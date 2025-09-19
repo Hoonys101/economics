@@ -1,0 +1,127 @@
+tick,agent_type,agent_id,method_name,message
+124,Household,124,Imitation Debug,"Current Imitation Need: 0.00, Social Status: 2089.28"
+124,Household,124,Imitation Debug,Imitation Need updated to: 1.27
+124,Household,124,Imitation Debug,"Current Imitation Need: 1.27, Social Status: 1966.28"
+124,Household,124,Imitation Debug,Imitation Need updated to: 2.55
+124,Household,124,Imitation Debug,"Current Imitation Need: 2.55, Social Status: 1892.08"
+124,Household,124,Imitation Debug,Imitation Need updated to: 3.71
+124,Household,124,Imitation Debug,"Current Imitation Need: 3.71, Social Status: 1845.05"
+124,Household,124,Imitation Debug,Imitation Need updated to: 4.87
+124,Household,124,Imitation Debug,"Current Imitation Need: 4.87, Social Status: 1817.84"
+124,Household,124,Imitation Debug,Imitation Need updated to: 6.04
+124,Household,124,Imitation Debug,"Current Imitation Need: 6.04, Social Status: 1754.54"
+124,Household,124,Imitation Debug,Imitation Need updated to: 7.23
+124,Household,124,Imitation Debug,"Current Imitation Need: 7.23, Social Status: 1710.19"
+124,Household,124,Imitation Debug,Imitation Need updated to: 8.35
+124,Household,124,Imitation Debug,"Current Imitation Need: 8.35, Social Status: 1678.56"
+124,Household,124,Imitation Debug,Imitation Need updated to: 9.48
+124,Household,124,Imitation Debug,"Current Imitation Need: 9.48, Social Status: 1638.99"
+124,Household,124,Imitation Debug,Imitation Need updated to: 10.62
+124,Household,124,Imitation Debug,"Current Imitation Need: 10.62, Social Status: 1620.55"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1793.84"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 11.78
+124,Household,124,Imitation Debug,"Current Imitation Need: 11.78, Social Status: 1575.36"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1770.18"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 12.88
+124,Household,124,Imitation Debug,"Current Imitation Need: 12.88, Social Status: 1548.79"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1727.67"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 13.99
+124,Household,124,Imitation Debug,"Current Imitation Need: 13.99, Social Status: 1507.52"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1693.71"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 15.13
+124,Household,124,Imitation Debug,"Current Imitation Need: 15.13, Social Status: 1474.19"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1673.10"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 16.21
+124,Household,124,Imitation Debug,"Current Imitation Need: 16.21, Social Status: 1452.09"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1635.94"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 17.31
+124,Household,124,Imitation Debug,"Current Imitation Need: 17.31, Social Status: 1415.62"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1619.35"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 18.43
+124,Household,124,Imitation Debug,"Current Imitation Need: 18.43, Social Status: 1398.86"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1575.37"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 19.56
+124,Household,124,Imitation Debug,"Current Imitation Need: 19.56, Social Status: 1355.22"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1540.68"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 20.71
+124,Household,124,Imitation Debug,"Current Imitation Need: 20.71, Social Status: 1320.71"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1516.66"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 21.80
+124,Household,124,Imitation Debug,"Current Imitation Need: 21.80, Social Status: 1295.93"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1479.99"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 22.91
+124,Household,124,Imitation Debug,"Current Imitation Need: 22.91, Social Status: 1259.54"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1448.96"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 24.04
+124,Household,124,Imitation Debug,"Current Imitation Need: 24.04, Social Status: 1228.65"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1428.03"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 25.13
+124,Household,124,Imitation Debug,"Current Imitation Need: 25.13, Social Status: 1207.33"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1392.41"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 26.23
+124,Household,124,Imitation Debug,"Current Imitation Need: 26.23, Social Status: 1171.88"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1375.23"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 27.34
+124,Household,124,Imitation Debug,"Current Imitation Need: 27.34, Social Status: 1154.65"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1332.02"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 28.47
+124,Household,124,Imitation Debug,"Current Imitation Need: 28.47, Social Status: 1111.52"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1297.72"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 29.61
+124,Household,124,Imitation Debug,"Current Imitation Need: 29.61, Social Status: 1077.26"
+124,Household,124,Imitation Debug,Active households count: 103
+124,Household,124,Imitation Debug,Top households count: 10
+124,Household,124,Imitation Debug,"Target household: 123, Social Status: 1273.53"
+124,Household,124,Imitation Debug,Luxury goods in target: {'luxury_food': 0.0}
+124,Household,124,Imitation Debug,Imitation Need updated to: 30.71

@@ -1,0 +1,253 @@
+import pytest
+from unittest.mock import Mock, MagicMock, patch
+import os
+import sys
+
+from simulation.core_agents import Household
+from simulation.firms import Firm
+from simulation.markets.order_book_market import OrderBookMarket
+from simulation.models import Order
+from simulation.decisions.household_decision_engine import HouseholdDecisionEngine
+from simulation.decisions.firm_decision_engine import FirmDecisionEngine
+import config
+
+# Add project root to sys.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, os.pardir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Mock data for goods
+GOODS_DATA = [
+    {"id": "food", "name": "Food", "utility_per_need": {"survival_need": 10.0}, "storability": 0.5},
+    {"id": "luxury_food", "name": "Luxury Food", "utility_per_need": {"recognition_need": 5.0}, "is_luxury": True, "storability": 0.1}
+]
+
+# Mock Logger to prevent actual file writes during tests
+@pytest.fixture(autouse=True)
+def mock_logger():
+    with patch('simulation.decisions.household_decision_engine.logging.getLogger') as mock_hh_logger:
+        with patch('simulation.decisions.firm_decision_engine.logging.getLogger') as mock_firm_logger:
+            mock_hh_logger_instance = MagicMock()
+            mock_firm_logger_instance = MagicMock()
+            mock_hh_logger.return_value = mock_hh_logger_instance
+            mock_firm_logger.return_value = mock_firm_logger_instance
+            yield mock_hh_logger_instance # Yield one of them, or both if needed separately
+
+@pytest.fixture
+def household():
+    hh = Mock(spec=Household)
+    hh.id = 1
+    hh.assets = 1000.0
+    hh.inventory = {"food": 10.0}
+    hh.needs = {"survival_need": 50.0, "labor_need": 0.0}
+    hh.perceived_avg_prices = {"food": 10.0}
+    hh.is_employed = False
+    hh.goods_info_map = {g['id']: g for g in GOODS_DATA}
+    hh.decision_engine = Mock(spec=HouseholdDecisionEngine)
+    hh.decision_engine.ai_engine = Mock() # Mock the AI engine within the decision engine
+    return hh
+
+@pytest.fixture
+def firm():
+    f = Mock(spec=Firm)
+    f.id = 1
+    f.assets = 10000.0
+    f.inventory = {"food": 50.0}
+    f.employees = []
+    f.production_targets = {"food": 100.0}
+    f.productivity_factor = 1.0
+    f.revenue_this_turn = 0.0
+    f.cost_this_turn = 0.0
+    f.decision_engine = Mock(spec=FirmDecisionEngine)
+    f.decision_engine.ai_engine = Mock() # Mock the AI engine within the decision engine
+    return f
+
+@pytest.fixture
+def goods_market():
+    market = OrderBookMarket("goods_market")
+    return market
+
+@pytest.fixture
+def labor_market():
+    market = OrderBookMarket("labor_market")
+    market.buy_orders = {}
+    market.sell_orders = {}
+    return market
+
+@pytest.fixture(autouse=True)
+def set_config_for_tests():
+    original_values = {}
+    test_values = {
+        'HOUSEHOLD_RESERVATION_PRICE_BASE': 5.0,
+        'HOUSEHOLD_NEED_PRICE_MULTIPLIER': 1.0,
+        'HOUSEHOLD_ASSET_PRICE_MULTIPLIER': 0.1,
+        'HOUSEHOLD_PRICE_ELASTICITY_FACTOR': 0.5,
+        'HOUSEHOLD_STOCKPILING_BONUS_FACTOR': 0.2,
+        'MIN_SELL_PRICE': 1.0,
+        'GOODS_MARKET_SELL_PRICE': 10.0,
+        'LABOR_NEED_THRESHOLD': 50.0,
+        'HOUSEHOLD_MIN_WAGE_DEMAND': 10.0,
+        'WAGE_DECAY_RATE': 0.9,
+        'RND_WAGE_PREMIUM': 1.5,
+        'GROWTH_NEED_THRESHOLD': 60.0,
+        'IMITATION_NEED_THRESHOLD': 70.0,
+        'IMITATION_ASSET_THRESHOLD': 500.0,
+        'CHILD_REARING_NEED_THRESHOLD': 80.0,
+        'CHILD_REARING_ASSET_THRESHOLD': 1000.0,
+        'SURVIVAL_NEED_THRESHOLD': 30.0,
+        'ASSETS_THRESHOLD_FOR_OTHER_ACTIONS': 200.0,
+        'RECOGNITION_NEED_THRESHOLD': 40.0,
+        'LIQUIDITY_RATIO_MAX': 0.8,
+        'LIQUIDITY_RATIO_MIN': 0.1,
+        'LIQUIDITY_RATIO_DIVISOR': 100.0
+    }
+
+    for key, value in test_values.items():
+        if hasattr(config, key):
+            original_values[key] = getattr(config, key)
+        setattr(config, key, value)
+    
+    yield
+    
+    for key, value in original_values.items():
+        setattr(config, key, value)
+
+
+class TestDecisionEngineIntegration:
+
+    def test_firm_places_sell_order_for_food(self, firm: Firm, goods_market: OrderBookMarket):
+        """기업이 식량 판매 주문을 올바르게 제출하는지 테스트합니다."""
+        # Mock the firm's make_decision to return a sell order
+        firm.make_decision.return_value = [
+            Order(agent_id=firm.id, order_type='SELL', item_id='food', quantity=10.0, price=15.0, market_id='goods_market')
+        ]
+        
+        orders = firm.make_decision(current_tick=1, market_data={'all_households': [], 'goods_data': GOODS_DATA})
+        
+        # Place the orders into the market
+        for order in orders:
+            goods_market.place_order(order, current_tick=1)
+
+        assert len(goods_market.sell_orders['food']) == 1
+        assert len(goods_market.sell_orders['food']) > 0
+        assert goods_market.sell_orders['food'][0].agent_id == firm.id
+
+    def test_household_places_buy_order_for_food(self, household: Household, firm: Firm, goods_market: OrderBookMarket):
+        """가계가 식량 구매 주문을 올바르게 제출하는지 테스트합니다."""
+        # Ensure household wants to buy food based on rules (survival need high)
+        household.needs["survival_need"] = 80.0
+        household.inventory["food"] = 0.0
+        
+        # Mock the household's make_decision to return a buy order
+        household.make_decision.return_value = [
+            Order(agent_id=household.id, order_type='BUY', item_id='food', quantity=1.0, price=1.6, market_id='goods_market')
+        ]
+
+        orders = household.make_decision(current_tick=1, market_data={'all_households': [], 'goods_data': GOODS_DATA})
+        
+        # Place the orders into the market
+        transactions = []
+        for order in orders:
+            transactions.extend(goods_market.place_order(order, current_tick=1))
+
+        assert len(orders) > 0 # At least one order should be generated
+        assert len(goods_market.buy_orders['food']) == 1
+        assert goods_market.buy_orders['food'][0].agent_id == household.id
+        
+        # No transactions expected yet, as there's no matching sell order
+        assert not transactions
+
+    def test_household_sells_labor(self, household: Household, labor_market: OrderBookMarket):
+        """가계가 노동 판매 주문을 올바르게 제출하는지 테스트합니다."""
+        household.is_employed = False
+        household.needs["labor_need"] = 50
+        household.needs["survival_need"] = 10.0 # Ensure AI is called
+
+        # Mock the household's make_decision to return a labor sell order
+        household.make_decision.return_value = [
+            Order(agent_id=household.id, order_type='SELL', item_id='labor', quantity=1, price=10, market_id='labor_market')
+        ]
+        orders = household.make_decision(current_tick=1, market_data={'all_households': [household], 'goods_data': GOODS_DATA})
+        
+        # Place the orders into the market
+        for order in orders:
+            labor_market.place_order(order, current_tick=1)
+
+        assert len(labor_market.sell_orders['labor']) == 1
+        assert labor_market.sell_orders['labor'][0].agent_id == household.id
+
+    def test_firm_buys_labor(self, firm: Firm, labor_market: OrderBookMarket):
+        """기업이 노동 구매 주문을 올바르게 제출하는지 테스트합니다."""
+        firm.employees = []
+        # Mock the firm's make_decision to return a labor buy order
+        firm.make_decision.return_value = [
+            Order(agent_id=firm.id, order_type='BUY', item_id='labor', quantity=1, price=10, market_id='labor_market')
+        ]
+        orders = firm.make_decision(current_tick=1, market_data={'all_households': [], 'goods_data': GOODS_DATA})
+        
+        # Place the orders into the market
+        for order in orders:
+            labor_market.place_order(order, current_tick=1)
+
+        assert len(labor_market.buy_orders['labor']) == 1
+        assert labor_market.buy_orders['labor'][0].agent_id == firm.id
+
+    def test_goods_market_matching_integration(self, household: Household, firm: Firm, goods_market: OrderBookMarket):
+        """가계와 기업의 주문이 상품 시장에서 올바르게 매칭되는지 통합 테스트합니다."""
+        # Firm sells food
+        firm_sell_order = Order(agent_id=firm.id, order_type='SELL', item_id='food', quantity=5.0, price=10.0, market_id='goods_market')
+        firm_transactions = goods_market.place_order(firm_sell_order, current_tick=1)
+        assert not firm_transactions # No transactions yet
+        assert 'food' in goods_market.sell_orders
+        assert len(goods_market.sell_orders['food']) == 1
+
+        # Household buys food
+        household_buy_order = Order(agent_id=household.id, order_type='BUY', item_id='food', quantity=5.0, price=10.0, market_id='goods_market')
+        household_transactions = goods_market.place_order(household_buy_order, current_tick=1)
+
+        assert len(household_transactions) == 1
+        tx = household_transactions[0]
+        assert tx.item_id == 'food'
+        assert tx.quantity == 5.0
+        assert tx.price == 10.0
+        assert tx.buyer_id == household.id
+        assert tx.seller_id == firm.id
+        assert not goods_market.sell_orders.get('food') # Order book should be cleared
+        assert not goods_market.buy_orders.get('food')
+
+    def test_labor_market_matching_integration(self, household: Household, firm: Firm, labor_market: OrderBookMarket):
+        """가계와 기업의 주문이 노동 시장에서 올바르게 매칭되는지 통합 테스트합니다."""
+        # Household sells labor
+        household.is_employed = False
+        household.needs["labor_need"] = 50
+        household.needs["survival_need"] = 10.0 # Ensure AI is called
+        household.make_decision.return_value = [
+            Order(agent_id=household.id, order_type='SELL', item_id='labor', quantity=1, price=10, market_id='labor_market')
+        ]
+        household_orders = household.make_decision(current_tick=1, market_data={'all_households': [household], 'goods_data': GOODS_DATA})
+        household_transactions = []
+        for order in household_orders:
+            household_transactions.extend(labor_market.place_order(order, current_tick=1))
+        assert not household_transactions # No transactions yet
+        assert 'labor' in labor_market.sell_orders
+
+        # Firm buys labor
+        firm.employees = []
+        firm.make_decision.return_value = [
+            Order(agent_id=firm.id, order_type='BUY', item_id='labor', quantity=1, price=10, market_id='labor_market')
+        ]
+        firm_orders = firm.make_decision(current_tick=1, market_data={'all_households': [], 'goods_data': GOODS_DATA})
+        firm_transactions = []
+        for order in firm_orders:
+            firm_transactions.extend(labor_market.place_order(order, current_tick=1))
+
+        assert len(firm_transactions) == 1
+        tx = firm_transactions[0]
+        assert tx.item_id == 'labor'
+        assert tx.quantity == 1
+        assert tx.price == 10.0
+        assert tx.buyer_id == firm.id
+        assert tx.seller_id == household.id
+        assert not labor_market.sell_orders.get('labor') # Order book should be cleared
+        assert not labor_market.buy_orders.get('labor')

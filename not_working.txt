@@ -1,0 +1,65 @@
+PS C:\Users\Gram Pro\coding\economics> python app.py
+AI model (wealth_and_needs) loaded from ./ai_model_wealth_and_needs.pkl
+AI model (needs_and_growth) loaded from ./ai_model_needs_and_growth.pkl
+AI model (needs_and_social_status) loaded from ./ai_model_needs_and_social_status.pkl
+New simulation instance created.
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5001
+Press CTRL+C to quit
+127.0.0.1 - - [08/Jul/2025 21:50:20] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:20] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:20] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:25] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:25] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:25] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:29] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:29] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:29] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:29] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:31] "POST /api/simulation/start HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:33] "POST /api/simulation/start HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:33] "POST /api/simulation/start HTTP/1.1" 200 -
+Exception in thread Thread-12 (run_simulation_loop):
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/state HTTP/1.1" 200 -   
+Traceback (most recent call last):
+  File "C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+  File "C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Gram Pro\coding\economics\app.py", line 95, in run_simulation_loop
+    simulation_instance.run_tick()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Gram Pro\coding\economics\simulation\engine.py", line 260, in run_tick
+    transactions = market.match_orders(self.time)
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+  File "C:\Users\Gram Pro\coding\economics\simulation\markets.py", line 102, in match_orders
+    tx = Transaction(
+        buyer_id=buy_order.agent_id, # 노동 구매자 (기업)
+    ...<4 lines>...
+        transaction_type="labor"
+    )
+TypeError: Transaction.__init__() missing 1 required positional argument: 'time'  
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/state HTTP/1.1" 200 -   
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:34] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:35] "POST /api/simulation/pause HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:35] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:35] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:35] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:39] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:39] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:39] "GET /api/simulation/market_activity HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:45] "GET /api/simulation/state HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:45] "GET /api/simulation/chart_data HTTP/1.1" 200 -
+127.0.0.1 - - [08/Jul/2025 21:50:45] "GET /api/simulation/market_activity HTTP/1.1" 200 -

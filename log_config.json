@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "level": "DEBUG",
+  "output": "file",
+  "log_file": "logs/debug_custom.log"
+}

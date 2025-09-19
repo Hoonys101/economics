@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경제 시뮬레이션 대시보드 (v2)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card-body { min-height: 120px; }
+        /* For Animated List */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .transaction-item {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <header class="text-center mb-4">
+            <h1>경제 시뮬레이션 대시보드</h1>
+        </header>
+
+        <!-- 제어 패널 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Control Panel</span>
+                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal">설정 변경</button>
+            </div>
+            <div class="card-body">
+                <button id="startBtn" class="btn btn-primary">시작</button>
+                <button id="pauseBtn" class="btn btn-warning">일시정지</button>
+                <button id="stopBtn" class="btn btn-secondary">중단</button>
+                <button id="resetBtn" class="btn btn-danger">재설정</button>
+                <button id="stopServerBtn" class="btn btn-dark">서버 중지</button>
+            </div>
+        </div>
+
+        <!-- 메인 대시보드 -->
+        <div class="row mb-4">
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Status</h5><p id="simStatus" class="card-text fs-4">-</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Tick</h5><p id="simTick" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">GDP</h5><p id="simGdp" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Population</h5><p id="simPopulation" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Trade Volume</h5><p id="simTradeVolume" class="card-text fs-4">0</p></div></div></div>
+        </div>
+        <div class="row mb-4">
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Household Wealth</h5><p id="simAvgHouseholdWealth" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Firm Wealth</h5><p id="simAvgFirmWealth" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Household Needs</h5><p id="simHouseholdNeeds" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Firm Needs</h5><p id="simFirmNeeds" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Top Selling Good</h5><p id="simTopGood" class="card-text fs-4">-</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Unemployment</h5><p id="simUnemployment" class="card-text fs-4">0%</p></div></div></div>
+        </div>
+
+        <!-- 차트 & 거래내역 -->
+        <div class="row">
+            <!-- 차트 영역 -->
+            <div class="col-md-8">
+                <div class="row">
+                    <div class="col-md-6 mb-4"><canvas id="gdpChart"></canvas></div>
+                    <div class="col-md-6 mb-4"><canvas id="wealthDistChart"></canvas></div>
+                    <div class="col-md-6 mb-4"><canvas id="householdNeedsChart"></canvas></div>
+                    <div class="col-md-6 mb-4"><canvas id="firmNeedsChart"></canvas></div>
+                    <div class="col-12"><canvas id="salesByGoodChart"></canvas></div>
+                </div>
+            </div>
+            <!-- 거래 내역 -->
+            <div class="col-md-4">
+                <h5>최근 거래 내역</h5>
+                <div id="transaction-list-container" class="relative flex h-[500px] w-full flex-col overflow-y-auto p-2 space-y-4">
+                    <!-- Transactions will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">시뮬레이션 설정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="settingsForm">
+                        <div class="mb-3"><label class="form-label">초기 가계 수</label><input type="number" class="form-control" id="NUM_HOUSEHOLDS"></div>
+                        <div class="mb-3"><label class="form-label">초기 기업 수</label><input type="number" class="form-control" id="NUM_FIRMS"></div>
+                        <div class="mb-3"><label class="form-label">최대 시뮬레이션 Tick</label><input type="number" class="form-control" id="SIMULATION_TICKS"></div>
+                        <div class="mb-3"><label class="form-label">초기 가계 자산 (평균)</label><input type="number" class="form-control" id="INITIAL_HOUSEHOLD_ASSETS_MEAN"></div>
+                        <div class="mb-3"><label class="form-label">초기 기업 자본 (평균)</label><input type="number" class="form-control" id="INITIAL_FIRM_CAPITAL_MEAN"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    <button type="button" class="btn btn-primary" id="saveSettingsBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Chart instances
+        let gdpChart, wealthDistChart, householdNeedsChart, firmNeedsChart, salesByGoodChart;
+        let lastTick = 0;
+        let lastTransactionTick = 0;
+        let isPolling = false;
+
+        // DOM Elements
+        const elements = {
+            status: document.getElementById('simStatus'),
+            tick: document.getElementById('simTick'),
+            gdp: document.getElementById('simGdp'),
+            population: document.getElementById('simPopulation'),
+            tradeVolume: document.getElementById('simTradeVolume'),
+            avgHouseholdWealth: document.getElementById('simAvgHouseholdWealth'),
+            avgFirmWealth: document.getElementById('simAvgFirmWealth'),
+            householdNeeds: document.getElementById('simHouseholdNeeds'),
+            firmNeeds: document.getElementById('simFirmNeeds'),
+            topGood: document.getElementById('simTopGood'),
+            unemployment: document.getElementById('simUnemployment'),
+            transactionList: document.getElementById('transaction-list-container')
+        };
+
+        // Control & Settings Buttons
+        document.getElementById('startBtn').addEventListener('click', () => sendControlCommand('start'));
+        document.getElementById('pauseBtn').addEventListener('click', () => sendControlCommand('pause'));
+        document.getElementById('stopBtn').addEventListener('click', () => sendControlCommand('stop'));
+        document.getElementById('resetBtn').addEventListener('click', () => sendControlCommand('reset'));
+        document.getElementById('stopServerBtn').addEventListener('click', () => sendControlCommand('shutdown'));
+        document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+        document.getElementById('settingsModal').addEventListener('show.bs.modal', loadSettings);
+
+        async function sendControlCommand(command) {
+            try {
+                const response = await fetch(`/api/simulation/${command}`, { method: 'POST' });
+                const result = await response.json();
+                console.log(result.message);
+                if (command === 'start' && !isPolling) {
+                    isPolling = true;
+                    pollForUpdates();
+                    pollForTransactions(); // Start polling for transactions
+                } else if (command === 'stop' || command === 'pause' || command === 'shutdown') {
+                    isPolling = false;
+                }
+            } catch (error) {
+                console.error(`Error sending ${command} command:`, error);
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                for (const [key, value] of Object.entries(config)) {
+                    const input = document.getElementById(key);
+                    if (input) input.value = value;
+                }
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+
+        async function saveSettings() {
+            const form = document.getElementById('settingsForm');
+            const newConfig = {};
+            for (const child of form.children) {
+                const input = child.querySelector('input');
+                if (input) {
+                    newConfig[input.id] = input.value;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+                const result = await response.json();
+                console.log(result.message);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+                modal.hide();
+                lastTick = 0; 
+                lastTransactionTick = 0;
+                elements.transactionList.innerHTML = ''; // Clear transaction list
+                if (!isPolling) {
+                    pollForUpdates();
+                }
+            } catch (error) {
+                console.error('Error saving config:', error);
+            }
+        }
+
+        async function pollForUpdates() {
+            if (!isPolling) return;
+
+            try {
+                const response = await fetch(`/api/simulation/update?since=${lastTick}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+
+                if (data.status !== 'no_update') {
+                    updateDashboard(data);
+                    lastTick = data.tick;
+                }
+            } catch (error) {
+                console.error('Error polling for updates:', error);
+            }
+
+            setTimeout(pollForUpdates, 1000); // Poll every 1s
+        }
+
+        async function pollForTransactions() {
+            if (!isPolling) return;
+
+            try {
+                const response = await fetch(`/api/market/transactions?since=${lastTransactionTick}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const transactions = await response.json();
+
+                if (transactions.length > 0) {
+                    lastTransactionTick = transactions[transactions.length - 1].time;
+                    updateTransactionList(transactions);
+                }
+            } catch (error) {
+                console.error('Error polling for transactions:', error);
+            }
+
+            setTimeout(pollForTransactions, 1500); // Poll every 1.5s
+        }
+
+        function updateTransactionList(transactions) {
+            transactions.reverse().forEach(tx => {
+                const itemHTML = createTransactionItem(tx);
+                elements.transactionList.insertAdjacentHTML('afterbegin', itemHTML);
+                // Keep list size manageable
+                if (elements.transactionList.children.length > 50) {
+                    elements.transactionList.lastElementChild.remove();
+                }
+            });
+        }
+        
+        function createTransactionItem(tx) {
+            const isLabor = tx.item_id === 'labor';
+            const icon = isLabor ? '💼' : '📦';
+            const color = isLabor ? '#1E86FF' : '#00C9A7';
+            const name = isLabor ? 'Labor Contract' : `Trade: ${tx.item_id}`;
+            const description = `Buyer: ${tx.buyer_id}, Seller: ${tx.seller_id}, Qty: ${tx.quantity.toFixed(1)}, Price: ${tx.price.toFixed(1)}`;
+
+            return `
+                <figure class="transaction-item relative mx-auto min-h-fit w-full max-w-[400px] cursor-pointer overflow-hidden rounded-2xl p-4 bg-white dark:bg-transparent dark:backdrop-blur-md dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]">
+                    <div class="flex flex-row items-center gap-3">
+                        <div class="flex size-10 items-center justify-center rounded-2xl" style="background-color: ${color};">
+                            <span class="text-lg">${icon}</span>
+                        </div>
+                        <div class="flex flex-col overflow-hidden">
+                            <figcaption class="flex flex-row items-center whitespace-pre text-lg font-medium dark:text-white">
+                                <span class="text-sm sm:text-lg">${name}</span>
+                                <span class="mx-1">·</span>
+                                <span class="text-xs text-gray-500">Tick ${tx.time}</span>
+                            </figcaption>
+                            <p class="text-sm font-normal dark:text-white/60">${description}</p>
+                        </div>
+                    </div>
+                </figure>
+            `;
+        }
+
+        function updateDashboard(data) {
+            elements.status.textContent = data.status;
+            elements.tick.textContent = data.tick;
+            elements.gdp.textContent = data.gdp.toLocaleString();
+            elements.population.textContent = data.population;
+            elements.tradeVolume.textContent = data.trade_volume.toLocaleString();
+            elements.avgHouseholdWealth.textContent = data.average_household_wealth.toFixed(2);
+            elements.avgFirmWealth.textContent = data.average_firm_wealth.toFixed(2);
+            elements.householdNeeds.textContent = data.household_avg_needs.toFixed(2);
+            elements.firmNeeds.textContent = data.firm_avg_needs.toFixed(2);
+            elements.topGood.textContent = data.top_selling_good;
+            elements.unemployment.textContent = `${data.unemployment_rate.toFixed(1)}%`;
+
+            // Chart and old table updates are now minimal
+            if (data.chart_update && data.chart_update.new_gdp_history) {
+                 updateLineChart(gdpChart, 'gdpChart', 'GDP Over Time', data.chart_update.new_gdp_history);
+            }
+        }
+
+        function updateLineChart(chart, elementId, label, newData) {
+            if (!newData || newData.length === 0) return;
+            if (!chart) {
+                const ctx = document.getElementById(elementId).getContext('2d');
+                gdpChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: newData.length}, (_, i) => lastTick + i + 1),
+                        datasets: [{ label, data: newData, borderColor: '#0d6efd', tension: 0.1 }]
+                    }
+                });
+            } else {
+                const newLabels = Array.from({length: newData.length}, (_, i) => lastTick + i + 1);
+                chart.data.labels.push(...newLabels);
+                chart.data.datasets[0].data.push(...newData);
+                chart.update();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial load
+            pollForUpdates();
+        });
+
+    </script>
+</body>
+</html>

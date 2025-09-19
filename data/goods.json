@@ -1,0 +1,35 @@
+[
+    {
+        "id": "food",
+        "name": "기본 식량",
+        "is_essential": true,
+        "utility_per_need": {
+            "survival_need": 2.0,
+            "recognition_need": 0.05,
+            "growth_need": 0.0
+        }
+    },
+    {
+        "id": "luxury_food",
+        "name": "고급 식량",
+        "is_luxury": true,
+        "is_essential": false,
+        "utility_per_need": {
+            "survival_need": 0.0,
+            "recognition_need": 1.5,
+            "growth_need": 0.1
+        },
+        "storability": 1.0
+    },
+    {
+        "id": "education_service",
+        "name": "교육 서비스",
+        "is_essential": false,
+        "utility_per_need": {
+            "survival_need": 0.0,
+            "recognition_need": 0.2,
+            "growth_need": 2.0
+        },
+        "storability": 0.0
+    }
+]
