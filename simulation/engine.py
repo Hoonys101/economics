@@ -9,8 +9,8 @@ from simulation.markets import OrderBookMarket
 from simulation.core_markets import Market
 from simulation.agents.bank import Bank
 from simulation.loan_market import LoanMarket
-from simulation.ai_model import AITrainingManager
-import config
+from simulation.ai_model import AIEngineRegistry # Import AIEngineRegistry
+from simulation.decisions.household_decision_engine import HouseholdDecisionEngine
 
 # New imports for database
 from simulation.db.repository import SimulationRepository
@@ -83,7 +83,7 @@ class EconomicIndicatorTracker:
             if last_avg_goods_price is not None:
                 record["avg_goods_price"] = last_avg_goods_price
             else:
-                record["avg_goods_price"] = config.GOODS_MARKET_SELL_PRICE # Fallback for first tick
+                record["avg_goods_price"] = self.config_module.GOODS_MARKET_SELL_PRICE # Fallback for first tick
         
         labor_transactions = [tx for tx in all_transactions if tx.transaction_type == 'labor']
         if labor_transactions:
@@ -91,8 +91,13 @@ class EconomicIndicatorTracker:
             record["avg_wage"] = avg_wage
             self.logger.debug(f"TRACKER_LABOR_TRANSACTIONS | Tick {time}, Labor Transactions: {len(labor_transactions)}, Prices: {[tx.price for tx in labor_transactions]}", extra={'tick': time, 'tags': ['tracker', 'labor_debug']})
         else:
-            record["avg_wage"] = 0.0
-            self.logger.debug(f"TRACKER_LABOR_TRANSACTIONS | Tick {time}, No labor transactions.", extra={'tick': time, 'tags': ['tracker', 'labor_debug']})
+            # If no labor transactions, carry over the last recorded avg_wage
+            last_avg_wage = self.repository.get_latest_economic_indicator('avg_wage')
+            if last_avg_wage is not None:
+                record["avg_wage"] = last_avg_wage
+            else:
+                record["avg_wage"] = self.config_module.BASE_WAGE # Fallback for first tick or no history
+            self.logger.debug(f"TRACKER_LABOR_TRANSACTIONS | Tick {time}, No labor transactions. Carrying over last avg_wage or using BASE_WAGE.", extra={'tick': time, 'tags': ['tracker', 'labor_debug']})
 
         total_production = sum(f.current_production for f in firms if getattr(f, 'is_active', False))
         record["total_production"] = total_production
@@ -118,7 +123,7 @@ class Simulation:
     가계, 기업, 시장, 은행 등 모든 시뮬레이션 구성 요소를 초기화하고,
     각 시뮬레이션 틱(tick)마다 에이전트의 의사결정, 시장 거래, 생산 및 소비 활동을 순차적으로 실행합니다.
     """
-    def __init__(self, households: List[Household], firms: List[Firm], goods_data: List[Dict[str, Any]], ai_trainer: AITrainingManager, repository: SimulationRepository, logger: logging.Logger | None = None) -> None:
+    def __init__(self, households: List[Household], firms: List[Firm], goods_data: List[Dict[str, Any]], ai_trainer: AIEngineRegistry, repository: SimulationRepository, config_module: Any, logger: logging.Logger | None = None) -> None:
         """Simulation 클래스를 초기화합니다.
 
         Args:
@@ -140,7 +145,11 @@ class Simulation:
         self.goods_data = goods_data
         self.next_agent_id = len(households) + len(firms)
 
-        self.bank = Bank(id=self.next_agent_id, initial_assets=config.INITIAL_BANK_ASSETS)
+        self.ai_trainer = ai_trainer
+        self.config_module = config_module # Store config_module
+        self.time: int = 0
+
+        self.bank = Bank(id=self.next_agent_id, initial_assets=self.config_module.INITIAL_BANK_ASSETS)
         self.agents[self.bank.id] = self.bank
         self.next_agent_id += 1
 
@@ -158,10 +167,9 @@ class Simulation:
             firm.decision_engine.goods_market = self.markets['goods_market']
             firm.decision_engine.labor_market = self.markets['labor_market']
             firm.decision_engine.loan_market = self.markets['loan_market']
+            # Pass config_module to Firm constructor
+            firm.config_module = self.config_module # Assuming Firm constructor is updated to accept this
         self.repository = repository # Use passed-in repository
-        self.tracker = EconomicIndicatorTracker(self.repository) # Pass repository to tracker
-        self.ai_trainer = ai_trainer
-        self.time: int = 0
 
     def run_tick(self, repository: SimulationRepository) -> None:
         self.time += 1
@@ -182,11 +190,17 @@ class Simulation:
         # 1. Households make decisions and place orders
         for household in self.households:
             if household.is_active:
-                household_orders = household.make_decision(market_data, self.time)
+                # Use the new HouseholdDecisionEngine
+                decision_engine = HouseholdDecisionEngine(household)
+                household_orders = decision_engine.make_decisions(household, self.markets, self.goods_data)
                 for order in household_orders:
-                    market = self.markets.get(order.market_id)
+                    # Infer market from the order's item_id
+                    market_id = 'labor_market' if order.item_id == 'labor' else 'goods_market'
+                    market = self.markets.get(market_id)
                     if market:
                         market.place_order(order)
+                    else:
+                        self.logger.warning(f"Market '{market_id}' not found for order from agent {household.id}", extra={'tick': self.time})
 
         # 2. Firms make decisions and place orders
         for firm in self.firms:
@@ -207,6 +221,16 @@ class Simulation:
             self.logger.debug(f"TRANSACTION_DETAIL | Tick {self.time}, Type: {tx.transaction_type}, Item: {tx.item_id}, Price: {tx.price}, Quantity: {tx.quantity}", extra={'tick': self.time, 'tags': ['debug_transaction']})
         self._process_transactions(all_transactions)
         self.logger.debug(f"PROCESS_TRANSACTIONS_END | Tick {self.time}, Finished processing transactions.", extra={'tick': self.time, 'tags': ['debug_transaction']})
+
+        # --- GEMINI_PROPOSED_ADDITION_START: Firm Profit Calculation and History Update ---
+        for firm in self.firms:
+            if firm.is_active:
+                current_profit = firm.revenue_this_turn - firm.expenses_this_tick
+                firm.profit_history.append(current_profit)
+                firm.revenue_this_turn = 0.0 # Reset for next tick
+                firm.expenses_this_tick = 0.0 # Reset for next tick
+                self.logger.debug(f"FIRM_PROFIT_UPDATE | Firm {firm.id} profit this tick: {current_profit:.2f}, profit_history: {list(firm.profit_history)}", extra={'tick': self.time, 'agent_id': firm.id, 'current_profit': current_profit, 'profit_history': list(firm.profit_history), 'tags': ['firm_profit']})
+        # --- GEMINI_PROPOSED_ADDITION_END ---
 
         # --- GEMINI_TEMP_CHANGE_START: Save transactions to repository ---
         for tx in all_transactions:
@@ -268,13 +292,8 @@ class Simulation:
         # 5. Households consume goods and update needs
         for household in self.households:
             if household.is_active:
-                # For simplicity, households consume food based on their survival need
-                # More complex consumption logic can be added to HouseholdDecisionEngine
-                food_needed = household.needs["survival_need"] / config.SURVIVAL_NEED_INCREASE_RATE # Rough estimate
-                if household.inventory.get('food', 0) > 0 and food_needed > 0:
-                    consume_quantity = min(food_needed, household.inventory['food'])
-                    household.consume('food', consume_quantity, self.time)
-                household.update_needs(self.time)
+                household.consume_goods()
+
 
         # 6. Firms update needs (e.g., liquidity, check for closure)
         for firm in self.firms:
@@ -346,24 +365,24 @@ class Simulation:
                 if best_ask_price is not None:
                     goods_market_data[f'{item_id}_current_sell_price'] = best_ask_price
                 else:
-                    goods_market_data[f'{item_id}_current_sell_price'] = config.GOODS_MARKET_SELL_PRICE
+                    goods_market_data[f'{item_id}_current_sell_price'] = self.config_module.GOODS_MARKET_SELL_PRICE
 
         # Get avg_goods_price from the tracker's last recorded value
         # If first tick or no previous data, use GOODS_MARKET_SELL_PRICE as fallback
         avg_goods_price_for_market_data = tracker.repository.get_latest_economic_indicator('avg_goods_price')
         if avg_goods_price_for_market_data is None:
-            avg_goods_price_for_market_data = config.GOODS_MARKET_SELL_PRICE
+            avg_goods_price_for_market_data = self.config_module.GOODS_MARKET_SELL_PRICE
 
         avg_wage_for_market_data = tracker.repository.get_latest_economic_indicator('avg_wage')
         if avg_wage_for_market_data is None or avg_wage_for_market_data == 0:
-            avg_wage_for_market_data = config.BASE_WAGE
+            avg_wage_for_market_data = self.config_module.BASE_WAGE
         
         self.logger.debug(f"PREPARE_MARKET_DATA | Tick {self.time}, avg_goods_price_for_market_data: {avg_goods_price_for_market_data:.2f}", extra={'tick': self.time, 'tags': ['market_data_debug']})
 
         return {
             "time": self.time,
             "goods_market": goods_market_data,
-            "loan_market": {"interest_rate": config.LOAN_INTEREST_RATE},
+            "loan_market": {"interest_rate": self.config_module.LOAN_INTEREST_RATE},
             "all_households": self.households,
             "goods_data": self.goods_data,
             "avg_goods_price": avg_goods_price_for_market_data # Added avg_goods_price
@@ -416,7 +435,7 @@ class Simulation:
 
                     if tx.transaction_type == "research_labor":
                         research_skill = seller.skills.get("research", Skill("research")).value
-                        buyer.productivity_factor += research_skill * config.RND_PRODUCTIVITY_MULTIPLIER
+                        buyer.productivity_factor += research_skill * self.config_module.RND_PRODUCTIVITY_MULTIPLIER
                         self.logger.info(f"FIRM_PRODUCTIVITY_INCREASE | Firm {buyer.id} productivity increased to {buyer.productivity_factor:.2f} due to research labor from {seller.id}", extra={'tick': self.time, 'agent_id': buyer.id, 'employee_id': seller.id, 'tags': ['debug_productivity']})
 
             elif tx.transaction_type == "goods":
@@ -476,18 +495,19 @@ class Simulation:
         self.logger.debug(f"AGENTS_DICT_REBUILT | Total active agents: {len(self.agents)}", extra={'tick': self.time, 'tags': ['debug_lifecycle']})
 
         # --- Update employee lists for active firms to remove inactive employees ---
-        for firm in self.firms:
-            initial_employee_count = len(firm.employees)
-            # Only keep employees who are still active in the simulation
-            active_employees = [emp for emp in firm.employees if emp.is_active and emp.id in self.agents]
-            
-            if len(active_employees) < initial_employee_count:
-                self.logger.info(f"FIRM_EMPLOYEES_UPDATED | Firm {firm.id} removed {initial_employee_count - len(active_employees)} inactive employees.", extra={'tick': self.time, 'firm_id': firm.id, 'tags': ['debug_lifecycle']})
-            
-            firm.employees = active_employees
-            # Verify employment status consistency
-            for emp in firm.employees:
-                if not emp.is_employed or emp.employer_id != firm.id:
-                    self.logger.warning(f"EMPLOYMENT_INCONSISTENCY | Firm {firm.id} has employee {emp.id} but household is_employed={emp.is_employed}/employer_id={emp.employer_id}", extra={'tick': self.time, 'firm_id': firm.id, 'agent_id': emp.id, 'tags': ['debug_employment']})
+        # GEMINI_BUG_FIX: Commented out to prevent employees from being incorrectly removed.
+        # for firm in self.firms:
+        #     initial_employee_count = len(firm.employees)
+        #     # Only keep employees who are still active in the simulation
+        #     active_employees = [emp for emp in firm.employees if emp.is_active and emp.id in self.agents]
+        #     
+        #     if len(active_employees) < initial_employee_count:
+        #         self.logger.info(f"FIRM_EMPLOYEES_UPDATED | Firm {firm.id} removed {initial_employee_count - len(active_employees)} inactive employees.", extra={'tick': self.time, 'firm_id': firm.id, 'tags': ['debug_lifecycle']})
+        #     
+        #     firm.employees = active_employees
+        #     # Verify employment status consistency
+        #     for emp in firm.employees:
+        #         if not emp.is_employed or emp.employer_id != firm.id:
+        #             self.logger.warning(f"EMPLOYMENT_INCONSISTENCY | Firm {firm.id} has employee {emp.id} but household is_employed={emp.is_employed}/employer_id={emp.employer_id}", extra={'tick': self.time, 'firm_id': firm.id, 'agent_id': emp.id, 'tags': ['debug_employment']})
 
         self.logger.debug(f"LIFECYCLE_END | Finished agent lifecycle management at tick {self.time}", extra={'tick': self.time, 'tags': ['debug_lifecycle']})
