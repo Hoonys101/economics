@@ -1,6 +1,53 @@
 {
-  "enabled": true,
-  "level": "DEBUG",
-  "output": "file",
-  "log_file": "logs/debug_custom.log"
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "standard": {
+      "format": "{asctime} - {name} - {levelname} - {message}",
+      "style": "{"
+    },
+    "csv_formatter": {
+      "class": "utils.logging_manager.CsvFormatter",
+      "format": null,
+      "datefmt": null,
+      "style": "%"
+    }
+  },
+  "filters": {
+    "sampling_filter": {
+      "()": "utils.logging_manager.SamplingFilter"
+    }
+  },
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "formatter": "standard",
+      "level": "INFO",
+      "stream": "ext://sys.stdout"
+    },
+    "file": {
+      "class": "logging.FileHandler",
+      "formatter": "csv_formatter",
+      "level": "DEBUG",
+      "filename": "logs/simulation_log_StandardLog.csv",
+      "mode": "w",
+      "filters": ["sampling_filter"]
+    }
+  },
+  "loggers": {
+    "simulation": {
+      "handlers": ["console", "file"],
+      "level": "DEBUG",
+      "propagate": false
+    },
+    "main": {
+      "handlers": ["console", "file"],
+      "level": "DEBUG",
+      "propagate": false
+    },
+    "root": {
+      "handlers": ["console", "file"],
+      "level": "INFO"
+    }
+  }
 }

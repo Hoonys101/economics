@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import Mock, MagicMock, patch
+from collections import deque
 
 from simulation.decisions.firm_decision_engine import FirmDecisionEngine
 from simulation.firms import Firm
@@ -8,7 +9,11 @@ from simulation.firms import Firm
 @pytest.fixture(autouse=True)
 def mock_logger():
     with patch('simulation.decisions.firm_decision_engine.logging.getLogger') as mock_get_logger:
-        mock_logger_instance = MagicMock()
+        mock_logger_instance = MagicMock(name='firm_decision_engine_logger')
+        mock_logger_instance.debug = MagicMock()
+        mock_logger_instance.info = MagicMock()
+        mock_logger_instance.warning = MagicMock()
+        mock_logger_instance.error = MagicMock()
         mock_get_logger.return_value = mock_logger_instance
         yield mock_logger_instance
 
@@ -30,6 +35,7 @@ def mock_config():
     mock_cfg.MAX_SELL_QUANTITY = 50.0
     mock_cfg.PRICE_ADJUSTMENT_FACTOR = 0.05
     mock_cfg.PRICE_ADJUSTMENT_EXPONENT = 1.2
+    mock_cfg.PROFIT_HISTORY_TICKS = 10 # Add this for profit_history
     return mock_cfg
 
 @pytest.fixture
@@ -44,11 +50,18 @@ def mock_firm(mock_config):
     firm.last_prices = {"food": mock_config.GOODS_MARKET_SELL_PRICE}
     firm.revenue_this_turn = 0.0
     firm.cost_this_turn = 0.0
+    firm.profit_history = deque(maxlen=mock_config.PROFIT_HISTORY_TICKS) # Add profit_history
     return firm
 
 @pytest.fixture
-def firm_decision_engine_instance(mock_config):
-    return FirmDecisionEngine(config_module=mock_config, goods_market=Mock(), labor_market=Mock(), loan_market=Mock())
+def mock_ai_engine():
+    return Mock() # Mock the AI engine
+
+@pytest.fixture
+def firm_decision_engine_instance(mock_config, mock_ai_engine):
+    engine = FirmDecisionEngine(ai_engine=mock_ai_engine, config_module=mock_config, goods_market=Mock(), labor_market=Mock(), loan_market=Mock())
+    engine._calculate_dynamic_wage_offer = Mock(return_value=10.0) # Mock this method to return a float
+    return engine
 
 class TestFirmDecisionEngine:
     def test_initialization(self, firm_decision_engine_instance, mock_config):

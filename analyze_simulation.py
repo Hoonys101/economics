@@ -1,4 +1,7 @@
 import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 def analyze_simulation_results(input_csv_path="simulation_results.csv", output_csv_path="summary_results.csv"):
     try:
@@ -11,12 +14,12 @@ def analyze_simulation_results(input_csv_path="simulation_results.csv", output_c
 
         # CSV로 저장
         summary_df.to_csv(output_csv_path, index=False)
-        print(f"Summary results saved to {output_csv_path}")
+        logging.info(f"Summary results saved to {output_csv_path}")
 
     except FileNotFoundError:
-        print(f"Error: Input file not found at {input_csv_path}")
+        logging.error(f"Error: Input file not found at {input_csv_path}")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logging.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     analyze_simulation_results()

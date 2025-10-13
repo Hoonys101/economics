@@ -1,6 +1,9 @@
 import sqlite3
+import logging
 from typing import List, Dict, Any, Optional
 from simulation.db.database import get_db_connection, close_db_connection
+
+logger = logging.getLogger(__name__)
 
 class SimulationRepository:
     """
@@ -9,6 +12,24 @@ class SimulationRepository:
     def __init__(self):
         self.conn = get_db_connection()
         self.cursor = self.conn.cursor()
+
+    def save_simulation_run(self, description: str, config_hash: str) -> int:
+        """
+        새로운 시뮬레이션 실행 정보를 저장하고 실행 ID를 반환합니다.
+        """
+        try:
+            self.cursor.execute(
+                "INSERT INTO simulation_runs (description, config_hash) VALUES (?, ?)",
+                (description, config_hash)
+            )
+            self.conn.commit()
+            run_id = self.cursor.lastrowid
+            logger.info(f"Started new simulation run with ID: {run_id}")
+            return run_id
+        except sqlite3.Error as e:
+            logger.error(f"Error creating simulation run: {e}")
+            self.conn.rollback()
+            raise
 
     def clear_all_data(self):
         """
@@ -20,15 +41,16 @@ class SimulationRepository:
             self.cursor.execute("DELETE FROM market_history")
             self.cursor.execute("DELETE FROM economic_indicators")
             self.conn.commit()
-            print("All simulation data cleared from database.")
+            logger.info("All simulation data cleared from database.")
         except sqlite3.Error as e:
-            print(f"Error clearing data: {e}")
+            logger.error(f"Error clearing data: {e}")
             self.conn.rollback()
 
     def save_transaction(self, transaction_data: Dict[str, Any]):
         """
         단일 거래 데이터를 데이터베이스에 저장합니다.
         """
+        logger.debug(f"Attempting to save transaction: {transaction_data}")
         try:
             self.cursor.execute('''
                 INSERT INTO transactions (time, buyer_id, seller_id, item_id, quantity, price, market_id, transaction_type)
@@ -38,9 +60,11 @@ class SimulationRepository:
                 transaction_data['item_id'], transaction_data['quantity'], transaction_data['price'],
                 transaction_data['market_id'], transaction_data['transaction_type']
             ))
+            logger.debug("Transaction executed. Committing...")
             self.conn.commit()
+            logger.debug("Transaction committed successfully.")
         except sqlite3.Error as e:
-            print(f"Error saving transaction: {e}")
+            logger.error(f"Error saving transaction: {e}")
             self.conn.rollback()
 
     def save_agent_state(self, agent_state_data: Dict[str, Any]):
@@ -62,7 +86,7 @@ class SimulationRepository:
             ))
             self.conn.commit()
         except sqlite3.Error as e:
-            print(f"Error saving agent state: {e}")
+            logger.error(f"Error saving agent state: {e}")
             self.conn.rollback()
 
     def save_market_history(self, market_history_data: Dict[str, Any]):
@@ -80,7 +104,7 @@ class SimulationRepository:
             ))
             self.conn.commit()
         except sqlite3.Error as e:
-            print(f"Error saving market history: {e}")
+            logger.error(f"Error saving market history: {e}")
             self.conn.rollback()
 
     def save_economic_indicator(self, indicator_data: Dict[str, Any]):
@@ -89,20 +113,20 @@ class SimulationRepository:
         """
         try:
             self.cursor.execute('''
-                INSERT INTO economic_indicators (time, unemployment_rate, avg_wage, food_avg_price, avg_goods_price,
+                INSERT INTO economic_indicators (time, unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price,
                                                  total_production, total_consumption, total_household_assets,
                                                  total_firm_assets, total_food_consumption, total_inventory)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 indicator_data['time'], indicator_data.get('unemployment_rate'), indicator_data.get('avg_wage'),
-                indicator_data.get('food_avg_price'), indicator_data.get('avg_goods_price'), indicator_data.get('total_production'),
+                indicator_data.get('food_avg_price'), indicator_data.get('food_trade_volume'), indicator_data.get('avg_goods_price'), indicator_data.get('total_production'),
                 indicator_data.get('total_consumption'), indicator_data.get('total_household_assets'),
                 indicator_data.get('total_firm_assets'), indicator_data.get('total_food_consumption'),
                 indicator_data.get('total_inventory')
             ))
             self.conn.commit()
         except sqlite3.Error as e:
-            print(f"Error saving economic indicator: {e}")
+            logger.error(f"Error saving economic indicator: {e}")
             self.conn.rollback()
 
     def get_economic_indicators(self, start_tick: Optional[int] = None, end_tick: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -219,10 +243,10 @@ if __name__ == '__main__':
     repo.save_market_history({'time': 1, 'market_id': 'goods_market', 'item_id': 'food', 'avg_price': 5.0, 'trade_volume': 100.0, 'best_ask': 4.5, 'best_bid': 5.5})
 
     # 테스트 데이터 조회
-    print("\nEconomic Indicators (Tick 1):", repo.get_economic_indicators(start_tick=1, end_tick=1))
-    print("\nGoods Market History (Tick 1):", repo.get_market_history(market_id='goods_market', start_tick=1, end_tick=1))
-    print("\nAgent 1 State (Tick 1):", repo.get_agent_states(agent_id=1, start_tick=1, end_tick=1))
-    print("\nTransactions (Tick 1):", repo.get_transactions(start_tick=1, end_tick=1))
+    logger.info("\nEconomic Indicators (Tick 1): %s", repo.get_economic_indicators(start_tick=1, end_tick=1))
+    logger.info("\nGoods Market History (Tick 1): %s", repo.get_market_history(market_id='goods_market', start_tick=1, end_tick=1))
+    logger.info("\nAgent 1 State (Tick 1): %s", repo.get_agent_states(agent_id=1, start_tick=1, end_tick=1))
+    logger.info("\nTransactions (Tick 1): %s", repo.get_transactions(start_tick=1, end_tick=1))
 
     repo.close()
-    print("\nRepository test completed.")
+    logger.info("\nRepository test completed.")

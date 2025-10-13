@@ -19,6 +19,7 @@ class OrderBookMarket(Market):
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
         """
         self.market_id = market_id
+        super().__init__(market_id) # Call parent constructor to set self.id
         self.logger = logger if logger else logging.getLogger(__name__)
         self.buy_orders: Dict[str, List[Order]] = {}
         self.sell_orders: Dict[str, List[Order]] = {}
@@ -26,40 +27,50 @@ class OrderBookMarket(Market):
 
     def clear_market_for_next_tick(self):
         """다음 틱을 위해 호가창을 초기화합니다."""
-        self.buy_orders = {}
-        self.sell_orders = {}
-        self.logger.debug(f"Market {self.market_id} cleared for next tick.", extra={'market_id': self.market_id, 'tags': ['market_clear']})
+        # Orders now persist across ticks, so no clearing here.
+        self.logger.debug(f"Market {self.market_id} orders persist for next tick.", extra={'market_id': self.market_id, 'tags': ['market_persist']})
 
-    def place_order(self, order: Order):
+    def place_order(self, order: Order, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
 
         Args:
             order (Order): 제출할 주문 객체.
+            current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
-        log_extra = {'market_id': self.market_id, 'agent_id': order.agent_id, 'item_id': order.item_id, 'order_type': order.order_type, 'price': order.price, 'quantity': order.quantity}
+        log_extra = {'tick': current_time, 'market_id': self.market_id, 'agent_id': order.agent_id, 'item_id': order.item_id, 'order_type': order.order_type, 'price': order.price, 'quantity': order.quantity}
         self.logger.debug(f"Placing order: {order.order_type} {order.quantity} of {order.item_id} at {order.price} by {order.agent_id}", extra=log_extra)
-        self._add_order(order)
+        self._add_order(order, log_extra)
 
-    def match_and_execute_orders(self, current_tick: int) -> List[Transaction]:
-        """해당 틱에 제출된 모든 주문을 매칭하고 거래를 체결합니다.
-
-        Returns:
-            List[Transaction]: 발생한 모든 거래의 리스트.
+    def match_and_execute_orders(self, current_time: int) -> List[Transaction]:
         """
-        transactions = []
+        현재 틱의 모든 주문을 매칭하고 거래를 실행합니다.
+        각 아이템별로 주문 매칭을 수행합니다.
+        """
+        all_transactions: List[Transaction] = []
+        
+        # Get all unique item_ids from both buy and sell orders
         all_item_ids = set(self.buy_orders.keys()) | set(self.sell_orders.keys())
-        for item_id in all_item_ids:
-            transactions.extend(self._match_orders_for_item(item_id, current_tick))
-        return transactions
 
-    def _add_order(self, order: Order):
+        if not all_item_ids:
+            self.logger.info(f"No items to match in market {self.market_id} at tick {current_time}", extra={'tick': current_time, 'market_id': self.market_id, 'tags': ['market_match']})
+            return all_transactions
+
+        self.logger.info(f"Starting order matching for items: {list(all_item_ids)}", extra={'tick': current_time, 'market_id': self.market_id, 'tags': ['market_match']})
+
+        for item_id in all_item_ids:
+            item_transactions = self._match_orders_for_item(item_id, current_time)
+            all_transactions.extend(item_transactions)
+
+        return all_transactions
+
+    def _add_order(self, order: Order, log_extra: Dict[str, Any]):
         # Determine which order book to use based on order type
         if order.order_type == 'BUY':
             target_order_book = self.buy_orders
         elif order.order_type == 'SELL':
             target_order_book = self.sell_orders
         else:
-            self.logger.warning(f"Unknown order type for _add_order: {order.order_type}", extra={'order_type': order.order_type})
+            self.logger.warning(f"Unknown order type for _add_order: {order.order_type}", extra=log_extra)
             return
 
         if order.item_id not in target_order_book:
@@ -81,23 +92,26 @@ class OrderBookMarket(Market):
             List[Transaction]: 해당 아이템에 대해 발생한 거래 리스트.
         """
         transactions = []
-        buy_orders = self.buy_orders.get(item_id, [])
-        sell_orders = self.sell_orders.get(item_id, [])
-
         log_extra = {'tick': current_tick, 'market_id': self.market_id, 'item_id': item_id}
 
         # --- GEMINI_DEBUG_START ---
-        if item_id == 'labor': # Only log for labor market
-            self.logger.info(f"MATCHING_DEBUG | Item: {item_id}, #Buy: {len(buy_orders)}, #Sell: {len(sell_orders)}", extra=log_extra)
-            if buy_orders and sell_orders:
-                self.logger.info(f"MATCHING_DEBUG | Best Bid: {buy_orders[0].price:.2f}, Best Ask: {sell_orders[0].price:.2f}", extra=log_extra)
+        if item_id == 'labor' or item_id == 'food': # Log for labor and food market
+            buy_orders_list = self.buy_orders.get(item_id, [])
+            sell_orders_list = self.sell_orders.get(item_id, [])
+            self.logger.info(f"MATCHING_DEBUG | Item: {item_id}, #Buy: {len(buy_orders_list)}, #Sell: {len(sell_orders_list)}", extra=log_extra)
+            if buy_orders_list and sell_orders_list:
+                self.logger.info(f"MATCHING_DEBUG | Best Bid: {buy_orders_list[0].price:.2f}, Best Ask: {sell_orders_list[0].price:.2f}", extra=log_extra)
+            elif buy_orders_list:
+                self.logger.info(f"MATCHING_DEBUG | Item: {item_id}, Only Buy Orders. Best Bid: {buy_orders_list[0].price:.2f}", extra=log_extra)
+            elif sell_orders_list:
+                self.logger.info(f"MATCHING_DEBUG | Item: {item_id}, Only Sell Orders. Best Ask: {sell_orders_list[0].price:.2f}", extra=log_extra)
             else:
-                self.logger.info(f"MATCHING_DEBUG | Item: {item_id}, No matching orders (Buy: {len(buy_orders)}, Sell: {len(sell_orders)})", extra=log_extra)
+                self.logger.info(f"MATCHING_DEBUG | Item: {item_id}, No orders.", extra=log_extra)
         # --- GEMINI_DEBUG_END ---
 
-        while buy_orders and sell_orders and buy_orders[0].price >= sell_orders[0].price:
-            buy_order = buy_orders[0]
-            sell_order = sell_orders[0]
+        while self.buy_orders.get(item_id) and self.sell_orders.get(item_id) and self.buy_orders[item_id][0].price >= self.sell_orders[item_id][0].price:
+            buy_order = self.buy_orders[item_id][0]
+            sell_order = self.sell_orders[item_id][0]
 
             trade_price = (buy_order.price + sell_order.price) / 2 # Mid-price
             trade_quantity = min(buy_order.quantity, sell_order.quantity)
@@ -127,9 +141,9 @@ class OrderBookMarket(Market):
             sell_order.quantity -= trade_quantity
 
             if buy_order.quantity <= 0:
-                buy_orders.pop(0)
+                self.buy_orders[item_id].pop(0)
             if sell_order.quantity <= 0:
-                sell_orders.pop(0)
+                self.sell_orders[item_id].pop(0)
         
         return transactions
 
@@ -151,3 +165,11 @@ class OrderBookMarket(Market):
             "buy_orders": [{'agent_id': o.agent_id, 'quantity': o.quantity, 'price': o.price} for o in self.buy_orders.get(item_id, [])],
             "sell_orders": [{'agent_id': o.agent_id, 'quantity': o.quantity, 'price': o.price} for o in self.sell_orders.get(item_id, [])]
         }
+
+    def get_total_demand(self) -> float:
+        """시장의 모든 매수 주문 총량을 반환합니다."""
+        return sum(order.quantity for orders in self.buy_orders.values() for order in orders)
+
+    def get_total_supply(self) -> float:
+        """시장의 모든 매도 주문 총량을 반환합니다."""
+        return sum(order.quantity for orders in self.sell_orders.values() for order in orders)

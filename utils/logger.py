@@ -69,8 +69,30 @@ class Logger:
 
         self._sampling_rates = {}
         self._special_log_methods = []
+        self._agent_sampling_pool: Optional[List[int]] = None # New attribute for dynamic sampling
+
+        # Log rotation settings
+        self._max_log_file_size_bytes: int = 10 * 1024 * 1024  # Default 10 MB
+        self._max_log_files: int = 5  # Default 5 files
 
         Logger._initialized = True
+
+    def clear_logs(self):
+        """
+        Closes all open log files and deletes them.
+        """
+        for log_type, file in self.files.items():
+            file.close()
+        self.files = {}
+        self.writers = {}
+        self.headers = {}
+
+        for file_name in os.listdir(self.log_dir):
+            if file_name.startswith("simulation_log_") and file_name.endswith(".csv"):
+                try:
+                    os.remove(os.path.join(self.log_dir, file_name))
+                except OSError as e:
+                    self.error(f"Error removing log file {file_name}: {e}", log_type="LoggerConfig", method_name="clear_logs")
 
     def _reconfigure_handlers(self):
         """Safely removes all existing handlers and re-adds them based on log_config.json."""
@@ -116,9 +138,20 @@ class Logger:
         self.root_logger.addHandler(handler)
         self.root_logger.info("Logging system configured successfully by custom Logger.")
 
+        # Update log rotation settings from config
+        rotation_config = log_config.get('rotation', {})
+        self._max_log_file_size_bytes = rotation_config.get('max_file_size_mb', 10) * 1024 * 1024
+        self._max_log_files = rotation_config.get('max_files', 5)
+
     def _get_writer(self, log_type, header):
+        log_file_path = os.path.join(self.log_dir, f"simulation_log_{log_type}.csv")
+
+        # Check for log rotation before returning writer
+        if log_type in self.files and os.path.exists(log_file_path):
+            if os.path.getsize(log_file_path) >= self._max_log_file_size_bytes:
+                self._rotate_log_file(log_type)
+
         if log_type not in self.writers:
-            log_file_path = os.path.join(self.log_dir, f"simulation_log_{log_type}.csv")
             file_exists = os.path.exists(log_file_path)
             file = open(log_file_path, 'a', newline='', encoding='utf-8')
             writer = csv.writer(file)
@@ -131,13 +164,50 @@ class Logger:
                 writer.writerow(header)
         return self.writers[log_type]
 
-    def _write_log(self, level, log_type, tick, agent_type, agent_id, method_name, message, **kwargs):
+    def _rotate_log_file(self, log_type: str):
+        """
+        Rotates the log file for a given log_type.
+        Closes the current file, renames it, and opens a new one.
+        """
+        if log_type in self.files:
+            self.files[log_type].close()
+            del self.files[log_type]
+            del self.writers[log_type]
+
+        base_path = os.path.join(self.log_dir, f"simulation_log_{log_type}.csv")
+        
+        # Shift existing log files
+        for i in range(self._max_log_files - 1, 0, -1):
+            src = f"{base_path}.{i-1}"
+            dst = f"{base_path}.{i}"
+            if os.path.exists(src):
+                if os.path.exists(dst):
+                    os.remove(dst)
+                os.rename(src, dst)
+        
+        # Rename current log file to .0
+        if os.path.exists(base_path):
+            if os.path.exists(f"{base_path}.0"):
+                os.remove(f"{base_path}.0")
+            os.rename(base_path, f"{base_path}.0")
+        
+        self.info(f"Log file for {log_type} rotated.", log_type="LoggerConfig", method_name="_rotate_log_file")
+
+    def _write_log(self, level, log_type, tick, agent_type, agent_id, method_name, message, is_conditional=False, threshold_met=False, is_event=False, **kwargs):
         # Filtering logic based on the allowed list
         if self.allowed_log_types is not None and log_type not in self.allowed_log_types:
             return
 
         # This _min_log_level is for CSV logging, standard logging is handled by root_logger's level
         if level < self._min_log_level:
+            return
+
+        # Conditional Logging: Skip if conditional and threshold not met
+        if is_conditional and not threshold_met:
+            return
+
+        # Dynamic Sampling for agents: Only log if agent_id is in the sampling pool, unless it's an event
+        if not is_event and agent_id != -1 and self._agent_sampling_pool is not None and agent_id not in self._agent_sampling_pool:
             return
 
         if method_name not in self._special_log_methods:
@@ -176,95 +246,67 @@ class Logger:
         }
         self.root_logger.log(level, log_message_for_std_logger, extra=extra_for_std_logger)
 
+    def set_agent_sampling_pool(self, agent_ids: Optional[List[int]]):
+        """
+        Sets the list of agent IDs for which detailed logs should be recorded.
+        If set to None, all agents will be logged (subject to other filters).
+        :param agent_ids: A list of agent IDs to sample, or None to disable agent sampling.
+        """
+        self._agent_sampling_pool = agent_ids
+        self.info(f"Agent sampling pool set to: {agent_ids}", log_type="LoggerConfig", method_name="set_agent_sampling_pool")
 
-    def log(self, level, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', **kwargs):
+    def set_sampling_rate(self, method_name: str, rate: float):
+        """
+        Sets the sampling rate for a specific method_name.
+        :param method_name: The name of the method to apply sampling to.
+        :param rate: The sampling rate (0.0 to 1.0). 0.0 means no logs, 1.0 means all logs.
+        """
+        if not 0.0 <= rate <= 1.0:
+            raise ValueError("Sampling rate must be between 0.0 and 1.0")
+        self._sampling_rates[method_name] = rate
+        self.info(f"Sampling rate for {method_name} set to {rate}", log_type="LoggerConfig", method_name="set_sampling_rate")
+
+
+    def log(self, level, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', is_conditional=False, threshold_met=False, is_event=False, **kwargs):
         # This method is now the primary entry point for all logging.
         # It will handle both CSV logging and forwarding to the standard Python logger.
         
+        # Check if the log level is sufficient for CSV logging
+        if level < self._min_log_level:
+            return
+
         # Prepare kwargs for CSV logging
         csv_kwargs = kwargs.copy()
         
         # Call _write_log for CSV logging
-        self._write_log(level, log_type, tick, agent_type, agent_id, method_name, message, **csv_kwargs)
+        self._write_log(level, log_type, tick, agent_type, agent_id, method_name, message, is_conditional=is_conditional, threshold_met=threshold_met, is_event=is_event, **csv_kwargs)
 
-    def debug(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', **kwargs):
-        self.log(logging.DEBUG, message, log_type, tick, agent_type, agent_id, method_name, **kwargs)
-
-    def info(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', **kwargs):
-        self.log(logging.INFO, message, log_type, tick, agent_type, agent_id, method_name, **kwargs)
-
-    def warning(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', **kwargs):
-        self.log(logging.WARNING, message, log_type, tick, agent_type, agent_id, method_name, **kwargs)
-
-    def error(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', **kwargs):
-        self.log(logging.ERROR, message, log_type, tick, agent_type, agent_id, method_name, **kwargs)
-
-    def critical(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', **kwargs):
-        self.log(logging.CRITICAL, message, log_type, tick, agent_type, agent_id, method_name, **kwargs)
-
-    def set_allowed_log_types(self, allowed_types: Optional[List[str]]):
+    def set_log_level(self, level_name: str):
         """
-        Sets the list of allowed log_types. If set, only these types will be logged to CSV.
-        :param allowed_types: A list of strings representing the log_types to allow, or None to allow all.
+        Sets the minimum log level for both CSV logging and the standard Python logger.
+        :param level_name: Name of the log level (e.g., 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL').
         """
-        self.allowed_log_types = allowed_types
-        self.info(f"Log types allowed for CSV: {allowed_types}", log_type="LoggerConfig", method_name="set_allowed_log_types")
-
-    def set_min_log_level(self, level):
-        if level not in self.log_levels.values():
-            raise ValueError(f"Invalid log level: {level}. Use logging.DEBUG, INFO, WARNING, ERROR, CRITICAL.")
+        level = self.log_levels.get(level_name.upper())
+        if level is None:
+            raise ValueError(f"Invalid log level name: {level_name}. Use DEBUG, INFO, WARNING, ERROR, CRITICAL.")
+        
         self._min_log_level = level
-        self.info(f"Minimum log level for CSV set to: {logging.getLevelName(level)}", log_type="LoggerConfig", method_name="set_min_log_level")
-
-    def set_sampling_rate(self, method_name, rate):
-        if not (0.0 <= rate <= 1.0):
-            raise ValueError("Sampling rate must be between 0.0 and 1.0.")
-        self._sampling_rates[method_name] = rate
-        self.info(f"Sampling rate for method '{method_name}' set to: {rate}", log_type="LoggerConfig", method_name="set_sampling_rate")
-
-    def clear_logs(self):
-        self.close()
-        for filename in os.listdir(self.log_dir):
-            if filename.startswith("simulation_log_") and filename.endswith(".csv"):
-                os.remove(os.path.join(self.log_dir, filename))
-        self.files = {}
-        self.writers = {}
-        self.headers = {}
-        self.root_logger.info("All simulation CSV logs cleared.")
-
-    def close(self):
-        for file_handle in self.files.values():
-            file_handle.close()
-        self.files = {}
-        self.writers = {}
-        self.headers = {}
-        # Do not remove handlers from root_logger here, as it's managed by _reconfigure_handlers
-        # and might be used by other parts of the application.
-        Logger._initialized = False
-        self.root_logger.info("Custom Logger instance closed.")
-
-    def save_to_file(self, filename="simulation_results.csv"):
-        # This method seems to be a placeholder or for a different purpose.
-        # The CSV logging is handled automatically by _write_log.
-        pass
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        if '_instance' in state:
-            del state['_instance']
-        del state['files']
-        del state['writers']
-        del state['headers']
-        del state['root_logger'] 
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        self.files = {}
-        self.writers = {}
-        self.headers = {}
-        
-        self.root_logger = logging.getLogger()
+        self.root_logger.setLevel(level) # Update standard logger level
+        self.info(f"Global log level set to: {level_name.upper()}", log_type="LoggerConfig", method_name="set_log_level")
+        # Reconfigure handlers to apply the new level, especially for file handlers that might be created later
         self._reconfigure_handlers()
-        
-        Logger._initialized = True
+
+    def debug(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', is_conditional=False, threshold_met=False, is_event=False, **kwargs):
+        self.log(logging.DEBUG, message, log_type, tick, agent_type, agent_id, method_name, is_conditional, threshold_met, is_event, **kwargs)
+
+    def info(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', is_conditional=False, threshold_met=False, is_event=False, **kwargs):
+        self.log(logging.INFO, message, log_type, tick, agent_type, agent_id, method_name, is_conditional, threshold_met, is_event, **kwargs)
+
+    def warning(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', is_conditional=False, threshold_met=False, is_event=False, **kwargs):
+        self.log(logging.WARNING, message, log_type, tick, agent_type, agent_id, method_name, is_conditional, threshold_met, is_event, **kwargs)
+
+    def error(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', is_conditional=False, threshold_met=False, is_event=False, **kwargs):
+        self.log(logging.ERROR, message, log_type, tick, agent_type, agent_id, method_name, is_conditional, threshold_met, is_event, **kwargs)
+
+    def critical(self, message, log_type='StandardLog', tick=-1, agent_type='System', agent_id=-1, method_name='Unknown', is_conditional=False, threshold_met=False, is_event=False, **kwargs):
+        self.log(logging.CRITICAL, message, log_type, tick, agent_type, agent_id, method_name, is_conditional, threshold_met, is_event, **kwargs)

@@ -4,16 +4,21 @@ import random
 import threading
 import time
 import logging
-from flask import Flask, render_template, jsonify, request
+import os # Import os
+from flask import Flask, render_template, jsonify, request, g
 
 import config
 from simulation.engine import Simulation
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
-from simulation.ai_model import AITrainingManager # AITrainingManager 임포트
+from simulation.ai_model import AIEngineRegistry
+from simulation.ai.api import Personality
+from simulation.ai.state_builder import StateBuilder
+from simulation.decisions.action_proposal import ActionProposalEngine
 
 # Import ViewModels
 from simulation.db.repository import SimulationRepository
+from simulation.db_manager import DBManager # Import DBManager
 from simulation.viewmodels.economic_indicators_viewmodel import EconomicIndicatorsViewModel
 from simulation.viewmodels.market_history_viewmodel import MarketHistoryViewModel
 from simulation.viewmodels.agent_state_viewmodel import AgentStateViewModel
@@ -31,12 +36,14 @@ simulation_lock = threading.Lock()
 # 시뮬레이션 실행 상태를 제어하는 플래그
 simulation_running = threading.Event()
 
-ai_manager = AITrainingManager() # AI Training Manager 인스턴스 생성
+state_builder = StateBuilder()
+action_proposal_engine = ActionProposalEngine(config_module=config)
+ai_manager = AIEngineRegistry(action_proposal_engine=action_proposal_engine, state_builder=state_builder) # AI Training Manager 인스턴스 생성
 
 # ==============================================
 # Database Connection Management (Per-request)
 # ==============================================
-from flask import g # Import g for request-specific global variables
+
 
 def get_repository():
     if '_repository_instance' not in g:
@@ -56,6 +63,10 @@ def close_repository_on_teardown(exception):
 def create_simulation():
     """`config`와 `goods.json`을 기반으로 새로운 시뮬레이션 인스턴스를 생성하고 반환합니다."""
     global simulation_instance
+    
+    # Initialize the DBManager for this simulation run
+    db_manager = DBManager(db_path='simulation_data.db') # Use DBManager
+
     try:
         with open('data/goods.json', 'r', encoding='utf-8') as f:
             goods_data = json.load(f)
@@ -86,7 +97,9 @@ def create_simulation():
             },
             decision_engine=ai_manager.get_engine(random.choice(all_value_orientations)),
             value_orientation=random.choice(all_value_orientations),
-            logger=logger
+            personality=random.choice(list(Personality)), # Add personality
+            logger=logger,
+            config_module=config
         ) for i in range(config.NUM_HOUSEHOLDS)
     ]
 
@@ -102,11 +115,12 @@ def create_simulation():
                 productivity_factor=config.FIRM_PRODUCTIVITY_FACTOR,
                 decision_engine=ai_manager.get_engine(firm_value_orientation),
                 value_orientation=firm_value_orientation,
+                config_module=config, # Add config_module
                 logger=logger
             )
         )
     
-    simulation_instance = Simulation(households, firms, goods_data, ai_manager)
+    simulation_instance = Simulation(households, firms, goods_data, ai_manager, db_manager, config) # Pass db_manager and config
     logging.info("New simulation instance created.", extra={'tick': 0, 'agent_type':"App", 'agent_id':0, 'method_name':"create_simulation", 'tags': ['app_info']})
 
 # ==============================================
@@ -116,18 +130,18 @@ def create_simulation():
 def run_simulation_loop():
     """시뮬레이션 루프를 실행하는 백그라운드 스레드의 타겟 함수"""
     # 시뮬레이션 스레드 전용 Repository 인스턴스 생성
-    simulation_repo = SimulationRepository()
+    # simulation_repo = SimulationRepository() # Removed as Simulation instance already has db_manager
     try:
         while simulation_running.is_set():
             with simulation_lock:
                 if simulation_instance:
                     # 시뮬레이션 인스턴스의 run_tick 메서드에 전용 Repository 전달
-                    simulation_instance.run_tick(simulation_repo)
+                    simulation_instance.run_tick() # Removed simulation_repo argument
             time.sleep(0.1) # CPU 사용량 감소를 위해 짧은 대기 시간 추가
         logging.info("Simulation loop stopped.", extra={'tick': simulation_instance.time if simulation_instance else 0, 'agent_type':"App", 'agent_id':0, 'method_name':"run_simulation_loop", 'tags': ['app_info']})
     finally:
         # 시뮬레이션 스레드 종료 시 Repository 연결 닫기
-        simulation_repo.close()
+        pass # simulation_repo.close() removed
 
 # =============================================
 # HTML Page Rendering
@@ -310,4 +324,19 @@ def shutdown_server():
 # 앱 시작 시 시뮬레이션 초기화
 if __name__ == '__main__':
     create_simulation()
-    app.run(debug=True, port=5001, use_reloader=False) # use_reloader=False는 Flask가 두 번 실행되는 것을 방지
+    import cProfile
+    import pstats
+    
+    # Profile the app.run() call
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    try:
+        app.run(debug=True, port=5001, use_reloader=False) # use_reloader=False는 Flask가 두 번 실행되는 것을 방지
+    finally:
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats(20) # Print top 20 functions by cumulative time
+        profile_path = os.path.join(os.path.dirname(__file__), "app_profile.prof")
+        stats.dump_stats(profile_path) # Save stats to a file
+        logging.info(f"Profiling data saved to {profile_path}")

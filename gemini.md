@@ -37,34 +37,3 @@
     *   `[변경 목적 요약]`: 이 임시 변경을 왜 했는지 간략하게 설명합니다 (예: "가계 파산 디버깅을 위한 임시 고용 로직").
     *   `[원래 코드 (주석 처리)]`: 원본 코드를 주석 처리하여 보존합니다.
     *   `[임시 변경 코드]`: 임시로 적용할 코드를 작성합니다.
-
----
-
-## 3. 도구 및 프레임워크 (Tools & Frameworks)
-
-### 3.1. SuperGemini 프레임워크 (SuperGemini Framework)
-
-이 프로젝트에서는 개발 생산성 향상을 위해 **SuperGemini 프레임워크**를 사용할 수 있습니다.
-
-- **설치 (Installation)**:
-  ```shell
-  pip install SuperGemini
-  ```
-
-- **설정 (Setup)**:
-  ```shell
-  # 추천 설정 (Express setup)
-  SuperGemini install --yes
-  ```
-
-- **사용법 (Usage)**:
-  Gemini CLI 내에서 `/sg:` 접두사를 사용하여 고수준의 작업을 지시할 수 있습니다.
-
-  - **코드 분석 예시**:
-    ```
-    /sg:analyze src/
-    ```
-  - **기능 구현 예시**:
-    ```
-    /sg:implement user authentication
-    ```

@@ -1,13 +1,14 @@
-from typing import List, Dict, Any, Optional
+from __future__ import annotations
+from typing import List, Dict, Any, Optional, override, Tuple
 import logging
 from logging import Logger
 
 from simulation.base_agent import BaseAgent
 from simulation.decisions.household_decision_engine import HouseholdDecisionEngine # HouseholdDecisionEngine 임포트
-import config # config.py를 파일 상단에서 임포트
-from simulation.models import Transaction
-from simulation.ai_model import AIDecisionEngine # AIDecisionEngine 임포트
+from simulation.models import Order
 from simulation.loan_market import LoanMarket # LoanMarket 임포트
+from simulation.ai.api import Personality, Tactic # Personality Enum 임포트
+from simulation.core_markets import Market # Import Market
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ class Household(BaseAgent):
         perceived_avg_prices (Dict[str, float]): 가계가 인지하는 상품별 평균 가격 (재화 ID: 가격 맵).
         current_food_consumption (float): 현재 턴의 식량 소비량.
     """
-    def __init__(self, id: int, talent: Talent, goods_data: List[Dict[str, Any]], initial_assets: float, initial_needs: Dict[str, float], decision_engine: HouseholdDecisionEngine, value_orientation: str, loan_market: Optional[LoanMarket] = None, ai_engine: Optional[AIDecisionEngine] = None, logger: Optional[Logger] = None):
+    def __init__(self, id: int, talent: Talent, goods_data: List[Dict[str, Any]], initial_assets: float, initial_needs: Dict[str, float], decision_engine: HouseholdDecisionEngine, value_orientation: str, personality: Personality, config_module: Any, loan_market: Optional[LoanMarket] = None, logger: Optional[Logger] = None):
         """Household 클래스의 생성자입니다.
 
         Args:
@@ -89,18 +90,28 @@ class Household(BaseAgent):
             initial_needs (Dict[str, float]): 가계의 초기 욕구 수준.
             decision_engine (HouseholdDecisionEngine): 가계의 의사결정 로직을 담당하는 엔진.
             value_orientation (str): 가계의 가치관.
+            personality (Personality): 가계의 고유한 특질(성격).
             loan_market (Optional[LoanMarket]): 대출 시장 인스턴스. 기본값은 None.
-            ai_engine (Optional[AIDecisionEngine]): AI 의사결정 엔진 인스턴스. 기본값은 None.
             logger (Optional[Logger]): 로거 인스턴스. 기본값은 None.
         """
         super().__init__(id, initial_assets, initial_needs, decision_engine, value_orientation, name=f"Household_{id}", logger=logger)
+        self.logger.debug(f"HOUSEHOLD_INIT | Household {self.id} initialized. Initial Needs: {self.needs}", extra={'tags': ['household_init']})
         self.talent = talent
         self.skills: Dict[str, Skill] = {}
         self.goods_info_map: Dict[str, Dict[str, Any]] = {g['id']: g for g in goods_data}
-        self.needs.setdefault("labor_need", 0.0)
-        self.needs["wealth_need"] = initial_needs.get("wealth_need", 0.0)
-        self.needs["imitation_need"] = initial_needs.get("imitation_need", 0.0)
-        self.needs["child_rearing_need"] = initial_needs.get("child_rearing_need", 0.0)
+        
+        # Initialize personality and desire weights
+        self.personality = personality
+        self.desire_weights: Dict[str, float] = self._initialize_desire_weights(personality)
+
+        # Initialize new desires based on the personality-driven model
+
+        # Remove old needs that are replaced by the new model
+        # self.needs.setdefault("labor_need", 0.0) # Replaced by 'asset' or 'survival' indirectly
+        # self.needs["wealth_need"] = initial_needs.get("wealth_need", 0.0) # Replaced by 'asset'
+        # self.needs["imitation_need"] = initial_needs.get("imitation_need", 0.0) # Replaced by 'social'
+        # self.needs["child_rearing_need"] = initial_needs.get("child_rearing_need", 0.0) # Not directly mapped to new model yet
+
         self.current_food_consumption: float = 0.0
         self.current_consumption: float = 0.0
         self.employer_id: Optional[int] = None
@@ -111,7 +122,65 @@ class Household(BaseAgent):
         self.social_status: float = 0.0
         self.perceived_avg_prices: Dict[str, float] = {}
 
+        self.config_module = config_module # Store config_module
         self.decision_engine.loan_market = loan_market
+        self.decision_engine.logger = self.logger # Pass logger to decision engine
+
+    def decide_and_consume(self, current_time: int) -> None:
+        log_extra = {'tick': current_time, 'agent_id': self.id, 'tags': ['household_consumption']}
+        self.logger.debug(f"HOUSEHOLD_CONSUMPTION_DECISION_START | Household {self.id} deciding what to consume. Current Survival Need: {self.needs.get('survival', 0):.2f}. Needs: {self.needs}", extra=log_extra)
+
+        # Prioritize survival need
+        if self.needs["survival"] >= self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD:
+            self.logger.debug(f"HOUSEHOLD_CONSUMPTION_CHECK | Household {self.id} survival need ({self.needs["survival"]:.2f}) >= threshold ({self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD:.2f})", extra=log_extra)
+            food_in_inventory = self.inventory.get('food', 0.0)
+            if food_in_inventory > 0:
+                self.logger.debug(f"HOUSEHOLD_CONSUMPTION_FOOD_AVAILABLE | Household {self.id} has {food_in_inventory:.2f} food in inventory.", extra=log_extra)
+                # Calculate how much survival need needs to be reduced
+                current_survival_need = self.needs.get('survival', 0.0)
+                # Aim to reduce survival need to a point slightly below the threshold, or to 0 if it's very high
+                target_survival_need = max(0.0, self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD - self.config_module.BASE_DESIRE_GROWTH) # Aim for slightly below threshold
+
+                needed_to_reduce_survival = current_survival_need - target_survival_need
+
+                food_info = self.goods_info_map.get('food')
+                if food_info and 'utility_per_need' in food_info and 'survival' in food_info['utility_per_need']:
+                    utility_per_unit_food = food_info['utility_per_need']['survival']
+                    if utility_per_unit_food > 0:
+                        # Calculate food quantity needed to reduce survival need
+                        food_needed_for_survival = needed_to_reduce_survival / utility_per_unit_food
+                        # Ensure we don't consume more than available or a reasonable maximum per tick
+                        quantity_to_consume = min(food_in_inventory, food_needed_for_survival, self.config_module.FOOD_CONSUMPTION_MAX_PER_TICK) # Define FOOD_CONSUMPTION_MAX_PER_TICK in config
+                        
+                        if quantity_to_consume > 0:
+                            self.consume('food', quantity_to_consume, current_time)
+                            self.logger.info(f"HOUSEHOLD_CONSUMPTION | Household {self.id} consumed {quantity_to_consume:.2f} food for survival. Inventory: {self.inventory.get('food', 0.0):.2f}, New Survival Need: {self.needs.get('survival', 0.0):.2f}", extra=log_extra)
+                        else:
+                            self.logger.debug(f"HOUSEHOLD_CONSUMPTION_SKIP | Household {self.id} calculated 0 food to consume. Needed to reduce survival: {needed_to_reduce_survival:.2f}", extra=log_extra)
+                    else:
+                        self.logger.warning(f"HOUSEHOLD_CONSUMPTION_WARNING | Household {self.id} food utility_per_need for survival is 0 or less. Cannot calculate food needed.", extra=log_extra)
+                else:
+                    self.logger.warning(f"HOUSEHOLD_CONSUMPTION_WARNING | Household {self.id} food utility_per_need for survival not defined. Cannot calculate food needed.", extra=log_extra)
+            else:
+                self.logger.debug(f"HOUSEHOLD_CONSUMPTION_FAIL | Household {self.id} needs food but inventory is empty.", extra=log_extra)
+        else:
+            self.logger.debug(f"HOUSEHOLD_CONSUMPTION_SKIP | Household {self.id} survival need ({self.needs["survival"]:.2f}) < threshold ({self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD:.2f}), skipping food consumption.", extra=log_extra)
+
+        # TODO: Add logic for consuming luxury goods for social need, education for improvement need, etc.
+        self.update_needs(current_time)
+
+    def _initialize_desire_weights(self, personality: Personality) -> Dict[str, float]:
+        """
+        주어진 특질에 따라 각 욕구의 성장 가중치를 초기화합니다.
+        """
+        if personality == Personality.MISER:
+            return {'survival': 1.0, 'asset': 1.5, 'social': 0.5, 'improvement': 0.5}
+        elif personality == Personality.STATUS_SEEKER:
+            return {'survival': 1.0, 'asset': 0.5, 'social': 1.5, 'improvement': 0.5}
+        elif personality == Personality.GROWTH_ORIENTED:
+            return {'survival': 1.0, 'asset': 0.5, 'social': 0.5, 'improvement': 1.5}
+        else: # Default or unknown personality
+            return {'survival': 1.0, 'asset': 1.0, 'social': 1.0, 'improvement': 1.0}
 
     def calculate_social_status(self) -> None:
         """
@@ -125,8 +194,8 @@ class Household(BaseAgent):
             if good_info and good_info.get('is_luxury', False):
                 luxury_goods_value += quantity
         
-        self.social_status = (self.assets * config.SOCIAL_STATUS_ASSET_WEIGHT) + \
-                             (luxury_goods_value * config.SOCIAL_STATUS_LUXURY_WEIGHT)
+        self.social_status = (self.assets * self.config_module.SOCIAL_STATUS_ASSET_WEIGHT) + \
+                             (luxury_goods_value * self.config_module.SOCIAL_STATUS_LUXURY_WEIGHT)
 
     def update_perceived_prices(self, market_data: Dict[str, Any]) -> None:
         """
@@ -147,97 +216,154 @@ class Household(BaseAgent):
 
             if actual_price is not None and actual_price > 0:
                 old_perceived_price = self.perceived_avg_prices.get(item_id, actual_price)
-                new_perceived_price = (config.PERCEIVED_PRICE_UPDATE_FACTOR * actual_price) + \
-                                      ((1 - config.PERCEIVED_PRICE_UPDATE_FACTOR) * old_perceived_price)
+                new_perceived_price = (self.config_module.PERCEIVED_PRICE_UPDATE_FACTOR * actual_price) + \
+                                      ((1 - self.config_module.PERCEIVED_PRICE_UPDATE_FACTOR) * old_perceived_price)
                 self.perceived_avg_prices[item_id] = new_perceived_price
 
 
-    def make_decision(self, market_data: Dict[str, Any], current_time: int) -> List[Transaction]:
+    def get_agent_data(self) -> Dict[str, Any]:
+        """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
+        return {
+            "assets": self.assets,
+            "needs": self.needs.copy(),
+            "inventory": self.inventory.copy(),
+            "is_employed": self.is_employed,
+            # AI 상태 결정에 필요한 다른 데이터 추가 가능
+        }
+
+    def make_decision(self, markets: Dict[str, 'Market'], goods_data: List[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> Tuple[List['Order'], 'Tactic']:
         self.calculate_social_status()
         
         log_extra = {'tick': current_time, 'agent_id': self.id, 'tags': ['household_action']}
         self.logger.debug(f"HOUSEHOLD_DECISION_START | Household {self.id} before decision: Assets={self.assets:.2f}, is_employed={self.is_employed}, employer_id={self.employer_id}, Needs={self.needs}", extra={**log_extra, 'assets_before': self.assets, 'is_employed_before': self.is_employed, 'employer_id_before': self.employer_id, 'needs_before': self.needs})
 
         self.logger.debug(f"Calling decision_engine.make_decisions for Household {self.id}", extra=log_extra)
-        decisions = self.decision_engine.make_decisions(self, current_time, market_data)
-        self.logger.debug(f"HOUSEHOLD_DECISION_END | Household {self.id} after decision: Assets={self.assets:.2f}, is_employed={self.is_employed}, employer_id={self.employer_id}, Needs={self.needs}, Decisions={len(decisions)}", extra={**log_extra, 'assets_after': self.assets, 'is_employed_after': self.is_employed, 'employer_id_after': self.employer_id, 'needs_after': self.needs, 'num_decisions': len(decisions)})
-        return decisions
+        orders, tactic = self.decision_engine.make_decisions(self, markets, goods_data, market_data, current_time)
+        
+        self.logger.debug(f"HOUSEHOLD_DECISION_END | Household {self.id} after decision: Assets={self.assets:.2f}, is_employed={self.is_employed}, employer_id={self.employer_id}, Needs={self.needs}, Decisions={len(orders)}", extra={**log_extra, 'assets_after': self.assets, 'is_employed_after': self.is_employed, 'employer_id_after': self.employer_id, 'needs_after': self.needs, 'num_decisions': len(orders)})
+        return orders, tactic
+
+    def get_desired_wage(self) -> float:
+        """
+        가계가 노동 시장에 제시할 희망 임금을 결정합니다.
+        기본 임금에 가계의 노동 스킬, 생존 욕구, 자산 수준을 반영하여 계산합니다.
+        """
+        base_wage = self.config_module.BASE_WAGE
+        desired_wage = base_wage * self.labor_skill
+
+        # 생존 욕구가 높으면 희망 임금을 낮춰서라도 고용될 확률을 높임
+        survival_need = self.needs.get("survival", 0.0)
+        if survival_need > self.config_module.SURVIVAL_NEED_THRESHOLD_FOR_OTHER_ACTIONS:
+            desired_wage *= (1 - (survival_need / self.config_module.MAX_DESIRE_VALUE) * 0.5) # 최대 50%까지 감소
+
+        # 자산이 낮으면 희망 임금을 낮춤
+        if self.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
+            desired_wage *= (1 - (self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS - self.assets) / self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS * 0.5) # 최대 50%까지 감소
+
+        # 최소 임금 보장
+        return max(desired_wage, self.config_module.LABOR_MARKET_MIN_WAGE)
 
     def consume(self, item_id: str, quantity: float, current_time: int) -> None:
-        log_extra = {'tick': current_time, 'agent_id': self.id, 'item_id': item_id, 'quantity': quantity}
-        self.logger.debug(f"Attempting to consume: Item={item_id}, Qty={quantity:.1f}, Inventory={self.inventory.get(item_id, 0):.1f}", extra=log_extra)
+        log_extra = {'tick': current_time, 'agent_id': self.id, 'item_id': item_id, 'quantity': quantity, 'tags': ['household_consumption']}
+        self.logger.debug(f"CONSUME_METHOD_START | Household {self.id} attempting to consume: Item={item_id}, Qty={quantity:.1f}, Inventory={self.inventory.get(item_id, 0):.1f}", extra=log_extra)
         if self.inventory.get(item_id, 0) >= quantity:
-            self.logger.debug(f"Consuming {quantity:.1f} of {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival_need', 0):.1f}", extra={**log_extra, 'inventory_before': self.inventory.get(item_id, 0), 'survival_need_before': self.needs.get('survival_need', 0)})
+            self.logger.debug(f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}", extra={**log_extra, 'inventory_before': self.inventory.get(item_id, 0), 'survival_need_before': self.needs.get('survival', 0)})
             self.inventory[item_id] -= quantity
             self.current_consumption += quantity 
             
             if item_id == 'food':
                 self.current_food_consumption += quantity
-                self.logger.debug(f"Consumed {quantity:.1f} of food. Current food consumption: {self.current_food_consumption:.1f}. Inventory AFTER: {self.inventory.get(item_id, 0):.1f}. Survival Need AFTER: {self.needs.get('survival_need', 0):.1f}", extra={**log_extra, 'current_food_consumption': self.current_food_consumption, 'inventory_after': self.inventory.get(item_id, 0), 'survival_need_after': self.needs.get('survival_need', 0)})
+                self.logger.debug(f"CONSUME_METHOD_FOOD_UPDATE | Household {self.id} consumed food. Current food consumption: {self.current_food_consumption:.1f}. Inventory AFTER: {self.inventory.get(item_id, 0):.1f}. Survival Need AFTER: {self.needs.get('survival', 0):.1f}", extra={**log_extra, 'current_food_consumption': self.current_food_consumption, 'inventory_after': self.inventory.get(item_id, 0), 'survival_need_after': self.needs.get('survival', 0)})
 
             consumed_good = self.goods_info_map.get(item_id)
             if consumed_good and 'utility_per_need' in consumed_good:
                 for need_type, utility_value in consumed_good['utility_per_need'].items():
-                    self.needs[need_type] = max(0, self.needs.get(need_type, 0) - (utility_value * quantity))
-                self.logger.info(f"Consumed {quantity:.1f} of {item_id}. Needs after consumption: Survival={self.needs['survival_need']:.1f}, Recognition={self.needs['recognition_need']:.1f}, Growth={self.needs['growth_need']:.1f}, Liquidity={self.needs['liquidity_need']:.1f}, Imitation={self.needs['imitation_need']:.1f}", extra={**log_extra, 'survival_need': self.needs['survival_need'], 'recognition_need': self.needs['recognition_need'], 'growth_need': self.needs['growth_need'], 'liquidity_need': self.needs['liquidity_need'], 'imitation_need': self.needs['imitation_need']})
-
+                    # Ensure need_type is one of the new needs
+                    if need_type in ["survival", "asset", "social", "improvement"]:
+                        self.needs[need_type] = max(0, self.needs.get(need_type, 0) - (utility_value * quantity))
+                self.logger.info(f"CONSUME_METHOD_NEEDS_UPDATE | Household {self.id} consumed {quantity:.1f} of {item_id}. Needs after consumption: Survival={self.needs['survival']:.1f}, Asset={self.needs['asset']:.1f}, Social={self.needs['social']:.1f}, Improvement={self.needs['improvement']:.1f}", extra={**log_extra, 'survival_need': self.needs['survival'], 'asset_need': self.needs['asset'], 'social_need': self.needs['social'], 'improvement_need': self.needs['improvement']})
+            else:
+                self.logger.debug(f"CONSUME_METHOD_NO_UTILITY | Household {self.id} consumed {item_id} but no utility_per_need defined or needs not updated.", extra=log_extra)
+        else:
+            self.logger.debug(f"CONSUME_METHOD_INVENTORY_EMPTY | Household {self.id} tried to consume {item_id} but inventory is empty or insufficient. Inventory: {self.inventory.get(item_id, 0):.1f}, Quantity: {quantity:.1f}", extra=log_extra)
+    @override
     def update_needs(self, current_time: int) -> None:
         log_extra = {'tick': current_time, 'agent_id': self.id, 'tags': ['needs_update']}
-        self.logger.debug(f"HOUSEHOLD_NEEDS_UPDATE_START | Household {self.id} needs before update: Survival={self.needs["survival_need"]:.1f}, Labor={self.needs["labor_need"]:.1f}, Assets={self.assets:.2f}, is_employed={self.is_employed}", extra={**log_extra, 'needs_before': self.needs, 'assets_before': self.assets, 'is_employed_before': self.is_employed})
-        
-        self.needs["survival_need"] += config.SURVIVAL_NEED_INCREASE_RATE
-        self.needs["survival_need"] = min(100.0, self.needs["survival_need"])
+        self.logger.debug(f"HOUSEHOLD_NEEDS_UPDATE_START | Household {self.id} needs before update: {self.needs}. Survival Need: {self.needs.get('survival', 0):.2f}", extra={**log_extra, 'needs_before': self.needs})
 
-        if self.needs["survival_need"] > config.NEED_MEDIUM_THRESHOLD:
-            self.needs["labor_need"] += (self.needs["survival_need"] - config.NEED_MEDIUM_THRESHOLD) * config.SURVIVAL_TO_LABOR_NEED_FACTOR
-            self.needs["labor_need"] = min(100.0, self.needs["labor_need"])
+        # --- Personality-driven desire growth ---
+        base_growth = self.config_module.BASE_DESIRE_GROWTH # From config.py
 
-        self.needs["recognition_need"] += config.RECOGNITION_NEED_INCREASE_RATE
-        if self.needs["survival_need"] < config.NEED_MEDIUM_THRESHOLD:
-            pass
-        elif self.needs["survival_need"] < config.NEED_HIGH_THRESHOLD:
-            self.needs["recognition_need"] += config.RECOGNITION_NEED_INCREASE_RATE * 0.5
-        else:
-            self.needs["recognition_need"] = max(0, self.needs["recognition_need"] - config.RECOGNITION_NEED_INCREASE_RATE * 0.1)
-        self.needs["recognition_need"] = min(100.0, self.needs["recognition_need"])
+        # Survival need grows for all
+        self.needs["survival"] += base_growth
 
-        if self.needs["survival_need"] < config.NEED_MEDIUM_THRESHOLD and self.needs["recognition_need"] < config.NEED_MEDIUM_THRESHOLD:
-            self.needs["growth_need"] += config.GROWTH_NEED_INCREASE_RATE
-        elif self.needs["survival_need"] < config.NEED_HIGH_THRESHOLD or self.needs["recognition_need"] < config.NEED_HIGH_THRESHOLD:
-            self.needs["growth_need"] += config.GROWTH_NEED_INCREASE_RATE * 0.5
-        else:
-            self.needs["growth_need"] = max(0, self.needs["growth_need"] - config.GROWTH_NEED_INCREASE_RATE * 0.1)
-        self.needs["growth_need"] = min(100.0, self.needs["growth_need"])
+        # Other needs grow based on personality weights
+        self.needs["asset"] += base_growth * self.desire_weights['asset']
+        self.needs["social"] += base_growth * self.desire_weights['social']
+        self.needs["improvement"] += base_growth * self.desire_weights['improvement']
 
-        self.needs["liquidity_need"] += config.LIQUIDITY_NEED_INCREASE_RATE
-        self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"])
+        # Cap all needs at MAX_DESIRE_VALUE
+        for need_type in ["survival", "asset", "social", "improvement"]:
 
-        if (self.needs["survival_need"] < config.NEED_MEDIUM_THRESHOLD or 
-            self.needs["recognition_need"] < config.NEED_MEDIUM_THRESHOLD or 
-            self.needs["growth_need"] < config.NEED_MEDIUM_THRESHOLD):
-            pass
-        else:
-            self.needs["wealth_need"] += config.WEALTH_NEED_INCREASE_RATE
-        self.needs["wealth_need"] = min(100.0, self.needs["wealth_need"])
+            self.needs[need_type] = min(self.config_module.MAX_DESIRE_VALUE, self.needs[need_type])
+        # --- End Personality-driven desire growth ---
 
-        self.needs["imitation_need"] += config.IMITATION_NEED_INCREASE_RATE * (1 + self.needs["recognition_need"] / 100.0)
-        self.needs["imitation_need"] = min(100.0, self.needs["imitation_need"])
-        self.logger.debug(f"Imitation Need updated to: {self.needs['imitation_need']:.2f}", extra={**log_extra, 'imitation_need': self.needs['imitation_need']})
+        # --- Old needs logic (to be removed or re-evaluated) ---
+        # The following needs are now managed by the new personality-driven system
+        # or are derived from other needs. They should be removed or integrated.
+        # For now, I will comment them out to avoid conflicts.
+        # self.needs["labor_need"] += ...
+        # self.needs["recognition_need"] += ...
+        # self.needs["growth_need"] += ...
+        # self.needs["liquidity_need"] += ...
+        # self.needs["wealth_need"] += ...
+        # self.needs["imitation_need"] += ...
+        # self.needs["child_rearing_need"] += ...
+        # --- End Old needs logic ---
 
-        if (self.needs["survival_need"] < config.NEED_MEDIUM_THRESHOLD and 
-            self.needs["recognition_need"] < config.NEED_MEDIUM_THRESHOLD and 
-            self.needs["growth_need"] < config.NEED_MEDIUM_THRESHOLD and 
-            self.needs["wealth_need"] < config.NEED_MEDIUM_THRESHOLD):
-            self.needs["child_rearing_need"] += config.CHILD_REARING_NEED_INCREASE_RATE
-        self.needs["child_rearing_need"] = min(100.0, self.needs["child_rearing_need"])
-
-        if self.needs["survival_need"] >= config.SURVIVAL_NEED_DEATH_THRESHOLD:
+        # Check for household death conditions
+        if self.needs["survival"] >= self.config_module.SURVIVAL_NEED_DEATH_THRESHOLD:
             self.survival_need_high_turns += 1
         else:
             self.survival_need_high_turns = 0
 
-        if (self.assets <= config.ASSETS_DEATH_THRESHOLD or 
-            self.survival_need_high_turns >= config.HOUSEHOLD_DEATH_TURNS_THRESHOLD):
+        if (self.assets <= self.config_module.ASSETS_DEATH_THRESHOLD or \
+            self.survival_need_high_turns >= self.config_module.HOUSEHOLD_DEATH_TURNS_THRESHOLD):
             self.is_active = False
-            self.logger.warning(f"HOUSEHOLD_INACTIVE | Household {self.id} became inactive. Assets: {self.assets:.2f}, Survival Need: {self.needs['survival_need']:.1f}, High Turns: {self.survival_need_high_turns}", extra={**log_extra, 'assets': self.assets, 'survival_need': self.needs['survival_need'], 'high_turns': self.survival_need_high_turns, 'tags': ['death']})
-        self.logger.debug(f"HOUSEHOLD_NEEDS_UPDATE_END | Household {self.id} needs after update: Survival={self.needs["survival_need"]:.1f}, Labor={self.needs["labor_need"]:.1f}, Assets={self.assets:.2f}, is_employed={self.is_employed}, is_active={self.is_active}", extra={**log_extra, 'needs_after': self.needs, 'assets_after': self.assets, 'is_employed_after': self.is_employed, 'is_active_after': self.is_active})
+            self.logger.warning(f"HOUSEHOLD_INACTIVE | Household {self.id} became inactive. Assets: {self.assets:.2f}, Survival Need: {self.needs['survival']:.1f}, High Turns: {self.survival_need_high_turns}", extra={**log_extra, 'assets': self.assets, 'survival_need': self.needs['survival'], 'high_turns': self.survival_need_high_turns, 'tags': ['death']})
+        self.logger.debug(f"HOUSEHOLD_NEEDS_UPDATE_END | Household {self.id} needs after update: {self.needs}, is_active={self.is_active}. Survival Need: {self.needs.get('survival', 0):.2f}", extra={**log_extra, 'needs_after': self.needs, 'is_active_after': self.is_active})
+
+    def clone(self) -> 'Household':
+        """
+        현재 가계 에이전트의 복제본을 생성합니다.
+        """
+        # Note: This is a shallow copy for most attributes.
+        # Deep copy might be needed for mutable objects like decision_engine, skills, inventory, etc.
+        # For now, assuming decision_engine, skills, inventory are re-initialized or handled separately
+        # in the context where clone is called.
+        cloned_household = Household(
+            id=self.id, # ID might need to be new if it's a new agent, or same if it's a snapshot
+            talent=self.talent, # Talent is immutable, can be shared
+            initial_assets=self.assets, # Use current assets as initial for clone
+            initial_needs=self.needs.copy(), # Copy current needs
+            decision_engine=self.decision_engine, # Decision engine might need to be cloned too
+            value_orientation=self.value_orientation,
+            personality=self.personality,
+            config_module=self.config_module, # Pass config_module
+            loan_market=self.decision_engine.loan_market, # Pass loan_market if available
+            logger=self.logger
+        )
+        # Copy mutable attributes
+        cloned_household.skills = self.skills.copy()
+        cloned_household.inventory = self.inventory.copy()
+        cloned_household.current_consumption = self.current_consumption
+        cloned_household.employer_id = self.employer_id
+        cloned_household.shares_owned = self.shares_owned.copy()
+        cloned_household.is_employed = self.is_employed
+        cloned_household.labor_skill = self.labor_skill
+        cloned_household.survival_need_high_turns = self.survival_need_high_turns
+        cloned_household.social_status = self.social_status
+        cloned_household.perceived_avg_prices = self.perceived_avg_prices.copy()
+        cloned_household.current_food_consumption = self.current_food_consumption
+        
+        return cloned_household

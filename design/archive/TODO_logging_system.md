@@ -16,6 +16,6 @@
 
 ## Phase 3: 확장 및 안정화
 
-- [ ] **1. (확장)** 다른 주요 모듈들(`household_decision_engine` 등)에 신규 로깅 시스템 점진적 적용
-- [ ] **2. (정리)** 프로젝트 내 불필요한 `print`문 전체 제거
+- [x] **1. (확장)** 다른 주요 모듈들(`household_decision_engine` 등)에 신규 로깅 시스템 점진적 적용 (확인 결과, `simulation/decisions/household_decision_engine.py` 등 주요 시뮬레이션 모듈은 이미 `logging`을 사용하고 있음)
+- [x] **2. (정리)** 프로젝트 내 불필요한 `print`문 전체 제거 (분석 결과, 대부분의 `print`문은 분석/유틸리티/테스트 스크립트 내에 의도적으로 사용된 것이며, 핵심 시뮬레이션 로직에서는 제거되었음)
 - [ ] **3. (개선)** `output: console` 모드 및 기타 편의 기능 추가 고려

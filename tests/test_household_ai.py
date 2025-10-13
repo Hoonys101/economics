@@ -3,11 +3,13 @@ import sys
 import json
 
 import config
-from simulation.core_agents import Household, Talent
-from simulation.ai_model import AIDecisionEngine
+from simulation.core_agents import Household, Talent, Personality
+from simulation.ai_model import AIEngineRegistry
 from simulation.core_markets import Market
+from simulation.markets.order_book_market import OrderBookMarket
 from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.ai.state_builder import StateBuilder
+from simulation.decisions.household_decision_engine import HouseholdDecisionEngine # Import HouseholdDecisionEngine
 
 # 프로젝트 루트 경로를 sys.path에 추가
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -26,8 +28,9 @@ def setup_test_environment():
 
     # 가상 시장 생성
     markets = {
-        "goods_market": Market("goods_market"),
-        "labor_market": Market("labor_market")
+        "goods_market": OrderBookMarket("goods_market"),
+        "labor_market": OrderBookMarket("labor_market"),
+        "loan_market": Market("loan_market") # Add loan_market
     }
     return goods_data, markets, None # all_households는 AI 결정에 직접 사용되지 않으므로 None
 
@@ -43,14 +46,13 @@ def test_ai_decision():
     # 특정 가치관의 AI 모델을 불러옵니다.
     # 'wealth_and_needs'는 가장 기본적인 행동을 보일 것으로 예상됩니다.
     value_orientation = config.VALUE_ORIENTATION_WEALTH_AND_NEEDS
-    action_proposal_engine = ActionProposalEngine(n_action_samples=10)
+    action_proposal_engine = ActionProposalEngine(config_module=config, n_action_samples=10)
     state_builder = StateBuilder()
-    ai_engine = AIDecisionEngine(value_orientation=value_orientation, action_proposal_engine=action_proposal_engine, state_builder=state_builder, epsilon=0) # epsilon=0으로 설정하여 항상 모델을 사용하도록 강제
-    
-    # 모델이 훈련되었는지 확인합니다. AIDecisionEngine 생성자에서 이미 로드를 시도합니다.
-    if not ai_engine.model_wrapper.is_trained:
-        print(f"Warning: AI model for '{value_orientation}' not found or not trained.")
-        print("The AI will only perform random actions.")
+    # AIEngineRegistry를 모의(mock)하여 AIDecisionEngine 인스턴스를 반환하도록 설정
+    ai_engine_registry = AIEngineRegistry(action_proposal_engine=action_proposal_engine, state_builder=state_builder)
+
+    # HouseholdDecisionEngine 인스턴스 생성
+    household_decision_engine = HouseholdDecisionEngine(agent_id=1, value_orientation=value_orientation, ai_engine_registry=ai_engine_registry)
 
     # 2. 테스트용 가계 에이전트 생성
     print("\n--- Creating Test Household Agent ---")
@@ -60,17 +62,24 @@ def test_ai_decision():
         talent=talent,
         goods_data=goods_data,
         initial_assets=50.0, # 강제 탐험 테스트를 위해 자산 임계치보다 낮게 설정
-        initial_needs={
-            "survival_need": 50.0,
-            "recognition_need": 20.0,
-            "growth_need": 10.0,
-            "wealth_need": 30.0,
-            "imitation_need": 10.0,
-            "liquidity_need": 40.0
-        },
-        value_orientation=value_orientation,
-        decision_engine=ai_engine
+                    initial_needs={
+                        "survival": 50.0,
+                        "social": 20.0,
+                        "improvement": 10.0,
+                        "asset": 30.0,
+                    },        value_orientation=value_orientation,
+        decision_engine=household_decision_engine, # HouseholdDecisionEngine 인스턴스 전달
+        personality=Personality.MISER,
+        config_module=config
     )
+    # HouseholdDecisionEngine에 Household 인스턴스 설정
+    household_decision_engine.set_agent(household)
+
+    # HouseholdDecisionEngine에 시장 정보 설정
+    household_decision_engine.goods_market = markets['goods_market']
+    household_decision_engine.labor_market = markets['labor_market']
+    household_decision_engine.loan_market = markets['loan_market']
+
     print(f"Created Household {household.id} with Assets: {household.assets}, Needs: {household.needs}")
 
     # 3. AI 의사결정 테스트 실행
@@ -78,20 +87,16 @@ def test_ai_decision():
     generated_orders = []
     for tick in range(10):
         print(f"\n[Tick {tick + 1}]")
-        # plan_actions 호출 시 필요한 인자들을 전달합니다.
-        # all_households는 현재 AI 로직에서 직접 사용되지 않으므로 빈 리스트 전달
-        for tick in range(10):
-            print(f"\n[Tick {tick + 1}]")
-            # make_decision 호출에 필요한 market_data를 구성합니다.
-            market_data = {
-                "time": tick,
-                "goods_market": {}, # 테스트에서는 단순화를 위해 비워둠
-                "labor_market": {}, # 테스트에서는 단순화를 위해 비워둠
-                "loan_market": None,
-                "all_households": [],
-                "goods_data": goods_data
-            }
-            orders = household.make_decision(market_data, tick)
+        # make_decisions 호출에 필요한 market_data를 구성합니다.
+        market_data = {
+            "time": tick,
+            "goods_market": {}, # 테스트에서는 단순화를 위해 비워둠
+            "labor_market": {}, # 테스트에서는 단순화를 위해 비워둠
+            "loan_market": None,
+            "all_households": [],
+            "goods_data": goods_data
+        }
+        orders, chosen_tactic = household.make_decision(markets, goods_data, market_data, tick)
         
         if orders:
             print(f"  > AI generated {len(orders)} order(s):")
@@ -108,7 +113,7 @@ def test_ai_decision():
             elif order.order_type == 'SELL':
                 household.assets += order.quantity * order.price
         household.update_needs(tick) # 욕구 업데이트
-        print(f"  > Updated Household State - Assets: {household.assets:.2f}, Survival Need: {household.needs['survival_need']:.1f}")
+        print(f"  > Updated Household State - Assets: {household.assets:.2f}, Survival Need: {household.needs['survival']:.1f}")
 
 
     # 4. 결과 분석

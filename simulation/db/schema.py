@@ -1,4 +1,5 @@
 import sqlite3
+import logging
 
 def create_tables(conn: sqlite3.Connection):
     """
@@ -62,6 +63,7 @@ def create_tables(conn: sqlite3.Connection):
             unemployment_rate REAL,
             avg_wage REAL,
             food_avg_price REAL,
+            food_trade_volume REAL,
             avg_goods_price REAL,
             total_production REAL,
             total_consumption REAL,
@@ -80,5 +82,5 @@ if __name__ == '__main__':
     create_tables(conn)
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    print("Created tables:", cursor.fetchall())
+    logging.info(f"Created tables: {cursor.fetchall()}")
     conn.close()

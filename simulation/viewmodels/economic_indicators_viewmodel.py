@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 from simulation.db.repository import SimulationRepository
+import logging
 
 class EconomicIndicatorsViewModel:
     """
@@ -114,10 +115,10 @@ if __name__ == '__main__':
 
     vm = EconomicIndicatorsViewModel(repo)
     
-    print("Economic Indicators (all):", vm.get_economic_indicators())
-    print("\nUnemployment Rate Data (Chart.js format):", vm.get_unemployment_rate_data())
-    print("\nTotal Production Data (Chart.js format):", vm.get_total_production_data(start_tick=5, end_tick=10))
-    print("\nAvg Wage Data (Chart.js format):", vm.get_avg_wage_data())
+    logging.info(f"Economic Indicators (all): {vm.get_economic_indicators()}")
+    logging.info(f"Unemployment Rate Data (Chart.js format): {vm.get_unemployment_rate_data()}")
+    logging.info(f"Total Production Data (Chart.js format): {vm.get_total_production_data(start_tick=5, end_tick=10)}")
+    logging.info(f"Avg Wage Data (Chart.js format): {vm.get_avg_wage_data()}")
 
     repo.close()
     # if 'original_db_name' in locals():

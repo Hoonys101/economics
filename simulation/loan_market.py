@@ -1,6 +1,5 @@
-from typing import List
+from typing import List, Any
 import logging
-import config
 
 from simulation.models import Order, Transaction
 from simulation.agents.bank import Bank # Bank 클래스 임포트
@@ -9,9 +8,10 @@ logger = logging.getLogger(__name__)
 
 class LoanMarket:
     """대출 요청 및 상환을 처리하는 시장"""
-    def __init__(self, market_id: str, bank: Bank):
+    def __init__(self, market_id: str, bank: Bank, config_module: Any):
         self.market_id = market_id
         self.bank = bank # 시장과 연결된 은행 인스턴스
+        self.config_module = config_module # Store config_module
         self.loan_requests: List[Order] = [] # 대출 요청 주문 큐
         self.repayment_requests: List[Order] = [] # 상환 요청 주문 큐
         logger.info(f"LoanMarket {market_id} initialized with bank: {bank.id}", extra={'tick': 0, 'market_id': self.market_id, 'agent_id': bank.id, 'tags': ['init', 'market']})
@@ -25,7 +25,7 @@ class LoanMarket:
         if order.order_type == "LOAN_REQUEST":
             loan_amount = order.quantity
             interest_rate = order.price
-            duration = config.DEFAULT_LOAN_DURATION # Use default duration from config
+            duration = self.config_module.DEFAULT_LOAN_DURATION # Use default duration from config
             
             loan_id, loan_details = self.bank.grant_loan(order.agent_id, loan_amount, interest_rate, duration)
             if loan_id:
@@ -62,3 +62,11 @@ class LoanMarket:
                 loan_details["remaining_payments"] -= 1
 
         return interest_transactions
+
+    def get_total_demand(self) -> float:
+        """총 수요를 반환합니다. LoanMarket의 경우 0을 반환합니다."""
+        return 0.0
+
+    def get_total_supply(self) -> float:
+        """총 공급을 반환합니다. LoanMarket의 경우 0을 반환합니다."""
+        return 0.0

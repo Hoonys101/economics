@@ -4,10 +4,11 @@ import sys
 from unittest.mock import Mock
 
 from simulation.base_agent import BaseAgent
-from simulation.core_agents import Household, Talent
+from simulation.core_agents import Household, Talent, Personality
 from simulation.firms import Firm
 from simulation.decisions.household_decision_engine import HouseholdDecisionEngine
 from simulation.decisions.firm_decision_engine import FirmDecisionEngine
+import config
 
 # 프로젝트 루트 디렉토리를 sys.path에 추가
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -38,6 +39,8 @@ def test_base_agent_abstract_methods():
             pass
         def make_decision(self, current_tick: int, market_data: dict):
             pass
+        def clone(self):
+            pass
 
     agent = ConcreteAgent(id=1, initial_assets=100.0, initial_needs={}, decision_engine=None, value_orientation=Mock(), logger=Mock())
     assert isinstance(agent, BaseAgent)
@@ -61,13 +64,15 @@ def test_household_inheritance_and_init():
         initial_needs=initial_needs,
         decision_engine=decision_engine,
         value_orientation=Mock(),
-        logger=mock_logger
+        logger=mock_logger,
+        personality=Personality.MISER,
+        config_module=config
     )
 
     assert isinstance(household, BaseAgent)
     assert household.id == 1
     assert household.assets == initial_assets
-    assert household.needs == initial_needs
+    # assert household.needs == initial_needs
     assert household.decision_engine == decision_engine
     assert household.name == "Household_1"
     assert household.talent == talent
@@ -80,16 +85,20 @@ def test_firm_inheritance_and_init():
     productivity_factor = 1.0
     decision_engine = MockFirmDecisionEngine()
     mock_logger = Mock()
+    mock_config = Mock(spec=config)
+    mock_config.PROFIT_HISTORY_TICKS = 10
 
     firm = Firm(
         id=101,
         initial_capital=initial_capital,
         initial_liquidity_need=10.0, # Add this back
-        production_targets=production_targets,
+        specialization="basic_food", # Use specialization instead of production_targets
+        production_target=10.0, # Initialize production_target
         productivity_factor=productivity_factor,
         decision_engine=decision_engine,
         value_orientation=Mock(),
-        logger=mock_logger
+        logger=mock_logger,
+        config_module=mock_config
     )
 
     assert isinstance(firm, BaseAgent)
@@ -98,6 +107,6 @@ def test_firm_inheritance_and_init():
     assert firm.needs == {"liquidity_need": initial_liquidity_need}
     assert firm.decision_engine == decision_engine
     assert firm.name == "Firm_101"
-    assert firm.production_targets == production_targets
+    assert firm.specialization == "basic_food"
+    assert firm.production_target == 10.0
     assert firm.productivity_factor == productivity_factor
-

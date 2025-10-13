@@ -1,6 +1,7 @@
 import sqlite3
 from typing import Optional
 from simulation.db.schema import create_tables
+import logging
 
 DATABASE_NAME = 'simulation_data.db'
 
@@ -53,6 +54,6 @@ if __name__ == '__main__':
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    print("Tables in database:", cursor.fetchall())
+    logging.info(f"Tables in database: {cursor.fetchall()}")
     close_db_connection()
-    print(f"Database '{DATABASE_NAME}' created and tables initialized.")
+    logging.info(f"Database '{DATABASE_NAME}' created and tables initialized.")

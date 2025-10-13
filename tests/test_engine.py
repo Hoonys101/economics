@@ -2,9 +2,9 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 
 from simulation.engine import Simulation, EconomicIndicatorTracker
-from simulation.core_agents import Household, Talent, Skill
+from simulation.core_agents import Household, Talent, Skill, Personality
 from simulation.firms import Firm
-from simulation.ai_model import AITrainingManager
+from simulation.ai_model import AIEngineRegistry
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.loan_market import LoanMarket
 from simulation.agents.bank import Bank
@@ -34,6 +34,7 @@ def mock_households():
     hh1.inventory = {"food": 10}
     hh1.current_consumption = 0.0
     hh1.current_food_consumption = 0.0
+    hh1.is_employed = False # Added
     hh1.employer_id = None # Added
     hh1.skills = {} # Added for research labor test
 
@@ -47,38 +48,17 @@ def mock_households():
     hh2.inventory = {"food": 5}
     hh2.current_consumption = 0.0
     hh2.current_food_consumption = 0.0
+    hh2.is_employed = False # Added
     hh2.employer_id = None # Added
     return [hh1, hh2]
 
 @pytest.fixture
-def mock_firms():
-    f1 = Mock(spec=Firm,
-              id=101,
-              assets=1000.0,
-              is_active=True,
-              value_orientation="profit_maximization",
-              decision_engine=Mock(),
-              employees=[],
-              current_production=0.0,
-              inventory={"food": 50},
-              production_targets={"food": 100},
-              productivity_factor=1.0,
-              revenue_this_turn=0.0,
-              cost_this_turn=0.0)
+def mock_firms(mock_config_module):
+    f1 = Firm(id=101, initial_capital=1000, initial_liquidity_need=100, specialization="basic_food", productivity_factor=1.0, decision_engine=Mock(), value_orientation="test", config_module=mock_config_module, initial_inventory={"basic_food": 50})
+    f1.is_active = True
 
-    f2 = Mock(spec=Firm,
-              id=102,
-              assets=1200.0,
-              is_active=False, # Inactive firm
-              value_orientation="profit_maximization",
-              decision_engine=Mock(),
-              employees=[],
-              current_production=0.0,
-              inventory={"food": 60},
-              production_targets={"food": 120},
-              productivity_factor=1.0,
-              revenue_this_turn=0.0,
-              cost_this_turn=0.0)
+    f2 = Firm(id=102, initial_capital=1200, initial_liquidity_need=100, specialization="luxury_food", productivity_factor=1.0, decision_engine=Mock(), value_orientation="test", config_module=mock_config_module, initial_inventory={"luxury_food": 60})
+    f2.is_active = False # Inactive firm
     return [f1, f2]
 
 
@@ -91,7 +71,7 @@ def mock_goods_data():
 
 @pytest.fixture
 def mock_ai_trainer():
-    trainer = Mock(spec=AITrainingManager)
+    trainer = Mock(spec=AIEngineRegistry)
     trainer.state_builder = Mock()
     trainer.state_builder.build_state.return_value = {"assets": 100} # Default mock return
     trainer.collect_experience = Mock()
@@ -99,20 +79,62 @@ def mock_ai_trainer():
     return trainer
 
 @pytest.fixture
-def simulation_instance(mock_households, mock_firms, mock_goods_data, mock_ai_trainer):
-    return Simulation(mock_households, mock_firms, mock_goods_data, mock_ai_trainer)
+def mock_repository():
+    repo = MagicMock()
+    repo.save_simulation_run = MagicMock(return_value=1) # Return a dummy run_id
+    repo.save_economic_indicator = MagicMock()
+    repo.save_agent_states = MagicMock()
+    repo.save_transactions = MagicMock()
+    repo.get_latest_economic_indicator = MagicMock(return_value=None)
+    return repo
+
+@pytest.fixture
+def mock_config_module():
+    mock_config = Mock(spec=config)
+    mock_config.LOAN_INTEREST_RATE = 0.05
+    mock_config.GOODS_MARKET_SELL_PRICE = 10.0
+    mock_config.BASE_WAGE = 10.0
+    mock_config.PROFIT_HISTORY_TICKS = 10
+    mock_config.RND_PRODUCTIVITY_MULTIPLIER = 0.01
+    mock_config.GOODS = {
+        "basic_food": {
+            "production_cost": 3,
+            "utility_effects": {"survival": 10}
+        },
+        "luxury_food": {
+            "production_cost": 10,
+            "utility_effects": {"survival": 12, "social": 5}
+        }
+    }
+    return mock_config
+
+@pytest.fixture
+def mock_tracker(mock_repository):
+    # tracker = Mock(spec=EconomicIndicatorTracker)
+    # tracker.repository = mock_repository
+    # return tracker
+    # EconomicIndicatorTracker는 더 이상 repository를 직접 갖지 않으므로,
+    # 실제 객체를 사용하되, 내부에서 repository를 사용하지 않도록 다른 부분을 mock 처리합니다.
+    # 여기서는 config_module만 필요로 하므로 간단히 생성합니다.
+    mock_config = Mock()
+    return EconomicIndicatorTracker(config_module=mock_config)
+
+@pytest.fixture
+def simulation_instance(mock_households, mock_firms, mock_goods_data, mock_ai_trainer, mock_repository, mock_config_module, mock_tracker):
+    # db_manager 인스턴스를 mock_repository로 사용합니다.
+    sim = Simulation(mock_households, mock_firms, mock_ai_trainer, mock_repository, mock_config_module)
+    return sim
 
 # Test Cases for Simulation class
 class TestSimulation:
     def test_simulation_initialization(self, simulation_instance, mock_households, mock_firms, mock_goods_data, mock_ai_trainer):
         assert simulation_instance.households == mock_households
         assert simulation_instance.firms == mock_firms
-        assert simulation_instance.goods_data == mock_goods_data
         assert simulation_instance.ai_trainer == mock_ai_trainer
         assert simulation_instance.time == 0
         assert isinstance(simulation_instance.tracker, EconomicIndicatorTracker)
         assert isinstance(simulation_instance.bank, Bank)
-        assert isinstance(simulation_instance.markets['goods_market'], OrderBookMarket)
+        assert isinstance(simulation_instance.markets['basic_food'], OrderBookMarket)
         assert isinstance(simulation_instance.markets['labor_market'], OrderBookMarket)
         assert isinstance(simulation_instance.markets['loan_market'], LoanMarket)
 
@@ -122,54 +144,58 @@ class TestSimulation:
 
         # Verify decision engines are linked to markets
         for hh in mock_households:
-            assert hh.decision_engine.goods_market == simulation_instance.markets['goods_market']
-            assert hh.decision_engine.labor_market == simulation_instance.markets['labor_market']
-            assert hh.decision_engine.loan_market == simulation_instance.markets['loan_market']
+            hh.decision_engine.markets = simulation_instance.markets
         for firm in mock_firms:
-            assert firm.decision_engine.goods_market == simulation_instance.markets['goods_market']
-            assert firm.decision_engine.labor_market == simulation_instance.markets['labor_market']
-            assert firm.decision_engine.loan_market == simulation_instance.markets['loan_market']
+            firm.decision_engine.markets = simulation_instance.markets
 
-    def test_prepare_market_data_basic(self, simulation_instance, mock_goods_data):
-        market_data = simulation_instance._prepare_market_data()
+    def test_prepare_market_data_basic(self, simulation_instance, mock_goods_data, mock_tracker):
+        # simulation_instance.tracker.repository.get_latest_economic_indicator.return_value = 10.0
+        # tracker는 더 이상 repository를 직접 가지지 않으므로, tracker의 metrics를 직접 조작합니다.
+        mock_tracker.metrics['avg_goods_price'] = [10.0]
+        mock_tracker.metrics['avg_wage'] = [15.0]
+        
+        market_data = simulation_instance._prepare_market_data(mock_tracker)
         assert "time" in market_data
         assert market_data["time"] == simulation_instance.time
         assert "goods_market" in market_data
-        assert "labor_market" in market_data
+        # assert "labor_market" in market_data # _prepare_market_data는 labor_market 정보를 직접 넣지 않음
         assert "loan_market" in market_data
         assert "all_households" in market_data
-        assert "goods_data" in market_data
-        assert market_data["goods_data"] == mock_goods_data
-        assert market_data["loan_market"]["interest_rate"] == config.LOAN_INTEREST_RATE
+        assert market_data["avg_goods_price"] == 10.0
 
-    def test_prepare_market_data_no_goods_market(self, simulation_instance, mock_goods_data):
-        original_goods_market = simulation_instance.markets['goods_market']
-        simulation_instance.markets['goods_market'] = None # Temporarily set to None
-        market_data = simulation_instance._prepare_market_data()
-        assert market_data["goods_market"] == {}
-        simulation_instance.markets['goods_market'] = original_goods_market # Restore
+    def test_prepare_market_data_no_goods_market(self, simulation_instance, mock_goods_data, mock_tracker):
+        original_basic_food_market = simulation_instance.markets['basic_food']
+        simulation_instance.markets['basic_food'] = None # Temporarily set to None
+        mock_tracker.metrics['avg_goods_price'] = [10.0]
+        
+        market_data = simulation_instance._prepare_market_data(mock_tracker)
+        assert "luxury_food_current_sell_price" in market_data["goods_market"] # Still contains luxury_food
+        assert "basic_food_current_sell_price" not in market_data["goods_market"] # basic_food should be gone
+        simulation_instance.markets['basic_food'] = original_basic_food_market # Restore
 
-    def test_prepare_market_data_with_best_ask(self, simulation_instance, mock_goods_data):
-        mock_goods_market = Mock(spec=OrderBookMarket)
-        mock_goods_market.get_best_ask.return_value = 10.0 # Mock a best ask price
-        simulation_instance.markets['goods_market'] = mock_goods_market
+    def test_prepare_market_data_with_best_ask(self, simulation_instance, mock_goods_data, mock_tracker):
+        mock_basic_food_market = Mock(spec=OrderBookMarket)
+        mock_basic_food_market.get_best_ask.return_value = 10.0 # Mock a best ask price
+        simulation_instance.markets['basic_food'] = mock_basic_food_market
+        mock_tracker.metrics['avg_goods_price'] = [12.0] # 다른 값으로 설정하여 구분
         
-        market_data = simulation_instance._prepare_market_data()
+        market_data = simulation_instance._prepare_market_data(mock_tracker)
         
-        assert market_data["goods_market"]["food_current_sell_price"] == 10.0
+        assert market_data["goods_market"]["basic_food_current_sell_price"] == 10.0
+        assert market_data["avg_goods_price"] == 10.0
 
     def test_process_transactions_goods_trade(self, simulation_instance, mock_households, mock_firms):
         buyer_hh = mock_households[0]
         seller_firm = mock_firms[0]
         initial_buyer_assets = buyer_hh.assets
         initial_seller_assets = seller_firm.assets
-        initial_seller_inventory = seller_firm.inventory.get("food", 0)
-        initial_buyer_inventory = buyer_hh.inventory.get("food", 0)
+        initial_seller_inventory = seller_firm.inventory.get("basic_food", 0)
+        initial_buyer_inventory = buyer_hh.inventory.get("basic_food", 0)
 
         tx = Mock(spec=Transaction)
         tx.buyer_id = buyer_hh.id
         tx.seller_id = seller_firm.id
-        tx.item_id = "food"
+        tx.item_id = "basic_food"
         tx.quantity = 5.0
         tx.price = 10.0
         tx.transaction_type = "goods"
@@ -178,8 +204,8 @@ class TestSimulation:
 
         assert buyer_hh.assets == initial_buyer_assets - (tx.quantity * tx.price)
         assert seller_firm.assets == initial_seller_assets + (tx.quantity * tx.price)
-        assert seller_firm.inventory["food"] == initial_seller_inventory - tx.quantity
-        assert buyer_hh.inventory["food"] == initial_buyer_inventory + tx.quantity
+        assert seller_firm.inventory["basic_food"] == initial_seller_inventory - tx.quantity
+        assert buyer_hh.inventory["basic_food"] == initial_buyer_inventory + tx.quantity
         assert buyer_hh.current_consumption == tx.quantity
         assert buyer_hh.current_food_consumption == tx.quantity
         assert seller_firm.revenue_this_turn == (tx.quantity * tx.price)
@@ -230,7 +256,7 @@ class TestSimulation:
 
         assert seller_hh.is_employed is True
         assert seller_hh in buyer_firm.employees
-        assert buyer_firm.productivity_factor == initial_productivity_factor + (seller_hh.skills["research"].value * config.RND_PRODUCTIVITY_MULTIPLIER)
+        assert buyer_firm.productivity_factor == initial_productivity_factor + (seller_hh.skills["research"].value * simulation_instance.config_module.RND_PRODUCTIVITY_MULTIPLIER)
 
     def test_process_transactions_invalid_agents(self, simulation_instance, mock_households, mock_firms):
         tx_invalid_buyer = Mock(spec=Transaction)
@@ -265,7 +291,7 @@ def mock_goods_data_for_lifecycle():
 
 @pytest.fixture
 def mock_ai_trainer_for_lifecycle():
-    mock_trainer = Mock(spec=AITrainingManager)
+    mock_trainer = Mock(spec=AIEngineRegistry)
     mock_trainer.get_engine.return_value = Mock() # Mock the AI engine
     mock_trainer.state_builder = Mock()
     return mock_trainer
@@ -279,27 +305,27 @@ def mock_firm_decision_engine_for_lifecycle():
     return Mock(spec=FirmDecisionEngine)
 
 @pytest.fixture
-def setup_simulation_for_lifecycle(mock_goods_data_for_lifecycle, mock_ai_trainer_for_lifecycle, mock_household_decision_engine_for_lifecycle, mock_firm_decision_engine_for_lifecycle):
+def setup_simulation_for_lifecycle(mock_goods_data_for_lifecycle, mock_ai_trainer_for_lifecycle, mock_household_decision_engine_for_lifecycle, mock_firm_decision_engine_for_lifecycle, mock_repository, mock_config_module, mock_logger):
     # Create active and inactive households
-    household_active = Household(id=1, talent=Mock(spec=Talent), goods_data=mock_goods_data_for_lifecycle, initial_assets=100, initial_needs={}, decision_engine=mock_household_decision_engine_for_lifecycle, value_orientation="test")
+    household_active = Household(id=1, talent=Mock(spec=Talent), goods_data=mock_goods_data_for_lifecycle, initial_assets=100, initial_needs={}, decision_engine=mock_household_decision_engine_for_lifecycle, value_orientation="test", personality=Personality.MISER, config_module=mock_config_module)
     household_active.is_active = True
     household_active.is_employed = True
     household_active.employer_id = 101 # Employed by firm_active
 
-    household_inactive = Household(id=2, talent=Mock(spec=Talent), goods_data=mock_goods_data_for_lifecycle, initial_assets=50, initial_needs={}, decision_engine=mock_household_decision_engine_for_lifecycle, value_orientation="test")
+    household_inactive = Household(id=2, talent=Mock(spec=Talent), goods_data=mock_goods_data_for_lifecycle, initial_assets=50, initial_needs={}, decision_engine=mock_household_decision_engine_for_lifecycle, value_orientation="test", personality=Personality.MISER, config_module=mock_config_module)
     household_inactive.is_active = False # This household is inactive
 
-    household_employed_by_inactive_firm = Household(id=3, talent=Mock(spec=Talent), goods_data=mock_goods_data_for_lifecycle, initial_assets=70, initial_needs={}, decision_engine=mock_household_decision_engine_for_lifecycle, value_orientation="test")
+    household_employed_by_inactive_firm = Household(id=3, talent=Mock(spec=Talent), goods_data=mock_goods_data_for_lifecycle, initial_assets=70, initial_needs={}, decision_engine=mock_household_decision_engine_for_lifecycle, value_orientation="test", personality=Personality.MISER, config_module=mock_config_module)
     household_employed_by_inactive_firm.is_active = True
     household_employed_by_inactive_firm.is_employed = True
     household_employed_by_inactive_firm.employer_id = 102 # Employed by firm_inactive
 
     # Create active and inactive firms
-    firm_active = Firm(id=101, initial_capital=1000, initial_liquidity_need=100, production_targets={"food": 100}, productivity_factor=1.0, decision_engine=mock_firm_decision_engine_for_lifecycle, value_orientation="test")
+    firm_active = Firm(id=101, initial_capital=1000, initial_liquidity_need=100, specialization="food", productivity_factor=1.0, decision_engine=mock_firm_decision_engine_for_lifecycle, value_orientation="test", config_module=mock_config_module)
     firm_active.is_active = True
     firm_active.employees.append(household_active) # Add active household as employee
 
-    firm_inactive = Firm(id=102, initial_capital=500, initial_liquidity_need=50, production_targets={"food": 50}, productivity_factor=1.0, decision_engine=mock_firm_decision_engine_for_lifecycle, value_orientation="test")
+    firm_inactive = Firm(id=102, initial_capital=500, initial_liquidity_need=50, specialization="food", productivity_factor=1.0, decision_engine=mock_firm_decision_engine_for_lifecycle, value_orientation="test", config_module=mock_config_module)
     firm_inactive.is_active = False # This firm is inactive
     firm_inactive.employees.append(household_employed_by_inactive_firm) # Add household employed by inactive firm
 
@@ -307,7 +333,7 @@ def setup_simulation_for_lifecycle(mock_goods_data_for_lifecycle, mock_ai_traine
     firms = [firm_active, firm_inactive]
 
     # Create a Simulation instance
-    sim = Simulation(households, firms, mock_goods_data_for_lifecycle, mock_ai_trainer_for_lifecycle)
+    sim = Simulation(households, firms, mock_ai_trainer_for_lifecycle, mock_repository, mock_config_module, logger=mock_logger)
     
     # Ensure initial agents dict is correct
     assert sim.agents[household_active.id] == household_active

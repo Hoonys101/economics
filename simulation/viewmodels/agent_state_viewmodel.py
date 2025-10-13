@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 from simulation.db.repository import SimulationRepository
+import logging
 
 class AgentStateViewModel:
     """
@@ -68,8 +69,8 @@ if __name__ == '__main__':
     vm = AgentStateViewModel(repo)
     
     # 예시: 에이전트 1의 상태 이력 조회
-    print("Agent 1 States (all):", vm.get_agent_states(agent_id=1))
-    print("\nAgent 1 Assets Data (Chart.js format):", vm.get_agent_assets_data(agent_id=1))
-    print("\nAgent 1 Employment Data (Chart.js format):", vm.get_agent_employment_data(agent_id=1))
+    logging.info(f"Agent 1 States (all): {vm.get_agent_states(agent_id=1)}")
+    logging.info(f"Agent 1 Assets Data (Chart.js format): {vm.get_agent_assets_data(agent_id=1)}")
+    logging.info(f"Agent 1 Employment Data (Chart.js format): {vm.get_agent_employment_data(agent_id=1)}")
 
     repo.close()

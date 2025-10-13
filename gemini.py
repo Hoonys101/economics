@@ -8,6 +8,10 @@ This file contains the basic guidelines and API design for the Gemini AI-based e
 All programming work must follow the guidelines and designs below.
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # ======================================================================================
 # 개발 지침 (Development Guidelines)
 # from design/개발지침.md
@@ -97,7 +101,7 @@ def imitate_behavior(agent, successful_agents):
     4.  모방 결과 로깅: 모방 행동과 그 결과를 기록하여 AI 모델 학습에 사용
     """
     # Placeholder for imitation logic
-    print(f"{agent} is imitating one of {successful_agents}")
+    logger.info(f"{agent} is imitating one of {successful_agents}")
     pass
 
 # ======================================================================================

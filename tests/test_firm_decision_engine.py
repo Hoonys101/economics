@@ -2,28 +2,33 @@ import pytest
 from simulation.firms import Firm
 from simulation.decisions.firm_decision_engine import FirmDecisionEngine
 import config
+from unittest.mock import Mock
 
 # Mock config values for testing
 @pytest.fixture(autouse=True)
 def mock_config(monkeypatch):
-    monkeypatch.setattr(config, 'FIRM_PRODUCTION_TARGETS', {'food': 100.0})
+    monkeypatch.setattr(config, 'FIRM_SPECIALIZATIONS', {0: 'basic_food', 1: 'luxury_food'})
     monkeypatch.setattr(config, 'FIRM_PRODUCTIVITY_FACTOR', 1.0)
     monkeypatch.setattr(config, 'GOODS_MARKET_SELL_PRICE', 10.0)
-    monkeypatch.setattr(config, 'LABOR_MARKET_OFFERED_WAGE', 5.0)
+    monkeypatch.setattr(config, 'BASE_WAGE', 5.0)
 
 @pytest.fixture
 def sample_firm():
+    mock_ai_engine = Mock() # Create a mock AI engine
     firm = Firm(
         id=1,
         initial_capital=1000.0,
         initial_liquidity_need=10.0,
-        production_targets={'food': 100.0},
+        specialization="basic_food",
         productivity_factor=1.0,
-        decision_engine=FirmDecisionEngine(),
+        decision_engine=FirmDecisionEngine(ai_engine=mock_ai_engine, config_module=config), # Pass the mock AI engine
         value_orientation="test_firm_vo",
+        config_module=config, # Pass the config module
         logger=None # Pass None for logger in tests or mock it
     )
-    firm.inventory['food'] = 50.0 # Initial inventory
+    firm.production_target = 100.0 # Initialize production_target
+    firm.inventory[firm.specialization] = 50.0 # Initial inventory for specialized good
+    firm.last_prices = {firm.specialization: 10.0} # Initialize last_prices
     return firm
 
 @pytest.fixture
@@ -60,42 +65,34 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
     sample_firm.employees = [employee1, employee2]
 
     # Call make_decisions
-    orders = sample_firm.decision_engine.make_decisions(sample_firm, sample_market_data, 0)
+    orders = sample_firm.decision_engine.make_decisions(sample_firm, 0, sample_market_data)
 
     # Assertions for production (assuming produce is called internally or orders are generated)
     # The FirmDecisionEngine primarily generates BUY/SELL orders, not directly production.
     # Production happens in firm.produce() which is called by the simulation engine.
     # So, we should test if the firm tries to hire or sell based on its inventory/targets.
 
-    # Test if a SELL order for 'food' is generated if inventory > target
-    # Or if a BUY order for 'labor' is generated if employees < needed for target
-
-    # For this test, let's assume it tries to sell if it has inventory above a certain threshold
-    # or if it needs to reduce inventory.
-    sell_orders = [order for order in orders if order.order_type == 'SELL' and order.market_id == 'goods_market']
-    assert len(sell_orders) > 0, "Expected firm to generate SELL orders for goods"
-    assert sell_orders[0].item_id == 'food'
-    assert sell_orders[0].quantity > 0
-
     # Test if a BUY order for 'labor' is generated if it needs more production
-    # This assertion depends on the internal logic of FirmDecisionEngine.
-    # If it prioritizes selling over hiring when inventory is high, this might be 0.
-    # For now, let's just check if any labor orders are made.
-    # assert len(buy_labor_orders) > 0, "Expected firm to generate BUY orders for labor"
+    buy_labor_orders = [order for order in orders if order.order_type == 'BUY' and order.market_id == 'labor_market']
+    assert len(buy_labor_orders) > 0, "Expected firm to generate BUY orders for labor"
+    assert buy_labor_orders[0].item_id == 'labor'
+    assert buy_labor_orders[0].quantity == 1 # Assuming it tries to hire one unit of labor
 
-def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
-    # Set inventory to meet or exceed target
-    sample_firm.inventory['food'] = 150.0 # Above target of 100
+    # Test if no SELL order for 'food' is generated if inventory is below target
+    sell_orders = [order for order in orders if order.order_type == 'SELL' and order.market_id == 'goods_market']
+    assert len(sell_orders) == 0, "Expected no SELL orders when inventory is below target"
+
+    def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
+        # Set inventory to meet or exceed target
+        sample_firm.inventory[sample_firm.specialization] = 150.0 # Above target of 100
 
     # Ensure no employees are present to focus on inventory decision
-    sample_firm.employees = []
-
-    orders = sample_firm.decision_engine.make_decisions(sample_firm, sample_market_data, 0)
+    orders = sample_firm.decision_engine.make_decisions(sample_firm, 0, sample_market_data)
 
     # Expect SELL orders to reduce inventory, but not necessarily BUY labor orders
     sell_orders = [order for order in orders if order.order_type == 'SELL' and order.market_id == 'goods_market']
     assert len(sell_orders) > 0, "Expected firm to generate SELL orders to reduce excess inventory"
-    assert sell_orders[0].item_id == 'food'
+    assert sell_orders[0].item_id == sample_firm.specialization
     assert sell_orders[0].quantity > 0
 
     # If target is met/exceeded, it should not try to hire more for production
@@ -103,12 +100,12 @@ def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
     # For now, we'll assume it might still try to hire for other reasons or if its logic is not perfect.
     # assert len(buy_labor_orders) == 0, "Expected no labor BUY orders if production target is met/exceeded"
 
-def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
-    # Set inventory to 0, so it needs to produce
-    sample_firm.inventory['food'] = 0.0
-    sample_firm.employees = [] # No employees
+    def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
+        # Set inventory to 0, so it needs to produce
+        sample_firm.inventory[sample_firm.specialization] = 0.0
+        sample_firm.employees = [] # No employees
 
-    orders = sample_firm.decision_engine.make_decisions(sample_firm, sample_market_data, 0)
+    orders = sample_firm.decision_engine.make_decisions(sample_firm, 0, sample_market_data)
 
     # Expect BUY labor orders to meet production target
     buy_labor_orders = [order for order in orders if order.order_type == 'BUY' and order.market_id == 'labor_market']

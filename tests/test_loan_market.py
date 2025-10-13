@@ -18,7 +18,7 @@ def mock_bank():
 
 @pytest.fixture
 def loan_market_instance(mock_bank):
-    return LoanMarket(market_id="test_loan_market", bank=mock_bank)
+    return LoanMarket(market_id="test_loan_market", bank=mock_bank, config_module=config)
 
 @pytest.fixture(autouse=True)
 def mock_logger():

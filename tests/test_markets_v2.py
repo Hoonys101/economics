@@ -22,7 +22,7 @@ class TestPlaceOrderToBook:
     def test_add_single_buy_order(self, market: OrderBookMarket):
         """단일 매수 주문이 오더북에 올바르게 추가되는지 테스트합니다."""
         order = Order(agent_id=1, order_type='BUY', item_id='food', quantity=10, price=100, market_id='test_market')
-        market.place_order(order, current_tick=1)
+        market.place_order(order, 1)
         
         buy_book = market.buy_orders.get('food', [])
         sell_book = market.sell_orders.get('food', [])
@@ -81,10 +81,12 @@ class TestOrderMatching:
     def test_full_match_one_to_one(self, market: OrderBookMarket):
         """매수 주문 1개와 매도 주문 1개가 완전히 체결되는 경우를 테스트합니다."""
         sell_order = Order(agent_id=2, order_type='SELL', item_id='food', quantity=10, price=100, market_id='test_market')
-        market.place_order(sell_order, 1)
+        market.place_order(sell_order, current_time=1)
 
         buy_order = Order(agent_id=1, order_type='BUY', item_id='food', quantity=10, price=105, market_id='test_market')
-        transactions = market.place_order(buy_order, 2)
+        market.place_order(buy_order, current_time=2)
+
+        transactions = market.match_and_execute_orders(current_time=2)
 
         assert len(transactions) == 1
         tx = transactions[0]
@@ -100,10 +102,12 @@ class TestOrderMatching:
     def test_partial_match_then_book(self, market: OrderBookMarket):
         """새로운 매수 주문이 부분 체결된 후 나머지가 오더북에 등록되는 경우를 테스트합니다."""
         sell_order = Order(agent_id=2, order_type='SELL', item_id='food', quantity=5, price=100, market_id='test_market')
-        market.place_order(sell_order, 1)
+        market.place_order(sell_order, current_time=1)
 
         buy_order = Order(agent_id=1, order_type='BUY', item_id='food', quantity=10, price=105, market_id='test_market')
-        transactions = market.place_order(buy_order, 2)
+        market.place_order(buy_order, current_time=2)
+
+        transactions = market.match_and_execute_orders(current_time=2)
 
         assert len(transactions) == 1
         tx = transactions[0]
@@ -121,11 +125,13 @@ class TestOrderMatching:
         """새로운 큰 주문 하나가 여러 개의 작은 주문과 체결되는 경우를 테스트합니다."""
         sell1 = Order(agent_id=2, order_type='SELL', item_id='food', quantity=5, price=98, market_id='test_market')
         sell2 = Order(agent_id=3, order_type='SELL', item_id='food', quantity=5, price=100, market_id='test_market')
-        market.place_order(sell1, 1)
-        market.place_order(sell2, 2)
+        market.place_order(sell1, current_time=1)
+        market.place_order(sell2, current_time=2)
 
         buy_order = Order(agent_id=1, order_type='BUY', item_id='food', quantity=12, price=105, market_id='test_market')
-        transactions = market.place_order(buy_order, 3)
+        market.place_order(buy_order, current_time=3)
+
+        transactions = market.match_and_execute_orders(current_time=3)
 
         assert len(transactions) == 2
         assert transactions[0].quantity == 5

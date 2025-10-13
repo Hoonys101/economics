@@ -1,4 +1,7 @@
 import csv
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 def analyze_aid_log(filepath):
     is_trained_counts = {'True': 0, 'False': 0}
@@ -15,7 +18,7 @@ def analyze_aid_log(filepath):
             method_name_idx = header.index('method_name')
             message_idx = header.index('message')
         except ValueError as e:
-            print(f"Error: Missing expected column in CSV header: {e}")
+            logging.error(f"Error: Missing expected column in CSV header: {e}")
             return
 
         for i, row in enumerate(reader):
@@ -41,19 +44,19 @@ def analyze_aid_log(filepath):
                 # print(f"Skipping malformed row {i+2}: {e}")
                 continue
 
-    print("--- AI Decision Log Analysis ---")
-    print("Is Trained Status:")
+    logging.info("--- AI Decision Log Analysis ---")
+    logging.info("Is Trained Status:")
     for status, count in is_trained_counts.items():
-        print(f"  {status}: {count}")
+        logging.info(f"  {status}: {count}")
 
     if predicted_rewards:
-        print("Predicted Rewards:")
-        print(f"  Total entries: {len(predicted_rewards)}")
-        print(f"  Min: {min(predicted_rewards):.2f}")
-        print(f"  Max: {max(predicted_rewards):.2f}")
-        print(f"  Average: {sum(predicted_rewards) / len(predicted_rewards):.2f}")
+        logging.info("Predicted Rewards:")
+        logging.info(f"  Total entries: {len(predicted_rewards)}")
+        logging.info(f"  Min: {min(predicted_rewards):.2f}")
+        logging.info(f"  Max: {max(predicted_rewards):.2f}")
+        logging.info(f"  Average: {sum(predicted_rewards) / len(predicted_rewards):.2f}")
     else:
-        print("No predicted reward data found.")
+        logging.info("No predicted reward data found.")
 
 if __name__ == "__main__":
     log_filepath = "C:\\coding\\economics\\logs\\simulation_log_AIDecision.csv"

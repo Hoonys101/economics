@@ -44,17 +44,29 @@
     2.  성공적인 에이전트를 따라하는 '모방 학습' 메커니즘 구현 및 검증.
     3.  다양한 시나리오(호황, 불황)를 통해 AI 모델을 학습시켜 다채로운 에이전트 행동 패턴 확보.
 
-### 최근 진행 상황 (2025년 9월 26일)
+### 최근 진행 상황 (2025년 9월 29일)
 
 *   **AI 에이전트 지능 고도화:**
     *   **가계 AI (`HouseholdAI`):**
         *   전략적 상태 (`_get_strategic_state`)를 자산 및 욕구 수준에 따라 5단계로 이산화하여 정교화했습니다.
         *   전술적 상태 (`_get_tactical_state`)를 생존, 사회적 욕구, 자산 증식, 능력 향상 등 다양한 의도에 맞춰 시장 데이터(구매 여력, 노동 시장 상황 등)를 기반으로 구체화했습니다.
         *   보상 함수 (`_calculate_reward`)에 가중치를 도입하여 생존 욕구 충족에 높은 우선순위를 부여하고, 파산 시 큰 페널티를 부과하도록 고도화했습니다.
+        *   **완료:** `AIDecisionEngine`과의 순환 참조 문제를 해결하고, `HouseholdDecisionEngine`에서 사치품 및 교육 서비스 시장 데이터를 AI에 제공하도록 업데이트하여 AI 기반 가계 소비 의사결정 로직을 강화했습니다.
+        *   `Tactic` enum에 `DO_NOTHING`을 추가하여 AI의 의사결정 유연성을 높였습니다.
+        *   `food_price` 접근 방식을 `market_data['goods_market']['food_current_sell_price']`로 수정하여 정확한 시장 데이터를 활용하도록 개선했습니다.
     *   **기업 AI (`FirmAI`):**
         *   전략적 상태 (`_get_strategic_state`)를 자산, 이윤, 시장 점유율, 재고 수준에 따라 여러 단계로 이산화하여 정교화했습니다.
         *   전술적 상태 (`_get_tactical_state`)를 이윤 극대화, 시장 점유율 확대, 생산성 향상 등 다양한 의도에 맞춰 시장 데이터(수요-공급 비율, 경쟁사 가격, 투자 여력 등)를 기반으로 구체화했습니다.
         *   보상 함수 (`_calculate_reward`)에 가중치를 도입하여 이윤 변화와 시장 점유율 변화를 함께 고려하고, 손실 및 파산에 대한 페널티를 부과하도록 고도화했습니다.
+        *   `Firm` 클래스에 `get_agent_data()` 메서드를 구현하여 에이전트 데이터 접근 일관성을 확보했습니다.
+        *   로깅 `extra` 파라미터 형식을 수정하여 로그 가독성과 정확성을 높였습니다.
+
+*   **시뮬레이션 엔진 안정화 및 버그 수정:**
+    *   `market.place_order()` 호출에 `current_time` 인자를 추가하여 시장 주문 처리의 정확성을 높였습니다.
+    *   `EconomicIndicatorTracker` 초기화 시 `config_module`을 전달하도록 수정하여 경제 지표 추적의 일관성을 확보했습니다.
+    *   `Bank` 객체에 대한 `is_active` 접근 오류를 `isinstance(agent, BaseAgent)` 체크 로직으로 수정하고 `BaseAgent`를 임포트하여 시뮬레이션 루프의 안정성을 강화했습니다.
+    *   `config.py`에서 `LIQUIDITY_NEED_INCREASE_RATE` 설정을 활성화하여 유동성 관리 로직을 정상화했습니다.
+    *   **생산량 0 문제 해결을 확인했습니다. 기업들이 정상적으로 재화를 생산하고 있습니다.**
 
 *   **에이전트 생명주기 및 복제 메커니즘 설계:**
     *   파산 에이전트(가계, 기업)를 성공 에이전트의 복제본으로 대체하는 '도태 및 복제' 메커니즘에 대한 상세 설계 문서 (`design/project_management/agent_lifecycle_and_cloning_design.md`)를 생성했습니다. 이 설계는 복제 로직의 모듈화를 포함합니다.
@@ -63,6 +75,41 @@
 *   **코드 품질 개선 (Ruff Linting):**
     *   `ruff check . --fix`를 실행하여 코드 스타일 및 잠재적 오류를 점검했습니다.
     *   **모든 `ruff` 오류를 성공적으로 수정했습니다. 현재 코드는 `ruff` 검사에서 깨끗합니다.**
+
+### 현재 작업: 로깅 시스템 리팩토링 및 DB 통합
+
+**목적:**
+*   시뮬레이션 진행 상황 출력(예: `print` 또는 `logging.info`)과 에이전트의 의사결정, 상태 변화, 시장 활동 등 상세 시뮬레이션 데이터를 분리합니다.
+*   상세 시뮬레이션 데이터를 구조화된 데이터베이스 형식으로 저장하여 분석 및 시각화를 용이하게 합니다.
+*   각 시뮬레이션 실행 시 데이터베이스를 초기화하여 실험의 독립성을 보장합니다.
+*   오류 및 경고 메시지를 표준 `logging` 모듈로 전환하여 더 나은 오류 처리 및 제어 기능을 제공합니다.
+
+**진행 현황 체크리스트:**
+
+1.  **DBManager에 `reset_database()` 메서드 추가 및 통합:**
+    *   **목표:** 시뮬레이션 시작 시 데이터베이스를 초기화하여 매 실행이 독립적인 분석이 가능하도록 함.
+    *   **구체적인 방법:**
+        *   `simulation/db/db_manager.py` 파일에 `reset_database()` 메서드 추가 (모든 테이블 삭제 후 재생성).
+        *   `main.py` 파일에서 `DBManager` 초기화 후 `reset_database()` 호출.
+    *   **진행 현황:** ✅ 완료
+
+2.  **`simulation/` 디렉토리 내 `print()` 문 리팩토링:**
+    *   **목표:** 에이전트의 의사결정, 상태 변화, 시장 활동 등 상세 시뮬레이션 데이터를 `print()` 대신 `DBManager`를 통해 데이터베이스에 저장하고, 오류/경고 메시지는 `logging` 모듈로 전환.
+    *   **구체적인 방법:**
+        *   **오류/경고 메시지 `print()` -> `logging` 전환:**
+            *   `simulation/ai/q_table_manager.py` 파일 내 `print()` 문을 `logging.error()` 또는 `logging.warning()`으로 전환.
+            *   `simulation/db/db_manager.py` 파일 내 `print()` 문을 `logging.error()`로 전환.
+            *   `simulation/db/repository.py` 파일 내 `print()` 문을 `logging.error()`로 전환.
+        *   **시뮬레이션 런타임 데이터 `print()` -> `DBManager` 저장 로직으로 전환:**
+            *   `simulation/` 디렉토리 내에서 에이전트의 의사결정, 상태 변화, 시장 활동을 출력하는 `print()` 문 식별.
+            *   해당 `print()` 문을 `DBManager`의 `save_ai_decision()`, `save_agent_state()`, `save_transaction()` 등의 적절한 메서드 호출로 대체.
+            *   `decision_details` 필드(JSON)에 `tactic`, `reason` 등 상세 컨텍스트 포함.
+    *   **진행 현황:**
+        *   `simulation/ai/q_table_manager.py`의 `print()` 문 `logging` 전환: ✅ 완료
+        *   `simulation/db/db_manager.py`의 `print()` 문 `logging` 전환: ✅ 완료
+        *   `simulation/db/repository.py`의 `print()` 문 `logging` 전환: ✅ 완료
+        *   `simulation/db/db_manager.py`의 `if __name__ == '__main__':` 블록 내 `print()` 문 `logging` 전환: ✅ 완료
+        *   시뮬레이션 런타임 데이터 `print()` -> `DBManager` 저장 로직 전환: ⬜ 미완료
 
 ### Phase 2: 세계 확장 (World Expansion)
 
@@ -103,5 +150,5 @@
 
 -   [x] **6. (버그) 가계 소비 문제 해결:**
     -   **문제 정의:** 시뮬레이션 초기 단계에서 가계 에이전트의 소비 활동이 전혀 이루어지지 않아 `total_consumption` 지표가 0으로 나타나던 문제.
-    -   **해결 내용:** `simulation/engine.py`의 `Simulation.run_tick` 메서드 내 임시 가계 소비 로직을 제거하고, `HouseholdDecisionEngine`이 가계의 소비 결정을 담당하도록 통합했습니다. 이로써 가계의 기본적인 소비 활동이 AI 기반으로 처리됩니다.
+    -   **해결 내용:** `simulation/engine.py`의 `Simulation.run_tick` 메서드 내 임시 가계 소비 로직을 제거하고, `HouseholdDecisionEngine`이 가계의 소비 결정을 담당하도록 통합했습니다. 이로써 가계의 기본적인 소비 활동이 AI 기반으로 처리됩니다. 또한, `simulation/engine.py`에서 `HouseholdDecisionEngine.make_decisions` 호출 시 `current_time`을 전달하도록 수정했습니다.
     -   **다음 과제:** `HouseholdDecisionEngine` 내에서 AI가 다른 욕구(인정, 성장)에 대한 소비를 결정하도록 로직을 고도화하는 것이 필요합니다.

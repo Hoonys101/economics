@@ -1,5 +1,4 @@
 import logging
-import config
 import random
 from typing import Optional, Any, List
 from simulation.models import Order
@@ -9,7 +8,8 @@ class ActionProposalEngine:
     에이전트의 상태에 기반하여 현실적인 후보 행동(주문) 목록을 생성합니다.
     '어떤 행동들을 할 수 있는가?'에 대한 책임을 집니다.
     """
-    def __init__(self, n_action_samples: int = 10, logger: Optional[logging.Logger] = None) -> None:
+    def __init__(self, config_module: Any, n_action_samples: int = 10, logger: Optional[logging.Logger] = None) -> None:
+        self.config_module = config_module
         self.n_action_samples = n_action_samples
         self.logger = logger if logger else logging.getLogger(__name__) # Initialize logger
 
@@ -37,10 +37,10 @@ class ActionProposalEngine:
             # 행동 결정: 노동 시장 참여 또는 상품 구매
             explore_labor_market = False
             
-            condition_assets_low = agent.assets < config.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY
-            condition_random_check = random.random() < config.FORCED_LABOR_EXPLORATION_PROBABILITY
+            condition_assets_low = agent.assets < self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY
+            condition_random_check = random.random() < self.config_module.FORCED_LABOR_EXPLORATION_PROBABILITY
             
-            self.logger.debug(f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={agent.assets:.2f} < threshold={config.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}", extra={'tick': current_time, 'agent_id': agent.id, 'tags': ['debug_labor_conditions']})
+            self.logger.debug(f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={agent.assets:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}", extra={'tick': current_time, 'agent_id': agent.id, 'tags': ['debug_labor_conditions']})
 
             if not agent.is_employed and condition_assets_low:
                 if condition_random_check:
@@ -49,7 +49,7 @@ class ActionProposalEngine:
             if explore_labor_market or (not agent.is_employed and random.random() < 0.5):
                 self.logger.debug(f"DEBUG: Household {agent.id} is attempting to sell labor. explore_labor_market: {explore_labor_market}, is_employed: {agent.is_employed}", extra={'tick': current_time, 'agent_id': agent.id, 'tags': ['debug_labor_sell']})
                 # 노동 시장에 노동력 판매 주문
-                desired_wage = config.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
+                desired_wage = self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
                 orders.append(Order(agent.id, 'SELL', 'labor', 1, desired_wage, 'labor_market'))
             else:
                 # 상품 시장에서 상품 구매 주문
@@ -63,7 +63,7 @@ class ActionProposalEngine:
                     budget = agent.assets * spending_ratio
 
                     # 인지된 가격 또는 기본 가격 사용
-                    price = agent.perceived_avg_prices.get(good_to_trade, config.GOODS_MARKET_SELL_PRICE)
+                    price = agent.perceived_avg_prices.get(good_to_trade, self.config_module.GOODS_MARKET_SELL_PRICE)
                     price = max(price, 0.01) # 가격이 0이 되는 것 방지
 
                     max_quantity = budget / price
@@ -96,7 +96,7 @@ class ActionProposalEngine:
             # 행동 결정: 노동력 구매 또는 상품 판매
             if random.random() < 0.5: # TODO: 더 정교한 로직으로 변경
                 # 노동 시장에 노동력 구매 주문
-                offer_wage = config.LABOR_MARKET_OFFERED_WAGE * random.uniform(0.9, 1.1)
+                offer_wage = self.config_module.LABOR_MARKET_OFFERED_WAGE * random.uniform(0.9, 1.1)
                 orders.append(Order(agent.id, 'BUY', 'labor', 1, offer_wage, 'labor_market'))
             else:
                 # 상품 시장에 상품 판매 주문
@@ -104,7 +104,7 @@ class ActionProposalEngine:
                 good_to_trade = random.choice(available_goods)
                 
                 if agent.inventory.get(good_to_trade, 0) > 0:
-                    price = config.GOODS_MARKET_SELL_PRICE * random.uniform(0.9, 1.1)
+                    price = self.config_module.GOODS_MARKET_SELL_PRICE * random.uniform(0.9, 1.1)
                     # 재고의 일부를 판매 수량으로 결정
                     quantity = random.uniform(0.1, agent.inventory.get(good_to_trade, 0))
                     orders.append(Order(agent.id, 'SELL', good_to_trade, quantity, price, 'goods_market'))
@@ -119,5 +119,5 @@ class ActionProposalEngine:
         강제 탐험을 위한 노동 판매 행동을 제안합니다.
         """
         # 희망 임금 조정 (강제 탐험 시 임금 할인)
-        desired_wage = config.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3) * wage_factor
+        desired_wage = self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3) * wage_factor
         return Order(household.id, 'SELL', 'labor', 1, desired_wage, 'labor_market')

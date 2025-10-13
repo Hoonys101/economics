@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 from simulation.db.repository import SimulationRepository
+import logging
 
 class MarketHistoryViewModel:
     """
@@ -66,8 +67,8 @@ if __name__ == '__main__':
     vm = MarketHistoryViewModel(repo)
     
     # 예시: 상품 시장의 'food' 아이템 이력 조회
-    print("Goods Market Food History (all):", vm.get_market_history(market_id='goods_market', item_id='food'))
-    print("\nGoods Market Food Price Data (Chart.js format):", vm.get_market_price_data(market_id='goods_market', item_id='food'))
-    print("\nLabor Market Trade Volume Data (Chart.js format):", vm.get_market_trade_volume_data(market_id='labor_market', item_id='labor'))
+    logging.info(f"Goods Market Food History (all): {vm.get_market_history(market_id='goods_market', item_id='food')}")
+    logging.info(f"Goods Market Food Price Data (Chart.js format): {vm.get_market_price_data(market_id='goods_market', item_id='food')}")
+    logging.info(f"Labor Market Trade Volume Data (Chart.js format): {vm.get_market_trade_volume_data(market_id='labor_market', item_id='labor')}")
 
     repo.close()
