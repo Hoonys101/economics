@@ -1,8 +1,9 @@
 import pytest
 from simulation.firms import Firm
-from simulation.decisions.firm_decision_engine import FirmDecisionEngine
+from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 import config
 from unittest.mock import Mock
+from simulation.ai.enums import Tactic
 
 # Mock config values for testing
 @pytest.fixture(autouse=True)
@@ -11,6 +12,9 @@ def mock_config(monkeypatch):
     monkeypatch.setattr(config, 'FIRM_PRODUCTIVITY_FACTOR', 1.0)
     monkeypatch.setattr(config, 'GOODS_MARKET_SELL_PRICE', 10.0)
     monkeypatch.setattr(config, 'BASE_WAGE', 5.0)
+    # Add thresholds for the fix
+    monkeypatch.setattr(config, 'UNDERSTOCK_THRESHOLD', 0.8)
+    monkeypatch.setattr(config, 'OVERSTOCK_THRESHOLD', 1.2)
 
 @pytest.fixture
 def sample_firm():
@@ -21,7 +25,7 @@ def sample_firm():
         initial_liquidity_need=10.0,
         specialization="basic_food",
         productivity_factor=1.0,
-        decision_engine=FirmDecisionEngine(ai_engine=mock_ai_engine, config_module=config), # Pass the mock AI engine
+        decision_engine=AIDrivenFirmDecisionEngine(ai_engine=mock_ai_engine, config_module=config), # Pass the mock AI engine
         value_orientation="test_firm_vo",
         config_module=config, # Pass the config module
         logger=None # Pass None for logger in tests or mock it
@@ -63,14 +67,10 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
     employee1 = MockHousehold(id=101, labor_skill=1.0)
     employee2 = MockHousehold(id=102, labor_skill=0.8)
     sample_firm.employees = [employee1, employee2]
+    sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = Tactic.ADJUST_WAGES
 
     # Call make_decisions
-    orders = sample_firm.decision_engine.make_decisions(sample_firm, 0, sample_market_data)
-
-    # Assertions for production (assuming produce is called internally or orders are generated)
-    # The FirmDecisionEngine primarily generates BUY/SELL orders, not directly production.
-    # Production happens in firm.produce() which is called by the simulation engine.
-    # So, we should test if the firm tries to hire or sell based on its inventory/targets.
+    orders, _ = sample_firm.decision_engine.make_decisions(sample_firm, {}, [], sample_market_data, 0)
 
     # Test if a BUY order for 'labor' is generated if it needs more production
     buy_labor_orders = [order for order in orders if order.order_type == 'BUY' and order.market_id == 'labor_market']
@@ -82,12 +82,13 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
     sell_orders = [order for order in orders if order.order_type == 'SELL' and order.market_id == 'goods_market']
     assert len(sell_orders) == 0, "Expected no SELL orders when inventory is below target"
 
-    def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
-        # Set inventory to meet or exceed target
-        sample_firm.inventory[sample_firm.specialization] = 150.0 # Above target of 100
+def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
+    # Set inventory to meet or exceed target
+    sample_firm.inventory[sample_firm.specialization] = 150.0 # Above target of 100
+    sample_firm.employees = [] # Ensure no employees are present to focus on inventory decision
+    sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = Tactic.ADJUST_PRICE
 
-    # Ensure no employees are present to focus on inventory decision
-    orders = sample_firm.decision_engine.make_decisions(sample_firm, 0, sample_market_data)
+    orders, _ = sample_firm.decision_engine.make_decisions(sample_firm, {}, [], sample_market_data, 0)
 
     # Expect SELL orders to reduce inventory, but not necessarily BUY labor orders
     sell_orders = [order for order in orders if order.order_type == 'SELL' and order.market_id == 'goods_market']
@@ -96,16 +97,16 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
     assert sell_orders[0].quantity > 0
 
     # If target is met/exceeded, it should not try to hire more for production
-    # This assertion depends heavily on the FirmDecisionEngine's internal logic.
-    # For now, we'll assume it might still try to hire for other reasons or if its logic is not perfect.
-    # assert len(buy_labor_orders) == 0, "Expected no labor BUY orders if production target is met/exceeded"
+    buy_labor_orders = [order for order in orders if order.order_type == 'BUY' and order.market_id == 'labor_market']
+    assert len(buy_labor_orders) == 0, "Expected no labor BUY orders if production target is met/exceeded"
 
-    def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
-        # Set inventory to 0, so it needs to produce
-        sample_firm.inventory[sample_firm.specialization] = 0.0
-        sample_firm.employees = [] # No employees
+def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
+    # Set inventory to 0, so it needs to produce
+    sample_firm.inventory[sample_firm.specialization] = 0.0
+    sample_firm.employees = [] # No employees
+    sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = Tactic.ADJUST_WAGES
 
-    orders = sample_firm.decision_engine.make_decisions(sample_firm, 0, sample_market_data)
+    orders, _ = sample_firm.decision_engine.make_decisions(sample_firm, {}, [], sample_market_data, 0)
 
     # Expect BUY labor orders to meet production target
     buy_labor_orders = [order for order in orders if order.order_type == 'BUY' and order.market_id == 'labor_market']
