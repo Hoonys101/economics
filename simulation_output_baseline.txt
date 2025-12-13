@@ -1,1 +1,0 @@
-All simulation data cleared from database.

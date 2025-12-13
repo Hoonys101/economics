@@ -12,28 +12,44 @@ if TYPE_CHECKING:
     from simulation.decisions.action_proposal import ActionProposalEngine
     from simulation.ai.state_builder import StateBuilder
 
+
 class AIDecisionEngine:
     """
     AI 에이전트의 의사결정을 총괄하는 엔진.
     ModelWrapper를 사용하여 예측하고, BaseAIEngine의 추상 메서드를 구현하여
     실제 에이전트의 상태, 행동, 보상 로직을 연결한다.
     """
-    def __init__(self, value_orientation: str, action_proposal_engine: 'ActionProposalEngine', state_builder: 'StateBuilder'):
+
+    def __init__(
+        self,
+        value_orientation: str,
+        action_proposal_engine: "ActionProposalEngine",
+        state_builder: "StateBuilder",
+    ):
         self.value_orientation = value_orientation
         self.model_wrapper = ModelWrapper(value_orientation)
-        self.model_wrapper.load() # Load existing model if available
+        self.model_wrapper.load()  # Load existing model if available
         self.action_proposal_engine = action_proposal_engine
         self.state_builder = state_builder
-        self.is_trained = self.model_wrapper.is_trained # Track if the underlying model is trained
+        self.is_trained = (
+            self.model_wrapper.is_trained
+        )  # Track if the underlying model is trained
 
-    def get_predicted_reward(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> float:
+    def get_predicted_reward(
+        self, agent_data: Dict[str, Any], market_data: Dict[str, Any]
+    ) -> float:
         """
         에이전트의 현재 상태를 기반으로 ModelWrapper를 사용하여 예상 보상을 예측한다.
         """
-        current_state_dict = self.state_builder.build_state(agent_data, market_data, self.value_orientation)
+        current_state_dict = self.state_builder.build_state(
+            agent_data, market_data, self.value_orientation
+        )
         predicted_reward = self.model_wrapper.predict(current_state_dict)
-        
-        logger.debug(f"AIDecisionEngine | Predicted reward: {predicted_reward}", extra={'tags': ['ai_prediction_debug']})
+
+        logger.debug(
+            f"AIDecisionEngine | Predicted reward: {predicted_reward}",
+            extra={"tags": ["ai_prediction_debug"]},
+        )
         return predicted_reward
 
     def train(self, states: List[Dict[str, Any]], rewards: List[float]):
@@ -60,7 +76,11 @@ class AIDecisionEngine:
 class AIEngineRegistry:
     """AI 의사결정 엔진을 생성하고 관리하는 레지스트리 클래스입니다."""
 
-    def __init__(self, action_proposal_engine: 'ActionProposalEngine', state_builder: 'StateBuilder'):
+    def __init__(
+        self,
+        action_proposal_engine: "ActionProposalEngine",
+        state_builder: "StateBuilder",
+    ):
         self._engines: Dict[str, AIDecisionEngine] = {}
         self._action_proposal_engine = action_proposal_engine
         self._state_builder = state_builder
@@ -74,7 +94,7 @@ class AIEngineRegistry:
             engine = AIDecisionEngine(
                 value_orientation=value_orientation,
                 action_proposal_engine=self._action_proposal_engine,
-                state_builder=self._state_builder
+                state_builder=self._state_builder,
             )
             self._engines[value_orientation] = engine
         return self._engines[value_orientation]
@@ -85,4 +105,7 @@ class AIEngineRegistry:
         """
         for engine in self._engines.values():
             engine.save_model()
-        logger.info("All AI models saved at the end of the episode.", extra={'tags': ['ai_model', 'save_all']})
+        logger.info(
+            "All AI models saved at the end of the episode.",
+            extra={"tags": ["ai_model", "save_all"]},
+        )

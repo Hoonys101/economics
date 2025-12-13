@@ -1,160 +1,148 @@
 import os
 import sys
 import json
+import pytest
+from unittest.mock import Mock
+
+# Add project root to sys.path to allow imports from other modules
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 import config
 from simulation.core_agents import Household, Talent, Personality
 from simulation.ai_model import AIEngineRegistry
 from simulation.core_markets import Market
+from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.ai.state_builder import StateBuilder
-from simulation.decisions.household_decision_engine import HouseholdDecisionEngine # Import HouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.ai.household_ai import HouseholdAI
+from simulation.ai.enums import Tactic
 
-# 프로젝트 루트 경로를 sys.path에 추가
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
+@pytest.fixture
 def setup_test_environment():
-    """테스트에 필요한 가상 환경을 설정합니다."""
-    # 재화 데이터 로드
+    """Fixture to set up the test environment."""
+    goods_json_path = os.path.join(project_root, "data", "goods.json")
     try:
-        with open("data/goods.json", 'r', encoding='utf-8') as f:
+        with open(goods_json_path, "r", encoding="utf-8") as f:
             goods_data = json.load(f)
     except FileNotFoundError:
-        print("Error: goods.json not found. Make sure the file exists in the 'data' directory.")
-        return None, None, None
+        pytest.fail(f"Error: {goods_json_path} not found.")
 
-    # 가상 시장 생성
     markets = {
         "goods_market": OrderBookMarket("goods_market"),
         "labor_market": OrderBookMarket("labor_market"),
-        "loan_market": Market("loan_market") # Add loan_market
+        "loan_market": Mock(spec=Market),
     }
-    return goods_data, markets, None # all_households는 AI 결정에 직접 사용되지 않으므로 None
+    
+    # Pre-populate goods market with some offers for testing
+    goods_market = markets["goods_market"]
+    goods_market.place_order(Order(agent_id=99, order_type="SELL", item_id="basic_food", quantity=100, price=10.0, market_id="goods_market"), 0)
+    goods_market.place_order(Order(agent_id=98, order_type="SELL", item_id="luxury_food", quantity=50, price=50.0, market_id="goods_market"), 0)
+    
+    return goods_data, markets
 
-def test_ai_decision():
-    """저장된 AI 모델을 불러와 가계의 의사결정을 테스트합니다."""
-    print("--- Setting up test environment ---")
-    goods_data, markets, _ = setup_test_environment()
-    if not goods_data:
-        return
-
-    # 1. AI 의사결정 엔진 로드
-    print("\n--- Loading AI Decision Engine ---")
-    # 특정 가치관의 AI 모델을 불러옵니다.
-    # 'wealth_and_needs'는 가장 기본적인 행동을 보일 것으로 예상됩니다.
+@pytest.fixture
+def ai_engine_setup():
+    """Fixture for setting up AI engine components."""
     value_orientation = config.VALUE_ORIENTATION_WEALTH_AND_NEEDS
     action_proposal_engine = ActionProposalEngine(config_module=config, n_action_samples=10)
     state_builder = StateBuilder()
-    # AIEngineRegistry를 모의(mock)하여 AIDecisionEngine 인스턴스를 반환하도록 설정
-    ai_engine_registry = AIEngineRegistry(action_proposal_engine=action_proposal_engine, state_builder=state_builder)
+    ai_engine_registry = AIEngineRegistry(
+        action_proposal_engine=action_proposal_engine, state_builder=state_builder
+    )
+    return ai_engine_registry, value_orientation
 
-    # HouseholdDecisionEngine 인스턴스 생성
-    household_decision_engine = HouseholdDecisionEngine(agent_id=1, value_orientation=value_orientation, ai_engine_registry=ai_engine_registry)
+def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
+    """AI가 생존 욕구가 높을 때 'food' 구매 주문을 생성하는지 테스트합니다."""
+    goods_data, markets = setup_test_environment
+    ai_engine_registry, value_orientation = ai_engine_setup
 
-    # 2. 테스트용 가계 에이전트 생성
-    print("\n--- Creating Test Household Agent ---")
+    ai_decision_engine_instance = ai_engine_registry.get_engine(value_orientation)
+    household_ai_instance = HouseholdAI(agent_id=str(2), ai_decision_engine=ai_decision_engine_instance)
+    household_ai_instance.set_ai_decision_engine(ai_decision_engine_instance)
+    household_decision_engine = AIDrivenHouseholdDecisionEngine(
+        ai_engine=household_ai_instance, config_module=config
+    )
+
     talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
     household = Household(
-        id=1,
+        id=2,
         talent=talent,
         goods_data=goods_data,
-        initial_assets=50.0, # 강제 탐험 테스트를 위해 자산 임계치보다 낮게 설정
-                    initial_needs={
-                        "survival": 50.0,
-                        "social": 20.0,
-                        "improvement": 10.0,
-                        "asset": 30.0,
-                    },        value_orientation=value_orientation,
-        decision_engine=household_decision_engine, # HouseholdDecisionEngine 인스턴스 전달
+        initial_assets=100.0,
+        initial_needs={"survival": 80.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
+        value_orientation=value_orientation,
+        decision_engine=household_decision_engine,
         personality=Personality.MISER,
-        config_module=config
+        config_module=config,
     )
-    # HouseholdDecisionEngine에 Household 인스턴스 설정
-    household_decision_engine.set_agent(household)
+    household.decision_engine.markets = markets
 
-    # HouseholdDecisionEngine에 시장 정보 설정
-    household_decision_engine.goods_market = markets['goods_market']
-    household_decision_engine.labor_market = markets['labor_market']
-    household_decision_engine.loan_market = markets['loan_market']
+    market_data = {"time": 1, "goods_data": goods_data}
+    orders, _ = household.make_decision(markets, goods_data, market_data, 1)
 
-    print(f"Created Household {household.id} with Assets: {household.assets}, Needs: {household.needs}")
+    assert orders is not None
+    assert len(orders) == 1
+    
+    purchase_order = orders[0]
+    assert purchase_order.order_type == "BUY"
+    # The logic might choose EVALUATE_CONSUMPTION_OPTIONS which then chooses a food.
+    # We should check if the item is a food item.
+    assert "food" in purchase_order.item_id
+    assert purchase_order.quantity > 0
+    
+    print("OK: AI successfully generated a purchase order for food.")
 
-    # 3. AI 의사결정 테스트 실행
-    print("\n--- Running AI Decision Simulation (10 ticks) ---")
-    generated_orders = []
-    for tick in range(10):
-        print(f"\n[Tick {tick + 1}]")
-        # make_decisions 호출에 필요한 market_data를 구성합니다.
-        market_data = {
-            "time": tick,
-            "goods_market": {}, # 테스트에서는 단순화를 위해 비워둠
-            "labor_market": {}, # 테스트에서는 단순화를 위해 비워둠
-            "loan_market": None,
-            "all_households": [],
-            "goods_data": goods_data
-        }
-        orders, chosen_tactic = household.make_decision(markets, goods_data, market_data, tick)
-        
-        if orders:
-            print(f"  > AI generated {len(orders)} order(s):")
-            for order in orders:
-                print(f"    - Type: {order.order_type}, Item: {order.item_id}, Qty: {order.quantity:.2f}, Price: {order.price:.2f}")
-                generated_orders.append(order)
-        else:
-            print("  > AI generated no orders.")
-            
-        # 간단한 상태 업데이트 (자산만 변경)
-        for order in orders:
-            if order.order_type == 'BUY':
-                household.assets -= order.quantity * order.price
-            elif order.order_type == 'SELL':
-                household.assets += order.quantity * order.price
-        household.update_needs(tick) # 욕구 업데이트
-        print(f"  > Updated Household State - Assets: {household.assets:.2f}, Survival Need: {household.needs['survival']:.1f}")
+def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setup):
+    """
+    AI가 여러 소비 옵션 중에서 욕구를 가장 잘 충족시키는(효용 대비 가격이 높은) 재화를 선택하는지 테스트합니다.
+    여기서는 '사회적' 욕구가 높을 때 'luxury_food'를 선택하는지 확인합니다.
+    """
+    goods_data, markets = setup_test_environment
+    ai_engine_registry, base_value_orientation = ai_engine_setup
 
+    value_orientation = config.VALUE_ORIENTATION_NEEDS_AND_SOCIAL_STATUS
+    
+    ai_decision_engine_instance = ai_engine_registry.get_engine(value_orientation)
+    household_ai_instance = HouseholdAI(agent_id=str(3), ai_decision_engine=ai_decision_engine_instance)
+    household_ai_instance.set_ai_decision_engine(ai_decision_engine_instance)
+    household_decision_engine = AIDrivenHouseholdDecisionEngine(
+        ai_engine=household_ai_instance, config_module=config
+    )
 
-    # 4. 결과 분석
-    print("\n\n--- Test Results Analysis ---")
-    if not generated_orders:
-        print("AI did not generate any transactions during the test.")
-        return
+    talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
+    household = Household(
+        id=3,
+        talent=talent,
+        goods_data=goods_data,
+        initial_assets=1000.0,
+        initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
+        value_orientation=value_orientation,
+        decision_engine=household_decision_engine,
+        personality=Personality.STATUS_SEEKER,
+        config_module=config,
+    )
+    household.decision_engine.markets = markets
 
-    order_types = {"BUY": 0, "SELL": 0}
-    item_ids = {}
-    markets_used = {"goods_market": False, "labor_market": False}
+    market_data = {
+        "time": 1,
+        "goods_data": goods_data,
+        "goods_market": markets["goods_market"],
+    }
+    orders, chosen_tactic_tuple = household.make_decision(markets, goods_data, market_data, 1)
+    chosen_tactic, _ = chosen_tactic_tuple
 
-    for order in generated_orders:
-        order_types[order.order_type] += 1
-        item_ids[order.item_id] = item_ids.get(order.item_id, 0) + 1
-        if order.item_id == 'labor':
-            markets_used['labor_market'] = True
-        else:
-            markets_used['goods_market'] = True
+    assert orders is not None
+    assert len(orders) > 0
+    
+    assert chosen_tactic == Tactic.EVALUATE_CONSUMPTION_OPTIONS, f"Expected Tactic EVALUATE_CONSUMPTION_OPTIONS, got {chosen_tactic.name}"
 
-    print(f"Total orders generated: {len(generated_orders)}")
-    print(f"Order type distribution: {order_types}")
-    print(f"Traded item distribution: {item_ids}")
-    print(f"Markets used: {markets_used}")
-
-    print("\n--- Conclusion ---")
-    if markets_used["goods_market"] and markets_used["labor_market"]:
-        print("OK: The AI demonstrated transactions in both goods and labor markets.")
-    else:
-        print("WARN: The AI did not engage in transactions in all available markets.")
-
-    if len(item_ids) > 1:
-        print("OK: The AI attempted to trade more than one type of item.")
-    else:
-        print("WARN: The AI only traded one type of item.")
-        
-    if order_types["BUY"] > 0 and order_types["SELL"] > 0:
-        print("OK: The AI demonstrated both BUY and SELL behaviors.")
-    else:
-        print("WARN: The AI only demonstrated one type of behavior (BUY or SELL).")
-
-
-if __name__ == "__main__":
-    test_ai_decision()
+    purchase_order = orders[0]
+    assert purchase_order.order_type == "BUY"
+    assert purchase_order.item_id == "luxury_food"
+    assert purchase_order.quantity > 0
+    
+    print("OK: AI successfully evaluated consumption options and chose 'luxury_food'.")

@@ -2,12 +2,15 @@ import pytest
 import os
 import sys
 from unittest.mock import Mock
+from typing import Dict, Any
 
 from simulation.base_agent import BaseAgent
 from simulation.core_agents import Household, Talent, Personality
 from simulation.firms import Firm
-from simulation.decisions.household_decision_engine import HouseholdDecisionEngine
-from simulation.decisions.firm_decision_engine import FirmDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
+from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 import config
 
 # 프로젝트 루트 디렉토리를 sys.path에 추가
@@ -16,18 +19,23 @@ project_root = os.path.abspath(os.path.join(current_dir, os.pardir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Mock Decision Engines for testing
-class MockHouseholdDecisionEngine(HouseholdDecisionEngine):
-    def __init__(self):
-        pass
-    def make_decisions(self, household, market_data, current_time):
-        return []
 
-class MockFirmDecisionEngine(FirmDecisionEngine):
+# Mock Decision Engines for testing
+class MockHouseholdDecisionEngine(AIDrivenHouseholdDecisionEngine):
     def __init__(self):
         pass
+
+    def make_decisions(self, household, market_data, current_time):
+        return [], None
+
+
+class MockFirmDecisionEngine(AIDrivenFirmDecisionEngine):
+    def __init__(self):
+        pass
+
     def make_decisions(self, firm, market_data, current_time):
-        return []
+        return [], None
+
 
 # Test BaseAgent abstract methods
 def test_base_agent_abstract_methods():
@@ -37,20 +45,34 @@ def test_base_agent_abstract_methods():
     class ConcreteAgent(BaseAgent):
         def update_needs(self, current_tick: int):
             pass
-        def make_decision(self, current_tick: int, market_data: dict):
-            pass
+
+        def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
+            return [], None
+
         def clone(self):
             pass
 
-    agent = ConcreteAgent(id=1, initial_assets=100.0, initial_needs={}, decision_engine=None, value_orientation=Mock(), logger=Mock())
+    agent = ConcreteAgent(
+        id=1,
+        initial_assets=100.0,
+        initial_needs={},
+        decision_engine=None,
+        value_orientation=Mock(),
+        logger=Mock(),
+    )
     assert isinstance(agent, BaseAgent)
 
-# ... (rest of the imports)
 
 # Test Household inheritance and initialization
 def test_household_inheritance_and_init():
     initial_assets = 100.0
-    initial_needs = {"survival_need": 50.0, "wealth_need": 10.0, "labor_need": 0.0, "imitation_need": 0.0, "child_rearing_need": 0.0}
+    initial_needs = {
+        "survival_need": 50.0,
+        "wealth_need": 10.0,
+        "labor_need": 0.0,
+        "imitation_need": 0.0,
+        "child_rearing_need": 0.0,
+    }
     talent = Talent(base_learning_rate=1.0, max_potential={})
     goods_data = []
     decision_engine = MockHouseholdDecisionEngine()
@@ -66,7 +88,7 @@ def test_household_inheritance_and_init():
         value_orientation=Mock(),
         logger=mock_logger,
         personality=Personality.MISER,
-        config_module=config
+        config_module=config,
     )
 
     assert isinstance(household, BaseAgent)
@@ -77,28 +99,29 @@ def test_household_inheritance_and_init():
     assert household.name == "Household_1"
     assert household.talent == talent
 
+
 # Test Firm inheritance and initialization
 def test_firm_inheritance_and_init():
     initial_capital = 500.0
-    initial_liquidity_need = 10.0 # Define this variable
-    production_targets = {"food": 10}
+    initial_liquidity_need = 10.0  # Define this variable
+    #     production_targets = {"food": 10}
     productivity_factor = 1.0
     decision_engine = MockFirmDecisionEngine()
     mock_logger = Mock()
     mock_config = Mock(spec=config)
     mock_config.PROFIT_HISTORY_TICKS = 10
+    mock_config.FIRM_MIN_PRODUCTION_TARGET = 10.0
 
     firm = Firm(
         id=101,
         initial_capital=initial_capital,
-        initial_liquidity_need=10.0, # Add this back
-        specialization="basic_food", # Use specialization instead of production_targets
-        production_target=10.0, # Initialize production_target
+        initial_liquidity_need=10.0,  # Add this back
+        specialization="basic_food",  # Use specialization instead of production_targets
         productivity_factor=productivity_factor,
         decision_engine=decision_engine,
         value_orientation=Mock(),
         logger=mock_logger,
-        config_module=mock_config
+        config_module=mock_config,
     )
 
     assert isinstance(firm, BaseAgent)

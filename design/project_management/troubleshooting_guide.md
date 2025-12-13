@@ -84,7 +84,7 @@
 
 ### 근본 원인 및 해결방법
 1.  **가계의 잘못된 주문 타입:**
-    *   **문제:** 가계 에이전트가 상품 구매 주문을 낼 때, `Order` 객체의 `order_type`을 소문자 `'buy'`로 생성했습니다. `OrderBookMarket`은 대문자 `'BUY'`만 유효한 주문 타입으로 인식하여 이 주문들을 무시했습니다. 노동 시장 판매 주문도 소문자 `'sell'`로 생성되었습니다.
+    *   **문제:** 가계 에이전트가 상품 구매 주문을 낼 때, `Order` 객체의 `order_type`을 소문자 `'buy'`로 생성했습니다. `OrderBookMarket`은 대문자 `'BUY'`만 유효한 주문 타입으로 인식하여 이 주문들을 무시했습니다.
     *   **해결:** `simulation/decisions/household_decision_engine.py` 파일에서 `_execute_tactic` 메서드 내의 모든 주문 타입(`'buy'`, `'sell'`)을 대문자(`'BUY'`, `'SELL'`)로 수정하여 시장이 올바르게 인식하도록 했습니다.
 2.  **가계의 초기 'food' 재고 부족:**
     *   **문제:** 시뮬레이션 시작 시 가계 에이전트가 'food' 재고를 전혀 가지고 있지 않아, 생존 욕구가 높아져도 소비할 'food'가 없어 소비에 실패했습니다.
@@ -92,8 +92,6 @@
 
 ### 인사이트
 시뮬레이션의 기본 경제 순환이 작동하기 위해서는 에이전트의 의사결정(주문 생성)과 시장 메커니즘(주문 처리) 간의 인터페이스가 정확히 일치해야 합니다. 또한, 에이전트가 초기부터 기본적인 활동을 수행할 수 있도록 적절한 초기 자원(재고)을 제공하는 것이 중요합니다.
-
----
 
 ## 11. 장기 TODO: 재래시장 모델 도입 (시장 설계 다변화)
 
@@ -127,3 +125,33 @@
 *   `OrderBookMarket`과 별도의 `TraditionalMarket` 클래스 구현.
 *   `HouseholdDecisionEngine` 및 `FirmDecisionEngine`에 재래시장 환경에 맞는 의사결정 로직 추가.
 *   `window` 크기, 탐색 전략, 가격 협상 로직 등 세부 메커니즘 정의.
+
+## 13. `AttributeError: type object 'Tactic' has no attribute 'PRICE_INCREASE_LARGE'`
+
+### 문제인식
+`pytest` 실행 시 `RuleBasedFirmDecisionEngine`의 `_execute_tactic` 메서드에서 `AttributeError`가 발생했습니다. 이는 `Tactic` 열거형에 존재하지 않는 멤버(`PRICE_INCREASE_LARGE`, `PRICE_DECREASE_LARGE`)에 접근하려고 시도했기 때문입니다.
+
+### 확인방법
+1.  `pytest` 오류 메시지에서 `AttributeError: type object 'Tactic' has no attribute 'PRICE_INCREASE_LARGE'`를 확인합니다.
+2.  `simulation/ai/enums.py` 파일의 `Tactic` 열거형 정의를 확인하여 사용 가능한 멤버를 확인합니다.
+
+### 해결방법
+`simulation/decisions/rule_based_firm_engine.py` 파일의 `_execute_tactic` 메서드와 `_adjust_price_with_ai` 메서드에서 `Tactic.PRICE_INCREASE_LARGE` 및 `Tactic.PRICE_DECREASE_LARGE`를 사용하는 코드를 제거했습니다.
+
+### 인사이트
+코드를 수정할 때, 특히 열거형(Enum)과 같이 미리 정의된 상수를 사용할 때는 해당 상수가 실제로 정의되어 있는지 확인하는 것이 중요합니다. 이를 통해 런타임에 발생할 수 있는 `AttributeError`를 방지할 수 있습니다.
+
+## 14. `AssertionError: assert len(orders) == 3` in `test_household_decision_engine_multi_good.py`
+
+### 문제인식
+`test_make_decisions_with_evaluate_consumption_options` 테스트에서 `AIDrivenHouseholdDecisionEngine`이 `EVALUATE_CONSUMPTION_OPTIONS` 전술에 대해 빈 주문 목록을 반환하여 `AssertionError`가 발생했습니다.
+
+### 확인방법
+1.  `pytest`를 실행하여 `assert len(orders) == 3`에서 테스트가 실패하는 것을 확인합니다.
+2.  `simulation/decisions/ai_driven_household_engine.py`의 `_execute_tactic` 메서드를 디버깅하여 `EVALUATE_CONSUMPTION_OPTIONS` 전술이 처리되지 않고 있음을 확인합니다.
+
+### 해결방법
+`simulation/decisions/ai_driven_household_engine.py`의 `_execute_tactic` 메서드에 `EVALUATE_CONSUMPTION_OPTIONS` 전술을 처리하는 `elif` 블록을 추가하여, 해당 전술이 선택되었을 때 `rule_based_engine`에 결정을 위임하도록 수정했습니다.
+
+### 인사이트
+AI 기반 의사결정 엔진을 개발할 때, 모든 전술(Tactic)에 대한 처리 로직을 명시적으로 구현하거나, 의도적으로 처리하지 않을 경우를 명확히 문서화해야 합니다. 특히, AI 엔진과 규칙 기반 엔진을 함께 사용하는 경우, 전술에 따른 책임 위임(delegation) 로직을 꼼꼼하게 검증해야 합니다.

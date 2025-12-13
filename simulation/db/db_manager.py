@@ -4,10 +4,8 @@ from datetime import datetime
 import logging
 
 
-
-
 class DBManager:
-    def __init__(self, db_path='simulation_data.db'):
+    def __init__(self, db_path="simulation_data.db"):
         self.db_path = db_path
         self.conn = None
         self.cursor = None
@@ -92,65 +90,137 @@ class DBManager:
         self.conn.commit()
 
     def save_simulation_run(self, start_time, config_hash, description=None):
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             INSERT INTO simulation_runs (start_time, config_hash, description)
             VALUES (?, ?, ?)
-        """, (start_time, config_hash, description))
+        """,
+            (start_time, config_hash, description),
+        )
         self.conn.commit()
         return self.cursor.lastrowid
 
     def update_simulation_run_end_time(self, run_id, end_time):
-        self.cursor.execute("""
+        self.cursor.execute(
+            """
             UPDATE simulation_runs SET end_time = ? WHERE run_id = ?
-        """, (end_time, run_id))
+        """,
+            (end_time, run_id),
+        )
         self.conn.commit()
 
-    def save_simulation_state(self, run_id, tick, timestamp, global_economic_indicators):
-        self.cursor.execute("""
+    def save_simulation_state(
+        self, run_id, tick, timestamp, global_economic_indicators
+    ):
+        self.cursor.execute(
+            """
             INSERT INTO simulation_states (run_id, tick, timestamp, global_economic_indicators)
             VALUES (?, ?, ?, ?)
-        """, (run_id, tick, timestamp, json.dumps(global_economic_indicators)))
+        """,
+            (run_id, tick, timestamp, json.dumps(global_economic_indicators)),
+        )
         self.conn.commit()
 
-    def save_agent_state(self, run_id, tick, agent_id, agent_type, assets, inventory=None, needs=None,
-                         is_employed=None, employer_id=None, employees=None, production_targets=None,
-                         current_production=None, ai_model_state=None):
-        self.cursor.execute("""
+    def save_agent_state(
+        self,
+        run_id,
+        tick,
+        agent_id,
+        agent_type,
+        assets,
+        inventory=None,
+        needs=None,
+        is_employed=None,
+        employer_id=None,
+        employees=None,
+        production_targets=None,
+        current_production=None,
+        ai_model_state=None,
+    ):
+        self.cursor.execute(
+            """
             INSERT INTO agents_state_history (
                 run_id, tick, agent_id, agent_type, assets, inventory, needs,
                 is_employed, employer_id, employees, production_targets,
                 current_production, ai_model_state
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            run_id, tick, agent_id, agent_type, assets,
-            json.dumps(inventory) if inventory else None,
-            json.dumps(needs) if needs else None,
-            is_employed, employer_id,
-            json.dumps(employees) if employees else None,
-            json.dumps(production_targets) if production_targets else None,
-            json.dumps(current_production) if current_production else None,
-            json.dumps(ai_model_state) if ai_model_state else None
-        ))
+        """,
+            (
+                run_id,
+                tick,
+                agent_id,
+                agent_type,
+                assets,
+                json.dumps(inventory) if inventory else None,
+                json.dumps(needs) if needs else None,
+                is_employed,
+                employer_id,
+                json.dumps(employees) if employees else None,
+                json.dumps(production_targets) if production_targets else None,
+                json.dumps(current_production) if current_production else None,
+                json.dumps(ai_model_state) if ai_model_state else None,
+            ),
+        )
         self.conn.commit()
 
-    def save_transaction(self, run_id, tick, buyer_id, seller_id, item_id, quantity, price, transaction_type, loan_id=None):
-        self.cursor.execute("""
+    def save_transaction(
+        self,
+        run_id,
+        tick,
+        buyer_id,
+        seller_id,
+        item_id,
+        quantity,
+        price,
+        transaction_type,
+        loan_id=None,
+    ):
+        self.cursor.execute(
+            """
             INSERT INTO transactions_history (
                 run_id, tick, buyer_id, seller_id, item_id, quantity, price, transaction_type, loan_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (run_id, tick, buyer_id, seller_id, item_id, quantity, price, transaction_type, loan_id))
+        """,
+            (
+                run_id,
+                tick,
+                buyer_id,
+                seller_id,
+                item_id,
+                quantity,
+                price,
+                transaction_type,
+                loan_id,
+            ),
+        )
         self.conn.commit()
 
-    def save_ai_decision(self, run_id, tick, agent_id, decision_type, decision_details=None, predicted_reward=None, actual_reward=None):
-        self.cursor.execute("""
+    def save_ai_decision(
+        self,
+        run_id,
+        tick,
+        agent_id,
+        decision_type,
+        decision_details=None,
+        predicted_reward=None,
+        actual_reward=None,
+    ):
+        self.cursor.execute(
+            """
             INSERT INTO ai_decisions_history (
                 run_id, tick, agent_id, decision_type, decision_details, predicted_reward, actual_reward
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            run_id, tick, agent_id, decision_type,
-            json.dumps(decision_details) if decision_details else None,
-            predicted_reward, actual_reward
-        ))
+        """,
+            (
+                run_id,
+                tick,
+                agent_id,
+                decision_type,
+                json.dumps(decision_details) if decision_details else None,
+                predicted_reward,
+                actual_reward,
+            ),
+        )
         self.conn.commit()
 
     def get_simulation_run(self, run_id):
@@ -207,7 +277,9 @@ class DBManager:
             self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables = self.cursor.fetchall()
             for table_name in tables:
-                if table_name[0] != 'sqlite_sequence': # sqlite_sequence는 삭제하지 않음
+                if (
+                    table_name[0] != "sqlite_sequence"
+                ):  # sqlite_sequence는 삭제하지 않음
                     self.cursor.execute(f"DROP TABLE IF EXISTS {table_name[0]}")
             self.conn.commit()
             self._create_tables()
@@ -219,15 +291,16 @@ class DBManager:
             self.conn = None
             self.cursor = None
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Example Usage:
-    db_manager = DBManager(db_path='test_simulation.db')
+    db_manager = DBManager(db_path="test_simulation.db")
 
     # Save a new simulation run
     run_id = db_manager.save_simulation_run(
         start_time=datetime.now().isoformat(),
         config_hash="abcdef12345",
-        description="Test run for new DBManager"
+        description="Test run for new DBManager",
     )
     logging.info(f"New simulation run_id: {run_id}")
 
@@ -236,7 +309,7 @@ if __name__ == '__main__':
         run_id=run_id,
         tick=1,
         timestamp=datetime.now().isoformat(),
-        global_economic_indicators={"gdp": 1000, "unemployment_rate": 0.05}
+        global_economic_indicators={"gdp": 1000, "unemployment_rate": 0.05},
     )
 
     # Save agent state for a household
@@ -249,7 +322,7 @@ if __name__ == '__main__':
         inventory={"food": 10, "clothes": 2},
         needs={"food": 0.8, "shelter": 0.5},
         is_employed=True,
-        employer_id=201
+        employer_id=201,
     )
 
     # Save agent state for a firm
@@ -262,7 +335,7 @@ if __name__ == '__main__':
         inventory={"food": 50, "raw_materials": 100},
         employees={"101": 150.0},
         production_targets={"food": 20},
-        current_production={"food": 15}
+        current_production={"food": 15},
     )
 
     # Save a transaction
@@ -274,7 +347,7 @@ if __name__ == '__main__':
         item_id="food",
         quantity=5.0,
         price=10.0,
-        transaction_type="Goods"
+        transaction_type="Goods",
     )
 
     # Save an AI decision
@@ -285,16 +358,24 @@ if __name__ == '__main__':
         decision_type="Consume",
         decision_details={"item": "food", "quantity": 3},
         predicted_reward=0.9,
-        actual_reward=0.85
+        actual_reward=0.85,
     )
 
     # Retrieve data
     logging.info("\n--- Retrieved Data ---")
     logging.info("Simulation Run:", db_manager.get_simulation_run(run_id))
-    logging.info("Simulation States (tick 1):", db_manager.get_simulation_states(run_id, tick=1))
-    logging.info("Agent States (Household 101, tick 1):", db_manager.get_agent_states(run_id, tick=1, agent_id=101))
+    logging.info(
+        "Simulation States (tick 1):", db_manager.get_simulation_states(run_id, tick=1)
+    )
+    logging.info(
+        "Agent States (Household 101, tick 1):",
+        db_manager.get_agent_states(run_id, tick=1, agent_id=101),
+    )
     logging.info("Transactions (tick 1):", db_manager.get_transactions(run_id, tick=1))
-    logging.info("AI Decisions (agent 101, tick 1):", db_manager.get_ai_decisions(run_id, tick=1, agent_id=101))
+    logging.info(
+        "AI Decisions (agent 101, tick 1):",
+        db_manager.get_ai_decisions(run_id, tick=1, agent_id=101),
+    )
 
     # Update simulation run end time
     db_manager.update_simulation_run_end_time(run_id, datetime.now().isoformat())

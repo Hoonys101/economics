@@ -1,127 +1,189 @@
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
-from simulation.decisions.household_decision_engine import HouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
 from simulation.core_agents import Household
-from simulation.ai_model import AIDecisionEngine, AIEngineRegistry
-from simulation.ai.enums import Tactic
+from simulation.ai.household_ai import HouseholdAI
+from simulation.ai.enums import Tactic, Aggressiveness
 from simulation.models import Order
-import config
+from simulation.markets.order_book_market import OrderBookMarket
 
-# Mock Logger to prevent actual file writes during tests
-@pytest.fixture(autouse=True)
-def mock_logger():
-    with patch('simulation.decisions.household_decision_engine.logging.getLogger') as mock_get_logger:
-        mock_logger_instance = MagicMock(name='household_decision_engine_logger')
-        mock_logger_instance.debug = MagicMock()
-        mock_logger_instance.info = MagicMock()
-        mock_logger_instance.warning = MagicMock()
-        mock_logger_instance.error = MagicMock()
-        mock_get_logger.return_value = mock_logger_instance
-        yield mock_logger_instance
 
-# Correctly patch config values for all tests in this module
+# Mock Logger
 @pytest.fixture(autouse=True)
-def set_config_for_tests():
-    original_values = {}
-    test_values = {
-        'HOUSEHOLD_RESERVATION_PRICE_BASE': 5.0,
-        'HOUSEHOLD_NEED_PRICE_MULTIPLIER': 1.0,
-        'HOUSEHOLD_ASSET_PRICE_MULTIPLIER': 0.1,
-        'HOUSEHOLD_PRICE_ELASTICITY_FACTOR': 0.5,
-        'HOUSEHOLD_STOCKPILING_BONUS_FACTOR': 0.2,
-        'MIN_SELL_PRICE': 1.0,
-        'GOODS_MARKET_SELL_PRICE': 10.0,
-        'SURVIVAL_NEED_THRESHOLD': 20.0,
-        'LIQUIDITY_RATIO_MAX': 0.8,
-        'LIQUIDITY_RATIO_MIN': 0.1,
-        'LIQUIDITY_RATIO_DIVISOR': 100.0
+def mock_logger_fixture():
+    with patch(
+        "simulation.decisions.ai_driven_household_engine.logging.getLogger"
+    ) as mock_get_logger:
+        yield mock_get_logger
+
+
+@pytest.fixture
+def mock_config():
+    config = Mock()
+    config.GOODS = {
+        "basic_food": {"utility_effects": {"survival": 10}},
+        "luxury_food": {"utility_effects": {"leisure": 10}},
     }
+    return config
 
-    for key, value in test_values.items():
-        if hasattr(config, key):
-            original_values[key] = getattr(config, key)
-        setattr(config, key, value)
-    
-    yield
-    
-    # Restore original config values
-    for key, value in original_values.items():
-        setattr(config, key, value)
 
 @pytest.fixture
 def mock_household():
     hh = Mock(spec=Household)
     hh.id = 1
     hh.assets = 100.0
-    hh.get_agent_data.return_value = {} # Mock the method
-    hh.get_pre_state_data.return_value = {} # Mock the method
-    hh.needs = {
-        "survival_need": 50.0,
-        "recognition_need": 20.0,
-        "growth_need": 10.0,
-        "wealth_need": 30.0,
-        "imitation_need": 10.0,
-        "labor_need": 0.0,
-        "liquidity_need": 40.0
-    }
-    hh.inventory = {"food": 5.0}
-    hh.perceived_avg_prices = {"food": 10.0}
-    hh.goods_info_map = {
-        "food": {"id": "food", "utility_per_need": {"survival_need": 1.0}, "storability": 0.5},
-        "luxury_food": {"id": "luxury_food", "utility_per_need": {"recognition_need": 0.5}, "storability": 0.1}
-    }
+    hh.needs = {"survival": 0.8, "leisure": 0.5}
+    hh.get_agent_data.return_value = {}
+    hh.get_pre_state_data.return_value = {}
+    hh.get_desired_wage.return_value = 50.0
+    hh.perceived_avg_prices = {}
+    hh.inventory = {}
+    hh.is_employed = False
     return hh
 
-@pytest.fixture
-def mock_ai_engine_registry():
-    registry = Mock(spec=AIEngineRegistry)
-    # This is the mock for the HouseholdAI instance
-    mock_ai_engine_instance = MagicMock() 
-    mock_ai_engine_instance.decide_and_learn = Mock(return_value=Tactic.DO_NOTHING) # Default return
-    
-    # This is the mock for the AIDecisionEngine (the ML model wrapper)
-    mock_ai_decision_engine_instance = Mock(spec=AIDecisionEngine)
 
-    # When HouseholdDecisionEngine asks the registry for an engine, it gets the ML model wrapper
-    registry.get_engine.return_value = mock_ai_decision_engine_instance
-    
-    # We also need to control what the HouseholdAI instance is. We'll patch its creation.
-    with patch('simulation.decisions.household_decision_engine.HouseholdAI', return_value=mock_ai_engine_instance) as patched_ai:
-        yield registry, mock_ai_engine_instance
+@pytest.fixture
+def mock_ai_engine():
+    ai = Mock(spec=HouseholdAI)
+    ai.decide_and_learn.return_value = (
+        Tactic.DO_NOTHING_CONSUMPTION,
+        Aggressiveness.NORMAL,
+    )
+    return ai
 
 
 @pytest.fixture
-def household_decision_engine_instance(mock_ai_engine_registry):
-    # mock_ai_engine_registry is now a tuple: (registry, mock_ai_engine_instance)
-    registry, mock_ai_engine = mock_ai_engine_registry
-    return HouseholdDecisionEngine(agent_id=1, value_orientation="test", ai_engine_registry=registry)
+def decision_engine(mock_ai_engine, mock_config):
+    return AIDrivenHouseholdDecisionEngine(
+        ai_engine=mock_ai_engine, config_module=mock_config
+    )
 
-class TestHouseholdDecisionEngine:
-    def test_initialization(self, household_decision_engine_instance, mock_ai_engine_registry):
-        registry, _ = mock_ai_engine_registry
-        assert household_decision_engine_instance.ai_engine_registry == registry
 
-    def test_make_decisions_calls_ai_and_executes_tactic(self, household_decision_engine_instance, mock_household, mock_ai_engine_registry):
-        _, mock_ai_engine = mock_ai_engine_registry
-        
-        # 1. Mock the AI's decision
-        expected_tactic = Tactic.BUY_ESSENTIAL_GOODS
-        mock_ai_engine.decide_and_learn.return_value = expected_tactic
+class TestAIDrivenHouseholdDecisionEngine:
+    def test_make_decisions_calls_ai(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        decision_engine.make_decisions(mock_household, {}, [], {}, 1)
+        mock_ai_engine.decide_and_learn.assert_called_once()
 
-        # 2. Mock the execution result
-        expected_orders = [Mock(spec=Order)]
-        with patch.object(household_decision_engine_instance, '_execute_tactic', return_value=expected_orders) as mock_execute:
-            
-            # 3. Call the method under test
-            orders, tactic = household_decision_engine_instance.make_decisions(mock_household, {}, [], {}, 1)
-            
-            # 4. Assert AI was called correctly
-            mock_ai_engine.decide_and_learn.assert_called_once()
-            
-            # 5. Assert the tactic was executed
-            mock_execute.assert_called_once_with(expected_tactic, mock_household, {}, 1)
-            
-            # 6. Assert the final results are correct
-            assert orders == expected_orders
-            assert tactic == expected_tactic
+    def test_consumption_do_nothing(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.DO_NOTHING_CONSUMPTION,
+            Aggressiveness.NORMAL,
+        )
+        orders, _ = decision_engine.make_decisions(mock_household, {}, [], {}, 1)
+        assert len(orders) == 0
+
+    def test_consumption_buy_basic_food_sufficient_assets(
+        self, decision_engine, mock_household, mock_ai_engine, mock_config
+    ):
+        mock_markets = {
+            "basic_food": Mock(spec=OrderBookMarket, id="basic_food_market")
+        }
+        mock_markets["basic_food"].get_best_ask.return_value = 10.0
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.BUY_BASIC_FOOD,
+            Aggressiveness.NORMAL,
+        )
+
+        orders, _ = decision_engine.make_decisions(
+            mock_household, mock_markets, [], {}, 1
+        )
+
+        assert len(orders) == 1
+        assert orders[0].item_id == "basic_food"
+        assert orders[0].price == 10.0
+
+    def test_consumption_buy_luxury_food_insufficient_assets(
+        self, decision_engine, mock_household, mock_ai_engine, mock_config
+    ):
+        mock_markets = {
+            "luxury_food": Mock(spec=OrderBookMarket, id="luxury_food_market")
+        }
+        mock_markets["luxury_food"].get_best_ask.return_value = 1000.0
+        mock_household.assets = 100.0
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.BUY_LUXURY_FOOD,
+            Aggressiveness.AGGRESSIVE,
+        )
+
+        orders, _ = decision_engine.make_decisions(
+            mock_household, mock_markets, [], {}, 1
+        )
+
+        assert len(orders) == 0
+
+    def test_consumption_evaluate_options_chooses_best_utility(
+        self, decision_engine, mock_household, mock_ai_engine, mock_config
+    ):
+        mock_markets = {
+            "basic_food": Mock(spec=OrderBookMarket, id="basic_food_market"),
+            "luxury_food": Mock(spec=OrderBookMarket, id="luxury_food_market"),
+        }
+        mock_markets[
+            "basic_food"
+        ].get_best_ask.return_value = 10.0  # Utility/dollar = (0.8*10)/10 = 0.8
+        mock_markets[
+            "luxury_food"
+        ].get_best_ask.return_value = 20.0  # Utility/dollar = (0.5*10)/20 = 0.25
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.EVALUATE_CONSUMPTION_OPTIONS,
+            Aggressiveness.NORMAL,
+        )
+
+        orders, _ = decision_engine.make_decisions(
+            mock_household, mock_markets, [], {}, 1
+        )
+
+        assert len(orders) == 1
+        assert orders[0].item_id == "basic_food"  # Higher utility per dollar
+
+    def test_labor_market_participation_aggressive(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
+        mock_labor_market.get_all_bids = Mock(
+            return_value=[Order(2, "BUY", "labor", 1, 45.0, "labor_market")]
+        )
+        mock_markets = {"labor": mock_labor_market}
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.PARTICIPATE_LABOR_MARKET,
+            Aggressiveness.AGGRESSIVE,
+        )
+        mock_household.get_desired_wage.return_value = 50.0  # Base reservation wage
+
+        orders, _ = decision_engine.make_decisions(
+            mock_household, mock_markets, [], {}, 1
+        )
+
+        assert len(orders) == 1
+        assert orders[0].order_type == "SELL"
+        assert orders[0].item_id == "labor"
+        assert orders[0].price == 45.0  # Accepts lower wage due to aggressiveness
+
+    def test_labor_market_participation_passive_no_offer(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
+        mock_labor_market.get_all_bids = Mock(
+            return_value=[Order(2, "BUY", "labor", 1, 55.0, "labor_market")]
+        )
+        mock_markets = {"labor": mock_labor_market}
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.PARTICIPATE_LABOR_MARKET,
+            Aggressiveness.PASSIVE,
+        )
+        mock_household.get_desired_wage.return_value = (
+            50.0  # Base reservation wage (adjusted to 60)
+        )
+
+        orders, _ = decision_engine.make_decisions(
+            mock_household, mock_markets, [], {}, 1
+        )
+
+        assert len(orders) == 0  # Does not accept offer below adjusted reservation wage

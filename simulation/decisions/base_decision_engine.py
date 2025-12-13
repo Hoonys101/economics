@@ -1,24 +1,32 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, Dict, Any
-import logging
+from typing import List, Dict, Any, Tuple, TYPE_CHECKING
+from simulation.models import Order
 
 if TYPE_CHECKING:
-    from simulation.base_agent import BaseAgent
-    from simulation.models import Order
+    from simulation.core_markets import Market
 
-logger = logging.getLogger(__name__)
 
 class BaseDecisionEngine:
-    """모든 의사결정 엔진의 기본 클래스"""
-    def __init__(self) -> None:
-        # 로거는 이제 모듈 레벨에서 관리됩니다.
-        pass
+    def make_decisions(
+        self,
+        agent: Any,
+        markets: Dict[str, "Market"],
+        goods_data: List[Dict[str, Any]],
+        market_data: Dict[str, Any],
+        current_time: int,
+    ) -> Tuple[List[Order], Any]:
+        """
+        에이전트의 현재 상태와 시장 정보를 바탕으로 의사결정을 내리고,
+        그 결과로 생성된 주문 목록과 선택된 전술을 반환합니다.
 
-    def make_decision(self, agent: BaseAgent, market_data: Dict[str, Any], current_tick: int) -> List[Order]:
-        """에이전트의 의사결정을 내리고 주문 리스트를 반환합니다."""
+        Args:
+            agent: 의사결정을 내리는 주체 에이전트.
+            markets: 접근 가능한 시장 객체 딕셔너리.
+            goods_data: 시뮬레이션의 모든 재화 정보.
+            market_data: 현재 틱의 요약된 시장 데이터.
+            current_time: 현재 시뮬레이션 틱.
+
+        Returns:
+            (생성된 주문 목록, 선택된 전술) 튜플.
+        """
         raise NotImplementedError
-
-    def _allocate_budget(self, agent: BaseAgent) -> Dict[str, float]:
-        """에이전트의 현재 자산과 욕구를 바탕으로 예산을 할당합니다."""
-        # 기본적으로는 모든 자산을 소비 예산으로 할당
-        return {"consumption_budget": agent.assets, "investment_budget": 0.0}

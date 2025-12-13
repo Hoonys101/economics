@@ -1,7 +1,14 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
+
 # --- Simulation Parameters ---
 NUM_HOUSEHOLDS = 20
 NUM_FIRMS = 4
 SIMULATION_TICKS = 100
+HOUSEHOLD_MIN_FOOD_INVENTORY = 2.0 # Rule-based households aim to keep at least this much food in inventory
+DEFAULT_ENGINE_TYPE = "AIDriven"  # Can be "RuleBased" or "AIDriven" for global agent decision engine type
 
 # --- Initial Agent Configuration ---
 INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0
@@ -15,10 +22,10 @@ INITIAL_HOUSEHOLD_NEEDS_MEAN = {
     "wealth_need": 10.0,
     "imitation_need": 15.0,
     "labor_need": 0.0,
-    "child_rearing_need": 0.0
+    "child_rearing_need": 0.0,
 }
 INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
-INITIAL_EMPLOYMENT_RATE = 0.5 # 초기 고용률
+INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
 
 INITIAL_FIRM_CAPITAL_MEAN = 10000.0
 INITIAL_FIRM_CAPITAL_RANGE = 0.2
@@ -30,15 +37,13 @@ FIRM_PRODUCTIVITY_FACTOR = 10.0
 
 # --- Goods Configuration ---
 GOODS = {
-    "basic_food": {
-        "production_cost": 3,
-        "utility_effects": {"survival": 10}
-    },
+    "basic_food": {"production_cost": 3, "utility_effects": {"survival": 10}},
     "luxury_food": {
         "production_cost": 10,
-        "utility_effects": {"survival": 12, "social": 5}
-    }
+        "utility_effects": {"survival": 12, "social": 5},
+    },
 }
+
 
 # --- Firm Specialization ---
 # Assigns which firms produce which goods. Assumes NUM_FIRMS = 4
@@ -46,12 +51,12 @@ FIRM_SPECIALIZATIONS = {
     0: "basic_food",
     1: "basic_food",
     2: "luxury_food",
-    3: "luxury_food"
+    3: "luxury_food",
 }
 
 
 # --- Experiment Configuration ---
-FOOD_SUPPLY_MODIFIER = 1.5 # Multiplier for food supply in experiments (e.g., 1.0 for no change, 1.5 for 50% increase, 0.5 for 50% decrease)
+FOOD_SUPPLY_MODIFIER = 1.5  # Multiplier for food supply in experiments (e.g., 1.0 for no change, 1.5 for 50% increase, 0.5 for 50% decrease)
 INITIAL_HOUSEHOLD_FOOD_INVENTORY = 10.0
 
 # --- Value Orientations (as strings) ---
@@ -60,7 +65,7 @@ VALUE_ORIENTATION_NEEDS_AND_GROWTH = "needs_and_growth"
 VALUE_ORIENTATION_NEEDS_AND_SOCIAL_STATUS = "needs_and_social_status"
 
 # --- Market & Decision Logic ---
-INITIAL_WAGE = 10.0 # Renamed from LABOR_MARKET_OFFERED_WAGE
+INITIAL_WAGE = 10.0  # Renamed from LABOR_MARKET_OFFERED_WAGE
 BASE_WAGE = 20.0
 WAGE_INFLATION_ADJUSTMENT_FACTOR = 0.1
 LABOR_MARKET_MIN_WAGE = 8.0
@@ -83,7 +88,9 @@ WAGE_COMPETITION_PREMIUM = 0.2
 # --- Dynamic Wage Determination ---
 PROFIT_HISTORY_TICKS = 10  # Number of recent ticks to evaluate a firm's profitability
 WAGE_PROFIT_SENSITIVITY = 0.5  # Sensitivity of wage premium to firm's profit
-MAX_WAGE_PREMIUM = 1.0  # Maximum wage premium based on profitability (100% of base wage)
+MAX_WAGE_PREMIUM = (
+    1.0  # Maximum wage premium based on profitability (100% of base wage)
+)
 
 # --- Production & Stock ---
 OVERSTOCK_THRESHOLD = 1.2
@@ -96,9 +103,13 @@ PRODUCTION_ADJUSTMENT_FACTOR = 0.2
 PRICE_ADJUSTMENT_FACTOR = 0.2
 PRICE_ADJUSTMENT_EXPONENT = 1.2
 
+# --- AI Price Adjustment ---
+AI_PRICE_ADJUSTMENT_SMALL = 0.05  # 5% price adjustment
+AI_PRICE_ADJUSTMENT_MEDIUM = 0.10  # 10% price adjustment
+
 # --- Need Dynamics & Thresholds ---
-BASE_DESIRE_GROWTH = 1.0 # Base rate at which desires increase per tick
-MAX_DESIRE_VALUE = 100.0 # Maximum value a desire can reach
+BASE_DESIRE_GROWTH = 1.0  # Base rate at which desires increase per tick
+MAX_DESIRE_VALUE = 100.0  # Maximum value a desire can reach
 
 # Old need increase rates (commented out as they are replaced by personality-driven growth)
 # SURVIVAL_NEED_INCREASE_RATE = 1.0
@@ -121,14 +132,28 @@ NEED_HIGH_THRESHOLD = 80.0
 SURVIVAL_TO_LABOR_NEED_FACTOR = 0.5
 
 # --- Household Consumption ---
-SURVIVAL_NEED_CONSUMPTION_THRESHOLD = 50.0 # Households will try to consume food if survival need is above this
-FOOD_CONSUMPTION_QUANTITY = 1.0 # Quantity of food consumed at a time
-FOOD_CONSUMPTION_MAX_PER_TICK = 5.0 # Maximum quantity of food a household can consume in a single tick
-FOOD_PURCHASE_MAX_PER_TICK = 5.0 # Maximum quantity of food a household can purchase in a single tick
-HOUSEHOLD_FOOD_PRICE_ELASTICITY = 0.5 # Factor to adjust demand based on price deviation from average
-HOUSEHOLD_FOOD_STOCKPILE_TARGET_TICKS = 5 # How many ticks worth of food a household aims to stockpile when prices are good
-HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0 # The base amount of food a household consumes per tick, to calculate stockpile target
-HOUSEHOLD_MIN_FOOD_INVENTORY_TICKS = 2 # Minimum number of ticks worth of food a household aims to keep in inventory
+TARGET_FOOD_BUFFER_QUANTITY = 5.0 # 가계가 목표로 하는 식량 완충 재고량.
+PERCEIVED_FAIR_PRICE_THRESHOLD_FACTOR = 0.9 # 인지된 공정 가격 대비 얼마나 낮아야 투기적 구매를 고려할지 결정하는 요소.
+SURVIVAL_NEED_CONSUMPTION_THRESHOLD = (
+    50.0  # Households will try to consume food if survival need is above this
+)
+FOOD_CONSUMPTION_QUANTITY = 1.0  # Quantity of food consumed at a time
+FOOD_CONSUMPTION_MAX_PER_TICK = (
+    5.0  # Maximum quantity of food a household can consume in a single tick
+)
+FOOD_PURCHASE_MAX_PER_TICK = (
+    5.0  # Maximum quantity of food a household can purchase in a single tick
+)
+HOUSEHOLD_FOOD_PRICE_ELASTICITY = (
+    0.5  # Factor to adjust demand based on price deviation from average
+)
+HOUSEHOLD_FOOD_STOCKPILE_TARGET_TICKS = (
+    5  # How many ticks worth of food a household aims to stockpile when prices are good
+)
+HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0  # The base amount of food a household consumes per tick, to calculate stockpile target
+HOUSEHOLD_MIN_FOOD_INVENTORY_TICKS = (
+    2  # Minimum number of ticks worth of food a household aims to keep in inventory
+)
 
 # --- Agent Lifecycle & Death ---
 SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
@@ -145,6 +170,8 @@ RND_PRODUCTIVITY_MULTIPLIER = 0.01
 AI_SKILL_REWARD_WEIGHT = 10.0
 AI_ASSET_REWARD_WEIGHT = 1.0
 AI_SOCIAL_STATUS_REWARD_WEIGHT = 5.0
+AI_GROWTH_REWARD_WEIGHT = 7.0
+AI_WEALTH_REWARD_WEIGHT = 3.0
 
 # --- AI Learning Parameters ---
 AI_GAMMA = 0.9
@@ -159,6 +186,9 @@ IMITATION_ASSET_THRESHOLD = 500.0
 CHILD_REARING_ASSET_THRESHOLD = 1000.0
 SURVIVAL_NEED_THRESHOLD_FOR_OTHER_ACTIONS = 30.0
 ASSETS_THRESHOLD_FOR_OTHER_ACTIONS = 200.0
+IMITATION_LEARNING_INTERVAL = 100
+IMITATION_MUTATION_RATE = 0.1
+IMITATION_MUTATION_MAGNITUDE = 0.05
 
 # --- Loan Market ---
 LOAN_INTEREST_RATE = 0.05
@@ -172,5 +202,11 @@ LIQUIDITY_RATIO_MAX = 0.8
 LIQUIDITY_RATIO_MIN = 0.1
 LIQUIDITY_RATIO_DIVISOR = 100.0
 
+# --- Database Batching ---
+BATCH_SAVE_INTERVAL = 10  # Save to DB every 10 ticks
+
 # --- Logging ---
 ROOT_LOGGER_LEVEL = "INFO"
+
+# --- Security ---
+SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default-secret-token")

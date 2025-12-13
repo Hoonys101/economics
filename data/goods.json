@@ -1,0 +1,44 @@
+[
+  {
+    "id": "food",
+    "name": "Food",
+    "type": "consumable",
+    "satiety": 20,
+    "decay_rate": 0.1,
+    "initial_price": 10
+  },
+  {
+    "id": "basic_food",
+    "name": "Basic Food",
+    "type": "consumable",
+    "satiety": 15,
+    "decay_rate": 0.1,
+    "initial_price": 5
+  },
+  {
+    "id": "luxury_food",
+    "name": "Luxury Food",
+    "type": "consumable",
+    "satiety": 30,
+    "decay_rate": 0.05,
+    "initial_price": 20
+  },
+  {
+    "id": "education",
+    "name": "Education",
+    "type": "investment",
+    "initial_price": 100
+  },
+  {
+    "id": "housing",
+    "name": "Housing",
+    "type": "durable",
+    "initial_price": 500
+  },
+  {
+    "id": "labor",
+    "name": "Labor",
+    "type": "service",
+    "initial_price": 15
+  }
+]

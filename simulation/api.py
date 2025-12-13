@@ -9,17 +9,12 @@ from .engine import Simulation, EconomicIndicatorTracker
 from .core_agents import Household, Talent, Skill
 from .firms import Firm
 from .decisions.action_proposal import ActionProposalEngine
-from .decisions.base_decision_engine import BaseDecisionEngine
-from .decisions.firm_decision_engine import FirmDecisionEngine
-from .decisions.household_decision_engine import HouseholdDecisionEngine
-from .ai.api import (
-    AITrainingManager,
-    AIDecisionEngine,
-    AIEngineRegistry,
-    StateBuilder,
-    ModelWrapper,
-    RewardCalculator
-)
+from .decisions import BaseDecisionEngine, FirmDecisionEngine, HouseholdDecisionEngine
+from .ai.ai_training_manager import AITrainingManager
+from .ai_model import AIDecisionEngine, AIEngineRegistry
+from .ai.state_builder import StateBuilder
+from .ai.model_wrapper import ModelWrapper
+from .ai.reward_calculator import RewardCalculator
 
 __all__ = [
     "Market",
@@ -38,5 +33,5 @@ __all__ = [
     "AIEngineRegistry",
     "StateBuilder",
     "ModelWrapper",
-    "RewardCalculator"
+    "RewardCalculator",
 ]

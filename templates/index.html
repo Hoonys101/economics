@@ -89,6 +89,8 @@
                 </div>
                 <div class="modal-body">
                     <form id="settingsForm">
+                        <div class="mb-3"><label class="form-label">Secret Token</label><input type="password" class="form-control" id="secretToken"></div>
+                        <hr>
                         <div class="mb-3"><label class="form-label">초기 가계 수</label><input type="number" class="form-control" id="NUM_HOUSEHOLDS"></div>
                         <div class="mb-3"><label class="form-label">초기 기업 수</label><input type="number" class="form-control" id="NUM_FIRMS"></div>
                         <div class="mb-3"><label class="form-label">최대 시뮬레이션 Tick</label><input type="number" class="form-control" id="SIMULATION_TICKS"></div>
@@ -137,9 +139,21 @@
         document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
         document.getElementById('settingsModal').addEventListener('show.bs.modal', loadSettings);
 
+        function getAuthHeader() {
+            const token = localStorage.getItem('secretToken');
+            return token ? { 'Authorization': `Bearer ${token}` } : {};
+        }
+
         async function sendControlCommand(command) {
             try {
-                const response = await fetch(`/api/simulation/${command}`, { method: 'POST' });
+                const response = await fetch(`/api/simulation/${command}`, { 
+                    method: 'POST',
+                    headers: getAuthHeader()
+                });
+                if (response.status === 401) {
+                    alert('Authentication failed. Please set the correct token in the settings.');
+                    return;
+                }
                 const result = await response.json();
                 console.log(result.message);
                 if (command === 'start' && !isPolling) {
@@ -156,6 +170,7 @@
 
         async function loadSettings() {
             try {
+                document.getElementById('secretToken').value = localStorage.getItem('secretToken') || '';
                 const response = await fetch('/api/config');
                 const config = await response.json();
                 for (const [key, value] of Object.entries(config)) {
@@ -168,11 +183,16 @@
         }
 
         async function saveSettings() {
+            const tokenInput = document.getElementById('secretToken');
+            if (tokenInput.value) {
+                localStorage.setItem('secretToken', tokenInput.value);
+            }
+
             const form = document.getElementById('settingsForm');
             const newConfig = {};
             for (const child of form.children) {
                 const input = child.querySelector('input');
-                if (input) {
+                if (input && input.id !== 'secretToken') {
                     newConfig[input.id] = input.value;
                 }
             }
@@ -180,9 +200,13 @@
             try {
                 const response = await fetch('/api/config', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                     body: JSON.stringify(newConfig)
                 });
+                 if (response.status === 401) {
+                    alert('Authentication failed. Please set the correct token in the settings.');
+                    return;
+                }
                 const result = await response.json();
                 console.log(result.message);
                 const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));

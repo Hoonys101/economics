@@ -2,15 +2,19 @@ from typing import List, Dict, Any, Optional
 from simulation.db.repository import SimulationRepository
 import logging
 
+
 class EconomicIndicatorsViewModel:
     """
     경제 지표 데이터를 웹 UI에 제공하기 위한 ViewModel입니다.
     SimulationRepository를 통해 데이터를 조회하고, 필요한 형태로 가공합니다.
     """
+
     def __init__(self, repository: Optional[SimulationRepository] = None):
         self.repository = repository if repository else SimulationRepository()
 
-    def get_economic_indicators(self, start_tick: Optional[int] = None, end_tick: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_economic_indicators(
+        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """
         경제 지표 데이터를 조회하여 반환합니다.
         """
@@ -19,14 +23,16 @@ class EconomicIndicatorsViewModel:
         # 예: 특정 지표만 선택하거나, 포맷을 변경하거나, 평균을 계산하는 등.
         return indicators
 
-    def get_unemployment_rate_data(self, start_tick: Optional[int] = None, end_tick: Optional[int] = None) -> Dict[str, List[Any]]:
+    def get_unemployment_rate_data(
+        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None
+    ) -> Dict[str, List[Any]]:
         """
         실업률 차트 데이터를 Chart.js 형식에 맞게 가공하여 반환합니다.
         """
         indicators = self.get_economic_indicators(start_tick, end_tick)
-        times = [ind['time'] for ind in indicators]
-        unemployment_rates = [ind['unemployment_rate'] for ind in indicators]
-        
+        times = [ind["time"] for ind in indicators]
+        unemployment_rates = [ind["unemployment_rate"] for ind in indicators]
+
         return {
             "labels": times,
             "datasets": [
@@ -34,19 +40,21 @@ class EconomicIndicatorsViewModel:
                     "label": "실업률",
                     "data": unemployment_rates,
                     "borderColor": "rgb(75, 192, 192)",
-                    "tension": 0.1
+                    "tension": 0.1,
                 }
-            ]
+            ],
         }
 
-    def get_total_production_data(self, start_tick: Optional[int] = None, end_tick: Optional[int] = None) -> Dict[str, List[Any]]:
+    def get_total_production_data(
+        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None
+    ) -> Dict[str, List[Any]]:
         """
         총 생산량 차트 데이터를 Chart.js 형식에 맞게 가공하여 반환합니다.
         """
         indicators = self.get_economic_indicators(start_tick, end_tick)
-        times = [ind['time'] for ind in indicators]
-        total_production = [ind['total_production'] for ind in indicators]
-        
+        times = [ind["time"] for ind in indicators]
+        total_production = [ind["total_production"] for ind in indicators]
+
         return {
             "labels": times,
             "datasets": [
@@ -54,19 +62,21 @@ class EconomicIndicatorsViewModel:
                     "label": "총 생산량",
                     "data": total_production,
                     "borderColor": "rgb(255, 99, 132)",
-                    "tension": 0.1
+                    "tension": 0.1,
                 }
-            ]
+            ],
         }
 
-    def get_avg_wage_data(self, start_tick: Optional[int] = None, end_tick: Optional[int] = None) -> Dict[str, List[Any]]:
+    def get_avg_wage_data(
+        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None
+    ) -> Dict[str, List[Any]]:
         """
         평균 임금 차트 데이터를 Chart.js 형식에 맞게 가공하여 반환합니다.
         """
         indicators = self.get_economic_indicators(start_tick, end_tick)
-        times = [ind['time'] for ind in indicators]
-        avg_wages = [ind['avg_wage'] for ind in indicators]
-        
+        times = [ind["time"] for ind in indicators]
+        avg_wages = [ind["avg_wage"] for ind in indicators]
+
         return {
             "labels": times,
             "datasets": [
@@ -74,16 +84,17 @@ class EconomicIndicatorsViewModel:
                     "label": "평균 임금",
                     "data": avg_wages,
                     "borderColor": "rgb(54, 162, 235)",
-                    "tension": 0.1
+                    "tension": 0.1,
                 }
-            ]
+            ],
         }
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # 테스트 코드
     # 이 테스트를 실행하기 전에 simulation_data.db 파일이 존재하고 데이터가 채워져 있어야 합니다.
     # main.py를 한 번 실행하여 데이터를 생성한 후 이 테스트를 실행하세요.
-    
+
     # 임시 데이터베이스 파일 생성 (테스트용)
     # import os
     # if os.path.exists('test_simulation_data.db'):
@@ -114,10 +125,14 @@ if __name__ == '__main__':
     #     })
 
     vm = EconomicIndicatorsViewModel(repo)
-    
+
     logging.info(f"Economic Indicators (all): {vm.get_economic_indicators()}")
-    logging.info(f"Unemployment Rate Data (Chart.js format): {vm.get_unemployment_rate_data()}")
-    logging.info(f"Total Production Data (Chart.js format): {vm.get_total_production_data(start_tick=5, end_tick=10)}")
+    logging.info(
+        f"Unemployment Rate Data (Chart.js format): {vm.get_unemployment_rate_data()}"
+    )
+    logging.info(
+        f"Total Production Data (Chart.js format): {vm.get_total_production_data(start_tick=5, end_tick=10)}"
+    )
     logging.info(f"Avg Wage Data (Chart.js format): {vm.get_avg_wage_data()}")
 
     repo.close()
