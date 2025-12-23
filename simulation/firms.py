@@ -46,6 +46,7 @@ class Firm(BaseAgent):
             config_module.FIRM_MIN_PRODUCTION_TARGET
         )  # Initialize production target
         self.employees: List[Household] = []
+        self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
         self.consecutive_loss_turns: int = 0
         self.current_profit: float = 0.0
         self.revenue_this_turn: float = 0.0
@@ -134,6 +135,8 @@ class Firm(BaseAgent):
         self.current_profit = 0.0
         self.revenue_this_turn = 0.0
         self.cost_this_turn = 0.0
+        self.revenue_this_tick = 0.0
+        self.expenses_this_tick = 0.0
         return transactions
 
     @override
@@ -248,6 +251,36 @@ class Firm(BaseAgent):
             self.logger.info(
                 f"Paid inventory holding cost: {holding_cost:.2f}",
                 extra={**log_extra, "holding_cost": holding_cost},
+            )
+
+        # Pay wages to employees
+        total_wages = 0.0
+        for employee in list(self.employees):
+            # Clean up employees who no longer work here (quit or hired elsewhere)
+            if employee.employer_id != self.id or not employee.is_employed:
+                self.employees.remove(employee)
+                if employee.id in self.employee_wages:
+                    del self.employee_wages[employee.id]
+                continue
+
+            wage = self.employee_wages.get(employee.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+            if self.assets >= wage:
+                self.assets -= wage
+                employee.assets += wage
+                total_wages += wage
+                self.expenses_this_tick += wage
+                self.cost_this_turn += wage
+            else:
+                # Cannot afford wage! Fire employee
+                self.logger.warning(f"Firm {self.id} cannot afford wage for Household {employee.id}. Firing.")
+                employee.quit()
+                if employee.id in self.employee_wages:
+                    del self.employee_wages[employee.id]
+        
+        if total_wages > 0:
+            self.logger.info(
+                f"Paid total wages: {total_wages:.2f} to {len(self.employees)} employees.",
+                extra={**log_extra, "total_wages": total_wages},
             )
 
         self.needs["liquidity_need"] += self.config_module.LIQUIDITY_NEED_INCREASE_RATE

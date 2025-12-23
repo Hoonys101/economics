@@ -109,32 +109,44 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                 )
 
         # 3. Execution: Hiring Logic
-        # Always attempt to hire if below target
         target_inventory = firm.production_target
-        if current_inventory < target_inventory:
-             needed_labor = max(1, int((target_inventory - current_inventory) / 10)) # Simple heuristic
-             current_employees = len(firm.employees)
+        inventory_gap = target_inventory - current_inventory
+        
+        if inventory_gap > 0:
+             # Heuristic: base needed labor on production missing
+             # (Each labor unit produces roughly firm.productivity_factor)
+             needed_labor = max(1, int(inventory_gap / firm.productivity_factor))
+             needed_labor = min(needed_labor, 5) # Cap hiring per tick
              
-             # Hiring Lever: Aggressiveness
-             # 0.0 -> Offer Low Wage (-20%)
-             # 1.0 -> Offer High Wage (+20%)
-             market_wage = self.config_module.LABOR_MARKET_MIN_WAGE # Fallback
+             # Hiring Lever: Aggressiveness from AI
+             agg_hire = action_vector.hiring_aggressiveness
+             
+             # Internal Urgency Modifier
+             urgency = min(1.0, inventory_gap / target_inventory) if target_inventory > 0 else 1.0
+             
+             market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
              if "labor" in market_data and "avg_wage" in market_data["labor"]:
                  market_wage = market_data["labor"]["avg_wage"]
              
-             agg_hire = action_vector.hiring_aggressiveness
-             wage_adjustment = (agg_hire - 0.5) * 0.4
+             # Combined Wage Logic: AI Aggressiveness + Urgency
+             # 0.5 is neutral. 1.0 is aggressive.
+             effective_agg = (agg_hire * 0.5) + (urgency * 0.5)
              
+             # Range: -20% to +50% of market wage
+             wage_adjustment = -0.2 + (effective_agg * 0.7) 
+             
+             if len(firm.employees) == 0:
+                 # Desperate to start production!
+                 wage_adjustment = max(wage_adjustment, 0.3)
+                 
              offer_wage = market_wage * (1.0 + wage_adjustment)
              offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
+             print(f"DEBUG: Firm {firm.id} offering wage: {offer_wage:.2f} (Urgency: {urgency:.2f}, Agg: {agg_hire:.2f})")
              
-             # Create Job Offer (Assuming Labor Market uses 'labor' item_id)
-             # Note: Simulation Engine needs to handle JOB_OFFER type or just BUY labor?
-             # Standard OrderBookMarket treats Labor as a commodity 'labor'.
-             # Firms BUY labor.
-             orders.append(
-                 Order(firm.id, "BUY", "labor", 1, offer_wage, "labor")
-             )
+             for _ in range(needed_labor):
+                 orders.append(
+                     Order(firm.id, "BUY", "labor", 1, offer_wage, "labor")
+                 )
 
         return orders, action_vector
 

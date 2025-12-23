@@ -43,6 +43,11 @@ class HouseholdActionVector:
     # 1.0: Low Reservation Wage (Work for anything)
     work_aggressiveness: float = 0.5
 
-    # 3. 투자/교육 적극성
+    # 3. 노동 기동성 (이직 적극성)
+    # 0.0: High Loyalty (Don't quit even for better wages)
+    # 1.0: High Mobility (Quit immediately for slightly better wages)
+    job_mobility_aggressiveness: float = 0.5
+
+    # 4. 투자/교육 적극성
     investment_aggressiveness: float = 0.0
     learning_aggressiveness: float = 0.0

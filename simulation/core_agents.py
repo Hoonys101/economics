@@ -164,6 +164,7 @@ class Household(BaseAgent):
         self.shares_owned: Dict[int, float] = {}
         self.is_employed: bool = False
         self.labor_skill: float = 1.0
+        self.current_wage: float = 0.0
         self.survival_need_high_turns: int = 0
         self.social_status: float = 0.0
         self.perceived_avg_prices: Dict[str, float] = {}
@@ -172,95 +173,56 @@ class Household(BaseAgent):
         self.decision_engine.loan_market = loan_market
         self.decision_engine.logger = self.logger  # Pass logger to decision engine
 
+    def quit(self) -> None:
+        """현재 직장에서 퇴사합니다."""
+        if self.is_employed:
+            self.logger.info(f"Household {self.id} is quitting from Firm {self.employer_id}")
+            self.is_employed = False
+            self.employer_id = None
+            self.current_wage = 0.0
+
     def decide_and_consume(self, current_time: int) -> None:
-        log_extra = {
-            "tick": current_time,
-            "agent_id": self.id,
-            "tags": ["household_consumption"],
-        }
-        self.logger.debug(
-            f"HOUSEHOLD_CONSUMPTION_DECISION_START | Household {self.id} deciding what to consume. Current Survival Need: {self.needs.get('survival', 0):.2f}. Needs: {self.needs}",
-            extra=log_extra,
-        )
+        """가계가 현재 욕구 상태와 보유 재고를 바탕으로 재화를 소모합니다."""
+        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["consumption"]}
 
-        # Prioritize survival need
-        if (
-            self.needs["survival"]
-            >= self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD
-        ):
-            self.logger.debug(
-                f"HOUSEHOLD_CONSUMPTION_CHECK | Household {self.id} survival need ({self.needs['survival']:.2f}) >= threshold ({self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD:.2f})",
-                extra=log_extra,
-            )
-            food_in_inventory = self.inventory.get("food", 0.0)
-            if food_in_inventory > 0:
-                self.logger.debug(
-                    f"HOUSEHOLD_CONSUMPTION_FOOD_AVAILABLE | Household {self.id} has {food_in_inventory:.2f} food in inventory.",
-                    extra=log_extra,
-                )
-                # Calculate how much survival need needs to be reduced
-                current_survival_need = self.needs.get("survival", 0.0)
-                # Aim to reduce survival need to a point slightly below the threshold, or to 0 if it's very high
-                target_survival_need = max(
-                    0.0,
-                    self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD
-                    - self.config_module.BASE_DESIRE_GROWTH,
-                )  # Aim for slightly below threshold
+        # 1. 모든 인벤토리 품목에 대해 소비 가능 여부 확인
+        for item_id, inventory_quantity in list(self.inventory.items()):
+            if inventory_quantity <= 0:
+                continue
 
-                needed_to_reduce_survival = current_survival_need - target_survival_need
+            good_info = self.goods_info_map.get(item_id)
+            if not good_info:
+                continue
 
-                food_info = self.goods_info_map.get("food")
-                if (
-                    food_info
-                    and "utility_per_need" in food_info
-                    and "survival" in food_info["utility_per_need"]
-                ):
-                    utility_per_unit_food = food_info["utility_per_need"]["survival"]
-                    if utility_per_unit_food > 0:
-                        # Calculate food quantity needed to reduce survival need
-                        food_needed_for_survival = (
-                            needed_to_reduce_survival / utility_per_unit_food
-                        )
-                        # Ensure we don't consume more than available or a reasonable maximum per tick
-                        quantity_to_consume = min(
-                            food_in_inventory,
-                            food_needed_for_survival,
-                            self.config_module.FOOD_CONSUMPTION_MAX_PER_TICK,
-                        )  # Define FOOD_CONSUMPTION_MAX_PER_TICK in config
+            utility_effects = good_info.get("utility_effects", {})
+            if not utility_effects:
+                continue
 
-                        if quantity_to_consume > 0:
-                            self.consume("food", quantity_to_consume, current_time)
-                            self.logger.info(
-                                f"HOUSEHOLD_CONSUMPTION | Household {self.id} consumed {quantity_to_consume:.2f} food for survival. Inventory: {self.inventory.get('food', 0.0):.2f}, New Survival Need: {self.needs.get('survival', 0.0):.2f}",
-                                extra=log_extra,
-                            )
-                        else:
-                            self.logger.debug(
-                                f"HOUSEHOLD_CONSUMPTION_SKIP | Household {self.id} calculated 0 food to consume. Needed to reduce survival: {needed_to_reduce_survival:.2f}",
-                                extra=log_extra,
-                            )
-                    else:
-                        self.logger.warning(
-                            f"HOUSEHOLD_CONSUMPTION_WARNING | Household {self.id} food utility_per_need for survival is 0 or less. Cannot calculate food needed.",
-                            extra=log_extra,
-                        )
-                else:
-                    self.logger.warning(
-                        f"HOUSEHOLD_CONSUMPTION_WARNING | Household {self.id} food utility_per_need for survival not defined. Cannot calculate food needed.",
-                        extra=log_extra,
+            should_consume = False
+            for need_key, effect in utility_effects.items():
+                current_need = self.needs.get(need_key, 0.0)
+                
+                # 소비 문턱값 설정
+                threshold = self.config_module.NEED_MEDIUM_THRESHOLD
+                if need_key == "survival":
+                    threshold = self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD
+                
+                if current_need > threshold:
+                    should_consume = True
+                    break
+            
+            if should_consume:
+                # 기본적으로 1.0 단위를 소모 (재고가 적으면 재정량만큼)
+                quantity_to_consume = min(inventory_quantity, 1.0) 
+                
+                if quantity_to_consume > 0:
+                    self.consume(item_id, quantity_to_consume, current_time)
+                    self.logger.info(
+                        f"HOUSEHOLD_CONSUMPTION | Household {self.id} consumed {quantity_to_consume:.2f} {item_id}. Remaining inventory: {self.inventory.get(item_id, 0.0):.2f}",
+                        extra={**log_extra, "item_id": item_id, "quantity": quantity_to_consume}
                     )
-            else:
-                self.logger.debug(
-                    f"HOUSEHOLD_CONSUMPTION_FAIL | Household {self.id} needs food but inventory is empty.",
-                    extra=log_extra,
-                )
-        else:
-            self.logger.debug(
-                f"HOUSEHOLD_CONSUMPTION_SKIP | Household {self.id} survival need ({self.needs['survival']:.2f}) < threshold ({self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD:.2f}), skipping food consumption.",
-                extra=log_extra,
-            )
 
-        # TODO: Add logic for consuming luxury goods for social need, education for improvement need, etc.
+        # 2. 욕구 업데이트 (자연적 증가/감소)
         self.update_needs(current_time)
 
     def _initialize_desire_weights(self, personality: Personality) -> Dict[str, float]:

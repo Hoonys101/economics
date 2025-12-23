@@ -73,7 +73,7 @@ class Simulation:
             good_name: OrderBookMarket(market_id=good_name)
             for good_name in self.config_module.GOODS
         }
-        self.markets["labor_market"] = OrderBookMarket(market_id="labor_market")
+        self.markets["labor"] = OrderBookMarket(market_id="labor")
         self.markets["loan_market"] = LoanMarket(
             market_id="loan_market", bank=self.bank, config_module=self.config_module
         )
@@ -355,7 +355,7 @@ class Simulation:
                 all_transactions.extend(market.match_orders(self.time))
 
         self._process_transactions(all_transactions)
-        print(f"DEBUG: Tick {self.time} Processed {len(all_transactions)} transactions.")
+        print(f"DEBUG: Tick {self.time} Processed {len(all_transactions)} transactions. Buyers: {[tx.buyer_id for tx in all_transactions[:5]]}")
 
         # ---------------------------------------------------------
         # Activate Consumption Logic
@@ -365,6 +365,14 @@ class Simulation:
         for household in self.households:
              if household.is_active:
                  household.decide_and_consume(self.time)
+
+        # ---------------------------------------------------------
+        # Activate Farm Logic (Production & Needs/Wages)
+        # ---------------------------------------------------------
+        for firm in self.firms:
+             if firm.is_active:
+                 firm.produce(self.time)
+                 firm.update_needs(self.time)
 
         # Update tracker with the latest data after transactions and consumption
         self.tracker.track(self.time, self.households, self.firms, self.markets)
@@ -490,6 +498,24 @@ class Simulation:
                 
                 goods_market_data[f"{good_name}_current_sell_price"] = avg_price
 
+        # Include Labor Market Data (Use historical data as the order book is cleared)
+        latest_indicators = tracker.get_latest_indicators()
+        avg_wage = latest_indicators.get("labor_avg_price", self.config_module.LABOR_MARKET_MIN_WAGE)
+        
+        labor_market = self.markets.get("labor")
+        best_wage_offer = 0.0
+        if labor_market and isinstance(labor_market, OrderBookMarket):
+            # Best bid in the labor market is the highest wage offered by a firm
+            best_wage_offer = labor_market.get_best_bid("labor") or 0.0
+            # If the market currently has no orders, fall back to historical avg
+            if best_wage_offer <= 0:
+                best_wage_offer = avg_wage
+
+        goods_market_data["labor"] = {
+            "avg_wage": avg_wage,
+            "best_wage_offer": best_wage_offer
+        }
+
         total_price = 0.0
         count = 0.0
         for good_name in self.config_module.GOODS:
@@ -553,11 +579,13 @@ class Simulation:
 
                     seller.is_employed = True
                     seller.employer_id = buyer.id
+                    seller.current_wage = tx.price # Store wage
                     seller.needs["labor_need"] = 0.0
 
                 if isinstance(buyer, Firm):
                     if seller not in buyer.employees:
                         buyer.employees.append(seller)
+                    buyer.employee_wages[seller.id] = tx.price # Store wage
                     buyer.cost_this_turn += trade_value
 
                     if tx.transaction_type == "research_labor":

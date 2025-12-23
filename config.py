@@ -46,6 +46,7 @@ FIRM_PRODUCTIVITY_FACTOR = 10.0
 # --- Goods Configuration ---
 GOODS = {
     "basic_food": {"production_cost": 3, "utility_effects": {"survival": 10}},
+    "clothing": {"production_cost": 5, "utility_effects": {"survival": 2, "social": 8}},
     "luxury_food": {
         "production_cost": 10,
         "utility_effects": {"survival": 12, "social": 5},
@@ -54,12 +55,13 @@ GOODS = {
 
 
 # --- Firm Specialization ---
-# Assigns which firms produce which goods. Assumes NUM_FIRMS = 4
+# Assigns which firms produce which goods. Assumes NUM_FIRMS = 5 (for multi-good test)
 FIRM_SPECIALIZATIONS = {
     0: "basic_food",
     1: "basic_food",
-    2: "luxury_food",
-    3: "luxury_food",
+    2: "basic_food",
+    3: "clothing",
+    4: "clothing",
 }
 
 
@@ -152,6 +154,7 @@ FOOD_CONSUMPTION_MAX_PER_TICK = (
 FOOD_PURCHASE_MAX_PER_TICK = (
     5.0  # Maximum quantity of food a household can purchase in a single tick
 )
+HOUSEHOLD_MAX_PURCHASE_QUANTITY = 5.0 # Max units per item per tick for bulk buying
 HOUSEHOLD_FOOD_PRICE_ELASTICITY = (
     0.5  # Factor to adjust demand based on price deviation from average
 )
