@@ -4,6 +4,7 @@ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngin
 import config
 from unittest.mock import Mock
 from simulation.ai.enums import Tactic, Aggressiveness
+from simulation.dtos import DecisionContext
 
 
 # Mock config values for testing
@@ -13,7 +14,7 @@ def mock_config(monkeypatch):
         config, "FIRM_SPECIALIZATIONS", {0: "basic_food", 1: "luxury_food"}
     )
     monkeypatch.setattr(config, "FIRM_PRODUCTIVITY_FACTOR", 1.0)
-    monkeypatch.setattr(config, "GOODS_MARKET_SELL_PRICE", 10.0)
+
     monkeypatch.setattr(config, "BASE_WAGE", 5.0)
     # Add thresholds for the fix
     monkeypatch.setattr(config, "UNDERSTOCK_THRESHOLD", 0.8)
@@ -76,9 +77,14 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
     )
 
     # Call make_decisions
-    orders, _ = sample_firm.decision_engine.make_decisions(
-        sample_firm, {}, [], sample_market_data, 0
+    context = DecisionContext(
+        firm=sample_firm,
+        markets={},
+        goods_data=[],
+        market_data=sample_market_data,
+        current_time=0,
     )
+    orders, _ = sample_firm.decision_engine.make_decisions(context)
 
     # Test if a BUY order for 'labor' is generated if it needs more production
     buy_labor_orders = [
@@ -111,9 +117,14 @@ def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
         Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
     )
 
-    orders, _ = sample_firm.decision_engine.make_decisions(
-        sample_firm, {}, [], sample_market_data, 0
+    context = DecisionContext(
+        firm=sample_firm,
+        markets={},
+        goods_data=[],
+        market_data=sample_market_data,
+        current_time=0,
     )
+    orders, _ = sample_firm.decision_engine.make_decisions(context)
 
     # Expect SELL orders to reduce inventory, but not necessarily BUY labor orders
     sell_orders = [
@@ -146,9 +157,14 @@ def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
         Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
     )
 
-    orders, _ = sample_firm.decision_engine.make_decisions(
-        sample_firm, {}, [], sample_market_data, 0
+    context = DecisionContext(
+        firm=sample_firm,
+        markets={},
+        goods_data=[],
+        market_data=sample_market_data,
+        current_time=0,
     )
+    orders, _ = sample_firm.decision_engine.make_decisions(context)
 
     # Expect BUY labor orders to meet production target
     buy_labor_orders = [

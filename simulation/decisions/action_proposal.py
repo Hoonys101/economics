@@ -157,7 +157,7 @@ class ActionProposalEngine:
             if random.random() < 0.5:  # TODO: 더 정교한 로직으로 변경
                 # 노동 시장에 노동력 구매 주문
                 offer_wage = (
-                    self.config_module.LABOR_MARKET_OFFERED_WAGE
+                    self.config_module.INITIAL_WAGE
                     * random.uniform(0.9, 1.1)
                 )
                 orders.append(

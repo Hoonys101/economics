@@ -1,97 +1,157 @@
-# 트러블슈팅 가이드 (Troubleshooting Guide)
+## 5. 기업 생산량 0 및 고용 문제
 
-이 문서는 경제 시뮬레이션 개발 과정에서 발생한 주요 문제점과 해결 방법을 기록합니다. 반복적인 오류를 방지하고, 문제 해결 과정을 문서화하여 지식 기반을 구축하는 것을 목표로 합니다.
+### 문제인식
+시뮬레이션 초기 설정 후 기업이 직원을 유지하지 못하고 생산량이 0이 되는 문제. `MASTER_PLAN.md`에 P0 블로커로 명시됨.
 
----
+### 확인방법
+1.  시뮬레이션 로그에서 기업의 `employees` 리스트가 비어 있는지 확인.
+2.  `simulation/engine.py`의 `_handle_agent_lifecycle` 메서드에서 비활성 에이전트 처리 로직 확인.
+3.  가계가 노동 시장에 `SELL` 주문을 제출하는지 확인.
 
-## 1. `AttributeError: module 'config' has no attribute 'FIRM_PRODUCTION_TARGETS'`
+### 해결방법
+1.  **가계의 노동 공급 로직 부재**: `simulation/decisions/household_decision_engine.py`의 `make_decisions` 메서드에 실업 상태이고 노동 욕구가 높은 가계가 노동 시장에 `SELL` 주문을 제출하는 규칙 기반 로직을 추가합니다.
+    *   `config.LABOR_NEED_THRESHOLD` 및 `config.HOUSEHOLD_MIN_WAGE_DEMAND` 값을 활용합니다.
+2.  **`Household` 객체의 `active` 속성 오류**: `simulation/engine.py`의 `_handle_agent_lifecycle` 메서드에서 `h.active`를 `h.is_active`로 수정합니다.
+    *   **예방**: `tests/test_engine.py`에 `test_handle_agent_lifecycle_removes_inactive_agents` 단위 테스트를 추가하여 `_handle_agent_lifecycle`의 정확한 동작을 검증합니다.
 
-*   **문제 인식 (Problem Recognition):** `app.py`에서 `Firm` 클래스를 인스턴스화할 때 `config.FIRM_PRODUCTION_TARGETS`라는 존재하지 않는 속성을 참조하여 `AttributeError`가 발생했습니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 실행 시 `app.py`의 `create_simulation` 함수 호출 중 `Firm` 생성자에서 오류가 발생했습니다.
-*   **해결 방법 (Solution Method):** `app.py`의 `create_simulation` 함수 내 `Firm` 생성자 호출에서 `production_targets=config.FIRM_PRODUCTION_TARGETS` 인자를 제거했습니다. `Firm` 클래스 생성자는 `production_targets` 인자를 직접 받지 않고, `config_module.FIRM_MIN_PRODUCTION_TARGET`를 사용하여 `self.production_target`을 초기화합니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 클래스 생성자의 인자 목록과 호출 시 전달하는 인자가 일치하는지 항상 확인해야 합니다. 특히 `config` 모듈의 속성명과 사용법을 정확히 이해해야 합니다.
+## 6. `OrderBookMarket`의 `KeyError` 및 내부 상태 불일치
 
----
+### 문제인식
+`test_decision_engine_integration.py` 테스트에서 `OrderBookMarket` 인스턴스의 `buy_orders` 또는 `sell_orders` 딕셔너리에 `KeyError`가 발생하거나, `place_order` 호출 후에도 딕셔너리가 비어 있는 현상. `_add_order`가 호출되었음에도 내부 상태가 변경되지 않는 것처럼 보임.
 
-## 2. `sqlite3.ProgrammingError: Cannot operate on a closed database.`
+### 확인방법
+1.  `OrderBookMarket.place_order` 및 `_add_order` 메서드 내부에 디버그 `print` 문을 추가하여 `order_book` 매개변수와 `self.buy_orders`, `self.sell_orders`의 객체 ID를 비교합니다.
+2.  `pytest -s`로 테스트를 실행하여 디버그 출력을 확인합니다.
 
-*   **문제 인식 (Problem Recognition):** 시뮬레이션 스레드 또는 API 엔드포인트에서 데이터베이스 작업을 시도할 때 `sqlite3.ProgrammingError`가 발생했습니다. 이는 데이터베이스 연결이 예상보다 일찍 닫혔기 때문입니다.
-*   **확인 방법 (Verification Method):**
-    *   **시뮬레이션 스레드:** `app.py`의 `run_simulation_loop`에서 `simulation_instance.run_tick()` 호출 중 `repository.save_simulation_run()`에서 오류 발생.
-    *   **API 엔드포인트:** `/api/market/transactions`와 같은 API 호출 시 `get_repository()`에서 오류 발생.
-*   **해결 방법 (Solution Method):**
-    *   **시뮬레이션 스레드:** `app.py`의 `create_simulation` 함수 내에서 `SimulationRepository()` 인스턴스를 직접 생성하여 시뮬레이션 스레드가 독립적인 데이터베이스 연결을 가지도록 했습니다.
-    *   **API 엔드포인트:** `app.py`에서 `@app.teardown_appcontext` 데코레이터와 `close_repository_on_teardown` 함수를 제거하여 Flask 요청 컨텍스트 종료 시 데이터베이스 연결이 닫히는 것을 방지했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** Flask의 애플리케이션 컨텍스트 및 요청 컨텍스트와 백그라운드 스레드 간의 데이터베이스 연결 관리 방식에 대한 이해가 중요합니다. 특히 장기 실행되는 스레드에서는 컨텍스트에 의존적인 리소스 관리를 피해야 합니다.
+### 해결방법
+1.  **`OrderBookMarket.place_order`의 `transactions` 초기화 누락**: `simulation/markets/order_book_market.py`의 `place_order` 메서드 시작 부분에 `self.transactions = []`를 추가하여 이전 호출의 트랜잭션이 누적되지 않도록 합니다.
+2.  **`_add_order`의 매개변수 별칭 문제**: `simulation/markets/order_book_market.py`의 `_add_order` 메서드를 리팩토링하여 `order_book` 매개변수를 제거하고, `order.order_type`에 따라 `self.buy_orders` 또는 `self.sell_orders`를 직접 수정하도록 변경합니다.
+    *   `place_order`에서 `_add_order`를 호출할 때 `self._add_order(order)` 형태로 변경합니다.
+3.  **테스트 단언문 조정**: `tests/test_decision_engine_integration.py`의 관련 테스트에서 `KeyError`가 발생하지 않도록 단언문을 조정합니다. (예: `assert 'food' in goods_market.sell_orders` 대신 `assert len(goods_market.sell_orders.get('food', [])) == 1`과 같이 안전하게 접근하거나, 매칭 후에는 `assert not goods_market.sell_orders.get('food')`와 같이 비어 있음을 확인).
 
----
+## 7. `LoanMarket`의 알 수 없는 주문 유형 처리 문제
 
-## 3. `NameError: name 'HouseholdAI' is not defined`
+### 문제인식
+`tests/test_loan_market.py`의 `test_place_order_unknown_type_logs_warning` 테스트가 실패하며, `LoanMarket.place_order`가 알 수 없는 주문 유형에 대해 경고를 로깅하지 않거나 예상과 다르게 로깅함.
 
-*   **문제 인식 (Problem Recognition):** `app.py`에서 `HouseholdAI` 및 `FirmAI` 클래스를 사용하려고 했으나, 해당 클래스들이 임포트되지 않아 `NameError`가 발생했습니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 시작 시 `app.py`의 `create_simulation` 함수에서 `HouseholdAI` 또는 `FirmAI` 객체 생성 중 오류 발생.
-*   **해결 방법 (Solution Method):** `app.py` 파일 상단에 `from simulation.ai.household_ai import HouseholdAI` 및 `from simulation.ai.firm_ai import FirmAI` 임포트 문을 추가했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 새로운 클래스를 사용하거나 기존 클래스의 위치를 변경할 때는 항상 해당 파일에 올바른 임포트 문이 추가되었는지 확인해야 합니다.
+### 확인방법
+1.  `simulation/loan_market.py`의 `LoanMarket.place_order` 메서드 로직을 확인하여 알 수 없는 `order.order_type`에 대한 처리 방식과 로깅 여부를 확인합니다.
+2.  `tests/test_loan_market.py`의 해당 테스트에서 `mock_logger.warning.assert_called_once_with`의 기대값과 실제 로깅 메시지를 비교합니다.
 
----
+### 해결방법
+1.  **`LoanMarket.place_order`에 경고 로깅 추가**: `simulation/loan_market.py`의 `LoanMarket.place_order` 메서드에 `if/elif` 블록의 `else` 절을 추가하여 알 수 없는 `order.order_type`에 대해 `logger.warning`를 명시적으로 호출하도록 합니다.
+2.  **테스트 단언문 조정**: `tests/test_order_book_market.py`의 `test_place_order_unknown_type_logs_warning` 테스트에서 `_add_order`와 `place_order` 모두에서 경고가 발생할 수 있으므로, `mock_logger.warning.assert_called_once_with` 대신 `mock_logger.warning.assert_called_with`를 사용하고 `mock_logger.warning.call_count`를 확인하여 예상되는 호출 횟수(예: 2회)를 검증합니다.
 
-## 4. `AttributeError: 'AIDecisionEngine' object has no attribute '_get_strategic_state'`
+## 8. `simulation/engine.py`의 `SyntaxError`
 
-*   **문제 인식 (Problem Recognition):** `simulation/engine.py`에서 `firm.decision_engine.ai_engine._get_strategic_state()`를 호출할 때, `ai_engine`이 `AIDecisionEngine` 인스턴스여서 `_get_strategic_state` 메서드가 없어 `AttributeError`가 발생했습니다. `_get_strategic_state`는 `FirmAI` 및 `HouseholdAI`에 정의되어야 합니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 실행 중 `run_tick` 함수에서 `Firm` 또는 `Household`의 AI 엔진으로부터 전략적 상태를 가져오는 부분에서 오류 발생.
-*   **해결 방법 (Solution Method):** `app.py`의 `create_simulation` 함수에서 `AIDrivenFirmDecisionEngine` 및 `AIDrivenHouseholdDecisionEngine`을 인스턴스화할 때, `ai_engine` 인자로 `ai_manager.get_engine()`이 반환하는 `AIDecisionEngine`이 아닌, `FirmAI` 또는 `HouseholdAI` 인스턴스를 직접 생성하여 전달하도록 수정했습니다. 또한 `HouseholdAI` 생성자도 `FirmAI`와 동일하게 `ai_decision_engine` 인자를 받도록 수정했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 계층적 AI 구조에서 각 계층의 역할과 책임, 그리고 인스턴스 간의 올바른 관계 설정이 중요합니다. 특히 `BaseAIEngine`을 상속받는 구체적인 AI 클래스(`FirmAI`, `HouseholdAI`)와 이들을 관리하는 `AIDecisionEngine` 간의 관계를 명확히 해야 합니다.
+### 문제인식
+`run_experiment.py` 실행 중 `simulation/engine.py` 파일의 `self.db_manager.save_ai_decision(` 호출 부분에서 괄호가 닫히지 않은 `SyntaxError`가 발생했습니다. 이는 파일 끝에 불완전한 코드가 중복으로 포함되어 발생한 것으로 확인되었습니다.
 
----
+### 확인방법
+`run_experiment.py` 실행 시 발생하는 `SyntaxError`의 스택 트레이스를 통해 `simulation/engine.py`의 특정 라인에서 문법 오류를 확인했습니다.
 
-## 5. `AttributeError: 'FirmAI' object has no attribute '_discretize'`
+### 해결방법
+`simulation/engine.py` 파일 전체를 다시 읽어와, 파일 끝에 중복으로 포함된 불완전한 코드 블록을 제거하고 올바른 내용으로 파일을 덮어썼습니다.
 
-*   **문제 인식 (Problem Recognition):** `FirmAI` 클래스의 `_get_strategic_state` 메서드에서 `self._discretize()`를 호출했으나, `FirmAI`에 해당 메서드가 정의되어 있지 않아 `AttributeError`가 발생했습니다. `_discretize` 메서드는 `HouseholdAI`에만 정의되어 있었습니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 실행 중 `FirmAI`의 `_get_strategic_state` 호출 시 오류 발생.
-*   **해결 방법 (Solution Method):** `_discretize` 메서드를 `HouseholdAI`에서 `BaseAIEngine` (부모 클래스)으로 이동시키고, `HouseholdAI`에서는 해당 메서드를 제거했습니다. 이로써 `FirmAI`와 `HouseholdAI` 모두 `BaseAIEngine`으로부터 `_discretize` 메서드를 상속받아 사용할 수 있게 되었습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 공통으로 사용되는 유틸리티 메서드는 상속 계층 구조의 적절한 위치(예: 추상 기본 클래스)에 정의하여 코드 중복을 피하고 일관성을 유지해야 합니다.
+### 인사이트
+코드 편집 과정에서 발생할 수 있는 복사-붙여넣기 오류나 불완전한 코드 조각이 파일에 남아있을 경우, 예상치 못한 문법 오류를 유발할 수 있습니다. 특히 `replace`와 같은 자동화된 도구를 사용할 때, `old_string`이 너무 일반적이면 의도치 않은 위치까지 수정되거나, 파일이 손상될 수 있으므로 주의해야 합니다.
 
----
+## 9. 로깅 시스템 설정 오류
 
-## 6. `NameError: name 'Aggressiveness' is not defined`
+### 문제인식
+`run_experiment.py` 실행 시 `DEBUG` 레벨의 상세 로그가 `logs/simulation_log_StandardLog.csv` 파일에 제대로 기록되지 않고, 오래된 단위 테스트 로그만 남아있었습니다. 이는 로깅 설정이 올바르게 적용되지 않았음을 의미합니다.
 
-*   **문제 인식 (Problem Recognition):** `simulation/ai/firm_ai.py` 파일에서 `Aggressiveness` Enum을 사용했으나, 해당 Enum이 임포트되지 않아 `NameError`가 발생했습니다.
-*   **확인 방법 (Verification Method):** `firm_ai.py` 파일 로드 시 또는 `_get_tactical_actions` 메서드 호출 시 오류 발생.
-*   **해결 방법 (Solution Method):** `simulation/ai/firm_ai.py` 파일 상단에 `from .enums import Aggressiveness` 임포트 문을 추가했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 임포트 누락은 흔한 오류이므로, 새로운 클래스나 Enum을 사용할 때는 항상 임포트 여부를 확인해야 합니다.
+### 확인방법
+1.  `logs/simulation_log_StandardLog.csv` 파일의 내용을 확인하여 `run_experiment.py` 실행과 관련된 상세 로그가 누락되었음을 확인했습니다.
+2.  `main.py` 및 `config.py` 파일을 검토하여 로깅 설정 초기화 로직을 분석했습니다.
 
----
+### 해결방법
+1.  **로깅 설정 중앙화:** `utils/logging_manager.py` 파일을 새로 생성하여 로깅 설정을 중앙에서 관리하는 `setup_logging` 함수를 구현했습니다. 이 함수는 `config.ROOT_LOGGER_LEVEL`을 읽어와 파일 핸들러와 스트림 핸들러를 설정하고, 모든 로그를 지정된 CSV 파일과 콘솔에 출력하도록 구성합니다.
+2.  **`main.py` 수정:** `main.py` 시작 부분에서 `logging_manager.setup_logging()`을 호출하여 전역 로깅 설정을 적용하고, `custom_logger`와 `main_logger`를 `logging.getLogger(__name__)`으로 통일하여 일관성을 확보했습니다.
 
-## 7. `AttributeError: 'tuple' object has no attribute 'name'`
+### 인사이트
+복잡한 시뮬레이션 환경에서는 로깅 설정이 매우 중요합니다. 특히 여러 모듈에서 로거를 사용할 경우, 중앙 집중식 로깅 관리자를 통해 일관된 설정과 출력을 보장하는 것이 디버깅 효율성을 극대화하는 데 필수적입니다.
 
-*   **문제 인식 (Problem Recognition):** `simulation/decisions/ai_driven_firm_engine.py`의 `_execute_tactic` 메서드에서 `tactic.name`을 호출할 때, `tactic` 변수가 `(Tactic, Aggressiveness)` 튜플이어서 `AttributeError`가 발생했습니다. `decide_and_learn` 메서드는 튜플을 반환하지만, `_execute_tactic`은 `Tactic` Enum 단일 객체를 기대했습니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 실행 중 `Firm`의 의사결정 과정에서 `_execute_tactic` 로깅 부분에서 오류 발생.
-*   **해결 방법 (Solution Method):** `AIDrivenFirmDecisionEngine.make_decisions`에서 `self.ai_engine.decide_and_learn`의 반환값을 `chosen_tactic_tuple`로 받고, 이를 `tactic, aggressiveness = chosen_tactic_tuple`과 같이 언팩하도록 수정했습니다. 또한 `_execute_tactic` 메서드의 시그니처를 `(tactic: Tactic, aggressiveness: Aggressiveness, ...)`로 변경하고, 로깅 시 `tactic.name`을 사용하도록 수정했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 함수나 메서드의 반환 타입과 이를 사용하는 코드의 기대 타입이 일치하는지 항상 확인해야 합니다. 특히 튜플 언팩킹 시 변수 개수를 정확히 맞춰야 합니다.
+## 10. 시장 거래 미발생 (수요-공급 테스트 실패의 근본 원인)
 
----
+### 문제인식
+수요-공급 법칙 검증 실험 결과, 모든 시나리오에서 'food'의 평균 가격과 거래량이 모두 0으로 기록되었습니다. 이는 시뮬레이션 내에서 'food' 거래가 전혀 이루어지지 않았음을 의미합니다.
 
-## 8. `AttributeError: 'OrderBookMarket' object has no attribute 'place_place_order'`
+### 확인방법
+1.  `analyze_supply_demand.py` 실행 결과 `food_avg_price`와 `food_trade_volume`이 0으로 나타나는 것을 확인했습니다.
+2.  `simulation_data.db`의 `transactions` 테이블을 직접 조회하여 거래 기록이 전혀 없음을 확인했습니다.
+3.  `DEBUG` 레벨로 시뮬레이션을 실행하여 생성된 로그(`logs/simulation_log_StandardLog.csv`)를 분석했습니다.
 
-*   **문제 인식 (Problem Recognition):** `simulation/engine.py`의 `run_tick` 메서드에서 `market.place_place_order()`라는 오타로 인해 `AttributeError`가 발생했습니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 실행 중 `Household`의 주문을 시장에 제출하는 부분에서 오류 발생.
-*   **해결 방법 (Solution Method):** `simulation/engine.py` 파일에서 `market.place_place_order`를 올바른 메서드명인 `market.place_order`로 수정했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 코드 작성 시 오타에 주의하고, 메서드 호출 전에 해당 객체가 해당 메서드를 가지고 있는지 확인하는 습관을 들여야 합니다.
+### 근본 원인 및 해결방법
+1.  **가계의 잘못된 주문 타입:**
+    *   **문제:** 가계 에이전트가 상품 구매 주문을 낼 때, `Order` 객체의 `order_type`을 소문자 `'buy'`로 생성했습니다. `OrderBookMarket`은 대문자 `'BUY'`만 유효한 주문 타입으로 인식하여 이 주문들을 무시했습니다.
+    *   **해결:** `simulation/decisions/household_decision_engine.py` 파일에서 `_execute_tactic` 메서드 내의 모든 주문 타입(`'buy'`, `'sell'`)을 대문자(`'BUY'`, `'SELL'`)로 수정하여 시장이 올바르게 인식하도록 했습니다.
+2.  **가계의 초기 'food' 재고 부족:**
+    *   **문제:** 시뮬레이션 시작 시 가계 에이전트가 'food' 재고를 전혀 가지고 있지 않아, 생존 욕구가 높아져도 소비할 'food'가 없어 소비에 실패했습니다.
+    *   **해결:** `main.py` 파일에서 가계 에이전트를 초기화할 때, `config.INITIAL_HOUSEHOLD_FOOD_INVENTORY` 설정값을 사용하여 모든 가계에 초기 'food' 재고를 지급하도록 수정했습니다.
 
----
+### 인사이트
+시뮬레이션의 기본 경제 순환이 작동하기 위해서는 에이전트의 의사결정(주문 생성)과 시장 메커니즘(주문 처리) 간의 인터페이스가 정확히 일치해야 합니다. 또한, 에이전트가 초기부터 기본적인 활동을 수행할 수 있도록 적절한 초기 자원(재고)을 제공하는 것이 중요합니다.
 
-## 9. `TypeError: AIDrivenFirmDecisionEngine.make_decisions() missing 2 required positional arguments: 'market_data' and 'current_time'`
+## 11. 장기 TODO: 재래시장 모델 도입 (시장 설계 다변화)
 
-*   **문제 인식 (Problem Recognition):** `simulation/firms.py`의 `Firm.make_decision` 메서드에서 `self.decision_engine.make_decisions`를 호출할 때, `markets`와 `goods_data` 인자를 전달하지 않아 `TypeError`가 발생했습니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 실행 중 `Firm`의 의사결정 과정에서 `AIDrivenFirmDecisionEngine.make_decisions` 호출 시 오류 발생.
-*   **해결 방법 (Solution Method):** `simulation/firms.py` 파일의 `Firm.make_decision` 메서드에서 `self.decision_engine.make_decisions`를 호출할 때 `markets=self.decision_engine.markets`와 `goods_data=self.decision_engine.goods_data` 인자를 추가하여 모든 필수 인자를 전달하도록 수정했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 메서드 시그니처를 변경하거나 호출하는 쪽에서 인자를 누락하지 않도록 주의해야 합니다. 특히 `TYPE_CHECKING`을 사용하는 경우 런타임 오류를 방지하기 위해 더욱 꼼꼼한 확인이 필요합니다.
+### 문제인식
+현재 시뮬레이션의 시장 모델은 모든 참가자에게 모든 계약이 공개되고 순차적으로 정렬되어 거래가 실행되는 '오더북' 방식입니다. 이는 효율적이지만, 현실 세계의 다양한 시장 형태를 모두 반영하지 못합니다. 특히, 비공식적이고 비정형적인 거래가 이루어지는 '재래시장'과 같은 모델을 도입하여 시장 메커니즘의 다양성을 확보하고 싶습니다.
 
----
+### 목표
+기존 오더북 시장 모델과 병행하여, 재래시장과 유사한 새로운 시장 모델을 구현하여 시뮬레이션의 현실성과 복잡성을 증대시킵니다. 이를 통해 시장 구조가 에이전트의 행동과 거시 경제 지표에 미치는 영향을 분석할 수 있는 기반을 마련합니다.
 
-## 10. `AttributeError: 'float' object has no attribute 'values'`
+### 재래시장 모델 상세 설계 (장기 TODO)
+*   **시장 개장 및 폐장:** 각 시뮬레이션 틱(tick)은 시장이 열리고 닫히는 하나의 '장'으로 간주합니다.
+*   **공급자의 행동:**
+    *   시장이 열리면, 공급자(기업)는 자신의 인벤토리에서 판매할 물품의 종류와 양을 결정하여 시장에 나옵니다.
+    *   공급자는 시장이 폐장되기 전까지 물품을 판매해야 하므로, 시간이 지남에 따라 가격을 낮출 유인이 생깁니다.
+*   **수요자의 행동:**
+    *   수요자(가계)는 시장에서 `window` 수만큼의 공급자를 무작위 또는 특정 기준으로 탐색합니다.
+    *   탐색한 공급자들의 제시 가격을 확인하고, 자신의 구매 의사 가격과 비교하여 거래를 시도합니다.
+    *   **거래 성립 조건:** 공급자의 제시 가격이 수요자의 구매 의사 가격보다 낮거나 같으면 거래가 성립됩니다.
+    *   **가격 결정:** 거래가 성립되면, 공급자 가격과 수요자 가격의 중간 가격으로 거래가 체결됩니다.
+    *   **시장 이탈:** 수요자는 사고자 하는 물품을 모두 구매하면 시장에서 제외됩니다.
+*   **시장 폐장 및 재고 소각:**
+    *   정해진 시간(틱)이 지나 시장이 폐장되면, 공급자가 가져온 물품 중 판매되지 않고 남은 물품은 모두 소각됩니다.
+    *   이는 공급자에게 재고 부담을 주어 가격 인하 유인을 강화합니다.
 
-*   **문제 인식 (Problem Recognition):** `simulation/metrics/economic_tracker.py`의 `track` 메서드에서 `total_production`을 계산할 때 `f.current_production.values()`를 호출했으나, `Firm.current_production`이 `float` 타입이어서 `AttributeError`가 발생했습니다.
-*   **확인 방법 (Verification Method):** 시뮬레이션 실행 중 경제 지표 추적 부분에서 오류 발생.
-*   **해결 방법 (Solution Method):** `simulation/metrics/economic_tracker.py` 파일에서 `total_production` 계산 로직을 `sum(f.current_production for f in firms if getattr(f, "is_active", False))`로 수정하여 `float` 값을 직접 합산하도록 변경했습니다.
-*   **인사이트/교훈 (Insight/Lesson Learned):** 객체의 속성 타입과 그 속성을 사용하는 방식이 일치하는지 확인해야 합니다. 특히 집계 함수를 사용할 때는 데이터의 구조를 정확히 이해하고 적용해야 합니다.
+### 기대 효과
+*   보다 현실적인 시장 환경 조성: 가격 협상, 정보 비대칭, 재고 소각 등의 요소를 통해 시장의 동적인 특성을 강화합니다.
+*   에이전트 행동의 복잡성 증대: 공급자와 수요자는 시장 상황과 자신의 목표에 따라 가격 전략을 더욱 정교하게 수립해야 합니다.
+*   시장 구조가 경제에 미치는 영향 분석: 오더북 시장과 재래시장 모델 간의 비교 분석을 통해 시장 구조가 가격 형성, 거래량, 에이전트의 이윤 등에 미치는 영향을 연구할 수 있습니다.
+
+### 구현 방향 (향후 논의 필요)
+*   `OrderBookMarket`과 별도의 `TraditionalMarket` 클래스 구현.
+*   `HouseholdDecisionEngine` 및 `FirmDecisionEngine`에 재래시장 환경에 맞는 의사결정 로직 추가.
+*   `window` 크기, 탐색 전략, 가격 협상 로직 등 세부 메커니즘 정의.
+
+## 13. `AttributeError: type object 'Tactic' has no attribute 'PRICE_INCREASE_LARGE'`
+
+### 문제인식
+`pytest` 실행 시 `RuleBasedFirmDecisionEngine`의 `_execute_tactic` 메서드에서 `AttributeError`가 발생했습니다. 이는 `Tactic` 열거형에 존재하지 않는 멤버(`PRICE_INCREASE_LARGE`, `PRICE_DECREASE_LARGE`)에 접근하려고 시도했기 때문입니다.
+
+### 확인방법
+1.  `pytest` 오류 메시지에서 `AttributeError: type object 'Tactic' has no attribute 'PRICE_INCREASE_LARGE'`를 확인합니다.
+2.  `simulation/ai/enums.py` 파일의 `Tactic` 열거형 정의를 확인하여 사용 가능한 멤버를 확인합니다.
+
+### 해결방법
+`simulation/decisions/rule_based_firm_engine.py` 파일의 `_execute_tactic` 메서드와 `_adjust_price_with_ai` 메서드에서 `Tactic.PRICE_INCREASE_LARGE` 및 `Tactic.PRICE_DECREASE_LARGE`를 사용하는 코드를 제거했습니다.
+
+### 인사이트
+코드를 수정할 때, 특히 열거형(Enum)과 같이 미리 정의된 상수를 사용할 때는 해당 상수가 실제로 정의되어 있는지 확인하는 것이 중요합니다. 이를 통해 런타임에 발생할 수 있는 `AttributeError`를 방지할 수 있습니다.
+
+## 14. `AssertionError: assert len(orders) == 3` in `test_household_decision_engine_multi_good.py`
+
+### 문제인식
+`test_make_decisions_with_evaluate_consumption_options` 테스트에서 `AIDrivenHouseholdDecisionEngine`이 `EVALUATE_CONSUMPTION_OPTIONS` 전술에 대해 빈 주문 목록을 반환하여 `AssertionError`가 발생했습니다.
+
+### 확인방법
+1.  `pytest`를 실행하여 `assert len(orders) == 3`에서 테스트가 실패하는 것을 확인합니다.
+2.  `simulation/decisions/ai_driven_household_engine.py`의 `_execute_tactic` 메서드를 디버깅하여 `EVALUATE_CONSUMPTION_OPTIONS` 전술이 처리되지 않고 있음을 확인합니다.
+
+### 해결방법
+`simulation/decisions/ai_driven_household_engine.py`의 `_execute_tactic` 메서드에 `EVALUATE_CONSUMPTION_OPTIONS` 전술을 처리하는 `elif` 블록을 추가하여, 해당 전술이 선택되었을 때 `rule_based_engine`에 결정을 위임하도록 수정했습니다.
+
+### 인사이트
+AI 기반 의사결정 엔진을 개발할 때, 모든 전술(Tactic)에 대한 처리 로직을 명시적으로 구현하거나, 의도적으로 처리하지 않을 경우를 명확히 문서화해야 합니다. 특히, AI 엔진과 규칙 기반 엔진을 함께 사용하는 경우, 전술에 따른 책임 위임(delegation) 로직을 꼼꼼하게 검증해야 합니다.

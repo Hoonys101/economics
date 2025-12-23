@@ -4,6 +4,12 @@ import sqlite3
 from simulation.db.database import DatabaseManager
 from simulation.db.schema import create_tables
 from simulation.db.repository import SimulationRepository
+from simulation.dtos import (
+    TransactionData,
+    AgentStateData,
+    MarketHistoryData,
+    EconomicIndicatorData,
+)
 
 
 # Use an in-memory database for testing
@@ -53,21 +59,22 @@ def test_save_and_get_simulation_run(test_repo: SimulationRepository):
 
 def test_save_and_get_agent_state(test_repo: SimulationRepository):
     """Test saving and retrieving an agent's state."""
-    agent_state = {
-        "time": 1,
-        "agent_id": 101,
-        "agent_type": "household",
-        "assets": 1000.0,
-        "is_active": True,
-        "is_employed": True,
-        "employer_id": 201,
-        "needs_survival": 0.5,
-        "needs_labor": 0.8,
-        "inventory_food": 10.0,
-        "current_production": None,
-        "num_employees": None,
-    }
-    test_repo.save_agent_state(1, agent_state)
+    agent_state_data = AgentStateData(
+        run_id=1,
+        time=1,
+        agent_id=101,
+        agent_type="Household",
+        assets=100.0,
+        is_active=True,
+        is_employed=True,
+        employer_id=201,
+        needs_survival=0.5,
+        needs_labor=0.8,
+        inventory_food=10.0,
+        current_production=None,
+        num_employees=None,
+    )
+    test_repo.save_agent_state(agent_state_data)
 
     retrieved_states = test_repo.get_agent_states(
         agent_id=101, start_tick=1, end_tick=1
@@ -76,23 +83,24 @@ def test_save_and_get_agent_state(test_repo: SimulationRepository):
 
     retrieved_state = retrieved_states[0]
     assert retrieved_state["agent_id"] == 101
-    assert retrieved_state["assets"] == 1000.0
+    assert retrieved_state["assets"] == 100.0 # Changed from 1000.0 to 100.0 to match DTO
     assert retrieved_state["inventory_food"] == 10.0
 
 
 def test_save_and_get_transaction(test_repo: SimulationRepository):
     """Test saving and retrieving a transaction."""
-    transaction_data = {
-        "time": 1,
-        "buyer_id": 101,
-        "seller_id": 201,
-        "item_id": "food",
-        "quantity": 5.0,
-        "price": 10.0,
-        "market_id": "goods_market",
-        "transaction_type": "goods",
-    }
-    test_repo.save_transaction(1, transaction_data)
+    transaction_data = TransactionData(
+        run_id=1,
+        time=1,
+        buyer_id=101,
+        seller_id=201,
+        item_id="food",
+        quantity=5.0,
+        price=10.0,
+        transaction_type="Goods",
+        market_id="goods_market",
+    )
+    test_repo.save_transaction(transaction_data)
 
     retrieved_txs = test_repo.get_transactions(
         start_tick=1, end_tick=1, market_id="goods_market"
@@ -107,21 +115,22 @@ def test_save_and_get_transaction(test_repo: SimulationRepository):
 
 def test_save_and_get_economic_indicators(test_repo: SimulationRepository):
     """Test saving and retrieving economic indicators."""
-    indicator_data = {
-        "time": 1,
-        "unemployment_rate": 0.05,
-        "avg_wage": 1500.0,
-        "food_avg_price": 10.0,
-        "food_trade_volume": 100.0,
-        "avg_goods_price": 12.0,
-        "total_production": 500.0,
-        "total_consumption": 450.0,
-        "total_household_assets": 100000.0,
-        "total_firm_assets": 200000.0,
-        "total_food_consumption": 200.0,
-        "total_inventory": 1000.0,
-    }
-    test_repo.save_economic_indicator(1, indicator_data)
+    indicator_data = EconomicIndicatorData(
+        run_id=1,
+        time=1,
+        unemployment_rate=0.05,
+        avg_wage=15.0,
+        food_avg_price=10.0,
+        food_trade_volume=100.0,
+        avg_goods_price=12.0,
+        total_production=500.0,
+        total_consumption=450.0,
+        total_household_assets=100000.0,
+        total_firm_assets=200000.0,
+        total_food_consumption=200.0,
+        total_inventory=1000.0,
+    )
+    test_repo.save_economic_indicator(indicator_data)
 
     retrieved_indicators = test_repo.get_economic_indicators(start_tick=1, end_tick=1)
     assert len(retrieved_indicators) == 1

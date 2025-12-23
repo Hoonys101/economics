@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import List, Dict, Any, Tuple, TYPE_CHECKING
 from simulation.models import Order
 
+from simulation.dtos import DecisionContext
+
 if TYPE_CHECKING:
     from simulation.core_markets import Market
 
@@ -9,11 +11,7 @@ if TYPE_CHECKING:
 class BaseDecisionEngine:
     def make_decisions(
         self,
-        agent: Any,
-        markets: Dict[str, "Market"],
-        goods_data: List[Dict[str, Any]],
-        market_data: Dict[str, Any],
-        current_time: int,
+        context: DecisionContext,
     ) -> Tuple[List[Order], Any]:
         """
         에이전트의 현재 상태와 시장 정보를 바탕으로 의사결정을 내리고,

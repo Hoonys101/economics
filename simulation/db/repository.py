@@ -1,10 +1,18 @@
 import sqlite3
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from datetime import datetime
 import json
 
 from simulation.db.database import get_db_connection, close_db_connection
+if TYPE_CHECKING:
+    from simulation.dtos import (
+        TransactionData,
+        AgentStateData,
+        MarketHistoryData,
+        EconomicIndicatorData,
+        AIDecisionData,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -54,16 +62,7 @@ class SimulationRepository:
             self.conn.rollback()
             raise
 
-    def save_ai_decision(
-        self,
-        run_id: int,
-        tick: int,
-        agent_id: int,
-        decision_type: str,
-        decision_details: Dict[str, Any],
-        predicted_reward: Optional[float] = None,
-        actual_reward: Optional[float] = None,
-    ):
+    def save_ai_decision(self, data: "AIDecisionData"):
         """
         AI 에이전트의 의사결정 데이터를 데이터베이스에 저장합니다.
         """
@@ -75,13 +74,13 @@ class SimulationRepository:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    run_id,
-                    tick,
-                    agent_id,
-                    decision_type,
-                    json.dumps(decision_details) if decision_details else None,
-                    predicted_reward,
-                    actual_reward,
+                    data.run_id,
+                    data.tick,
+                    data.agent_id,
+                    data.decision_type,
+                    json.dumps(data.decision_details) if data.decision_details else None,
+                    data.predicted_reward,
+                    data.actual_reward,
                 ),
             )
             self.conn.commit()
@@ -99,17 +98,18 @@ class SimulationRepository:
             self.cursor.execute("DELETE FROM agent_states")
             self.cursor.execute("DELETE FROM market_history")
             self.cursor.execute("DELETE FROM economic_indicators")
+            self.cursor.execute("DELETE FROM ai_decisions_history")
             self.conn.commit()
             logger.info("All simulation data cleared from database.")
         except sqlite3.Error as e:
             logger.error(f"Error clearing data: {e}")
             self.conn.rollback()
 
-    def save_transaction(self, run_id: int, transaction_data: Dict[str, Any]):
+    def save_transaction(self, data: "TransactionData"):
         """
         단일 거래 데이터를 데이터베이스에 저장합니다.
         """
-        logger.debug(f"Attempting to save transaction: {transaction_data}")
+        logger.debug(f"Attempting to save transaction: {data}")
         try:
             self.cursor.execute(
                 """
@@ -117,15 +117,15 @@ class SimulationRepository:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    run_id,
-                    transaction_data["time"],
-                    transaction_data["buyer_id"],
-                    transaction_data["seller_id"],
-                    transaction_data["item_id"],
-                    transaction_data["quantity"],
-                    transaction_data["price"],
-                    transaction_data["market_id"],
-                    transaction_data["transaction_type"],
+                    data.run_id,
+                    data.time,
+                    data.buyer_id,
+                    data.seller_id,
+                    data.item_id,
+                    data.quantity,
+                    data.price,
+                    data.market_id,
+                    data.transaction_type,
                 ),
             )
             logger.debug("Transaction executed. Committing...")
@@ -135,7 +135,7 @@ class SimulationRepository:
             logger.error(f"Error saving transaction: {e}")
             self.conn.rollback()
 
-    def save_agent_state(self, run_id: int, agent_state_data: Dict[str, Any]):
+    def save_agent_state(self, data: "AgentStateData"):
         """
         단일 에이전트 상태 데이터를 데이터베이스에 저장합니다.
         """
@@ -147,19 +147,19 @@ class SimulationRepository:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    run_id,
-                    agent_state_data["time"],
-                    agent_state_data["agent_id"],
-                    agent_state_data["agent_type"],
-                    agent_state_data["assets"],
-                    agent_state_data["is_active"],
-                    agent_state_data.get("is_employed"),
-                    agent_state_data.get("employer_id"),
-                    agent_state_data.get("needs_survival"),
-                    agent_state_data.get("needs_labor"),
-                    agent_state_data.get("inventory_food"),
-                    agent_state_data.get("current_production"),
-                    agent_state_data.get("num_employees"),
+                    data.run_id,
+                    data.time,
+                    data.agent_id,
+                    data.agent_type,
+                    data.assets,
+                    data.is_active,
+                    data.is_employed,
+                    data.employer_id,
+                    data.needs_survival,
+                    data.needs_labor,
+                    data.inventory_food,
+                    data.current_production,
+                    data.num_employees,
                 ),
             )
             self.conn.commit()
@@ -167,24 +167,28 @@ class SimulationRepository:
             logger.error(f"Error saving agent state: {e}")
             self.conn.rollback()
 
-    def save_market_history(self, market_history_data: Dict[str, Any]):
+    def save_market_history(self, data: "MarketHistoryData"):
         """
         단일 시장 이력 데이터를 데이터베이스에 저장합니다.
         """
         try:
             self.cursor.execute(
                 """
-                INSERT INTO market_history (time, market_id, item_id, avg_price, trade_volume, best_ask, best_bid)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO market_history (time, market_id, item_id, avg_price, trade_volume, best_ask, best_bid, avg_ask, avg_bid, worst_ask, worst_bid)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    market_history_data["time"],
-                    market_history_data["market_id"],
-                    market_history_data.get("item_id"),
-                    market_history_data.get("avg_price"),
-                    market_history_data.get("trade_volume"),
-                    market_history_data.get("best_ask"),
-                    market_history_data.get("best_bid"),
+                    data.time,
+                    data.market_id,
+                    data.item_id,
+                    data.avg_price,
+                    data.trade_volume,
+                    data.best_ask,
+                    data.best_bid,
+                    data.avg_ask,
+                    data.avg_bid,
+                    data.worst_ask,
+                    data.worst_bid,
                 ),
             )
             self.conn.commit()
@@ -192,7 +196,7 @@ class SimulationRepository:
             logger.error(f"Error saving market history: {e}")
             self.conn.rollback()
 
-    def save_economic_indicator(self, run_id: int, indicator_data: Dict[str, Any]):
+    def save_economic_indicator(self, data: "EconomicIndicatorData"):
         """
         단일 경제 지표 데이터를 데이터베이스에 저장합니다.
         """
@@ -205,19 +209,19 @@ class SimulationRepository:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    run_id,
-                    indicator_data["time"],
-                    indicator_data.get("unemployment_rate"),
-                    indicator_data.get("avg_wage"),
-                    indicator_data.get("food_avg_price"),
-                    indicator_data.get("food_trade_volume"),
-                    indicator_data.get("avg_goods_price"),
-                    indicator_data.get("total_production"),
-                    indicator_data.get("total_consumption"),
-                    indicator_data.get("total_household_assets"),
-                    indicator_data.get("total_firm_assets"),
-                    indicator_data.get("total_food_consumption"),
-                    indicator_data.get("total_inventory"),
+                    data.run_id,
+                    data.time,
+                    data.unemployment_rate,
+                    data.avg_wage,
+                    data.food_avg_price,
+                    data.food_trade_volume,
+                    data.avg_goods_price,
+                    data.total_production,
+                    data.total_consumption,
+                    data.total_household_assets,
+                    data.total_firm_assets,
+                    data.total_food_consumption,
+                    data.total_inventory,
                 ),
             )
             self.conn.commit()
@@ -225,7 +229,7 @@ class SimulationRepository:
             logger.error(f"Error saving economic indicator: {e}")
             self.conn.rollback()
 
-    def save_agent_states_batch(self, run_id: int, agent_states_data: List[Dict[str, Any]]):
+    def save_agent_states_batch(self, agent_states_data: List["AgentStateData"]):
         """
         여러 에이전트 상태 데이터를 데이터베이스에 일괄 저장합니다.
         """
@@ -237,19 +241,19 @@ class SimulationRepository:
             for state_data in agent_states_data:
                 data_to_insert.append(
                     (
-                        run_id, # Add run_id to the data
-                        state_data["time"],
-                        state_data["agent_id"],
-                        state_data["agent_type"],
-                        state_data["assets"],
-                        state_data["is_active"],
-                        state_data.get("is_employed"),
-                        state_data.get("employer_id"),
-                        state_data.get("needs_survival"),
-                        state_data.get("needs_labor"),
-                        state_data.get("inventory_food"),
-                        state_data.get("current_production"),
-                        state_data.get("num_employees"),
+                        state_data.run_id,
+                        state_data.time,
+                        state_data.agent_id,
+                        state_data.agent_type,
+                        state_data.assets,
+                        state_data.is_active,
+                        state_data.is_employed,
+                        state_data.employer_id,
+                        state_data.needs_survival,
+                        state_data.needs_labor,
+                        state_data.inventory_food,
+                        state_data.current_production,
+                        state_data.num_employees,
                     )
                 )
             self.cursor.executemany(
@@ -261,13 +265,13 @@ class SimulationRepository:
                 data_to_insert,
             )
             self.conn.commit()
-            logger.debug(f"Saved {len(agent_states_data)} agent states in batch for run_id {run_id}")
+            logger.debug(f"Saved {len(agent_states_data)} agent states in batch")
         except sqlite3.Error as e:
             logger.error(f"Error saving agent states batch: {e}")
             self.conn.rollback()
             raise
 
-    def save_transactions_batch(self, run_id: int, transactions_data: List[Dict[str, Any]]):
+    def save_transactions_batch(self, transactions_data: List["TransactionData"]):
         """
         여러 거래 데이터를 데이터베이스에 일괄 저장합니다.
         """
@@ -278,15 +282,15 @@ class SimulationRepository:
             for tx_data in transactions_data:
                 data_to_insert.append(
                     (
-                        run_id,
-                        tx_data["time"],
-                        tx_data["buyer_id"],
-                        tx_data["seller_id"],
-                        tx_data["item_id"],
-                        tx_data["quantity"],
-                        tx_data["price"],
-                        tx_data["market_id"],
-                        tx_data["transaction_type"],
+                        tx_data.run_id,
+                        tx_data.time,
+                        tx_data.buyer_id,
+                        tx_data.seller_id,
+                        tx_data.item_id,
+                        tx_data.quantity,
+                        tx_data.price,
+                        tx_data.market_id,
+                        tx_data.transaction_type,
                     )
                 )
             self.cursor.executemany(
@@ -297,13 +301,13 @@ class SimulationRepository:
                 data_to_insert,
             )
             self.conn.commit()
-            logger.debug(f"Saved {len(transactions_data)} transactions in batch for run_id {run_id}")
+            logger.debug(f"Saved {len(transactions_data)} transactions in batch")
         except sqlite3.Error as e:
             logger.error(f"Error saving transactions batch: {e}")
             self.conn.rollback()
             raise
 
-    def save_economic_indicators_batch(self, run_id: int, indicators_data: List[Dict[str, Any]]):
+    def save_economic_indicators_batch(self, indicators_data: List["EconomicIndicatorData"]):
         """
         여러 경제 지표 데이터를 데이터베이스에 일괄 저장합니다.
         """
@@ -314,19 +318,19 @@ class SimulationRepository:
             for indicator_data in indicators_data:
                 data_to_insert.append(
                     (
-                        run_id,
-                        indicator_data["time"],
-                        indicator_data.get("unemployment_rate"),
-                        indicator_data.get("avg_wage"),
-                        indicator_data.get("food_avg_price"),
-                        indicator_data.get("food_trade_volume"),
-                        indicator_data.get("avg_goods_price"),
-                        indicator_data.get("total_production"),
-                        indicator_data.get("total_consumption"),
-                        indicator_data.get("total_household_assets"),
-                        indicator_data.get("total_firm_assets"),
-                        indicator_data.get("total_food_consumption"),
-                        indicator_data.get("total_inventory"),
+                        indicator_data.run_id,
+                        indicator_data.time,
+                        indicator_data.unemployment_rate,
+                        indicator_data.avg_wage,
+                        indicator_data.food_avg_price,
+                        indicator_data.food_trade_volume,
+                        indicator_data.avg_goods_price,
+                        indicator_data.total_production,
+                        indicator_data.total_consumption,
+                        indicator_data.total_household_assets,
+                        indicator_data.total_firm_assets,
+                        indicator_data.total_food_consumption,
+                        indicator_data.total_inventory,
                     )
                 )
             self.cursor.executemany(
@@ -339,9 +343,47 @@ class SimulationRepository:
                 data_to_insert,
             )
             self.conn.commit()
-            logger.debug(f"Saved {len(indicators_data)} economic indicators in batch for run_id {run_id}")
+            logger.debug(f"Saved {len(indicators_data)} economic indicators in batch")
         except sqlite3.Error as e:
             logger.error(f"Error saving economic indicators batch: {e}")
+            self.conn.rollback()
+            raise
+
+    def save_market_history_batch(self, market_history_data: List["MarketHistoryData"]):
+        """
+        여러 시장 이력 데이터를 데이터베이스에 일괄 저장합니다.
+        """
+        if not market_history_data:
+            return
+        try:
+            data_to_insert = []
+            for data in market_history_data:
+                data_to_insert.append(
+                    (
+                        data.time,
+                        data.market_id,
+                        data.item_id,
+                        data.avg_price,
+                        data.trade_volume,
+                        data.best_ask,
+                        data.best_bid,
+                        data.avg_ask,
+                        data.avg_bid,
+                        data.worst_ask,
+                        data.worst_bid,
+                    )
+                )
+            self.cursor.executemany(
+                """
+                INSERT INTO market_history (time, market_id, item_id, avg_price, trade_volume, best_ask, best_bid, avg_ask, avg_bid, worst_ask, worst_bid)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                data_to_insert,
+            )
+            self.conn.commit()
+            logger.debug(f"Saved {len(market_history_data)} market history records in batch")
+        except sqlite3.Error as e:
+            logger.error(f"Error saving market history batch: {e}")
             self.conn.rollback()
             raise
 
@@ -471,8 +513,12 @@ if __name__ == "__main__":
     # 테스트 코드
     repo = SimulationRepository()
 
+    # 테스트 런 생성
+    run_id = repo.save_simulation_run("test_hash", "Test Run")
+
     # 테스트 데이터 저장
     repo.save_transaction(
+        run_id,
         {
             "time": 1,
             "buyer_id": 1,
@@ -485,6 +531,7 @@ if __name__ == "__main__":
         }
     )
     repo.save_agent_state(
+        run_id,
         {
             "time": 1,
             "agent_id": 1,
@@ -501,6 +548,7 @@ if __name__ == "__main__":
         }
     )
     repo.save_economic_indicator(
+        run_id,
         {
             "time": 1,
             "unemployment_rate": 5.0,

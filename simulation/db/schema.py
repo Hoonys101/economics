@@ -67,7 +67,11 @@ def create_tables(conn: sqlite3.Connection):
             avg_price REAL,
             trade_volume REAL,
             best_ask REAL,
-            best_bid REAL
+            best_bid REAL,
+            avg_ask REAL,
+            avg_bid REAL,
+            worst_ask REAL,
+            worst_bid REAL
         )
     """)
 

@@ -41,11 +41,7 @@ logger = logging.getLogger(__name__)
 # ==============================================
 app = Flask(__name__)
 simulation_instance: Simulation | None = None
-simulation_thread: threading.Thread | None = None
 simulation_lock = threading.Lock()
-
-# 시뮬레이션 실행 상태를 제어하는 플래그
-simulation_running = threading.Event()
 
 state_builder = StateBuilder()
 action_proposal_engine = ActionProposalEngine(config_module=config)
@@ -124,14 +120,16 @@ def create_simulation() -> None:
     for i in range(config.NUM_HOUSEHOLDS):
         value_orientation = random.choice(all_value_orientations)
         household_decision_engine = None
-        if config.DEFAULT_ENGINE_TYPE == "AIDriven":
+        
+        # Use EngineType enum for comparison
+        if config.DEFAULT_ENGINE_TYPE == config.EngineType.AI_DRIVEN:
             ai_decision_engine = ai_manager.get_engine(value_orientation)
             household_ai = HouseholdAI(agent_id=str(i), ai_decision_engine=ai_decision_engine)
             household_decision_engine = AIDrivenHouseholdDecisionEngine(household_ai, config, logger)
-        elif config.DEFAULT_ENGINE_TYPE == "RuleBased":
+        elif config.DEFAULT_ENGINE_TYPE == config.EngineType.RULE_BASED:
             household_decision_engine = RuleBasedHouseholdDecisionEngine(config, logger)
         else:
-            # Default to AIDriven if an unknown type is specified
+             # Default fallback
             ai_decision_engine = ai_manager.get_engine(value_orientation)
             household_ai = HouseholdAI(agent_id=str(i), ai_decision_engine=ai_decision_engine)
             household_decision_engine = AIDrivenHouseholdDecisionEngine(household_ai, config, logger)
@@ -172,14 +170,16 @@ def create_simulation() -> None:
     for i in range(config.NUM_FIRMS):
         firm_value_orientation = random.choice(all_value_orientations)
         firm_decision_engine = None
-        if config.DEFAULT_ENGINE_TYPE == "AIDriven":
+        
+        # Use EngineType enum for comparison
+        if config.DEFAULT_ENGINE_TYPE == config.EngineType.AI_DRIVEN:
             ai_decision_engine = ai_manager.get_engine(firm_value_orientation)
             firm_ai = FirmAI(agent_id=str(i + config.NUM_HOUSEHOLDS), ai_decision_engine=ai_decision_engine)
             firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, config, logger)
-        elif config.DEFAULT_ENGINE_TYPE == "RuleBased":
+        elif config.DEFAULT_ENGINE_TYPE == config.EngineType.RULE_BASED:
             firm_decision_engine = StandaloneRuleBasedFirmDecisionEngine(config, logger)
         else:
-            # Default to AIDriven if an unknown type is specified
+             # Default fallback
             ai_decision_engine = ai_manager.get_engine(firm_value_orientation)
             firm_ai = FirmAI(agent_id=str(i + config.NUM_HOUSEHOLDS), ai_decision_engine=ai_decision_engine)
             firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, config, logger)
@@ -224,26 +224,7 @@ def create_simulation() -> None:
 # ==============================================
 
 
-def run_simulation_loop() -> None:
-    """시뮬레이션 루프를 실행하는 백그라운드 스레드의 타겟 함수"""
-    try:
-        while simulation_running.is_set():
-            with simulation_lock:
-                if simulation_instance:
-                    simulation_instance.run_tick()
-            time.sleep(0.1)
-        logging.info(
-            "Simulation loop stopped.",
-            extra={
-                "tick": simulation_instance.time if simulation_instance else 0,
-                "agent_type": "App",
-                "agent_id": 0,
-                "method_name": "run_simulation_loop",
-                "tags": ["app_info"],
-            },
-        )
-    finally:
-        pass
+
 
 
 # ==============================================
@@ -272,13 +253,8 @@ def get_config() -> Response:
 @app.route("/api/config", methods=["POST"])
 @require_token
 def set_config() -> tuple[Response, int] | Response:
-    if simulation_running.is_set():
-        return jsonify(
-            {
-                "status": "error",
-                "message": "Cannot change settings while simulation is running.",
-            }
-        ), 400
+    # Note: In client-driven mode, "running" state is managed by the frontend.
+    # Config changes will reset the simulation, so this is always safe.
 
     new_config = request.json
     if new_config is None:
@@ -346,105 +322,110 @@ def get_transactions_api() -> Response:
 # --- GEMINI_TEMP_CHANGE_END ---
 
 
-@app.route("/api/simulation/update", methods=["GET"])
-def get_simulation_update():
-    """UI 업데이트에 필요한 최소한의 데이터를 DB에서 조회하여 반환합니다."""
-    since_tick = request.args.get("since", 0, type=int)
+@app.route("/api/simulation/tick", methods=["POST"])
+@require_token
+def advance_tick() -> Response:
+    """Advance the simulation by one tick and return the update data."""
+    if not simulation_instance:
+        return jsonify({"status": "error", "message": "Simulation not initialized"}), 400
 
-    vm = EconomicIndicatorsViewModel(get_repository())
-    latest_indicators = vm.get_economic_indicators(start_tick=since_tick)
+    start_time = time.time()
+    current_tick = simulation_instance.time  # Get last known tick for error reporting
 
-    if not latest_indicators:
+    try:
         with simulation_lock:
-            current_tick = simulation_instance.time if simulation_instance else 0
-            if current_tick == since_tick:
-                return jsonify({"status": "no_update"})
-            return jsonify(
-                {
-                    "status": "running" if simulation_running.is_set() else "paused",
-                    "tick": current_tick,
-                }
-            )
+            simulation_instance.run_tick()
+            current_tick = simulation_instance.time
+        
+        vm = EconomicIndicatorsViewModel(get_repository())
+        latest_indicators = vm.get_economic_indicators(start_tick=current_tick)
+        
+        if not latest_indicators:
+            return jsonify({"status": "error", "message": "No data generated for tick", "tick": current_tick}), 500
 
-    current_tick = latest_indicators[-1]["time"]
-    latest_record = latest_indicators[-1]
+        latest_record = latest_indicators[-1]
+        new_gdp_history = [latest_record.get("total_consumption", 0)]
 
-    new_gdp_history = [r.get("total_consumption", 0) for r in latest_indicators]
+        update_data = {
+            "status": "running",
+            "tick": current_tick,
+            "gdp": latest_record.get("total_consumption", 0),
+            "population": latest_record.get("population", config.NUM_HOUSEHOLDS),
+            "unemployment_rate": latest_record.get("unemployment_rate", 0),
+            "trade_volume": latest_record.get("food_trade_volume", 0),
+            "top_selling_good": "N/A",
+            "average_household_wealth": latest_record.get("total_household_assets", 0)
+            / latest_record.get("population", 1),
+            "average_firm_wealth": latest_record.get("total_firm_assets", 0)
+            / config.NUM_FIRMS,
+            "household_avg_needs": 0,
+            "firm_avg_needs": 0,
+            "chart_update": {
+                "new_gdp_history": new_gdp_history,
+                "wealth_distribution": [],
+                "household_needs_distribution": {},
+            },
+            "market_update": {"open_orders": [], "transactions": []},
+            "duration_ms": (time.time() - start_time) * 1000
+        }
+        
+        return jsonify(update_data)
 
-    update_data = {
-        "status": "running" if simulation_running.is_set() else "paused",
-        "tick": current_tick,
-        "gdp": latest_record.get("total_consumption", 0),
-        "population": latest_record.get("population", config.NUM_HOUSEHOLDS),
-        "unemployment_rate": latest_record.get("unemployment_rate", 0),
-        "trade_volume": latest_record.get("total_trade_volume", 0),
-        "top_selling_good": "N/A",
-        "average_household_wealth": latest_record.get("total_household_assets", 0)
-        / latest_record.get("population", 1),
-        "average_firm_wealth": latest_record.get("total_firm_assets", 0)
-        / config.NUM_FIRMS,
-        "household_avg_needs": 0,
-        "firm_avg_needs": 0,
-        "chart_update": {
-            "new_gdp_history": new_gdp_history,
-            "wealth_distribution": [],
-            "household_needs_distribution": {},
-        },
-        "market_update": {"open_orders": [], "transactions": []},
-    }
-    return jsonify(update_data)
+    except Exception as e:
+        logging.exception(f"Error during tick {current_tick}: {e}")
+        # Attempt to flush any buffered data before returning error
+        try:
+            if simulation_instance:
+                simulation_instance._flush_buffers_to_db()
+        except Exception:
+            pass  # Best effort
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "tick": current_tick
+        }), 500
 
 
 @app.route("/api/simulation/start", methods=["POST"])
 @require_token
 def start_simulation():
-    global simulation_thread
-    if not simulation_running.is_set():
-        simulation_running.set()
-        if not simulation_thread or not simulation_thread.is_alive():
-            simulation_thread = threading.Thread(target=run_simulation_loop)
-            simulation_thread.start()
-        return jsonify({"status": "success", "message": "Simulation started."})
-    return jsonify({"status": "already_running"})
+    # Only useful for logging or backend state tracking if needed
+    # But for client-driven, this is mostly a placeholder or can be removed.
+    # We kept it to satisfy the button calls in frontend (initially), 
+    # but we will change frontend to not call these for logic control, 
+    # EXCEPT maybe for explicit logging?
+    # Let's keep it simple: Just return success, maybe log.
+    logging.info("Simulation start requested (Client-driven mode)")
+    return jsonify({"status": "success", "message": "Simulation start acknowledged."})
 
 
 @app.route("/api/simulation/pause", methods=["POST"])
 @require_token
 def pause_simulation():
-    simulation_running.clear()
+    logging.info("Simulation pause requested (Client-driven mode)")
     return jsonify({"status": "success", "message": "Simulation paused."})
 
 
 @app.route("/api/simulation/stop", methods=["POST"])
 @require_token
 def stop_simulation():
-    global simulation_thread, simulation_instance
-    simulation_running.clear()
-    if simulation_thread and simulation_thread.is_alive():
-        time.sleep(0.2)
-    simulation_thread = None
+    global simulation_instance
     simulation_instance = None
-    logging.info(
-        "Simulation stopped and instance cleared.",
-        extra={
-            "tick": 0,
-            "agent_type": "App",
-            "agent_id": 0,
-            "method_name": "stop_simulation",
-            "tags": ["app_info"],
-        },
-    )
+    logging.info("Simulation stopped and instance cleared.")
     return jsonify({"status": "success", "message": "Simulation stopped."})
 
 
 @app.route("/api/simulation/reset", methods=["POST"])
 @require_token
 def reset_simulation():
-    global simulation_thread
-    simulation_running.clear()
-    simulation_thread = None
-
+    global simulation_instance
     with simulation_lock:
+        # Finalize the old instance before creating a new one
+        if simulation_instance:
+            try:
+                simulation_instance.finalize_simulation()
+            except Exception as e:
+                logging.warning(f"Error finalizing old simulation: {e}")
         create_simulation()
 
     return jsonify({"status": "success", "message": "Simulation reset."})

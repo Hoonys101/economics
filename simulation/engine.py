@@ -15,7 +15,15 @@ from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 
 # Updated import to use the repository pattern
+# Updated import to use the repository pattern
 from simulation.db.repository import SimulationRepository
+from simulation.dtos import (
+    AgentStateData,
+    TransactionData,
+    EconomicIndicatorData,
+    AIDecisionData,
+    MarketHistoryData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +55,10 @@ class Simulation:
         self.time: int = 0
 
         # Buffers for batch database writes
-        self.agent_state_buffer: List[Dict[str, Any]] = []
-        self.transaction_buffer: List[Dict[str, Any]] = []
-        self.economic_indicator_buffer: List[Dict[str, Any]] = []
+        self.agent_state_buffer: List[AgentStateData] = []
+        self.transaction_buffer: List[TransactionData] = []
+        self.economic_indicator_buffer: List[EconomicIndicatorData] = []
+        self.market_history_buffer: List[MarketHistoryData] = []
         self.batch_save_interval = (
             self.config_module.BATCH_SAVE_INTERVAL
         )  # Define this in config.py
@@ -111,62 +120,106 @@ class Simulation:
             if not getattr(agent, "is_active", False):
                 continue
 
-            agent_data = {
-                "time": self.time,
-                "agent_id": agent.id,
-                "assets": agent.assets,
-                "is_active": agent.is_active,
-            }
+            agent_dto = AgentStateData(
+                run_id=self.run_id,
+                time=self.time,
+                agent_id=agent.id,
+                agent_type="",
+                assets=agent.assets,
+                is_active=agent.is_active,
+            )
+
             if isinstance(agent, Household):
-                agent_data.update(
-                    {
-                        "agent_type": "household",
-                        "is_employed": agent.is_employed,
-                        "employer_id": agent.employer_id,
-                        "needs_survival": agent.needs.get("survival", 0),
-                        "needs_labor": agent.needs.get("labor_need", 0),
-                        "inventory_food": agent.inventory.get("food", 0),
-                        "current_production": None,
-                        "num_employees": None,
-                    }
-                )
+                agent_dto.agent_type = "household"
+                agent_dto.is_employed = agent.is_employed
+                agent_dto.employer_id = agent.employer_id
+                agent_dto.needs_survival = agent.needs.get("survival", 0)
+                agent_dto.needs_labor = agent.needs.get("labor_need", 0)
+                agent_dto.inventory_food = agent.inventory.get("food", 0)
             elif isinstance(agent, Firm):
-                agent_data.update(
-                    {
-                        "agent_type": "firm",
-                        "is_employed": None,
-                        "employer_id": None,
-                        "needs_survival": None,
-                        "needs_labor": None,
-                        "inventory_food": agent.inventory.get("food", 0),
-                        "current_production": agent.current_production,
-                        "num_employees": len(agent.employees),
-                    }
-                )
+                agent_dto.agent_type = "firm"
+                agent_dto.inventory_food = agent.inventory.get("food", 0)
+                agent_dto.current_production = agent.current_production
+                agent_dto.num_employees = len(agent.employees)
             else:  # Skip bank or other types for now
                 continue
 
-            self.agent_state_buffer.append(agent_data)
+            self.agent_state_buffer.append(agent_dto)
 
         # 2. Buffer transactions
         for tx in transactions:
-            tx_data = {
-                "time": self.time,
-                "buyer_id": tx.buyer_id,
-                "seller_id": tx.seller_id,
-                "item_id": tx.item_id,
-                "quantity": tx.quantity,
-                "price": tx.price,
-                "market_id": tx.market_id,
-                "transaction_type": tx.transaction_type,
-            }
-            self.transaction_buffer.append(tx_data)
+            tx_dto = TransactionData(
+                run_id=self.run_id,
+                time=self.time,
+                buyer_id=tx.buyer_id,
+                seller_id=tx.seller_id,
+                item_id=tx.item_id,
+                quantity=tx.quantity,
+                price=tx.price,
+                market_id=tx.market_id,
+                transaction_type=tx.transaction_type,
+            )
+            self.transaction_buffer.append(tx_dto)
 
         # 3. Buffer economic indicators
         indicators = self.tracker.get_latest_indicators()
         if indicators:
-            indicators["time"] = self.time
-            self.economic_indicator_buffer.append(indicators)
+            # indicators is a dict, convert to DTO
+            indicator_dto = EconomicIndicatorData(
+                run_id=self.run_id,
+                time=self.time,
+                unemployment_rate=indicators.get("unemployment_rate"),
+                avg_wage=indicators.get("avg_wage"),
+                food_avg_price=indicators.get("food_avg_price"),
+                food_trade_volume=indicators.get("food_trade_volume"),
+                avg_goods_price=indicators.get("avg_goods_price"),
+                total_production=indicators.get("total_production"),
+                total_consumption=indicators.get("total_consumption"),
+                total_household_assets=indicators.get("total_household_assets"),
+                total_firm_assets=indicators.get("total_firm_assets"),
+                total_food_consumption=indicators.get("total_food_consumption"),
+                total_inventory=indicators.get("total_inventory"),
+            )
+            self.economic_indicator_buffer.append(indicator_dto)
+        
+        # 4. Buffer market history
+        for market_id, market in self.markets.items():
+            if isinstance(market, OrderBookMarket):
+                # For OrderBookMarket, we can track multiple items if they exist
+                # Currently, each market name corresponds to a good name, or 'labor_market'
+                items = list(market.buy_orders.keys()) + list(market.sell_orders.keys())
+                # Add historical items too if any
+                items = list(set(items))
+                
+                if not items and market_id in self.config_module.GOODS:
+                    items = [market_id]
+                for item_id in items:
+                    all_bids = market.get_all_bids(item_id)
+                    all_asks = market.get_all_asks(item_id)
+                    
+                    avg_bid = sum(o.price for o in all_bids) / len(all_bids) if all_bids else 0.0
+                    avg_ask = sum(o.price for o in all_asks) / len(all_asks) if all_asks else 0.0
+                    
+                    best_bid = max(o.price for o in all_bids) if all_bids else 0.0
+                    worst_bid = min(o.price for o in all_bids) if all_bids else 0.0
+                    
+                    best_ask = min(o.price for o in all_asks) if all_asks else 0.0
+                    worst_ask = max(o.price for o in all_asks) if all_asks else 0.0
+                    
+                    history_dto = MarketHistoryData(
+                        time=self.time,
+                        market_id=market_id,
+                        item_id=item_id,
+                        avg_price=market.get_daily_avg_price(),
+                        trade_volume=market.get_daily_volume(),
+                        best_ask=best_ask,
+                        best_bid=best_bid,
+                        avg_ask=avg_ask,
+                        avg_bid=avg_bid,
+                        worst_ask=worst_ask,
+                        worst_bid=worst_bid
+                    )
+                    self.market_history_buffer.append(history_dto)
 
         self.logger.debug(
             f"DB_SAVE_END | Finished buffering state for tick {self.time}",
@@ -179,6 +232,7 @@ class Simulation:
             not self.agent_state_buffer
             and not self.transaction_buffer
             and not self.economic_indicator_buffer
+            and not self.market_history_buffer
         ):
             return
 
@@ -189,21 +243,27 @@ class Simulation:
 
         if self.agent_state_buffer:
             self.repository.save_agent_states_batch(
-                self.run_id, self.agent_state_buffer
+                self.agent_state_buffer
             )
             self.agent_state_buffer.clear()
 
         if self.transaction_buffer:
             self.repository.save_transactions_batch(
-                self.run_id, self.transaction_buffer
+                self.transaction_buffer
             )
             self.transaction_buffer.clear()
 
         if self.economic_indicator_buffer:
             self.repository.save_economic_indicators_batch(
-                self.run_id, self.economic_indicator_buffer
+                self.economic_indicator_buffer
             )
             self.economic_indicator_buffer.clear()
+
+        if self.market_history_buffer:
+            self.repository.save_market_history_batch(
+                self.market_history_buffer
+            )
+            self.market_history_buffer.clear()
 
         self.logger.info(
             f"DB_FLUSH_END | Finished flushing buffers to DB at tick {self.time}",
@@ -231,6 +291,13 @@ class Simulation:
                 market.clear_market_for_next_tick()
 
         market_data = self._prepare_market_data(self.tracker)
+        
+        # Snapshot agents for learning (Pre-state)
+        for f in self.firms:
+            if f.is_active: f.pre_state_snapshot = f.get_agent_data()
+        for h in self.households:
+            if h.is_active: h.pre_state_snapshot = h.get_agent_data()
+
         all_transactions: List[Transaction] = []
 
         firm_pre_states = {}
@@ -252,7 +319,7 @@ class Simulation:
                     "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
                     "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
                 }
-                firm_orders, chosen_tactic = firm.make_decision(self.markets, self.goods_data, market_data, self.time)
+                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time)
                 for order in firm_orders:
                     target_market: Market | None = self.markets.get(order.market_id)
                     if target_market:
@@ -266,21 +333,11 @@ class Simulation:
                         household.get_agent_data(), market_data
                     )
                 )
-                pre_tactical_state = (
-                    household.decision_engine.ai_engine._get_tactical_state(
-                        household.decision_engine.ai_engine.chosen_intention,
-                        household.get_agent_data(),
-                        market_data,
-                    )
-                )
                 household_pre_states[household.id] = {
-                    "pre_strategic_state": pre_strategic_state,
-                    "pre_tactical_state": pre_tactical_state,
-                    "chosen_intention": household.decision_engine.ai_engine.chosen_intention,
-                    "chosen_tactic_tuple": household.decision_engine.ai_engine.last_chosen_tactic,  # 튜플로 변경
+                    "pre_strategic_state": pre_strategic_state, # Legacy support
                 }
-                # make_decision 호출 시 (orders, chosen_tactic_tuple) 반환 기대
-                household_orders, chosen_tactic_tuple = household.make_decision(
+                # make_decision return (orders, vector)
+                household_orders, action_vector = household.make_decision(
                     self.markets, self.goods_data, market_data, self.time
                 )
                 for order in household_orders:
@@ -298,60 +355,50 @@ class Simulation:
                 all_transactions.extend(market.match_orders(self.time))
 
         self._process_transactions(all_transactions)
+        print(f"DEBUG: Tick {self.time} Processed {len(all_transactions)} transactions.")
 
-        # Update tracker with the latest data after transactions
+        # ---------------------------------------------------------
+        # Activate Consumption Logic
+        # ---------------------------------------------------------
+        # After transactions, households have goods in inventory.
+        # Now they must consume them to satisfy needs.
+        for household in self.households:
+             if household.is_active:
+                 household.decide_and_consume(self.time)
+
+        # Update tracker with the latest data after transactions and consumption
         self.tracker.track(self.time, self.households, self.firms, self.markets)
 
         for firm in self.firms:
             if firm.is_active and firm.id in firm_pre_states:
-                pre_states = firm_pre_states[firm.id]
-                pre_strategic_state = pre_states["pre_strategic_state"]
-                pre_tactical_state = pre_states["pre_tactical_state"]
-                chosen_intention = pre_states["chosen_intention"]
-                chosen_tactic = pre_states["chosen_tactic"]
                 post_state_data = firm.get_agent_data()
                 agent_data = firm.get_agent_data()
                 market_data = self._prepare_market_data(self.tracker)
+                
+                # Calculate Reward
                 reward = firm.decision_engine.ai_engine._calculate_reward(
                     firm.get_pre_state_data(), post_state_data, agent_data, market_data
                 )
-                next_strategic_state = (
-                    firm.decision_engine.ai_engine._get_strategic_state(
-                        agent_data, market_data
-                    )
-                )
-                next_tactical_state = (
-                    firm.decision_engine.ai_engine._get_tactical_state(
-                        chosen_intention, agent_data, market_data
-                    )
-                )
-                firm.decision_engine.ai_engine.update_learning(
-                    tick=self.time,
-                    strategic_state=pre_strategic_state,
-                    chosen_intention=chosen_intention,
-                    tactical_state=pre_tactical_state,
-                    chosen_tactic_tuple=chosen_tactic,
+                
+                # Update Learning V2
+                firm.decision_engine.ai_engine.update_learning_v2(
                     reward=reward,
-                    next_strategic_state=next_strategic_state,
-                    next_tactical_state=next_tactical_state,
+                    next_agent_data=agent_data,
+                    next_market_data=market_data,
                 )
-                self.repository.save_ai_decision(
+                
+                decision_data = AIDecisionData(
                     run_id=self.run_id,
                     tick=self.time,
                     agent_id=firm.id,
-                    decision_type=chosen_intention.name
-                    if chosen_intention is not None
-                    else "UNKNOWN_DECISION",
+                    decision_type="VECTOR_V2",
                     decision_details={
-                        "pre_strategic_state": pre_strategic_state,
-                        "pre_tactical_state": pre_tactical_state,
-                        "chosen_tactic": chosen_tactic[0].name if chosen_tactic else None,
-                        "next_strategic_state": next_strategic_state,
-                        "next_tactical_state": next_tactical_state,
+                       "reward": reward
                     },
                     predicted_reward=None,
                     actual_reward=reward,
                 )
+                self.repository.save_ai_decision(decision_data)
                 self.logger.debug(
                     f"FIRM_LEARNING_UPDATE | Firm {firm.id} updated learning. Reward: {reward:.2f}",
                     extra={
@@ -365,62 +412,37 @@ class Simulation:
         # --- AI Learning Update for Households ---
         for household in self.households:
             if household.is_active and household.id in household_pre_states:
-                pre_states = household_pre_states[household.id]
-                pre_strategic_state = pre_states["pre_strategic_state"]
-                pre_tactical_state = pre_states["pre_tactical_state"]
-                chosen_intention = pre_states["chosen_intention"]
-                chosen_tactic_tuple = pre_states["chosen_tactic_tuple"]  # 튜플로 변경
                 post_state_data = household.get_agent_data()
                 agent_data = household.get_agent_data()
                 market_data = self._prepare_market_data(self.tracker)
+                
+                # Calculate Reward
                 reward = household.decision_engine.ai_engine._calculate_reward(
                     household.get_pre_state_data(),
                     post_state_data,
                     agent_data,
                     market_data,
                 )
-                next_strategic_state = (
-                    household.decision_engine.ai_engine._get_strategic_state(
-                        agent_data, market_data
-                    )
-                )
-                next_tactical_state = (
-                    household.decision_engine.ai_engine._get_tactical_state(
-                        chosen_intention, agent_data, market_data
-                    )
-                )
-                household.decision_engine.ai_engine.update_learning(
-                    tick=self.time,
-                    strategic_state=pre_strategic_state,
-                    chosen_intention=chosen_intention,
-                    tactical_state=pre_tactical_state,
-                    chosen_tactic_tuple=chosen_tactic_tuple,  # 튜플로 변경
+                
+                # Update Learning V2
+                household.decision_engine.ai_engine.update_learning_v2(
                     reward=reward,
-                    next_strategic_state=next_strategic_state,
-                    next_tactical_state=next_tactical_state,
+                    next_agent_data=agent_data,
+                    next_market_data=market_data,
                 )
-                self.repository.save_ai_decision(
+
+                decision_data = AIDecisionData(
                     run_id=self.run_id,
                     tick=self.time,
                     agent_id=household.id,
-                    decision_type=chosen_intention.name
-                    if chosen_intention is not None
-                    else "UNKNOWN_DECISION",
+                    decision_type="VECTOR_V2",
                     decision_details={
-                        "pre_strategic_state": pre_strategic_state,
-                        "pre_tactical_state": pre_tactical_state,
-                        "chosen_tactic": chosen_tactic_tuple[0].name
-                        if chosen_tactic_tuple
-                        else None,  # 튜플에서 Tactic만 저장
-                        "chosen_aggressiveness": chosen_tactic_tuple[1].name
-                        if chosen_tactic_tuple
-                        else None,  # Aggressiveness 저장
-                        "next_strategic_state": next_strategic_state,
-                        "next_tactical_state": next_tactical_state,
+                        "reward": reward
                     },
                     predicted_reward=None,
                     actual_reward=reward,
                 )
+                self.repository.save_ai_decision(decision_data)
                 self.logger.debug(
                     f"HOUSEHOLD_LEARNING_UPDATE | Household {household.id} updated learning. Reward: {reward:.2f}",
                     extra={
@@ -449,12 +471,24 @@ class Simulation:
         for good_name in self.config_module.GOODS:
             market = self.markets.get(good_name)
             if market and isinstance(market, OrderBookMarket):
-                best_ask_price = market.get_best_ask(good_name)
-                goods_market_data[f"{good_name}_current_sell_price"] = (
-                    best_ask_price
-                    if best_ask_price is not None
-                    else self.config_module.GOODS[good_name].get("initial_price", 10.0)
-                )
+                # 1. 이번 틱의 평균 체결가 (거래가 있었다면 가장 정확)
+                avg_price = market.get_daily_avg_price()
+                
+                # 2. 거래가 없었다면 호가창의 최저 매도가(Best Ask)
+                if avg_price <= 0:
+                    avg_price = market.get_best_ask(good_name) or 0
+                
+                # 3. 호가도 없다면 이전 틱의 기록된 가격 (Tracker)
+                if avg_price <= 0:
+                    latest = tracker.get_latest_indicators()
+                    # Tracker 필드명은 {item_id}_avg_price 형식을 따름 (EconomicIndicatorTracker 참고)
+                    avg_price = latest.get(f"{good_name}_avg_price", 0)
+                
+                # 4. 모두 없다면 설정 파일의 초기 가격
+                if avg_price <= 0:
+                    avg_price = self.config_module.GOODS[good_name].get("initial_price", 10.0)
+                
+                goods_market_data[f"{good_name}_current_sell_price"] = avg_price
 
         total_price = 0.0
         count = 0.0

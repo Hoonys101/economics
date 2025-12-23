@@ -32,10 +32,12 @@ class OrderBookMarket(Market):
 
     def clear_market_for_next_tick(self):
         """다음 틱을 위해 호가창을 초기화합니다."""
-        self.matched_transactions = [] # Clear matched transactions for the new tick.
+        self.matched_transactions = [] 
+        self.buy_orders = {}
+        self.sell_orders = {}
         self.logger.debug(
-            f"Market {self.market_id} orders persist for next tick.",
-            extra={"market_id": self.market_id, "tags": ["market_persist"]},
+            f"Market {self.market_id} orders cleared for new tick.",
+            extra={"market_id": self.market_id, "tags": ["market_clear"]},
         )
 
     def place_order(self, order: Order, current_time: int):
@@ -237,6 +239,14 @@ class OrderBookMarket(Market):
                 for o in self.sell_orders.get(item_id, [])
             ],
         }
+
+    def get_all_bids(self, item_id: str) -> List[Order]:
+        """주어진 아이템의 모든 매수 주문을 반환합니다."""
+        return self.buy_orders.get(item_id, [])
+
+    def get_all_asks(self, item_id: str) -> List[Order]:
+        """주어진 아이템의 모든 매도 주문을 반환합니다."""
+        return self.sell_orders.get(item_id, [])
 
     def get_total_demand(self) -> float:
         """시장의 모든 매수 주문 총량을 반환합니다."""

@@ -5,6 +5,7 @@ import logging
 from simulation.models import Order
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.ai.enums import Tactic
+from simulation.dtos import DecisionContext
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -25,11 +26,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
     def make_decisions(
         self,
-        firm: Firm,
-        markets: Dict[str, Any],
-        goods_data: List[Dict[str, Any]],
-        market_data: Dict[str, Any],
-        current_time: int,
+        context: DecisionContext,
     ) -> Tuple[List[Order], Tactic]:
         """
         이 메서드는 더 이상 사용되지 않습니다. AIDrivenFirmDecisionEngine이 전체적인 결정을 담당합니다.
@@ -148,6 +145,9 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         target_quantity = firm.production_target
         current_inventory = firm.inventory.get(item_id, 0)
         needed_production = max(0, target_quantity - current_inventory)
+        if firm.productivity_factor <= 0:
+            return 999999.0 # Impossible to produce without productivity
+
         needed_labor = needed_production / firm.productivity_factor
         return needed_labor
 

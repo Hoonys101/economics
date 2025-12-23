@@ -13,6 +13,7 @@ from simulation.ai.api import (
     Aggressiveness,
 )  # Personality, Tactic, Aggressiveness Enum 임포트
 from simulation.core_markets import Market  # Import Market
+from simulation.dtos import DecisionContext
 
 logger = logging.getLogger(__name__)
 
@@ -333,10 +334,8 @@ class Household(BaseAgent):
     def get_pre_state_data(self) -> Dict[str, Any]:
         """
         AI 학습을 위한 이전 상태 데이터를 반환합니다.
-        현재는 get_agent_data()와 동일하게 반환하지만, 
-        향후 학습 로직에 따라 이전 틱의 상태를 저장하고 반환하도록 수정될 수 있습니다.
         """
-        return self.get_agent_data()
+        return getattr(self, "pre_state_snapshot", self.get_agent_data())
 
     @override
     def make_decision(
@@ -368,9 +367,14 @@ class Household(BaseAgent):
             f"Calling decision_engine.make_decisions for Household {self.id}",
             extra=log_extra,
         )
-        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(
-            self, markets, goods_data, market_data, current_time
+        context = DecisionContext(
+            household=self,
+            markets=markets,
+            goods_data=goods_data,
+            market_data=market_data,
+            current_time=current_time,
         )
+        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context)
 
         self.logger.debug(
             f"HOUSEHOLD_DECISION_END | Household {self.id} after decision: Assets={self.assets:.2f}, is_employed={self.is_employed}, employer_id={self.employer_id}, Needs={self.needs}, Decisions={len(orders)}",

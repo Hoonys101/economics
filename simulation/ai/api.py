@@ -106,7 +106,30 @@ class BaseAIEngine(ABC):
         """
         pass
 
-    @abstractmethod
+    def _calculate_wealth(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> float:
+        """
+        에이전트의 순자산(Total Wealth)을 계산한다.
+        Wealth = Cash (Assets) + Sum(Inventory * MarketPrice)
+        """
+        cash = agent_data.get("assets", 0.0)
+        inventory = agent_data.get("inventory", {})
+        
+        # 시장 가격 데이터를 활용하여 재고 가치 평가
+        # market_data["goods_market"] 에는 {item_id_current_sell_price: price} 형태의 데이터가 있음
+        goods_prices = market_data.get("goods_market", {})
+        inventory_value = 0.0
+        
+        for item_id, qty in inventory.items():
+            if item_id == "labor": # 노동력은 재고 자산으로 치지 않음 (또는 이미 Cash로 전환됨)
+                continue
+            
+            # 구체적인 상품 가격 확인, 없으면 평균가 사용
+            price_key = f"{item_id}_current_sell_price"
+            price = goods_prices.get(price_key, market_data.get("avg_goods_price", 10.0))
+            inventory_value += qty * price
+            
+        return cash + inventory_value
+
     def _calculate_reward(
         self,
         pre_state_data: Dict[str, Any],
@@ -115,11 +138,13 @@ class BaseAIEngine(ABC):
         market_data: Dict[str, Any],
     ) -> float:
         """
-        행동의 결과로 얻어지는 보상을 계산한다.
-        자산 변화율과 욕구 감소율을 기반으로 한다.
-        AIDecisionEngine의 예측 보상을 선택적으로 통합한다.
+        기본적인 보상 계산: 순자산(Wealth)의 증분.
+        하위 클래스에서 욕구 해소 등을 추가하여 확장할 수 있다.
         """
-        pass
+        pre_wealth = self._calculate_wealth(pre_state_data, market_data)
+        post_wealth = self._calculate_wealth(post_state_data, market_data)
+        
+        return post_wealth - pre_wealth
 
     def decide_and_learn(
         self,

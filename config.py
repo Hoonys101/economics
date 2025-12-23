@@ -4,11 +4,19 @@ from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
 
 # --- Simulation Parameters ---
+from enum import Enum
+
+# --- Simulation Parameters ---
 NUM_HOUSEHOLDS = 20
 NUM_FIRMS = 4
 SIMULATION_TICKS = 100
 HOUSEHOLD_MIN_FOOD_INVENTORY = 2.0 # Rule-based households aim to keep at least this much food in inventory
-DEFAULT_ENGINE_TYPE = "AIDriven"  # Can be "RuleBased" or "AIDriven" for global agent decision engine type
+
+class EngineType(Enum):
+    RULE_BASED = "RuleBased"
+    AI_DRIVEN = "AIDriven"
+
+DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
 
 # --- Initial Agent Configuration ---
 INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0
@@ -203,7 +211,7 @@ LIQUIDITY_RATIO_MIN = 0.1
 LIQUIDITY_RATIO_DIVISOR = 100.0
 
 # --- Database Batching ---
-BATCH_SAVE_INTERVAL = 10  # Save to DB every 10 ticks
+BATCH_SAVE_INTERVAL = 1  # Save to DB every tick (Required for client-driven mode)
 
 # --- Logging ---
 ROOT_LOGGER_LEVEL = "INFO"

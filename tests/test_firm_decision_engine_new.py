@@ -5,6 +5,7 @@ from collections import deque
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from simulation.firms import Firm
 from simulation.ai.enums import Tactic, Aggressiveness
+from simulation.dtos import DecisionContext
 
 
 # Mock Logger to prevent actual file writes during tests
@@ -95,12 +96,19 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
         )
-
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
-        )
+        mock_firm.inventory["food"] = 150.0 # Force overstock (150 > 100 * 1.2)
 
         initial_target = mock_firm.production_target
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
+
         expected_target = max(
             mock_config.FIRM_MIN_PRODUCTION_TARGET,
             initial_target * (1 - mock_config.PRODUCTION_ADJUSTMENT_FACTOR),
@@ -116,9 +124,14 @@ class TestFirmDecisionEngine:
             Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         expected_target = min(
             mock_config.FIRM_MAX_PRODUCTION_TARGET,
@@ -135,9 +148,14 @@ class TestFirmDecisionEngine:
             Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         assert mock_firm.production_target == initial_target
 
@@ -150,17 +168,27 @@ class TestFirmDecisionEngine:
         # Test min bound
         mock_firm.inventory["food"] = 1000.0
         mock_firm.production_target = mock_config.FIRM_MIN_PRODUCTION_TARGET * 0.5
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         assert mock_firm.production_target == mock_config.FIRM_MIN_PRODUCTION_TARGET
 
         # Test max bound
         mock_firm.inventory["food"] = 0.0
         mock_firm.production_target = mock_config.FIRM_MAX_PRODUCTION_TARGET * 1.5
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         assert mock_firm.production_target == mock_config.FIRM_MAX_PRODUCTION_TARGET
 
     def test_make_decisions_hires_to_meet_min_employees(
@@ -172,9 +200,14 @@ class TestFirmDecisionEngine:
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {"avg_wage": 10.0}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"avg_wage": 10.0},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         buy_labor_orders = [
             o for o in orders if o.order_type == "BUY" and o.item_id == "labor"
@@ -193,9 +226,14 @@ class TestFirmDecisionEngine:
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {"avg_wage": 10.0}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"avg_wage": 10.0},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         buy_labor_orders = [
             o for o in orders if o.order_type == "BUY" and o.item_id == "labor"
@@ -212,9 +250,14 @@ class TestFirmDecisionEngine:
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         buy_labor_orders = [
             o for o in orders if o.order_type == "BUY" and o.item_id == "labor"
@@ -231,9 +274,14 @@ class TestFirmDecisionEngine:
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         buy_labor_orders = [
             o for o in orders if o.order_type == "BUY" and o.item_id == "labor"
@@ -249,9 +297,14 @@ class TestFirmDecisionEngine:
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {"avg_wage": 10.0}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"avg_wage": 10.0},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         labor_order = next(
             (o for o in orders if o.order_type == "BUY" and o.item_id == "labor"), None
@@ -268,9 +321,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_orders = [
             o for o in orders if o.order_type == "SELL" and o.item_id == "food"
         ]
@@ -283,9 +341,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_orders = [
             o for o in orders if o.order_type == "SELL" and o.item_id == "food"
         ]
@@ -299,9 +362,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )
@@ -315,9 +383,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )
@@ -333,9 +406,14 @@ class TestFirmDecisionEngine:
         mock_firm.inventory["food"] = 150.0
         mock_firm.last_prices["food"] = 1.0
         mock_config.MIN_SELL_PRICE = 5.0
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )
@@ -345,9 +423,14 @@ class TestFirmDecisionEngine:
         mock_firm.inventory["food"] = 90.0  # Not understocked
         mock_firm.last_prices["food"] = 100.0
         mock_config.MAX_SELL_PRICE = 90.0
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )
@@ -361,9 +444,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )
@@ -379,9 +467,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )
@@ -399,9 +492,14 @@ class TestFirmDecisionEngine:
             Tactic.PRICE_INCREASE_SMALL, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
@@ -419,9 +517,14 @@ class TestFirmDecisionEngine:
             Tactic.PRICE_DECREASE_MEDIUM, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
@@ -439,9 +542,14 @@ class TestFirmDecisionEngine:
             Tactic.PRICE_HOLD, Aggressiveness.NORMAL
         )
 
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
@@ -462,9 +570,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.PRICE_DECREASE_MEDIUM, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )
@@ -475,9 +588,14 @@ class TestFirmDecisionEngine:
         firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
             Tactic.PRICE_INCREASE_SMALL, Aggressiveness.NORMAL
         )
-        orders, _ = firm_decision_engine_instance.make_decisions(
-            mock_firm, {}, [], {}, 1
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
         )
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
             (o for o in orders if o.order_type == "SELL" and o.item_id == "food"), None
         )

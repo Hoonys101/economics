@@ -107,9 +107,15 @@ def setup_logging(
         logging.config.dictConfig(config_dict)
         logging.info("Logging setup complete from config file.")
     else:
-        logging.basicConfig(level=default_level)
+    else:
+        # Standardize fallback logging format
+        logging.basicConfig(
+            level=default_level,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
         logging.info(
-            "Logging setup complete with basic configuration (config file not found)."
+            "Logging setup complete with basic configuration (config file not found). Standard format applied."
         )
 
     # Write header to CSV file if a CSV handler is configured

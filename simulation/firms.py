@@ -7,6 +7,7 @@ from simulation.models import Order, Transaction
 from simulation.core_agents import Household  # Household 클래스 임포트
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
+from simulation.dtos import DecisionContext
 
 logger = logging.getLogger(__name__)
 
@@ -150,8 +151,12 @@ class Firm(BaseAgent):
             "revenue_this_turn": self.revenue_this_turn,
             "expenses_this_tick": self.expenses_this_tick,
             "consecutive_loss_turns": self.consecutive_loss_turns,
-            # AI 상태 결정에 필요한 다른 데이터 추가 가능
         }
+
+    def get_pre_state_data(self) -> Dict[str, Any]:
+        """AI 학습을 위한 이전 상태 데이터를 반환합니다."""
+        return getattr(self, "pre_state_snapshot", self.get_agent_data())
+
 
     @override
     def make_decision(
@@ -167,13 +172,14 @@ class Firm(BaseAgent):
                 "is_active_before": self.is_active,
             },
         )
-        decisions, tactic = self.decision_engine.make_decisions(
-            firm=self, 
-            markets=markets, 
-            goods_data=goods_data, 
-            market_data=market_data, 
-            current_time=current_time
+        context = DecisionContext(
+            firm=self,
+            markets=markets,
+            goods_data=goods_data,
+            market_data=market_data,
+            current_time=current_time,
         )
+        decisions, tactic = self.decision_engine.make_decisions(context)
         self.logger.debug(
             f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
             extra={

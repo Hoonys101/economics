@@ -7,6 +7,7 @@ from simulation.decisions.ai_driven_household_engine import (
 from simulation.core_agents import Household
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.enums import Tactic, Aggressiveness
+from simulation.dtos import DecisionContext
 from simulation.markets.order_book_market import OrderBookMarket
 
 
@@ -151,7 +152,14 @@ class TestHouseholdDecisionEngineMultiGood:
         )
 
         # Household has 100 assets, will buy basic_food
-        orders, tactic_tuple = engine.make_decisions(mock_household, mock_markets, list(MockConfig.GOODS.values()), {}, 1)
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=list(MockConfig.GOODS.values()),
+            market_data={},
+            current_time=1,
+        )
+        orders, tactic_tuple = engine.make_decisions(context)
         tactic, _ = tactic_tuple
 
         assert tactic == Tactic.EVALUATE_CONSUMPTION_OPTIONS
@@ -171,7 +179,14 @@ class TestHouseholdDecisionEngineMultiGood:
         mock_household.get_desired_wage.return_value = 12.0
         mock_household.is_employed = False
 
-        orders, tactic_tuple = engine.make_decisions(mock_household, mock_markets, [], {}, 1)
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+        orders, tactic_tuple = engine.make_decisions(context)
         tactic, _ = tactic_tuple
 
         assert tactic == Tactic.PARTICIPATE_LABOR_MARKET

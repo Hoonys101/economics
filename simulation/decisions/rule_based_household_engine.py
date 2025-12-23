@@ -5,6 +5,7 @@ import logging
 from simulation.models import Order
 from simulation.ai.enums import Tactic, Aggressiveness
 from .base_decision_engine import BaseDecisionEngine
+from simulation.dtos import DecisionContext
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -30,16 +31,18 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
 
     def make_decisions(
         self,
-        household: Household,
-        markets: Dict[str, Any],
-        goods_data: List[Dict[str, Any]],
-        market_data: Dict[str, Any],
-        current_time: int,
+        context: DecisionContext,
     ) -> Tuple[List[Order], Tuple[Tactic, Aggressiveness]]:
         """
         규칙 기반 로직을 사용하여 가계의 의사결정을 수행한다.
         주로 생존 욕구 충족과 노동 시장 참여에 집중한다.
         """
+        household = context.household
+        markets = context.markets
+        goods_data = context.goods_data
+        market_data = context.market_data
+        current_time = context.current_time
+
         orders: List[Order] = []
         chosen_tactic: Tactic = Tactic.NO_ACTION
         chosen_aggressiveness: Aggressiveness = Aggressiveness.NEUTRAL
