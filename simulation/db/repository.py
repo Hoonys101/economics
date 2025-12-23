@@ -100,7 +100,10 @@ class SimulationRepository:
             self.cursor.execute("DELETE FROM economic_indicators")
             self.cursor.execute("DELETE FROM ai_decisions_history")
             self.conn.commit()
-            logger.info("All simulation data cleared from database.")
+            
+            # Reclaim disk space
+            self.cursor.execute("VACUUM")
+            logger.info("All simulation data cleared and VACUUMed database.")
         except sqlite3.Error as e:
             logger.error(f"Error clearing data: {e}")
             self.conn.rollback()
