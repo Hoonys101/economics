@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경제 시뮬레이션 대시보드 (v2)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <header class="text-center mb-4">
+            <h1>경제 시뮬레이션 대시보드</h1>
+        </header>
+
+        <!-- 제어 패널 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Control Panel</span>
+                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal">설정 변경</button>
+            </div>
+            <div class="card-body">
+                <button id="startBtn" class="btn btn-primary">시작</button>
+                <button id="pauseBtn" class="btn btn-warning">일시정지</button>
+                <button id="stopBtn" class="btn btn-secondary">중단</button>
+                <button id="resetBtn" class="btn btn-danger">재설정</button>
+                <button id="stopServerBtn" class="btn btn-dark">서버 중지</button>
+            </div>
+        </div>
+
+        <!-- 메인 대시보드 -->
+        <div class="row mb-4">
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Status</h5><p id="simStatus" class="card-text fs-4">-</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Tick</h5><p id="simTick" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">GDP</h5><p id="simGdp" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Population</h5><p id="simPopulation" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Trade Volume</h5><p id="simTradeVolume" class="card-text fs-4">0</p></div></div></div>
+        </div>
+        <div class="row mb-4">
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Household Wealth</h5><p id="simAvgHouseholdWealth" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Firm Wealth</h5><p id="simAvgFirmWealth" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Household Needs</h5><p id="simHouseholdNeeds" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Avg. Firm Needs</h5><p id="simFirmNeeds" class="card-text fs-4">0</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Top Selling Good</h5><p id="simTopGood" class="card-text fs-4">-</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Unemployment</h5><p id="simUnemployment" class="card-text fs-4">0%</p></div></div></div>
+        </div>
+
+        <!-- 차트 & 거래내역 -->
+        <div class="row">
+            <!-- 차트 영역 -->
+            <div class="col-md-8">
+                <div class="row">
+                    <div class="col-md-6 mb-4"><canvas id="gdpChart"></canvas></div>
+                    <div class="col-md-6 mb-4"><canvas id="wealthDistChart"></canvas></div>
+                    <div class="col-md-6 mb-4"><canvas id="householdNeedsChart"></canvas></div>
+                    <div class="col-md-6 mb-4"><canvas id="firmNeedsChart"></canvas></div>
+                    <div class="col-12"><canvas id="salesByGoodChart"></canvas></div>
+                </div>
+            </div>
+            <!-- 거래 내역 -->
+            <div class="col-md-4">
+                <h5>최근 거래 내역</h5>
+                <div id="transaction-list-container" class="relative flex h-[500px] w-full flex-col overflow-y-auto p-2 space-y-4">
+                    <!-- Transactions will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">시뮬레이션 설정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="settingsForm">
+                        <div class="mb-3"><label class="form-label">Secret Token</label><input type="password" class="form-control" id="secretToken"></div>
+                        <hr>
+                        <div class="mb-3"><label class="form-label">초기 가계 수</label><input type="number" class="form-control" id="NUM_HOUSEHOLDS"></div>
+                        <div class="mb-3"><label class="form-label">초기 기업 수</label><input type="number" class="form-control" id="NUM_FIRMS"></div>
+                        <div class="mb-3"><label class="form-label">최대 시뮬레이션 Tick</label><input type="number" class="form-control" id="SIMULATION_TICKS"></div>
+                        <div class="mb-3"><label class="form-label">초기 가계 자산 (평균)</label><input type="number" class="form-control" id="INITIAL_HOUSEHOLD_ASSETS_MEAN"></div>
+                        <div class="mb-3"><label class="form-label">초기 기업 자본 (평균)</label><input type="number" class="form-control" id="INITIAL_FIRM_CAPITAL_MEAN"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    <button type="button" class="btn btn-primary" id="saveSettingsBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Libs & Main Script -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
