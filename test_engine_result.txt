@@ -1,0 +1,67 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\coding\economics
+plugins: anyio-4.12.0, cov-7.0.0, mock-3.15.1
+collecting ... collected 9 items
+
+tests/test_engine.py::TestSimulation::test_simulation_initialization PASSED [ 11%]
+tests/test_engine.py::TestSimulation::test_prepare_market_data_basic PASSED [ 22%]
+tests/test_engine.py::TestSimulation::test_prepare_market_data_no_goods_market PASSED [ 33%]
+tests/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask FAILED [ 44%]
+tests/test_engine.py::TestSimulation::test_process_transactions_goods_trade PASSED [ 55%]
+tests/test_engine.py::TestSimulation::test_process_transactions_labor_trade PASSED [ 66%]
+tests/test_engine.py::TestSimulation::test_process_transactions_research_labor_trade PASSED [ 77%]
+tests/test_engine.py::TestSimulation::test_process_transactions_invalid_agents PASSED [ 88%]
+tests/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents PASSED [100%]
+
+================================== FAILURES ===================================
+____________ TestSimulation.test_prepare_market_data_with_best_ask ____________
+
+self = <test_engine.TestSimulation object at 0x0000017F11BAF820>
+simulation_instance = <simulation.engine.Simulation object at 0x0000017F489822C0>
+mock_goods_data = [{'id': 'food', 'name': 'Food', 'utility_per_need': {'survival_need': 10.0}}, {'id': 'luxury_food', 'name': 'Luxury Food', 'utility_per_need': {'recognition_need': 5.0}}]
+mock_tracker = <simulation.metrics.economic_tracker.EconomicIndicatorTracker object at 0x0000017F11CACD10>
+
+    def test_prepare_market_data_with_best_ask(
+        self, simulation_instance, mock_goods_data, mock_tracker
+    ):
+        mock_food_market = Mock(spec=OrderBookMarket)
+        mock_food_market.get_best_ask.return_value = 10.0
+        simulation_instance.markets["food"] = mock_food_market
+    
+        mock_luxury_market = Mock(spec=OrderBookMarket)
+        mock_luxury_market.get_best_ask.return_value = 30.0
+        simulation_instance.markets["luxury_food"] = mock_luxury_market
+    
+        mock_basic_food_market = Mock(spec=OrderBookMarket)
+        mock_basic_food_market.get_best_ask.return_value = 12.0
+        simulation_instance.markets["basic_food"] = mock_basic_food_market
+    
+>       market_data = simulation_instance._prepare_market_data(mock_tracker)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_engine.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.engine.Simulation object at 0x0000017F489822C0>
+tracker = <simulation.metrics.economic_tracker.EconomicIndicatorTracker object at 0x0000017F11CACD10>
+
+    def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
+        """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
+        goods_market_data: Dict[str, Any] = {}
+        for good_name in self.config_module.GOODS:
+            market = self.markets.get(good_name)
+            if market and isinstance(market, OrderBookMarket):
+                # 1. 이번 틱의 평균 체결가 (거래가 있었다면 가장 정확)
+                avg_price = market.get_daily_avg_price()
+    
+                # 2. 거래가 없었다면 호가창의 최저 매도가(Best Ask)
+>               if avg_price <= 0:
+                   ^^^^^^^^^^^^^^
+E               TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation\engine.py:489: TypeError
+=========================== short test summary info ===========================
+FAILED tests/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask
+========================= 1 failed, 8 passed in 3.52s =========================

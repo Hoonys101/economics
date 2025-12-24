@@ -57,7 +57,7 @@ def sample_sell_order():
 
 class TestOrderBookMarket:
     def test_initialization(self, order_book_market_instance):
-        assert order_book_market_instance.market_id == "test_market"
+        assert order_book_market_instance.id == "test_market"
         assert order_book_market_instance.buy_orders == {}
         assert order_book_market_instance.sell_orders == {}
 

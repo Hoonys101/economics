@@ -1,12 +1,11 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, override, Tuple
+from typing import List, Dict, Any, Optional, override, Tuple, TYPE_CHECKING
 import logging
 from logging import Logger
 
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.models import Order
-from simulation.loan_market import LoanMarket  # LoanMarket 임포트
 from simulation.ai.api import (
     Personality,
     Tactic,
@@ -14,6 +13,9 @@ from simulation.ai.api import (
 )  # Personality, Tactic, Aggressiveness Enum 임포트
 from simulation.core_markets import Market  # Import Market
 from simulation.dtos import DecisionContext
+
+if TYPE_CHECKING:
+    from simulation.loan_market import LoanMarket
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +112,7 @@ class Household(BaseAgent):
         config_module: Any,
         loan_market: Optional[LoanMarket] = None,
         logger: Optional[Logger] = None,
-    ):
+    ) -> None:
         """Household 클래스의 생성자입니다.
 
         Args:
@@ -288,10 +290,13 @@ class Household(BaseAgent):
         return {
             "assets": self.assets,
             "needs": self.needs.copy(),
-            "inventory": self.inventory.copy(),
+            "is_active": self.is_active,
             "is_employed": self.is_employed,
-            # AI 상태 결정에 필요한 다른 데이터 추가 가능
+            "current_wage": self.current_wage,
+            "employer_id": self.employer_id,
+            "social_status": self.social_status,
         }
+    # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
     def get_pre_state_data(self) -> Dict[str, Any]:
         """
@@ -382,31 +387,15 @@ class Household(BaseAgent):
         return orders
 
     def get_desired_wage(self) -> float:
-        """
-        가계가 노동 시장에 제시할 희망 임금을 결정합니다.
-        기본 임금에 가계의 노동 스킬, 생존 욕구, 자산 수준을 반영하여 계산합니다.
-        """
-        base_wage = self.config_module.BASE_WAGE
-        desired_wage = base_wage * self.labor_skill
-
-        # 생존 욕구가 높으면 희망 임금을 낮춰서라도 고용될 확률을 높임
-        survival_need = self.needs.get("survival", 0.0)
-        if survival_need > self.config_module.SURVIVAL_NEED_THRESHOLD_FOR_OTHER_ACTIONS:
-            desired_wage *= (
-                1 - (survival_need / self.config_module.MAX_DESIRE_VALUE) * 0.5
-            )  # 최대 50%까지 감소
-
-        # 자산이 낮으면 희망 임금을 낮춤
-        if self.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
-            desired_wage *= (
-                1
-                - (self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS - self.assets)
-                / self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS
-                * 0.5
-            )  # 최대 50%까지 감소
-
-        # 최소 임금 보장
-        return max(desired_wage, self.config_module.LABOR_MARKET_MIN_WAGE)
+        """가계가 희망하는 최저 임금을 반환합니다."""
+        if self.assets < self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD:
+            return self.config_module.HOUSEHOLD_LOW_ASSET_WAGE
+        return self.config_module.HOUSEHOLD_DEFAULT_WAGE
+    #                 * 0.5
+    #             )  # 최대 50%까지 감소
+    #
+    #     # 최소 임금 보장
+    #     return max(desired_wage, self.config_module.LABOR_MARKET_MIN_WAGE)
 
     def consume(self, item_id: str, quantity: float, current_time: int) -> None:
         log_extra = {

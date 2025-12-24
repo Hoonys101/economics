@@ -1,0 +1,62 @@
+INFO:simulation.ai.model_wrapper:No existing model found for needs_and_growth.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:TestLabor:AIDrivenHouseholdDecisionEngine initialized.
+INFO:simulation.ai.model_wrapper:No existing model found for profit_maximizer.
+INFO:TestLabor:AIDrivenFirmDecisionEngine initialized.
+INFO:TestLabor:AIDrivenFirmDecisionEngine initialized.
+INFO:simulation.agents.bank:Bank 12 initialized.
+INFO:Market_basic_food:OrderBookMarket basic_food initialized.
+INFO:Market_clothing:OrderBookMarket clothing initialized.
+INFO:Market_luxury_food:OrderBookMarket luxury_food initialized.
+INFO:Market_labor:OrderBookMarket labor initialized.
+INFO:simulation.loan_market:LoanMarket loan_market initialized with bank: 12
+INFO:simulation.ai.ai_training_manager:AITrainingManager initialized.
+INFO:simulation.db.repository:Started new simulation run with ID: 1
+INFO:TestLabor:Simulation run started with run_id: 1
+INFO:TestLabor:--- Starting Tick 1 ---
+INFO:Market_basic_food:Starting order matching for items: ['basic_food']
+INFO:Market_clothing:Starting order matching for items: ['clothing']
+INFO:Market_luxury_food:Starting order matching for items: ['luxury_food']
+INFO:Market_labor:Starting order matching for items: ['labor']
+INFO:Market_labor:MATCHING_DEBUG | Item: labor, #Buy: 5, #Sell: 10
+INFO:Market_labor:MATCHING_DEBUG | Best Bid: 10.40, Best Ask: 8.00
+INFO:Market_labor:Matched 1.00 of labor at 10.40. Buyer: 20, Seller: 0
+INFO:Market_labor:Matched 1.00 of labor at 10.40. Buyer: 20, Seller: 1
+INFO:Market_labor:Matched 1.00 of labor at 10.40. Buyer: 20, Seller: 2
+INFO:Market_labor:Matched 1.00 of labor at 10.40. Buyer: 20, Seller: 3
+INFO:Market_labor:Matched 1.00 of labor at 10.40. Buyer: 20, Seller: 4
+INFO:TestLabor:Starting production for basic_food. Total capacity: 50.00 (Labor: 5.0, ProdFactor: 10.00)
+INFO:TestLabor:Produced 50.0 of basic_food. New inventory: 50.0
+INFO:TestLabor:Paid inventory holding cost: 0.25
+INFO:TestLabor:Paid total wages: 52.00 to 5 employees.
+INFO:TestLabor:DB_FLUSH_START | Flushing buffers to DB at tick 1
+INFO:TestLabor:DB_FLUSH_END | Finished flushing buffers to DB at tick 1
+INFO:TestLabor:--- Ending Tick 1 ---
+E
+======================================================================
+ERROR: test_job_hopping_and_wages (__main__.TestLaborDynamics.test_job_hopping_and_wages)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\coding\economics\tests\verify_labor_dynamics.py", line 132, in test_job_hopping_and_wages
+    sim.run_tick()
+    ~~~~~~~~~~~~^^
+  File "C:\coding\economics\simulation\engine.py", line 504, in run_tick
+    market.clear_orders()
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'StockMarket' object has no attribute 'clear_orders'. Did you mean: 'sell_orders'?
+
+----------------------------------------------------------------------
+Ran 1 test in 0.334s
+
+FAILED (errors=1)
+
+=== Labor Market Test: Job Hopping & Recurring Wages ===
+Phase 1: Firm 20 (Low Wage) Hires (Tick 1-5)

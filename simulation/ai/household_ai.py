@@ -37,12 +37,15 @@ class HouseholdAI(BaseAIEngine):
         # One Q-Table per Consumption Category (e.g., 'basic_food', 'luxury')
         self.q_consumption: Dict[str, QTableManager] = {} 
         self.q_work = QTableManager()
+        self.q_investment = QTableManager()  # 주식 투자 적극성 Q-테이블
 
         # State Tracking
         self.last_consumption_states: Dict[str, Tuple] = {}
         self.last_consumption_action_idxs: Dict[str, int] = {}
         self.last_work_state: Optional[Tuple] = None
         self.last_work_action_idx: Optional[int] = None
+        self.last_investment_state: Optional[Tuple] = None
+        self.last_investment_action_idx: Optional[int] = None
 
     def set_ai_decision_engine(self, engine: "AIDecisionEngine"):
         self.ai_decision_engine = engine
@@ -105,11 +108,27 @@ class HouseholdAI(BaseAIEngine):
         self.last_work_action_idx = work_action_idx
         work_agg = self.AGGRESSIVENESS_LEVELS[work_action_idx]
 
+        # 3. Investment Aggressiveness
+        # 자산이 충분할 때만 투자 고려
+        assets = agent_data.get("assets", 0)
+        if assets >= 500.0:  # 최소 투자 자산
+            self.last_investment_state = state
+            inv_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
+            inv_action_idx = self.action_selector.choose_action(
+                self.q_investment, state, inv_actions
+            )
+            self.last_investment_action_idx = inv_action_idx
+            investment_agg = self.AGGRESSIVENESS_LEVELS[inv_action_idx]
+        else:
+            self.last_investment_state = None
+            self.last_investment_action_idx = None
+            investment_agg = 0.0
+
         return HouseholdActionVector(
             consumption_aggressiveness=consumption_aggressiveness,
             work_aggressiveness=work_agg,
             learning_aggressiveness=0.0,
-            investment_aggressiveness=0.0
+            investment_aggressiveness=investment_agg
         )
 
     def update_learning_v2(
@@ -145,6 +164,18 @@ class HouseholdAI(BaseAIEngine):
             self.q_work.update_q_table(
                 self.last_work_state,
                 self.last_work_action_idx,
+                reward,
+                next_state,
+                actions,
+                self.base_alpha,
+                self.gamma
+            )
+
+        # Update Investment Q-Table
+        if self.last_investment_state is not None and self.last_investment_action_idx is not None:
+            self.q_investment.update_q_table(
+                self.last_investment_state,
+                self.last_investment_action_idx,
                 reward,
                 next_state,
                 actions,

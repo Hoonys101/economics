@@ -521,60 +521,60 @@ if __name__ == "__main__":
 
     # 테스트 데이터 저장
     repo.save_transaction(
-        run_id,
-        {
-            "time": 1,
-            "buyer_id": 1,
-            "seller_id": 2,
-            "item_id": "food",
-            "quantity": 10.0,
-            "price": 5.0,
-            "market_id": "goods_market",
-            "transaction_type": "goods",
-        }
+        TransactionData(
+            run_id=run_id,
+            time=1,
+            buyer_id=1,
+            seller_id=2,
+            item_id="food",
+            quantity=10.0,
+            price=5.0,
+            market_id="goods_market",
+            transaction_type="goods",
+        )
     )
     repo.save_agent_state(
-        run_id,
-        {
-            "time": 1,
-            "agent_id": 1,
-            "agent_type": "household",
-            "assets": 1000.0,
-            "is_active": True,
-            "is_employed": True,
-            "employer_id": 10,
-            "needs_survival": 50.0,
-            "needs_labor": 20.0,
-            "inventory_food": 5.0,
-            "current_production": None,
-            "num_employees": None,
-        }
+        AgentStateData(
+            run_id=run_id,
+            time=1,
+            agent_id=1,
+            agent_type="household",
+            assets=1000.0,
+            is_active=True,
+            is_employed=True,
+            employer_id=10,
+            needs_survival=50.0,
+            needs_labor=20.0,
+            inventory_food=5.0,
+            current_production=None,
+            num_employees=None,
+        )
     )
     repo.save_economic_indicator(
-        run_id,
-        {
-            "time": 1,
-            "unemployment_rate": 5.0,
-            "avg_wage": 1500.0,
-            "food_avg_price": 5.0,
-            "total_production": 100.0,
-            "total_consumption": 50.0,
-            "total_household_assets": 10000.0,
-            "total_firm_assets": 5000.0,
-            "total_food_consumption": 30.0,
-            "total_inventory": 200.0,
-        }
+        EconomicIndicatorData(
+            run_id=run_id,
+            time=1,
+            unemployment_rate=5.0,
+            avg_wage=1500.0,
+            food_avg_price=5.0,
+            total_production=100.0,
+            total_consumption=50.0,
+            total_household_assets=10000.0,
+            total_firm_assets=5000.0,
+            total_food_consumption=30.0,
+            total_inventory=200.0,
+        )
     )
     repo.save_market_history(
-        {
-            "time": 1,
-            "market_id": "goods_market",
-            "item_id": "food",
-            "avg_price": 5.0,
-            "trade_volume": 100.0,
-            "best_ask": 4.5,
-            "best_bid": 5.5,
-        }
+        MarketHistoryData(
+            time=1,
+            market_id="goods_market",
+            item_id="food",
+            avg_price=5.0,
+            trade_volume=100.0,
+            best_ask=4.5,
+            best_bid=5.5,
+        )
     )
 
     # 테스트 데이터 조회

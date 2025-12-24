@@ -1,0 +1,244 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\coding\economics
+plugins: anyio-4.12.0, cov-7.0.0, mock-3.15.1
+collecting ... collected 139 items
+
+tests/test_ai_driven_firm_engine.py::test_adjust_price_tactic FAILED     [  0%]
+tests/test_ai_training_manager.py::TestAITrainingManager::test_get_top_performing_agents PASSED [  1%]
+tests/test_ai_training_manager.py::TestAITrainingManager::test_clone_and_mutate_q_table FAILED [  2%]
+tests/test_ai_training_manager.py::TestAITrainingManager::test_run_imitation_learning_cycle FAILED [  2%]
+tests/test_ai_training_manager_new.py::test_get_top_performing_agents PASSED [  3%]
+tests/test_ai_training_manager_new.py::test_get_under_performing_agents PASSED [  4%]
+tests/test_ai_training_manager_new.py::test_clone_and_mutate_q_table PASSED [  5%]
+tests/test_ai_training_manager_new.py::test_clone_from_fittest_agent PASSED [  5%]
+tests/test_ai_training_manager_new.py::test_run_imitation_learning_cycle FAILED [  6%]
+tests/test_app.py::test_get_config PASSED                                [  7%]
+tests/test_app.py::test_set_config_valid_token PASSED                    [  7%]
+tests/test_app.py::test_set_config_invalid_token PASSED                  [  8%]
+tests/test_app.py::test_start_simulation PASSED                          [  9%]
+tests/test_app.py::test_pause_simulation PASSED                          [ 10%]
+tests/test_app.py::test_stop_simulation PASSED                           [ 10%]
+tests/test_app.py::test_reset_simulation PASSED                          [ 11%]
+tests/test_app.py::test_get_economic_indicators_api PASSED               [ 12%]
+tests/test_app.py::test_get_market_history_api PASSED                    [ 12%]
+tests/test_app.py::test_get_agent_state_api PASSED                       [ 13%]
+tests/test_app.py::test_get_transactions_api PASSED                      [ 14%]
+tests/test_bank.py::TestBank::test_initialization PASSED                 [ 15%]
+tests/test_bank.py::TestBank::test_grant_loan_successful PASSED          [ 15%]
+tests/test_bank.py::TestBank::test_grant_loan_insufficient_assets PASSED [ 16%]
+tests/test_bank.py::TestBank::test_grant_loan_multiple_loans PASSED      [ 17%]
+tests/test_bank.py::TestBank::test_process_repayment_full PASSED         [ 17%]
+tests/test_bank.py::TestBank::test_process_repayment_partial PASSED      [ 18%]
+tests/test_bank.py::TestBank::test_process_repayment_non_existent_loan PASSED [ 19%]
+tests/test_bank.py::TestBank::test_get_outstanding_loans_for_agent_exists PASSED [ 20%]
+tests/test_bank.py::TestBank::test_get_outstanding_loans_for_agent_none PASSED [ 20%]
+tests/test_bank.py::TestBank::test_get_outstanding_loans_for_agent_multiple PASSED [ 21%]
+tests/test_base_agent.py::test_base_agent_abstract_methods PASSED        [ 22%]
+tests/test_base_agent.py::test_household_inheritance_and_init PASSED     [ 23%]
+tests/test_base_agent.py::test_firm_inheritance_and_init PASSED          [ 23%]
+tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_places_sell_order_for_food FAILED [ 24%]
+tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_places_buy_order_for_food FAILED [ 25%]
+tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_sells_labor FAILED [ 25%]
+tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_buys_labor FAILED [ 26%]
+tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_goods_market_matching_integration PASSED [ 27%]
+tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_labor_market_matching_integration PASSED [ 28%]
+tests/test_engine.py::TestSimulation::test_simulation_initialization FAILED [ 28%]
+tests/test_engine.py::TestSimulation::test_prepare_market_data_basic PASSED [ 29%]
+tests/test_engine.py::TestSimulation::test_prepare_market_data_no_goods_market PASSED [ 30%]
+tests/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask FAILED [ 30%]
+tests/test_engine.py::TestSimulation::test_process_transactions_goods_trade PASSED [ 31%]
+tests/test_engine.py::TestSimulation::test_process_transactions_labor_trade PASSED [ 32%]
+tests/test_engine.py::TestSimulation::test_process_transactions_research_labor_trade PASSED [ 33%]
+tests/test_engine.py::TestSimulation::test_process_transactions_invalid_agents PASSED [ 33%]
+tests/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents PASSED [ 34%]
+tests/test_firm_decision_engine.py::test_firm_production_decision_with_employees FAILED [ 35%]
+tests/test_firm_decision_engine.py::test_firm_no_production_if_target_met FAILED [ 35%]
+tests/test_firm_decision_engine.py::test_firm_hiring_decision_no_inventory FAILED [ 36%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_initialization PASSED [ 37%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_overstock_reduces_target FAILED [ 38%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_understock_increases_target FAILED [ 38%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_target_within_bounds_no_change FAILED [ 39%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_target_min_max_bounds FAILED [ 40%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_hires_to_meet_min_employees FAILED [ 41%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_hires_for_needed_labor FAILED [ 41%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_hire_if_max_employees_reached FAILED [ 42%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_hire_if_no_needed_labor FAILED [ 43%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_labor_order_details FAILED [ 43%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_sell_if_understocked FAILED [ 44%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_sell_if_no_inventory FAILED [ 45%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_price_adjusts_overstock FAILED [ 46%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_price_adjusts_understock FAILED [ 46%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_price_min_max_bounds FAILED [ 47%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_quantity_max_bound FAILED [ 48%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_order_details FAILED [ 48%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_increase_small FAILED [ 49%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_decrease_medium FAILED [ 50%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_hold FAILED [ 51%]
+tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_min_max_bounds FAILED [ 51%]
+tests/test_firm_profit.py::test_firm_profit_history_update PASSED        [ 52%]
+tests/test_firm_profit.py::test_firm_revenue_expenses_reset PASSED       [ 53%]
+tests/test_household_ai.py::test_ai_creates_purchase_order FAILED        [ 53%]
+tests/test_household_ai.py::test_ai_evaluates_consumption_options FAILED [ 54%]
+tests/test_household_ai_consumption.py::TestHouseholdAIConsumption::test_ai_chooses_consumption_tactic FAILED [ 55%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_get_consumption_candidates SKIPPED [ 56%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_calculate_utility_gain_basic_food SKIPPED [ 56%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_calculate_utility_gain_luxury_food SKIPPED [ 57%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_find_optimal_consumption_bundle_prioritize_cheaper SKIPPED [ 58%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_find_optimal_consumption_bundle_insufficient_funds SKIPPED [ 58%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_find_optimal_consumption_bundle_no_candidates SKIPPED [ 59%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_make_decisions_with_evaluate_consumption_options FAILED [ 60%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_make_decisions_with_participate_labor_market FAILED [ 61%]
+tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_find_optimal_consumption_bundle_mix_goods_sufficient_budget SKIPPED [ 61%]
+tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_make_decisions_calls_ai FAILED [ 62%]
+tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_do_nothing FAILED [ 63%]
+tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_basic_food_sufficient_assets FAILED [ 64%]
+tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_luxury_food_insufficient_assets FAILED [ 64%]
+tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_evaluate_options_chooses_best_utility FAILED [ 65%]
+tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_aggressive FAILED [ 66%]
+tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_passive_no_offer FAILED [ 66%]
+tests/test_household_marginal_utility.py::TestHouseholdMarginalUtility::test_high_price_prevents_buying FAILED [ 67%]
+tests/test_household_marginal_utility.py::TestHouseholdMarginalUtility::test_marginal_utility_stops_buying FAILED [ 68%]
+tests/test_loan_market.py::TestLoanMarket::test_initialization PASSED    [ 69%]
+tests/test_loan_market.py::TestLoanMarket::test_place_loan_request_grants_loan PASSED [ 69%]
+tests/test_loan_market.py::TestLoanMarket::test_place_loan_request_denies_loan PASSED [ 70%]
+tests/test_loan_market.py::TestLoanMarket::test_place_repayment_processes_repayment PASSED [ 71%]
+tests/test_loan_market.py::TestLoanMarket::test_place_order_unknown_type_logs_warning PASSED [ 71%]
+tests/test_loan_market.py::TestLoanMarket::test_process_interest_calls_bank_method PASSED [ 72%]
+tests/test_logger.py::TestLogger::test_clear_logs PASSED                 [ 73%]
+tests/test_logger.py::TestLogger::test_log_writing PASSED                [ 74%]
+tests/test_logger.py::TestLogger::test_singleton_instance PASSED         [ 74%]
+tests/test_markets_v2.py::TestOrderBookMarketInitialization::test_market_initialization PASSED [ 75%]
+tests/test_markets_v2.py::TestPlaceOrderToBook::test_add_single_buy_order PASSED [ 76%]
+tests/test_markets_v2.py::TestPlaceOrderToBook::test_add_buy_orders_sorted PASSED [ 76%]
+tests/test_markets_v2.py::TestPlaceOrderToBook::test_add_sell_orders_sorted PASSED [ 77%]
+tests/test_markets_v2.py::TestPlaceOrderToBook::test_add_orders_with_same_price PASSED [ 78%]
+tests/test_markets_v2.py::TestOrderMatching::test_full_match_one_to_one PASSED [ 79%]
+tests/test_markets_v2.py::TestOrderMatching::test_partial_match_then_book PASSED [ 79%]
+tests/test_markets_v2.py::TestOrderMatching::test_match_with_multiple_orders PASSED [ 80%]
+tests/test_markets_v2.py::TestMarketAPI::test_get_best_bid_empty PASSED  [ 81%]
+tests/test_markets_v2.py::TestMarketAPI::test_get_best_bid_non_empty PASSED [ 82%]
+tests/test_markets_v2.py::TestMarketAPI::test_get_best_ask_empty PASSED  [ 82%]
+tests/test_markets_v2.py::TestMarketAPI::test_get_best_ask_non_empty PASSED [ 83%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_initialization PASSED [ 84%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_place_buy_order_adds_and_sorts PASSED [ 84%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_place_sell_order_adds_and_sorts PASSED [ 85%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_place_order_unknown_type_logs_warning PASSED [ 86%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_full_fill PASSED [ 87%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_partial_fill_buy_order PASSED [ 87%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_partial_fill_sell_order PASSED [ 88%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_no_match_price PASSED [ 89%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_multiple_matches PASSED [ 89%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_different_items PASSED [ 90%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_empty_books PASSED [ 91%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_transaction_type_goods PASSED [ 92%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_match_orders_transaction_type_labor PASSED [ 92%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_get_best_ask_empty PASSED [ 93%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_get_best_ask_non_empty PASSED [ 94%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_get_best_bid_empty PASSED [ 94%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_get_best_bid_non_empty PASSED [ 95%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_get_order_book_status_empty PASSED [ 96%]
+tests/test_order_book_market.py::TestOrderBookMarket::test_get_order_book_status_non_empty PASSED [ 97%]
+tests/test_repository.py::test_save_and_get_simulation_run PASSED        [ 97%]
+tests/test_repository.py::test_save_and_get_agent_state PASSED           [ 98%]
+tests/test_repository.py::test_save_and_get_transaction PASSED           [ 99%]
+tests/test_repository.py::test_save_and_get_economic_indicators PASSED   [100%]
+
+================================== FAILURES ===================================
+C:\coding\economics\tests\test_ai_driven_firm_engine.py:62: TypeError: AIDrivenFirmDecisionEngine.make_decisions() takes 2 positional arguments but 6 were given
+C:\coding\economics\simulation\ai\ai_training_manager.py:112: TypeError: 'Mock' object is not iterable
+C:\coding\economics\simulation\ai\ai_training_manager.py:71: TypeError: unsupported operand type(s) for *: 'int' and 'Mock'
+C:\coding\economics\simulation\ai\ai_training_manager.py:60: TypeError: unsupported operand type(s) for *: 'int' and 'Mock'
+C:\coding\economics\tests\test_decision_engine_integration.py:167: TypeError: cannot unpack non-iterable Mock object
+C:\coding\economics\tests\test_decision_engine_integration.py:203: TypeError: cannot unpack non-iterable Mock object
+C:\coding\economics\tests\test_decision_engine_integration.py:240: TypeError: cannot unpack non-iterable Mock object
+C:\coding\economics\tests\test_decision_engine_integration.py:273: TypeError: cannot unpack non-iterable Mock object
+C:\coding\economics\tests\test_engine.py:187: KeyError: 'labor_market'
+C:\coding\economics\simulation\engine.py:489: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:133: TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:133: TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:133: TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:133: TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:133: TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\simulation\decisions\ai_driven_firm_engine.py:98: TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+C:\coding\economics\tests\test_household_ai.py:88: AssertionError: assert 4 == 1
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:72: AttributeError: 'OrderBookMarket' object has no attribute 'get'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'MagicMock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:85: TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:85: TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\simulation\decisions\ai_driven_household_engine.py:73: TypeError: '<=' not supported between instances of 'Mock' and 'int'
+C:\coding\economics\tests\test_household_marginal_utility.py:127: TypeError: AIDrivenHouseholdDecisionEngine._handle_specific_purchase() got an unexpected keyword argument 'current_tick'
+C:\coding\economics\tests\test_household_marginal_utility.py:103: TypeError: AIDrivenHouseholdDecisionEngine._handle_specific_purchase() got an unexpected keyword argument 'current_tick'
+=========================== short test summary info ===========================
+FAILED tests/test_ai_driven_firm_engine.py::test_adjust_price_tactic - TypeEr...
+FAILED tests/test_ai_training_manager.py::TestAITrainingManager::test_clone_and_mutate_q_table
+FAILED tests/test_ai_training_manager.py::TestAITrainingManager::test_run_imitation_learning_cycle
+FAILED tests/test_ai_training_manager_new.py::test_run_imitation_learning_cycle
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_places_sell_order_for_food
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_places_buy_order_for_food
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_sells_labor
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_buys_labor
+FAILED tests/test_engine.py::TestSimulation::test_simulation_initialization
+FAILED tests/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask
+FAILED tests/test_firm_decision_engine.py::test_firm_production_decision_with_employees
+FAILED tests/test_firm_decision_engine.py::test_firm_no_production_if_target_met
+FAILED tests/test_firm_decision_engine.py::test_firm_hiring_decision_no_inventory
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_overstock_reduces_target
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_understock_increases_target
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_target_within_bounds_no_change
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_target_min_max_bounds
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_hires_to_meet_min_employees
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_hires_for_needed_labor
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_hire_if_max_employees_reached
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_hire_if_no_needed_labor
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_labor_order_details
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_sell_if_understocked
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_sell_if_no_inventory
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_price_adjusts_overstock
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_price_adjusts_understock
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_price_min_max_bounds
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_quantity_max_bound
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_order_details
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_increase_small
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_decrease_medium
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_hold
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_min_max_bounds
+FAILED tests/test_household_ai.py::test_ai_creates_purchase_order - Assertion...
+FAILED tests/test_household_ai.py::test_ai_evaluates_consumption_options - At...
+FAILED tests/test_household_ai_consumption.py::TestHouseholdAIConsumption::test_ai_chooses_consumption_tactic
+FAILED tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_make_decisions_with_evaluate_consumption_options
+FAILED tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_make_decisions_with_participate_labor_market
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_make_decisions_calls_ai
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_do_nothing
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_basic_food_sufficient_assets
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_luxury_food_insufficient_assets
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_evaluate_options_chooses_best_utility
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_aggressive
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_passive_no_offer
+FAILED tests/test_household_marginal_utility.py::TestHouseholdMarginalUtility::test_high_price_prevents_buying
+FAILED tests/test_household_marginal_utility.py::TestHouseholdMarginalUtility::test_marginal_utility_stops_buying
+================== 47 failed, 85 passed, 7 skipped in 4.87s ===================

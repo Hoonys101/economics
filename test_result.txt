@@ -1,0 +1,24 @@
+E
+======================================================================
+ERROR: test_job_hopping_and_wages (__main__.TestLaborDynamics.test_job_hopping_and_wages)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\coding\economics\tests\verify_labor_dynamics.py", line 101, in test_job_hopping_and_wages
+    sim = Simulation(
+        households=households, firms=firms, ai_trainer=ai_manager,
+        repository=self.repository, config_module=config, goods_data=goods_list, logger=logger
+    )
+  File "C:\coding\economics\simulation\engine.py", line 73, in __init__
+    good_name: OrderBookMarket(market_id=good_name)
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\coding\economics\simulation\markets\order_book_market.py", line 34, in __init__
+    f"OrderBookMarket {self.market_id} initialized.",
+                       ^^^^^^^^^^^^^^
+AttributeError: 'OrderBookMarket' object has no attribute 'market_id'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.400s
+
+FAILED (errors=1)
+
+=== Labor Market Test: Job Hopping & Recurring Wages ===

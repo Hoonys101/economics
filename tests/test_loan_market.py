@@ -38,7 +38,7 @@ def mock_logger():
 
 class TestLoanMarket:
     def test_initialization(self, loan_market_instance, mock_bank):
-        assert loan_market_instance.market_id == "test_loan_market"
+        assert loan_market_instance.id == "test_loan_market"
         assert loan_market_instance.bank == mock_bank
         assert isinstance(loan_market_instance.loan_requests, list)
         assert isinstance(loan_market_instance.repayment_requests, list)

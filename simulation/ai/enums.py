@@ -30,6 +30,7 @@ class Tactic(Enum):
     """
 
     DO_NOTHING = auto()
+    NO_ACTION = auto()
     WAIT = auto()
 
     # --- 가계용 Tactics ---
@@ -90,4 +91,5 @@ class Aggressiveness(Enum):
 
     PASSIVE = auto()
     NORMAL = auto()
+    NEUTRAL = auto()
     AGGRESSIVE = auto()

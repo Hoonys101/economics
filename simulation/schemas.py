@@ -25,6 +25,21 @@ class FirmActionVector:
     # 0.0: Maintain or Reduce
     production_aggressiveness: float = 0.5
 
+    # 5. 배당 적극성
+    # 0.0: 저배당 (이익 재투자)
+    # 1.0: 고배당 (주주 환원)
+    dividend_aggressiveness: float = 0.5
+
+    # 6. 자본(주식) 운용 적극성
+    # 0.0: 적극적 자사주 매입 (Buyback)
+    # 1.0: 적극적 주식 발행/매도 (Issuance)
+    equity_aggressiveness: float = 0.5
+
+    # 7. 자본재(Capital Goods) 투자 적극성
+    # 0.0: 투자 최소화 (보수적 운영)
+    # 1.0: 투자 최대화 (설비 확장 집중)
+    capital_aggressiveness: float = 0.5
+
 
 @dataclass
 class HouseholdActionVector:

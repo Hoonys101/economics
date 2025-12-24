@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional, override
 import logging
 
 from simulation.models import Order, Transaction
@@ -12,8 +12,8 @@ class LoanMarket(Market):
     """대출 요청 및 상환을 처리하는 시장"""
 
     def __init__(self, market_id: str, bank: Bank, config_module: Any):
-        super().__init__(market_id)
-        self.market_id = market_id
+        super().__init__(market_id=market_id)
+        self.id = market_id
         self.bank = bank  # 시장과 연결된 은행 인스턴스
         self.config_module = config_module  # Store config_module
         self.loan_requests: List[Order] = []  # 대출 요청 주문 큐
@@ -22,7 +22,7 @@ class LoanMarket(Market):
             f"LoanMarket {market_id} initialized with bank: {bank.id}",
             extra={
                 "tick": 0,
-                "market_id": self.market_id,
+                "market_id": self.id,
                 "agent_id": bank.id,
                 "tags": ["init", "market"],
             },
@@ -33,7 +33,7 @@ class LoanMarket(Market):
         transactions: List[Transaction] = []
         log_extra = {
             "tick": current_tick,
-            "market_id": self.market_id,
+            "market_id": self.id,
             "agent_id": order.agent_id,
             "order_type": order.order_type,
             "item_id": order.item_id,
@@ -65,7 +65,7 @@ class LoanMarket(Market):
                         seller_id=order.agent_id,
                         transaction_type="loan",
                         time=current_tick,
-                        market_id=self.market_id,
+                        market_id=self.id,
                     )
                 )
                 logger.info(
@@ -92,7 +92,7 @@ class LoanMarket(Market):
                     seller_id=self.bank.id,
                     transaction_type="loan",
                     time=current_tick,
-                    market_id=self.market_id,
+                    market_id=self.id,
                 )
             )
             logger.info(
@@ -110,7 +110,7 @@ class LoanMarket(Market):
             f"Processing interest for outstanding loans at tick {current_tick}.",
             extra={
                 "tick": current_tick,
-                "market_id": self.market_id,
+                "market_id": self.id,
                 "tags": ["loan", "interest"],
             },
         )
@@ -130,14 +130,14 @@ class LoanMarket(Market):
                         seller_id=loan_details["borrower_id"],
                         transaction_type="loan",
                         time=current_tick,
-                        market_id=self.market_id,
+                        market_id=self.id,
                     )
                 )
                 logger.info(
                     f"Interest payment of {interest_amount:.2f} for loan {loan_id} by {loan_details['borrower_id']}.",
                     extra={
                         "tick": current_tick,
-                        "market_id": self.market_id,
+                        "market_id": self.id,
                         "loan_id": loan_id,
                         "borrower_id": loan_details["borrower_id"],
                         "amount": interest_amount,
@@ -170,7 +170,8 @@ class LoanMarket(Market):
         """LoanMarket의 일일 거래량은 의미가 없으므로 0을 반환합니다."""
         return 0.0
 
-    def clear_market_for_next_tick(self) -> None:
+    @override
+    def clear_orders(self) -> None:
         """LoanMarket은 매 틱 초기화할 내부 상태가 없습니다."""
-        pass
+        self.matched_transactions = []
 

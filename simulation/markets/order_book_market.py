@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, override
 import logging
 
 from simulation.models import Order, Transaction
@@ -20,24 +20,40 @@ class OrderBookMarket(Market):
             market_id (str): 시장의 고유 ID (예: 'goods_market', 'labor_market').
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
         """
-        self.market_id = market_id
-        super().__init__(market_id)  # Call parent constructor to set self.id
-        self.logger = logger if logger else logging.getLogger(__name__)
+        super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
+        self.id = market_id
         self.buy_orders: Dict[str, List[Order]] = {}
         self.sell_orders: Dict[str, List[Order]] = {}
+        self.daily_avg_price: Dict[str, float] = {}
+        self.daily_total_volume: Dict[str, float] = {}
+        
+        # --- GEMINI_ADDITION: Persist signals across ticks ---
+        self.cached_best_bid: Dict[str, float] = {}
+        self.cached_best_ask: Dict[str, float] = {}
+        
         self.logger.info(
-            f"OrderBookMarket {self.market_id} initialized.",
-            extra={"tick": 0, "market_id": self.market_id, "tags": ["init", "market"]},
+            f"OrderBookMarket {self.id} initialized.",
+            extra={"tick": 0, "market_id": self.id, "tags": ["init", "market"]},
         )
 
-    def clear_market_for_next_tick(self):
-        """다음 틱을 위해 호가창을 초기화합니다."""
-        self.matched_transactions = [] 
-        self.buy_orders = {}
-        self.sell_orders = {}
+
+    def clear_orders(self) -> None:
+        """현재 틱의 모든 주문을 초기화합니다. 초기화 전 Best Bid/Ask를 캐싱합니다."""
+        # Cache best prices for signal persistence
+        for item_id in set(list(self.buy_orders.keys()) + list(self.sell_orders.keys())):
+            bid = self.get_best_bid(item_id)
+            if bid is not None: self.cached_best_bid[item_id] = bid
+            
+            ask = self.get_best_ask(item_id)
+            if ask is not None: self.cached_best_ask[item_id] = ask
+
+        self.buy_orders.clear()
+        self.sell_orders.clear()
+        self.daily_avg_price.clear()
+        self.daily_total_volume.clear()
         self.logger.debug(
-            f"Market {self.market_id} orders cleared for new tick.",
-            extra={"market_id": self.market_id, "tags": ["market_clear"]},
+            f"Market {self.id} orders cleared for new tick.",
+            extra={"market_id": self.id, "tags": ["market_clear"]},
         )
 
     def place_order(self, order: Order, current_time: int):
@@ -49,7 +65,7 @@ class OrderBookMarket(Market):
         """
         log_extra = {
             "tick": current_time,
-            "market_id": self.market_id,
+            "market_id": self.id,
             "agent_id": order.agent_id,
             "item_id": order.item_id,
             "order_type": order.order_type,
@@ -74,10 +90,10 @@ class OrderBookMarket(Market):
 
         if not all_item_ids:
             self.logger.info(
-                f"No items to match in market {self.market_id} at tick {current_time}",
+                f"No items to match in market {self.id} at tick {current_time}",
                 extra={
                     "tick": current_time,
-                    "market_id": self.market_id,
+                    "market_id": self.id,
                     "tags": ["market_match"],
                 },
             )
@@ -87,7 +103,7 @@ class OrderBookMarket(Market):
             f"Starting order matching for items: {list(all_item_ids)}",
             extra={
                 "tick": current_time,
-                "market_id": self.market_id,
+                "market_id": self.id,
                 "tags": ["market_match"],
             },
         )
@@ -135,7 +151,7 @@ class OrderBookMarket(Market):
         transactions = []
         log_extra = {
             "tick": current_tick,
-            "market_id": self.market_id,
+            "market_id": self.id,
             "item_id": item_id,
         }
 
@@ -176,7 +192,11 @@ class OrderBookMarket(Market):
             buy_order = self.buy_orders[item_id][0]
             sell_order = self.sell_orders[item_id][0]
 
-            trade_price = (buy_order.price + sell_order.price) / 2  # Mid-price
+            # Labor Market에서는 구매자(기업)가 제시한 가격(임금)으로 체결 (고스트 시그널 방지)
+            if self.id == "labor" or self.id == "research_labor":
+                trade_price = buy_order.price
+            else:
+                trade_price = (buy_order.price + sell_order.price) / 2  # Mid-price
             trade_quantity = min(buy_order.quantity, sell_order.quantity)
 
             transaction = Transaction(
@@ -185,9 +205,9 @@ class OrderBookMarket(Market):
                 price=trade_price,
                 buyer_id=buy_order.agent_id,
                 seller_id=sell_order.agent_id,
-                market_id=self.market_id,
+                market_id=self.id,
                 transaction_type="goods"
-                if self.market_id == "goods_market"
+                if self.id == "goods_market"
                 else "labor",
                 time=current_tick,
             )
@@ -219,13 +239,13 @@ class OrderBookMarket(Market):
         """주어진 아이템의 최저 판매 가격(best ask)을 반환합니다."""
         if item_id in self.sell_orders and self.sell_orders[item_id]:
             return self.sell_orders[item_id][0].price
-        return None
+        return self.cached_best_ask.get(item_id)
 
     def get_best_bid(self, item_id: str) -> float | None:
         """주어진 아이템의 최고 구매 가격(best bid)을 반환합니다."""
         if item_id in self.buy_orders and self.buy_orders[item_id]:
             return self.buy_orders[item_id][0].price
-        return None
+        return self.cached_best_bid.get(item_id)
 
     def get_order_book_status(self, item_id: str) -> Dict[str, Any]:
         """주어진 아이템의 현재 호가창 상태를 반환합니다."""

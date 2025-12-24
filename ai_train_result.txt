@@ -1,0 +1,58 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\coding\economics
+plugins: anyio-4.12.0, cov-7.0.0, mock-3.15.1
+collecting ... collected 3 items
+
+tests/test_ai_training_manager.py::TestAITrainingManager::test_get_top_performing_agents PASSED [ 33%]
+tests/test_ai_training_manager.py::TestAITrainingManager::test_clone_and_mutate_q_table FAILED [ 66%]
+tests/test_ai_training_manager.py::TestAITrainingManager::test_run_imitation_learning_cycle FAILED [100%]
+
+================================== FAILURES ===================================
+_____________ TestAITrainingManager.test_clone_and_mutate_q_table _____________
+tests\test_ai_training_manager.py:62: in test_clone_and_mutate_q_table
+    training_manager._clone_and_mutate_q_table(source_agent, target_agent)
+simulation\ai\ai_training_manager.py:99: in _clone_and_mutate_q_table
+    self._copy_and_mutate_single_table(source_tactic_manager, target_tactic_manager)
+simulation\ai\ai_training_manager.py:112: in _copy_and_mutate_single_table
+    for state, actions in source_manager.q_table.items():
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'Mock' object is not iterable
+___________ TestAITrainingManager.test_run_imitation_learning_cycle ___________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:958: in assert_called_once
+    raise AssertionError(msg)
+E   AssertionError: Expected 'choice' to have been called once. Called 5 times.
+E   Calls: [call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>])].
+
+During handling of the above exception, another exception occurred:
+tests\test_ai_training_manager.py:87: in test_run_imitation_learning_cycle
+    mock_choice.assert_called_once()
+E   AssertionError: Expected 'choice' to have been called once. Called 5 times.
+E   Calls: [call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>]),
+E    call([<Mock spec='Household' id='2034521109376'>])].
+E   
+E   pytest introspection follows:
+E   
+E   Args:
+E   assert ([<Mock spec=...521109376'>],) == ()
+E     
+E     Left contains one more item: [<Mock spec='Household' id='2034521109376'>]
+E     
+E     Full diff:
+E     - ()
+E     + (
+E     +     [...
+E     
+E     ...Full output truncated (3 lines hidden), use '-vv' to show
+=========================== short test summary info ===========================
+FAILED tests/test_ai_training_manager.py::TestAITrainingManager::test_clone_and_mutate_q_table
+FAILED tests/test_ai_training_manager.py::TestAITrainingManager::test_run_imitation_learning_cycle
+========================= 2 failed, 1 passed in 0.24s =========================

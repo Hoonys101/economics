@@ -111,7 +111,114 @@ def create_tables(conn: sqlite3.Connection):
         )
     """)
 
+    # Stock Market History 테이블 (기업별 주가 이력)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS stock_market_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            time INTEGER NOT NULL,
+            firm_id INTEGER NOT NULL,
+            stock_price REAL,
+            book_value_per_share REAL,
+            price_to_book_ratio REAL,
+            trade_volume REAL,
+            buy_order_count INTEGER,
+            sell_order_count INTEGER,
+            firm_assets REAL,
+            firm_profit REAL,
+            dividend_paid REAL,
+            market_cap REAL,
+            FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
+        )
+    """)
+
+    # Wealth Distribution 테이블 (불평등 지표)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS wealth_distribution (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            time INTEGER NOT NULL,
+            gini_total_assets REAL,
+            gini_financial_assets REAL,
+            gini_stock_holdings REAL,
+            labor_income_share REAL,
+            capital_income_share REAL,
+            top_10_pct_wealth_share REAL,
+            bottom_50_pct_wealth_share REAL,
+            mean_household_assets REAL,
+            median_household_assets REAL,
+            mean_to_median_ratio REAL,
+            FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
+        )
+    """)
+
+    # Household Income 테이블 (가계별 소득 원천)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS household_income (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            time INTEGER NOT NULL,
+            household_id INTEGER NOT NULL,
+            labor_income REAL,
+            dividend_income REAL,
+            capital_gains REAL,
+            total_income REAL,
+            portfolio_value REAL,
+            portfolio_return_rate REAL,
+            FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
+        )
+    """)
+
+    # Social Mobility 테이블 (계층 이동 지표)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS social_mobility (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            time INTEGER NOT NULL,
+            quintile_1_count INTEGER,
+            quintile_2_count INTEGER,
+            quintile_3_count INTEGER,
+            quintile_4_count INTEGER,
+            quintile_5_count INTEGER,
+            upward_mobility_count INTEGER,
+            downward_mobility_count INTEGER,
+            stable_count INTEGER,
+            quintile_1_avg_assets REAL,
+            quintile_2_avg_assets REAL,
+            quintile_3_avg_assets REAL,
+            quintile_4_avg_assets REAL,
+            quintile_5_avg_assets REAL,
+            mobility_index REAL,
+            FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
+        )
+    """)
+
+    # Personality Statistics 테이블 (성향별 통계)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS personality_statistics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            time INTEGER NOT NULL,
+            personality_type TEXT NOT NULL,
+            count INTEGER,
+            avg_assets REAL,
+            median_assets REAL,
+            avg_labor_income REAL,
+            avg_capital_income REAL,
+            labor_income_ratio REAL,
+            employment_rate REAL,
+            avg_portfolio_value REAL,
+            avg_stock_holdings REAL,
+            avg_survival_need REAL,
+            avg_social_need REAL,
+            avg_improvement_need REAL,
+            avg_wealth_growth_rate REAL,
+            FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
+        )
+    """)
+
     conn.commit()
+
 
 
 if __name__ == "__main__":

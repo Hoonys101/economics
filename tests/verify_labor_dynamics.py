@@ -33,7 +33,7 @@ class TestLaborDynamics(unittest.TestCase):
     def test_job_hopping_and_wages(self):
         print("\n=== Labor Market Test: Job Hopping & Recurring Wages ===")
         
-        logging.basicConfig(level=logging.ERROR)
+        logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger("TestLabor")
         
         mock_action_proposal = MagicMock()
@@ -139,6 +139,9 @@ class TestLaborDynamics(unittest.TestCase):
         # Run Phase 2: Firm 21 (High Wage) Enters (Tick 6-31)
         print("\nPhase 2: Firm 21 (High Wage) Enters (Tick 6-31)")
         f11.is_active = True
+        if f11 not in sim.firms:
+            sim.firms.append(f11)
+            sim.agents[f11.id] = f11
         
         hops = 0
         ever_at_20 = {h.id for h in sim.households if h.employer_id == 20} # Everyone starts at 20 (roughly)
@@ -156,7 +159,7 @@ class TestLaborDynamics(unittest.TestCase):
                 h.needs["social"] = 0.0
                 h.needs["asset"] = 0.0
                 h.needs["improvement"] = 0.0
-                h.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=HouseholdActionVector({"basic_food": 0.5}, 1.0, 0.0, 0.0))
+                h.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=HouseholdActionVector({"basic_food": 0.5}, 1.0, 0.9, 0.0, 0.0))
             
             sim.run_tick()
             

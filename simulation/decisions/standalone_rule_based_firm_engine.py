@@ -6,6 +6,7 @@ from simulation.models import Order
 from simulation.ai.enums import Tactic, Aggressiveness
 from .base_decision_engine import BaseDecisionEngine
 from .rule_based_firm_engine import RuleBasedFirmDecisionEngine
+from simulation.dtos import DecisionContext
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -35,16 +36,20 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
     def make_decisions(
         self,
-        firm: Firm,
-        markets: Dict[str, Any],
-        goods_data: List[Dict[str, Any]],
-        market_data: Dict[str, Any],
-        current_time: int,
+        context: DecisionContext,
     ) -> Tuple[List[Order], Tuple[Tactic, Aggressiveness]]:
         """
         규칙 기반 로직을 사용하여 기업의 의사결정을 수행한다.
         생산 조정, 임금 조정, 가격 조정에 집중한다.
         """
+        firm = context.firm
+        markets = context.markets
+        goods_data = context.goods_data
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if firm is None:
+            return [], (Tactic.NO_ACTION, Aggressiveness.NEUTRAL)
         orders: List[Order] = []
         chosen_tactic: Tactic = Tactic.NO_ACTION
         chosen_aggressiveness: Aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 중립으로 설정
@@ -73,7 +78,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         # 현재 생산 목표와 실제 생산량, 고용 인원 등을 고려하여 임금 및 고용 결정 로직 추가
         if chosen_tactic != Tactic.ADJUST_PRODUCTION: # 이미 생산 조정 결정을 했으면 이번 턴에 임금 조정은 건너뛴다 (간단화를 위해)
             needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
-            if len(firm.employees) < needed_labor_for_production * 0.9 or \
+            if len(firm.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
                len(firm.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
                 chosen_tactic = Tactic.ADJUST_WAGES # ADJUST_WAGES 전술에 고용 로직도 포함되어 있음
                 orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))

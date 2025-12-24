@@ -7,7 +7,7 @@ import logging
 import os  # Import os
 from flask import Flask, render_template, jsonify, request, g, Response
 from functools import wraps
-from typing import Callable, Any
+from typing import Callable, Any, Optional, cast
 
 import config
 from simulation.engine import Simulation
@@ -15,9 +15,11 @@ from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.api import Personality
+from simulation.dtos import DecisionContext
 from simulation.ai.state_builder import StateBuilder
 from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.decisions.ai_driven_household_engine import (
     AIDrivenHouseholdDecisionEngine,
 )
@@ -119,7 +121,7 @@ def create_simulation() -> None:
     households = []
     for i in range(config.NUM_HOUSEHOLDS):
         value_orientation = random.choice(all_value_orientations)
-        household_decision_engine = None
+        household_decision_engine: Optional[BaseDecisionEngine] = None
         
         # Use EngineType enum for comparison
         if config.DEFAULT_ENGINE_TYPE == config.EngineType.AI_DRIVEN:
@@ -169,7 +171,7 @@ def create_simulation() -> None:
     firms = []
     for i in range(config.NUM_FIRMS):
         firm_value_orientation = random.choice(all_value_orientations)
-        firm_decision_engine = None
+        firm_decision_engine: Optional[BaseDecisionEngine] = None
         
         # Use EngineType enum for comparison
         if config.DEFAULT_ENGINE_TYPE == config.EngineType.AI_DRIVEN:
@@ -324,10 +326,10 @@ def get_transactions_api() -> Response:
 
 @app.route("/api/simulation/tick", methods=["POST"])
 @require_token
-def advance_tick() -> Response:
+def advance_tick() -> Any:
     """Advance the simulation by one tick and return the update data."""
     if not simulation_instance:
-        return jsonify({"status": "error", "message": "Simulation not initialized"}), 400
+        return cast(Response, jsonify({"status": "error", "message": "Simulation not initialized"})), 400
 
     start_time = time.time()
     current_tick = simulation_instance.time  # Get last known tick for error reporting

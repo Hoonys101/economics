@@ -150,7 +150,7 @@ class TestDecisionEngineIntegration:
         self, mock_make_decision: MagicMock, firm: Firm, goods_market: OrderBookMarket
     ):
         """기업이 식량 판매 주문을 올바르게 제출하는지 테스트합니다."""
-        firm.make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = ( # Corrected mock assignment
             [
                 Order(
                     agent_id=firm.id,
@@ -185,7 +185,7 @@ class TestDecisionEngineIntegration:
         household.needs["survival_need"] = 80.0
         household.inventory["food"] = 0.0
 
-        household.make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = ( # Corrected mock assignment
             [
                 Order(
                     agent_id=household.id,
@@ -223,7 +223,7 @@ class TestDecisionEngineIntegration:
         household.needs["labor_need"] = 50
         household.needs["survival_need"] = 10.0
 
-        household.make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = ( # Corrected mock assignment
             [
                 Order(
                     agent_id=household.id,
@@ -256,7 +256,7 @@ class TestDecisionEngineIntegration:
     ):
         """기업이 노동 구매 주문을 올바르게 제출하는지 테스트합니다."""
         firm.employees = []
-        firm.make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = ( # Corrected mock assignment
             [
                 Order(
                     agent_id=firm.id,

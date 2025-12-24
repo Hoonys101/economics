@@ -43,6 +43,9 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
         market_data = context.market_data
         current_time = context.current_time
 
+        if household is None:
+            return [], (Tactic.NO_ACTION, Aggressiveness.NEUTRAL)
+
         orders: List[Order] = []
         chosen_tactic: Tactic = Tactic.NO_ACTION
         chosen_aggressiveness: Aggressiveness = Aggressiveness.NEUTRAL

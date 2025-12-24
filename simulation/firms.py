@@ -1,5 +1,6 @@
+from __future__ import annotations
 from collections import deque
-from typing import List, Dict, Any, Optional, override
+from typing import List, Dict, Any, Optional, override, TYPE_CHECKING
 import logging
 import copy
 
@@ -8,6 +9,9 @@ from simulation.core_agents import Household  # Household 클래스 임포트
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
+
+if TYPE_CHECKING:
+    from simulation.loan_market import LoanMarket
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +30,8 @@ class Firm(BaseAgent):
         value_orientation: str,
         config_module: Any,
         initial_inventory: Optional[Dict[str, float]] = None,
-        loan_market: Any = None,
-        logger: Any = None,
+        loan_market: Optional[LoanMarket] = None,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         super().__init__(
             id,
@@ -53,7 +57,7 @@ class Firm(BaseAgent):
         self.cost_this_turn: float = 0.0
         self.current_production: float = 0.0
         self.productivity_factor: float = productivity_factor
-        self.total_shares: float = 100.0
+        self.total_shares: float = self.config_module.FIRM_DEFAULT_TOTAL_SHARES
         self.last_prices: Dict[str, float] = {}
         self.hires_last_tick: int = 0
         # --- GEMINI_PROPOSED_ADDITION_START ---
@@ -62,8 +66,75 @@ class Firm(BaseAgent):
         self.revenue_this_tick = 0.0
         self.expenses_this_tick = 0.0
         # --- GEMINI_PROPOSED_ADDITION_END ---
+        
+        # --- 주식 시장 관련 속성 ---
+        self.founder_id: Optional[int] = None  # 창업자 가계 ID
+        self.is_publicly_traded: bool = True   # 상장 여부
+        self.dividend_rate: float = getattr(
+            config_module, "DIVIDEND_RATE", 0.3
+        )  # 기업별 배당률 (기본값: config)
+        self.treasury_shares: float = 0.0  # 자사주 보유량
+        self.capital_stock: float = 100.0   # 실물 자본재 (초기값)
 
         self.decision_engine.loan_market = loan_market
+
+    def issue_shares(self, quantity: float, price: float) -> float:
+        """
+        신규 주식을 발행합니다 (유상증자).
+        
+        Args:
+            quantity: 발행할 주식 수량
+            price: 주당 발행 가격
+            
+        Returns:
+            조달된 자본금
+        """
+        if quantity <= 0 or price <= 0:
+            return 0.0
+        
+        self.total_shares += quantity
+        raised_capital = quantity * price
+        self.assets += raised_capital
+        
+        self.logger.info(
+            f"Firm {self.id} issued {quantity:.1f} shares at {price:.2f}, "
+            f"raising {raised_capital:.2f} capital. Total shares: {self.total_shares:.1f}",
+            extra={
+                "agent_id": self.id,
+                "quantity": quantity,
+                "price": price,
+                "raised_capital": raised_capital,
+                "total_shares": self.total_shares,
+                "tags": ["stock", "issue"]
+            }
+        )
+        return raised_capital
+
+    def get_book_value_per_share(self) -> float:
+        """주당 순자산가치(BPS)를 계산합니다. (유통주식수 기준)"""
+        outstanding_shares = self.total_shares - self.treasury_shares
+        if outstanding_shares <= 0:
+            return 0.0
+        # TODO: 부채 차감 필요 (현재는 자산만 고려)
+        net_assets = self.assets
+        return net_assets / outstanding_shares
+
+    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
+        """
+        시가총액을 계산합니다.
+        
+        Args:
+            stock_price: 주가 (None이면 순자산가치 기반 계산)
+            
+        Returns:
+            시가총액
+        """
+        if stock_price is None:
+            stock_price = self.get_book_value_per_share()
+        
+        outstanding_shares = self.total_shares - self.treasury_shares
+        return outstanding_shares * stock_price
+
 
     @override
     def clone(self, new_id: int, initial_assets_from_parent: float) -> "Firm":
@@ -99,7 +170,7 @@ class Firm(BaseAgent):
     def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
         transactions = []
         distributable_profit = max(
-            0, self.current_profit * self.config_module.DIVIDEND_RATE
+            0, self.current_profit * self.dividend_rate
         )
 
         if distributable_profit > 0:
@@ -154,6 +225,10 @@ class Firm(BaseAgent):
             "revenue_this_turn": self.revenue_this_turn,
             "expenses_this_tick": self.expenses_this_tick,
             "consecutive_loss_turns": self.consecutive_loss_turns,
+            "total_shares": self.total_shares,
+            "treasury_shares": self.treasury_shares,
+            "dividend_rate": self.dividend_rate,
+            "capital_stock": self.capital_stock,
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:
@@ -196,20 +271,45 @@ class Firm(BaseAgent):
         return decisions, tactic
 
     def produce(self, current_time: int) -> None:
+        """
+        Cobb-Douglas 생산 함수를 사용한 생산 로직.
+        Y = A * L^α * K^(1-α)
+        - A: 총요소생산성 (productivity_factor)
+        - L: 노동 투입량 (total_labor_skill)
+        - K: 자본 투입량 (capital_stock)
+        - α: 노동의 산출 탄력성 (LABOR_ALPHA)
+        """
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
 
+        # 1. 감가상각 처리
+        depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
+        self.capital_stock *= (1.0 - depreciation_rate)
+
+        # 2. 노동 및 자본 투입량 계산
         total_labor_skill = sum(employee.labor_skill for employee in self.employees)
-        # The firm's production capacity is based on its employees' skills and its productivity factor.
-        produced_quantity = total_labor_skill * self.productivity_factor
+        capital = max(self.capital_stock, 0.01)  # 0 방지
+
+        # 3. Cobb-Douglas 생산 함수
+        alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+        tfp = self.productivity_factor  # Total Factor Productivity
+
+        if total_labor_skill > 0 and capital > 0:
+            produced_quantity = tfp * (total_labor_skill ** alpha) * (capital ** (1 - alpha))
+        else:
+            produced_quantity = 0.0
+
         self.current_production = 0.0
 
         self.logger.info(
-            f"Starting production for {self.specialization}. Total capacity: {produced_quantity:.2f} (Labor: {total_labor_skill:.1f}, ProdFactor: {self.productivity_factor:.2f})",
+            f"Production (Cobb-Douglas) for {self.specialization}. "
+            f"Y={produced_quantity:.2f} (A={tfp:.2f}, L={total_labor_skill:.1f}, K={capital:.1f}, α={alpha:.2f})",
             extra={
                 **log_extra,
-                "total_capacity": produced_quantity,
-                "total_labor_skill": total_labor_skill,
-                "productivity_factor": self.productivity_factor,
+                "produced_quantity": produced_quantity,
+                "tfp": tfp,
+                "labor": total_labor_skill,
+                "capital": capital,
+                "alpha": alpha,
             },
         )
 
@@ -228,7 +328,7 @@ class Firm(BaseAgent):
                 },
             )
         else:
-            self.logger.info("No employees, no production.", extra=log_extra)
+            self.logger.info("No employees or no capital, no production.", extra=log_extra)
 
     @override
     def update_needs(self, current_time: int) -> None:

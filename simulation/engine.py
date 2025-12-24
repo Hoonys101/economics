@@ -10,7 +10,10 @@ from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
 from simulation.agents.bank import Bank
 from simulation.loan_market import LoanMarket
+from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+from simulation.metrics.inequality_tracker import InequalityTracker
+from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 
@@ -23,6 +26,9 @@ from simulation.dtos import (
     EconomicIndicatorData,
     AIDecisionData,
     MarketHistoryData,
+    StockMarketHistoryData,
+    WealthDistributionData,
+    PersonalityStatisticsData,
 )
 
 logger = logging.getLogger(__name__)
@@ -77,6 +83,16 @@ class Simulation:
         self.markets["loan_market"] = LoanMarket(
             market_id="loan_market", bank=self.bank, config_module=self.config_module
         )
+        
+        # 주식 시장 초기화
+        if getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
+            self.stock_market = StockMarket(
+                config_module=self.config_module,
+                logger=self.logger,
+            )
+            self.markets["stock_market"] = self.stock_market
+        else:
+            self.stock_market = None
 
         for agent in self.households + self.firms:
             agent.decision_engine.markets = self.markets
@@ -86,6 +102,12 @@ class Simulation:
 
         self.repository = repository
         self.tracker = EconomicIndicatorTracker(config_module=config_module)
+        
+        # 추가 지표 Tracker 초기화
+        self.inequality_tracker = InequalityTracker(config_module=config_module)
+        self.stock_tracker = StockMarketTracker(config_module=config_module)
+        self.personality_tracker = PersonalityStatisticsTracker(config_module=config_module)
+        
         self.ai_training_manager = AITrainingManager(
             self.households, self.config_module
         )
@@ -288,7 +310,7 @@ class Simulation:
 
         for market in self.markets.values():
             if isinstance(market, OrderBookMarket):
-                market.clear_market_for_next_tick()
+                market.clear_orders()
 
         market_data = self._prepare_market_data(self.tracker)
         
@@ -354,8 +376,22 @@ class Simulation:
             if isinstance(market, OrderBookMarket):
                 all_transactions.extend(market.match_orders(self.time))
 
+        # ---------------------------------------------------------
+        # Stock Market Matching
+        # ---------------------------------------------------------
+        if self.stock_market is not None:
+            # 기업 기준가 업데이트
+            firms_dict = {f.id: f for f in self.firms if f.is_active}
+            self.stock_market.update_reference_prices(firms_dict)
+            
+            # 주식 거래 매칭
+            stock_transactions = self.stock_market.match_orders(self.time)
+            all_transactions.extend(stock_transactions)
+            
+            # 만료된 주문 정리
+            self.stock_market.clear_expired_orders(self.time)
+
         self._process_transactions(all_transactions)
-        print(f"DEBUG: Tick {self.time} Processed {len(all_transactions)} transactions. Buyers: {[tx.buyer_id for tx in all_transactions[:5]]}")
 
         # ---------------------------------------------------------
         # Activate Consumption Logic
@@ -376,6 +412,7 @@ class Simulation:
 
         # Update tracker with the latest data after transactions and consumption
         self.tracker.track(self.time, self.households, self.firms, self.markets)
+
 
         for firm in self.firms:
             if firm.is_active and firm.id in firm_pre_states:
@@ -473,9 +510,13 @@ class Simulation:
             extra={"tick": self.time, "tags": ["tick_end"]},
         )
 
+        # Clear markets for next tick
+        for market in self.markets.values():
+            market.clear_orders()
+
     def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
-        goods_market_data = {}
+        goods_market_data: Dict[str, Any] = {}
         for good_name in self.config_module.GOODS:
             market = self.markets.get(good_name)
             if market and isinstance(market, OrderBookMarket):
@@ -526,10 +567,25 @@ class Simulation:
 
         avg_goods_price_for_market_data = total_price / count if count > 0 else 10.0
 
+        # 주식 시장 데이터 추가
+        stock_market_data = {}
+        if self.stock_market:
+            for firm in self.firms:
+                firm_item_id = f"stock_{firm.id}"
+                # StockMarket 클래스의 메서드는 정수 firm.id를 사용함
+                price = self.stock_market.get_daily_avg_price(firm.id)
+                if price <= 0:
+                    price = self.stock_market.get_best_ask(firm.id) or 0
+                if price <= 0:
+                    # 장기 기록이나 장부가를 fallback으로 사용 가능
+                    price = firm.assets / firm.total_shares if firm.total_shares > 0 else 10.0
+                stock_market_data[firm_item_id] = {"avg_price": price}
+
         return {
             "time": self.time,
             "goods_market": goods_market_data,
             "loan_market": {"interest_rate": self.config_module.LOAN_INTEREST_RATE},
+            "stock_market": stock_market_data,
             "all_households": self.households,
             "avg_goods_price": avg_goods_price_for_market_data,
         }
@@ -610,6 +666,30 @@ class Simulation:
                     buyer.current_consumption += tx.quantity
                     if tx.item_id == "basic_food":
                         buyer.current_food_consumption += tx.quantity
+
+            elif tx.transaction_type == "stock":
+                # 주식 거래 처리
+                # item_id 형식: "stock_{firm_id}"
+                firm_id = int(tx.item_id.split("_")[1])
+                
+                # 매도자의 주식 감소
+                if isinstance(seller, Household):
+                    current_shares = seller.shares_owned.get(firm_id, 0)
+                    seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
+                    if seller.shares_owned[firm_id] == 0:
+                        del seller.shares_owned[firm_id]
+                elif isinstance(seller, Firm) and seller.id == firm_id:
+                    # 자사주 매각
+                    seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
+                
+                # 매수자의 주식 증가
+                if isinstance(buyer, Household):
+                    current_shares = buyer.shares_owned.get(firm_id, 0)
+                    buyer.shares_owned[firm_id] = current_shares + tx.quantity
+                elif isinstance(buyer, Firm) and buyer.id == firm_id:
+                    # 자사주 매입 (Buyback)
+                    buyer.treasury_shares += tx.quantity
+
 
     def _handle_agent_lifecycle(self) -> None:
         """비활성화된 에이전트를 시뮬레이션에서 제거하고 고용 상태를 업데이트합니다."""

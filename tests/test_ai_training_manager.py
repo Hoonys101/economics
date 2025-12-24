@@ -12,6 +12,8 @@ def mock_config():
     config.IMITATION_LEARNING_INTERVAL = 100
     config.IMITATION_MUTATION_RATE = 0.1
     config.IMITATION_MUTATION_MAGNITUDE = 0.05
+    config.TOP_PERFORMING_PERCENTILE = 0.1
+    config.UNDER_PERFORMING_PERCENTILE = 0.5
     return config
 
 

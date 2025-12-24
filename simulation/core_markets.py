@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging
 from abc import ABC, abstractmethod
 
@@ -19,11 +19,12 @@ class Market(ABC):
         matched_transactions (List[Transaction]): 시장에서 매칭되어 완료된 거래 기록 리스트입니다.
     """
 
-    def __init__(self, market_id: str):
+    def __init__(self, market_id: str, logger: Optional[logging.Logger] = None):
         self.id = market_id
         self.buy_orders: Dict[str, List[Order]] = {}
         self.sell_orders: Dict[str, List[Order]] = {}
-        self.matched_transactions: List[Transaction] = []  # 매칭된 거래를 저장할 리스트
+        self.matched_transactions: List[Transaction] = []
+        self.logger = logger if logger is not None else logging.getLogger(f"Market_{market_id}")
 
     @abstractmethod
     def place_order(self, order: Order, current_time: int) -> List[Transaction]:
@@ -68,4 +69,9 @@ class Market(ABC):
         """
         해당 시장의 일일 거래량을 반환합니다.
         """
+        pass
+
+    @abstractmethod
+    def clear_orders(self) -> None:
+        """현재 틱의 모든 주문을 초기화합니다."""
         pass

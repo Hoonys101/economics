@@ -107,7 +107,6 @@ def setup_logging(
         logging.config.dictConfig(config_dict)
         logging.info("Logging setup complete from config file.")
     else:
-    else:
         # Standardize fallback logging format
         logging.basicConfig(
             level=default_level,

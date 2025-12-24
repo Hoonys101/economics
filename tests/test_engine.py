@@ -184,7 +184,7 @@ class TestSimulation:
         assert isinstance(simulation_instance.tracker, EconomicIndicatorTracker)
         assert isinstance(simulation_instance.bank, Bank)
         assert isinstance(simulation_instance.markets["food"], OrderBookMarket)
-        assert isinstance(simulation_instance.markets["labor_market"], OrderBookMarket)
+        assert isinstance(simulation_instance.markets["labor"], OrderBookMarket)
         assert isinstance(simulation_instance.markets["loan_market"], LoanMarket)
 
         expected_agent_ids = (
@@ -225,14 +225,17 @@ class TestSimulation:
     ):
         mock_food_market = Mock(spec=OrderBookMarket)
         mock_food_market.get_best_ask.return_value = 10.0
+        mock_food_market.get_daily_avg_price.return_value = 10.0
         simulation_instance.markets["food"] = mock_food_market
 
         mock_luxury_market = Mock(spec=OrderBookMarket)
         mock_luxury_market.get_best_ask.return_value = 30.0
+        mock_luxury_market.get_daily_avg_price.return_value = 30.0
         simulation_instance.markets["luxury_food"] = mock_luxury_market
 
         mock_basic_food_market = Mock(spec=OrderBookMarket)
         mock_basic_food_market.get_best_ask.return_value = 12.0
+        mock_basic_food_market.get_daily_avg_price.return_value = 12.0
         simulation_instance.markets["basic_food"] = mock_basic_food_market
 
         market_data = simulation_instance._prepare_market_data(mock_tracker)
@@ -241,6 +244,7 @@ class TestSimulation:
         assert market_data["goods_market"]["luxury_food_current_sell_price"] == 30.0
         assert market_data["goods_market"]["basic_food_current_sell_price"] == 12.0
         assert market_data["avg_goods_price"] == pytest.approx((10.0 + 30.0 + 12.0) / 3)
+
 
     def test_process_transactions_goods_trade(
         self, simulation_instance, mock_households, mock_firms

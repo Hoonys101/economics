@@ -90,7 +90,9 @@ MAX_SELL_PRICE = 100.0
 MAX_SELL_QUANTITY = 50.0
 PERCEIVED_PRICE_UPDATE_FACTOR = 0.1
 INVENTORY_HOLDING_COST_RATE = 0.005
-DIVIDEND_RATE = 0.1
+DIVIDEND_RATE = 0.1  # 기본 배당률
+DIVIDEND_RATE_MIN = 0.05  # 최소 배당률 (저배당 정책)
+DIVIDEND_RATE_MAX = 0.5   # 최대 배당률 (고배당 정책)
 WAGE_DECAY_RATE = 0.9
 RND_WAGE_PREMIUM = 1.5
 WAGE_COMPETITION_PREMIUM = 0.2
@@ -221,3 +223,120 @@ ROOT_LOGGER_LEVEL = "INFO"
 
 # --- Security ---
 SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default-secret-token")
+
+# ==============================================================================
+# 🔧 HARDCODED VALUES CENTRALIZATION
+# ==============================================================================
+# 아래 값들은 코드 전반에 하드코딩되어 있던 것들을 통합 관리하기 위해 이동함.
+# 각 섹션은 역할에 따라 분류되어 있으며, 향후 AI가 동적으로 조정해야 할 값들은
+# 별도 섹션으로 분리되어 있음.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 📊 HOUSEHOLD DECISION LOGIC (가계 의사결정 로직)
+# ------------------------------------------------------------------------------
+# 가계의 희망 임금 결정에 사용되는 값들
+HOUSEHOLD_LOW_ASSET_THRESHOLD = 100.0  # 자산이 이 값 미만이면 낮은 임금 수용
+HOUSEHOLD_LOW_ASSET_WAGE = 8.0         # 자산이 낮을 때 희망 임금
+HOUSEHOLD_DEFAULT_WAGE = 10.0          # 기본 희망 임금
+
+# 시장 가격 폴백 (시장 데이터 없을 때 사용)
+MARKET_PRICE_FALLBACK = 10.0
+
+# ------------------------------------------------------------------------------
+# 🏢 FIRM DECISION LOGIC (기업 의사결정 로직)
+# ------------------------------------------------------------------------------
+# 기업 주식 관련
+FIRM_DEFAULT_TOTAL_SHARES = 100.0  # 기업의 기본 총 주식 수
+
+# 고용 임계값
+FIRM_LABOR_REQUIREMENT_RATIO = 0.9  # 필요 노동력 대비 현재 고용 비율 임계값
+
+# ------------------------------------------------------------------------------
+# 🤖 AI-ADJUSTABLE PARAMETERS (AI 동적 조정 대상)
+# ------------------------------------------------------------------------------
+# ⚠️ 주의: 아래 값들은 향후 AI 학습 또는 메타 최적화를 통해
+# 자동으로 조정될 수 있도록 설계되어야 함.
+# 변경 시 시뮬레이션 전체 동작에 영향을 미칠 수 있음.
+# ------------------------------------------------------------------------------
+
+# --- 욕구 기반 가치 평가 (Need-Based Valuation) ---
+NEED_FACTOR_BASE = 0.5              # 욕구 팩터 기본값 (max_need=0일 때)
+NEED_FACTOR_SCALE = 100.0           # 욕구값을 정규화하는 스케일
+VALUATION_MODIFIER_BASE = 0.9       # 가치 평가 수정자 기본값
+VALUATION_MODIFIER_RANGE = 0.2      # 가치 평가 수정자 범위 (agg_buy에 따라 변동)
+
+# --- 욕구 임계값 (Need Thresholds for Bulk Buying) ---
+BULK_BUY_NEED_THRESHOLD = 70.0      # 이 값 이상이면 대량 구매
+BULK_BUY_AGG_THRESHOLD = 0.8        # 공격성이 이 값 이상이면 추가 구매
+BULK_BUY_MODERATE_RATIO = 0.6       # 보통 패닉 구매 시 최대 수량 비율
+
+# --- 예산 제한 (Budget Constraints) ---
+BUDGET_LIMIT_NORMAL_RATIO = 0.5     # 일반 상황에서 자산 대비 예산 비율
+BUDGET_LIMIT_URGENT_NEED = 80.0     # 이 욕구 이상이면 긴급 예산 적용
+BUDGET_LIMIT_URGENT_RATIO = 0.9     # 긴급 상황에서 자산 대비 예산 비율
+
+# --- 직장 이동 (Job Mobility) ---
+JOB_QUIT_THRESHOLD_BASE = 2.0       # 기본 퇴직 임계값 (낮은 이동성일 때)
+JOB_QUIT_PROB_BASE = 0.1            # 퇴직 확률 기본값
+JOB_QUIT_PROB_SCALE = 0.9           # 퇴직 확률 스케일 (agg_mobility에 따라 변동)
+
+# --- 유보 임금 (Reservation Wage) ---
+RESERVATION_WAGE_BASE = 1.5         # 유보 임금 계산 기본값
+RESERVATION_WAGE_RANGE = 1.0        # 유보 임금 계산 범위
+
+# --- 최소 구매 수량 (Minimum Purchase Quantity) ---
+MIN_PURCHASE_QUANTITY = 0.1         # 구매를 실행하기 위한 최소 수량
+
+# ------------------------------------------------------------------------------
+# 🎓 AI HYPERPARAMETERS (AI 학습 하이퍼파라미터)
+# ------------------------------------------------------------------------------
+# 이 값들은 Q-러닝 기반 AI 학습에 사용됨.
+# 현재 default argument로 사용되며, config에서 우선 참조 가능.
+# AI_GAMMA, AI_EPSILON, AI_BASE_ALPHA, AI_LEARNING_FOCUS 는 이미 위에 정의됨.
+
+# 상위/하위 에이전트 선별 백분위
+TOP_PERFORMING_PERCENTILE = 0.1     # 상위 10% 에이전트 (모방 학습 대상)
+UNDER_PERFORMING_PERCENTILE = 0.5   # 하위 50% 에이전트 (학습 필요 대상)
+
+# --- 가격 결정 AI (AI Price Decision) ---
+AI_MIN_PRICE_FLOOR = 0.1            # AI가 설정 가능한 최저 가격 하한
+
+# ------------------------------------------------------------------------------
+# 📈 STOCK MARKET PARAMETERS (주식 시장 파라미터)
+# ------------------------------------------------------------------------------
+# 주식 시장 운영에 필요한 설정값들
+
+# --- 기본 설정 ---
+STOCK_MARKET_ENABLED = True         # 주식 시장 활성화 여부
+STOCK_PRICE_LIMIT_RATE = 0.10       # 일일 가격 변동폭 제한 (±10%)
+
+# --- 주가 결정 방식 ---
+STOCK_PRICE_METHOD = "book_value"   # "book_value" 또는 "market_price"
+STOCK_BOOK_VALUE_MULTIPLIER = 1.0   # 순자산가치 대비 기준 주가 배수 (PBR)
+
+# --- 거래 관련 ---
+STOCK_MIN_ORDER_QUANTITY = 1.0      # 최소 주문 수량
+STOCK_ORDER_EXPIRY_TICKS = 5        # 주문 유효 기간 (틱)
+STOCK_TRANSACTION_FEE_RATE = 0.001  # 거래 수수료율 (0.1%)
+
+# --- 투자 의사결정 ---
+HOUSEHOLD_INVESTMENT_BUDGET_RATIO = 0.2  # 자산 대비 최대 투자 비율
+HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0  # 투자를 위한 최소 자산
+STOCK_SELL_PROFIT_THRESHOLD = 0.15  # 매도 고려 수익률 임계값 (15%)
+STOCK_BUY_DISCOUNT_THRESHOLD = 0.10 # 매수 고려 할인율 임계값 (10%)
+
+# --- Phase 2.3: Capital & Labor Rigidity ---
+CAPITAL_DEPRECIATION_RATE = 0.05       # 틱당 자본재 감가상각률 (5%)
+CAPITAL_TO_OUTPUT_RATIO = 2.0         # 자본-산출 비율 (대략적)
+LABOR_ALPHA = 0.7                     # Cobb-Douglas 생산 함수의 노동 탄력성 (L^0.7 * K^0.3)
+WAGE_RIGIDITY_COEFFICIENT = 0.95      # 임금 하방 경직성 계수 (이전 임금의 95% 이하로 제안 지양)
+RESERVATION_WAGE_RATIO = 0.7          # 가계가 수용하는 최소 임금 비율 (이전 임금 대비)
+
+# --- 배당 관련 (기존 DIVIDEND_RATE 참조) ---
+# DIVIDEND_RATE는 이미 위에서 정의됨
+
+# --- 창업 관련 ---
+STARTUP_MIN_CAPITAL = 5000.0        # 창업 최소 자본금
+STARTUP_INITIAL_SHARES = 100.0      # 창업 시 발행 주식 수
+STARTUP_PROBABILITY = 0.01          # 틱당 창업 시도 확률 (자격 충족 시)

@@ -15,7 +15,7 @@ def market():
 class TestOrderBookMarketInitialization:
     def test_market_initialization(self, market: OrderBookMarket):
         """시장이 올바르게 초기화되는지 테스트합니다."""
-        assert market.market_id == "test_goods_market"
+        assert market.id == "test_goods_market"
         assert isinstance(market.logger, Logger)
         assert not market.buy_orders
         assert not market.sell_orders

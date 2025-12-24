@@ -49,7 +49,9 @@ class AITrainingManager:
         logger.info(f"Cloning from fittest agent {fittest_agent.id} to new agent {target_agent.id}")
         self._clone_and_mutate_q_table(fittest_agent, target_agent)
 
-    def _get_top_performing_agents(self, percentile: float = 0.1) -> List[Household]:
+    def _get_top_performing_agents(self, percentile: float = None) -> List[Household]:
+        if percentile is None:
+            percentile = getattr(self.config_module, "TOP_PERFORMING_PERCENTILE", 0.1)
         """Identifies the top-performing agents based on their assets."""
         if not self.agents:
             return []
@@ -58,7 +60,9 @@ class AITrainingManager:
         top_n = max(1, int(len(self.agents) * percentile))
         return sorted_agents[:top_n]
 
-    def _get_under_performing_agents(self, percentile: float = 0.5) -> List[Household]:
+    def _get_under_performing_agents(self, percentile: float = None) -> List[Household]:
+        if percentile is None:
+            percentile = getattr(self.config_module, "UNDER_PERFORMING_PERCENTILE", 0.5)
         """Identifies the under-performing agents based on their assets."""
         if not self.agents:
             return []
