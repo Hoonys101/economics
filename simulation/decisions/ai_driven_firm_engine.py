@@ -198,18 +198,21 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         if cap_agg > 0.6:
             # 자본재 투자 규모 결정 (자산의 일부를 소모하여 capital_stock 증가)
             # 실물 시장에서 구매하는 모델 대신, 시스템 구매(투자비 소모)로 우선 구현
-            investment_budget = firm.assets * 0.1 * (cap_agg - 0.5) * 2.0
-            if investment_budget > 100:
-                # 투자 효율 (1원당 자본재 증가량)
-                # CAPITAL_TO_OUTPUT_RATIO의 역수를 기준으로 효율 설정 가능
-                efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
-                added_capital = investment_budget * efficiency
-                
-                firm.assets -= investment_budget
-                firm.capital_stock += added_capital
-                
-                # ROI 로직 등을 위해 기록 가능
-                # firm.logger.info(f"Firm {firm.id} invested {investment_budget:.2f} in Capital Goods. Added: {added_capital:.2f}")
+                investment_budget = firm.assets * 0.1 * (cap_agg - 0.5) * 2.0
+                if investment_budget > 100:
+                    # 투자 효율 (1원당 자본재 증가량)
+                    # CAPITAL_TO_OUTPUT_RATIO의 역수를 기준으로 효율 설정 가능
+                    efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
+                    added_capital = investment_budget * efficiency
+                    
+                    firm.assets -= investment_budget
+                    firm.capital_stock += added_capital
+                    
+                    # 6a. 정부 보조금 수령 (R&D 및 자본투자 보조금)
+                    if context.government:
+                        subsidy_rate = getattr(self.config_module, "RD_SUBSIDY_RATE", 0.2)
+                        subsidy_amount = investment_budget * subsidy_rate
+                        context.government.provide_subsidy(firm, subsidy_amount, context.current_time)
 
         return orders, action_vector
 

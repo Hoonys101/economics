@@ -326,12 +326,16 @@ HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0  # 투자를 위한 최소 자산
 STOCK_SELL_PROFIT_THRESHOLD = 0.15  # 매도 고려 수익률 임계값 (15%)
 STOCK_BUY_DISCOUNT_THRESHOLD = 0.10 # 매수 고려 할인율 임계값 (10%)
 
-# --- Phase 2.3: Capital & Labor Rigidity ---
-CAPITAL_DEPRECIATION_RATE = 0.05       # 틱당 자본재 감가상각률 (5%)
-CAPITAL_TO_OUTPUT_RATIO = 2.0         # 자본-산출 비율 (대략적)
-LABOR_ALPHA = 0.7                     # Cobb-Douglas 생산 함수의 노동 탄력성 (L^0.7 * K^0.3)
-WAGE_RIGIDITY_COEFFICIENT = 0.95      # 임금 하방 경직성 계수 (이전 임금의 95% 이하로 제안 지양)
-RESERVATION_WAGE_RATIO = 0.7          # 가계가 수용하는 최소 임금 비율 (이전 임금 대비)
+# --- Phase 3.1: Government & Taxation ---
+INCOME_TAX_RATE = 0.1                 # 가계 소득세 (10%)
+INCOME_TAX_PAYER = "HOUSEHOLD"         # "HOUSEHOLD" (원천징수) 또는 "FIRM" (기업이 추가 납부)
+CORPORATE_TAX_RATE = 0.2              # 기업 법인세 (20%)
+SALES_TAX_RATE = 0.05                 # 거래세/부가세 (5%)
+INHERITANCE_TAX_RATE = 1.0            # 상속세 (100%, 정부 귀속)
+
+RD_SUBSIDY_RATE = 0.2                 # R&D(자본투자) 보조금 (투자액의 20%)
+INFRASTRUCTURE_INVESTMENT_COST = 5000.0  # 인프라 투자 1회당 비용
+INFRASTRUCTURE_TFP_BOOST = 0.05       # 인프라 투자 시 전체 생산성(TFP) 증가율
 
 # --- 배당 관련 (기존 DIVIDEND_RATE 참조) ---
 # DIVIDEND_RATE는 이미 위에서 정의됨

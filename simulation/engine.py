@@ -3,12 +3,13 @@ from typing import List, Dict, Any
 import logging
 import hashlib
 
-from simulation.models import Transaction
+from simulation.models import Transaction, Order, StockOrder
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
 from simulation.agents.bank import Bank
+from simulation.agents.government import Government
 from simulation.loan_market import LoanMarket
 from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
@@ -17,8 +18,7 @@ from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStat
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 
-# Updated import to use the repository pattern
-# Updated import to use the repository pattern
+# Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
 from simulation.dtos import (
     AgentStateData,
@@ -73,6 +73,15 @@ class Simulation:
             id=self.next_agent_id, initial_assets=self.config_module.INITIAL_BANK_ASSETS
         )
         self.agents[self.bank.id] = self.bank
+        self.next_agent_id += 1
+
+        # 정부 에이전트 초기화
+        self.government = Government(
+            id=self.next_agent_id, 
+            initial_assets=0.0, 
+            config_module=self.config_module
+        )
+        self.agents[self.government.id] = self.government
         self.next_agent_id += 1
 
         self.markets: Dict[str, Market] = {
@@ -341,11 +350,27 @@ class Simulation:
                     "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
                     "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
                 }
-                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time)
+                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time, self.government)
                 for order in firm_orders:
-                    target_market: Market | None = self.markets.get(order.market_id)
+                    target_market = self.markets.get(order.market_id)
                     if target_market:
-                        target_market.place_order(order, self.time)
+                        if order.market_id == "stock_market" and isinstance(target_market, StockMarket):
+                            # Convert Order to StockOrder for stock market compatibility
+                            try:
+                                firm_id_str = order.item_id.split("_")[-1]
+                                firm_id = int(firm_id_str)
+                                s_order = StockOrder(
+                                    agent_id=order.agent_id,
+                                    order_type=order.order_type,
+                                    firm_id=firm_id,
+                                    quantity=order.quantity,
+                                    price=order.price
+                                )
+                                target_market.place_order(s_order, self.time)
+                            except (ValueError, IndexError):
+                                self.logger.error(f"Invalid stock item_id pattern: {order.item_id}")
+                        else:
+                            target_market.place_order(order, self.time)
 
         household_pre_states = {}
         for household in self.households:
@@ -360,12 +385,28 @@ class Simulation:
                 }
                 # make_decision return (orders, vector)
                 household_orders, action_vector = household.make_decision(
-                    self.markets, self.goods_data, market_data, self.time
+                    self.markets, self.goods_data, market_data, self.time, self.government
                 )
                 for order in household_orders:
-                    household_target_market: Market | None = self.markets.get(order.market_id)
+                    household_target_market = self.markets.get(order.market_id)
                     if household_target_market:
-                        household_target_market.place_order(order, self.time)
+                        if order.market_id == "stock_market" and isinstance(household_target_market, StockMarket):
+                            # Convert Order to StockOrder
+                            try:
+                                firm_id_str = order.item_id.split("_")[-1]
+                                firm_id = int(firm_id_str)
+                                s_order = StockOrder(
+                                    agent_id=order.agent_id,
+                                    order_type=order.order_type,
+                                    firm_id=firm_id,
+                                    quantity=order.quantity,
+                                    price=order.price
+                                )
+                                household_target_market.place_order(s_order, self.time)
+                            except (ValueError, IndexError):
+                                self.logger.error(f"Invalid stock item_id pattern: {order.item_id}")
+                        else:
+                            household_target_market.place_order(order, self.time)
                     else:
                         self.logger.warning(
                             f"Market '{order.market_id}' not found for order from agent {household.id}",
@@ -409,9 +450,27 @@ class Simulation:
              if firm.is_active:
                  firm.produce(self.time)
                  firm.update_needs(self.time)
+                 
+                 # 2a. 법인세(Corporate Tax) 징수 (이익이 발생한 경우)
+                 if firm.is_active and firm.current_profit > 0:
+                     corporate_tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
+                     tax_amount = firm.current_profit * corporate_tax_rate
+                     firm.assets -= tax_amount
+                     self.government.collect_tax(tax_amount, "corporate_tax", firm.id, self.time)
 
         # Update tracker with the latest data after transactions and consumption
         self.tracker.track(self.time, self.households, self.firms, self.markets)
+
+        # 2b. 정부 인프라 투자 (예산 충족 시)
+        if self.government.invest_infrastructure(self.time):
+            # 인프라 투자 성공 시 모든 기업의 TFP 상향 조정
+            tfp_boost = getattr(self.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
+            for firm in self.firms:
+                firm.productivity_factor *= (1.0 + tfp_boost)
+            self.logger.info(
+                f"GLOBAL_TFP_BOOST | All firms productivity increased by {tfp_boost*100:.1f}%",
+                extra={"tick": self.time, "tags": ["government", "infrastructure"]}
+            )
 
 
         for firm in self.firms:
@@ -612,10 +671,39 @@ class Simulation:
                 continue
 
             trade_value = tx.quantity * tx.price
+            sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
+            income_tax_rate = getattr(self.config_module, "INCOME_TAX_RATE", 0.1)
 
-            buyer.assets -= trade_value
-            seller.assets += trade_value
+            # --- 1. 기본 자산 이동 및 세금 처리 ---
+            if tx.transaction_type in ["goods", "stock"]:
+                # 거래세(부가가치세) 적용: 매수자가 추가로 지불
+                tax_amount = trade_value * sales_tax_rate
+                buyer.assets -= (trade_value + tax_amount)
+                seller.assets += trade_value
+                self.government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, self.time)
+            
+            elif tx.transaction_type in ["labor", "research_labor"]:
+                # 소득세 적용 (INCOME_TAX_PAYER 설정에 따름)
+                tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
+                tax_amount = trade_value * income_tax_rate
+                
+                if tax_payer == "FIRM":
+                    # 기업이 세금을 추가로 납부 (가계는 trade_value 전액 수령)
+                    buyer.assets -= (trade_value + tax_amount)
+                    seller.assets += trade_value
+                    self.government.collect_tax(tax_amount, "income_tax_firm", buyer.id, self.time)
+                else:
+                    # 가계가 세금을 납부 (원천징수, 기본값)
+                    buyer.assets -= trade_value
+                    seller.assets += (trade_value - tax_amount)
+                    self.government.collect_tax(tax_amount, "income_tax_household", seller.id, self.time)
+            
+            else:
+                # 기타 거래 (대출 등) - 현재는 세금 없음
+                buyer.assets -= trade_value
+                seller.assets += trade_value
 
+            # --- 2. 유형별 특수 로직 ---
             if (
                 tx.transaction_type == "labor"
                 or tx.transaction_type == "research_labor"
@@ -750,16 +838,19 @@ class Simulation:
         # 2. 사망 가계 청산 (Household Liquidation)
         inactive_households = [h for h in self.households if not h.is_active]
         for household in inactive_households:
+            # 2a. 상속세 징수 (잔여 자산 정부 귀속)
+            inheritance_tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 1.0)
+            tax_amount = household.assets * inheritance_tax_rate
+            self.government.collect_tax(tax_amount, "inheritance_tax", household.id, self.time)
+            
             self.logger.info(
-                f"HOUSEHOLD_LIQUIDATION | Household {household.id} assets destroyed. "
-                f"Cash: {household.assets:.2f}, Inventory: {sum(household.inventory.values()):.2f}, "
-                f"Shares: {sum(household.shares_owned.values()):.2f}",
-                extra={"agent_id": household.id, "tags": ["liquidation"]}
+                f"HOUSEHOLD_LIQUIDATION | Household {household.id} liquidated. "
+                f"Tax Collected: {tax_amount:.2f}, Inventory: {sum(household.inventory.values()):.2f}",
+                extra={"agent_id": household.id, "tags": ["liquidation", "tax"]}
             )
-            # 자산 소멸 (미래: 정부로 이전)
+            
             household.assets = 0.0
             household.inventory.clear()
-            # 주식은 그냥 소멸 (기업의 총 발행주식수에서 제거되지 않음 - 유령 주식)
             household.shares_owned.clear()
 
         # 3. 시뮬레이션에서 비활성 에이전트 제거

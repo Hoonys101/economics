@@ -83,6 +83,7 @@ class DecisionContext:
     current_time: int
     household: Optional[Household] = None # Avoid circular import if possible, or use TYPE_CHECKING
     firm: Optional[Firm] = None
+    government: Optional[Any] = None
 
 
 # ------------------------------------------------------------------------------

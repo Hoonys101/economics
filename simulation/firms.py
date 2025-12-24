@@ -238,7 +238,7 @@ class Firm(BaseAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int
+        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         self.logger.debug(
@@ -256,6 +256,7 @@ class Firm(BaseAgent):
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
+            government=government,
         )
         decisions, tactic = self.decision_engine.make_decisions(context)
         self.logger.debug(

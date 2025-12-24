@@ -311,6 +311,7 @@ class Household(BaseAgent):
         goods_data: List[Dict[str, Any]],
         market_data: Dict[str, Any],
         current_time: int,
+        government: Optional[Any] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
         self.calculate_social_status()
 
@@ -340,6 +341,7 @@ class Household(BaseAgent):
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
+            government=government,
         )
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context)
 
