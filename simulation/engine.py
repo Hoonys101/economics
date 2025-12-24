@@ -692,21 +692,84 @@ class Simulation:
 
 
     def _handle_agent_lifecycle(self) -> None:
-        """비활성화된 에이전트를 시뮬레이션에서 제거하고 고용 상태를 업데이트합니다."""
+        """비활성화된 에이전트를 청산하고 시뮬레이션에서 제거합니다."""
+        
+        # 1. 파산 기업 청산 (Firm Liquidation)
         inactive_firms = [f for f in self.firms if not f.is_active]
         for firm in inactive_firms:
+            self.logger.info(
+                f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}. "
+                f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
+                extra={"agent_id": firm.id, "tags": ["liquidation"]}
+            )
+            
+            # 1a. 직원 해고
             for employee in firm.employees:
                 if employee.is_active:
                     employee.is_employed = False
                     employee.employer_id = None
             firm.employees = []
+            
+            # 1b. 재고 소멸 (시장에 매도하는 대신 간단히 소멸)
+            total_inventory_value = sum(
+                qty * firm.last_prices.get(item_id, 10.0) 
+                for item_id, qty in firm.inventory.items()
+            )
+            firm.inventory.clear()
+            
+            # 1c. 자본재 소멸
+            firm.capital_stock = 0.0
+            
+            # 1d. 현금을 주주(가계)에게 분배
+            total_cash = firm.assets
+            if total_cash > 0:
+                outstanding_shares = firm.total_shares - firm.treasury_shares
+                if outstanding_shares > 0:
+                    for household in self.households:
+                        if household.is_active and firm.id in household.shares_owned:
+                            share_ratio = household.shares_owned[firm.id] / outstanding_shares
+                            distribution = total_cash * share_ratio
+                            household.assets += distribution
+                            self.logger.info(
+                                f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
+                                f"{distribution:.2f} from Firm {firm.id} liquidation",
+                                extra={"agent_id": household.id, "tags": ["liquidation"]}
+                            )
+            
+            # 1e. 주주들의 해당 기업 주식 보유량 삭제
+            for household in self.households:
+                if firm.id in household.shares_owned:
+                    del household.shares_owned[firm.id]
+            
+            firm.assets = 0.0
+            self.logger.info(
+                f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
+                extra={"agent_id": firm.id, "tags": ["liquidation"]}
+            )
 
+        # 2. 사망 가계 청산 (Household Liquidation)
+        inactive_households = [h for h in self.households if not h.is_active]
+        for household in inactive_households:
+            self.logger.info(
+                f"HOUSEHOLD_LIQUIDATION | Household {household.id} assets destroyed. "
+                f"Cash: {household.assets:.2f}, Inventory: {sum(household.inventory.values()):.2f}, "
+                f"Shares: {sum(household.shares_owned.values()):.2f}",
+                extra={"agent_id": household.id, "tags": ["liquidation"]}
+            )
+            # 자산 소멸 (미래: 정부로 이전)
+            household.assets = 0.0
+            household.inventory.clear()
+            # 주식은 그냥 소멸 (기업의 총 발행주식수에서 제거되지 않음 - 유령 주식)
+            household.shares_owned.clear()
+
+        # 3. 시뮬레이션에서 비활성 에이전트 제거
         self.households = [h for h in self.households if h.is_active]
         self.firms = [f for f in self.firms if f.is_active]
 
         self.agents = {agent.id: agent for agent in self.households + self.firms}
         self.agents[self.bank.id] = self.bank
 
+        # 4. 기업 직원 리스트 정리 (이미 제거된 가계 참조 제거)
         for firm in self.firms:
             firm.employees = [
                 emp for emp in firm.employees if emp.is_active and emp.id in self.agents
