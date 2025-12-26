@@ -16,11 +16,16 @@ export const UI = {
         firmNeeds: document.getElementById('simFirmNeeds'),
         topGood: document.getElementById('simTopGood'),
         unemployment: document.getElementById('simUnemployment'),
-        transactionList: document.getElementById('transaction-list-container')
+        transactionList: document.getElementById('transaction-list-container'),
+        orderBookBody: document.getElementById('order-book-body') // Need to add this to HTML
     },
 
     charts: {
-        gdp: null
+        gdp: null,
+        wealthDist: null,
+        householdNeeds: null,
+        firmNeeds: null,
+        salesByGood: null
     },
 
     updateDashboard(data) {
@@ -36,16 +41,36 @@ export const UI = {
         this.elements.topGood.textContent = data.top_selling_good;
         this.elements.unemployment.textContent = `${data.unemployment_rate.toFixed(1)}%`;
 
-        if (data.chart_update && data.chart_update.new_gdp_history) {
-            this.updateGdpChart(data.chart_update.new_gdp_history, data.tick);
+        if (data.chart_update) {
+            if (data.chart_update.new_gdp_history) {
+                this.updateGdpChart(data.chart_update.new_gdp_history, data.tick);
+            }
+            if (data.chart_update.wealth_distribution) {
+                this.updateWealthDistributionChart(data.chart_update.wealth_distribution);
+            }
+            if (data.chart_update.household_needs_distribution) {
+                this.updateHouseholdNeedsChart(data.chart_update.household_needs_distribution);
+            }
+            if (data.chart_update.firm_needs_distribution) {
+                this.updateFirmNeedsChart(data.chart_update.firm_needs_distribution);
+            }
+            if (data.chart_update.sales_by_good) {
+                this.updateSalesChart(data.chart_update.sales_by_good);
+            }
+        }
+
+        if (data.market_update) {
+            if (data.market_update.open_orders) {
+                this.updateMarketOrderBook(data.market_update.open_orders);
+            }
+            // Transactions handled by separate poll usually, but if sent here:
+            if (data.market_update.transactions && data.market_update.transactions.length > 0) {
+                 this.updateTransactionList(data.market_update.transactions);
+            }
         }
     },
 
     updateGdpChart(newData, currentTick) {
-        // Calculate the starting tick for the new data chunk
-        // If newData has length N, and ends at currentTick, it flows backwards
-        // But usually newData follows strictly after the last update.
-        // Simplified: Just appending.
         const lastTick = this.charts.gdp && this.charts.gdp.data.labels.length > 0
             ? this.charts.gdp.data.labels[this.charts.gdp.data.labels.length - 1]
             : 0;
@@ -71,6 +96,149 @@ export const UI = {
             this.charts.gdp.data.datasets[0].data.push(...newData);
             this.charts.gdp.update();
         }
+    },
+
+    updateWealthDistributionChart(data) {
+        if (!this.charts.wealthDist) {
+            const ctx = document.getElementById('wealthDistChart').getContext('2d');
+            this.charts.wealthDist = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Wealth Distribution',
+                        data: data.data,
+                        backgroundColor: '#198754'
+                    }]
+                }
+            });
+        } else {
+            this.charts.wealthDist.data.labels = data.labels;
+            this.charts.wealthDist.data.datasets[0].data = data.data;
+            this.charts.wealthDist.update();
+        }
+    },
+
+    updateHouseholdNeedsChart(data) {
+        // data is object {need_name: avg_value}
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+
+        if (!this.charts.householdNeeds) {
+            const ctx = document.getElementById('householdNeedsChart').getContext('2d');
+            this.charts.householdNeeds = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg Household Needs',
+                        data: values,
+                        backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                        borderColor: '#ffc107',
+                        pointBackgroundColor: '#ffc107'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        } else {
+            this.charts.householdNeeds.data.labels = labels;
+            this.charts.householdNeeds.data.datasets[0].data = values;
+            this.charts.householdNeeds.update();
+        }
+    },
+
+    updateFirmNeedsChart(data) {
+        // data is object {need_name: avg_value}
+        // Likely mainly liquidity need
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+
+        if (!this.charts.firmNeeds) {
+            const ctx = document.getElementById('firmNeedsChart').getContext('2d');
+            this.charts.firmNeeds = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg Firm Needs',
+                        data: values,
+                        backgroundColor: '#dc3545'
+                    }]
+                },
+                options: {
+                   scales: {
+                       y: { beginAtZero: true }
+                   }
+                }
+            });
+        } else {
+            this.charts.firmNeeds.data.labels = labels;
+            this.charts.firmNeeds.data.datasets[0].data = values;
+            this.charts.firmNeeds.update();
+        }
+    },
+
+    updateSalesChart(data) {
+        // data is {item_id: quantity}
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+
+        if (!this.charts.salesByGood) {
+            const ctx = document.getElementById('salesByGoodChart').getContext('2d');
+            this.charts.salesByGood = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sales Volume',
+                        data: values,
+                        backgroundColor: [
+                            '#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14'
+                        ]
+                    }]
+                }
+            });
+        } else {
+            this.charts.salesByGood.data.labels = labels;
+            this.charts.salesByGood.data.datasets[0].data = values;
+            this.charts.salesByGood.update();
+        }
+    },
+
+    updateMarketOrderBook(orders) {
+        // Update table
+        const tbody = document.getElementById('order-book-body');
+        if (!tbody) return; // Must ensure HTML exists
+
+        tbody.innerHTML = '';
+        // Sort by Type then Item then Price
+        // Bids descending price, Asks ascending price
+        orders.sort((a, b) => {
+            if (a.type !== b.type) return a.type.localeCompare(b.type);
+            if (a.item_id !== b.item_id) return a.item_id.localeCompare(b.item_id);
+            if (a.type === 'BID') return b.price - a.price;
+            return a.price - b.price;
+        });
+
+        orders.forEach(order => {
+            const row = `
+                <tr class="${order.type === 'BID' ? 'table-success' : 'table-danger'}">
+                    <td>${order.type}</td>
+                    <td>${order.item_id}</td>
+                    <td>${order.price.toFixed(2)}</td>
+                    <td>${order.quantity.toFixed(1)}</td>
+                    <td>${order.agent_id}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
     },
 
     updateTransactionList(transactions) {
@@ -111,5 +279,25 @@ export const UI = {
     
     clearTransactions() {
         this.elements.transactionList.innerHTML = '';
+        if (this.charts.gdp) {
+             this.charts.gdp.destroy();
+             this.charts.gdp = null;
+        }
+        if (this.charts.wealthDist) {
+             this.charts.wealthDist.destroy();
+             this.charts.wealthDist = null;
+        }
+        if (this.charts.householdNeeds) {
+             this.charts.householdNeeds.destroy();
+             this.charts.householdNeeds = null;
+        }
+        if (this.charts.firmNeeds) {
+             this.charts.firmNeeds.destroy();
+             this.charts.firmNeeds = null;
+        }
+        if (this.charts.salesByGood) {
+             this.charts.salesByGood.destroy();
+             this.charts.salesByGood = null;
+        }
     }
 };

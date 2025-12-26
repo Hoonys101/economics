@@ -24,6 +24,10 @@ INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 50.0
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
 INITIAL_HOUSEHOLD_NEEDS_MEAN = {
+    "survival": 60.0,
+    "asset": 10.0,
+    "social": 20.0,
+    "improvement": 10.0,
     "survival_need": 60.0,
     "recognition_need": 20.0,
     "growth_need": 10.0,
