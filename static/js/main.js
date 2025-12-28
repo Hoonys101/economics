@@ -80,6 +80,7 @@ function startGameLoop() {
     if (isRunning) return;
     isRunning = true;
     UI.updateDashboard({ ...getCurrentUIState(), status: 'running' }); // Optimistic update
+    updateControlButtons('running');
     runTick();
     startTxPolling(); // Keep TX polling separate or integrate? Separate is fine for now.
 }
@@ -89,6 +90,7 @@ function stopGameLoop() {
     clearTimeout(gameLoopTimeout);
     clearTimeout(txPollInterval);
     UI.updateDashboard({ ...getCurrentUIState(), status: 'paused' });
+    updateControlButtons('paused');
 }
 
 function resetUI() {
@@ -100,6 +102,27 @@ function resetUI() {
         trade_volume: 0, average_household_wealth: 0, average_firm_wealth: 0,
         household_avg_needs: 0, firm_avg_needs: 0, top_selling_good: '-', unemployment_rate: 0
     });
+    updateControlButtons('paused');
+}
+
+function updateControlButtons(state) {
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    if (state === 'running') {
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+        resetBtn.disabled = true;
+    } else {
+        // paused or stopped
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = false; // Stop resets sim on backend sometimes, or just stops.
+        resetBtn.disabled = false;
+    }
 }
 
 function getCurrentUIState() {

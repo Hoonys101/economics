@@ -32,7 +32,7 @@
 
         <!-- 메인 대시보드 -->
         <div class="row mb-4">
-            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Status</h5><p id="simStatus" class="card-text fs-4">-</p></div></div></div>
+            <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Status</h5><p id="simStatus" class="card-text fs-4" aria-live="polite">-</p></div></div></div>
             <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Tick</h5><p id="simTick" class="card-text fs-4">0</p></div></div></div>
             <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">GDP</h5><p id="simGdp" class="card-text fs-4">0</p></div></div></div>
             <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">Population</h5><p id="simPopulation" class="card-text fs-4">0</p></div></div></div>
@@ -62,7 +62,7 @@
             <!-- 거래 내역 -->
             <div class="col-md-4">
                 <h5>최근 거래 내역</h5>
-                <div id="transaction-list-container" class="relative flex h-[500px] w-full flex-col overflow-y-auto p-2 space-y-4">
+                <div id="transaction-list-container" class="relative flex h-[500px] w-full flex-col overflow-y-auto p-2 space-y-4" tabindex="0" aria-label="Recent Transactions List">
                     <!-- Transactions will be injected here -->
                 </div>
             </div>
