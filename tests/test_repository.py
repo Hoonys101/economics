@@ -138,3 +138,29 @@ def test_save_and_get_economic_indicators(test_repo: SimulationRepository):
     retrieved_indicator = retrieved_indicators[0]
     assert retrieved_indicator["unemployment_rate"] == 0.05
     assert retrieved_indicator["total_production"] == 500.0
+
+
+def test_indexes_created(test_repo: SimulationRepository):
+    """Test that performance indexes are created."""
+    cursor = test_repo.conn.cursor()
+    cursor.execute("PRAGMA index_list('economic_indicators')")
+    indexes = cursor.fetchall()
+    # Check if 'idx_economic_indicators_time' is present
+    # index_list returns tuples like (seq, name, unique, origin, partial)
+    index_names = [idx[1] for idx in indexes]
+    assert "idx_economic_indicators_time" in index_names
+
+    cursor.execute("PRAGMA index_list('transactions')")
+    indexes = cursor.fetchall()
+    index_names = [idx[1] for idx in indexes]
+    assert "idx_transactions_time" in index_names
+
+    cursor.execute("PRAGMA index_list('agent_states')")
+    indexes = cursor.fetchall()
+    index_names = [idx[1] for idx in indexes]
+    assert "idx_agent_states_time" in index_names
+
+    cursor.execute("PRAGMA index_list('market_history')")
+    indexes = cursor.fetchall()
+    index_names = [idx[1] for idx in indexes]
+    assert "idx_market_history_time" in index_names
