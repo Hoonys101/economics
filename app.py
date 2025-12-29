@@ -144,6 +144,10 @@ def create_simulation() -> None:
                 goods_data=goods_data,
                 initial_assets=config.INITIAL_HOUSEHOLD_ASSETS_MEAN,
                 initial_needs={
+                    "survival": config.INITIAL_HOUSEHOLD_NEEDS_MEAN.get("survival", 60.0),
+                    "asset": config.INITIAL_HOUSEHOLD_NEEDS_MEAN.get("asset", 10.0),
+                    "social": config.INITIAL_HOUSEHOLD_NEEDS_MEAN.get("social", 20.0),
+                    "improvement": config.INITIAL_HOUSEHOLD_NEEDS_MEAN.get("improvement", 10.0),
                     "survival_need": config.INITIAL_HOUSEHOLD_NEEDS_MEAN[
                         "survival_need"
                     ],
@@ -348,26 +352,52 @@ def advance_tick() -> Any:
         latest_record = latest_indicators[-1]
         new_gdp_history = [latest_record.get("total_consumption", 0)]
 
+        # --- Calculate Extended Metrics using ViewModel ---
+        wealth_dist = vm.get_wealth_distribution(simulation_instance.households, simulation_instance.firms)
+        needs_dist = vm.get_needs_distribution(simulation_instance.households, simulation_instance.firms)
+
+        # For sales by good, we need recent transactions.
+        # Ideally, we should pass transactions from this tick, but simulation_instance stores them in buffer or we can fetch from repo.
+        # Since run_tick already flushed to DB (maybe), we can fetch from repository or rely on what's available.
+        # Let's fetch recent transactions from repository for this tick.
+        repo = get_repository()
+        recent_txs = repo.get_transactions(start_tick=current_tick, end_tick=current_tick)
+        sales_by_good = vm.get_sales_by_good(recent_txs)
+
+        # Market Order Book
+        open_orders = vm.get_market_order_book(simulation_instance.markets)
+
+        # Calculate averages for dashboard cards
+        hh_needs_avg = sum(needs_dist.get('household', {}).values()) / max(1, len(needs_dist.get('household', {})))
+        firm_needs_avg = needs_dist.get('firm', {}).get('liquidity_need', 0)
+
+        top_selling = max(sales_by_good, key=sales_by_good.get) if sales_by_good else "None"
+
         update_data = {
             "status": "running",
             "tick": current_tick,
             "gdp": latest_record.get("total_consumption", 0),
             "population": latest_record.get("population", config.NUM_HOUSEHOLDS),
             "unemployment_rate": latest_record.get("unemployment_rate", 0),
-            "trade_volume": latest_record.get("food_trade_volume", 0),
-            "top_selling_good": "N/A",
+            "trade_volume": sum(sales_by_good.values()), # Total trade volume for this tick
+            "top_selling_good": top_selling,
             "average_household_wealth": latest_record.get("total_household_assets", 0)
             / latest_record.get("population", 1),
             "average_firm_wealth": latest_record.get("total_firm_assets", 0)
             / config.NUM_FIRMS,
-            "household_avg_needs": 0,
-            "firm_avg_needs": 0,
+            "household_avg_needs": hh_needs_avg,
+            "firm_avg_needs": firm_needs_avg,
             "chart_update": {
                 "new_gdp_history": new_gdp_history,
-                "wealth_distribution": [],
-                "household_needs_distribution": {},
+                "wealth_distribution": wealth_dist,
+                "household_needs_distribution": needs_dist['household'],
+                "firm_needs_distribution": needs_dist['firm'],
+                "sales_by_good": sales_by_good
             },
-            "market_update": {"open_orders": [], "transactions": []},
+            "market_update": {
+                "open_orders": open_orders,
+                "transactions": recent_txs # Also send transactions for the list
+            },
             "duration_ms": (time.time() - start_time) * 1000
         }
         
