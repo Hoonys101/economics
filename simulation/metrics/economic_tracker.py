@@ -85,13 +85,56 @@ class EconomicIndicatorTracker:
         )
 
         # Simplified logic for market data - assumes market objects have this data
-        food_market = markets.get("food")
-        if food_market and hasattr(food_market, "get_daily_avg_price"):
-            record["food_avg_price"] = food_market.get_daily_avg_price()
-            record["food_trade_volume"] = food_market.get_daily_volume()
+        # Calculate weighted average price for goods and find food market data
+        total_volume = 0.0
+        weighted_price_sum = 0.0
+
+        # Track specific food metrics (assuming 'basic_food' is the primary food or iterating)
+        food_price_sum = 0.0
+        food_volume_sum = 0.0
+
+        # We can also look for "food" or "basic_food" specifically
+        primary_food_key = "basic_food"
+
+        for market_id, market in markets.items():
+            if market_id == "labor" or market_id == "loan_market" or market_id == "stock_market":
+                continue
+
+            if hasattr(market, "get_daily_avg_price"):
+                avg_price = market.get_daily_avg_price()
+                volume = market.get_daily_volume()
+
+                if volume > 0:
+                    weighted_price_sum += avg_price * volume
+                    total_volume += volume
+
+                # Check if this is a food item
+                if "food" in market_id:
+                    if volume > 0:
+                         food_price_sum += avg_price * volume
+                         food_volume_sum += volume
+                    elif avg_price > 0:
+                         # If no volume but has price (e.g. from asks), just track price?
+                         # For weighted avg, we need volume. If 0 volume, we can't weight it.
+                         pass
+
+        if food_volume_sum > 0:
+            record["food_avg_price"] = food_price_sum / food_volume_sum
         else:
-            record["food_avg_price"] = 0.0
-            record["food_trade_volume"] = 0.0
+            # Fallback to checking best asks if no trades
+            # For simplicity, just use 0.0 or try to get from specific market
+            f_market = markets.get(primary_food_key)
+            if f_market and hasattr(f_market, "get_daily_avg_price"):
+                 record["food_avg_price"] = f_market.get_daily_avg_price() or 0.0
+            else:
+                 record["food_avg_price"] = 0.0
+
+        record["food_trade_volume"] = food_volume_sum
+
+        if total_volume > 0:
+            record["avg_goods_price"] = weighted_price_sum / total_volume
+        else:
+            record["avg_goods_price"] = 0.0
 
         # ... other metric calculations ...
         total_production = sum(
@@ -104,6 +147,7 @@ class EconomicIndicatorTracker:
         total_consumption = sum(
             h.current_consumption for h in households if getattr(h, "is_active", True)
         )
+        self.logger.info(f"TRACKER_DEBUG | Total Consumption: {total_consumption}. Active Households: {len([h for h in households if getattr(h, 'is_active', True)])}")
         record["total_consumption"] = total_consumption
 
         total_food_consumption = sum(

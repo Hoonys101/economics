@@ -436,10 +436,16 @@ class Household(BaseAgent):
                 )
 
             consumed_good = self.goods_info_map.get(item_id)
-            if consumed_good and "utility_per_need" in consumed_good:
-                for need_type, utility_value in consumed_good[
-                    "utility_per_need"
-                ].items():
+            # GEMINI_FIX: Check for "utility_effects" (used in config/decide_and_consume) OR "utility_per_need"
+            utility_map = None
+            if consumed_good:
+                if "utility_effects" in consumed_good:
+                    utility_map = consumed_good["utility_effects"]
+                elif "utility_per_need" in consumed_good:
+                    utility_map = consumed_good["utility_per_need"]
+
+            if utility_map:
+                for need_type, utility_value in utility_map.items():
                     # Ensure need_type is one of the new needs
                     if need_type in ["survival", "asset", "social", "improvement"]:
                         self.needs[need_type] = max(
