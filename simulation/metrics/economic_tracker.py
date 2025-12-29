@@ -147,7 +147,6 @@ class EconomicIndicatorTracker:
         total_consumption = sum(
             h.current_consumption for h in households if getattr(h, "is_active", True)
         )
-        self.logger.info(f"TRACKER_DEBUG | Total Consumption: {total_consumption}. Active Households: {len([h for h in households if getattr(h, 'is_active', True)])}")
         record["total_consumption"] = total_consumption
 
         total_food_consumption = sum(
