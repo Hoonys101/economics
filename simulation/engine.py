@@ -564,6 +564,13 @@ class Simulation:
         if self.time % self.batch_save_interval == 0:
             self._flush_buffers_to_db()
 
+        # Reset consumption counters for next tick
+        for h in self.households:
+            if hasattr(h, "current_consumption"):
+                h.current_consumption = 0.0
+            if hasattr(h, "current_food_consumption"):
+                h.current_food_consumption = 0.0
+
         self.logger.info(
             f"--- Ending Tick {self.time} ---",
             extra={"tick": self.time, "tags": ["tick_end"]},
