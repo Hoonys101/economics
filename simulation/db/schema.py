@@ -217,6 +217,12 @@ def create_tables(conn: sqlite3.Connection):
         )
     """)
 
+    # Indexes
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_economic_indicators_time ON economic_indicators(time)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_time ON transactions(time)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_states_time ON agent_states(time)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_market_history_time ON market_history(time)")
+
     conn.commit()
 
 
