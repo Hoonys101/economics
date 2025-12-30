@@ -5,11 +5,12 @@
 기존 OrderBookMarket과 유사한 가격-시간 우선 원칙을 적용합니다.
 """
 
-from typing import Dict, List, Optional, Any, TYPE_CHECKING
+from typing import Dict, List, Optional, Any, TYPE_CHECKING, Union
 import logging
 from collections import defaultdict
 
-from simulation.models import StockOrder, Transaction
+from simulation.models import StockOrder, Transaction, Order
+from simulation.core_markets import Market
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class StockMarket:
+class StockMarket(Market):
     """
     주식 시장 클래스.
     
@@ -36,8 +37,8 @@ class StockMarket:
         self.logger = logger or logging.getLogger(__name__)
         
         # 기업별 주문서 (firm_id -> List[StockOrder])
-        self.buy_orders: Dict[int, List[StockOrder]] = defaultdict(list)
-        self.sell_orders: Dict[int, List[StockOrder]] = defaultdict(list)
+        self.buy_orders: Dict[int, List[StockOrder]] = defaultdict(list) # type: ignore
+        self.sell_orders: Dict[int, List[StockOrder]] = defaultdict(list) # type: ignore
         
         # 가격 및 거래량 추적
         self.last_prices: Dict[int, float] = {}      # 최근 거래가
@@ -83,12 +84,23 @@ class StockMarket:
             return self.last_prices[firm_id]
         return self.reference_prices.get(firm_id)
 
-    def get_daily_avg_price(self, firm_id: int) -> float:
+    def get_daily_avg_price(self, firm_id: Optional[int] = None) -> float:
         """
         특정 기업의 일일 평균 거래 가격을 반환합니다.
-        현재는 최근 거래가를 반환합니다.
+        firm_id가 없으면 전체 평균을 반환합니다.
         """
-        return self.get_stock_price(firm_id) or 0.0
+        if firm_id is not None:
+            return self.get_stock_price(firm_id) or 0.0
+
+        if not self.last_prices:
+            return 0.0
+        return sum(self.last_prices.values()) / len(self.last_prices)
+
+    def get_daily_volume(self) -> float:
+        """
+        시장 전체의 일일 거래량을 반환합니다.
+        """
+        return sum(self.daily_volumes.values())
 
     def get_best_bid(self, firm_id: int) -> Optional[float]:
         """특정 기업 주식의 최고 매수호가를 반환합니다."""
@@ -104,14 +116,13 @@ class StockMarket:
             return None
         return min(order.price for order in orders)
 
-    def place_order(self, order: StockOrder, tick: int) -> None:
+    def place_order(self, order: Union[Order, StockOrder], tick: int) -> List[Transaction]:
         """
         주식 주문을 제출합니다.
-        
-        Args:
-            order: 주식 주문 객체
-            tick: 현재 시뮬레이션 틱
         """
+        if not isinstance(order, StockOrder):
+            return []
+
         # 가격 제한 확인 (상하한가)
         limit_rate = getattr(self.config_module, "STOCK_PRICE_LIMIT_RATE", 0.10)
         ref_price = self.reference_prices.get(order.firm_id, order.price)
@@ -142,7 +153,7 @@ class StockMarket:
                 f"Unknown stock order type: {order.order_type}",
                 extra={"tick": tick, "agent_id": order.agent_id}
             )
-            return
+            return []
         
         # 주문 생성 틱 기록
         self.order_ticks[order.id] = tick
@@ -160,6 +171,7 @@ class StockMarket:
                 "tags": ["stock", "order"]
             }
         )
+        return []
 
     def match_orders(self, tick: int) -> List[Transaction]:
         """

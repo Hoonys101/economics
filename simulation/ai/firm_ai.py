@@ -241,9 +241,9 @@ class FirmAI(BaseAIEngine):
         stock_market_data = market_data.get("stock_market", {})
         firm_item_id = f"stock_{self.agent_id}"
         
-        market_price = 0
+        market_price: float = 0.0
         if firm_item_id in stock_market_data:
-            market_price = stock_market_data[firm_item_id].get("avg_price", 0)
+            market_price = stock_market_data[firm_item_id].get("avg_price", 0.0)
         
         if market_price <= 0:
             # 주가가 없는 경우 장부가(BPS) 기준
@@ -252,10 +252,10 @@ class FirmAI(BaseAIEngine):
 
         # 주가 자체의 수준에 가중치를 두어 "높은 기업 가치 유지"에 보상
         # wealth_delta에 비해 너무 크지 않도록 스케일링 (예: 자산 1000일 때 주가 10이면 1 정도)
-        price_reward = market_price * 0.5 
+        price_reward_val = float(market_price) * 0.5
 
         # 최종 보상 = 자산 증분 + 가치 유지 보상
         # 가계가 주식을 선호하도록 배당을 주는 행위가 주가를 올린다면, 
         # 자산 감소(wealth_delta 음수)를 주가 상승(price_reward 양수)이 상쇄하도록 유도
-        return wealth_delta + price_reward
+        return wealth_delta + price_reward_val
 

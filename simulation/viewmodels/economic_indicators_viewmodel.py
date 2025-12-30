@@ -99,7 +99,7 @@ class EconomicIndicatorsViewModel:
         """
         Aggregates sales volume by good type from a list of transactions (dicts).
         """
-        sales = {}
+        sales: Dict[str, float] = {}
         for tx in transactions:
             item = tx.get('item_id', 'unknown')
             qty = tx.get('quantity', 0)

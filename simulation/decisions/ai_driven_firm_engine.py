@@ -170,9 +170,9 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         stock_market_id = "stock_market"
         firm_item_id = f"stock_{firm.id}"
 
-        market_stock_price = 0
+        market_stock_price: float = 0.0
         if stock_market_id in market_data and firm_item_id in market_data[stock_market_id]:
-            market_stock_price = market_data[stock_market_id][firm_item_id].get('avg_price', 0)
+            market_stock_price = market_data[stock_market_id][firm_item_id].get('avg_price', 0.0)
         
         if market_stock_price <= 0:
             market_stock_price = firm.assets / firm.total_shares if firm.total_shares > 0 else 10.0
@@ -180,17 +180,17 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         if eq_agg < 0.4:  # Buyback
             buyback_budget = firm.assets * 0.05
             if buyback_budget > market_stock_price:
-                qty = int(buyback_budget / market_stock_price)
-                qty = min(qty, 5)
-                if qty > 0:
+                buyback_qty = int(buyback_budget / market_stock_price)
+                buyback_qty = min(buyback_qty, 5)
+                if buyback_qty > 0:
                     orders.append(
-                        Order(firm.id, "BUY", firm_item_id, qty, market_stock_price * 1.02, stock_market_id)
+                        Order(firm.id, "BUY", firm_item_id, buyback_qty, market_stock_price * 1.02, stock_market_id)
                     )
         elif eq_agg > 0.6:  # Sell Treasury Stocks
             if firm.treasury_shares > 0:
-                qty = min(firm.treasury_shares, 5)
+                issuance_qty = int(min(firm.treasury_shares, 5))
                 orders.append(
-                    Order(firm.id, "SELL", firm_item_id, qty, market_stock_price * 0.98, stock_market_id)
+                    Order(firm.id, "SELL", firm_item_id, issuance_qty, market_stock_price * 0.98, stock_market_id)
                 )
 
         # 6. Execution: Capital Goods Investment (자본재 투자)
