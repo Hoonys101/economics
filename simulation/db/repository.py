@@ -391,22 +391,31 @@ class SimulationRepository:
             raise
 
     def get_economic_indicators(
-        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None
+        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None, run_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         경제 지표 데이터를 조회합니다.
         """
         query = "SELECT * FROM economic_indicators"
         params: List[Any] = []
-        if start_tick is not None and end_tick is not None:
-            query += " WHERE time BETWEEN ? AND ?"
-            params = [start_tick, end_tick]
-        elif start_tick is not None:
-            query += " WHERE time >= ?"
-            params = [start_tick]
-        elif end_tick is not None:
-            query += " WHERE time <= ?"
-            params = [end_tick]
+        conditions = []
+
+        if run_id is not None:
+            conditions.append("run_id = ?")
+            params.append(run_id)
+
+        if start_tick is not None:
+            conditions.append("time >= ?")
+            params.append(start_tick)
+        if end_tick is not None:
+            conditions.append("time <= ?")
+            params.append(end_tick)
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        # Sort by time to ensure history is ordered
+        query += " ORDER BY time ASC"
 
         self.cursor.execute(query, params)
         columns = [description[0] for description in self.cursor.description]

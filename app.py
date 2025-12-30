@@ -87,26 +87,30 @@ def get_repository() -> SimulationRepository:
 # ==============================================
 # Helper Methods
 # ==============================================
-def _build_simulation_update_payload(current_tick: int, sim_instance: Simulation, duration_ms: float = 0.0) -> dict:
-    """Builds the dashboard update payload for a specific tick."""
+def _build_simulation_update_payload(current_tick: int, sim_instance: Simulation, duration_ms: float = 0.0, since_tick: Optional[int] = None) -> dict:
+    """Builds the dashboard update payload for a specific tick or range."""
     repo = get_repository()
     vm = EconomicIndicatorsViewModel(repo)
 
-    # Fetch indicators for the current tick
-    # If it's tick 0, there might be no data yet, handle gracefully
-    latest_indicators = vm.get_economic_indicators(start_tick=current_tick)
+    # Determine the start tick for fetching indicators
+    # If since_tick is provided, fetch from there. Otherwise, just fetch current tick.
+    fetch_start_tick = since_tick if since_tick is not None else current_tick
 
-    if not latest_indicators:
-        # Fallback if no data exists for this tick yet (e.g. tick 0 or just started)
-        # Try to get the very last one if available, or empty defaults
-        latest_indicators = vm.get_economic_indicators(start_tick=max(0, current_tick - 1))
+    # Fetch indicators (filter by current run_id)
+    indicators = vm.get_economic_indicators(start_tick=fetch_start_tick, end_tick=current_tick, run_id=sim_instance.run_id)
 
-    if latest_indicators:
-        latest_record = latest_indicators[-1]
+    # If no data found (e.g., tick 0 or gap), try to fallback to just the current/last tick
+    if not indicators:
+        indicators = vm.get_economic_indicators(start_tick=max(0, current_tick - 1), run_id=sim_instance.run_id)
+
+    # Prepare data
+    if indicators:
+        latest_record = indicators[-1]
+        # Construct history list for charts
+        new_gdp_history = [record.get("total_consumption", 0) for record in indicators]
     else:
         latest_record = {}
-
-    new_gdp_history = [latest_record.get("total_consumption", 0)]
+        new_gdp_history = [0]
 
     # --- Calculate Extended Metrics using ViewModel ---
     wealth_dist = vm.get_wealth_distribution(sim_instance.households, sim_instance.firms)
@@ -411,8 +415,10 @@ def get_simulation_update() -> Any:
         return jsonify({"status": "stopped", "message": "Simulation not initialized"}), 200
 
     current_tick = simulation_instance.time
+    since_tick = request.args.get('since', type=int)
+
     try:
-        update_data = _build_simulation_update_payload(current_tick, simulation_instance)
+        update_data = _build_simulation_update_payload(current_tick, simulation_instance, since_tick=since_tick)
         # Allow override of status since we are just viewing
         update_data["status"] = "paused" # Or just return current state? Frontend interprets 'running' to keep polling.
         # Ideally, we should check if it's actually running, but here it's client-driven.
@@ -439,7 +445,8 @@ def advance_tick() -> Any:
             simulation_instance.run_tick()
             current_tick = simulation_instance.time
         
-        update_data = _build_simulation_update_payload(current_tick, simulation_instance, (time.time() - start_time) * 1000)
+        # For tick updates, we typically only need the latest data point
+        update_data = _build_simulation_update_payload(current_tick, simulation_instance, (time.time() - start_time) * 1000, since_tick=current_tick)
         return jsonify(update_data)
 
     except Exception as e:
