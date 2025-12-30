@@ -264,35 +264,85 @@ pytest tests/diagnosis/ -v -s
 
 ---
 
-## 7. 예상 결과 시나리오
+---
 
-### 시나리오 A: 에이전트가 주문을 안 냄
-```
-Spec 0 FAIL → AI Decision Engine 문제
-  └─> AIDrivenHouseholdDecisionEngine.make_decisions() 디버깅
+## 7. Spec 3: API Contract Verification (신규 추가)
+
+### 7.1 목적
+백엔드 로직은 정상이나 프론트엔드에서 데이터가 안 보이는 문제(연결부 결함)를 진단.
+`app.py`의 `_build_simulation_update_payload()`가 반환하는 **JSON 구조**를 직접 검증.
+
+> **핵심 가설**: 
+> 1. `gdp` 필드는 `total_consumption`으로 매핑되어야 한다.
+> 2. `OrderBook` 데이터가 프론트엔드가 기대하는 형식(Raw List vs Depth Map)과 일치하는지 확인해야 한다.
+
+### 7.2 파일 경로
+`tests/diagnosis/test_api_contract.py`
+
+### 7.3 테스트 케이스
+
+#### TC-3.1: Simulation Update Payload 구조 검증
+```python
+def test_simulation_update_payload_structure(mock_app, mock_simulation):
+    # 1. Setup
+    # app.py의 _build_simulation_update_payload 함수를 테스트 (또는 API 호출)
+    
+    # 2. Action
+    with mock_app.app_context():
+        payload = _build_simulation_update_payload(current_tick=1, sim_instance=mock_simulation)
+    
+    # 3. Verify Keys
+    ASSERT "gdp" in payload, "API 응답에 gdp 필드가 누락됨"
+    ASSERT "market_update" in payload
+    ASSERT "chart_update" in payload
 ```
 
-### 시나리오 B: 주문은 있으나 매칭 안 됨
-```
-Spec 0 PASS, Spec 1 FAIL → OrderBookMarket 버그
-  └─> _match_orders_for_item() 디버깅
+#### TC-3.2: GDP 매핑 로직 확인
+```python
+def test_gdp_value_mapping(mock_app, mock_simulation):
+    # 1. Setup
+    # Simulation Instance 내의 Tracker가 total_consumption = 100을 반환하도록 Mocking
+    
+    # 2. Action
+    payload = _build_simulation_update_payload(...)
+    
+    # 3. Verify
+    # 백엔드 내부엔 gdp가 없지만, API엔 gdp가 있어야 하고 그 값은 total_consumption과 같아야 함
+    ASSERT payload["gdp"] == 100.0
 ```
 
-### 시나리오 C: 거래는 되나 지표가 0
-```
-Spec 0 PASS, Spec 1 PASS, Spec 2 FAIL → Tracker 연결 문제
-  └─> Engine.run_tick() 내 tracker.track() 호출 확인
+#### TC-3.3: OrderBook 데이터 형식 확인
+```python
+def test_order_book_format(mock_app, mock_simulation):
+    # 1. Action
+    payload = _build_simulation_update_payload(...)
+    open_orders = payload["market_update"]["open_orders"]
+    
+    # 2. Verify
+    # 현재 구현은 List[Dict] 형태임
+    ASSERT isinstance(open_orders, list)
+    if len(open_orders) > 0:
+        order = open_orders[0]
+        ASSERT "price" in order
+        ASSERT "quantity" in order
+        ASSERT "type" in order # BID or ASK
+        
+        # [중요] 프론트엔드 호환성 경고
+        # 만약 프론트엔드가 {price: volume} 딕셔너리를 기대한다면 여기서 차이가 발생함
+        PRINT f"[INFO] OrderBook Format: {open_orders[0].keys()}"
 ```
 
-### 시나리오 D: GDP 필드 불일치
-```
-Spec 2에서 "gdp" 필드 미존재 확인
-  └─> 프론트엔드가 "total_production" 또는 다른 필드를 사용하도록 수정
-```
+### 7.4 결과 해석
+| 결과 | 의미 | 조치 |
+|:---:|:---|:---|
+| `gdp` 키 없음 | 매핑 로직 누락 | `app.py` 수정 필요 |
+| `gdp` 값 불일치 | 잘못된 필드 매핑 | 매핑 소스(`total_consumption` 등) 확인 |
+| `OrderBook` 비어있음 | ViewModel 변환 실패 | `EconomicIndicatorsViewModel` 확인 |
 
 ---
 
-## 8. 구현 우선순위
+## 8. 테스트 실행 방법
+
 
 1. **conftest.py** 작성 (공용 Fixture)
 2. **test_agent_decision.py** (Spec 0)
