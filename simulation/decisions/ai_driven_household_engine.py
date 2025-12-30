@@ -56,7 +56,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         
         # 1. AI Decision (Vector Output)
         action_vector = self.ai_engine.decide_action_vector(
-            agent_data, market_data, goods_list
+            agent_data, market_data, goods_list, self.config_module
         )
         
         orders = []

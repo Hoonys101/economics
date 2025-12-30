@@ -70,19 +70,46 @@ class HouseholdAI(BaseAIEngine):
         self,
         agent_data: Dict[str, Any],
         market_data: Dict[str, Any],
-        goods_list: List[str] # List of item_ids to decide consumption for
+        goods_list: List[str], # List of item_ids to decide consumption for
+        config_module: Any = None
     ) -> HouseholdActionVector:
         """
         Decide aggressiveness for consumption (per item) and work.
         """
         state = self._get_common_state(agent_data, market_data)
         
+        # --- Maslow Gating Check ---
+        is_starving = False
+        if config_module:
+            survival_need = agent_data.get("needs", {}).get("survival", 0.0)
+            threshold = getattr(config_module, "MASLOW_SURVIVAL_THRESHOLD", 50.0)
+            if survival_need > threshold:
+                is_starving = True
+
         # 1. Consumption Aggressiveness
         consumption_aggressiveness = {}
         self.last_consumption_states = {}
         self.last_consumption_action_idxs = {}
 
         for item_id in goods_list:
+            # Gating: Force 0.0 for non-survival items if starving
+            # We assume 'basic_food' or items with 'survival' effect are exempt.
+            # But here we don't have utility info easily.
+            # However, the Architect said: "survival 효용이 없는 모든 품목 ... 적극성을 0.0으로 강제 고정".
+            # To do this accurately, we need goods info.
+            # Using config_module.GOODS if available.
+            is_survival_item = False
+            if config_module and hasattr(config_module, "GOODS"):
+                good_info = config_module.GOODS.get(item_id, {})
+                if "survival" in good_info.get("utility_effects", {}):
+                    is_survival_item = True
+            elif item_id == "basic_food": # Fallback
+                is_survival_item = True
+
+            if is_starving and not is_survival_item:
+                consumption_aggressiveness[item_id] = 0.0
+                continue
+
             if item_id not in self.q_consumption:
                 self.q_consumption[item_id] = QTableManager()
             
@@ -111,7 +138,13 @@ class HouseholdAI(BaseAIEngine):
         # 3. Investment Aggressiveness
         # 자산이 충분할 때만 투자 고려
         assets = agent_data.get("assets", 0)
-        if assets >= 500.0:  # 최소 투자 자산
+
+        # Gating: Force 0.0 for investment if starving
+        if is_starving:
+            investment_agg = 0.0
+            self.last_investment_state = None
+            self.last_investment_action_idx = None
+        elif assets >= 500.0:  # 최소 투자 자산
             self.last_investment_state = state
             inv_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
             inv_action_idx = self.action_selector.choose_action(

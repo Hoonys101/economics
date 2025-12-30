@@ -802,9 +802,22 @@ class Simulation:
                 seller.inventory[tx.item_id] = max(
                     0, seller.inventory.get(tx.item_id, 0) - tx.quantity
                 )
-                buyer.inventory[tx.item_id] = (
-                    buyer.inventory.get(tx.item_id, 0) + tx.quantity
-                )
+
+                # Check for Service (Immediate Consumption)
+                is_service = False
+                good_info = self.config_module.GOODS.get(tx.item_id)
+                if good_info and good_info.get("is_service", False):
+                    is_service = True
+
+                if is_service and isinstance(buyer, Household):
+                    # Consume immediately (bypassing inventory)
+                    buyer.consume(tx.item_id, tx.quantity, self.time)
+                else:
+                    # Standard inventory addition
+                    buyer.inventory[tx.item_id] = (
+                        buyer.inventory.get(tx.item_id, 0) + tx.quantity
+                    )
+
                 if isinstance(seller, Firm):
                     seller.revenue_this_turn += trade_value
                 if isinstance(buyer, Household):

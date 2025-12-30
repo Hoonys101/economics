@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, override, Tuple, TYPE_CHECKING
 import logging
 from logging import Logger
-import random
 
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
@@ -11,7 +10,7 @@ from simulation.ai.api import (
     Personality,
     Tactic,
     Aggressiveness,
-)
+)  # Personality, Tactic, Aggressiveness Enum 임포트
 from simulation.core_markets import Market  # Import Market
 from simulation.dtos import DecisionContext
 
@@ -156,6 +155,17 @@ class Household(BaseAgent):
         self.desire_weights: Dict[str, float] = self._initialize_desire_weights(
             personality
         )
+
+        # --- Maslow & Education ---
+        self.education_xp: float = 0.0
+
+        # Initialize new desires based on the personality-driven model
+
+        # Remove old needs that are replaced by the new model
+        # self.needs.setdefault("labor_need", 0.0) # Replaced by 'asset' or 'survival' indirectly
+        # self.needs["wealth_need"] = initial_needs.get("wealth_need", 0.0) # Replaced by 'asset'
+        # self.needs["imitation_need"] = initial_needs.get("imitation_need", 0.0) # Replaced by 'social'
+        # self.needs["child_rearing_need"] = initial_needs.get("child_rearing_need", 0.0) # Not directly mapped to new model yet
 
         self.current_food_consumption: float = 0.0
         self.current_consumption: float = 0.0
@@ -390,6 +400,11 @@ class Household(BaseAgent):
         if self.assets < self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD:
             return self.config_module.HOUSEHOLD_LOW_ASSET_WAGE
         return self.config_module.HOUSEHOLD_DEFAULT_WAGE
+    #                 * 0.5
+    #             )  # 최대 50%까지 감소
+    #
+    #     # 최소 임금 보장
+    #     return max(desired_wage, self.config_module.LABOR_MARKET_MIN_WAGE)
 
     def consume(self, item_id: str, quantity: float, current_time: int) -> None:
         log_extra = {
@@ -399,20 +414,39 @@ class Household(BaseAgent):
             "quantity": quantity,
             "tags": ["household_consumption"],
         }
+
+        # --- Education XP Logic ---
+        if item_id == "education_service":
+            learning_efficiency = getattr(self.config_module, "LEARNING_EFFICIENCY", 1.0)
+            self.education_xp += quantity * learning_efficiency
+            self.logger.info(
+                f"EDUCATION_XP_GAIN | Household {self.id} gained XP. Total XP: {self.education_xp:.2f}",
+                extra={**log_extra, "xp_gain": quantity * learning_efficiency}
+            )
+
         self.logger.debug(
             f"CONSUME_METHOD_START | Household {self.id} attempting to consume: Item={item_id}, Qty={quantity:.1f}, Inventory={self.inventory.get(item_id, 0):.1f}",
             extra=log_extra,
         )
-        if self.inventory.get(item_id, 0) >= quantity:
-            self.logger.debug(
-                f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}",
-                extra={
-                    **log_extra,
-                    "inventory_before": self.inventory.get(item_id, 0),
-                    "survival_need_before": self.needs.get("survival", 0),
-                },
-            )
-            self.inventory[item_id] -= quantity
+
+        # Check if service (skip inventory check if so, assuming direct consumption flow)
+        is_service = False
+        good_info = self.goods_info_map.get(item_id)
+        if good_info and good_info.get("is_service", False):
+            is_service = True
+
+        if is_service or self.inventory.get(item_id, 0) >= quantity:
+            if not is_service:
+                self.logger.debug(
+                    f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}",
+                    extra={
+                        **log_extra,
+                        "inventory_before": self.inventory.get(item_id, 0),
+                        "survival_need_before": self.needs.get("survival", 0),
+                    },
+                )
+                self.inventory[item_id] -= quantity
+
             self.current_consumption += quantity
 
             if item_id == "food":
@@ -493,6 +527,19 @@ class Household(BaseAgent):
                 self.config_module.MAX_DESIRE_VALUE, self.needs[need_type]
             )
         # --- End Personality-driven desire growth ---
+
+        # --- Old needs logic (to be removed or re-evaluated) ---
+        # The following needs are now managed by the new personality-driven system
+        # or are derived from other needs. They should be removed or integrated.
+        # For now, I will comment them out to avoid conflicts.
+        # self.needs["labor_need"] += ...
+        # self.needs["recognition_need"] += ...
+        # self.needs["growth_need"] += ...
+        # self.needs["liquidity_need"] += ...
+        # self.needs["wealth_need"] += ...
+        # self.needs["imitation_need"] += ...
+        # self.needs["child_rearing_need"] += ...
+        # --- End Old needs logic ---
 
         # Check for household death conditions
         if self.needs["survival"] >= self.config_module.SURVIVAL_NEED_DEATH_THRESHOLD:
