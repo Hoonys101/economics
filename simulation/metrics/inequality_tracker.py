@@ -118,7 +118,7 @@ class InequalityTracker:
         
         # 분위별 통계 계산
         total_assets = sum(h.assets for h in households)
-        result = {}
+        result: Dict[str, Any] = {}
         
         for q in range(1, 6):
             q_households = quintiles[q]

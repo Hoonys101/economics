@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 import hashlib
 
@@ -93,6 +93,7 @@ class Simulation:
             market_id="loan_market", bank=self.bank, config_module=self.config_module
         )
         
+        self.stock_market: Optional[StockMarket] = None
         # 주식 시장 초기화
         if getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
             self.stock_market = StockMarket(
