@@ -1,0 +1,3831 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /app
+collected 164 items
+
+tests/test_ai_driven_firm_engine.py F                                    [  0%]
+tests/test_ai_training_manager.py .FF                                    [  2%]
+tests/test_ai_training_manager_new.py ....F                              [  5%]
+tests/test_api_extensions.py ....                                        [  7%]
+tests/test_app.py ...........                                            [ 14%]
+tests/test_bank.py ..........                                            [ 20%]
+tests/test_base_agent.py ...                                             [ 22%]
+tests/test_decision_engine_integration.py FFFF..                         [ 26%]
+tests/test_e2e_playwright.py F                                           [ 26%]
+tests/test_engine.py .........                                           [ 32%]
+tests/test_firm_decision_engine.py FFF                                   [ 34%]
+tests/test_firm_decision_engine_new.py .FFFFFFFFFFFFFFFFFFFF             [ 46%]
+tests/test_firm_profit.py ..                                             [ 48%]
+tests/test_government_fiscal_policy.py ..                                [ 49%]
+tests/test_household_ai.py FF                                            [ 50%]
+tests/test_household_ai_consumption.py F                                 [ 51%]
+tests/test_household_decision_engine_multi_good.py ssssssFFs             [ 56%]
+tests/test_household_decision_engine_new.py FFFFFFF                      [ 60%]
+tests/test_household_marginal_utility.py FF                              [ 62%]
+tests/test_loan_market.py ......                                         [ 65%]
+tests/test_logger.py ...                                                 [ 67%]
+tests/test_markets_v2.py ............                                    [ 75%]
+tests/test_order_book_market.py ...................                      [ 86%]
+tests/test_repository.py .....                                           [ 89%]
+tests/test_stock_market.py ...............                               [ 98%]
+tests/test_tax_incidence.py ..                                           [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_adjust_price_tactic ___________________________
+
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7e232c0>
+mock_firm = <Mock id='140384682428464'>
+
+    def test_adjust_price_tactic(firm_decision_engine_instance, mock_firm):
+        """Test that the ADJUST_PRICE tactic correctly adjusts the price."""
+        mock_firm.inventory["food"] = 200
+        mock_firm.production_target = 100
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE
+        )
+
+>       orders, _ = firm_decision_engine_instance.make_decisions(mock_firm, {}, [], {}, 1)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: AIDrivenFirmDecisionEngine.make_decisions() takes 2 positional arguments but 6 were given
+
+tests/test_ai_driven_firm_engine.py:62: TypeError
+_____________ TestAITrainingManager.test_clone_and_mutate_q_table ______________
+
+self = <test_ai_training_manager.TestAITrainingManager object at 0x7fadf957d2b0>
+training_manager = <simulation.ai.ai_training_manager.AITrainingManager object at 0x7fadd7e83dd0>
+mock_households = [<Mock spec='Household' id='140384628385136'>, <Mock spec='Household' id='140384628711856'>, <Mock spec='Household' id...id='140385198354752'>, <Mock spec='Household' id='140384675216560'>, <Mock spec='Household' id='140384675641728'>, ...]
+
+    def test_clone_and_mutate_q_table(self, training_manager, mock_households):
+        source_agent = mock_households[9]  # Richest agent
+        target_agent = mock_households[0]  # Poorest agent
+
+        original_q_value = (
+            source_agent.decision_engine.ai_engine.q_table_manager_strategy.q_table[
+                "state"
+            ]["action"]
+        )
+
+        with (
+            patch.object(random, "random", return_value=0.05),
+            patch.object(random, "uniform", return_value=0.01),
+        ):
+>           training_manager._clone_and_mutate_q_table(source_agent, target_agent)
+
+tests/test_ai_training_manager.py:62:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/ai/ai_training_manager.py:99: in _clone_and_mutate_q_table
+    self._copy_and_mutate_single_table(source_tactic_manager, target_tactic_manager)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.ai.ai_training_manager.AITrainingManager object at 0x7fadd7e83dd0>
+source_manager = <Mock name='mock.decision_engine.ai_engine.q_table_manager_tactic' id='140384645222992'>
+target_manager = <Mock name='mock.decision_engine.ai_engine.q_table_manager_tactic' id='140384707875840'>
+
+    def _copy_and_mutate_single_table(self, source_manager: Any, target_manager: Any):
+        """Helper to copy and mutate a single QTableManager's table."""
+        # Deep copy the Q-table
+        # Assuming q_table is Dict[State, Dict[Action, float]]
+        # We need to be careful with deep copying if keys are objects, but here they are likely tuples/Enums which are immutable/safe.
+        # But the inner dict needs to be copied.
+        new_q_table = {}
+>       for state, actions in source_manager.q_table.items():
+E       TypeError: 'Mock' object is not iterable
+
+simulation/ai/ai_training_manager.py:112: TypeError
+___________ TestAITrainingManager.test_run_imitation_learning_cycle ____________
+
+self = <test_ai_training_manager.TestAITrainingManager object at 0x7fadf957d580>
+training_manager = <simulation.ai.ai_training_manager.AITrainingManager object at 0x7fadd7ed2210>
+mock_households = [<Mock spec='Household' id='140384628712528'>, <Mock spec='Household' id='140384628711904'>, <Mock spec='Household' id...id='140384628711088'>, <Mock spec='Household' id='140384628710560'>, <Mock spec='Household' id='140384628709744'>, ...]
+
+    def test_run_imitation_learning_cycle(self, training_manager, mock_households):
+        mock_role_model = mock_households[9]  # Richest agent
+        with (
+            patch.object(
+                training_manager,
+                "_get_top_performing_agents",
+                return_value=[mock_role_model],
+            ) as mock_get_top,
+            patch.object(training_manager, "_clone_and_mutate_q_table") as mock_clone,
+            patch.object(random, "choice", return_value=mock_role_model) as mock_choice,
+        ):
+            training_manager.run_imitation_learning_cycle(100)
+
+            mock_get_top.assert_called_once()
+>           mock_choice.assert_called_once()
+
+tests/test_ai_training_manager.py:87:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock name='choice' id='140384627180320'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'choice' to have been called once. Called 5 times.
+E           Calls: [call([<Mock spec='Household' id='140384628708064'>]),
+E            call([<Mock spec='Household' id='140384628708064'>]),
+E            call([<Mock spec='Household' id='140384628708064'>]),
+E            call([<Mock spec='Household' id='140384628708064'>]),
+E            call([<Mock spec='Household' id='140384628708064'>])].
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/unittest/mock.py:928: AssertionError
+______________________ test_run_imitation_learning_cycle _______________________
+
+mock_agents = [<Mock spec='Household' id='140384627195440'>, <Mock spec='Household' id='140384627187184'>, <Mock spec='Household' id...id='140384627186560'>, <Mock spec='Household' id='140384627186224'>, <Mock spec='Household' id='140384627185888'>, ...]
+mock_config = <Mock id='140384627183872'>
+
+    def test_run_imitation_learning_cycle(mock_agents, mock_config):
+        manager = AITrainingManager(mock_agents, mock_config)
+
+        # Mock _clone_and_mutate_q_table to verify calls
+        manager._clone_and_mutate_q_table = Mock()
+
+>       manager.run_imitation_learning_cycle(current_tick=1000)
+
+tests/test_ai_training_manager_new.py:107:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/ai/ai_training_manager.py:22: in run_imitation_learning_cycle
+    top_performers = self._get_top_performing_agents()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.ai.ai_training_manager.AITrainingManager object at 0x7fadd7d5ffb0>
+percentile = <Mock name='mock.TOP_PERFORMING_PERCENTILE' id='140384627183776'>
+
+    def _get_top_performing_agents(self, percentile: float | None = None) -> List[Household]:
+        if percentile is None:
+            percentile = getattr(self.config_module, "TOP_PERFORMING_PERCENTILE", 0.1)
+        """Identifies the top-performing agents based on their assets."""
+        if not self.agents:
+            return []
+
+        sorted_agents = sorted(self.agents, key=lambda x: x.assets, reverse=True)
+>       top_n = max(1, int(len(self.agents) * percentile))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: unsupported operand type(s) for *: 'int' and 'Mock'
+
+simulation/ai/ai_training_manager.py:60: TypeError
+______ TestDecisionEngineIntegration.test_firm_places_sell_order_for_food ______
+
+self = <test_decision_engine_integration.TestDecisionEngineIntegration object at 0x7fadd82c9130>
+mock_make_decision = <MagicMock name='make_decision' id='140384622968176'>
+firm = <Mock spec='Firm' id='140384622968800'>
+goods_market = <simulation.markets.order_book_market.OrderBookMarket object at 0x7fadd7957e00>
+
+    @patch.object(Firm, 'make_decision')
+    def test_firm_places_sell_order_for_food(
+        self, mock_make_decision: MagicMock, firm: Firm, goods_market: OrderBookMarket
+    ):
+        """기업이 식량 판매 주문을 올바르게 제출하는지 테스트합니다."""
+        mock_make_decision.return_value = ( # Corrected mock assignment
+            [
+                Order(
+                    agent_id=firm.id,
+                    order_type="SELL",
+                    item_id="food",
+                    quantity=10.0,
+                    price=15.0,
+                    market_id="goods_market",
+                )
+            ],
+            (Tactic.ADJUST_PRICE, Aggressiveness.NORMAL) # Firm's make_decision also returns a tactic tuple
+        )
+        markets = {"goods_market": goods_market}
+>       orders, _ = firm.make_decision(
+        ^^^^^^^^^
+            markets=markets,
+            goods_data=GOODS_DATA,
+            market_data={"all_households": [], "goods_data": GOODS_DATA},
+            current_time=1
+        )
+E       TypeError: cannot unpack non-iterable Mock object
+
+tests/test_decision_engine_integration.py:167: TypeError
+____ TestDecisionEngineIntegration.test_household_places_buy_order_for_food ____
+
+self = <test_decision_engine_integration.TestDecisionEngineIntegration object at 0x7fadd82a3920>
+mock_make_decision = <MagicMock name='make_decision' id='140384622913216'>
+household = <Mock spec='Household' id='140384622913792'>
+goods_market = <simulation.markets.order_book_market.OrderBookMarket object at 0x7fadd794a750>
+
+    @patch.object(Household, 'make_decision')
+    def test_household_places_buy_order_for_food(
+        self, mock_make_decision: MagicMock, household: Household, goods_market: OrderBookMarket
+    ):
+        """가계가 식량 구매 주문을 올바르게 제출하는지 테스트합니다."""
+        household.needs["survival_need"] = 80.0
+        household.inventory["food"] = 0.0
+
+        mock_make_decision.return_value = ( # Corrected mock assignment
+            [
+                Order(
+                    agent_id=household.id,
+                    order_type="BUY",
+                    item_id="food",
+                    quantity=1.0,
+                    price=1.6,
+                    market_id="goods_market",
+                )
+            ],
+            (Tactic.EVALUATE_CONSUMPTION_OPTIONS, Aggressiveness.NORMAL)
+        )
+
+        markets = {"goods_market": goods_market}
+>       orders, _ = household.make_decision(
+        ^^^^^^^^^
+            markets=cast(Dict[str, Market], markets),
+            goods_data=GOODS_DATA,
+            market_data={"all_households": [], "goods_data": GOODS_DATA},
+            current_time=1
+        )
+E       TypeError: cannot unpack non-iterable Mock object
+
+tests/test_decision_engine_integration.py:203: TypeError
+___________ TestDecisionEngineIntegration.test_household_sells_labor ___________
+
+self = <test_decision_engine_integration.TestDecisionEngineIntegration object at 0x7fadd82a0fe0>
+mock_make_decision = <MagicMock name='make_decision' id='140384622924464'>
+household = <Mock spec='Household' id='140384622925184'>
+labor_market = <simulation.markets.order_book_market.OrderBookMarket object at 0x7fadd794d370>
+
+    @patch.object(Household, 'make_decision')
+    def test_household_sells_labor(
+        self, mock_make_decision: MagicMock, household: Household, labor_market: OrderBookMarket
+    ):
+        """가계가 노동 판매 주문을 올바르게 제출하는지 테스트합니다."""
+        household.is_employed = False
+        household.needs["labor_need"] = 50
+        household.needs["survival_need"] = 10.0
+
+        mock_make_decision.return_value = ( # Corrected mock assignment
+            [
+                Order(
+                    agent_id=household.id,
+                    order_type="SELL",
+                    item_id="labor",
+                    quantity=1,
+                    price=10,
+                    market_id="labor_market",
+                )
+            ],
+            (Tactic.PARTICIPATE_LABOR_MARKET, Aggressiveness.NORMAL)
+        )
+        markets = {"labor_market": labor_market}
+>       orders, _ = household.make_decision(
+        ^^^^^^^^^
+            markets=cast(Dict[str, Market], markets),
+            goods_data=GOODS_DATA,
+            market_data={"all_households": [household], "goods_data": GOODS_DATA},
+            current_time=1,
+        )
+E       TypeError: cannot unpack non-iterable Mock object
+
+tests/test_decision_engine_integration.py:240: TypeError
+______________ TestDecisionEngineIntegration.test_firm_buys_labor ______________
+
+self = <test_decision_engine_integration.TestDecisionEngineIntegration object at 0x7fadd82a1910>
+mock_make_decision = <MagicMock name='make_decision' id='140384622804960'>
+firm = <Mock spec='Firm' id='140384622804144'>
+labor_market = <simulation.markets.order_book_market.OrderBookMarket object at 0x7fadd792cdd0>
+
+    @patch.object(Firm, 'make_decision')
+    def test_firm_buys_labor(
+        self, mock_make_decision: MagicMock, firm: Firm, labor_market: OrderBookMarket
+    ):
+        """기업이 노동 구매 주문을 올바르게 제출하는지 테스트합니다."""
+        firm.employees = []
+        mock_make_decision.return_value = ( # Corrected mock assignment
+            [
+                Order(
+                    agent_id=firm.id,
+                    order_type="BUY",
+                    item_id="labor",
+                    quantity=1,
+                    price=10,
+                    market_id="labor_market",
+                )
+            ],
+            (Tactic.ADJUST_WAGES, Aggressiveness.NORMAL) # Firm's make_decision also returns a tactic tuple
+        )
+        markets = {"labor_market": labor_market}
+>       orders, _ = firm.make_decision(
+        ^^^^^^^^^
+            markets=markets,
+            goods_data=GOODS_DATA,
+            market_data={"all_households": [], "goods_data": GOODS_DATA},
+            current_time=1
+        )
+E       TypeError: cannot unpack non-iterable Mock object
+
+tests/test_decision_engine_integration.py:273: TypeError
+______________________________ test_frontend_flow ______________________________
+
+    def test_frontend_flow():
+        # Start server in thread
+        server_thread = threading.Thread(target=run_app, daemon=True)
+        server_thread.start()
+
+        base_url = "http://127.0.0.1:5005"
+        if not wait_for_server(base_url):
+            print("Server failed to start")
+            return
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+
+            # 1. Visit Homepage
+            print("Visiting Homepage...")
+            page.goto(base_url)
+            # Updated title check
+            expect(page).to_have_title("경제 시뮬레이션 대시보드 (v2)")
+
+            # 2. Inject Auth Token (Simulate Login)
+            print("Injecting Auth Token...")
+            # config.SECRET_TOKEN should be available
+            page.evaluate(f"localStorage.setItem('secretToken', '{config.SECRET_TOKEN}')")
+            page.reload() # Reload to apply token if needed by init scripts
+
+            # 3. Check for Start Button and Click
+            print("Starting Simulation...")
+            start_button = page.get_by_role("button", name="Start Simulation")
+            # Ensure it's visible or handle "Stop" if already running (though unlikely in fresh thread)
+            if start_button.is_visible():
+                start_button.click()
+                # Wait for some indication of running, e.g., Pause button appears
+                expect(page.get_by_role("button", name="Pause Simulation")).to_be_visible()
+
+            # 4. Wait for a few seconds to let simulation tick
+            print("Waiting for simulation to tick...")
+            time.sleep(5)
+
+            # 5. Check if tick count increased (Frontend usually updates a span with id 'current-tick' or similar)
+            # Inspecting the page would be better, but let's assume there is some visual indicator.
+            # Based on previous knowledge/standard UI:
+            # Let's try to verify if some chart canvas is present.
+            expect(page.locator("canvas").first).to_be_visible()
+
+            # 6. Stop Simulation
+            print("Stopping Simulation...")
+>           page.get_by_role("button", name="Stop Simulation").click()
+
+tests/test_e2e_playwright.py:75:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/playwright/sync_api/_generated.py:15543: in click
+    self._sync(
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/playwright/_impl/_locator.py:160: in click
+    return await self._frame.click(self._selector, strict=True, **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/playwright/_impl/_frame.py:549: in click
+    await self._channel.send("click", self._timeout, locals_to_params(locals()))
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/playwright/_impl/_connection.py:69: in send
+    return await self._connection.wrap_api_call(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <playwright._impl._connection.Connection object at 0x7fadd79668d0>
+cb = <function Channel.send.<locals>.<lambda> at 0x7fadd7cc6e80>
+is_internal = False, title = None
+
+    async def wrap_api_call(
+        self, cb: Callable[[], Any], is_internal: bool = False, title: str = None
+    ) -> Any:
+        if self._api_zone.get():
+            return await cb()
+        task = asyncio.current_task(self._loop)
+        st: List[inspect.FrameInfo] = getattr(
+            task, "__pw_stack__", None
+        ) or inspect.stack(0)
+
+        parsed_st = _extract_stack_trace_information_from_stack(st, is_internal, title)
+        self._api_zone.set(parsed_st)
+        try:
+            return await cb()
+        except Exception as error:
+>           raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E           playwright._impl._errors.TimeoutError: Locator.click: Timeout 30000ms exceeded.
+E           Call log:
+E             - waiting for get_by_role("button", name="Stop Simulation")
+
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/playwright/_impl/_connection.py:558: TimeoutError
+----------------------------- Captured stdout call -----------------------------
+ * Serving Flask app 'app'
+ * Debug mode: off
+Visiting Homepage...
+Injecting Auth Token...
+Starting Simulation...
+Waiting for simulation to tick...
+Stopping Simulation...
+------------------------------ Captured log call -------------------------------
+INFO     werkzeug:_internal.py:97 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5005
+INFO     werkzeug:_internal.py:97 [33mPress CTRL+C to quit[0m
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:02] "GET / HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:04] "GET / HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:04] "GET /static/css/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:04] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:04] "GET /static/js/modules/api.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:04] "GET /static/js/modules/ui.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:04] "GET /api/simulation/update?since=0 HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:05] "GET / HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:05] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:05] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:05] "[36mGET /static/js/modules/api.js HTTP/1.1[0m" 304 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:05] "[36mGET /static/js/modules/ui.js HTTP/1.1[0m" 304 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [30/Dec/2025 03:40:05] "GET /api/simulation/update?since=0 HTTP/1.1" 200 -
+_________________ test_firm_production_decision_with_employees _________________
+
+sample_firm = <simulation.firms.Firm object at 0x7fadd7de9e80>
+sample_market_data = {'all_households': [], 'goods_data': [{'id': 'food', 'name': 'Food', 'utility_per_need': {'survival_need': 1.0}}], 'goods_market': {'food_current_sell_price': 10.0}, 'labor_market': {'avg_wage': 5.0}, ...}
+
+    def test_firm_production_decision_with_employees(sample_firm, sample_market_data):
+        # Simulate having employees
+        class MockHousehold:
+            def __init__(self, id, labor_skill):
+                self.id = id
+                self.labor_skill = labor_skill
+
+            # Add a mock for is_active if needed by the firm's logic
+            @property
+            def is_active(self):
+                return True
+
+        employee1 = MockHousehold(id=101, labor_skill=1.0)
+        employee2 = MockHousehold(id=102, labor_skill=0.8)
+        sample_firm.employees = [employee1, employee2]
+        sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        )
+
+        # Call make_decisions
+        context = DecisionContext(
+            firm=sample_firm,
+            markets={},
+            goods_data=[],
+            market_data=sample_market_data,
+            current_time=0,
+        )
+>       orders, _ = sample_firm.decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine.py:87:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7de9ca0>
+context = DecisionContext(markets={}, goods_data=[], market_data={'time': 0, 'goods_market': {'food_current_sell_price': 10.0}, ...need': 1.0}}]}, current_time=0, household=None, firm=<simulation.firms.Firm object at 0x7fadd7de9e80>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+____________________ test_firm_no_production_if_target_met _____________________
+
+sample_firm = <simulation.firms.Firm object at 0x7fadd7ddfdd0>
+sample_market_data = {'all_households': [], 'goods_data': [{'id': 'food', 'name': 'Food', 'utility_per_need': {'survival_need': 1.0}}], 'goods_market': {'food_current_sell_price': 10.0}, 'labor_market': {'avg_wage': 5.0}, ...}
+
+    def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
+        # Set inventory to meet or exceed target
+        sample_firm.inventory[sample_firm.specialization] = 150.0  # Above target of 100
+        sample_firm.employees = []  # Ensure no employees are present to focus on inventory decision
+        sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=sample_firm,
+            markets={},
+            goods_data=[],
+            market_data=sample_market_data,
+            current_time=0,
+        )
+>       orders, _ = sample_firm.decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine.py:127:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7dde3c0>
+context = DecisionContext(markets={}, goods_data=[], market_data={'time': 0, 'goods_market': {'food_current_sell_price': 10.0}, ...need': 1.0}}]}, current_time=0, household=None, firm=<simulation.firms.Firm object at 0x7fadd7ddfdd0>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+____________________ test_firm_hiring_decision_no_inventory ____________________
+
+sample_firm = <simulation.firms.Firm object at 0x7fadd7ddc500>
+sample_market_data = {'all_households': [], 'goods_data': [{'id': 'food', 'name': 'Food', 'utility_per_need': {'survival_need': 1.0}}], 'goods_market': {'food_current_sell_price': 10.0}, 'labor_market': {'avg_wage': 5.0}, ...}
+
+    def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
+        # Set inventory to 0, so it needs to produce
+        sample_firm.inventory[sample_firm.specialization] = 0.0
+        sample_firm.employees = []  # No employees
+        sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=sample_firm,
+            markets={},
+            goods_data=[],
+            market_data=sample_market_data,
+            current_time=0,
+        )
+>       orders, _ = sample_firm.decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine.py:167:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7ddf500>
+context = DecisionContext(markets={}, goods_data=[], market_data={'time': 0, 'goods_market': {'food_current_sell_price': 10.0}, ...need': 1.0}}]}, current_time=0, household=None, firm=<simulation.firms.Firm object at 0x7fadd7ddc500>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+            price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+
+            target_price = market_price * (1.0 + price_adjustment)
+            final_price = max(self.config_module.AI_MIN_PRICE_FLOOR, target_price) # Prevent negative/zero
+
+            firm.last_prices[item_id] = final_price # Update memory
+
+            qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
+            if qty > 0:
+                orders.append(
+                    Order(firm.id, "SELL", item_id, qty, final_price, item_id)
+                )
+
+        # 3. Execution: Hiring Logic
+        target_inventory = firm.production_target
+        inventory_gap = target_inventory - current_inventory
+
+        if inventory_gap > 0:
+             # Heuristic: base needed labor on production missing
+             # (Each labor unit produces roughly firm.productivity_factor)
+             needed_labor = max(1, int(inventory_gap / firm.productivity_factor))
+             needed_labor = min(needed_labor, 5) # Cap hiring per tick
+
+             # Hiring Lever: Aggressiveness from AI
+             agg_hire = action_vector.hiring_aggressiveness
+
+             # Internal Urgency Modifier
+             urgency = min(1.0, inventory_gap / target_inventory) if target_inventory > 0 else 1.0
+
+             market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
+             if "labor" in market_data and "avg_wage" in market_data["labor"]:
+                 market_wage = market_data["labor"]["avg_wage"]
+
+             # Combined Wage Logic: AI Aggressiveness + Urgency
+             # 0.5 is neutral. 1.0 is aggressive.
+>            effective_agg = (agg_hire * 0.5) + (urgency * 0.5)
+                              ^^^^^^^^^^^^^^
+E            TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+
+simulation/decisions/ai_driven_firm_engine.py:133: TypeError
+_____ TestFirmDecisionEngine.test_make_decisions_overstock_reduces_target ______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e22210>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd79568d0>
+mock_firm = <Mock spec='Firm' id='140384627763840'>
+mock_config = <Mock id='140384622962992'>
+
+    def test_make_decisions_overstock_reduces_target(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
+        )
+        mock_firm.inventory["food"] = 150.0 # Force overstock (150 > 100 * 1.2)
+
+        initial_target = mock_firm.production_target
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:110:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd79568d0>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384627763840'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+____ TestFirmDecisionEngine.test_make_decisions_understock_increases_target ____
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e21b50>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7bd5e80>
+mock_firm = <Mock spec='Firm' id='140384625644448'>
+mock_config = <Mock id='140384625581648'>
+
+    def test_make_decisions_understock_increases_target(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 50.0
+        initial_target = mock_firm.production_target
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:134:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7bd5e80>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384625644448'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+__ TestFirmDecisionEngine.test_make_decisions_target_within_bounds_no_change ___
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e21220>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7ddd280>
+mock_firm = <Mock spec='Firm' id='140384623452400'>
+mock_config = <Mock id='140384627704176'>
+
+    def test_make_decisions_target_within_bounds_no_change(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 100.0
+        initial_target = mock_firm.production_target
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:158:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7ddd280>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384623452400'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+_______ TestFirmDecisionEngine.test_make_decisions_target_min_max_bounds _______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e34680>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd790fce0>
+mock_firm = <Mock spec='Firm' id='140384624932096'>
+mock_config = <Mock id='140384622671440'>
+
+    def test_make_decisions_target_min_max_bounds(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
+        )
+        # Test min bound
+        mock_firm.inventory["food"] = 1000.0
+        mock_firm.production_target = mock_config.FIRM_MIN_PRODUCTION_TARGET * 0.5
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:178:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd790fce0>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384624932096'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+____ TestFirmDecisionEngine.test_make_decisions_hires_to_meet_min_employees ____
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e34a10>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7be64b0>
+mock_firm = <Mock spec='Firm' id='140384625572272'>
+mock_config = <Mock id='140384625648768'>
+
+    def test_make_decisions_hires_to_meet_min_employees(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.employees = []
+        mock_firm.inventory["food"] = 0  # Ensure production is needed
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"avg_wage": 10.0},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:210:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7be64b0>
+context = DecisionContext(markets={}, goods_data=[], market_data={'avg_wage': 10.0}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384625572272'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+            price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+
+            target_price = market_price * (1.0 + price_adjustment)
+            final_price = max(self.config_module.AI_MIN_PRICE_FLOOR, target_price) # Prevent negative/zero
+
+            firm.last_prices[item_id] = final_price # Update memory
+
+            qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
+            if qty > 0:
+                orders.append(
+                    Order(firm.id, "SELL", item_id, qty, final_price, item_id)
+                )
+
+        # 3. Execution: Hiring Logic
+        target_inventory = firm.production_target
+        inventory_gap = target_inventory - current_inventory
+
+        if inventory_gap > 0:
+             # Heuristic: base needed labor on production missing
+             # (Each labor unit produces roughly firm.productivity_factor)
+             needed_labor = max(1, int(inventory_gap / firm.productivity_factor))
+             needed_labor = min(needed_labor, 5) # Cap hiring per tick
+
+             # Hiring Lever: Aggressiveness from AI
+             agg_hire = action_vector.hiring_aggressiveness
+
+             # Internal Urgency Modifier
+             urgency = min(1.0, inventory_gap / target_inventory) if target_inventory > 0 else 1.0
+
+             market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
+             if "labor" in market_data and "avg_wage" in market_data["labor"]:
+                 market_wage = market_data["labor"]["avg_wage"]
+
+             # Combined Wage Logic: AI Aggressiveness + Urgency
+             # 0.5 is neutral. 1.0 is aggressive.
+>            effective_agg = (agg_hire * 0.5) + (urgency * 0.5)
+                              ^^^^^^^^^^^^^^
+E            TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+
+simulation/decisions/ai_driven_firm_engine.py:133: TypeError
+______ TestFirmDecisionEngine.test_make_decisions_hires_for_needed_labor _______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e34da0>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7deb530>
+mock_firm = <Mock spec='Firm' id='140384622959104'>
+mock_config = <Mock id='140384627766432'>
+
+    def test_make_decisions_hires_for_needed_labor(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.employees = [Mock()]
+        mock_firm.production_target = 500
+        mock_firm.inventory["food"] = 0  # Ensure production is needed
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"avg_wage": 10.0},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:236:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7deb530>
+context = DecisionContext(markets={}, goods_data=[], market_data={'avg_wage': 10.0}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384622959104'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+            price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+
+            target_price = market_price * (1.0 + price_adjustment)
+            final_price = max(self.config_module.AI_MIN_PRICE_FLOOR, target_price) # Prevent negative/zero
+
+            firm.last_prices[item_id] = final_price # Update memory
+
+            qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
+            if qty > 0:
+                orders.append(
+                    Order(firm.id, "SELL", item_id, qty, final_price, item_id)
+                )
+
+        # 3. Execution: Hiring Logic
+        target_inventory = firm.production_target
+        inventory_gap = target_inventory - current_inventory
+
+        if inventory_gap > 0:
+             # Heuristic: base needed labor on production missing
+             # (Each labor unit produces roughly firm.productivity_factor)
+             needed_labor = max(1, int(inventory_gap / firm.productivity_factor))
+             needed_labor = min(needed_labor, 5) # Cap hiring per tick
+
+             # Hiring Lever: Aggressiveness from AI
+             agg_hire = action_vector.hiring_aggressiveness
+
+             # Internal Urgency Modifier
+             urgency = min(1.0, inventory_gap / target_inventory) if target_inventory > 0 else 1.0
+
+             market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
+             if "labor" in market_data and "avg_wage" in market_data["labor"]:
+                 market_wage = market_data["labor"]["avg_wage"]
+
+             # Combined Wage Logic: AI Aggressiveness + Urgency
+             # 0.5 is neutral. 1.0 is aggressive.
+>            effective_agg = (agg_hire * 0.5) + (urgency * 0.5)
+                              ^^^^^^^^^^^^^^
+E            TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+
+simulation/decisions/ai_driven_firm_engine.py:133: TypeError
+_ TestFirmDecisionEngine.test_make_decisions_does_not_hire_if_max_employees_reached _
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e35130>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7b5bc50>
+mock_firm = <Mock spec='Firm' id='140384622934880'>
+mock_config = <Mock id='140384625081472'>
+
+    def test_make_decisions_does_not_hire_if_max_employees_reached(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.employees = [Mock() for _ in range(mock_config.FIRM_MAX_EMPLOYEES)]
+        mock_firm.production_target = 500
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:260:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7b5bc50>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384622934880'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+_ TestFirmDecisionEngine.test_make_decisions_does_not_hire_if_no_needed_labor __
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e354c0>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7957950>
+mock_firm = <Mock spec='Firm' id='140384622961120'>
+mock_config = <Mock id='140384622967024'>
+
+    def test_make_decisions_does_not_hire_if_no_needed_labor(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.employees = [Mock() for _ in range(10)]
+        mock_firm.production_target = 0
+        mock_firm.inventory = {"food": 1000}
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:284:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7957950>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384622961120'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+________ TestFirmDecisionEngine.test_make_decisions_labor_order_details ________
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e35850>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7deb0e0>
+mock_firm = <Mock spec='Firm' id='140384625648336'>
+mock_config = <Mock id='140384627755632'>
+
+    def test_make_decisions_labor_order_details(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.employees = []
+        mock_firm.inventory["food"] = 0  # Ensure production is needed
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"avg_wage": 10.0},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:307:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7deb0e0>
+context = DecisionContext(markets={}, goods_data=[], market_data={'avg_wage': 10.0}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384625648336'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+            price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+
+            target_price = market_price * (1.0 + price_adjustment)
+            final_price = max(self.config_module.AI_MIN_PRICE_FLOOR, target_price) # Prevent negative/zero
+
+            firm.last_prices[item_id] = final_price # Update memory
+
+            qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
+            if qty > 0:
+                orders.append(
+                    Order(firm.id, "SELL", item_id, qty, final_price, item_id)
+                )
+
+        # 3. Execution: Hiring Logic
+        target_inventory = firm.production_target
+        inventory_gap = target_inventory - current_inventory
+
+        if inventory_gap > 0:
+             # Heuristic: base needed labor on production missing
+             # (Each labor unit produces roughly firm.productivity_factor)
+             needed_labor = max(1, int(inventory_gap / firm.productivity_factor))
+             needed_labor = min(needed_labor, 5) # Cap hiring per tick
+
+             # Hiring Lever: Aggressiveness from AI
+             agg_hire = action_vector.hiring_aggressiveness
+
+             # Internal Urgency Modifier
+             urgency = min(1.0, inventory_gap / target_inventory) if target_inventory > 0 else 1.0
+
+             market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
+             if "labor" in market_data and "avg_wage" in market_data["labor"]:
+                 market_wage = market_data["labor"]["avg_wage"]
+
+             # Combined Wage Logic: AI Aggressiveness + Urgency
+             # 0.5 is neutral. 1.0 is aggressive.
+>            effective_agg = (agg_hire * 0.5) + (urgency * 0.5)
+                              ^^^^^^^^^^^^^^
+E            TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+
+simulation/decisions/ai_driven_firm_engine.py:133: TypeError
+___ TestFirmDecisionEngine.test_make_decisions_does_not_sell_if_understocked ___
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e35be0>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7864d10>
+mock_firm = <Mock spec='Firm' id='140384621984704'>
+
+    def test_make_decisions_does_not_sell_if_understocked(
+        self, firm_decision_engine_instance, mock_firm
+    ):
+        mock_firm.inventory["food"] = 10.0  # Understocked
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:331:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7864d10>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384621984704'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+___ TestFirmDecisionEngine.test_make_decisions_does_not_sell_if_no_inventory ___
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e35f70>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7903050>
+mock_firm = <Mock spec='Firm' id='140384621813760'>
+
+    def test_make_decisions_does_not_sell_if_no_inventory(
+        self, firm_decision_engine_instance, mock_firm
+    ):
+        mock_firm.inventory["food"] = 0.0
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:351:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7903050>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384621813760'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+            price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+
+            target_price = market_price * (1.0 + price_adjustment)
+            final_price = max(self.config_module.AI_MIN_PRICE_FLOOR, target_price) # Prevent negative/zero
+
+            firm.last_prices[item_id] = final_price # Update memory
+
+            qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
+            if qty > 0:
+                orders.append(
+                    Order(firm.id, "SELL", item_id, qty, final_price, item_id)
+                )
+
+        # 3. Execution: Hiring Logic
+        target_inventory = firm.production_target
+        inventory_gap = target_inventory - current_inventory
+
+        if inventory_gap > 0:
+             # Heuristic: base needed labor on production missing
+             # (Each labor unit produces roughly firm.productivity_factor)
+             needed_labor = max(1, int(inventory_gap / firm.productivity_factor))
+             needed_labor = min(needed_labor, 5) # Cap hiring per tick
+
+             # Hiring Lever: Aggressiveness from AI
+             agg_hire = action_vector.hiring_aggressiveness
+
+             # Internal Urgency Modifier
+             urgency = min(1.0, inventory_gap / target_inventory) if target_inventory > 0 else 1.0
+
+             market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
+             if "labor" in market_data and "avg_wage" in market_data["labor"]:
+                 market_wage = market_data["labor"]["avg_wage"]
+
+             # Combined Wage Logic: AI Aggressiveness + Urgency
+             # 0.5 is neutral. 1.0 is aggressive.
+>            effective_agg = (agg_hire * 0.5) + (urgency * 0.5)
+                              ^^^^^^^^^^^^^^
+E            TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+
+simulation/decisions/ai_driven_firm_engine.py:133: TypeError
+______ TestFirmDecisionEngine.test_make_decisions_price_adjusts_overstock ______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e36300>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd788da90>
+mock_firm = <Mock spec='Firm' id='140384621984272'>
+mock_config = <Mock id='140384622140096'>
+
+    def test_make_decisions_price_adjusts_overstock(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 150.0
+        mock_firm.last_prices["food"] = 10.0
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:372:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd788da90>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384621984272'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+_____ TestFirmDecisionEngine.test_make_decisions_price_adjusts_understock ______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e36690>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7bd1460>
+mock_firm = <Mock spec='Firm' id='140384625647040'>
+mock_config = <Mock id='140384625562768'>
+
+    def test_make_decisions_price_adjusts_understock(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 90.0  # Not understocked, but below target
+        mock_firm.last_prices["food"] = 10.0
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:393:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7bd1460>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384625647040'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+_____ TestFirmDecisionEngine.test_make_decisions_sell_price_min_max_bounds _____
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e20a10>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7b592e0>
+mock_firm = <Mock spec='Firm' id='140384622955072'>
+mock_config = <Mock id='140384625070912'>
+
+    def test_make_decisions_sell_price_min_max_bounds(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+        # Test min bound
+        mock_firm.inventory["food"] = 150.0
+        mock_firm.last_prices["food"] = 1.0
+        mock_config.MIN_SELL_PRICE = 5.0
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:416:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7b592e0>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384622955072'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+______ TestFirmDecisionEngine.test_make_decisions_sell_quantity_max_bound ______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e21a90>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd51d18e0>
+mock_firm = <Mock spec='Firm' id='140384581569136'>
+mock_config = <Mock id='140384581523632'>
+
+    def test_make_decisions_sell_quantity_max_bound(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 100.0
+        mock_config.MAX_SELL_QUANTITY = 20.0
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:454:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd51d18e0>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384581569136'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+________ TestFirmDecisionEngine.test_make_decisions_sell_order_details _________
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e22c30>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7de9790>
+mock_firm = <Mock spec='Firm' id='140384625068368'>
+mock_config = <Mock id='140384627759232'>
+
+    def test_make_decisions_sell_order_details(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 90.0  # Not understocked
+        mock_config.MAX_SELL_QUANTITY = (
+            100.0  # Ensure max quantity is not the limiting factor
+        )
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        )
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:477:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7de9790>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384625068368'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+______ TestFirmDecisionEngine.test_make_decisions_ai_price_increase_small ______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e367e0>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7bd76b0>
+mock_firm = <Mock spec='Firm' id='140384625651888'>
+mock_config = <Mock id='140384625585344'>
+
+    def test_make_decisions_ai_price_increase_small(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 100.0
+        mock_firm.last_prices["food"] = 10.0
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.PRICE_INCREASE_SMALL, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:502:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7bd76b0>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384625651888'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+_____ TestFirmDecisionEngine.test_make_decisions_ai_price_decrease_medium ______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e361b0>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7865520>
+mock_firm = <Mock spec='Firm' id='140384622226720'>
+mock_config = <Mock id='140384621974768'>
+
+    def test_make_decisions_ai_price_decrease_medium(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 100.0
+        mock_firm.last_prices["food"] = 10.0
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.PRICE_DECREASE_MEDIUM, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:527:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd7865520>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384622226720'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+___________ TestFirmDecisionEngine.test_make_decisions_ai_price_hold ___________
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e35880>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd5134290>
+mock_firm = <Mock spec='Firm' id='140384580892192'>
+mock_config = <Mock id='140384580878944'>
+
+    def test_make_decisions_ai_price_hold(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 100.0
+        mock_firm.last_prices["food"] = 10.0
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.PRICE_HOLD, Aggressiveness.NORMAL
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:552:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd5134290>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384580892192'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+______ TestFirmDecisionEngine.test_make_decisions_ai_price_min_max_bounds ______
+
+self = <test_firm_decision_engine_new.TestFirmDecisionEngine object at 0x7fadd7e35280>
+firm_decision_engine_instance = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd788c260>
+mock_firm = <Mock spec='Firm' id='140384621983264'>
+mock_config = <Mock id='140384622133904'>
+
+    def test_make_decisions_ai_price_min_max_bounds(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        mock_firm.inventory["food"] = 100.0
+        mock_firm.last_prices["food"] = 1.0
+        mock_config.MIN_SELL_PRICE = 5.0
+        mock_config.MAX_SELL_PRICE = 90.0
+
+        # Test min bound (price would go below MIN_SELL_PRICE)
+        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+            Tactic.PRICE_DECREASE_MEDIUM, Aggressiveness.NORMAL
+        )
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = firm_decision_engine_instance.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_firm_decision_engine_new.py:580:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine object at 0x7fadd788c260>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=None, firm=<Mock spec='Firm' id='140384621983264'>, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        firm = context.firm
+        if firm is None:
+             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+        agent_data = firm.get_agent_data()
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data
+        )
+
+        orders = []
+
+        # 2. Execution: Sales Logic
+        # Always attempt to sell if we have inventory
+        item_id = firm.specialization
+        current_inventory = firm.inventory.get(item_id, 0)
+
+        if current_inventory > 0:
+            # Anchor Price Selection:
+            # 1. Market Data (Current traded price in the whole market)
+            # 2. Firm's last successful(? or attempted) price
+            # 3. Production Cost (Fundamental floor)
+
+            market_price = 0.0
+
+            # Use market_data if available (from context)
+            if item_id in market_data:
+                 market_price = market_data[item_id].get('avg_price', 0)
+
+            # If not in market_data root, check goods_market_data format (from engine._prepare_market_data)
+            if market_price <= 0:
+                 market_price = market_data.get(f"{item_id}_current_sell_price", 0)
+
+            # Firm's own memory
+            if market_price <= 0:
+                 market_price = firm.last_prices.get(item_id, 0)
+
+            # Absolute fallback
+            if market_price <= 0:
+                 market_price = self.config_module.GOODS[item_id].get("production_cost", 10.0)
+
+            # Pricing Lever: Aggressiveness
+            # 0.0 -> Try to sell at Premium (+20%)
+            # 1.0 -> Try to sell at Discount (-20%)
+            agg_sell = action_vector.sales_aggressiveness
+>           price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
+                                ^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for -: 'float' and 'Mock'
+
+simulation/decisions/ai_driven_firm_engine.py:98: TypeError
+________________________ test_ai_creates_purchase_order ________________________
+
+setup_test_environment = ([{'decay_rate': 0.1, 'id': 'food', 'initial_price': 10, 'name': 'Food', ...}, {'decay_rate': 0.1, 'id': 'basic_food',...order_book_market.OrderBookMarket object at 0x7fadd796f560>, 'loan_market': <Mock spec='Market' id='140384623061680'>})
+ai_engine_setup = (<simulation.ai_model.AIEngineRegistry object at 0x7fadd796fe30>, 'wealth_and_needs')
+
+    def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
+        """AI가 생존 욕구가 높을 때 'food' 구매 주문을 생성하는지 테스트합니다."""
+        goods_data, markets = setup_test_environment
+        ai_engine_registry, value_orientation = ai_engine_setup
+
+        ai_decision_engine_instance = ai_engine_registry.get_engine(value_orientation)
+        household_ai_instance = HouseholdAI(agent_id=str(2), ai_decision_engine=ai_decision_engine_instance)
+        household_ai_instance.set_ai_decision_engine(ai_decision_engine_instance)
+        household_decision_engine = AIDrivenHouseholdDecisionEngine(
+            ai_engine=household_ai_instance, config_module=config
+        )
+
+        talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
+        household = Household(
+            id=2,
+            talent=talent,
+            goods_data=goods_data,
+            initial_assets=100.0,
+            initial_needs={"survival": 80.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
+            value_orientation=value_orientation,
+            decision_engine=household_decision_engine,
+            personality=Personality.MISER,
+            config_module=config,
+        )
+        household.decision_engine.markets = markets
+
+        market_data = {"time": 1, "goods_data": goods_data}
+        orders, _ = household.make_decision(markets, goods_data, market_data, 1)
+
+        assert orders is not None
+>       assert len(orders) == 1
+E       AssertionError: assert 4 == 1
+E        +  where 4 = len([Order(agent_id=2, order_type='BUY', item_id='basic_food', quantity=3, price=13.65, market_id='basic_food', id='73c732...der_type='SELL', item_id='labor', quantity=1, price=8.0, market_id='labor', id='51d0e3ee-3d2d-4d79-8167-8229f1942026')])
+
+tests/test_household_ai.py:88: AssertionError
+____________________ test_ai_evaluates_consumption_options _____________________
+
+setup_test_environment = ([{'decay_rate': 0.1, 'id': 'food', 'initial_price': 10, 'name': 'Food', ...}, {'decay_rate': 0.1, 'id': 'basic_food',...order_book_market.OrderBookMarket object at 0x7fadd7bd4140>, 'loan_market': <Mock spec='Market' id='140384625574160'>})
+ai_engine_setup = (<simulation.ai_model.AIEngineRegistry object at 0x7fadd7bd6360>, 'wealth_and_needs')
+
+    def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setup):
+        """
+        AI가 여러 소비 옵션 중에서 욕구를 가장 잘 충족시키는(효용 대비 가격이 높은) 재화를 선택하는지 테스트합니다.
+        여기서는 '사회적' 욕구가 높을 때 'luxury_food'를 선택하는지 확인합니다.
+        """
+        goods_data, markets = setup_test_environment
+        ai_engine_registry, base_value_orientation = ai_engine_setup
+
+        value_orientation = config.VALUE_ORIENTATION_NEEDS_AND_SOCIAL_STATUS
+
+        ai_decision_engine_instance = ai_engine_registry.get_engine(value_orientation)
+        household_ai_instance = HouseholdAI(agent_id=str(3), ai_decision_engine=ai_decision_engine_instance)
+        household_ai_instance.set_ai_decision_engine(ai_decision_engine_instance)
+        household_decision_engine = AIDrivenHouseholdDecisionEngine(
+            ai_engine=household_ai_instance, config_module=config
+        )
+
+        talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
+        household = Household(
+            id=3,
+            talent=talent,
+            goods_data=goods_data,
+            initial_assets=1000.0,
+            initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
+            value_orientation=value_orientation,
+            decision_engine=household_decision_engine,
+            personality=Personality.STATUS_SEEKER,
+            config_module=config,
+        )
+        household.decision_engine.markets = markets
+
+        market_data = {
+            "time": 1,
+            "goods_data": goods_data,
+            "goods_market": markets["goods_market"],
+        }
+>       orders, chosen_tactic_tuple = household.make_decision(markets, goods_data, market_data, 1)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_ai.py:135:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/core_agents.py:346: in make_decision
+    orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7bd5d00>
+context = DecisionContext(markets={'goods_market': <simulation.markets.order_book_market.OrderBookMarket object at 0x7fadd7bd417...0>}, current_time=1, household=<simulation.core_agents.Household object at 0x7fadd7bd5b20>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+>           avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'OrderBookMarket' object has no attribute 'get'
+
+simulation/decisions/ai_driven_household_engine.py:72: AttributeError
+________ TestHouseholdAIConsumption.test_ai_chooses_consumption_tactic _________
+
+self = <test_household_ai_consumption.TestHouseholdAIConsumption object at 0x7fadd7e37410>
+setup_household = (<simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7be73e0>, <MagicMock spec='Household' id='140384622904768'>, <MagicMock spec='HouseholdAI' id='140384625648288'>)
+
+    def test_ai_chooses_consumption_tactic(self, setup_household):
+        engine, household, mock_household_ai = setup_household
+
+        markets = {"goods_market": MagicMock()}
+        # Mock get_best_ask for food
+        markets["goods_market"].get_best_ask.return_value = 10.0
+
+        goods_data = [{"id": "food", "name": "Food"}]
+        market_data = {}
+        current_time = 1
+
+        # Run make_decisions
+        context = DecisionContext(
+            household=household,
+            markets=markets,
+            goods_data=goods_data,
+            market_data=market_data,
+            current_time=current_time,
+        )
+>       orders, (tactic, aggressiveness) = engine.make_decisions(context)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_ai_consumption.py:63:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7be73e0>
+context = DecisionContext(markets={'goods_market': <MagicMock id='140384625649152'>}, goods_data=[{'id': 'food', 'name': 'Food'}...arket_data={}, current_time=1, household=<MagicMock spec='Household' id='140384622904768'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'MagicMock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_ TestHouseholdDecisionEngineMultiGood.test_make_decisions_with_evaluate_consumption_options _
+
+self = <test_household_decision_engine_multi_good.TestHouseholdDecisionEngineMultiGood object at 0x7fadd7e594c0>
+household_decision_engine = (<simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd51f7d40>, <Mock spec='HouseholdAI' id='140384581675504'>)
+mock_household = <Mock spec='Household' id='140384581675744'>
+mock_markets = {'goods_market': <Mock spec='OrderBookMarket' id='140384581680496'>, 'labor_market': <Mock spec='OrderBookMarket' id='140384627988224'>, 'loan_market': <Mock id='140384628077344'>}
+
+    def test_make_decisions_with_evaluate_consumption_options(
+        self, household_decision_engine, mock_household, mock_markets
+    ):
+        engine, mock_ai_engine = household_decision_engine
+        # Mock AI to return EVALUATE_CONSUMPTION_OPTIONS
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.EVALUATE_CONSUMPTION_OPTIONS, Aggressiveness.NORMAL
+        )
+
+        # Household has 100 assets, will buy basic_food
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=list(MockConfig.GOODS.values()),
+            market_data={},
+            current_time=1,
+        )
+>       orders, tactic_tuple = engine.make_decisions(context)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_multi_good.py:180:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd51f7d40>
+context = DecisionContext(markets={'goods_market': <Mock spec='OrderBookMarket' id='140384581680496'>, 'labor_market': <Mock spe...}], market_data={}, current_time=1, household=<Mock spec='Household' id='140384581675744'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+            if not avg_price or avg_price <= 0:
+                avg_price = self.config_module.MARKET_PRICE_FALLBACK # Fallback
+
+            # Valuation factor: Use the most pressing need satisfied by this good
+            max_need_value = 0.0
+            for need_type in utility_effects.keys():
+                nv = household.needs.get(need_type, 0.0)
+                if nv > max_need_value:
+                    max_need_value = nv
+
+            # Need Factor: if max_need is 50 (medium), factor is 1.0. If 100, factor is 2.0.
+            need_factor = self.config_module.NEED_FACTOR_BASE + (max_need_value / self.config_module.NEED_FACTOR_SCALE)
+>           valuation_modifier = self.config_module.VALUATION_MODIFIER_BASE + (agg_buy * self.config_module.VALUATION_MODIFIER_RANGE)
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+
+simulation/decisions/ai_driven_household_engine.py:85: TypeError
+_ TestHouseholdDecisionEngineMultiGood.test_make_decisions_with_participate_labor_market _
+
+self = <test_household_decision_engine_multi_good.TestHouseholdDecisionEngineMultiGood object at 0x7fadd7e59850>
+household_decision_engine = (<simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd79577a0>, <Mock spec='HouseholdAI' id='140384622966448'>)
+mock_household = <Mock spec='Household' id='140384622958144'>
+mock_markets = {'goods_market': <Mock spec='OrderBookMarket' id='140384622966736'>, 'labor_market': <Mock spec='OrderBookMarket' id='140384622961840'>, 'loan_market': <Mock id='140384622959824'>}
+
+    def test_make_decisions_with_participate_labor_market(
+        self, household_decision_engine, mock_household, mock_markets
+    ):
+        engine, mock_ai_engine = household_decision_engine
+        # Mock AI to return PARTICIPATE_LABOR_MARKET
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.PARTICIPATE_LABOR_MARKET, Aggressiveness.NORMAL
+        )
+        mock_household.get_desired_wage.return_value = 12.0
+        mock_household.is_employed = False
+
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, tactic_tuple = engine.make_decisions(context)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_multi_good.py:207:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd79577a0>
+context = DecisionContext(markets={'goods_market': <Mock spec='OrderBookMarket' id='140384622966736'>, 'labor_market': <Mock spe...[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384622958144'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+            if not avg_price or avg_price <= 0:
+                avg_price = self.config_module.MARKET_PRICE_FALLBACK # Fallback
+
+            # Valuation factor: Use the most pressing need satisfied by this good
+            max_need_value = 0.0
+            for need_type in utility_effects.keys():
+                nv = household.needs.get(need_type, 0.0)
+                if nv > max_need_value:
+                    max_need_value = nv
+
+            # Need Factor: if max_need is 50 (medium), factor is 1.0. If 100, factor is 2.0.
+            need_factor = self.config_module.NEED_FACTOR_BASE + (max_need_value / self.config_module.NEED_FACTOR_SCALE)
+>           valuation_modifier = self.config_module.VALUATION_MODIFIER_BASE + (agg_buy * self.config_module.VALUATION_MODIFIER_RANGE)
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: unsupported operand type(s) for *: 'Mock' and 'float'
+
+simulation/decisions/ai_driven_household_engine.py:85: TypeError
+_______ TestAIDrivenHouseholdDecisionEngine.test_make_decisions_calls_ai _______
+
+self = <test_household_decision_engine_new.TestAIDrivenHouseholdDecisionEngine object at 0x7fadd7e59a30>
+decision_engine = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd51d2060>
+mock_household = <Mock spec='Household' id='140384581525120'>
+mock_ai_engine = <Mock spec='HouseholdAI' id='140384581518928'>
+
+    def test_make_decisions_calls_ai(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        context = DecisionContext(
+            household=mock_household,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       decision_engine.make_decisions(context)
+
+tests/test_household_decision_engine_new.py:77:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd51d2060>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384581525120'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_______ TestAIDrivenHouseholdDecisionEngine.test_consumption_do_nothing ________
+
+self = <test_household_decision_engine_new.TestAIDrivenHouseholdDecisionEngine object at 0x7fadd7e592e0>
+decision_engine = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7de9f70>
+mock_household = <Mock spec='Household' id='140384625558496'>
+mock_ai_engine = <Mock spec='HouseholdAI' id='140384627759856'>
+
+    def test_consumption_do_nothing(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.DO_NOTHING_CONSUMPTION,
+            Aggressiveness.NORMAL,
+        )
+        context = DecisionContext(
+            household=mock_household,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_new.py:94:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7de9f70>
+context = DecisionContext(markets={}, goods_data=[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384625558496'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_ TestAIDrivenHouseholdDecisionEngine.test_consumption_buy_basic_food_sufficient_assets _
+
+self = <test_household_decision_engine_new.TestAIDrivenHouseholdDecisionEngine object at 0x7fadd7e58bc0>
+decision_engine = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd79cc260>
+mock_household = <Mock spec='Household' id='140384625584144'>
+mock_ai_engine = <Mock spec='HouseholdAI' id='140384623444672'>
+mock_config = <Mock id='140384623445056'>
+
+    def test_consumption_buy_basic_food_sufficient_assets(
+        self, decision_engine, mock_household, mock_ai_engine, mock_config
+    ):
+        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
+        mock_goods_market.get_best_ask.return_value = 10.0
+        mock_markets = {"goods_market": mock_goods_market}
+
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.BUY_BASIC_FOOD,
+            Aggressiveness.NORMAL,
+        )
+
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_new.py:116:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd79cc260>
+context = DecisionContext(markets={'goods_market': <Mock spec='OrderBookMarket' id='140384625080368'>}, goods_data=[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384625584144'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_ TestAIDrivenHouseholdDecisionEngine.test_consumption_buy_luxury_food_insufficient_assets _
+
+self = <test_household_decision_engine_new.TestAIDrivenHouseholdDecisionEngine object at 0x7fadd7e584d0>
+decision_engine = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7bd3230>
+mock_household = <Mock spec='Household' id='140384625567808'>
+mock_ai_engine = <Mock spec='HouseholdAI' id='140384625570304'>
+mock_config = <Mock id='140384625570640'>
+
+    def test_consumption_buy_luxury_food_insufficient_assets(
+        self, decision_engine, mock_household, mock_ai_engine, mock_config
+    ):
+        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
+        mock_goods_market.get_best_ask.return_value = 1000.0
+        mock_markets = {"goods_market": mock_goods_market}
+
+        mock_household.assets = 100.0
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.BUY_LUXURY_FOOD,
+            Aggressiveness.AGGRESSIVE,
+        )
+
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_new.py:142:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7bd3230>
+context = DecisionContext(markets={'goods_market': <Mock spec='OrderBookMarket' id='140384622604272'>}, goods_data=[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384625567808'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_ TestAIDrivenHouseholdDecisionEngine.test_consumption_evaluate_options_chooses_best_utility _
+
+self = <test_household_decision_engine_new.TestAIDrivenHouseholdDecisionEngine object at 0x7fadd7e5a3f0>
+decision_engine = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd78fe540>
+mock_household = <Mock spec='Household' id='140384581530880'>
+mock_ai_engine = <Mock spec='HouseholdAI' id='140384622601488'>
+mock_config = <Mock id='140384622601968'>
+
+    def test_consumption_evaluate_options_chooses_best_utility(
+        self, decision_engine, mock_household, mock_ai_engine, mock_config
+    ):
+        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
+        # Utility/dollar = (0.8*10)/10 = 0.8 for basic_food
+        # Utility/dollar = (0.5*10)/20 = 0.25 for luxury_food
+        mock_goods_market.get_best_ask.side_effect = lambda item_id: 10.0 if item_id == "basic_food" else (20.0 if item_id == "luxury_food" else None)
+
+        mock_markets = {"goods_market": mock_goods_market}
+
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.EVALUATE_CONSUMPTION_OPTIONS,
+            Aggressiveness.NORMAL,
+        )
+
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_new.py:168:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd78fe540>
+context = DecisionContext(markets={'goods_market': <Mock spec='OrderBookMarket' id='140384622966208'>}, goods_data=[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384581530880'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_ TestAIDrivenHouseholdDecisionEngine.test_labor_market_participation_aggressive _
+
+self = <test_household_decision_engine_new.TestAIDrivenHouseholdDecisionEngine object at 0x7fadd7e5a780>
+decision_engine = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7b5a240>
+mock_household = <Mock spec='Household' id='140384625643440'>
+mock_ai_engine = <Mock spec='HouseholdAI' id='140384625082144'>
+
+    def test_labor_market_participation_aggressive(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
+        mock_labor_market.get_all_bids = Mock(
+            return_value=[Order(2, "BUY", "labor", 1, 45.0, "labor_market")]
+        )
+        mock_markets = {"labor": mock_labor_market}
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.PARTICIPATE_LABOR_MARKET,
+            Aggressiveness.AGGRESSIVE,
+        )
+        mock_household.get_desired_wage.return_value = 50.0  # Base reservation wage
+
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_new.py:194:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7b5a240>
+context = DecisionContext(markets={'labor': <Mock spec='OrderBookMarket' id='140384625660736'>}, goods_data=[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384625643440'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_ TestAIDrivenHouseholdDecisionEngine.test_labor_market_participation_passive_no_offer _
+
+self = <test_household_decision_engine_new.TestAIDrivenHouseholdDecisionEngine object at 0x7fadd7e5ab10>
+decision_engine = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7beb560>
+mock_household = <Mock spec='Household' id='140384622935216'>
+mock_ai_engine = <Mock spec='HouseholdAI' id='140384625669376'>
+
+    def test_labor_market_participation_passive_no_offer(
+        self, decision_engine, mock_household, mock_ai_engine
+    ):
+        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
+        mock_labor_market.get_all_bids = Mock(
+            return_value=[Order(2, "BUY", "labor", 1, 55.0, "labor_market")]
+        )
+        mock_markets = {"labor": mock_labor_market}
+        mock_ai_engine.decide_and_learn.return_value = (
+            Tactic.PARTICIPATE_LABOR_MARKET,
+            Aggressiveness.PASSIVE,
+        )
+        mock_household.get_desired_wage.return_value = (
+            50.0  # Base reservation wage (adjusted to 60)
+        )
+
+        context = DecisionContext(
+            household=mock_household,
+            markets=mock_markets,
+            goods_data=[],
+            market_data={},
+            current_time=1,
+        )
+>       orders, _ = decision_engine.make_decisions(context)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_household_decision_engine_new.py:224:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.decisions.ai_driven_household_engine.AIDrivenHouseholdDecisionEngine object at 0x7fadd7beb560>
+context = DecisionContext(markets={'labor': <Mock spec='OrderBookMarket' id='140384622915376'>}, goods_data=[], market_data={}, current_time=1, household=<Mock spec='Household' id='140384622935216'>, firm=None, government=None)
+
+    def make_decisions(
+        self,
+        context: DecisionContext,
+    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+        """
+        AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
+        Architecture V2: Continuous Aggressiveness
+        """
+        household = context.household
+        markets = context.markets
+        market_data = context.market_data
+        current_time = context.current_time
+
+        if household is None:
+            # Fallback action vector for returning if agent is None
+            from simulation.schemas import HouseholdActionVector
+            return [], HouseholdActionVector()
+
+        agent_data = household.get_agent_data()
+
+        goods_list = list(self.config_module.GOODS.keys())
+
+        # 1. AI Decision (Vector Output)
+        action_vector = self.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+
+        orders = []
+
+        # 2. Execution: Consumption Logic (Per Item)
+        for item_id in goods_list:
+            agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            # Improved Valuation: Anchor to Market Price + Urgent Need
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+>           if not avg_price or avg_price <= 0:
+                                ^^^^^^^^^^^^^^
+E           TypeError: '<=' not supported between instances of 'Mock' and 'int'
+
+simulation/decisions/ai_driven_household_engine.py:73: TypeError
+_________ TestHouseholdMarginalUtility.test_high_price_prevents_buying _________
+
+self = <test_household_marginal_utility.TestHouseholdMarginalUtility testMethod=test_high_price_prevents_buying>
+
+    def test_high_price_prevents_buying(self):
+        """
+        Scenario 2: Price = 11.0
+        Base Utility = 10.
+        MU (first unit) = 10/1 = 10.
+        10 > 11 ? No.
+        Should buy 0 units.
+        """
+        market_data = {
+            "goods_market": MagicMock()
+        }
+        market_data["goods_market"].get_best_ask.return_value = 11.0 # Price = 11.0
+
+>       orders = self.engine._handle_specific_purchase(
+            self.household,
+            "food",
+            Aggressiveness.NORMAL,
+            current_tick=1,
+            markets=market_data
+        )
+E       TypeError: AIDrivenHouseholdDecisionEngine._handle_specific_purchase() got an unexpected keyword argument 'current_tick'
+
+tests/test_household_marginal_utility.py:127: TypeError
+_______ TestHouseholdMarginalUtility.test_marginal_utility_stops_buying ________
+
+self = <test_household_marginal_utility.TestHouseholdMarginalUtility testMethod=test_marginal_utility_stops_buying>
+
+    def test_marginal_utility_stops_buying(self):
+        """
+        Test that purchasing stops when Marginal Utility < Price.
+        Base Utility = 10 * 1 = 10.
+        MU = 10 / (1 + Inventory)
+
+        Scenario 1: Price = 2.0
+        MU > 2.0 when Inventory < 4. (10/1=10, 10/2=5, 10/3=3.3, 10/4=2.5, 10/5=2.0)
+        So it should buy exactly 4 or 5 units depending on <= or < logic.
+        Code says: if marginal_utility > best_ask: buy.
+        10/1 > 2 ? Yes (Buy 1st, Inv=0->1)
+        10/2 > 2 ? Yes (Buy 2nd, Inv=1->2)
+        10/3 > 2 ? Yes (Buy 3rd, Inv=2->3)
+        10/4 > 2 ? Yes (Buy 4th, Inv=3->4)
+        10/5 > 2 ? No (2 > 2 is False).
+        So expected quantity = 4.
+        """
+
+        market_data = {
+            "goods_market": MagicMock()
+        }
+        market_data["goods_market"].get_best_ask.return_value = 2.0 # Price = 2.0
+
+        tactic = Tactic.BUY_BASIC_FOOD # Logic is shared in _handle_specific_purchase
+        aggressiveness = Aggressiveness.NORMAL # Factor = 1.0
+
+        # We need to call _handle_specific_purchase directly or simulate _execute_tactic
+        # Let's call _handle_specific_purchase directly for unit testing logic
+
+>       orders = self.engine._handle_specific_purchase(
+            self.household,
+            "food",
+            aggressiveness,
+            current_tick=1,
+            markets=market_data
+        )
+E       TypeError: AIDrivenHouseholdDecisionEngine._handle_specific_purchase() got an unexpected keyword argument 'current_tick'
+
+tests/test_household_marginal_utility.py:103: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_ai_driven_firm_engine.py::test_adjust_price_tactic - TypeEr...
+FAILED tests/test_ai_training_manager.py::TestAITrainingManager::test_clone_and_mutate_q_table
+FAILED tests/test_ai_training_manager.py::TestAITrainingManager::test_run_imitation_learning_cycle
+FAILED tests/test_ai_training_manager_new.py::test_run_imitation_learning_cycle
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_places_sell_order_for_food
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_places_buy_order_for_food
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_sells_labor
+FAILED tests/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_buys_labor
+FAILED tests/test_e2e_playwright.py::test_frontend_flow - playwright._impl._e...
+FAILED tests/test_firm_decision_engine.py::test_firm_production_decision_with_employees
+FAILED tests/test_firm_decision_engine.py::test_firm_no_production_if_target_met
+FAILED tests/test_firm_decision_engine.py::test_firm_hiring_decision_no_inventory
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_overstock_reduces_target
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_understock_increases_target
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_target_within_bounds_no_change
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_target_min_max_bounds
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_hires_to_meet_min_employees
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_hires_for_needed_labor
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_hire_if_max_employees_reached
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_hire_if_no_needed_labor
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_labor_order_details
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_sell_if_understocked
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_does_not_sell_if_no_inventory
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_price_adjusts_overstock
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_price_adjusts_understock
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_price_min_max_bounds
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_quantity_max_bound
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_sell_order_details
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_increase_small
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_decrease_medium
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_hold
+FAILED tests/test_firm_decision_engine_new.py::TestFirmDecisionEngine::test_make_decisions_ai_price_min_max_bounds
+FAILED tests/test_household_ai.py::test_ai_creates_purchase_order - Assertion...
+FAILED tests/test_household_ai.py::test_ai_evaluates_consumption_options - At...
+FAILED tests/test_household_ai_consumption.py::TestHouseholdAIConsumption::test_ai_chooses_consumption_tactic
+FAILED tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_make_decisions_with_evaluate_consumption_options
+FAILED tests/test_household_decision_engine_multi_good.py::TestHouseholdDecisionEngineMultiGood::test_make_decisions_with_participate_labor_market
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_make_decisions_calls_ai
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_do_nothing
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_basic_food_sufficient_assets
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_luxury_food_insufficient_assets
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_evaluate_options_chooses_best_utility
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_aggressive
+FAILED tests/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_passive_no_offer
+FAILED tests/test_household_marginal_utility.py::TestHouseholdMarginalUtility::test_high_price_prevents_buying
+FAILED tests/test_household_marginal_utility.py::TestHouseholdMarginalUtility::test_marginal_utility_stops_buying
+================== 46 failed, 111 passed, 7 skipped in 41.89s ==================
