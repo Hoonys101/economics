@@ -1,60 +1,46 @@
-# 가계 에이전트 설계 (V2)
+# 가계 에이전트 설계 (V2 - Multi-Channel Aggressiveness)
+
+**작성일**: 2025-12-29
+**분석 대상 코드**: `simulation/decisions/ai_driven_household_engine.py`, `simulation/ai/household_ai.py`
 
 ## 1. 목표
 
-이 문서는 V2 시장 메커니즘 하에서 가계(Household) 에이전트의 의사결정 알고리즘을 구체적으로 정의합니다. 가계는 시장에 제시된 가격을 바탕으로 자신의 효용을 극대화하는 합리적인 선택을 하도록 설계됩니다.
+가계 에이전트는 AI(`HouseholdAI`)가 결정한 **소비, 노동, 투자 채널의 적극성(Aggressiveness)**을 기반으로 시장에 참여합니다. 생존 욕구를 최우선으로 충족하면서 자산을 증식하는 것을 목표로 합니다.
 
-## 2. 핵심 속성
+## 2. 의사결정 프로세스
 
-- `assets`: 자산
-- `needs`: 욕구 (생존, 인정, 성장 등)
-- `inventory`: 재고
-- `is_employed`: 고용 상태 (True/False)
-- `employer_id`: 고용주 ID
-- `reservation_wage`: 노동을 제공할 용의가 있는 최소 기대 임금
+AI가 출력하는 `HouseholdActionVector`는 다음과 같이 처리됩니다.
 
-## 3. 의사결정 알고리즘 (V2)
+### 2.1. Consumption Channel (소비 결정)
+- **입력**: `consumption_aggressiveness` (Dict[item_id, float]) - 각 상품별 적극성
+- **로직**:
+    - `decide_action_vector`에서 각 상품별로 독립적인 Q-Table을 통해 적극성을 결정합니다.
+    - **적극성(Aggressiveness)의 의미**:
+        - 지불 용의(Willingness to Pay)를 조절합니다.
+        - 적극성이 높을수록 시장 평균가보다 비싸도 구매를 시도합니다.
+        - 적극성이 낮으면 저가 매수 기회를 노리거나 구매를 미룹니다.
+- **실행**:
+    - 예산 제약(자산의 일정 비율) 내에서 적극성이 높은 품목을 우선적으로 구매 시도합니다.
+    - `BUY` 주문 생성 시 가격: `시장가 * (1.0 + (agg - 0.5) * adjustment)`
 
-가계의 의사결정은 **전략(AI)**과 **전술(규칙)**의 두 계층으로 분리됩니다.
+### 2.2. Work Channel (노동 공급)
+- **입력**: `work_aggressiveness` (0.0 ~ 1.0)
+- **로직**:
+    - **실업 상태**: 구직 활동의 적극성을 결정합니다.
+        - 적극성이 높으면(`> 0.5`) 낮은 임금이라도 수락하여 취업하려 합니다 (희망 임금 하향).
+        - 적극성이 낮으면(`< 0.5`) 더 높은 임금을 주는 일자리를 기다립니다.
+    - **취업 상태**: 이직 또는 임금 인상 요구를 고려할 수 있습니다(현재 구현에 따라 다름).
+- **실행**: 노동 시장(`labor`)에 `SELL` 주문(노동 공급)을 제출합니다.
 
-### 3.1. 전략 계층: AI의 역할 (상위 레벨)
+### 2.3. Investment Channel (투자)
+- **입력**: `investment_aggressiveness` (0.0 ~ 1.0)
+- **전제 조건**: 최소 자산(`HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT`) 이상 보유 시에만 활성화됩니다.
+- **로직**:
+    - 포트폴리오 비중을 결정합니다.
+    - 적극성이 높을수록 자산의 더 많은 부분을 주식에 투자합니다.
+- **실행**: 주식 시장(`stock_market`)에 기업 주식 `BUY` 주문을 제출합니다.
 
-AI는 계층적 Q-러닝을 통해 **최상위 목표(`Intention`)**와 그것을 달성하기 위한 **구체적인 행동(`Tactic`)**을 결정합니다. AI의 최종 결정은 `(Intention, Tactic)` 튜플 형태로 나옵니다. (상세 내용은 `ai_agent_model.md` 참조)
+## 3. 욕구 및 소비 메커니즘
 
-- **주요 결정 사항:**
-    - **소비 vs 저축 결정:** 현재 시장 상황과 미래 예측을 바탕으로, 이번 틱의 **소비 예산 비율(`consumption_ratio`)**을 결정합니다. (예: 0.8 이면 자산의 80%를 소비에 사용)
-    - **노동 참여 강도 결정:** 노동 시장에 참여할 때 얼마나 적극적으로 참여할지 **적극성(`Aggressiveness`)**을 결정합니다.
-    - **고급 상품 선호도 및 경력 개발 결정:** 어떤 고급 상품을 구매할지, 또는 이직/학습을 시도할지 등의 장기 계획을 `Tactic`으로 결정합니다.
-
-### 3.2. 전술 계층: 규칙 기반 실행 (하위 레벨)
-
-AI가 결정한 `Tactic`과 `Aggressiveness`는 아래의 규칙 기반 실행 엔진에 파라미터로 작용하여 구체적인 주문(Order)을 생성합니다.
-
-#### 3.2.1. 노동 공급 (실업 상태일 경우)
-
-*   **Tactic:** `PARTICIPATE_LABOR_MARKET`
-*   **실행 로직:**
-    1.  **기대 임금 설정:** 자신의 생존 필요 비용과 AI가 결정한 **`Aggressiveness`**를 조합하여 `reservation_wage`를 결정합니다.
-        *   `Aggressiveness.PASSIVE`: 생존 최소 비용의 120%를 기대 임금으로 설정 (느긋함)
-        *   `Aggressiveness.NORMAL`: 생존 최소 비용의 100%를 기대 임금으로 설정 (보통)
-        *   `Aggressiveness.AGGRESSIVE`: 생존 최소 비용의 80%를 기대 임금으로 설정 (급함)
-    2.  **노동 시장 탐색:** 노동 시장의 모든 채용 공고를 확인합니다.
-    3.  **최적 직업 선택:** 자신의 `reservation_wage`를 만족하는 일자리 중 가장 높은 임금을 제시하는 기업을 선택합니다.
-    4.  **노동 판매 주문:** 조건에 맞는 일자리가 있으면 해당 기업에 노동 판매(SELL) 주문을 제출합니다. 없으면 제출하지 않습니다.
-
-#### 3.2.2. 상품 소비
-
-*   **Tactic:** `BUY_ESSENTIAL_GOODS` (또는 `BUY_LUXURY_GOODS`)
-*   **실행 로직:**
-    1.  **예산 책정:** AI가 결정한 `consumption_ratio`에 따라 이번 틱의 소비 예산 `consumption_budget`을 계산합니다. (`consumption_budget = assets * consumption_ratio`)
-    2.  **필요 상품 식별:** 현재 가장 높은 욕구(needs)를 충족시킬 상품을 우선순위로 정합니다.
-    3.  **상품 시장 탐색 및 구매:** 예산 내에서 우선순위 상품을 구매합니다. 이때 AI가 결정한 **`Aggressiveness`**가 지불 용의(Willingness to Pay)에 영향을 줍니다.
-        *   `Aggressiveness.PASSIVE`: 시장 평균가보다 10% 이상 비싸면 구매하지 않음.
-        *   `Aggressiveness.NORMAL`: 시장 평균가보다 20% 이상 비싸면 구매하지 않음.
-        *   `Aggressiveness.AGGRESSIVE`: 생존에 필요하다면 시장 평균가보다 50% 이상 비싸도 구매함.
-
----
-
-### 3.3. 동적 기대 임금 조정 (기존 설계 유지)
-
-가계가 장기간 실업 상태에 빠져 생존이 위협받는 상황(유동성 위기)에서는, AI의 `Aggressiveness` 설정과 관계없이 생존을 위해 기대 임금을 점진적으로 하향 조정하는 기존 로직을 유지합니다. 이는 AI의 전략적 판단을 뛰어넘는, 생존을 위한 합리적 예외 처리입니다.
+- **Utility Effects**: 상품(`config.py`)에 정의된 `utility_effects`를 기반으로, 구매 후 소비 시 `needs`가 해소됩니다.
+- **Consumption Reset**: 매 틱마다 소비량(`current_consumption`)이 초기화되어 정확한 GDP 흐름을 반영합니다.

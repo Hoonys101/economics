@@ -1,56 +1,33 @@
 # Design Documentation Index
 
-**최종 업데이트**: 2025-12-24
+**최종 업데이트**: 2025-12-29
+**상태**: Phase 1 Step 2 (Documentation Population) 완료
 
-이 폴더는 프로젝트의 설계 및 관리 문서를 포함합니다.
-
----
-
-## 1. 큰 그림 (The Big Picture)
-
-| 문서 | 설명 |
-|---|---|
-| [PROJECT_STATUS.md](file:///c:/coding/economics/design/1_project_management/PROJECT_STATUS.md) | 현재 상태, 완료 항목, 남은 과업 |
-| [Architecture](file:///c:/coding/economics/design/2_architecture/architecture.md) | 시스템 아키텍처 |
+이 폴더는 프로젝트의 설계 및 관리 문서를 포함합니다. 모든 문서는 실제 코드베이스 분석을 기반으로 최신화되었습니다.
 
 ---
 
-## 2. 현재 직면 사항 (Current Immediate Issues)
+## 1. 핵심 설계 문서 (Core Specs)
 
-| 문서 | 설명 |
-|---|---|
-| [**직면 지침서**](file:///c:/coding/economics/design/직면_지침서.md) | **가장 중요** - 당장 수행할 작업 |
-
----
-
-## 3. 앞으로의 계획 (Future Plans)
-
-| 문서 | 설명 |
-|---|---|
-| [Future Vision](file:///c:/coding/economics/design/0_master_plan/future_vision_and_long_term_plan.md) | 장기 비전 (V3, 노동의 질) |
-| [고도화 계획 v2](file:///c:/coding/economics/design/1_project_management/프로젝트_고도화_계획_v2.md) | Phase별 상세 과업 |
-
----
-
-## 4. 현재 진행 상태 요약
-
-| Phase | 상태 | 내용 |
+| 문서 | 설명 | 분석 대상 코드 |
 |---|---|---|
-| Phase 1 | ✅ 완료 | AI 통합 및 고도화 |
-| Phase 2.1 | ✅ 완료 | 주식 시장, 배당 정책, 경제 분석 인프라 |
-| Phase 1.1 | 🔲 대기 | 정부 에이전트 (세금, UBI) |
-| Phase 1.2 | 🔲 대기 | 중앙은행 (기준 금리) |
-| Phase 2.2 | 🔲 대기 | R&D 모델 |
+| [System Architecture](file:///c:/coding/economics/design/2_architecture/architecture.md) | 전체 시스템 구조 및 흐름 | `engine.py`, `repository.py` |
+| [AI Agent Model](file:///c:/coding/economics/design/3_feature_design/ai_agent_model.md) | V2 Multi-Channel Aggressiveness AI | `ai/firm_ai.py`, `ai/household_ai.py` |
+| [Firm Agent Spec](file:///c:/coding/economics/design/3_feature_design/firm_agent_design.md) | 기업 에이전트 채널별 로직 | `decisions/ai_driven_firm_engine.py` |
+| [Household Agent Spec](file:///c:/coding/economics/design/3_feature_design/household_agent_design.md) | 가계 에이전트 채널별 로직 | `decisions/ai_driven_household_engine.py` |
+| [Market Mechanism](file:///c:/coding/economics/design/3_feature_design/market_mechanism_design.md) | OrderBook 및 Stock 시장 | `markets/order_book_market.py`, `stock_market.py` |
+| [Personality & Learning](file:///c:/coding/economics/design/3_feature_design/v2_agent_personality_and_learning_design.md) | 성격 기반 욕구 성장 | `core_agents.py`, `ai/enums.py` |
+| [API Contract](file:///c:/coding/economics/design/api_contract.md) | 백엔드 API 명세 | `app.py`, `api.js` |
 
 ---
 
-## 5. Folder Structure
+## 2. Folder Structure
 
 | 폴더 | 내용 |
 |---|---|
-| `0_master_plan/` | 장기 비전 |
+| `0_master_plan/` | 장기 비전 및 마스터 플랜 |
 | `1_project_management/` | 프로젝트 관리, 상태 보고서 |
 | `2_architecture/` | 시스템 아키텍처 |
-| `3_feature_design/` | 개별 기능 상세 설계 |
+| `3_feature_design/` | 개별 기능 상세 설계 (Specs) |
 | `4_technical_design/` | 기술적 구현 상세 |
 | `5_troubleshooting/` | 문제 해결 가이드 |
