@@ -2,9 +2,11 @@ from __future__ import annotations
 import logging
 import random
 from typing import List, Any, TYPE_CHECKING
+from simulation.ai.api import Personality # Added import
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
+    from simulation.ai.household_ai import HouseholdAI
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,29 @@ class AITrainingManager:
         logger.info(f"Cloning from fittest agent {fittest_agent.id} to new agent {target_agent.id}")
         self._clone_and_mutate_q_table(fittest_agent, target_agent)
 
+    def inherit_brain(self, parent_agent: Household, child_agent: Household) -> None:
+        """
+        Transfers knowledge (Q-Tables) and personality from parent to child.
+        """
+        # 1. Personality Inheritance (Mutation)
+        mutation_prob = getattr(self.config_module, "MITOSIS_MUTATION_PROBABILITY", 0.2)
+        if random.random() < mutation_prob:
+            # Randomly mutate personality
+            child_agent.personality = random.choice(list(Personality))
+            logger.info(
+                f"MUTATION | {child_agent.id} mutated personality to {child_agent.personality.name}",
+                extra={"agent_id": child_agent.id, "tags": ["mitosis", "mutation"]}
+            )
+        else:
+            # Inherit parent personality
+            child_agent.personality = parent_agent.personality
+
+        # Recalculate desire weights based on (possibly new) personality
+        child_agent.desire_weights = child_agent._initialize_desire_weights(child_agent.personality)
+
+        # 2. Q-Table Cloning
+        self._clone_and_mutate_q_table(parent_agent, child_agent)
+
     def _get_top_performing_agents(self, percentile: float | None = None) -> List[Household]:
         if percentile is None:
             percentile = getattr(self.config_module, "TOP_PERFORMING_PERCENTILE", 0.1)
@@ -80,40 +105,59 @@ class AITrainingManager:
         ):
             return
 
+        source_ai = source_agent.decision_engine.ai_engine
+        target_ai = target_agent.decision_engine.ai_engine
+
+        # --- Handle V2 HouseholdAI Q-Tables (q_consumption, q_work, q_investment) ---
+        if hasattr(source_ai, "q_consumption") and hasattr(target_ai, "q_consumption"):
+            # Clone Consumption Q-Tables
+            for item_id, source_manager in source_ai.q_consumption.items():
+                if item_id not in target_ai.q_consumption:
+                    from simulation.ai.q_table_manager import QTableManager
+                    target_ai.q_consumption[item_id] = QTableManager()
+
+                target_manager = target_ai.q_consumption[item_id]
+                self._copy_and_mutate_single_table(source_manager, target_manager)
+
+        if hasattr(source_ai, "q_work") and hasattr(target_ai, "q_work"):
+            self._copy_and_mutate_single_table(source_ai.q_work, target_ai.q_work)
+
+        if hasattr(source_ai, "q_investment") and hasattr(target_ai, "q_investment"):
+            self._copy_and_mutate_single_table(source_ai.q_investment, target_ai.q_investment)
+
+        # --- Handle Legacy Q-Tables (Strategy/Tactic) ---
         # Clone Strategy Q-Table
-        source_strategy_manager = (
-            source_agent.decision_engine.ai_engine.q_table_manager_strategy
-        )
-        target_strategy_manager = (
-            target_agent.decision_engine.ai_engine.q_table_manager_strategy
-        )
-        self._copy_and_mutate_single_table(source_strategy_manager, target_strategy_manager)
+        source_strategy_manager = getattr(source_ai, "q_table_manager_strategy", None)
+        target_strategy_manager = getattr(target_ai, "q_table_manager_strategy", None)
+
+        if source_strategy_manager and target_strategy_manager:
+            self._copy_and_mutate_single_table(source_strategy_manager, target_strategy_manager)
 
         # Clone Tactic Q-Table
-        source_tactic_manager = (
-            source_agent.decision_engine.ai_engine.q_table_manager_tactic
-        )
-        target_tactic_manager = (
-            target_agent.decision_engine.ai_engine.q_table_manager_tactic
-        )
-        self._copy_and_mutate_single_table(source_tactic_manager, target_tactic_manager)
+        source_tactic_manager = getattr(source_ai, "q_table_manager_tactic", None)
+        target_tactic_manager = getattr(target_ai, "q_table_manager_tactic", None)
+
+        if source_tactic_manager and target_tactic_manager:
+            self._copy_and_mutate_single_table(source_tactic_manager, target_tactic_manager)
         
         logger.debug(
-            f"Cloned and mutated Q-tables (Strategy & Tactic) from {source_agent.id} to {target_agent.id}."
+            f"Cloned and mutated Q-tables from {source_agent.id} to {target_agent.id}."
         )
 
     def _copy_and_mutate_single_table(self, source_manager: Any, target_manager: Any):
         """Helper to copy and mutate a single QTableManager's table."""
         # Deep copy the Q-table
-        # Assuming q_table is Dict[State, Dict[Action, float]]
-        # We need to be careful with deep copying if keys are objects, but here they are likely tuples/Enums which are immutable/safe.
-        # But the inner dict needs to be copied.
         new_q_table = {}
         for state, actions in source_manager.q_table.items():
             new_q_table[state] = actions.copy()
 
         # Mutate the Q-table
-        mutation_rate = getattr(self.config_module, "IMITATION_MUTATION_RATE", 0.1)
+        # Use MITOSIS mutation rate if defined, else fallback to imitation rate
+        mitosis_rate = getattr(self.config_module, "MITOSIS_Q_TABLE_MUTATION_RATE", None)
+        imitation_rate = getattr(self.config_module, "IMITATION_MUTATION_RATE", 0.1)
+
+        mutation_rate = mitosis_rate if mitosis_rate is not None else imitation_rate
+
         mutation_magnitude = getattr(
             self.config_module, "IMITATION_MUTATION_MAGNITUDE", 0.05
         )

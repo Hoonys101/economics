@@ -50,6 +50,22 @@ class StockMarket(Market):
         # 주문 생성 틱 추적 (만료 관리용)
         self.order_ticks: Dict[str, int] = {}  # order_id -> created_tick
 
+        # 주주 명부 (firm_id -> agent_id -> quantity)
+        # Conservation of Mass 검증 및 배당 지급 등을 위한 중앙 레지스트리
+        self.shareholders: Dict[int, Dict[int, float]] = defaultdict(lambda: defaultdict(float))
+
+    def update_shareholder(self, agent_id: int, firm_id: int, quantity: float) -> None:
+        """
+        주주 명부를 갱신합니다. (보유량 설정)
+        주로 초기화, Mitosis, Liquidation 등 특수 상황에서 호출됩니다.
+        일반 거래는 match_orders 후 처리 과정에서 동기화되어야 합니다.
+        """
+        if quantity <= 0:
+            if agent_id in self.shareholders[firm_id]:
+                del self.shareholders[firm_id][agent_id]
+        else:
+            self.shareholders[firm_id][agent_id] = quantity
+
     def update_reference_prices(self, firms: Dict[int, "Firm"]) -> None:
         """
         기업들의 순자산가치를 기반으로 기준 주가를 업데이트합니다.

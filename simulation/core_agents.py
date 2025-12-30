@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, override, Tuple, TYPE_CHECKING
 import logging
 from logging import Logger
+import random
 
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
@@ -10,9 +11,13 @@ from simulation.ai.api import (
     Personality,
     Tactic,
     Aggressiveness,
-)  # Personality, Tactic, Aggressiveness Enum 임포트
+)
 from simulation.core_markets import Market  # Import Market
 from simulation.dtos import DecisionContext
+
+# Import HouseholdAI and AIDrivenHouseholdDecisionEngine for mitosis
+from simulation.ai.household_ai import HouseholdAI
+from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -151,14 +156,6 @@ class Household(BaseAgent):
         self.desire_weights: Dict[str, float] = self._initialize_desire_weights(
             personality
         )
-
-        # Initialize new desires based on the personality-driven model
-
-        # Remove old needs that are replaced by the new model
-        # self.needs.setdefault("labor_need", 0.0) # Replaced by 'asset' or 'survival' indirectly
-        # self.needs["wealth_need"] = initial_needs.get("wealth_need", 0.0) # Replaced by 'asset'
-        # self.needs["imitation_need"] = initial_needs.get("imitation_need", 0.0) # Replaced by 'social'
-        # self.needs["child_rearing_need"] = initial_needs.get("child_rearing_need", 0.0) # Not directly mapped to new model yet
 
         self.current_food_consumption: float = 0.0
         self.current_consumption: float = 0.0
@@ -393,11 +390,6 @@ class Household(BaseAgent):
         if self.assets < self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD:
             return self.config_module.HOUSEHOLD_LOW_ASSET_WAGE
         return self.config_module.HOUSEHOLD_DEFAULT_WAGE
-    #                 * 0.5
-    #             )  # 최대 50%까지 감소
-    #
-    #     # 최소 임금 보장
-    #     return max(desired_wage, self.config_module.LABOR_MARKET_MIN_WAGE)
 
     def consume(self, item_id: str, quantity: float, current_time: int) -> None:
         log_extra = {
@@ -502,19 +494,6 @@ class Household(BaseAgent):
             )
         # --- End Personality-driven desire growth ---
 
-        # --- Old needs logic (to be removed or re-evaluated) ---
-        # The following needs are now managed by the new personality-driven system
-        # or are derived from other needs. They should be removed or integrated.
-        # For now, I will comment them out to avoid conflicts.
-        # self.needs["labor_need"] += ...
-        # self.needs["recognition_need"] += ...
-        # self.needs["growth_need"] += ...
-        # self.needs["liquidity_need"] += ...
-        # self.needs["wealth_need"] += ...
-        # self.needs["imitation_need"] += ...
-        # self.needs["child_rearing_need"] += ...
-        # --- End Old needs logic ---
-
         # Check for household death conditions
         if self.needs["survival"] >= self.config_module.SURVIVAL_NEED_DEATH_THRESHOLD:
             self.survival_need_high_turns += 1
@@ -582,3 +561,110 @@ class Household(BaseAgent):
         cloned_household.current_food_consumption = self.current_food_consumption
 
         return cloned_household
+
+    def _create_new_decision_engine(self, new_id: int) -> AIDrivenHouseholdDecisionEngine:
+        """
+        새로운 DecisionEngine을 생성합니다 (Mitosis용).
+        기존 clone()은 참조만 복사하므로, 완전히 독립적인 새 인스턴스를 생성해야 합니다.
+        """
+        # Access the shared AIDecisionEngine (central AI logic)
+        shared_ai_engine = self.decision_engine.ai_engine.ai_decision_engine
+
+        # Create new HouseholdAI
+        new_ai_engine = HouseholdAI(
+            agent_id=new_id,
+            ai_decision_engine=shared_ai_engine,
+            gamma=self.decision_engine.ai_engine.gamma,
+            epsilon=self.decision_engine.ai_engine.action_selector.epsilon,
+            base_alpha=self.decision_engine.ai_engine.base_alpha,
+            learning_focus=self.decision_engine.ai_engine.learning_focus
+        )
+
+        # Create new DecisionEngine
+        new_decision_engine = AIDrivenHouseholdDecisionEngine(
+            ai_engine=new_ai_engine,
+            config_module=self.config_module,
+            logger=self.logger
+        )
+        return new_decision_engine
+
+    def check_mitosis(
+        self,
+        current_population: int,
+        target_population: int,
+        new_id: int
+    ) -> Optional["Household"]:
+        """
+        세포 분열(Mitosis) 조건 체크 및 자식 생성.
+        """
+        # 1. 동적 임계값 계산
+        pop_ratio = current_population / max(1, target_population)
+        base_threshold = self.config_module.MITOSIS_BASE_THRESHOLD
+        sensitivity = self.config_module.MITOSIS_SENSITIVITY
+
+        mitosis_cost = base_threshold * (pop_ratio ** sensitivity)
+
+        # 2. FIRE 조건 (Financial Independence, Retire Early)
+        # 고용되어 있거나, 자산이 분열 비용의 2배 이상이어야 함
+        is_financially_stable = (
+            self.is_employed or
+            self.assets > mitosis_cost * 2.0
+        )
+
+        # 3. 분열 가능 조건
+        can_reproduce = (
+            self.assets > mitosis_cost and
+            is_financially_stable and
+            self.needs["survival"] < self.config_module.MITOSIS_SURVIVAL_THRESHOLD
+        )
+
+        if not can_reproduce:
+            return None
+
+        # 4. 자산 분할 (50/50)
+        # 부동소수점 정밀도 문제를 피하기 위해 정확히 절반으로 나눔
+        child_assets = self.assets / 2.0
+        self.assets = self.assets / 2.0
+
+        # 5. 주식 분할 (50/50, 소수점 버림은 부모가 보유)
+        child_shares = {}
+        for firm_id, qty in list(self.shares_owned.items()):
+            child_qty = qty // 2
+            if child_qty > 0:
+                self.shares_owned[firm_id] -= child_qty
+                child_shares[firm_id] = child_qty
+
+        # 6. 새 Household 인스턴스 생성 (새 DecisionEngine 포함)
+        child = Household(
+            id=new_id,
+            talent=self.talent, # Talent is shared/immutable
+            goods_data=list(self.goods_info_map.values()),
+            initial_assets=child_assets,
+            initial_needs={}, # 리셋
+            decision_engine=self._create_new_decision_engine(new_id), # 새 인스턴스!
+            value_orientation=self.value_orientation,
+            personality=self.personality, # 일단 복사, inherit_brain에서 돌연변이
+            config_module=self.config_module,
+            loan_market=self.decision_engine.loan_market,
+            logger=self.logger
+        )
+        child.shares_owned = child_shares
+        child.is_employed = False
+        child.employer_id = None
+        child.needs["survival"] = random.uniform(0, 20)
+
+        # 다른 욕구들도 초기화 (필요시)
+        for need_key in self.needs.keys():
+            if need_key != "survival":
+                child.needs[need_key] = 0.0
+
+        self.logger.info(
+            f"MITOSIS | Parent {self.id} -> Child {child.id}. "
+            f"Split Assets: {child_assets:.2f}, Cost Threshold: {mitosis_cost:.2f}",
+            extra={
+                "parent_id": self.id,
+                "child_id": child.id,
+                "tags": ["mitosis"]
+            }
+        )
+        return child

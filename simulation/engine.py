@@ -444,6 +444,51 @@ class Simulation:
              if household.is_active:
                  household.decide_and_consume(self.time)
 
+        # --- Mitosis Processing (Agent Evolution) ---
+        # Inserted after consumption reset (which is actually after consumption logic in original flow)
+        # Spec says: After consumption counter reset, Before _handle_agent_lifecycle
+
+        # NOTE: Original code had consumption counter reset at the END of run_tick.
+        # But for Mitosis to see updated needs/assets after consumption, it should be here or after.
+        # The spec says "After consumption counter reset". This implies we might need to move the reset earlier
+        # or do Mitosis at the end. However, usually counters are reset for the *next* tick.
+        # Let's put Mitosis here, before lifecycle management.
+
+        new_children = []
+        # Count active households for dynamic threshold
+        current_pop = len([h for h in self.households if h.is_active])
+
+        for household in list(self.households): # Iterate copy in case of modification issues
+            if not household.is_active:
+                continue
+
+            child = household.check_mitosis(
+                current_population=current_pop,
+                target_population=self.config_module.TARGET_POPULATION,
+                new_id=self.next_agent_id
+            )
+
+            if child:
+                self.next_agent_id += 1
+                new_children.append((household, child))
+                current_pop += 1
+
+        # Register new children and inherit brains
+        for parent, child in new_children:
+            self.households.append(child)
+            self.agents[child.id] = child
+            child.decision_engine.markets = self.markets
+            child.decision_engine.goods_data = self.goods_data
+            self.ai_training_manager.agents.append(child)
+
+            # Brain Inheritance (Q-Table + Personality)
+            self.ai_training_manager.inherit_brain(parent, child)
+
+            # Update Stock Market Shareholder Registry
+            if self.stock_market:
+                for firm_id, qty in child.shares_owned.items():
+                    self.stock_market.update_shareholder(child.id, firm_id, qty)
+
         # ---------------------------------------------------------
         # Activate Farm Logic (Production & Needs/Wages)
         # ---------------------------------------------------------
@@ -557,6 +602,10 @@ class Simulation:
                         "tags": ["ai_learning"],
                     },
                 )
+
+        # --- Handle Agent Lifecycle (Death, Liquidation) ---
+        # Added as per requirement (previously missing in run_tick)
+        self._handle_agent_lifecycle()
 
         # Save all state at the end of the tick
         self._save_state_to_db(all_transactions)
@@ -786,6 +835,15 @@ class Simulation:
                     # 자사주 매입 (Buyback)
                     buyer.treasury_shares += tx.quantity
 
+                # [Mitosis] Update Shareholder Registry in StockMarket
+                if self.stock_market:
+                    # Update Seller
+                    if isinstance(seller, Household):
+                        self.stock_market.update_shareholder(seller.id, firm_id, seller.shares_owned.get(firm_id, 0))
+                    # Update Buyer
+                    if isinstance(buyer, Household):
+                        self.stock_market.update_shareholder(buyer.id, firm_id, buyer.shares_owned.get(firm_id, 0))
+
 
     def _handle_agent_lifecycle(self) -> None:
         """비활성화된 에이전트를 청산하고 시뮬레이션에서 제거합니다."""
@@ -836,6 +894,9 @@ class Simulation:
             for household in self.households:
                 if firm.id in household.shares_owned:
                     del household.shares_owned[firm.id]
+                    # [Mitosis] Update registry
+                    if self.stock_market:
+                        self.stock_market.update_shareholder(household.id, firm.id, 0)
             
             firm.assets = 0.0
             self.logger.info(
@@ -860,6 +921,11 @@ class Simulation:
             household.assets = 0.0
             household.inventory.clear()
             household.shares_owned.clear()
+
+            # [Mitosis] Clear shareholder registry for this household
+            if self.stock_market:
+                for firm_id in list(self.stock_market.shareholders.keys()):
+                     self.stock_market.update_shareholder(household.id, firm_id, 0)
 
         # 3. 시뮬레이션에서 비활성 에이전트 제거
         self.households = [h for h in self.households if h.is_active]

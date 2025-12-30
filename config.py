@@ -355,3 +355,11 @@ INFRASTRUCTURE_TFP_BOOST = 0.05       # 인프라 투자 시 전체 생산성(TF
 STARTUP_MIN_CAPITAL = 5000.0        # 창업 최소 자본금
 STARTUP_INITIAL_SHARES = 100.0      # 창업 시 발행 주식 수
 STARTUP_PROBABILITY = 0.01          # 틱당 창업 시도 확률 (자격 충족 시)
+
+# --- Mitosis Configuration ---
+TARGET_POPULATION = 50
+MITOSIS_BASE_THRESHOLD = 5000.0  # 기본 분열 자산 요건
+MITOSIS_SENSITIVITY = 1.5       # 인구 압박 민감도
+MITOSIS_SURVIVAL_THRESHOLD = 20.0  # 배고픔 한계
+MITOSIS_MUTATION_PROBABILITY = 0.2  # 성격 돌연변이 확률
+MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
