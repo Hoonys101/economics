@@ -16,12 +16,12 @@ class EconomicIndicatorsViewModel:
         self.repository = repository if repository else SimulationRepository()
 
     def get_economic_indicators(
-        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None
+        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None, run_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         Retrieves and returns economic indicator data.
         """
-        indicators = self.repository.get_economic_indicators(start_tick, end_tick)
+        indicators = self.repository.get_economic_indicators(start_tick, end_tick, run_id=run_id)
         return indicators
 
     def get_wealth_distribution(self, households: List[Any], firms: List[Any]) -> Dict[str, Any]:
