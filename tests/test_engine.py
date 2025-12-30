@@ -71,6 +71,8 @@ def mock_firms(mock_config_module):
         initial_inventory={"basic_food": 50},
     )
     f1.is_active = True
+    f1.total_shares = 1000.0
+    f1.treasury_shares = 0.0
 
     f2 = Firm(
         id=102,
@@ -84,6 +86,8 @@ def mock_firms(mock_config_module):
         initial_inventory={"luxury_food": 60},
     )
     f2.is_active = False  # Inactive firm
+    f2.total_shares = 1000.0
+    f2.treasury_shares = 0.0
     return [f1, f2]
 
 
@@ -136,6 +140,11 @@ def mock_config_module():
         "basic_food": {"initial_price": 10.0},
     }
     mock_config.INITIAL_BANK_ASSETS = 1000000
+    mock_config.SALES_TAX_RATE = 0.05
+    mock_config.INCOME_TAX_RATE = 0.1
+    mock_config.INCOME_TAX_PAYER = "HOUSEHOLD"
+    mock_config.LABOR_MARKET_MIN_WAGE = 5.0
+    mock_config.INHERITANCE_TAX_RATE = 1.0
     return mock_config
 
 
@@ -191,6 +200,7 @@ class TestSimulation:
             [h.id for h in mock_households]
             + [f.id for f in mock_firms]
             + [simulation_instance.bank.id]
+            + [simulation_instance.government.id]  # Add Government agent ID
         )
         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
 
@@ -266,8 +276,11 @@ class TestSimulation:
 
         simulation_instance._process_transactions([tx])
 
-        assert buyer_hh.assets == initial_buyer_assets - (tx.quantity * tx.price)
-        assert seller_firm.assets == initial_seller_assets + (tx.quantity * tx.price)
+        # Assets include tax considerations
+        trade_value = tx.quantity * tx.price
+        tax = trade_value * simulation_instance.config_module.SALES_TAX_RATE
+        assert buyer_hh.assets == initial_buyer_assets - (trade_value + tax)
+        assert seller_firm.assets == initial_seller_assets + trade_value
         assert (
             seller_firm.inventory["basic_food"]
             == initial_seller_inventory - tx.quantity
@@ -300,8 +313,13 @@ class TestSimulation:
 
         simulation_instance._process_transactions([tx])
 
-        assert buyer_firm.assets == initial_buyer_assets - (tx.quantity * tx.price)
-        assert seller_hh.assets == initial_seller_assets + (tx.quantity * tx.price)
+        # Assets include tax considerations
+        trade_value = tx.quantity * tx.price
+        # Assuming HOUSEHOLD pays income tax
+        tax = trade_value * simulation_instance.config_module.INCOME_TAX_RATE
+
+        assert buyer_firm.assets == initial_buyer_assets - trade_value
+        assert seller_hh.assets == initial_seller_assets + (trade_value - tax)
         assert seller_hh.is_employed is True
         assert seller_hh.employer_id == buyer_firm.id
         assert seller_hh.needs["labor_need"] == 0.0
@@ -450,6 +468,8 @@ def setup_simulation_for_lifecycle(
         config_module=mock_config_module,
     )
     firm_active.is_active = True
+    firm_active.total_shares = 1000.0
+    firm_active.treasury_shares = 0.0
     firm_active.employees.append(household_active)
 
     firm_inactive = Firm(
@@ -463,6 +483,8 @@ def setup_simulation_for_lifecycle(
         config_module=mock_config_module,
     )
     firm_inactive.is_active = False
+    firm_inactive.total_shares = 1000.0
+    firm_inactive.treasury_shares = 0.0
     firm_inactive.employees.append(household_employed_by_inactive_firm)
 
     households = [
