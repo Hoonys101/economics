@@ -123,10 +123,17 @@ class BaseAIEngine(ABC):
             if item_id == "labor": # 노동력은 재고 자산으로 치지 않음 (또는 이미 Cash로 전환됨)
                 continue
             
-            # 구체적인 상품 가격 확인, 없으면 평균가 사용
+            # 1. 시장 가격 조회
             price_key = f"{item_id}_current_sell_price"
-            price = goods_prices.get(price_key, market_data.get("avg_goods_price", 10.0))
-            inventory_value += qty * price
+            market_price = goods_prices.get(price_key, market_data.get("avg_goods_price", 0.0))
+            
+            # [Patch] 2. 최소 가치 보장 (생산 원가 vs 시장가 중 높은 것 선택)
+            # AI가 "고용=손해"로 오판하는 것을 방지하기 위해, 시장가가 없어도 생산 원가만큼은 가치로 인정
+            production_cost = 10.0 # 임시 하드코딩 (Config나 Goods Data에서 가져오는 것이 이상적임)
+            
+            valuation_price = max(market_price, production_cost)
+            
+            inventory_value += qty * valuation_price
             
         return cash + inventory_value
 

@@ -19,7 +19,7 @@ class EngineType(Enum):
 DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
 
 # --- Initial Agent Configuration ---
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 50.0
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
@@ -49,12 +49,19 @@ FIRM_PRODUCTIVITY_FACTOR = 10.0
 
 # --- Goods Configuration ---
 GOODS = {
-    "basic_food": {"production_cost": 3, "utility_effects": {"survival": 10}},
-    "clothing": {"production_cost": 5, "utility_effects": {"survival": 2, "social": 8}},
+    "basic_food": {"production_cost": 3, "initial_price": 5.0, "utility_effects": {"survival": 10}},
+    "clothing": {"production_cost": 5, "initial_price": 15.0, "utility_effects": {"survival": 2, "social": 8}},
     "luxury_food": {
         "production_cost": 10,
+        "initial_price": 30.0,
         "utility_effects": {"survival": 12, "social": 5},
     },
+}
+
+# Added for explicit reference
+GOODS_INITIAL_PRICE = {
+    "basic_food": 5.0,
+    "stock": 50.0
 }
 
 
