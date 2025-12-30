@@ -87,6 +87,35 @@ def get_repository() -> SimulationRepository:
 # ==============================================
 # Helper Methods
 # ==============================================
+def get_or_create_simulation() -> Simulation:
+    """
+    Retrieves the current simulation instance.
+    If it doesn't exist, responsibly creates a new one using thread-safe locking.
+    This implements the 'Lazy Initialization' pattern to prevent 400/500 errors
+    when frontend calls tick/start before reset.
+    """
+    global simulation_instance
+    
+    # Fast check
+    if simulation_instance:
+        return simulation_instance
+
+    # Thread-safe creation
+    with simulation_lock:
+        # Double-check
+        if simulation_instance:
+            return simulation_instance
+            
+        logging.info("Auto-initializing simulation instance (Lazy Init)...", extra={"tags": ["app_lifecycle"]})
+        create_simulation() # This updates the global variable
+        
+        # create_simulation might fail (e.g. file not found), so check again
+        if not simulation_instance:
+             raise RuntimeError("Failed to auto-create simulation instance.")
+             
+        return simulation_instance
+
+
 def _build_simulation_update_payload(current_tick: int, sim_instance: Simulation, duration_ms: float = 0.0, since_tick: Optional[int] = None) -> dict:
     """Builds the dashboard update payload for a specific tick or range."""
     repo = get_repository()
@@ -411,19 +440,19 @@ def get_transactions_api() -> Response:
 @app.route("/api/simulation/update", methods=["GET"])
 def get_simulation_update() -> Any:
     """Get the current simulation state without advancing the tick."""
-    if not simulation_instance:
-        return jsonify({"status": "stopped", "message": "Simulation not initialized"}), 200
+    # Use Lazy Init
+    try:
+        sim = get_or_create_simulation()
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-    current_tick = simulation_instance.time
+    current_tick = sim.time
     since_tick = request.args.get('since', type=int)
 
     try:
-        update_data = _build_simulation_update_payload(current_tick, simulation_instance, since_tick=since_tick)
-        # Allow override of status since we are just viewing
-        update_data["status"] = "paused" # Or just return current state? Frontend interprets 'running' to keep polling.
-        # Ideally, we should check if it's actually running, but here it's client-driven.
-        # If client called this, it's likely just fetching state.
-
+        update_data = _build_simulation_update_payload(current_tick, sim, since_tick=since_tick)
+        update_data["status"] = "paused" # Client-driven mode: Backend doesn't loop
+        
         return jsonify(update_data)
     except Exception as e:
         logging.exception(f"Error fetching update at tick {current_tick}: {e}")
@@ -434,27 +463,29 @@ def get_simulation_update() -> Any:
 @require_token
 def advance_tick() -> Any:
     """Advance the simulation by one tick and return the update data."""
-    if not simulation_instance:
-        return cast(Response, jsonify({"status": "error", "message": "Simulation not initialized"})), 400
+    # Use Lazy Init
+    try:
+        sim = get_or_create_simulation()
+    except Exception as e:
+        return cast(Response, jsonify({"status": "error", "message": str(e)})), 500
 
     start_time = time.time()
-    current_tick = simulation_instance.time  # Get last known tick for error reporting
+    current_tick = sim.time  # Get last known tick for error reporting
 
     try:
         with simulation_lock:
-            simulation_instance.run_tick()
-            current_tick = simulation_instance.time
+            sim.run_tick()
+            current_tick = sim.time
         
         # For tick updates, we typically only need the latest data point
-        update_data = _build_simulation_update_payload(current_tick, simulation_instance, (time.time() - start_time) * 1000, since_tick=current_tick)
+        update_data = _build_simulation_update_payload(current_tick, sim, (time.time() - start_time) * 1000, since_tick=current_tick)
         return jsonify(update_data)
 
     except Exception as e:
         logging.exception(f"Error during tick {current_tick}: {e}")
         # Attempt to flush any buffered data before returning error
         try:
-            if simulation_instance:
-                simulation_instance._flush_buffers_to_db()
+             sim._flush_buffers_to_db()
         except Exception:
             pass  # Best effort
         return jsonify({
@@ -467,14 +498,14 @@ def advance_tick() -> Any:
 @app.route("/api/simulation/start", methods=["POST"])
 @require_token
 def start_simulation():
-    # Only useful for logging or backend state tracking if needed
-    # But for client-driven, this is mostly a placeholder or can be removed.
-    # We kept it to satisfy the button calls in frontend (initially), 
-    # but we will change frontend to not call these for logic control, 
-    # EXCEPT maybe for explicit logging?
-    # Let's keep it simple: Just return success, maybe log.
+    # Use Lazy Init to ensure instance exists
+    try:
+        get_or_create_simulation()
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
     logging.info("Simulation start requested (Client-driven mode)")
-    return jsonify({"status": "success", "message": "Simulation start acknowledged."})
+    return jsonify({"status": "success", "message": "Simulation started (Instance ready)."})
 
 
 @app.route("/api/simulation/pause", methods=["POST"])
@@ -488,7 +519,8 @@ def pause_simulation():
 @require_token
 def stop_simulation():
     global simulation_instance
-    simulation_instance = None
+    with simulation_lock:
+        simulation_instance = None
     logging.info("Simulation stopped and instance cleared.")
     return jsonify({"status": "success", "message": "Simulation stopped."})
 
@@ -518,12 +550,14 @@ def shutdown_server():
             "Attempted to shut down server, but not running with Werkzeug development server.",
             extra={"tags": ["app_shutdown"]},
         )
+        # Instead of 500 Error, return 200 OK with a warning message
+        # This prevents frontend from thinking the request failed drastically.
         return jsonify(
             {
-                "status": "error",
-                "message": "Server is not running in a development environment or Werkzeug server.",
+                "status": "warning",
+                "message": "Server shutdown not supported in this environment (Process kill required).",
             }
-        ), 500
+        ), 200
     try:
         func()
         logger.info("Server shutting down...", extra={"tags": ["app_shutdown"]})
