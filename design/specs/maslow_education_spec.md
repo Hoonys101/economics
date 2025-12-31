@@ -1,7 +1,7 @@
 # W-1 Specification: Maslow's Hierarchy & Education
 
-**모듈**: Task #6 - Desire Hierarchy  
-**상태**: ✅ Approved (구현 가능)  
+**모듈**: Task #6 - Desire Hierarchy
+**상태**: 🟡 Implemented / Verifying (검증 필요)
 **전제**: Phase 2 (Mitosis) 완료 필수  
 **대상 파일**: `config.py`, `simulation/ai/household_ai.py`, `simulation/core_agents.py`, `simulation/db/schema.py`
 
@@ -129,14 +129,20 @@ ALTER TABLE agent_states ADD COLUMN education_xp REAL DEFAULT 0.0;
 
 ---
 
-## 8. 체크리스트
+## 8. 구현 상태 및 검증 체크리스트 (Current Status: Implemented)
 
+**현재 상태**: 본 명세서의 핵심 로직(`config.py`, `engine.py`, `core_agents.py`, `household_ai.py`, `ai_training_manager.py`)은 이미 코드베이스에 구현되어 있습니다.
+따라서 본 업무(Task #6)의 목표는 **구현**이 아니라 **검증 및 안정화**입니다.
 
-- [ ] `config.py`에 Maslow/Education 상수 추가
-- [ ] `GOODS`에 `education_service` 추가
-- [ ] `Household.__init__`에 `education_xp` 추가
-- [ ] `Household.consume()`에 education 처리 로직
-- [ ] `household_ai.py`에 Gating 로직 추가
-- [ ] `inherit_brain()`에 학습률 보너스 로직
-- [ ] DB 스키마 업데이트
-- [ ] 검증 테스트 작성
+### 8.1 검증 수행 항목
+- [ ] **Config 확인**: `config.py`에 `MASLOW_SURVIVAL_THRESHOLD`, `EDUCATION_SENSITIVITY` 등이 올바르게 설정되어 있는지 확인.
+- [ ] **Gating 동작 검증**: `verify_maslow.py` (신규 작성)
+    - 시나리오: `survival` 욕구가 50 이상인 에이전트 강제 생성.
+    - 확인: `decide_action_vector` 호출 시 `social`, `improvement` 관련 상품의 적극성이 0.0인지 확인.
+- [ ] **교육 XP 적립 검증**: `verify_education.py` (신규 작성)
+    - 시나리오: `education_service` 소비.
+    - 확인: `agent.education_xp`가 증가하는지 확인.
+- [ ] **DB 스키마 확인**: `agent_states` 테이블에 `education_xp` 컬럼이 존재하는지 스키마 확인 (`check_schema.py` 활용).
+
+### 8.2 다음 단계
+검증이 완료되면 **Task #7: Brand Value & Product Quality** 설계로 넘어갑니다.
