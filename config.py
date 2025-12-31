@@ -472,3 +472,19 @@ CREDIT_RECOVERY_TICKS = 100 # 1 year (100 ticks) credit jail
 BANKRUPTCY_XP_PENALTY = 0.2 # 20% XP penalty
 
 FISCAL_MODEL = "MIXED" # Default regime
+    
+# ==============================================================================
+# Phase 6: The Brand Economy
+# ==============================================================================
+# 1. Brand Engine
+MARKETING_DECAY_RATE = 0.8        # Adstock retains 80% per tick
+MARKETING_EFFICIENCY = 0.01       # 1 unit of currency = 0.01 adstock unit
+PERCEIVED_QUALITY_ALPHA = 0.2     # EMA smoothing factor for quality perception
+
+# 2. Consumer Behavior
+QUALITY_SENSITIVITY_MEAN = 0.5    # Average preference for quality over price
+BRAND_LOYALTY_DECAY = 0.95        # Loyalty score decays 5% per tick without reinforcement
+NETWORK_EFFECT_WEIGHT = 0.5       # Weight of sales volume in Utility function
+
+# 3. AI Reward
+AI_VALUATION_MULTIPLIER = 1000.0   # Value of 100% Brand Awareness in AI Reward

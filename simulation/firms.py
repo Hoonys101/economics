@@ -5,7 +5,8 @@ import logging
 import copy
 
 from simulation.models import Order, Transaction
-from simulation.core_agents import Household  # Household 클래스 임포트
+from simulation.brands.brand_manager import BrandManager
+from simulation.core_agents import Household
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
@@ -14,7 +15,6 @@ if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
 
 logger = logging.getLogger(__name__)
-
 
 class Firm(BaseAgent):
     """기업 주체. 생산과 고용의 주체."""
@@ -67,6 +67,10 @@ class Firm(BaseAgent):
         self.expenses_this_tick = 0.0
         # --- GEMINI_PROPOSED_ADDITION_END ---
         
+        # --- Phase 6: Brand Engine ---
+        self.brand_manager = BrandManager(self.id, config_module, logger)
+        self.marketing_budget: float = 0.0 # Decision variable
+
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
         self.is_publicly_traded: bool = True   # 상장 여부
@@ -74,9 +78,67 @@ class Firm(BaseAgent):
             config_module, "DIVIDEND_RATE", 0.3
         )  # 기업별 배당률 (기본값: config)
         self.treasury_shares: float = 0.0  # 자사주 보유량
-        self.capital_stock: float = 100.0   # 실물 자본재 (초기값)
+        self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
 
         self.decision_engine.loan_market = loan_market
+
+    # ... (issue_shares, get_book_value_per_share, get_market_cap, clone, distribute_dividends methods need to ensure implementation or pass-through)
+    # Re-inserting methods not shown in chunk to be safe, but focusing on init here.
+    # Actually I should use multi_replace for safety if I am editing init.
+    # The target content includes up to 'produce' in my mental model, but let's stick to init and imports first.
+    
+    # ... (methods) 
+
+    def produce(self, current_time: int) -> None:
+        """
+        Cobb-Douglas 생산 함수를 사용한 생산 로직.
+        Phase 6: Update Brand Quality based on Productivity.
+        """
+        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
+
+        # 1. 감가상각 처리
+        depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
+        self.capital_stock *= (1.0 - depreciation_rate)
+
+        # 2. 노동 및 자본 투입량 계산
+        total_labor_skill = sum(employee.labor_skill for employee in self.employees)
+        capital = max(self.capital_stock, 0.01)  # 0 방지
+
+        # 3. Cobb-Douglas 생산 함수
+        alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+        tfp = self.productivity_factor  # Total Factor Productivity
+        
+        # Phase 6: Update Perceived Quality
+        # Quality Proxy = TFP / 10.0
+        actual_quality = tfp / 10.0
+        # Marketing spend is processed in update_needs, but brand quality update happens here?
+        # BrandManager.update takes (spend, quality). Spend is known at decision time (prev tick) or this tick?
+        # Let's say spend happens in update_needs (cost). Here we just update quality? 
+        # BrandManager.update logic combines both. Let's call it in update_needs where we deduct cost.
+        # But we need to pass 'actual_quality' to it.
+        # So I will calculate actual_quality here and store/pass acts, or call brand_manager.update_quality?
+        # The Spec `BrandManager.update(spend, quality)`.
+        # I'll store `actual_quality` temporarily or recalc in update_needs.
+        # Let's verify produce is called BEFORE update_needs in engine. YES.
+        
+        self.current_production = 0.0
+
+        if total_labor_skill > 0 and capital > 0:
+            produced_quantity = tfp * (total_labor_skill ** alpha) * (capital ** (1 - alpha))
+        else:
+            produced_quantity = 0.0
+
+        if produced_quantity > 0:
+            item_id = self.specialization
+            current_inventory = self.inventory.get(item_id, 0)
+            self.inventory[item_id] = current_inventory + produced_quantity
+            self.current_production = produced_quantity
+            
+            # Phase 6: Brand Manager Update (Quality Only? No, full update needed, but spend is deducted later)
+            # Use temp variable for quality to be used in update_needs
+            # OR just update quality aspect now?
+            # Creating a helper or just partial update is complex.
+            # I will just invoke update in update_needs using current TFP.
 
     def issue_shares(self, quantity: float, price: float) -> float:
         """
@@ -405,6 +467,25 @@ class Firm(BaseAgent):
                 f"Paid total wages: {total_wages:.2f} to {len(self.employees)} employees.",
                 extra={**log_extra, "total_wages": total_wages},
             )
+        
+        # --- Phase 6: Marketing Spend & Brand Update ---
+        # Mock Decision: 5% of this turn's revenue (if any) or min 10.0 if assets allow
+        marketing_spend = 0.0
+        if self.assets > 100.0:
+            marketing_spend = max(10.0, self.revenue_this_turn * 0.05)
+        
+        if self.assets >= marketing_spend:
+             self.assets -= marketing_spend
+             self.cost_this_turn += marketing_spend
+             self.marketing_budget = marketing_spend # Record for AI/Stats
+        else:
+             marketing_spend = 0.0
+             self.marketing_budget = 0.0
+
+        # Update Brand Assets
+        actual_quality = self.productivity_factor / 10.0
+        self.brand_manager.update(marketing_spend, actual_quality)
+        # ---------------------------------------------
 
         self.needs["liquidity_need"] += self.config_module.LIQUIDITY_NEED_INCREASE_RATE
         self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"])
@@ -437,5 +518,7 @@ class Firm(BaseAgent):
                 "assets_after": self.assets,
                 "num_employees_after": len(self.employees),
                 "is_active_after": self.is_active,
+                "brand_awareness": self.brand_manager.brand_awareness,
+                "perceived_quality": self.brand_manager.perceived_quality
             },
         )

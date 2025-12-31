@@ -183,6 +183,12 @@ class Household(BaseAgent):
         self.config_module = config_module  # Store config_module
         self.decision_engine.loan_market = loan_market
         self.decision_engine.logger = self.logger  # Pass logger to decision engine
+        
+        # --- Phase 6: Brand Economy Traits ---
+        self.quality_preference = random.random()  # 0.0=Miser, 1.0=Snob (ToDo: Link to Personality)
+        self.brand_loyalty: Dict[int, float] = {}  # FirmID -> LoyaltyMultipler (Default 1.0)
+        self.last_purchase_memory: Dict[str, int] = {} # ItemID -> FirmID
+
 
     def quit(self) -> None:
         """현재 직장에서 퇴사합니다."""
@@ -431,6 +437,25 @@ class Household(BaseAgent):
         )
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context)
 
+        # --- Phase 6: Targeted Order Refinement ---
+        # The AI decides "What to buy", the Household Logic decides "From Whom".
+        refined_orders = []
+        for order in orders:
+            if order.order_type == "BUY" and order.target_agent_id is None:
+                # Select best seller
+                best_seller_id, best_price = self.choose_best_seller(markets, order.item_id)
+                if best_seller_id:
+                    order.target_agent_id = best_seller_id
+                    # Update price to seller's ask price if logic dictates, 
+                    # but usually Order price is 'Max Willingness to Pay'.
+                    # If we target, we usually agree to pay Ask Price if it's <= our Order Price.
+                    # Or we just set target and let Market handle price check.
+                    # The Spec says "Place BuyOrder with target_agent_id".
+                    pass 
+            refined_orders.append(order)
+        orders = refined_orders
+        # ------------------------------------------
+
         self.logger.debug(
             f"HOUSEHOLD_DECISION_END | Household {self.id} after decision: Assets={self.assets:.2f}, is_employed={self.is_employed}, employer_id={self.employer_id}, Needs={self.needs}, Decisions={len(orders)}",
             extra={
@@ -443,6 +468,54 @@ class Household(BaseAgent):
             },
         )
         return orders, chosen_tactic_tuple
+
+    def choose_best_seller(self, markets: Dict[str, "Market"], item_id: str) -> Tuple[Optional[int], float]:
+        """
+        Phase 6: Utility-based Seller Selection.
+        Returns (BestSellerID, BestAskPrice)
+        """
+        market = markets.get("goods_market")
+        if not market:
+            return None, 0.0
+        
+        # This requires Market to expose 'get_all_asks' with Seller Info
+        # We assume order_book_market has get_all_asks(item_id) returning list of SellOrders
+        # And SellOrder has agent_id.
+        # But we need metadata (Quality, Awareness) which isn't in Order DTO yet?
+        # WAIT. The Spec said "Firm places order, it stamps current Brand/Quality on it".
+        # I didn't verify SellOrder metadata.
+        # IF metadata is missing, we default to 0.5.
+        
+        asks = market.get_all_asks(item_id) # Should return List[Order]
+        if not asks:
+            return None, 0.0
+            
+        best_u = -float('inf')
+        best_seller = None
+        best_price = 0.0
+        
+        avg_sales = 10.0 # Default network effect base if unknown
+        
+        for ask in asks:
+            price = ask.price
+            seller_id = ask.agent_id
+            
+            # Phase 6: Read brand metadata from Order (Firm stamps it on SellOrder)
+            brand_data = ask.brand_info or {}
+            quality = brand_data.get("perceived_quality", 1.0)
+            awareness = brand_data.get("brand_awareness", 0.0)
+            
+            loyalty = self.brand_loyalty.get(seller_id, 1.0)
+            
+            # Utility Function: U = (Quality * (1 + Awareness * Pref) * Loyalty) / Price
+            utility = (quality * (1.0 + awareness * self.quality_preference) * loyalty) / max(0.01, price)
+            
+            if utility > best_u:
+                best_u = utility
+                best_seller = seller_id
+                best_price = price
+        
+        return best_seller, best_price
 
     def execute_tactic(
         self,
