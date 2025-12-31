@@ -388,3 +388,28 @@ MITOSIS_SENSITIVITY = 1.5       # 인구 압박 민감도
 MITOSIS_SURVIVAL_THRESHOLD = 20.0  # 배고픔 한계
 MITOSIS_MUTATION_PROBABILITY = 0.2  # 성격 돌연변이 확률
 MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
+
+# --- Phase 4: Fiscal Policy ---
+
+# 1. Progressive Tax (Income Tax)
+# Criteria: Multiples of SURVIVAL_COST
+TAX_BRACKETS = [
+    (1.5, 0.0),   # Up to 1.5x survival cost: Tax Free
+    (5.0, 0.15),  # Middle class (1.5 ~ 5.0x): 15%
+    (float('inf'), 0.40) # Wealthy: 40%
+]
+
+# 2. Wealth Tax
+# WEALTH_TAX_THRESHOLD is defined below
+WEALTH_TAX_THRESHOLD = 50000.0
+ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
+
+# 3. Welfare
+UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # Ratio of survival cost
+STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% drop trigger
+
+# 4. Bankruptcy Penalty
+CREDIT_RECOVERY_TICKS = 100 # 1 year (100 ticks) credit jail
+BANKRUPTCY_XP_PENALTY = 0.2 # 20% XP penalty
+
+FISCAL_MODEL = "MIXED" # Default regime

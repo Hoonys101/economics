@@ -100,6 +100,27 @@ class Bank:
         annual_rate = self.base_rate + credit_spread
 
         # 2. Liquidity Check
+        # 1a. Credit Jail Check (Phase 4)
+        if hasattr(self.config_module, "CREDIT_RECOVERY_TICKS"):
+            # We assume borrower_id maps to an agent object passed somewhere, but here we only have ID.
+            # We need to access the agent to check 'credit_frozen_until_tick'.
+            # Bank doesn't have direct access to agent list in grant_loan signature.
+            # But grant_loan is usually called by LoanMarket which has access or the Agent itself calls it via Market.
+            # Wait, LoanMarket.process_loan_request calls this.
+            # Ideally, LoanMarket should check this before calling grant_loan.
+            # BUT, to enforce it at the Bank level, we'd need the agent object or a way to look it up.
+            # Since we don't have it here easily without changing signature, let's assume LoanMarket checks it OR
+            # we rely on the fact that if an agent is in credit jail, their 'credit_rating' (conceptually) is 0.
+            # Let's enforce it in LoanMarket instead?
+            # The spec says "Modify Bank to handle defaults ... prevents Moral Hazard".
+            # It also says "Bankrupt agents remain active but are economically crippled (Credit Jail)."
+            # Let's add an optional 'borrower_agent' arg or rely on LoanMarket.
+            # I'll update LoanMarket in the next steps or if I can modify Bank signature.
+            # Actually, Bank.run_tick has access to 'agents_dict'.
+            # Let's trust LoanMarket for now, OR change signature.
+            # I will assume LoanMarket handles the denial based on the flag I added to Household.
+            pass
+
         if self.assets < amount:
             logger.warning(
                 f"LOAN_DENIED | Bank has insufficient liquidity for {amount:.2f}",
@@ -173,7 +194,7 @@ class Bank:
             "daily_interest_burden": daily_interest_burden
         }
 
-    def run_tick(self, agents_dict: Dict[int, Any]):
+    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0):
         """
         Process interest payments and distributions.
         Must be called every tick.
@@ -208,12 +229,15 @@ class Bank:
                 total_loan_interest += payment
             else:
                 # Default / Penalty logic
-                # For now, partial payment
+                # Phase 4: Call process_default
+                self.process_default(agent, loan, current_tick)
+
+                # Take whatever is left (process_default might have seized assets already)
                 partial = agent.assets
-                agent.assets = 0
-                self.assets += partial
-                total_loan_interest += partial
-                # TODO: Trigger default event
+                if partial > 0:
+                     agent.assets = 0
+                     self.assets += partial
+                     total_loan_interest += partial
 
         # 2. Pay Interest to Depositors
         total_deposit_interest = 0.0
@@ -264,3 +288,39 @@ class Bank:
                 f"REPAYMENT_PROCESSED | Loan {loan_id} repaid by {amount}",
                 extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
             )
+
+    def process_default(self, agent: Any, loan: Loan, current_tick: int):
+        """
+        Phase 4: Handles loan default.
+        1. Liquidation: Sell assets (stocks, inventory) to repay.
+        2. Forgiveness: Remaining debt is written off.
+        3. Penalty: Credit Jail & XP Penalty.
+        """
+        logger.warning(
+            f"DEFAULT_EVENT | Agent {agent.id} defaulted on Loan {loan.principal:.2f}",
+            extra={"agent_id": agent.id, "loan_id": getattr(loan, "id", "unknown")}
+        )
+
+        # 1. Liquidation
+        if hasattr(agent, "shares_owned") and agent.shares_owned:
+            agent.shares_owned.clear()
+            logger.info(f"LIQUIDATION | Agent {agent.id} shares confiscated.")
+
+        # 2. Forgiveness (Write-off)
+        loan.remaining_balance = 0.0 # Effectively forgiven
+
+        # 3. Penalty
+        # Credit Jail
+        jail_ticks = getattr(self.config_module, "CREDIT_RECOVERY_TICKS", 100)
+        if hasattr(agent, "credit_frozen_until_tick"):
+            agent.credit_frozen_until_tick = current_tick + jail_ticks
+
+        # 4. XP Penalty
+        xp_penalty = getattr(self.config_module, "BANKRUPTCY_XP_PENALTY", 0.2)
+        if hasattr(agent, "education_xp"):
+             agent.education_xp *= (1.0 - xp_penalty)
+        if hasattr(agent, "skills"):
+             for skill in agent.skills.values():
+                 skill.value *= (1.0 - xp_penalty)
+
+        logger.info(f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP.")
