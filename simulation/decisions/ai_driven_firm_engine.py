@@ -104,9 +104,15 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
             
             qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
             if qty > 0:
-                orders.append(
-                    Order(firm.id, "SELL", item_id, qty, final_price, item_id)
-                )
+                # Use firm.post_ask to inject brand info and submit to market
+                # Note: post_ask calls market.place_order, so we do NOT append to 'orders' list
+                # to avoid double submission in engine.
+                target_market = markets.get(item_id)
+                if target_market:
+                    firm.post_ask(item_id, final_price, qty, target_market, current_time)
+                else:
+                    # Fallback if market not found (shouldn't happen for valid goods)
+                    pass
 
         # 3. Execution: Hiring Logic
         target_inventory = firm.production_target

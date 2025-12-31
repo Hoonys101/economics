@@ -487,4 +487,4 @@ BRAND_LOYALTY_DECAY = 0.95        # Loyalty score decays 5% per tick without rei
 NETWORK_EFFECT_WEIGHT = 0.5       # Weight of sales volume in Utility function
 
 # 3. AI Reward
-AI_VALUATION_MULTIPLIER = 1000.0   # Value of 100% Brand Awareness in AI Reward
+# AI_VALUATION_MULTIPLIER = 1000.0   # Deprecated: Using relative asset valuation (5% of Assets * Delta Awareness)

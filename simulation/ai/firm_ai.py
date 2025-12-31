@@ -7,6 +7,7 @@ from simulation.schemas import FirmActionVector
 
 if TYPE_CHECKING:
     from simulation.ai_model import AIDecisionEngine
+    from simulation.firms import Firm
 
 logger = logging.getLogger(__name__)
 
@@ -232,6 +233,35 @@ class FirmAI(BaseAIEngine):
     def _get_tactical_state(self, i, a, m): pass
     def _get_strategic_actions(self): pass
     def _get_tactical_actions(self, i): pass
+
+    def calculate_reward(self, firm_agent: "Firm", prev_state: Dict, current_state: Dict) -> float:
+        """
+        Reward = Financial Performance + Brand Asset Valuation
+        """
+        # 1. 재무적 성과 (Profit Proxy: Change in Assets)
+        # Note: Ideally we use Net Income, but Asset Change is a solid proxy for overall performance including inventory value changes.
+        profit = current_state.get("assets", 0.0) - prev_state.get("assets", 0.0)
+
+        # 2. 비재무적 성과: 브랜드 자산 가치 변동
+        current_awareness = firm_agent.brand_manager.brand_awareness
+        prev_awareness = firm_agent.prev_awareness
+
+        delta_awareness = current_awareness - prev_awareness
+        brand_valuation = delta_awareness * firm_agent.assets * 0.05  # 5% of Assets
+
+        # 3. 통합 보상
+        total_reward = profit + brand_valuation
+
+        # 4. 상태 갱신 (Firm Body에 저장)
+        firm_agent.prev_awareness = current_awareness
+
+        logger.debug(
+            f"FIRM_AI_REWARD | Firm {firm_agent.id}: Profit={profit:.2f}, ΔAwareness={delta_awareness:.4f}, BrandValue={brand_valuation:.2f}, TotalReward={total_reward:.2f}",
+            extra={"agent_id": firm_agent.id}
+        )
+
+        return total_reward
+
     def _calculate_reward(
         self,
         pre_state_data: Dict[str, Any],
@@ -240,34 +270,8 @@ class FirmAI(BaseAIEngine):
         market_data: Dict[str, Any],
     ) -> float:
         """
-        기업 보상 함수:
-        1. Wealth Delta (현금 + 재고 가치 증분)
-        2. Market Price Incentive (주가 부양 유인 - 경영권 방어 대리)
+        Deprecated: Use calculate_reward instead.
+        Kept for compatibility if needed by base class or other calls.
         """
-        # 1. 자산 증분 (기본: 수익성)
-        wealth_delta = super()._calculate_reward(
-            pre_state_data, post_state_data, agent_data, market_data
-        )
-
-        # 2. 주가 기반 보상 (시가총액 대리 지표)
-        stock_market_data = market_data.get("stock_market", {})
-        firm_item_id = f"stock_{self.agent_id}"
-        
-        market_price: float = 0.0
-        if firm_item_id in stock_market_data:
-            market_price = stock_market_data[firm_item_id].get("avg_price", 0.0)
-        
-        if market_price <= 0:
-            # 주가가 없는 경우 장부가(BPS) 기준
-            total_shares = post_state_data.get("total_shares", 1)
-            market_price = post_state_data.get("assets", 0) / total_shares if total_shares > 0 else 10.0
-
-        # 주가 자체의 수준에 가중치를 두어 "높은 기업 가치 유지"에 보상
-        # wealth_delta에 비해 너무 크지 않도록 스케일링 (예: 자산 1000일 때 주가 10이면 1 정도)
-        price_reward_val = float(market_price) * 0.5
-
-        # 최종 보상 = 자산 증분 + 가치 유지 보상
-        # 가계가 주식을 선호하도록 배당을 주는 행위가 주가를 올린다면, 
-        # 자산 감소(wealth_delta 음수)를 주가 상승(price_reward 양수)이 상쇄하도록 유도
-        return wealth_delta + price_reward_val
+        return super()._calculate_reward(pre_state_data, post_state_data, agent_data, market_data)
 

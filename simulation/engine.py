@@ -599,9 +599,9 @@ class Simulation:
                 agent_data = firm.get_agent_data()
                 market_data = self._prepare_market_data(self.tracker)
                 
-                # Calculate Reward
-                reward = firm.decision_engine.ai_engine._calculate_reward(
-                    firm.get_pre_state_data(), post_state_data, agent_data, market_data
+                # Calculate Reward using new method for Firms (Brand Valuation)
+                reward = firm.decision_engine.ai_engine.calculate_reward(
+                    firm, firm.get_pre_state_data(), agent_data
                 )
                 
                 # Update Learning V2

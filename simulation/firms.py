@@ -7,6 +7,7 @@ import copy
 from simulation.models import Order, Transaction
 from simulation.brands.brand_manager import BrandManager
 from simulation.core_agents import Household
+from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
@@ -70,6 +71,7 @@ class Firm(BaseAgent):
         # --- Phase 6: Brand Engine ---
         self.brand_manager = BrandManager(self.id, config_module, logger)
         self.marketing_budget: float = 0.0 # Decision variable
+        self.prev_awareness: float = 0.0  # For AI Reward Calculation
 
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
@@ -82,12 +84,56 @@ class Firm(BaseAgent):
 
         self.decision_engine.loan_market = loan_market
 
-    # ... (issue_shares, get_book_value_per_share, get_market_cap, clone, distribute_dividends methods need to ensure implementation or pass-through)
-    # Re-inserting methods not shown in chunk to be safe, but focusing on init here.
-    # Actually I should use multi_replace for safety if I am editing init.
-    # The target content includes up to 'produce' in my mental model, but let's stick to init and imports first.
-    
-    # ... (methods) 
+    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+        """
+        판매 주문을 생성하고 시장에 제출합니다.
+        Brand Metadata를 자동으로 주입합니다.
+        """
+        # 1. 브랜드 정보 스냅샷
+        brand_snapshot = {
+            "brand_awareness": self.brand_manager.brand_awareness,
+            "perceived_quality": self.brand_manager.perceived_quality,
+        }
+
+        # 2. 주문 생성 (brand_info 자동 주입)
+        order = Order(
+            agent_id=self.id,
+            order_type="SELL",
+            item_id=item_id,
+            quantity=quantity,
+            price=price,
+            market_id=market.id,
+            brand_info=brand_snapshot  # <-- Critical Injection
+        )
+
+        # 3. 시장에 제출
+        market.place_order(order, current_tick)
+
+        self.logger.debug(
+            f"FIRM_POST_ASK | Firm {self.id} posted SELL order for {quantity:.1f} {item_id} @ {price:.2f} with brand_info",
+            extra={"agent_id": self.id, "tick": current_tick, "brand_awareness": brand_snapshot["brand_awareness"]}
+        )
+
+        return order
+
+    def calculate_brand_premium(self, market_data: Dict[str, Any]) -> float:
+        """
+        브랜드 프리미엄 = 내 판매가격 - 시장 평균가격
+        """
+        item_id = self.specialization
+        market_avg_key = f"{item_id}_avg_traded_price"
+
+        market_avg_price = market_data.get("goods_market", {}).get(market_avg_key, 0.0)
+
+        # 내 최근 판매가 (last_prices에서 조회)
+        my_price = self.last_prices.get(item_id, market_avg_price)
+
+        if market_avg_price > 0:
+            brand_premium = my_price - market_avg_price
+        else:
+            brand_premium = 0.0
+
+        return brand_premium
 
     def produce(self, current_time: int) -> None:
         """
@@ -486,6 +532,18 @@ class Firm(BaseAgent):
         actual_quality = self.productivity_factor / 10.0
         self.brand_manager.update(marketing_spend, actual_quality)
         # ---------------------------------------------
+
+        brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
+        self.logger.info(
+            f"FIRM_BRAND_METRICS | Firm {self.id}: Awareness={self.brand_manager.brand_awareness:.4f}, "
+            f"Quality={self.brand_manager.perceived_quality:.4f}, Premium={brand_premium:.2f}",
+            extra={
+                **log_extra,
+                "brand_awareness": self.brand_manager.brand_awareness,
+                "perceived_quality": self.brand_manager.perceived_quality,
+                "brand_premium": brand_premium
+            }
+        )
 
         self.needs["liquidity_need"] += self.config_module.LIQUIDITY_NEED_INCREASE_RATE
         self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"])
