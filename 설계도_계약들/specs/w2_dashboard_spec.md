@@ -2,11 +2,21 @@
 
 본 문서는 Jules 및 프론트엔드 작업자가 추가 질문 없이 즉시 개발에 착수할 수 있도록 설계된 상세 명세서입니다.
 
+- **Goal**: 시뮬레이션의 실시간 경제/사회 지표를 HUD(Head-Up Display)와 탭 기능을 통해 시각화.
+- **Key Features**: 실시간 데이터 폴링, 4개 도메인 탭(Society, Government, Market, Finance), 모바일 반응형 디자인, 다국어(i18n) 지원.
+
 ---
 
-## 1. 인터페이스 계약 (The Contract)
+## 1. 아키텍처 및 요구사항
 
-### 1.1 API Endpoint
+### 1.1 Responsive & i18n Design
+- **Mobile First**: 화면 크기에 따라 HUD 레이아웃이 유연하게 변해야 함 (1열/2열/3열/6열).
+- **Internationalization (i18n)**: 모든 라벨은 `i18n` 객체 또는 라이브러리를 통해 관리하여 한국어/영어 전환이 가능해야 함.
+- **Scalability**: 추후 로그인(Login) 및 인증 레이어를 쉽게 추가할 수 있도록 구조화된 라우팅 체계 고려.
+
+## 2. 인터페이스 계약 (The Contract)
+
+### 2.1 API Endpoint
 - **URL**: `GET /api/simulation/dashboard`
 - **Method**: `GET`
 - **Response Type**: `application/json`
@@ -41,12 +51,23 @@ Jules는 `simulation/dtos.py`에 정의된 다음 구조를 사용하여 데이�
 
 ---
 
-## 3. Work Order for Jules (구현 지침)
-"Jules, 아래 순서대로 백엔드 작업을 완료하고 보고하라."
-1.  **Repository 검색**: `SimulationRepository`에 `get_generation_stats`가 구현되어 있으니 이를 활용하라.
-2.  **ViewModel 생성**: `simulation/viewmodels/snapshot_viewmodel.py`를 만들고, `DashboardSnapshotDTO`를 조립하는 로직을 작성하라.
-3.  **API 노출**: `app.py`에서 프로젝트의 핵심 관제 라우트인 `/api/simulation/dashboard`를 활성화하라.
-4.  **검증**: `tests/test_dashboard_api.py`를 작성하여 JSON 형식이 계약서와 일치하는지 확인하라.
+### 3. Work Order for Jules (구현 지침)
+"Jules, 아래 순서대로 작업을 완료하고 보고하라."
+
+#### **Phase A: Backend (Aggregator)**
+1.  **Repository 활용**: `SimulationRepository`에 `get_generation_stats`가 이미 구현되어 있음.
+2.  **ViewModel 생성**: `simulation/viewmodels/snapshot_viewmodel.py`를 구현하여 데이터를 조립하라.
+3.  **API 노출**: `app.py`에서 `/api/simulation/dashboard` 엔드포인트를 연결하라.
+
+#### **Phase B: Frontend (UI/Visualization)**
+1.  **폴더 확인**: `frontend/src/components/dashboard/`에 작업 영역을 생성해 두었다.
+2.  **컴포넌트 구현**:
+    - `SocietyTab.tsx`: 세대별 자산 분포(Area Chart)와 실업 유형(Donut Chart).
+    - `GovernmentTab.tsx`: 세수 분포(Pie Chart) 및 세수 추이(Line Chart).
+    - `MarketTab.tsx`: CPI 및 품목별 추이(Multi-line Chart).
+    - `FinanceTab.tsx`: 시총 및 거래량 통계.
+3.  **데이터 연동**: `src/hooks/useSimulation.ts`를 사용하여 실제 API 데이터를 UI에 바인딩하라.
+4.  **스타일 준수**: `index.css`에 정의된 디자인 토큰과 `.glass-card` 클래스를 활용하여 프리미엄 룩을 유지하라.
 
 ---
 
