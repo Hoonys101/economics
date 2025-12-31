@@ -104,9 +104,17 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
             
             qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
             if qty > 0:
-                orders.append(
-                    Order(firm.id, "SELL", item_id, qty, final_price, item_id)
-                )
+                # Phase 6: Use post_ask for Brand Info Injection
+                market_obj = context.markets.get(item_id)
+                if market_obj:
+                    orders.append(
+                        firm.post_ask(item_id, final_price, qty, market_obj, current_time)
+                    )
+                else:
+                    # Fallback
+                    orders.append(
+                        Order(firm.id, "SELL", item_id, qty, final_price, item_id)
+                    )
 
         # 3. Execution: Hiring Logic
         target_inventory = firm.production_target
