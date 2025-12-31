@@ -227,6 +227,10 @@ class DashboardGlobalIndicatorsDTO:
     gdp: float
     avg_wage: float
     gini: float
+    # Phase 3
+    avg_tax_rate: float = 0.0
+    avg_leisure_hours: float = 0.0
+    parenting_rate: float = 0.0
 
 @dataclass
 class GenerationStatDTO:
@@ -239,11 +243,19 @@ class SocietyTabDataDTO:
     generations: List[GenerationStatDTO]
     mitosis_cost: float
     unemployment_pie: Dict[str, int] # e.g., {"struggling": 80, "voluntary": 20}
+    # Phase 3
+    time_allocation: Dict[str, float] = None  # e.g. {"work": 40.0, "parenting": 10.0}
+    avg_leisure_hours: float = 0.0
 
 @dataclass
 class GovernmentTabDataDTO:
     tax_revenue: Dict[str, float]
     fiscal_balance: Dict[str, float]
+    # Phase 3
+    tax_revenue_breakdown: Dict[str, float] = None # 50-tick Moving Sum
+    welfare_spending: float = 0.0 # Last Tick Flow
+    current_avg_tax_rate: float = 0.0
+    budget_balance: float = 0.0 # Last Tick Flow
 
 @dataclass
 class MarketTabDataDTO:
