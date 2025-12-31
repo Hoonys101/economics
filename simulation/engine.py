@@ -397,6 +397,7 @@ class Simulation:
                             target_market.place_order(order, self.time)
 
         household_pre_states = {}
+        household_time_allocation = {}  # Store time allocation for later use
         for household in self.households:
             if household.is_active:
                 pre_strategic_state = (
@@ -411,6 +412,20 @@ class Simulation:
                 household_orders, action_vector = household.make_decision(
                     self.markets, self.goods_data, market_data, self.time, self.government
                 )
+
+                # Phase 5: Calculate Time Allocation (Hydraulic Model)
+                # work_hours = work_agg * MAX_WORK_HOURS
+                # leisure_hours = 24 - work_hours - SHOPPING_HOURS
+                work_aggressiveness = action_vector.work_aggressiveness
+                max_work_hours = self.config_module.MAX_WORK_HOURS
+                shopping_hours = getattr(self.config_module, "SHOPPING_HOURS", 2.0)
+                hours_per_tick = getattr(self.config_module, "HOURS_PER_TICK", 24.0)
+
+                work_hours = work_aggressiveness * max_work_hours
+                leisure_hours = max(0.0, hours_per_tick - work_hours - shopping_hours)
+
+                household_time_allocation[household.id] = leisure_hours
+
                 for order in household_orders:
                     household_target_market = self.markets.get(order.market_id)
                     if household_target_market:
@@ -459,13 +474,35 @@ class Simulation:
         self._process_transactions(all_transactions)
 
         # ---------------------------------------------------------
-        # Activate Consumption Logic
+        # Activate Consumption Logic & Leisure Effects
         # ---------------------------------------------------------
         # After transactions, households have goods in inventory.
         # Now they must consume them to satisfy needs.
+        household_leisure_effects = {} # Store utility for AI reward injection
+
         for household in self.households:
              if household.is_active:
-                 household.decide_and_consume(self.time)
+                 # 1. Consumption
+                 consumed_items = household.decide_and_consume(self.time)
+
+                 # 2. Phase 5: Leisure Effect Application
+                 leisure_hours = household_time_allocation.get(household.id, 0.0)
+                 effect_dto = household.apply_leisure_effect(leisure_hours, consumed_items)
+
+                 # Store utility for reward injection
+                 household_leisure_effects[household.id] = effect_dto.utility_gained
+
+                 # Apply XP to Children (if Parenting)
+                 if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:
+                     for child_id in household.children_ids:
+                         # Children might be in self.agents
+                         child = self.agents.get(child_id)
+                         if child and isinstance(child, Household) and child.is_active:
+                             child.education_xp += effect_dto.xp_gained
+                             self.logger.debug(
+                                 f"PARENTING_XP_TRANSFER | Parent {household.id} -> Child {child_id}. XP: {effect_dto.xp_gained:.4f}",
+                                 extra={"agent_id": household.id, "tags": ["LEISURE_EFFECT", "parenting"]}
+                             )
 
         # --- Mitosis Processing (Agent Evolution) ---
         # Inserted after consumption reset (which is actually after consumption logic in original flow)
@@ -589,6 +626,10 @@ class Simulation:
                 agent_data = household.get_agent_data()
                 market_data = self._prepare_market_data(self.tracker)
                 
+                # Inject Phase 5 Leisure Utility into agent_data for Reward Calculation
+                leisure_utility = household_leisure_effects.get(household.id, 0.0)
+                agent_data["leisure_utility"] = leisure_utility
+
                 # Calculate Reward
                 reward = household.decision_engine.ai_engine._calculate_reward(
                     household.get_pre_state_data(),

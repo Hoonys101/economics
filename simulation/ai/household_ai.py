@@ -241,6 +241,19 @@ class HouseholdAI(BaseAIEngine):
         asset_weight = 1.0
         growth_weight = 5.0 # 욕구 해소에 더 높은 가중치
         
-        total_reward = (wealth_reward * asset_weight) + (need_reduction * growth_weight)
+        # 3. Leisure Utility (Phase 5)
+        # agent_data is injected with 'leisure_utility' in engine.py
+        leisure_utility = agent_data.get("leisure_utility", 0.0)
+
+        # Use config LEISURE_WEIGHT if available, else default 0.3
+        leisure_weight = 0.3
+        if self.ai_decision_engine and getattr(self.ai_decision_engine, "config_module", None):
+            leisure_weight = getattr(self.ai_decision_engine.config_module, "LEISURE_WEIGHT", 0.3)
+
+        total_reward = (
+            (wealth_reward * asset_weight) +
+            (need_reduction * growth_weight) +
+            (leisure_utility * leisure_weight)
+        )
         
         return total_reward

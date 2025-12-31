@@ -288,7 +288,9 @@ BANKRUPTCY_XP_PENALTY = 0.2       # 20% XP Loss
 # Phase 5: Time Allocation & Leisure Constants
 # ==============================================================================
 HOURS_PER_TICK = 24.0
+SHOPPING_HOURS = 2.0   # 쇼핑 및 가사 시간 (고정)
 MAX_WORK_HOURS = 14.0  # 법정/물리적 최대 노동 시간
+LEISURE_WEIGHT = 0.3   # AI 보상 함수에서 여가 효용의 가중치
 
 # 여가 유형별 계수
 LEISURE_COEFFS = {

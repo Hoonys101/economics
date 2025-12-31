@@ -13,7 +13,7 @@ from simulation.ai.api import (
     Aggressiveness,
 )
 from simulation.core_markets import Market  # Import Market
-from simulation.dtos import DecisionContext
+from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType
 
 # Import HouseholdAI and AIDrivenHouseholdDecisionEngine for mitosis
 from simulation.ai.household_ai import HouseholdAI
@@ -191,9 +191,15 @@ class Household(BaseAgent):
             self.employer_id = None
             self.current_wage = 0.0
 
-    def decide_and_consume(self, current_time: int) -> None:
-        """가계가 현재 욕구 상태와 보유 재고를 바탕으로 재화를 소모합니다."""
+    def decide_and_consume(self, current_time: int) -> Dict[str, float]:
+        """
+        가계가 현재 욕구 상태와 보유 재고를 바탕으로 재화를 소모합니다.
+
+        Returns:
+            Dict[str, float]: 이번 틱에 소비한 아이템과 수량 맵.
+        """
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["consumption"]}
+        consumed_items: Dict[str, float] = {}
 
         # 1. 모든 인벤토리 품목에 대해 소비 가능 여부 확인
         for item_id, inventory_quantity in list(self.inventory.items()):
@@ -227,6 +233,7 @@ class Household(BaseAgent):
                 
                 if quantity_to_consume > 0:
                     self.consume(item_id, quantity_to_consume, current_time)
+                    consumed_items[item_id] = consumed_items.get(item_id, 0.0) + quantity_to_consume
                     self.logger.info(
                         f"HOUSEHOLD_CONSUMPTION | Household {self.id} consumed {quantity_to_consume:.2f} {item_id}. Remaining inventory: {self.inventory.get(item_id, 0.0):.2f}",
                         extra={**log_extra, "item_id": item_id, "quantity": quantity_to_consume}
@@ -234,6 +241,7 @@ class Household(BaseAgent):
 
         # 2. 욕구 업데이트 (자연적 증가/감소)
         self.update_needs(current_time)
+        return consumed_items
 
     def _initialize_desire_weights(self, personality: Personality) -> Dict[str, float]:
         """
@@ -292,6 +300,70 @@ class Household(BaseAgent):
                     * old_perceived_price
                 )
                 self.perceived_avg_prices[item_id] = new_perceived_price
+
+    def apply_leisure_effect(
+        self, leisure_hours: float, consumed_items: Dict[str, float]
+    ) -> LeisureEffectDTO:
+        """
+        주어진 여가 시간과 소비 아이템에 따라 여가 유형을 결정하고 효과를 계산합니다.
+
+        Args:
+            leisure_hours (float): 할당된 여가 시간.
+            consumed_items (Dict[str, float]): 이번 틱에 소비된 아이템.
+
+        Returns:
+            LeisureEffectDTO: 계산된 여가 효과 데이터.
+        """
+        leisure_type: LeisureType = "SELF_DEV"  # Default
+
+        # Determine Leisure Type
+        has_children = len(self.children_ids) > 0
+        has_education = consumed_items.get("education_service", 0.0) > 0
+        has_luxury = (
+            consumed_items.get("luxury_food", 0.0) > 0 or
+            consumed_items.get("clothing", 0.0) > 0
+        )
+
+        if has_children and has_education:
+            leisure_type = "PARENTING"
+        elif has_luxury:
+            leisure_type = "ENTERTAINMENT"
+        else:
+            leisure_type = "SELF_DEV"
+
+        # Apply Effects using Coefficients from Config
+        coeffs = self.config_module.LEISURE_COEFFS.get(leisure_type, {})
+        utility_per_hour = coeffs.get("utility_per_hour", 0.0)
+        xp_gain_per_hour = coeffs.get("xp_gain_per_hour", 0.0)
+        productivity_gain = coeffs.get("productivity_gain", 0.0)
+
+        utility_gained = leisure_hours * utility_per_hour
+        xp_gained = leisure_hours * xp_gain_per_hour
+        prod_gained = leisure_hours * productivity_gain
+
+        # Apply Self-Dev productivity gain immediately to self
+        if leisure_type == "SELF_DEV" and prod_gained > 0:
+            # Assuming 'productivity' skill or base talent modification
+            # For simplicity, let's say it increases 'learning' skill if it exists, or just log for now
+            # The spec says "本인 생산성 향상" (Productivity increase)
+            # We can model this as labor_skill increase
+            self.labor_skill += prod_gained
+            self.logger.debug(
+                f"LEISURE_SELF_DEV | Household {self.id} increased labor skill by {prod_gained:.4f}. New Skill: {self.labor_skill:.4f}",
+                extra={"agent_id": self.id, "tags": ["LEISURE_EFFECT"]}
+            )
+        elif leisure_type == "ENTERTAINMENT" and utility_gained > 0:
+            self.logger.debug(
+                f"LEISURE_ENTERTAINMENT | Household {self.id} enjoyed entertainment. Utility: {utility_gained:.4f}",
+                extra={"agent_id": self.id, "tags": ["LEISURE_EFFECT"]}
+            )
+
+        return LeisureEffectDTO(
+            leisure_type=leisure_type,
+            leisure_hours=leisure_hours,
+            utility_gained=utility_gained,
+            xp_gained=xp_gained
+        )
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
