@@ -7,7 +7,7 @@ from simulation.firms import Firm
 from simulation.ai_model import AIEngineRegistry
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.loan_market import LoanMarket
-from simulation.agents.bank import Bank
+from simulation.bank import Bank
 from simulation.models import Transaction
 from simulation.decisions.ai_driven_household_engine import (
     AIDrivenHouseholdDecisionEngine,

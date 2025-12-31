@@ -58,7 +58,7 @@ class FirmAI(BaseAIEngine):
     def _get_common_state(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Tuple:
         """
         Common state features shared across channels.
-        Includes: Profitability, Inventory Level, Cash Level
+        Includes: Profitability, Inventory Level, Cash Level, Debt Metrics
         """
         # 1. Inventory Level (0=Empty, 1=Target, 2=Over)
         target = agent_data.get("production_target", 100)
@@ -71,7 +71,19 @@ class FirmAI(BaseAIEngine):
         cash = agent_data.get("assets", 0)
         cash_idx = self._discretize(cash, [100, 500, 1000, 5000, 10000])
 
-        return (inv_idx, cash_idx)
+        # 3. Debt Ratio
+        debt_info = market_data.get("debt_data", {}).get(self.agent_id, {"total_principal": 0.0, "daily_interest_burden": 0.0})
+        total_debt = debt_info.get("total_principal", 0.0)
+        interest_burden = debt_info.get("daily_interest_burden", 0.0)
+
+        debt_ratio = total_debt / cash if cash > 0 else 0.0
+        debt_idx = self._discretize(debt_ratio, [0.1, 0.3, 0.5, 0.8])
+
+        # 4. Interest Burden
+        burden_ratio = interest_burden / (cash * 0.01 + 1e-9)
+        burden_idx = self._discretize(burden_ratio, [0.1, 0.2, 0.5])
+
+        return (inv_idx, cash_idx, debt_idx, burden_idx)
 
     def decide_action_vector(
         self,

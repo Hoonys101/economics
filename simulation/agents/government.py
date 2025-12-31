@@ -78,6 +78,37 @@ class Government:
         )
         return amount
 
+    def update_monetary_policy(self, bank_agent: Any, current_tick: int, inflation_rate: float = 0.0):
+        """
+        중앙은행 역할: 인플레이션 등에 따라 기준 금리를 조절합니다.
+        (현재는 간단한 Rule-based 로직: 인플레가 높으면 금리 인상)
+        """
+        # 기본 금리 가져오기
+        current_rate = bank_agent.base_rate
+
+        # 목표 인플레이션 (예: 2%)
+        target_inflation = 0.02
+
+        # Taylor Rule Simplified
+        # Rate = Current + 0.5 * (Inflation - Target)
+        # 틱당 호출되므로 변화폭을 매우 작게 하거나, 분기별로 호출해야 함.
+        # 여기서는 매 틱 아주 미세하게 조정하거나, 특정 주기에만 조정.
+
+        if current_tick > 0 and current_tick % 10 == 0: # 10틱마다 조정
+            adjustment = 0.5 * (inflation_rate - target_inflation)
+            # 스무딩
+            new_rate = current_rate + (adjustment * 0.1)
+
+            # 하한/상한 (0% ~ 20%)
+            new_rate = max(0.0, min(0.20, new_rate))
+
+            if abs(new_rate - current_rate) > 0.0001:
+                bank_agent.update_base_rate(new_rate)
+                logger.info(
+                    f"MONETARY_POLICY_UPDATE | Rate: {current_rate:.4f} -> {new_rate:.4f} (Infl: {inflation_rate:.4f})",
+                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["policy", "rate"]}
+                )
+
     def invest_infrastructure(self, current_tick: int) -> bool:
         """인프라에 투자하여 전체 생산성을 향상시킵니다."""
         cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)

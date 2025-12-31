@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 from simulation.models import Order
 from simulation.loan_market import LoanMarket
-from simulation.agents.bank import Bank
+from simulation.bank import Bank
 import config  # Import config for DEFAULT_LOAN_DURATION
 
 
@@ -13,10 +13,7 @@ def mock_bank():
     bank.id = 0
     bank.assets = 1000000.0
     bank.loans = {}
-    bank.grant_loan.return_value = (
-        "loan_id_123",
-        {"amount": 100, "interest_rate": 0.05, "duration": 10},
-    )
+    bank.grant_loan.return_value = "loan_id_123"
     bank.process_repayment.return_value = None
     return bank
 
@@ -56,8 +53,9 @@ class TestLoanMarket:
         )
         transactions = loan_market_instance.place_order(order, 1)
 
+    # Update expectation to match new API (keyword args, no interest_rate passed)
         mock_bank.grant_loan.assert_called_once_with(
-            1, 100, 0.05, config.DEFAULT_LOAN_DURATION
+            borrower_id=1, amount=100, term_ticks=config.DEFAULT_LOAN_DURATION
         )
         assert len(transactions) == 1
         assert transactions[0].item_id == "loan_granted"
@@ -78,7 +76,7 @@ class TestLoanMarket:
     def test_place_loan_request_denies_loan(
         self, loan_market_instance, mock_bank, mock_logger
     ):
-        mock_bank.grant_loan.return_value = (None, None)  # Simulate loan denial
+        mock_bank.grant_loan.return_value = None  # Simulate loan denial (returns None)
         order = Order(
             agent_id=1,
             order_type="LOAN_REQUEST",

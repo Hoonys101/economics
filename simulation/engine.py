@@ -8,7 +8,7 @@ from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
-from simulation.agents.bank import Bank
+from simulation.bank import Bank
 from simulation.agents.government import Government
 from simulation.loan_market import LoanMarket
 from simulation.markets.stock_market import StockMarket
@@ -70,7 +70,9 @@ class Simulation:
         )  # Define this in config.py
 
         self.bank = Bank(
-            id=self.next_agent_id, initial_assets=self.config_module.INITIAL_BANK_ASSETS
+            id=self.next_agent_id,
+            initial_assets=self.config_module.INITIAL_BANK_ASSETS,
+            config_module=self.config_module
         )
         self.agents[self.bank.id] = self.bank
         self.next_agent_id += 1
@@ -315,6 +317,13 @@ class Simulation:
             and self.time % self.config_module.IMITATION_LEARNING_INTERVAL == 0
         ):
             self.ai_training_manager.run_imitation_learning_cycle(self.time)
+
+        # Update Bank Tick (Interest Processing)
+        self.bank.run_tick(self.agents)
+
+        # 1c. 통화 정책 업데이트 (정부/중앙은행)
+        inflation_rate = 0.0 # TODO: Calculate inflation properly from tracker
+        self.government.update_monetary_policy(self.bank, self.time, inflation_rate)
 
         for firm in self.firms:
             firm.hires_last_tick = 0
@@ -634,6 +643,15 @@ class Simulation:
     def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
         goods_market_data: Dict[str, Any] = {}
+
+        # [Bank Info Injection for AI]
+        # In a real scenario, this would be queried from LoanMarket or Bank directly.
+        # Here we inject the bank instance wrapper or summary map.
+        debt_data_map = {}
+        for agent_id in self.agents:
+            if isinstance(self.agents[agent_id], Household) or isinstance(self.agents[agent_id], Firm):
+                debt_data_map[agent_id] = self.bank.get_debt_summary(agent_id)
+
         for good_name in self.config_module.GOODS:
             market = self.markets.get(good_name)
             if market and isinstance(market, OrderBookMarket):
@@ -701,10 +719,11 @@ class Simulation:
         return {
             "time": self.time,
             "goods_market": goods_market_data,
-            "loan_market": {"interest_rate": self.config_module.LOAN_INTEREST_RATE},
+            "loan_market": {"interest_rate": self.bank.base_rate}, # Use bank base rate
             "stock_market": stock_market_data,
             "all_households": self.households,
             "avg_goods_price": avg_goods_price_for_market_data,
+            "debt_data": debt_data_map, # Injected Debt Data
         }
 
     def get_all_agents(self) -> List[Any]:

@@ -231,12 +231,20 @@ MAX_LEARNING_RATE = 0.5           # 최대 학습률
 LEARNING_EFFICIENCY = 1.0         # XP 획득 효율
 
 
-# --- Loan Market ---
+# --- Loan Market (Deprecated/Legacy - overwritten by Banking below) ---
 LOAN_INTEREST_RATE = 0.05
 INITIAL_BANK_ASSETS = 1000000.0
 HOUSEHOLD_LOAN_THRESHOLD = 500.0
 LOAN_DURATION = 20
 DEFAULT_LOAN_DURATION = 10
+
+# --- Banking & Time Scale (Phase 3) ---
+TICKS_PER_YEAR = 100.0          # 1년 = 100틱 (모든 이자 계산의 기준)
+INITIAL_BASE_ANNUAL_RATE = 0.05 # 연 5% (틱당 금리가 아님!)
+LOAN_DEFAULT_TERM = 50          # 6개월 (50틱)
+CREDIT_SPREAD_BASE = 0.02       # 연 2% 가산금리
+BANK_MARGIN = 0.02              # 예대마진 (연 2%)
+
 
 # --- Liquidity ---
 LIQUIDITY_RATIO_MAX = 0.8
