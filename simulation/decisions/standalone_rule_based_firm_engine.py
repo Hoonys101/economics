@@ -99,7 +99,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 # RuleBasedFirmDecisionEngine에는 가격 조정 메서드가 없으므로, 여기에 간단히 구현하거나
                 # _adjust_price_with_ai와 유사한 메서드를 RuleBasedFirmDecisionEngine에 추가하는 것을 고려해야 한다.
                 # 현재는 AIDrivenFirmDecisionEngine의 _adjust_price를 참조하여 유사하게 구현 (재고 기반 가격 조정)
-                orders.extend(self._adjust_price_based_on_inventory(firm, current_time))
+                orders.extend(self._adjust_price_based_on_inventory(firm, current_time, markets))
                 self.logger.info(
                     f"Firm {firm.id} RuleBased: Adjusting price and selling.",
                     extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
@@ -109,7 +109,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         if chosen_tactic == Tactic.NO_ACTION:
             # Fallback for pricing, always attempt to sell if inventory exists.
             if current_inventory > 0:
-                orders.extend(self._adjust_price_based_on_inventory(firm, current_time))
+                orders.extend(self._adjust_price_based_on_inventory(firm, current_time, markets))
                 chosen_tactic = Tactic.PRICE_HOLD # Placeholder, as some action was taken
                 self.logger.info(
                     f"Firm {firm.id} RuleBased: Defaulting to price adjustment/selling.",
@@ -118,10 +118,11 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         return orders, (chosen_tactic, chosen_aggressiveness)
     
-    def _adjust_price_based_on_inventory(self, firm: Firm, current_tick: int) -> List[Order]:
+    def _adjust_price_based_on_inventory(self, firm: Firm, current_tick: int, markets: Dict[str, Any] = None) -> List[Order]:
         """
         재고 수준에 따라 판매 가격을 조정하고 판매 주문을 생성한다.
         AIDrivenFirmDecisionEngine의 _adjust_price 메서드와 유사하게 구현.
+        Phase 6: Modified to use firm.post_ask for brand info injection.
         """
         orders = []
         item_id = firm.specialization
@@ -167,15 +168,24 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 current_inventory, self.config_module.MAX_SELL_QUANTITY
             )
             if quantity_to_sell > 0:
-                order = Order(
-                    firm.id,
-                    "SELL",
-                    item_id,
-                    quantity_to_sell,
-                    final_price,
-                    "goods_market",
-                )
-                orders.append(order)
+                # Phase 6: Use post_ask
+                market_obj = markets.get(item_id) if markets else None
+                if market_obj:
+                    orders.append(
+                        firm.post_ask(item_id, final_price, quantity_to_sell, market_obj, current_tick)
+                    )
+                else:
+                    # Fallback
+                    order = Order(
+                        firm.id,
+                        "SELL",
+                        item_id,
+                        quantity_to_sell,
+                        final_price,
+                        "goods_market",
+                    )
+                    orders.append(order)
+
                 self.logger.info(
                     f"Firm {firm.id} RuleBased Price Adj: Selling {quantity_to_sell:.1f} of {item_id} at price {final_price:.2f}",
                     extra={

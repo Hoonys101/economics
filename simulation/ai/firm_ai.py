@@ -269,5 +269,15 @@ class FirmAI(BaseAIEngine):
         # 최종 보상 = 자산 증분 + 가치 유지 보상
         # 가계가 주식을 선호하도록 배당을 주는 행위가 주가를 올린다면, 
         # 자산 감소(wealth_delta 음수)를 주가 상승(price_reward 양수)이 상쇄하도록 유도
-        return wealth_delta + price_reward_val
+
+        # 3. Brand Valuation (Phase 6)
+        # Reward += (Delta Awareness * Assets * 0.05)
+        current_awareness = post_state_data.get("brand_awareness", 0.0)
+        prev_awareness = pre_state_data.get("brand_awareness", 0.0)
+        delta_awareness = current_awareness - prev_awareness
+
+        assets = post_state_data.get("assets", 0.0)
+        brand_valuation = delta_awareness * assets * 0.05
+
+        return wealth_delta + price_reward_val + brand_valuation
 

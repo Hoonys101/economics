@@ -5,7 +5,8 @@ import logging
 import copy
 
 from simulation.models import Order, Transaction
-from simulation.core_agents import Household  # Household 클래스 임포트
+from simulation.brands.brand_manager import BrandManager
+from simulation.core_agents import Household
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
@@ -66,7 +67,12 @@ class Firm(BaseAgent):
         self.revenue_this_tick = 0.0
         self.expenses_this_tick = 0.0
         # --- GEMINI_PROPOSED_ADDITION_END ---
-        
+
+        # --- Phase 6: Brand Engine ---
+        self.brand_manager = BrandManager(self.id, config_module, logger)
+        self.marketing_budget: float = 0.0
+        self.prev_awareness: float = 0.0
+
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
         self.is_publicly_traded: bool = True   # 상장 여부
@@ -74,7 +80,7 @@ class Firm(BaseAgent):
             config_module, "DIVIDEND_RATE", 0.3
         )  # 기업별 배당률 (기본값: config)
         self.treasury_shares: float = 0.0  # 자사주 보유량
-        self.capital_stock: float = 100.0   # 실물 자본재 (초기값)
+        self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
 
         self.decision_engine.loan_market = loan_market
 
@@ -229,6 +235,8 @@ class Firm(BaseAgent):
             "treasury_shares": self.treasury_shares,
             "dividend_rate": self.dividend_rate,
             "capital_stock": self.capital_stock,
+            "brand_awareness": self.brand_manager.brand_awareness,
+            "perceived_quality": self.brand_manager.perceived_quality,
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:
@@ -270,6 +278,65 @@ class Firm(BaseAgent):
             },
         )
         return decisions, tactic
+
+    def post_ask(
+        self,
+        item_id: str,
+        price: float,
+        quantity: float,
+        market: Any,
+        current_tick: int,
+    ) -> Order:
+        """
+        판매 주문을 생성하고 시장에 제출합니다.
+        Brand Metadata를 자동으로 주입합니다.
+
+        Note: simulation/engine.py collects orders returned by make_decision and places them.
+        To avoid double submission, this method currently RETURNS the order but does NOT call
+        market.place_order(). If the calling engine uses the returned order list, this is safe.
+        """
+        # 1. 브랜드 정보 스냅샷
+        brand_snapshot = {
+            "brand_awareness": self.brand_manager.brand_awareness,
+            "perceived_quality": self.brand_manager.perceived_quality,
+        }
+
+        market_id = market.id if hasattr(market, "id") else str(market)
+
+        order = Order(
+            agent_id=self.id,
+            order_type="SELL",
+            item_id=item_id,
+            quantity=quantity,
+            price=price,
+            market_id=market_id,
+            brand_info=brand_snapshot,
+        )
+
+        self.logger.debug(
+            f"FIRM_POST_ASK | Firm {self.id} posted SELL order for {quantity:.1f} {item_id} @ {price:.2f} with brand_info",
+            extra={
+                "agent_id": self.id,
+                "tick": current_tick,
+                "brand_awareness": brand_snapshot["brand_awareness"],
+            },
+        )
+        return order
+
+    def calculate_brand_premium(self, market_data: Dict[str, Any]) -> float:
+        """브랜드 프리미엄 = 내 판매가격 - 시장 평균가격"""
+        item_id = self.specialization
+        market_avg_key = f"{item_id}_avg_traded_price"
+        market_avg_price = market_data.get("goods_market", {}).get(market_avg_key, 0.0)
+
+        if market_avg_price <= 0:
+             market_avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", 0.0)
+
+        my_price = self.last_prices.get(item_id, market_avg_price)
+
+        if market_avg_price > 0:
+            return my_price - market_avg_price
+        return 0.0
 
     def produce(self, current_time: int) -> None:
         """
@@ -406,6 +473,38 @@ class Firm(BaseAgent):
                 extra={**log_extra, "total_wages": total_wages},
             )
 
+        # --- Phase 6: Marketing Spend & Brand Update ---
+        # Mock Decision: 5% of this turn's revenue (if any) or min 10.0 if assets allow
+        marketing_spend = 0.0
+        if self.assets > 100.0:
+            marketing_spend = max(10.0, self.revenue_this_turn * 0.05)
+
+        if self.assets >= marketing_spend:
+             self.assets -= marketing_spend
+             self.cost_this_turn += marketing_spend
+             self.marketing_budget = marketing_spend # Record for AI/Stats
+        else:
+             marketing_spend = 0.0
+             self.marketing_budget = 0.0
+
+        # Update Brand Assets
+        actual_quality = self.productivity_factor / 10.0
+        self.brand_manager.update(marketing_spend, actual_quality)
+
+        # Logging Brand Premium
+        brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
+        self.logger.info(
+            f"FIRM_BRAND_METRICS | Firm {self.id}: Awareness={self.brand_manager.brand_awareness:.4f}, "
+            f"Quality={self.brand_manager.perceived_quality:.4f}, Premium={brand_premium:.2f}",
+            extra={
+                **log_extra,
+                "brand_awareness": self.brand_manager.brand_awareness,
+                "perceived_quality": self.brand_manager.perceived_quality,
+                "brand_premium": brand_premium
+            }
+        )
+        # ---------------------------------------------
+
         self.needs["liquidity_need"] += self.config_module.LIQUIDITY_NEED_INCREASE_RATE
         self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"])
 
@@ -437,5 +536,7 @@ class Firm(BaseAgent):
                 "assets_after": self.assets,
                 "num_employees_after": len(self.employees),
                 "is_active_after": self.is_active,
+                "brand_awareness": self.brand_manager.brand_awareness,
+                "perceived_quality": self.brand_manager.perceived_quality
             },
         )
