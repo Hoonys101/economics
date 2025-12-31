@@ -82,6 +82,7 @@ class OrderBookMarket(Market):
         """
         현재 틱의 모든 주문을 매칭하고 거래를 실행합니다.
         각 아이템별로 주문 매칭을 수행합니다.
+        Phase 6: Targeted Orders Protocol updated.
         """
         all_transactions: List[Transaction] = []
 
@@ -155,35 +156,100 @@ class OrderBookMarket(Market):
             "item_id": item_id,
         }
 
-        # --- GEMINI_DEBUG_START ---
-        if item_id == "labor" or item_id == "food":  # Log for labor and food market
-            buy_orders_list = self.buy_orders.get(item_id, [])
-            sell_orders_list = self.sell_orders.get(item_id, [])
-            self.logger.info(
-                f"MATCHING_DEBUG | Item: {item_id}, #Buy: {len(buy_orders_list)}, #Sell: {len(sell_orders_list)}",
-                extra=log_extra,
-            )
-            if buy_orders_list and sell_orders_list:
-                self.logger.info(
-                    f"MATCHING_DEBUG | Best Bid: {buy_orders_list[0].price:.2f}, Best Ask: {sell_orders_list[0].price:.2f}",
-                    extra=log_extra,
-                )
-            elif buy_orders_list:
-                self.logger.info(
-                    f"MATCHING_DEBUG | Item: {item_id}, Only Buy Orders. Best Bid: {buy_orders_list[0].price:.2f}",
-                    extra=log_extra,
-                )
-            elif sell_orders_list:
-                self.logger.info(
-                    f"MATCHING_DEBUG | Item: {item_id}, Only Sell Orders. Best Ask: {sell_orders_list[0].price:.2f}",
-                    extra=log_extra,
-                )
-            else:
-                self.logger.info(
-                    f"MATCHING_DEBUG | Item: {item_id}, No orders.", extra=log_extra
-                )
-        # --- GEMINI_DEBUG_END ---
+        if item_id not in self.buy_orders: self.buy_orders[item_id] = []
+        if item_id not in self.sell_orders: self.sell_orders[item_id] = []
 
+        buy_orders_list = self.buy_orders[item_id]
+        sell_orders_list = self.sell_orders[item_id]
+
+        # --- Phase 6: Targeted Matching (Priority) ---
+        # 1. Separate targeted and general buy orders
+        targeted_buys = [o for o in buy_orders_list if o.target_agent_id is not None]
+        general_buys = [o for o in buy_orders_list if o.target_agent_id is None]
+
+        # 2. Match Targeted Orders First
+        # We need to iterate carefully since we are modifying lists (quantity reduction)
+        # Strategy: Iterate targeted buys, find specific seller.
+        remaining_targeted_buys = []
+
+        for buy_order in targeted_buys:
+            target_id = buy_order.target_agent_id
+
+            # Find the sell order from target_id (if any)
+            target_sell_order = None
+            for sell_order in sell_orders_list:
+                if sell_order.agent_id == target_id:
+                    # found it!
+                    # Logic: Targeted orders match IF price conditions met?
+                    # Spec says: "Place BuyOrder with price = AskPrice". So it should match.
+                    # But if ask price changed?
+                    if buy_order.price >= sell_order.price:
+                        target_sell_order = sell_order
+                    break
+
+            if target_sell_order:
+                trade_price = target_sell_order.price # Targeted deals execute at Seller's Price
+                trade_quantity = min(buy_order.quantity, target_sell_order.quantity)
+
+                transaction = Transaction(
+                    item_id=item_id,
+                    quantity=trade_quantity,
+                    price=trade_price,
+                    buyer_id=buy_order.agent_id,
+                    seller_id=target_sell_order.agent_id,
+                    market_id=self.id,
+                    transaction_type="goods",
+                    time=current_tick,
+                )
+                transactions.append(transaction)
+
+                self.logger.info(
+                    f"Targeted Match {trade_quantity:.2f} of {item_id} at {trade_price:.2f}. Buyer: {buy_order.agent_id} -> Seller: {target_sell_order.agent_id}",
+                    extra={**log_extra, "tags": ["match", "targeted"]}
+                )
+
+                buy_order.quantity -= trade_quantity
+                target_sell_order.quantity -= trade_quantity
+
+                # Cleanup if exhausted
+                if target_sell_order.quantity <= 0:
+                    sell_orders_list.remove(target_sell_order)
+
+                if buy_order.quantity > 0:
+                    # Partial fill? Add to remaining (general pool? or expire?)
+                    # Spec says: "If match NOT found (Sold out?): Buy Order Expires/Fails"
+                    # But here we found match, maybe partial.
+                    # Let's say residual drops to general pool if targeting failed?
+                    # Or just expire remaining targeting?
+                    # Simplification: Convert remaining to general buy? No, "Consumer leaves empty-handed" implies expiration.
+                    # BUT partial fill is better than nothing.
+                    pass # It stays in targeted list but next loop won't find seller if sold out.
+            else:
+                 # Seller not found or price mismatch.
+                 # Spec: "Expires/Fails".
+                 pass
+
+        # Remove exhausted buy orders from the main list (which we haven't touched yet, we used copies/filters)
+        # Actually we need to reconstruct buy_orders_list
+        # But wait, we filtered `buy_orders_list`. We modified objects in it.
+        # So we just need to filter out empty orders.
+        # AND exclude failed targeted orders from general matching.
+
+        # New Buy Order List for General Matching:
+        # Only General Buys that are valid. Targeted buys are done (success or fail).
+        self.buy_orders[item_id] = [o for o in general_buys if o.quantity > 0]
+
+        # Clean sell orders (remove 0 qty) - already done in loop but safety check
+        self.sell_orders[item_id] = [o for o in sell_orders_list if o.quantity > 0]
+
+        # Re-sort General Buys (Price Desc) and Sells (Price Asc)
+        self.buy_orders[item_id].sort(key=lambda o: o.price, reverse=True)
+        self.sell_orders[item_id].sort(key=lambda o: o.price)
+
+
+        # --- End Phase 6 Targeted Matching ---
+
+        # --- Standard Matching (Residuals) ---
         while (
             self.buy_orders.get(item_id)
             and self.sell_orders.get(item_id)

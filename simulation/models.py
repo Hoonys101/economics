@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Dict, Any, Optional
 import uuid
 
 
@@ -13,6 +14,10 @@ class Order:
     price: float
     market_id: str
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
+
+    # Phase 6: Brand Economy Update
+    target_agent_id: Optional[int] = None # Targeted Buy Order (특정 판매자 지정)
+    brand_info: Optional[Dict[str, Any]] = None # Sell Order Metadata (품질, 브랜드 정보)
 
 
 @dataclass

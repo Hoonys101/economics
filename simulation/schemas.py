@@ -40,6 +40,11 @@ class FirmActionVector:
     # 1.0: 투자 최대화 (설비 확장 집중)
     capital_aggressiveness: float = 0.5
 
+    # 8. 마케팅 투자 적극성 (Phase 6)
+    # 0.0: No Marketing
+    # 1.0: Max Marketing Budget (e.g. 20% of Revenue/Assets)
+    marketing_aggressiveness: float = 0.5
+
 
 @dataclass
 class HouseholdActionVector:

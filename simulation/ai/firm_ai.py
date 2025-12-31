@@ -39,6 +39,7 @@ class FirmAI(BaseAIEngine):
         self.q_dividend = QTableManager()
         self.q_equity = QTableManager()
         self.q_capital = QTableManager()
+        self.q_marketing = QTableManager() # Phase 6
         
         # State Tracking
         self.last_sales_state: Optional[Tuple] = None
@@ -46,11 +47,13 @@ class FirmAI(BaseAIEngine):
         self.last_dividend_state: Optional[Tuple] = None
         self.last_equity_state: Optional[Tuple] = None
         self.last_capital_state: Optional[Tuple] = None
+        self.last_marketing_state: Optional[Tuple] = None
         self.last_sales_action_idx: Optional[int] = None
         self.last_hiring_action_idx: Optional[int] = None
         self.last_dividend_action_idx: Optional[int] = None
         self.last_equity_action_idx: Optional[int] = None
         self.last_capital_action_idx: Optional[int] = None
+        self.last_marketing_action_idx: Optional[int] = None
 
     def set_ai_decision_engine(self, engine: "AIDecisionEngine"):
         self.ai_decision_engine = engine
@@ -99,6 +102,7 @@ class FirmAI(BaseAIEngine):
         self.last_dividend_state = state
         self.last_equity_state = state
         self.last_capital_state = state
+        self.last_marketing_state = state
 
         # 1. Sales Channel
         sales_actions = list(range(len(self.AGGRESSIVENESS_LEVELS))) # Indices
@@ -140,8 +144,16 @@ class FirmAI(BaseAIEngine):
         self.last_capital_action_idx = capital_action_idx
         capital_agg = self.AGGRESSIVENESS_LEVELS[capital_action_idx]
 
+        # 6. Marketing Channel (Phase 6)
+        marketing_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
+        marketing_action_idx = self.action_selector.choose_action(
+            self.q_marketing, state, marketing_actions
+        )
+        self.last_marketing_action_idx = marketing_action_idx
+        marketing_agg = self.AGGRESSIVENESS_LEVELS[marketing_action_idx]
+
         logger.debug(
-            f"FIRM_AI_V2 | Firm {self.agent_id} | Sales: {sales_agg} | Hire: {hiring_agg} | Div: {dividend_agg} | Eq: {equity_agg} | Cap: {capital_agg}",
+            f"FIRM_AI_V2 | Firm {self.agent_id} | Sales: {sales_agg} | Hire: {hiring_agg} | Div: {dividend_agg} | Eq: {equity_agg} | Cap: {capital_agg} | Mkt: {marketing_agg}",
             extra={"tags": ["ai_v2"]}
         )
 
@@ -151,7 +163,8 @@ class FirmAI(BaseAIEngine):
             production_aggressiveness=0.5, # Default for now
             dividend_aggressiveness=dividend_agg,
             equity_aggressiveness=equity_agg,
-            capital_aggressiveness=capital_agg
+            capital_aggressiveness=capital_agg,
+            marketing_aggressiveness=marketing_agg
         )
 
     def update_learning_v2(
@@ -227,6 +240,18 @@ class FirmAI(BaseAIEngine):
                 self.gamma
             )
 
+        # Update Marketing Q-Table
+        if self.last_marketing_state is not None and self.last_marketing_action_idx is not None:
+            self.q_marketing.update_q_table(
+                self.last_marketing_state,
+                self.last_marketing_action_idx,
+                reward,
+                next_state,
+                list(range(len(self.AGGRESSIVENESS_LEVELS))),
+                self.base_alpha,
+                self.gamma
+            )
+
     # Legacy Methods (Required by BaseAIEngine ABC but unused/deprecated)
     def _get_strategic_state(self, a, m): pass
     def _get_tactical_state(self, i, a, m): pass
@@ -269,5 +294,16 @@ class FirmAI(BaseAIEngine):
         # 최종 보상 = 자산 증분 + 가치 유지 보상
         # 가계가 주식을 선호하도록 배당을 주는 행위가 주가를 올린다면, 
         # 자산 감소(wealth_delta 음수)를 주가 상승(price_reward 양수)이 상쇄하도록 유도
-        return wealth_delta + price_reward_val
+
+        # Phase 6: Brand Valuation Reward (Intangible Asset)
+        # Reward = Delta Assets + (Delta BrandAwareness * ValuationMultiplier)
+
+        brand_awareness = agent_data.get("brand_awareness", 0.0)
+        prev_brand_awareness = pre_state_data.get("brand_awareness", 0.0)
+        delta_awareness = brand_awareness - prev_brand_awareness
+
+        valuation_multiplier = getattr(self.ai_decision_engine.config_module, "VALUATION_MULTIPLIER", 1000.0)
+        brand_reward = delta_awareness * valuation_multiplier
+
+        return wealth_delta + price_reward_val + brand_reward
 

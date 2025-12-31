@@ -214,6 +214,33 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                         subsidy_amount = investment_budget * subsidy_rate
                         context.government.provide_subsidy(firm, subsidy_amount, context.current_time)
 
+        # 7. Execution: Marketing Investment (Phase 6)
+        # Marketing Aggressiveness 0.0 ~ 1.0
+        # Budget = (Assets * BudgetRatio * Aggressiveness) or (Revenue * Ratio)
+        # Let's use Assets * 0.1 (Max 10% of assets) for now.
+        mkt_agg = action_vector.marketing_aggressiveness
+
+        # Only spend if we have enough assets
+        if firm.assets > 500.0:
+            marketing_budget = firm.assets * 0.1 * mkt_agg
+
+            # Cap at reasonable amount (e.g. 5000)
+            marketing_budget = min(marketing_budget, 5000.0)
+
+            if marketing_budget > 10.0:
+                firm.assets -= marketing_budget
+                # Stash budget in firm state for produce() to pick up later?
+                # Or apply immediately?
+                # Firm.produce() calls BrandManager.update().
+                # So we need to store this budget in firm so produce() can use it.
+                # I added firm.marketing_budget_this_tick in firms.py
+                firm.marketing_budget_this_tick = marketing_budget
+
+                self.logger.info(
+                    f"Firm {firm.id} allocated marketing budget: {marketing_budget:.2f} (Agg: {mkt_agg:.2f})",
+                    extra={"tick": current_time, "agent_id": firm.id, "marketing_budget": marketing_budget}
+                )
+
         return orders, action_vector
 
     # Legacy helper methods removed as they are integrated into vector execution logic

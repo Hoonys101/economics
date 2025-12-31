@@ -65,55 +65,81 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         for item_id in goods_list:
             agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
             
-            good_info = self.config_module.GOODS.get(item_id, {})
-            utility_effects = good_info.get("utility_effects", {})
+            # --- Phase 6: Targeted Buying using Utility Function ---
+
+            # Scan the market for potential sellers
+            # We need to access the market object to see asks.
+            # Assuming 'goods_market' is the ID.
+            market = markets.get("goods_market")
+
+            target_agent_id = None
+            target_price = 0.0
             
-            # Improved Valuation: Anchor to Market Price + Urgent Need
+            # Default logic (Fallback): Blind Buy
             avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
             if not avg_price or avg_price <= 0:
-                avg_price = self.config_module.MARKET_PRICE_FALLBACK # Fallback
-                
-            # Valuation factor: Use the most pressing need satisfied by this good
+                avg_price = self.config_module.MARKET_PRICE_FALLBACK
+
+            # Calculate Willingness To Pay (Budget/Utility Based)
+            good_info = self.config_module.GOODS.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
             max_need_value = 0.0
             for need_type in utility_effects.keys():
                 nv = household.needs.get(need_type, 0.0)
                 if nv > max_need_value:
                     max_need_value = nv
             
-            # Need Factor: if max_need is 50 (medium), factor is 1.0. If 100, factor is 2.0.
             need_factor = self.config_module.NEED_FACTOR_BASE + (max_need_value / self.config_module.NEED_FACTOR_SCALE)
             valuation_modifier = self.config_module.VALUATION_MODIFIER_BASE + (agg_buy * self.config_module.VALUATION_MODIFIER_RANGE)
-            
             willingness_to_pay = avg_price * need_factor * valuation_modifier
+
+            # Phase 6: Choose Best Seller
+            if market:
+                # Get all asks for this item
+                asks = market.get_all_asks(item_id)
+                if asks:
+                    best_ask = self._choose_best_seller(household, asks, item_id, willingness_to_pay)
+                    if best_ask:
+                        target_agent_id = best_ask.agent_id
+                        target_price = best_ask.price
+                        # If target price is higher than WTP, do we still buy?
+                        # If WTP is strict, we might skip. But if urgency is high, maybe we stretch?
+                        # For now, let's say if target_price <= willingness_to_pay * 1.1 (margin), we target it.
+                        # Else, we place a limit order at WTP (untargeted or targeting best but low price).
+                        # Let's trust the Utility Function: it picks the best VALUE.
+                        # We use the Ask Price for the order.
+                        willingness_to_pay = target_price # Match the seller's price
             
-            # 3. Execution: Multi-unit Purchase Logic (Bulk Buying)
-            # If need is high (> 70) or agg_buy is very high, buy more units.
+            # Logic for Quantity (Bulk Buying) - Same as before
             max_q = self.config_module.HOUSEHOLD_MAX_PURCHASE_QUANTITY
-            
             target_quantity = 1.0
-            
             if max_need_value > self.config_module.BULK_BUY_NEED_THRESHOLD:
                 target_quantity = max_q
             elif agg_buy > self.config_module.BULK_BUY_AGG_THRESHOLD:
-                target_quantity = max(1.0, max_q * self.config_module.BULK_BUY_MODERATE_RATIO) # Moderate panic
+                target_quantity = max(1.0, max_q * self.config_module.BULK_BUY_MODERATE_RATIO)
             
-            # Budget Constraint Check: Don't spend more than 50% of assets on a single item per tick
-            # unless survival is critical.
+            # Budget Constraint
             budget_limit = household.assets * self.config_module.BUDGET_LIMIT_NORMAL_RATIO
             if max_need_value > self.config_module.BUDGET_LIMIT_URGENT_NEED:
-                budget_limit = household.assets * self.config_module.BUDGET_LIMIT_URGENT_RATIO # Extreme urgency
+                budget_limit = household.assets * self.config_module.BUDGET_LIMIT_URGENT_RATIO
             
             if willingness_to_pay * target_quantity > budget_limit:
-                # Reduce quantity first
-                target_quantity = max(1.0, budget_limit / willingness_to_pay)
-                # If still too expensive, reduce WTP? No, just buy less.
-                if willingness_to_pay * target_quantity > budget_limit:
-                    target_quantity = budget_limit / willingness_to_pay
+                 if willingness_to_pay > 0:
+                    target_quantity = max(1.0, budget_limit / willingness_to_pay)
             
             # Final Sanity Check
             if target_quantity >= self.config_module.MIN_PURCHASE_QUANTITY and willingness_to_pay > 0:
                 orders.append(
-                    Order(household.id, "BUY", item_id, max(1, int(target_quantity)), willingness_to_pay, item_id)
+                    Order(
+                        agent_id=household.id,
+                        order_type="BUY",
+                        item_id=item_id,
+                        quantity=max(1, int(target_quantity)),
+                        price=willingness_to_pay,
+                        market_id="goods_market", # Explicitly set market_id
+                        target_agent_id=target_agent_id
+                    )
                 )
 
         # 3. Execution: Labor Logic
@@ -163,6 +189,54 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 stock_market.place_order(stock_order, current_time)
 
         return orders, action_vector
+
+    def _choose_best_seller(self, household: "Household", asks: List[Order], item_id: str, budget_limit_per_unit: float) -> Optional[Order]:
+        """
+        Phase 6: Utility-Based Seller Selection.
+        Calculates Utility U_j for each seller j and returns the best Order (Ask).
+        """
+        best_ask = None
+        max_utility = -float('inf')
+
+        # Params
+        pref_quality = household.quality_preference
+        alpha_network = getattr(self.config_module, "NETWORK_WEIGHT", 0.1)
+
+        for ask in asks:
+            # Skip if price is too high (hard budget constraint?)
+            # Or just let utility handle it (Utility decreases with price)
+            if ask.price <= 0: continue
+
+            seller_id = ask.agent_id
+
+            # Extract Brand Info from Ask Metadata (Phase 6)
+            brand_info = getattr(ask, "brand_info", {}) or {}
+            perceived_quality = brand_info.get("perceived_quality", 1.0)
+            brand_awareness = brand_info.get("brand_awareness", 0.0)
+
+            # Get Loyalty
+            loyalty = household.brand_loyalty.get(seller_id, 1.0)
+
+            # Get Sales Volume (Network Effect) - NOT IMPLEMENTED YET IN ASK METADATA
+            # For now assume 0 or need to update OrderBook to attach this
+            sales_volume = 0.0
+
+            # Utility Formula:
+            # U_j = (Q_perc * (1 + Awareness * Pref_q) * Loyalty) / Price + alpha * ln(Sales + 1)
+
+            # Prevent Division by Zero
+            price = max(0.01, ask.price)
+
+            term1 = (perceived_quality * (1.0 + brand_awareness * pref_quality) * loyalty) / price
+            term2 = alpha_network * math.log(sales_volume + 1.0)
+
+            utility = term1 + term2
+
+            if utility > max_utility:
+                max_utility = utility
+                best_ask = ask
+
+        return best_ask
 
     def _make_stock_investment_decisions(
         self,

@@ -179,6 +179,15 @@ class Household(BaseAgent):
         self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
         self.last_leisure_type: LeisureType = "IDLE"  # For visualization aggregation
 
+        # Phase 6: Brand Loyalty & Quality Preference
+        self.brand_loyalty: Dict[int, float] = {} # FirmID -> Loyalty Score (Default 1.0)
+        # Quality Preference derived from Personality (0.0=Cheap, 1.0=Quality)
+        # Assuming MISER=0.0, STATUS_SEEKER=1.0, others=0.5
+        self.quality_preference: float = 0.5
+        if self.personality == Personality.MISER:
+             self.quality_preference = 0.1
+        elif self.personality == Personality.STATUS_SEEKER:
+             self.quality_preference = 0.9
 
         self.config_module = config_module  # Store config_module
         self.decision_engine.loan_market = loan_market
@@ -381,6 +390,8 @@ class Household(BaseAgent):
             "employer_id": self.employer_id,
             "social_status": self.social_status,
             "credit_frozen_until_tick": self.credit_frozen_until_tick,
+            "brand_loyalty": self.brand_loyalty.copy(),
+            "quality_preference": self.quality_preference,
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
@@ -664,6 +675,8 @@ class Household(BaseAgent):
         cloned_household.perceived_avg_prices = self.perceived_avg_prices.copy()
         cloned_household.current_food_consumption = self.current_food_consumption
         cloned_household.credit_frozen_until_tick = self.credit_frozen_until_tick
+        cloned_household.brand_loyalty = self.brand_loyalty.copy()
+        cloned_household.quality_preference = self.quality_preference
 
         return cloned_household
 

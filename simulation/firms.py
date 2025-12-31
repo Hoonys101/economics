@@ -9,6 +9,7 @@ from simulation.core_agents import Household  # Household 클래스 임포트
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
+from simulation.brands.brand_manager import BrandManager
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -67,6 +68,10 @@ class Firm(BaseAgent):
         self.expenses_this_tick = 0.0
         # --- GEMINI_PROPOSED_ADDITION_END ---
         
+        # --- Phase 6: Brand Economy ---
+        self.brand_manager = BrandManager(config_module)
+        self.marketing_budget_this_tick: float = 0.0
+
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
         self.is_publicly_traded: bool = True   # 상장 여부
@@ -208,6 +213,7 @@ class Firm(BaseAgent):
         self.cost_this_turn = 0.0
         self.revenue_this_tick = 0.0
         self.expenses_this_tick = 0.0
+        self.marketing_budget_this_tick = 0.0
         return transactions
 
     @override
@@ -229,6 +235,9 @@ class Firm(BaseAgent):
             "treasury_shares": self.treasury_shares,
             "dividend_rate": self.dividend_rate,
             "capital_stock": self.capital_stock,
+            # Phase 6
+            "brand_awareness": self.brand_manager.brand_awareness,
+            "perceived_quality": self.brand_manager.perceived_quality,
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:
@@ -301,6 +310,14 @@ class Firm(BaseAgent):
 
         self.current_production = 0.0
 
+        # Phase 6: Update Brand Manager with Quality
+        # Actual Quality is defined as Productivity / 10.0 in spec
+        actual_quality = self.productivity_factor / 10.0
+        # Marketing update happens here or via make_decision?
+        # Ideally, make_decision sets budget, and we spend it here or in update_needs?
+        # Let's assume make_decision already deducted cash and set self.marketing_budget_this_tick.
+        self.brand_manager.update(self.marketing_budget_this_tick, actual_quality)
+
         self.logger.info(
             f"Production (Cobb-Douglas) for {self.specialization}. "
             f"Y={produced_quantity:.2f} (A={tfp:.2f}, L={total_labor_skill:.1f}, K={capital:.1f}, α={alpha:.2f})",
@@ -311,6 +328,9 @@ class Firm(BaseAgent):
                 "labor": total_labor_skill,
                 "capital": capital,
                 "alpha": alpha,
+                "marketing_spend": self.marketing_budget_this_tick,
+                "brand_awareness": self.brand_manager.brand_awareness,
+                "perceived_quality": self.brand_manager.perceived_quality
             },
         )
 

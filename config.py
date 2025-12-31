@@ -319,6 +319,23 @@ LEISURE_COEFFS = {
 
 
 # ==============================================================================
+# Phase 6: Brand Economy Constants
+# ==============================================================================
+# Brand Engine
+MARKETING_DECAY_RATE = 0.8  # Adstock decay factor (Retention Rate)
+MARKETING_EFFICIENCY = 0.01 # Impact of 1 unit of currency on Adstock
+
+# Quality
+QUALITY_SMOOTHING_FACTOR = 0.2 # EMA alpha for Perceived Quality
+
+# Household Utility
+LOYALTY_DECAY_RATE = 0.95   # Loyalty decay per tick if not purchased
+LOYALTY_BOOST = 1.1         # Loyalty multiplier on purchase
+NETWORK_WEIGHT = 0.1        # Weight of network effect (Sales Volume)
+VALUATION_MULTIPLIER = 1000.0 # Reward multiplier for Brand Awareness
+
+
+# ==============================================================================
 # 🔧 HARDCODED VALUES CENTRALIZATION
 # ==============================================================================
 # 아래 값들은 코드 전반에 하드코딩되어 있던 것들을 통합 관리하기 위해 이동함.
