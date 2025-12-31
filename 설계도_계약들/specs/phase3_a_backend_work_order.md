@@ -20,9 +20,12 @@
 ## 2. 집계 로직 고도화 (simulation/viewmodels/snapshot_viewmodel.py)
 `SnapshotViewModel` 내의 각 비공개 메서드를 수정하여 데이터를 집계하십시오.
 
-- **Time Allocation**: 에이전트들의 `leisure_type`과 `time_worked`를 전역적으로 집계하십시오. (`work`, `parenting`, `self_dev`, `entertainment`, `idle`)
-- **Avg Tax Rate**: `total_income_tax_collected / max(1, total_household_income)` (또는 정부가 기록한 실효세율 데이터 활용).
-- **Parenting Rate**: `(Parenting Hours / Total Leisure Hours) * 100`.
+- **Time Allocation**: 에이전트들의 `leisure_type`과 `time_worked`를 전역적으로 집계하십시오.
+    - **Note**: `Household` 클래스에 `last_leisure_type` 속성을 추가하여 상태를 보존하고 집계에 활용하십시오.
+- **Gov Metrics (Flow vs Stock)**: 
+    - **HUD (Balance, Spending)**: **Last Tick Flow** (이번 틱의 순수익/지출)를 사용하십시오.
+    - **Charts (Breakdown)**: 너무 튀는 것을 방지하기 위해 **최근 50틱 이동 합계(50-tick Moving Sum)**를 사용하십시오. (Stock이 아닌 Flow의 누적)
+- **Data Persistence**: 현재는 DB 저장 없이 **In-memory aggregation**으로 API 응답만 구성하는 것으로 충분합니다.
 - **Caching**: 
     - HUD(`_get_global_indicators`)는 매 틱 계산.
     - Tab 데이터(`_get_society_data`, `_get_government_data`)는 5~10틱 주기로 캐싱.
