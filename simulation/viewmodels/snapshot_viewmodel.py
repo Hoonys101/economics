@@ -24,11 +24,20 @@ class SnapshotViewModel:
 
     def __init__(self, repository: SimulationRepository):
         self.repository = repository
+        self._cached_snapshot: Optional[DashboardSnapshotDTO] = None
+        self._last_cached_tick: int = -1
 
     def get_dashboard_snapshot(self, simulation: Simulation, current_tick: int) -> DashboardSnapshotDTO:
         """
         현재 시뮬레이션 상태에 대한 DashboardSnapshotDTO를 생성합니다.
+        성능을 위해 5틱마다 무거운 지표를 재계산합니다.
         """
+        # Caching logic (only refresh heavy metrics every 5 ticks)
+        if self._cached_snapshot and current_tick - self._last_cached_tick < 5:
+            # We update the tick to the current one so frontend knows it's the latest response
+            snapshot_copy = self._cached_snapshot
+            snapshot_copy.tick = current_tick
+            return snapshot_copy
 
         # 1. Global Indicators (HUD)
         global_indicators = self._get_global_indicators(simulation, current_tick)
@@ -53,11 +62,14 @@ class SnapshotViewModel:
             "finance": finance_data
         }
 
-        return DashboardSnapshotDTO(
+        self._cached_snapshot = DashboardSnapshotDTO(
             tick=current_tick,
             global_indicators=global_indicators,
             tabs=tabs
         )
+        self._last_cached_tick = current_tick
+
+        return self._cached_snapshot
 
     def _get_global_indicators(self, simulation: Simulation, current_tick: int) -> DashboardGlobalIndicatorsDTO:
         latest_indicators = simulation.tracker.get_latest_indicators()
