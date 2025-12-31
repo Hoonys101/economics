@@ -684,6 +684,9 @@ class Simulation:
         # Added as per requirement (previously missing in run_tick)
         self._handle_agent_lifecycle()
 
+        # Phase 5: Finalize Government Stats for the tick
+        self.government.finalize_tick(self.time)
+
         # Save all state at the end of the tick
         self._save_state_to_db(all_transactions)
 

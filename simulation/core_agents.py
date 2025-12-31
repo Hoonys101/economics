@@ -177,6 +177,7 @@ class Household(BaseAgent):
         self.parent_id: Optional[int] = None      # 부모 가구 ID
         self.children_ids: List[int] = []         # 자녀 가구 ID 목록
         self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
+        self.last_leisure_type: LeisureType = "IDLE"  # For visualization aggregation
 
 
         self.config_module = config_module  # Store config_module
@@ -330,6 +331,8 @@ class Household(BaseAgent):
             leisure_type = "ENTERTAINMENT"
         else:
             leisure_type = "SELF_DEV"
+
+        self.last_leisure_type = leisure_type
 
         # Apply Effects using Coefficients from Config
         coeffs = self.config_module.LEISURE_COEFFS.get(leisure_type, {})

@@ -6,11 +6,14 @@ export interface GenerationStat {
 
 export interface SocietyTabData {
   generations: GenerationStat[];
-  mitosis_cost: number; // Added from component usage
+  mitosis_cost: number;
   unemployment_pie: {
       struggling: number;
       voluntary: number;
   };
+  // Phase 5
+  time_allocation: Record<string, number>;
+  avg_leisure_hours: number;
 }
 
 export interface GovernmentTabData {
@@ -19,6 +22,11 @@ export interface GovernmentTabData {
       revenue: number;
       expense: number;
   };
+  // Phase 5
+  tax_revenue_history: Record<string, any>[]; // Array of history objects
+  welfare_spending: number;
+  current_avg_tax_rate: number;
+  welfare_history: Record<string, number>[];
 }
 
 export interface MarketTabData {
@@ -41,14 +49,15 @@ export interface DashboardGlobalIndicators {
   gdp: number;
   avg_wage: number;
   gini: number;
+  // Phase 5
+  avg_tax_rate: number;
+  avg_leisure_hours: number;
+  parenting_rate: number;
 }
 
 export interface DashboardSnapshot {
   tick: number;
   global_indicators: DashboardGlobalIndicators;
-  // Note: The backend returns 'tabs' which contains these.
-  // We need to match the actual API response structure.
-  // Based on snapshot_viewmodel.py: return DashboardSnapshotDTO(tabs={...})
   tabs: {
       society: SocietyTabData;
       government: GovernmentTabData;

@@ -20,6 +20,19 @@ class Government:
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
 
+        # History buffers for visualization
+        self.tax_history: List[Dict[str, Any]] = [] # For Stacked Bar Chart (breakdown per tick)
+        self.welfare_history: List[Dict[str, float]] = [] # For Welfare Line Chart
+        self.history_window_size = 50
+
+        # Current tick accumulators (reset every tick)
+        self.current_tick_stats = {
+            "tax_revenue": {},
+            "welfare_spending": 0.0,
+            "stimulus_spending": 0.0,
+            "total_collected": 0.0
+        }
+
         # 성향 및 욕구 (AI 훈련용 더미)
         self.value_orientation = "public_service"
         self.needs: Dict[str, float] = {}
@@ -103,8 +116,12 @@ class Government:
         self.assets += amount
         self.total_collected_tax += amount
         
-        # 세목별 집계
+        # 세목별 집계 (Cumulative)
         self.tax_revenue[tax_type] = self.tax_revenue.get(tax_type, 0.0) + amount
+
+        # Current Tick Stats
+        self.current_tick_stats["tax_revenue"][tax_type] = self.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
+        self.current_tick_stats["total_collected"] += amount
 
         logger.info(
             f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {source_id}",
@@ -132,6 +149,20 @@ class Government:
         self.total_spent_subsidies += amount
         target_agent.assets += amount
         
+        # Track spending type (Stimulus check is usually large lump sum, benefit is small)
+        # But here we don't have explicit type.
+        # run_welfare_check calls this for "benefit" and "stimulus".
+        # We need to distinguish or just lump them.
+        # For now, we will track total in current_tick_stats and distinguish in the caller if needed.
+        # Ideally provide_subsidy should take a 'reason'.
+        # Assuming run_welfare_check updates 'current_tick_stats' for type differentiation or we update here if we change signature.
+        # But changing signature breaks compatibility with potential tests.
+        # Let's just track total here, and let run_welfare_check add to specific buckets.
+        # Actually, run_welfare_check does not update buckets.
+        # Let's update `current_tick_stats["welfare_spending"]` here.
+
+        self.current_tick_stats["welfare_spending"] += amount
+
         logger.info(
             f"SUBSIDY_PAID | Paid {amount:.2f} subsidy to {target_agent.id}",
             extra={
@@ -342,6 +373,37 @@ class Government:
             )
             return True
         return False
+
+    def finalize_tick(self, current_tick: int):
+        """
+        Called at the end of every tick to finalize statistics and push to history buffers.
+        """
+        # 1. Archive Tax Revenue
+        revenue_snapshot = self.current_tick_stats["tax_revenue"].copy()
+        revenue_snapshot["tick"] = current_tick
+        revenue_snapshot["total"] = self.current_tick_stats["total_collected"]
+
+        self.tax_history.append(revenue_snapshot)
+        if len(self.tax_history) > self.history_window_size:
+            self.tax_history.pop(0)
+
+        # 2. Archive Welfare Spending
+        welfare_snapshot = {
+            "tick": current_tick,
+            "welfare": self.current_tick_stats["welfare_spending"],
+            "stimulus": self.current_tick_stats["stimulus_spending"]
+        }
+        self.welfare_history.append(welfare_snapshot)
+        if len(self.welfare_history) > self.history_window_size:
+            self.welfare_history.pop(0)
+
+        # 3. Reset Current Tick Stats
+        self.current_tick_stats = {
+            "tax_revenue": {},
+            "welfare_spending": 0.0,
+            "stimulus_spending": 0.0,
+            "total_collected": 0.0
+        }
 
     def get_agent_data(self) -> Dict[str, Any]:
         """정부 상태 데이터를 반환합니다."""

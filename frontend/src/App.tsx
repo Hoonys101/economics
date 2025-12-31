@@ -29,7 +29,10 @@ const i18n = {
     employment: "고용률",
     gdp: "GDP",
     avg_wage: "평균 임금",
-    gini: "지니계수"
+    gini: "지니계수",
+    avg_tax: "평균 세율",
+    avg_leisure: "평균 여가",
+    parenting_rate: "육아 비율"
   },
   en: {
     dashboard_title: "W-2 Simulation Economic HUD",
@@ -43,7 +46,10 @@ const i18n = {
     employment: "Employment",
     gdp: "GDP",
     avg_wage: "Avg Wage",
-    gini: "Gini Index"
+    gini: "Gini Index",
+    avg_tax: "Avg Tax Rate",
+    avg_leisure: "Avg Leisure",
+    parenting_rate: "Parenting Rate"
   }
 }
 
@@ -93,13 +99,16 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col p-4 md:p-6 gap-4 md:gap-6">
       {/* Header HUD */}
-      <header className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+      <header className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-2 md:gap-3">
         <Indicator label={t.tick} value={data.tick} color="text-white" />
         <Indicator label={t.survival_rate} value={(100 - hud.death_rate).toFixed(1)} unit="%" color="text-green-400" />
         <Indicator label={t.employment} value={hud.employment_rate.toFixed(1)} unit="%" color="text-blue-400" />
         <Indicator label={t.gdp} value={hud.gdp.toLocaleString()} color="text-yellow-400" />
         <Indicator label={t.avg_wage} value={hud.avg_wage.toFixed(0)} color="text-emerald-400" />
         <Indicator label={t.gini} value={hud.gini.toFixed(3)} color="text-purple-400" />
+        <Indicator label={t.avg_tax} value={(hud.avg_tax_rate * 100).toFixed(1)} unit="%" color="text-red-400" />
+        <Indicator label={t.avg_leisure} value={hud.avg_leisure_hours.toFixed(1)} unit="h" color="text-pink-400" />
+        <Indicator label={t.parenting_rate} value={hud.parenting_rate.toFixed(1)} unit="%" color="text-rose-400" />
       </header>
 
       {/* Navigation & Lang Switcher */}

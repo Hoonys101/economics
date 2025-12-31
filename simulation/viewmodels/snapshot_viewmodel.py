@@ -113,13 +113,50 @@ class SnapshotViewModel:
         total_households_window = current_households + death_count
         death_rate = (death_count / total_households_window * 100.0) if total_households_window > 0 else 0.0
 
+        # --- Phase 5: New Metrics ---
+        # 1. Avg Tax Rate
+        # Calculated as (Total Tax Collected This Tick) / (GDP This Tick)
+        # We need tick-level tax collected. Government now tracks this history.
+        last_tick_tax = 0.0
+        if simulation.government.tax_history:
+             last_tick_stats = simulation.government.tax_history[-1]
+             if last_tick_stats["tick"] == current_tick:
+                  last_tick_tax = last_tick_stats.get("total", 0.0)
+             else:
+                  # Maybe the government hasn't finalized this tick yet when this runs?
+                  # Or this runs after finalize?
+                  # If snapshot is called after run_tick, we should check the last entry.
+                  # If tick mismatch, maybe previous tick.
+                  last_tick_tax = last_tick_stats.get("total", 0.0) # Use latest available
+
+        avg_tax_rate = (last_tick_tax / gdp) if gdp > 0 else 0.0
+
+        # 2. Leisure Stats
+        total_leisure_hours = 0.0
+        total_parenting_hours = 0.0
+        active_household_count = 0
+
+        for h in simulation.households:
+             if h.is_active:
+                  leisure = simulation.household_time_allocation.get(h.id, 0.0)
+                  total_leisure_hours += leisure
+                  active_household_count += 1
+                  if h.last_leisure_type == "PARENTING":
+                       total_parenting_hours += leisure
+
+        avg_leisure_hours = (total_leisure_hours / active_household_count) if active_household_count > 0 else 0.0
+        parenting_rate = (total_parenting_hours / total_leisure_hours * 100.0) if total_leisure_hours > 0 else 0.0
+
         return DashboardGlobalIndicatorsDTO(
             death_rate=death_rate,
             bankruptcy_rate=bankruptcy_rate,
             employment_rate=employment_rate,
             gdp=gdp,
             avg_wage=avg_wage,
-            gini=gini
+            gini=gini,
+            avg_tax_rate=avg_tax_rate,
+            avg_leisure_hours=avg_leisure_hours,
+            parenting_rate=parenting_rate
         )
 
     def _get_society_data(self, simulation: Simulation, current_tick: int) -> SocietyTabDataDTO:
@@ -144,53 +181,97 @@ class SnapshotViewModel:
         pop_ratio = current_pop / max(1, target_pop)
         mitosis_cost = base_threshold * (pop_ratio ** sensitivity)
 
-        # Unemployment Pie
-        # "Struggling": Unemployed & survival_need > 50
-        # "Voluntary": Unemployed & survival_need <= 50
+        # Unemployment Pie & Time Allocation
         struggling = 0
         voluntary = 0
 
+        # Time Allocation Aggregation
+        time_allocation = {
+             "WORK": 0.0,
+             "PARENTING": 0.0,
+             "SELF_DEV": 0.0,
+             "ENTERTAINMENT": 0.0,
+             "IDLE": 0.0
+        }
+        total_leisure_sum = 0.0
+        count_active = 0
+
         for h in simulation.households:
-            if h.is_active and not h.is_employed:
-                survival_need = h.needs.get("survival", 0.0)
-                if survival_need > 50:
-                    struggling += 1
+            if h.is_active:
+                count_active += 1
+                # Unemployment Logic
+                if not h.is_employed:
+                    survival_need = h.needs.get("survival", 0.0)
+                    if survival_need > 50:
+                        struggling += 1
+                    else:
+                        voluntary += 1
+
+                # Time Allocation Logic
+                leisure_hours = simulation.household_time_allocation.get(h.id, 0.0)
+                work_hours = getattr(simulation.config_module, "HOURS_PER_TICK", 24.0) - getattr(simulation.config_module, "SHOPPING_HOURS", 2.0) - leisure_hours
+
+                time_allocation["WORK"] += work_hours
+
+                l_type = h.last_leisure_type
+                if l_type in time_allocation:
+                     time_allocation[l_type] += leisure_hours
                 else:
-                    voluntary += 1
+                     time_allocation["IDLE"] += leisure_hours # Fallback
+
+                total_leisure_sum += leisure_hours
 
         unemployment_pie = {
             "struggling": struggling,
             "voluntary": voluntary
         }
 
+        avg_leisure_hours = (total_leisure_sum / count_active) if count_active > 0 else 0.0
+
         return SocietyTabDataDTO(
             generations=generations,
             mitosis_cost=mitosis_cost,
-            unemployment_pie=unemployment_pie
+            unemployment_pie=unemployment_pie,
+            time_allocation=time_allocation,
+            avg_leisure_hours=avg_leisure_hours
         )
 
     def _get_government_data(self, simulation: Simulation, current_tick: int) -> GovernmentTabDataDTO:
         tax_revenue = simulation.government.tax_revenue.copy()
 
         # Fiscal Balance
-        # Total Revenue vs Total Expenditure
-        # Currently we have accumulated totals in Government agent
-        # Ideally, we might want "Last Tick" or "Recent Window" balance.
-        # DTO says `fiscal_balance: Dict[str, float]`. Let's return totals for now?
-        # Or maybe "revenue" vs "expense".
         fiscal_balance = {
             "revenue": simulation.government.total_collected_tax,
             "expense": simulation.government.total_spent_subsidies + (simulation.government.infrastructure_level * getattr(simulation.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)) # Approx
-            # Note: Infrasturcture cost is subtracted from assets directly in invest_infrastructure.
-            # We don't track total_spent_infrastructure in a field.
-            # But we can infer it or just use assets?
-            # Let's just put accumulated revenue/expense we know.
         }
-        # Actually `total_spent_subsidies` is tracked.
+
+        # Phase 5: Historical Data
+        tax_history = simulation.government.tax_history
+        welfare_history = simulation.government.welfare_history
+
+        # Current Stats
+        # Use latest history point or current_tick_stats (which is reset at tick end, so might be empty if called after finalize)
+        # Snapshot is usually called after tick is done.
+        current_welfare = 0.0
+        current_avg_tax_rate = 0.0
+
+        if tax_history:
+             last = tax_history[-1]
+             # Calculate rate relative to GDP
+             gdp = simulation.tracker.get_latest_indicators().get("total_consumption", 1.0)
+             current_avg_tax_rate = (last.get("total", 0.0) / gdp) if gdp > 0 else 0.0
+
+        if welfare_history:
+             last_w = welfare_history[-1]
+             current_welfare = last_w.get("welfare", 0.0) + last_w.get("stimulus", 0.0)
 
         return GovernmentTabDataDTO(
             tax_revenue=tax_revenue,
-            fiscal_balance=fiscal_balance
+            fiscal_balance=fiscal_balance,
+            tax_revenue_history=tax_history,
+            welfare_spending=current_welfare,
+            current_avg_tax_rate=current_avg_tax_rate,
+            welfare_history=welfare_history
         )
 
     def _get_market_data(self, simulation: Simulation, current_tick: int) -> MarketTabDataDTO:

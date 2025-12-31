@@ -2,6 +2,14 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { SocietyTabData } from '../../types/dashboard';
 
 const COLORS = ['#ef4444', '#22c55e']; // Red for struggling, Green for voluntary
+// Colors for Time Allocation: Work, Parenting, SelfDev, Ent, Idle
+const TIME_COLORS = {
+  WORK: '#ef4444',
+  PARENTING: '#22c55e',
+  SELF_DEV: '#3b82f6',
+  ENTERTAINMENT: '#eab308',
+  IDLE: '#94a3b8'
+};
 
 interface SocietyTabProps {
   data: SocietyTabData;
@@ -16,10 +24,16 @@ export default function SocietyTab({ data }: SocietyTabProps) {
     { name: 'Voluntary', value: data.unemployment_pie.voluntary },
   ];
 
+  // Map Time Allocation Dictionary to Recharts Array
+  const timeAllocationData = data.time_allocation ? Object.entries(data.time_allocation).map(([key, value]) => ({
+    name: key.replace('_', ' '), // e.g. SELF_DEV -> SELF DEV
+    value: value
+  })) : [];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full h-full">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full h-full">
       {/* Generation Wealth Distribution */}
-      <div className="glass-card p-6 flex flex-col">
+      <div className="glass-card p-6 flex flex-col md:col-span-2 lg:col-span-1">
         <h3 className="text-lg font-semibold text-white mb-4">Generation Wealth Distribution</h3>
         <div className="flex-1 min-h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -40,6 +54,40 @@ export default function SocietyTab({ data }: SocietyTabProps) {
               <Area type="monotone" dataKey="avg_assets" stroke="var(--color-primary)" fillOpacity={1} fill="url(#colorAssets)" />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Time Allocation (Phase 5) */}
+      <div className="glass-card p-6 flex flex-col">
+        <h3 className="text-lg font-semibold text-white mb-4">Time Allocation</h3>
+        <div className="flex-1 min-h-[300px] flex items-center justify-center">
+             <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={timeAllocationData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {timeAllocationData.map((entry, index) => {
+                  const key = entry.name.replace(' ', '_') as keyof typeof TIME_COLORS;
+                  return <Cell key={`cell-${index}`} fill={TIME_COLORS[key] || '#888'} />;
+                })}
+              </Pie>
+              <Tooltip
+                 contentStyle={{ backgroundColor: '#1e293b', borderColor: '#333' }}
+                 itemStyle={{ color: '#fff' }}
+                 formatter={(value: any) => [Number(value).toFixed(1) + ' hrs', 'Hours']}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="mt-4 text-center">
+            <p className="text-sm text-muted-foreground">Avg Leisure: <span className="text-white font-bold">{data.avg_leisure_hours.toFixed(1)} hrs</span></p>
         </div>
       </div>
 
