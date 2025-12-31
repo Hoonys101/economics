@@ -52,9 +52,16 @@ class LoanMarket(Market):
                 self.config_module.DEFAULT_LOAN_DURATION
             )  # Use default duration from config
 
-            loan_id, loan_details = self.bank.grant_loan(
-                order.agent_id, loan_amount, interest_rate, duration
+            # Bank calculates rate internally based on base rate + spread
+            # We ignore order.price (interest_rate) as the bank sets the rate
+            loan_id = self.bank.grant_loan(
+                borrower_id=order.agent_id,
+                amount=loan_amount,
+                term_ticks=duration
             )
+            # Fetch details if needed or assume success if ID returned
+            # Legacy expected loan_details but we only got ID.
+            # We can skip details or fetch them.
             if loan_id:
                 transactions.append(
                     Transaction(
@@ -82,14 +89,20 @@ class LoanMarket(Market):
             loan_id = order.item_id
             repay_amount = order.quantity
 
-            self.bank.process_repayment(loan_id, repay_amount)
+            # Update Bank State (Principal Reduction)
+            if hasattr(self.bank, "process_repayment"):
+                 self.bank.process_repayment(loan_id, repay_amount)
+
+            # Transaction: Money from Borrower (Buyer) to Bank (Seller)
+            # Transaction: Money from Borrower (Buyer) to Bank (Seller)
+            # Logic: Buyer pays, Seller receives.
             transactions.append(
                 Transaction(
                     item_id="loan_repaid",
                     quantity=repay_amount,
-                    price=0,
-                    buyer_id=order.agent_id,
-                    seller_id=self.bank.id,
+                    price=1.0,
+                    buyer_id=order.agent_id, # Agent pays money (Assets decrease)
+                    seller_id=self.bank.id,  # Bank gets money (Assets increase)
                     transaction_type="loan",
                     time=current_tick,
                     market_id=self.id,
@@ -99,6 +112,33 @@ class LoanMarket(Market):
                 f"Repayment of {repay_amount:.2f} processed for loan {loan_id} by {order.agent_id}.",
                 extra={**log_extra, "loan_id": loan_id},
             )
+
+        elif order.order_type == "DEPOSIT":
+            amount = order.quantity
+            deposit_id = self.bank.deposit(order.agent_id, amount)
+
+            if deposit_id:
+                # Deposit: Agent gives money to Bank.
+                # Agent loses money (Buyer). Bank gains money (Seller).
+                transactions.append(
+                    Transaction(
+                        item_id="deposit",
+                        quantity=amount,
+                        price=1.0,
+                        buyer_id=order.agent_id,   # Agent pays
+                        seller_id=self.bank.id,    # Bank receives
+                        transaction_type="deposit",
+                        time=current_tick,
+                        market_id=self.id,
+                    )
+                )
+                logger.info(
+                    f"Deposit accepted from {order.agent_id} for {amount:.2f}. Deposit ID: {deposit_id}",
+                    extra={**log_extra, "deposit_id": deposit_id},
+                )
+            else:
+                logger.warning(f"Deposit failed for {order.agent_id}", extra=log_extra)
+
         else:  # Handle unknown order types
             logger.warning(f"Unknown order type: {order.order_type}", extra=log_extra)
 

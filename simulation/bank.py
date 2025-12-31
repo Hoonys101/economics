@@ -53,7 +53,10 @@ class Bank:
         self.deposits: Dict[str, Deposit] = {}
 
         # Policy Rates
-        self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", INITIAL_BASE_ANNUAL_RATE)
+        if config_module:
+            self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", INITIAL_BASE_ANNUAL_RATE)
+        else:
+            self.base_rate = INITIAL_BASE_ANNUAL_RATE
 
         # Counters
         self.next_loan_id = 0
@@ -81,12 +84,13 @@ class Bank:
 
     def grant_loan(
         self,
-        borrower_agent: Any,
+        borrower_id: int,
         amount: float,
         term_ticks: Optional[int] = None
     ) -> Optional[str]:
         """
         Grants a loan to an agent if eligible.
+        Does NOT transfer assets directly; returns loan ID for Transaction creation.
         """
         # 1. Config Check
         if not term_ticks:
@@ -103,53 +107,43 @@ class Bank:
             )
             return None
 
-        # 3. Credit Check (Simple LTV/DTI placeholder)
-        # TODO: Implement stricter credit checks based on agent history
-
-        # 4. Execution
-        self.assets -= amount
+        # 3. Execution (Update Bank State Only)
+        # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction
         loan_id = f"loan_{self.next_loan_id}"
         self.next_loan_id += 1
 
         new_loan = Loan(
-            borrower_id=borrower_agent.id,
+            borrower_id=borrower_id,
             principal=amount,
             remaining_balance=amount,
             annual_interest_rate=annual_rate,
             term_ticks=term_ticks,
-            start_tick=0 # Will be updated by caller or use relative tick if passed
+            start_tick=0
         )
         self.loans[loan_id] = new_loan
 
-        # Transfer funds to borrower
-        borrower_agent.assets += amount
-
         logger.info(
-            f"LOAN_GRANTED | Loan {loan_id} to Agent {borrower_agent.id}. "
+            f"LOAN_GRANTED | Loan {loan_id} to Agent {borrower_id}. "
             f"Amt: {amount:.2f}, Rate: {annual_rate:.2%}, Term: {term_ticks}",
             extra={"agent_id": self.id, "tags": ["bank", "loan"]}
         )
         return loan_id
 
-    def deposit(self, depositor_agent: Any, amount: float) -> Optional[str]:
+    def deposit(self, depositor_id: int, amount: float) -> Optional[str]:
         """
         Accepts a deposit from an agent.
+        Does NOT transfer assets directly; returns deposit ID for Transaction creation.
         """
-        if depositor_agent.assets < amount:
-            return None
-
         margin = self._get_config("BANK_MARGIN", 0.02)
         deposit_rate = max(0.0, self.base_rate + self._get_config("CREDIT_SPREAD_BASE", 0.02) - margin)
 
-        # Transfer funds
-        depositor_agent.assets -= amount
-        self.assets += amount
+        # self.assets += amount <-- REMOVED: Asset transfer handled by LoanMarket Transaction
 
         deposit_id = f"dep_{self.next_deposit_id}"
         self.next_deposit_id += 1
 
         new_deposit = Deposit(
-            depositor_id=depositor_agent.id,
+            depositor_id=depositor_id,
             amount=amount,
             annual_interest_rate=deposit_rate
         )
@@ -157,11 +151,27 @@ class Bank:
         self.deposits[deposit_id] = new_deposit
 
         logger.info(
-            f"DEPOSIT_ACCEPTED | Deposit {deposit_id} from Agent {depositor_agent.id}. "
+            f"DEPOSIT_ACCEPTED | Deposit {deposit_id} from Agent {depositor_id}. "
             f"Amt: {amount:.2f}, Rate: {deposit_rate:.2%}",
             extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
         )
         return deposit_id
+
+    def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+        """Returns debt info for AI state."""
+        total_principal = 0.0
+        daily_interest_burden = 0.0
+        ticks_per_year = self._get_config("TICKS_PER_YEAR", TICKS_PER_YEAR)
+
+        for loan in self.loans.values():
+            if loan.borrower_id == agent_id:
+                total_principal += loan.remaining_balance
+                daily_interest_burden += (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+
+        return {
+            "total_principal": total_principal,
+            "daily_interest_burden": daily_interest_burden
+        }
 
     def run_tick(self, agents_dict: Dict[int, Any]):
         """
@@ -243,3 +253,14 @@ class Bank:
             }
             for l in self.loans.values() if l.borrower_id == agent_id
         ]
+    def process_repayment(self, loan_id: str, amount: float):
+        if loan_id in self.loans:
+            # We don't touch assets here, handled by Transaction
+            self.loans[loan_id].remaining_balance -= amount
+            if self.loans[loan_id].remaining_balance <= 0:
+                # Fully repaid
+                pass # Logic to archive loan?
+            logger.info(
+                f"REPAYMENT_PROCESSED | Loan {loan_id} repaid by {amount}",
+                extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
+            )

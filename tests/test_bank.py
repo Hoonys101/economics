@@ -26,18 +26,20 @@ class TestBank:
     def test_grant_loan_successful(self, bank_instance):
         initial_assets = bank_instance.assets
         # Mock a borrower agent
-        borrower = MagicMock()
-        borrower.id = 101
-        borrower.assets = 0.0
+        borrower_id = 101
 
         loan_id = bank_instance.grant_loan(
-            borrower_agent=borrower, amount=1000, term_ticks=50
+            borrower_id=borrower_id, amount=1000, term_ticks=50
         )
 
         assert loan_id == "loan_0"
-        # Bank assets decreased, borrower assets increased
-        assert bank_instance.assets == initial_assets - 1000
-        assert borrower.assets == 1000
+        # Bank assets decreased (reserved) - Wait, we REMOVED self.assets -= amount in grant_loan
+        # So assets should remain same in grant_loan, assuming Transaction handles it.
+        # However, checking Bank.py:
+        # "self.assets -= amount # Reserve reduced immediately" -> This was in the *previous* version.
+        # I removed it in "Fix Bank Double Counting".
+        # So asset check should be == initial_assets.
+        assert bank_instance.assets == initial_assets
 
         loan = bank_instance.loans[loan_id]
         assert loan.borrower_id == 101
@@ -49,13 +51,11 @@ class TestBank:
 
     def test_grant_loan_insufficient_assets(self, bank_instance):
         initial_assets = bank_instance.assets
-        borrower = MagicMock()
-        borrower.id = 101
-        borrower.assets = 0.0
+        borrower_id = 101
 
         # Ask for more than available
         loan_id = bank_instance.grant_loan(
-            borrower_agent=borrower, amount=20000, term_ticks=50
+            borrower_id=borrower_id, amount=20000, term_ticks=50
         )
 
         assert loan_id is None
@@ -64,11 +64,8 @@ class TestBank:
         assert bank_instance.next_loan_id == 0
 
     def test_grant_loan_multiple_loans(self, bank_instance):
-        borrower1 = MagicMock(); borrower1.id = 101; borrower1.assets = 0
-        borrower2 = MagicMock(); borrower2.id = 102; borrower2.assets = 0
-
-        bank_instance.grant_loan(borrower1, 1000)
-        bank_instance.grant_loan(borrower2, 500)
+        bank_instance.grant_loan(borrower_id=101, amount=1000)
+        bank_instance.grant_loan(borrower_id=102, amount=500)
 
         assert len(bank_instance.loans) == 2
         assert "loan_0" in bank_instance.loans
@@ -76,11 +73,8 @@ class TestBank:
         assert bank_instance.next_loan_id == 2
 
     def test_get_outstanding_loans_for_agent_exists(self, bank_instance):
-        borrower1 = MagicMock(); borrower1.id = 101; borrower1.assets = 0
-        borrower2 = MagicMock(); borrower2.id = 102; borrower2.assets = 0
-
-        bank_instance.grant_loan(borrower1, 1000)
-        bank_instance.grant_loan(borrower2, 500)
+        bank_instance.grant_loan(borrower_id=101, amount=1000)
+        bank_instance.grant_loan(borrower_id=102, amount=500)
 
         loans = bank_instance.get_outstanding_loans_for_agent(agent_id=101)
         assert len(loans) == 1
@@ -88,19 +82,16 @@ class TestBank:
         assert loans[0]["amount"] == 1000
 
     def test_get_outstanding_loans_for_agent_none(self, bank_instance):
-        borrower1 = MagicMock(); borrower1.id = 101; borrower1.assets = 0
-        bank_instance.grant_loan(borrower1, 1000)
+        bank_instance.grant_loan(borrower_id=101, amount=1000)
 
         loans = bank_instance.get_outstanding_loans_for_agent(agent_id=999)
         assert len(loans) == 0
 
     def test_get_outstanding_loans_for_agent_multiple(self, bank_instance):
-        borrower1 = MagicMock(); borrower1.id = 101; borrower1.assets = 0
-        bank_instance.grant_loan(borrower1, 1000)
-        bank_instance.grant_loan(borrower1, 2000)
+        bank_instance.grant_loan(borrower_id=101, amount=1000)
+        bank_instance.grant_loan(borrower_id=101, amount=2000)
 
-        borrower2 = MagicMock(); borrower2.id = 102; borrower2.assets = 0
-        bank_instance.grant_loan(borrower2, 500)
+        bank_instance.grant_loan(borrower_id=102, amount=500)
 
         loans = bank_instance.get_outstanding_loans_for_agent(agent_id=101)
         assert len(loans) == 2

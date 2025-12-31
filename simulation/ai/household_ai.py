@@ -64,20 +64,20 @@ class HouseholdAI(BaseAIEngine):
         avg_need = sum(needs.values()) / max(len(needs), 1)
         need_idx = self._discretize(avg_need, [20, 50, 80])
 
-        # 3. Debt Ratio (liabilities / assets)
-        # Note: liabilities not explicitly passed in agent_data by default, assuming it's injected or we use net worth proxy.
-        # Ideally, agent_data should contain 'liabilities' or 'loans'.
-        # Fallback: If not present, assume 0.
-        liabilities = agent_data.get("liabilities", 0.0)
-        debt_ratio = liabilities / assets if assets > 0 else 0.0
+        # 3. Debt Metrics (from market_data injection)
+        debt_info = market_data.get("debt_data", {}).get(self.agent_id, {"total_principal": 0.0, "daily_interest_burden": 0.0})
+        total_debt = debt_info.get("total_principal", 0.0)
+        interest_burden = debt_info.get("daily_interest_burden", 0.0)
+
+        debt_ratio = total_debt / assets if assets > 0 else 0.0
         debt_idx = self._discretize(debt_ratio, [0.1, 0.3, 0.5, 0.8])
         
-        # 4. Interest Burden (interest_payment / income)
-        # Tracking income/interest requires history. Using proxy or simplified metric.
-        # Fallback: simple boolean if has debt.
-        has_debt_idx = 1 if liabilities > 0 else 0
+        # 4. Interest Burden Ratio (vs Asset or Income Proxy)
+        # Using asset as income proxy since income is volatile
+        burden_ratio = interest_burden / (assets * 0.01 + 1e-9) # Assume 1% daily return as baseline
+        burden_idx = self._discretize(burden_ratio, [0.1, 0.2, 0.5])
 
-        return (asset_idx, need_idx, debt_idx, has_debt_idx)
+        return (asset_idx, need_idx, debt_idx, burden_idx)
 
     def decide_action_vector(
         self,
