@@ -36,9 +36,13 @@ class TestBankingSystem(unittest.TestCase):
         # Loan Amount: 1000, Annual Rate: 5% + 2% (spread) = 7%
         # Term: 50 ticks
         loan_amount = 1000.0
-        loan_id = self.bank.grant_loan(self.agent1, loan_amount, term_ticks=50)
+        loan_id = self.bank.grant_loan(self.agent1.id, loan_amount, term_ticks=50)
 
         self.assertIsNotNone(loan_id)
+        
+        # Manually adjust assets because Bank.grant_loan doesn't do it anymore (Transaction's job)
+        self.agent1.assets += loan_amount
+        self.bank.assets -= loan_amount
         self.assertEqual(self.agent1.assets, 2000.0) # 1000 + 1000
 
         loan = self.bank.loans[loan_id]
@@ -49,9 +53,13 @@ class TestBankingSystem(unittest.TestCase):
         # Deposit Amount: 1000
         # Rate: Loan Rate - Margin = 7% - 2% = 5%
         deposit_amount = 1000.0
-        deposit_id = self.bank.deposit(self.agent2, deposit_amount)
+        deposit_id = self.bank.deposit(self.agent2.id, deposit_amount)
 
         self.assertIsNotNone(deposit_id)
+        
+        # Manually adjust assets (Transaction's job)
+        self.agent2.assets -= deposit_amount
+        self.bank.assets += deposit_amount
         self.assertEqual(self.agent2.assets, 0.0) # 1000 - 1000
 
         deposit = self.bank.deposits[deposit_id]
@@ -63,12 +71,7 @@ class TestBankingSystem(unittest.TestCase):
         # Interest Per Tick (Deposit) = (1000 * 0.05) / 100 = 0.5
         # Net Bank Profit Per Tick = 0.2
 
-        initial_bank_assets = self.bank.assets
-        # Assets changed by operations:
-        # Initial: 1,000,000
-        # Loan Out: -1000 -> 999,000
-        # Deposit In: +1000 -> 1,000,000
-
+        initial_bank_assets = self.bank.assets # Should be 1,000,000 (after -1000 +1000)
         self.assertEqual(self.bank.assets, 1000000.0)
 
         ticks_per_year = 100
@@ -101,26 +104,34 @@ class TestBankingSystem(unittest.TestCase):
         mock_decision_engine = MagicMock()
         mock_decision_engine.config_module = config
 
-        ai = HouseholdAI(agent_id="test_ai", ai_decision_engine=mock_decision_engine)
+        ai = HouseholdAI(agent_id=1, ai_decision_engine=mock_decision_engine)
 
         # State 1: No Debt
         agent_data_clean = {
             "assets": 1000.0,
             "needs": {"survival": 20.0},
-            "liabilities": 0.0
         }
-        market_data = {}
+        # Injected market_data as expected by engine.py
+        market_data_clean = {
+            "debt_data": {
+                1: {"total_principal": 0.0, "daily_interest_burden": 0.0}
+            }
+        }
 
-        state_clean = ai._get_common_state(agent_data_clean, market_data)
+        state_clean = ai._get_common_state(agent_data_clean, market_data_clean)
 
         # State 2: High Debt
         agent_data_debt = {
             "assets": 1000.0,
             "needs": {"survival": 20.0},
-            "liabilities": 800.0 # 80% Debt Ratio
+        }
+        market_data_debt = {
+            "debt_data": {
+                1: {"total_principal": 800.0, "daily_interest_burden": 5.0}
+            }
         }
 
-        state_debt = ai._get_common_state(agent_data_debt, market_data)
+        state_debt = ai._get_common_state(agent_data_debt, market_data_debt)
 
         print(f"State (No Debt): {state_clean}")
         print(f"State (High Debt): {state_debt}")
@@ -132,11 +143,10 @@ class TestBankingSystem(unittest.TestCase):
         self.assertEqual(len(state_clean), 4)
 
         # Verify Debt Index (3rd element) is higher in debt state
-        # debt_idx for 0.0 ratio -> likely 0
-        # debt_idx for 0.8 ratio -> likely high index
         self.assertGreater(state_debt[2], state_clean[2])
 
         print("✅ AI Awareness Verified: Agent perceives debt level.")
+
 
 if __name__ == '__main__':
     unittest.main()

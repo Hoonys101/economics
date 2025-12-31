@@ -1,73 +1,86 @@
-# W-1 Specification: [W-2] Economic Control Tower
+# W-1 Specification: [W-2] Economic Control Tower (Revised for Phase 5)
 
-본 문서는 Jules 및 프론트엔드 작업자가 추가 질문 없이 즉시 개발에 착수할 수 있도록 설계된 상세 명세서입니다.
-
-- **Goal**: 시뮬레이션의 실시간 경제/사회 지표를 HUD(Head-Up Display)와 탭 기능을 통해 시각화.
-- **Key Features**: 실시간 데이터 폴링, 4개 도메인 탭(Society, Government, Market, Finance), 모바일 반응형 디자인, 다국어(i18n) 지원.
+**작성자**: Architect Prime / Antigravity
+**목표**: Phase 5 실험 결과(시간 배분, 래퍼 곡선 효과)를 실시간으로 모니터링하기 위한 대시보드 고도화.
 
 ---
 
-## 1. 아키텍처 및 요구사항
+## 1. HUD (Head-Up Display) Updates
+최상단 고정 패널에 '실험 변수'와 '핵심 반응 변수'를 추가하여 즉각적인 상태 파악 지원.
 
-### 1.1 Responsive & i18n Design
-- **Mobile First**: 화면 크기에 따라 HUD 레이아웃이 유연하게 변해야 함 (1열/2열/3열/6열).
-- **Internationalization (i18n)**: 모든 라벨은 `i18n` 객체 또는 라이브러리를 통해 관리하여 한국어/영어 전환이 가능해야 함.
-- **Scalability**: 추후 로그인(Login) 및 인증 레이어를 쉽게 추가할 수 있도록 구조화된 라우팅 체계 고려.
-
-## 2. 인터페이스 계약 (The Contract)
-
-### 2.1 API Endpoint
-- **URL**: `GET /api/simulation/dashboard`
-- **Method**: `GET`
-- **Response Type**: `application/json`
-
-### 1.2 Data Schema (DTOs)
-Jules는 `simulation/dtos.py`에 정의된 다음 구조를 사용하여 데이터를 반환해야 한다:
-- `DashboardSnapshotDTO`: 최상위 컨테이너.
-- `DashboardGlobalIndicatorsDTO`: HUD 데이터.
-- `SocietyTabDataDTO`: 인구/사회 탭 (세대 통계 포함).
-- `GovernmentTabDataDTO`: 재정/세금 탭.
-- `MarketTabDataDTO`: 실물 시장 탭 (CPI, Maslow).
-- `FinanceTabDataDTO`: 금융 시장 탭 (시총, 거래량).
+- **기존 지표**: GDP, 인구수, 평균 자산, 고용률, 지니계수.
+- **추가 지표 (Phase 5 반영)**:
+    - **Avg Tax Rate (평균 실효세율)**: 현재 정부가 가계로부터 걷고 있는 실제 소득세율 평균. (실험의 X값)
+    - **Avg Leisure Hours (평균 여가 시간)**: 24시간 중 노동하지 않는 시간. (실험의 Y값 1)
+    - **Parenting Rate (육아 참여율)**: 전체 여가 시간 중 Parenting이 차지하는 비중(%). (실험의 Y값 2)
 
 ---
 
-## 2. 모듈 상세 설계 (Micro-Design)
+## 2. Tab 1: Society (사회 탭) - The Life of Agents
+에이전트들이 시간을 어떻게 쓰고 있는지 시각화.
 
-### 2.1 Backend Aggregator (Jules 담당)
-- **로직**: `simulation/viewmodels/snapshot_viewmodel.py`를 생성하고 `get_dashboard_snapshot()` 메서드를 구현한다.
-    1. `SimulationRepository.get_latest_economic_indicator()`를 호출하여 HUD의 대부분 지표를 가져온다.
-    2. `SimulationRepository.get_wealth_distribution()` (또는 `InequalityTracker` 데이터)를 통해 지니계수와 5분위 데이터를 가져온다.
-    3. `SimulationRepository.get_generation_stats(tick)`를 호출하여 세대 분포를 가져온다.
-    4. `Government.tax_records`를 집계하여 세수 분포를 계산한다.
-    5. `MarketHistory`에서 최근 N틱의 거래량과 가격을 가져와 CPI와 품목별 추이를 계산한다.
-- **API 구현**: `app.py`에 `/api/simulation/dashboard` 라우트를 추가하고 위 ViewModel을 호출하여 결과를 반환한다.
-
-### 2.2 Frontend Components (Assistant 담당)
-- **Vite 프로젝트 초기화**: `frontend/` 폴더 내에 React + TS 프로젝트를 생성한다.
-- **Shadcn/UI 설치**: Button, Tabs, Card, Table 컴포넌트를 설치한다.
-- **Recharts**: 각 탭에 필요한 차트(Area, Bar, Pie, Radar)를 구현한다.
-- **상태 관리**: `useSimulation` 훅을 통해 데이터를 1초 간격으로 폴링하고, 전역 상태로 관리한다.
+### 2.1 Time Allocation Chart (New)
+- **Type**: Pie Chart
+- **Data Source**: AgentState의 `leisure_type` 집계.
+- **Segments**:
+    - 🟥 **Work**: `time_worked`의 총합.
+    - 🟩 **Parenting**: `leisure_type=PARENTING`인 에이전트의 여가 시간 합.
+    - 🟦 **Self-Dev**: `leisure_type=SELF_DEV`인 에이전트의 여가 시간 합.
+    - 🟨 **Entertainment**: `leisure_type=ENTERTAINMENT`인 에이전트의 여가 시간 합.
+    - ⬜ **Idle**: 아무것도 안 한 시간 (나머지).
 
 ---
 
-### 3. Work Order for Jules (구현 지침)
-"Jules, 아래 순서대로 작업을 완료하고 보고하라."
+## 3. Tab 2: Government (정부 탭) - Fiscal Reality
+정부가 걷은 돈의 출처와 쓴 곳을 명확히 표시.
 
-#### **[Phase A: Backend (Aggregator)] - ✅ DONE & OPTIMIZED**
-- **Status**: Merged to `main` with performance caching (Tick % 5). 
-- **Action**: `git pull origin main`을 통해 최적화된 백엔드 코드를 동기화할 것.
+### 3.1 Tax Revenue Breakdown (New)
+- **Type**: Stacked Bar Chart (최근 50 Tick 이력)
+- **Series**:
+    - **Income Tax** (소득세)
+    - **Corporate Tax** (법인세)
+    - **Wealth Tax** (부유세)
+    - **Consumption Tax** (소비세)
 
-#### **[Phase B: Frontend (UI/Visualization)] - ✅ DONE**
-- **Status**: All 4 tabs implemented & Build Verified.
-- **Action**: 시스템이 정상 작동하는지 `npm run dev` 및 `python app.py`로 최종 확인하라.
+### 3.2 Welfare Expenditure (New)
+- **Type**: Line Chart / Area Chart
+- **Metrics**: **Unemployment Benefit** (실업 급여 지출액) vs **Stimulus Check** (재난 지원금).
 
 ---
 
-## 3. 예외 처리 및 방어적 설계
-- **Empty Data**: 시뮬레이션 초기(tick 0)에는 모든 값을 기본값(0.0)으로 반환하여 프론트엔드 크래시 방지.
-- **Performance**: `InequalityTracker` 호출 시 매번 O(N log N) 정렬이 발생하므로, 가계 수가 1000명 이상일 경우 5틱마다 한 번씩만 계산하는 캐싱 로직 고려.
+## 4. Backend & DTO Updates (Work Order for Jules)
 
-## 4. Work Order (지침)
-- **Jules**: `simulation/viewmodels/snapshot_viewmodel.py`를 신설하여 집계 로직을 캡슐화하고, `app.py`에서 이를 호출하도록 구현하라.
-- **Assistant**: `frontend/` 디렉토리를 생성하고 `npx create-vite@latest`를 통해 React/TS 설정을 하라.
+### 4.1 Data Schema (simulation/dtos.py)
+```python
+@dataclass
+class DashboardGlobalIndicatorsDTO:
+    # ... existing ...
+    avg_tax_rate: float
+    avg_leisure_hours: float
+    parenting_rate: float
+
+@dataclass
+class SocietyTabDataDTO:
+    # ... existing ...
+    time_allocation: Dict[str, float]  # {"work": 1200.5, "parenting": 300.0, ...}
+    avg_leisure_hours: float
+
+@dataclass
+class GovernmentTabDataDTO:
+    # ... existing ...
+    tax_revenue_breakdown: Dict[str, float]
+    welfare_spending: float
+    current_avg_tax_rate: float
+```
+
+### 4.2 Aggregation Logic (snapshot_viewmodel.py)
+- **Optimization**: `AgentState` 조회 시 `group by leisure_type` 쿼리 또는 인메모리 집계 사용.
+- **Caching Strategy**: 
+    - HUD 데이터: **매 틱(Every Tick)** 갱신.
+    - 탭 상세 데이터 (Society/Gov): **5~10틱 주기**로 갱신하여 성능 확보.
+
+---
+
+## 5. Work Order
+1. **Jules**: `dtos.py` 확장 및 `SnapshotViewModel`에서 집계 로직 고도화.
+2. **Assistant**: `HUD.tsx`, `SocietyTab.tsx`, `GovernmentTab.tsx` 컴포넌트 수정 및 Recharts 연동.
