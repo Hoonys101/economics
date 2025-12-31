@@ -94,6 +94,8 @@ class Simulation:
         self.markets["loan_market"] = LoanMarket(
             market_id="loan_market", bank=self.bank, config_module=self.config_module
         )
+        # Pass agents reference to LoanMarket for credit check
+        self.markets["loan_market"].agents_ref = self.agents
         
         self.stock_market: Optional[StockMarket] = None
         # 주식 시장 초기화
@@ -319,7 +321,11 @@ class Simulation:
             self.ai_training_manager.run_imitation_learning_cycle(self.time)
 
         # Update Bank Tick (Interest Processing)
-        self.bank.run_tick(self.agents)
+        # Phase 4: Pass current_tick to bank for credit jail logic
+        if hasattr(self.bank, "run_tick") and "current_tick" in self.bank.run_tick.__code__.co_varnames:
+             self.bank.run_tick(self.agents, self.time)
+        else:
+             self.bank.run_tick(self.agents)
 
         # 1c. 통화 정책 업데이트 (정부/중앙은행)
         inflation_rate = 0.0 # TODO: Calculate inflation properly from tracker
@@ -334,6 +340,13 @@ class Simulation:
 
         market_data = self._prepare_market_data(self.tracker)
         
+        # Phase 4: Welfare Check
+        # run_welfare_check(agents, market_data, current_tick)
+        # Note: market_data needs 'total_production' (GDP) for stimulus check
+        latest_gdp = self.tracker.get_latest_indicators().get("total_production", 0.0)
+        market_data["total_production"] = latest_gdp # Inject for Government
+        self.government.run_welfare_check(list(self.agents.values()), market_data, self.time)
+
         # Snapshot agents for learning (Pre-state)
         for f in self.firms:
             if f.is_active: f.pre_state_snapshot = f.get_agent_data()
@@ -762,7 +775,19 @@ class Simulation:
             elif tx.transaction_type in ["labor", "research_labor"]:
                 # 소득세 적용 (INCOME_TAX_PAYER 설정에 따름)
                 tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
-                tax_amount = trade_value * income_tax_rate
+
+                # Phase 4: Progressive Tax
+                # Calculate Survival Cost for Tax Bracket
+                avg_food_price = 0.0
+                goods_market_data = self._prepare_market_data(self.tracker).get("goods_market", {})
+                if "basic_food_current_sell_price" in goods_market_data:
+                    avg_food_price = goods_market_data["basic_food_current_sell_price"]
+                else:
+                    avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+                daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+                survival_cost = max(avg_food_price * daily_food_need, 10.0)
+
+                tax_amount = self.government.calculate_income_tax(trade_value, survival_cost)
                 
                 if tax_payer == "FIRM":
                     # 기업이 세금을 추가로 납부 (가계는 trade_value 전액 수령)

@@ -170,6 +170,9 @@ class Household(BaseAgent):
         self.perceived_avg_prices: Dict[str, float] = {}
         self.education_xp: float = 0.0  # Task #6: Education XP
 
+        # Phase 4: Bankruptcy Penalty
+        self.credit_frozen_until_tick: int = 0
+
 
         self.config_module = config_module  # Store config_module
         self.decision_engine.loan_market = loan_market
@@ -295,6 +298,7 @@ class Household(BaseAgent):
             "current_wage": self.current_wage,
             "employer_id": self.employer_id,
             "social_status": self.social_status,
+            "credit_frozen_until_tick": self.credit_frozen_until_tick,
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
@@ -577,6 +581,7 @@ class Household(BaseAgent):
         cloned_household.social_status = self.social_status
         cloned_household.perceived_avg_prices = self.perceived_avg_prices.copy()
         cloned_household.current_food_consumption = self.current_food_consumption
+        cloned_household.credit_frozen_until_tick = self.credit_frozen_until_tick
 
         return cloned_household
 
@@ -670,6 +675,7 @@ class Household(BaseAgent):
         child.shares_owned = child_shares
         child.is_employed = False
         child.employer_id = None
+        child.credit_frozen_until_tick = 0 # New agent has clean credit record
         child.needs["survival"] = random.uniform(0, 20)
 
         # 다른 욕구들도 초기화 (필요시)

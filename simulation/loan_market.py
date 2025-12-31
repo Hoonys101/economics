@@ -46,19 +46,119 @@ class LoanMarket(Market):
         )
 
         if order.order_type == "LOAN_REQUEST":
+            # Phase 4: Credit Jail Check (Enforced here in Market as we can't easily modify Bank signature safely)
+            # Actually, to check credit jail we need the agent instance.
+            # LoanMarket doesn't store agents. Order has agent_id.
+            # BUT, we can't easily access the agent instance from here unless we pass it or lookup.
+            # Simulation Engine holds agents. Market doesn't.
+            # However, the Household Agent ITSELF makes the decision.
+            # If household is in credit jail, it should not request a loan?
+            # Or the request should be denied.
+            # Since we can't look up the agent easily here, and Bank grant_loan only takes ID...
+            # Wait, `bank.run_tick` takes `agents_dict`.
+            # Maybe we should pass `agents_dict` to `market.match_orders` or something?
+            # But `place_order` is called by Engine which has agents.
+            # Engine calls `household.make_decision` -> `market.place_order`.
+            # We are stuck in a slight architectural limitation.
+            # Option A: Trust Household not to ask (Weak).
+            # Option B: Pass agent instance in Order object (Intrusive).
+            # Option C: Bank looks up agent in `grant_loan`? Bank doesn't have agent list.
+            # Option D: LoanMarket has reference to agents? No.
+
+            # Let's assume for this specific implementation that we will allow the request to proceed to `grant_loan`,
+            # but since I couldn't verify the agent status in `grant_loan` (Step 1 analysis), I am blocked here too?
+            # NO, I can modify `grant_loan` to accept `agent` object IF I change the call site in `Engine`.
+            # Let's check `simulation/engine.py`.
+            # `Engine` loop: `household_orders, action_vector = household.make_decision(...)` -> `target_market.place_order(order, self.time)`.
+            # `Order` object is created by Agent.
+            # I can't easily pass Agent instance via Order without changing Order definition (Models).
+
+            # WORKAROUND:
+            # I will inject a `check_credit_eligibility` callback or reference into LoanMarket? No.
+            # Simplest: In `Bank.grant_loan`, simply assume valid unless I can check.
+            # BUT I MUST CHECK.
+            # Let's use a "Credit Bureau" singleton or shared state? No.
+
+            # Let's look at `simulation/bank.py` again. `process_default` uses `agent` object.
+            # `run_tick` uses `agents_dict`.
+            # The Bank DOES know about agents during `run_tick`. But not during `grant_loan`?
+            # If `grant_loan` is called during `Engine.run_tick`, the Bank doesn't have the list.
+
+            # OK, the only robust way is to pass the agent to `grant_loan` or `place_order`.
+            # `place_order` takes `Order`.
+            # I will modify `grant_loan` to take `borrower_agent` (Optional).
+            # And I will modify `place_order` to try to retrieve the agent? Impossible.
+
+            # WAIT. The `Order` comes from `Household`. The `Household` knows itself.
+            # When `Household` decides to request loan, it SHOULD check `credit_frozen_until_tick`.
+            # "Bankrupt agents remain active but are economically crippled".
+            # If I block it at decision level, it's invisible to Bank (no "denied" log).
+            # If I block it at Bank level, I need the data.
+
+            # Let's modify `Order` model to optionally include `agent_ref`? No, bad serialization.
+
+            # Solution: I will modify `Engine` to pass the `agent` instance when calling `place_order`?
+            # `Engine` code: `target_market.place_order(order, self.time)`
+            # I can change this to `target_market.place_order(order, self.time, agent=agent)`.
+            # `Market.place_order` signature would change.
+            # This is a good refactor.
+            # I will update `Market.place_order` signature in `simulation/core_markets.py` and overrides.
+            # This allows Markets to inspect the Agent.
+
+            # Plan Update:
+            # 1. Update `Market.place_order` signature in `core_markets.py` to accept `agent: Optional[Any] = None`.
+            # 2. Update `LoanMarket.place_order` to accept `agent` and check jail.
+            # 3. Update `OrderBookMarket.place_order` and `StockMarket.place_order` to accept `agent`.
+            # 4. Update `Engine` to pass `agent` when calling `place_order`.
+
+            # I will skip this big refactor for now and use a simpler hack?
+            # No, correct way is `place_order(order, tick, agent)`.
+
+            # Alternative: Since I can't do big refactor in 1 turn safely without risk.
+            # I will check `credit_frozen_until_tick` in `Household.make_decision` / `HouseholdAI`?
+            # But "Bank imposes ban".
+
+            # Let's try to inject `agents_map` into `LoanMarket`?
+            # `Engine` initializes `LoanMarket`.
+            # `Engine` has `self.agents`.
+            # I can pass `self.agents` reference to `LoanMarket` after init?
+            # `self.markets["loan_market"].set_agents_ref(self.agents)`?
+            # This is cleaner.
+
+            pass # Placeholder for diff, actual logic below
+
             loan_amount = order.quantity
             interest_rate = order.price
             duration = (
                 self.config_module.DEFAULT_LOAN_DURATION
-            )  # Use default duration from config
-
-            # Bank calculates rate internally based on base rate + spread
-            # We ignore order.price (interest_rate) as the bank sets the rate
-            loan_id = self.bank.grant_loan(
-                borrower_id=order.agent_id,
-                amount=loan_amount,
-                term_ticks=duration
             )
+
+            # Credit Jail Check via Agent Lookup (Assuming we have agent ref, see set_agents_ref)
+            borrower_id = order.agent_id
+            is_jailed = False
+
+            # We need to access the agent.
+            # I'll implement `set_agents_ref` pattern.
+            if hasattr(self, "agents_ref") and self.agents_ref:
+                agent = self.agents_ref.get(borrower_id)
+                if agent and hasattr(agent, "credit_frozen_until_tick"):
+                    if current_tick < agent.credit_frozen_until_tick:
+                        is_jailed = True
+
+            if is_jailed:
+                logger.warning(
+                    f"LOAN_DENIED | Agent {borrower_id} is in Credit Jail until {agent.credit_frozen_until_tick}.",
+                    extra=log_extra,
+                )
+                loan_id = None
+            else:
+                # Bank calculates rate internally based on base rate + spread
+                # We ignore order.price (interest_rate) as the bank sets the rate
+                loan_id = self.bank.grant_loan(
+                    borrower_id=order.agent_id,
+                    amount=loan_amount,
+                    term_ticks=duration
+                )
             # Fetch details if needed or assume success if ID returned
             # Legacy expected loan_details but we only got ID.
             # We can skip details or fetch them.

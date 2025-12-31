@@ -24,38 +24,69 @@ class Government:
         self.value_orientation = "public_service"
         self.needs: Dict[str, float] = {}
 
+        # GDP Tracking for Stimulus
+        self.gdp_history: List[float] = [] # Stores total_production per tick
+        self.gdp_history_window = 20 # 2 quarters (approx 20 ticks based on spec saying 2 quarters)
+        # Note: Spec says "2분기 연속 하락". If 1 year = 100 ticks, 1 quarter = 25 ticks.
+        # Let's keep a history buffer to calculate trends.
+
         logger.info(
             f"Government {self.id} initialized with assets: {self.assets}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
 
-    def run_fiscal_policy(self, agents: Dict[int, Any], current_tick: int):
+    def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """
-        Phase 4: Main Fiscal Policy Loop.
-        Called every tick to manage Revenue (Tax) and Expenditure (Welfare).
-        
-        Responsibilities:
-        1. Wealth Tax Collection (Annual % converted to Tick)
-        2. Welfare Checks (Unemployment & Stimulus)
+        Calculates progressive income tax based on survival cost.
         """
-        # Jules to Implement:
-        # self._run_wealth_tax(agents, current_tick)
-        # self._run_welfare_check(agents, current_tick)
-        pass
+        tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
+        if not tax_brackets:
+            # Fallback to flat rate if no brackets defined
+            rate = getattr(self.config_module, "INCOME_TAX_RATE", 0.1)
+            return income * rate
 
-    def _calculate_progressive_tax(self, income: float, survival_cost: float) -> float:
-        """
-        Calculates tax based on config.TAX_BRACKETS.
-        """
-        # Jules to Implement
-        return 0.0
+        # Brackets are defined as (multiple_of_survival_cost, rate)
+        # However, for simple V1 implementation per spec:
+        # "단순하게 Transaction Amount 자체에 브라켓을 적용합니다"
+        # We need to find which bracket the income falls into.
+        # But wait, progressive tax usually applies to chunks.
+        # Spec says: "소득 구간(Tax Brackets)별 차등 세율 적용"
+        # BUT Spec Clarification says: "단순하게 Transaction Amount 자체에 브라켓을 적용합니다. (V1 Simplicity)"
+        # This implies a flat rate based on the total amount's bracket, OR a simplified bracket logic.
+        # Let's assume standard marginal tax brackets for correctness, as "Progressive" implies that.
+        # But if "V1 Simplicity" means finding the rate for the total amount and applying it to the whole, that's easier.
+        # Let's read the brackets: [(1.5, 0.0), (5.0, 0.15), (inf, 0.40)]
+        # This looks like: Income up to 1.5*SC is 0%. Income between 1.5*SC and 5.0*SC is 15%. Above is 40%.
 
-    def _run_welfare_check(self, agents: Dict[int, Any], current_tick: int):
-        """
-        Scans agents for unemployment/poverty and distributes benefits.
-        """
-        # Jules to Implement
-        pass
+        tax_total = 0.0
+        remaining_income = income
+        previous_limit_abs = 0.0
+
+        for multiple, rate in tax_brackets:
+            limit_abs = multiple * survival_cost
+
+            taxable_in_this_bracket = min(max(0, limit_abs - previous_limit_abs), remaining_income)
+
+            # If remaining_income is greater than the width of this bracket, we tax the full width
+            # If remaining_income is less, we tax the remainder
+            # Actually, let's do it cleanly:
+
+            # Range for this bracket: [previous_limit_abs, limit_abs]
+            # Income overlapping with this range:
+            upper_bound = min(income, limit_abs)
+            lower_bound = max(0, previous_limit_abs)
+
+            taxable_amount = max(0.0, upper_bound - lower_bound)
+
+            if taxable_amount > 0:
+                tax_total += taxable_amount * rate
+
+            if income <= limit_abs:
+                break
+
+            previous_limit_abs = limit_abs
+
+        return tax_total
 
     def collect_tax(self, amount: float, tax_type: str, source_id: int, current_tick: int):
         """세금을 징수합니다."""
@@ -105,6 +136,154 @@ class Government:
             }
         )
         return amount
+
+    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int):
+        """
+        Phase 4: Performs welfare checks, wealth tax collection, and stimulus injection.
+        Called every tick by the Engine.
+        """
+        # 1. Calculate Survival Cost (Dynamic)
+        # max(avg_food_price * daily_food_need, 10.0)
+        avg_food_price = 0.0
+        goods_market = market_data.get("goods_market", {})
+        if "basic_food_current_sell_price" in goods_market:
+            avg_food_price = goods_market["basic_food_current_sell_price"]
+        else:
+            avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+
+        # Assuming FOOD_CONSUMPTION_MAX_PER_TICK or similar as daily need.
+        # Config says HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0.
+        # Let's use HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK if available.
+        daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+
+        survival_cost = max(avg_food_price * daily_food_need, 10.0)
+
+        # 2. Wealth Tax & Unemployment Benefit
+        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02)
+        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100.0)
+        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
+        wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", 50000.0)
+
+        unemployment_ratio = getattr(self.config_module, "UNEMPLOYMENT_BENEFIT_RATIO", 0.8)
+        benefit_amount = survival_cost * unemployment_ratio
+
+        total_wealth_tax = 0.0
+        total_welfare_paid = 0.0
+
+        for agent in agents:
+            if not getattr(agent, "is_active", False):
+                continue
+
+            # We only tax/support Households (checking agent_type or class would be better but duck typing works)
+            if hasattr(agent, "needs") and hasattr(agent, "is_employed"): # Identifying Household
+
+                # A. Wealth Tax
+                net_worth = agent.assets # Simplified Net Worth (ignoring debts/stocks value for now for speed, or assume assets includes cash)
+                # Ideally Net Worth = Cash + Stock Value - Debt.
+                # agent.assets is usually just Cash.
+                # Let's use Cash + Stock Value if possible, but spec says "Net Assets".
+                # For Phase 4 V1, let's stick to Cash or see if we can easily get Stock Value.
+                # agent.shares_owned exists. We need stock prices.
+                # Computing full net worth might be expensive inside this loop if we do lookup.
+                # Let's stick to agent.assets (Cash) for now unless spec demands rigorous Net Worth.
+                # Spec says "Net Assets (Net Worth)".
+                # Let's try to add stock value if market_data has it.
+                stock_value = 0.0
+                if hasattr(agent, "shares_owned") and agent.shares_owned:
+                    stock_market_data = market_data.get("stock_market", {})
+                    for firm_id, qty in agent.shares_owned.items():
+                         key = f"stock_{firm_id}"
+                         if key in stock_market_data:
+                             stock_value += qty * stock_market_data[key]["avg_price"]
+
+                total_assets = agent.assets + stock_value
+
+                if total_assets > wealth_threshold:
+                    tax_amount = (total_assets - wealth_threshold) * wealth_tax_rate_tick
+                    if agent.assets >= tax_amount:
+                        agent.assets -= tax_amount
+                        self.collect_tax(tax_amount, "wealth_tax", agent.id, current_tick)
+                        total_wealth_tax += tax_amount
+                    else:
+                        # Asset poor but stock rich? Force sell?
+                        # For now, just take what cash is available.
+                        taken = agent.assets
+                        agent.assets = 0
+                        self.collect_tax(taken, "wealth_tax", agent.id, current_tick)
+                        total_wealth_tax += taken
+
+                # B. Unemployment Benefit
+                # Spec: is_employed = False AND looking_for_work = True
+                # "looking_for_work" isn't explicitly tracked as a flag in Household,
+                # but unemployed households generally look for work.
+                if not agent.is_employed:
+                    # Provide benefit
+                    # Check Government budget? Spec says "Treasury. If deficient, Money Printing".
+                    # So we always pay.
+                    if self.assets < benefit_amount:
+                        # Deficit Spending / Money Printing
+                        self.assets += benefit_amount # Print money
+                        logger.info(f"DEFICIT_SPENDING | Government printed {benefit_amount:.2f} for welfare.", extra={"tick": current_tick, "agent_id": self.id})
+
+                    self.provide_subsidy(agent, benefit_amount, current_tick)
+                    total_welfare_paid += benefit_amount
+
+        # 3. Stimulus Check (Helicopter Money)
+        # Condition: GDP drops significantly.
+        # Check Tracker for total_production?
+        # The Engine calls this method. We should have access to GDP via market_data or passed args.
+        # market_data usually contains price info. GDP (Total Production) is in Tracker.
+        # But we need history.
+        # Let's rely on the Engine to pass the latest GDP or we fetch it if we had access to tracker.
+        # Currently run_welfare_check signature is (agents, market_data, current_tick).
+        # We might need to track GDP history internally in Government class by having Engine pass current GDP.
+
+        # NOTE: Engine should pass `current_gdp` to this method.
+        # I will update the signature in the next step or assume it is in market_data if I put it there.
+        # Let's check `market_data` usage in Engine. It has "goods_market", "stock_market".
+        # I'll rely on a new argument `current_gdp` or extract from `market_data` if I hack it in.
+        # Better: Add `current_gdp` to `run_welfare_check` signature.
+        # For now, I'll access it from `market_data` assuming I add it there in Engine.
+
+        current_gdp = market_data.get("total_production", 0.0)
+        self.gdp_history.append(current_gdp)
+        if len(self.gdp_history) > self.gdp_history_window:
+            self.gdp_history.pop(0)
+
+        # Trigger Logic: "2분기 연속 하락" (Falling for 2 quarters)
+        # Simplified: Check if average of last quarter < average of quarter before that?
+        # Or checking a "drop" threshold defined in config.
+        # Spec: "GDP 5% drop trigger" (STIMULUS_TRIGGER_GDP_DROP = -0.05)
+        # Let's compare current GDP vs GDP 10 ticks ago (approx short term trend).
+        trigger_drop = getattr(self.config_module, "STIMULUS_TRIGGER_GDP_DROP", -0.05)
+
+        should_stimulus = False
+        if len(self.gdp_history) >= 10:
+            past_gdp = self.gdp_history[-10]
+            if past_gdp > 0:
+                change = (current_gdp - past_gdp) / past_gdp
+                if change <= trigger_drop:
+                    should_stimulus = True
+
+        if should_stimulus:
+             stimulus_amount = survival_cost * 5.0 # Example lump sum
+             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
+
+             total_stimulus = 0.0
+             for h in active_households:
+                 if self.assets < stimulus_amount:
+                     self.assets += stimulus_amount # Print
+                 self.provide_subsidy(h, stimulus_amount, current_tick)
+                 total_stimulus += stimulus_amount
+
+             logger.warning(
+                 f"STIMULUS_TRIGGERED | GDP Drop Detected. Paid {total_stimulus:.2f} total.",
+                 extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
+             )
+             # Reset history or cooldown to prevent continuous stimulus?
+             # Spec doesn't say. Let's add a cooldown implicit by the fact that GDP needs to drop AGAIN to trigger.
+             # But if it stays low, the comparison might stabilize.
+             # If it keeps dropping, we keep paying. This seems correct for "Rescue".
 
     def update_monetary_policy(self, bank_agent: Any, current_tick: int, inflation_rate: float = 0.0):
         """
