@@ -54,20 +54,19 @@ Jules는 `simulation/dtos.py`에 정의된 다음 구조를 사용하여 데이�
 ### 3. Work Order for Jules (구현 지침)
 "Jules, 아래 순서대로 작업을 완료하고 보고하라."
 
-#### **Phase A: Backend (Aggregator)**
-1.  **Repository 활용**: `SimulationRepository`에 `get_generation_stats`가 이미 구현되어 있음.
-2.  **ViewModel 생성**: `simulation/viewmodels/snapshot_viewmodel.py`를 구현하여 데이터를 조립하라.
-3.  **API 노출**: `app.py`에서 `/api/simulation/dashboard` 엔드포인트를 연결하라.
+#### **[Phase A: Backend (Aggregator)] - ✅ DONE & OPTIMIZED**
+- **Status**: Merged to `main` with performance caching (Tick % 5). 
+- **Action**: `git pull origin main`을 통해 최적화된 백엔드 코드를 동기화할 것.
 
-#### **Phase B: Frontend (UI/Visualization)**
-1.  **폴더 확인**: `frontend/src/components/dashboard/`에 작업 영역을 생성해 두었다.
-2.  **컴포넌트 구현**:
+#### **[Phase B: Frontend (UI/Visualization)] - 🚀 IN PROGRESS**
+1.  **지침**: `frontend/src/components/dashboard/` 내에 4개 탭(`SocietyTab`, `GovernmentTab`, `MarketTab`, `FinanceTab`)을 구현하라.
     - `SocietyTab.tsx`: 세대별 자산 분포(Area Chart)와 실업 유형(Donut Chart).
     - `GovernmentTab.tsx`: 세수 분포(Pie Chart) 및 세수 추이(Line Chart).
     - `MarketTab.tsx`: CPI 및 품목별 추이(Multi-line Chart).
     - `FinanceTab.tsx`: 시총 및 거래량 통계.
-3.  **데이터 연동**: `src/hooks/useSimulation.ts`를 사용하여 실제 API 데이터를 UI에 바인딩하라.
-4.  **스타일 준수**: `index.css`에 정의된 디자인 토큰과 `.glass-card` 클래스를 활용하여 프리미엄 룩을 유지하라.
+2.  **디자인**: 이미 설정된 `.glass-card` 및 HSL 컬러 디자인 시스템을 엄격히 준수할 것.
+3.  **데이터**: `src/hooks/useSimulation.ts`를 임포트하여 API 데이터를 각 차트에 바인딩하라.
+4.  **차트**: Recharts를 권장하며, 각 탭의 의미에 맞는 차트 유형(Area, Pie, Bar 등)을 선택하라.
 
 ---
 
