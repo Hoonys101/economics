@@ -208,13 +208,8 @@ class Government:
         )
         return amount
 
-    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int):
-        """
-        Phase 4: Performs welfare checks, wealth tax collection, and stimulus injection.
-        Called every tick by the Engine.
-        """
-        # 1. Calculate Survival Cost (Dynamic)
-        # max(avg_food_price * daily_food_need, 10.0)
+    def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
+        """ Calculates current survival cost based on food prices. """
         avg_food_price = 0.0
         goods_market = market_data.get("goods_market", {})
         if "basic_food_current_sell_price" in goods_market:
@@ -222,12 +217,16 @@ class Government:
         else:
             avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
 
-        # Assuming FOOD_CONSUMPTION_MAX_PER_TICK or similar as daily need.
-        # Config says HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0.
-        # Let's use HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK if available.
         daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+        return max(avg_food_price * daily_food_need, 10.0)
 
-        survival_cost = max(avg_food_price * daily_food_need, 10.0)
+    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int):
+        """
+        Phase 4: Performs welfare checks, wealth tax collection, and stimulus injection.
+        Called every tick by the Engine.
+        """
+        # 1. Calculate Survival Cost (Dynamic)
+        survival_cost = self.get_survival_cost(market_data)
 
         # 2. Wealth Tax & Unemployment Benefit
         wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02)

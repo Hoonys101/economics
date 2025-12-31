@@ -267,9 +267,10 @@ SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default-secret-token")
 # Format: (Threshold Multiplier of SURVIVAL_COST, Tax Rate)
 # Example: (1.5, 0.0) -> Income up to 1.5x Survival Cost is Tax Free.
 TAX_BRACKETS = [
-    (1.5, 0.0),   # Lower Class (Survival Protection)
-    (5.0, 0.15),  # Middle Class
-    (float('inf'), 0.40) # Upper Class
+    (0.5, 0.0),   # Up to 0.5x survival cost: Tax Free
+    (1.0, 0.10),  # Working Class (0.5 ~ 1.0x): 10%
+    (3.0, 0.20),  # Middle Class
+    (float('inf'), 0.40) # Wealthy
 ]
 
 # 2. Wealth Tax (Annual Rate -> Tick Rate Logic needed in implementation)
@@ -277,7 +278,7 @@ ANNUAL_WEALTH_TAX_RATE = 0.02  # 2% per year
 WEALTH_TAX_THRESHOLD = 50000.0 # Net Worth above this is taxed
 
 # 3. Welfare
-UNEMPLOYMENT_BENEFIT_RATIO = 0.8  # 80% of Survival Cost
+UNEMPLOYMENT_BENEFIT_RATIO = 0.5  # 50% of Survival Cost (Austerity)
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # -5% GDP Growth triggers Stimulus
 
 # 4. Bankruptcy & Credit Jail
@@ -451,9 +452,10 @@ MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
 # 1. Progressive Tax (Income Tax)
 # Criteria: Multiples of SURVIVAL_COST
 TAX_BRACKETS = [
-    (1.5, 0.0),   # Up to 1.5x survival cost: Tax Free
-    (5.0, 0.15),  # Middle class (1.5 ~ 5.0x): 15%
-    (float('inf'), 0.40) # Wealthy: 40%
+    (0.5, 0.0),   # Up to 0.5x survival cost: Tax Free
+    (1.0, 0.10),  # Working Class (0.5 ~ 1.0x): 10%
+    (3.0, 0.20),  # Middle Class
+    (float('inf'), 0.40) # Wealthy
 ]
 
 # 2. Wealth Tax
@@ -462,7 +464,7 @@ WEALTH_TAX_THRESHOLD = 50000.0
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
-UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # Ratio of survival cost
+UNEMPLOYMENT_BENEFIT_RATIO = 0.5 # Ratio of survival cost (Austerity)
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% drop trigger
 
 # 4. Bankruptcy Penalty

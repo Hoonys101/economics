@@ -568,7 +568,8 @@ class Simulation:
         for firm in self.firms:
              if firm.is_active:
                  firm.produce(self.time)
-                 firm.update_needs(self.time)
+                 # Phase 4: Pass government and market_data for income tax withholding
+                 firm.update_needs(self.time, self.government, market_data)
                  
                  # 2a. 법인세(Corporate Tax) 징수 (이익이 발생한 경우)
                  if firm.is_active and firm.current_profit > 0:

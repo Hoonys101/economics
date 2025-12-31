@@ -332,7 +332,7 @@ class Firm(BaseAgent):
             self.logger.info("No employees or no capital, no production.", extra=log_extra)
 
     @override
-    def update_needs(self, current_time: int) -> None:
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None) -> None:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
         self.logger.debug(
             f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}",
@@ -356,6 +356,13 @@ class Firm(BaseAgent):
 
         # Pay wages to employees
         total_wages = 0.0
+        total_tax_withheld = 0.0
+
+        # Calculate survival cost for tax logic (if government/market_data is available)
+        survival_cost = 10.0 # Default fallback
+        if government and market_data:
+            survival_cost = government.get_survival_cost(market_data)
+
         for employee in list(self.employees):
             # Clean up employees who no longer work here (quit or hired elsewhere)
             if employee.employer_id != self.id or not employee.is_employed:
@@ -365,9 +372,24 @@ class Firm(BaseAgent):
                 continue
 
             wage = self.employee_wages.get(employee.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+            
+            # Affordability check
             if self.assets >= wage:
+                # Calculate Tax
+                income_tax = 0.0
+                if government:
+                    income_tax = government.calculate_income_tax(wage, survival_cost)
+                
+                net_wage = wage - income_tax
+
+                # Transactions
                 self.assets -= wage
-                employee.assets += wage
+                employee.assets += net_wage # Pay Net Wage
+                
+                if income_tax > 0 and government:
+                    government.collect_tax(income_tax, "income_tax", employee.id, current_time)
+                    total_tax_withheld += income_tax
+
                 total_wages += wage
                 self.expenses_this_tick += wage
                 self.cost_this_turn += wage
