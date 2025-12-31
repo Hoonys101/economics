@@ -210,8 +210,8 @@ class SimulationRepository:
                 """
                 INSERT INTO economic_indicators (run_id, time, unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price,
                                                  total_production, total_consumption, total_household_assets,
-                                                 total_firm_assets, total_food_consumption, total_inventory)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     data.run_id,
@@ -227,6 +227,7 @@ class SimulationRepository:
                     data.total_firm_assets,
                     data.total_food_consumption,
                     data.total_inventory,
+                    data.avg_survival_need,
                 ),
             )
             self.conn.commit()
@@ -340,12 +341,32 @@ class SimulationRepository:
                         indicator_data.total_inventory,
                     )
                 )
+            data_to_insert = []
+            for indicator_data in indicators_data:
+                data_to_insert.append(
+                    (
+                        indicator_data.run_id,
+                        indicator_data.time,
+                        indicator_data.unemployment_rate,
+                        indicator_data.avg_wage,
+                        indicator_data.food_avg_price,
+                        indicator_data.food_trade_volume,
+                        indicator_data.avg_goods_price,
+                        indicator_data.total_production,
+                        indicator_data.total_consumption,
+                        indicator_data.total_household_assets,
+                        indicator_data.total_firm_assets,
+                        indicator_data.total_food_consumption,
+                        indicator_data.total_inventory,
+                        indicator_data.avg_survival_need,
+                    )
+                )
             self.cursor.executemany(
                 """
                 INSERT INTO economic_indicators (run_id, time, unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price,
                                                  total_production, total_consumption, total_household_assets,
-                                                 total_firm_assets, total_food_consumption, total_inventory)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 data_to_insert,
             )
@@ -542,6 +563,94 @@ class SimulationRepository:
         self.cursor.execute(query, params)
         columns = [description[0] for description in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+
+    def get_attrition_counts(self, start_tick: int, end_tick: int, run_id: Optional[int] = None) -> Dict[str, int]:
+        """
+        Calculates the number of agents that became inactive (bankruptcy/death) between start_tick and end_tick.
+
+        Args:
+            start_tick: The starting tick of the window (inclusive).
+            end_tick: The ending tick of the window (inclusive).
+            run_id: The simulation run ID.
+
+        Returns:
+            Dict with keys "bankruptcy_count" and "death_count".
+        """
+        # We need to find agents who were active at start_tick (or before) and inactive at end_tick.
+        # However, agent_states is a snapshot.
+        # A simpler approach: Count unique agents whose `is_active` state transitions from 1 to 0 within the window.
+        # Or simply count distinct agents where `is_active`=0 AND `time` BETWEEN start and end AND `is_active` was 1 previously?
+        # Since we might not have every tick saved, we can just check:
+        # Agents who are inactive at `end_tick` but were active at `start_tick`.
+
+        # 1. Get active agents at start_tick (or closest previous tick)
+        # 2. Get inactive agents at end_tick
+        # Intersection is the attrition.
+
+        # Optimization: Just count agents where `is_active`=0 in the latest state within window, who were active before?
+        # The accurate way requested: "changes in agent_states".
+
+        # SQL Strategy:
+        # Find agents where (time = end_tick AND is_active = 0)
+        # AND agent_id IN (SELECT agent_id FROM agent_states WHERE time = start_tick AND is_active = 1)
+
+        # Note: This relies on snapshots existing exactly at start_tick and end_tick.
+        # If BATCH_SAVE_INTERVAL > 1, exact ticks might be missing.
+        # But for this task, let's assume availability or use range.
+
+        params = [end_tick, start_tick]
+        query_suffix = ""
+        if run_id:
+            query_suffix = " AND run_id = ?"
+            params.append(run_id)
+            params.append(run_id) # For the subquery
+
+        # Bankruptcy (Firms)
+        firm_query = f"""
+            SELECT COUNT(DISTINCT agent_id)
+            FROM agent_states
+            WHERE time = ? AND is_active = 0 AND agent_type = 'firm'
+            AND agent_id IN (
+                SELECT agent_id FROM agent_states
+                WHERE time = ? AND is_active = 1 AND agent_type = 'firm' {query_suffix}
+            )
+            {query_suffix}
+        """
+
+        # Death (Households)
+        household_query = f"""
+            SELECT COUNT(DISTINCT agent_id)
+            FROM agent_states
+            WHERE time = ? AND is_active = 0 AND agent_type = 'household'
+            AND agent_id IN (
+                SELECT agent_id FROM agent_states
+                WHERE time = ? AND is_active = 1 AND agent_type = 'household' {query_suffix}
+            )
+            {query_suffix}
+        """
+
+        # Construct params for each query (end_tick, start_tick, [run_id], [run_id])
+        # Wait, the params list needs to be duplicated for two executions or I execute separately.
+
+        result = {}
+
+        # Execute Firm Query
+        p_firm = [end_tick, start_tick]
+        if run_id:
+            p_firm.extend([run_id, run_id])
+
+        self.cursor.execute(firm_query, p_firm)
+        result["bankruptcy_count"] = self.cursor.fetchone()[0]
+
+        # Execute Household Query
+        p_household = [end_tick, start_tick]
+        if run_id:
+            p_household.extend([run_id, run_id])
+
+        self.cursor.execute(household_query, p_household)
+        result["death_count"] = self.cursor.fetchone()[0]
+
+        return result
 
 
 if __name__ == "__main__":

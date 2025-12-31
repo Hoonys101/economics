@@ -43,6 +43,7 @@ class EconomicIndicatorTracker:
             "total_consumption",
             "total_food_consumption",
             "total_inventory",
+            "avg_survival_need",
         ]
         self.logger = logging.getLogger(__name__)
 
@@ -160,6 +161,19 @@ class EconomicIndicatorTracker:
             sum(f.inventory.values()) for f in firms if getattr(f, "is_active", False)
         )
         record["total_inventory"] = total_inventory
+
+        # Calculate average survival need for active households
+        active_households_count = 0
+        total_survival_need = 0.0
+        for h in households:
+            if getattr(h, "is_active", True):
+                active_households_count += 1
+                total_survival_need += h.needs.get("survival", 0.0)
+
+        record["avg_survival_need"] = (
+            total_survival_need / active_households_count
+            if active_households_count > 0 else 0.0
+        )
 
         for field in self.all_fieldnames:
             record.setdefault(field, 0.0)
