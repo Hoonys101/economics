@@ -53,17 +53,33 @@
 
 ### 3.1 Config 추가 (`config.py`)
 ```python
+### 3.1 Config 수정 (Critical Refinement: Economics Math Fix)
+```python
 # --- Phase 4: Fiscal Policy ---
-# Tax Brackets: [(threshold_multiplier, rate)]
-# multiplier는 평균 소득 대비 배수
+
+# 1. Progressive Tax (Income Tax)
+# 기준: SURVIVAL_COST (생존 비용) 대비 배수
+# 이유: 경기 침체 시 '평균 소득'이 폭락하면 빈민에게 과세하는 오류 방지
 TAX_BRACKETS = [
-    (0.5, 0.0),   # 평균의 0.5배 이하: 면세
-    (2.0, 0.15),  # 평균의 2배 이하: 15%
-    (float('inf'), 0.40) # 그 이상: 40%
+    (1.5, 0.0),   # 생존비의 1.5배까지: 면세 (최저 생계 보장)
+    (5.0, 0.15),  # 중산층 구간 (1.5 ~ 5.0배): 15%
+    (float('inf'), 0.40) # 부유층: 40%
 ]
 
-WEALTH_TAX_THRESHOLD = 50000.0  # 보유세 부과 기준 자산
-WEALTH_TAX_RATE = 0.005 # 틱당 0.5% (연 50%... 너무 쎈가? 연환산 고려 필요)
+# 2. Wealth Tax (보유세)
+# 틱당 금리(Phase 3)와 마찬가지로 연율 기준 환산 필요.
+# WEALTH_TAX_THRESHOLD = 50000.0  # (기존 유지)
+ANNUAL_WEALTH_TAX_RATE = 0.02   # 연 2% 부유세
+# 틱당 징수액 = (NetWorth - Threshold) * (ANNUAL_WEALTH_TAX_RATE / TICKS_PER_YEAR)
+
+# 3. Welfare
+UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # 생존 비용 대비 지급 비율
+STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% 하락 시
+
+# 4. Bankruptcy Penalty (Moral Hazard 방지)
+CREDIT_RECOVERY_TICKS = 100 # 1년(100틱) 간 신용 불량 (대출 불가)
+BANKRUPTCY_XP_PENALTY = 0.2 #보유 기술 경험치 20% 삭감 (지능 패널티)
+```
 
 UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # 생존 비용 대비 지급 비율
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% 하락 시
