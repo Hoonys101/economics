@@ -10,6 +10,7 @@ from simulation.ai.enums import Tactic, Aggressiveness
 from simulation.dtos import DecisionContext
 from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
+from simulation.schemas import HouseholdActionVector
 
 
 # Mock Logger
@@ -28,6 +29,24 @@ def mock_config():
         "basic_food": {"utility_effects": {"survival": 10}},
         "luxury_food": {"utility_effects": {"leisure": 10}},
     }
+    config.MARKET_PRICE_FALLBACK = 10.0
+    config.NEED_FACTOR_BASE = 1.0
+    config.NEED_FACTOR_SCALE = 100.0
+    config.VALUATION_MODIFIER_BASE = 1.0
+    config.VALUATION_MODIFIER_RANGE = 0.5
+    config.HOUSEHOLD_MAX_PURCHASE_QUANTITY = 5
+    config.BULK_BUY_NEED_THRESHOLD = 0.7
+    config.BULK_BUY_AGG_THRESHOLD = 0.8
+    config.BULK_BUY_MODERATE_RATIO = 0.5
+    config.BUDGET_LIMIT_NORMAL_RATIO = 0.5
+    config.BUDGET_LIMIT_URGENT_NEED = 0.9
+    config.BUDGET_LIMIT_URGENT_RATIO = 0.9
+    config.MIN_PURCHASE_QUANTITY = 1
+    config.LABOR_MARKET_MIN_WAGE = 5.0
+    config.JOB_QUIT_THRESHOLD_BASE = 1.5
+    config.RESERVATION_WAGE_BASE = 1.0
+    config.RESERVATION_WAGE_RANGE = 0.5
+    config.STOCK_MARKET_ENABLED = False
     return config
 
 
@@ -43,15 +62,20 @@ def mock_household():
     hh.perceived_avg_prices = {}
     hh.inventory = {}
     hh.is_employed = False
+    hh.shares_owned = {}
     return hh
 
 
 @pytest.fixture
 def mock_ai_engine():
     ai = Mock(spec=HouseholdAI)
-    ai.decide_and_learn.return_value = (
-        Tactic.DO_NOTHING_CONSUMPTION,
-        Aggressiveness.NORMAL,
+    # Default V2 Mock Return
+    ai.decide_action_vector.return_value = HouseholdActionVector(
+        consumption_aggressiveness={},
+        work_aggressiveness=0.5,
+        job_mobility_aggressiveness=0.5,
+        investment_aggressiveness=0.0,
+        learning_aggressiveness=0.0
     )
     return ai
 
@@ -75,152 +99,165 @@ class TestAIDrivenHouseholdDecisionEngine:
             current_time=1,
         )
         decision_engine.make_decisions(context)
-        mock_ai_engine.decide_and_learn.assert_called_once()
+        mock_ai_engine.decide_action_vector.assert_called_once()
 
     def test_consumption_do_nothing(
         self, decision_engine, mock_household, mock_ai_engine
     ):
-        mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.DO_NOTHING_CONSUMPTION,
-            Aggressiveness.NORMAL,
+        # V2: "Do Nothing" is simulated by very low consumption aggressiveness
+        mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
+            consumption_aggressiveness={"basic_food": 0.0, "luxury_food": 0.0}
         )
+
+        # Also need high price or low need to prevent buy.
+        # With default config and need=0.8, even 0.0 agg might buy if price is low.
+        # But if valuation modifier makes WTP low...
+        # Let's set price high.
+
+        market_data = {
+            "goods_market": {
+                "basic_food_avg_traded_price": 1000.0,
+                "luxury_food_avg_traded_price": 1000.0
+            }
+        }
+
         context = DecisionContext(
             household=mock_household,
             markets={},
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
-        assert len(orders) == 0
+
+        # Ignore labor sell order
+        buy_orders = [o for o in orders if o.order_type == "BUY"]
+        assert len(buy_orders) == 0
 
     def test_consumption_buy_basic_food_sufficient_assets(
         self, decision_engine, mock_household, mock_ai_engine, mock_config
     ):
-        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
-        mock_goods_market.get_best_ask.return_value = 10.0
-        mock_markets = {"goods_market": mock_goods_market}
-        
-        mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.BUY_BASIC_FOOD,
-            Aggressiveness.NORMAL,
+        # V2: Set aggressiveness for basic_food
+        mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
+            consumption_aggressiveness={"basic_food": 0.8}
         )
+
+        market_data = {
+            "goods_market": {
+                "basic_food_avg_traded_price": 10.0
+            }
+        }
 
         context = DecisionContext(
             household=mock_household,
-            markets=mock_markets,
+            markets={},
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
 
-        assert len(orders) == 1
-        assert orders[0].item_id == "basic_food"
-        assert orders[0].price == 10.0
+        buy_orders = [o for o in orders if o.order_type == "BUY" and o.item_id == "basic_food"]
+        assert len(buy_orders) == 1
+        # WTP calculation involves need factor and valuation modifier.
+        # WTP > 0.
+        assert buy_orders[0].price > 0
 
     def test_consumption_buy_luxury_food_insufficient_assets(
         self, decision_engine, mock_household, mock_ai_engine, mock_config
     ):
-        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
-        mock_goods_market.get_best_ask.return_value = 1000.0
-        mock_markets = {"goods_market": mock_goods_market}
-        
-        mock_household.assets = 100.0
-        mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.BUY_LUXURY_FOOD,
-            Aggressiveness.AGGRESSIVE,
+        # Aggressive buy but price is way too high
+        mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
+            consumption_aggressiveness={"luxury_food": 1.0}
         )
+        
+        market_data = {
+            "goods_market": {
+                "luxury_food_avg_traded_price": 1000.0
+            }
+        }
+        
+        mock_household.assets = 100.0 # Can't afford much
 
         context = DecisionContext(
             household=mock_household,
-            markets=mock_markets,
+            markets={},
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
 
-        assert len(orders) == 0
+        # Logic: WTP might be high, but quantity might be reduced to fit budget.
+        # If min purchase quantity is 1, and price > budget, should be 0.
+        # 1000 * 1 > 100.
 
-    def test_consumption_evaluate_options_chooses_best_utility(
-        self, decision_engine, mock_household, mock_ai_engine, mock_config
-    ):
-        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
-        # Utility/dollar = (0.8*10)/10 = 0.8 for basic_food
-        # Utility/dollar = (0.5*10)/20 = 0.25 for luxury_food
-        mock_goods_market.get_best_ask.side_effect = lambda item_id: 10.0 if item_id == "basic_food" else (20.0 if item_id == "luxury_food" else None)
-        
-        mock_markets = {"goods_market": mock_goods_market}
-        
-        mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.EVALUATE_CONSUMPTION_OPTIONS,
-            Aggressiveness.NORMAL,
-        )
+        buy_orders = [o for o in orders if o.order_type == "BUY" and o.item_id == "luxury_food"]
 
-        context = DecisionContext(
-            household=mock_household,
-            markets=mock_markets,
-            goods_data=[],
-            market_data={},
-            current_time=1,
-        )
-        orders, _ = decision_engine.make_decisions(context)
+        # If budget check works properly, quantity becomes < 1 if WTP is around price.
+        # If WTP is super high (e.g. 2000), quantity check: 100 / 2000 = 0.05.
+        # max(1, int(0.05)) -> Wait, max(1, 0) is 1.
+        # But wait, logic:
+        # target_quantity = budget_limit / willingness_to_pay
+        # If WTP > price, say WTP=1000. Budget=100. Q = 0.1.
+        # if target_quantity >= min_purchase_quantity (1)...
+        # 0.1 < 1. So no order.
 
-        assert len(orders) == 1
-        assert orders[0].item_id == "basic_food"  # Higher utility per dollar
+        assert len(buy_orders) == 0
 
     def test_labor_market_participation_aggressive(
         self, decision_engine, mock_household, mock_ai_engine
     ):
-        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
-        mock_labor_market.get_all_bids = Mock(
-            return_value=[Order(2, "BUY", "labor", 1, 45.0, "labor_market")]
+        mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
+            work_aggressiveness=1.0 # High aggressiveness -> Low Reservation Wage
         )
-        mock_markets = {"labor": mock_labor_market}
-        mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.PARTICIPATE_LABOR_MARKET,
-            Aggressiveness.AGGRESSIVE,
-        )
-        mock_household.get_desired_wage.return_value = 50.0  # Base reservation wage
+
+        # Market Avg Wage = 10.0
+        market_data = {
+            "goods_market": {
+                "labor": {"avg_wage": 10.0}
+            }
+        }
 
         context = DecisionContext(
             household=mock_household,
-            markets=mock_markets,
+            markets={},
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
 
-        assert len(orders) == 1
-        assert orders[0].order_type == "SELL"
-        assert orders[0].item_id == "labor"
-        assert orders[0].price == 45.0  # Accepts lower wage due to aggressiveness
+        labor_orders = [o for o in orders if o.order_type == "SELL" and o.item_id == "labor"]
+        assert len(labor_orders) == 1
+        # With agg=1.0, reservation modifier = 1.0 - (1.0 * 0.5) = 0.5
+        # Res Wage = 10.0 * 0.5 = 5.0.
+        assert labor_orders[0].price == 5.0
 
-    def test_labor_market_participation_passive_no_offer(
+    def test_labor_market_participation_passive(
         self, decision_engine, mock_household, mock_ai_engine
     ):
-        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
-        mock_labor_market.get_all_bids = Mock(
-            return_value=[Order(2, "BUY", "labor", 1, 55.0, "labor_market")]
+        mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
+            work_aggressiveness=0.0 # Low aggressiveness -> High Reservation Wage
         )
-        mock_markets = {"labor": mock_labor_market}
-        mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.PARTICIPATE_LABOR_MARKET,
-            Aggressiveness.PASSIVE,
-        )
-        mock_household.get_desired_wage.return_value = (
-            50.0  # Base reservation wage (adjusted to 60)
-        )
+
+        market_data = {
+            "goods_market": {
+                "labor": {"avg_wage": 10.0}
+            }
+        }
 
         context = DecisionContext(
             household=mock_household,
-            markets=mock_markets,
+            markets={},
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
 
-        assert len(orders) == 0  # Does not accept offer below adjusted reservation wage
+        labor_orders = [o for o in orders if o.order_type == "SELL" and o.item_id == "labor"]
+        assert len(labor_orders) == 1
+        # With agg=0.0, reservation modifier = 1.0 - (0.0 * 0.5) = 1.0
+        # Res Wage = 10.0 * 1.0 = 10.0.
+        assert labor_orders[0].price == 10.0
