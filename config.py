@@ -284,6 +284,11 @@ STIMULUS_TRIGGER_GDP_DROP = -0.05 # -5% GDP Growth triggers Stimulus
 CREDIT_RECOVERY_TICKS = 100       # 1 Year Loan Ban
 BANKRUPTCY_XP_PENALTY = 0.2       # 20% XP Loss
 
+# 5. Experiment: Laffer Curve
+TAX_MODE = "PROGRESSIVE"  # "PROGRESSIVE" or "FLAT"
+BASE_INCOME_TAX_RATE = 0.2  # Used when TAX_MODE="FLAT"
+RANDOM_SEED = 42  # For experiment reproducibility
+
 # ==============================================================================
 # Phase 5: Time Allocation & Leisure Constants
 # ==============================================================================

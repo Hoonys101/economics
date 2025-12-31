@@ -35,6 +35,9 @@ class AgentStateData:
     num_employees: Optional[int] = None
     education_xp: Optional[float] = None
     generation: Optional[int] = 0
+    # Experiment: Time Allocation Tracking
+    time_worked: Optional[float] = None
+    time_leisure: Optional[float] = None
 
 @dataclass
 class EconomicIndicatorData:
