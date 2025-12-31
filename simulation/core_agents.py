@@ -361,6 +361,8 @@ class Household(BaseAgent):
                 extra={"agent_id": self.id, "tags": ["LEISURE_EFFECT"]}
             )
 
+        self.last_leisure_type = leisure_type
+
         return LeisureEffectDTO(
             leisure_type=leisure_type,
             leisure_hours=leisure_hours,

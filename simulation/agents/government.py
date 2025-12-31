@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Deque
+from collections import deque
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,36 @@ class Government:
 
         return tax_total
 
+    def reset_tick_flow(self):
+        """
+        매 틱 시작 시 호출되어 이번 틱의 Flow 데이터를 초기화하고,
+        이전 틱의 데이터를 History에 저장합니다.
+        (실제로는 History 저장은 Tick 끝에 하는 것이 좋지만,
+         Engine 흐름상 매 틱 Start 시점에 지난 틱 데이터를 Flush 하는 방식으로 처리합니다.
+         단, 첫 호출시에는 0이 들어갈 수 있음)
+        """
+        # 현재 누적된 Flow가 있다면 History에 추가 (지난 틱 데이터)
+        # 세부 Breakdown History를 위해 현재 tax_revenue와 이전 tax_revenue의 차이를 구하거나
+        # 별도의 'revenue_breakdown_this_tick'을 관리해야 함.
+        # 간단하게 구현하기 위해 tax_revenue_history에는 '이번 틱에 걷힌 세금 Breakdown'을 저장해야 함.
+        # 하지만 collect_tax에서 전역 tax_revenue만 누적하고 있음.
+        # 따라서 collect_tax에서 별도의 breakdown_this_tick 딕셔너리를 업데이트하도록 변경 필요.
+        # 여기서는 buffer를 flush.
+
+        # NOTE: collect_tax logic update needed to support breakdown history properly.
+        # See collect_tax implementation below.
+
+        if getattr(self, "revenue_breakdown_this_tick", None) is None:
+             self.revenue_breakdown_this_tick = {}
+
+        self.tax_revenue_history.append(self.revenue_breakdown_this_tick.copy())
+        self.expenditure_history.append(self.expenditure_this_tick)
+
+        # Reset Logic
+        self.revenue_this_tick = 0.0
+        self.expenditure_this_tick = 0.0
+        self.revenue_breakdown_this_tick = {}
+
     def collect_tax(self, amount: float, tax_type: str, source_id: int, current_tick: int):
         """세금을 징수합니다."""
         if amount <= 0:
@@ -115,6 +146,7 @@ class Government:
             
         self.assets += amount
         self.total_collected_tax += amount
+        self.revenue_this_tick += amount
         
         # 세목별 집계 (Cumulative)
         self.tax_revenue[tax_type] = self.tax_revenue.get(tax_type, 0.0) + amount
@@ -147,6 +179,8 @@ class Government:
             
         self.assets -= amount
         self.total_spent_subsidies += amount
+        self.expenditure_this_tick += amount
+
         target_agent.assets += amount
         
         # Track spending type (Stimulus check is usually large lump sum, benefit is small)
@@ -328,6 +362,9 @@ class Government:
         중앙은행 역할: 인플레이션 등에 따라 기준 금리를 조절합니다.
         (현재는 간단한 Rule-based 로직: 인플레가 높으면 금리 인상)
         """
+        # Phase 3: Start of Tick Logic for Government (Reset Flow)
+        self.reset_tick_flow()
+
         # 기본 금리 가져오기
         current_rate = bank_agent.base_rate
 
@@ -360,6 +397,7 @@ class Government:
         
         if self.assets >= cost:
             self.assets -= cost
+            self.expenditure_this_tick += cost
             self.infrastructure_level += 1
             
             logger.info(

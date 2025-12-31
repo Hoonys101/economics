@@ -30,17 +30,20 @@ class SnapshotViewModel:
     def get_dashboard_snapshot(self, simulation: Simulation, current_tick: int) -> DashboardSnapshotDTO:
         """
         현재 시뮬레이션 상태에 대한 DashboardSnapshotDTO를 생성합니다.
-        성능을 위해 5틱마다 무거운 지표를 재계산합니다.
+        성능 최적화:
+         - HUD (Global Indicators): 매 틱 갱신 (실시간성)
+         - Tabs (Society, Government, etc): 5틱마다 갱신 (Caching)
         """
-        # Caching logic (only refresh heavy metrics every 5 ticks)
+        # 1. Global Indicators (HUD) - Always Fresh
+        global_indicators = self._get_global_indicators(simulation, current_tick)
+
+        # Caching logic for Tabs
         if self._cached_snapshot and current_tick - self._last_cached_tick < 5:
-            # We update the tick to the current one so frontend knows it's the latest response
+            # Reuse cached tabs but inject fresh global indicators and tick
             snapshot_copy = self._cached_snapshot
             snapshot_copy.tick = current_tick
+            snapshot_copy.global_indicators = global_indicators
             return snapshot_copy
-
-        # 1. Global Indicators (HUD)
-        global_indicators = self._get_global_indicators(simulation, current_tick)
 
         # 2. Society Tab
         society_data = self._get_society_data(simulation, current_tick)
@@ -62,6 +65,7 @@ class SnapshotViewModel:
             "finance": finance_data
         }
 
+        # Create full snapshot for cache
         self._cached_snapshot = DashboardSnapshotDTO(
             tick=current_tick,
             global_indicators=global_indicators,
@@ -75,41 +79,27 @@ class SnapshotViewModel:
         latest_indicators = simulation.tracker.get_latest_indicators()
 
         # Basic Metrics
-        # GDP -> total_consumption as per spec
         gdp = latest_indicators.get("total_consumption", 0.0)
         avg_wage = latest_indicators.get("avg_wage", 0.0)
-        employment_rate = 100 - latest_indicators.get("unemployment_rate", 0.0) # Spec asks for employment rate
+        employment_rate = 100 - latest_indicators.get("unemployment_rate", 0.0)
 
         # Inequality (Gini)
-        # Use Simulation's live InequalityTracker for current state
         wealth_dist = simulation.inequality_tracker.calculate_wealth_distribution(simulation.households, simulation.stock_market)
         gini = wealth_dist.get("gini_total_assets", 0.0)
 
-        # Attrition Rates (Death/Bankruptcy)
-        # Compare current state with 5 ticks ago
+        # Attrition Rates
         start_tick = max(0, current_tick - 5)
         attrition_counts = self.repository.get_attrition_counts(start_tick, current_tick, run_id=simulation.run_id)
 
         bankruptcy_count = attrition_counts.get("bankruptcy_count", 0)
         death_count = attrition_counts.get("death_count", 0)
 
-        # Rates calculations (based on *initial* or *average* count in window?
-        # For simplicity and robustness, let's use current totals + attrition as denominator, or just use current totals)
-        # Spec says "changes in agent_states". Rate usually implies per capita.
-        # Let's assume rate = count / (current_count + count) * 100 approx.
-        # Or just raw count if frontend expects rate but backend provides count?
-        # DTO says `death_rate: float`. Let's calculate % of population lost in last 5 ticks.
+        current_firms = len(simulation.firms)
+        current_households = len(simulation.households)
 
-        # We need denominator (approx population 5 ticks ago)
-        current_firms = len(simulation.firms) # Active firms
-        current_households = len(simulation.households) # Active households
-
-        # Avoid division by zero
-        # 5-tick bankruptcy rate
         total_firms_window = current_firms + bankruptcy_count
         bankruptcy_rate = (bankruptcy_count / total_firms_window * 100.0) if total_firms_window > 0 else 0.0
 
-        # 5-tick death rate
         total_households_window = current_households + death_count
         death_rate = (death_count / total_households_window * 100.0) if total_households_window > 0 else 0.0
 
@@ -171,8 +161,6 @@ class SnapshotViewModel:
         ]
 
         # Mitosis Cost
-        # Dynamic threshold based on current population pressure
-        # Formula: Cost = Base * (Pop/Target)^Sensitivity
         current_pop = len([h for h in simulation.households if h.is_active])
         target_pop = simulation.config_module.TARGET_POPULATION
         base_threshold = simulation.config_module.MITOSIS_BASE_THRESHOLD
@@ -237,8 +225,8 @@ class SnapshotViewModel:
         )
 
     def _get_government_data(self, simulation: Simulation, current_tick: int) -> GovernmentTabDataDTO:
+        # Accumulated Stats
         tax_revenue = simulation.government.tax_revenue.copy()
-
         # Fiscal Balance
         fiscal_balance = {
             "revenue": simulation.government.total_collected_tax,
