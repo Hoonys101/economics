@@ -158,15 +158,23 @@ def run_iron_test(num_ticks: int = 1000):
     total_hh = len(simulation.households)
     total_firms = len(simulation.firms)
     
-    logger.info(f"[Survivability] Households: {active_hh}/{total_hh} ({100*active_hh/total_hh:.1f}%)")
-    logger.info(f"[Survivability] Firms: {active_firms}/{total_firms} ({100*active_firms/total_firms:.1f}%)")
+    if total_hh > 0:
+        logger.info(f"[Survivability] Households: {active_hh}/{total_hh} ({100*active_hh/total_hh:.1f}%)")
+    else:
+        logger.warning("[Survivability] Households: 0/0 (No households remaining)")
+
+    if total_firms > 0:
+        logger.info(f"[Survivability] Firms: {active_firms}/{total_firms} ({100*active_firms/total_firms:.1f}%)")
+    else:
+        logger.warning("[Survivability] Firms: 0/0 (No firms remaining)")
     
     # Fiscal Balance
     if simulation.government:
         gov = simulation.government
         logger.info(f"[Fiscal] Government Assets: {gov.assets:.0f}")
-        total_tax = getattr(gov, 'total_tax_collected', getattr(gov, 'cumulative_tax_income', 0))
-        total_welfare = getattr(gov, 'total_welfare_paid', getattr(gov, 'cumulative_welfare_expense', 0))
+        # Use correct attributes: total_collected_tax, total_spent_subsidies
+        total_tax = getattr(gov, 'total_collected_tax', getattr(gov, 'total_tax_collected', 0))
+        total_welfare = getattr(gov, 'total_spent_subsidies', getattr(gov, 'total_welfare_paid', 0))
         logger.info(f"[Fiscal] Total Tax Collected: {total_tax:.0f}")
         logger.info(f"[Fiscal] Total Welfare Paid: {total_welfare:.0f}")
     
@@ -192,8 +200,11 @@ def run_iron_test(num_ticks: int = 1000):
         f.write(f"total_firms,{total_firms}\n")
         if simulation.government:
             f.write(f"gov_assets,{simulation.government.assets:.0f}\n")
-            f.write(f"total_tax,{simulation.government.total_tax_collected:.0f}\n")
-            f.write(f"total_welfare,{simulation.government.total_welfare_paid:.0f}\n")
+            # Use getattr with default to be safe, or correct attribute
+            tax = getattr(simulation.government, 'total_collected_tax', 0)
+            welfare = getattr(simulation.government, 'total_spent_subsidies', 0)
+            f.write(f"total_tax,{tax:.0f}\n")
+            f.write(f"total_welfare,{welfare:.0f}\n")
     
     logger.info(f"Summary saved to: {summary_file}")
     logger.info("=== IRON TEST COMPLETE ===")
