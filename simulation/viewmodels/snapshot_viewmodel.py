@@ -30,17 +30,20 @@ class SnapshotViewModel:
     def get_dashboard_snapshot(self, simulation: Simulation, current_tick: int) -> DashboardSnapshotDTO:
         """
         현재 시뮬레이션 상태에 대한 DashboardSnapshotDTO를 생성합니다.
-        성능을 위해 5틱마다 무거운 지표를 재계산합니다.
+        성능 최적화:
+         - HUD (Global Indicators): 매 틱 갱신 (실시간성)
+         - Tabs (Society, Government, etc): 5틱마다 갱신 (Caching)
         """
-        # Caching logic (only refresh heavy metrics every 5 ticks)
+        # 1. Global Indicators (HUD) - Always Fresh
+        global_indicators = self._get_global_indicators(simulation, current_tick)
+
+        # Caching logic for Tabs
         if self._cached_snapshot and current_tick - self._last_cached_tick < 5:
-            # We update the tick to the current one so frontend knows it's the latest response
+            # Reuse cached tabs but inject fresh global indicators and tick
             snapshot_copy = self._cached_snapshot
             snapshot_copy.tick = current_tick
+            snapshot_copy.global_indicators = global_indicators
             return snapshot_copy
-
-        # 1. Global Indicators (HUD)
-        global_indicators = self._get_global_indicators(simulation, current_tick)
 
         # 2. Society Tab
         society_data = self._get_society_data(simulation, current_tick)
@@ -62,6 +65,7 @@ class SnapshotViewModel:
             "finance": finance_data
         }
 
+        # Create full snapshot for cache
         self._cached_snapshot = DashboardSnapshotDTO(
             tick=current_tick,
             global_indicators=global_indicators,
@@ -75,43 +79,62 @@ class SnapshotViewModel:
         latest_indicators = simulation.tracker.get_latest_indicators()
 
         # Basic Metrics
-        # GDP -> total_consumption as per spec
         gdp = latest_indicators.get("total_consumption", 0.0)
         avg_wage = latest_indicators.get("avg_wage", 0.0)
-        employment_rate = 100 - latest_indicators.get("unemployment_rate", 0.0) # Spec asks for employment rate
+        employment_rate = 100 - latest_indicators.get("unemployment_rate", 0.0)
 
         # Inequality (Gini)
-        # Use Simulation's live InequalityTracker for current state
         wealth_dist = simulation.inequality_tracker.calculate_wealth_distribution(simulation.households, simulation.stock_market)
         gini = wealth_dist.get("gini_total_assets", 0.0)
 
-        # Attrition Rates (Death/Bankruptcy)
-        # Compare current state with 5 ticks ago
+        # Attrition Rates
         start_tick = max(0, current_tick - 5)
         attrition_counts = self.repository.get_attrition_counts(start_tick, current_tick, run_id=simulation.run_id)
 
         bankruptcy_count = attrition_counts.get("bankruptcy_count", 0)
         death_count = attrition_counts.get("death_count", 0)
 
-        # Rates calculations (based on *initial* or *average* count in window?
-        # For simplicity and robustness, let's use current totals + attrition as denominator, or just use current totals)
-        # Spec says "changes in agent_states". Rate usually implies per capita.
-        # Let's assume rate = count / (current_count + count) * 100 approx.
-        # Or just raw count if frontend expects rate but backend provides count?
-        # DTO says `death_rate: float`. Let's calculate % of population lost in last 5 ticks.
+        current_firms = len(simulation.firms)
+        current_households = len(simulation.households)
 
-        # We need denominator (approx population 5 ticks ago)
-        current_firms = len(simulation.firms) # Active firms
-        current_households = len(simulation.households) # Active households
-
-        # Avoid division by zero
-        # 5-tick bankruptcy rate
         total_firms_window = current_firms + bankruptcy_count
         bankruptcy_rate = (bankruptcy_count / total_firms_window * 100.0) if total_firms_window > 0 else 0.0
 
-        # 5-tick death rate
         total_households_window = current_households + death_count
         death_rate = (death_count / total_households_window * 100.0) if total_households_window > 0 else 0.0
+
+        # Phase 3: Additional Indicators
+        # Avg Leisure Hours
+        total_leisure = 0.0
+        active_households_count = 0
+        parenting_count = 0
+
+        for h in simulation.households:
+             if h.is_active:
+                 active_households_count += 1
+                 # Use tracked allocation from Engine or calculate? Engine has household_time_allocation
+                 leisure = simulation.household_time_allocation.get(h.id, 0.0)
+                 total_leisure += leisure
+
+                 if hasattr(h, "last_leisure_type") and h.last_leisure_type == "PARENTING":
+                     parenting_count += 1
+
+        avg_leisure_hours = total_leisure / active_households_count if active_households_count > 0 else 0.0
+        parenting_rate = (parenting_count / active_households_count * 100.0) if active_households_count > 0 else 0.0
+
+        # Avg Tax Rate (Effective)
+        # Use Government's current tax revenue vs GDP? Or predefined rate?
+        # Contract says "current_avg_tax_rate". Let's calculate effective rate = Total Tax / GDP (Last Tick)
+        # Government.revenue_this_tick is last tick's revenue.
+        # GDP (total production) is in latest_indicators["total_production"]
+
+        # NOTE: revenue_this_tick is updated during the tick. Since this is called at end of tick, it should be full.
+        total_tax_flow = simulation.government.revenue_this_tick
+        total_production = latest_indicators.get("total_production", 1.0) # Avoid zero division
+
+        avg_tax_rate = 0.0
+        if total_production > 0:
+             avg_tax_rate = total_tax_flow / total_production
 
         return DashboardGlobalIndicatorsDTO(
             death_rate=death_rate,
@@ -119,7 +142,10 @@ class SnapshotViewModel:
             employment_rate=employment_rate,
             gdp=gdp,
             avg_wage=avg_wage,
-            gini=gini
+            gini=gini,
+            avg_tax_rate=avg_tax_rate,
+            avg_leisure_hours=avg_leisure_hours,
+            parenting_rate=parenting_rate
         )
 
     def _get_society_data(self, simulation: Simulation, current_tick: int) -> SocietyTabDataDTO:
@@ -134,8 +160,6 @@ class SnapshotViewModel:
         ]
 
         # Mitosis Cost
-        # Dynamic threshold based on current population pressure
-        # Formula: Cost = Base * (Pop/Target)^Sensitivity
         current_pop = len([h for h in simulation.households if h.is_active])
         target_pop = simulation.config_module.TARGET_POPULATION
         base_threshold = simulation.config_module.MITOSIS_BASE_THRESHOLD
@@ -145,52 +169,106 @@ class SnapshotViewModel:
         mitosis_cost = base_threshold * (pop_ratio ** sensitivity)
 
         # Unemployment Pie
-        # "Struggling": Unemployed & survival_need > 50
-        # "Voluntary": Unemployed & survival_need <= 50
         struggling = 0
         voluntary = 0
 
+        # Phase 3: Time Allocation Breakdown
+        time_allocation = {
+            "work": 0.0,
+            "parenting": 0.0,
+            "self_dev": 0.0,
+            "entertainment": 0.0,
+            "idle": 0.0
+        }
+
+        total_leisure_hours_agg = 0.0
+        active_count = 0
+
         for h in simulation.households:
-            if h.is_active and not h.is_employed:
-                survival_need = h.needs.get("survival", 0.0)
-                if survival_need > 50:
-                    struggling += 1
+            if h.is_active:
+                active_count += 1
+
+                # Leisure Logic
+                leisure_hours = simulation.household_time_allocation.get(h.id, 0.0)
+                total_leisure_hours_agg += leisure_hours
+
+                leisure_type = getattr(h, "last_leisure_type", "IDLE").lower()
+
+                # Work Logic
+                # Work = 24 - Shopping - Leisure
+                shopping_hours = getattr(simulation.config_module, "SHOPPING_HOURS", 2.0)
+                hours_per_tick = getattr(simulation.config_module, "HOURS_PER_TICK", 24.0)
+                work_hours = max(0.0, hours_per_tick - leisure_hours - shopping_hours)
+
+                time_allocation["work"] += work_hours
+
+                # Add leisure to specific type
+                if leisure_type in time_allocation:
+                    time_allocation[leisure_type] += leisure_hours
                 else:
-                    voluntary += 1
+                    # Fallback
+                    time_allocation["idle"] += leisure_hours
+
+                # Unemployment Logic
+                if not h.is_employed:
+                    survival_need = h.needs.get("survival", 0.0)
+                    if survival_need > 50:
+                        struggling += 1
+                    else:
+                        voluntary += 1
 
         unemployment_pie = {
             "struggling": struggling,
             "voluntary": voluntary
         }
 
+        avg_leisure_hours = total_leisure_hours_agg / active_count if active_count > 0 else 0.0
+
         return SocietyTabDataDTO(
             generations=generations,
             mitosis_cost=mitosis_cost,
-            unemployment_pie=unemployment_pie
+            unemployment_pie=unemployment_pie,
+            time_allocation=time_allocation,
+            avg_leisure_hours=avg_leisure_hours
         )
 
     def _get_government_data(self, simulation: Simulation, current_tick: int) -> GovernmentTabDataDTO:
+        # Accumulated Stats
         tax_revenue = simulation.government.tax_revenue.copy()
-
-        # Fiscal Balance
-        # Total Revenue vs Total Expenditure
-        # Currently we have accumulated totals in Government agent
-        # Ideally, we might want "Last Tick" or "Recent Window" balance.
-        # DTO says `fiscal_balance: Dict[str, float]`. Let's return totals for now?
-        # Or maybe "revenue" vs "expense".
         fiscal_balance = {
             "revenue": simulation.government.total_collected_tax,
-            "expense": simulation.government.total_spent_subsidies + (simulation.government.infrastructure_level * getattr(simulation.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)) # Approx
-            # Note: Infrasturcture cost is subtracted from assets directly in invest_infrastructure.
-            # We don't track total_spent_infrastructure in a field.
-            # But we can infer it or just use assets?
-            # Let's just put accumulated revenue/expense we know.
+            "expense": simulation.government.total_spent_subsidies # Simplified
         }
-        # Actually `total_spent_subsidies` is tracked.
+
+        # Phase 3: Flow Metrics
+        # Budget Balance = Revenue (Last Tick) - Expenditure (Last Tick)
+        budget_balance = simulation.government.revenue_this_tick - simulation.government.expenditure_this_tick
+        welfare_spending = simulation.government.expenditure_this_tick
+
+        # Calculate Current Avg Tax Rate (Effective)
+        # We can reuse the global indicator logic or just put it here
+        # Let's assume global indicator calculation was sufficient, but this DTO asks for it specifically.
+        # Recalculate or store/pass? Recalculate is cheap.
+        latest_indicators = simulation.tracker.get_latest_indicators()
+        total_production = latest_indicators.get("total_production", 1.0)
+        current_avg_tax_rate = 0.0
+        if total_production > 0:
+            current_avg_tax_rate = simulation.government.revenue_this_tick / total_production
+
+        # Phase 3: Tax Revenue Breakdown (50-tick Moving Sum)
+        # Sum up the history
+        tax_revenue_breakdown = {}
+        for entry in simulation.government.tax_revenue_history:
+             for tax_type, amount in entry.items():
+                 tax_revenue_breakdown[tax_type] = tax_revenue_breakdown.get(tax_type, 0.0) + amount
 
         return GovernmentTabDataDTO(
             tax_revenue=tax_revenue,
-            fiscal_balance=fiscal_balance
+            fiscal_balance=fiscal_balance,
+            tax_revenue_breakdown=tax_revenue_breakdown,
+            welfare_spending=welfare_spending,
+            current_avg_tax_rate=current_avg_tax_rate,
+            budget_balance=budget_balance
         )
 
     def _get_market_data(self, simulation: Simulation, current_tick: int) -> MarketTabDataDTO:

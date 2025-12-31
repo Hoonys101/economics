@@ -177,6 +177,7 @@ class Household(BaseAgent):
         self.parent_id: Optional[int] = None      # 부모 가구 ID
         self.children_ids: List[int] = []         # 자녀 가구 ID 목록
         self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
+        self.last_leisure_type: str = "IDLE"      # 마지막으로 선택한 여가 활동
 
 
         self.config_module = config_module  # Store config_module
@@ -357,6 +358,8 @@ class Household(BaseAgent):
                 f"LEISURE_ENTERTAINMENT | Household {self.id} enjoyed entertainment. Utility: {utility_gained:.4f}",
                 extra={"agent_id": self.id, "tags": ["LEISURE_EFFECT"]}
             )
+
+        self.last_leisure_type = leisure_type
 
         return LeisureEffectDTO(
             leisure_type=leisure_type,
