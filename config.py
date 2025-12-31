@@ -285,6 +285,32 @@ CREDIT_RECOVERY_TICKS = 100       # 1 Year Loan Ban
 BANKRUPTCY_XP_PENALTY = 0.2       # 20% XP Loss
 
 # ==============================================================================
+# Phase 5: Time Allocation & Leisure Constants
+# ==============================================================================
+HOURS_PER_TICK = 24.0
+MAX_WORK_HOURS = 14.0  # 법정/물리적 최대 노동 시간
+
+# 여가 유형별 계수
+LEISURE_COEFFS = {
+    "PARENTING": {
+        "condition_item": "education_service",
+        "utility_per_hour": 2.0,   # 시간당 사회적 만족
+        "xp_gain_per_hour": 0.5    # 시간당 자녀 XP 증가
+    },
+    "ENTERTAINMENT": {
+        "condition_item": "luxury_food",  # or clothing
+        "utility_per_hour": 5.0,   # 높은 즉각적 만족
+        "xp_gain_per_hour": 0.0
+    },
+    "SELF_DEV": {
+        "condition_item": None,    # Default (조건 없음)
+        "utility_per_hour": 1.0,   # 낮은 만족
+        "productivity_gain": 0.001 # 본인 생산성 향상
+    }
+}
+
+
+# ==============================================================================
 # 🔧 HARDCODED VALUES CENTRALIZATION
 # ==============================================================================
 # 아래 값들은 코드 전반에 하드코딩되어 있던 것들을 통합 관리하기 위해 이동함.

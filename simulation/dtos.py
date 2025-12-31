@@ -260,3 +260,39 @@ class DashboardSnapshotDTO:
     tick: int
     global_indicators: DashboardGlobalIndicatorsDTO
     tabs: Dict[str, Any] # Or specific classes for each tab
+
+
+# ==============================================================================
+# Phase 5: Time Allocation & Genealogy DTOs
+# ==============================================================================
+from typing import Literal
+
+LeisureType = Literal["PARENTING", "SELF_DEV", "ENTERTAINMENT", "IDLE"]
+
+@dataclass
+class TimeBudgetDTO:
+    """한 틱(24시간) 동안의 시간 배분 결과"""
+    total_hours: float = 24.0
+    work_hours: float = 0.0
+    leisure_hours: float = 0.0
+    selected_leisure_type: LeisureType = "IDLE"
+    efficiency_multiplier: float = 1.0  # 도구(재화) 사용에 따른 효율
+
+
+@dataclass
+class FamilyInfoDTO:
+    """가계의 가족 관계 정보 (AI 의사결정용 입력)"""
+    agent_id: int
+    generation: int
+    parent_id: Optional[int]
+    children_ids: List[int]
+    children_avg_xp: float = 0.0  # 자녀들의 평균 지능
+
+
+@dataclass
+class LeisureEffectDTO:
+    """여가 활동의 결과"""
+    leisure_type: LeisureType
+    leisure_hours: float
+    utility_gained: float       # 사회적 만족
+    xp_gained: float           # 자녀 XP 증가 (Parenting) 또는 본인 생산성 (Self-Dev)

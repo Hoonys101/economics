@@ -683,6 +683,10 @@ class Household(BaseAgent):
         child.credit_frozen_until_tick = 0 # New agent has clean credit record
         child.needs["survival"] = random.uniform(0, 20)
 
+        # Phase 5: Genealogy Linking
+        child.parent_id = self.id
+        self.children_ids.append(child.id)
+
         # 다른 욕구들도 초기화 (필요시)
         for need_key in self.needs.keys():
             if need_key != "survival":
