@@ -52,7 +52,7 @@ class HouseholdAI(BaseAIEngine):
 
     def _get_common_state(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Tuple:
         """
-        Common state: Assets, General Needs
+        Common state: Assets, General Needs, Debt Ratio, Interest Burden
         """
         # 1. Asset Level
         assets = agent_data.get("assets", 0)
@@ -63,8 +63,21 @@ class HouseholdAI(BaseAIEngine):
         needs = agent_data.get("needs", {})
         avg_need = sum(needs.values()) / max(len(needs), 1)
         need_idx = self._discretize(avg_need, [20, 50, 80])
+
+        # 3. Debt Ratio (liabilities / assets)
+        # Note: liabilities not explicitly passed in agent_data by default, assuming it's injected or we use net worth proxy.
+        # Ideally, agent_data should contain 'liabilities' or 'loans'.
+        # Fallback: If not present, assume 0.
+        liabilities = agent_data.get("liabilities", 0.0)
+        debt_ratio = liabilities / assets if assets > 0 else 0.0
+        debt_idx = self._discretize(debt_ratio, [0.1, 0.3, 0.5, 0.8])
         
-        return (asset_idx, need_idx)
+        # 4. Interest Burden (interest_payment / income)
+        # Tracking income/interest requires history. Using proxy or simplified metric.
+        # Fallback: simple boolean if has debt.
+        has_debt_idx = 1 if liabilities > 0 else 0
+
+        return (asset_idx, need_idx, debt_idx, has_debt_idx)
 
     def decide_action_vector(
         self,

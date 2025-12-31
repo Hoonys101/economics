@@ -2,7 +2,7 @@ from typing import List, Any, Optional, override
 import logging
 
 from simulation.models import Order, Transaction
-from simulation.agents.bank import Bank  # Bank 클래스 임포트
+from simulation.bank import Bank  # Bank 클래스 임포트
 from simulation.core_markets import Market # Import Market
 
 logger = logging.getLogger(__name__)

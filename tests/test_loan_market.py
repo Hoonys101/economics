@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 from simulation.models import Order
 from simulation.loan_market import LoanMarket
-from simulation.agents.bank import Bank
+from simulation.bank import Bank
 import config  # Import config for DEFAULT_LOAN_DURATION
 
 

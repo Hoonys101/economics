@@ -267,8 +267,8 @@ class SimulationRepository:
             self.cursor.executemany(
                 """
                 INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
-                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 data_to_insert,
             )

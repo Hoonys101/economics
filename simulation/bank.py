@@ -1,0 +1,245 @@
+import logging
+from dataclasses import dataclass
+from typing import Dict, Any, List, Optional
+import math
+
+logger = logging.getLogger(__name__)
+
+# Constants (Fallback if config is not passed, though it should be)
+TICKS_PER_YEAR = 100
+INITIAL_BASE_ANNUAL_RATE = 0.05
+CREDIT_SPREAD_BASE = 0.02
+BANK_MARGIN = 0.02
+
+
+@dataclass
+class Loan:
+    borrower_id: int
+    principal: float       # 원금
+    remaining_balance: float # 잔액
+    annual_interest_rate: float # 연이율
+    term_ticks: int        # 만기 (틱)
+    start_tick: int        # 대출 실행 틱
+
+    @property
+    def tick_interest_rate(self) -> float:
+        return self.annual_interest_rate / TICKS_PER_YEAR
+
+
+@dataclass
+class Deposit:
+    depositor_id: int
+    amount: float          # 예치금
+    annual_interest_rate: float # 연이율
+
+    @property
+    def tick_interest_rate(self) -> float:
+        return self.annual_interest_rate / TICKS_PER_YEAR
+
+
+class Bank:
+    """
+    Phase 3: Central & Commercial Bank Hybrid System.
+    Manages loans, deposits, and monetary policy interaction.
+    """
+
+    def __init__(self, id: int, initial_assets: float, config_module: Any = None):
+        self.id = id
+        self.assets = initial_assets # Reserves
+        self.config_module = config_module
+
+        # Data Stores
+        self.loans: Dict[str, Loan] = {}
+        self.deposits: Dict[str, Deposit] = {}
+
+        # Policy Rates
+        self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", INITIAL_BASE_ANNUAL_RATE)
+
+        # Counters
+        self.next_loan_id = 0
+        self.next_deposit_id = 0
+
+        # Dummy attrs for compatibility
+        self.value_orientation = "N/A"
+        self.needs: Dict[str, float] = {}
+
+        logger.info(
+            f"Bank {self.id} initialized. Assets: {self.assets:.2f}, Base Rate: {self.base_rate:.2%}",
+            extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
+        )
+
+    def _get_config(self, key: str, default: Any) -> Any:
+        return getattr(self.config_module, key, default)
+
+    def update_base_rate(self, new_rate: float):
+        """Called by Central Bank / Government to update monetary policy."""
+        self.base_rate = new_rate
+        logger.info(
+            f"MONETARY_POLICY | Base Rate updated to {self.base_rate:.2%}",
+            extra={"agent_id": self.id, "tags": ["bank", "policy"]}
+        )
+
+    def grant_loan(
+        self,
+        borrower_agent: Any,
+        amount: float,
+        term_ticks: Optional[int] = None
+    ) -> Optional[str]:
+        """
+        Grants a loan to an agent if eligible.
+        """
+        # 1. Config Check
+        if not term_ticks:
+            term_ticks = self._get_config("LOAN_DEFAULT_TERM", 50)
+
+        credit_spread = self._get_config("CREDIT_SPREAD_BASE", 0.02)
+        annual_rate = self.base_rate + credit_spread
+
+        # 2. Liquidity Check
+        if self.assets < amount:
+            logger.warning(
+                f"LOAN_DENIED | Bank has insufficient liquidity for {amount:.2f}",
+                extra={"agent_id": self.id, "tags": ["bank", "loan"]}
+            )
+            return None
+
+        # 3. Credit Check (Simple LTV/DTI placeholder)
+        # TODO: Implement stricter credit checks based on agent history
+
+        # 4. Execution
+        self.assets -= amount
+        loan_id = f"loan_{self.next_loan_id}"
+        self.next_loan_id += 1
+
+        new_loan = Loan(
+            borrower_id=borrower_agent.id,
+            principal=amount,
+            remaining_balance=amount,
+            annual_interest_rate=annual_rate,
+            term_ticks=term_ticks,
+            start_tick=0 # Will be updated by caller or use relative tick if passed
+        )
+        self.loans[loan_id] = new_loan
+
+        # Transfer funds to borrower
+        borrower_agent.assets += amount
+
+        logger.info(
+            f"LOAN_GRANTED | Loan {loan_id} to Agent {borrower_agent.id}. "
+            f"Amt: {amount:.2f}, Rate: {annual_rate:.2%}, Term: {term_ticks}",
+            extra={"agent_id": self.id, "tags": ["bank", "loan"]}
+        )
+        return loan_id
+
+    def deposit(self, depositor_agent: Any, amount: float) -> Optional[str]:
+        """
+        Accepts a deposit from an agent.
+        """
+        if depositor_agent.assets < amount:
+            return None
+
+        margin = self._get_config("BANK_MARGIN", 0.02)
+        deposit_rate = max(0.0, self.base_rate + self._get_config("CREDIT_SPREAD_BASE", 0.02) - margin)
+
+        # Transfer funds
+        depositor_agent.assets -= amount
+        self.assets += amount
+
+        deposit_id = f"dep_{self.next_deposit_id}"
+        self.next_deposit_id += 1
+
+        new_deposit = Deposit(
+            depositor_id=depositor_agent.id,
+            amount=amount,
+            annual_interest_rate=deposit_rate
+        )
+
+        self.deposits[deposit_id] = new_deposit
+
+        logger.info(
+            f"DEPOSIT_ACCEPTED | Deposit {deposit_id} from Agent {depositor_agent.id}. "
+            f"Amt: {amount:.2f}, Rate: {deposit_rate:.2%}",
+            extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
+        )
+        return deposit_id
+
+    def run_tick(self, agents_dict: Dict[int, Any]):
+        """
+        Process interest payments and distributions.
+        Must be called every tick.
+        """
+        ticks_per_year = self._get_config("TICKS_PER_YEAR", TICKS_PER_YEAR)
+
+        # 1. Collect Interest from Loans
+        total_loan_interest = 0.0
+        loans_to_remove = []
+
+        for loan_id, loan in self.loans.items():
+            agent = agents_dict.get(loan.borrower_id)
+            if not agent or not getattr(agent, 'is_active', True):
+                # Default logic or write-off logic here
+                continue
+
+            # Calculate Interest Payment
+            interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+
+            # Principal Repayment (Amortized or Bullet? Assuming Bullet for now or minimal amortization)
+            # Let's simple amortization: Principal / Remaining Term
+            # Wait, design spec says "Man-gi or Bun-hal". Let's do simple interest only + Principal at end?
+            # Or constant payment?
+            # Spec: "tick_payment = (balance * annual_rate) / TICKS_PER_YEAR" -> This is Interest Only.
+
+            payment = interest_payment
+
+            # Try to collect
+            if agent.assets >= payment:
+                agent.assets -= payment
+                self.assets += payment
+                total_loan_interest += payment
+            else:
+                # Default / Penalty logic
+                # For now, partial payment
+                partial = agent.assets
+                agent.assets = 0
+                self.assets += partial
+                total_loan_interest += partial
+                # TODO: Trigger default event
+
+        # 2. Pay Interest to Depositors
+        total_deposit_interest = 0.0
+        for dep_id, deposit in self.deposits.items():
+            agent = agents_dict.get(deposit.depositor_id)
+            if not agent:
+                continue
+
+            interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
+
+            if self.assets >= interest_payout:
+                self.assets -= interest_payout
+                agent.assets += interest_payout
+                total_deposit_interest += interest_payout
+                # Compounding? Usually deposits compound.
+                # If we pay to agent.assets, it's "Payout".
+                # If we add to deposit.amount, it's "Compound".
+                # Spec says: "bank.reserves 차감, agent.assets 증가 (유동성 공급)" -> Payout.
+            else:
+                # Bank run scenario?
+                logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
+
+        logger.info(
+            f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Reserves: {self.assets:.2f}",
+            extra={"agent_id": self.id, "tags": ["bank", "tick"]}
+        )
+
+    # Legacy method support for compatibility if needed, but we are rewriting
+    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
+        # Return dict representation for compatibility if other modules use it
+        return [
+            {
+                "borrower_id": l.borrower_id,
+                "amount": l.remaining_balance,
+                "interest_rate": l.annual_interest_rate,
+                "duration": l.term_ticks
+            }
+            for l in self.loans.values() if l.borrower_id == agent_id
+        ]

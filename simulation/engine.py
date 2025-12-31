@@ -8,7 +8,7 @@ from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
-from simulation.agents.bank import Bank
+from simulation.bank import Bank
 from simulation.agents.government import Government
 from simulation.loan_market import LoanMarket
 from simulation.markets.stock_market import StockMarket
@@ -315,6 +315,13 @@ class Simulation:
             and self.time % self.config_module.IMITATION_LEARNING_INTERVAL == 0
         ):
             self.ai_training_manager.run_imitation_learning_cycle(self.time)
+
+        # Update Bank Tick (Interest Processing)
+        self.bank.run_tick(self.agents)
+
+        # 1c. 통화 정책 업데이트 (정부/중앙은행)
+        inflation_rate = 0.0 # TODO: Calculate inflation properly from tracker
+        self.government.update_monetary_policy(self.bank, self.time, inflation_rate)
 
         for firm in self.firms:
             firm.hires_last_tick = 0
