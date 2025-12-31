@@ -51,6 +51,7 @@ class EconomicIndicatorData:
     total_firm_assets: Optional[float] = None
     total_food_consumption: Optional[float] = None
     total_inventory: Optional[float] = None
+    avg_survival_need: Optional[float] = None
 
 @dataclass
 class MarketHistoryData:

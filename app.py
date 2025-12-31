@@ -35,6 +35,8 @@ from simulation.viewmodels.economic_indicators_viewmodel import (
 )
 from simulation.viewmodels.market_history_viewmodel import MarketHistoryViewModel
 from simulation.viewmodels.agent_state_viewmodel import AgentStateViewModel
+from simulation.viewmodels.snapshot_viewmodel import SnapshotViewModel
+from dataclasses import asdict
 
 logger = logging.getLogger(__name__)
 
@@ -432,6 +434,30 @@ def get_transactions_api() -> Response:
     repo = get_repository()
     transactions = repo.get_transactions(start_tick=since_tick)
     return jsonify(transactions)
+
+
+@app.route("/api/simulation/dashboard", methods=["GET"])
+def get_dashboard_snapshot() -> Response:
+    """
+    Economic Control Tower Dashboard Endpoint.
+    Aggregates global indicators, society, government, market, and finance data into a single snapshot.
+    """
+    try:
+        sim = get_or_create_simulation()
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+    repo = get_repository()
+    vm = SnapshotViewModel(repo)
+
+    try:
+        # Use simulation_lock to ensure thread-safe access to simulation state (e.g. households list)
+        with simulation_lock:
+             snapshot_dto = vm.get_dashboard_snapshot(sim, sim.time)
+        return jsonify(asdict(snapshot_dto))
+    except Exception as e:
+        logger.exception("Error generating dashboard snapshot")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # --- GEMINI_TEMP_CHANGE_END ---

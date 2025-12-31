@@ -17,6 +17,9 @@ class Government:
         self.total_spent_subsidies: float = 0.0
         self.infrastructure_level: int = 0
         
+        # 세수 유형별 집계
+        self.tax_revenue: Dict[str, float] = {}
+
         # 성향 및 욕구 (AI 훈련용 더미)
         self.value_orientation = "public_service"
         self.needs: Dict[str, float] = {}
@@ -34,6 +37,9 @@ class Government:
         self.assets += amount
         self.total_collected_tax += amount
         
+        # 세목별 집계
+        self.tax_revenue[tax_type] = self.tax_revenue.get(tax_type, 0.0) + amount
+
         logger.info(
             f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {source_id}",
             extra={

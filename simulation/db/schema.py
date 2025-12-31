@@ -94,6 +94,7 @@ def create_tables(conn: sqlite3.Connection):
             total_firm_assets REAL,
             total_food_consumption REAL,
             total_inventory REAL,
+            avg_survival_need REAL,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
         )
     """)
