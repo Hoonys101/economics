@@ -131,8 +131,7 @@ class Government:
         if getattr(self, "revenue_breakdown_this_tick", None) is None:
              self.revenue_breakdown_this_tick = {}
 
-        self.tax_revenue_history.append(self.revenue_breakdown_this_tick.copy())
-        self.expenditure_history.append(self.expenditure_this_tick)
+        # Legacy history appending removed in favor of finalize_tick logic
 
         # Reset Logic
         self.revenue_this_tick = 0.0

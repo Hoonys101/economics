@@ -34,7 +34,7 @@ def test_dashboard_snapshot_endpoint_structure():
                 generations=[],
                 mitosis_cost=100.0,
                 unemployment_pie={"struggling": 5, "voluntary": 10},
-                time_allocation={"work": 40.0, "parenting": 10.0},
+                time_allocation={"WORK": 40.0, "PARENTING": 10.0},
                 avg_leisure_hours=8.0
             )
             
@@ -67,5 +67,5 @@ def test_dashboard_snapshot_endpoint_structure():
                     
                     assert "tabs" in data
                     assert "society" in data["tabs"]
-                    assert data["tabs"]["society"]["time_allocation"]["parenting"] == 10.0
+                    assert data["tabs"]["society"]["time_allocation"]["PARENTING"] == 10.0
                     assert "government" in data["tabs"]
