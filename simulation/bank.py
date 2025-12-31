@@ -264,3 +264,13 @@ class Bank:
                 f"REPAYMENT_PROCESSED | Loan {loan_id} repaid by {amount}",
                 extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
             )
+
+    def process_default(self, agent: Any, current_tick: int):
+        """
+        Phase 4: Handle Bankruptcy.
+        1. Liquidate Agent Assets (Seize and sell).
+        2. Write-off remaining debt.
+        3. Impose 'Credit Jail' (Loan Ban).
+        """
+        # Jules to Implement
+        pass

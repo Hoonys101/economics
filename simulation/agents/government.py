@@ -29,6 +29,34 @@ class Government:
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
 
+    def run_fiscal_policy(self, agents: Dict[int, Any], current_tick: int):
+        """
+        Phase 4: Main Fiscal Policy Loop.
+        Called every tick to manage Revenue (Tax) and Expenditure (Welfare).
+        
+        Responsibilities:
+        1. Wealth Tax Collection (Annual % converted to Tick)
+        2. Welfare Checks (Unemployment & Stimulus)
+        """
+        # Jules to Implement:
+        # self._run_wealth_tax(agents, current_tick)
+        # self._run_welfare_check(agents, current_tick)
+        pass
+
+    def _calculate_progressive_tax(self, income: float, survival_cost: float) -> float:
+        """
+        Calculates tax based on config.TAX_BRACKETS.
+        """
+        # Jules to Implement
+        return 0.0
+
+    def _run_welfare_check(self, agents: Dict[int, Any], current_tick: int):
+        """
+        Scans agents for unemployment/poverty and distributes benefits.
+        """
+        # Jules to Implement
+        pass
+
     def collect_tax(self, amount: float, tax_type: str, source_id: int, current_tick: int):
         """세금을 징수합니다."""
         if amount <= 0:

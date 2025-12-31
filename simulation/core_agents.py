@@ -141,6 +141,7 @@ class Household(BaseAgent):
             name=f"Household_{id}",
             logger=logger,
         )
+        self.credit_frozen_until_tick: int = 0  # Phase 4: Bankruptcy Penalty
         self.logger.debug(
             f"HOUSEHOLD_INIT | Household {self.id} initialized. Initial Needs: {self.needs}",
             extra={"tags": ["household_init"]},

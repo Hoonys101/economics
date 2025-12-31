@@ -261,6 +261,30 @@ ROOT_LOGGER_LEVEL = "INFO"
 SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default-secret-token")
 
 # ==============================================================================
+# Phase 4: Fiscal Policy & Welfare Constants
+# ==============================================================================
+# 1. Progressive Tax (Income Tax)
+# Format: (Threshold Multiplier of SURVIVAL_COST, Tax Rate)
+# Example: (1.5, 0.0) -> Income up to 1.5x Survival Cost is Tax Free.
+TAX_BRACKETS = [
+    (1.5, 0.0),   # Lower Class (Survival Protection)
+    (5.0, 0.15),  # Middle Class
+    (float('inf'), 0.40) # Upper Class
+]
+
+# 2. Wealth Tax (Annual Rate -> Tick Rate Logic needed in implementation)
+ANNUAL_WEALTH_TAX_RATE = 0.02  # 2% per year
+WEALTH_TAX_THRESHOLD = 50000.0 # Net Worth above this is taxed
+
+# 3. Welfare
+UNEMPLOYMENT_BENEFIT_RATIO = 0.8  # 80% of Survival Cost
+STIMULUS_TRIGGER_GDP_DROP = -0.05 # -5% GDP Growth triggers Stimulus
+
+# 4. Bankruptcy & Credit Jail
+CREDIT_RECOVERY_TICKS = 100       # 1 Year Loan Ban
+BANKRUPTCY_XP_PENALTY = 0.2       # 20% XP Loss
+
+# ==============================================================================
 # 🔧 HARDCODED VALUES CENTRALIZATION
 # ==============================================================================
 # 아래 값들은 코드 전반에 하드코딩되어 있던 것들을 통합 관리하기 위해 이동함.
