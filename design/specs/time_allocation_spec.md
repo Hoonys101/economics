@@ -43,6 +43,44 @@ child.generation = parent.generation + 1
 
 ---
 
+## 2.3 DTO Definition (Data Transfer Object)
+
+```python
+# simulation/dtos.py (추가)
+@dataclass
+class GenealogyInfo:
+    agent_id: int
+    parent_id: Optional[int]
+    children_ids: List[int]
+    generation: int
+
+@dataclass
+class LeisureEffect:
+    leisure_type: str  # "PARENTING" | "ENTERTAINMENT" | "SELF_DEV"
+    leisure_hours: float
+    effect_value: float  # XP, Social Need, or Productivity delta
+```
+
+## 2.4 API Definition (Method Signatures)
+
+```python
+# simulation/core_agents.py - Household
+def get_genealogy_info(self) -> GenealogyInfo:
+    """Returns genealogy data for this household."""
+    pass  # Jules to Implement
+
+def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffect:
+    """Calculates and applies leisure effect based on time and consumption."""
+    pass  # Jules to Implement
+
+# simulation/ai/household_ai.py
+def _calculate_leisure_utility(self, leisure_hours: float, child_xp_gain: float, social_gain: float) -> float:
+    """Calculates leisure utility for reward function."""
+    pass  # Jules to Implement
+```
+
+---
+
 ## 3. Time Allocation Logic (Hydraulic Model)
 
 ### 3.1 Config 추가

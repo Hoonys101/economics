@@ -173,6 +173,11 @@ class Household(BaseAgent):
         # Phase 4: Bankruptcy Penalty
         self.credit_frozen_until_tick: int = 0
 
+        # Phase 5: Genealogy & Time Allocation
+        self.parent_id: Optional[int] = None      # 부모 가구 ID
+        self.children_ids: List[int] = []         # 자녀 가구 ID 목록
+        self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
+
 
         self.config_module = config_module  # Store config_module
         self.decision_engine.loan_market = loan_market
