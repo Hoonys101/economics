@@ -1,0 +1,40 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\coding\economics
+plugins: anyio-4.12.0, cov-7.0.0, mock-3.15.1
+collecting ... collected 3 items
+
+tests/verify_maslow_education.py::test_maslow_gating_logic FAILED
+tests/verify_maslow_education.py::test_education_xp_accumulation DEBUG: Initial XP: 0.0
+DEBUG: New XP: 2.0
+PASSED
+tests/verify_maslow_education.py::test_inheritance_bonus PASSED
+
+================================== FAILURES ===================================
+__________________________ test_maslow_gating_logic ___________________________
+
+mock_household = <simulation.core_agents.Household object at 0x00000272EE4EAE40>
+
+    def test_maslow_gating_logic(mock_household):
+        """Verify that high survival need masks non-essential actions."""
+        mock_household.needs["survival"] = 60.0 # Starving
+    
+        agent_data = mock_household.get_agent_data()
+        market_data = {"goods_market": {}}
+        goods_list = ["basic_food", "education_service"]
+    
+        action_vector = mock_household.decision_engine.ai_engine.decide_action_vector(
+            agent_data, market_data, goods_list
+        )
+    
+        # basic_food has survival utility, education_service does not.
+        # Logic: agg = 0.0 if is_starving and utility_effects.get("survival", 0) <= 0
+>       assert action_vector.consumption_aggressiveness["education_service"] == 0.0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'education_service'
+
+tests\verify_maslow_education.py:98: KeyError
+=========================== short test summary info ===========================
+FAILED tests/verify_maslow_education.py::test_maslow_gating_logic - KeyError: 'education_service'
+========================= 1 failed, 2 passed in 0.17s =========================

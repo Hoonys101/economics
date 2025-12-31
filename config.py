@@ -56,7 +56,14 @@ GOODS = {
         "initial_price": 30.0,
         "utility_effects": {"survival": 12, "social": 5},
     },
+    "education_service": {
+        "production_cost": 20,
+        "initial_price": 50.0,
+        "utility_effects": {"improvement": 15},
+        "is_service": True,
+    },
 }
+
 
 # Added for explicit reference
 GOODS_INITIAL_PRICE = {
@@ -213,6 +220,16 @@ ASSETS_THRESHOLD_FOR_OTHER_ACTIONS = 200.0
 IMITATION_LEARNING_INTERVAL = 100
 IMITATION_MUTATION_RATE = 0.1
 IMITATION_MUTATION_MAGNITUDE = 0.05
+
+# --- Maslow Hierarchy ---
+MASLOW_SURVIVAL_THRESHOLD = 50.0  # 이 값 초과 시 상위 욕구 비활성화
+
+# --- Education Service ---
+EDUCATION_SENSITIVITY = 0.1       # 교육 효과 민감도
+BASE_LEARNING_RATE = 0.1          # 기본 학습률
+MAX_LEARNING_RATE = 0.5           # 최대 학습률
+LEARNING_EFFICIENCY = 1.0         # XP 획득 효율
+
 
 # --- Loan Market ---
 LOAN_INTEREST_RATE = 0.05

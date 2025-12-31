@@ -53,6 +53,8 @@ def create_tables(conn: sqlite3.Connection):
             inventory_food REAL,
             current_production REAL,
             num_employees INTEGER,
+            education_xp REAL,
+            generation INTEGER,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
         )
     """)

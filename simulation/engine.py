@@ -159,6 +159,7 @@ class Simulation:
                 agent_type="",
                 assets=agent.assets,
                 is_active=agent.is_active,
+                generation=getattr(agent, "generation", 0),
             )
 
             if isinstance(agent, Household):
@@ -799,18 +800,30 @@ class Simulation:
                         )
 
             elif tx.transaction_type == "goods":
-                seller.inventory[tx.item_id] = max(
-                    0, seller.inventory.get(tx.item_id, 0) - tx.quantity
-                )
-                buyer.inventory[tx.item_id] = (
-                    buyer.inventory.get(tx.item_id, 0) + tx.quantity
-                )
+                good_info = self.config_module.GOODS.get(tx.item_id, {})
+                is_service = good_info.get("is_service", False)
+
+                if is_service:
+                    # 서비스인 경우 인벤토리를 거치지 않고 즉시 소비 처리
+                    if isinstance(buyer, Household):
+                        buyer.consume(tx.item_id, tx.quantity, self.time)
+                else:
+                    seller.inventory[tx.item_id] = max(
+                        0, seller.inventory.get(tx.item_id, 0) - tx.quantity
+                    )
+                    buyer.inventory[tx.item_id] = (
+                        buyer.inventory.get(tx.item_id, 0) + tx.quantity
+                    )
+
                 if isinstance(seller, Firm):
                     seller.revenue_this_turn += trade_value
+                
                 if isinstance(buyer, Household):
-                    buyer.current_consumption += tx.quantity
-                    if tx.item_id == "basic_food":
-                        buyer.current_food_consumption += tx.quantity
+                    # 서비스는 consume()에서 이미 처리되었으므로 비서비스 상품만 여기서 추가
+                    if not is_service:
+                        buyer.current_consumption += tx.quantity
+                        if tx.item_id == "basic_food":
+                            buyer.current_food_consumption += tx.quantity
 
             elif tx.transaction_type == "stock":
                 # 주식 거래 처리

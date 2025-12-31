@@ -25,6 +25,7 @@ class BaseAgent(ABC):
         self.logger = logger if logger is not None else logging.getLogger(self.name)
         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
+        self.generation: int = 0
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""

@@ -108,7 +108,29 @@ ALTER TABLE agent_states ADD COLUMN education_xp REAL DEFAULT 0.0;
 
 ---
 
-## 7. 체크리스트
+## 7. Architectural Decisions (V2 Engine Compatibility)
+
+본 시뮬레이션의 V2 AI 구조(다채널 적극성 벡터)와의 정합성을 위해 다음과 같이 구현을 확정함.
+
+### 7.1 Maslow Gating in Multi-Channel AI
+- **위치**: `household_ai.py` -> `decide_action_vector()`
+- **정책 (Action Masking)**:
+    - 가계의 `survival` 욕구가 `MASLOW_SURVIVAL_THRESHOLD`를 초과할 경우:
+        - `survival` 효용이 없는 모든 품목(`luxury_food`, `clothing`, `education_service` 등)의 적극성을 **0.0**으로 강제 고정.
+        - `investment_aggressiveness`를 **0.0**으로 강제 고정.
+- **보상 보정**: `_calculate_reward`에서 `IS_STARVING` 상태일 때 상위 욕구 해소로 인한 보상을 0으로 처리하거나 대폭 삭감.
+
+### 7.2 Service Consumption Logic
+- **정의**: `is_service: True`인 품목은 실물 재고가 없으며 구매 즉시 효용을 발생시킴.
+- **위치**: `engine.py` -> `match_orders` 이후 `process_transactions` 루프
+- **정책**:
+    - 거래 성공 시, 해당 품목이 `is_service`라면 `buyer.consume()`을 즉시 호출.
+    - `Household.consume()`은 해당 품목이 서비스인 경우 인벤토리 체크를 생략하고 `xp` 또는 `utility`만 즉시 반영하고 종료.
+
+---
+
+## 8. 체크리스트
+
 
 - [ ] `config.py`에 Maslow/Education 상수 추가
 - [ ] `GOODS`에 `education_service` 추가

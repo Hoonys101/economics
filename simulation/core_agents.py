@@ -167,6 +167,8 @@ class Household(BaseAgent):
         self.survival_need_high_turns: int = 0
         self.social_status: float = 0.0
         self.perceived_avg_prices: Dict[str, float] = {}
+        self.education_xp: float = 0.0  # Task #6: Education XP
+
 
         self.config_module = config_module  # Store config_module
         self.decision_engine.loan_market = loan_market
@@ -403,28 +405,42 @@ class Household(BaseAgent):
             f"CONSUME_METHOD_START | Household {self.id} attempting to consume: Item={item_id}, Qty={quantity:.1f}, Inventory={self.inventory.get(item_id, 0):.1f}",
             extra=log_extra,
         )
-        if self.inventory.get(item_id, 0) >= quantity:
-            self.logger.debug(
-                f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}",
-                extra={
-                    **log_extra,
-                    "inventory_before": self.inventory.get(item_id, 0),
-                    "survival_need_before": self.needs.get("survival", 0),
-                },
-            )
-            self.inventory[item_id] -= quantity
+        good_info = self.goods_info_map.get(item_id, {})
+        is_service = good_info.get("is_service", False)
+
+        if is_service or self.inventory.get(item_id, 0) >= quantity:
+            if not is_service:
+                self.logger.debug(
+                    f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}",
+                    extra={
+                        **log_extra,
+                        "inventory_before": self.inventory.get(item_id, 0),
+                        "survival_need_before": self.needs.get("survival", 0),
+                    },
+                )
+                self.inventory[item_id] -= quantity
+            
             self.current_consumption += quantity
+
 
             if item_id == "food":
                 self.current_food_consumption += quantity
                 self.logger.debug(
-                    f"CONSUME_METHOD_FOOD_UPDATE | Household {self.id} consumed food. Current food consumption: {self.current_food_consumption:.1f}. Inventory AFTER: {self.inventory.get(item_id, 0):.1f}. Survival Need AFTER: {self.needs.get('survival', 0):.1f}",
+                    f"CONSUME_METHOD_FOOD_UPDATE | Household {self.id} consumed food. Current food consumption: {self.current_food_consumption:.1f}. Inventory AFTER: {self.inventory.get(item_id, 0.0):.1f}. Survival Need AFTER: {self.needs.get('survival', 0):.1f}",
                     extra={
                         **log_extra,
                         "current_food_consumption": self.current_food_consumption,
                         "inventory_after": self.inventory.get(item_id, 0),
                         "survival_need_after": self.needs.get("survival", 0),
                     },
+                )
+
+            # Task #6: Gain Education XP
+            if item_id == "education_service":
+                self.education_xp += quantity * self.config_module.LEARNING_EFFICIENCY
+                self.logger.info(
+                    f"EDUCATION | Household {self.id} gained XP. Total XP: {self.education_xp:.2f}",
+                    extra={**log_extra, "education_xp": self.education_xp}
                 )
 
             consumed_good = self.goods_info_map.get(item_id)
@@ -444,14 +460,15 @@ class Household(BaseAgent):
                             0, self.needs.get(need_type, 0) - (utility_value * quantity)
                         )
                 self.logger.info(
-                    f"CONSUME_METHOD_NEEDS_UPDATE | Household {self.id} consumed {quantity:.1f} of {item_id}. Needs after consumption: Survival={self.needs['survival']:.1f}, Asset={self.needs['asset']:.1f}, Social={self.needs['social']:.1f}, Improvement={self.needs['improvement']:.1f}",
+                    f"CONSUME_METHOD_NEEDS_UPDATE | Household {self.id} consumed {quantity:.1f} of {item_id}. Needs after consumption: Survival={self.needs.get('survival', 0):.1f}, Asset={self.needs.get('asset', 0):.1f}, Social={self.needs.get('social', 0):.1f}, Improvement={self.needs.get('improvement', 0):.1f}",
                     extra={
                         **log_extra,
-                        "survival_need": self.needs["survival"],
-                        "asset_need": self.needs["asset"],
-                        "social_need": self.needs["social"],
-                        "improvement_need": self.needs["improvement"],
+                        "survival_need": self.needs.get("survival", 0),
+                        "asset_need": self.needs.get("asset", 0),
+                        "social_need": self.needs.get("social", 0),
+                        "improvement_need": self.needs.get("improvement", 0),
                     },
+
                 )
             else:
                 self.logger.debug(
@@ -648,6 +665,7 @@ class Household(BaseAgent):
             loan_market=self.decision_engine.loan_market,
             logger=self.logger
         )
+        child.generation = self.generation + 1
         child.shares_owned = child_shares
         child.is_employed = False
         child.employer_id = None

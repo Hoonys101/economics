@@ -146,8 +146,8 @@ class SimulationRepository:
             self.cursor.execute(
                 """
                 INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
-                                          needs_survival, needs_labor, inventory_food, current_production, num_employees)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     data.run_id,
@@ -163,6 +163,8 @@ class SimulationRepository:
                     data.inventory_food,
                     data.current_production,
                     data.num_employees,
+                    data.education_xp,
+                    data.generation,
                 ),
             )
             self.conn.commit()
@@ -257,13 +259,15 @@ class SimulationRepository:
                         state_data.inventory_food,
                         state_data.current_production,
                         state_data.num_employees,
+                        state_data.education_xp,
+                        state_data.generation,
                     )
                 )
             self.cursor.executemany(
                 """
                 INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
-                                          needs_survival, needs_labor, inventory_food, current_production, num_employees)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 data_to_insert,
             )
@@ -423,7 +427,7 @@ class SimulationRepository:
 
     def get_latest_economic_indicator(self, indicator_name: str) -> Optional[float]:
         """
-        특정 경제 지표의 최신 값을 조회합니다。
+        특정 경제 지표의 최신 값을 조회합니다.
         """
         query = f"SELECT {indicator_name} FROM economic_indicators ORDER BY time DESC LIMIT 1"
         self.cursor.execute(query)
@@ -438,7 +442,7 @@ class SimulationRepository:
         item_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
-        특정 시장의 이력 데이터를 조회합니다。
+        특정 시장의 이력 데이터를 조회합니다.
         """
         query = "SELECT * FROM market_history WHERE market_id = ?"
         params: List[Any] = [market_id]
@@ -466,7 +470,7 @@ class SimulationRepository:
         end_tick: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
-        특정 에이전트의 상태 변화 이력을 조회합니다。
+        특정 에이전트의 상태 변화 이력을 조회합니다.
         """
         query = "SELECT * FROM agent_states WHERE agent_id = ?"
         params: List[Any] = [agent_id]
@@ -519,6 +523,25 @@ class SimulationRepository:
         Repository 사용을 마칠 때 데이터베이스 연결을 닫습니다.
         """
         close_db_connection()
+
+    def get_generation_stats(self, tick: int, run_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        특정 틱의 세대별 인구 및 자산 통계를 조회합니다.
+        """
+        query = """
+            SELECT generation as gen, COUNT(*) as count, AVG(assets) as avg_assets
+            FROM agent_states
+            WHERE time = ? AND agent_type = 'household'
+        """
+        params = [tick]
+        if run_id:
+            query += " AND run_id = ?"
+            params.append(run_id)
+        query += " GROUP BY generation"
+        
+        self.cursor.execute(query, params)
+        columns = [description[0] for description in self.cursor.description]
+        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
 
 
 if __name__ == "__main__":

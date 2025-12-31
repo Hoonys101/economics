@@ -82,13 +82,21 @@ class HouseholdAI(BaseAIEngine):
         self.last_consumption_states = {}
         self.last_consumption_action_idxs = {}
 
+        # Task #6: Maslow Gating (Action Masking)
+        needs = agent_data.get("needs", {})
+        survival_need = needs.get("survival", 0.0)
+        # Use config if available via ai_decision_engine, else fallback
+        config_module = getattr(self.ai_decision_engine, "config_module", None)
+        survival_threshold = getattr(config_module, "MASLOW_SURVIVAL_THRESHOLD", 50.0)
+        is_starving = survival_need > survival_threshold
+
         for item_id in goods_list:
             if item_id not in self.q_consumption:
+
+
+
                 self.q_consumption[item_id] = QTableManager()
             
-            # Create specific state for this item (e.g., specific need inventory?)
-            # For now, use common state + item inventory level?
-            # Keeping it simple: Use common state
             item_state = state 
             self.last_consumption_states[item_id] = item_state
             
@@ -97,7 +105,20 @@ class HouseholdAI(BaseAIEngine):
                 self.q_consumption[item_id], item_state, actions
             )
             self.last_consumption_action_idxs[item_id] = action_idx
-            consumption_aggressiveness[item_id] = self.AGGRESSIVENESS_LEVELS[action_idx]
+            agg = self.AGGRESSIVENESS_LEVELS[action_idx]
+
+            # Apply Gating if Starving
+            if is_starving and config_module:
+                good_info = config_module.GOODS.get(item_id, {})
+                utility_effects = good_info.get("utility_effects", {})
+                if utility_effects.get("survival", 0) <= 0:
+                    agg = 0.0  # Force passive if no survival benefit
+
+            consumption_aggressiveness[item_id] = agg
+
+
+
+
 
         # 2. Work Aggressiveness
         self.last_work_state = state
@@ -111,7 +132,7 @@ class HouseholdAI(BaseAIEngine):
         # 3. Investment Aggressiveness
         # 자산이 충분할 때만 투자 고려
         assets = agent_data.get("assets", 0)
-        if assets >= 500.0:  # 최소 투자 자산
+        if assets >= 500.0 and not is_starving:  # 최소 투자 자산 및 배고프지 않을 때
             self.last_investment_state = state
             inv_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
             inv_action_idx = self.action_selector.choose_action(
@@ -130,6 +151,7 @@ class HouseholdAI(BaseAIEngine):
             learning_aggressiveness=0.0,
             investment_aggressiveness=investment_agg
         )
+
 
     def update_learning_v2(
         self,

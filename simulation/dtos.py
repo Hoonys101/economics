@@ -33,6 +33,8 @@ class AgentStateData:
     inventory_food: Optional[float] = None
     current_production: Optional[float] = None
     num_employees: Optional[int] = None
+    education_xp: Optional[float] = None
+    generation: Optional[int] = 0
 
 @dataclass
 class EconomicIndicatorData:
@@ -213,3 +215,47 @@ class PersonalityStatisticsData:
     
     # 성과 지표
     avg_wealth_growth_rate: float   # 평균 자산 증가율
+@dataclass
+class DashboardGlobalIndicatorsDTO:
+    death_rate: float
+    bankruptcy_rate: float
+    employment_rate: float
+    gdp: float
+    avg_wage: float
+    gini: float
+
+@dataclass
+class GenerationStatDTO:
+    gen: int
+    count: int
+    avg_assets: float
+
+@dataclass
+class SocietyTabDataDTO:
+    generations: List[GenerationStatDTO]
+    mitosis_cost: float
+    unemployment_pie: Dict[str, int] # e.g., {"struggling": 80, "voluntary": 20}
+
+@dataclass
+class GovernmentTabDataDTO:
+    tax_revenue: Dict[str, float]
+    fiscal_balance: Dict[str, float]
+
+@dataclass
+class MarketTabDataDTO:
+    commodity_volumes: Dict[str, float]
+    cpi: List[float]
+    maslow_fulfillment: List[float]
+
+@dataclass
+class FinanceTabDataDTO:
+    market_cap: float
+    volume: float
+    turnover: float
+    dividend_yield: float
+
+@dataclass
+class DashboardSnapshotDTO:
+    tick: int
+    global_indicators: DashboardGlobalIndicatorsDTO
+    tabs: Dict[str, Any] # Or specific classes for each tab

@@ -74,6 +74,24 @@ class AITrainingManager:
         # 2. Q-Table Cloning
         self._clone_and_mutate_q_table(parent_agent, child_agent)
 
+        # 3. Education XP Inheritance Bonus (Task #6)
+        import math
+        education_xp = getattr(parent_agent, "education_xp", 0.0)
+        sensitivity = getattr(self.config_module, "EDUCATION_SENSITIVITY", 0.1)
+        base_rate = getattr(self.config_module, "BASE_LEARNING_RATE", 0.1)
+        max_rate = getattr(self.config_module, "MAX_LEARNING_RATE", 0.5)
+
+        xp_bonus = math.log1p(education_xp) * sensitivity
+        
+        child_ai = child_agent.decision_engine.ai_engine
+        child_ai.base_alpha = min(max_rate, base_rate + xp_bonus)
+        
+        logger.info(
+            f"EDUCATION_INHERITANCE | Child {child_agent.id} base_alpha: {child_ai.base_alpha:.4f} (Bonus: {xp_bonus:.4f})",
+            extra={"agent_id": child_agent.id, "tags": ["mitosis", "education"]}
+        )
+
+
     def _get_top_performing_agents(self, percentile: float | None = None) -> List[Household]:
         if percentile is None:
             percentile = getattr(self.config_module, "TOP_PERFORMING_PERCENTILE", 0.1)
