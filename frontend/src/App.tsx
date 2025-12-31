@@ -1,6 +1,11 @@
 import { useState, ReactNode } from 'react'
-import { LayoutDashboard, Users, Landmark, ShoppingCart, TrendingUp } from 'lucide-react'
+import { Users, Landmark, ShoppingCart, TrendingUp } from 'lucide-react'
 import './App.css'
+import { useSimulation } from './hooks/useSimulation'
+import SocietyTab from './components/dashboard/SocietyTab'
+import GovernmentTab from './components/dashboard/GovernmentTab'
+import MarketTab from './components/dashboard/MarketTab'
+import FinanceTab from './components/dashboard/FinanceTab'
 
 interface TabButtonProps {
   id: string;
@@ -14,7 +19,7 @@ interface TabButtonProps {
 const i18n = {
   ko: {
     dashboard_title: "W-2 시뮬레이션 경제 관제탑",
-    system_awaiting: "system.awaiting_jules_implementation...",
+    system_awaiting: "데이터 로딩 중...",
     society: "사회",
     government: "정부",
     market: "시장",
@@ -24,12 +29,11 @@ const i18n = {
     employment: "고용률",
     gdp: "GDP",
     avg_wage: "평균 임금",
-    gini: "지니계수",
-    description: "탭 작업을 위해 Jules를 기다리는 중입니다. Jules는 이곳에 각 탭별 Recharts 기반 시각화 요소를 구현하게 됩니다."
+    gini: "지니계수"
   },
   en: {
     dashboard_title: "W-2 Simulation Economic HUD",
-    system_awaiting: "system.awaiting_jules_implementation...",
+    system_awaiting: "Loading Data...",
     society: "Society",
     government: "Government",
     market: "Market",
@@ -39,8 +43,7 @@ const i18n = {
     employment: "Employment",
     gdp: "GDP",
     avg_wage: "Avg Wage",
-    gini: "Gini Index",
-    description: "Waiting for Jules to implement the tab content. Jules will implement Recharts-based visualizations for each tab."
+    gini: "Gini Index"
   }
 }
 
@@ -71,18 +74,32 @@ const Indicator = ({ label, value, unit, color }: { label: string, value: string
 function App() {
   const [activeTab, setActiveTab] = useState('society')
   const [lang, setLang] = useState<'ko' | 'en'>('ko')
+  const { data, loading } = useSimulation()
   const t = i18n[lang]
+
+  if (loading || !data) {
+      return (
+        <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+            <div className="animate-pulse flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"/>
+                <div className="text-primary font-mono">{t.system_awaiting}</div>
+            </div>
+        </div>
+      )
+  }
+
+  const { global_indicators: hud, tabs } = data
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col p-4 md:p-6 gap-4 md:gap-6">
       {/* Header HUD */}
       <header className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-        <Indicator label={t.tick} value={1240} color="text-white" />
-        <Indicator label={t.survival_rate} value={98.2} unit="%" color="text-green-400" />
-        <Indicator label={t.employment} value={85.5} unit="%" color="text-blue-400" />
-        <Indicator label={t.gdp} value="12.4M" color="text-yellow-400" />
-        <Indicator label={t.avg_wage} value={4520} color="text-emerald-400" />
-        <Indicator label={t.gini} value={0.342} color="text-purple-400" />
+        <Indicator label={t.tick} value={data.tick} color="text-white" />
+        <Indicator label={t.survival_rate} value={(100 - hud.death_rate).toFixed(1)} unit="%" color="text-green-400" />
+        <Indicator label={t.employment} value={hud.employment_rate.toFixed(1)} unit="%" color="text-blue-400" />
+        <Indicator label={t.gdp} value={hud.gdp.toLocaleString()} color="text-yellow-400" />
+        <Indicator label={t.avg_wage} value={hud.avg_wage.toFixed(0)} color="text-emerald-400" />
+        <Indicator label={t.gini} value={hud.gini.toFixed(3)} color="text-purple-400" />
       </header>
 
       {/* Navigation & Lang Switcher */}
@@ -119,23 +136,13 @@ function App() {
       </div>
 
       {/* Content Area */}
-      <main className="flex-1 glass-card rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col items-center justify-center">
+      <main className="flex-1 glass-card rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-        
-        <div className="flex flex-col gap-4 relative z-10 text-center max-w-2xl">
-          <h2 className="text-2xl md:text-4xl font-bold text-white mb-2">
-            {t.dashboard_title}
-          </h2>
-          <p className="text-muted-foreground text-sm md:text-lg">
-            {t.description.replace('{tab}', activeTab.toUpperCase())}
-          </p>
-          
-          <div className="mt-8 flex justify-center gap-4">
-            <div className="animate-pulse flex items-center gap-2 text-primary font-mono text-xs md:text-sm lowercase">
-              <div className="w-2 h-2 rounded-full bg-primary" />
-              {t.system_awaiting}
-            </div>
-          </div>
+        <div className="relative z-10 w-full h-full">
+            {activeTab === 'society' && <SocietyTab data={tabs.society} />}
+            {activeTab === 'government' && <GovernmentTab data={tabs.government} />}
+            {activeTab === 'market' && <MarketTab data={tabs.market} />}
+            {activeTab === 'finance' && <FinanceTab data={tabs.finance} />}
         </div>
       </main>
     </div>

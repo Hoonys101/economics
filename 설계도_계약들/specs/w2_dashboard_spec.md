@@ -60,13 +60,11 @@ Jules는 `simulation/dtos.py`에 정의된 다음 구조를 사용하여 데이�
 
 #### **[Phase B: Frontend (UI/Visualization)] - 🚀 IN PROGRESS**
 1.  **지침**: `frontend/src/components/dashboard/` 내에 4개 탭(`SocietyTab`, `GovernmentTab`, `MarketTab`, `FinanceTab`)을 구현하라.
-    - `SocietyTab.tsx`: 세대별 자산 분포(Area Chart)와 실업 유형(Donut Chart).
-    - `GovernmentTab.tsx`: 세수 분포(Pie Chart) 및 세수 추이(Line Chart).
-    - `MarketTab.tsx`: CPI 및 품목별 추이(Multi-line Chart).
-    - `FinanceTab.tsx`: 시총 및 거래량 통계.
-2.  **디자인**: 이미 설정된 `.glass-card` 및 HSL 컬러 디자인 시스템을 엄격히 준수할 것.
-3.  **데이터**: `src/hooks/useSimulation.ts`를 임포트하여 API 데이터를 각 차트에 바인딩하라.
-4.  **차트**: Recharts를 권장하며, 각 탭의 의미에 맞는 차트 유형(Area, Pie, Bar 등)을 선택하라.
+2.  **i18n**: `App.tsx` 내의 `i18n` 객체를 확장하여 차트 라벨(예: "세수 구성", "실업 유형" 등)을 모두 추가하라. (Locale 파일 분리 없이 `App.tsx`에서 유지)
+3.  **HUD 동적 연동**: `App.tsx`의 헤더 인디케이터에 있는 하드코딩된 값(예: 1240)을 `useSimulation` 훅에서 넘어오는 실시간 데이터로 바인딩하라.
+4.  **Axis 렌더링**: `cpi`, `maslow_fulfillment`와 같은 스칼라 배열 데이터는 배열 인덱스를 활용하여 '최근 이력(Recent History)'으로 X축을 표시하라.
+5.  **CSS 변수**: Tailwind 4 아키텍처에 따라 Recharts 및 커스텀 스타일링 시 `--color-primary` 를 직접 참조하여 일관된 컬러 시스템을 유지하라.
+6.  **디자인**: 이미 설정된 `.glass-card` 및 HSL 컬러 디자인 시스템을 엄격히 준수할 것.
 
 ---
 
