@@ -37,8 +37,15 @@ class Government:
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """
-        Calculates progressive income tax based on survival cost.
+        Calculates income tax based on TAX_MODE (FLAT or PROGRESSIVE).
         """
+        tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
+
+        if tax_mode == "FLAT":
+            base_rate = getattr(self.config_module, "BASE_INCOME_TAX_RATE", 0.2)
+            return income * base_rate
+
+        # Progressive Logic
         tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
         if not tax_brackets:
             # Fallback to flat rate if no brackets defined

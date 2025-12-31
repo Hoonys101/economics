@@ -126,6 +126,9 @@ class Simulation:
             self.households, self.config_module
         )
 
+        # Time allocation tracking
+        self.household_time_allocation: Dict[int, float] = {}
+
         config_content = str(self.config_module.__dict__)
         config_hash = hashlib.sha256(config_content.encode()).hexdigest()
         self.run_id = self.repository.save_simulation_run(
@@ -173,6 +176,15 @@ class Simulation:
                 agent_dto.needs_survival = agent.needs.get("survival", 0)
                 agent_dto.needs_labor = agent.needs.get("labor_need", 0)
                 agent_dto.inventory_food = agent.inventory.get("food", 0)
+
+                # Experiment: Time Allocation Tracking
+                time_leisure = self.household_time_allocation.get(agent.id, 0.0)
+                shopping_hours = getattr(self.config_module, "SHOPPING_HOURS", 2.0)
+                hours_per_tick = getattr(self.config_module, "HOURS_PER_TICK", 24.0)
+
+                agent_dto.time_leisure = time_leisure
+                agent_dto.time_worked = max(0.0, hours_per_tick - time_leisure - shopping_hours)
+
             elif isinstance(agent, Firm):
                 agent_dto.agent_type = "firm"
                 agent_dto.inventory_food = agent.inventory.get("food", 0)
@@ -425,6 +437,7 @@ class Simulation:
                 leisure_hours = max(0.0, hours_per_tick - work_hours - shopping_hours)
 
                 household_time_allocation[household.id] = leisure_hours
+                self.household_time_allocation[household.id] = leisure_hours
 
                 for order in household_orders:
                     household_target_market = self.markets.get(order.market_id)

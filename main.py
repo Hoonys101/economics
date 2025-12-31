@@ -1,6 +1,7 @@
 import random
 import sys
 import logging
+from typing import Dict, Any, Optional
 from utils.logging_manager import (
     setup_logging,
     SamplingFilter,
@@ -55,12 +56,17 @@ else:
 # --- End Setup Logging ---
 
 
-def run_simulation(
-    firm_production_targets=None,
-    initial_firm_inventory_mean=None,
-    output_filename="simulation_results.csv",
-):
-    logging.info("Starting simulation run.", extra={"tags": ["setup"]})
+def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+    """Create simulation instance with optional config overrides."""
+    logging.info("Initializing simulation.", extra={"tags": ["setup"]})
+
+    if overrides:
+        for key, value in overrides.items():
+            setattr(config, key, value)
+
+    # Seed for reproducibility
+    if hasattr(config, "RANDOM_SEED"):
+         random.seed(config.RANDOM_SEED)
 
     # Initialize the SimulationRepository for this simulation run
     repository = SimulationRepository()
@@ -82,7 +88,6 @@ def run_simulation(
 
     num_households = config.NUM_HOUSEHOLDS
     num_firms = config.NUM_FIRMS
-    simulation_ticks = config.SIMULATION_TICKS
 
     goods_data = [
         {"id": good_name, **good_attrs}
@@ -178,15 +183,6 @@ def run_simulation(
             config.INITIAL_HOUSEHOLD_FOOD_INVENTORY
         )  # Provide initial food (now basic_food)
 
-        # Now that the household object is created, set it in the decision engine
-
-        # No longer using goods_data for luxury food initialization
-        # if i < num_households * 0.1:
-        #     luxury_food_id = next((g['id'] for g in goods_data if g.get('is_luxury', False)), None)
-        #     if luxury_food_id:
-        #         household.inventory[luxury_food_id] = 10.0
-        #         household.assets += 10.0 * 10.0
-
         households.append(household)
 
     firms = []
@@ -258,10 +254,6 @@ def run_simulation(
         for household in households:
             household.shares_owned[firm.id] = shares_per_household
 
-    if initial_firm_inventory_mean is not None:
-        original_initial_firm_inventory_mean = config.INITIAL_FIRM_INVENTORY_MEAN
-        config.INITIAL_FIRM_INVENTORY_MEAN = initial_firm_inventory_mean
-
     num_to_employ = int(num_households * config.INITIAL_EMPLOYMENT_RATE)
     unemployed_households = list(households)
     random.shuffle(unemployed_households)
@@ -292,21 +284,53 @@ def run_simulation(
         logger=main_logger,
     )
 
+    return sim
+
+
+def run_simulation(
+    firm_production_targets=None,
+    initial_firm_inventory_mean=None,
+    output_filename="simulation_results.csv",
+):
+    overrides = {}
     if initial_firm_inventory_mean is not None:
-        config.INITIAL_FIRM_INVENTORY_MEAN = original_initial_firm_inventory_mean
+        overrides["INITIAL_FIRM_INVENTORY_MEAN"] = initial_firm_inventory_mean
+
+    # We don't override firm_production_targets in create_simulation as it is not used in the original loop
+    # The original loop just ran sim.run_tick().
+    # However, create_simulation needs to handle temporary config changes.
+    # The original code changed config globally then changed it back.
+    # Here create_simulation changes it globally and leaves it.
+    # If run_simulation needs to restore it, it should handle that.
+
+    original_initial_firm_inventory_mean = None
+    if initial_firm_inventory_mean is not None:
+         original_initial_firm_inventory_mean = config.INITIAL_FIRM_INVENTORY_MEAN
+
+    sim = create_simulation(overrides=overrides)
+
+    # Restore config if needed (since create_simulation modifies it globally)
+    # The original code modified config global variable.
+    # create_simulation also modifies it.
+
+    simulation_ticks = config.SIMULATION_TICKS
 
     for i in range(simulation_ticks):
         # Pass the repository to the run_tick method
         sim.run_tick()
 
-    ai_trainer.end_episode(sim.get_all_agents())
+    sim.ai_training_manager.end_episode(sim.get_all_agents())
     logging.info(
         "Simulation finished. Closing logger.",
         extra={"tick": sim.time, "tags": ["shutdown"]},
     )
 
     # Close the SimulationRepository connection at the end
-    repository.close()
+    sim.repository.close()
+
+    # Restore original config if we changed it
+    if original_initial_firm_inventory_mean is not None:
+        config.INITIAL_FIRM_INVENTORY_MEAN = original_initial_firm_inventory_mean
 
 
 if __name__ == "__main__":
@@ -314,4 +338,3 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         output_filename = sys.argv[1]
     run_simulation(output_filename=output_filename)
-
