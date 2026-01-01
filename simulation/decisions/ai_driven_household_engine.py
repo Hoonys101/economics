@@ -97,6 +97,29 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             elif agg_buy > self.config_module.BULK_BUY_AGG_THRESHOLD:
                 target_quantity = max(1.0, max_q * self.config_module.BULK_BUY_MODERATE_RATIO) # Moderate panic
             
+            # --- Phase 8: Inflation Psychology (Panic Buying & Wait) ---
+            pi_e = household.expected_inflation.get(item_id, 0.0)
+
+            # Panic Buying
+            if pi_e > self.config_module.PANIC_BUYING_THRESHOLD:
+                # Add Hoarding Factor (e.g., +50%)
+                hoard_qty = target_quantity * self.config_module.HOARDING_FACTOR
+                target_quantity += hoard_qty
+                self.logger.info(
+                    f"PANIC_BUYING | Household {household.id} panic buying {item_id}. Expected Inflation: {pi_e:.3f}. Qty: {target_quantity:.2f}",
+                    extra={"agent_id": household.id, "tags": ["inflation_psychology", "panic_buying"]}
+                )
+
+            # Deflationary Wait
+            elif pi_e < self.config_module.DEFLATION_WAIT_THRESHOLD:
+                # Reduce by Delay Factor (e.g., -50%)
+                delay_qty = target_quantity * self.config_module.DELAY_FACTOR
+                target_quantity -= delay_qty
+                self.logger.info(
+                    f"DEFLATION_WAIT | Household {household.id} delaying purchase of {item_id}. Expected Inflation: {pi_e:.3f}. Qty: {target_quantity:.2f}",
+                    extra={"agent_id": household.id, "tags": ["inflation_psychology", "deflation_wait"]}
+                )
+
             # Budget Constraint Check: Don't spend more than 50% of assets on a single item per tick
             # unless survival is critical.
             budget_limit = household.assets * self.config_module.BUDGET_LIMIT_NORMAL_RATIO
