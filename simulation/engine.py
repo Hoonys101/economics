@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import logging
 import hashlib
+import random
 
 from simulation.models import Transaction, Order, StockOrder
 from simulation.core_agents import Household, Skill
@@ -685,6 +686,9 @@ class Simulation:
         # Added as per requirement (previously missing in run_tick)
         self._handle_agent_lifecycle()
 
+        # Entrepreneurship Check (Spawn new firms if needed)
+        self._check_entrepreneurship()
+
         # Phase 5: Finalize Government Stats for the tick
         self.government.finalize_tick(self.time)
 
@@ -959,6 +963,114 @@ class Simulation:
                     if isinstance(buyer, Household):
                         self.stock_market.update_shareholder(buyer.id, firm_id, buyer.shares_owned.get(firm_id, 0))
 
+
+    def spawn_firm(self, founder_household: "Household") -> Optional["Firm"]:
+        """
+        부유한 가계가 새로운 기업을 설립합니다.
+
+        Args:
+            founder_household: 창업주 가계 에이전트
+
+        Returns:
+            생성된 Firm 객체 또는 None (실패 시)
+        """
+        startup_cost = getattr(self.config_module, "STARTUP_COST", 15000.0)
+
+        # 1. 자본 차감
+        # Using assets as cash proxy
+        if founder_household.assets < startup_cost:
+            return None
+        founder_household.assets -= startup_cost
+
+        # 2. 새 기업 ID 생성
+        max_id = max([a.id for a in self.agents.values()], default=0)
+        new_firm_id = max_id + 1
+
+        # 3. 업종 선택 (부족한 업종 우선)
+        specializations = ["basic_food", "clothing", "education_service"]
+        # 간단히 랜덤 또는 기업 수가 적은 업종 선택
+        import random
+        specialization = random.choice(specializations)
+
+        # 4. AI 설정
+        from simulation.ai.firm_ai import FirmAI
+        from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+
+        value_orientation = random.choice([
+            self.config_module.VALUE_ORIENTATION_WEALTH_AND_NEEDS,
+            self.config_module.VALUE_ORIENTATION_NEEDS_AND_GROWTH,
+        ])
+        # Use ai_trainer instead of ai_manager
+        ai_decision_engine = self.ai_trainer.get_engine(value_orientation)
+        firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+        firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config_module, self.logger)
+
+        # 5. Firm 생성
+        new_firm = Firm(
+            id=new_firm_id,
+            initial_capital=startup_cost,
+            initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
+            specialization=specialization,
+            productivity_factor=random.uniform(8.0, 12.0),
+            decision_engine=firm_decision_engine,
+            value_orientation=value_orientation,
+            config_module=self.config_module,
+            logger=self.logger,
+        )
+        new_firm.founder_id = founder_household.id
+        # Set loan market if available in simulation
+        if "loan_market" in self.markets:
+            new_firm.decision_engine.loan_market = self.markets["loan_market"]
+
+        # 6. 리스트에 추가
+        self.firms.append(new_firm)
+        self.agents[new_firm.id] = new_firm
+
+        # Add to AI training manager
+        self.ai_training_manager.agents.append(new_firm)
+
+        self.logger.info(
+            f"STARTUP | Household {founder_household.id} founded Firm {new_firm_id} "
+            f"(Specialization: {specialization}, Capital: {startup_cost})",
+            extra={"tick": self.time, "agent_id": new_firm_id, "tags": ["entrepreneurship"]}
+        )
+
+        return new_firm
+
+    def _check_entrepreneurship(self):
+        """
+        매 틱마다 창업 조건을 확인하고 신규 기업을 생성합니다.
+        """
+        min_firms = getattr(self.config_module, "MIN_FIRMS_THRESHOLD", 5)
+        startup_cost = getattr(self.config_module, "STARTUP_COST", 15000.0)
+        spirit = getattr(self.config_module, "ENTREPRENEURSHIP_SPIRIT", 0.05)
+        capital_multiplier = getattr(self.config_module, "STARTUP_CAPITAL_MULTIPLIER", 1.5)
+
+        active_firms_count = sum(1 for f in self.firms if f.is_active)
+
+        # Hard Trigger: 기업 수가 최소치 이하
+        if active_firms_count < min_firms:
+            trigger_probability = 0.5  # 50% 창업 확률 (위기 상황)
+        else:
+            trigger_probability = spirit  # 일반 창업 확률 (5%)
+
+        # 부유한 가계 필터링 (use 'assets' property as cash proxy, but 'cash' property might not exist on household directly in this version? Household inherits from BaseAgent which has 'assets'. Instructions used 'cash'. Household code uses 'assets'. 'cash' is likely alias or just assets.)
+        # Checking Household code: it uses self.assets. It doesn't seem to have 'cash' property.
+        # I will replace .cash with .assets as per standard agent.
+
+        wealthy_households = [
+            h for h in self.households
+            if h.is_active and h.assets > startup_cost * capital_multiplier
+        ]
+
+        import random
+        for household in wealthy_households:
+            if random.random() < trigger_probability:
+                # Use assets instead of cash for spawn_firm call inside too
+                # Need to update spawn_firm implementation to use assets if cash is not available.
+                # Actually, I'll update spawn_firm implementation above to use assets.
+                self.spawn_firm(household)
+                break  # 한 틱에 하나씩만 창업
 
     def _handle_agent_lifecycle(self) -> None:
         """비활성화된 에이전트를 청산하고 시뮬레이션에서 제거합니다."""
