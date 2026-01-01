@@ -10,7 +10,9 @@
 
 - **완료된 단계:** `Phase 1: AI 통합 및 고도화` ✅
 - **완료된 단계:** `Phase 2.1: 주식 시장 구현` ✅
-- **현재 단계:** `Phase 1.1~1.3: 시뮬레이션 현실성 강화` 🔄
+- **완료된 단계:** `Phase 6 Pre-work: 창업 시스템 (Entrepreneurship)` ✅
+- **현재 단계:** `Phase 4.5: 책임 있는 정부 (Responsible Government)` 🔄
+- **보류된 단계:** `Phase 6: 브랜드 경제` ⏸️
 
 ---
 
