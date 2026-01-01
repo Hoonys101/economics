@@ -484,6 +484,16 @@ ADAPTATION_RATE_IMPULSIVE = 0.8  # Lambda for impulsive agents
 ADAPTATION_RATE_NORMAL = 0.3     # Lambda for normal agents
 ADAPTATION_RATE_CONSERVATIVE = 0.1 # Lambda for conservative agents
 
+# ==============================================================================
+# Phase 9: M&A & Bankruptcy Parameters
+# ==============================================================================
+MA_ENABLED = True
+VALUATION_PER_MULTIPLIER = 10.0      # PER 10
+MIN_ACQUISITION_CASH_RATIO = 1.5     # Hunter Cash >= Target Valuation * 1.5
+LIQUIDATION_DISCOUNT_RATE = 0.5      # Asset fire sale discount
+BANKRUPTCY_CONSECUTIVE_LOSS_TICKS = 20 # Warning threshold
+
+
 PANIC_BUYING_THRESHOLD = 0.05    # Expected Inflation > 5% -> Hoard
 HOARDING_FACTOR = 0.5            # Buy 50% more than needed
 

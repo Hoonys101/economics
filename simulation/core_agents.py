@@ -236,6 +236,10 @@ class Household(BaseAgent):
         )
         self.expected_inflation: Dict[str, float] = defaultdict(float)
         
+        # [Refactoring] Standardized Memory Structure
+        # Used for storing generic agent history/state (e.g. past perceptions, triggers)
+        self.memory: Dict[str, Any] = {}
+        
         # Set Adaptation Rate (Lambda) based on Personality
         if self.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
             self.adaptation_rate = self.config_module.ADAPTATION_RATE_IMPULSIVE
