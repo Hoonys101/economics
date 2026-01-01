@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, override, Tuple, TYPE_CHECKING
 import logging
 from logging import Logger
+from collections import deque, defaultdict
 import random
 from collections import deque
 
@@ -212,7 +213,7 @@ class Household(BaseAgent):
         is_wealthy = self.assets > mean_assets * 1.5
         is_poor = self.assets < mean_assets * 0.5
         
-        # Removed MATERIALISTIC
+
         if self.personality == Personality.STATUS_SEEKER or is_wealthy:
             # Snob: 0.7 ~ 1.0 (Uses config if available, else hardcoded)
             min_pref = getattr(self.config_module, "QUALITY_PREF_SNOB_MIN", 0.7)
@@ -228,6 +229,20 @@ class Household(BaseAgent):
             self.quality_preference = random.uniform(max_miser, min_snob) # 0.3 ~ 0.7
         self.brand_loyalty: Dict[int, float] = {}  # FirmID -> LoyaltyMultipler (Default 1.0)
         self.last_purchase_memory: Dict[str, int] = {} # ItemID -> FirmID
+        
+        # --- Phase 8: Inflation Psychology ---
+        self.price_history: Dict[str, deque] = defaultdict(
+            lambda: deque(maxlen=self.config_module.INFLATION_MEMORY_WINDOW)
+        )
+        self.expected_inflation: Dict[str, float] = defaultdict(float)
+        
+        # Set Adaptation Rate (Lambda) based on Personality
+        if self.personality == Personality.STATUS_SEEKER:
+            self.adaptation_rate = self.config_module.ADAPTATION_RATE_IMPULSIVE
+        elif self.personality == Personality.MISER:
+            self.adaptation_rate = self.config_module.ADAPTATION_RATE_CONSERVATIVE
+        else:
+            self.adaptation_rate = self.config_module.ADAPTATION_RATE_NORMAL
 
 
     def quit(self) -> None:
@@ -319,16 +334,13 @@ class Household(BaseAgent):
             self.assets * self.config_module.SOCIAL_STATUS_ASSET_WEIGHT
         ) + (luxury_goods_value * self.config_module.SOCIAL_STATUS_LUXURY_WEIGHT)
 
+    @override
     def update_perceived_prices(self, market_data: Dict[str, Any]) -> None:
         """
-        시장에서 인지된 상품 가격을 업데이트합니다.
-        실제 시장 가격과 기존 인지 가격을 기반으로 가계의 인지 가격을 조정합니다.
-
-        Phase 8 Update: Also updates price history and calculates expected inflation.
-
+        시장에서 인지된 상품 가격을 업데이트하고, 인플레이션을 예측하여 사재기(Hoarding) 심리를 형성합니다.
+        (Phase 8: Adaptive Expectations)
         Args:
             market_data (Dict[str, Any]): 현재 시장 데이터를 포함하는 딕셔너리입니다.
-                                         'goods_market' 키를 통해 상품 시장 정보에 접근합니다.
         """
         goods_market = market_data.get("goods_market")
         if not goods_market:
@@ -339,6 +351,28 @@ class Household(BaseAgent):
             actual_price = goods_market.get(f"{item_id}_avg_traded_price")
 
             if actual_price is not None and actual_price > 0:
+                # --- Phase 8: Inflation Expectation Update ---
+                history = self.price_history[item_id]
+                if history:
+                    last_price = history[-1]
+                    if last_price > 0:
+                        inflation_t = (actual_price - last_price) / last_price
+                        
+                        # Adaptive Expectation: pi_e(t+1) = pi_e(t) + lambda * (pi(t) - pi_e(t))
+                        old_expect = self.expected_inflation[item_id]
+                        new_expect = old_expect + self.adaptation_rate * (inflation_t - old_expect)
+                        self.expected_inflation[item_id] = new_expect
+                        
+                        # Log significant expectation changes
+                        if abs(new_expect) > 0.05: # > 5% inflation/deflation expectation
+                             self.logger.debug(
+                                f"INFLATION_EXPECTATION | Household {self.id} expects {new_expect:.1%} inflation for {item_id}",
+                                extra={"tags": ["inflation_psychology"], "item_id": item_id, "inflation": new_expect}
+                             )
+
+                history.append(actual_price)
+                # ---------------------------------------------
+
                 old_perceived_price = self.perceived_avg_prices.get(
                     item_id, actual_price
                 )

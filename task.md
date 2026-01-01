@@ -70,9 +70,9 @@
 > **Goal**: Agents remember price history and speculate on future inflation (Hoarding/Delay).
 
 - [x] **Spec**: Defined Memory/Expectation Logic in `design/specs/phase8_adaptive_expectations_spec.md`.
-- [ ] **Implementation**:
-    - [ ] **Config**: Add `PANIC_THRESHOLD`, `HOARDING_FACTOR`, `ADAPTATION_RATE` constants.
-    - [ ] **Household Attributes**: Add `price_history`, `expected_inflation`, `lambda` (adaptation rate).
-    - [ ] **Logic**: Update `decide_and_consume` to adjust quantity based on inflation expectation.
-- [ ] **Verification**:
-    - [ ] `verify_inflation_psychology.py`: Create Supply Shock and observe Panic Buying.
+- [x] **Implementation**:
+    - [x] **Config**: Add `PANIC_THRESHOLD`, `HOARDING_FACTOR`, `ADAPTATION_RATE` constants.
+    - [x] **Household Attributes**: Add `price_history`, `expected_inflation`, `lambda` (adaptation rate).
+    - [x] **Logic**: Update `decide_and_consume` to adjust quantity based on inflation expectation.
+- [x] **Verification**:
+    - [x] `verify_inflation_psychology.py`: Create Supply Shock and observe Panic Buying.

@@ -493,6 +493,17 @@ BRAND_SENSITIVITY_BETA = 0.5      # Consumer sensitivity to Brand Awareness
 QUALITY_PREF_SNOB_MIN = 0.7       # Threshold for Snob behavior
 QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 
+# Phase 8: Inflation Psychology
+INFLATION_MEMORY_WINDOW = 10     # Ticks to remember price history
+ADAPTATION_RATE_IMPULSIVE = 0.8  # Lambda for impulsive agents
+ADAPTATION_RATE_NORMAL = 0.3     # Lambda for normal agents
+ADAPTATION_RATE_CONSERVATIVE = 0.1 # Lambda for conservative agents
+
+PANIC_BUYING_THRESHOLD = 0.05    # Expected Inflation > 5% -> Hoard
+HOARDING_FACTOR = 0.5            # Buy 50% more than needed
+DEFLATION_WAIT_THRESHOLD = -0.05 # Expected Inflation < -5% -> Delay
+DELAY_FACTOR = 0.5               # Buy 50% less than needed
+
 # 3. AI Reward
 # AI_VALUATION_MULTIPLIER = 1000.0   # Deprecated: Using relative asset valuation (5% of Assets * Delta Awareness)
 
