@@ -260,37 +260,7 @@ ROOT_LOGGER_LEVEL = "INFO"
 # --- Security ---
 SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default-secret-token")
 
-# ==============================================================================
-# Phase 4: Fiscal Policy & Welfare Constants
-# ==============================================================================
-# 1. Progressive Tax (Income Tax)
-# Format: (Threshold Multiplier of SURVIVAL_COST, Tax Rate)
-# Example: (1.5, 0.0) -> Income up to 1.5x Survival Cost is Tax Free.
-# [HOTFIX: Fiscal Balance] Tax rates reduced by 50% to prevent liquidity crunch
-TAX_BRACKETS = [
-    (0.5, 0.0),   # Up to 0.5x survival cost: Tax Free
-    (1.0, 0.05),  # Working Class (0.5 ~ 1.0x): 5% (was 10%)
-    (3.0, 0.10),  # Middle Class: 10% (was 20%)
-    (float('inf'), 0.20) # Wealthy: 20% (was 40%)
-]
 
-# 2. Wealth Tax (Annual Rate -> Tick Rate Logic needed in implementation)
-ANNUAL_WEALTH_TAX_RATE = 0.02  # 2% per year
-WEALTH_TAX_THRESHOLD = 50000.0 # Net Worth above this is taxed
-
-# 3. Welfare
-# [HOTFIX: Fiscal Balance] Increased to prevent early extinction
-UNEMPLOYMENT_BENEFIT_RATIO = 0.7  # 70% of Survival Cost (was 50%)
-STIMULUS_TRIGGER_GDP_DROP = -0.05 # -5% GDP Growth triggers Stimulus
-
-# 4. Bankruptcy & Credit Jail
-CREDIT_RECOVERY_TICKS = 100       # 1 Year Loan Ban
-BANKRUPTCY_XP_PENALTY = 0.2       # 20% XP Loss
-
-# 5. Experiment: Laffer Curve
-TAX_MODE = "PROGRESSIVE"  # "PROGRESSIVE" or "FLAT"
-BASE_INCOME_TAX_RATE = 0.2  # Used when TAX_MODE="FLAT"
-RANDOM_SEED = 42  # For experiment reproducibility
 
 # ==============================================================================
 # Phase 5: Time Allocation & Leisure Constants
@@ -493,16 +463,7 @@ BRAND_SENSITIVITY_BETA = 0.5      # Consumer sensitivity to Brand Awareness
 QUALITY_PREF_SNOB_MIN = 0.7       # Threshold for Snob behavior
 QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 
-# Phase 8: Inflation Psychology
-INFLATION_MEMORY_WINDOW = 10     # Ticks to remember price history
-ADAPTATION_RATE_IMPULSIVE = 0.8  # Lambda for impulsive agents
-ADAPTATION_RATE_NORMAL = 0.3     # Lambda for normal agents
-ADAPTATION_RATE_CONSERVATIVE = 0.1 # Lambda for conservative agents
 
-PANIC_BUYING_THRESHOLD = 0.05    # Expected Inflation > 5% -> Hoard
-HOARDING_FACTOR = 0.5            # Buy 50% more than needed
-DEFLATION_WAIT_THRESHOLD = -0.05 # Expected Inflation < -5% -> Delay
-DELAY_FACTOR = 0.5               # Buy 50% less than needed
 
 # 3. AI Reward
 # AI_VALUATION_MULTIPLIER = 1000.0   # Deprecated: Using relative asset valuation (5% of Assets * Delta Awareness)

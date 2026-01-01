@@ -296,7 +296,7 @@ class Household(BaseAgent):
                 if quantity_to_consume > 0:
                     self.consume(item_id, quantity_to_consume, current_time)
                     consumed_items[item_id] = consumed_items.get(item_id, 0.0) + quantity_to_consume
-                    self.logger.info(
+                    self.logger.debug(
                         f"HOUSEHOLD_CONSUMPTION | Household {self.id} consumed {quantity_to_consume:.2f} {item_id}. Remaining inventory: {self.inventory.get(item_id, 0.0):.2f}",
                         extra={**log_extra, "item_id": item_id, "quantity": quantity_to_consume}
                     )
@@ -683,7 +683,7 @@ class Household(BaseAgent):
             # Task #6: Gain Education XP
             if item_id == "education_service":
                 self.education_xp += quantity * self.config_module.LEARNING_EFFICIENCY
-                self.logger.info(
+                self.logger.debug(
                     f"EDUCATION | Household {self.id} gained XP. Total XP: {self.education_xp:.2f}",
                     extra={**log_extra, "education_xp": self.education_xp}
                 )
@@ -704,7 +704,7 @@ class Household(BaseAgent):
                         self.needs[need_type] = max(
                             0, self.needs.get(need_type, 0) - (utility_value * quantity)
                         )
-                self.logger.info(
+                self.logger.debug(
                     f"CONSUME_METHOD_NEEDS_UPDATE | Household {self.id} consumed {quantity:.1f} of {item_id}. Needs after consumption: Survival={self.needs.get('survival', 0):.1f}, Asset={self.needs.get('asset', 0):.1f}, Social={self.needs.get('social', 0):.1f}, Improvement={self.needs.get('improvement', 0):.1f}",
                     extra={
                         **log_extra,
