@@ -50,64 +50,68 @@ Encapsulate logic in a helper class.
     $$Q_{perc, t} = (Q_{actual, t} \times 0.2) + (Q_{perc, t-1} \times 0.8)$$
     *   *Note*: $Q_{actual}$ is defined as `Firm.productivity_factor / 10.0`.
 
-### 3.2 Household: The Utility Function
-When evaluating Seller $j$:
+## 3.2 Household: The Utility Function (The "Smart Consumer")
 
-$$U_j = \frac{Q_{perc, j} \cdot (1 + Awareness_j \cdot Pref_{quality}) \cdot Loyalty_{j}}{Price_j} + \alpha \ln(SalesVolume_j + 1)$$
+### 3.2.1 Preference Initialization (`Household.__init__`)
+Each household has a unique "taste" based on wealth and personality.
+*   **Attribute**: `self.quality_preference` (float 0.0 ~ 1.0)
+*   **Logic**:
+    *   **Snob** (Top 20% Wealth OR 'Materialistic'): `Random(0.7, 1.0)`
+    *   **Miser** (Bottom 20% Wealth OR 'Frugal'): `Random(0.0, 0.3)`
+    *   **Average**: `Random(0.3, 0.7)`
 
-*   `Pref_quality`: Household's innate trait (0.0=Miser, 1.0=Snob).
-*   `Loyalty_j`: Dynamic multiplier (Starts 1.0, increases on purchase, decays over time).
-*   `SalesVolume_j`: Network Effect (Last tick's sales count of Firm $j$).
+### 3.2.2 Seller Selection Logic (`choose_best_seller`)
+When buying a good, the Household evaluates all available Asks (Offers) in the market.
+
+**Utility Score Formula**:
+$$Utility_{ij} = \frac{Q_{perceived, j}^{\alpha} \cdot (1 + Awareness_j)^{\beta}}{Price_j}$$
+
+*   $\alpha$ (Alpha): Buyer's `quality_preference`.
+*   $\beta$ (Beta): Brand sensitivity (Default 0.5 or tied to preference).
+*   *Interpretation*:
+    *   If $\alpha \approx 0$ (Miser), Numerator $\approx 1$, so $Utility \approx 1/Price$. (Minimizes Price).
+    *   If $\alpha \approx 1$ (Snob), Quality and Awareness significantly boost Utility.
+
+### 3.2.3 Pseudocode (for Jules)
+```python
+def choose_best_seller(self, market_snapshot):
+    best_seller_id = None
+    max_score = -1.0
+    alpha = self.quality_preference
+    beta = 0.5  # Fixed or Configurable
+
+    for offer in market_snapshot['asks']:
+        # Extract metadata (injected by Firm)
+        awareness = offer.get('brand_awareness', 0.0)
+        quality = offer.get('perceived_quality', 1.0) # Default 1.0 to avoid div by zero if formula changes
+        price = offer.get('price', 999.0)
+
+        # Utility Calculation (Cobb-Douglas-ish)
+        numerator = (quality ** alpha) * ((1.0 + awareness) ** beta)
+        score = numerator / max(price, 0.01)
+
+        if score > max_score:
+            max_score = score
+            best_seller_id = offer.agent_id
+
+    return best_seller_id
+```
+
+## 4. Market Interaction (The Loop)
+1.  **Firm**: Places Sell Order with `brand_info` (`awareness`, `quality`).
+2.  **Household**:
+    *   Calls `choose_best_seller()` to find $Firm^*$.
+    *   Places Buy Order with `target_agent_id = Firm^*`.
+3.  **Market**: `OrderBookMarket` executes **Targeted Matching** first.
 
 ---
 
-## 4. AI Training: Solving "Marketing is Cost"
+## 5. Verification Scenarios
+### Scenario A: The "Apple" Test (Snob Appeal)
+*   Firm A: Price 15, Awareness 0.9, Quality 1.0
+*   Firm B: Price 10, Awareness 0.1, Quality 0.5
+*   **Expectation**: High `quality_preference` households buy from **Firm A** despite higher price.
 
-### 4.1 The Problem
-RL Agents optimize for `Asset Growth`. Marketing Spend reduces Assets immediately, while benefits (Brand) come later. Without guidance, AI will learn to set Marketing=0.
-
-### 4.2 The Fix: Intangible Asset Valuation
-We must "pay" the AI for building Brand.
-
-**Modified Reward Function (`simulation/ai_model.py` or Firm wrapper)**:
-$$Reward = \Delta Assets + (\Delta BrandAwareness \times ValuationMultiplier)$$
-
-*   `ValuationMultiplier`: How much is 100% Awareness worth?
-    *   Estimate: `Avg_Profit_Per_Tick * 50 ticks`.
-    *   Value: `1000.0` (Configurable).
-
----
-
-## 5. Implementation Roadmap (Jules' Tasks)
-
-### Step 1: Schema & Config
-1.  **`config.py`**: Add `MARKETING_DECAY`, `LOYALTY_DECAY`, `NETWORK_WEIGHT`.
-2.  **`dtos.py`**: Update `Order` to include `target_agent_id` (Optional[int]).
-
-### Step 2: The Brand Engine
-1.  Create `simulation/brands/brand_manager.py`.
-2.  Implement `update(spend, quality)`.
-3.  Integrate into `Firm`. Firms now have `marketing_budget` decision.
-
-### Step 3: Market Upgrade
-1.  Modify `OrderBookMarket.match_orders` to handle `target_agent_id`.
-    *   *Critical*: Ensure targeted trades happen *before* general sorting.
-2.  Update `OrderBookMarket.get_all_asks` to return agent_id clearly.
-
-### Step 4: Household Choice Logic
-1.  Implement `Household.choose_seller(good_id)` using the Utility Formula.
-    *   Needs access to `Firm.brand_awareness` & `Firm.perceived_quality`.
-    *   *Access Pattern*: `Market` should publish a "Catalog" or `Household` queries `Firm` public state?
-    *   *Simplification*: `OrderBookMarket` Asks can carry metadata? Or `Firm` adds metadata to `SellOrder`.
-    *   **Decision**: Add `brand_info` dict to `SellOrder`. When Firm places order, it stamps current Brand/Quality on it.
-
-### Step 5: Network Effect Pipeline
-1.  `Firm` tracks `sales_last_tick`.
-2.  `SellOrder` includes `sales_last_tick` in metadata.
-
----
-
-## 6. Verification Checklist
-1.  **Adstock Test**: Spend 100 -> Adstock goes up. Stop -> Adstock decays.
-2.  **Targeting Test**: H1 targets F1. F1 price is 12, F2 is 10. H1 buys from F1 (because U(F1) > U(F2)).
-3.  **AI Test**: Run simulation. Does Firm set `marketing_budget > 0`? (If 0, Reward shaping failed).
+### Scenario B: The "Daiso" Test (Miser Necessity)
+*   Same Firms.
+*   **Expectation**: Low `quality_preference` households buy from **Firm B** (Lowest Price).

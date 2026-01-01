@@ -7,10 +7,10 @@
 - [ ] **Handover**: Create Work Order for Jules
 
 ## 1. Survival Parameter Tuning (Priority #1)
-- [ ] **Config**: Increase `INITIAL_HOUSEHOLD_ASSETS` (Prevent early death)
-- [ ] **Config**: Adjust `SURVIVAL_NEED_DEATH_THRESHOLD` or `HOUSEHOLD_DEATH_TURNS_THRESHOLD`
-- [ ] **Config**: Set `WEALTH_THRESHOLD_FOR_LEISURE = 50000.0` (Prevent early retirement)
-- [ ] **Firm Init**: Initial inventory = 50 (Prevent supply gap at Tick 1)
+- [x] **Config**: Increase `INITIAL_HOUSEHOLD_ASSETS` (Prevent early death)
+- [x] **Config**: Adjust `SURVIVAL_NEED_DEATH_THRESHOLD` or `HOUSEHOLD_DEATH_TURNS_THRESHOLD`
+- [x] **Config**: Set `WEALTH_THRESHOLD_FOR_LEISURE = 50000.0` (Prevent early retirement)
+- [x] **Firm Init**: Initial inventory = 50 (Prevent supply gap at Tick 1)
 
 ---
 
@@ -23,35 +23,45 @@
 - [ ] **Remove Hard-Coded Logic**: `calculate_labor_utility`의 `return 999999.0` 제거 후 AI가 동일 결론 도달하는지 검증
 
 ## 2. Political System (The Approval Function)
-- [ ] **Model**: Implement `Government.evaluate_approval(household)`
-    - [ ] Survival Score (Wage/Benefit)
-    - [ ] Relative Score (Asset comparison)
-    - [ ] Future Score (GDP Growth)
-    - [ ] Tax Score (Sensitivity based on Personality)
-- [ ] **Metric**: Track `average_approval_rating` in `Government` class
+- [x] **Model**: Implement `Government.evaluate_approval(household)`
+    - [x] Survival Score (Wage/Benefit)
+    - [x] Relative Score (Asset comparison)
+    - [x] Future Score (GDP Growth)
+    - [x] Tax Score (Sensitivity based on Personality)
+- [x] **Metric**: Track `average_approval_rating` in `Government` class
 
 ## 3. Fiscal Rules (The Loop)
-- [ ] **Logic**: Implement `Government.adjust_fiscal_policy()`
-    - [ ] **Surplus Rule**: If Cash > 10% GDP -> Distribute 30% of excess as Dividend
-    - [ ] **Tax Bounding**: Rate kept between 5% and 50% (Gradual ±1% adjustment)
-    - [ ] **Inflation Guard**: Halt distribution if Inflation > 5%
+- [x] **Logic**: Implement `Government.adjust_fiscal_policy()`
+    - [x] **Surplus Rule**: If Cash > 10% GDP -> Distribute 30% of excess as Dividend
+    - [x] **Tax Bounding**: Rate kept between 5% and 50% (Gradual ±1% adjustment)
+    - [x] **Inflation Guard**: Halt distribution if Inflation > 5%
 
 ## 4. Verification
-- [ ] **Test**: `verify_fiscal_stability.py` (Run 1000 ticks)
-- [ ] **Success Criteria**:
-    - [ ] Active Households > 50% after 1000 ticks
-    - [ ] Tax Rate fluctuates realistically (not zero)
-    - [ ] No "Money Black Hole" (Government hoarding)
+- [x] **Test**: `verify_fiscal_stability.py` (Run 1000 ticks)
+- [x] **Success Criteria**:
+    - [x] Active Households > 50% after 1000 ticks
+    - [x] Tax Rate fluctuates realistically (not zero)
+    - [x] No "Money Black Hole" (Government hoarding)
 
 ---
 
-# (Deferred) Task Checklist: Phase 6 - The Brand Economy
-*Blocked until economic stability is secured.*
+# Task Checklist: Phase 6 - The Brand Economy (Differentiation)
+> **Goal**: Transition from "Survival Economy" (Commodity) to "Brand Economy" (Product Differentiation).
 
-## 1. Core Logic
-- [ ] BrandManager Module
-- [ ] Config Updates
+## 1. Core Logic (Supply Side)
+- [x] **BrandManager**: `BrandManager` class with Adstock, Awareness, Quality logic.
+- [x] **Firm Integration**: `Firm` updates `BrandManager` and injects `brand_info` into Orders.
+- [x] **Market Logic**: `OrderBookMarket` supports `Targeted Matching` (Buyer -> Specific Seller).
 
-## 2. Market Overhaul
-- [ ] Targeted Orders
-- [ ] Household Utility Function
+## 2. Household Logic (Demand Side)
+- [x] **Spec**: Defined Preference Init & Utility Formula in `phase6_brand_economy_spec.md`.
+- [ ] **Handover**: Assign `phase6_demand_instructions.md` to Jules.
+- [ ] **Implementation**:
+    - [ ] `Household.quality_preference` Init
+    - [ ] `Household.choose_best_seller()` (Utility Logic)
+    - [ ] `Targeted Buy Order` Creation in `make_decisions()`
+
+## 3. Verification
+- [ ] **Script**: `verify_brand_economy.py`
+    - [ ] Check if High Brand Value Firms -> Higher Sales/Prices.
+    - [ ] Verify `Adstock` decay and `Awareness` growth S-curve.
