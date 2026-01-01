@@ -497,6 +497,6 @@ NETWORK_EFFECT_WEIGHT = 0.5       # Weight of sales volume in Utility function
 # Task #9: Entrepreneurship Constants
 # ==============================================================================
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
-STARTUP_COST = 15000.0           # 창업 비용 (가계 현금에서 차감)
+STARTUP_COST = 3000.0            # 창업 비용 (가계 현금에서 차감) - 초기 자산 대비 합리적 수준
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
-STARTUP_CAPITAL_MULTIPLIER = 1.5 # 창업 자격: cash > STARTUP_COST * 이 값
+STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)

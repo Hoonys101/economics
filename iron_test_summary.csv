@@ -1,10 +1,10 @@
 metric,value
 total_ticks,1000
-elapsed_seconds,11.0
+elapsed_seconds,141.5
 active_households,0
 total_households,0
-active_firms,0
-total_firms,0
+active_firms,1
+total_firms,1
 gov_assets,0
-total_tax,80590
-total_welfare,9466
+total_tax,13694
+total_welfare,9653
