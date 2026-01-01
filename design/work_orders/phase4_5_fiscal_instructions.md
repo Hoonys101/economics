@@ -100,7 +100,21 @@ def adjust_fiscal_policy(self, households):
     elif self.approval_rating > 0.60:
         # 여유: 증세
         new_tax = min(0.50, current_tax + 0.01)
-```
+
+---
+
+## ✅ Task 4: Enhance Market Responsiveness (Crucial)
+**시장 경직성 해결**: 아사(Death)보다 시장 반응이 느리면 전멸합니다. 아래 "위기 반응(Panic Logic)"을 반드시 추가하십시오.
+
+1.  **Panic Labor (Household)**:
+    - 조건: `Survival Need > 80` (굶어 죽기 직전)
+    - 행동: `Reservation Wage` 하한선(`MIN_WAGE`)을 무시하고, **현재 시장 최저가보다 낮게**라도 노동 공급.
+    - 구현: `AIDrivenHouseholdDecisionEngine`에서 `reservation_wage` 계산 시 Safe Guard 해제.
+
+2.  **Desperate Hiring (Firm)**:
+    - 조건: `Employees == 0` AND `Inventory < Target` (일손이 없어 망하기 직전)
+    - 행동: 임금 인상폭 제한(`WAGE_INFLATION_ADJUSTMENT`)을 무시하고, **즉시 1.5배~2배** 임금 제시.
+    - 구현: `AIDrivenFirmDecisionEngine`에서 임금 결정 로직에 예외 처리 추가.
 
 ---
 
@@ -108,4 +122,5 @@ def adjust_fiscal_policy(self, households):
 1.  **Iron Test (1000 ticks)** 실행.
 2.  **생존율**: `active_households >= 10` (50% 이상 생존)
 3.  **재정 안정**: 정부 현금이 무한대로 발산하지 않고 일정 수준 유지.
+
 4.  **로그 확인**: `FISCAL_POLICY | Tax Rate adjusted to...` 또는 `DIVIDEND | Distributed...` 로그 확인.
