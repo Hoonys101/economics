@@ -185,7 +185,7 @@ class Household(BaseAgent):
         self.decision_engine.logger = self.logger  # Pass logger to decision engine
         
         # --- Phase 6: Brand Economy Traits ---
-        self.quality_preference = random.random()  # 0.0=Miser, 1.0=Snob (ToDo: Link to Personality)
+        self.quality_preference = self._initialize_quality_preference(personality, initial_assets)
         self.brand_loyalty: Dict[int, float] = {}  # FirmID -> LoyaltyMultipler (Default 1.0)
         self.last_purchase_memory: Dict[str, int] = {} # ItemID -> FirmID
 
@@ -249,6 +249,48 @@ class Household(BaseAgent):
         # 2. 욕구 업데이트 (자연적 증가/감소)
         self.update_needs(current_time)
         return consumed_items
+
+    def _initialize_quality_preference(self, personality: Personality, initial_assets: float) -> float:
+        """
+        Initialize quality preference based on personality and wealth.
+        Logic Refined by Architect Prime:
+        1. Personality Check (Primary)
+        2. Wealth Proxy Check (Secondary)
+        3. Default (Average)
+        """
+        # 1. Personality Check
+        if personality in [Personality.STATUS_SEEKER]:
+             return random.uniform(
+                 self.config_module.QUALITY_PREF_SNOB_MIN,
+                 self.config_module.QUALITY_PREF_SNOB_MAX
+             )
+        elif personality == Personality.MISER:
+             return random.uniform(
+                 self.config_module.QUALITY_PREF_MISER_MIN,
+                 self.config_module.QUALITY_PREF_MISER_MAX
+             )
+
+        # 2. Wealth Proxy Check
+        # Note: We cannot calculate global percentile here, so we use Mean from Config
+        mean_assets = self.config_module.INITIAL_HOUSEHOLD_ASSETS_MEAN
+        if initial_assets > mean_assets * 1.5:
+            # Wealthy -> Snob
+            return random.uniform(
+                 self.config_module.QUALITY_PREF_SNOB_MIN,
+                 self.config_module.QUALITY_PREF_SNOB_MAX
+             )
+        elif initial_assets < mean_assets * 0.5:
+            # Poor -> Miser
+            return random.uniform(
+                 self.config_module.QUALITY_PREF_MISER_MIN,
+                 self.config_module.QUALITY_PREF_MISER_MAX
+             )
+
+        # 3. Default (Average)
+        return random.uniform(
+             self.config_module.QUALITY_PREF_AVG_MIN,
+             self.config_module.QUALITY_PREF_AVG_MAX
+        )
 
     def _initialize_desire_weights(self, personality: Personality) -> Dict[str, float]:
         """
@@ -507,8 +549,17 @@ class Household(BaseAgent):
             
             loyalty = self.brand_loyalty.get(seller_id, 1.0)
             
-            # Utility Function: U = (Quality * (1 + Awareness * Pref) * Loyalty) / Price
-            utility = (quality * (1.0 + awareness * self.quality_preference) * loyalty) / max(0.01, price)
+            # Utility Function: U = (Quality^alpha * (1 + Awareness)^beta * Loyalty) / Price
+            # alpha = quality_preference
+            # beta = BRAND_SENSITIVITY_BETA (0.5)
+            alpha = self.quality_preference
+            beta = self.config_module.BRAND_SENSITIVITY_BETA
+
+            # Safe power calculation
+            q_term = max(0.1, quality) ** alpha
+            a_term = (1.0 + awareness) ** beta
+
+            utility = (q_term * a_term * loyalty) / max(0.01, price)
             
             if utility > best_u:
                 best_u = utility

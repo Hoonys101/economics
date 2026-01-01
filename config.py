@@ -489,6 +489,13 @@ PERCEIVED_QUALITY_ALPHA = 0.2     # EMA smoothing factor for quality perception
 QUALITY_SENSITIVITY_MEAN = 0.5    # Average preference for quality over price
 BRAND_LOYALTY_DECAY = 0.95        # Loyalty score decays 5% per tick without reinforcement
 NETWORK_EFFECT_WEIGHT = 0.5       # Weight of sales volume in Utility function
+BRAND_SENSITIVITY_BETA = 0.5      # Impact of Brand Awareness on Utility
+QUALITY_PREF_SNOB_MIN = 0.7
+QUALITY_PREF_SNOB_MAX = 1.0
+QUALITY_PREF_MISER_MIN = 0.0
+QUALITY_PREF_MISER_MAX = 0.3
+QUALITY_PREF_AVG_MIN = 0.3
+QUALITY_PREF_AVG_MAX = 0.7
 
 # 3. AI Reward
 # AI_VALUATION_MULTIPLIER = 1000.0   # Deprecated: Using relative asset valuation (5% of Assets * Delta Awareness)
