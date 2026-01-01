@@ -111,8 +111,7 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                 if target_market:
                     firm.post_ask(item_id, final_price, qty, target_market, current_time)
                 else:
-                    # Fallback if market not found (shouldn't happen for valid goods)
-                    pass
+                    self.logger.error(f"FIRM_DECISION_ERROR | Market not found for {item_id}")
 
         # 3. Execution: Hiring Logic
         target_inventory = firm.production_target

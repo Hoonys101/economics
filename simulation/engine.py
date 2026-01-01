@@ -887,6 +887,7 @@ class Simulation:
 
                     seller.is_employed = True
                     seller.employer_id = buyer.id
+                    seller.hired_at_tick = self.time # Track hiring time for tenure
                     seller.current_wage = tx.price # Store wage
                     seller.needs["labor_need"] = 0.0
 

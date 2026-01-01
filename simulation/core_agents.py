@@ -179,6 +179,9 @@ class Household(BaseAgent):
         self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
         self.last_leisure_type: LeisureType = "IDLE"  # For visualization aggregation
 
+        # Tenure Tracking
+        self.hired_at_tick: int = 0
+
 
         self.config_module = config_module  # Store config_module
         self.decision_engine.loan_market = loan_market

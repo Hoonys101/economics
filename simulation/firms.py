@@ -481,8 +481,15 @@ class Firm(BaseAgent):
 
             wage = self.employee_wages.get(employee.id, self.config_module.LABOR_MARKET_MIN_WAGE)
             
-            # Affordability check
-            if self.assets >= wage:
+            # Affordability check & Tenure Protection
+            min_tenure = getattr(self.config_module, "MINIMUM_EMPLOYMENT_TENURE", 10)
+            tenure = current_time - getattr(employee, "hired_at_tick", 0)
+
+            can_afford = self.assets >= wage
+            protected = tenure < min_tenure
+
+            if can_afford or protected:
+                # Pay wage (even if debt)
                 # Calculate Tax
                 income_tax = 0.0
                 if government:
@@ -491,8 +498,8 @@ class Firm(BaseAgent):
                 net_wage = wage - income_tax
 
                 # Transactions
-                self.assets -= wage
-                employee.assets += net_wage # Pay Net Wage
+                self.assets -= wage # May go negative if protected
+                employee.assets += net_wage
                 
                 if income_tax > 0 and government:
                     government.collect_tax(income_tax, "income_tax", employee.id, current_time)
@@ -501,6 +508,12 @@ class Firm(BaseAgent):
                 total_wages += wage
                 self.expenses_this_tick += wage
                 self.cost_this_turn += wage
+
+                if not can_afford and protected:
+                    self.logger.info(
+                        f"FIRM_DEBT_WAGE | Firm {self.id} paid wage to Household {employee.id} despite low assets (Protected). Assets: {self.assets:.2f}",
+                        extra={**log_extra, "wage": wage}
+                    )
             else:
                 # Cannot afford wage! Fire employee
                 self.logger.warning(f"Firm {self.id} cannot afford wage for Household {employee.id}. Firing.")
