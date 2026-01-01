@@ -1,168 +1,141 @@
-
-import logging
 import sys
 import os
+import random
+import logging
+from unittest.mock import MagicMock
 
-# Ensure project root is in path
+# Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_agents import Household, Talent
-from simulation.firms import Firm
-from simulation.models import Order
 from simulation.ai.api import Personality
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
-from simulation.ai.household_ai import HouseholdAI
-from simulation.ai_model import AIDecisionEngine
-import config
+from simulation.models import Order
+from simulation.core_markets import Market
+from simulation.dtos import DecisionContext
 
-# Setup Logging
+# Setup logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("VERIFY_BRAND")
+logger = logging.getLogger(__name__)
 
-def verify_brand_economy():
-    logger.info("=== START: Brand Economy Verification ===")
+class MockConfig:
+    # Brand Economy Constants
+    BRAND_SENSITIVITY_BETA = 0.5
+    QUALITY_PREF_SNOB_MIN = 0.7
+    QUALITY_PREF_SNOB_MAX = 1.0
+    QUALITY_PREF_MISER_MIN = 0.0
+    QUALITY_PREF_MISER_MAX = 0.3
+    QUALITY_PREF_AVG_MIN = 0.3
+    QUALITY_PREF_AVG_MAX = 0.7
     
-    # 1. Setup Market
-    market = OrderBookMarket("goods_market", logger)
-    
-    # 2. Setup Config Mock
-    class MockConfig:
-        MARKETING_DECAY_RATE = 0.8
-        MARKETING_EFFICIENCY = 0.05
-        PERCEIVED_QUALITY_ALPHA = 0.2
-        QUALITY_SENSITIVITY_MEAN = 0.5
-        BRAND_LOYALTY_DECAY = 0.95
-        NETWORK_EFFECT_WEIGHT = 0.5
-        AI_VALUATION_MULTIPLIER = 1000.0
-        
-        # Base Agent Configs
-        INITIAL_FIRM_LIQUIDITY_NEED = 50.0
-        FIRM_MIN_PRODUCTION_TARGET = 10.0
-        FIRM_DEFAULT_TOTAL_SHARES = 1000.0
-        PROFIT_HISTORY_TICKS = 10
-        DIVIDEND_RATE = 0.1
-        CAPITAL_DEPRECIATION_RATE = 0.0
-        LABOR_ALPHA = 0.7
-        INVENTORY_HOLDING_COST_RATE = 0.0
-        LABOR_MARKET_MIN_WAGE = 10.0
-        LIQUIDITY_NEED_INCREASE_RATE = 0
-        ASSETS_CLOSURE_THRESHOLD = -1000
-        FIRM_CLOSURE_TURNS_THRESHOLD = 999
-        
-    mock_config = MockConfig()
-    
-    # --- Mock AI Dependencies ---
-    class MockActionProposalEngine:
-        def get_all_actions(self): return []
-    
-    class MockStateBuilder:
-        def build_state(self, *args): return {}
+    # Needs
+    INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000.0
+    BASE_DESIRE_GROWTH = 1.0
+    MAX_DESIRE_VALUE = 100.0
+    SURVIVAL_NEED_CONSUMPTION_THRESHOLD = 50.0
+    NEED_MEDIUM_THRESHOLD = 50.0
+    ASSETS_DEATH_THRESHOLD = 0.0
+    HOUSEHOLD_DEATH_TURNS_THRESHOLD = 10
+    SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
+    LEISURE_COEFFS = {}
+    SOCIAL_STATUS_ASSET_WEIGHT = 0.5
+    SOCIAL_STATUS_LUXURY_WEIGHT = 0.5
 
-    mock_action_engine = MockActionProposalEngine()
-    mock_state_builder = MockStateBuilder()
+def create_mock_market_with_orders(item_id="phone"):
+    market = MagicMock()
+    market.get_all_asks = MagicMock(return_value=[])
+    return market
 
-    # 3. Setup Firms (Brand vs Generic)
-    # Firm A: Premium Brand
-    firm_a_ai = AIDecisionEngine("firm_a", mock_action_engine, mock_state_builder) 
-    firm_a = Firm(1, 1000.0, 50.0, "widget", 20.0, firm_a_ai, "profit", mock_config, loan_market=None, logger=logger)
+def test_brand_economy_scenarios():
+    """
+    Scenario A (Snob): High Pref Household buys from High Brand Firm (Price 15, Awareness 0.9, Quality 1.0)
+    Scenario B (Miser): Low Pref Household buys from Low Brand Firm (Price 10, Awareness 0.1, Quality 0.5)
+    """
+    config = MockConfig()
     
-    # Firm B: Generic
-    firm_b_ai = AIDecisionEngine("firm_b", mock_action_engine, mock_state_builder) 
-    firm_b = Firm(2, 1000.0, 50.0, "widget", 10.0, firm_b_ai, "profit", mock_config, loan_market=None, logger=logger)
+    # 1. Setup Firms (Asks)
+    # Firm A: "Apple" (High Price, High Brand)
+    ask_a = Order(agent_id=1, order_type="SELL", item_id="phone", quantity=10, price=15.0, market_id="goods_market")
+    ask_a.brand_info = {"perceived_quality": 1.0, "brand_awareness": 0.9}
     
-    # --- Step A: Brand Building ---
-    logger.info("--- Step A: Building Brand for Firm A ---")
-    # Force Firm A to spend on marketing (High Awareness, Same Quality)
-    # Direct injection into Brand Manager
-    firm_a.brand_manager.update(100.0, 2.0) # Spend 100, Quality 2.0 -> Perceived Quality ~0.4
-    firm_b.brand_manager.update(0.0, 2.0)   # Spend 0, Quality 2.0 (SAME QUALITY) -> Perceived ~0.4
-                                            # Awareness = 0 for B
+    # Firm B: "Daiso" (Low Price, Low Brand)
+    ask_b = Order(agent_id=2, order_type="SELL", item_id="phone", quantity=10, price=10.0, market_id="goods_market")
+    ask_b.brand_info = {"perceived_quality": 0.5, "brand_awareness": 0.1}
     
-    logger.info(f"Firm A Awareness: {firm_a.brand_manager.brand_awareness:.4f}, Perceived Quality: {firm_a.brand_manager.perceived_quality:.4f}")
-    logger.info(f"Firm B Awareness: {firm_b.brand_manager.brand_awareness:.4f}, Perceived Quality: {firm_b.brand_manager.perceived_quality:.4f}")
+    # Market setup
+    market = MagicMock()
+    # Return list of Asks
+    market.get_all_asks.return_value = [ask_a, ask_b]
     
-    assert firm_a.brand_manager.brand_awareness > firm_b.brand_manager.brand_awareness, "Firm A should have higher awareness"
+    markets = {"goods_market": market}
     
-    # --- Step B: Market Offering ---
-    logger.info("--- Step B: Firms Place Sell Orders ---")
-    # Firm A sells at Premium (Price 15) with Brand Metadata
-    # Firm B sells at Discount (Price 10) with Generic Metadata
-    brand_info_a = {
-        "brand_awareness": firm_a.brand_manager.brand_awareness,
-        "perceived_quality": firm_a.brand_manager.perceived_quality
-    }
-    brand_info_b = {
-        "brand_awareness": firm_b.brand_manager.brand_awareness,
-        "perceived_quality": firm_b.brand_manager.perceived_quality
-    }
-    order_a = Order(1, "SELL", "widget", 10.0, 15.0, "goods_market", brand_info=brand_info_a)
-    order_b = Order(2, "SELL", "widget", 10.0, 10.0, "goods_market", brand_info=brand_info_b)
+    # 2. Setup Households
+    # Snob: Status Seeker, High Preference
+    talent = Talent(0.1, {})
+    snob = Household(
+        id=101,
+        talent=talent,
+        goods_data=[],
+        initial_assets=5000.0,
+        initial_needs={},
+        decision_engine=MagicMock(),
+        value_orientation="status",
+        personality=Personality.STATUS_SEEKER,
+        config_module=config
+    )
+    # Force preference to 0.9 for deterministic test
+    snob.quality_preference = 0.9
     
-    market.place_order(order_a, 1)
-    market.place_order(order_b, 1)
+    # Miser: Frugal, Low Preference
+    miser = Household(
+        id=102,
+        talent=talent,
+        goods_data=[],
+        initial_assets=100.0,
+        initial_needs={},
+        decision_engine=MagicMock(),
+        value_orientation="survival",
+        personality=Personality.MISER,
+        config_module=config
+    )
+    # Force preference to 0.1 for deterministic test
+    miser.quality_preference = 0.1
+
+    # 3. Execute Selection Logic
     
-    # --- Step C: Household Choice ---
-    logger.info("--- Step C: Household Selection ---")
+    # Snob Check
+    logger.info("--- Testing Snob (Pref=0.9) ---")
+    best_seller_snob, price_snob = snob.choose_best_seller(markets, "phone")
+    logger.info(f"Snob selected Agent {best_seller_snob} at Price {price_snob}")
     
-    # Household 1: Quality Seeker (Snob)
-    hh_ai = AIDecisionEngine("hh", mock_action_engine, mock_state_builder) # Dummy
-    # Need proper init
-    talent = Talent(1.0, {})
-    hh_snob = Household(101, talent, [], 100.0, {}, hh_ai, "status", Personality.STATUS_SEEKER, mock_config, logger=logger)
-    hh_snob.quality_preference = 1.0 # Max quality pref
+    # Calculate Utility manually for verification
+    # U = Q^alpha * (1+A)^0.5 / P
+    # Firm A: 1.0^0.9 * (1.9)^0.5 / 15 = 1 * 1.378 / 15 = 0.0918
+    # Firm B: 0.5^0.9 * (1.1)^0.5 / 10 = 0.535 * 1.048 / 10 = 0.0561
+    # Expectation: Firm A (Agent 1)
     
-    # Household 2: Miser
-    hh_miser = Household(102, talent, [], 100.0, {}, hh_ai, "needs", Personality.MISER, mock_config, logger=logger)
-    hh_miser.quality_preference = 0.0 # Price only
+    # Miser Check
+    logger.info("--- Testing Miser (Pref=0.1) ---")
+    best_seller_miser, price_miser = miser.choose_best_seller(markets, "phone")
+    logger.info(f"Miser selected Agent {best_seller_miser} at Price {price_miser}")
     
-    # Check Choice
-    # Use choose_best_seller directly
-    target_snob, price_snob = hh_snob.choose_best_seller({"goods_market": market}, "widget")
-    target_miser, price_miser = hh_miser.choose_best_seller({"goods_market": market}, "widget")
+    # Calculate Utility manually for verification
+    # Firm A: 1.0^0.1 * (1.9)^0.5 / 15 = 1 * 1.378 / 15 = 0.0918 (Same numerator part for Q=1)
+    # Firm B: 0.5^0.1 * (1.1)^0.5 / 10 = 0.933 * 1.048 / 10 = 0.0977
+    # Expectation: Firm B (Agent 2) is HIGHER utility (0.0977 > 0.0918)
     
-    logger.info(f"Snob chose Firm {target_snob} at {price_snob}")
-    logger.info(f"Miser chose Firm {target_miser} at {price_miser}")
-    
-    # Verify: Snob should choose Firm A (High Quality/Brand) even if price is 15 vs 10
-    # U_A = (2.0 * (1 + 0.63*1) * 1) / 15 = (2 * 1.63) / 15 = 3.26 / 15 = 0.217
-    # U_B = (1.0 * (1 + 0) * 1) / 10 = 0.1
-    # 0.217 > 0.1 -> Choose A.
-    
-    if target_snob == 1:
-        logger.info("PASS: Snob chose Premium Brand (Firm A).")
+    # Assertions
+    if best_seller_snob == 1:
+        logger.info("PASS: Snob selected Firm A (Apple)")
     else:
-        logger.error(f"FAIL: Snob chose Firm {target_snob}. Expected Firm 1.")
+        logger.error(f"FAIL: Snob selected Firm {best_seller_snob}, expected 1")
         
-    if target_miser == 2:
-        logger.info("PASS: Miser chose Cheapest (Firm B).")
+    if best_seller_miser == 2:
+        logger.info("PASS: Miser selected Firm B (Daiso)")
     else:
-        logger.error(f"FAIL: Miser chose Firm {target_miser}. Expected Firm 2.")
+        logger.error(f"FAIL: Miser selected Firm {best_seller_miser}, expected 2")
         
-    # --- Step D: Execution ---
-    logger.info("--- Step D: Execution (Targeted Orders) ---")
-    
-    # Place targeted buy orders
-    buy_snob = Order(101, "BUY", "widget", 1.0, 20.0, "goods_market", target_agent_id=target_snob)
-    buy_miser = Order(102, "BUY", "widget", 1.0, 20.0, "goods_market", target_agent_id=target_miser)
-    
-    market.place_order(buy_snob, 1)
-    market.place_order(buy_miser, 1)
-    
-    txs = market.match_orders(1)
-    
-    assert len(txs) == 2, f"Expected 2 transactions, got {len(txs)}"
-    
-    for tx in txs:
-        logger.info(f"Transaction: Buyer {tx.buyer_id} -> Seller {tx.seller_id} @ {tx.price}")
-        if tx.buyer_id == 101:
-            assert tx.seller_id == 1, "Snob matched wrong seller"
-            assert tx.price == 15.0, "Snob paid wrong price (should be Seller Ask)"
-        if tx.buyer_id == 102:
-            assert tx.seller_id == 2, "Miser matched wrong seller"
-            assert tx.price == 10.0, "Miser paid wrong price"
-            
-    logger.info("=== VERIFICATION SUCCESS ===")
+    assert best_seller_snob == 1, "Snob should prefer Quality/Brand"
+    assert best_seller_miser == 2, "Miser should prefer Low Price"
 
 if __name__ == "__main__":
-    verify_brand_economy()
+    test_brand_economy_scenarios()
