@@ -9,6 +9,18 @@
 ## 1. Survival Parameter Tuning (Priority #1)
 - [ ] **Config**: Increase `INITIAL_HOUSEHOLD_ASSETS` (Prevent early death)
 - [ ] **Config**: Adjust `SURVIVAL_NEED_DEATH_THRESHOLD` or `HOUSEHOLD_DEATH_TURNS_THRESHOLD`
+- [ ] **Config**: Set `WEALTH_THRESHOLD_FOR_LEISURE = 50000.0` (Prevent early retirement)
+- [ ] **Firm Init**: Initial inventory = 50 (Prevent supply gap at Tick 1)
+
+---
+
+## ⚠️ Long-Term TODO: AI-Driven Labor Incentive (철학적 과제)
+> **Current Approach**: "배고프면 일해라" 로직을 하드코딩으로 강제 (Starvation Fear Logic)
+> **Ideal Approach**: AI가 [생존 → 노동 필요성]을 스스로 학습하도록 Reward Shaping 및 Q-Learning 개선
+> **Status**: *Deferred until simulation stability is achieved*
+
+- [ ] **Reward Shaping**: 노동 보상 함수에 "식량 재고 기반 긍정적 신호" 반영
+- [ ] **Remove Hard-Coded Logic**: `calculate_labor_utility`의 `return 999999.0` 제거 후 AI가 동일 결론 도달하는지 검증
 
 ## 2. Political System (The Approval Function)
 - [ ] **Model**: Implement `Government.evaluate_approval(household)`
