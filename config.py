@@ -266,11 +266,12 @@ SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default-secret-token")
 # 1. Progressive Tax (Income Tax)
 # Format: (Threshold Multiplier of SURVIVAL_COST, Tax Rate)
 # Example: (1.5, 0.0) -> Income up to 1.5x Survival Cost is Tax Free.
+# [HOTFIX: Fiscal Balance] Tax rates reduced by 50% to prevent liquidity crunch
 TAX_BRACKETS = [
     (0.5, 0.0),   # Up to 0.5x survival cost: Tax Free
-    (1.0, 0.10),  # Working Class (0.5 ~ 1.0x): 10%
-    (3.0, 0.20),  # Middle Class
-    (float('inf'), 0.40) # Wealthy
+    (1.0, 0.05),  # Working Class (0.5 ~ 1.0x): 5% (was 10%)
+    (3.0, 0.10),  # Middle Class: 10% (was 20%)
+    (float('inf'), 0.20) # Wealthy: 20% (was 40%)
 ]
 
 # 2. Wealth Tax (Annual Rate -> Tick Rate Logic needed in implementation)
@@ -278,7 +279,8 @@ ANNUAL_WEALTH_TAX_RATE = 0.02  # 2% per year
 WEALTH_TAX_THRESHOLD = 50000.0 # Net Worth above this is taxed
 
 # 3. Welfare
-UNEMPLOYMENT_BENEFIT_RATIO = 0.5  # 50% of Survival Cost (Austerity)
+# [HOTFIX: Fiscal Balance] Increased to prevent early extinction
+UNEMPLOYMENT_BENEFIT_RATIO = 0.7  # 70% of Survival Cost (was 50%)
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # -5% GDP Growth triggers Stimulus
 
 # 4. Bankruptcy & Credit Jail
@@ -451,11 +453,12 @@ MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
 
 # 1. Progressive Tax (Income Tax)
 # Criteria: Multiples of SURVIVAL_COST
+# [HOTFIX: Fiscal Balance] Tax rates reduced by 50%
 TAX_BRACKETS = [
-    (0.5, 0.0),   # Up to 0.5x survival cost: Tax Free
-    (1.0, 0.10),  # Working Class (0.5 ~ 1.0x): 10%
-    (3.0, 0.20),  # Middle Class
-    (float('inf'), 0.40) # Wealthy
+    (0.5, 0.0),   # Tax Free
+    (1.0, 0.05),  # Working Class: 5% (was 10%)
+    (3.0, 0.10),  # Middle Class: 10% (was 20%)
+    (float('inf'), 0.20) # Wealthy: 20% (was 40%)
 ]
 
 # 2. Wealth Tax
@@ -464,7 +467,8 @@ WEALTH_TAX_THRESHOLD = 50000.0
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
-UNEMPLOYMENT_BENEFIT_RATIO = 0.5 # Ratio of survival cost (Austerity)
+# [HOTFIX: Fiscal Balance] Increased to 0.7
+UNEMPLOYMENT_BENEFIT_RATIO = 0.7 # 70% of survival cost (was 50%)
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% drop trigger
 
 # 4. Bankruptcy Penalty
@@ -488,3 +492,11 @@ NETWORK_EFFECT_WEIGHT = 0.5       # Weight of sales volume in Utility function
 
 # 3. AI Reward
 # AI_VALUATION_MULTIPLIER = 1000.0   # Deprecated: Using relative asset valuation (5% of Assets * Delta Awareness)
+
+# ==============================================================================
+# Task #9: Entrepreneurship Constants
+# ==============================================================================
+MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
+STARTUP_COST = 15000.0           # 창업 비용 (가계 현금에서 차감)
+ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
+STARTUP_CAPITAL_MULTIPLIER = 1.5 # 창업 자격: cash > STARTUP_COST * 이 값
