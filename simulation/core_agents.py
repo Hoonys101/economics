@@ -185,7 +185,25 @@ class Household(BaseAgent):
         self.decision_engine.logger = self.logger  # Pass logger to decision engine
         
         # --- Phase 6: Brand Economy Traits ---
-        self.quality_preference = random.random()  # 0.0=Miser, 1.0=Snob (ToDo: Link to Personality)
+        # --- Phase 6: Brand Economy Traits ---
+        # Initialize quality_preference based on Personality and Wealth
+        mean_assets = self.config_module.INITIAL_HOUSEHOLD_ASSETS_MEAN
+        is_wealthy = self.assets > mean_assets * 1.5
+        is_poor = self.assets < mean_assets * 0.5
+        
+        if self.personality in [Personality.STATUS_SEEKER, Personality.MATERIALISTIC] or is_wealthy:
+            # Snob: 0.7 ~ 1.0 (Uses config if available, else hardcoded)
+            min_pref = getattr(self.config_module, "QUALITY_PREF_SNOB_MIN", 0.7)
+            self.quality_preference = random.uniform(min_pref, 1.0)
+        elif self.personality == Personality.MISER or is_poor:
+            # Miser: 0.0 ~ 0.3
+            max_pref = getattr(self.config_module, "QUALITY_PREF_MISER_MAX", 0.3)
+            self.quality_preference = random.uniform(0.0, max_pref)
+        else:
+            # Average: 0.3 ~ 0.7
+            min_snob = getattr(self.config_module, "QUALITY_PREF_SNOB_MIN", 0.7)
+            max_miser = getattr(self.config_module, "QUALITY_PREF_MISER_MAX", 0.3)
+            self.quality_preference = random.uniform(max_miser, min_snob) # 0.3 ~ 0.7
         self.brand_loyalty: Dict[int, float] = {}  # FirmID -> LoyaltyMultipler (Default 1.0)
         self.last_purchase_memory: Dict[str, int] = {} # ItemID -> FirmID
 
@@ -508,7 +526,14 @@ class Household(BaseAgent):
             loyalty = self.brand_loyalty.get(seller_id, 1.0)
             
             # Utility Function: U = (Quality * (1 + Awareness * Pref) * Loyalty) / Price
-            utility = (quality * (1.0 + awareness * self.quality_preference) * loyalty) / max(0.01, price)
+            # Beta (Brand Sensitivity) from Config
+            beta = getattr(self.config_module, "BRAND_SENSITIVITY_BETA", 0.5)
+            
+            # Revised Formula: Q^alpha * (1+A)^beta / P
+            # Note: Previous code used (1 + A * Pref). Spec says (1+A)^beta or similar.
+            # Architect Prime Spec: U = (Q^alpha * (1+A)^beta) / P
+            numerator = (quality ** self.quality_preference) * ((1.0 + awareness) ** beta)
+            utility = (numerator * loyalty) / max(0.01, price)
             
             if utility > best_u:
                 best_u = utility
