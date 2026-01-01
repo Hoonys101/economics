@@ -81,7 +81,12 @@ class Personality(Enum):
 
     MISER = auto()  # 수전노형 (Asset-Focused)
     STATUS_SEEKER = auto()  # 지위추구형 (Status-Seeking)
+
     GROWTH_ORIENTED = auto()  # 학습형 (Growth-Oriented)
+    
+    # Phase 8 Additions
+    IMPULSIVE = auto()     # 충동구매형 (High Adaptation, High Hoarding)
+    CONSERVATIVE = auto()  # 보수적형 (Low Adaptation)
 
 
 class Aggressiveness(Enum):

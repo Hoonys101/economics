@@ -41,7 +41,7 @@ class TestInflationPsychology(unittest.TestCase):
             initial_needs={"survival": 0.0},
             decision_engine=MagicMock(), # Placeholder
             value_orientation="survival",
-            personality=Personality.STATUS_SEEKER,
+            personality=Personality.IMPULSIVE,
             config_module=self.config
         )
         

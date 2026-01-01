@@ -237,9 +237,9 @@ class Household(BaseAgent):
         self.expected_inflation: Dict[str, float] = defaultdict(float)
         
         # Set Adaptation Rate (Lambda) based on Personality
-        if self.personality == Personality.STATUS_SEEKER:
+        if self.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
             self.adaptation_rate = self.config_module.ADAPTATION_RATE_IMPULSIVE
-        elif self.personality == Personality.MISER:
+        elif self.personality in [Personality.MISER, Personality.CONSERVATIVE]:
             self.adaptation_rate = self.config_module.ADAPTATION_RATE_CONSERVATIVE
         else:
             self.adaptation_rate = self.config_module.ADAPTATION_RATE_NORMAL
@@ -309,9 +309,9 @@ class Household(BaseAgent):
         """
         주어진 특질에 따라 각 욕구의 성장 가중치를 초기화합니다.
         """
-        if personality == Personality.MISER:
+        if personality in [Personality.MISER, Personality.CONSERVATIVE]:
             return {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5}
-        elif personality == Personality.STATUS_SEEKER:
+        elif personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
             return {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5}
         elif personality == Personality.GROWTH_ORIENTED:
             return {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5}
@@ -384,29 +384,7 @@ class Household(BaseAgent):
                 )
                 self.perceived_avg_prices[item_id] = new_perceived_price
 
-                # --- Phase 8: Inflation Psychology ---
-                # 1. Update Memory
-                if item_id not in self.price_history:
-                    self.price_history[item_id] = deque(maxlen=self.config_module.INFLATION_MEMORY_WINDOW)
-                self.price_history[item_id].append(actual_price)
 
-                # 2. Calculate Current Inflation (pi_t)
-                # Need at least 2 data points to calculate change
-                if len(self.price_history[item_id]) >= 2:
-                    prev_price = self.price_history[item_id][-2]
-                    # Avoid division by zero
-                    if prev_price > 0:
-                        pi_t = (actual_price - prev_price) / prev_price
-                    else:
-                        pi_t = 0.0
-                else:
-                    pi_t = 0.0
-
-                # 3. Update Expectation (pi_e)
-                # pi^e_{t+1} = pi^e_t + lambda * (pi_t - pi^e_t)
-                old_pi_e = self.expected_inflation.get(item_id, 0.0)
-                new_pi_e = old_pi_e + self.adaptation_rate * (pi_t - old_pi_e)
-                self.expected_inflation[item_id] = new_pi_e
 
     def apply_leisure_effect(
         self, leisure_hours: float, consumed_items: Dict[str, float]
