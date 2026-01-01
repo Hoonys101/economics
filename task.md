@@ -55,13 +55,24 @@
 
 ## 2. Household Logic (Demand Side)
 - [x] **Spec**: Defined Preference Init & Utility Formula in `phase6_brand_economy_spec.md`.
-- [ ] **Handover**: Assign `phase6_demand_instructions.md` to Jules.
-- [ ] **Implementation**:
-    - [ ] `Household.quality_preference` Init
-    - [ ] `Household.choose_best_seller()` (Utility Logic)
-    - [ ] `Targeted Buy Order` Creation in `make_decisions()`
+- [x] **Handover**: Assign `phase6_demand_instructions.md` to Jules.
+- [x] **Implementation**:
+    - [x] `Household.quality_preference` Init
+    - [x] `Household.choose_best_seller()` (Utility Logic)
+    - [x] `Targeted Buy Order` Creation in `make_decisions()`
 
 ## 3. Verification
-- [ ] **Script**: `verify_brand_economy.py`
-    - [ ] Check if High Brand Value Firms -> Higher Sales/Prices.
-    - [ ] Verify `Adstock` decay and `Awareness` growth S-curve.
+- [x] **Script**: `verify_brand_economy.py`
+    - [x] Check if High Brand Value Firms -> Higher Sales/Prices.
+    - [x] Verify `Adstock` decay and `Awareness` growth S-curve.
+
+## Phase 8: Adaptive Price Expectations (The Psychology of Inflation)
+> **Goal**: Agents remember price history and speculate on future inflation (Hoarding/Delay).
+
+- [x] **Spec**: Defined Memory/Expectation Logic in `design/specs/phase8_adaptive_expectations_spec.md`.
+- [ ] **Implementation**:
+    - [ ] **Config**: Add `PANIC_THRESHOLD`, `HOARDING_FACTOR`, `ADAPTATION_RATE` constants.
+    - [ ] **Household Attributes**: Add `price_history`, `expected_inflation`, `lambda` (adaptation rate).
+    - [ ] **Logic**: Update `decide_and_consume` to adjust quantity based on inflation expectation.
+- [ ] **Verification**:
+    - [ ] `verify_inflation_psychology.py`: Create Supply Shock and observe Panic Buying.
