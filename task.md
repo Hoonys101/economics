@@ -81,13 +81,13 @@
 > **Goal**: Implement "Survival of the Fittest" metabolism.
 
 - [x] **Spec**: Defined W-1 Spec (`design/specs/phase9_ma_spec.md`).
-- [/] **Preparation**:
+- [x] **Preparation**:
     - [x] **Config**: Add Valuation & M&A constants.
     - [x] **Scaffold**: Create `simulation/systems/ma_manager.py`.
     - [x] **Work Order**: Create `design/work_orders/WO-009-MA.md`.
-- [ ] **Implementation (Jules)**:
-    - [ ] `Firm.calculate_valuation()` & `liquidate_assets()`.
-    - [ ] `MAManager` Logic (Predator-Prey Matching).
-    - [ ] Integration with `Simulation` Engine.
-- [ ] **Verification**:
-    - [ ] `verify_ma_bankruptcy.py`: Test Liquidation and Acquisition scenarios.
+- [x] **Implementation (Jules)**:
+    - [x] `Firm.calculate_valuation()` & `liquidate_assets()`.
+    - [x] `MAManager` Logic (Predator-Prey Matching).
+    - [x] Integration with `Simulation` Engine.
+- [x] **Verification**:
+    - [x] `verify_ma_bankruptcy.py`: Test Liquidation and Acquisition scenarios.
