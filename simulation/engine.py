@@ -18,6 +18,7 @@ from simulation.metrics.inequality_tracker import InequalityTracker
 from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
+from simulation.systems.ma_manager import MAManager
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -126,6 +127,9 @@ class Simulation:
         self.ai_training_manager = AITrainingManager(
             self.households, self.config_module
         )
+        
+        # M&A Manager System
+        self.ma_manager = MAManager(self, self.config_module)
 
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
@@ -681,6 +685,18 @@ class Simulation:
                         "tags": ["ai_learning"],
                     },
                 )
+
+        # 8. M&A 및 파산 처리 (Corporate Metabolism)
+        self.ma_manager.process_market_exits_and_entries(self.time)
+
+        # 9. 비활성 기업 정리 (Cleanup Inactive Firms)
+        # Remove inactive firms from the active processing list
+        # They remain in self.agents for ID reference, but won't act in future ticks
+        active_firms_count_before = len(self.firms)
+        self.firms = [f for f in self.firms if f.is_active]
+        
+        if len(self.firms) < active_firms_count_before:
+            self.logger.info(f"CLEANUP | Removed {active_firms_count_before - len(self.firms)} inactive firms from execution list.")
 
         # --- Handle Agent Lifecycle (Death, Liquidation) ---
         # Added as per requirement (previously missing in run_tick)

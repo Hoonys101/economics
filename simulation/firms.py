@@ -68,6 +68,64 @@ class Firm(BaseAgent):
         self.expenses_this_tick = 0.0
         # --- GEMINI_PROPOSED_ADDITION_END ---
         
+        # --- Phase 9: M&A Attributes ---
+        self.is_bankrupt: bool = False
+        self.valuation: float = 0.0
+        self.consecutive_loss_ticks_for_bankruptcy: int = 0 # Track separately strictly for rule
+
+    def calculate_valuation(self) -> float:
+        """
+        Calculate Firm Valuation based on Net Assets + Profit Potential.
+        Formula: Net Assets + (Max(0, Avg_Profit_Last_10) * PER Multiplier)
+        """
+        net_assets = self.assets + self.get_inventory_value() + self.capital_stock 
+        
+        avg_profit = 0.0
+        if len(self.profit_history) > 0:
+            avg_profit = sum(self.profit_history) / len(self.profit_history)
+        
+        profit_premium = max(0.0, avg_profit) * getattr(self.config_module, "VALUATION_PER_MULTIPLIER", 10.0)
+        
+        self.valuation = net_assets + profit_premium
+        return self.valuation
+
+    def get_inventory_value(self) -> float:
+        """Calculate market value of current inventory."""
+        total_value = 0.0
+        for item_id, qty in self.inventory.items():
+            # Use last known market price or book value? Market price is better.
+            # But Firm stores last_prices?
+            price = self.last_prices.get(item_id, 0.0) # Or fetch from market?
+            # If no price known, assume 0 or cost? Use valid price if possible.
+            total_value += qty * price
+        return total_value
+
+    def liquidate_assets(self) -> float:
+        """
+        Liquidate all assets (Inventory, Capital Stock) at a discount.
+        Returns total cash recovered.
+        """
+        discount_rate = getattr(self.config_module, "LIQUIDATION_DISCOUNT_RATE", 0.5)
+        
+        # 1. Sell Inventory
+        inventory_value = self.get_inventory_value()
+        recovered_cash = inventory_value * discount_rate
+        self.inventory.clear()
+        
+        # 2. Sell Capital Stock
+        # Assuming Capital Stock has a book value of 1.0 per unit for simplicity, or relative to something?
+        # Let's assume Capital Stock worth is proportional to productivity or base cost.
+        # For now, treat Capital Stock unit value as 100.0 (arbitrary base)? 
+        # Or better, just don't liquidate capital stock explicitly into cash if no market exists?
+        # Let's assume it's scrap value.
+        scrap_value = self.capital_stock * 10.0 * discount_rate # 10.0 is arbitrary base price of capital
+        recovered_cash += scrap_value
+        self.capital_stock = 0.0
+        
+        self.assets += recovered_cash
+        self.is_bankrupt = True
+        return self.assets
+        
         # --- Phase 6: Brand Engine ---
         self.brand_manager = BrandManager(self.id, config_module, logger)
         self.marketing_budget: float = 0.0 # Decision variable

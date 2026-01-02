@@ -1,4 +1,4 @@
-# Task Checklist: Phase 4.5 - The Responsible Government (Fiscal Stability)
+# Task Checklist: Economics Simulation (Current: Phase 9 - M&A)
 
 > **Goal**: Prevent economic collapse (extinction) by implementing a logic-driven Government that follows fiscal rules and responds to political approval.
 
@@ -76,3 +76,18 @@
     - [x] **Logic**: Update `decide_and_consume` to adjust quantity based on inflation expectation.
 - [x] **Verification**:
     - [x] `verify_inflation_psychology.py`: Create Supply Shock and observe Panic Buying.
+
+## Phase 9: M&A & Bankruptcy (The Corporate Food Chain)
+> **Goal**: Implement "Survival of the Fittest" metabolism.
+
+- [x] **Spec**: Defined W-1 Spec (`design/specs/phase9_ma_spec.md`).
+- [/] **Preparation**:
+    - [x] **Config**: Add Valuation & M&A constants.
+    - [x] **Scaffold**: Create `simulation/systems/ma_manager.py`.
+    - [x] **Work Order**: Create `design/work_orders/WO-009-MA.md`.
+- [ ] **Implementation (Jules)**:
+    - [ ] `Firm.calculate_valuation()` & `liquidate_assets()`.
+    - [ ] `MAManager` Logic (Predator-Prey Matching).
+    - [ ] Integration with `Simulation` Engine.
+- [ ] **Verification**:
+    - [ ] `verify_ma_bankruptcy.py`: Test Liquidation and Acquisition scenarios.

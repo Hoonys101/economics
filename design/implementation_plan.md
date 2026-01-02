@@ -58,8 +58,10 @@
 - **주의**: 가격 변동성이 폭증(Oscillation)하여 시뮬레이션이 붕괴될 위험이 크므로 Golden Sample 검증 필수.
 
 ### 9. 기업 인수합병 (Corporate M&A)
-- **지침**: 파산 조건 발생 시 삭제 대신 `Simulation.merge_firms(winner, loser)`를 호출하여 자산을 통합한다.
-- **주의**: ID 참조 오류(Broken Reference)가 발생하기 쉬운 가장 위험한 단계이다.
+- **지침**: `MAManager` 시스템을 도입하여 주기적으로 기업 가치(Valuation)를 평가하고, 현금 보유량이 풍부한 기업이 부실 기업을 인수하도록 한다.
+- **상세**: `Firm.calculate_valuation()` 구현, `Simulation.systems.ma_manager` 모듈 신설.
+- **주의**: ID 참조 오류 방지를 위해, 인수 후 피인수 기업(Prey)은 즉시 제거하지 않고 `is_active=False` 처리 후 다음 틱에 정리한다.
+- **파산**: 인수되지 못한 부실 기업은 자산 50% 할인 매각(Liquidation) 후 퇴출된다.
 
 - **검증**: 이자율 조절에 따라 가계의 저축 성향과 기업의 투자/고용 규모가 유기적으로 변하는지 확인한다.
 

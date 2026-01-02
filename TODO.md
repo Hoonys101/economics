@@ -1,56 +1,29 @@
-# Gemini 개발 계획: To-Do 리스트
+# Project Roadmap & TODO
 
-이 문서는 `design` 폴더의 설계 문서를 기반으로 구체화된 개발 To-Do 리스트입니다.
+**Current Phase**: Phase 9 - M&A & Bankruptcy
+**Last Updated**: 2026-01-02
 
----
+## 1. Completed Phases (Core Foundation)
+- [x] **Phase 1: AI Agents** (Household, Firm, Government)
+- [x] **Phase 2: Advanced Markets** (Labor, Stock, Loan)
+- [x] **Phase 3: Stabilization** (Survival Logic parameter tuning)
+- [x] **Phase 4.5: Responsible Government** (Fiscal Rules, Approval Rating)
+- [x] **Phase 6: Brand Economy** (Marketing, Quality, Veblen Effect)
+- [x] **Phase 8: Inflation Psychology** (Adaptive Expectations, Panic Buying)
 
-## Phase 1: 코드 안정화 및 리팩토링
+## 2. Active Phase (Phase 9: The Corporate Food Chain)
+- [ ] **Firm Valuation**: Logic to calculate fair value (Net Assets + Profit Potential).
+- [ ] **Bankruptcy**: Liquidation process for insolvent firms.
+- [ ] **M&A Manager**: System to match Cash-Rich Predators with Struggling Preys.
+- [ ] **Verification**: Ensure "Survival of the Fittest" dynamics.
 
-- [ ] `gemini_refactoring_todo.md` 분석 및 기존 코드 리팩토링 우선순위 결정
-- [ ] 시뮬레이션 실행 및 `debugging_log_summary.md` 참고하여 불필요한 로그 및 디버그 코드 제거
-- [ ] `경제_시뮬레이션_초기_안정화_설계.md` 기반으로 시뮬레이션 초기 파라미터 튜닝 및 안정성 확보
-- [ ] 안정화 관련 단위 테스트 코드 보강 (`/tests/`)
+## 3. Future Phases (Backlog)
+- [ ] **Phase 10: Central Bank** (Interest Rate Policy, Bond Market)
+- [ ] **Phase 12: Data Lake** (Integration with Real-World Data)
+- [ ] **Phase 13: Time Machine** (Backtesting Framework)
+- [ ] **Phase 14: Global Economy** (Trade, Exchange Rates)
 
-## Phase 2: 프로젝트 고도화 (신규 기능 개발)
-
-### 2.1. 정부(Government) 모듈 개발
-- [ ] 정부 에이전트 기본 구조 설계 (`simulation/agents.py` 또는 신규 파일)
-- [ ] 세금(소득세, 법인세) 부과 기능 구현
-- [ ] 정부 지출 및 보조금 지급 기능 구현
-- [ ] 시뮬레이션 엔진(`simulation/engine.py`)에 정부 모듈 통합
-- [ ] 정부 모듈 관련 단위 테스트 작성
-
-### 2.2. 금융(Financial) 시스템 도입
-- [ ] 은행(Bank) 에이전트 기본 구조 설계
-- [ ] 가계 및 기업 대상 대출/예금 기능 구현
-- [ ] 이자율 메커니즘 구현
-- [ ] 시뮬레이션 엔진에 금융 시스템 통합
-- [ ] 금융 시스템 관련 단위 테스트 작성
-
-### 2.3. 노동 시장 고도화
-- [ ] 가계(Household) 에이전트에 '기술 수준', '경력' 등 속성 추가
-- [ ] 기업(Firm)의 채용 로직을 '요구 기술/경력' 기반으로 수정
-- [ ] 노동 시장(Market)의 매칭 로직을 다차원 속성 기반으로 개선
-- [ ] 고도화된 노동 시장 관련 단위 테스트 작성
-
-### 2.4. 창업(Startup) 메커니즘 (심층 분석 후 도입)
-- [ ] 창업 의지 결정 로직 (자산 규모 + 실업 상태 + 투자 성향)
-- [ ] 소규모 기업(Sole Proprietorship) 생성 및 성장 모델
-- [ ] 창업 성공률 및 자본 축적 시뮬레이션
-
-## Phase 3: UI 고도화 및 분석 도구 (W-2: State of the Nation)
-
-- [ ] **HUD (Heads-Up Display) 구현**: 사망률, 파산율, 고용률, GDP, 임금, 자산 집중도 상단 고정
-- [ ] **4개 상세 탭(Tab) 구현**:
-    - [ ] 인구/사회: 출산 장벽, 세대 분포
-    - [ ] 재정/세금: 세수 현황, 정부 수지
-    - [ ] 실물 시장: 품목별 판매, CPI, 욕구 충족률
-    - [ ] 금융 시장: 주가 지수, 거래 회전율, 시가총액
-- [ ] `경제시뮬레이션_UI_설계.md` 기반으로 신규 기능(정부, 금융) 관련 데이터 시각화 항목 추가
-
-## Phase 4: 최종 검토 및 최적화
-- [ ] 전체 기능 통합 테스트 및 시나리오 테스트
-- [ ] 최종 코드 리뷰 및 문서(docstrings, `design` 폴더) 업데이트
-
-
----
+## 4. Technical Debt & Cleanup
+- [x] Refactor `config.py` (Grouped by Phase).
+- [x] Standardize Agent Memory (`self.memory`).
+- [ ] Optimize Simulation Speed (Profiler analysis needed).

@@ -99,4 +99,3 @@ set PYTHONPATH=%cd% && python -m pytest tests/test_household_decision_engine_new
 - **모듈화된 설정 관리**: `config.py`를 YAML/JSON 파일로 분리하여 유연성 확보.
 - **API 보안 강화**: UI 제어 및 설정 API에 기본 인증 추가.
 - **시뮬레이션 엔진 최적화**: 대규모 시뮬레이션의 성능 향상.
-  > > > > > > > feature/gemini/ai-integration-refinement
