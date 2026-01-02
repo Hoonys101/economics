@@ -11,6 +11,7 @@ from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
 from simulation.bank import Bank
 from simulation.agents.government import Government
+from simulation.agents.central_bank import CentralBank
 from simulation.loan_market import LoanMarket
 from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
@@ -88,6 +89,20 @@ class Simulation:
         self.agents[self.government.id] = self.government
         self.next_agent_id += 1
 
+        # Tracker initialization (Done below, but CentralBank needs it)
+        # So we move Tracker init up or init CentralBank later.
+        # Moving Tracker init up.
+        self.tracker = EconomicIndicatorTracker(config_module=config_module)
+
+        # Central Bank Initialization (Phase 10)
+        self.central_bank = CentralBank(
+            tracker=self.tracker,
+            config_module=self.config_module
+        )
+        # Central Bank is not in self.agents dict as it's a special system agent
+        # similar to how markets are handled, or we can add it if needed.
+        # But it doesn't participate in normal transactions.
+
         self.markets: Dict[str, Market] = {
             good_name: OrderBookMarket(market_id=good_name)
             for good_name in self.config_module.GOODS
@@ -117,7 +132,7 @@ class Simulation:
                 agent.config_module = self.config_module
 
         self.repository = repository
-        self.tracker = EconomicIndicatorTracker(config_module=config_module)
+        # self.tracker = EconomicIndicatorTracker(config_module=config_module) # Moved up
         
         # 추가 지표 Tracker 초기화
         self.inequality_tracker = InequalityTracker(config_module=config_module)
@@ -344,9 +359,12 @@ class Simulation:
         else:
              self.bank.run_tick(self.agents)
 
-        # 1c. 통화 정책 업데이트 (정부/중앙은행)
-        inflation_rate = 0.0 # TODO: Calculate inflation properly from tracker
-        self.government.update_monetary_policy(self.bank, self.time, inflation_rate)
+        # 1c. 통화 정책 업데이트 (Central Bank) - Phase 10
+        self.central_bank.step(self.time)
+        new_base_rate = self.central_bank.get_base_rate()
+        self.bank.update_base_rate(new_base_rate)
+
+        # Legacy call removed: self.government.update_monetary_policy(...)
 
         for firm in self.firms:
             firm.hires_last_tick = 0

@@ -75,10 +75,17 @@ class Bank:
         return getattr(self.config_module, key, default)
 
     def update_base_rate(self, new_rate: float):
-        """Called by Central Bank / Government to update monetary policy."""
+        """
+        Called by Central Bank (via Engine) to update monetary policy.
+        Updates the base rate which affects new loans and deposits.
+        """
+        if abs(self.base_rate - new_rate) < 1e-6:
+            return
+
+        old_rate = self.base_rate
         self.base_rate = new_rate
         logger.info(
-            f"MONETARY_POLICY | Base Rate updated to {self.base_rate:.2%}",
+            f"MONETARY_POLICY | Base Rate updated: {old_rate:.2%} -> {self.base_rate:.2%}",
             extra={"agent_id": self.id, "tags": ["bank", "policy"]}
         )
 
