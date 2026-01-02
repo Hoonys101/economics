@@ -64,8 +64,15 @@ class ActionProposalEngine:
                 < self.config_module.FORCED_LABOR_EXPLORATION_PROBABILITY
             )
 
+            # --- Panic Mode: Starvation or Food Insecurity ---
+            is_starving = agent.needs.get("survival", 0.0) > 50.0
+            food_inventory = agent.inventory.get("basic_food", 0.0)
+            is_food_insecure = food_inventory < 1.0
+
+            is_panic_mode = is_starving or is_food_insecure
+
             self.logger.debug(
-                f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={agent.assets:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}",
+                f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={agent.assets:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), panic={is_panic_mode}",
                 extra={
                     "tick": current_time,
                     "agent_id": agent.id,
@@ -73,15 +80,15 @@ class ActionProposalEngine:
                 },
             )
 
-            if not agent.is_employed and condition_assets_low:
-                if condition_random_check:
+            if not agent.is_employed and (condition_assets_low or is_panic_mode):
+                if condition_random_check or is_panic_mode:
                     explore_labor_market = True
 
             if explore_labor_market or (
                 not agent.is_employed and random.random() < 0.5
             ):
                 self.logger.debug(
-                    f"DEBUG: Household {agent.id} is attempting to sell labor. explore_labor_market: {explore_labor_market}, is_employed: {agent.is_employed}",
+                    f"DEBUG: Household {agent.id} is attempting to sell labor. Panic: {is_panic_mode}",
                     extra={
                         "tick": current_time,
                         "agent_id": agent.id,
@@ -89,11 +96,14 @@ class ActionProposalEngine:
                     },
                 )
                 # 노동 시장에 노동력 판매 주문
-                desired_wage = (
-                    self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
-                )
+                if is_panic_mode:
+                    desired_wage = 0.01 # Undercut everyone
+                else:
+                    desired_wage = (
+                        self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
+                    )
                 orders.append(
-                    Order(agent.id, "SELL", "labor", 1, desired_wage, "labor_market")
+                    Order(agent.id, "SELL", "labor", 1, desired_wage, "labor")
                 )
             else:
                 # 상품 시장에서 상품 구매 주문
@@ -110,10 +120,12 @@ class ActionProposalEngine:
                     budget = agent.assets * spending_ratio
 
                     # 인지된 가격 또는 기본 가격 사용
-                    price = agent.perceived_avg_prices.get(
-                        good_to_trade, self.config_module.GOODS_MARKET_SELL_PRICE
-                    )
-                    price = max(price, 0.01)  # 가격이 0이 되는 것 방지
+                    base_price = agent.perceived_avg_prices.get(good_to_trade, 0.0)
+                    if base_price <= 0:
+                        # Fallback to config initial price
+                        base_price = self.config_module.GOODS.get(good_to_trade, {}).get("initial_price", 10.0)
+
+                    price = max(base_price, 0.01)  # 가격이 0이 되는 것 방지
 
                     max_quantity = budget / price
 
@@ -161,7 +173,7 @@ class ActionProposalEngine:
                     * random.uniform(0.9, 1.1)
                 )
                 orders.append(
-                    Order(agent.id, "BUY", "labor", 1, offer_wage, "labor_market")
+                    Order(agent.id, "BUY", "labor", 1, offer_wage, "labor")
                 )
             else:
                 # 상품 시장에 상품 판매 주문
@@ -186,7 +198,7 @@ class ActionProposalEngine:
                             good_to_trade,
                             quantity,
                             price,
-                            "goods_market",
+                            good_to_trade, # Market ID is the good name
                         )
                     )
 
@@ -207,4 +219,4 @@ class ActionProposalEngine:
             * random.uniform(0.9, 1.3)
             * wage_factor
         )
-        return Order(household.id, "SELL", "labor", 1, desired_wage, "labor_market")
+        return Order(household.id, "SELL", "labor", 1, desired_wage, "labor")
