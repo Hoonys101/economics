@@ -12,9 +12,10 @@
     - `Phase 4.5: Responsible Government` ✅
     - `Phase 6: Brand Economy` ✅ (Differentiation)
     - `Phase 8: Inflation Psychology` ✅ (Adaptive Expectations)
-    - `Tactical Cleanup` ✅ (Refactoring/Optimization)
-- **현재 단계:** `Phase 9: M&A & Bankruptcy` 🔄 (Corporate Food Chain)
-- **다음 단계:** `Phase 12: Data Lake` 📅 (Universe Expansion)
+    - `Phase 9: M&A & Bankruptcy` ✅ (Corporate Food Chain)
+    - `Phase 10: Central Bank` ✅ (Monetary Policy)
+- **현재 단계:** `Architectural Audit` 📐 (Re-baselining)
+- **다음 단계:** `Optimization` or `Phase 11/12` (TBD)
 
 ---
 
@@ -45,16 +46,22 @@
 
 ## 3. 남은 과업 (Backlog)
 
-### Phase 9: M&A (Current)
-- [ ] Valuation Logic
-- [ ] Liquidation (Bankruptcy)
-- [ ] M&A Matching System
+### Phase 9: M&A & Bankruptcy ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Valuation Logic | ✅ | Assets + Profit Premium |
+| M&A Matching | ✅ | Predator (Cash Rich) vs Prey (Poor) |
+| Liquidation | ✅ | Asset fire sale on bankruptcy |
 
-### Phase 10: Central Bank (Monetary Policy)
-- [ ] Interest Rate Control
+### Phase 10: Central Bank ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Taylor Rule | ✅ | Inflation/GDP Gap targeting |
+| Rate Transmission | ⚠️ | Engine -> Bank (OK), Bank -> Household (Missing Link) |
 
-### Phase 12: Data Lake
-- [ ] Real-world integration
+## 4. 구조적 진단 (Architectural Audit)
+- **발견된 문제**: 중앙은행이 금리를 올려도 가계(AI)가 즉각적으로 저축을 늘리는 로직이 **누락(Missing Link)**됨.
+- **조치 계획**: `AIDrivenHouseholdDecisionEngine`에 금리 민감도(Interest Sensitivity) 휴리스틱 추가 필요.
 
 ---
 

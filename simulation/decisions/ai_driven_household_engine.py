@@ -54,16 +54,46 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         goods_list = list(self.config_module.GOODS.keys())
         
-        # 1. AI Decision (Vector Output)
         action_vector = self.ai_engine.decide_action_vector(
             agent_data, market_data, goods_list
         )
+        
+        # --- [Architectural Audit] The Missing Link: Interest Rate Sensitivity ---
+        # AI learns slowly, so we add a behavioral heuristic to react to Monetary Policy.
+        # High Real Rates -> Incentive to Save -> Reduce Consumption
+        
+        loan_market_data = market_data.get("loan_market", {})
+        nominal_rate = loan_market_data.get("interest_rate", 0.05) # Base Rate
+        
+        # Use simple average expected inflation across goods
+        if household.expected_inflation:
+            avg_expected_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+        else:
+            avg_expected_inflation = 0.0
+            
+        real_rate = nominal_rate - avg_expected_inflation
+        
+        # Heuristic: If Real Rate > 3% (0.03), reduce consumption aggressiveness
+        savings_incentive = 1.0
+        if real_rate > 0.03:
+            # 1% extra real rate -> 5% consumption reduction?
+            # Example: Rate 0.05, Infl 0.0 -> Real 0.05. Gap 0.02. Incentive = 0.9
+            excess_rate = real_rate - 0.03
+            savings_incentive = max(0.5, 1.0 - (excess_rate * 5.0))
+            if random.random() < 0.05: # Log occasionally
+                 self.logger.debug(f"SAVINGS_INCENTIVE | Agent {household.id} RealRate: {real_rate:.1%} -> Incentive: {savings_incentive:.2f}")
+
+        # --------------------------------------------------------------------------
         
         orders = []
 
         # 2. Execution: Consumption Logic (Per Item)
         for item_id in goods_list:
             agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
+            
+            # Apply Savings Incentive (Reduce Aggressiveness)
+            if item_id != "food": # Don't starve for interest
+                agg_buy *= savings_incentive
             
             good_info = self.config_module.GOODS.get(item_id, {})
             utility_effects = good_info.get("utility_effects", {})
