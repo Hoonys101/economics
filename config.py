@@ -499,3 +499,11 @@ HOARDING_FACTOR = 0.5            # Buy 50% more than needed
 
 DEFLATION_WAIT_THRESHOLD = -0.05 # Expected Inflation < -5% -> Delay
 DELAY_FACTOR = 0.5               # Buy 50% less than needed
+
+# ==============================================================================
+# Phase 10: Central Bank & Monetary Policy
+# ==============================================================================
+CB_UPDATE_INTERVAL = 10         # Central Bank policy update interval (ticks)
+CB_INFLATION_TARGET = 0.02      # Target inflation rate (2%)
+CB_TAYLOR_ALPHA = 1.5           # Taylor Rule weight on inflation
+CB_TAYLOR_BETA = 0.5            # Taylor Rule weight on output gap
