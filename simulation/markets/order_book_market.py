@@ -26,6 +26,7 @@ class OrderBookMarket(Market):
         self.sell_orders: Dict[str, List[Order]] = {}
         self.daily_avg_price: Dict[str, float] = {}
         self.daily_total_volume: Dict[str, float] = {}
+        self.last_traded_prices: Dict[str, float] = {}
         
         # --- GEMINI_ADDITION: Persist signals across ticks ---
         self.cached_best_bid: Dict[str, float] = {}
@@ -203,6 +204,7 @@ class OrderBookMarket(Market):
                          transaction_type="goods" if self.id == "goods_market" else "labor",
                          time=current_tick
                      )
+                     self.last_traded_prices[item_id] = trade_price
                      transactions.append(transaction)
                      
                      self.logger.info(
@@ -278,6 +280,7 @@ class OrderBookMarket(Market):
                     transaction_type="goods" if self.id == "goods_market" else "labor",
                     time=current_tick
                 )
+                self.last_traded_prices[item_id] = trade_price
                 transactions.append(transaction)
                 
                 self.logger.info(
@@ -319,6 +322,25 @@ class OrderBookMarket(Market):
         if item_id in self.buy_orders and self.buy_orders[item_id]:
             return self.buy_orders[item_id][0].price
         return self.cached_best_bid.get(item_id)
+
+    def get_last_traded_price(self, item_id: str) -> float | None:
+        """주어진 아이템의 마지막 체결 가격을 반환합니다."""
+        return self.last_traded_prices.get(item_id)
+
+    def get_spread(self, item_id: str) -> float | None:
+        """주어진 아이템의 매도-매수 스프레드를 반환합니다."""
+        best_ask = self.get_best_ask(item_id)
+        best_bid = self.get_best_bid(item_id)
+        if best_ask is None or best_bid is None:
+            return None
+        return best_ask - best_bid
+
+    def get_market_depth(self, item_id: str) -> Dict[str, int]:
+        """주어진 아이템의 매수/매도 주문 건수를 반환합니다."""
+        return {
+            "buy_orders": len(self.buy_orders.get(item_id, [])),
+            "sell_orders": len(self.sell_orders.get(item_id, [])),
+        }
 
     def get_order_book_status(self, item_id: str) -> Dict[str, Any]:
         """주어진 아이템의 현재 호가창 상태를 반환합니다."""
