@@ -72,6 +72,22 @@ class Firm(BaseAgent):
         self.is_bankrupt: bool = False
         self.valuation: float = 0.0
         self.consecutive_loss_ticks_for_bankruptcy: int = 0 # Track separately strictly for rule
+        
+        # --- Phase 6: Brand Engine ---
+        self.brand_manager = BrandManager(self.id, config_module, logger)
+        self.marketing_budget: float = 0.0 # Decision variable
+        self.prev_awareness: float = 0.0  # For AI Reward Calculation
+
+        # --- 주식 시장 관련 속성 ---
+        self.founder_id: Optional[int] = None  # 창업자 가계 ID
+        self.is_publicly_traded: bool = True   # 상장 여부
+        self.dividend_rate: float = getattr(
+            config_module, "DIVIDEND_RATE", 0.3
+        )  # 기업별 배당률 (기본값: config)
+        self.treasury_shares: float = 0.0  # 자사주 보유량
+        self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
+
+        self.decision_engine.loan_market = loan_market
 
     def calculate_valuation(self) -> float:
         """
@@ -125,22 +141,6 @@ class Firm(BaseAgent):
         self.assets += recovered_cash
         self.is_bankrupt = True
         return self.assets
-        
-        # --- Phase 6: Brand Engine ---
-        self.brand_manager = BrandManager(self.id, config_module, logger)
-        self.marketing_budget: float = 0.0 # Decision variable
-        self.prev_awareness: float = 0.0  # For AI Reward Calculation
-
-        # --- 주식 시장 관련 속성 ---
-        self.founder_id: Optional[int] = None  # 창업자 가계 ID
-        self.is_publicly_traded: bool = True   # 상장 여부
-        self.dividend_rate: float = getattr(
-            config_module, "DIVIDEND_RATE", 0.3
-        )  # 기업별 배당률 (기본값: config)
-        self.treasury_shares: float = 0.0  # 자사주 보유량
-        self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
-
-        self.decision_engine.loan_market = loan_market
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         """

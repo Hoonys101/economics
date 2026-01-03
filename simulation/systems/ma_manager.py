@@ -128,7 +128,7 @@ class MAManager:
         for emp in list(prey.employees):
             if random.random() < 0.5:
                 # Fire
-                emp.quit(tick)
+                emp.quit()
                 fired_count += 1
             else:
                 # Retain (Transfer)

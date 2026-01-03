@@ -43,6 +43,12 @@ class Government:
         self.gdp_history_window = 20 # 2 quarters (approx 20 ticks based on spec saying 2 quarters)
         # Note: Spec says "2분기 연속 하락". If 1 year = 100 ticks, 1 quarter = 25 ticks.
         # Let's keep a history buffer to calculate trends.
+        
+        self.revenue_this_tick = 0.0
+        self.expenditure_this_tick = 0.0
+        self.revenue_breakdown_this_tick = {}
+        
+        self.average_approval_rating = 0.5 # Default approval
 
         logger.info(
             f"Government {self.id} initialized with assets: {self.assets}",
@@ -225,6 +231,9 @@ class Government:
         Phase 4: Performs welfare checks, wealth tax collection, and stimulus injection.
         Called every tick by the Engine.
         """
+        # Ensure tick flow is reset at the start of government processing
+        self.reset_tick_flow()
+
         # 1. Calculate Survival Cost (Dynamic)
         survival_cost = self.get_survival_cost(market_data)
 
