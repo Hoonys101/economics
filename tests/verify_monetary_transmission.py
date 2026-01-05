@@ -2,9 +2,13 @@
 import sys
 import os
 import random
+import numpy as np
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Fix random seed for reproducibility
+RANDOM_SEED = 42
 
 from main import create_simulation
 import config
@@ -41,6 +45,10 @@ Household.consume = patched_consume
 def run_scenario(interest_rate_override: float, label: str):
     print(f"\n--- Running Scenario: {label} (Rate: {interest_rate_override:.1%}) ---")
 
+    # Reset random seeds for reproducibility
+    random.seed(RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+
     # Reset Record
     CONSUMPTION_RECORD["ant"] = 0.0
     CONSUMPTION_RECORD["grasshopper"] = 0.0
@@ -62,10 +70,16 @@ def run_scenario(interest_rate_override: float, label: str):
 
     sim = create_simulation(overrides=overrides)
 
-    # Force initial inflation expectations to 0
+    # Force bank base rate AND central bank rate directly to prevent Taylor Rule override
+    sim.bank.base_rate = interest_rate_override
+    sim.central_bank._base_rate = interest_rate_override  # Bypass Taylor Rule
+    print(f"[{label}] Bank & CentralBank Rate set to: {sim.bank.base_rate:.1%}")
+
+    # Force initial inflation expectations to 0 and low survival need
     for h in sim.households:
         h.expected_inflation = {k: 0.0 for k in h.expected_inflation}
         h.assets = 10000.0
+        h.needs["survival"] = 20.0  # Force low survival need to enable interest sensitivity
 
     # Run for 50 ticks
     # We ignore the first few ticks to let market stabilize (production start)
