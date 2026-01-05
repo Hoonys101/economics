@@ -62,7 +62,8 @@ def operation_trinity():
             
             # Household Metrics
             active_households = [h for h in sim.households if h.is_active]
-            avg_agg_buy = np.mean([h.consumption_aggressiveness for h in active_households]) if active_households else 0
+            # Fix: consumption_aggressiveness is internal state. Use current_consumption instead.
+            avg_consumption = np.mean([h.current_consumption for h in active_households]) if active_households else 0
             
             record = {
                 "Tick": tick,
@@ -76,7 +77,7 @@ def operation_trinity():
                 "ActiveFirms": len(active_firms),
                 "AvgMarketingRate": avg_marketing_rate,
                 "TotalRevenue": total_revenue,
-                "AvgAggBuy": avg_agg_buy,
+                "AvgConsumption": avg_consumption,
                 "Unemployment": indicators.get("unemployment_rate", 0),
                 "ApprovalRating": gov.average_approval_rating
             }
