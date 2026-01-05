@@ -153,6 +153,6 @@ class MAManager:
         
         # Fire all employees
         for emp in list(firm.employees):
-            emp.quit(tick)
+            emp.quit()
             
         firm.is_active = False

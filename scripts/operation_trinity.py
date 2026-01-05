@@ -87,7 +87,7 @@ def operation_trinity():
                 print(f"   Tick {tick:4}: GDP={record['GDP']:5.1f} | Tax={record['TaxRate']:4.1%} | Debt/GDP={record['DebtRatio']:4.2f} | Firms={record['ActiveFirms']}")
                 
     except Exception as e:
-        print(f"\n❌ CRITICAL ERROR: {e}")
+        print(f"\nCRITICAL ERROR: {e}")
         import traceback
         traceback.print_exc()
     finally:
