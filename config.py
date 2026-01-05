@@ -421,6 +421,16 @@ MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
 
 # --- Phase 4: Fiscal Policy ---
 
+# --- Phase 7: Adaptive Fiscal Policy ---
+FISCAL_SENSITIVITY_ALPHA = 0.5          # Output gap -> fiscal stance conversion
+POTENTIAL_GDP_WINDOW = 50               # Ticks for moving average
+TAX_RATE_MIN = 0.05
+TAX_RATE_MAX = 0.30
+TAX_RATE_BASE = 0.10                    # Neutral rate (boom/bust neutral)
+DEBT_CEILING_RATIO = 1.0                # Max debt/GDP
+FISCAL_STANCE_EXPANSION_THRESHOLD = 0.025   # +2.5% stance -> expand
+FISCAL_STANCE_CONTRACTION_THRESHOLD = -0.025 # -2.5% stance -> contract
+
 # 1. Progressive Tax (Income Tax)
 # Criteria: Multiples of SURVIVAL_COST
 # [HOTFIX: Fiscal Balance] Tax rates reduced by 50%

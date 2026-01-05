@@ -21,6 +21,18 @@ class Government:
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
 
+        # --- Phase 7: Adaptive Fiscal Policy State ---
+        self.potential_gdp: float = 0.0
+        self.gdp_ema: float = 0.0
+        self.fiscal_stance: float = 0.0
+        # Initialize effective_tax_rate with base rate
+        base_rate = 0.1
+        if self.config_module:
+             base_rate = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
+        self.effective_tax_rate: float = base_rate
+        self.total_debt: float = 0.0
+        # ---------------------------------------------
+
         # History buffers for visualization
         self.tax_history: List[Dict[str, Any]] = [] # For Stacked Bar Chart (breakdown per tick)
         self.welfare_history: List[Dict[str, float]] = [] # For Welfare Line Chart
@@ -58,62 +70,54 @@ class Government:
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """
         Calculates income tax based on TAX_MODE (FLAT or PROGRESSIVE).
+        Uses self.effective_tax_rate as the base or multiplier where applicable.
         """
         tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
 
         if tax_mode == "FLAT":
-            base_rate = getattr(self.config_module, "BASE_INCOME_TAX_RATE", 0.2)
-            return income * base_rate
+            # Use effective_tax_rate instead of static base rate
+            return income * self.effective_tax_rate
 
         # Progressive Logic
         tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
         if not tax_brackets:
-            # Fallback to flat rate if no brackets defined
-            rate = getattr(self.config_module, "INCOME_TAX_RATE", 0.1)
-            return income * rate
+            return income * self.effective_tax_rate
 
-        # Brackets are defined as (multiple_of_survival_cost, rate)
-        # However, for simple V1 implementation per spec:
-        # "단순하게 Transaction Amount 자체에 브라켓을 적용합니다"
-        # We need to find which bracket the income falls into.
-        # But wait, progressive tax usually applies to chunks.
-        # Spec says: "소득 구간(Tax Brackets)별 차등 세율 적용"
-        # BUT Spec Clarification says: "단순하게 Transaction Amount 자체에 브라켓을 적용합니다. (V1 Simplicity)"
-        # This implies a flat rate based on the total amount's bracket, OR a simplified bracket logic.
-        # Let's assume standard marginal tax brackets for correctness, as "Progressive" implies that.
-        # But if "V1 Simplicity" means finding the rate for the total amount and applying it to the whole, that's easier.
-        # Let's read the brackets: [(1.5, 0.0), (5.0, 0.15), (inf, 0.40)]
-        # This looks like: Income up to 1.5*SC is 0%. Income between 1.5*SC and 5.0*SC is 15%. Above is 40%.
+        # Adjust brackets relatively if needed, or just apply effective rate as a scaling factor?
+        # Spec says: "Replace fixed INCOME_TAX_RATE with self.effective_tax_rate"
+        # For progressive tax, we usually scale the rates or shift brackets.
+        # Simplified approach: Scale the calculated tax by (effective_rate / base_rate).
+        # Or simpler: If the goal is "Adjust fiscal policy", let's assume effective_tax_rate
+        # REPLACES the base rates in brackets logic or scales them.
 
-        tax_total = 0.0
+        # Let's calculate standard progressive tax first.
+        base_rate_config = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
+
+        # Calculate raw tax based on brackets
+        raw_tax = 0.0
         remaining_income = income
         previous_limit_abs = 0.0
 
         for multiple, rate in tax_brackets:
             limit_abs = multiple * survival_cost
-
-            taxable_in_this_bracket = min(max(0, limit_abs - previous_limit_abs), remaining_income)
-
-            # If remaining_income is greater than the width of this bracket, we tax the full width
-            # If remaining_income is less, we tax the remainder
-            # Actually, let's do it cleanly:
-
-            # Range for this bracket: [previous_limit_abs, limit_abs]
-            # Income overlapping with this range:
             upper_bound = min(income, limit_abs)
             lower_bound = max(0, previous_limit_abs)
-
             taxable_amount = max(0.0, upper_bound - lower_bound)
 
             if taxable_amount > 0:
-                tax_total += taxable_amount * rate
+                raw_tax += taxable_amount * rate
 
             if income <= limit_abs:
                 break
-
             previous_limit_abs = limit_abs
 
-        return tax_total
+        # Scale tax based on effective_tax_rate vs base_rate
+        # If effective rate is 0.05 and base is 0.10, tax should be halved.
+        if base_rate_config > 0:
+            adjustment_factor = self.effective_tax_rate / base_rate_config
+            return raw_tax * adjustment_factor
+        else:
+            return raw_tax
 
     def reset_tick_flow(self):
         """
@@ -173,33 +177,87 @@ class Government:
         )
         return amount
 
+    def adjust_fiscal_policy(self, current_gdp: float) -> None:
+        """Adjust fiscal policy (tax rates) based on Output Gap."""
+        alpha = getattr(self.config_module, "FISCAL_SENSITIVITY_ALPHA", 0.5)
+        window = getattr(self.config_module, "POTENTIAL_GDP_WINDOW", 50)
+
+        # 1. Update Potential GDP (EMA)
+        if self.potential_gdp == 0:
+            self.potential_gdp = current_gdp
+        else:
+            ema_weight = 2 / (window + 1)
+            self.potential_gdp = current_gdp * ema_weight + self.potential_gdp * (1 - ema_weight)
+
+        # 2. Calculate Output Gap
+        if self.potential_gdp > 0:
+            output_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
+        else:
+            output_gap = 0.0
+
+        # 3. Set Fiscal Stance (Counter-cyclical: negative gap -> positive stance)
+        # If GDP is below potential (negative gap), stance becomes positive (expansionary)
+        self.fiscal_stance = -alpha * output_gap
+
+        # 4. Adjust Tax Rate
+        base_rate = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
+        min_rate = getattr(self.config_module, "TAX_RATE_MIN", 0.05)
+        max_rate = getattr(self.config_module, "TAX_RATE_MAX", 0.30)
+
+        # Expansion stance (positive) -> lower taxes
+        # Contraction stance (negative) -> higher taxes
+        # Formula: effective = base * (1 - stance)
+        # Example: Stance +0.1 (Expansion) -> Rate = Base * 0.9 (Lower)
+        # Example: Stance -0.1 (Contraction) -> Rate = Base * 1.1 (Higher)
+        # Wait, Spec says: "adjustment = self.fiscal_stance * 0.3" in spec text,
+        # but User Refined Instructions says: "Adjust self.effective_tax_rate between 5% and 30% based on the stance".
+        # Let's follow the standard logic: Stance is directly the % adjustment to base rate?
+        # Let's use: effective_rate = base_rate - (base_rate * stance) or similar.
+        # If stance is 0.5 (Huge recession), we want taxes to drop significantly.
+        # Let's assume fiscal_stance is roughly the percentage change desired.
+
+        self.effective_tax_rate = base_rate * (1.0 - self.fiscal_stance)
+        self.effective_tax_rate = max(min_rate, min(max_rate, self.effective_tax_rate))
+
     def provide_subsidy(self, target_agent: Any, amount: float, current_tick: int):
-        """보조금을 지급합니다."""
-        if self.assets < amount:
-            # 예산 부족 시 보유 자산만큼만 지급하거나 지급하지 않음
-            amount = max(0.0, self.assets)
-            
+        """
+        보조금을 지급합니다.
+        Assets 부족 시 Debt Ceiling을 확인하고 적자 지출(Deficit Spending)을 수행합니다.
+        """
         if amount <= 0:
             return 0.0
+
+        # Check for Deficit Spending
+        if self.assets < amount:
+            deficit_needed = amount - self.assets
+
+            # Debt Ceiling Check
+            debt_ceiling_ratio = getattr(self.config_module, "DEBT_CEILING_RATIO", 1.0)
+            # Use max(1.0) to avoid division by zero
+            gdp_ref = max(self.potential_gdp, 1.0)
+            current_debt_ratio = self.total_debt / gdp_ref
             
+            if current_debt_ratio >= debt_ceiling_ratio:
+                logger.warning(
+                    f"DEBT_CEILING_HIT | Ratio: {current_debt_ratio:.2f} >= {debt_ceiling_ratio}. Spending Blocked.",
+                    extra={"tick": current_tick, "agent_id": self.id}
+                )
+                return 0.0 # Block spending
+
+            # Print Money (Deficit Spending)
+            self.assets += deficit_needed
+            self.total_debt += deficit_needed
+            logger.info(
+                f"DEFICIT_SPENDING | Printed {deficit_needed:.2f}. Total Debt: {self.total_debt:.2f}",
+                extra={"tick": current_tick, "agent_id": self.id}
+            )
+
+        # Execute Payment
         self.assets -= amount
         self.total_spent_subsidies += amount
         self.expenditure_this_tick += amount
 
         target_agent.assets += amount
-        
-        # Track spending type (Stimulus check is usually large lump sum, benefit is small)
-        # But here we don't have explicit type.
-        # run_welfare_check calls this for "benefit" and "stimulus".
-        # We need to distinguish or just lump them.
-        # For now, we will track total in current_tick_stats and distinguish in the caller if needed.
-        # Ideally provide_subsidy should take a 'reason'.
-        # Assuming run_welfare_check updates 'current_tick_stats' for type differentiation or we update here if we change signature.
-        # But changing signature breaks compatibility with potential tests.
-        # Let's just track total here, and let run_welfare_check add to specific buckets.
-        # Actually, run_welfare_check does not update buckets.
-        # Let's update `current_tick_stats["welfare_spending"]` here.
-
         self.current_tick_stats["welfare_spending"] += amount
 
         logger.info(
@@ -229,10 +287,16 @@ class Government:
     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int):
         """
         Phase 4: Performs welfare checks, wealth tax collection, and stimulus injection.
+        Phase 7: Adjusts Fiscal Policy based on GDP.
         Called every tick by the Engine.
         """
         # Ensure tick flow is reset at the start of government processing
         self.reset_tick_flow()
+
+        # --- Phase 7: Adaptive Fiscal Policy ---
+        current_gdp = market_data.get("total_production", 0.0)
+        self.adjust_fiscal_policy(current_gdp)
+        # ---------------------------------------
 
         # 1. Calculate Survival Cost (Dynamic)
         survival_cost = self.get_survival_cost(market_data)
@@ -292,46 +356,18 @@ class Government:
                         total_wealth_tax += taken
 
                 # B. Unemployment Benefit
-                # Spec: is_employed = False AND looking_for_work = True
-                # "looking_for_work" isn't explicitly tracked as a flag in Household,
-                # but unemployed households generally look for work.
                 if not agent.is_employed:
                     # Provide benefit
-                    # Check Government budget? Spec says "Treasury. If deficient, Money Printing".
-                    # So we always pay.
-                    if self.assets < benefit_amount:
-                        # Deficit Spending / Money Printing
-                        self.assets += benefit_amount # Print money
-                        logger.info(f"DEFICIT_SPENDING | Government printed {benefit_amount:.2f} for welfare.", extra={"tick": current_tick, "agent_id": self.id})
-
+                    # Centralized spending logic handles deficit spending in provide_subsidy
                     self.provide_subsidy(agent, benefit_amount, current_tick)
                     total_welfare_paid += benefit_amount
 
         # 3. Stimulus Check (Helicopter Money)
-        # Condition: GDP drops significantly.
-        # Check Tracker for total_production?
-        # The Engine calls this method. We should have access to GDP via market_data or passed args.
-        # market_data usually contains price info. GDP (Total Production) is in Tracker.
-        # But we need history.
-        # Let's rely on the Engine to pass the latest GDP or we fetch it if we had access to tracker.
-        # Currently run_welfare_check signature is (agents, market_data, current_tick).
-        # We might need to track GDP history internally in Government class by having Engine pass current GDP.
-
-        # NOTE: Engine should pass `current_gdp` to this method.
-        # I will update the signature in the next step or assume it is in market_data if I put it there.
-        # Let's check `market_data` usage in Engine. It has "goods_market", "stock_market".
-        # I'll rely on a new argument `current_gdp` or extract from `market_data` if I hack it in.
-        # Better: Add `current_gdp` to `run_welfare_check` signature.
-        # For now, I'll access it from `market_data` assuming I add it there in Engine.
-
-        current_gdp = market_data.get("total_production", 0.0)
         self.gdp_history.append(current_gdp)
         if len(self.gdp_history) > self.gdp_history_window:
             self.gdp_history.pop(0)
 
         # Trigger Logic: "2분기 연속 하락" (Falling for 2 quarters)
-        # Simplified: Check if average of last quarter < average of quarter before that?
-        # Or checking a "drop" threshold defined in config.
         # Spec: "GDP 5% drop trigger" (STIMULUS_TRIGGER_GDP_DROP = -0.05)
         # Let's compare current GDP vs GDP 10 ticks ago (approx short term trend).
         trigger_drop = getattr(self.config_module, "STIMULUS_TRIGGER_GDP_DROP", -0.05)
@@ -350,8 +386,7 @@ class Government:
 
              total_stimulus = 0.0
              for h in active_households:
-                 if self.assets < stimulus_amount:
-                     self.assets += stimulus_amount # Print
+                 # Centralized spending logic handles deficit spending
                  self.provide_subsidy(h, stimulus_amount, current_tick)
                  total_stimulus += stimulus_amount
 
