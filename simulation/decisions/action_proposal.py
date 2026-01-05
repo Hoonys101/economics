@@ -165,11 +165,7 @@ class ActionProposalEngine:
                 )
             else:
                 # 상품 시장에 상품 판매 주문
-                available_goods = [
-                    "food",
-                    "luxury_food",
-                ]  # TODO: 기업이 생산하는 상품 목록에서 가져오기
-                good_to_trade = random.choice(available_goods)
+                good_to_trade = agent.specialization
 
                 if agent.inventory.get(good_to_trade, 0) > 0:
                     price = self.config_module.GOODS_MARKET_SELL_PRICE * random.uniform(
