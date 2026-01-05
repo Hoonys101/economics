@@ -281,9 +281,19 @@ class Firm(BaseAgent):
         outstanding_shares = self.total_shares - self.treasury_shares
         if outstanding_shares <= 0:
             return 0.0
-        # TODO: 부채 차감 필요 (현재는 자산만 고려)
-        net_assets = self.assets
-        return net_assets / outstanding_shares
+
+        # Calculate liabilities from bank loans
+        liabilities = 0.0
+        try:
+            loan_market = getattr(self.decision_engine, 'loan_market', None)
+            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
+                debt_summary = loan_market.bank.get_debt_summary(self.id)
+                liabilities = debt_summary.get('total_principal', 0.0)
+        except Exception:
+            pass  # Graceful fallback
+
+        net_assets = self.assets - liabilities
+        return max(0.0, net_assets) / outstanding_shares
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
         """

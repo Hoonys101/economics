@@ -56,15 +56,17 @@ class TestStockMarketInitialization:
 
     def test_update_reference_prices(self, stock_market):
         mock_firm = Mock()
-        mock_firm.assets = 10000.0
-        mock_firm.total_shares = 100.0
+        mock_firm.id = 100
         mock_firm.is_active = True
         
+        # Since logic is delegated to firm.get_book_value_per_share, we just mock that return value
+        mock_firm.get_book_value_per_share.return_value = 80.0
+
         firms = {100: mock_firm}
         stock_market.update_reference_prices(firms)
         
         assert 100 in stock_market.reference_prices
-        assert stock_market.reference_prices[100] == 100.0  # 10000 / 100
+        assert stock_market.reference_prices[100] == 80.0
 
 
 class TestStockOrderPlacement:
