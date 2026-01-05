@@ -84,30 +84,7 @@ class StockMarket(Market):
 
     def _calculate_book_value_per_share(self, firm: "Firm") -> float:
         """기업의 주당 순자산가치를 계산합니다."""
-        # Calculate Liabilities
-        liabilities = 0.0
-        try:
-            if (
-                hasattr(firm, "decision_engine")
-                and hasattr(firm.decision_engine, "loan_market")
-                and firm.decision_engine.loan_market
-                and hasattr(firm.decision_engine.loan_market, "bank")
-            ):
-                bank = firm.decision_engine.loan_market.bank
-                debt_summary = bank.get_debt_summary(firm.id)
-                liabilities = debt_summary.get("total_principal", 0.0)
-        except Exception as e:
-            self.logger.warning(
-                f"Failed to calculate liabilities for firm {firm.id}: {e}",
-                extra={"agent_id": firm.id, "tags": ["stock", "book_value_error"]}
-            )
-
-        net_assets = firm.assets - liabilities
-        total_shares = getattr(firm, "total_shares", 100.0)
-        
-        if total_shares <= 0:
-            return 0.0
-        return max(0.0, net_assets) / total_shares
+        return firm.get_book_value_per_share()
 
     def get_stock_price(self, firm_id: int) -> Optional[float]:
         """

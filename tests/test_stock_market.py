@@ -57,28 +57,15 @@ class TestStockMarketInitialization:
     def test_update_reference_prices(self, stock_market):
         mock_firm = Mock()
         mock_firm.id = 100
-        mock_firm.assets = 10000.0
-        mock_firm.total_shares = 100.0
         mock_firm.is_active = True
         
-        # Mock Decision Engine & Loan Market for Liabilities Check
-        mock_decision_engine = Mock()
-        mock_loan_market = Mock()
-        mock_bank = Mock()
-
-        mock_firm.decision_engine = mock_decision_engine
-        mock_decision_engine.loan_market = mock_loan_market
-        mock_loan_market.bank = mock_bank
-
-        # Setup Bank Debt Summary
-        mock_bank.get_debt_summary.return_value = {"total_principal": 2000.0}
+        # Since logic is delegated to firm.get_book_value_per_share, we just mock that return value
+        mock_firm.get_book_value_per_share.return_value = 80.0
 
         firms = {100: mock_firm}
         stock_market.update_reference_prices(firms)
         
         assert 100 in stock_market.reference_prices
-        # Net Assets = 10000 - 2000 = 8000
-        # Book Value = 8000 / 100 = 80.0
         assert stock_market.reference_prices[100] == 80.0
 
 
