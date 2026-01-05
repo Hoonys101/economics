@@ -62,8 +62,8 @@ def operation_trinity():
             
             # Household Metrics
             active_households = [h for h in sim.households if h.is_active]
-            # Fix: consumption_aggressiveness is internal state. Use current_consumption instead.
-            avg_consumption = np.mean([h.current_consumption for h in active_households]) if active_households else 0
+            # Fix: current_consumption is reset at end of tick. Use tracker data.
+            avg_consumption = indicators.get("total_consumption", 0) / len(active_households) if active_households else 0
             
             record = {
                 "Tick": tick,
