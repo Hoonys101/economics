@@ -77,6 +77,10 @@ class Firm(BaseAgent):
         self.brand_manager = BrandManager(self.id, config_module, logger)
         self.marketing_budget: float = 0.0 # Decision variable
         self.prev_awareness: float = 0.0  # For AI Reward Calculation
+        # ROI Optimization
+        self.marketing_budget_rate: float = 0.05  # Initial 5%
+        self.last_revenue: float = 0.0
+        self.last_marketing_spend: float = 0.0
 
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
@@ -192,6 +196,39 @@ class Firm(BaseAgent):
             brand_premium = 0.0
 
         return brand_premium
+
+    def _adjust_marketing_budget(self) -> None:
+        """Adjust marketing budget rate based on ROI."""
+        delta_spend = self.marketing_budget  # Current tick spend
+
+        # Skip first tick or zero previous spend
+        # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.
+        # But we also need to avoid division by zero.
+        if delta_spend <= 0 or self.last_marketing_spend <= 0:
+            self.last_revenue = self.revenue_this_turn
+            self.last_marketing_spend = self.marketing_budget
+            return
+
+        delta_revenue = self.revenue_this_turn - self.last_revenue
+        efficiency = delta_revenue / self.last_marketing_spend
+
+        # Decision Rules
+        saturation_level = getattr(self.config_module, "BRAND_AWARENESS_SATURATION", 0.9)
+        high_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5)
+        low_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8)
+        min_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MIN", 0.01)
+        max_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MAX", 0.20)
+
+        if self.brand_manager.brand_awareness >= saturation_level:
+            pass  # Maintain (Saturation)
+        elif efficiency > high_eff_threshold:
+            self.marketing_budget_rate = min(max_rate, self.marketing_budget_rate * 1.1)
+        elif efficiency < low_eff_threshold:
+            self.marketing_budget_rate = max(min_rate, self.marketing_budget_rate * 0.9)
+
+        # Update tracking
+        self.last_revenue = self.revenue_this_turn
+        self.last_marketing_spend = self.marketing_budget
 
     def produce(self, current_time: int) -> None:
         """
@@ -587,22 +624,29 @@ class Firm(BaseAgent):
             )
         
         # --- Phase 6: Marketing Spend & Brand Update ---
-        # Mock Decision: 5% of this turn's revenue (if any) or min 10.0 if assets allow
+        # Adaptive Budgeting
         marketing_spend = 0.0
         if self.assets > 100.0:
-            marketing_spend = max(10.0, self.revenue_this_turn * 0.05)
+            marketing_spend = max(10.0, self.revenue_this_turn * self.marketing_budget_rate)
         
-        if self.assets >= marketing_spend:
+        # Check affordability
+        if self.assets < marketing_spend:
+             marketing_spend = 0.0
+
+        # Apply spend
+        if marketing_spend > 0:
              self.assets -= marketing_spend
              self.cost_this_turn += marketing_spend
-             self.marketing_budget = marketing_spend # Record for AI/Stats
-        else:
-             marketing_spend = 0.0
-             self.marketing_budget = 0.0
+
+        # Update state for AI/ROI (Explicitly assign to instance variable)
+        self.marketing_budget = marketing_spend
 
         # Update Brand Assets
         actual_quality = self.productivity_factor / 10.0
         self.brand_manager.update(marketing_spend, actual_quality)
+
+        # Adjust Budget Rate based on ROI
+        self._adjust_marketing_budget()
         # ---------------------------------------------
 
         brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
