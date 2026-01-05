@@ -72,16 +72,32 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             avg_expected_inflation = 0.0
             
         real_rate = nominal_rate - avg_expected_inflation
+
+        # 1. Savings Incentive (Substitution Effect)
+        # Higher sensitivity for 'Ants' (Wealth Orientation)
+        sensitivity = self.config_module.INTEREST_SENSITIVITY_GRASSHOPPER
+        if household.value_orientation == self.config_module.VALUE_ORIENTATION_WEALTH_AND_NEEDS:
+            sensitivity = self.config_module.INTEREST_SENSITIVITY_ANT
         
-        # Heuristic: If Real Rate > 3% (0.03), reduce consumption aggressiveness
-        savings_incentive = 1.0
-        if real_rate > 0.03:
-            # 1% extra real rate -> 5% consumption reduction?
-            # Example: Rate 0.05, Infl 0.0 -> Real 0.05. Gap 0.02. Incentive = 0.9
-            excess_rate = real_rate - 0.03
-            savings_incentive = max(0.5, 1.0 - (excess_rate * 5.0))
-            if random.random() < 0.05: # Log occasionally
-                 self.logger.debug(f"SAVINGS_INCENTIVE | Agent {household.id} RealRate: {real_rate:.1%} -> Incentive: {savings_incentive:.2f}")
+        # Logic: If real_rate > neutral_rate, we reduce consumption
+        savings_incentive = max(0.0, (real_rate - self.config_module.NEUTRAL_REAL_RATE) * sensitivity)
+
+        # 2. Debt Burden (Income Effect)
+        # Check DSR (Debt Service Ratio)
+        debt_data = market_data.get("debt_data", {}).get(household.id, {})
+        daily_interest_burden = debt_data.get("daily_interest_burden", 0.0)
+        income_proxy = max(household.current_wage, household.assets * 0.01) # Wage or 1% of Assets
+        dsr = daily_interest_burden / (income_proxy + 1e-9)
+
+        debt_penalty = 0.0
+        if dsr > self.config_module.DSR_CRITICAL_THRESHOLD:
+            debt_penalty = 0.2 # Reduce consumption aggressiveness significantly
+
+        if random.random() < 0.01 and (savings_incentive > 0 or debt_penalty > 0):
+             self.logger.debug(
+                 f"MONETARY_TRANSMISSION | Agent {household.id} ({household.value_orientation}) "
+                 f"RealRate: {real_rate:.1%} -> SavInc: {savings_incentive:.2f}, DSR: {dsr:.2f} -> DebtPen: {debt_penalty:.2f}"
+             )
 
         # --------------------------------------------------------------------------
         
@@ -91,9 +107,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         for item_id in goods_list:
             agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
             
-            # Apply Savings Incentive (Reduce Aggressiveness)
-            if item_id != "food": # Don't starve for interest
-                agg_buy *= savings_incentive
+            # Apply Savings Incentive & Debt Penalty (Reduce Aggressiveness)
+            # Subsistence Constraint: Do not reduce if survival need is high
+            survival_need = household.needs.get("survival", 0.0)
+            if survival_need < getattr(self.config_module, "MASLOW_SURVIVAL_THRESHOLD", 50.0):
+                agg_buy *= (1.0 - savings_incentive - debt_penalty)
+                agg_buy = max(0.0, agg_buy)
             
             good_info = self.config_module.GOODS.get(item_id, {})
             utility_effects = good_info.get("utility_effects", {})
