@@ -152,10 +152,44 @@ class TestPlaceOrderToBook:
         assert [o.agent_id for o in buy_book if o.price == 100] == [1, 3]
 
 
-# TODO: place_order 테스트 케이스 추가 (미체결, 완전체결, 부분체결)
-
-
 class TestOrderMatching:
+    def test_unfilled_order_no_match(self, market: OrderBookMarket):
+        """가격이 교차하지 않아 매칭이 발생하지 않는 경우를 테스트합니다."""
+        # Arrange: 매도 110, 매수 100 (가격 불일치)
+        sell_order = Order(
+            agent_id=1,
+            order_type="SELL",
+            item_id="food",
+            quantity=10,
+            price=110,
+            market_id="test_market",
+        )
+        market.place_order(sell_order, current_time=1)
+
+        buy_order = Order(
+            agent_id=2,
+            order_type="BUY",
+            item_id="food",
+            quantity=10,
+            price=100,
+            market_id="test_market",
+        )
+        market.place_order(buy_order, current_time=2)
+
+        # Act
+        transactions = market.match_orders(current_time=3)
+
+        # Assert: 거래 없음, 주문 잔존
+        assert len(transactions) == 0
+
+        buy_book = market.buy_orders.get("food", [])
+        sell_book = market.sell_orders.get("food", [])
+
+        assert len(buy_book) == 1
+        assert len(sell_book) == 1
+        assert buy_book[0].price == 100
+        assert sell_book[0].price == 110
+
     def test_full_match_one_to_one(self, market: OrderBookMarket):
         """매수 주문 1개와 매도 주문 1개가 완전히 체결되는 경우를 테스트합니다."""
         sell_order = Order(
