@@ -66,22 +66,40 @@ def adjust_fiscal_policy(self, current_gdp: float) -> None:
 ### 2.4 Modify `calculate_income_tax`
 Replace fixed `INCOME_TAX_RATE` with `self.effective_tax_rate`.
 
-### 2.5 Debt Ceiling Logic in `provide_subsidy`
+### 2.5 Dynamic `provide_subsidy` (Centralized Spending)
+**All** spending (welfare, stimulus, infrastructure) must pass through this method to enforce the debt ceiling.
+
 ```python
-def provide_subsidy(self, ...):
+def provide_subsidy(self, target_agent: Any, amount: float, current_tick: int):
     debt_ceiling = getattr(self.config_module, "DEBT_CEILING_RATIO", 1.0)
     current_debt_ratio = self.total_debt / max(self.potential_gdp, 1.0)
     
-    if current_debt_ratio >= debt_ceiling and self.assets < amount:
-        self.logger.warning("DEBT_CEILING_HIT | Cannot deficit-spend.")
-        return  # Block deficit spending
-    
-    # Normal subsidy logic...
+    # Check if we need to print money
     if self.assets < amount:
+        # If debt ceiling reached, we CANNOT print more money
+        if current_debt_ratio >= debt_ceiling:
+            self.logger.warning(f"DEBT_CEILING_HIT | Ratio: {current_debt_ratio:.2f}. Blocking subsidy.")
+            return 0.0
+            
+        # Deficit Spending (Money Printing)
         deficit = amount - self.assets
-        self.assets += deficit  # Print money
+        self.assets += deficit
         self.total_debt += deficit
+        self.logger.info(f"DEFICIT_SPENDING | Printed {deficit:.2f}. Total Debt: {self.total_debt:.2f}")
+
+    # Final assets check (safety)
+    actual_payment = min(amount, self.assets)
+    if actual_payment <= 0: return 0.0
+    
+    self.assets -= actual_payment
+    target_agent.assets += actual_payment
+    # ... logging ...
+    return actual_payment
 ```
+
+### 2.6 Integration with Stimulus
+`run_welfare_check` should call `provide_subsidy` without manually increasing `self.assets`.
+The "GDP 5% drop" logic remains as a trigger, but its execution is now throttled by the **Debt Ceiling** within `provide_subsidy`.
 
 ## 3. Integration Points
 
