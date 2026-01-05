@@ -214,14 +214,24 @@ class PersonalityStatisticsTracker:
         
         avg_growth_rate = sum(growth_rates) / len(growth_rates) if growth_rates else 0.0
         
+        # 소득 통계 (labor_income_this_tick, capital_income_this_tick 사용)
+        labor_incomes = [getattr(h, "labor_income_this_tick", 0.0) for h in members]
+        capital_incomes = [getattr(h, "capital_income_this_tick", 0.0) for h in members]
+
+        avg_labor_income = sum(labor_incomes) / n
+        avg_capital_income = sum(capital_incomes) / n
+
+        total_income = avg_labor_income + avg_capital_income
+        labor_income_ratio = avg_labor_income / total_income if total_income > 0 else 0.0
+
         return {
             "personality_type": personality_type,
             "count": n,
             "avg_assets": avg_assets,
             "median_assets": median_assets,
-            "avg_labor_income": 0.0,  # TODO: 소득 추적 필요
-            "avg_capital_income": 0.0,  # TODO: 소득 추적 필요
-            "labor_income_ratio": 0.0,
+            "avg_labor_income": avg_labor_income,
+            "avg_capital_income": avg_capital_income,
+            "labor_income_ratio": labor_income_ratio,
             "employment_rate": employment_rate,
             "avg_portfolio_value": sum(portfolio_values) / n,
             "avg_stock_holdings": sum(stock_holdings) / n,

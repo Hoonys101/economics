@@ -562,6 +562,10 @@ class Firm(BaseAgent):
                 self.assets -= wage
                 employee.assets += net_wage # Pay Net Wage
                 
+                # Track Labor Income (Net)
+                if hasattr(employee, "labor_income_this_tick"):
+                    employee.labor_income_this_tick += net_wage
+
                 if income_tax > 0 and government:
                     government.collect_tax(income_tax, "income_tax", employee.id, current_time)
                     total_tax_withheld += income_tax
