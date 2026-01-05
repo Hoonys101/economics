@@ -507,3 +507,9 @@ CB_UPDATE_INTERVAL = 10         # Central Bank policy update interval (ticks)
 CB_INFLATION_TARGET = 0.02      # Target inflation rate (2%)
 CB_TAYLOR_ALPHA = 1.5           # Taylor Rule weight on inflation
 CB_TAYLOR_BETA = 0.5            # Taylor Rule weight on output gap
+
+# --- Phase 4.5: Interest Sensitivity ---
+NEUTRAL_REAL_RATE = 0.02
+DSR_CRITICAL_THRESHOLD = 0.4
+INTEREST_SENSITIVITY_ANT = 5.0
+INTEREST_SENSITIVITY_GRASSHOPPER = 1.0
