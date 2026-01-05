@@ -258,6 +258,12 @@ class Bank:
             if self.assets >= interest_payout:
                 self.assets -= interest_payout
                 agent.assets += interest_payout
+
+                # Track Capital Income (Interest)
+                from simulation.core_agents import Household
+                if isinstance(agent, Household) and hasattr(agent, "capital_income_this_tick"):
+                    agent.capital_income_this_tick += interest_payout
+
                 total_deposit_interest += interest_payout
                 # Compounding? Usually deposits compound.
                 # If we pay to agent.assets, it's "Payout".

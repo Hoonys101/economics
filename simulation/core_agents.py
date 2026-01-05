@@ -174,6 +174,10 @@ class Household(BaseAgent):
         self.perceived_avg_prices: Dict[str, float] = {}
         self.education_xp: float = 0.0  # Task #6: Education XP
 
+        # Income Tracking (Reset every tick)
+        self.labor_income_this_tick: float = 0.0
+        self.capital_income_this_tick: float = 0.0
+
         # Phase 8: Inflation Psychology
         self.price_history: Dict[str, deque] = {}  # ItemID -> Deque[float]
         self.expected_inflation: Dict[str, float] = {} # ItemID -> Expected Inflation Rate

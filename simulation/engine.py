@@ -733,12 +733,18 @@ class Simulation:
         if self.time % self.batch_save_interval == 0:
             self._flush_buffers_to_db()
 
-        # Reset consumption counters for next tick
+        # Reset consumption and income counters for next tick
         for h in self.households:
             if hasattr(h, "current_consumption"):
                 h.current_consumption = 0.0
             if hasattr(h, "current_food_consumption"):
                 h.current_food_consumption = 0.0
+
+            # Reset Income Accumulators
+            if hasattr(h, "labor_income_this_tick"):
+                h.labor_income_this_tick = 0.0
+            if hasattr(h, "capital_income_this_tick"):
+                h.capital_income_this_tick = 0.0
 
         self.logger.info(
             f"--- Ending Tick {self.time} ---",
@@ -924,6 +930,18 @@ class Simulation:
                     seller.current_wage = tx.price # Store wage
                     seller.needs["labor_need"] = 0.0
 
+                    # Track Labor Income (Net) - for first hiring, assuming payment
+                    # Note: Usually actual payment is in Firm.update_needs.
+                    # But if this transaction involves money transfer (it does below),
+                    # we should record it.
+                    # However, logic above:
+                    # buyer.assets -= ...
+                    # seller.assets += (trade_value - tax_amount)
+                    # So seller received net income.
+                    if hasattr(seller, "labor_income_this_tick"):
+                        net_income = trade_value - tax_amount
+                        seller.labor_income_this_tick += net_income
+
                 if isinstance(buyer, Firm):
                     if seller not in buyer.employees:
                         buyer.employees.append(seller)
@@ -938,6 +956,21 @@ class Simulation:
                             research_skill
                             * self.config_module.RND_PRODUCTIVITY_MULTIPLIER
                         )
+
+            elif tx.transaction_type == "dividend":
+                # Firm (Seller) pays Household (Buyer)
+                # Correction: distribute_dividends sets Seller=Firm, Buyer=Household.
+                # Standard logic above: Buyer pays Seller.
+                # We need REVERSE logic for Dividend.
+
+                # Firm (Seller) pays Dividend
+                seller.assets -= trade_value
+
+                # Household (Buyer) receives Dividend
+                buyer.assets += trade_value
+
+                if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+                    buyer.capital_income_this_tick += trade_value
 
             elif tx.transaction_type == "goods":
                 good_info = self.config_module.GOODS.get(tx.item_id, {})
