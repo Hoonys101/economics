@@ -185,6 +185,10 @@ class PersonalityStatisticsTracker:
         portfolio_values = []
         stock_holdings = []
         
+        # 소득 통계
+        labor_incomes = []
+        capital_incomes = []
+
         for h in members:
             portfolio_value = 0.0
             total_shares = 0.0
@@ -197,6 +201,16 @@ class PersonalityStatisticsTracker:
             
             portfolio_values.append(portfolio_value)
             stock_holdings.append(total_shares)
+
+            # 소득 데이터 수집
+            labor_incomes.append(getattr(h, "current_labor_income", 0.0))
+            capital_incomes.append(getattr(h, "current_capital_income", 0.0))
+
+        avg_labor_income = sum(labor_incomes) / n
+        avg_capital_income = sum(capital_incomes) / n
+
+        total_income = avg_labor_income + avg_capital_income
+        labor_income_ratio = (avg_labor_income / total_income) if total_income > 0 else 0.0
         
         # 욕구 통계
         survival_needs = [h.needs.get("survival", 0.0) for h in members]
@@ -219,9 +233,9 @@ class PersonalityStatisticsTracker:
             "count": n,
             "avg_assets": avg_assets,
             "median_assets": median_assets,
-            "avg_labor_income": 0.0,  # TODO: 소득 추적 필요
-            "avg_capital_income": 0.0,  # TODO: 소득 추적 필요
-            "labor_income_ratio": 0.0,
+            "avg_labor_income": avg_labor_income,
+            "avg_capital_income": avg_capital_income,
+            "labor_income_ratio": labor_income_ratio,
             "employment_rate": employment_rate,
             "avg_portfolio_value": sum(portfolio_values) / n,
             "avg_stock_holdings": sum(stock_holdings) / n,

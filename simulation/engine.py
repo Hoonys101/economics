@@ -352,6 +352,17 @@ class Simulation:
         ):
             self.ai_training_manager.run_imitation_learning_cycle(self.time)
 
+        # Reset consumption and income counters at the start of the tick
+        for h in self.households:
+            if hasattr(h, "current_consumption"):
+                h.current_consumption = 0.0
+            if hasattr(h, "current_food_consumption"):
+                h.current_food_consumption = 0.0
+            if hasattr(h, "current_labor_income"):
+                h.current_labor_income = 0.0
+            if hasattr(h, "current_capital_income"):
+                h.current_capital_income = 0.0
+
         # Update Bank Tick (Interest Processing)
         # Phase 4: Pass current_tick to bank for credit jail logic
         if hasattr(self.bank, "run_tick") and "current_tick" in self.bank.run_tick.__code__.co_varnames:
@@ -733,12 +744,8 @@ class Simulation:
         if self.time % self.batch_save_interval == 0:
             self._flush_buffers_to_db()
 
-        # Reset consumption counters for next tick
-        for h in self.households:
-            if hasattr(h, "current_consumption"):
-                h.current_consumption = 0.0
-            if hasattr(h, "current_food_consumption"):
-                h.current_food_consumption = 0.0
+        # TODO: Firm.distribute_dividends() is defined but never called in run_tick.
+        # Shareholders receive no dividends. This may be a bug.
 
         self.logger.info(
             f"--- Ending Tick {self.time} ---",
@@ -890,16 +897,29 @@ class Simulation:
                     buyer.assets -= (trade_value + tax_amount)
                     seller.assets += trade_value
                     self.government.collect_tax(tax_amount, "income_tax_firm", buyer.id, self.time)
+                    # [Track Labor Income] Net Income = Gross (Tax paid by firm)
+                    if hasattr(seller, 'current_labor_income'):
+                        seller.current_labor_income += trade_value
                 else:
                     # 가계가 세금을 납부 (원천징수, 기본값)
                     buyer.assets -= trade_value
                     seller.assets += (trade_value - tax_amount)
                     self.government.collect_tax(tax_amount, "income_tax_household", seller.id, self.time)
+                    # [Track Labor Income] Net Income = Gross - Tax
+                    if hasattr(seller, 'current_labor_income'):
+                        seller.current_labor_income += (trade_value - tax_amount)
             
             else:
                 # 기타 거래 (대출 등) - 현재는 세금 없음
                 buyer.assets -= trade_value
                 seller.assets += trade_value
+
+                # [Track Capital Income] Dividend
+                # NOTE: In standard logic, seller receives funds.
+                # If dividend transaction is constructed correctly, Household should be seller.
+                if tx.transaction_type == "dividend":
+                    if hasattr(seller, 'current_capital_income'):
+                        seller.current_capital_income += trade_value
 
             # --- 2. 유형별 특수 로직 ---
             if (

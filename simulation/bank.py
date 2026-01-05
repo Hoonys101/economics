@@ -258,6 +258,9 @@ class Bank:
             if self.assets >= interest_payout:
                 self.assets -= interest_payout
                 agent.assets += interest_payout
+                # [Track Capital Income] Interest
+                if hasattr(agent, "current_capital_income"):
+                    agent.current_capital_income += interest_payout
                 total_deposit_interest += interest_payout
                 # Compounding? Usually deposits compound.
                 # If we pay to agent.assets, it's "Payout".
