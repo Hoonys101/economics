@@ -155,4 +155,3 @@ simulation_data.db-journal
 logs/
 *.log
 tests/goldens/
-simulation_results/
