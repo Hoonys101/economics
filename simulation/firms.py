@@ -593,6 +593,11 @@ class Firm(BaseAgent):
             survival_cost = government.get_survival_cost(market_data)
 
         for employee in list(self.employees):
+            # Defensive: Skip invalid objects (e.g., Firm accidentally in employees)
+            if not hasattr(employee, 'employer_id') or not hasattr(employee, 'is_employed'):
+                self.employees.remove(employee)
+                continue
+            
             # Clean up employees who no longer work here (quit or hired elsewhere)
             if employee.employer_id != self.id or not employee.is_employed:
                 self.employees.remove(employee)
