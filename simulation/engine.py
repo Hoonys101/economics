@@ -20,6 +20,7 @@ from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStat
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
+from simulation.systems.reflux_system import EconomicRefluxSystem
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -145,6 +146,9 @@ class Simulation:
         
         # M&A Manager System
         self.ma_manager = MAManager(self, self.config_module)
+
+        # Economic Reflux System (Phase 8-B)
+        self.reflux_system = EconomicRefluxSystem()
 
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
@@ -354,7 +358,10 @@ class Simulation:
 
         # Update Bank Tick (Interest Processing)
         # Phase 4: Pass current_tick to bank for credit jail logic
-        if hasattr(self.bank, "run_tick") and "current_tick" in self.bank.run_tick.__code__.co_varnames:
+        # Phase 8-B: Pass reflux_system to capture bank profits
+        if hasattr(self.bank, "run_tick") and "reflux_system" in self.bank.run_tick.__code__.co_varnames:
+             self.bank.run_tick(self.agents, self.time, reflux_system=self.reflux_system)
+        elif hasattr(self.bank, "run_tick") and "current_tick" in self.bank.run_tick.__code__.co_varnames:
              self.bank.run_tick(self.agents, self.time)
         else:
              self.bank.run_tick(self.agents)
@@ -409,7 +416,8 @@ class Simulation:
                     "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
                     "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
                 }
-                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time, self.government)
+                # Phase 8-B: Pass reflux_system to firm.make_decision for CAPEX capture
+                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time, self.government, self.reflux_system)
                 for order in firm_orders:
                     target_market = self.markets.get(order.market_id)
                     if target_market:
@@ -592,7 +600,8 @@ class Simulation:
              if firm.is_active:
                  firm.produce(self.time)
                  # Phase 4: Pass government and market_data for income tax withholding
-                 firm.update_needs(self.time, self.government, market_data)
+                 # Phase 8-B: Pass reflux_system for expense capture
+                 firm.update_needs(self.time, self.government, market_data, self.reflux_system)
                  
                  # 2a. 법인세(Corporate Tax) 징수 (이익이 발생한 경우)
                  if firm.is_active and firm.current_profit > 0:
@@ -605,7 +614,8 @@ class Simulation:
         self.tracker.track(self.time, self.households, self.firms, self.markets)
 
         # 2b. 정부 인프라 투자 (예산 충족 시)
-        if self.government.invest_infrastructure(self.time):
+        # Phase 8-B: Pass reflux_system to capture infrastructure spending
+        if self.government.invest_infrastructure(self.time, self.reflux_system):
             # 인프라 투자 성공 시 모든 기업의 TFP 상향 조정
             tfp_boost = getattr(self.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
             for firm in self.firms:
@@ -725,6 +735,10 @@ class Simulation:
 
         # Phase 5: Finalize Government Stats for the tick
         self.government.finalize_tick(self.time)
+
+        # Phase 8-B: Distribute Reflux Funds (Service Sector Income)
+        # Must happen before state save so households see the income
+        self.reflux_system.distribute(self.households)
 
         # Save all state at the end of the tick
         self._save_state_to_db(all_transactions)

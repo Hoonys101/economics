@@ -212,6 +212,9 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                     added_capital = investment_budget * efficiency
                     
                     firm.assets -= investment_budget
+                    # Phase 8-B: Capture CAPEX
+                    if context.reflux_system:
+                         context.reflux_system.capture(investment_budget, str(firm.id), "capex")
                     firm.capital_stock += added_capital
                     
                     # 6a. 정부 보조금 수령 (R&D 및 자본투자 보조금)

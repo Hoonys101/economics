@@ -433,13 +433,17 @@ class Government:
                     extra={"tick": current_tick, "agent_id": self.id, "tags": ["policy", "rate"]}
                 )
 
-    def invest_infrastructure(self, current_tick: int) -> bool:
+    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> bool:
         """인프라에 투자하여 전체 생산성을 향상시킵니다."""
         cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
         
         if self.assets >= cost:
             self.assets -= cost
             self.expenditure_this_tick += cost
+            # Phase 8-B: Capture Infrastructure Cost
+            if reflux_system:
+                reflux_system.capture(cost, str(self.id), "infrastructure")
+
             self.infrastructure_level += 1
             
             logger.info(

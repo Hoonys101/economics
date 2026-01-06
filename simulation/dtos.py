@@ -90,6 +90,7 @@ class DecisionContext:
     household: Optional[Household] = None # Avoid circular import if possible, or use TYPE_CHECKING
     firm: Optional[Firm] = None
     government: Optional[Any] = None
+    reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
 
 
 # ------------------------------------------------------------------------------

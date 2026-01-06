@@ -451,7 +451,7 @@ class Firm(BaseAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None
+        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         self.logger.debug(
@@ -470,6 +470,7 @@ class Firm(BaseAgent):
             market_data=market_data,
             current_time=current_time,
             government=government,
+            reflux_system=reflux_system,
         )
         decisions, tactic = self.decision_engine.make_decisions(context)
         self.logger.debug(
@@ -545,7 +546,7 @@ class Firm(BaseAgent):
             self.logger.info("No employees or no capital, no production.", extra=log_extra)
 
     @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None) -> None:
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
         self.logger.debug(
             f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}",
@@ -561,7 +562,11 @@ class Firm(BaseAgent):
         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
         self.assets -= holding_cost
         self.cost_this_turn += holding_cost
+
+        # Phase 8-B: Capture holding cost (Storage Service Fee)
         if holding_cost > 0:
+            if reflux_system:
+                reflux_system.capture(holding_cost, str(self.id), "fixed_cost")
             self.logger.info(
                 f"Paid inventory holding cost: {holding_cost:.2f}",
                 extra={**log_extra, "holding_cost": holding_cost},
@@ -637,6 +642,9 @@ class Firm(BaseAgent):
         if marketing_spend > 0:
              self.assets -= marketing_spend
              self.cost_this_turn += marketing_spend
+             # Phase 8-B: Capture marketing spend (Ad Agency Fee)
+             if reflux_system:
+                 reflux_system.capture(marketing_spend, str(self.id), "marketing")
 
         # Update state for AI/ROI (Explicitly assign to instance variable)
         self.marketing_budget = marketing_spend

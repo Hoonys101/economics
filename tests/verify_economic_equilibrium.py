@@ -2,6 +2,7 @@
 import logging
 import sys
 import os
+import unittest
 
 # Ensure we can import simulation modules
 sys.path.append(os.getcwd())
@@ -17,58 +18,57 @@ from app import create_simulation, simulation_instance, get_or_create_simulation
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("EconomyCheck")
 
-def run_verification():
-    print(">>> Initializing Simulation...")
-    
-    # Use app's creator to ensure consistency
-    create_simulation()
-    from app import simulation_instance as sim
-    
-    if not sim:
-        print("!! Failed to create simulation.")
-        return
+class TestEconomicConservation(unittest.TestCase):
+    def setUp(self):
+        self.original_config = {}
+        
+    def test_conservation_of_money(self):
+        print("\n>>> Initializing Simulation for Conservation Check...")
+        
+        create_simulation()
+        from app import simulation_instance as sim
+        
+        if not sim:
+            self.fail("Failed to create simulation.")
 
-    print(f"Start: Households={len(sim.households)}, Firms={len(sim.firms)}")
-    
-    print("\n>>> Running 5 Ticks (Diagnostic Mode)...")
-    print(f"{'Tick':<5} | {'GDP':<10} | {'Deaths':<8} | {'Food Price':<10} | {'H0 Assets':<10} | {'H0 Food':<8} | {'H0 SurvStatus':<12}")
-    print("-" * 100)
+        def calculate_total_money(simulation):
+            h_assets = sum(h.assets for h in simulation.households)
+            f_assets = sum(f.assets for f in simulation.firms)
+            b_assets = simulation.bank.assets
+            g_assets = simulation.government.assets
+            r_bal = simulation.reflux_system.balance
+            return h_assets + f_assets + b_assets + g_assets + r_bal
 
-    for i in range(1, 6):
-        sim.run_tick()
+        initial_money = calculate_total_money(sim)
+        print(f"Initial Money Supply: {initial_money:,.2f}")
         
-        # Get Indicators
-        indicators = sim.tracker.get_latest_indicators()
-        gdp = indicators.get("total_production", 0)
+        ticks_to_run = 100
+        prev_money = initial_money
         
-        # Count deaths
-        dead_h = sum(1 for h in sim.households if not h.is_active)
-        
-        # Check Food Market
-        food_market = sim.markets.get("basic_food")
-        last_price = food_market.daily_avg_price.get("basic_food", 0) if food_market else 0
-        
-        # Check Agent 0
-        h0 = sim.agents.get(0) # Household 0
-        h0_assets = h0.assets if h0 else -1
-        h0_food = h0.inventory.get("basic_food", 0) if h0 else -1
-        h0_surv = h0.needs.get("survival", 0) if h0 else -1
-        
-        print(f"{i:<5} | {gdp:<10.1f} | {dead_h:<8} | {last_price:<10.1f} | {h0_assets:<10.1f} | {h0_food:<8.1f} | {h0_surv:<12.1f}")
-        
-        # Debug Order Book at Tick 1
-        if i == 1:
-            print(f"  [Tick 1 Debug] Market 'basic_food':")
-            bids = food_market.buy_orders.get("basic_food", [])
-            asks = food_market.sell_orders.get("basic_food", [])
-            print(f"    Bids ({len(bids)}): {[f'{o.price:.2f} (qty {o.quantity})' for o in bids]}")
-            print(f"    Asks ({len(asks)}): {[f'{o.price:.2f} (qty {o.quantity})' for o in asks]}")
+        print(f"{'Tick':<5} | {'Total Money':<15} | {'Diff':<10}")
+        print("-" * 35)
+
+        for i in range(1, ticks_to_run + 1):
+            sim.run_tick()
+
+            current_money = calculate_total_money(sim)
+            diff = current_money - prev_money
             
-            # Check if H0 tried to buy
-            if h0:
-                print(f"    H0 State: Active={h0.is_active}, Decision Engine Recommends: ?")
+            # Print periodically or on error
+            if i % 10 == 0 or diff < -0.01:
+                print(f"{i:<5} | {current_money:<15,.2f} | {diff:<10.4f}")
 
-    print("\n>>> Diagnosis Complete")
+            # Allow for floating point errors (epsilon)
+            # Fail only if money decreases significantly (Leak)
+            # Increases are allowed (Central Bank injection, Deficit Spending)
+            if diff < -1.0:
+                 self.fail(f"Money Leakage Detected at Tick {i}. Diff: {diff}")
+
+            prev_money = current_money
+
+        print("\n>>> Conservation Test Passed.")
+        print(f"Final Money: {prev_money:,.2f}")
+        print(f"Net Change: {prev_money - initial_money:,.2f}")
 
 if __name__ == "__main__":
-    run_verification()
+    unittest.main()

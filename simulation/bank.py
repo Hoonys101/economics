@@ -201,7 +201,7 @@ class Bank:
             "daily_interest_burden": daily_interest_burden
         }
 
-    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0):
+    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None):
         """
         Process interest payments and distributions.
         Must be called every tick.
@@ -273,8 +273,20 @@ class Bank:
                 # Bank run scenario?
                 logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
 
+        # Phase 8-B: Capture Net Profit (Reflux)
+        # Net Profit = Interest Income - Interest Expense
+        net_profit = total_loan_interest - total_deposit_interest
+        if net_profit > 0 and reflux_system:
+            # Transfer profit to reflux system (Distribution as dividend/service fee)
+            # This ensures Bank doesn't accumulate infinite money.
+            # Bank assets were already updated above (+loan_int, -dep_int).
+            # So we subtract net_profit from assets.
+            self.assets -= net_profit
+            reflux_system.capture(net_profit, "Bank", "net_profit")
+            logger.info(f"BANK_PROFIT_CAPTURE | Transferred {net_profit:.2f} to Reflux System.")
+
         logger.info(
-            f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Reserves: {self.assets:.2f}",
+            f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Net Profit: {net_profit:.2f}, Reserves: {self.assets:.2f}",
             extra={"agent_id": self.id, "tags": ["bank", "tick"]}
         )
 
