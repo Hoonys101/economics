@@ -38,6 +38,54 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
             extra={"tick": 0, "tags": ["init"]},
         )
 
+    def calculate_survival_price(self, firm, proposed_price):
+        """
+        Solvency-Driven Pricing.
+        - Depreciation: Old inventory loses value.
+        - Liquidity Fear: Low cash triggers panic selling.
+        """
+        # --- 1. Depreciation Pressure ---
+        # Longer inventory holding = lower value (0.5% decay per day)
+        # Use last_sales_volume tracked by Engine
+        sales_volume = getattr(firm, 'last_sales_volume', 1) or 1
+        current_inventory = sum(firm.inventory.values()) if isinstance(firm.inventory, dict) else getattr(firm, 'inventory', 0)
+        avg_inventory_days = current_inventory / sales_volume
+        depreciation_factor = max(0.5, 1.0 - (avg_inventory_days * 0.005))
+
+        value_adjusted_price = proposed_price * depreciation_factor
+
+        # --- 2. Liquidity Fear (Runway-based Panic) ---
+        # Use last_daily_expenses tracked by Engine
+        daily_burn = getattr(firm, 'last_daily_expenses', 1.0) # Avoid 0
+        if daily_burn <= 0: daily_burn = 1.0 # Safety
+
+        runway = firm.assets / (daily_burn + 1e-9)  # Days until bankruptcy
+
+        panic_discount = 0.0
+        if runway < 30:   # Less than 1 month
+            panic_discount = 0.10  # 10% off
+        if runway < 10:   # Less than 10 days
+            panic_discount = 0.30  # 30% off
+        if runway < 3:    # Imminent death
+            panic_discount = 0.80  # 80% off (true fire sale)
+
+        final_price = value_adjusted_price * (1.0 - panic_discount)
+
+        if panic_discount > 0:
+            self.logger.info(
+                f"PANIC_DISCOUNT | Firm {firm.id} Panic: Runway={runway:.1f} days, "
+                f"Burn={daily_burn:.1f}, Discount={panic_discount*100:.0f}%",
+                extra={
+                    "agent_id": firm.id,
+                    "runway": runway,
+                    "panic_discount": panic_discount,
+                    "tick": 0 # Context usually has time, but not passed here. Logger handles it if capable.
+                }
+            )
+
+        # Floor price (never below 0.1)
+        return max(0.1, final_price)
+
     def make_decisions(
         self,
         context: DecisionContext,
@@ -98,7 +146,12 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
             price_adjustment = (0.5 - agg_sell) * 0.4 # +/- 20% range
             
             target_price = market_price * (1.0 + price_adjustment)
-            final_price = max(self.config_module.AI_MIN_PRICE_FLOOR, target_price) # Prevent negative/zero
+
+            # --- Solvency-Driven Pricing Check (WO-012) ---
+            final_price = self.calculate_survival_price(firm, target_price)
+            # ----------------------------------------------
+
+            final_price = max(self.config_module.AI_MIN_PRICE_FLOOR, final_price) # Prevent negative/zero
             
             firm.last_prices[item_id] = final_price # Update memory
             

@@ -66,6 +66,11 @@ class Firm(BaseAgent):
         self.profit_history: deque[float] = deque(maxlen=self.config_module.PROFIT_HISTORY_TICKS)
         self.revenue_this_tick = 0.0
         self.expenses_this_tick = 0.0
+
+        # Solvency-Driven Logic Support
+        self.last_daily_expenses: float = 10.0  # Seed with non-zero to prevent inf runway
+        self.last_sales_volume: float = 1.0     # Seed with non-zero
+        self.sales_volume_this_tick: float = 0.0
         # --- GEMINI_PROPOSED_ADDITION_END ---
         
         # --- Phase 9: M&A Attributes ---

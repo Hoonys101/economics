@@ -760,6 +760,16 @@ class Simulation:
             if hasattr(h, "capital_income_this_tick"):
                 h.capital_income_this_tick = 0.0
 
+        # Reset/Update Firm Counters for Solvency Logic
+        for f in self.firms:
+            # Snapshot for next tick's decision
+            f.last_daily_expenses = f.expenses_this_tick
+            f.last_sales_volume = f.sales_volume_this_tick
+            # Reset current counters
+            f.sales_volume_this_tick = 0.0
+            f.expenses_this_tick = 0.0 # Reset expenses as well
+            f.revenue_this_tick = 0.0 # Reset revenue
+
         self.logger.info(
             f"--- Ending Tick {self.time} ---",
             extra={"tick": self.time, "tags": ["tick_end"]},
@@ -1011,6 +1021,10 @@ class Simulation:
                         buyer.current_consumption += tx.quantity
                         if tx.item_id == "basic_food":
                             buyer.current_food_consumption += tx.quantity
+
+                # Track Sales Volume for Solvency Logic
+                if isinstance(seller, Firm):
+                    seller.sales_volume_this_tick += tx.quantity
 
             elif tx.transaction_type == "stock":
                 # 주식 거래 처리
