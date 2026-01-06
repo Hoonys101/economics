@@ -560,7 +560,7 @@ class Household(BaseAgent):
         Phase 6: Utility-based Seller Selection.
         Returns (BestSellerID, BestAskPrice)
         """
-        market = markets.get("goods_market")
+        market = markets.get(item_id)
         if not market:
             return None, 0.0
         

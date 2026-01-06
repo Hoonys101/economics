@@ -4,7 +4,7 @@ import logging
 import random
 
 from simulation.models import Order, StockOrder
-from simulation.ai.enums import Tactic, Aggressiveness
+from simulation.ai.api import Tactic, Aggressiveness, Personality
 from .base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
 
@@ -58,47 +58,25 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             agent_data, market_data, goods_list
         )
         
-        # --- [Architectural Audit] The Missing Link: Interest Rate Sensitivity ---
-        # AI learns slowly, so we add a behavioral heuristic to react to Monetary Policy.
-        # High Real Rates -> Incentive to Save -> Reduce Consumption
+        # --- [Phase 4.5] Organic Monetary Transmission: Utility Competition Model ---
+        # Instead of a hard-coded command, we compare the "Value" of Current Consumption vs Future Savings.
         
         loan_market_data = market_data.get("loan_market", {})
-        nominal_rate = loan_market_data.get("interest_rate", 0.05) # Base Rate
+        nominal_rate = loan_market_data.get("interest_rate", 0.05)
         
-        # Use simple average expected inflation across goods
-        if household.expected_inflation:
-            avg_expected_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
-        else:
-            avg_expected_inflation = 0.0
-            
-        real_rate = nominal_rate - avg_expected_inflation
-
-        # 1. Savings Incentive (Substitution Effect)
-        # Higher sensitivity for 'Ants' (Wealth Orientation)
-        sensitivity = self.config_module.INTEREST_SENSITIVITY_GRASSHOPPER
-        if household.value_orientation == self.config_module.VALUE_ORIENTATION_WEALTH_AND_NEEDS:
-            sensitivity = self.config_module.INTEREST_SENSITIVITY_ANT
+        # 1. Savings Utility (Saving ROI)
+        savings_roi = self._calculate_savings_roi(household, nominal_rate)
         
-        # Logic: If real_rate > neutral_rate, we reduce consumption
-        savings_incentive = max(0.0, (real_rate - self.config_module.NEUTRAL_REAL_RATE) * sensitivity)
-
-        # 2. Debt Burden (Income Effect)
-        # Check DSR (Debt Service Ratio)
+        # 2. Debt Burden (Income Effect) - Still a hard constraint for liquidity
         debt_data = market_data.get("debt_data", {}).get(household.id, {})
         daily_interest_burden = debt_data.get("daily_interest_burden", 0.0)
-        income_proxy = max(household.current_wage, household.assets * 0.01) # Wage or 1% of Assets
+        income_proxy = max(household.current_wage, household.assets * 0.01)
         dsr = daily_interest_burden / (income_proxy + 1e-9)
-
-        debt_penalty = 0.0
+        
+        debt_penalty = 1.0
         if dsr > self.config_module.DSR_CRITICAL_THRESHOLD:
-            debt_penalty = 0.2 # Reduce consumption aggressiveness significantly
-
-        if random.random() < 0.01 and (savings_incentive > 0 or debt_penalty > 0):
-             self.logger.debug(
-                 f"MONETARY_TRANSMISSION | Agent {household.id} ({household.value_orientation}) "
-                 f"RealRate: {real_rate:.1%} -> SavInc: {savings_incentive:.2f}, DSR: {dsr:.2f} -> DebtPen: {debt_penalty:.2f}"
-             )
-
+            debt_penalty = 0.5 # 50% reduction in aggressiveness due to liquidity panic
+            
         # --------------------------------------------------------------------------
         
         orders = []
@@ -107,18 +85,53 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         for item_id in goods_list:
             agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
             
-            # Apply Savings Incentive & Debt Penalty (Reduce Aggressiveness)
-            # Subsistence Constraint: Do not reduce if survival need is high
-            survival_need = household.needs.get("survival", 0.0)
-            if survival_need < getattr(self.config_module, "MASLOW_SURVIVAL_THRESHOLD", 50.0):
-                agg_buy *= (1.0 - savings_incentive - debt_penalty)
-                agg_buy = max(0.0, agg_buy)
+            # --- Organic Substitution Effect: Saving vs Consumption ROI ---
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", self.config_module.MARKET_PRICE_FALLBACK)
+            if not avg_price or avg_price <= 0:
+                avg_price = self.config_module.MARKET_PRICE_FALLBACK
+            
+            # Need Value (UC)
+            max_need_value = 0.0
+            utility_effects = self.config_module.GOODS.get(item_id, {}).get("utility_effects", {})
+            for need_type in utility_effects.keys():
+                nv = household.needs.get(need_type, 0.0)
+                if nv > max_need_value:
+                    max_need_value = nv
+            
+            consumption_roi = max_need_value / (avg_price + 1e-9)
+            
+            # If Saving is more attractive, attenuate aggressiveness
+            if savings_roi > consumption_roi:
+                # Organic attenuation: ratio of ROIs
+                attenuation = consumption_roi / savings_roi
+                # Cap attenuation to prevent complete freeze unless extremely high rate
+                # Ensure survival priority
+                if max_need_value > 40:
+                    attenuation = max(0.5, attenuation)
+                else:
+                    attenuation = max(0.1, attenuation)
+                agg_buy *= attenuation
+            
+            if random.random() < 0.05: # Log 5% of decisions
+                self.logger.info(
+                    f"MONETARY_TRANS | HH {household.id} | {item_id} | Need: {max_need_value:.1f} | "
+                    f"ConsROI: {consumption_roi:.2f} vs SavROI: {savings_roi:.4f} | AggBuy: {agg_buy:.2f}"
+                )
+            
+            agg_buy *= debt_penalty # Apply liquidity constraint
+            agg_buy = max(0.0, agg_buy)
+
+            if random.random() < 0.001:
+                self.logger.debug(
+                    f"MONETARY_TRANS | Agent {household.id} {item_id}: "
+                    f"SavROI: {savings_roi:.4f} vs ConsROI: {consumption_roi:.4f} -> Agg: {agg_buy:.2f}"
+                )
             
             good_info = self.config_module.GOODS.get(item_id, {})
             utility_effects = good_info.get("utility_effects", {})
             
             # Improved Valuation: Anchor to Market Price + Urgent Need
-            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_avg_traded_price", self.config_module.MARKET_PRICE_FALLBACK)
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", self.config_module.MARKET_PRICE_FALLBACK)
             if not avg_price or avg_price <= 0:
                 avg_price = self.config_module.MARKET_PRICE_FALLBACK # Fallback
                 
@@ -156,13 +169,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 target_quantity *= (1.0 + hoarding_factor)
                 willingness_to_pay *= (1.0 + expected_inflation) # Paying premium to secure goods
                 
-                # Cap at max inventory capacity? For now, let them overbuy (stockpile)
-                
             elif expected_inflation < getattr(self.config_module, "DEFLATION_WAIT_THRESHOLD", -0.05):
                 # Deflationary Wait: Decrease Quantity
                 delay_factor = getattr(self.config_module, "DELAY_FACTOR", 0.5)
                 target_quantity *= (1.0 - delay_factor)
                 willingness_to_pay *= (1.0 + expected_inflation) # Lower WTP (expecting drop)
+            
             # Budget Constraint Check: Don't spend more than 50% of assets on a single item per tick
             # unless survival is critical.
             budget_limit = household.assets * self.config_module.BUDGET_LIMIT_NORMAL_RATIO
@@ -201,7 +213,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 
                 # Probability scales with mobility intent
                 if random.random() < (self.config_module.JOB_QUIT_PROB_BASE + agg_mobility * self.config_module.JOB_QUIT_PROB_SCALE):
-                    # print(f"DEBUG: Household {household.id} quitting (AI decision). Current: {household.current_wage:.2f}, Threshold: {quit_threshold:.2f}, BestOffer: {best_market_offer:.2f}")
                     household.quit()
 
         # Scenario B: Unemployed (Default or just quit) - Always look for work
@@ -221,8 +232,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         stock_orders = self._make_stock_investment_decisions(
             household, markets, market_data, action_vector, current_time
         )
-        # StockOrder는 별도 리스트로 반환 (Order와 다른 타입)
-        # 현재는 주식 주문을 markets에 직접 제출
+        # Current: Submit stock orders directly to markets
         stock_market = markets.get("stock_market")
         if stock_market is not None:
             for stock_order in stock_orders:
@@ -238,13 +248,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         action_vector: Any,
         current_time: int,
     ) -> List[StockOrder]:
-        """
-        주식 투자 의사결정을 수행합니다.
-        
-        투자 적극성(investment_aggressiveness)에 따라:
-        - 보유 주식의 매도 여부
-        - 신규 주식의 매수 여부
-        """
+        """주식 투자 의사결정을 수행합니다."""
         stock_orders: List[StockOrder] = []
         
         # 주식 시장 활성화 확인
@@ -266,81 +270,55 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         budget_ratio = getattr(self.config_module, "HOUSEHOLD_INVESTMENT_BUDGET_RATIO", 0.2)
         investment_budget = household.assets * budget_ratio * agg_invest
         
-        # ---------------------------------------------------------
-        # A. 매도 결정: 보유 주식 평가
-        # ---------------------------------------------------------
+        # A. 매도 결정
         sell_threshold = getattr(self.config_module, "STOCK_SELL_PROFIT_THRESHOLD", 0.15)
-        
         for firm_id, shares_owned in list(household.shares_owned.items()):
-            if shares_owned <= 0:
-                continue
-                
+            if shares_owned <= 0: continue
             current_price = stock_market.get_stock_price(firm_id)
-            if current_price is None:
-                continue
-            
-            # 매도 조건: 투자 적극성이 낮을수록 더 쉽게 매도
-            # 또는 주가가 크게 상승한 경우 (이익 실현)
+            if current_price is None: continue
             ref_price = stock_market.reference_prices.get(firm_id, current_price)
-            
-            # 순자산가치 대비 20% 이상 상승 시 매도 고려
             if current_price > ref_price * (1 + sell_threshold):
-                # 투자 적극성이 낮을수록 더 적극적으로 매도
                 sell_prob = 0.3 * (1 - agg_invest)
                 if random.random() < sell_prob:
                     sell_quantity = min(shares_owned, max(1.0, shares_owned * 0.5))
-                    stock_orders.append(
-                        StockOrder(
-                            agent_id=household.id,
-                            order_type="SELL",
-                            firm_id=firm_id,
-                            quantity=sell_quantity,
-                            price=current_price * 0.98,  # 시장가 약간 아래
-                        )
-                    )
+                    stock_orders.append(StockOrder(household.id, "SELL", firm_id, sell_quantity, current_price * 0.98))
         
-        # ---------------------------------------------------------
-        # B. 매수 결정: 저평가된 주식 탐색
-        # ---------------------------------------------------------
+        # B. 매수 결정
         if investment_budget < getattr(self.config_module, "STOCK_MIN_ORDER_QUANTITY", 1.0) * 10:
-            return stock_orders  # 예산 부족
+            return stock_orders
         
         buy_discount = getattr(self.config_module, "STOCK_BUY_DISCOUNT_THRESHOLD", 0.10)
-        
-        # 모든 기업의 주가 확인
         for firm_id, ref_price in stock_market.reference_prices.items():
-            if ref_price <= 0:
-                continue
-                
+            if ref_price <= 0: continue
             current_price = stock_market.get_stock_price(firm_id) or ref_price
-            
-            # 매수 조건: 시장가가 순자산가치보다 낮은 경우
             if current_price < ref_price * (1 - buy_discount):
-                # 투자 적극성에 비례하여 매수 확률
                 buy_prob = 0.2 * agg_invest
                 if random.random() < buy_prob:
-                    # 예산 내에서 매수 수량 결정
                     max_quantity = investment_budget / current_price
                     buy_quantity = max(1.0, min(10.0, max_quantity * 0.5))
-                    
                     if buy_quantity >= 1.0:
-                        stock_orders.append(
-                            StockOrder(
-                                agent_id=household.id,
-                                order_type="BUY",
-                                firm_id=firm_id,
-                                quantity=buy_quantity,
-                                price=current_price * 1.02,  # 시장가 약간 위
-                            )
-                        )
-                        # 예산 차감 (실제 거래는 매칭 후 처리)
+                        stock_orders.append(StockOrder(household.id, "BUY", firm_id, buy_quantity, current_price * 1.02))
                         investment_budget -= buy_quantity * current_price
-                        
-                        if investment_budget <= 0:
-                            break
+                        if investment_budget <= 0: break
         
         return stock_orders
 
-    # Legacy helper methods removed
+    def _calculate_savings_roi(self, household: "Household", nominal_rate: float) -> float:
+        """가계의 저축 ROI(미래 효용)를 계산합니다."""
+        if household.expected_inflation:
+            avg_expected_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+        else:
+            avg_expected_inflation = 0.0
+            
+        real_rate = nominal_rate - avg_expected_inflation
+        
+        beta = 1.0
+        if household.personality in [Personality.MISER, Personality.CONSERVATIVE]:
+            beta = 1.2
+        elif household.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+            beta = 0.8
+            
+        return (1.0 + real_rate) * beta
+
     def _execute_tactic(self, *args): return []
     def _handle_specific_purchase(self, *args): return []

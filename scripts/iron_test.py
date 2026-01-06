@@ -26,11 +26,10 @@ from simulation.ai.api import Personality
 
 # Setup Logging
 logging.basicConfig(
-    level=logging.WARNING,  # Only warnings and errors
+    level=logging.INFO,  # See all INFO logs
     format='%(asctime)s | %(levelname)s | %(message)s'
 )
 logger = logging.getLogger("IRON_TEST")
-logger.setLevel(logging.INFO)
 
 def run_iron_test(num_ticks: int = 1000):
     logger.info(f"=== IRON TEST: {num_ticks} Tick MVP Verification ===")
@@ -86,7 +85,7 @@ def run_iron_test(num_ticks: int = 1000):
     
     # 4. Create Firms
     firms = []
-    specializations = ["basic_food", "clothing", "education_service"]  # Must match config.GOODS keys
+    specializations = ["basic_food", "clothing", "education_service", "luxury_food"]
     
     for i in range(config.NUM_FIRMS):
         firm_value_orientation = random.choice(all_value_orientations)

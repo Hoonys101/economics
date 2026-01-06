@@ -94,10 +94,10 @@
 ## Phase 4.5: Interest Sensitivity (The Missing Link)
 > **Goal**: Connect Central Bank interest rates to household consumption/saving decisions (Monetary Transmission).
 
-- [/] **Planning**: Define `adjust_consumption_for_interest_rate` logic (Substitution & Cashflow effects).
-- [ ] **Implementation**:
-    - [ ] `AIDrivenHouseholdDecisionEngine`: Implement heuristic override for real interest rates.
-    - [ ] `AIDrivenHouseholdDecisionEngine`: Implement DSR-based consumption penalty.
+- [x] **Planning**: Define `adjust_consumption_for_interest_rate` logic (Substitution & Cashflow effects).
+- [x] **Implementation**:
+    - [x] `AIDrivenHouseholdDecisionEngine`: Implement heuristic override for real interest rates.
+    - [x] `AIDrivenHouseholdDecisionEngine`: Implement DSR-based consumption penalty.
 - [ ] **Verification**:
     - [ ] Run Iron Test and verify `MONETARY_TRANSMISSION` behavior.
     - [ ] Observe Ant (sensitive) vs Grasshopper (insensitive) behavior changes.

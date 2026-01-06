@@ -427,7 +427,7 @@ POTENTIAL_GDP_WINDOW = 50               # Ticks for moving average
 TAX_RATE_MIN = 0.05
 TAX_RATE_MAX = 0.30
 TAX_RATE_BASE = 0.10                    # Neutral rate (boom/bust neutral)
-DEBT_CEILING_RATIO = 1.0                # Max debt/GDP
+DEBT_CEILING_RATIO = 2.0                # Max debt/GDP (Increased to 2.0 for stability)
 FISCAL_STANCE_EXPANSION_THRESHOLD = 0.025   # +2.5% stance -> expand
 FISCAL_STANCE_CONTRACTION_THRESHOLD = -0.025 # -2.5% stance -> contract
 
@@ -447,8 +447,8 @@ WEALTH_TAX_THRESHOLD = 50000.0
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
-# [HOTFIX: Fiscal Balance] Increased to 0.7
-UNEMPLOYMENT_BENEFIT_RATIO = 0.7 # 70% of survival cost (was 50%)
+# [HOTFIX: Fiscal Balance] Increased to 1.0 for survival
+UNEMPLOYMENT_BENEFIT_RATIO = 1.0 # 100% of survival cost (was 70%)
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% drop trigger
 
 # 4. Bankruptcy Penalty
