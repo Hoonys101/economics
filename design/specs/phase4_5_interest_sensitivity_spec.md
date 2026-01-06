@@ -3,21 +3,20 @@
 > **Status**: REVISED (Organic Model)
 > **Goal**: Replace hard-coded scaling with an ROI-based competition between Saving and Consumption.
 
-## 1. Concept: Savings as a Product
-A household compares the "Value" of spending $1 now versus saving it for the future.
+## 1. Concept: The 3 Pillars of Desire
+Instead of simple binary logic, agents' internal conflict is driven by three competing desires.
 
-### 1.1 Savings ROI Calculation
-- **Real Rate ($r$)**: $r = \text{nominal\_rate} - \text{avg\_expected\_inflation}$
-- **Time Preference ($\beta$)**:
-    - **ANT** (`MISER`, `CONSERVATIVE`): 1.2
-    - **NEUTRAL** (`GROWTH_ORIENTED`): 1.0
-    - **GRASSHOPPER** (`STATUS_SEEKER`, `IMPULSIVE`): 0.8
-- **Saving ROI ($U_s$)**: $U_s = (1 + r) \times \beta$
+### 1.1 The Pillars
+- **Wealth (preference_asset)**: Desire for future safety and capital growth. Driven by interest rates.
+- **Social (preference_social)**: Desire for status and relative positioning. Driven by brand value and luxury.
+- **Growth (preference_growth)**: Desire for survival and self-improvement. Driven by basic needs.
 
-### 1.2 Consumption ROI Calculation (Per Item)
-- **Need Value ($V_n$)**: Current value of the most relevant need satisfied by the item (e.g., survival need for food).
-- **Market Price ($P$)**: Current `avg_traded_price`.
-- **Consumption ROI ($U_c$)**: $U_c = V_n / P$
+### 1.2 Utility Formulas
+1. **Saving ROI ($U_{save}$)**:
+   $$U_{save} = (1 + r_{real}) \times preference\_asset$$
+2. **Consumption ROI ($U_{consume}$)**:
+   - For Basic Goods: $U_{c} = (NeedValue / Price) \times preference\_growth$
+   - For Luxury/Brand: $U_{c} = (BrandValue / Price) \times preference\_social$
 
 ## 2. Decision Logic
 
