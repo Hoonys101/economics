@@ -247,7 +247,10 @@ class Firm(BaseAgent):
         self.capital_stock *= (1.0 - depreciation_rate)
 
         # 2. 노동 및 자본 투입량 계산
-        total_labor_skill = sum(employee.labor_skill for employee in self.employees)
+        # Defensive: Skip employees without labor_skill (e.g., corrupted data)
+        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+        if not self.employees:
+            total_labor_skill = 1.0  # Prevent zero production with automated factory
         capital = max(self.capital_stock, 0.01)  # 0 방지
 
         # 3. Cobb-Douglas 생산 함수
@@ -506,7 +509,10 @@ class Firm(BaseAgent):
         self.capital_stock *= (1.0 - depreciation_rate)
 
         # 2. 노동 및 자본 투입량 계산
-        total_labor_skill = sum(employee.labor_skill for employee in self.employees)
+        # Defensive: Skip employees without labor_skill
+        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+        if not self.employees:
+            total_labor_skill = 1.0
         capital = max(self.capital_stock, 0.01)  # 0 방지
 
         # 3. Cobb-Douglas 생산 함수
