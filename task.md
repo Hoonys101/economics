@@ -91,3 +91,33 @@
     - [x] Integration with `Simulation` Engine.
 - [x] **Verification**:
     - [x] `verify_ma_bankruptcy.py`: Test Liquidation and Acquisition scenarios.
+## Phase 4.5: Interest Sensitivity (The Missing Link)
+> **Goal**: Connect Central Bank interest rates to household consumption/saving decisions (Monetary Transmission).
+
+- [/] **Planning**: Define `adjust_consumption_for_interest_rate` logic (Substitution & Cashflow effects).
+- [ ] **Implementation**:
+    - [ ] `AIDrivenHouseholdDecisionEngine`: Implement heuristic override for real interest rates.
+    - [ ] `AIDrivenHouseholdDecisionEngine`: Implement DSR-based consumption penalty.
+- [ ] **Verification**:
+    - [ ] Run Iron Test and verify `MONETARY_TRANSMISSION` behavior.
+    - [ ] Observe Ant (sensitive) vs Grasshopper (insensitive) behavior changes.
+
+## Phase 8-B: Economic Reflux System (Money Conservation)
+> **Goal**: Prevent money leakage by capturing and redistributing sunk costs and profits.
+
+- [x] **Spec**: Define Reflux System architecture.
+- [x] **Implementation**:
+    - [x] `RefluxSystem`: Capture marketing, storage, CAPEX, and bank profits.
+    - [x] `Engine`: Distribute captured funds to households as "Service Sector Income".
+- [x] **Verification**:
+    - [x] `verify_economic_equilibrium.py`: 100-tick conservation test.
+
+## Phase 8-C: Operation Fire Sale (Solvency-Driven Pricing)
+> **Goal**: Break price rigidity by forcing firms to dump inventory when cash runs out.
+
+- [x] **Logic**: Solvency-Driven Pricing (Depreciation + Liquidity Fear).
+- [x] **Implementation**:
+    - [x] `Firm`: Track `last_daily_expenses` and `last_sales_volume`.
+    - [x] `AIDrivenFirmEngine`: Implement `calculate_survival_price` with 80% panic discount.
+- [x] **Verification**:
+    - [x] Iron Test: Verify price drops and trade resumption during liquidity crises.
