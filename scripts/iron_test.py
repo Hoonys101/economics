@@ -138,6 +138,21 @@ def run_iron_test(num_ticks: int = 1000):
                     f"Tick {tick:4d} | HH: {active_hh}/{len(simulation.households)} | "
                     f"Firms: {active_firms}/{len(simulation.firms)} | Gov Assets: {gov_assets:.0f}"
                 )
+
+                # --- [PILLAR_STATS] Consumption by Value Orientation ---
+                from collections import defaultdict
+                stats = defaultdict(lambda: {"consumption": 0.0, "count": 0})
+
+                for h in simulation.households:
+                    if not h.is_active: continue
+                    stats[h.value_orientation]["consumption"] += h.current_consumption
+                    stats[h.value_orientation]["count"] += 1
+
+                log_msg = f"[PILLAR_STATS] Tick {tick} | "
+                for vo, data in stats.items():
+                    avg_c = data["consumption"] / max(1, data["count"])
+                    log_msg += f"{vo}: avg_cons={avg_c:.2f} | "
+                logger.info(log_msg)
         except Exception as e:
             logger.error(f"ERROR at tick {tick}: {e}")
             import traceback

@@ -160,6 +160,17 @@ class Household(BaseAgent):
             personality
         )
 
+        # --- 3-Pillars Preferences (Value Orientation) ---
+        # Value Orientation determines "What" (ROI weights), independent of Personality ("How fast" needs grow)
+        mapping = getattr(config_module, "VALUE_ORIENTATION_MAPPING", {})
+        prefs = mapping.get(
+            value_orientation,
+            {"preference_asset": 1.0, "preference_social": 1.0, "preference_growth": 1.0}
+        )
+        self.preference_asset = prefs["preference_asset"]
+        self.preference_social = prefs["preference_social"]
+        self.preference_growth = prefs["preference_growth"]
+
         self.config_module = config_module  # Store config_module
 
         self.current_food_consumption: float = 0.0

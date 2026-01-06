@@ -49,18 +49,30 @@ FIRM_PRODUCTIVITY_FACTOR = 10.0
 
 # --- Goods Configuration ---
 GOODS = {
-    "basic_food": {"production_cost": 3, "initial_price": 5.0, "utility_effects": {"survival": 10}},
-    "clothing": {"production_cost": 5, "initial_price": 15.0, "utility_effects": {"survival": 2, "social": 8}},
+    "basic_food": {
+        "production_cost": 3,
+        "initial_price": 5.0,
+        "utility_effects": {"survival": 10},
+        "is_luxury": False,
+    },
+    "clothing": {
+        "production_cost": 5,
+        "initial_price": 15.0,
+        "utility_effects": {"survival": 2, "social": 8},
+        "is_luxury": True,
+    },
     "luxury_food": {
         "production_cost": 10,
         "initial_price": 30.0,
         "utility_effects": {"survival": 12, "social": 5},
+        "is_luxury": True,
     },
     "education_service": {
         "production_cost": 20,
         "initial_price": 50.0,
         "utility_effects": {"improvement": 15},
         "is_service": True,
+        "is_luxury": False,
     },
 }
 
@@ -91,6 +103,25 @@ INITIAL_HOUSEHOLD_FOOD_INVENTORY = 10.0
 VALUE_ORIENTATION_WEALTH_AND_NEEDS = "wealth_and_needs"
 VALUE_ORIENTATION_NEEDS_AND_GROWTH = "needs_and_growth"
 VALUE_ORIENTATION_NEEDS_AND_SOCIAL_STATUS = "needs_and_social_status"
+
+# --- 3-Pillars Preference Mapping ---
+VALUE_ORIENTATION_MAPPING = {
+    VALUE_ORIENTATION_WEALTH_AND_NEEDS: {
+        "preference_asset": 1.3,
+        "preference_social": 0.7,
+        "preference_growth": 1.0,
+    },
+    VALUE_ORIENTATION_NEEDS_AND_GROWTH: {
+        "preference_asset": 0.8,
+        "preference_social": 0.7,
+        "preference_growth": 1.5,
+    },
+    VALUE_ORIENTATION_NEEDS_AND_SOCIAL_STATUS: {
+        "preference_asset": 0.7,
+        "preference_social": 1.5,
+        "preference_growth": 0.8,
+    },
+}
 
 # --- Market & Decision Logic ---
 INITIAL_WAGE = 10.0  # Renamed from LABOR_MARKET_OFFERED_WAGE

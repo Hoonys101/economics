@@ -66,6 +66,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         
         # 1. Savings Utility (Saving ROI)
         savings_roi = self._calculate_savings_roi(household, nominal_rate)
+        # Apply 3-Pillars Preference (Wealth Pillar)
+        savings_roi *= household.preference_asset
         
         # 2. Debt Burden (Income Effect) - Still a hard constraint for liquidity
         debt_data = market_data.get("debt_data", {}).get(household.id, {})
@@ -90,20 +92,26 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             if not avg_price or avg_price <= 0:
                 avg_price = self.config_module.MARKET_PRICE_FALLBACK
             
+            good_info = self.config_module.GOODS.get(item_id, {})
+            is_luxury = good_info.get("is_luxury", False)
+
             # Need Value (UC)
             max_need_value = 0.0
-            utility_effects = self.config_module.GOODS.get(item_id, {}).get("utility_effects", {})
+            utility_effects = good_info.get("utility_effects", {})
             for need_type in utility_effects.keys():
                 nv = household.needs.get(need_type, 0.0)
                 if nv > max_need_value:
                     max_need_value = nv
             
-            consumption_roi = max_need_value / (avg_price + 1e-9)
+            # --- 3-Pillars ROI Calculation ---
+            # Apply preference weights based on good type (Luxury -> Social, Basic -> Growth)
+            preference_weight = household.preference_social if is_luxury else household.preference_growth
+            consumption_roi = (max_need_value / (avg_price + 1e-9)) * preference_weight
             
             # If Saving is more attractive, attenuate aggressiveness
             if savings_roi > consumption_roi:
                 # Organic attenuation: ratio of ROIs
-                attenuation = consumption_roi / savings_roi
+                attenuation = consumption_roi / (savings_roi + 1e-9)
                 # Cap attenuation to prevent complete freeze unless extremely high rate
                 # Ensure survival priority
                 if max_need_value > 40:
