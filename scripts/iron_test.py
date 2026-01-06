@@ -211,4 +211,8 @@ def run_iron_test(num_ticks: int = 1000):
     return simulation
 
 if __name__ == "__main__":
-    run_iron_test(1000)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num_ticks", type=int, default=1000)
+    args = parser.parse_args()
+    run_iron_test(args.num_ticks)

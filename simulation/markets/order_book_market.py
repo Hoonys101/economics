@@ -232,13 +232,13 @@ class OrderBookMarket(Market):
                  # Failed to fill completely
                  remaining_targeted_buys.append(b_order)
 
-        # Update Buy Orders List: Filter out fully filled
-        # We need to reconstruct the main list for general matching, BUT
-        # "Targeted buys do not participate in general matching" (Strict Targeting)
-        # OR "If target fails, try best price"?
-        # Spec says "Strict Targeting". So remaining targeted buys stay in book but don't match general asks.
-        # General Buys should match with ANY Remaining Sells.
-        
+        # Fallback: Add remaining targeted buys to general pool
+        # This fixes "Starvation by Brand Loyalty" where buyers wouldn't buy from others if target failed.
+        if remaining_targeted_buys:
+            general_buys.extend(remaining_targeted_buys)
+            # Re-sort general buys by price desc to maintain priority
+            general_buys.sort(key=lambda o: o.price, reverse=True)
+
         # Re-flatten sell map to list for general matching
         remaining_sells = []
         for s_list in sell_map.values():

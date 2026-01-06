@@ -439,7 +439,7 @@ class Simulation:
                         else:
                             target_market.place_order(order, self.time)
                 
-                self.logger.info(f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets.")
+                self.logger.debug(f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets.")
 
         household_pre_states = {}
         household_time_allocation = {}  # Store time allocation for later use
@@ -492,13 +492,13 @@ class Simulation:
                                 self.logger.error(f"Invalid stock item_id pattern: {order.item_id}")
                         else:
                             household_target_market.place_order(order, self.time)
-                
-                self.logger.info(f"TRACE_ENGINE | Household {household.id} submitted {len(household_orders)} orders back to engine.")
                     else:
                         self.logger.warning(
                             f"Market '{order.market_id}' not found for order from agent {household.id}",
                             extra={"tick": self.time},
                         )
+
+                self.logger.debug(f"TRACE_ENGINE | Household {household.id} submitted {len(household_orders)} orders back to engine.")
 
         for market in self.markets.values():
             if isinstance(market, OrderBookMarket):
