@@ -2,38 +2,85 @@
 
 > **To**: Jules (Implementation Agent)
 > **From**: Antigravity (Team Leader)
-> **Priority**: High (Critical for system stability)
+> **Priority**: Critical
+> **Objective**: Eliminate "Money Leakage" by implementing the Economic Reflux System.
 
 ## Context
-We are implementing the **Economic Reflux System** to fix a critical "money leakage" bug where Firm expenses and Bank profits were vanishing from the economy. This caused deflationary spirals.
+Firms and Banks currently "destroy" money when paying for non-wage expenses (marketing, fixed costs) or retaining earnings. This causes deflation.
+You must implement a `RefluxSystem` that captures these outflows and returns them to Households.
+
+---
 
 ## Assignments
 
 ### 1. Create `simulation/systems/reflux_system.py`
-- Implement the `EconomicRefluxSystem` class as defined in `design/specs/phase8b_reflux_system_spec.md`.
-- Ensure it has methods `capture(amount, source, category)` and `distribute(households)`.
+Implement the class `EconomicRefluxSystem` as defined in `design/specs/phase8b_reflux_system_spec.md`.
+- Methods: `__init__`, `capture(amount, source, category)`, `distribute(households)`.
 
-### 2. Update `simulation/firms.py`
-- Modify `Firm` methods to accept `reflux_system` (preferably passed in `update()` or initialized if singleton).
-- **CRITICAL**: Locate all lines where `self.cash` is decreased for non-wage reasons (marketing, maintenance, expansion).
-- Replace direct deduction with:
+### 2. Update `simulation/engine.py` (Orchestration)
+You must explicitly update the Engine to manage this system.
+
+**A. Initialization (`__init__`)**
+```python
+# Import at top
+from simulation.systems.reflux_system import EconomicRefluxSystem
+
+# Inside __init__
+self.reflux_system = EconomicRefluxSystem()
+```
+
+**B. Injection (`run_tick`) - Bank**
+Pass the system to the Bank so it can dump profits.
+```python
+# Inside run_tick(), finding the Bank update section:
+if hasattr(self.bank, "run_tick"):
+    if "reflux_system" in self.bank.run_tick.__code__.co_varnames:
+        self.bank.run_tick(self.agents, self.time, reflux_system=self.reflux_system)
+    else:
+        # Fallback if you haven't updated Bank signature yet, but you SHOULD.
+        self.bank.run_tick(self.agents, self.time)
+```
+
+**C. Injection (`Firm`)**
+Firms usually access systems via `self.make_decision` or directly if set.
+Ensure Firms have access. You can pass it in `make_decision` or set it during init/loop.
+*Recommendation*: In `run_tick`, when iterating firms, you might not need to pass it if you update `Firm` to take it in `update_needs` or similar, OR just pass it where needed.
+*Better Strategy*: Firms need to capture expenses *when they happen*. If expenses happen inside `firm.produce()` or `firm.make_decision()`, pass it there.
+*Instruction*: Update `Firm.produce` or relevant methods to accept `reflux_system`.
+
+**D. Distribution (End of Tick)**
+Crucial! Money must go back to households before the tick ends.
+```python
+# Inside run_tick(), BEFORE _save_state_to_db and BEFORE final cleanup
+# Phase 8-B
+self.reflux_system.distribute(self.households)
+```
+
+### 3. Update `simulation/firms.py`
+Find where money leaves `self.cash` (excluding wages and tax).
+- `marketing_invest` (if exists) -> `reflux_system.capture(amount, ...)`
+- `maintenance_cost` / `fixed_cost` -> `reflux_system.capture(amount, ...)`
+- `expansion_cost` (if exists) -> `reflux_system.capture(amount, ...)`
+
+### 4. Update `simulation/agents/bank.py`
+- In `run_tick` or `process_profits`:
+- Instead of adding to `self.reserves` (or ignoring net profit), do:
   ```python
-  self.cash -= cost
-  reflux_system.capture(cost, self.id, 'category')
+  if net_profit > 0:
+      reflux_system.capture(net_profit, "Bank", "dividend")
   ```
 
-### 3. Update `simulation/agents/bank.py`
-- Modify `Bank` to capture its `net_profit` into the reflux system instead of retaining it.
-- Ensure `reflux_system.capture()` is called at the end of the bank's cycle.
+### 5. Verification (CRITICAL)
+Rewrite `tests/verify_economic_equilibrium.py` to perform a **Conservation of Money** test.
+**Formula**:
+$$TotalMoney = \sum Household_{cash} + \sum Firm_{cash} + Bank_{reserves} + RefluxPool_{balance} + Government_{assets}$$
 
-### 4. Update `simulation/engine.py` (Orchestration)
-- Initialize `EconomicRefluxSystem` in `__init__`.
-- Pass it to agents during their `update` loop.
-- Call `reflux_system.distribute(self.households)` at the end of the tick (before data recording).
+- Run for 100 ticks.
+- Valid if: `TotalMoney` is constant (or increases only by configured Central Bank injections).
+- **Fail if**: `TotalMoney` decreases.
 
-### 5. Verification
-- Run `tests/verify_economic_equilibrium.py` (or create a new test `tests/verify_reflux.py`).
-- Limit: Ensure Total Money Supply does not decrease over 100 ticks.
-
-## Resources
-- `design/specs/phase8b_reflux_system_spec.md` (Detailed Logic)
+---
+**Output**: 
+1. `modules/system/reflux_system.py`
+2. Modified `engine.py`, `firms.py`, `bank.py`
+3. Check logs for "Conservation Passed".
