@@ -1,56 +1,47 @@
-# W-1 Spec: Phase 4.5 Interest Sensitivity (Monetary Transmission)
+# W-1 Spec: Phase 4.5 Organic Interest Sensitivity (Utility Competition)
 
-> **Status**: Approved by Chief Architect
-> **Goal**: Connect Central Bank rates to Household decisions.
+> **Status**: REVISED (Organic Model)
+> **Goal**: Replace hard-coded scaling with an ROI-based competition between Saving and Consumption.
 
-## 1. Logic Detail
+## 1. Concept: Savings as a Product
+A household compares the "Value" of spending $1 now versus saving it for the future.
 
-### 1.1 real_rate Calculation
-Real Interest Rate ($r$) is the primary signal for households.
-- $i$ = `nominal_rate` (from `loan_market` data in `market_data`)
-- $\pi^e$ = `expected_inflation` (average across all goods in `Household`)
-- $r = i - \pi^e$
+### 1.1 Savings ROI Calculation
+- **Real Rate ($r$)**: $r = \text{nominal\_rate} - \text{avg\_expected\_inflation}$
+- **Time Preference ($\beta$)**:
+    - **ANT** (`MISER`, `CONSERVATIVE`): 1.2
+    - **NEUTRAL** (`GROWTH_ORIENTED`): 1.0
+    - **GRASSHOPPER** (`STATUS_SEEKER`, `IMPULSIVE`): 0.8
+- **Saving ROI ($U_s$)**: $U_s = (1 + r) \times \beta$
 
-### 1.2 Substitution Effect (Savings Incentive)
-Adjust consumption aggressiveness based on how far $r$ is from the neutral rate.
-- Neutral Rate ($r^*$) = `config.NEUTRAL_REAL_RATE` (default 0.02)
-- Sensitivity ($S$):
-    - Personality Group **ANT** (`MISER`, `CONSERVATIVE`): $S = 10.0$
-    - Personality Group **Grasshopper** (`STATUS_SEEKER`, `IMPULSIVE`): $S = 2.5$
-- $\Delta MPC_{savings} = -1 \times S \times (r - r^*)$
+### 1.2 Consumption ROI Calculation (Per Item)
+- **Need Value ($V_n$)**: Current value of the most relevant need satisfied by the item (e.g., survival need for food).
+- **Market Price ($P$)**: Current `avg_traded_price`.
+- **Consumption ROI ($U_c$)**: $U_c = V_n / P$
 
-### 1.3 Cashflow Channel (Debt Penalty)
-Direct reduction in consumption due to interest burden on debt.
-- $DSR = \frac{Daily Interest Burden}{Income Proxy}$
-- $Income Proxy = \max(Wage, Assets \times 0.01)$
-- If $DSR > 0.3$: $\Delta MPC_{debt} = -0.1$ (additional drop)
+## 2. Decision Logic
 
-## 2. Implementation Guide
+### 2.1 The Competition
+Inside the `make_decisions` loop for each `item_id`:
+1.  Calculate $U_s$ and $U_c$.
+2.  Apply **Substitution Effect**: 
+    - If $U_s > U_c$:
+        - Attenuate buying aggressiveness: `agg_buy = agg_buy * (U_c / U_s)`
+        - This naturally slows down consumption when rates are high OR prices are high OR needs are low.
 
-### Target: `simulation/decisions/ai_driven_household_engine.py`
+### 2.2 Cashflow Channel (The Hard Constraint)
+While the substitution effect is organic, the **Debt Service Ratio (DSR)** represents a hard budget constraint.
+- $DSR = \frac{\text{Daily Interest Burden}}{\max(\text{Wage}, \text{Assets} \times 0.01)}$
+- If $DSR > \text{config.DSR\_CRITICAL\_THRESHOLD}$ (0.4):
+    - `agg_buy = agg_buy * 0.5` (Emergency liquidity preservation).
 
-#### [ADD] `adjust_consumption_for_interest_rate(self, household, base_agg, current_rate)`
-- Inputs:
-    - `household`: The agent instance.
-    - `base_agg`: The original `agg_buy` from the AI Action Vector.
-    - `current_rate`: The `nominal_rate` from market data.
-- Logic: Compute $\Delta MPC_{savings}$ and $\Delta MPC_{debt}$.
-- Return: `max(0.1, min(0.9, base_agg + delta_mpc))`
+## 3. Implementation Details
 
-#### [REFACTOR] `make_decisions`
-- Locate the loop over `goods_list`.
-- Inside the loop, for each `item_id`:
-    1. Get `base_agg = action_vector.consumption_aggressiveness.get(item_id, 0.5)`.
-    2. Call `agg_buy = self.adjust_consumption_for_interest_rate(household, base_agg, nominal_rate)`.
-    3. Use the adjusted `agg_buy` for subsequent willingness-to-pay and quantity calculations.
+- **File**: `simulation/decisions/ai_driven_household_engine.py`
+- **Method**: `_apply_monetary_transmission(self, household, market_data, item_id, base_agg)`
+- **Integration**: Call this inside the `goods_list` loop to get the final `agg_buy`.
 
-## 3. Verification
+## 4. Verification
 
-### Automated
-1. Run `python scripts/iron_test.py`.
-2. Check `MONETARY_TRANSMISSION` debug labels.
-3. Observe `total_consumption` vs `interest_rate` correlation in history.
-
-### Behavioral
-- ANT agents should show much larger consumption volatility in response to rate changes.
-- High-debt agents should maintain lower consumption even if they are "hungry" (if DSR is high).
+- Ant agents should stop buying `clothing` or `luxury_food` almost immediately when $r$ rises, while still buying `basic_food`.
+- Grasshoppers should only stop buying when $r$ is extremely high or they hit the DSR wall.
