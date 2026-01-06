@@ -45,9 +45,35 @@
 ## 추가 인사이트 (향후 업데이트 예정)
 
 ### Mass Extinction Event (대량 멸종 현상)
-- **현상**: 1000틱 Iron Test에서 20가구가 전멸.
-- **가설**: 노동 시장 미스매치 → 임금 없음 → 소비 불가 → 기아 사망.
-- **분석 중**...
+
+**관찰**: 1000틱 Iron Test에서 20가구 중 0가구 생존 (0%), 4기업 중 2기업 생존 (50%).
+
+**타임라인**:
+- Tick 1~100: 정상 거래, 일부 노동 매칭 실패 시작
+- Tick 100~400: 기업 매출 감소, 직원 해고 증가
+- Tick 400~600: 연쇄 파산 시작, 실업률 급증
+- Tick 600~1000: 전 가구 기아 사망 (생존 가구 0)
+
+**원인 분석 (Labor Market Mismatch)**:
+1. **임금 경직성**: `config.LABOR_MARKET_MIN_WAGE = 8.0` vs `config.HOUSEHOLD_MIN_WAGE_DEMAND = 10.0`
+2. 기업 제안 임금 < 가계 요구 임금 → 노동 계약 실패
+3. 노동 없음 → 생산 0 → 매출 0 → 기업 현금 고갈
+4. 기업 파산 → 가계 임금 수입 완전 상실
+5. 가계 자산 고갈 → 식량 구매 불가 → 기아 사망
+
+**Reflux System 동작 확인**:
+- Money Conservation Test: ✅ 통과 (화폐 총량 보존)
+- 문제는 Reflux가 아닌 **노동 시장 파라미터 튜닝** 문제
+
+**경제학적 교훈**:
+> **"임금 경직성(Wage Rigidity)은 대공황의 원인 중 하나다."**
+
+- 케인즈 경제학: 명목 임금의 하방 경직성이 실업을 유발
+- 본 시뮬레이션: 가계의 reservation wage가 시장 청산 가격보다 높으면 거래 불가
+- **해결책 후보**:
+  1. `HOUSEHOLD_MIN_WAGE_DEMAND` 하향 조정
+  2. Panic Mode에서 reservation wage 급락 로직 강화
+  3. 실업 급여(Unemployment Benefit)로 최소 생존 보장
 
 ---
 
