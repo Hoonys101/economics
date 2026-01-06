@@ -12,10 +12,11 @@
     - `Phase 4.5: Responsible Government` ✅
     - `Phase 6: Brand Economy` ✅ (Differentiation)
     - `Phase 8: Inflation Psychology` ✅ (Adaptive Expectations)
+    - `Phase 8-B: Economic Reflux System` ✅ (Money Conservation)
     - `Phase 9: M&A & Bankruptcy` ✅ (Corporate Food Chain)
     - `Phase 10: Central Bank` ✅ (Monetary Policy)
-- **현재 단계:** `Architectural Audit` 📐 (Re-baselining)
-- **다음 단계:** `Optimization` or `Phase 11/12` (TBD)
+- **현재 단계:** `Stabilization Testing` 🧪
+- **다음 단계:** `Interest Sensitivity` (Rate Transmission Fix)
 
 ---
 
