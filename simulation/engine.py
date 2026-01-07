@@ -556,6 +556,9 @@ class Simulation:
                  # 2. Phase 5: Leisure Effect Application
                  leisure_hours = household_time_allocation.get(household.id, 0.0)
                  effect_dto = household.apply_leisure_effect(leisure_hours, consumed_items)
+                 
+                 # 3. Lifecycle Update [BUGFIX: WO-Diag-003]
+                 household.update_needs(self.time, consumption_market_data)
 
                  # Store utility for reward injection
                  household_leisure_effects[household.id] = effect_dto.utility_gained
