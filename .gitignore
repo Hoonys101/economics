@@ -156,7 +156,7 @@ logs/
 *.log
 tests/goldens/
 simulation_results/
-OPERATIONS_MANUAL.md
+# OPERATIONS_MANUAL.md
 
 # Internal Documents
 
