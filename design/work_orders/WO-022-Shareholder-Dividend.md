@@ -66,3 +66,10 @@
 - **Q4: 누적 소득 데이터**
   - DB 스키마 변경 없이, `Household` 객체의 인스턴스 변수(`self.income_labor_cumulative` 등)로 메모리 상에서 관리하십시오.
   - 리포트 생성(`RECON_REPORT` 등) 시 이 값을 참조합니다.
+
+## 6. Future Integration Requirement (Safety Lock)
+본 작업은 "Phase 14-3: Stock Market"으로 가는 **초석**입니다. 따라서 다음 확장을 고려하여 구현하십시오.
+
+1.  **확장성 고려**: `Household.portfolio` 구조는 단순 `list[int]`로 시작하되, 향후 `shares_owned` 수량이나 `purchase_price` 등을 담을 수 있는 객체 구조(`PortfolioItem` 등)로 확장하기 용이해야 합니다. (이번 단계에서는 ID 리스트로 충분함)
+2.  **주식 객체화**: 주식은 단순한 ID 매핑을 넘어, 추후 `Current_Price`, `Dividends_Yield` 등의 속성을 가질 수 있는 독립체임을 염두에 두십시오.
+3.  **코드 스멜 방지**: `owner_id` 로직이 곳곳에 하드코딩되는 것을 피하고, `firm.get_owners()`와 같은 인터페이스를 통해 접근하도록 하여 추후 다수 주주 시스템으로 전환 시 수정 범위를 최소화하십시오.
