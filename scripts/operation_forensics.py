@@ -43,6 +43,8 @@ def run_forensic_investigation():
 
     # 2. Run Simulation
     print("Initializing Operation Forensics Simulation (100 Ticks)...")
+    # Runtime Override for Stress Test (WO-Diag-003)
+    config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0
     sim = create_simulation()
 
     try:
@@ -63,8 +65,10 @@ def run_forensic_investigation():
     type_c_count = 0
 
     report_lines = []
-    report_lines.append("=== FORENSIC REPORT ===")
-    report_lines.append(f"Total Deaths: {len(forensic_handler.death_records)}")
+    report_lines.append("# AUTOPSY REPORT (Stress Test)")
+    report_lines.append(f"**Total Deaths:** {len(forensic_handler.death_records)}")
+    report_lines.append("") # Blank line
+    report_lines.append("## Classification Analysis")
 
     sample_cases = []
 
@@ -116,25 +120,26 @@ def run_forensic_investigation():
 
     total = len(forensic_handler.death_records)
     if total > 0:
-        report_lines.append(f"- Type A (No Jobs): {type_a_count} ({type_a_count/total:.1%})")
-        report_lines.append(f"- Type B (Won't Work): {type_b_count} ({type_b_count/total:.1%})")
-        report_lines.append(f"- Type C (Won't Eat): {type_c_count} ({type_c_count/total:.1%})")
+        report_lines.append(f"- **Type A (No Jobs):** {type_a_count} ({type_a_count/total:.1%})")
+        report_lines.append(f"- **Type B (Won't Work):** {type_b_count} ({type_b_count/total:.1%})")
+        report_lines.append(f"- **Type C (Won't Eat):** {type_c_count} ({type_c_count/total:.1%})")
     else:
-        report_lines.append("- Type A (No Jobs): 0 (0%)")
-        report_lines.append("- Type B (Won't Work): 0 (0%)")
-        report_lines.append("- Type C (Won't Eat): 0 (0%)")
+        report_lines.append("- **Type A (No Jobs):** 0 (0%)")
+        report_lines.append("- **Type B (Won't Work):** 0 (0%)")
+        report_lines.append("- **Type C (Won't Eat):** 0 (0%)")
 
-    report_lines.append("\nSample Cases:")
+    report_lines.append("")
+    report_lines.append("## Sample Cases")
     for case in sample_cases:
-        report_lines.append(case)
+        report_lines.append(f"- {case}")
 
     # 4. Write Report
     os.makedirs("reports", exist_ok=True)
-    with open("reports/forensic_report.txt", "w") as f:
+    with open("reports/AUTOPSY_REPORT.md", "w") as f:
         f.write("\n".join(report_lines))
 
     print("\n".join(report_lines))
-    print(f"\nReport saved to reports/forensic_report.txt")
+    print(f"\nReport saved to reports/AUTOPSY_REPORT.md")
 
 if __name__ == "__main__":
     run_forensic_investigation()
