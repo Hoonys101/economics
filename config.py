@@ -239,6 +239,14 @@ AI_SOCIAL_STATUS_REWARD_WEIGHT = 5.0
 AI_GROWTH_REWARD_WEIGHT = 7.0
 AI_WEALTH_REWARD_WEIGHT = 3.0
 
+# --- Genesis: Activation Energy (WO-Diag-005) ---
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0  # 10.0 -> 50.0 (5x Booster)
+INITIAL_FIRM_CAPITAL_MEAN = 500.0     # 100.0 -> 500.0 (5x Booster)
+
+# --- Genesis: Market Flexibility Multipliers ---
+GENESIS_PRICE_ADJUSTMENT_MULTIPLIER = 2.0  # Speed up price slashing
+GENESIS_WAGE_FLEXIBILITY_FACTOR = 0.5      # How much faster households drop reservation wage
+
 # --- AI Learning Parameters ---
 AI_GAMMA = 0.9
 AI_EPSILON = 0.1
