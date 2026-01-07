@@ -189,6 +189,11 @@ class Household(BaseAgent):
         self.labor_income_this_tick: float = 0.0
         self.capital_income_this_tick: float = 0.0
 
+        # Cumulative Income Tracking (WO-022)
+        self.income_labor_cumulative: float = 0.0
+        self.income_capital_cumulative: float = 0.0
+        self.portfolio: List[int] = []  # List of Firm IDs owned (100% equity)
+
         # Phase 8: Inflation Psychology
         self.price_history: Dict[str, deque] = {}  # ItemID -> Deque[float]
         self.expected_inflation: Dict[str, float] = {} # ItemID -> Expected Inflation Rate
@@ -875,6 +880,11 @@ class Household(BaseAgent):
         cloned_household.perceived_avg_prices = self.perceived_avg_prices.copy()
         cloned_household.current_food_consumption = self.current_food_consumption
         cloned_household.credit_frozen_until_tick = self.credit_frozen_until_tick
+
+        # Clone Cumulative Income & Portfolio
+        cloned_household.income_labor_cumulative = self.income_labor_cumulative
+        cloned_household.income_capital_cumulative = self.income_capital_cumulative
+        cloned_household.portfolio = list(self.portfolio)
 
         return cloned_household
 

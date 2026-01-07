@@ -89,6 +89,7 @@ class Firm(BaseAgent):
 
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
+        self.owner_id: Optional[int] = None    # 현재 소유자 가계 ID (Private Firm) - WO-022
         self.is_publicly_traded: bool = True   # 상장 여부
         self.dividend_rate: float = getattr(
             config_module, "DIVIDEND_RATE", 0.3
@@ -419,6 +420,66 @@ class Firm(BaseAgent):
         self.cost_this_turn = 0.0
         self.revenue_this_tick = 0.0
         self.expenses_this_tick = 0.0
+        return transactions
+
+    def distribute_profit(self, current_time: int) -> List[Transaction]:
+        """
+        WO-022: Implement mandatory dividend rule for private owners.
+        Check if operating capital buffer is sufficient, then distribute surplus.
+        """
+        if self.owner_id is None:
+            return []
+
+        # 1. Calculate Average Wage
+        if self.employees:
+            avg_wage = sum(self.employee_wages.values()) / len(self.employees)
+        else:
+            avg_wage = 0.0
+
+        # 2. Calculate Required Reserves (6 months buffer ~ 20 ticks)
+        maintenance_fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
+        # Assuming maintenance fee is paid daily? Yes, in update_needs.
+        # Assuming wages are paid daily.
+        daily_burn = maintenance_fee + (avg_wage * len(self.employees))
+        required_reserves = daily_burn * 20.0
+
+        # 3. Calculate Distributable Cash
+        distributable_cash = self.assets - required_reserves
+
+        transactions = []
+        if distributable_cash > 0:
+            amount = distributable_cash
+
+            # Create Transaction Record
+            # IMPORTANT: The Engine will execute the asset transfer based on this transaction.
+            tx = Transaction(
+                buyer_id=self.owner_id,      # Recipient (Household)
+                seller_id=self.id,           # Payer (Firm)
+                item_id="dividend",
+                quantity=amount,
+                price=1.0,
+                market_id="financial",
+                transaction_type="dividend",
+                time=current_time
+            )
+            transactions.append(tx)
+
+            self.logger.info(
+                f"DIVIDEND | Firm {self.id} -> Household {self.owner_id} : ${amount:.2f}",
+                extra={
+                    "tick": current_time,
+                    "agent_id": self.id,
+                    "recipient_id": self.owner_id,
+                    "amount": amount,
+                    "reserves": required_reserves,
+                    "assets_before": self.assets,
+                    "tags": ["dividend", "reflux"]
+                }
+            )
+
+        # Note: We do NOT reset current_profit here because that is done in standard distribute_dividends
+        # or at end of tick. distribute_profit operates on CASH SURPLUS, not just "Profit".
+        # It is a balance sheet operation.
         return transactions
 
     @override

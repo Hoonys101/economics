@@ -630,6 +630,18 @@ class Simulation:
                  # Phase 4: Pass government and market_data for income tax withholding
                  # Phase 8-B: Pass reflux_system for expense capture
                  firm.update_needs(self.time, self.government, market_data, self.reflux_system)
+
+                 # WO-022: Distribute Profit (Mandatory Dividend for Private Owners)
+                 # Should be called after update_needs (wages paid) but before tax/other logic?
+                 # WO specifies: "After update_needs or accounting settlement".
+                 # Tax logic is below. Usually tax is on Net Profit.
+                 # distribute_profit calculates surplus cash.
+                 # Let's call it here.
+                 dividend_txs = firm.distribute_profit(self.time)
+                 if dividend_txs:
+                     all_transactions.extend(dividend_txs)
+                     # Must process immediately to transfer assets
+                     self._process_transactions(dividend_txs)
                  
                  # 2a. 법인세(Corporate Tax) 징수 (이익이 발생한 경우)
                  if firm.is_active and firm.current_profit > 0:
@@ -781,6 +793,12 @@ class Simulation:
                 h.current_consumption = 0.0
             if hasattr(h, "current_food_consumption"):
                 h.current_food_consumption = 0.0
+
+            # WO-022: Update Cumulative Income before reset
+            if hasattr(h, "income_labor_cumulative"):
+                h.income_labor_cumulative += getattr(h, "labor_income_this_tick", 0.0)
+            if hasattr(h, "income_capital_cumulative"):
+                h.income_capital_cumulative += getattr(h, "capital_income_this_tick", 0.0)
 
             # Reset Income Accumulators
             if hasattr(h, "labor_income_this_tick"):
@@ -1198,6 +1216,16 @@ class Simulation:
             logger=self.logger,
         )
         new_firm.founder_id = founder_household.id
+
+        # WO-022: Set owner_id and update portfolio
+        new_firm.owner_id = founder_household.id
+        founder_household.portfolio.append(new_firm.id)
+
+        # WO-022: Sync Shares (100% Equity)
+        founder_household.shares_owned[new_firm.id] = new_firm.total_shares
+        if self.stock_market:
+            self.stock_market.update_shareholder(founder_household.id, new_firm.id, new_firm.total_shares)
+
         # Set loan market if available in simulation
         if "loan_market" in self.markets:
             new_firm.decision_engine.loan_market = self.markets["loan_market"]
@@ -1207,11 +1235,14 @@ class Simulation:
         self.agents[new_firm.id] = new_firm
 
         # Add to AI training manager
-        self.ai_training_manager.agents.append(new_firm)
+        # BUGFIX: AITrainingManager.agents refers to self.households list.
+        # Appending Firm to it corrupts the household list.
+        # Firms are not currently subject to Imitation Learning in the same way.
+        # self.ai_training_manager.agents.append(new_firm)
 
         self.logger.info(
             f"STARTUP | Household {founder_household.id} founded Firm {new_firm_id} "
-            f"(Specialization: {specialization}, Capital: {startup_cost})",
+            f"(Specialization: {specialization}, Capital: {startup_cost}, 100% Equity)",
             extra={"tick": self.time, "agent_id": new_firm_id, "tags": ["entrepreneurship"]}
         )
 
