@@ -126,6 +126,11 @@ class Simulation:
         else:
             self.stock_market = None
 
+        # 2. 에이전트 욕구 업데이트 (Update Needs)
+        for agent in self.households + self.firms:
+            agent.update_needs(self.time)
+            
+        # 3. 에이전트 의사결정 및 행동 (Decisions & Actions)
         for agent in self.households + self.firms:
             agent.decision_engine.markets = self.markets
             agent.decision_engine.goods_data = self.goods_data
@@ -235,25 +240,72 @@ class Simulation:
             self.transaction_buffer.append(tx_dto)
 
         # 3. Buffer economic indicators
-        indicators = self.tracker.get_latest_indicators()
-        if indicators:
-            # indicators is a dict, convert to DTO
-            indicator_dto = EconomicIndicatorData(
-                run_id=self.run_id,
-                time=self.time,
-                unemployment_rate=indicators.get("unemployment_rate"),
-                avg_wage=indicators.get("avg_wage"),
-                food_avg_price=indicators.get("food_avg_price"),
-                food_trade_volume=indicators.get("food_trade_volume"),
-                avg_goods_price=indicators.get("avg_goods_price"),
-                total_production=indicators.get("total_production"),
-                total_consumption=indicators.get("total_consumption"),
-                total_household_assets=indicators.get("total_household_assets"),
-                total_firm_assets=indicators.get("total_firm_assets"),
-                total_food_consumption=indicators.get("total_food_consumption"),
-                total_inventory=indicators.get("total_inventory"),
-            )
-            self.economic_indicator_buffer.append(indicator_dto)
+        # The following block replaces the original `indicators = self.tracker.get_latest_indicators()` and subsequent `if indicators:` block.
+        # It also includes new calculations for income aggregation.
+        
+        # Calculate indicators directly or retrieve from tracker
+        # Note: unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price
+        # are typically calculated by the tracker. We need to ensure they are available.
+        # For now, we'll assume self.tracker.get_latest_indicators() provides them.
+        
+        # Get latest indicators from tracker
+        tracker_indicators = self.tracker.get_latest_indicators()
+        
+        total_production = sum(
+            agent.current_production
+            for agent in self.firms + self.households
+            if getattr(agent, "current_production", None) is not None
+        )
+        total_consumption = sum(
+            getattr(agent, "last_tick_food_consumption", 0) for agent in self.households
+        )
+        total_household_assets = sum(agent.assets for agent in self.households)
+        # Total Firm Assets should only include Firms?
+        # Correction: The list comprehension above iterates households + firms but checks isinstance Firm.
+        # Ideally: sum(firm.assets for firm in self.firms)
+        total_firm_assets = sum(firm.assets for firm in self.firms)
+
+        total_food_consumption = sum(
+            getattr(agent, "last_tick_food_consumption", 0) for agent in self.households
+        )
+        total_inventory = sum(
+            sum(agent.inventory.values()) for agent in self.households + self.firms
+        )
+        avg_survival_need = (
+            sum(agent.needs["survival"] for agent in self.households)
+            / len(self.households)
+            if self.households
+            else 0.0
+        )
+        
+        # Phase 14-1: Income Aggregation
+        total_labor_income = sum(
+            getattr(h, "labor_income_this_tick", 0.0) for h in self.households
+        )
+        total_capital_income = sum(
+            getattr(h, "capital_income_this_tick", 0.0) for h in self.households
+        )
+
+        # Create DTO using calculated values and values from tracker
+        indicator_dto = EconomicIndicatorData(
+            run_id=self.run_id, # Use self.run_id directly
+            time=self.time,
+            unemployment_rate=tracker_indicators.get("unemployment_rate"),
+            avg_wage=tracker_indicators.get("avg_wage"),
+            food_avg_price=tracker_indicators.get("food_avg_price"),
+            food_trade_volume=tracker_indicators.get("food_trade_volume"),
+            avg_goods_price=tracker_indicators.get("avg_goods_price"),
+            total_production=total_production,
+            total_consumption=total_consumption,
+            total_household_assets=total_household_assets,
+            total_firm_assets=total_firm_assets,
+            total_food_consumption=total_food_consumption,
+            total_inventory=total_inventory,
+            avg_survival_need=avg_survival_need,
+            total_labor_income=total_labor_income,
+            total_capital_income=total_capital_income,
+        )
+        self.economic_indicator_buffer.append(indicator_dto)
         
         # 4. Buffer market history
         for market_id, market in self.markets.items():
@@ -380,6 +432,10 @@ class Simulation:
         self.bank.update_base_rate(new_base_rate)
 
         # Legacy call removed: self.government.update_monetary_policy(...)
+
+        # Phase 14-1: Firm Profit Distribution (Operation Reflux)
+        for firm in self.firms:
+             firm.distribute_profit(self.agents, self.time)
 
         for firm in self.firms:
             firm.hires_last_tick = 0
@@ -1165,12 +1221,34 @@ class Simulation:
         max_id = max([a.id for a in self.agents.values()], default=0)
         new_firm_id = max_id + 1
 
-        # 3. 업종 선택 (부족한 업종 우선)
-        # WO-018: Add luxury_food to specializations
-        specializations = ["basic_food", "clothing", "education_service", "luxury_food"]
-        # 간단히 랜덤 또는 기업 수가 적은 업종 선택
-        import random
-        specialization = random.choice(specializations)
+        # 3. 업종 선택 (Blue Ocean Strategy)
+        specializations = ["basic_food", "clothing", "education_service", "luxury_food", "consumer_goods"]
+        is_visionary = False
+        sector = "OTHER"
+
+        # WO-023: Visionary Mutation (Configurable)
+        mutation_rate = getattr(self.config_module, "VISIONARY_MUTATION_RATE", 0.05)
+        if random.random() < mutation_rate:
+            is_visionary = True
+            
+        # Blue Ocean Logic: If Visionary, look for empty markets
+        if is_visionary:
+            active_specs = {f.specialization for f in self.firms if f.is_active}
+            if "consumer_goods" not in active_specs:
+                specialization = "consumer_goods"
+            else:
+                 specialization = random.choice(specializations)
+        else:
+             # Standard Entrepreneur: Random Choice
+             specialization = random.choice(specializations)
+             
+        # Map Specialization to Sector
+        if specialization in ["basic_food", "luxury_food"]:
+            sector = "FOOD"
+        elif specialization == "consumer_goods":
+            sector = "GOODS"
+        else:
+            sector = "OTHER"
 
         # 4. AI 설정
         from simulation.ai.firm_ai import FirmAI
@@ -1196,6 +1274,8 @@ class Simulation:
             value_orientation=value_orientation,
             config_module=self.config_module,
             logger=self.logger,
+            sector=sector,
+            is_visionary=is_visionary,
         )
         new_firm.founder_id = founder_household.id
         # Set loan market if available in simulation

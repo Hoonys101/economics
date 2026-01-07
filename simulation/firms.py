@@ -33,6 +33,9 @@ class Firm(BaseAgent):
         initial_inventory: Optional[Dict[str, float]] = None,
         loan_market: Optional[LoanMarket] = None,
         logger: Optional[logging.Logger] = None,
+        # Phase 14-2: Innovation
+        sector: str = "FOOD", 
+        is_visionary: bool = False,
     ) -> None:
         super().__init__(
             id,
@@ -47,6 +50,19 @@ class Firm(BaseAgent):
         if initial_inventory is not None:
             self.inventory.update(initial_inventory)
         self.specialization = specialization
+        
+        # Phase 14-2 attributes
+        self.sector = sector
+        self.is_visionary = is_visionary
+        self.owner_id: Optional[int] = None # Phase 14-1: Shareholder System
+        
+        # Set bankruptcy threshold based on visionary status
+        base_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5)
+        if self.is_visionary:
+            self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold * 2
+        else:
+             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
+
         self.production_target: float = (
             config_module.FIRM_MIN_PRODUCTION_TARGET
         )  # Initialize production target
@@ -268,7 +284,12 @@ class Firm(BaseAgent):
             produced_quantity = 0.0
 
         if produced_quantity > 0:
-            item_id = self.specialization
+            # WO-023: Sector-based Production enforcement
+            if self.sector == "GOODS":
+                item_id = "consumer_goods"
+            else:
+                item_id = self.specialization
+                
             current_inventory = self.inventory.get(item_id, 0)
             self.inventory[item_id] = current_inventory + produced_quantity
             self.current_production = produced_quantity
@@ -760,3 +781,64 @@ class Firm(BaseAgent):
                     f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}",
                     extra={"tick": current_time, "agent_id": self.id, "tags": ["tax", "corporate_tax"]}
                 )
+
+    def distribute_profit(self, agents: Dict[int, Any], current_time: int) -> float:
+        """
+        Phase 14-1: Mandatory Dividend Rule.
+        Distribute surplus cash to owner if reserves are met.
+        Returns:
+            amount_distributed (float)
+        """
+        if self.owner_id is None:
+            return 0.0
+
+        # owner_id validation
+        owner = agents.get(self.owner_id)
+        if owner is None:
+            # Owner might be dead or invalid
+            return 0.0
+
+        # 1. Calculate Required Reserves (Maintenance + Wages coverage)
+        # Using config or defaults
+        maintenance_fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 0.0)
+        
+        avg_wage = 0.0
+        if self.employees:
+             avg_wage = sum(self.employee_wages.values()) / len(self.employees)
+        
+        # Reserve buffer: 6 months approx equivalent. 
+        # Let's say 20 ticks.
+        reserve_period = 20
+        # Operational Cost per tick = Maintenance + (Avg Wage * Count)
+        weekly_burn_rate = maintenance_fee + (avg_wage * len(self.employees))
+        required_reserves = weekly_burn_rate * reserve_period
+        
+        # 2. Calculate Distributable Cash
+        # Distributable = Current Assets - Required Reserves
+        distributable_cash = self.assets - required_reserves
+        
+        # 3. Distribute
+        if distributable_cash > 0:
+            dividend_amount = distributable_cash
+            self.assets -= dividend_amount
+            
+            # Transfer to Owner
+            owner.assets += dividend_amount
+            
+            # Record Income for Analytics (Phase 14-1)
+            # Assuming Household has tracked attributes (added in core_agents.py)
+            if hasattr(owner, 'income_capital_cumulative'):
+                owner.income_capital_cumulative += dividend_amount
+            if hasattr(owner, 'capital_income_this_tick'):
+                owner.capital_income_this_tick += dividend_amount
+
+            if self.logger:
+                self.logger.info(
+                    f"DIVIDEND | Firm {self.id} -> Household {self.owner_id} : ${dividend_amount:.2f}",
+                    extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
+                )
+            
+            return dividend_amount
+            
+        return 0.0
+

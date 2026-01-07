@@ -55,6 +55,8 @@ class EconomicIndicatorData:
     total_food_consumption: Optional[float] = None
     total_inventory: Optional[float] = None
     avg_survival_need: Optional[float] = None
+    total_labor_income: Optional[float] = None
+    total_capital_income: Optional[float] = None
 
 @dataclass
 class MarketHistoryData:

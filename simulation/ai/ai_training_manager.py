@@ -188,3 +188,8 @@ class AITrainingManager:
                     )
         
         target_manager.q_table = new_q_table
+
+    def end_episode(self, agents: List[Any]) -> None:
+        """Called at the end of a simulation episode."""
+        logger.info("End of episode. Saving learning data if applicable.")
+        # Future: Save Q-tables or model weights here

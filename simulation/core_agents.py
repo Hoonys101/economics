@@ -215,6 +215,15 @@ class Household(BaseAgent):
 
         # Phase 5: Genealogy & Time Allocation
         self.parent_id: Optional[int] = None      # 부모 가구 ID
+        self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
+        self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
+
+        # --- Phase 14-1: Shareholder & Dividend Attributes ---
+        self.portfolio: List[int] = []  # List of Firm IDs owned
+        self.income_labor_cumulative: float = 0.0
+        self.income_capital_cumulative: float = 0.0
+        self.labor_income_this_tick: float = 0.0
+        self.capital_income_this_tick: float = 0.0
         self.children_ids: List[int] = []         # 자녀 가구 ID 목록
         self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
         self.last_leisure_type: LeisureType = "IDLE"  # For visualization aggregation

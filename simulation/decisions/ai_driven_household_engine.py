@@ -85,6 +85,13 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         # 2. Execution: Consumption Logic (Per Item)
         for item_id in goods_list:
+            # WO-023: Maslow Constraint (Food Security First)
+            if item_id == "consumer_goods":
+                food_inventory = household.inventory.get("basic_food", 0.0)
+                target_buffer = getattr(self.config_module, "TARGET_FOOD_BUFFER_QUANTITY", 5.0)
+                if food_inventory < target_buffer:
+                    continue # Skip consumer_goods if food insecure
+
             agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
             
             # --- Organic Substitution Effect: Saving vs Consumption ROI ---

@@ -15,6 +15,7 @@ NUM_HOUSEHOLDS = 20
 NUM_FIRMS = 4
 SIMULATION_TICKS = 100
 HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0 # Operation Empty Warehouse: No initial safety net
+TARGET_FOOD_BUFFER_QUANTITY = 5.0 # WO-023: Maslow Constraint Threshold
 
 class EngineType(Enum):
     RULE_BASED = "RuleBased"
@@ -38,7 +39,9 @@ INITIAL_HOUSEHOLD_NEEDS_MEAN = {
     "wealth_need": 10.0,
     "imitation_need": 15.0,
     "labor_need": 0.0,
+    "labor_need": 0.0,
     "child_rearing_need": 0.0,
+    "quality": 0.0, # WO-023: New need for consumer goods
 }
 INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
 INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
@@ -77,6 +80,13 @@ GOODS = {
         "utility_effects": {"improvement": 15},
         "is_service": True,
         "is_luxury": False,
+    },
+    # WO-023: Consumer Goods (Industrial Product)
+    "consumer_goods": {
+        "production_cost": 5.0,
+        "initial_price": 15.0,
+        "utility_effects": {"quality": 10},
+        "is_luxury": True, # Treated as luxury/higher tier need
     },
 }
 

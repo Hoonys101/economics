@@ -249,11 +249,26 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             )
         firms.append(firm)
 
+    firm_founders = {}
     for firm in firms:
+        # Phase 14-1: Assign a Single Founder (Owner) logic
+        # For simplicity in Genesis, assign randomly or round-robin
+        # Let's use round-robin to ensure distribution
+        founder_household = households[firm.id % num_households]
+        firm.owner_id = founder_household.id
+        firm.founder_id = founder_household.id
+        
+        # Add to portfolio
+        if hasattr(founder_household, "portfolio"):
+            founder_household.portfolio.append(firm.id)
+            
+        firm_founders[firm.id] = founder_household.id
+
+        # Compatible with Stock Market (Shares)
         shares_per_household = firm.total_shares / num_households
         for household in households:
             household.shares_owned[firm.id] = shares_per_household
-
+            
     num_to_employ = int(num_households * config.INITIAL_EMPLOYMENT_RATE)
     unemployed_households = list(households)
     random.shuffle(unemployed_households)

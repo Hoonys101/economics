@@ -210,8 +210,9 @@ class SimulationRepository:
                 """
                 INSERT INTO economic_indicators (run_id, time, unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price,
                                                  total_production, total_consumption, total_household_assets,
-                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need,
+                                                 total_labor_income, total_capital_income)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     data.run_id,
@@ -228,6 +229,8 @@ class SimulationRepository:
                     data.total_food_consumption,
                     data.total_inventory,
                     data.avg_survival_need,
+                    data.total_labor_income,
+                    data.total_capital_income,
                 ),
             )
             self.conn.commit()
@@ -359,14 +362,17 @@ class SimulationRepository:
                         indicator_data.total_food_consumption,
                         indicator_data.total_inventory,
                         indicator_data.avg_survival_need,
+                        indicator_data.total_labor_income,
+                        indicator_data.total_capital_income,
                     )
                 )
             self.cursor.executemany(
                 """
                 INSERT INTO economic_indicators (run_id, time, unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price,
                                                  total_production, total_consumption, total_household_assets,
-                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need,
+                                                 total_labor_income, total_capital_income)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 data_to_insert,
             )
