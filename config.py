@@ -216,7 +216,7 @@ HOUSEHOLD_FOOD_PRICE_ELASTICITY = (
 HOUSEHOLD_FOOD_STOCKPILE_TARGET_TICKS = (
     5  # How many ticks worth of food a household aims to stockpile when prices are good
 )
-HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0  # The base amount of food a household consumes per tick, to calculate stockpile target
+HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0  # Increased for Genesis circulation (Jules tuning)
 HOUSEHOLD_MIN_FOOD_INVENTORY_TICKS = (
     2  # Minimum number of ticks worth of food a household aims to keep in inventory
 )
@@ -241,7 +241,7 @@ AI_WEALTH_REWARD_WEIGHT = 3.0
 
 # --- Genesis: Activation Energy (WO-Diag-005) ---
 INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0  # 10.0 -> 50.0 (5x Booster)
-INITIAL_FIRM_CAPITAL_MEAN = 500.0     # 100.0 -> 500.0 (5x Booster)
+INITIAL_FIRM_CAPITAL_MEAN = 1000.0    # 500.0 -> 1000.0 (Runway Booster)
 
 # --- Genesis: Market Flexibility Multipliers ---
 GENESIS_PRICE_ADJUSTMENT_MULTIPLIER = 2.0  # Speed up price slashing
@@ -526,7 +526,7 @@ QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 # ==============================================================================
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
 STARTUP_COST = 30000.0           # 창업 비용 (30,000으로 상향)
-FIRM_MAINTENANCE_FEE = 50.0      # 매 틱 고정 유지비
+FIRM_MAINTENANCE_FEE = 1.0       # 50.0 -> 1.0 (Fixed Cost Reduction for stable Genesis)
 CORPORATE_TAX_RATE = 0.2         # 법인세 (20%)
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
 STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)

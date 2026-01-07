@@ -387,15 +387,19 @@ class Government:
              active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
 
              total_stimulus = 0.0
+             target_agents_paid = 0
              for h in active_households:
-                 # Centralized spending logic handles deficit spending
-                 self.provide_subsidy(h, stimulus_amount, current_tick)
-                 total_stimulus += stimulus_amount
+                 # provide_subsidy returns the amount actually paid (respects toggle/funds)
+                 paid = self.provide_subsidy(h, stimulus_amount, current_tick)
+                 total_stimulus += paid
+                 if paid > 0:
+                     target_agents_paid += 1
 
-             logger.warning(
-                 f"STIMULUS_TRIGGERED | GDP Drop Detected. Paid {total_stimulus:.2f} total.",
-                 extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
-             )
+             if total_stimulus > 0:
+                 logger.warning(
+                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Paid {total_stimulus:.2f} total to {target_agents_paid} agents.",
+                     extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
+                 )
              # Reset history or cooldown to prevent continuous stimulus?
              # Spec doesn't say. Let's add a cooldown implicit by the fact that GDP needs to drop AGAIN to trigger.
              # But if it stays low, the comparison might stabilize.

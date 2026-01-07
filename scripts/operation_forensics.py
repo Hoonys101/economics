@@ -16,13 +16,18 @@ class ForensicLogHandler(logging.Handler):
     def __init__(self):
         super().__init__()
         self.death_records: List[Dict[str, Any]] = []
+        self.stimulus_records: List[Dict[str, Any]] = []
+        self.all_records: List[Dict[str, Any]] = []
 
     def emit(self, record):
+        # Capture for verify_genesis generic access
+        self.all_records.append(record.__dict__)
+
+        # Specific capturing for forensics
         if hasattr(record, "agent_id") and hasattr(record, "cause") and record.cause == "starvation":
-             # This matches our AGENT_DEATH log
              if hasattr(record, "food_inventory"): # Check for forensic fields
                  data = {
-                     "tick": record.tick,
+                     "tick": getattr(record, "tick", 0),
                      "agent_id": record.agent_id,
                      "cash_at_death": getattr(record, "cash_at_death", 0.0),
                      "food_inventory": getattr(record, "food_inventory", 0.0),
@@ -31,6 +36,12 @@ class ForensicLogHandler(logging.Handler):
                      "job_vacancies_available": getattr(record, "job_vacancies_available", 0)
                  }
                  self.death_records.append(data)
+        
+        if "STIMULUS_TRIGGERED" in record.getMessage():
+             self.stimulus_records.append({
+                 "tick": getattr(record, "tick", 0),
+                 "message": record.getMessage()
+             })
 
 def run_forensic_investigation():
     # 1. Setup Logging

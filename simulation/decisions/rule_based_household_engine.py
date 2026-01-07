@@ -93,6 +93,29 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                 chosen_aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 공격성 중립으로 설정
 
                 desired_wage = household.get_desired_wage()
+                
+                # --- Genesis: Wage Surrender (WO-Diag-005) ---
+                survival_need = household.needs.get("survival", 0.0)
+                if survival_need >= self.config_module.SURVIVAL_NEED_THRESHOLD:
+                    # Desperation factor increases as survival need goes from threshold 20 to 100
+                    desperation = (survival_need - self.config_module.SURVIVAL_NEED_THRESHOLD) / (100.0 - self.config_module.SURVIVAL_NEED_THRESHOLD)
+                    desperation = max(0.0, min(1.0, desperation))
+                    
+                    # Apply flexibility factor to drop wage
+                    flexibility = getattr(self.config_module, "GENESIS_WAGE_FLEXIBILITY_FACTOR", 1.0)
+                    reduction = desperation * flexibility
+                    
+                    # New desired wage: drop up to 90% but floor at 1.0
+                    new_wage = max(1.0, desired_wage * (1.0 - (reduction * 0.9)))
+                    
+                    if new_wage < desired_wage:
+                        self.logger.info(
+                            f"WAGE_SURRENDER | Household {household.id} desperate (Survival={survival_need:.1f}). Dropping wage: {desired_wage:.2f} -> {new_wage:.2f}",
+                            extra={"tick": current_time, "agent_id": household.id}
+                        )
+                        desired_wage = new_wage
+                # ---------------------------------------------
+
                 orders.append(
                     Order(
                         household.id,

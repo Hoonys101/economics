@@ -143,22 +143,33 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 diff_ratio = (
                     current_inventory - target_inventory
                 ) / target_inventory
-                signed_power = (
-                    abs(diff_ratio) ** self.config_module.PRICE_ADJUSTMENT_EXPONENT
-                )
-                if diff_ratio < 0: # Understocked, increase price
-                    adjusted_price = base_price * (
-                        1
-                        + signed_power * self.config_module.PRICE_ADJUSTMENT_FACTOR
+                
+                # --- Genesis: Acceleration & Emergency Sale (WO-Diag-005) ---
+                price_multiplier = getattr(self.config_module, "GENESIS_PRICE_ADJUSTMENT_MULTIPLIER", 1.0)
+                
+                # Check for Emergency Overstock (2x threshold)
+                if current_inventory > 2 * target_inventory * self.config_module.OVERSTOCK_THRESHOLD:
+                    # Step-change drop: Force 50% discount to clear dead stock
+                    adjusted_price = min(base_price * 0.5, self.config_module.GOODS[item_id]["production_cost"] * 0.5)
+                    self.logger.warning(
+                        f"EMERGENCY_FIRE_SALE | Firm {firm.id} is severely overstocked ({current_inventory:.1f}). Force-cutting price to {adjusted_price:.2f}",
+                        extra={"tick": current_tick, "agent_id": firm.id}
                     )
-                else: # Overstocked, decrease price
-                    adjusted_price = base_price * (
-                        1
-                        - signed_power * self.config_module.PRICE_ADJUSTMENT_FACTOR
+                else:
+                    signed_power = (
+                        abs(diff_ratio) ** self.config_module.PRICE_ADJUSTMENT_EXPONENT
                     )
+                    # Apply multiplier to speed up price discovery
+                    adjustment = signed_power * self.config_module.PRICE_ADJUSTMENT_FACTOR * price_multiplier
+                    
+                    if diff_ratio < 0: # Understocked, increase price
+                        adjusted_price = base_price * (1 + adjustment)
+                    else: # Overstocked, decrease price
+                        adjusted_price = base_price * (1 - adjustment)
+                # ------------------------------------------------------------
 
             final_price = max(
-                self.config_module.MIN_SELL_PRICE,
+                0.1, # Absolute hard floor to prevent zero/negative
                 min(self.config_module.MAX_SELL_PRICE, adjusted_price),
             )
             firm.last_prices[item_id] = final_price
