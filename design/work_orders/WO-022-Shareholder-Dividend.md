@@ -73,3 +73,13 @@
 1.  **확장성 고려**: `Household.portfolio` 구조는 단순 `list[int]`로 시작하되, 향후 `shares_owned` 수량이나 `purchase_price` 등을 담을 수 있는 객체 구조(`PortfolioItem` 등)로 확장하기 용이해야 합니다. (이번 단계에서는 ID 리스트로 충분함)
 2.  **주식 객체화**: 주식은 단순한 ID 매핑을 넘어, 추후 `Current_Price`, `Dividends_Yield` 등의 속성을 가질 수 있는 독립체임을 염두에 두십시오.
 3.  **코드 스멜 방지**: `owner_id` 로직이 곳곳에 하드코딩되는 것을 피하고, `firm.get_owners()`와 같은 인터페이스를 통해 접근하도록 하여 추후 다수 주주 시스템으로 전환 시 수정 범위를 최소화하십시오.
+
+## 7. Data Schema Update (Required for Visualization)
+테스트 검증을 위해 **Macro Level**에서의 소득 집계가 필요합니다. `economic_indicators` 테이블에 다음 컬럼을 추가하고 데이터를 저장하십시오.
+
+1.  **Schema Change (`simulation/db/schema.py`)**:
+    - `economic_indicators` 테이블에 `total_labor_income` (REAL), `total_capital_income` (REAL) 컬럼 추가.
+2.  **DTO Update (`simulation/dtos.py`)**:
+    - `EconomicIndicatorData` 클래스에 위 두 필드 추가.
+3.  **Simulation Engine Update**:
+    - 매 틱 통계 집계 시(`calculate_aggregate_stats`), 전체 가계의 `labor_income_this_tick`과 `capital_income_this_tick` 합계를 구하여 저장.
