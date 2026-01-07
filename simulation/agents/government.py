@@ -40,7 +40,7 @@ class Government:
         # History buffers for visualization
         self.tax_history: List[Dict[str, Any]] = [] # For Stacked Bar Chart (breakdown per tick)
         self.welfare_history: List[Dict[str, float]] = [] # For Welfare Line Chart
-        self.history_window_size = 50
+        self.history_window_size = 5000 # Increased for full run capture (WO-019)
 
         # Current tick accumulators (reset every tick)
         self.current_tick_stats = {
@@ -481,11 +481,13 @@ class Government:
         if len(self.tax_history) > self.history_window_size:
             self.tax_history.pop(0)
 
-        # 2. Archive Welfare Spending
+        # 2. Archive Welfare Spending, Debt & Assets
         welfare_snapshot = {
             "tick": current_tick,
             "welfare": self.current_tick_stats["welfare_spending"],
-            "stimulus": self.current_tick_stats["stimulus_spending"]
+            "stimulus": self.current_tick_stats["stimulus_spending"],
+            "debt": self.total_debt,
+            "assets": self.assets
         }
         self.welfare_history.append(welfare_snapshot)
         if len(self.welfare_history) > self.history_window_size:
