@@ -1,7 +1,7 @@
 # WO-018: Corporate Tax & Maintenance Fee Implementation
 
 ## 1. 개요
-**목표**: 기업의 무분별한 증식과 좀비 존속을 억제하기 위해 비용 구조를 강화한다.
+**목표**: 기업의 무분별한 증식과 좀비 존속을 억제하고, 청산(Liquidation) 과정에서의 화폐 생성 버그를 수정하여 경제 시스템의 무결성을 확보한다.
 
 ## 2. 구현 상세
 
@@ -12,39 +12,42 @@ FIRM_MAINTENANCE_FEE = 50.0  # 틱당 고정 유지비
 STARTUP_COST = 30000.0  # 창업 비용 상향 (기존 15,000)
 ```
 
-### 2.2 Firm Logic (`simulation/firms.py`)
+### 2.2 Critical Bug Fix: Money Creation in Liquidation (`simulation/firms.py`)
+> **ISSUE**: 현재 `liquidate_assets`에서 재고와 설비를 매각 처리하며 **구매자 없이 현금을 생성**하는 버그가 있음 (Money Printing).
+- **FIX**: `liquidate_assets` 메서드를 수정하여:
+   1. 재고(`inventory`) 및 설비(`capital_stock`)는 현금화하지 않고 **즉시 폐기(0원)** 처리한다.
+   2. `inventory.clear()`, `capital_stock = 0.0`.
+   3. 오직 `self.assets`(보유 현금)만 반환한다.
+
+### 2.3 Firm Logic Update (`simulation/firms.py`)
 1. **유지비 지불 (`pay_maintenance`)**:
    - 매 틱 `FIRM_MAINTENANCE_FEE`를 지불한다.
-   - 현금 부족 시 화폐 보유량을 0으로 만들고, 부족분은 일단 무시(파산 로직에서 처리됨).
-   - 지불된 금액은 정부(`government.collect_tax`)로 귀속 (항목: `firm_maintenance`).
+   - `self.assets -= fee`.
+   - `config_module.government.collect_tax(fee, "firm_maintenance", ...)` 호출.
 
 2. **법인세 지불 (`pay_taxes`)**:
    - `profit_this_tick = revenue - expenses` (유지비 포함)
    - `if profit_this_tick > 0`:
      - `tax = profit_this_tick * CORPORATE_TAX_RATE`
-     - 정부에 납부 (항목: `corporate_tax`).
+     - `self.assets -= tax`
+     - `config_module.government.collect_tax(tax, "corporate_tax", ...)` 호출.
 
 3. **`update` 메서드 수정**:
    - 기존 로직 마지막에 `pay_maintenance()`와 `pay_taxes()` 호출 추가.
 
-### 2.3 Engine Update (`simulation/engine.py`)
+### 2.4 Engine Update (`simulation/engine.py`)
 1. **창업 로직 수정**:
    - `spawn_firm`에서 `startup_cost`를 `config.STARTUP_COST` (30000)로 사용.
-   - `luxury_food`도 창업 분야에 추가.
+   - `specializations` 리스트에 `"luxury_food"` 추가 (랜덤 선택 시 포함).
 
-### 2.4 Fix Money Creation Logic (`simulation/firms.py`)
-> **CRITICAL**: 현재 `liquidate_assets`에서 재고와 설비를 매각 처리하며 허공에서 현금을 생성함 (Money Printing Bug).
-1. `liquidate_assets` 수정:
-   - 재고(`inventory`) 및 설비(`capital_stock`)는 현금화하지 않고 **즉시 폐기(0원)** 처리한다.
-   - 오직 `self.assets`(보유 현금)만 반환한다.
-   - `inventory.clear()`, `capital_stock = 0.0`.
+## 3. 검증 계획 (Verification)
+`tests/verify_corporate_tax.py`를 작성하여 다음을 검증하라:
 
-## 3. 검증 계획
-1. **단위 테스트**: `tests/verify_corporate_tax.py` 작성.
-   - 고정비 차감 확인.
-   - 이익 발생 시 법인세 차감 확인.
-2. **효과 검증**:
-   - 100틱 시뮬레이션 후 기업 수 증가 추세가 완화되었는지 확인.
+1. **Tax & Fee Test**:
+   - 기업이 매출 발생 시 법인세를 납부하는지 확인.
+   - 기업이 매출 0일 때 유지비를 납부하는지 확인.
+2. **Conservation Test**:
+   - 기업 청산(Liquidation) 시나리오를 강제로 실행하고, 전후 시스템 전체 화폐 총량(Delta)이 **0.0000**인지 확인.
 
 ## 4. 보고 요청
-Jules는 구현 후 `reports/CORPORATE_TAX_REPORT.md`를 제출하라.
+Jules는 구현 및 검증 후 `reports/CORPORATE_TAX_REPORT.md`를 제출하라.
