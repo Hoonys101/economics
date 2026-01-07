@@ -41,15 +41,19 @@ def run_forensic_investigation():
     # Ensure standard logging is also setup (so we don't miss other errors)
     setup_logging()
 
-    # 2. Run Simulation
-    print("Initializing Operation Forensics Simulation (100 Ticks)...")
+    # 2. Run Simulation (STRESS TEST MODE)
+    print("Initializing Operation Forensics Simulation (STRESS TEST: Asset=50.0)...")
+    
+    # [CRITICAL] Runtime Config Override for Stress Test
+    config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0 
+    
     sim = create_simulation()
 
     try:
         for i in range(500):
             sim.run_tick()
-            if (i+1) % 10 == 0:
-                print(f"Tick {i+1}/100 complete...")
+            if (i+1) % 50 == 0:
+                print(f"Tick {i+1}/500 complete...")
     except Exception as e:
         print(f"Simulation crashed at tick {sim.time}: {e}")
         import traceback
@@ -63,8 +67,9 @@ def run_forensic_investigation():
     type_c_count = 0
 
     report_lines = []
-    report_lines.append("=== FORENSIC REPORT ===")
-    report_lines.append(f"Total Deaths: {len(forensic_handler.death_records)}")
+    report_lines.append("# AUTOPSY REPORT: FORENSIC ANALYSIS")
+    report_lines.append(f"**Total Deaths**: {len(forensic_handler.death_records)}")
+    report_lines.append("")
 
     sample_cases = []
 
@@ -77,21 +82,13 @@ def run_forensic_investigation():
         inventory = record["food_inventory"]
 
         # Classification Logic (Priority: A -> B -> C)
-        # Based on WO-021:
         # Type A: Job Vacancy = 0
         # Type B: Last Labor Offer > 10 ticks ago (or never)
         # Type C: Cash > Price (Won't Eat)
 
         is_type_a = vacancies == 0
-
-        # Type B: "Labor Offer count = 0 in last 10 ticks" -> (current_tick - last_offer > 10)
-        # Note: If never offered, last_offer is 0.
         is_type_b = (death_tick - last_offer) > 10
-
-        # Type C: Cash > Price (if Price is known) and Inventory empty
-        # Note: inventory is checked at death, usually 0 if starvation.
-        # If price is None (no market data), we can't strictly classify as C based on price,
-        # but usually it means market collapse or no sellers.
+        
         price_val = price if price is not None else 999999.0
         is_type_c = (cash >= price_val)
 
@@ -99,42 +96,42 @@ def run_forensic_investigation():
 
         if is_type_a:
             type_a_count += 1
-            assigned_type = "Type A"
+            assigned_type = "Type A (No Jobs)"
         elif is_type_b:
             type_b_count += 1
-            assigned_type = "Type B"
+            assigned_type = "Type B (Won't Work)"
         elif is_type_c:
             type_c_count += 1
-            assigned_type = "Type C"
+            assigned_type = "Type C (Won't Eat)"
         else:
-            # Fallback or mixed causes
             assigned_type = "Unclassified"
 
-        # Collect sample cases (first 2 of each type)
-        if len(sample_cases) < 10: # Just collect some
-            sample_cases.append(f"[{assigned_type}] Agent #{record['agent_id']}: Cash={cash:.2f}, Vacancies={vacancies}, LastOffer={last_offer} (Tick {death_tick}), Price={price}")
+        # Collect sample cases (first 5 of each type)
+        if len(sample_cases) < 15: 
+            sample_cases.append(f"- **{assigned_type}** | Agent #{record['agent_id']} | Tick: {death_tick} | Cash: {cash:.2f} | Vacancies: {vacancies} | Last Offer: {last_offer} | Price: {price}")
 
     total = len(forensic_handler.death_records)
     if total > 0:
-        report_lines.append(f"- Type A (No Jobs): {type_a_count} ({type_a_count/total:.1%})")
-        report_lines.append(f"- Type B (Won't Work): {type_b_count} ({type_b_count/total:.1%})")
-        report_lines.append(f"- Type C (Won't Eat): {type_c_count} ({type_c_count/total:.1%})")
+        report_lines.append("## Classification Summary")
+        report_lines.append(f"- **Type A (No Jobs)**: {type_a_count} ({type_a_count/total:.1%})")
+        report_lines.append(f"- **Type B (Won't Work)**: {type_b_count} ({type_b_count/total:.1%})")
+        report_lines.append(f"- **Type C (Won't Eat)**: {type_c_count} ({type_c_count/total:.1%})")
     else:
-        report_lines.append("- Type A (No Jobs): 0 (0%)")
-        report_lines.append("- Type B (Won't Work): 0 (0%)")
-        report_lines.append("- Type C (Won't Eat): 0 (0%)")
+        report_lines.append("## Classification Summary")
+        report_lines.append("- No deaths recorded.")
 
-    report_lines.append("\nSample Cases:")
+    report_lines.append("")
+    report_lines.append("## Sample Cases")
     for case in sample_cases:
         report_lines.append(case)
 
     # 4. Write Report
     os.makedirs("reports", exist_ok=True)
-    with open("reports/forensic_report.txt", "w") as f:
+    with open("reports/AUTOPSY_REPORT.md", "w") as f:
         f.write("\n".join(report_lines))
 
     print("\n".join(report_lines))
-    print(f"\nReport saved to reports/forensic_report.txt")
+    print(f"\nReport saved to reports/AUTOPSY_REPORT.md")
 
 if __name__ == "__main__":
     run_forensic_investigation()
