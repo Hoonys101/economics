@@ -41,5 +41,24 @@ WO-022(배당)가 적용된 상태에서 본 기능 투입 시:
 3.  **Phase 3 (산업 혁명)**: '비전가'가 Goods 공장 설립. 실직 농부들이 공장 노동자로 전환.
 4.  **Phase 4 (고도화)**: 식량 가격 안정화 + Goods 시장 폭발적 성장 -> GDP 퀀텀 점프.
 
-## 4. 제언 (Execution Strategy)
-본 WO-023은 **WO-022(주주 배당)** 시스템이 안정적으로 정착되어 가계/기업의 현금 흐름이 원활해진 후(Serial Execution) 투입해야 효과를 명확히 검증할 수 있습니다.
+## ## 5. Q&A 및 기술적 명확화 (Technical Clarifications)
+
+- **Q1: "Consumer Goods"의 정의**
+  - 기존 `clothing` 대신 새로운 상품 타입 `consumer_goods`를 `config.py`의 `GOODS` 딕셔너리에 추가하십시오.
+  - 속성: `production_cost`: 5.0 (Food보다 고부가가치), `is_luxury`: True, `utility_effects`: {"quality": 10}.
+  - 이 상품은 "삶의 질" 욕구를 충족시키는 대표 공산품입니다.
+
+- **Q2: Sector Logic in `produce`**
+  - `produce` 메서드 자체의 로직(Cobb-Douglas 등)을 근본적으로 바꿀 필요는 없습니다.
+  - **핵심 차이**: `GenericFirm`이 `sector` 속성(`FOOD` vs `GOODS`)에 따라 생산하는 **`output_good_id`**가 달라져야 합니다.
+  - `FOOD` 섹터 -> `basic_food` 생산 / `GOODS` 섹터 -> `consumer_goods` 생산.
+
+- **Q3: "Visionary" 속성 (Permanent vs One-off)**
+  - **Permanent Trait**으로 구현하십시오. (`self.is_visionary = True`)
+  - 효과:
+    1.  **High Pain Tolerance**: 적자(Loss)로 인한 폐업 임계값(`closure_threshold`)을 일반 기업보다 2배 길게 설정. (Death Valley 생존력)
+    2.  **Blue Ocean Strategy**: 창업 시점에 경쟁자가 없는 섹터(GOODS)를 **100% 확률**로 선택.
+
+- **Q4: 가계 소비 기준 (Threshold)**
+  - 하드코딩 대신 `config.TARGET_FOOD_BUFFER_QUANTITY` (기본값 5.0)를 기준으로 사용하십시오.
+  - 로직: `if food_inventory >= config.TARGET_FOOD_BUFFER_QUANTITY and cash > price:` -> Buy Goods.
