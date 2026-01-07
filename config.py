@@ -43,13 +43,13 @@ INITIAL_HOUSEHOLD_NEEDS_MEAN = {
 INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
 INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
 
-INITIAL_FIRM_CAPITAL_MEAN = 10000.0
+INITIAL_FIRM_CAPITAL_MEAN = 10000.0 # High Initial Capital for Laissez-Faire Runway
 INITIAL_FIRM_CAPITAL_RANGE = 0.2
 INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 200.0
 INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
 INITIAL_FIRM_INVENTORY_MEAN = 0.0  # Operation Empty Warehouse: No initial safety net
 INITIAL_FIRM_INVENTORY_RANGE = 0.2
-FIRM_PRODUCTIVITY_FACTOR = 10.0
+FIRM_PRODUCTIVITY_FACTOR = 20.0 # Laissez-Faire: Double Output
 
 # --- Goods Configuration ---
 GOODS = {
@@ -436,11 +436,11 @@ STOCK_SELL_PROFIT_THRESHOLD = 0.15  # 매도 고려 수익률 임계값 (15%)
 STOCK_BUY_DISCOUNT_THRESHOLD = 0.10 # 매수 고려 할인율 임계값 (10%)
 
 # --- Phase 3.1: Government & Taxation ---
-INCOME_TAX_RATE = 0.1                 # 가계 소득세 (10%)
-INCOME_TAX_PAYER = "HOUSEHOLD"         # "HOUSEHOLD" (원천징수) 또는 "FIRM" (기업이 추가 납부)
-CORPORATE_TAX_RATE = 0.2              # 기업 법인세 (20%)
-SALES_TAX_RATE = 0.05                 # 거래세/부가세 (5%)
-INHERITANCE_TAX_RATE = 1.0            # 상속세 (100%, 정부 귀속)
+INCOME_TAX_RATE = 0.0                 # Laissez-Faire: Zero Tax
+INCOME_TAX_PAYER = "HOUSEHOLD"         
+CORPORATE_TAX_RATE = 0.0              # Laissez-Faire: Zero Tax
+SALES_TAX_RATE = 0.0                 # Laissez-Faire: Zero Tax
+INHERITANCE_TAX_RATE = 0.0            # Laissez-Faire: Zero Tax
 
 RD_SUBSIDY_RATE = 0.2                 # R&D(자본투자) 보조금 (투자액의 20%)
 INFRASTRUCTURE_INVESTMENT_COST = 5000.0  # 인프라 투자 1회당 비용
@@ -526,8 +526,8 @@ QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 # ==============================================================================
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
 STARTUP_COST = 30000.0           # 창업 비용 (30,000으로 상향)
-FIRM_MAINTENANCE_FEE = 1.0       # 50.0 -> 1.0 (Fixed Cost Reduction for stable Genesis)
-CORPORATE_TAX_RATE = 0.2         # 법인세 (20%)
+FIRM_MAINTENANCE_FEE = 50.0       # WO-021: 1/4 of legacy 200.0
+CORPORATE_TAX_RATE = 0.0         # Laissez-Faire: Zero Tax
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
 STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)
 

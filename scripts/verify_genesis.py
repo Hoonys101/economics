@@ -30,8 +30,8 @@ def run_genesis_verification():
         "FIRM_PRODUCTIVITY_FACTOR": prod_factor,
         "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK": cons_rate,
         "GOVERNMENT_STIMULUS_ENABLED": False,
-        "INITIAL_HOUSEHOLD_ASSETS_MEAN": 50.0,
-        "INITIAL_FIRM_CAPITAL_MEAN": 500.0
+        "INITIAL_HOUSEHOLD_ASSETS_MEAN": config.INITIAL_HOUSEHOLD_ASSETS_MEAN,
+        "INITIAL_FIRM_CAPITAL_MEAN": config.INITIAL_FIRM_CAPITAL_MEAN
     }
     
     print(f"--- 🚀 Operation Genesis Verification ---")
