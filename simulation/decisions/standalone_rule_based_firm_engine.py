@@ -74,18 +74,56 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
             )
 
+        # [FIX: WO-Diag-005] Kickstart Production Logic
+        # If inventory is wiped out (Fire-Sale) and target is too low (due to cuts),
+        # the firm must aggressively restart production to meet demand.
+        # Threshold 50.0 is approx 5 employees' worth of output (Productivity 10.0).
+        if current_inventory < 5.0 and firm.production_target < 50.0:
+            old_target = firm.production_target
+            firm.production_target = 50.0
+            self.logger.warning(
+                f"KICKSTART_PRODUCTION | Firm {firm.id} rebooting capacity. {old_target:.1f} -> {firm.production_target:.1f}",
+                extra={"tick": current_time, "agent_id": firm.id, "tags": ["kickstart"]}
+            )
+
         # 2. 임금 조정 및 고용 결정 (생산 조정 이후 필요에 따라)
-        # 현재 생산 목표와 실제 생산량, 고용 인원 등을 고려하여 임금 및 고용 결정 로직 추가
-        if chosen_tactic != Tactic.ADJUST_PRODUCTION: # 이미 생산 조정 결정을 했으면 이번 턴에 임금 조정은 건너뛴다 (간단화를 위해)
-            needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
-            if len(firm.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
-               len(firm.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
-                chosen_tactic = Tactic.ADJUST_WAGES # ADJUST_WAGES 전술에 고용 로직도 포함되어 있음
-                orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))
-                self.logger.info(
-                    f"Firm {firm.id} RuleBased: Need more labor, adjusting wages/hiring.",
-                    extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
-                )
+        # [FIX: WO-Diag-005] Allow simultaneous Production Adjustment and Hiring
+        # Previously, if tactic was ADJUST_PRODUCTION, we skipped hiring. This caused a death spiral
+        # where firms increased targets (due to understock) but never hired the labor to meet them.
+        needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
+        if len(firm.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
+            len(firm.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+
+            # If we are already adjusting production, we might want to keep that label or switch to wages.
+            # We prioritize executing the action.
+            chosen_tactic = Tactic.ADJUST_WAGES
+            labor_orders = self.rule_based_executor._adjust_wages(firm, current_time, market_data)
+
+            # [FIX: WO-Diag-005] Solvency-Based Wage Offer
+            # If firm revenue crashed (due to Fire-Sale), it cannot pay BASE_WAGE.
+            # It must offer what it can afford (Sustainable Wage), matching the Household's Wage Surrender.
+            for order in labor_orders:
+                if order.order_type == "BUY" and order.market_id == "labor_market":
+                    last_price = firm.last_prices.get(firm.specialization, self.config_module.GOODS[firm.specialization]["production_cost"])
+                    # Sustainable Wage = Revenue per Worker * Margin Safety (0.9)
+                    sustainable_wage = (last_price * firm.productivity_factor) * 0.9
+
+                    original_offer = order.price
+                    # Offer lower of (Original, Sustainable), but at least 1.0
+                    new_offer = max(1.0, min(original_offer, sustainable_wage))
+
+                    if new_offer < original_offer:
+                        order.price = new_offer
+                        self.logger.warning(
+                            f"SOLVENCY_WAGE_ADJ | Firm {firm.id} lowering wage offer. {original_offer:.2f} -> {new_offer:.2f} (Sustainable: {sustainable_wage:.2f})",
+                            extra={"tick": current_time, "agent_id": firm.id, "tags": ["wage_adjustment"]}
+                        )
+
+            orders.extend(labor_orders)
+            self.logger.info(
+                f"Firm {firm.id} RuleBased: Need more labor, adjusting wages/hiring.",
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
+            )
 
         # 3. 가격 조정 및 판매 (재고가 있을 경우)
         if current_inventory > 0:
@@ -139,23 +177,49 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
             )
 
             adjusted_price = base_price
-            if target_inventory > 0:
+
+            # --- Genesis: Fire-Sale Logic (WO-Diag-005) ---
+            # 1. Emergency Fire-Sale
+            # If inventory is excessively high (e.g. 2x threshold), crash the price.
+            # Strategy: Step-change drop to 50% of current or cost.
+            is_emergency_overstock = (
+                current_inventory > target_inventory * self.config_module.OVERSTOCK_THRESHOLD * 2.0
+            )
+
+            if is_emergency_overstock:
+                production_cost = self.config_module.GOODS[item_id]["production_cost"]
+                adjusted_price = max(base_price * 0.5, production_cost * 0.5)
+                self.logger.warning(
+                    f"EMERGENCY_FIRE_SALE | Firm {firm.id} slashing price. Base: {base_price:.2f} -> New: {adjusted_price:.2f}. Inventory: {current_inventory:.1f}",
+                    extra={"tick": current_tick, "agent_id": firm.id, "tags": ["fire_sale"]}
+                )
+
+            # 2. Standard Adjustment (Boosted by Genesis Factor)
+            elif target_inventory > 0:
                 diff_ratio = (
                     current_inventory - target_inventory
                 ) / target_inventory
                 signed_power = (
                     abs(diff_ratio) ** self.config_module.PRICE_ADJUSTMENT_EXPONENT
                 )
+
+                # Apply Genesis Multiplier for faster correction
+                adjustment_factor = (
+                    self.config_module.PRICE_ADJUSTMENT_FACTOR *
+                    self.config_module.GENESIS_PRICE_ADJUSTMENT_MULTIPLIER
+                )
+
                 if diff_ratio < 0: # Understocked, increase price
                     adjusted_price = base_price * (
                         1
-                        + signed_power * self.config_module.PRICE_ADJUSTMENT_FACTOR
+                        + signed_power * adjustment_factor
                     )
                 else: # Overstocked, decrease price
                     adjusted_price = base_price * (
                         1
-                        - signed_power * self.config_module.PRICE_ADJUSTMENT_FACTOR
+                        - signed_power * adjustment_factor
                     )
+            # ---------------------------------------------
 
             final_price = max(
                 self.config_module.MIN_SELL_PRICE,
