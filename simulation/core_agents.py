@@ -207,6 +207,8 @@ class Household(BaseAgent):
         else: # Normal
             self.adaptation_rate = self.config_module.ADAPTATION_RATE_NORMAL
 
+        # Operation Forensics (WO-021)
+        self.last_labor_offer_tick: int = 0
 
         # Phase 4: Bankruptcy Penalty
         self.credit_frozen_until_tick: int = 0
@@ -272,7 +274,7 @@ class Household(BaseAgent):
             self.employer_id = None
             self.current_wage = 0.0
 
-    def decide_and_consume(self, current_time: int) -> Dict[str, float]:
+    def decide_and_consume(self, current_time: int, market_data: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
         """
         가계가 현재 욕구 상태와 보유 재고를 바탕으로 재화를 소모합니다.
 
@@ -321,7 +323,7 @@ class Household(BaseAgent):
                     )
 
         # 2. 욕구 업데이트 (자연적 증가/감소)
-        self.update_needs(current_time)
+        self.update_needs(current_time, market_data)
         return consumed_items
 
     def _initialize_desire_weights(self, personality: Personality) -> Dict[str, float]:
@@ -553,6 +555,11 @@ class Household(BaseAgent):
         orders = refined_orders
         # ------------------------------------------
 
+        # Operation Forensics: Track last labor offer
+        for order in orders:
+            if order.order_type == "SELL" and (order.item_id == "labor" or order.market_id == "labor"):
+                self.last_labor_offer_tick = current_time
+
         self.logger.debug(
             f"HOUSEHOLD_DECISION_END | Household {self.id} after decision: Assets={self.assets:.2f}, is_employed={self.is_employed}, employer_id={self.employer_id}, Needs={self.needs}, Decisions={len(orders)}",
             extra={
@@ -746,7 +753,7 @@ class Household(BaseAgent):
             )
 
     @override
-    def update_needs(self, current_tick: int):
+    def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         log_extra = {
             "tick": current_tick,
             "agent_id": self.id,
@@ -787,6 +794,33 @@ class Household(BaseAgent):
             >= self.config_module.HOUSEHOLD_DEATH_TURNS_THRESHOLD
         ):
             self.is_active = False
+
+            # Operation Forensics (WO-021)
+            # Retrieve forensics data from market_data if available
+            market_food_price = None
+            job_vacancies = 0
+
+            if market_data:
+                 goods_market = market_data.get("goods_market", {})
+                 market_food_price = goods_market.get("basic_food_current_sell_price")
+                 job_vacancies = market_data.get("job_vacancies", 0)
+
+            self.logger.warning(
+                f"AGENT_DEATH | ID: {self.id}",
+                extra={
+                    "tick": current_tick,
+                    "agent_id": self.id,
+                    "cause": "starvation",
+                    "cash_at_death": self.assets,
+                    "food_inventory": self.inventory.get("basic_food", 0),
+                    "market_food_price": market_food_price,
+                    "last_labor_offer_tick": self.last_labor_offer_tick,
+                    "job_vacancies_available": job_vacancies,
+                    "survival_need": self.needs["survival"],
+                    "tags": ["death", "autopsy"]
+                }
+            )
+
             self.logger.warning(
                 f"HOUSEHOLD_INACTIVE | Household {self.id} became inactive. Assets: {self.assets:.2f}, Survival Need: {self.needs['survival']:.1f}, High Turns: {self.survival_need_high_turns}",
                 extra={

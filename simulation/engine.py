@@ -536,10 +536,22 @@ class Simulation:
         # Now they must consume them to satisfy needs.
         household_leisure_effects = {} # Store utility for AI reward injection
 
+        # Recalculate vacancy count for correct death classification
+        current_vacancies = 0
+        labor_market = self.markets.get("labor")
+        if labor_market and isinstance(labor_market, OrderBookMarket):
+             for item_orders in labor_market.buy_orders.values():
+                 for order in item_orders:
+                     current_vacancies += order.quantity
+
+        # Create a consumption-specific market data context
+        consumption_market_data = market_data.copy()
+        consumption_market_data["job_vacancies"] = current_vacancies
+
         for household in self.households:
              if household.is_active:
                  # 1. Consumption
-                 consumed_items = household.decide_and_consume(self.time)
+                 consumed_items = household.decide_and_consume(self.time, consumption_market_data)
 
                  # 2. Phase 5: Leisure Effect Application
                  leisure_hours = household_time_allocation.get(household.id, 0.0)
@@ -857,10 +869,21 @@ class Simulation:
             if best_wage_offer <= 0:
                 best_wage_offer = avg_wage
 
+        # Operation Forensics (WO-021): Calculate Job Vacancies
+        # Sum of quantities of all buy orders in the labor market
+        job_vacancies = 0
+        if labor_market and isinstance(labor_market, OrderBookMarket):
+             # buy_orders is Dict[item_id, List[Order]]
+             # In labor market, item_id is usually "labor" or "research_labor"
+             for item_orders in labor_market.buy_orders.values():
+                 for order in item_orders:
+                     job_vacancies += order.quantity
+
         goods_market_data["labor"] = {
             "avg_wage": avg_wage,
             "best_wage_offer": best_wage_offer
         }
+        goods_market_data["job_vacancies"] = job_vacancies
 
         total_price = 0.0
         count = 0.0
