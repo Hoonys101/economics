@@ -42,20 +42,28 @@ def run_long_term_recon():
     logging.getLogger("main").addHandler(forensic_handler)
 
     # 2. Run Simulation (NORMAL LONG-TERM MODE)
-    # Allow dynamic productivity override from CLI
+    # Allow dynamic productivity and consumption override from CLI
     prod_factor = 10.0
+    cons_rate = 1.0
+    
     if len(sys.argv) > 1:
         try:
             prod_factor = float(sys.argv[1])
         except ValueError:
             print(f"Invalid productivity factor '{sys.argv[1]}'. Using default 10.0")
+            
+    if len(sys.argv) > 2:
+        try:
+            cons_rate = float(sys.argv[2])
+        except ValueError:
+            print(f"Invalid consumption rate '{sys.argv[2]}'. Using default 1.0")
 
-    print(f"Initializing Normal Long-Term Recon Simulation (1000 Ticks, Prod={prod_factor})...")
+    print(f"Initializing Normal Long-Term Recon Simulation (1000 Ticks, Prod={prod_factor}, Cons={cons_rate})...")
     
     # [CRITICAL] RESET parameters to Normal for Recon
     config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0 
     config.GOVERNMENT_STIMULUS_ENABLED = True
-    config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = cons_rate
     config.FIRM_PRODUCTIVITY_FACTOR = prod_factor
     
     sim = create_simulation()
