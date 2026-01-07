@@ -1222,7 +1222,8 @@ class Simulation:
         new_firm_id = max_id + 1
 
         # 3. 업종 선택 (Blue Ocean Strategy)
-        specializations = ["basic_food", "clothing", "education_service", "luxury_food", "consumer_goods"]
+        # Refactored: Dynamic list from config
+        specializations = list(self.config_module.GOODS.keys())
         is_visionary = False
         sector = "OTHER"
 
@@ -1234,21 +1235,24 @@ class Simulation:
         # Blue Ocean Logic: If Visionary, look for empty markets
         if is_visionary:
             active_specs = {f.specialization for f in self.firms if f.is_active}
-            if "consumer_goods" not in active_specs:
-                specialization = "consumer_goods"
+            # Find any specialization not in active_specs
+            potential_blue_oceans = [s for s in specializations if s not in active_specs]
+            
+            if potential_blue_oceans:
+                specialization = random.choice(potential_blue_oceans)
             else:
-                 specialization = random.choice(specializations)
+                # If no blue ocean, fallback to consumer_goods if defined, else random
+                if "consumer_goods" in specializations:
+                     specialization = "consumer_goods"
+                else:
+                     specialization = random.choice(specializations)
         else:
              # Standard Entrepreneur: Random Choice
              specialization = random.choice(specializations)
              
-        # Map Specialization to Sector
-        if specialization in ["basic_food", "luxury_food"]:
-            sector = "FOOD"
-        elif specialization == "consumer_goods":
-            sector = "GOODS"
-        else:
-            sector = "OTHER"
+        # Refactored: Map Specialization to Sector using Config
+        goods_config = self.config_module.GOODS.get(specialization, {})
+        sector = goods_config.get("sector", "OTHER")
 
         # 4. AI 설정
         from simulation.ai.firm_ai import FirmAI

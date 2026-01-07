@@ -61,18 +61,21 @@ GOODS = {
         "initial_price": 5.0,
         "utility_effects": {"survival": 10},
         "is_luxury": False,
+        "sector": "FOOD",
     },
     "clothing": {
         "production_cost": 5,
         "initial_price": 15.0,
         "utility_effects": {"survival": 2, "social": 8},
         "is_luxury": True,
+        "sector": "GOODS",
     },
     "luxury_food": {
         "production_cost": 10,
         "initial_price": 30.0,
         "utility_effects": {"survival": 12, "social": 5},
         "is_luxury": True,
+        "sector": "FOOD",
     },
     "education_service": {
         "production_cost": 20,
@@ -80,6 +83,7 @@ GOODS = {
         "utility_effects": {"improvement": 15},
         "is_service": True,
         "is_luxury": False,
+        "sector": "SERVICE",
     },
     # WO-023: Consumer Goods (Industrial Product)
     "consumer_goods": {
@@ -87,6 +91,7 @@ GOODS = {
         "initial_price": 15.0,
         "utility_effects": {"quality": 10},
         "is_luxury": True, # Treated as luxury/higher tier need
+        "sector": "GOODS",
     },
 }
 

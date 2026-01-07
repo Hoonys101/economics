@@ -284,11 +284,8 @@ class Firm(BaseAgent):
             produced_quantity = 0.0
 
         if produced_quantity > 0:
-            # WO-023: Sector-based Production enforcement
-            if self.sector == "GOODS":
-                item_id = "consumer_goods"
-            else:
-                item_id = self.specialization
+            # WO-023: Refactored to use self.specialization directly (Data Driven)
+            item_id = self.specialization
                 
             current_inventory = self.inventory.get(item_id, 0)
             self.inventory[item_id] = current_inventory + produced_quantity
