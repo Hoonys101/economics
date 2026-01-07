@@ -229,35 +229,22 @@ class Government:
     def provide_subsidy(self, target_agent: Any, amount: float, current_tick: int):
         """
         보조금을 지급합니다.
-        Assets 부족 시 Debt Ceiling을 확인하고 적자 지출(Deficit Spending)을 수행합니다.
+        [WO-020] Hard Stop: 자산이 부족하면 지급하지 않습니다 (No Deficit Spending).
         """
         if amount <= 0:
             return 0.0
 
-        # Check for Deficit Spending
+        # Hard Stop: Check for sufficient funds
         if self.assets < amount:
-            deficit_needed = amount - self.assets
-
-            # Debt Ceiling Check
-            debt_ceiling_ratio = getattr(self.config_module, "DEBT_CEILING_RATIO", 1.0)
-            # Use max(1.0) to avoid division by zero
-            gdp_ref = max(self.potential_gdp, 1.0)
-            current_debt_ratio = self.total_debt / gdp_ref
-            
-            if current_debt_ratio >= debt_ceiling_ratio:
-                logger.warning(
-                    f"DEBT_CEILING_HIT | Ratio: {current_debt_ratio:.2f} >= {debt_ceiling_ratio}. Spending Blocked.",
-                    extra={"tick": current_tick, "agent_id": self.id}
-                )
-                return 0.0 # Block spending
-
-            # Print Money (Deficit Spending)
-            self.assets += deficit_needed
-            self.total_debt += deficit_needed
-            logger.info(
-                f"DEFICIT_SPENDING | Printed {deficit_needed:.2f}. Total Debt: {self.total_debt:.2f}",
-                extra={"tick": current_tick, "agent_id": self.id}
+            logger.warning(
+                f"SPENDING_REJECTED | Insufficient funds: {self.assets:.2f} < {amount:.2f}",
+                extra={
+                    "tick": current_tick,
+                    "agent_id": self.id,
+                    "tags": ["spending_rejected"]
+                }
             )
+            return 0.0
 
         # Execute Payment
         self.assets -= amount
@@ -265,6 +252,7 @@ class Government:
         self.expenditure_this_tick += amount
 
         # Money Creation (Gold Standard / Fiat Source)
+        # Note: Even though we don't print money, this tracks outflow from Gov to Private
         self.total_money_issued += amount
 
         target_agent.assets += amount
@@ -466,7 +454,16 @@ class Government:
                 }
             )
             return True
-        return False
+        else:
+            logger.warning(
+                f"SPENDING_REJECTED | Insufficient funds for Infrastructure: {self.assets:.2f} < {cost:.2f}",
+                extra={
+                    "tick": current_tick,
+                    "agent_id": self.id,
+                    "tags": ["spending_rejected", "infrastructure"]
+                }
+            )
+            return False
 
     def finalize_tick(self, current_tick: int):
         """

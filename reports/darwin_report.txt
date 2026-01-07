@@ -1,0 +1,11 @@
+
+Operation Darwin Verification Report
+====================================
+Short Test (100 Ticks):
+- Money Warnings: 0
+
+Full Test (1000 Ticks):
+- Final GDP: 0.00
+- Mitosis Events: 0
+- Death Events: 0
+- Government Spending Rejections: 0

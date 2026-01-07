@@ -482,8 +482,8 @@ WEALTH_TAX_THRESHOLD = 50000.0
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
-# [HOTFIX: Fiscal Balance] Increased to 1.0 for survival
-UNEMPLOYMENT_BENEFIT_RATIO = 1.0 # 100% of survival cost (was 70%)
+# [WO-020] Operation Darwin: No Free Lunch.
+UNEMPLOYMENT_BENEFIT_RATIO = 0.0 # No unemployment benefit
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% drop trigger
 
 # 4. Bankruptcy Penalty
