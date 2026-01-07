@@ -30,7 +30,14 @@ STARTUP_COST = 30000.0  # 창업 비용 상향 (기존 15,000)
 ### 2.3 Engine Update (`simulation/engine.py`)
 1. **창업 로직 수정**:
    - `spawn_firm`에서 `startup_cost`를 `config.STARTUP_COST` (30000)로 사용.
-   - `luxury_food`도 창업 분야에 추가 (랜덤 선택 리스트 확장).
+   - `luxury_food`도 창업 분야에 추가.
+
+### 2.4 Fix Money Creation Logic (`simulation/firms.py`)
+> **CRITICAL**: 현재 `liquidate_assets`에서 재고와 설비를 매각 처리하며 허공에서 현금을 생성함 (Money Printing Bug).
+1. `liquidate_assets` 수정:
+   - 재고(`inventory`) 및 설비(`capital_stock`)는 현금화하지 않고 **즉시 폐기(0원)** 처리한다.
+   - 오직 `self.assets`(보유 현금)만 반환한다.
+   - `inventory.clear()`, `capital_stock = 0.0`.
 
 ## 3. 검증 계획
 1. **단위 테스트**: `tests/verify_corporate_tax.py` 작성.
