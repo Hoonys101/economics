@@ -9,9 +9,11 @@
 ### 2.1 임시 파라미터 조정 (`scripts/operation_forensics.py` 수정)
 *   **대상 파일**: `scripts/operation_forensics.py`
 *   **지시 사항**:
-    *   `config.py`를 직접 수정하지 말고, 시뮬레이션 초기화 직전에 `config.INITIAL_HOUSEHOLD_ASSETS_MEAN` 값을 런타임에서 오버라이드 하십시오.
-    *   **목표값**: `50.0` (식량 가격 5.0 기준 약 10틱 분량)
-    *   참고: `create_simulation()` 호출 전에 `config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0` 설정.
+    *   `config.py`를 직접 수정하지 말고, 시뮬레이션 초기화 직전에 아래 값들을 런타임에서 오버라이드 하십시오.
+    *   **목표값**:
+        *   `config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0`
+        *   `config.GOVERNMENT_STIMULUS_ENABLED = False` (정부의 무분별한 현금 살포 및 구제 금융이 사망을 막고 있음)
+    *   참고: `create_simulation()` 호출 전에 설정.
 
 ### 2.2 시뮬레이션 재실행 및 보고
 *   수정된 스크립트로 시뮬레이션을 재실행하십시오. (Tick 수: 100~200 유지)
