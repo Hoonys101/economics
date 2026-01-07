@@ -46,7 +46,7 @@ def run_forensic_investigation():
     sim = create_simulation()
 
     try:
-        for i in range(100):
+        for i in range(500):
             sim.run_tick()
             if (i+1) % 10 == 0:
                 print(f"Tick {i+1}/100 complete...")
