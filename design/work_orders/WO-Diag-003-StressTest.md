@@ -9,11 +9,14 @@
 ### 2.1 임시 파라미터 조정 (`scripts/operation_forensics.py` 수정)
 *   **대상 파일**: `scripts/operation_forensics.py`
 *   **지시 사항**:
-    *   `config.py`를 직접 수정하지 말고, 시뮬레이션 초기화 직전에 아래 값들을 런타임에서 오버라이드 하십시오.
-    *   **목표값**:
-        *   `config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0`
-        *   `config.GOVERNMENT_STIMULUS_ENABLED = False` (정부의 무분별한 현금 살포 및 구제 금융이 사망을 막고 있음)
-    *   참고: `create_simulation()` 호출 전에 설정.
+    *   **목적**: 에이전트의 생산성을 압도하는 소비/갈증 상태를 만들어 인위적 기근을 유도하십시오. (Malthusian Trap)
+    *   **오버라이드 리스트**:
+        *   `config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 10.0` (극단적 빈곤)
+        *   `config.GOVERNMENT_STIMULUS_ENABLED = False` (정부 지원 차단)
+        *   `config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 5.0` (평소보다 5배 많이 먹음)
+        *   `config.GOODS['basic_food']['utility_effects']['survival'] = 1` (식량의 영양가가 1/10로 감소)
+        *   `config.FIRM_PRODUCTIVITY_FACTOR = 1.0` (생산성 급감)
+    *   참고: `create_simulation()` 호출 직전에 설정.
 
 ### 2.2 시뮬레이션 재실행 및 보고
 *   수정된 스크립트로 시뮬레이션을 재실행하십시오. (Tick 수: 100~200 유지)
