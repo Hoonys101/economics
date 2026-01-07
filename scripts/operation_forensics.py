@@ -63,8 +63,9 @@ def run_forensic_investigation():
     type_c_count = 0
 
     report_lines = []
-    report_lines.append("=== FORENSIC REPORT ===")
-    report_lines.append(f"Total Deaths: {len(forensic_handler.death_records)}")
+    report_lines.append("# Autopsy Report: Agent Death Analysis")
+    report_lines.append(f"**Total Deaths:** {len(forensic_handler.death_records)}\n")
+    report_lines.append("## Classification Summary")
 
     sample_cases = []
 
@@ -99,42 +100,46 @@ def run_forensic_investigation():
 
         if is_type_a:
             type_a_count += 1
-            assigned_type = "Type A"
+            assigned_type = "Type A (No Jobs)"
         elif is_type_b:
             type_b_count += 1
-            assigned_type = "Type B"
+            assigned_type = "Type B (Won't Work)"
         elif is_type_c:
             type_c_count += 1
-            assigned_type = "Type C"
+            assigned_type = "Type C (Won't Eat)"
         else:
             # Fallback or mixed causes
             assigned_type = "Unclassified"
 
         # Collect sample cases (first 2 of each type)
-        if len(sample_cases) < 10: # Just collect some
-            sample_cases.append(f"[{assigned_type}] Agent #{record['agent_id']}: Cash={cash:.2f}, Vacancies={vacancies}, LastOffer={last_offer} (Tick {death_tick}), Price={price}")
+        # We want a few samples, let's say up to 10 total
+        if len(sample_cases) < 10:
+            sample_cases.append(f"- **[{assigned_type}]** Agent #{record['agent_id']}: Cash={cash:.2f}, Vacancies={vacancies}, LastOfferTick={last_offer} (Died at {death_tick}), Price={price}")
 
     total = len(forensic_handler.death_records)
     if total > 0:
-        report_lines.append(f"- Type A (No Jobs): {type_a_count} ({type_a_count/total:.1%})")
-        report_lines.append(f"- Type B (Won't Work): {type_b_count} ({type_b_count/total:.1%})")
-        report_lines.append(f"- Type C (Won't Eat): {type_c_count} ({type_c_count/total:.1%})")
+        report_lines.append(f"- **Type A (No Jobs):** {type_a_count} ({type_a_count/total:.1%})")
+        report_lines.append(f"- **Type B (Won't Work):** {type_b_count} ({type_b_count/total:.1%})")
+        report_lines.append(f"- **Type C (Won't Eat):** {type_c_count} ({type_c_count/total:.1%})")
     else:
-        report_lines.append("- Type A (No Jobs): 0 (0%)")
-        report_lines.append("- Type B (Won't Work): 0 (0%)")
-        report_lines.append("- Type C (Won't Eat): 0 (0%)")
+        report_lines.append("- **Type A (No Jobs):** 0 (0%)")
+        report_lines.append("- **Type B (Won't Work):** 0 (0%)")
+        report_lines.append("- **Type C (Won't Eat):** 0 (0%)")
 
-    report_lines.append("\nSample Cases:")
-    for case in sample_cases:
-        report_lines.append(case)
+    report_lines.append("\n## Sample Cases")
+    if sample_cases:
+        for case in sample_cases:
+            report_lines.append(case)
+    else:
+        report_lines.append("No deaths recorded.")
 
     # 4. Write Report
     os.makedirs("reports", exist_ok=True)
-    with open("reports/forensic_report.txt", "w") as f:
+    with open("reports/AUTOPSY_REPORT.md", "w") as f:
         f.write("\n".join(report_lines))
 
     print("\n".join(report_lines))
-    print(f"\nReport saved to reports/forensic_report.txt")
+    print(f"\nReport saved to reports/AUTOPSY_REPORT.md")
 
 if __name__ == "__main__":
     run_forensic_investigation()
