@@ -333,6 +333,19 @@ def run_iron_test(num_ticks: int = 1000):
         final_money_supply
     )
 
+    # 7.5 Export Fiscal History for Visualization (WO-019)
+    try:
+        if simulation.government:
+            fiscal_data = {
+                "tax_history": simulation.government.tax_history,
+                "welfare_history": simulation.government.welfare_history
+            }
+            with open("reports/fiscal_history.json", "w") as f:
+                json.dump(fiscal_data, f, indent=2)
+            logger.info("Exported fiscal history to reports/fiscal_history.json")
+    except Exception as e:
+        logger.error(f"Failed to export fiscal history: {e}")
+
     # Clean up handler
     logging.getLogger().removeHandler(crucible_handler)
     
