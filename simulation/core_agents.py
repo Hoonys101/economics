@@ -783,12 +783,14 @@ class Household(BaseAgent):
         self.needs["asset"] += base_growth * self.desire_weights["asset"]
         self.needs["social"] += base_growth * self.desire_weights["social"]
         self.needs["improvement"] += base_growth * self.desire_weights["improvement"]
+        self.needs["quality"] = self.needs.get("quality", 0.0) + (base_growth * self.desire_weights.get("quality", 1.0)) # WO-023
 
         # Cap all needs at MAX_DESIRE_VALUE
-        for need_type in ["survival", "asset", "social", "improvement"]:
-            self.needs[need_type] = min(
-                self.config_module.MAX_DESIRE_VALUE, self.needs[need_type]
-            )
+        for need_type in ["survival", "asset", "social", "improvement", "quality"]: # WO-023
+            if need_type in self.needs:
+                self.needs[need_type] = min(
+                    self.config_module.MAX_DESIRE_VALUE, self.needs[need_type]
+                )
         # --- End Personality-driven desire growth ---
 
         # Check for household death conditions
