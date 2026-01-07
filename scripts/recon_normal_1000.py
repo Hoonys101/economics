@@ -32,19 +32,31 @@ class ForensicLogHandler(logging.Handler):
 
 def run_long_term_recon():
     # 1. Setup Logging
-    forensic_handler = ForensicLogHandler()
-    root_logger = logging.getLogger()
-    root_logger.addHandler(forensic_handler)
+    # [FIX: WO-Diag-003] setup_logging first
     setup_logging()
+    
+    forensic_handler = ForensicLogHandler()
+    # Attach to necessary loggers due to propagate=False
+    logging.getLogger().addHandler(forensic_handler)
+    logging.getLogger("simulation").addHandler(forensic_handler)
+    logging.getLogger("main").addHandler(forensic_handler)
 
     # 2. Run Simulation (NORMAL LONG-TERM MODE)
-    print("Initializing Normal Long-Term Recon Simulation (1000 Ticks)...")
+    # Allow dynamic productivity override from CLI
+    prod_factor = 10.0
+    if len(sys.argv) > 1:
+        try:
+            prod_factor = float(sys.argv[1])
+        except ValueError:
+            print(f"Invalid productivity factor '{sys.argv[1]}'. Using default 10.0")
+
+    print(f"Initializing Normal Long-Term Recon Simulation (1000 Ticks, Prod={prod_factor})...")
     
     # [CRITICAL] RESET parameters to Normal for Recon
     config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0 
     config.GOVERNMENT_STIMULUS_ENABLED = True
     config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
-    config.FIRM_PRODUCTIVITY_FACTOR = 10.0
+    config.FIRM_PRODUCTIVITY_FACTOR = prod_factor
     
     sim = create_simulation()
 
@@ -65,25 +77,31 @@ def run_long_term_recon():
     type_a_count = 0
     type_b_count = 0
     type_c_count = 0
-
+    type_d_count = 0
     report_lines = []
-    report_lines.append("# LONG-TERM RECON REPORT: NORMAL CONDITIONS")
-    report_lines.append(f"**Total Deaths**: {len(forensic_handler.death_records)}")
-    report_lines.append("")
-
     sample_cases = []
 
+    seen_deaths = set()
+    unique_deaths = []
     for record in forensic_handler.death_records:
+        death_key = (record["tick"], record["agent_id"])
+        if death_key not in seen_deaths:
+            seen_deaths.add(death_key)
+            unique_deaths.append(record)
+
+    for record in unique_deaths:
         death_tick = record["tick"]
         vacancies = record["job_vacancies_available"]
         last_offer = record["last_labor_offer_tick"]
         cash = record["cash_at_death"]
         price = record["market_food_price"]
 
+        # Classification Logic (Priority: A -> B -> C -> D)
         is_type_a = vacancies == 0
         is_type_b = (death_tick - last_offer) > 10
         price_val = price if price is not None else 999999.0
         is_type_c = (cash >= price_val)
+        is_type_d = (cash < price_val)
 
         assigned_type = "Unknown"
         if is_type_a:
@@ -95,18 +113,22 @@ def run_long_term_recon():
         elif is_type_c:
             type_c_count += 1
             assigned_type = "Type C (Won't Eat)"
+        elif is_type_d:
+            type_d_count += 1
+            assigned_type = "Type D (Poverty)"
         else:
             assigned_type = "Unclassified"
 
         if len(sample_cases) < 15: 
             sample_cases.append(f"- **{assigned_type}** | Agent #{record['agent_id']} | Tick: {death_tick} | Cash: {cash:.2f} | Vacancies: {vacancies} | Last Offer: {last_offer} | Price: {price}")
 
-    total = len(forensic_handler.death_records)
+    total = len(unique_deaths)
     if total > 0:
         report_lines.append("## Classification Summary")
         report_lines.append(f"- **Type A (No Jobs)**: {type_a_count} ({type_a_count/total:.1%})")
         report_lines.append(f"- **Type B (Won't Work)**: {type_b_count} ({type_b_count/total:.1%})")
         report_lines.append(f"- **Type C (Won't Eat)**: {type_c_count} ({type_c_count/total:.1%})")
+        report_lines.append(f"- **Type D (Poverty)**: {type_d_count} ({type_d_count/total:.1%})")
     else:
         report_lines.append("## Classification Summary")
         report_lines.append("- No deaths recorded. The economy is stable.")

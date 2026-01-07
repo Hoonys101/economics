@@ -234,6 +234,10 @@ class Government:
         if amount <= 0:
             return 0.0
 
+        # [FIX: WO-Diag-003] Respect stimulus toggle
+        if not getattr(self.config_module, "GOVERNMENT_STIMULUS_ENABLED", True):
+            return 0.0
+
         # Hard Stop: Check for sufficient funds
         if self.assets < amount:
             logger.warning(

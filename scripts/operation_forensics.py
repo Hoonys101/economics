@@ -34,12 +34,14 @@ class ForensicLogHandler(logging.Handler):
 
 def run_forensic_investigation():
     # 1. Setup Logging
-    # We'll use our custom handler to capture death events
-    forensic_handler = ForensicLogHandler()
-    root_logger = logging.getLogger()
-    root_logger.addHandler(forensic_handler)
-    # Ensure standard logging is also setup (so we don't miss other errors)
+    # [FIX: WO-Diag-003] setup_logging first to avoid clearing handlers
     setup_logging()
+    
+    forensic_handler = ForensicLogHandler()
+    # Attach to root and simulation loggers explicitly due to propagate=False
+    logging.getLogger().addHandler(forensic_handler)
+    logging.getLogger("simulation").addHandler(forensic_handler)
+    logging.getLogger("main").addHandler(forensic_handler)
 
     # 2. Run Simulation (STRESS TEST MODE)
     print("Initializing Operation Forensics Simulation (STRESS TEST: Asset=50.0)...")
@@ -65,15 +67,19 @@ def run_forensic_investigation():
     type_a_count = 0
     type_b_count = 0
     type_c_count = 0
-
+    type_d_count = 0
     report_lines = []
-    report_lines.append("# AUTOPSY REPORT: FORENSIC ANALYSIS")
-    report_lines.append(f"**Total Deaths**: {len(forensic_handler.death_records)}")
-    report_lines.append("")
-
     sample_cases = []
 
+    seen_deaths = set()
+    unique_deaths = []
     for record in forensic_handler.death_records:
+        death_key = (record["tick"], record["agent_id"])
+        if death_key not in seen_deaths:
+            seen_deaths.add(death_key)
+            unique_deaths.append(record)
+
+    for record in unique_deaths:
         death_tick = record["tick"]
         vacancies = record["job_vacancies_available"]
         last_offer = record["last_labor_offer_tick"]
@@ -81,16 +87,13 @@ def run_forensic_investigation():
         price = record["market_food_price"]
         inventory = record["food_inventory"]
 
-        # Classification Logic (Priority: A -> B -> C)
-        # Type A: Job Vacancy = 0
-        # Type B: Last Labor Offer > 10 ticks ago (or never)
-        # Type C: Cash > Price (Won't Eat)
-
+        # Classification Logic (Priority: A -> B -> C -> D)
         is_type_a = vacancies == 0
         is_type_b = (death_tick - last_offer) > 10
         
         price_val = price if price is not None else 999999.0
         is_type_c = (cash >= price_val)
+        is_type_d = (cash < price_val)
 
         assigned_type = "Unknown"
 
@@ -103,6 +106,9 @@ def run_forensic_investigation():
         elif is_type_c:
             type_c_count += 1
             assigned_type = "Type C (Won't Eat)"
+        elif is_type_d:
+            type_d_count += 1
+            assigned_type = "Type D (Poverty)"
         else:
             assigned_type = "Unclassified"
 
@@ -110,12 +116,13 @@ def run_forensic_investigation():
         if len(sample_cases) < 15: 
             sample_cases.append(f"- **{assigned_type}** | Agent #{record['agent_id']} | Tick: {death_tick} | Cash: {cash:.2f} | Vacancies: {vacancies} | Last Offer: {last_offer} | Price: {price}")
 
-    total = len(forensic_handler.death_records)
+    total = len(unique_deaths)
     if total > 0:
         report_lines.append("## Classification Summary")
         report_lines.append(f"- **Type A (No Jobs)**: {type_a_count} ({type_a_count/total:.1%})")
         report_lines.append(f"- **Type B (Won't Work)**: {type_b_count} ({type_b_count/total:.1%})")
         report_lines.append(f"- **Type C (Won't Eat)**: {type_c_count} ({type_c_count/total:.1%})")
+        report_lines.append(f"- **Type D (Poverty)**: {type_d_count} ({type_d_count/total:.1%})")
     else:
         report_lines.append("## Classification Summary")
         report_lines.append("- No deaths recorded.")
