@@ -10,18 +10,18 @@
 **Survival Rate: 0.0%**
 
 ## Sample Cases
-- **Type A (No Jobs)** | Agent #14 | Tick: 432 | Cash: 85.20 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #1 | Tick: 461 | Cash: 109.39 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #18 | Tick: 484 | Cash: 116.62 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #12 | Tick: 492 | Cash: 101.98 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #5 | Tick: 495 | Cash: 92.20 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #16 | Tick: 496 | Cash: 99.52 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #3 | Tick: 499 | Cash: 111.68 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #7 | Tick: 502 | Cash: 100.02 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #17 | Tick: 536 | Cash: 101.85 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #10 | Tick: 538 | Cash: 88.09 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #4 | Tick: 539 | Cash: 162.73 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #11 | Tick: 543 | Cash: 106.62 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #8 | Tick: 579 | Cash: 112.49 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #19 | Tick: 585 | Cash: 63.81 | Vacancies: 0 | Price: 0.150554307635753
-- **Type A (No Jobs)** | Agent #6 | Tick: 707 | Cash: 101.69 | Vacancies: 0 | Price: 0.150554307635753
+- **Type A (No Jobs)** | Agent #4 | Tick: 288 | Cash: 239.69 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #11 | Tick: 290 | Cash: 251.90 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #1 | Tick: 301 | Cash: 61.31 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #15 | Tick: 334 | Cash: 54.76 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #3 | Tick: 335 | Cash: 64.88 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #14 | Tick: 335 | Cash: 92.45 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #6 | Tick: 342 | Cash: 59.31 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #12 | Tick: 350 | Cash: 86.19 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #9 | Tick: 351 | Cash: 218.44 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #10 | Tick: 355 | Cash: 50.26 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #8 | Tick: 365 | Cash: 93.38 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #5 | Tick: 373 | Cash: 361.48 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #19 | Tick: 373 | Cash: 42.12 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #0 | Tick: 382 | Cash: 239.78 | Vacancies: 0 | Price: 0.20378637208461298
+- **Type A (No Jobs)** | Agent #13 | Tick: 403 | Cash: 58.53 | Vacancies: 0 | Price: 0.20378637208461298
