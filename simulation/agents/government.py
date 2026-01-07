@@ -17,6 +17,10 @@ class Government:
         self.total_collected_tax: float = 0.0
         self.total_spent_subsidies: float = 0.0
         self.infrastructure_level: int = 0
+
+        # Gold Standard Money Tracking
+        self.total_money_issued: float = 0.0
+        self.total_money_destroyed: float = 0.0
         
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
@@ -156,6 +160,9 @@ class Government:
         self.assets += amount
         self.total_collected_tax += amount
         self.revenue_this_tick += amount
+
+        # Money Destruction (Gold Standard / Fiat Sink)
+        self.total_money_destroyed += amount
         
         # 세목별 집계 (Cumulative)
         self.tax_revenue[tax_type] = self.tax_revenue.get(tax_type, 0.0) + amount
@@ -256,6 +263,9 @@ class Government:
         self.assets -= amount
         self.total_spent_subsidies += amount
         self.expenditure_this_tick += amount
+
+        # Money Creation (Gold Standard / Fiat Source)
+        self.total_money_issued += amount
 
         target_agent.assets += amount
         self.current_tick_stats["welfare_spending"] += amount
@@ -489,6 +499,10 @@ class Government:
             "total_collected": 0.0
         }
 
+    def get_monetary_delta(self) -> float:
+        """Returns the net change in money supply caused by government actions."""
+        return self.total_money_issued - self.total_money_destroyed
+
     def get_agent_data(self) -> Dict[str, Any]:
         """정부 상태 데이터를 반환합니다."""
         return {
@@ -497,5 +511,7 @@ class Government:
             "assets": self.assets,
             "total_collected_tax": self.total_collected_tax,
             "total_spent_subsidies": self.total_spent_subsidies,
-            "infrastructure_level": self.infrastructure_level
+            "infrastructure_level": self.infrastructure_level,
+            "total_money_issued": self.total_money_issued,
+            "total_money_destroyed": self.total_money_destroyed
         }

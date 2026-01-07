@@ -128,12 +128,22 @@ class Bank:
             # I will assume LoanMarket handles the denial based on the flag I added to Household.
             pass
 
-        if self.assets < amount:
-            logger.warning(
+        # 3. Gold Standard (Full Reserve) Check
+        if self._get_config("GOLD_STANDARD_MODE", False):
+            if self.assets < amount:
+                logger.warning(
+                    f"LOAN_REJECTED | Insufficient reserves (Gold Standard) for {amount:.2f}. Reserves: {self.assets:.2f}",
+                    extra={"agent_id": self.id, "tags": ["bank", "loan", "gold_standard"]}
+                )
+                return None
+        # Modern Finance: In current implementation (Phase 3/4), we also check liquidity (Full Reserve by default).
+        # To support fractional reserve in future, this check would be relaxed or removed here.
+        elif self.assets < amount:
+             logger.warning(
                 f"LOAN_DENIED | Bank has insufficient liquidity for {amount:.2f}",
                 extra={"agent_id": self.id, "tags": ["bank", "loan"]}
             )
-            return None
+             return None
 
         # 3. Execution (Update Bank State Only)
         # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction

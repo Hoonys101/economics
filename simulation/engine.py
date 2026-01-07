@@ -344,6 +344,14 @@ class Simulation:
         )
 
     def run_tick(self) -> None:
+        # --- Gold Standard / Money Supply Verification (WO-016) ---
+        if self.time == 0:
+            self.baseline_money_supply = self._calculate_total_money()
+            self.logger.info(
+                f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {self.baseline_money_supply:.2f}",
+                extra={"tick": self.time, "money_supply": self.baseline_money_supply}
+            )
+
         self.time += 1
         self.logger.info(
             f"--- Starting Tick {self.time} ---",
@@ -587,7 +595,8 @@ class Simulation:
             self.agents[child.id] = child
             child.decision_engine.markets = self.markets
             child.decision_engine.goods_data = self.goods_data
-            self.ai_training_manager.agents.append(child)
+            # self.ai_training_manager.agents references self.households, so no need to append again
+            # self.ai_training_manager.agents.append(child)
 
             # Brain Inheritance (Q-Table + Personality)
             self.ai_training_manager.inherit_brain(parent, child)
@@ -774,6 +783,24 @@ class Simulation:
             f.expenses_this_tick = 0.0 # Reset expenses as well
             f.revenue_this_tick = 0.0 # Reset revenue
 
+        # --- Gold Standard / Money Supply Verification (WO-016) ---
+        if self.time >= 1:
+            current_money = self._calculate_total_money()
+            expected_money = getattr(self, "baseline_money_supply", 0.0)
+            if hasattr(self.government, "get_monetary_delta"):
+                expected_money += self.government.get_monetary_delta()
+
+            delta = current_money - expected_money
+
+            # Log Level: Info normally, Warning if delta is significant (> 1.0)
+            msg = f"MONEY_SUPPLY_CHECK | Current: {current_money:.2f}, Expected: {expected_money:.2f}, Delta: {delta:.4f}"
+            extra_data = {"tick": self.time, "current": current_money, "expected": expected_money, "delta": delta, "tags": ["money_supply"]}
+
+            if abs(delta) > 1.0:
+                 self.logger.warning(msg, extra=extra_data)
+            else:
+                 self.logger.info(msg, extra=extra_data)
+
         self.logger.info(
             f"--- Ending Tick {self.time} ---",
             extra={"tick": self.time, "tags": ["tick_end"]},
@@ -868,6 +895,33 @@ class Simulation:
             "avg_goods_price": avg_goods_price_for_market_data,
             "debt_data": debt_data_map, # Injected Debt Data
         }
+
+    def _calculate_total_money(self) -> float:
+        """
+        Calculates the total money supply in the system.
+        Money_Total = Household_Assets + Firm_Assets + Bank_Reserves + Reflux_Balance
+        (Government assets are excluded as it is the issuer)
+        """
+        total = 0.0
+
+        # 1. Households
+        for h in self.households:
+            if h.is_active:
+                total += h.assets
+
+        # 2. Firms
+        for f in self.firms:
+            if f.is_active:
+                total += f.assets
+
+        # 3. Bank Reserves
+        total += self.bank.assets
+
+        # 4. Reflux System Balance (Undistributed)
+        if hasattr(self, "reflux_system"):
+            total += self.reflux_system.balance
+
+        return total
 
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""

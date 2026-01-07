@@ -6,6 +6,10 @@ load_dotenv()  # Load environment variables from .env file
 # --- Simulation Parameters ---
 from enum import Enum
 
+# --- Gold Standard Mode (WO-016) ---
+GOLD_STANDARD_MODE = True  # True: 금본위 (Full Reserve), False: 현대 금융 (Credit Creation)
+INITIAL_MONEY_SUPPLY = 100_000.0  # 초기 화폐 총량 (검증용 기준값)
+
 # --- Simulation Parameters ---
 NUM_HOUSEHOLDS = 20
 NUM_FIRMS = 4
