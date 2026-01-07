@@ -49,4 +49,20 @@
 ## 4. 예상 시나리오 (Hypothesis)
 - **초기**: 노동 소득 우세.
 - **중기**: 살아남은 기업들이 배당을 시작하며 '자본 소득' 그래프가 상승.
-- **목표**: "Distribution Trap"이 해소되어 경제가 400틱을 넘어 영구 존속하는지 확인.
+## 5. Q&A 및 기술적 명확화 (Technical Clarifications)
+- **Q1: Stock Market 연동 (Compatibility)**
+  - `owner_id`는 이번 단계(Private Firm)의 핵심 주권입니다.
+  - 단, 기존 `StockMarket` 시스템과의 정합성을 위해, 창업 시 `STOCK_MARKET_ENABLED` 여부와 무관하게 **해당 가계에게 지분 100%를 발행(`shares_owned`)** 하여 포트폴리오를 동기화하십시오. (추후 IPO 대비)
+  - 배당 지급 시에는 `owner_id`가 존재하면 주주 명부 조회 없이 즉시 지급하는 `Fast-Track`을 사용해도 좋습니다.
+
+- **Q2: 실행 시점 및 메서드**
+  - 신규 메서드 `distribute_profit()`을 구현하십시오.
+  - 호출 위치: `simulation/engine.py`의 `run_tick` 루프 내, **모든 기업의 `update_needs()`가 끝난 직후** 일괄 호출합니다.
+
+- **Q3: 평균 임금 계산**
+  - 별도 속성(`avg_wage_paid`)을 영구 저장할 필요 없습니다.
+  - 메서드 내부에서 `current_avg_wage = sum(self.employee_wages.values()) / len(self.employees)`로 동적 계산하여 사용하십시오.
+
+- **Q4: 누적 소득 데이터**
+  - DB 스키마 변경 없이, `Household` 객체의 인스턴스 변수(`self.income_labor_cumulative` 등)로 메모리 상에서 관리하십시오.
+  - 리포트 생성(`RECON_REPORT` 등) 시 이 값을 참조합니다.
