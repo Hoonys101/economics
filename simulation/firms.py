@@ -127,27 +127,17 @@ class Firm(BaseAgent):
 
     def liquidate_assets(self) -> float:
         """
-        Liquidate all assets (Inventory, Capital Stock) at a discount.
-        Returns total cash recovered.
+        Liquidate all assets (Inventory, Capital Stock).
+        CRITICAL FIX: Do NOT convert physical assets to cash (Money Creation Bug).
+        Just destroy them (Value = 0) and return remaining cash (assets).
         """
-        discount_rate = getattr(self.config_module, "LIQUIDATION_DISCOUNT_RATE", 0.5)
-        
-        # 1. Sell Inventory
-        inventory_value = self.get_inventory_value()
-        recovered_cash = inventory_value * discount_rate
+        # 1. Destroy Inventory
         self.inventory.clear()
         
-        # 2. Sell Capital Stock
-        # Assuming Capital Stock has a book value of 1.0 per unit for simplicity, or relative to something?
-        # Let's assume Capital Stock worth is proportional to productivity or base cost.
-        # For now, treat Capital Stock unit value as 100.0 (arbitrary base)? 
-        # Or better, just don't liquidate capital stock explicitly into cash if no market exists?
-        # Let's assume it's scrap value.
-        scrap_value = self.capital_stock * 10.0 * discount_rate # 10.0 is arbitrary base price of capital
-        recovered_cash += scrap_value
+        # 2. Destroy Capital Stock
         self.capital_stock = 0.0
         
-        self.assets += recovered_cash
+        # 3. Only cash remains
         self.is_bankrupt = True
         return self.assets
 
@@ -569,18 +559,44 @@ class Firm(BaseAgent):
             },
         )
 
+        # --- Maintenance Fee (Fixed Operating Cost) ---
+        maintenance_fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
+
+        # Calculate what can actually be paid (Prevent negative assets/money creation)
+        payable_amount = min(self.assets, maintenance_fee)
+
+        # Deduct from assets (Cap at 0)
+        self.assets -= payable_amount
+
+        # Track full cost for solvency/decision logic (The obligation exists)
+        self.cost_this_turn += maintenance_fee
+        self.expenses_this_tick += maintenance_fee
+
+        # Transfer actual payment to Government
+        if payable_amount > 0 and government:
+            government.collect_tax(payable_amount, "maintenance_fee", self.id, current_time)
+
+        self.logger.info(
+            f"Paid maintenance fee: {payable_amount:.2f}/{maintenance_fee:.2f}",
+            extra={**log_extra, "maintenance_fee": maintenance_fee, "actual_paid": payable_amount},
+        )
+        # ----------------------------------------------
+
         inventory_value = sum(self.inventory.values())
         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
-        self.assets -= holding_cost
-        self.cost_this_turn += holding_cost
+
+        # Prevent Negative Assets
+        payable_holding_cost = min(self.assets, holding_cost)
+        self.assets -= payable_holding_cost
+        self.cost_this_turn += holding_cost # Accounting cost remains full
 
         # Phase 8-B: Capture holding cost (Storage Service Fee)
-        if holding_cost > 0:
+        if payable_holding_cost > 0:
             if reflux_system:
-                reflux_system.capture(holding_cost, str(self.id), "fixed_cost")
+                reflux_system.capture(payable_holding_cost, str(self.id), "fixed_cost")
             self.logger.info(
-                f"Paid inventory holding cost: {holding_cost:.2f}",
-                extra={**log_extra, "holding_cost": holding_cost},
+                f"Paid inventory holding cost: {payable_holding_cost:.2f}/{holding_cost:.2f}",
+                extra={**log_extra, "holding_cost": holding_cost, "actual_paid": payable_holding_cost},
             )
 
         # Pay wages to employees

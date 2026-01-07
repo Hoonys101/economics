@@ -620,8 +620,13 @@ class Simulation:
                  if firm.is_active and firm.current_profit > 0:
                      corporate_tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
                      tax_amount = firm.current_profit * corporate_tax_rate
-                     firm.assets -= tax_amount
-                     self.government.collect_tax(tax_amount, "corporate_tax", firm.id, self.time)
+
+                     # Prevent Negative Assets
+                     payable_tax = min(firm.assets, tax_amount)
+                     firm.assets -= payable_tax
+
+                     if payable_tax > 0:
+                         self.government.collect_tax(payable_tax, "corporate_tax", firm.id, self.time)
 
         # Update tracker with the latest data after transactions and consumption
         self.tracker.track(self.time, self.households, self.firms, self.markets)
@@ -1140,7 +1145,7 @@ class Simulation:
         new_firm_id = max_id + 1
 
         # 3. 업종 선택 (부족한 업종 우선)
-        specializations = ["basic_food", "clothing", "education_service"]
+        specializations = ["basic_food", "clothing", "education_service", "luxury_food"]
         # 간단히 랜덤 또는 기업 수가 적은 업종 선택
         import random
         specialization = random.choice(specializations)

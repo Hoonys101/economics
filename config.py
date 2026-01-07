@@ -95,7 +95,7 @@ FIRM_SPECIALIZATIONS = {
     1: "basic_food",
     2: "basic_food",
     3: "clothing",
-    4: "clothing",
+    4: "luxury_food",
 }
 
 
@@ -517,7 +517,8 @@ QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 # Task #9: Entrepreneurship Constants
 # ==============================================================================
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
-STARTUP_COST = 3000.0            # 창업 비용 (가계 현금에서 차감) - 초기 자산 대비 합리적 수준
+STARTUP_COST = 30000.0           # 창업 비용 (가계 현금에서 차감) - 초기 자산 대비 합리적 수준
+FIRM_MAINTENANCE_FEE = 50.0      # 기업 유지비 (매 틱 강제 차감)
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
 STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)
 
