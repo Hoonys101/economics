@@ -1127,7 +1127,7 @@ class Simulation:
         Returns:
             생성된 Firm 객체 또는 None (실패 시)
         """
-        startup_cost = getattr(self.config_module, "STARTUP_COST", 15000.0)
+        startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
 
         # 1. 자본 차감
         # Using assets as cash proxy
@@ -1140,7 +1140,8 @@ class Simulation:
         new_firm_id = max_id + 1
 
         # 3. 업종 선택 (부족한 업종 우선)
-        specializations = ["basic_food", "clothing", "education_service"]
+        # WO-018: Add luxury_food to specializations
+        specializations = ["basic_food", "clothing", "education_service", "luxury_food"]
         # 간단히 랜덤 또는 기업 수가 적은 업종 선택
         import random
         specialization = random.choice(specializations)

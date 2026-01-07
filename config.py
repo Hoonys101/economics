@@ -226,7 +226,7 @@ SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
 ASSETS_DEATH_THRESHOLD = 0.0
 HOUSEHOLD_DEATH_TURNS_THRESHOLD = 4
 ASSETS_CLOSURE_THRESHOLD = 0.0
-FIRM_CLOSURE_TURNS_THRESHOLD = 4
+FIRM_CLOSURE_TURNS_THRESHOLD = 20
 
 # --- Social & Lifecycle & AI ---
 SOCIAL_STATUS_ASSET_WEIGHT = 0.3
@@ -517,7 +517,9 @@ QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 # Task #9: Entrepreneurship Constants
 # ==============================================================================
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
-STARTUP_COST = 3000.0            # 창업 비용 (가계 현금에서 차감) - 초기 자산 대비 합리적 수준
+STARTUP_COST = 30000.0           # 창업 비용 (30,000으로 상향)
+FIRM_MAINTENANCE_FEE = 50.0      # 매 틱 고정 유지비
+CORPORATE_TAX_RATE = 0.2         # 법인세 (20%)
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
 STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)
 

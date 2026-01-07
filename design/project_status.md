@@ -16,8 +16,9 @@
     - `Phase 8-C: Operation Fire Sale` ✅ (Solvency Pricing)
     - `Phase 9: M&A & Bankruptcy` ✅ (Corporate Food Chain)
     - `Phase 10: Central Bank` ✅ (Monetary Policy)
-- **현재 단계:** `Stabilization Testing` 🧪
-- **다음 단계:** `Interest Sensitivity` (Rate Transmission Fix)
+    - `Stabilization Fix (WO-018)` ✅ (Corporate Tax & Money Leak Fix)
+- **현재 단계:** `Interest Sensitivity Verification` 🧪
+- **다음 단계:** `Phase 11: Backtest Engine Migration`
 
 ---
 

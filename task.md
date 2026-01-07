@@ -121,3 +121,28 @@
     - [x] `AIDrivenFirmEngine`: Implement `calculate_survival_price` with 80% panic discount.
 - [x] **Verification**:
     - [x] Iron Test: Verify price drops and trade resumption during liquidity crises.
+
+## Phase 1 Final Validation: The Crucible Test
+> **Goal**: Validate the integrated stability of 3-Pillars, Fire Sale, and Gold Standard mechanisms.
+
+- [ ] **Work Order**: Create `WO-017-FinalValidation.md` (Completed).
+- [ ] **Execution**: Run 1000-tick Iron Test with `GOLD_STANDARD_MODE=True`.
+- [ ] **Report**: Analyze `reports/PHASE1_FINAL_REPORT.md` for bubble suppression and money conservation.
+
+## Phase 1 Stabilization: Gold Standard & Corporate Tax (WO-018)
+- [x] **Spec**: `WO-018-CorporateTax.md`
+- [x] **Implementation**: Corporate Tax, Maintenance Fee, Money Creation Fix
+- [x] **Verification**: `tests/verify_corporate_tax.py` Passed
+
+## Phase 11: Backtest Engine Migration & Visualization
+> **Goal**: Migrate from text-based logs to DB-driven analysis. Run 1000-tick simulation and visualize key metrics.
+
+- [ ] **Implementation Plan**: Create `design/specs/phase11_backtest_migration_spec.md`
+- [ ] **Data Generation**: Run `scripts/iron_test.py` (1000 ticks) to populate DB.
+- [ ] **Migration Script**: Create `scripts/migrate_db_to_csv.py` or `modules/analytics/loader.py` to load DB data into Pandas.
+- [ ] **Visualization**: Create `scripts/visualize_economy.py` to generate:
+    - GDP Growth
+    - GINI Coefficient (Inequality)
+    - Inflation Rate
+    - Treasury Balance & Debt
+- [ ] **Verification**: Verify pipelines work with actual data.

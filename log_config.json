@@ -37,17 +37,17 @@
   "loggers": {
     "simulation": {
       "handlers": ["console", "file"],
-      "level": "DEBUG",
+      "level": "WARNING",
       "propagate": false
     },
     "main": {
       "handlers": ["console", "file"],
-      "level": "DEBUG",
+      "level": "WARNING",
       "propagate": false
     },
     "root": {
       "handlers": ["console", "file"],
-      "level": "INFO"
+      "level": "WARNING"
     }
   }
 }

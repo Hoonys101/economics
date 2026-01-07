@@ -127,27 +127,17 @@ class Firm(BaseAgent):
 
     def liquidate_assets(self) -> float:
         """
-        Liquidate all assets (Inventory, Capital Stock) at a discount.
-        Returns total cash recovered.
+        Liquidate assets.
+        CRITICAL FIX (WO-018): Inventory and Capital Stock are written off to zero
+        instead of being converted to cash, to prevent money creation from thin air.
+        Only existing cash (assets) is returned.
         """
-        discount_rate = getattr(self.config_module, "LIQUIDATION_DISCOUNT_RATE", 0.5)
-        
-        # 1. Sell Inventory
-        inventory_value = self.get_inventory_value()
-        recovered_cash = inventory_value * discount_rate
+        # 1. Write off Inventory
         self.inventory.clear()
         
-        # 2. Sell Capital Stock
-        # Assuming Capital Stock has a book value of 1.0 per unit for simplicity, or relative to something?
-        # Let's assume Capital Stock worth is proportional to productivity or base cost.
-        # For now, treat Capital Stock unit value as 100.0 (arbitrary base)? 
-        # Or better, just don't liquidate capital stock explicitly into cash if no market exists?
-        # Let's assume it's scrap value.
-        scrap_value = self.capital_stock * 10.0 * discount_rate # 10.0 is arbitrary base price of capital
-        recovered_cash += scrap_value
+        # 2. Write off Capital Stock
         self.capital_stock = 0.0
         
-        self.assets += recovered_cash
         self.is_bankrupt = True
         return self.assets
 
@@ -671,6 +661,11 @@ class Firm(BaseAgent):
 
         # Adjust Budget Rate based on ROI
         self._adjust_marketing_budget()
+
+        # --- Phase 2: System Stabilization (Tax & Fees) ---
+        if government:
+            self._pay_maintenance(government, reflux_system, current_time)
+            self._pay_taxes(government, current_time)
         # ---------------------------------------------
 
         brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
@@ -720,3 +715,48 @@ class Firm(BaseAgent):
                 "perceived_quality": self.brand_manager.perceived_quality
             },
         )
+
+    def _pay_maintenance(self, government: Any, reflux_system: Optional[Any], current_time: int) -> None:
+        """Pay fixed maintenance fee to government."""
+        fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
+        
+        # Force payment (can go negative or zero out)
+        # If assets < fee, take all assets? Or allow debt?
+        # Simulation simplifies: take all, if < fee -> bankruptcy risk increases naturally
+        payment = min(self.assets, fee)
+        
+        if payment > 0:
+            self.assets -= payment
+            self.cost_this_turn += payment
+            government.collect_tax(payment, "firm_maintenance", self.id, current_time)
+            
+            self.logger.info(
+                f"Paid maintenance fee: {payment:.2f}",
+                extra={"tick": current_time, "agent_id": self.id, "tags": ["tax", "maintenance"]}
+            )
+
+    def _pay_taxes(self, government: Any, current_time: int) -> None:
+        """Pay corporate tax on profit."""
+        # Calculate Net Profit for Tax purposes
+        # Revenue is accumulated in revenue_this_turn
+        # Expenses are accumulated in cost_this_turn (wages, holding cost, marketing, maintenance)
+        
+        net_profit = self.revenue_this_turn - self.cost_this_turn
+        
+        if net_profit > 0:
+            tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
+            tax_amount = net_profit * tax_rate
+            
+            # Affordability check (should be affordable if profit is real cash, but cash flow might differ)
+            payment = min(self.assets, tax_amount)
+            
+            if payment > 0:
+                self.assets -= payment
+                # Do not add to cost_this_turn to avoid double counting expenses for next tick logic?
+                # Tax is usually distinct from operating cost, but reduces retained earnings.
+                government.collect_tax(payment, "corporate_tax", self.id, current_time)
+                
+                self.logger.info(
+                    f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}",
+                    extra={"tick": current_time, "agent_id": self.id, "tags": ["tax", "corporate_tax"]}
+                )
