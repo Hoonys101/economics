@@ -34,46 +34,66 @@ class ForensicLogHandler(logging.Handler):
 
 def run_forensic_investigation():
     # 1. Setup Logging
+    # Ensure standard logging is setup FIRST so it doesn't overwrite our handler
+    setup_logging()
+
     # We'll use our custom handler to capture death events
     forensic_handler = ForensicLogHandler()
     root_logger = logging.getLogger()
     root_logger.addHandler(forensic_handler)
-    # Ensure standard logging is also setup (so we don't miss other errors)
-    setup_logging()
+
+    # [Fix] Attach to specific loggers to bypass propagation issues
+    logging.getLogger("simulation").addHandler(forensic_handler)
+    logging.getLogger("main").addHandler(forensic_handler)
 
     # 2. Run Simulation (STRESS TEST MODE)
     print("Initializing Operation Forensics Simulation (STRESS TEST: Asset=50.0)...")
     
     # [CRITICAL] Runtime Config Override for Stress Test
-    config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0 
+    config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 10.0
+    config.INITIAL_FIRM_CAPITAL_MEAN = 100.0
+    config.INITIAL_FIRM_INVENTORY_MEAN = 0.0
+    config.GOVERNMENT_STIMULUS_ENABLED = False
+    config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 5.0
+    config.GOODS['basic_food']['utility_effects']['survival'] = 1
+    config.FIRM_PRODUCTIVITY_FACTOR = 1.0
     
     sim = create_simulation()
 
     try:
-        for i in range(500):
+        for i in range(200):
             sim.run_tick()
             if (i+1) % 50 == 0:
-                print(f"Tick {i+1}/500 complete...")
+                print(f"Tick {i+1}/200 complete...")
     except Exception as e:
         print(f"Simulation crashed at tick {sim.time}: {e}")
         import traceback
         traceback.print_exc()
 
     # 3. Analyze Results
-    print(f"\nSimulation Complete. Analyzing {len(forensic_handler.death_records)} deaths...")
+    # Deduplicate records (tick, agent_id)
+    unique_deaths = {}
+    for record in forensic_handler.death_records:
+        key = (record["tick"], record["agent_id"])
+        if key not in unique_deaths:
+            unique_deaths[key] = record
+
+    deduplicated_records = list(unique_deaths.values())
+    print(f"\nSimulation Complete. Analyzing {len(deduplicated_records)} deaths (deduplicated)...")
 
     type_a_count = 0
     type_b_count = 0
     type_c_count = 0
+    type_d_count = 0
 
     report_lines = []
     report_lines.append("# AUTOPSY REPORT: FORENSIC ANALYSIS")
-    report_lines.append(f"**Total Deaths**: {len(forensic_handler.death_records)}")
+    report_lines.append(f"**Total Deaths**: {len(deduplicated_records)}")
     report_lines.append("")
 
     sample_cases = []
 
-    for record in forensic_handler.death_records:
+    for record in deduplicated_records:
         death_tick = record["tick"]
         vacancies = record["job_vacancies_available"]
         last_offer = record["last_labor_offer_tick"]
@@ -91,6 +111,7 @@ def run_forensic_investigation():
         
         price_val = price if price is not None else 999999.0
         is_type_c = (cash >= price_val)
+        is_type_d = (cash < price_val)
 
         assigned_type = "Unknown"
 
@@ -103,6 +124,9 @@ def run_forensic_investigation():
         elif is_type_c:
             type_c_count += 1
             assigned_type = "Type C (Won't Eat)"
+        elif is_type_d:
+            type_d_count += 1
+            assigned_type = "Type D (Poverty)"
         else:
             assigned_type = "Unclassified"
 
@@ -110,12 +134,13 @@ def run_forensic_investigation():
         if len(sample_cases) < 15: 
             sample_cases.append(f"- **{assigned_type}** | Agent #{record['agent_id']} | Tick: {death_tick} | Cash: {cash:.2f} | Vacancies: {vacancies} | Last Offer: {last_offer} | Price: {price}")
 
-    total = len(forensic_handler.death_records)
+    total = len(deduplicated_records)
     if total > 0:
         report_lines.append("## Classification Summary")
         report_lines.append(f"- **Type A (No Jobs)**: {type_a_count} ({type_a_count/total:.1%})")
         report_lines.append(f"- **Type B (Won't Work)**: {type_b_count} ({type_b_count/total:.1%})")
         report_lines.append(f"- **Type C (Won't Eat)**: {type_c_count} ({type_c_count/total:.1%})")
+        report_lines.append(f"- **Type D (Poverty)**: {type_d_count} ({type_d_count/total:.1%})")
     else:
         report_lines.append("## Classification Summary")
         report_lines.append("- No deaths recorded.")

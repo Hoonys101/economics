@@ -231,6 +231,10 @@ class Government:
         보조금을 지급합니다.
         [WO-020] Hard Stop: 자산이 부족하면 지급하지 않습니다 (No Deficit Spending).
         """
+        # [WO-Diag-003] Stimulus Control Guard
+        if not getattr(self.config_module, "GOVERNMENT_STIMULUS_ENABLED", True):
+            return 0.0
+
         if amount <= 0:
             return 0.0
 
