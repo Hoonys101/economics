@@ -157,3 +157,9 @@ logs/
 tests/goldens/
 simulation_results/
 OPERATIONS_MANUAL.md
+
+# Internal Documents
+design/work_orders/
+gemini.md
+gemini.md.bak
+design/JULES_DOCUMENTATION_GUIDE.md
