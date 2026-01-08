@@ -68,6 +68,35 @@ Create `scripts/verify_durables.py` to confirm "The Sine Wave":
 
 ---
 
+## 4. New Phase: Portfolio Optimization (WO-026)
+
+Phase 15 (Durables) is verified. We now introduce the **"Rational Investor"**.
+
+### Step 1: Personality Injection
+*   **Module**: `simulation/core_agents.py`
+*   **Task**: Add `risk_aversion` (float, 0.1~10.0) to `Household.__init__`.
+
+### Step 2: The Portfolio Manager
+*   **Reference**: `design/work_orders/WO-026-Portfolio-Manager.md`
+*   **Task**: Implement `PortfolioManager.optimize_portfolio()`.
+    *   **Logic**: Maximize Utility $U = E(R) - \lambda \sigma^2$.
+    *   **Safety**: Ensure 3 months of living expenses are kept in Cash/Risk-Free.
+
+### Step 3: Integration
+*   **Module**: `simulation/decisions/ai_driven_household_engine.py`
+*   **Trigger**: Run rebalancing logic monthly (`tick % 30 == 0`).
+*   **Output**: Generate `DEPOSIT`, `WITHDRAW`, or `INVEST` (Startup) orders based on the optimizer's target.
+
+### Step 4: Verification (The Friedman Effect)
+Create `scripts/verify_portfolio.py` to confirm interest rate sensitivity:
+1.  **Scenario**: Run simulation, then at T=50 raise Central Bank Base Rate significantly (e.g., to 10%).
+2.  **Expectation**:
+    *   **Deposits**: Should spike immediately after T=50.
+    *   **Consumption/Startup**: Should cool down as money moves to banks.
+
+
+---
+
 ## 4. Command Checklist
 
 - [ ] `git pull origin main` (Ensure you have Commit `bdac3b1` or later)
