@@ -72,4 +72,26 @@ Once Banking is stable, proceed to **Phase 15: Materiality**.
 - [ ] Review `simulation/firms.py` (Search for `pay_wages` logic)
 - [ ] Begin coding `simulation/agents/bank.py` per WO-024.
 
+---
+
+## 5. ⚠️ Governance Rules (Read Carefully)
+
+### A. Scope of Responsibility
+| Responsibility | Owner |
+|---|---|
+| **Implementation Success** (No crashes, no `None` values, no `ZeroDivision`) | **Jules** |
+| **Logic Correctness** (Does the economy behave as expected?) | **Architect/User** |
+
+### B. Verification Criteria for Jules
+Your task is **COMPLETE** when:
+1.  ✅ Code runs without errors.
+2.  ✅ No `NaN`, `None`, or obviously corrupted data in outputs.
+3.  ✅ Unit tests pass (`pytest tests/`).
+
+Your task is **NOT** to verify:
+-   ❌ Whether M2 > M0 (Money Multiplier).
+-   ❌ Whether agents "make sense" economically.
+
+**Rationale**: If economic behavior is unexpected, it may be a **design flaw (Architect's fault)**, not an implementation bug. Debugging logic without Architect input leads to infinite loops.
+
 **Execute.**
