@@ -256,6 +256,10 @@ class Household(BaseAgent):
         self.brand_loyalty: Dict[int, float] = {}  # FirmID -> LoyaltyMultipler (Default 1.0)
         self.last_purchase_memory: Dict[str, int] = {} # ItemID -> FirmID
         
+        # Phase 15: Materiality & Durables
+        self.inventory_quality: Dict[str, float] = {}  # Weighted Average Quality
+        self.durable_assets: List[Dict[str, Any]] = [] # [{'item_id': str, 'quality': float, 'remaining_life': int}]
+
         # --- Phase 8: Inflation Psychology ---
         self.price_history: Dict[str, deque] = defaultdict(
             lambda: deque(maxlen=self.config_module.INFLATION_MEMORY_WINDOW)
@@ -700,6 +704,26 @@ class Household(BaseAgent):
                 )
                 self.inventory[item_id] -= quantity
             
+            # Phase 15: Durable Asset Logic
+            is_durable = good_info.get("is_durable", False)
+            if is_durable and not is_service:
+                base_lifespan = good_info.get("base_lifespan", 50)
+                # Use stored quality or default
+                quality = self.inventory_quality.get(item_id, 1.0)
+
+                # Create Asset
+                for _ in range(int(quantity)):
+                    asset = {
+                        "item_id": item_id,
+                        "quality": quality,
+                        "remaining_life": base_lifespan
+                    }
+                    self.durable_assets.append(asset)
+                    self.logger.info(
+                        f"DURABLE_ACQUIRED | Household {self.id} installed {item_id}. Quality: {quality:.2f}, Life: {base_lifespan}",
+                         extra={**log_extra, "quality": quality}
+                    )
+
             self.current_consumption += quantity
 
 
@@ -772,6 +796,35 @@ class Household(BaseAgent):
             f"HOUSEHOLD_NEEDS_UPDATE_START | Household {self.id} needs before update: {self.needs}. Survival Need: {self.needs.get('survival', 0):.2f}",
             extra={**log_extra, "needs_before": self.needs},
         )
+
+        # Phase 15: Durable Asset Utility & Depreciation
+        # Apply utility from owning durables BEFORE natural decay
+        for asset in list(self.durable_assets):
+            item_id = asset["item_id"]
+            quality = asset["quality"]
+
+            # Depreciation
+            asset["remaining_life"] -= 1
+            if asset["remaining_life"] <= 0:
+                self.durable_assets.remove(asset)
+                self.logger.info(
+                    f"DURABLE_BROKEN | Household {self.id}'s {item_id} broke.",
+                    extra={**log_extra, "item_id": item_id}
+                )
+                continue
+
+            # Utility Application
+            # Durable utility reduces 'quality' need or 'asset' need?
+            # Config says: "utility_effects": {"quality": 10} for consumer_goods
+            good_info = self.goods_info_map.get(item_id, {})
+            utility_effects = good_info.get("utility_effects", {})
+
+            for need_type, base_utility in utility_effects.items():
+                # Utility = Base * Quality
+                effective_utility = base_utility * quality
+                # Satisfy need (reduce it)
+                if need_type in self.needs:
+                    self.needs[need_type] = max(0.0, self.needs[need_type] - effective_utility)
 
         # --- Personality-driven desire growth ---
         base_growth = self.config_module.BASE_DESIRE_GROWTH  # From config.py

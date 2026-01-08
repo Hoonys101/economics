@@ -1158,9 +1158,32 @@ class Simulation:
                     seller.inventory[tx.item_id] = max(
                         0, seller.inventory.get(tx.item_id, 0) - tx.quantity
                     )
-                    buyer.inventory[tx.item_id] = (
-                        buyer.inventory.get(tx.item_id, 0) + tx.quantity
-                    )
+
+                    # Phase 15: Transfer Quality (Weighted Average)
+                    current_qty = buyer.inventory.get(tx.item_id, 0)
+
+                    # Determine existing quality
+                    existing_quality = 1.0
+                    if isinstance(buyer, Household):
+                        existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
+                    elif isinstance(buyer, Firm):
+                        existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
+
+                    # Transaction Quality (passed from Market)
+                    tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
+
+                    # Calculate new WA Quality
+                    total_new_qty = current_qty + tx.quantity
+                    new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
+
+                    # Update Buyer Quality
+                    if isinstance(buyer, Household):
+                        buyer.inventory_quality[tx.item_id] = new_avg_quality
+                    elif isinstance(buyer, Firm):
+                        buyer.inventory_quality[tx.item_id] = new_avg_quality
+
+                    # Update Quantity
+                    buyer.inventory[tx.item_id] = total_new_qty
 
                 if isinstance(seller, Firm):
                     seller.revenue_this_turn += trade_value

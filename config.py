@@ -92,6 +92,9 @@ GOODS = {
         "utility_effects": {"quality": 10},
         "is_luxury": True, # Treated as luxury/higher tier need
         "sector": "GOODS",
+        "is_durable": True,
+        "base_lifespan": 50,  # Ticks
+        "quality_sensitivity": 0.5,
     },
 }
 

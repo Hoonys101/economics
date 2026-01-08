@@ -3,6 +3,7 @@ from collections import deque
 from typing import List, Dict, Any, Optional, override, TYPE_CHECKING
 import logging
 import copy
+import math
 
 from simulation.models import Order, Transaction
 from simulation.brands.brand_manager import BrandManager
@@ -50,6 +51,7 @@ class Firm(BaseAgent):
         if initial_inventory is not None:
             self.inventory.update(initial_inventory)
         self.specialization = specialization
+        self.inventory_quality: Dict[str, float] = {}  # Phase 15: Weighted Average Quality
         
         # Phase 14-2 attributes
         self.sector = sector
@@ -166,6 +168,7 @@ class Firm(BaseAgent):
         brand_snapshot = {
             "brand_awareness": self.brand_manager.brand_awareness,
             "perceived_quality": self.brand_manager.perceived_quality,
+            "quality": self.inventory_quality.get(item_id, 1.0), # Phase 15: Physical Quality
         }
 
         # 2. 주문 생성 (brand_info 자동 주입)
@@ -263,18 +266,18 @@ class Firm(BaseAgent):
         alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
         tfp = self.productivity_factor  # Total Factor Productivity
         
-        # Phase 6: Update Perceived Quality
-        # Quality Proxy = TFP / 10.0
-        actual_quality = tfp / 10.0
-        # Marketing spend is processed in update_needs, but brand quality update happens here?
-        # BrandManager.update takes (spend, quality). Spend is known at decision time (prev tick) or this tick?
-        # Let's say spend happens in update_needs (cost). Here we just update quality? 
-        # BrandManager.update logic combines both. Let's call it in update_needs where we deduct cost.
-        # But we need to pass 'actual_quality' to it.
-        # So I will calculate actual_quality here and store/pass acts, or call brand_manager.update_quality?
-        # The Spec `BrandManager.update(spend, quality)`.
-        # I'll store `actual_quality` temporarily or recalc in update_needs.
-        # Let's verify produce is called BEFORE update_needs in engine. YES.
+        # Phase 15: Quality Calculation (Skill-based)
+        # Quality = 1.0 + ln(Avg Labor Skill + 1) * Tech Multiplier
+        avg_skill = 0.0
+        if self.employees:
+            total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+            avg_skill = total_skill / len(self.employees)
+
+        # Check config for item specific sensitivity if possible
+        item_config = self.config_module.GOODS.get(self.specialization, {})
+        quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
+
+        actual_quality = 1.0 + (math.log1p(avg_skill) * quality_sensitivity)
         
         self.current_production = 0.0
 
@@ -288,14 +291,17 @@ class Firm(BaseAgent):
             item_id = self.specialization
                 
             current_inventory = self.inventory.get(item_id, 0)
-            self.inventory[item_id] = current_inventory + produced_quantity
-            self.current_production = produced_quantity
             
-            # Phase 6: Brand Manager Update (Quality Only? No, full update needed, but spend is deducted later)
-            # Use temp variable for quality to be used in update_needs
-            # OR just update quality aspect now?
-            # Creating a helper or just partial update is complex.
-            # I will just invoke update in update_needs using current TFP.
+            # Phase 15: Weighted Average Quality
+            current_quality = self.inventory_quality.get(item_id, 1.0)
+
+            # Formula: ((OldQty * OldQ) + (NewQty * NewQ)) / (OldQty + NewQty)
+            total_qty = current_inventory + produced_quantity
+            new_avg_quality = ((current_inventory * current_quality) + (produced_quantity * actual_quality)) / total_qty
+
+            self.inventory_quality[item_id] = new_avg_quality
+            self.inventory[item_id] = total_qty
+            self.current_production = produced_quantity
 
     def issue_shares(self, quantity: float, price: float) -> float:
         """
@@ -550,15 +556,32 @@ class Firm(BaseAgent):
         if produced_quantity > 0:
             item_id = self.specialization
             current_inventory = self.inventory.get(item_id, 0)
+
+            # Recalculate quality for the second produce implementation
+            avg_skill = 0.0
+            if self.employees:
+                total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+                avg_skill = total_skill / len(self.employees)
+
+            item_config = self.config_module.GOODS.get(self.specialization, {})
+            quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
+            actual_quality = 1.0 + (math.log1p(avg_skill) * quality_sensitivity)
+
+            current_quality = self.inventory_quality.get(item_id, 1.0)
+            total_qty = current_inventory + produced_quantity
+            new_avg_quality = ((current_inventory * current_quality) + (produced_quantity * actual_quality)) / total_qty
+
+            self.inventory_quality[item_id] = new_avg_quality
             self.inventory[item_id] = current_inventory + produced_quantity
             self.current_production = produced_quantity
             self.logger.info(
-                f"Produced {produced_quantity:.1f} of {item_id}. New inventory: {self.inventory[item_id]:.1f}",
+                f"Produced {produced_quantity:.1f} of {item_id}. New inventory: {self.inventory[item_id]:.1f}, Quality: {new_avg_quality:.2f}",
                 extra={
                     **log_extra,
                     "item_id": item_id,
                     "produced_quantity": produced_quantity,
                     "new_inventory": self.inventory[item_id],
+                    "quality": new_avg_quality
                 },
             )
         else:

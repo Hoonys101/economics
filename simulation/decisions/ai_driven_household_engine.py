@@ -92,6 +92,18 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 if food_inventory < target_buffer:
                     continue # Skip consumer_goods if food insecure
 
+            # Phase 15: Utility Saturation for Durables
+            # If household already has a functioning durable asset of this type,
+            # marginal utility is near zero.
+            if hasattr(household, 'durable_assets'):
+                 existing_durables = [a for a in household.durable_assets if a['item_id'] == item_id]
+                 if existing_durables:
+                     # Already own it. Don't buy another unless replacing?
+                     # Spec says: "If Household already has functioning asset, Marginal Utility drops near zero."
+                     # Implementation: Skip purchase logic or force agg_buy to 0.
+                     if random.random() < 0.95: # 95% chance to skip
+                         continue
+
             agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
             
             # --- Organic Substitution Effect: Saving vs Consumption ROI ---

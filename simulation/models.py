@@ -30,6 +30,7 @@ class Transaction:
     market_id: str  # Added market_id
     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
     time: int  # 거래가 발생한 시뮬레이션 틱
+    quality: float = 1.0  # Phase 15: Durables Quality
 
 
 @dataclass

@@ -202,7 +202,8 @@ class OrderBookMarket(Market):
                          seller_id=s_order.agent_id,
                          market_id=self.id,
                          transaction_type="labor" if "labor" in self.id else "goods",
-                         time=current_tick
+                         time=current_tick,
+                         quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
                      )
                      self.last_traded_prices[item_id] = trade_price
                      transactions.append(transaction)
@@ -278,7 +279,8 @@ class OrderBookMarket(Market):
                     seller_id=s_order.agent_id,
                     market_id=self.id,
                     transaction_type="labor" if "labor" in self.id else "goods",
-                    time=current_tick
+                    time=current_tick,
+                    quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
                 )
                 self.last_traded_prices[item_id] = trade_price
                 transactions.append(transaction)
