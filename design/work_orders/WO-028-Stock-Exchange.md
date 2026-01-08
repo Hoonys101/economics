@@ -29,6 +29,10 @@ Traders (Households) will use a mix of two strategies based on their `risk_avers
     *   **Target Price**: `LastPrice + (LastPrice - PrevPrice) * MomentumFactor`
     *   **Action**: Buy if Trend > 0, Sell if Trend < 0.
 
+3.  **Panic Seller (Liquidity Crisis)**
+    *   **Condition**: `Cash < Liquidity_Need * 0.5`.
+    *   **Action**: **Market Sell** (Dump) existing shares regardless of price until liquidity is restored.
+
 ### 2.3 Treasury Stock Buyback (The "Corporate Action")
 *   **Actor**: `CorporateManager` (CEO).
 *   **Condition**:
