@@ -239,6 +239,32 @@ class LoanMarket(Market):
             else:
                 logger.warning(f"Deposit failed for {order.agent_id}", extra=log_extra)
 
+        elif order.order_type == "WITHDRAW":
+            amount = order.quantity
+            success = self.bank.withdraw(order.agent_id, amount)
+
+            if success:
+                # Withdraw: Bank gives money to Agent.
+                # Buyer=Bank, Seller=Agent.
+                transactions.append(
+                    Transaction(
+                        item_id="withdrawal",
+                        quantity=amount,
+                        price=1.0,
+                        buyer_id=self.bank.id,     # Bank pays
+                        seller_id=order.agent_id,  # Agent receives
+                        transaction_type="deposit",
+                        time=current_tick,
+                        market_id=self.id,
+                    )
+                )
+                logger.info(
+                    f"Withdrawal accepted for {order.agent_id} for {amount:.2f}.",
+                    extra=log_extra,
+                )
+            else:
+                logger.warning(f"Withdrawal failed for {order.agent_id}", extra=log_extra)
+
         else:  # Handle unknown order types
             logger.warning(f"Unknown order type: {order.order_type}", extra=log_extra)
 

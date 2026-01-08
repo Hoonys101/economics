@@ -276,7 +276,53 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                         subsidy_amount = investment_budget * subsidy_rate
                         context.government.provide_subsidy(firm, subsidy_amount, context.current_time)
 
+        # ---------------------------------------------------------
+        # 7. Financial Management (Loan Request)
+        # ---------------------------------------------------------
+        financing_orders = self._manage_financing(firm, current_time)
+        orders.extend(financing_orders)
+
         return orders, action_vector
+
+    def _manage_financing(self, firm: "Firm", current_time: int) -> List[Order]:
+        """
+        Manages debt financing.
+        Low Liquidity -> Request Loan.
+        """
+        orders = []
+
+        # Calculate Runway
+        daily_burn = getattr(firm, 'last_daily_expenses', 1.0)
+        if daily_burn <= 0: daily_burn = 1.0
+
+        runway = firm.assets / daily_burn
+
+        # If runway < 30 days (1 month), seek financing
+        if runway < 30:
+            target_cash = daily_burn * 60 # Aim for 2 months buffer
+            needed_amount = target_cash - firm.assets
+
+            # Request Loan if needed amount is significant
+            if needed_amount > 100.0:
+                # Offer max interest rate = Base Rate + 5%
+                # Ideally bank sets rate, but order model requires price.
+                # We put a "willingness to pay" or just placeholder.
+                # LoanMarket/Bank logic ignores price for LOAN_REQUEST usually or treats it as max rate.
+                orders.append(
+                    Order(firm.id, "LOAN_REQUEST", "loan", needed_amount, 0.10, "loan")
+                )
+                self.logger.info(
+                    f"FINANCING_REQUEST | Firm {firm.id} requesting loan: {needed_amount:.2f}. Runway: {runway:.1f} days",
+                    extra={"agent_id": firm.id, "tags": ["financing"]}
+                )
+        else:
+             if random.random() < 0.01:
+                 self.logger.info(
+                     f"FINANCING_CHECK | Firm {firm.id} safe. Runway: {runway:.1f}. Assets: {firm.assets:.2f}, Burn: {daily_burn:.2f}",
+                     extra={"agent_id": firm.id, "tags": ["financing"]}
+                 )
+
+        return orders
 
     # Legacy helper methods removed as they are integrated into vector execution logic
     def _execute_tactic(self, *args): return []

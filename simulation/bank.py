@@ -324,6 +324,41 @@ class Bank:
                 extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
             )
 
+    def withdraw(self, depositor_id: int, amount: float) -> bool:
+        """
+        Withdraws from depositor's account.
+        Returns True if successful, False if insufficient balance.
+        """
+        # Find deposit by depositor_id
+        # We need to scan because key is deposit_id
+        # Or should we store deposits by depositor_id?
+        # Current struct: self.deposits: Dict[str, Deposit] (key=dep_id)
+        # Scan
+        target_deposit = None
+        target_dep_id = None
+        for dep_id, deposit in self.deposits.items():
+            if deposit.depositor_id == depositor_id:
+                target_deposit = deposit
+                target_dep_id = dep_id
+                break
+
+        if target_deposit is None or target_deposit.amount < amount:
+            return False
+
+        target_deposit.amount -= amount
+        # self.assets -= amount # Handled by Transaction
+
+        # If deposit is empty, remove it
+        if target_deposit.amount <= 0:
+            if target_dep_id:
+                del self.deposits[target_dep_id]
+
+        logger.info(
+            f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
+            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
+        )
+        return True
+
     def process_default(self, agent: Any, loan: Loan, current_tick: int):
         """
         Phase 4: Handles loan default.

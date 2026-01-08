@@ -537,9 +537,19 @@ class Simulation:
                 self.household_time_allocation[household.id] = leisure_hours
 
                 for order in household_orders:
-                    household_target_market = self.markets.get(order.market_id)
+                    # Determine target market based on Order Type or ID
+                    target_market_id = order.market_id
+
+                    # Routing Logic for Deposit/Withdraw/Loan
+                    if order.order_type in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
+                        target_market_id = "loan_market"
+                    elif order.item_id in ["deposit", "currency"]: # Fallback
+                        target_market_id = "loan_market"
+
+                    household_target_market = self.markets.get(target_market_id)
+
                     if household_target_market:
-                        if order.market_id == "stock_market" and isinstance(household_target_market, StockMarket):
+                        if target_market_id == "stock_market" and isinstance(household_target_market, StockMarket):
                             # Convert Order to StockOrder
                             try:
                                 firm_id_str = order.item_id.split("_")[-1]

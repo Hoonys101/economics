@@ -752,6 +752,7 @@ class Firm(BaseAgent):
         if payment > 0:
             self.assets -= payment
             self.cost_this_turn += payment
+            self.expenses_this_tick += payment
             government.collect_tax(payment, "firm_maintenance", self.id, current_time)
             
             self.logger.info(
