@@ -324,8 +324,14 @@ class Household(BaseAgent):
                     break
             
             if should_consume:
-                # 기본적으로 1.0 단위를 소모 (재고가 적으면 재정량만큼)
-                quantity_to_consume = min(inventory_quantity, 1.0) 
+                is_durable = good_info.get("is_durable", False)
+                # Fix Logic for Durables: Prevent fractional consumption ("Eating Fridges")
+                if is_durable:
+                    if inventory_quantity < 1.0:
+                        continue  # 1.0개 모일 때까지 절대 소비(설치)하지 말고 대기
+                    quantity_to_consume = 1.0 # 강제로 1개 단위로만 소비
+                else:
+                    quantity_to_consume = min(inventory_quantity, 1.0)
                 
                 if quantity_to_consume > 0:
                     self.consume(item_id, quantity_to_consume, current_time)
