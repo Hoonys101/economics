@@ -60,6 +60,12 @@ Banking is stable. Now we transition from "Instant Consumption" to "Durables & A
 *   **Firm Quality**: Production quality is now tied to the average labor skill of the firm's workforce.
 *   **Impact**: High-skill firms produce high-quality durables that satisfy utility longer.
 
+### Step 3: Business Cycle Verification (The Cliff & Echo)
+Create `scripts/verify_durables.py` to confirm "The Sine Wave":
+1.  **Sales Volatility**: Sales should spike at start (filling demand), drop to near zero (saturation), and echo back up when items break (replacement).
+2.  **Wealth Storage**: Household assets should form a sawtooth pattern (Buy -> Depreciate -> Buy), not flatline like Food.
+3.  **Quality Segmentation**: Confirm that Rich households own higher quality items than Poor households.
+
 ---
 
 ## 4. Command Checklist
