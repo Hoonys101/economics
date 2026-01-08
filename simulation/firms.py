@@ -12,6 +12,7 @@ from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
+from simulation.ai.enums import Personality
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -37,6 +38,8 @@ class Firm(BaseAgent):
         # Phase 14-2: Innovation
         sector: str = "FOOD", 
         is_visionary: bool = False,
+        # Phase 16-B: Personality
+        personality: Optional[Personality] = None,
     ) -> None:
         super().__init__(
             id,
@@ -58,6 +61,17 @@ class Firm(BaseAgent):
         self.is_visionary = is_visionary
         self.owner_id: Optional[int] = None # Phase 14-1: Shareholder System
         
+        # Phase 16-B: Personality & Innovation Attributes
+        self.personality = personality or Personality.BALANCED
+        self.retained_earnings: float = 0.0
+        self.base_quality: float = 1.0
+        self.research_history: Dict[str, Any] = {
+            "total_spent": 0.0,
+            "success_count": 0,
+            "last_success_tick": -1
+        }
+        self.dividends_paid_last_tick: float = 0.0 # Track for CASH_COW reward
+
         # Set bankruptcy threshold based on visionary status
         base_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5)
         if self.is_visionary:
@@ -113,6 +127,11 @@ class Firm(BaseAgent):
         )  # 기업별 배당률 (기본값: config)
         self.treasury_shares: float = 0.0  # 자사주 보유량
         self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
+
+        # Phase 16-B: Rewards Tracking (Delta storage)
+        self.prev_market_share: float = 0.0
+        self.prev_assets: float = self.assets
+        self.prev_avg_quality: float = 1.0
 
         self.decision_engine.loan_market = loan_market
 
@@ -268,6 +287,7 @@ class Firm(BaseAgent):
         
         # Phase 15: Quality Calculation (Skill-based)
         # Quality = 1.0 + ln(Avg Labor Skill + 1) * Tech Multiplier
+        # Phase 16-B: base_quality affected by R&D
         avg_skill = 0.0
         if self.employees:
             total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
@@ -277,7 +297,8 @@ class Firm(BaseAgent):
         item_config = self.config_module.GOODS.get(self.specialization, {})
         quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
 
-        actual_quality = 1.0 + (math.log1p(avg_skill) * quality_sensitivity)
+        # Base Quality (R&D) + Skill Bonus
+        actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
         
         self.current_production = 0.0
 
@@ -391,6 +412,7 @@ class Firm(BaseAgent):
             initial_inventory=copy.deepcopy(self.inventory),
             loan_market=self.decision_engine.loan_market,  # loan_market은 공유
             logger=self.logger,
+            personality=self.personality # Propagate personality
         )
         new_firm.logger.info(
             f"Firm {self.id} was cloned to new Firm {new_id}",
@@ -407,6 +429,9 @@ class Firm(BaseAgent):
         distributable_profit = max(
             0, self.current_profit * self.dividend_rate
         )
+
+        # Reset tracker for this tick
+        self.dividends_paid_last_tick = 0.0
 
         if distributable_profit > 0:
             for household in households:
@@ -427,6 +452,7 @@ class Firm(BaseAgent):
                             time=current_time,
                         )
                     )
+                    self.dividends_paid_last_tick += dividend_amount
                     self.logger.info(
                         f"Firm {self.id} distributed {dividend_amount:.2f} dividend to Household {household.id}.",
                         extra={
@@ -464,6 +490,8 @@ class Firm(BaseAgent):
             "treasury_shares": self.treasury_shares,
             "dividend_rate": self.dividend_rate,
             "capital_stock": self.capital_stock,
+            "base_quality": self.base_quality, # AI needs to know this
+            "inventory_quality": self.inventory_quality.copy(),
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:
@@ -507,86 +535,6 @@ class Firm(BaseAgent):
         )
         return decisions, tactic
 
-    def produce(self, current_time: int) -> None:
-        """
-        Cobb-Douglas 생산 함수를 사용한 생산 로직.
-        Y = A * L^α * K^(1-α)
-        - A: 총요소생산성 (productivity_factor)
-        - L: 노동 투입량 (total_labor_skill)
-        - K: 자본 투입량 (capital_stock)
-        - α: 노동의 산출 탄력성 (LABOR_ALPHA)
-        """
-        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
-
-        # 1. 감가상각 처리
-        depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
-        self.capital_stock *= (1.0 - depreciation_rate)
-
-        # 2. 노동 및 자본 투입량 계산
-        # Defensive: Skip employees without labor_skill
-        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
-        if not self.employees:
-            total_labor_skill = 1.0
-        capital = max(self.capital_stock, 0.01)  # 0 방지
-
-        # 3. Cobb-Douglas 생산 함수
-        alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
-        tfp = self.productivity_factor  # Total Factor Productivity
-
-        if total_labor_skill > 0 and capital > 0:
-            produced_quantity = tfp * (total_labor_skill ** alpha) * (capital ** (1 - alpha))
-        else:
-            produced_quantity = 0.0
-
-        self.current_production = 0.0
-
-        self.logger.info(
-            f"Production (Cobb-Douglas) for {self.specialization}. "
-            f"Y={produced_quantity:.2f} (A={tfp:.2f}, L={total_labor_skill:.1f}, K={capital:.1f}, α={alpha:.2f})",
-            extra={
-                **log_extra,
-                "produced_quantity": produced_quantity,
-                "tfp": tfp,
-                "labor": total_labor_skill,
-                "capital": capital,
-                "alpha": alpha,
-            },
-        )
-
-        if produced_quantity > 0:
-            item_id = self.specialization
-            current_inventory = self.inventory.get(item_id, 0)
-
-            # Recalculate quality for the second produce implementation
-            avg_skill = 0.0
-            if self.employees:
-                total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
-                avg_skill = total_skill / len(self.employees)
-
-            item_config = self.config_module.GOODS.get(self.specialization, {})
-            quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-            actual_quality = 1.0 + (math.log1p(avg_skill) * quality_sensitivity)
-
-            current_quality = self.inventory_quality.get(item_id, 1.0)
-            total_qty = current_inventory + produced_quantity
-            new_avg_quality = ((current_inventory * current_quality) + (produced_quantity * actual_quality)) / total_qty
-
-            self.inventory_quality[item_id] = new_avg_quality
-            self.inventory[item_id] = current_inventory + produced_quantity
-            self.current_production = produced_quantity
-            self.logger.info(
-                f"Produced {produced_quantity:.1f} of {item_id}. New inventory: {self.inventory[item_id]:.1f}, Quality: {new_avg_quality:.2f}",
-                extra={
-                    **log_extra,
-                    "item_id": item_id,
-                    "produced_quantity": produced_quantity,
-                    "new_inventory": self.inventory[item_id],
-                    "quality": new_avg_quality
-                },
-            )
-        else:
-            self.logger.info("No employees or no capital, no production.", extra=log_extra)
-
     @override
     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
@@ -599,6 +547,28 @@ class Firm(BaseAgent):
                 "num_employees_before": len(self.employees),
             },
         )
+
+        # Reset per-tick trackers at start of needs update (or keep cumulative if needs update called multiple times?)
+        # Normally update_needs is called once per tick.
+        # self.dividends_paid_last_tick should NOT be reset here if update_needs comes after distribute_dividends in the loop.
+        # In engine.py: produce -> update_needs -> taxes -> government -> distribute_profit (this is OLD flow?)
+        # Let's check engine.py
+
+        # engine.py:
+        # 1. run_tick starts
+        # ...
+        # 2. distribute_profit (Phase 14-1) -> calls distribute_dividends internally?
+        #    Wait, distribute_profit calls distribute_dividends?
+        #    Let's check distribute_profit method in Firm.
+
+        # 3. firm.produce
+        # 4. firm.update_needs
+        # ...
+
+        # If distribute_profit is called early, dividends_paid_last_tick is set.
+        # If we reset it in update_needs, we lose it before AI learning at end of tick.
+        # So do NOT reset here. Reset in distribute_dividends or start of tick.
+        # I added reset in distribute_dividends.
 
         inventory_value = sum(self.inventory.values())
         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
@@ -791,6 +761,9 @@ class Firm(BaseAgent):
         
         net_profit = self.revenue_this_turn - self.cost_this_turn
         
+        # Calculate Retained Earnings Logic
+        # profit is net of tax.
+
         if net_profit > 0:
             tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
             tax_amount = net_profit * tax_rate
@@ -800,12 +773,14 @@ class Firm(BaseAgent):
             
             if payment > 0:
                 self.assets -= payment
-                # Do not add to cost_this_turn to avoid double counting expenses for next tick logic?
-                # Tax is usually distinct from operating cost, but reduces retained earnings.
                 government.collect_tax(payment, "corporate_tax", self.id, current_time)
                 
+                # Update retained earnings with AFTER-TAX profit (before dividends)
+                after_tax_profit = net_profit - payment
+                self.retained_earnings += after_tax_profit
+
                 self.logger.info(
-                    f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}",
+                    f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}. Retained Earnings increased by {after_tax_profit:.2f}",
                     extra={"tick": current_time, "agent_id": self.id, "tags": ["tax", "corporate_tax"]}
                 )
 
@@ -859,6 +834,15 @@ class Firm(BaseAgent):
             if hasattr(owner, 'capital_income_this_tick'):
                 owner.capital_income_this_tick += dividend_amount
 
+            # Reduce Retained Earnings (Payout)
+            self.retained_earnings -= dividend_amount
+
+            # Track for AI Reward
+            # Note: This method (distribute_profit) is the private owner one.
+            # The method distribute_dividends is for PUBLIC shareholders.
+            # Which one does CASH_COW track? Likely both total payouts.
+            self.dividends_paid_last_tick += dividend_amount
+
             if self.logger:
                 self.logger.info(
                     f"DIVIDEND | Firm {self.id} -> Household {self.owner_id} : ${dividend_amount:.2f}",
@@ -868,4 +852,3 @@ class Firm(BaseAgent):
             return dividend_amount
             
         return 0.0
-

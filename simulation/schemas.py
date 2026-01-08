@@ -7,38 +7,35 @@ class FirmActionVector:
     기업의 한 틱 행동을 정의하는 연속적 적극성 벡터.
     Values ideally range from 0.0 to 1.0.
     """
-    # 1. 판매 적극성 (0.0~1.0)
-    # 0.0: Profit-driven (High Margin, Low Probability) -> High Price
-    # 1.0: Liquidity-driven (Low Margin, High Probability) -> Low Price
+    # 1. 판매 적극성 (Pricing)
+    # 0.0: High Margin (High Price)
+    # 1.0: High Volume (Low Price)
     sales_aggressiveness: float = 0.5 
 
-    # 2. 고용 적극성 (0.0~1.0)
-    # 0.0: Passive Hiring -> Offer Low Wage
-    # 1.0: Urgent Hiring -> Offer High Wage
+    # 2. 고용 적극성 (Employment)
+    # 0.0: Low Wage / Fire
+    # 1.0: High Wage / Hire
     hiring_aggressiveness: float = 0.5
     
-    # 3. 임금 유지/삭감 적극성 (Optional for future)
-    # wage_aggressiveness: float = 0.5
+    # 3. R&D 적극성 (Innovation)
+    # 0.0: No R&D
+    # 1.0: Maximize R&D Spending (% of Revenue)
+    rd_aggressiveness: float = 0.5
 
-    # 4. 생산 목표 조정 적극성 (Optional)
-    # 1.0: Maximize Production Capacity
-    # 0.0: Maintain or Reduce
-    production_aggressiveness: float = 0.5
+    # 4. 자본재 투자 적극성 (Capacity)
+    # 0.0: No CAPEX
+    # 1.0: Maximize CAPEX
+    capital_aggressiveness: float = 0.5
 
-    # 5. 배당 적극성
-    # 0.0: 저배당 (이익 재투자)
-    # 1.0: 고배당 (주주 환원)
+    # 5. 배당 적극성 (Dividend)
+    # 0.0: Retain Earnings
+    # 1.0: Maximize Payout
     dividend_aggressiveness: float = 0.5
 
-    # 6. 자본(주식) 운용 적극성
-    # 0.0: 적극적 자사주 매입 (Buyback)
-    # 1.0: 적극적 주식 발행/매도 (Issuance)
-    equity_aggressiveness: float = 0.5
-
-    # 7. 자본재(Capital Goods) 투자 적극성
-    # 0.0: 투자 최소화 (보수적 운영)
-    # 1.0: 투자 최대화 (설비 확장 집중)
-    capital_aggressiveness: float = 0.5
+    # 6. 부채 관리 적극성 (Leverage)
+    # 0.0: De-leverage (Repay Debt)
+    # 1.0: Leverage Up (Borrow Aggressively)
+    debt_aggressiveness: float = 0.5
 
 
 @dataclass

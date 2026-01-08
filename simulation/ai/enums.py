@@ -79,14 +79,17 @@ class Personality(Enum):
     각 특질은 특정 Intention에 대한 욕구 성장 가중치에 영향을 미친다.
     """
 
+    # --- Household Personalities ---
     MISER = auto()  # 수전노형 (Asset-Focused)
     STATUS_SEEKER = auto()  # 지위추구형 (Status-Seeking)
-
     GROWTH_ORIENTED = auto()  # 학습형 (Growth-Oriented)
-    
-    # Phase 8 Additions
     IMPULSIVE = auto()     # 충동구매형 (High Adaptation, High Hoarding)
     CONSERVATIVE = auto()  # 보수적형 (Low Adaptation)
+
+    # --- Firm Personalities (Phase 16-B) ---
+    BALANCED = auto()        # 균형형 (Profit + Brand)
+    GROWTH_HACKER = auto()   # 성장형 (Market Share + Quality)
+    CASH_COW = auto()        # 수익형 (Dividends + Cash Flow)
 
 
 class Aggressiveness(Enum):
