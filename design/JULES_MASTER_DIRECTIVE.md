@@ -57,7 +57,15 @@ Start implementing the **Fractional Reserve Banking System** immediately on top 
 
 ---
 
-## 3. Command Checklist
+## 3. Future Horizon (WO-025: Durables)
+
+Once Banking is stable, proceed to **Phase 15: Materiality**.
+*   **Reference:** `design/work_orders/WO-025-Materiality-Durables.md`
+*   **Paradigm Shift:** `Consumer Goods` become assets with lifespan, creating Business Cycles.
+
+---
+
+## 4. Command Checklist
 
 - [ ] `git pull origin main` (Ensure you have Commit `9ea5f0a` or later)
 - [ ] Review `simulation/core_agents.py` (Search for `_update_skill`)
