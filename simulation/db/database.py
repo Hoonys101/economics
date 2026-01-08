@@ -19,12 +19,13 @@ class DatabaseManager:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
         return cls._instance
 
-    def get_connection(self) -> sqlite3.Connection:
+    def get_connection(self, db_path: Optional[str] = None) -> sqlite3.Connection:
         """
         데이터베이스 연결을 반환합니다. 연결이 없으면 새로 생성하고 테이블을 초기화합니다.
         """
         if self._conn is None:
-            self._conn = sqlite3.connect(DATABASE_NAME, check_same_thread=False)
+            path = db_path if db_path else DATABASE_NAME
+            self._conn = sqlite3.connect(path, check_same_thread=False)
             create_tables(self._conn)
         return self._conn
 
@@ -41,11 +42,11 @@ class DatabaseManager:
 db_manager = DatabaseManager()
 
 
-def get_db_connection() -> sqlite3.Connection:
+def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """
     데이터베이스 연결을 얻는 헬퍼 함수입니다.
     """
-    return db_manager.get_connection()
+    return db_manager.get_connection(db_path)
 
 
 def close_db_connection():

@@ -22,8 +22,8 @@ class SimulationRepository:
     시뮬레이션 데이터를 SQLite3 데이터베이스에 저장하고 조회하는 Repository 클래스입니다.
     """
 
-    def __init__(self):
-        self.conn = get_db_connection()
+    def __init__(self, db_path: Optional[str] = None):
+        self.conn = get_db_connection(db_path) if db_path else get_db_connection()
         self.cursor = self.conn.cursor()
 
     def save_simulation_run(self, config_hash: str, description: str) -> int:
