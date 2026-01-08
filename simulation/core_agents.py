@@ -799,6 +799,9 @@ class Household(BaseAgent):
         else:
             self.survival_need_high_turns = 0
 
+        # WO-023-B: Human Capital Update
+        self._update_skill()
+
         if (
             self.assets <= self.config_module.ASSETS_DEATH_THRESHOLD
             or self.survival_need_high_turns
@@ -850,6 +853,33 @@ class Household(BaseAgent):
                 "is_active_after": self.is_active,
             },
         )
+
+    def _update_skill(self):
+        """
+        WO-023-B: Human Capital Growth Formula
+        Labor Skill = 1.0 + ln(XP + 1) * Talent
+        """
+        import math
+        # XP -> Skill Conversion
+        # If XP is 0, log(1)=0 -> Skill=1.0 (Base)
+        log_growth = math.log1p(self.education_xp)  # ln(x+1)
+        
+        # Talent Multiplier
+        talent_factor = self.talent.base_learning_rate
+        
+        # New Skill Level
+        new_skill = 1.0 + (log_growth * talent_factor)
+        
+        # Update
+        old_skill = self.labor_skill
+        self.labor_skill = new_skill
+        
+        # Optional: Log if significant change (e.g., > 1% increase) or periodically
+        if new_skill > old_skill + 0.1:
+            self.logger.debug(
+                f"SKILL_UP | Household {self.id} skill improved: {old_skill:.2f} -> {new_skill:.2f} (XP: {self.education_xp:.1f})",
+                 extra={"tags": ["education", "productivity"]}
+            )
 
     @override
     def clone(self, new_id: int, initial_assets_from_parent: float) -> "Household":

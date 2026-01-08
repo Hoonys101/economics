@@ -169,7 +169,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
         household = Household(
             id=i,
-            talent=Talent(1.0, {}),
+            talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
             goods_data=goods_data,
             initial_assets=initial_assets,
             initial_needs=initial_needs,

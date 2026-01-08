@@ -613,7 +613,13 @@ class Firm(BaseAgent):
                     del self.employee_wages[employee.id]
                 continue
 
-            wage = self.employee_wages.get(employee.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+            base_wage = self.employee_wages.get(employee.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+            
+            # WO-023-B: Skill-based Wage Bonus
+            # High skill workers get paid more (Meritocracy)
+            # If labor_skill is 1.0, wage is base_wage. If 2.0, wage is double.
+            actual_skill = getattr(employee, 'labor_skill', 1.0)
+            wage = base_wage * actual_skill
             
             # Affordability check
             if self.assets >= wage:
