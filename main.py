@@ -167,6 +167,12 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             ai_engine=household_ai_instance, config_module=config
         )
 
+        # Generate Risk Aversion (0.1 ~ 10.0)
+        # Assuming Normal Distribution centered at 1.0, or Uniform as per spec "Random Gaussian or Uniform"
+        # Let's use Log-Normalish or just Uniform [0.1, 10.0] as explicitly stated range.
+        # Spec: "0.1 (Gambler) to 10.0 (Super Conservative)"
+        risk_aversion = random.uniform(0.1, 10.0)
+
         household = Household(
             id=i,
             talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
@@ -177,6 +183,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             value_orientation=value_orientation,
             personality=personality,
             config_module=config,
+            risk_aversion=risk_aversion,
             logger=main_logger,
         )
         household.inventory["basic_food"] = (

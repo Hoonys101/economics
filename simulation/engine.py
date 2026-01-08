@@ -899,9 +899,11 @@ class Simulation:
         # In a real scenario, this would be queried from LoanMarket or Bank directly.
         # Here we inject the bank instance wrapper or summary map.
         debt_data_map = {}
+        deposit_data_map = {}
         for agent_id in self.agents:
             if isinstance(self.agents[agent_id], Household) or isinstance(self.agents[agent_id], Firm):
                 debt_data_map[agent_id] = self.bank.get_debt_summary(agent_id)
+                deposit_data_map[agent_id] = self.bank.get_deposit_balance(agent_id)
 
         for good_name in self.config_module.GOODS:
             market = self.markets.get(good_name)
@@ -986,6 +988,7 @@ class Simulation:
             "all_households": self.households,
             "avg_goods_price": avg_goods_price_for_market_data,
             "debt_data": debt_data_map, # Injected Debt Data
+            "deposit_data": deposit_data_map, # Injected Deposit Data
         }
 
     def _calculate_total_money(self) -> float:

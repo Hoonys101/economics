@@ -7,6 +7,7 @@ from simulation.models import Order, StockOrder
 from simulation.ai.api import Tactic, Aggressiveness, Personality
 from .base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
+from simulation.decisions.portfolio_manager import PortfolioManager
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -269,57 +270,163 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 stock_market.place_order(stock_order, current_time)
 
         # ---------------------------------------------------------
-        # 5. Liquidity Management (Banking)
+        # 5. Liquidity Management (Banking & Portfolio)
         # ---------------------------------------------------------
-        liquidity_orders = self._manage_liquidity(household, current_time)
-        orders.extend(liquidity_orders)
+        # Phase 16: Portfolio Manager (WO-026)
+        # Run monthly rebalancing (every 30 ticks)
+        if current_time % 30 == 0:
+            portfolio_orders = self._manage_portfolio(household, market_data, current_time)
+            orders.extend(portfolio_orders)
+        else:
+            # Simple liquidity check for emergencies (Withdraw if cash is critical)
+            emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
+            orders.extend(emergency_orders)
 
         return orders, action_vector
 
-    def _manage_liquidity(self, household: "Household", current_time: int) -> List[Order]:
+    def _manage_portfolio(self, household: "Household", market_data: Dict[str, Any], current_time: int) -> List[Order]:
         """
-        Manages cash vs deposits.
-        Target Liquidity = Monthly Expenses * Buffer Months.
-        Surplus -> Deposit. Shortage -> Withdraw.
+        Executes Portfolio Optimization (WO-026).
         """
         orders = []
 
-        # 1. Estimate Monthly Expenses (Heuristic: 30 * avg_daily_consumption_value)
-        # For simplicity, we use a fixed estimate or tracked history if available.
-        # Let's approximate based on survival need cost.
-        # cost per tick ~= 2.0 (food) * 5.0 (price) = 10.0
-        # monthly (100 ticks?) = 1000.0.
-        # Let's use a config-based estimation or simple rule.
-        estimated_daily_expense = 20.0 # Conservative estimate
-        buffer_ticks = 50 # 0.5 year buffer
-        target_liquidity = estimated_daily_expense * buffer_ticks # 1000.0
+        # 1. Gather Inputs
+        # a. Liquid Assets
+        cash = household.assets
+        deposit_data = market_data.get("deposit_data", {})
+        deposit_balance = deposit_data.get(household.id, 0.0)
+        total_liquid = cash + deposit_balance
 
-        # Personality Modifier
-        if household.personality in [Personality.MISER, Personality.CONSERVATIVE]:
-            target_liquidity *= 1.5
-        elif household.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
-            target_liquidity *= 0.5
+        # b. Risk Parameters
+        risk_aversion = getattr(household, "risk_aversion", 1.0)
 
-        current_cash = household.assets
+        # c. Market Rates
+        loan_market = market_data.get("loan_market", {})
+        risk_free_rate = loan_market.get("interest_rate", 0.05) # Base Rate
 
-        # 2. Deposit Surplus
-        if current_cash > target_liquidity * 1.2:
-            surplus = current_cash - target_liquidity
-            # Deposit 50% of surplus to be safe (smoothing)
-            deposit_amount = surplus * 0.5
-            if deposit_amount > 10.0:
-                orders.append(Order(household.id, "DEPOSIT", "currency", deposit_amount, 1.0, "currency"))
+        # d. Equity Return Proxy
+        # Assuming Equity Return ~ Dividend Yield + Growth?
+        # Or simple constant for now (Startup ROI expectation).
+        # Let's use a config value or assumed market average.
+        # Startups usually target high ROI (e.g. 15-20%).
+        equity_return = getattr(self.config_module, "EXPECTED_STARTUP_ROI", 0.15)
 
-        # 3. Withdraw Shortage
-        elif current_cash < target_liquidity * 0.8:
-            shortage = target_liquidity - current_cash
-            withdraw_amount = shortage
-            # Check if we have deposits? (Bank doesn't expose this easily to agent decision, but agent *should* know)
-            # We don't track "deposits_owned" in Household state explicitly in this file context.
-            # But the Bank holds it.
-            # We will attempt withdrawal. If failed, it logs warning.
-            if withdraw_amount > 10.0:
-                 orders.append(Order(household.id, "WITHDRAW", "currency", withdraw_amount, 1.0, "currency"))
+        # e. Survival Cost (Monthly)
+        # Basic Food Price * Consumption * 30
+        goods_market = market_data.get("goods_market", {})
+        food_price = goods_market.get("basic_food_current_sell_price", 5.0)
+        daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 2.0)
+        monthly_survival_cost = food_price * daily_consumption * 30.0
+
+        # f. Inflation Expectation (Avg of all goods)
+        if household.expected_inflation:
+            avg_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+        else:
+            avg_inflation = 0.0
+
+        # 2. Optimize
+        target_cash, target_deposit, target_equity = PortfolioManager.optimize_portfolio(
+            total_liquid_assets=total_liquid,
+            risk_aversion=risk_aversion,
+            risk_free_rate=risk_free_rate,
+            equity_return_proxy=equity_return,
+            survival_cost=monthly_survival_cost,
+            inflation_expectation=avg_inflation
+        )
+
+        # 3. Generate Orders
+
+        # A. Deposit / Withdraw
+        # Compare Target Deposit vs Current Deposit
+        diff_deposit = target_deposit - deposit_balance
+
+        if diff_deposit > 10.0:
+            # Need to Deposit
+            # Ensure we have enough cash (we should, based on optimization logic)
+            actual_deposit = min(cash, diff_deposit)
+            if actual_deposit > 10.0:
+                orders.append(Order(household.id, "DEPOSIT", "currency", actual_deposit, 1.0, "currency"))
+
+        elif diff_deposit < -10.0:
+            # Need to Withdraw
+            amount_to_withdraw = abs(diff_deposit)
+            orders.append(Order(household.id, "WITHDRAW", "currency", amount_to_withdraw, 1.0, "currency"))
+
+        # B. Investment (Startup)
+        # If target_equity > 0, we want to invest.
+        # Since currently "Equity" means "Startup" (until stock market participation is fuller),
+        # we check if we can afford a startup.
+        # Note: Startup Cost is high (~30,000). Optimization might suggest allocating 5,000.
+        # In that case, we can't startup yet. We just keep it in deposit (accumulator).
+        # OR we treat "Equity" allocation as "Willingness to spend on Capital".
+
+        startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
+
+        # If we have enough liquid assets allocated to Equity (or implicitly available) to start a firm
+        # AND we don't own too many firms?
+        # The Portfolio Manager says "Allocate X to Equity".
+        # If X >= Startup Cost, we trigger INVEST.
+
+        if target_equity >= startup_cost * 0.8: # Threshold to trigger
+            # Generate INVEST order
+            # Engine will handle the actual deduction and check
+            # We only generate if we actually have the cash/deposit.
+            # Usually Startup requires CASH.
+            # If we just Deposited everything, we might fail.
+            # But the Engine runs orders sequentially. DEPOSIT might happen first.
+            # So we should be careful.
+            # If we plan to INVEST, we should NOT DEPOSIT that amount.
+            # Correction: optimize_portfolio returned target states.
+            # If target_equity is high, target_deposit would be lower.
+            # So we should hold that amount in CASH?
+            # optimize_portfolio assumes Equity is an asset class.
+            # If we can't buy Equity immediately (e.g. startup cost too high),
+            # we should probably hold it in Interest-bearing Deposit until we have enough.
+            # BUT, the WO says "Generate INVEST orders... if surplus exists".
+
+            # Let's check if we *already* have enough CASH to invest?
+            # Or if we *will* have enough after rebalancing?
+            # If target_equity implies we should have equity, and we don't, we try to acquire.
+
+            # Current Simplification:
+            # If calculated target_equity is substantial, we try to INVEST.
+            # We assume the agent keeps the money in Cash if they intend to Invest this turn,
+            # OR withdraws it.
+            # Since INVEST is processed by Engine, which checks Assets.
+            # If we just sent a DEPOSIT order, Assets will decrease.
+            # Thus, if we order INVEST, we should cancel the DEPOSIT of that amount.
+
+            # Let's refine:
+            # If we decide to INVEST, we treat that amount as "Spending" logic, not Deposit.
+            # So we shouldn't have deposited it.
+            # But diff_deposit was calculated based on target_deposit.
+            # Target Deposit didn't include Target Equity.
+            # So Cash should hold Target Equity + Target Cash.
+            # If Cash > Target Cash + Target Equity, we Deposit surplus.
+            pass # Logic is sound. target_deposit does NOT include equity funds.
+                 # So equity funds remain in Cash (Wallet).
+
+            # Now, simply check if we have enough Cash (after planned deposit/withdraw)
+            projected_cash = cash - max(0, diff_deposit) + max(0, -diff_deposit)
+
+            if projected_cash >= startup_cost:
+                orders.append(Order(household.id, "INVEST", "startup", 1.0, startup_cost, "admin"))
+
+        return orders
+
+    def _check_emergency_liquidity(self, household: "Household", market_data: Dict[str, Any], current_time: int) -> List[Order]:
+        """
+        Simple check between rebalancing periods to prevent starvation if Cash reaches 0.
+        """
+        orders = []
+        if household.assets < 10.0:
+            deposit_data = market_data.get("deposit_data", {})
+            deposit_balance = deposit_data.get(household.id, 0.0)
+
+            if deposit_balance > 10.0:
+                # Emergency Withdraw
+                amount = min(deposit_balance, 50.0) # Withdraw a small buffer
+                orders.append(Order(household.id, "WITHDRAW", "currency", amount, 1.0, "currency"))
 
         return orders
 

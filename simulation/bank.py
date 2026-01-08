@@ -211,6 +211,14 @@ class Bank:
             "daily_interest_burden": daily_interest_burden
         }
 
+    def get_deposit_balance(self, agent_id: int) -> float:
+        """Returns the total deposit balance for a specific agent."""
+        total_deposit = 0.0
+        for deposit in self.deposits.values():
+            if deposit.depositor_id == agent_id:
+                total_deposit += deposit.amount
+        return total_deposit
+
     def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None):
         """
         Process interest payments and distributions.

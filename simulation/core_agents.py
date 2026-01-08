@@ -118,6 +118,7 @@ class Household(BaseAgent):
         personality: Personality,
         config_module: Any,
         loan_market: Optional[LoanMarket] = None,
+        risk_aversion: float = 1.0,
         logger: Optional[Logger] = None,
     ) -> None:
         """Household 클래스의 생성자입니다.
@@ -132,6 +133,7 @@ class Household(BaseAgent):
             value_orientation (str): 가계의 가치관.
             personality (Personality): 가계의 고유한 특질(성격).
             loan_market (Optional[LoanMarket]): 대출 시장 인스턴스. 기본값은 None.
+            risk_aversion (float): 위험 회피 성향 (0.1 ~ 10.0). 기본값은 1.0.
             logger (Optional[Logger]): 로거 인스턴스. 기본값은 None.
         """
         super().__init__(
@@ -148,6 +150,7 @@ class Household(BaseAgent):
             f"HOUSEHOLD_INIT | Household {self.id} initialized. Initial Needs: {self.needs}",
             extra={"tags": ["household_init"]},
         )
+        self.risk_aversion = risk_aversion
         self.talent = talent
         self.skills: Dict[str, Skill] = {}
         self.goods_info_map: Dict[str, Dict[str, Any]] = {
@@ -975,6 +978,7 @@ class Household(BaseAgent):
             personality=self.personality,
             config_module=self.config_module,  # Pass config_module
             loan_market=self.decision_engine.loan_market,  # Pass loan_market if available
+            risk_aversion=self.risk_aversion,  # Clone risk aversion
             logger=self.logger,
         )
         # Copy mutable attributes
@@ -1066,6 +1070,10 @@ class Household(BaseAgent):
                 child_shares[firm_id] = child_qty
 
         # 6. 새 Household 인스턴스 생성 (새 DecisionEngine 포함)
+        # Random mutation for risk aversion: +/- 20%
+        child_risk_aversion = self.risk_aversion * random.uniform(0.8, 1.2)
+        child_risk_aversion = max(0.1, min(10.0, child_risk_aversion))
+
         child = Household(
             id=new_id,
             talent=self.talent, # Talent is shared/immutable
@@ -1077,6 +1085,7 @@ class Household(BaseAgent):
             personality=self.personality, # 일단 복사, inherit_brain에서 돌연변이
             config_module=self.config_module,
             loan_market=self.decision_engine.loan_market,
+            risk_aversion=child_risk_aversion,
             logger=self.logger
         )
         child.generation = self.generation + 1
