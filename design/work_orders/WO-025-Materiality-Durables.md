@@ -50,7 +50,8 @@ Update `GOODS` dictionary:
 *   If `is_durable`:
     *   Do NOT destroy.
     *   Add to `self.durable_assets`: `{'item_id': item_id, 'quality': transaction_quality, 'remaining_life': MAX_LIFE}`.
-    *   *Saturation Logic*: If Household already has N active items (e.g., 1 fridge), do NOT buy another unless upgrading? (For MVP, simpler: Buy up to `Desire` capacity).
+    *   *Saturation Logic*: Implement "Utility Saturation" per `design/specs/utility_maximization_spec.md`.
+    *   If Household already has functioning asset, Marginal Utility drops near zero.
 
 **Method**: `update_needs()`
 *   Iterate `self.durable_assets`:
