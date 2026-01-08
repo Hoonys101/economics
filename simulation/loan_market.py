@@ -253,7 +253,7 @@ class LoanMarket(Market):
                         price=1.0,
                         buyer_id=self.bank.id,     # Bank pays
                         seller_id=order.agent_id,  # Agent receives
-                        transaction_type="deposit",
+                        transaction_type="withdrawal",
                         time=current_tick,
                         market_id=self.id,
                     )

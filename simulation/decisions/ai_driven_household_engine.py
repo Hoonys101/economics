@@ -293,15 +293,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             # Deposit 50% of surplus to be safe (smoothing)
             deposit_amount = surplus * 0.5
             if deposit_amount > 10.0:
-                orders.append(
-                    Order(household.id, "DEPOSIT", "deposit", 1, deposit_amount, "deposit") # Item_ID="deposit"? Or "cash"?
-                    # LoanMarket expects item_id="deposit" for deposit type? No, LoanMarket checks order_type.
-                    # place_order checks order.order_type == "DEPOSIT".
-                    # item_id is usually ignored or logged.
-                )
-                # Note: Order(agent_id, type, item_id, quantity, price)
-                # We use quantity=amount, price=1.0 usually for cash transfers.
-                # In LoanMarket.place_order: amount = order.quantity.
                 orders.append(Order(household.id, "DEPOSIT", "currency", deposit_amount, 1.0, "currency"))
 
         # 3. Withdraw Shortage
