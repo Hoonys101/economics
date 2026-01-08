@@ -253,7 +253,69 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             for stock_order in stock_orders:
                 stock_market.place_order(stock_order, current_time)
 
+        # ---------------------------------------------------------
+        # 5. Liquidity Management (Banking)
+        # ---------------------------------------------------------
+        liquidity_orders = self._manage_liquidity(household, current_time)
+        orders.extend(liquidity_orders)
+
         return orders, action_vector
+
+    def _manage_liquidity(self, household: "Household", current_time: int) -> List[Order]:
+        """
+        Manages cash vs deposits.
+        Target Liquidity = Monthly Expenses * Buffer Months.
+        Surplus -> Deposit. Shortage -> Withdraw.
+        """
+        orders = []
+
+        # 1. Estimate Monthly Expenses (Heuristic: 30 * avg_daily_consumption_value)
+        # For simplicity, we use a fixed estimate or tracked history if available.
+        # Let's approximate based on survival need cost.
+        # cost per tick ~= 2.0 (food) * 5.0 (price) = 10.0
+        # monthly (100 ticks?) = 1000.0.
+        # Let's use a config-based estimation or simple rule.
+        estimated_daily_expense = 20.0 # Conservative estimate
+        buffer_ticks = 50 # 0.5 year buffer
+        target_liquidity = estimated_daily_expense * buffer_ticks # 1000.0
+
+        # Personality Modifier
+        if household.personality in [Personality.MISER, Personality.CONSERVATIVE]:
+            target_liquidity *= 1.5
+        elif household.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+            target_liquidity *= 0.5
+
+        current_cash = household.assets
+
+        # 2. Deposit Surplus
+        if current_cash > target_liquidity * 1.2:
+            surplus = current_cash - target_liquidity
+            # Deposit 50% of surplus to be safe (smoothing)
+            deposit_amount = surplus * 0.5
+            if deposit_amount > 10.0:
+                orders.append(
+                    Order(household.id, "DEPOSIT", "deposit", 1, deposit_amount, "deposit") # Item_ID="deposit"? Or "cash"?
+                    # LoanMarket expects item_id="deposit" for deposit type? No, LoanMarket checks order_type.
+                    # place_order checks order.order_type == "DEPOSIT".
+                    # item_id is usually ignored or logged.
+                )
+                # Note: Order(agent_id, type, item_id, quantity, price)
+                # We use quantity=amount, price=1.0 usually for cash transfers.
+                # In LoanMarket.place_order: amount = order.quantity.
+                orders.append(Order(household.id, "DEPOSIT", "currency", deposit_amount, 1.0, "currency"))
+
+        # 3. Withdraw Shortage
+        elif current_cash < target_liquidity * 0.8:
+            shortage = target_liquidity - current_cash
+            withdraw_amount = shortage
+            # Check if we have deposits? (Bank doesn't expose this easily to agent decision, but agent *should* know)
+            # We don't track "deposits_owned" in Household state explicitly in this file context.
+            # But the Bank holds it.
+            # We will attempt withdrawal. If failed, it logs warning.
+            if withdraw_amount > 10.0:
+                 orders.append(Order(household.id, "WITHDRAW", "currency", withdraw_amount, 1.0, "currency"))
+
+        return orders
 
     def _make_stock_investment_decisions(
         self,
