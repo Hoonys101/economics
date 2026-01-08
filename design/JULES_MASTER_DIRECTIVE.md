@@ -94,6 +94,31 @@ Create `scripts/verify_portfolio.py` to confirm interest rate sensitivity:
     *   **Deposits**: Should spike immediately after T=50.
     *   **Consumption/Startup**: Should cool down as money moves to banks.
 
+---
+
+## 5. New Phase: Corporate Intelligence (WO-027)
+
+Firms are currently "too dumb". We must upgrade them with a **CEO Brain** module.
+
+### Step 1: 3-Layer Architecture Implementation
+*   **Layer 1 (Personality)**: Assign `BALANCED`, `GROWTH_HACKER`, or `CASH_COW` at `__init__`. This defines the reward weights for RL.
+*   **Layer 2 (RL Intent)**: Implement 5-channel Q-learning aggressiveness in `FirmAI` (R&D, CAPEX, Dividend, Employment, Debt).
+*   **Layer 3 (Logic Realization)**: Create `CorporateManager` to translate these 5 channels into concrete actions.
+
+### Step 2: The Innovation Physics (R&D)
+*   **Product R&D**: Increases `inventory_quality`.
+*   **Process R&D**: Increases `productivity_factor`.
+*   **Success**: Probability based on investment relative to revenue.
+
+### Step 3: Employment Strategy
+*   **Talent War**: Use high `q_hiring_agg` to offer higher wages and steal high-skill workers.
+*   **Layoffs**: Use low `q_hiring_agg` + poor liquidity to trigger layoffs of low-skill workers.
+
+### Step 4: Verification (The Innovation War)
+Create `scripts/verify_innovation.py`:
+1.  **Scenario**: Compare a `GROWTH_HACKER` firm (aggressive R&D) vs a `BALANCED` firm.
+2.  **Expectation**: The aggressive firm should eventually win market share through higher quality or lower costs.
+
 
 ---
 
