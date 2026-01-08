@@ -37,40 +37,38 @@ We have resolved two critical technical debts that were blocking the "Industrial
 
 ---
 
-## 2. Immediate Action Plan (WO-024: Banking)
+## 2. Completed: Banking System (WO-024)
 
-Do NOT wait for the legacy `verify_wo23.py` simulation to finish. It is running on obsolete logic.
-Start implementing the **Fractional Reserve Banking System** immediately on top of the current `main` branch.
-
-### Step 1: Banking Implementation
-*   **Reference:** `design/work_orders/WO-024-Interest-Banking.md`
-*   **Key Components:**
-    *   **Bank Agent**: Implement `CommercialBank` (inheriting from `Firm` or `BaseAgent`).
-    *   **Money Creation**: Implement `issue_loan()` which creates deposits (M2 expansion).
-    *   **Interest**: Implement `process_interest()` for both deposits (expense) and loans (revenue).
-
-### Step 2: Verification
-*   Create `scripts/verify_banking.py`.
-*   **Success Metrics:**
-    *   **Money Multiplier**: M2 (Broad Money) should be > M0 (Base Money) / Reserve Ratio.
-    *   **Solvency**: The Bank should be profitable (Spread > Defaults).
+The Fractional Reserve Banking System is successfully merged into `main`. 
+-   **Features**: Deposit/Withdraw, Loan Requests, M2 Money Creation, Interest Churn.
+-   **Correction**: `_manage_liquidity` is now implemented in the `AIDrivenHouseholdDecisionEngine`.
 
 ---
 
-## 3. Future Horizon (WO-025: Durables)
+## 3. Immediate Action Plan (WO-025: Materiality & Durables)
 
-Once Banking is stable, proceed to **Phase 15: Materiality**.
-*   **Reference:** `design/work_orders/WO-025-Materiality-Durables.md`
-*   **Paradigm Shift:** `Consumer Goods` become assets with lifespan, creating Business Cycles.
+Banking is stable. Now we transition from "Instant Consumption" to "Durables & Assets".
+
+### Step 1: Materiality Implementation
+*   **Reference**: `design/work_orders/WO-025-Materiality-Durables.md`
+*   **Key Concept**: Goods are now `Consumables` (instant) or `Durables` (persistent assets with lifespan).
+*   **Requirements**:
+    *   **Household Brain Upgrade**: Implement the **Utility Saturation Logic** from `design/specs/utility_maximization_spec.md`. Agents must not hoard multiple fridges/assets if utility is saturated.
+    *   **Depreciation**: Durables in agent inventory must lose `remaining_life` each tick and trigger disposal/replacement logic when spent.
+
+### Step 2: Quality Ladder
+*   **Firm Quality**: Production quality is now tied to the average labor skill of the firm's workforce.
+*   **Impact**: High-skill firms produce high-quality durables that satisfy utility longer.
 
 ---
 
 ## 4. Command Checklist
 
-- [ ] `git pull origin main` (Ensure you have Commit `9ea5f0a` or later)
-- [ ] Review `simulation/core_agents.py` (Search for `_update_skill`)
-- [ ] Review `simulation/firms.py` (Search for `pay_wages` logic)
-- [ ] Begin coding `simulation/agents/bank.py` per WO-024.
+- [ ] `git pull origin main` (Ensure you have Commit `bdac3b1` or later)
+- [ ] Review `design/specs/utility_maximization_spec.md` (Crucial for AI brain upgrade)
+- [ ] Implement `DurableAsset` logic in `simulation/core_agents.py`.
+- [ ] Update `Household.update_needs()` to handle asset depreciation.
+- [ ] Update `Firm.produce()` to calculate and tag product `quality`.
 
 ---
 
