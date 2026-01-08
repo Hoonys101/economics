@@ -97,7 +97,10 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             # marginal utility is near zero.
             if hasattr(household, 'durable_assets'):
                  existing_durables = [a for a in household.durable_assets if a['item_id'] == item_id]
-                 if existing_durables:
+                 # Saturation Check: Own it OR have it in inventory (pending install)
+                 has_inventory = household.inventory.get(item_id, 0.0) >= 1.0
+
+                 if existing_durables or has_inventory:
                      # Already own it. Don't buy another unless replacing?
                      # Spec says: "If Household already has functioning asset, Marginal Utility drops near zero."
                      # Implementation: Skip purchase logic or force agg_buy to 0.

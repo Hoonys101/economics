@@ -693,26 +693,29 @@ class Household(BaseAgent):
         is_service = good_info.get("is_service", False)
 
         if is_service or self.inventory.get(item_id, 0) >= quantity:
-            if not is_service:
-                self.logger.debug(
-                    f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}",
-                    extra={
-                        **log_extra,
-                        "inventory_before": self.inventory.get(item_id, 0),
-                        "survival_need_before": self.needs.get("survival", 0),
-                    },
-                )
-                self.inventory[item_id] -= quantity
-            
             # Phase 15: Durable Asset Logic
             is_durable = good_info.get("is_durable", False)
+
             if is_durable and not is_service:
+                # Durables must be consumed in integer units to function
+                # Relaxed check for float precision (0.9 instead of 1.0)
+                if quantity < 0.9:
+                    self.logger.debug(
+                        f"DURABLE_CONSUME_FAIL | Household {self.id} tried to consume partial {item_id}: {quantity:.2f}. Minimum 1.0 required.",
+                        extra=log_extra
+                    )
+                    return # Do not consume inventory
+
+                # If quantity valid for durable, reduce inventory
+                self.inventory[item_id] -= quantity
+
                 base_lifespan = good_info.get("base_lifespan", 50)
                 # Use stored quality or default
                 quality = self.inventory_quality.get(item_id, 1.0)
 
-                # Create Asset
-                for _ in range(int(quantity)):
+                # Create Asset (Round to nearest integer to handle 0.99 -> 1)
+                num_assets = int(round(quantity))
+                for _ in range(num_assets):
                     asset = {
                         "item_id": item_id,
                         "quality": quality,
@@ -723,6 +726,18 @@ class Household(BaseAgent):
                         f"DURABLE_ACQUIRED | Household {self.id} installed {item_id}. Quality: {quality:.2f}, Life: {base_lifespan}",
                          extra={**log_extra, "quality": quality}
                     )
+
+            elif not is_service:
+                # Standard Consumable
+                self.logger.debug(
+                    f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}",
+                    extra={
+                        **log_extra,
+                        "inventory_before": self.inventory.get(item_id, 0),
+                        "survival_need_before": self.needs.get("survival", 0),
+                    },
+                )
+                self.inventory[item_id] -= quantity
 
             self.current_consumption += quantity
 
