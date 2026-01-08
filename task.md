@@ -1,148 +1,49 @@
-# Task Checklist: Economics Simulation (Current: Phase 9 - M&A)
+# Task List
 
-> **Goal**: Prevent economic collapse (extinction) by implementing a logic-driven Government that follows fiscal rules and responds to political approval.
-
-## 0. Preparation
-- [x] **Spec**: Finalize `phase4_5_responsible_government_spec.md`
-- [ ] **Handover**: Create Work Order for Jules
-
-## 1. Survival Parameter Tuning (Priority #1)
-- [x] **Config**: Increase `INITIAL_HOUSEHOLD_ASSETS` (Prevent early death)
-- [x] **Config**: Adjust `SURVIVAL_NEED_DEATH_THRESHOLD` or `HOUSEHOLD_DEATH_TURNS_THRESHOLD`
-- [x] **Config**: Set `WEALTH_THRESHOLD_FOR_LEISURE = 50000.0` (Prevent early retirement)
-- [x] **Firm Init**: Initial inventory = 50 (Prevent supply gap at Tick 1)
-
----
-
-## ⚠️ Long-Term TODO: AI-Driven Labor Incentive (철학적 과제)
-> **Current Approach**: "배고프면 일해라" 로직을 하드코딩으로 강제 (Starvation Fear Logic)
-> **Ideal Approach**: AI가 [생존 → 노동 필요성]을 스스로 학습하도록 Reward Shaping 및 Q-Learning 개선
-> **Status**: *Deferred until simulation stability is achieved*
-
-- [ ] **Reward Shaping**: 노동 보상 함수에 "식량 재고 기반 긍정적 신호" 반영
-- [ ] **Remove Hard-Coded Logic**: `calculate_labor_utility`의 `return 999999.0` 제거 후 AI가 동일 결론 도달하는지 검증
-
-## 2. Political System (The Approval Function)
-- [x] **Model**: Implement `Government.evaluate_approval(household)`
-    - [x] Survival Score (Wage/Benefit)
-    - [x] Relative Score (Asset comparison)
-    - [x] Future Score (GDP Growth)
-    - [x] Tax Score (Sensitivity based on Personality)
-- [x] **Metric**: Track `average_approval_rating` in `Government` class
-
-## 3. Fiscal Rules (The Loop)
-- [x] **Logic**: Implement `Government.adjust_fiscal_policy()`
-    - [x] **Surplus Rule**: If Cash > 10% GDP -> Distribute 30% of excess as Dividend
-    - [x] **Tax Bounding**: Rate kept between 5% and 50% (Gradual ±1% adjustment)
-    - [x] **Inflation Guard**: Halt distribution if Inflation > 5%
-
-## 4. Verification
-- [x] **Test**: `verify_fiscal_stability.py` (Run 1000 ticks)
-- [x] **Success Criteria**:
-    - [x] Active Households > 50% after 1000 ticks
-    - [x] Tax Rate fluctuates realistically (not zero)
-    - [x] No "Money Black Hole" (Government hoarding)
-
----
-
-# Task Checklist: Phase 6 - The Brand Economy (Differentiation)
-> **Goal**: Transition from "Survival Economy" (Commodity) to "Brand Economy" (Product Differentiation).
-
-## 1. Core Logic (Supply Side)
-- [x] **BrandManager**: `BrandManager` class with Adstock, Awareness, Quality logic.
-- [x] **Firm Integration**: `Firm` updates `BrandManager` and injects `brand_info` into Orders.
-- [x] **Market Logic**: `OrderBookMarket` supports `Targeted Matching` (Buyer -> Specific Seller).
-
-## 2. Household Logic (Demand Side)
-- [x] **Spec**: Defined Preference Init & Utility Formula in `phase6_brand_economy_spec.md`.
-- [x] **Handover**: Assign `phase6_demand_instructions.md` to Jules.
-- [x] **Implementation**:
-    - [x] `Household.quality_preference` Init
-    - [x] `Household.choose_best_seller()` (Utility Logic)
-    - [x] `Targeted Buy Order` Creation in `make_decisions()`
-
-## 3. Verification
-- [x] **Script**: `verify_brand_economy.py`
-    - [x] Check if High Brand Value Firms -> Higher Sales/Prices.
-    - [x] Verify `Adstock` decay and `Awareness` growth S-curve.
-
-## Phase 8: Adaptive Price Expectations (The Psychology of Inflation)
-> **Goal**: Agents remember price history and speculate on future inflation (Hoarding/Delay).
-
-- [x] **Spec**: Defined Memory/Expectation Logic in `design/specs/phase8_adaptive_expectations_spec.md`.
-- [x] **Implementation**:
-    - [x] **Config**: Add `PANIC_THRESHOLD`, `HOARDING_FACTOR`, `ADAPTATION_RATE` constants.
-    - [x] **Household Attributes**: Add `price_history`, `expected_inflation`, `lambda` (adaptation rate).
-    - [x] **Logic**: Update `decide_and_consume` to adjust quantity based on inflation expectation.
-- [x] **Verification**:
-    - [x] `verify_inflation_psychology.py`: Create Supply Shock and observe Panic Buying.
-
-## Phase 9: M&A & Bankruptcy (The Corporate Food Chain)
-> **Goal**: Implement "Survival of the Fittest" metabolism.
-
-- [x] **Spec**: Defined W-1 Spec (`design/specs/phase9_ma_spec.md`).
-- [x] **Preparation**:
-    - [x] **Config**: Add Valuation & M&A constants.
-    - [x] **Scaffold**: Create `simulation/systems/ma_manager.py`.
-    - [x] **Work Order**: Create `design/work_orders/WO-009-MA.md`.
-- [x] **Implementation (Jules)**:
-    - [x] `Firm.calculate_valuation()` & `liquidate_assets()`.
-    - [x] `MAManager` Logic (Predator-Prey Matching).
-    - [x] Integration with `Simulation` Engine.
-- [x] **Verification**:
-    - [x] `verify_ma_bankruptcy.py`: Test Liquidation and Acquisition scenarios.
-## Phase 4.5: Interest Sensitivity (The Missing Link)
-> **Goal**: Connect Central Bank interest rates to household consumption/saving decisions (Monetary Transmission).
-
-- [x] **Planning**: Define `adjust_consumption_for_interest_rate` logic (Substitution & Cashflow effects).
-- [x] **Implementation**:
-    - [x] `AIDrivenHouseholdDecisionEngine`: Implement heuristic override for real interest rates.
-    - [x] `AIDrivenHouseholdDecisionEngine`: Implement DSR-based consumption penalty.
-- [ ] **Verification**:
-    - [ ] Run Iron Test and verify `MONETARY_TRANSMISSION` behavior.
-    - [ ] Observe Ant (sensitive) vs Grasshopper (insensitive) behavior changes.
-
-## Phase 8-B: Economic Reflux System (Money Conservation)
-> **Goal**: Prevent money leakage by capturing and redistributing sunk costs and profits.
-
-- [x] **Spec**: Define Reflux System architecture.
-- [x] **Implementation**:
-    - [x] `RefluxSystem`: Capture marketing, storage, CAPEX, and bank profits.
-    - [x] `Engine`: Distribute captured funds to households as "Service Sector Income".
-- [x] **Verification**:
-    - [x] `verify_economic_equilibrium.py`: 100-tick conservation test.
-
-## Phase 8-C: Operation Fire Sale (Solvency-Driven Pricing)
-> **Goal**: Break price rigidity by forcing firms to dump inventory when cash runs out.
-
-- [x] **Logic**: Solvency-Driven Pricing (Depreciation + Liquidity Fear).
-- [x] **Implementation**:
-    - [x] `Firm`: Track `last_daily_expenses` and `last_sales_volume`.
-    - [x] `AIDrivenFirmEngine`: Implement `calculate_survival_price` with 80% panic discount.
-- [x] **Verification**:
-    - [x] Iron Test: Verify price drops and trade resumption during liquidity crises.
-
-## Phase 1 Final Validation: The Crucible Test
-> **Goal**: Validate the integrated stability of 3-Pillars, Fire Sale, and Gold Standard mechanisms.
-
-- [ ] **Work Order**: Create `WO-017-FinalValidation.md` (Completed).
-- [ ] **Execution**: Run 1000-tick Iron Test with `GOLD_STANDARD_MODE=True`.
-- [ ] **Report**: Analyze `reports/PHASE1_FINAL_REPORT.md` for bubble suppression and money conservation.
-
-## Phase 1 Stabilization: Gold Standard & Corporate Tax (WO-018)
-- [x] **Spec**: `WO-018-CorporateTax.md`
-- [x] **Implementation**: Corporate Tax, Maintenance Fee, Money Creation Fix
-- [x] **Verification**: `tests/verify_corporate_tax.py` Passed
-
-## Phase 11: Backtest Engine Migration & Visualization
-> **Goal**: Migrate from text-based logs to DB-driven analysis. Run 1000-tick simulation and visualize key metrics.
-
-- [ ] **Implementation Plan**: Create `design/specs/phase11_backtest_migration_spec.md`
-- [ ] **Data Generation**: Run `scripts/iron_test.py` (1000 ticks) to populate DB.
-- [ ] **Migration Script**: Create `scripts/migrate_db_to_csv.py` or `modules/analytics/loader.py` to load DB data into Pandas.
-- [ ] **Visualization**: Create `scripts/visualize_economy.py` to generate:
-    - GDP Growth
-    - GINI Coefficient (Inequality)
-    - Inflation Rate
-    - Treasury Balance & Debt
-- [ ] **Verification**: Verify pipelines work with actual data.
+- [ ] Check Documentation Guide `design/JULES_DOCUMENTATION_GUIDE.md` <!-- id: 0 -->
+- [x] Create Work Order `design/work_orders/WO-DOC-001-SpecDocumentation.md` <!-- id: 1 -->
+- [ ] Verify Spec Files Existence <!-- id: 2 -->
+- [x] Handover to Jules (Git Commit & Push) <!-- id: 3 -->
+- [x] Create Spec `design/specs/diagnosis_autopsy_spec.md` (Forensics) <!-- id: 4 -->
+- [x] Create Work Order `design/work_orders/WO-Diag-002-Forensics.md` <!-- id: 5 -->
+- [x] Handover Forensics to Jules (Git Commit & Push) <!-- id: 6 -->
+- [x] Create Work Order `design/work_orders/WO-Diag-003-StressTest.md` <!-- id: 7 -->
+- [x] Handover Stress Test to Jules (Git Commit & Push) - Added Stimulus Disable <!-- id: 8 -->
+- [x] Fix "Immortality Bug" in `simulation/engine.py` (Missing `update_needs`) <!-- id: 10 -->
+- [x] Monitor Stress Test Simulation & Analyze `reports/AUTOPSY_REPORT.md` <!-- id: 9 -->
+- [x] Investigate Forensic Logging Failure & Wealth Anomaly <!-- id: 14 -->
+- [x] Create Work Order `design/work_orders/WO-Diag-004-LongTermRecon.md` (1000 Ticks) <!-- id: 11 -->
+- [x] Handover Long-Term Recon to Jules (Git Commit & Push) <!-- id: 12 -->
+- [x] Monitor Long-Term Recon & Analyze `reports/RECON_REPORT.md` <!-- id: 13 -->
+- [x] Create Final Walkthrough & Diagnosis <!-- id: 15 -->
+- [x] Execute Phase 12: Operation Genesis (Ignition Sequence) <!-- id: 16 -->
+    - [x] Update `config.py` for Initial Stock Injection <!-- id: 17 -->
+    - [x] Create `design/work_orders/WO-Diag-005-Genesis.md` for Flexibility Logic <!-- id: 18 -->
+    - [x] Handover to Jules for Implementation <!-- id: 19 -->
+    - [x] Final 1000-tick Verification & Analysis <!-- id: 20 -->
+- [x] Phase 13: Operation "Empty Warehouse" (The Real Spark) <!-- id: 21 -->
+    - [x] Set `INITIAL_FIRM_INVENTORY` & `INITIAL_HOUSEHOLD_INVENTORY` to 0 <!-- id: 22 -->
+    - [x] Run 400-tick survival test without Safety Net <!-- id: 23 -->
+    - [x] Analyze Cumulative Production vs. Consumption <!-- id: 24 -->
+    - [x] Final Verdict on Economic Autonomy <!-- id: 25 -->
+- [/] Phase 14: Operation "Laissez-Faire" (The Pure Spark) <!-- id: 26 -->
+    - [x] Set Taxes to 0.0 and Double Productivity <!-- id: 27 -->
+    - [ ] Run 1000-tick Laissez-Faire verification <!-- id: 28 -->
+    - [x] Analyze results: Growth vs. Distribution Collapse <!-- id: 29 -->
+- [x] Phase 14-1: Shareholder & Dividend (The Reflux) <!-- id: 30 -->
+    - [x] Create `design/work_orders/WO-022-Shareholder-Dividend.md` <!-- id: 31 -->
+    - [x] Implement `owner_id` in Firm & `portfolio` in Household <!-- id: 32 -->
+    - [x] Implement `distribute_profit()` with Reserve Logic <!-- id: 33 -->
+    - [x] Verify "Labor vs Capital" Income Golden Cross (Total Capital Income: 37,655.21 verified) <!-- id: 34 -->
+- [x] Phase 14-2: Innovation & Differentiation (The Transformation) <!-- id: 35 -->
+    - [x] Create `design/work_orders/WO-023-Innovation-Differentiation.md` <!-- id: 36 -->
+    - [x] Implement Maslow's Hierarchy (Food vs Goods) <!-- id: 37 -->
+    - [x] Implement Visionary Startup Logic (Blue Ocean) <!-- id: 38 -->
+    - [x] Refactor: Data-Driven Sector Logic (WO-023-A) <!-- id: 38a -->
+    - [x] Implement Human Capital: Talent & Skill (WO-023-B) <!-- id: 38b -->
+    - [x] Verify Structural Transformation (Agriculture -> Industry) <!-- id: 39 -->
+- [ ] Phase 14-3: Interest & Banking System (The Investment) <!-- id: 40 -->
+    - [x] Create `design/work_orders/WO-024-Interest-Banking.md` <!-- id: 41 -->
+    - [ ] Implement Fractional Reserve Banking <!-- id: 42 -->
+    - [ ] Implement Interest Rate Mechanism <!-- id: 43 -->
+    - [ ] Verify Passive Income Generation <!-- id: 44 -->
