@@ -1223,7 +1223,8 @@ class Simulation:
                     buyer.shares_owned[firm_id] = current_shares + tx.quantity
                 elif isinstance(buyer, Firm) and buyer.id == firm_id:
                     # 자사주 매입 (Buyback)
-                    buyer.treasury_shares += tx.quantity
+                    # FIX: Burn shares immediately (reduce total_shares) instead of holding treasury stock
+                    buyer.total_shares -= tx.quantity
 
                 # [Mitosis] Update Shareholder Registry in StockMarket
                 if self.stock_market:

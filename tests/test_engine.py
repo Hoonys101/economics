@@ -79,6 +79,7 @@ def mock_config_module():
     mock_config.QUALITY_PREF_SNOB_MIN = 0.7
     mock_config.QUALITY_PREF_MISER_MAX = 0.3
     mock_config.QUALITY_SENSITIVITY_MEAN = 0.5
+    mock_config.BATCH_SAVE_INTERVAL = 1
 
     # Complex Structures
     mock_config.GOODS = {
@@ -134,6 +135,7 @@ def mock_households(mock_config_module):
     hh1.decision_engine = Mock()
     hh1.needs = initial_needs.copy()
     hh1.inventory = {"food": 10, "basic_food": 10}
+    hh1.inventory_quality = {"food": 1.0, "basic_food": 1.0}
     hh1.current_consumption = 0.0
     hh1.current_food_consumption = 0.0
     hh1.is_employed = False
@@ -153,6 +155,7 @@ def mock_households(mock_config_module):
     hh2.decision_engine = Mock()
     hh2.needs = initial_needs.copy()
     hh2.inventory = {"food": 5, "basic_food": 5}
+    hh2.inventory_quality = {"food": 1.0, "basic_food": 1.0}
     hh2.current_consumption = 0.0
     hh2.current_food_consumption = 0.0
     hh2.is_employed = False
@@ -357,6 +360,7 @@ class TestSimulation:
         tx.quantity = 5.0
         tx.price = 10.0
         tx.transaction_type = "goods"
+        tx.quality = 1.0  # Mock quality
 
         simulation_instance._process_transactions([tx])
 

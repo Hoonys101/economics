@@ -152,6 +152,113 @@ class TestPlaceOrderToBook:
         assert [o.agent_id for o in buy_book if o.price == 100] == [1, 3]
 
 
+class TestOrderFillStatus:
+    def test_order_remains_unfilled(self, market: OrderBookMarket):
+        """매칭되지 않은 주문이 오더북에 그대로 남고 수량이 유지되는지 테스트합니다."""
+        # 1. Place Order
+        order = Order(
+            agent_id=1,
+            order_type="BUY",
+            item_id="food",
+            quantity=10,
+            price=100,
+            market_id="test_market",
+        )
+        market.place_order(order, current_time=1)
+
+        # 2. Match (no opposing orders)
+        market.match_orders(current_time=1)
+
+        # 3. Verify
+        buy_book = market.buy_orders.get("food", [])
+        assert len(buy_book) == 1
+        assert buy_book[0].quantity == 10  # 수량 변동 없음
+        assert buy_book[0].agent_id == 1
+
+    def test_order_fully_filled(self, market: OrderBookMarket):
+        """완전히 체결된 주문이 오더북에서 제거되고 수량이 0이 되는지 테스트합니다."""
+        # 1. Place Buy Order
+        buy_order = Order(
+            agent_id=1,
+            order_type="BUY",
+            item_id="food",
+            quantity=10,
+            price=100,
+            market_id="test_market",
+        )
+        market.place_order(buy_order, current_time=1)
+
+        # 2. Place Sell Order (Matching)
+        sell_order = Order(
+            agent_id=2,
+            order_type="SELL",
+            item_id="food",
+            quantity=10,
+            price=100,
+            market_id="test_market",
+        )
+        market.place_order(sell_order, current_time=1)
+
+        # 3. Match
+        market.match_orders(current_time=1)
+
+        # 4. Verify
+        buy_book = market.buy_orders.get("food", [])
+        sell_book = market.sell_orders.get("food", [])
+
+        # 오더북에서 제거되었는지 확인
+        assert len(buy_book) == 0
+        assert len(sell_book) == 0
+
+        # 주문 객체의 수량이 0으로 업데이트되었는지 확인
+        # (match_orders는 객체를 직접 수정함)
+        assert buy_order.quantity == 0
+        assert sell_order.quantity == 0
+
+    def test_order_partially_filled(self, market: OrderBookMarket):
+        """부분 체결된 주문이 오더북에 남고 수량이 차감되는지 테스트합니다."""
+        # 1. Place Buy Order (Large)
+        buy_order = Order(
+            agent_id=1,
+            order_type="BUY",
+            item_id="food",
+            quantity=10,
+            price=100,
+            market_id="test_market",
+        )
+        market.place_order(buy_order, current_time=1)
+
+        # 2. Place Sell Order (Small)
+        sell_order = Order(
+            agent_id=2,
+            order_type="SELL",
+            item_id="food",
+            quantity=4,
+            price=100,
+            market_id="test_market",
+        )
+        market.place_order(sell_order, current_time=1)
+
+        # 3. Match
+        market.match_orders(current_time=1)
+
+        # 4. Verify
+        buy_book = market.buy_orders.get("food", [])
+        sell_book = market.sell_orders.get("food", [])
+
+        # 매수 주문은 남아야 함
+        assert len(buy_book) == 1
+        # 매도 주문은 사라져야 함
+        assert len(sell_book) == 0
+
+        # 남은 주문의 수량 확인 (10 - 4 = 6)
+        assert buy_book[0].quantity == 6
+        assert buy_order.quantity == 6
+
+        # 매도 주문은 완전 체결됨
+        assert sell_order.quantity == 0
+
+
 class TestOrderMatching:
     def test_unfilled_order_no_match(self, market: OrderBookMarket):
         """가격이 교차하지 않아 매칭이 발생하지 않는 경우를 테스트합니다."""
