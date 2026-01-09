@@ -606,3 +606,12 @@ MARKETING_BUDGET_RATE_MAX = 0.20
 BRAND_AWARENESS_SATURATION = 0.9
 SERVICE_SECTORS = ["service.education", "service.medical"]
 SERVICE_WASTE_PENALTY_FACTOR = 0.5
+
+# ==============================================================================
+# Phase 17-3A: Real Estate
+# ==============================================================================
+NUM_HOUSING_UNITS = 100
+INITIAL_PROPERTY_VALUE = 10000.0
+INITIAL_RENT_PRICE = 100.0
+MAINTENANCE_RATE_PER_TICK = 0.001  # 0.1%
+HOMELESS_PENALTY_PER_TICK = 50.0

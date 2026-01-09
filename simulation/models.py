@@ -53,3 +53,15 @@ class Share:
     holder_id: int             # 보유자 ID (가계 또는 기업)
     quantity: float            # 보유 수량
     acquisition_price: float   # 평균 매입 가격
+
+
+@dataclass
+class RealEstateUnit:
+    """부동산 자산 단위 (Phase 17-3A)"""
+    id: int
+    owner_id: Optional[int] = None  # None = Government
+    occupant_id: Optional[int] = None  # Tenant
+    condition: float = 1.0
+    estimated_value: float = 10000.0
+    rent_price: float = 100.0
+    mortgage_id: Optional[int] = None

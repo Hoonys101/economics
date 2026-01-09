@@ -221,6 +221,11 @@ class Household(BaseAgent):
         self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
         self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
 
+        # --- Phase 17-3A: Real Estate ---
+        self.owned_properties: List[int] = []  # IDs of owned RealEstateUnits
+        self.residing_property_id: Optional[int] = None
+        self.is_homeless: bool = False
+
         # --- Phase 14-1: Shareholder & Dividend Attributes ---
         self.portfolio: List[int] = []  # List of Firm IDs owned
         self.income_labor_cumulative: float = 0.0
@@ -508,6 +513,9 @@ class Household(BaseAgent):
             "employer_id": self.employer_id,
             "social_status": self.social_status,
             "credit_frozen_until_tick": self.credit_frozen_until_tick,
+            "is_homeless": self.is_homeless,
+            "owned_properties_count": len(self.owned_properties),
+            "residing_property_id": self.residing_property_id,
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
@@ -994,6 +1002,9 @@ class Household(BaseAgent):
         cloned_household.perceived_avg_prices = self.perceived_avg_prices.copy()
         cloned_household.current_food_consumption = self.current_food_consumption
         cloned_household.credit_frozen_until_tick = self.credit_frozen_until_tick
+        cloned_household.owned_properties = self.owned_properties.copy()
+        cloned_household.residing_property_id = self.residing_property_id
+        cloned_household.is_homeless = self.is_homeless
 
         return cloned_household
 
@@ -1094,6 +1105,11 @@ class Household(BaseAgent):
         child.employer_id = None
         child.credit_frozen_until_tick = 0 # New agent has clean credit record
         child.needs["survival"] = random.uniform(0, 20)
+
+        # Phase 17-3A: Child is initially homeless until they rent/buy
+        child.is_homeless = True
+        child.residing_property_id = None
+        child.owned_properties = []
 
         # Phase 5: Genealogy Linking
         child.parent_id = self.id

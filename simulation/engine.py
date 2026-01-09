@@ -4,7 +4,7 @@ import logging
 import hashlib
 import random
 
-from simulation.models import Transaction, Order, StockOrder
+from simulation.models import Transaction, Order, StockOrder, RealEstateUnit
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.service_firms import ServiceFirm
@@ -104,6 +104,27 @@ class Simulation:
         # Central Bank is not in self.agents dict as it's a special system agent
         # similar to how markets are handled, or we can add it if needed.
         # But it doesn't participate in normal transactions.
+
+        # Phase 17-3A: Initialize Real Estate Units
+        self.real_estate_units: List[RealEstateUnit] = [
+            RealEstateUnit(id=i, estimated_value=self.config_module.INITIAL_PROPERTY_VALUE,
+                           rent_price=self.config_module.INITIAL_RENT_PRICE)
+            for i in range(self.config_module.NUM_HOUSING_UNITS)
+        ]
+
+        # Distribute to top 20% households
+        top_20_count = len(self.households) // 5
+        top_households = sorted(self.households, key=lambda h: h.assets, reverse=True)[:top_20_count]
+
+        for i, hh in enumerate(top_households):
+            if i < len(self.real_estate_units):
+                unit = self.real_estate_units[i]
+                unit.owner_id = hh.id
+                hh.owned_properties.append(unit.id)
+                # Owner occupies their own unit initially
+                unit.occupant_id = hh.id
+                hh.residing_property_id = unit.id
+                hh.is_homeless = False
 
         self.markets: Dict[str, Market] = {
             good_name: OrderBookMarket(market_id=good_name)
@@ -642,6 +663,9 @@ class Simulation:
                                  extra={"agent_id": household.id, "tags": ["LEISURE_EFFECT", "parenting"]}
                              )
 
+        # Phase 17-3A: Process Housing (Rent, Maintenance, Homeless Penalty)
+        self._process_housing()
+
         # --- Mitosis Processing (Agent Evolution) ---
         # Inserted after consumption reset (which is actually after consumption logic in original flow)
         # Spec says: After consumption counter reset, Before _handle_agent_lifecycle
@@ -891,6 +915,52 @@ class Simulation:
         # Clear markets for next tick
         for market in self.markets.values():
             market.clear_orders()
+
+    def _process_housing(self):
+        """Process rent collection, maintenance, and homeless penalty."""
+        # 1. Rent Collection & Maintenance
+        for unit in self.real_estate_units:
+            # Rent Collection
+            if unit.occupant_id is not None and unit.owner_id is not None and unit.occupant_id != unit.owner_id:
+                tenant = self.agents.get(unit.occupant_id)
+                landlord = self.agents.get(unit.owner_id)
+                if tenant and landlord and tenant.is_active and landlord.is_active:
+                    if tenant.assets >= unit.rent_price:
+                        tenant.assets -= unit.rent_price
+                        landlord.assets += unit.rent_price
+                    else:
+                        # Eviction
+                        self.logger.info(
+                            f"EVICTION | Household {tenant.id} evicted from Unit {unit.id} (Owner: {unit.owner_id}) due to non-payment.",
+                            extra={"agent_id": tenant.id, "unit_id": unit.id}
+                        )
+                        unit.occupant_id = None
+                        if isinstance(tenant, Household):
+                            tenant.residing_property_id = None
+                            tenant.is_homeless = True
+
+            # Maintenance Cost (Owner pays)
+            if unit.owner_id:
+                owner = self.agents.get(unit.owner_id)
+                if owner and owner.is_active:
+                    maintenance = unit.estimated_value * self.config_module.MAINTENANCE_RATE_PER_TICK
+                    owner.assets -= maintenance
+
+        # 2. Homeless Penalty
+        for hh in self.households:
+            if hh.is_active:
+                # Ensure consistency
+                if hh.residing_property_id is None:
+                    hh.is_homeless = True
+                else:
+                    hh.is_homeless = False # Important: Reset if they have a home
+
+                if hh.is_homeless:
+                    hh.needs["survival"] += self.config_module.HOMELESS_PENALTY_PER_TICK
+                    self.logger.debug(
+                        f"HOMELESS_PENALTY | Household {hh.id} survival need increased by {self.config_module.HOMELESS_PENALTY_PER_TICK}",
+                        extra={"agent_id": hh.id}
+                    )
 
     def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
