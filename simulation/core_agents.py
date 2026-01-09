@@ -196,6 +196,12 @@ class Household(BaseAgent):
         self.price_history: Dict[str, deque] = {}  # ItemID -> Deque[float]
         self.expected_inflation: Dict[str, float] = {} # ItemID -> Expected Inflation Rate
 
+        # Phase 17-3B: Real Estate Attributes
+        self.owned_properties: List[int] = []
+        self.residing_property_id: Optional[int] = None
+        self.is_homeless: bool = True
+
+
         # Initialize price history deques
         for item_id in self.goods_info_map.keys():
             self.price_history[item_id] = deque(maxlen=self.config_module.INFLATION_MEMORY_WINDOW)
@@ -225,6 +231,13 @@ class Household(BaseAgent):
         self.owned_properties: List[int] = []  # IDs of owned RealEstateUnits
         self.residing_property_id: Optional[int] = None
         self.is_homeless: bool = False
+
+        # Phase 17-3B: Personality Attributes (WO-029-D)
+        # Initializes with 0.5 (Neutral) + small random noise for diversity
+        self.ambition: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
+        self.conformity: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
+        self.patience: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
+        self.optimism: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
 
         # --- Phase 14-1: Shareholder & Dividend Attributes ---
         self.portfolio: List[int] = []  # List of Firm IDs owned

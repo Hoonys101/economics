@@ -148,6 +148,26 @@ class Simulation:
         else:
             self.stock_market = None
 
+        # Phase 17-3B: Housing Market & Initial Sales
+        self.markets["housing"] = OrderBookMarket(market_id="housing")
+        
+        # Government places SELL orders for unowned properties (80 units)
+        for unit in self.real_estate_units:
+            if unit.owner_id is None:
+                # Sell Order: item_id="unit_{id}", price=estimated_value, qty=1
+                sell_order = Order(
+                    agent_id=-1, # Government ID
+                    item_id=f"unit_{unit.id}",
+                    price=unit.estimated_value,
+                    quantity=1.0,
+                    market_id="housing",
+                    order_type="SELL"
+                )
+                if "housing" in self.markets:
+                    self.markets["housing"].place_order(sell_order, self.time)
+
+            self.stock_market = None
+
         # 2. 에이전트 욕구 업데이트 (Update Needs)
         for agent in self.households + self.firms:
             agent.update_needs(self.time)
@@ -663,8 +683,13 @@ class Simulation:
                                  extra={"agent_id": household.id, "tags": ["LEISURE_EFFECT", "parenting"]}
                              )
 
-        # Phase 17-3A: Process Housing (Rent, Maintenance, Homeless Penalty)
-        self._process_housing()
+        # Phase 17-3B: Process Housing (Mortgage, Rent, Maintenance, Foreclosure)
+        self._process_housing() # Updated to include Mortgage/Foreclosure
+
+        # Phase 17-3B: Housing Market Matching
+        if "housing" in self.markets:
+             housing_transactions = self.markets["housing"].match_orders(self.time)
+             all_transactions.extend(housing_transactions)
 
         # --- Mitosis Processing (Agent Evolution) ---
         # Inserted after consumption reset (which is actually after consumption logic in original flow)
@@ -1089,6 +1114,81 @@ class Simulation:
 
         return total
 
+    def _process_housing(self):
+        """
+        Phase 17-3B: Housing Market Mechanics
+        1. Mortgage Payments (Bank)
+        2. Maintenance Costs (Owner)
+        3. Rent Collection (Tenant -> Landlord)
+        4. Eviction / Foreclosure Checks
+        """
+        config = self.config_module
+
+        # 1. Process Bank/Mortgages
+        for unit in self.real_estate_units:
+             if unit.mortgage_id:
+                loan = self.bank.loans.get(unit.mortgage_id)
+                if loan and loan.is_active:
+                     if loan.missed_payments >= 3:
+                         # Foreclosure
+                         old_owner_id = unit.owner_id
+                         unit.owner_id = -1 
+                         unit.mortgage_id = None 
+                         
+                         # Evict Occupant (if owner was occupying)
+                         if unit.occupant_id == old_owner_id:
+                             unit.occupant_id = None
+                             old_owner_agent = self.agents.get(old_owner_id)
+                             if isinstance(old_owner_agent, Household):
+                                 if unit.id in old_owner_agent.owned_properties:
+                                     old_owner_agent.owned_properties.remove(unit.id)
+                                 old_owner_agent.residing_property_id = None
+                                 old_owner_agent.is_homeless = True
+                                 
+                         self.bank.terminate_loan(loan.id)
+                         
+                         fire_sale_price = unit.estimated_value * 0.8
+                         sell_order = Order(
+                            agent_id=-1,
+                            item_id=f"unit_{unit.id}",
+                            price=fire_sale_price,
+                            quantity=1.0,
+                            market_id="housing",
+                            order_type="SELL"
+                        )
+                         if "housing" in self.markets:
+                             self.markets["housing"].place_order(sell_order, self.time)
+
+        # 2. Rent & Maintenance
+        for unit in self.real_estate_units:
+            # A. Maintenance Cost (Owner pays)
+            if unit.owner_id is not None and unit.owner_id != -1: # -1 is Bank/Govt
+                owner = self.agents.get(unit.owner_id)
+                if owner:
+                    cost = unit.estimated_value * config.MAINTENANCE_RATE_PER_TICK
+                    if owner.assets >= cost:
+                        owner.assets -= cost
+                    else:
+                        owner.assets = 0.0 
+
+            # B. Rent Collection (Tenant pays Owner)
+            if unit.occupant_id is not None and unit.owner_id is not None:
+                if unit.occupant_id == unit.owner_id:
+                    continue
+
+                tenant = self.agents.get(unit.occupant_id)
+                owner = self.agents.get(unit.owner_id)
+
+                if tenant and owner:
+                    rent = unit.rent_price
+                    if tenant.assets >= rent:
+                        tenant.assets -= rent
+                        owner.assets += rent
+                    else:
+                        unit.occupant_id = None
+                        tenant.residing_property_id = None
+                        tenant.is_homeless = True
+
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
         all_agents = []
@@ -1299,11 +1399,12 @@ class Simulation:
                 
                 # 매수자의 주식 증가
                 if isinstance(buyer, Household):
-                    current_shares = buyer.shares_owned.get(firm_id, 0)
-                    buyer.shares_owned[firm_id] = current_shares + tx.quantity
+                    buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
                 elif isinstance(buyer, Firm) and buyer.id == firm_id:
-                    # 자사주 매입 (Buyback)
+                    # 자사주 매입 (Buyback) -> Treasury Shares 증가
                     buyer.treasury_shares += tx.quantity
+                    # Buyback은 유통 주식 수를 줄임
+                    buyer.total_shares -= tx.quantity
 
                 # [Mitosis] Update Shareholder Registry in StockMarket
                 if self.stock_market:
@@ -1311,9 +1412,78 @@ class Simulation:
                     if isinstance(seller, Household):
                         self.stock_market.update_shareholder(seller.id, firm_id, seller.shares_owned.get(firm_id, 0))
                     # Update Buyer
-                    if isinstance(buyer, Household):
-                        self.stock_market.update_shareholder(buyer.id, firm_id, buyer.shares_owned.get(firm_id, 0))
+                if isinstance(buyer, Household):
+                    self.stock_market.update_shareholder(buyer.id, firm_id, buyer.shares_owned.get(firm_id, 0))
 
+            # --- Phase 17-3B: Housing Transaction Logic ---
+            elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
+                self._process_housing_transaction(tx, buyer, seller, trade_value)
+
+
+
+    def _process_housing_transaction(self, tx, buyer, seller, trade_value):
+        """Phase 17-3B: Housing Transaction Logic"""
+        # item_id: "unit_{id}"
+        try:
+             unit_id = int(tx.item_id.split("_")[1])
+             unit = next((u for u in self.real_estate_units if u.id == unit_id), None)
+             
+             if not unit:
+                 self.logger.warning(f"HOUSING | Unit {tx.item_id} not found.")
+                 return
+
+             # 1. Mortgage Logic (Atomic Funding)
+             config = self.config_module
+             ltv_ratio = getattr(config, "MORTGAGE_LTV_RATIO", 0.8)
+             
+             use_leverage = False
+             if isinstance(buyer, Household):
+                 use_leverage = True 
+                 
+             if use_leverage:
+                 loan_amount = trade_value * ltv_ratio
+                 # Grant Loan
+                 loan_id = self.bank.grant_loan(buyer.id, loan_amount, term_ticks=300) 
+                 
+                 if loan_id:
+                     # Atomic Funding
+                     self.bank.assets -= loan_amount
+                     buyer.assets += loan_amount
+                     unit.mortgage_id = loan_id
+                 else:
+                     # Mortgage failed
+                     if buyer.assets < 0:
+                         self.logger.warning(f"HOUSING | Mortgage denied for {buyer.id}, Agent in debt.")
+                     unit.mortgage_id = None
+             else:
+                 unit.mortgage_id = None
+                 
+             # 2. Transfer Title (Common)
+             old_owner_id = unit.owner_id
+             unit.owner_id = buyer.id
+             
+             # 3. Update Agent Property Lists
+             if isinstance(seller, Household):
+                  if unit.id in seller.owned_properties:
+                      seller.owned_properties.remove(unit.id)
+             
+             if isinstance(buyer, Household):
+                  if unit.id not in buyer.owned_properties:
+                      buyer.owned_properties.append(unit.id)
+                  # Occupancy Update
+                  if buyer.residing_property_id is None:
+                      unit.occupant_id = buyer.id
+                      buyer.residing_property_id = unit.id
+                      buyer.is_homeless = False
+             
+             self.logger.info(
+                 f"REAL_ESTATE | Sold Unit {unit.id} to {buyer.id}. Price: {trade_value:.2f}",
+                 extra={"tick": self.time, "tags": ["real_estate"]}
+             )
+
+        except Exception as e:
+             self.logger.error(f"HOUSING_ERROR | {e}", extra={"error": str(e)})
+             raise e
 
     def spawn_firm(self, founder_household: "Household") -> Optional["Firm"]:
         """

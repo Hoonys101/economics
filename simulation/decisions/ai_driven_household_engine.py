@@ -282,6 +282,49 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
             orders.extend(emergency_orders)
 
+        # ---------------------------------------------------------
+        # 6. Real Estate Logic (Phase 17-3B)
+        # ---------------------------------------------------------
+        if "housing" in markets and household.residing_property_id is None:
+            # Only checking if Homeless or Renting (Agent residing_property_id assumes owned or rented)
+            # Actually residing_property_id is just where they live. owned_properties track ownership.
+            # Logic: If I don't own the home I live in, consider buying.
+            
+            is_owner_occupier = household.residing_property_id in household.owned_properties
+            
+            if not is_owner_occupier:
+                 # Look at market for properties
+                 housing_market = markets["housing"]
+                 loan_market = markets.get("loan_market")
+                 mortgage_rate = loan_market.interest_rate if loan_market else 0.05
+                 
+                 # Initialize Housing Manager if not exists (Lazy Load or should be in Agent?)
+                 # For now, instantiate on fly or use a helper
+                 from simulation.decisions.housing_manager import HousingManager
+                 housing_manager = HousingManager(household, self.config_module)
+                 
+                 # simplified: Look at cheapest available unit or random?
+                 # Look at best sell order
+                 best_offer = None
+                 min_price = float('inf')
+                 
+                 for item_id, orders_list in housing_market.sell_orders.items():
+                     if not orders_list: continue
+                     # item_id format "unit_{id}"
+                     # Check cheapest
+                     cheapest = orders_list[0] # Heap so 0 is min price
+                     if cheapest.price < min_price:
+                         min_price = cheapest.price
+                         best_offer = cheapest
+                         
+                 if best_offer and housing_manager.should_buy(best_offer.price, self.config_module.INITIAL_RENT_PRICE, mortgage_rate):
+                     # Place BUY Order
+                     # item_id is specific unit e.g. "unit_42"
+                     buy_order = Order(
+                         household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "real_estate"
+                     )
+                     orders.append(buy_order)
+
         return orders, action_vector
 
     def _manage_portfolio(self, household: "Household", market_data: Dict[str, Any], current_time: int) -> List[Order]:

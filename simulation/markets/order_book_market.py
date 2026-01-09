@@ -201,7 +201,7 @@ class OrderBookMarket(Market):
                          buyer_id=b_order.agent_id,
                          seller_id=s_order.agent_id,
                          market_id=self.id,
-                         transaction_type="labor" if "labor" in self.id else "goods",
+                         transaction_type="labor" if "labor" in self.id else ("housing" if "housing" in self.id else "goods"),
                          time=current_tick,
                          quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
                      )
@@ -278,7 +278,7 @@ class OrderBookMarket(Market):
                     buyer_id=b_order.agent_id,
                     seller_id=s_order.agent_id,
                     market_id=self.id,
-                    transaction_type="labor" if "labor" in self.id else "goods",
+                    transaction_type="labor" if "labor" in self.id else ("housing" if "housing" in self.id else "goods"),
                     time=current_tick,
                     quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
                 )
