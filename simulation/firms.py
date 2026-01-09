@@ -852,3 +852,102 @@ class Firm(BaseAgent):
             return dividend_amount
             
         return 0.0
+
+class ServiceFirm(Firm):
+    """
+    서비스 기업 클래스 (Phase 17-1: Service Market).
+    특징:
+    1. Perishability: 재고는 틱 종료 시 0으로 초기화됨 (저장 불가).
+    2. Capacity: 생산량은 즉 '당일 판매 가능 용량(Capacity)'을 의미.
+    """
+
+    def __init__(
+        self,
+        id: int,
+        initial_capital: float,
+        initial_liquidity_need: float,
+        specialization: str,
+        productivity_factor: float,
+        decision_engine: BaseDecisionEngine,
+        value_orientation: str,
+        config_module: Any,
+        initial_inventory: Optional[Dict[str, float]] = None,
+        loan_market: Optional[LoanMarket] = None,
+        logger: Optional[logging.Logger] = None,
+        sector: str = "SERVICE",
+        is_visionary: bool = False,
+        personality: Optional[Personality] = None,
+    ) -> None:
+        super().__init__(
+            id,
+            initial_capital,
+            initial_liquidity_need,
+            specialization,
+            productivity_factor,
+            decision_engine,
+            value_orientation,
+            config_module,
+            initial_inventory,
+            loan_market,
+            logger,
+            sector,
+            is_visionary,
+            personality,
+        )
+        self.capacity_this_tick: float = 0.0
+        self.sales_this_tick: float = 0.0 # Tracked via sales_volume_this_tick in parent, but aliased here for clarity if needed
+        self.waste_this_tick: float = 0.0
+
+    @override
+    def produce(self, current_time: int) -> None:
+        """
+        서비스 생산 로직.
+        1. 잔여 재고(Waste) 계산 및 폐기 (Perishability).
+        2. 새로운 Capacity 생산 (Super method).
+        """
+        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production", "service"]}
+
+        # 1. 잔여 재고(Waste) 처리
+        # produce()는 Tick의 마지막(판매 후)에 호출되므로,
+        # 현재 inventory에 남아있는 것은 팔리지 않은 '폐기 대상'이다.
+        item_id = self.specialization
+        unsold_inventory = self.inventory.get(item_id, 0.0)
+
+        self.waste_this_tick = unsold_inventory
+
+        if unsold_inventory > 0:
+            self.logger.debug(
+                f"SERVICE_WASTE | Firm {self.id} voided {unsold_inventory:.2f} unsold capacity.",
+                extra={**log_extra, "waste": unsold_inventory}
+            )
+            # Void Inventory
+            self.inventory[item_id] = 0.0
+
+        # 2. 새로운 Capacity 생산
+        super().produce(current_time)
+
+        # 3. Capacity 기록
+        # super().produce()가 inventory를 업데이트했으므로, 그 값이 내일의 Capacity가 됨.
+        self.capacity_this_tick = self.inventory.get(item_id, 0.0)
+
+        self.logger.debug(
+            f"SERVICE_CAPACITY | Firm {self.id} generated {self.capacity_this_tick:.2f} new capacity.",
+            extra={**log_extra, "capacity": self.capacity_this_tick}
+        )
+
+    @override
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
+        # Sales tracking alias (parent tracks sales_volume_this_tick)
+        self.sales_this_tick = self.sales_volume_this_tick
+
+        super().update_needs(current_time, government, market_data, reflux_system)
+
+    @override
+    def get_agent_data(self) -> Dict[str, Any]:
+        data = super().get_agent_data()
+        data.update({
+            "capacity_this_tick": self.capacity_this_tick,
+            "sales_this_tick": self.sales_volume_this_tick, # Use parent's tracker which is accurate at this point
+            "waste_this_tick": self.waste_this_tick,
+        })
+        return data
