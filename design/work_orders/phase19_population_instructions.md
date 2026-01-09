@@ -68,3 +68,29 @@ UNNAMED_CHILD_MORTALITY_RATE = 0.001 # 기본 사망률
 2. 위 태스크 구현
 3. `tests/verify_population_dynamics.py` 통과 확인
 4. PR 생성 및 보고
+
+---
+
+## 🙋 Q&A: Clarification & Design Decisions (필독)
+
+Jules의 질문에 대한 수석 아키텍트의 공식 답변입니다. 구현 시 다음 지침을 엄격히 따르십시오.
+
+### Q1. DemographicManager의 상세 역할과 위치
+- **역할 (Life Cycle Overseer)**: 단순 보고를 넘어 **'시스템 권한'**을 가진 생명주기 관리자입니다. 
+  - `HouseholdAI`가 출산 결정을 내리면, 실제 `Household` 객체를 생성하고 유전 형질(Talent, Brain)을 주입하는 집행자 역할을 합니다. 
+  - 에이전트의 나이(Aging)를 관리하고, 사망 시 자산 상속(Inheritance) 프로세스를 트리거합니다.
+- **위치**: `simulation/systems/demographic_manager.py` (시스템 싱글톤 형태).
+
+### Q2. 인구 모델과 AI 학습의 관계
+- **통합 방식 (Strategy Layer)**: 번식 결정을 Q-Learning의 개별 액션(Action Space)에 넣지 마십시오. 이는 너무 장기적인 결정이라 학습 효율이 떨어집니다.
+- **구현 로직**: `HouseholdAI` 내부에 **'전략 결정 함수(`decide_reproduction`)'**를 두십시오. 이 함수는 현재의 임금(기회비용), 학력(기대치), 사회적 경쟁(K-전략 가중치)을 반영한 **'진화적 기대 유틸리티'**에 기반해 결정합니다.
+- **유전 (Inheritance)**: 부모의 `Talent`와 `Personality`, `Brain weight`의 일부를 자식에게 상속하고 일정 확률로 변이(Mutation)를 발생시키십시오.
+
+### Q3. "Rat Race" vs "Baby Boom" 시나리오 재현
+- **발생 방식 (Emergence)**: Config 플래그로 하드코딩하는 것이 아닙니다. 
+- **트리거**: 환경 변수(교육비 상승, 주거비 상승, 소득 정체 등)를 인위적으로 조정한 **환경 시나리오** 하에서 에이전트들의 번식률이 **창발적으로** 변화해야 합니다. 
+- **테스트**: `verify_population_dynamics.py`에서 두 환경 설정을 시뮬레이션하여 출산율 차이를 입증하십시오.
+
+### Q4. 기존 코드 통합 지점
+- **완전 대체 (Replace)**: 기존 `Household`의 `check_mitosis`를 **삭제**하십시오. 
+- **책임 분리**: `Household`는 생물학적 상태(Age, Children)만 가지고, 번식 여부의 '판단'은 `HouseholdAI`가, '집행'은 `DemographicManager`가 담당합니다.

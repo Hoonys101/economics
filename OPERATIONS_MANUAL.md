@@ -13,7 +13,7 @@
 |------|--------|------|
 | **수석 아키텍트 (Architect Prime)** | Web Gemini | 개념 기획, 데이터 파이프라인 설계, 최종 승인 |
 | **부 아키텍트 (Second Architect)** | Antigravity | API 명세, 시스템 설계, 코드 리뷰, 문서화 (**직접 구현 금지**) |
-| **구현자 (Implementer)** | Jules | 실제 코드 구현, 테스트 작성, 인사이트 보고 |
+| **구현자 (Implementer)** | Jules | 실제 코드 구현, 테스트 작성, **인사이트 보고 (필수)** |
 
 ---
 
@@ -106,16 +106,22 @@ economics/
 ## 3. 검증 계획
 테스트 방법, 성공 기준
 
-## 4. 인사이트 보고 요청 (선택)
-`reports/[REPORT_NAME].md`에 기록할 사항
+## 4. 인사이트 보고 요청 (필수)
+`reports/[REPORT_NAME].md`에 기록할 사항 (현상, 원인, 해결, 경제학적 교훈)
 ```
 
 ### 4.2 Jules 명령어 형식
 
 ```
 Jules, 'design/work_orders/WO-XXX-Name.md'를 읽고 [작업 요약]을 수행하라.
-완료 후 'reports/[REPORT_NAME].md'에 인사이트를 보고하라.
+완료 후 'reports/[REPORT_NAME].md'에 인사이트를 보고하라. (W-3.3 완료 보고의 필수 항목)
 ```
+
+### 4.3 아키텍트의 지식 축적 (Architecture Review)
+Jules의 보고서가 제출되면 Antigravity는 다음을 수행한다:
+1. `reports/`의 내용을 검토하여 기술적/경제적 타당성 확인.
+2. 발견된 경제학적 통찰을 `design/ECONOMIC_INSIGHTS.md`에 공식 기록 및 집대성.
+3. 시뮬레이션의 창발적 행동(Emergent Behavior)을 `walkthrough.md`에 반영하여 사용자에게 보고.
 
 ### 4.3 Git Handover Protocol (Team Leader Rule)
 Antigravity가 설계를 마치고 Jules에게 넘기기 전, 반드시 형상 관리를 수행한다.
