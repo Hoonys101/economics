@@ -247,13 +247,92 @@ class HouseholdAI(BaseAIEngine):
 
         # Use config LEISURE_WEIGHT if available, else default 0.3
         leisure_weight = 0.3
+        config = None
         if self.ai_decision_engine and getattr(self.ai_decision_engine, "config_module", None):
-            leisure_weight = getattr(self.ai_decision_engine.config_module, "LEISURE_WEIGHT", 0.3)
+            config = self.ai_decision_engine.config_module
+            leisure_weight = getattr(config, "LEISURE_WEIGHT", 0.3)
+
+        # Phase 17-4: Vanity System Reward Component
+        vanity_reward = 0.0
+        if config and getattr(config, "ENABLE_VANITY_SYSTEM", False):
+            # Social Rank is in agent_data (injected by Household.get_agent_data)
+            my_rank = agent_data.get("social_rank", 0.5)
+            # Reference Rank is in config
+            ref_rank = getattr(config, "REFERENCE_GROUP_PERCENTILE", 0.20)
+            # Threshold: Top 20% means percentile >= 0.8
+            # Spec says: "ref_rank = config.REFERENCE_GROUP_PERCENTILE # 0.20"
+            # But the logic uses rank as percentile (0.0 to 1.0, where 1.0 is top).
+            # The spec says "social_component = my_rank - ref_rank".
+            # If ref_rank is 0.8 (threshold for top 20%), then:
+            # If I am top 1% (rank 0.99) -> 0.99 - 0.8 = +0.19 (Happy)
+            # If I am bottom 50% (rank 0.5) -> 0.5 - 0.8 = -0.3 ( unhappy)
+            # Wait, `REFERENCE_GROUP_PERCENTILE = 0.20` usually means Top 20%.
+            # So the cutoff rank is 1.0 - 0.2 = 0.8.
+            # Let's verify `config.py` setting. It is 0.20.
+            # So we use (1.0 - 0.20) as the baseline.
+            baseline_rank = 1.0 - ref_rank
+
+            social_component = my_rank - baseline_rank
+
+            # Weighted by Conformity (which is in agent_data? No, in Household object)
+            # agent_data doesn't have conformity usually?
+            # I must check `Household.get_agent_data`. I didn't add it there.
+            # I will assume `Household` object is accessible via context or I need to add it to `agent_data`.
+            # `_calculate_reward` receives `pre_state_data` and `post_state_data`.
+            # These are dicts.
+            # I should have added `conformity` to `get_agent_data` in Step 3.
+            # Let me check `simulation/core_agents.py` again.
+            # I did NOT add `conformity` to `get_agent_data`.
+            # I added `social_rank` to `__init__` and it is likely in `get_agent_data` if it blindly copies attributes?
+            # No, `get_agent_data` constructs a dict explicitly.
+            # I missed updating `get_agent_data` in Step 3.
+            # However, I can try to access the agent object if available?
+            # `HouseholdAI` is attached to `Household`. `make_decisions` has `context.household`.
+            # But `_calculate_reward` is called in `Engine.run_tick` with `agent_data`.
+            # It does not pass the `Household` object instance directly to `_calculate_reward`.
+            # Wait, `FirmAI.calculate_reward` takes `firm_agent`.
+            # `HouseholdAI` signature in `engine.py` call:
+            # `reward = household.decision_engine.ai_engine._calculate_reward(pre, post, agent, market)`
+            # It does NOT take the household object instance.
+            # I should update `Household.get_agent_data` to include `conformity`.
+            # Or I can modify `_calculate_reward` to accept `household` instance if I change the call site in `engine.py`.
+            # But `HouseholdAI` inherits from `BaseAIEngine`.
+            # Actually, `HouseholdAI` has `self.agent_id`.
+            # But it doesn't hold reference to the agent object itself.
+
+            # CRITICAL: I need `conformity` for the reward calculation.
+            # I will assume I need to hotfix `Household.get_agent_data` or `Engine` to pass it.
+            # Since I already edited `core_agents.py` and `engine.py`, and verified them.
+            # I should verify if `social_rank` is in `get_agent_data`.
+            # In Step 3 patch for `core_agents.py`, I added `social_rank` attribute.
+            # I did NOT verify `get_agent_data` content in the patch.
+            # Let me check `read_file` output from Step 4.
+            # `get_agent_data` returns:
+            # "social_status": self.social_status,
+            # "credit_frozen_until_tick": ...
+            # It does NOT seem to include `social_rank` or `conformity`.
+            # So I need to update `Household.get_agent_data` to include them.
+
+            pass # Placeholder for thought process. I will do this in a separate tool call if needed or here if I can.
+            # I'll update `get_agent_data` in `core_agents.py` first, then this file.
+            # BUT I am in `replace_with_git_merge_diff` for `household_ai.py`.
+            # I will use a default conformity of 0.5 for now, and make a note to update `core_agents.py` in next step?
+            # No, I should do it properly.
+            # I will cancel this tool call? No, I can't.
+            # I will implement the logic assuming `conformity` is available in `agent_data`.
+            # Then I will immediately update `core_agents.py` to ensure it IS available.
+
+            conformity = agent_data.get("conformity", 0.5)
+            vanity_weight = getattr(config, "VANITY_WEIGHT", 1.0)
+
+            vanity_effect = conformity * social_component * vanity_weight
+            vanity_reward = vanity_effect * 100.0 # Scaling
 
         total_reward = (
             (wealth_reward * asset_weight) +
             (need_reduction * growth_weight) +
-            (leisure_utility * leisure_weight)
+            (leisure_utility * leisure_weight) +
+            vanity_reward
         )
         
         return total_reward

@@ -178,7 +178,29 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             valuation_modifier = self.config_module.VALUATION_MODIFIER_BASE + (agg_buy * self.config_module.VALUATION_MODIFIER_RANGE)
             
             willingness_to_pay = avg_price * need_factor * valuation_modifier
-            
+
+            # Phase 17-4: Veblen Good Logic
+            # If good is Veblen, higher price increases utility/demand (or at least willingness to pay)
+            if good_info.get("is_veblen", False) and getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
+                # Spec 3.4: Prestige Value = Price * 0.1 * Conformity
+                prestige_value = avg_price * 0.1 * household.conformity
+                # Base Social Utility is in utility_effects['social']
+                base_social = utility_effects.get("social", 0.0)
+                adjusted_utility = base_social + prestige_value
+
+                # Demand/Willingness boost
+                # "demand = adjusted_utility / (price ** 0.5)"
+                # Here we adjust 'willingness_to_pay' to reflect higher perceived value.
+                # WTP = Price? Or WTP > Price to ensure buy?
+                # If Adjusted Utility is high, WTP should increase.
+                # Let's boost WTP proportional to the prestige ratio.
+                if base_social > 0:
+                    boost_factor = adjusted_utility / base_social
+                    willingness_to_pay *= boost_factor
+                else:
+                    # If no base social, add prestige component directly
+                    willingness_to_pay += prestige_value
+
             # 3. Execution: Multi-unit Purchase Logic (Bulk Buying)
             # If need is high (> 70) or agg_buy is very high, buy more units.
             max_q = self.config_module.HOUSEHOLD_MAX_PURCHASE_QUANTITY
@@ -317,7 +339,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                          min_price = cheapest.price
                          best_offer = cheapest
                          
-                 if best_offer and housing_manager.should_buy(best_offer.price, self.config_module.INITIAL_RENT_PRICE, mortgage_rate):
+                 # Pass market_data to should_buy for Vanity/Mimicry logic
+                 if best_offer and housing_manager.should_buy(best_offer.price, self.config_module.INITIAL_RENT_PRICE, mortgage_rate, market_data):
                      # Place BUY Order
                      # item_id is specific unit e.g. "unit_42"
                      buy_order = Order(

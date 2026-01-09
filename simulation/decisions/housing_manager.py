@@ -12,7 +12,46 @@ class HousingManager:
         self.agent = agent  # Household instance
         self.config = config
 
-    def should_buy(self, property_value: float, rent_price: float, interest_rate: float = 0.05) -> bool:
+    def decide_mimicry_purchase(self, household: Any, reference_standard: Dict[str, float], config: Any) -> bool:
+        """
+        Phase 17-4: Mimicry Consumption Logic (Relative Deprivation)
+        Determines if the household should buy housing purely due to social pressure.
+
+        Args:
+            household: The household agent.
+            reference_standard: Dict containing 'avg_housing_tier' of the top 20%.
+            config: Configuration module.
+
+        Returns:
+            True if mimicry triggers an urgent purchase, False otherwise.
+        """
+        if not getattr(config, "ENABLE_VANITY_SYSTEM", False):
+            return False
+
+        # Get housing tier (local helper as defined in Engine)
+        # We need to replicate logic or assume household has attribute.
+        # Engine has _get_housing_tier. Household doesn't store tier directly.
+        # But we can infer: Owner=3, Renter=2, Homeless=1
+        my_tier = 1
+        if household.residing_property_id is not None:
+            if household.residing_property_id in household.owned_properties:
+                my_tier = 3
+            else:
+                my_tier = 2
+
+        target_tier = reference_standard.get("avg_housing_tier", 2.0)
+        gap = target_tier - my_tier
+
+        if gap <= 0:
+            return False # Already at or above standard
+
+        # Urgency = Conformity * Gap * MimicryFactor
+        urgency = household.conformity * gap * getattr(config, "MIMICRY_FACTOR", 0.5)
+
+        # Threshold 0.5
+        return urgency > 0.5
+
+    def should_buy(self, property_value: float, rent_price: float, interest_rate: float = 0.05, market_data: Optional[Dict[str, Any]] = None) -> bool:
         """
         Determines whether to buy a property based on NPV calculation biased by personality.
         
@@ -20,10 +59,19 @@ class HousingManager:
             property_value: Asking price of the property.
             rent_price: Current or expected monthly rent.
             interest_rate: Annual mortgage interest rate (approximate).
+            market_data: Optional market context containing vanity metrics.
 
         Returns:
             True if the agent should buy, False otherwise.
         """
+        # Phase 17-4: Mimicry Override
+        if market_data:
+            vanity_metrics = market_data.get("vanity_metrics")
+            if vanity_metrics:
+                if self.decide_mimicry_purchase(self.agent, vanity_metrics, self.config):
+                    # Mimicry Triggered: Buy regardless of NPV (YOLO)
+                    return True
+
         # 1. Base Economic Parameters
         horizon = 120  # 10 years (120 ticks) horizon for calculation
         discount_rate = 0.005 # 0.5% per tick discount rate

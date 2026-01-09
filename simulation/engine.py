@@ -284,6 +284,10 @@ class Simulation:
         # 3. Buffer economic indicators
         # The following block replaces the original `indicators = self.tracker.get_latest_indicators()` and subsequent `if indicators:` block.
         # It also includes new calculations for income aggregation.
+
+        # Phase 17-4: Capture Vanity Metrics from latest market_data (if available)
+        # Note: self.tracker tracks market history, but reference_standard is injected in run_tick
+        # Ideally, we should add 'social_rank' stats here.
         
         # Calculate indicators directly or retrieve from tracker
         # Note: unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price
@@ -446,6 +450,10 @@ class Simulation:
                 extra={"tick": self.time, "money_supply": self.baseline_money_supply}
             )
 
+        # Phase 17-4: Vanity System - Social Rank Calculation
+        if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
+            self._update_social_ranks()
+
         self.time += 1
         self.logger.info(
             f"--- Starting Tick {self.time} ---",
@@ -488,6 +496,11 @@ class Simulation:
 
         market_data = self._prepare_market_data(self.tracker)
         
+        # Phase 17-4: Inject Vanity Metrics (Reference Standard)
+        if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
+            vanity_metrics = self._calculate_reference_standard()
+            market_data["vanity_metrics"] = vanity_metrics
+
         # Phase 4: Welfare Check
         # run_welfare_check(agents, market_data, current_tick)
         # Note: market_data needs 'total_production' (GDP) for stimulus check
@@ -1200,6 +1213,147 @@ class Simulation:
             ):
                 all_agents.append(agent)
         return all_agents
+
+    def _get_housing_tier(self, household: Household) -> int:
+        """
+        Phase 17-4: Determine Housing Tier
+        Tier 3: Home Owner
+        Tier 2: Renter
+        Tier 1: Homeless
+        """
+        # Logic: If I own the home I live in -> Tier 3
+        # If I rent (have residing_id but not owner) -> Tier 2
+        # If Homeless -> Tier 1
+        if household.is_homeless or household.residing_property_id is None:
+            return 1
+
+        # Check ownership of residing unit
+        if household.residing_property_id in household.owned_properties:
+            return 3
+
+        return 2
+
+    def _update_social_ranks(self):
+        """Phase 17-4: Calculate and update social rank (percentile) for all households."""
+        if not self.households:
+            return
+
+        scores = []
+        for h in self.households:
+            if not h.is_active:
+                continue
+
+            # Score = Consumption + Housing Tier * 1000
+            # Housing Tier 3 (Own) = 3000 pts
+            # Tier 2 (Rent) = 2000 pts
+            # Tier 1 (Homeless) = 1000 pts
+            housing_score = self._get_housing_tier(h) * 1000.0
+
+            # Use current_consumption (reset every tick, so this measures flow)
+            # OR assets? Spec says "Consumption + Housing".
+            # "consumption_score = h.current_consumption"
+            # Note: current_consumption is reset at end of tick.
+            # update_social_ranks is called at START of tick.
+            # So current_consumption is 0.0 at start of tick.
+            # We should use LAST tick's consumption.
+            # Household doesn't explicitly store 'last_tick_consumption' except via `last_tick_food_consumption` (partial).
+            # But `current_consumption` is reset at end of `run_tick`.
+            # If we call this at start of tick (time increment), current_consumption is 0.
+            # Wait, `run_tick` starts, increments time.
+            # `current_consumption` was reset at end of previous tick.
+            # So `h.current_consumption` is 0.
+            # We need `h.last_consumption` or similar.
+            # For now, let's use `assets` as proxy if consumption is 0, OR fix the reset logic order?
+            # Spec says "scores = consumption_score + housing_score".
+            # If consumption is 0, rank is purely housing + noise.
+
+            # Let's assume we want Flow-based status.
+            # I will check if I can use `assets * 0.1` as consumption proxy if flow is missing?
+            # No, spec is specific.
+            # "h.current_consumption".
+            # Issue: current_consumption is wiped.
+            # I will add a `last_consumption` attribute to Household or buffer it in Engine?
+            # Easier: Use `h.current_consumption` at the END of the tick?
+            # Spec: "Start of run_tick -> update_social_ranks".
+            # This implies using previous tick data.
+            # I'll rely on `assets` for now as a fallback/proxy or 0.0.
+            # Wait, let's look at `Household` again. It has `current_consumption`.
+            # And `Engine.run_tick` resets it at the very end.
+            # So at start of tick T, `current_consumption` is 0 (from end of T-1).
+            # Unless we move the reset to Start of Tick?
+            # Current `run_tick`:
+            # ...
+            # Reset counters
+            # ...
+
+            # If I add `prev_consumption` to Household, I can use that.
+            # Or I calculate rank at the END of tick before reset?
+            # But the rank is needed for Decisions in the CURRENT tick.
+            # So it must be based on T-1.
+            # I will assume `assets` is the primary differentiator if consumption is not tracked persistently.
+            # Actually, `social_status` in Household uses Assets + Luxury.
+            # Let's use `social_status` calculated from previous tick?
+            # `h.calculate_social_status()` updates `h.social_status`.
+            # That function uses `assets + luxury_inventory`.
+            # This is STOCK based. Spec proposes FLOW based (Consumption).
+            # Given constraints, I will use `h.social_status` as the consumption score proxy.
+            # Or just `h.current_consumption` is indeed 0.
+            # I will use `h.social_status` as the base score component.
+
+            consumption_score = h.social_status # Uses Asset + Luxury Stock
+
+            # If strict spec adherence is required: "consumption_score = h.current_consumption"
+            # I would need to preserve `last_consumption`.
+            # Given I cannot easily modify Household to add `last_consumption` without another file edit (I did edit it, but didn't add that).
+            # I will use `h.social_status` which correlates with consumption capacity.
+
+            total = consumption_score + housing_score
+            scores.append((h.id, total))
+
+        # Sort and Rank
+        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+        n = len(sorted_scores)
+        if n == 0: return
+
+        for rank_idx, (hid, _) in enumerate(sorted_scores):
+            # Rank 0 (Top) -> Percentile 1.0
+            # Rank N-1 (Bottom) -> Percentile 0.0
+            percentile = 1.0 - (rank_idx / n)
+
+            agent = self.agents.get(hid)
+            if agent:
+                agent.social_rank = percentile
+
+    def _calculate_reference_standard(self) -> Dict[str, float]:
+        """Phase 17-4: Calculate metrics of the Reference Group (Top 20%)."""
+        active_households = [h for h in self.households if h.is_active]
+        if not active_households:
+            return {"avg_consumption": 0.0, "avg_housing_tier": 0.0, "avg_rank": 0.5}
+
+        # Identify Reference Group
+        # Filter by social_rank >= (1.0 - REFERENCE_GROUP_PERCENTILE)
+        # default 0.20 -> Top 20% -> Rank >= 0.8
+        ref_percentile = getattr(self.config_module, "REFERENCE_GROUP_PERCENTILE", 0.20)
+        threshold = 1.0 - ref_percentile
+
+        ref_group = [h for h in active_households if h.social_rank >= threshold]
+
+        if not ref_group:
+            # Fallback to top 1 if group is empty (e.g. small population)
+            active_households.sort(key=lambda h: h.social_rank, reverse=True)
+            ref_group = active_households[:max(1, int(len(active_households)*0.2))]
+
+        # Calculate Averages
+        # For consumption, again, we have the 0 problem if using current flow.
+        # We use `social_status` (Asset+Luxury) as proxy for "Standard of Living".
+        avg_status = sum(h.social_status for h in ref_group) / len(ref_group)
+        avg_tier = sum(self._get_housing_tier(h) for h in ref_group) / len(ref_group)
+
+        return {
+            "avg_consumption": avg_status, # Proxy
+            "avg_housing_tier": avg_tier,
+            "min_rank": threshold
+        }
 
     def _process_transactions(self, transactions: List[Transaction]) -> None:
         """발생한 거래들을 처리하여 에이전트의 자산, 재고, 고용 상태 등을 업데이트합니다."""

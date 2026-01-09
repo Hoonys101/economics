@@ -10,6 +10,12 @@ from enum import Enum
 GOLD_STANDARD_MODE = True  # True: 금본위 (Full Reserve), False: 현대 금융 (Credit Creation)
 INITIAL_MONEY_SUPPLY = 100_000.0  # 초기 화폐 총량 (검증용 기준값)
 
+# --- Phase 17-4: Vanity System ---
+ENABLE_VANITY_SYSTEM = True
+VANITY_WEIGHT = 1.0           # 허영심 강도 (0=불교, 1=자본주의)
+MIMICRY_FACTOR = 0.5          # 모방 소비 강도
+REFERENCE_GROUP_PERCENTILE = 0.20  # 상위 20%
+
 # --- Simulation Parameters ---
 NUM_HOUSEHOLDS = 20
 NUM_FIRMS = 4
@@ -61,6 +67,7 @@ GOODS = {
         "initial_price": 5.0,
         "utility_effects": {"survival": 10},
         "is_luxury": False,
+        "is_veblen": False,
         "sector": "FOOD",
     },
     "clothing": {
@@ -68,6 +75,7 @@ GOODS = {
         "initial_price": 15.0,
         "utility_effects": {"survival": 2, "social": 8},
         "is_luxury": True,
+        "is_veblen": False,
         "sector": "GOODS",
     },
     "luxury_food": {
@@ -75,7 +83,16 @@ GOODS = {
         "initial_price": 30.0,
         "utility_effects": {"survival": 12, "social": 5},
         "is_luxury": True,
+        "is_veblen": False,
         "sector": "FOOD",
+    },
+    "luxury_bag": {
+        "production_cost": 500,
+        "initial_price": 2000.0,
+        "utility_effects": {"social": 50},
+        "is_luxury": True,
+        "is_veblen": True,  # 가격↑ → 수요↑
+        "sector": "LUXURY",
     },
     "education_service": {
         "production_cost": 20,
@@ -83,6 +100,7 @@ GOODS = {
         "utility_effects": {"improvement": 15},
         "is_service": True,
         "is_luxury": False,
+        "is_veblen": False,
         "sector": "SERVICE",
     },
     # WO-030: Iron (Raw Material)
@@ -91,6 +109,7 @@ GOODS = {
         "initial_price": 8.0,
         "utility_effects": {},
         "is_luxury": False,
+        "is_veblen": False,
         "sector": "MATERIAL",
     },
     # WO-023: Consumer Goods (Industrial Product)
@@ -99,6 +118,7 @@ GOODS = {
         "initial_price": 15.0,
         "utility_effects": {"quality": 10},
         "is_luxury": True, # Treated as luxury/higher tier need
+        "is_veblen": False,
         "sector": "GOODS",
         "is_durable": True,
         "base_lifespan": 50,  # Ticks

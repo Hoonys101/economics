@@ -185,6 +185,7 @@ class Household(BaseAgent):
         self.current_wage: float = 0.0
         self.survival_need_high_turns: int = 0
         self.social_status: float = 0.0
+        self.social_rank: float = 0.5  # Phase 17-4: Relative Social Rank (Percentile)
         self.perceived_avg_prices: Dict[str, float] = {}
         self.education_xp: float = 0.0  # Task #6: Education XP
 
@@ -235,7 +236,7 @@ class Household(BaseAgent):
         # Phase 17-3B: Personality Attributes (WO-029-D)
         # Initializes with 0.5 (Neutral) + small random noise for diversity
         self.ambition: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
-        self.conformity: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
+        self.conformity: float = random.uniform(0.3, 0.8) # Phase 17-4: Explicit Range
         self.patience: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
         self.optimism: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
 
@@ -525,6 +526,8 @@ class Household(BaseAgent):
             "current_wage": self.current_wage,
             "employer_id": self.employer_id,
             "social_status": self.social_status,
+            "social_rank": self.social_rank,
+            "conformity": self.conformity,
             "credit_frozen_until_tick": self.credit_frozen_until_tick,
             "is_homeless": self.is_homeless,
             "owned_properties_count": len(self.owned_properties),
