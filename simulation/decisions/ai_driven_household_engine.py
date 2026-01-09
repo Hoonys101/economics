@@ -590,3 +590,15 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
     def _execute_tactic(self, *args): return []
     def _handle_specific_purchase(self, *args): return []
+
+    def decide_reproduction(self, context: DecisionContext) -> bool:
+        """
+        Calls AI engine to decide reproduction.
+        """
+        household = context.household
+        if not household: return False
+
+        agent_data = household.get_agent_data()
+        market_data = context.market_data
+
+        return self.ai_engine.decide_reproduction(agent_data, market_data, context.current_time)

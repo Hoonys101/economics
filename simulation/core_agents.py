@@ -227,6 +227,23 @@ class Household(BaseAgent):
         self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
         self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
 
+        # --- Phase 19: Population Dynamics ---
+        # Initialize age uniformly between 20 and 60 for initial population
+        self.age: float = random.uniform(20.0, 60.0)
+
+        # Education Level (0~5) based on Distribution
+        dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
+        self.education_level: int = random.choices(range(len(dist)), weights=dist)[0]
+
+        # Expected Wage Calculation
+        base_wage = getattr(config_module, "INITIAL_WAGE", 10.0)
+        edu_mults = getattr(config_module, "EDUCATION_COST_MULTIPLIERS", {})
+        self.expected_wage: float = base_wage * edu_mults.get(self.education_level, 1.0)
+
+        self.time_budget: Dict[str, float] = {
+            "labor": 0.0, "leisure": 0.0, "childcare": 0.0, "housework": 0.0
+        }
+
         # --- Phase 17-3A: Real Estate ---
         self.owned_properties: List[int] = []  # IDs of owned RealEstateUnits
         self.residing_property_id: Optional[int] = None
@@ -542,6 +559,10 @@ class Household(BaseAgent):
             "social_rank": getattr(self, "social_rank", 0.0),
             "conformity": getattr(self, "conformity", 0.5),
             "approval_rating": getattr(self, "approval_rating", 1), # Phase 17-5
+            "age": getattr(self, "age", 30.0),
+            "education_level": getattr(self, "education_level", 0),
+            "children_count": len(self.children_ids),
+            "expected_wage": getattr(self, "expected_wage", 10.0),
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
@@ -1075,100 +1096,3 @@ class Household(BaseAgent):
             logger=self.logger
         )
         return new_decision_engine
-
-    def check_mitosis(
-        self,
-        current_population: int,
-        target_population: int,
-        new_id: int
-    ) -> Optional["Household"]:
-        """
-        세포 분열(Mitosis) 조건 체크 및 자식 생성.
-        """
-        # 1. 동적 임계값 계산
-        pop_ratio = current_population / max(1, target_population)
-        base_threshold = self.config_module.MITOSIS_BASE_THRESHOLD
-        sensitivity = self.config_module.MITOSIS_SENSITIVITY
-
-        mitosis_cost = base_threshold * (pop_ratio ** sensitivity)
-
-        # 2. FIRE 조건 (Financial Independence, Retire Early)
-        # 고용되어 있거나, 자산이 분열 비용의 2배 이상이어야 함
-        is_financially_stable = (
-            self.is_employed or
-            self.assets > mitosis_cost * 2.0
-        )
-
-        # 3. 분열 가능 조건
-        can_reproduce = (
-            self.assets > mitosis_cost and
-            is_financially_stable and
-            self.needs["survival"] < self.config_module.MITOSIS_SURVIVAL_THRESHOLD
-        )
-
-        if not can_reproduce:
-            return None
-
-        # 4. 자산 분할 (50/50)
-        # 부동소수점 정밀도 문제를 피하기 위해 정확히 절반으로 나눔
-        child_assets = self.assets / 2.0
-        self.assets = self.assets / 2.0
-
-        # 5. 주식 분할 (50/50, 소수점 버림은 부모가 보유)
-        child_shares = {}
-        for firm_id, qty in list(self.shares_owned.items()):
-            child_qty = qty // 2
-            if child_qty > 0:
-                self.shares_owned[firm_id] -= child_qty
-                child_shares[firm_id] = child_qty
-
-        # 6. 새 Household 인스턴스 생성 (새 DecisionEngine 포함)
-        # Random mutation for risk aversion: +/- 20%
-        child_risk_aversion = self.risk_aversion * random.uniform(0.8, 1.2)
-        child_risk_aversion = max(0.1, min(10.0, child_risk_aversion))
-
-        child = Household(
-            id=new_id,
-            talent=self.talent, # Talent is shared/immutable
-            goods_data=list(self.goods_info_map.values()),
-            initial_assets=child_assets,
-            initial_needs={}, # 리셋
-            decision_engine=self._create_new_decision_engine(new_id), # 새 인스턴스!
-            value_orientation=self.value_orientation,
-            personality=self.personality, # 일단 복사, inherit_brain에서 돌연변이
-            config_module=self.config_module,
-            loan_market=self.decision_engine.loan_market,
-            risk_aversion=child_risk_aversion,
-            logger=self.logger
-        )
-        child.generation = self.generation + 1
-        child.shares_owned = child_shares
-        child.is_employed = False
-        child.employer_id = None
-        child.credit_frozen_until_tick = 0 # New agent has clean credit record
-        child.needs["survival"] = random.uniform(0, 20)
-
-        # Phase 17-3A: Child is initially homeless until they rent/buy
-        child.is_homeless = True
-        child.residing_property_id = None
-        child.owned_properties = []
-
-        # Phase 5: Genealogy Linking
-        child.parent_id = self.id
-        self.children_ids.append(child.id)
-
-        # 다른 욕구들도 초기화 (필요시)
-        for need_key in self.needs.keys():
-            if need_key != "survival":
-                child.needs[need_key] = 0.0
-
-        self.logger.info(
-            f"MITOSIS | Parent {self.id} -> Child {child.id}. "
-            f"Split Assets: {child_assets:.2f}, Cost Threshold: {mitosis_cost:.2f}",
-            extra={
-                "parent_id": self.id,
-                "child_id": child.id,
-                "tags": ["mitosis"]
-            }
-        )
-        return child
