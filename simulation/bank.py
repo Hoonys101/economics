@@ -1,7 +1,7 @@
 import logging
-from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 import math
+from simulation.models import Loan, Deposit, Order, RealEstateUnit
 
 logger = logging.getLogger(__name__)
 
@@ -10,32 +10,6 @@ TICKS_PER_YEAR = 100
 INITIAL_BASE_ANNUAL_RATE = 0.05
 CREDIT_SPREAD_BASE = 0.02
 BANK_MARGIN = 0.02
-
-
-@dataclass
-class Loan:
-    borrower_id: int
-    principal: float       # 원금
-    remaining_balance: float # 잔액
-    annual_interest_rate: float # 연이율
-    term_ticks: int        # 만기 (틱)
-    start_tick: int        # 대출 실행 틱
-
-    @property
-    def tick_interest_rate(self) -> float:
-        return self.annual_interest_rate / TICKS_PER_YEAR
-
-
-@dataclass
-class Deposit:
-    depositor_id: int
-    amount: float          # 예치금
-    annual_interest_rate: float # 연이율
-
-    @property
-    def tick_interest_rate(self) -> float:
-        return self.annual_interest_rate / TICKS_PER_YEAR
-
 
 class Bank:
     """
@@ -51,6 +25,10 @@ class Bank:
         # Data Stores
         self.loans: Dict[str, Loan] = {}
         self.deposits: Dict[str, Deposit] = {}
+
+        # Mortgage Default Tracking
+        # Map loan_id -> missed_payments count
+        self.mortgage_default_counter: Dict[str, int] = {}
 
         # Policy Rates
         if config_module:
@@ -106,47 +84,11 @@ class Bank:
         credit_spread = self._get_config("CREDIT_SPREAD_BASE", 0.02)
         annual_rate = self.base_rate + credit_spread
 
-        # 2. Liquidity Check
-        # 1a. Credit Jail Check (Phase 4)
-        if hasattr(self.config_module, "CREDIT_RECOVERY_TICKS"):
-            # We assume borrower_id maps to an agent object passed somewhere, but here we only have ID.
-            # We need to access the agent to check 'credit_frozen_until_tick'.
-            # Bank doesn't have direct access to agent list in grant_loan signature.
-            # But grant_loan is usually called by LoanMarket which has access or the Agent itself calls it via Market.
-            # Wait, LoanMarket.process_loan_request calls this.
-            # Ideally, LoanMarket should check this before calling grant_loan.
-            # BUT, to enforce it at the Bank level, we'd need the agent object or a way to look it up.
-            # Since we don't have it here easily without changing signature, let's assume LoanMarket checks it OR
-            # we rely on the fact that if an agent is in credit jail, their 'credit_rating' (conceptually) is 0.
-            # Let's enforce it in LoanMarket instead?
-            # The spec says "Modify Bank to handle defaults ... prevents Moral Hazard".
-            # It also says "Bankrupt agents remain active but are economically crippled (Credit Jail)."
-            # Let's add an optional 'borrower_agent' arg or rely on LoanMarket.
-            # I'll update LoanMarket in the next steps or if I can modify Bank signature.
-            # Actually, Bank.run_tick has access to 'agents_dict'.
-            # Let's trust LoanMarket for now, OR change signature.
-            # I will assume LoanMarket handles the denial based on the flag I added to Household.
-            pass
-
-        # 3. Gold Standard (Full Reserve) Check
-        if self._get_config("GOLD_STANDARD_MODE", False):
-            if self.assets < amount:
-                logger.warning(
-                    f"LOAN_REJECTED | Insufficient reserves (Gold Standard) for {amount:.2f}. Reserves: {self.assets:.2f}",
-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "gold_standard"]}
-                )
-                return None
-        # Modern Finance: In current implementation (Phase 3/4), we also check liquidity (Full Reserve by default).
-        # To support fractional reserve in future, this check would be relaxed or removed here.
-        elif self.assets < amount:
-             logger.warning(
-                f"LOAN_DENIED | Bank has insufficient liquidity for {amount:.2f}",
-                extra={"agent_id": self.id, "tags": ["bank", "loan"]}
-            )
+        # 2. Liquidity Check & Gold Standard
+        if not self._check_liquidity(amount):
              return None
 
         # 3. Execution (Update Bank State Only)
-        # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction
         loan_id = f"loan_{self.next_loan_id}"
         self.next_loan_id += 1
 
@@ -167,6 +109,51 @@ class Bank:
         )
         return loan_id
 
+    def grant_mortgage(
+        self,
+        borrower_id: int,
+        property_id: int,
+        principal: float,
+        term_ticks: Optional[int] = None
+    ) -> Optional[str]:
+        """
+        Grants a Mortgage Loan linked to a RealEstateUnit.
+        Called by Engine during Real Estate Transaction.
+        """
+        if not term_ticks:
+            # 30 years * 12 months = 360 months equivalent ticks?
+            # Spec says "360 ticks (30 years equivalent)"
+            term_ticks = 360
+
+        credit_spread = self._get_config("MORTGAGE_SPREAD", 0.01) # Lower spread for secured loan
+        annual_rate = self.base_rate + credit_spread
+
+        # Check Liquidity
+        if not self._check_liquidity(principal):
+            return None
+
+        loan_id = f"mortgage_{self.next_loan_id}"
+        self.next_loan_id += 1
+
+        new_loan = Loan(
+            borrower_id=borrower_id,
+            principal=principal,
+            remaining_balance=principal,
+            annual_interest_rate=annual_rate,
+            term_ticks=term_ticks,
+            start_tick=0,
+            collateral_id=property_id
+        )
+        self.loans[loan_id] = new_loan
+        self.mortgage_default_counter[loan_id] = 0
+
+        logger.info(
+            f"MORTGAGE_GRANTED | Loan {loan_id} for Unit {property_id} to Agent {borrower_id}. "
+            f"Amt: {principal:.2f}, Rate: {annual_rate:.2%}, Term: {term_ticks}",
+            extra={"agent_id": self.id, "tags": ["bank", "mortgage"]}
+        )
+        return loan_id
+
     def deposit(self, depositor_id: int, amount: float) -> Optional[str]:
         """
         Accepts a deposit from an agent.
@@ -174,8 +161,6 @@ class Bank:
         """
         margin = self._get_config("BANK_MARGIN", 0.02)
         deposit_rate = max(0.0, self.base_rate + self._get_config("CREDIT_SPREAD_BASE", 0.02) - margin)
-
-        # self.assets += amount <-- REMOVED: Asset transfer handled by LoanMarket Transaction
 
         deposit_id = f"dep_{self.next_deposit_id}"
         self.next_deposit_id += 1
@@ -194,6 +179,22 @@ class Bank:
             extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
         )
         return deposit_id
+
+    def _check_liquidity(self, amount: float) -> bool:
+        if self._get_config("GOLD_STANDARD_MODE", False):
+            if self.assets < amount:
+                logger.warning(
+                    f"LOAN_REJECTED | Insufficient reserves (Gold Standard) for {amount:.2f}. Reserves: {self.assets:.2f}",
+                    extra={"agent_id": self.id, "tags": ["bank", "loan", "gold_standard"]}
+                )
+                return False
+        elif self.assets < amount:
+             logger.warning(
+                f"LOAN_DENIED | Bank has insufficient liquidity for {amount:.2f}",
+                extra={"agent_id": self.id, "tags": ["bank", "loan"]}
+            )
+             return False
+        return True
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Returns debt info for AI state."""
@@ -226,43 +227,72 @@ class Bank:
         """
         ticks_per_year = self._get_config("TICKS_PER_YEAR", TICKS_PER_YEAR)
 
-        # 1. Collect Interest from Loans
+        # 1. Collect Interest from Loans (and Principal for Mortgages?)
         total_loan_interest = 0.0
-        loans_to_remove = []
 
-        for loan_id, loan in self.loans.items():
+        # Copy keys to avoid modification during iteration if we remove loans (handled inside)
+        for loan_id, loan in list(self.loans.items()):
             agent = agents_dict.get(loan.borrower_id)
-            if not agent or not getattr(agent, 'is_active', True):
-                # Default logic or write-off logic here
+            if not agent:
                 continue
 
-            # Calculate Interest Payment
+            # Calculate Payment
+            # Default: Interest Only
             interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
 
-            # Principal Repayment (Amortized or Bullet? Assuming Bullet for now or minimal amortization)
-            # Let's simple amortization: Principal / Remaining Term
-            # Wait, design spec says "Man-gi or Bun-hal". Let's do simple interest only + Principal at end?
-            # Or constant payment?
-            # Spec: "tick_payment = (balance * annual_rate) / TICKS_PER_YEAR" -> This is Interest Only.
+            # Amortization for Mortgage
+            principal_payment = 0.0
+            if loan.collateral_id is not None and loan.term_ticks > 0:
+                # Simple straight-line amortization
+                raw_principal_payment = loan.principal / loan.term_ticks
+                # Correct Logic: Prevent overpayment
+                principal_payment = min(raw_principal_payment, loan.remaining_balance)
 
-            payment = interest_payment
+            total_payment = interest_payment + principal_payment
 
             # Try to collect
-            if agent.assets >= payment:
-                agent.assets -= payment
-                self.assets += payment
-                total_loan_interest += payment
-            else:
-                # Default / Penalty logic
-                # Phase 4: Call process_default
-                self.process_default(agent, loan, current_tick)
+            if agent.assets >= total_payment:
+                agent.assets -= total_payment
+                self.assets += total_payment
 
-                # Take whatever is left (process_default might have seized assets already)
-                partial = agent.assets
-                if partial > 0:
-                     agent.assets = 0
-                     self.assets += partial
-                     total_loan_interest += partial
+                # Apply payments
+                loan.remaining_balance -= principal_payment
+
+                total_loan_interest += interest_payment
+
+                # Reset default counter on success
+                if loan_id in self.mortgage_default_counter:
+                    self.mortgage_default_counter[loan_id] = 0
+
+                if loan.remaining_balance <= 0.0001: # Use epsilon
+                    # Loan paid off
+                    self.loans.pop(loan_id, None)
+                    logger.info(f"LOAN_PAID_OFF | Loan {loan_id} fully repaid.", extra={"loan_id": loan_id})
+
+            else:
+                # Default Logic
+                if loan.collateral_id is not None:
+                     # Mortgage Default
+                     current_misses = self.mortgage_default_counter.get(loan_id, 0) + 1
+                     self.mortgage_default_counter[loan_id] = current_misses
+
+                     logger.warning(
+                         f"MORTGAGE_DEFAULT | Loan {loan_id} missed payment {current_misses}/3.",
+                         extra={"agent_id": agent.id, "loan_id": loan_id}
+                     )
+                     # Foreclosure check happens in Engine or here?
+                     # Engine coordinates, but Bank tracks data.
+                     # We will expose a check method.
+                else:
+                    # Standard Loan Default (Unsecured)
+                    self.process_default(agent, loan, current_tick)
+
+                    # Partial recovery
+                    partial = agent.assets
+                    if partial > 0:
+                         agent.assets = 0
+                         self.assets += partial
+                         total_loan_interest += partial # Treat all as interest/penalty
 
         # 2. Pay Interest to Depositors
         total_deposit_interest = 0.0
@@ -283,22 +313,12 @@ class Bank:
                     agent.capital_income_this_tick += interest_payout
 
                 total_deposit_interest += interest_payout
-                # Compounding? Usually deposits compound.
-                # If we pay to agent.assets, it's "Payout".
-                # If we add to deposit.amount, it's "Compound".
-                # Spec says: "bank.reserves 차감, agent.assets 증가 (유동성 공급)" -> Payout.
             else:
-                # Bank run scenario?
                 logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
 
         # Phase 8-B: Capture Net Profit (Reflux)
-        # Net Profit = Interest Income - Interest Expense
         net_profit = total_loan_interest - total_deposit_interest
         if net_profit > 0 and reflux_system:
-            # Transfer profit to reflux system (Distribution as dividend/service fee)
-            # This ensures Bank doesn't accumulate infinite money.
-            # Bank assets were already updated above (+loan_int, -dep_int).
-            # So we subtract net_profit from assets.
             self.assets -= net_profit
             reflux_system.capture(net_profit, "Bank", "net_profit")
             logger.info(f"BANK_PROFIT_CAPTURE | Transferred {net_profit:.2f} to Reflux System.")
@@ -308,40 +328,77 @@ class Bank:
             extra={"agent_id": self.id, "tags": ["bank", "tick"]}
         )
 
-    # Legacy method support for compatibility if needed, but we are rewriting
-    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
-        # Return dict representation for compatibility if other modules use it
-        return [
-            {
-                "borrower_id": l.borrower_id,
-                "amount": l.remaining_balance,
-                "interest_rate": l.annual_interest_rate,
-                "duration": l.term_ticks
-            }
-            for l in self.loans.values() if l.borrower_id == agent_id
-        ]
-    def process_repayment(self, loan_id: str, amount: float):
-        if loan_id in self.loans:
-            # We don't touch assets here, handled by Transaction
-            self.loans[loan_id].remaining_balance -= amount
-            if self.loans[loan_id].remaining_balance <= 0:
-                # Fully repaid
-                pass # Logic to archive loan?
-            logger.info(
-                f"REPAYMENT_PROCESSED | Loan {loan_id} repaid by {amount}",
-                extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
-            )
+    def check_mortgage_defaults(self) -> List[str]:
+        """
+        Returns list of loan_ids that have exceeded default threshold (e.g. 3 ticks).
+        Called by Engine to trigger foreclosure.
+        """
+        defaults = []
+        threshold = self._get_config("MORTGAGE_DEFAULT_THRESHOLD", 3)
+        for loan_id, misses in self.mortgage_default_counter.items():
+            if misses >= threshold:
+                defaults.append(loan_id)
+        return defaults
+
+    def foreclose_property(self, loan_id: str, real_estate_units: List[RealEstateUnit], market: Any) -> bool:
+        """
+        Executes foreclosure:
+        1. Seize property (Owner -> Bank, Evict Tenant)
+        2. Cancel Loan (Collateral seized)
+        3. List for Fire Sale
+        """
+        loan = self.loans.get(loan_id)
+        if not loan or loan.collateral_id is None:
+            return False
+
+        unit_id = loan.collateral_id
+        # Find unit
+        unit = next((u for u in real_estate_units if u.id == unit_id), None)
+        if not unit:
+            return False
+
+        old_owner_id = unit.owner_id
+
+        # 1. Seize
+        unit.owner_id = self.id # Bank owns it
+        unit.occupant_id = None # Eviction
+        unit.mortgage_id = None # Unlink mortgage from unit (it's being wiped)
+
+        # 2. Cancel Loan
+        # Write off remaining balance against Bank Assets?
+        # Bank now owns asset (Property) worth X.
+        # Loan Balance was Y.
+        # If X > Y, Bank profits. If X < Y, Bank loses.
+        # For now, just remove the loan.
+        self.loans.pop(loan_id, None)
+        self.mortgage_default_counter.pop(loan_id, None)
+
+        # 3. Fire Sale
+        # Price = 80% of Estimated Value
+        fire_sale_price = unit.estimated_value * 0.8
+
+        # Place Sell Order
+        order = Order(
+            agent_id=self.id,
+            order_type="SELL",
+            item_id=f"unit_{unit.id}",
+            quantity=1.0,
+            price=fire_sale_price,
+            market_id="real_estate"
+        )
+        market.place_order(order, 0) # tick 0 or passed tick
+
+        logger.info(
+            f"FORECLOSURE_EXECUTED | Bank seized Unit {unit.id} from Agent {old_owner_id}. Loan {loan_id} cancelled. Listed for {fire_sale_price:.2f}",
+            extra={"loan_id": loan_id, "unit_id": unit.id, "tags": ["foreclosure"]}
+        )
+        return True
 
     def withdraw(self, depositor_id: int, amount: float) -> bool:
         """
         Withdraws from depositor's account.
         Returns True if successful, False if insufficient balance.
         """
-        # Find deposit by depositor_id
-        # We need to scan because key is deposit_id
-        # Or should we store deposits by depositor_id?
-        # Current struct: self.deposits: Dict[str, Deposit] (key=dep_id)
-        # Scan
         target_deposit = None
         target_dep_id = None
         for dep_id, deposit in self.deposits.items():
@@ -354,9 +411,7 @@ class Bank:
             return False
 
         target_deposit.amount -= amount
-        # self.assets -= amount # Handled by Transaction
 
-        # If deposit is empty, remove it
         if target_deposit.amount <= 0:
             if target_dep_id:
                 del self.deposits[target_dep_id]
@@ -385,10 +440,9 @@ class Bank:
             logger.info(f"LIQUIDATION | Agent {agent.id} shares confiscated.")
 
         # 2. Forgiveness (Write-off)
-        loan.remaining_balance = 0.0 # Effectively forgiven
+        loan.remaining_balance = 0.0
 
         # 3. Penalty
-        # Credit Jail
         jail_ticks = getattr(self.config_module, "CREDIT_RECOVERY_TICKS", 100)
         if hasattr(agent, "credit_frozen_until_tick"):
             agent.credit_frozen_until_tick = current_tick + jail_ticks

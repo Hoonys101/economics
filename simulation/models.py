@@ -64,4 +64,32 @@ class RealEstateUnit:
     condition: float = 1.0
     estimated_value: float = 10000.0
     rent_price: float = 100.0
-    mortgage_id: Optional[int] = None
+    mortgage_id: Optional[str] = None # Updated to str to match loan_id type
+
+
+@dataclass
+class Loan:
+    borrower_id: int
+    principal: float       # 원금
+    remaining_balance: float # 잔액
+    annual_interest_rate: float # 연이율
+    term_ticks: int        # 만기 (틱)
+    start_tick: int        # 대출 실행 틱
+    collateral_id: Optional[int] = None # Link to RealEstateUnit.id
+
+    @property
+    def tick_interest_rate(self) -> float:
+        TICKS_PER_YEAR = 100 # Default fallback, better if passed or configured
+        return self.annual_interest_rate / TICKS_PER_YEAR
+
+
+@dataclass
+class Deposit:
+    depositor_id: int
+    amount: float          # 예치금
+    annual_interest_rate: float # 연이율
+
+    @property
+    def tick_interest_rate(self) -> float:
+        TICKS_PER_YEAR = 100
+        return self.annual_interest_rate / TICKS_PER_YEAR

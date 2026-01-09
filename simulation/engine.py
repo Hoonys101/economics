@@ -9,6 +9,7 @@ from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.service_firms import ServiceFirm
 from simulation.markets.order_book_market import OrderBookMarket
+from simulation.markets.housing_market import HousingMarket
 from simulation.core_markets import Market
 from simulation.bank import Bank
 from simulation.agents.government import Government
@@ -137,6 +138,31 @@ class Simulation:
         # Pass agents reference to LoanMarket for credit check
         self.markets["loan_market"].agents_ref = self.agents
         
+        # Phase 17-3B: Real Estate Sales Market (Using HousingMarket subclass)
+        self.markets["real_estate"] = HousingMarket(market_id="real_estate")
+
+        # Initialize Government Sell Orders for Unowned Properties
+        unassigned_units = [u for u in self.real_estate_units if u.owner_id is None]
+        for unit in unassigned_units:
+            # Assign Government as temporary owner for system consistency if None
+            # Spec says "Government (or Bank) owned"
+            # We treat None owner as Government implicitly, or set it explicitly.
+            # Setting explicitly is safer.
+            unit.owner_id = self.government.id
+
+            # Place Sell Order
+            sell_order = Order(
+                agent_id=self.government.id,
+                order_type="SELL",
+                item_id=f"unit_{unit.id}",
+                quantity=1.0,
+                price=unit.estimated_value,
+                market_id="real_estate"
+            )
+            # Add directly to order book (market not active yet, so safe)
+            # Actually, use place_order with time=0
+            self.markets["real_estate"].place_order(sell_order, 0)
+
         self.stock_market: Optional[StockMarket] = None
         # 주식 시장 초기화
         if getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
@@ -918,6 +944,12 @@ class Simulation:
 
     def _process_housing(self):
         """Process rent collection, maintenance, and homeless penalty."""
+
+        # 0. Foreclosure & Mortgage Checks (Bank Managed)
+        defaults = self.bank.check_mortgage_defaults()
+        for loan_id in defaults:
+            self.bank.foreclose_property(loan_id, self.real_estate_units, self.markets["real_estate"])
+
         # 1. Rent Collection & Maintenance
         for unit in self.real_estate_units:
             # Rent Collection
@@ -1027,6 +1059,25 @@ class Simulation:
         }
         goods_market_data["job_vacancies"] = job_vacancies
 
+        # Phase 17-3B: Housing Market Data
+        # Ensure we provide housing price info to households
+        housing_market = self.markets.get("real_estate")
+        if housing_market and isinstance(housing_market, OrderBookMarket):
+            # We don't have a single "housing price", it's heterogeneous.
+            # But AI needs a reference. We can provide "avg_ask" or "min_ask" of all units.
+            # Let's aggregate.
+            all_asks = []
+            for asks in housing_market.sell_orders.values():
+                if asks: all_asks.append(asks[0].price)
+
+            avg_housing_ask = sum(all_asks) / len(all_asks) if all_asks else 0.0
+            min_housing_ask = min(all_asks) if all_asks else 0.0
+
+            goods_market_data["real_estate"] = {
+                "avg_ask": avg_housing_ask,
+                "min_ask": min_housing_ask
+            }
+
         total_price = 0.0
         count = 0.0
         for good_name in self.config_module.GOODS:
@@ -1115,7 +1166,114 @@ class Simulation:
             income_tax_rate = getattr(self.config_module, "INCOME_TAX_RATE", 0.1)
 
             # --- 1. 기본 자산 이동 및 세금 처리 ---
-            if tx.transaction_type in ["goods", "stock"]:
+            if tx.market_id == "real_estate":
+                # Phase 17-3B: Real Estate Transactions (Atomic Mortgage)
+                # 1. Determine Funding (Cash vs Mortgage)
+                # Standard Logic: If Buyer Cash < Price, Auto-Mortgage 80%.
+                # Actually, standard is 80% LTV anyway.
+                # If Buyer has enough cash to pay full price, do they want mortgage?
+                # For simplicity (V1), if Buyer Cash < Price * 1.1 (buffer), take mortgage.
+
+                unit_id_str = tx.item_id # e.g. "unit_5"
+                try:
+                    unit_id = int(unit_id_str.split("_")[1])
+                except (IndexError, ValueError):
+                    self.logger.error(f"Invalid real estate item_id: {tx.item_id}")
+                    continue
+
+                unit = next((u for u in self.real_estate_units if u.id == unit_id), None)
+                if not unit: continue
+
+                use_mortgage = False
+                mortgage_principal = 0.0
+                down_payment = trade_value
+
+                if buyer.assets < trade_value:
+                    # Must use mortgage
+                    use_mortgage = True
+
+                # Check LTV constraint
+                if use_mortgage:
+                    ltv = 0.8
+                    mortgage_principal = trade_value * ltv
+                    down_payment = trade_value * (1 - ltv)
+
+                    if buyer.assets < down_payment:
+                        # Transaction Failed (Rollback / Skip)
+                        self.logger.warning(
+                            f"HOUSING_TX_FAILED | Buyer {buyer.id} insufficient for down payment. Need {down_payment:.2f}, Have {buyer.assets:.2f}",
+                            extra={"buyer_id": buyer.id}
+                        )
+                        continue
+
+                    # Grant Mortgage
+                    # Note: We call Bank directly. Bank Assets should cover the Loan?
+                    # Bank.grant_mortgage checks liquidity.
+                    loan_id = self.bank.grant_mortgage(buyer.id, unit.id, mortgage_principal)
+                    if not loan_id:
+                        # Mortgage Rejected (Bank liquidity?)
+                        self.logger.warning(
+                            f"HOUSING_TX_FAILED | Mortgage denied for Buyer {buyer.id}.",
+                            extra={"buyer_id": buyer.id}
+                        )
+                        continue
+
+                    # Link Mortgage to Unit (Done in Bank? No, Bank links Loan->Unit. Unit->Loan needs link too?)
+                    # RealEstateUnit has `mortgage_id`.
+                    unit.mortgage_id = loan_id
+
+                    # Log
+                    self.logger.info(
+                        f"MORTGAGE_EXECUTED | Buyer {buyer.id} took loan {loan_id} for {unit_id_str}.",
+                        extra={"buyer_id": buyer.id, "loan_id": loan_id}
+                    )
+
+                # Transfer Funds
+                # Buyer pays Down Payment (to Seller)
+                # Bank pays Mortgage Principal (to Seller)
+
+                # Tax? Property Transfer Tax?
+                # Spec doesn't specify. Assume 0 or standard Sales Tax?
+                # Real Estate usually has taxes. Let's use Sales Tax for now.
+                tax_amount = trade_value * sales_tax_rate
+
+                # Buyer Asset Update
+                total_buyer_cost = down_payment + tax_amount
+                buyer.assets -= total_buyer_cost
+
+                # Bank Asset Update (Mortgage Payout)
+                # Bank assets already checked in grant_mortgage, but need to deduct here for transfer
+                if use_mortgage:
+                    self.bank.assets -= mortgage_principal
+
+                # Seller Asset Update
+                seller.assets += (down_payment + mortgage_principal) # Full Price
+
+                # Government Tax
+                self.government.collect_tax(tax_amount, "property_tax_transfer", buyer.id, self.time)
+
+                # Ownership Transfer
+                unit.owner_id = buyer.id
+                # Occupancy? Usually owner moves in if they bought it to live.
+                # If they already live there (renting), they stay.
+                # If they live elsewhere, they might move in.
+                if isinstance(buyer, Household):
+                    buyer.owned_properties.append(unit.id)
+                    # Simple logic: Move in immediately
+                    unit.occupant_id = buyer.id
+                    buyer.residing_property_id = unit.id
+                    buyer.is_homeless = False
+
+                # Seller updates
+                if isinstance(seller, Household) and unit.id in seller.owned_properties:
+                    seller.owned_properties.remove(unit.id)
+
+                self.logger.info(
+                    f"PROPERTY_SOLD | {unit_id_str} sold to {buyer.id} for {trade_value:.2f}. Mortgage: {use_mortgage}",
+                    extra={"buyer_id": buyer.id, "seller_id": seller.id, "price": trade_value}
+                )
+
+            elif tx.transaction_type in ["goods", "stock"]:
                 # 거래세(부가가치세) 적용: 매수자가 추가로 지불
                 tax_amount = trade_value * sales_tax_rate
                 buyer.assets -= (trade_value + tax_amount)
@@ -1313,264 +1471,3 @@ class Simulation:
                     # Update Buyer
                     if isinstance(buyer, Household):
                         self.stock_market.update_shareholder(buyer.id, firm_id, buyer.shares_owned.get(firm_id, 0))
-
-
-    def spawn_firm(self, founder_household: "Household") -> Optional["Firm"]:
-        """
-        부유한 가계가 새로운 기업을 설립합니다.
-
-        Args:
-            founder_household: 창업주 가계 에이전트
-
-        Returns:
-            생성된 Firm 객체 또는 None (실패 시)
-        """
-        startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
-
-        # 1. 자본 차감
-        # Using assets as cash proxy
-        if founder_household.assets < startup_cost:
-            return None
-        founder_household.assets -= startup_cost
-
-        # 2. 새 기업 ID 생성
-        max_id = max([a.id for a in self.agents.values()], default=0)
-        new_firm_id = max_id + 1
-
-        # 3. 업종 선택 (Blue Ocean Strategy)
-        # Refactored: Dynamic list from config
-        specializations = list(self.config_module.GOODS.keys())
-        is_visionary = False
-        sector = "OTHER"
-
-        # WO-023: Visionary Mutation (Configurable)
-        mutation_rate = getattr(self.config_module, "VISIONARY_MUTATION_RATE", 0.05)
-        if random.random() < mutation_rate:
-            is_visionary = True
-            
-        # Blue Ocean Logic: If Visionary, look for empty markets
-        if is_visionary:
-            active_specs = {f.specialization for f in self.firms if f.is_active}
-            # Find any specialization not in active_specs
-            potential_blue_oceans = [s for s in specializations if s not in active_specs]
-            
-            if potential_blue_oceans:
-                specialization = random.choice(potential_blue_oceans)
-            else:
-                # If no blue ocean, fallback to consumer_goods if defined, else random
-                if "consumer_goods" in specializations:
-                     specialization = "consumer_goods"
-                else:
-                     specialization = random.choice(specializations)
-        else:
-             # Standard Entrepreneur: Random Choice
-             specialization = random.choice(specializations)
-             
-        # Refactored: Map Specialization to Sector using Config
-        goods_config = self.config_module.GOODS.get(specialization, {})
-        sector = goods_config.get("sector", "OTHER")
-
-        # WO-030: Increase Initial Capital for Manufacturing Firms (Input Constraints)
-        has_inputs = bool(goods_config.get("inputs"))
-        if has_inputs:
-             startup_cost *= 1.5
-
-        # 4. AI 설정
-        from simulation.ai.firm_ai import FirmAI
-        from simulation.ai.service_firm_ai import ServiceFirmAI
-        from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
-
-        value_orientation = random.choice([
-            self.config_module.VALUE_ORIENTATION_WEALTH_AND_NEEDS,
-            self.config_module.VALUE_ORIENTATION_NEEDS_AND_GROWTH,
-        ])
-        # Use ai_trainer instead of ai_manager
-        ai_decision_engine = self.ai_trainer.get_engine(value_orientation)
-
-        is_service = specialization in getattr(self.config_module, "SERVICE_SECTORS", [])
-
-        if is_service:
-            firm_ai = ServiceFirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
-        else:
-            firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
-
-        firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config_module, self.logger)
-
-        # 5. Firm 생성
-        if is_service:
-            new_firm = ServiceFirm(
-                id=new_firm_id,
-                initial_capital=startup_cost,
-                initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
-                specialization=specialization,
-                productivity_factor=random.uniform(8.0, 12.0),
-                decision_engine=firm_decision_engine,
-                value_orientation=value_orientation,
-                config_module=self.config_module,
-                logger=self.logger,
-                sector=sector,
-                is_visionary=is_visionary,
-            )
-        else:
-            new_firm = Firm(
-                id=new_firm_id,
-                initial_capital=startup_cost,
-                initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
-                specialization=specialization,
-                productivity_factor=random.uniform(8.0, 12.0),
-                decision_engine=firm_decision_engine,
-                value_orientation=value_orientation,
-                config_module=self.config_module,
-                logger=self.logger,
-                sector=sector,
-                is_visionary=is_visionary,
-            )
-        new_firm.founder_id = founder_household.id
-        # Set loan market if available in simulation
-        if "loan_market" in self.markets:
-            new_firm.decision_engine.loan_market = self.markets["loan_market"]
-
-        # 6. 리스트에 추가
-        self.firms.append(new_firm)
-        self.agents[new_firm.id] = new_firm
-
-        # Add to AI training manager
-        self.ai_training_manager.agents.append(new_firm)
-
-        self.logger.info(
-            f"STARTUP | Household {founder_household.id} founded Firm {new_firm_id} "
-            f"(Specialization: {specialization}, Capital: {startup_cost})",
-            extra={"tick": self.time, "agent_id": new_firm_id, "tags": ["entrepreneurship"]}
-        )
-
-        return new_firm
-
-    def _check_entrepreneurship(self):
-        """
-        매 틱마다 창업 조건을 확인하고 신규 기업을 생성합니다.
-        """
-        min_firms = getattr(self.config_module, "MIN_FIRMS_THRESHOLD", 5)
-        startup_cost = getattr(self.config_module, "STARTUP_COST", 15000.0)
-        spirit = getattr(self.config_module, "ENTREPRENEURSHIP_SPIRIT", 0.05)
-        capital_multiplier = getattr(self.config_module, "STARTUP_CAPITAL_MULTIPLIER", 1.5)
-
-        active_firms_count = sum(1 for f in self.firms if f.is_active)
-
-        # Hard Trigger: 기업 수가 최소치 이하
-        if active_firms_count < min_firms:
-            trigger_probability = 0.5  # 50% 창업 확률 (위기 상황)
-        else:
-            trigger_probability = spirit  # 일반 창업 확률 (5%)
-
-        # 부유한 가계 필터링 (use 'assets' property as cash proxy, but 'cash' property might not exist on household directly in this version? Household inherits from BaseAgent which has 'assets'. Instructions used 'cash'. Household code uses 'assets'. 'cash' is likely alias or just assets.)
-        # Checking Household code: it uses self.assets. It doesn't seem to have 'cash' property.
-        # I will replace .cash with .assets as per standard agent.
-
-        wealthy_households = [
-            h for h in self.households
-            if h.is_active and h.assets > startup_cost * capital_multiplier
-        ]
-
-        import random
-        for household in wealthy_households:
-            if random.random() < trigger_probability:
-                # Use assets instead of cash for spawn_firm call inside too
-                # Need to update spawn_firm implementation to use assets if cash is not available.
-                # Actually, I'll update spawn_firm implementation above to use assets.
-                self.spawn_firm(household)
-                break  # 한 틱에 하나씩만 창업
-
-    def _handle_agent_lifecycle(self) -> None:
-        """비활성화된 에이전트를 청산하고 시뮬레이션에서 제거합니다."""
-        
-        # 1. 파산 기업 청산 (Firm Liquidation)
-        inactive_firms = [f for f in self.firms if not f.is_active]
-        for firm in inactive_firms:
-            self.logger.info(
-                f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}. "
-                f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
-            )
-            
-            # 1a. 직원 해고
-            for employee in firm.employees:
-                if employee.is_active:
-                    employee.is_employed = False
-                    employee.employer_id = None
-            firm.employees = []
-            
-            # 1b. 재고 소멸 (시장에 매도하는 대신 간단히 소멸)
-            total_inventory_value = sum(
-                qty * firm.last_prices.get(item_id, 10.0) 
-                for item_id, qty in firm.inventory.items()
-            )
-            firm.inventory.clear()
-            
-            # 1c. 자본재 소멸
-            firm.capital_stock = 0.0
-            
-            # 1d. 현금을 주주(가계)에게 분배
-            total_cash = firm.assets
-            if total_cash > 0:
-                outstanding_shares = firm.total_shares - firm.treasury_shares
-                if outstanding_shares > 0:
-                    for household in self.households:
-                        if household.is_active and firm.id in household.shares_owned:
-                            share_ratio = household.shares_owned[firm.id] / outstanding_shares
-                            distribution = total_cash * share_ratio
-                            household.assets += distribution
-                            self.logger.info(
-                                f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
-                                f"{distribution:.2f} from Firm {firm.id} liquidation",
-                                extra={"agent_id": household.id, "tags": ["liquidation"]}
-                            )
-            
-            # 1e. 주주들의 해당 기업 주식 보유량 삭제
-            for household in self.households:
-                if firm.id in household.shares_owned:
-                    del household.shares_owned[firm.id]
-                    # [Mitosis] Update registry
-                    if self.stock_market:
-                        self.stock_market.update_shareholder(household.id, firm.id, 0)
-            
-            firm.assets = 0.0
-            self.logger.info(
-                f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
-            )
-
-        # 2. 사망 가계 청산 (Household Liquidation)
-        inactive_households = [h for h in self.households if not h.is_active]
-        for household in inactive_households:
-            # 2a. 상속세 징수 (잔여 자산 정부 귀속)
-            inheritance_tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 1.0)
-            tax_amount = household.assets * inheritance_tax_rate
-            self.government.collect_tax(tax_amount, "inheritance_tax", household.id, self.time)
-            
-            self.logger.info(
-                f"HOUSEHOLD_LIQUIDATION | Household {household.id} liquidated. "
-                f"Tax Collected: {tax_amount:.2f}, Inventory: {sum(household.inventory.values()):.2f}",
-                extra={"agent_id": household.id, "tags": ["liquidation", "tax"]}
-            )
-            
-            household.assets = 0.0
-            household.inventory.clear()
-            household.shares_owned.clear()
-
-            # [Mitosis] Clear shareholder registry for this household
-            if self.stock_market:
-                for firm_id in list(self.stock_market.shareholders.keys()):
-                     self.stock_market.update_shareholder(household.id, firm_id, 0)
-
-        # 3. 시뮬레이션에서 비활성 에이전트 제거
-        self.households = [h for h in self.households if h.is_active]
-        self.firms = [f for f in self.firms if f.is_active]
-
-        self.agents = {agent.id: agent for agent in self.households + self.firms}
-        self.agents[self.bank.id] = self.bank
-
-        # 4. 기업 직원 리스트 정리 (이미 제거된 가계 참조 제거)
-        for firm in self.firms:
-            firm.employees = [
-                emp for emp in firm.employees if emp.is_active and emp.id in self.agents
-            ]

@@ -8,10 +8,12 @@ from simulation.ai.api import Tactic, Aggressiveness, Personality
 from .base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
 from simulation.decisions.portfolio_manager import PortfolioManager
+from simulation.decisions.housing_manager import HousingManager # WO-029-D: Import HousingManager
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.ai.household_ai import HouseholdAI
+    from simulation.markets.order_book_market import OrderBookMarket
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,55 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # --------------------------------------------------------------------------
         
         orders = []
+
+        # --- Phase 17-3B: Housing Market Decisions ---
+        # Only if not owning a home or if seeking investment (for now, primary residence focus)
+        # If currently renting or homeless
+        if not household.owned_properties:
+            real_estate_market = markets.get("real_estate")
+            real_estate_data = market_data.get("goods_market", {}).get("real_estate", {})
+
+            # Simple assumption: Rent price is derived from initial config or market average?
+            # Spec doesn't specify dynamic rent market yet (Phase 17-3A handles rent collection but not dynamic pricing?)
+            # Let's use config default for decision proxy if actual rent not available
+            current_rent = self.config_module.INITIAL_RENT_PRICE
+
+            # Find cheapest unit on market to evaluate
+            min_ask = real_estate_data.get("min_ask", 0.0)
+
+            if min_ask > 0 and real_estate_market:
+                # Run Housing Manager logic
+                should_buy = HousingManager.should_buy(
+                    household=household,
+                    unit_price=min_ask,
+                    rent_price=current_rent,
+                    interest_rate=nominal_rate,
+                    horizon=120
+                )
+
+                if should_buy:
+                    # Find specific unit
+                    # Logic: "find_best_property" scans market
+                    # Budget is assets (for down payment check)
+                    # We pass 'budget' to find_best_property, but remember HousingManager logic:
+                    # find_best_property checks if budget >= ask * 0.2.
+                    # So we pass household.assets.
+                    target_unit_id = HousingManager.find_best_property(real_estate_market, household.assets)
+
+                    if target_unit_id:
+                        # Place Buy Order
+                        # Price? Best Ask.
+                        # We need to know the price of that unit.
+                        # find_best_property returns ID. We need to fetch price again?
+                        # Or modify find_best_property to return tuple.
+                        # For now, get orders for that ID.
+                        orders_list = real_estate_market.sell_orders.get(target_unit_id)
+                        if orders_list:
+                            price = orders_list[0].price
+                            orders.append(
+                                Order(household.id, "BUY", target_unit_id, 1.0, price, "real_estate")
+                            )
+                            self.logger.info(f"HOUSING_DECISION | Household {household.id} decided to BUY {target_unit_id} at {price:.2f}")
 
         # 2. Execution: Consumption Logic (Per Item)
         for item_id in goods_list:
