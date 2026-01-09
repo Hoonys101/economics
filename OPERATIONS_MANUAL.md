@@ -123,20 +123,23 @@ Jules의 보고서가 제출되면 Antigravity는 다음을 수행한다:
 2. 발견된 경제학적 통찰을 `design/ECONOMIC_INSIGHTS.md`에 공식 기록 및 집대성.
 3. 시뮬레이션의 창발적 행동(Emergent Behavior)을 `walkthrough.md`에 반영하여 사용자에게 보고.
 
-### 4.3 Git Handover Protocol (Team Leader Rule)
-Antigravity가 설계를 마치고 Jules에게 넘기기 전, 반드시 형상 관리를 수행한다.
+### 4.3 Git Handover & Jules Communication (Team Leader Protocol)
+Antigravity가 설계를 마치고 Jules에게 넘기기 전, 반드시 형상 관리를 수행하며 '완결성'과 '효율성'의 균형을 맞춘다.
 
-1.  **Stage & Commit**:
-    ```bash
-    git add .
-    git commit -m "docs: hand over WO-XXX to Jules"
-    ```
-2.  **Push**:
-    ```bash
-    git push origin <current_branch>
-    ```
-3.  **Prompt Generation**:
-    사용자가 복사해서 Jules에게 붙여넣을 수 있는 **'명령 프롬프트'**를 생성하여 전달한다.
+1.  **The Combined Command**: 작업 하달 시 관련 문서(Spec, Roadmap, WO)의 핵심 내용을 프롬프트에 담아 **'원터치 복사-붙여넣기'**가 가능한 형태로 전달한다.
+2.  **Active Feedback Loop**: Jules의 질문은 설계의 누락을 보충할 기회로 삼는다. 텍스트 명령으로 즉각 응답하되, 중요한 변경점은 문서에 즉시 반영한다.
+3.  **Post-Update (소급 반영)**: 세션 중 발생한 모든 프롬프트 수정 사항 및 결정은 세션 종료 후 관련 문서(`specs`, `roadmap` 등)에 소급 반영하여 전체적인 설계 품질을 유지한다.
+4.  **Efficiency Focus**: 완벽한 'Zero-Question'에 집착하여 속도를 늦추기보다, 명확한 가이드와 유연한 소통을 통해 **토큰 효율**과 **개발 속도**의 균형을 맞춘다.
+
+---
+
+## 5. 🗂️ 특수 문서 관리
+
+| 문서 | 목적 | 위치 |
+|-----------|----------|------|
+| **PLAYBOOK.md** | 검증된 수치, 시뮬레이션 전술, 튜닝 노하우 집대성 | `design/PLAYBOOK.md` |
+| **Insights** | Jules의 발견 및 분석 보고서 저장 | `reports/insights/` |
+| **Specs** | 버전별 기술 명세서 | `design/specs/` |
 
 ---
 
