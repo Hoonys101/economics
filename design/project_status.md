@@ -9,16 +9,16 @@
 ## 1. 현재 개발 단계
 
 - **완료된 단계(Recent)**:
-    - `Phase 4.5: Responsible Government` ✅
     - `Phase 6: Brand Economy` ✅ (Differentiation)
     - `Phase 8: Inflation Psychology` ✅ (Adaptive Expectations)
-    - `Phase 8-B: Economic Reflux System` ✅ (Money Conservation)
-    - `Phase 8-C: Operation Fire Sale` ✅ (Solvency Pricing)
     - `Phase 9: M&A & Bankruptcy` ✅ (Corporate Food Chain)
     - `Phase 10: Central Bank` ✅ (Monetary Policy)
-    - `Stabilization Fix (WO-018)` ✅ (Corporate Tax & Money Leak Fix)
-- **현재 단계:** `Interest Sensitivity Verification` 🧪
-- **다음 단계:** `Phase 11: Backtest Engine Migration`
+    - `Phase 15: Materiality & Durables` ✅ (The Weight)
+    - `Phase 16: Portfolio Optimization` ✅ (Investment)
+    - `Phase 16-B: Corporate Intelligence` ✅ (CEO Module)
+    - `Phase 14-4: Stock Exchange` ✅ (Capital Market)
+- **현재 단계:** `Phase 17+: Market Diversity` 🏗️
+- **다음 단계:** `System Integration Test` (Grand Unified Simulation)
 
 ---
 
@@ -39,11 +39,20 @@
 | Targeted Matching | ✅ | `OrderBookMarket` update |
 | Veblen Effect | ✅ | Utility function update |
 
-### Phase 4.5: Responsible Government ✅
+### Phase 14-4: Stock Exchange ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Approval Rating | ✅ | Multi-dimensional score |
-| Fiscal Rules | ✅ | Surplus Rule, Debt Brake |
+| Batch Auction | ✅ | Equilibrium Pricing |
+| Valuation Models | ✅ | Value vs Momentum |
+| Stock Buyback | ✅ | Share Retirement (Burn) |
+| Verification | ✅ | `verify_stock_market.py` passed |
+
+### Phase 16-B: Corporate Intelligence ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| R&D Physics | ✅ | Innovation War Verified |
+| 6-Channel Actions | ✅ | Sales, Hiring, R&D, Capex, Div, Debt |
+| CEO Personality | ✅ | Balanced, Growth, Cash Cow |
 
 ---
 
@@ -60,7 +69,7 @@
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Taylor Rule | ✅ | Inflation/GDP Gap targeting |
-| Rate Transmission | ⚠️ | Engine -> Bank (OK), Bank -> Household (Missing Link) |
+| Rate Transmission | ✅ | Effect Verified (Friedman Effect) |
 
 ## 4. 구조적 진단 (Architectural Audit)
 - **발견된 문제**: 중앙은행이 금리를 올려도 가계(AI)가 즉각적으로 저축을 늘리는 로직이 **누락(Missing Link)**됨.

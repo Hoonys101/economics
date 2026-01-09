@@ -15,11 +15,15 @@
 - [x] 8. Adaptive Price Expectations (Phase 8)
 - [x] 9. Corporate M&A (Phase 9)
 - [x] 10. Monetary Policy (Phase 10)
+- [x] 11. Portfolio Optimization (Phase 16)
+- [x] 12. Corporate Intelligence (Phase 16-B)
+- [x] 13. Stock Exchange (Phase 14-4)
 
 ## 🔴 Pending / Future
-- [ ] 11. Commercial Bank Deepening (Lender of Last Resort)
-- [ ] 12. Data Lake & Universe Expansion
-- [ ] 13. Time Machine (Backtester)
+- [ ] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
+- [ ] 15. Commercial Bank Deepening (Lender of Last Resort)
+- [ ] 16. Data Lake & Universe Expansion
+- [ ] 17. Time Machine (Backtester)
 
 ## 🟣 Architecture v3.0: High-Performance Simulation (Long-Term)
 > **Goal**: Optimization Strategy for 100k+ Agents (OOP -> DOP Transition)
