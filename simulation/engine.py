@@ -156,7 +156,7 @@ class Simulation:
             if unit.owner_id is None:
                 # Sell Order: item_id="unit_{id}", price=estimated_value, qty=1
                 sell_order = Order(
-                    agent_id=-1, # Government ID
+                    agent_id=self.government.id, # Government ID
                     item_id=f"unit_{unit.id}",
                     price=unit.estimated_value,
                     quantity=1.0,
@@ -1435,6 +1435,8 @@ class Simulation:
              # 1. Mortgage Logic (Atomic Funding)
              config = self.config_module
              ltv_ratio = getattr(config, "MORTGAGE_LTV_RATIO", 0.8)
+             mortgage_term = getattr(config, "MORTGAGE_TERM_TICKS", 300)
+             mortgage_rate = getattr(config, "MORTGAGE_INTEREST_RATE", 0.05)
              
              use_leverage = False
              if isinstance(buyer, Household):
@@ -1443,7 +1445,12 @@ class Simulation:
              if use_leverage:
                  loan_amount = trade_value * ltv_ratio
                  # Grant Loan
-                 loan_id = self.bank.grant_loan(buyer.id, loan_amount, term_ticks=300) 
+                 loan_id = self.bank.grant_loan(
+                     buyer.id,
+                     loan_amount,
+                     term_ticks=mortgage_term,
+                     interest_rate=mortgage_rate
+                 )
                  
                  if loan_id:
                      # Atomic Funding

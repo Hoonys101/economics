@@ -93,18 +93,28 @@ class Bank:
         self,
         borrower_id: int,
         amount: float,
-        term_ticks: Optional[int] = None
+        term_ticks: Optional[int] = None,
+        interest_rate: Optional[float] = None
     ) -> Optional[str]:
         """
         Grants a loan to an agent if eligible.
         Does NOT transfer assets directly; returns loan ID for Transaction creation.
+
+        Args:
+            borrower_id: The ID of the agent borrowing money.
+            amount: The principal amount of the loan.
+            term_ticks: Duration of the loan in ticks. Defaults to LOAN_DEFAULT_TERM if None.
+            interest_rate: Specific annual interest rate to use. If None, uses Base Rate + Spread.
         """
         # 1. Config Check
         if not term_ticks:
             term_ticks = self._get_config("LOAN_DEFAULT_TERM", 50)
 
-        credit_spread = self._get_config("CREDIT_SPREAD_BASE", 0.02)
-        annual_rate = self.base_rate + credit_spread
+        if interest_rate is not None:
+            annual_rate = interest_rate
+        else:
+            credit_spread = self._get_config("CREDIT_SPREAD_BASE", 0.02)
+            annual_rate = self.base_rate + credit_spread
 
         # 2. Liquidity Check
         # 1a. Credit Jail Check (Phase 4)

@@ -139,8 +139,15 @@ class TestRealEstateSales(unittest.TestCase):
         unit.owner_id = None # Gov owned
         unit.estimated_value = 10000.0
         
+        # Mock Government ID in Engine
+        # Engine initializes Government agent inside __init__.
+        # We need to ensure engine.government exists and get its ID.
+        # Since we initialized Engine with mock config, it creates a government agent.
+        gov_id = engine.government.id
+
         buy_order = Order(agent_id=engine.households[0].id, item_id="unit_0", price=10000.0, quantity=1, order_type="BUY", market_id="housing")
-        sell_order = Order(agent_id=-1, item_id="unit_0", price=10000.0, quantity=1, order_type="SELL", market_id="housing")
+        # Use valid government ID for Sell Order
+        sell_order = Order(agent_id=gov_id, item_id="unit_0", price=10000.0, quantity=1, order_type="SELL", market_id="housing")
         
         # Inject orders directly for matching simulation
         engine.markets["housing"].place_order(buy_order, 0)
@@ -157,6 +164,9 @@ class TestRealEstateSales(unittest.TestCase):
         # Note: Logic grants LTV 80% (8000). Max Loan.
         # Downpayment = 2000. Buyer has 3000. OK.
         
+        print(f"DEBUG: Bank Assets: {engine.bank.assets}")
+        print(f"DEBUG: Config Bank Assets: {config.INITIAL_BANK_ASSETS}")
+
         engine._process_transactions(txs)
         
         # 5. Assertions
