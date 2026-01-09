@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-01-02
+**최종 업데이트**: 2026-01-10
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -9,16 +9,10 @@
 ## 1. 현재 개발 단계
 
 - **완료된 단계(Recent)**:
-    - `Phase 6: Brand Economy` ✅ (Differentiation)
-    - `Phase 8: Inflation Psychology` ✅ (Adaptive Expectations)
-    - `Phase 9: M&A & Bankruptcy` ✅ (Corporate Food Chain)
-    - `Phase 10: Central Bank` ✅ (Monetary Policy)
-    - `Phase 15: Materiality & Durables` ✅ (The Weight)
-    - `Phase 16: Portfolio Optimization` ✅ (Investment)
-    - `Phase 16-B: Corporate Intelligence` ✅ (CEO Module)
-    - `Phase 14-4: Stock Exchange` ✅ (Capital Market)
-- **현재 단계:** `Phase 17+: Market Diversity` 🏗️
-- **다음 단계:** `System Integration Test` (Grand Unified Simulation)
+    - `Phase 17.1-5: Market Diversity & Leviathan` ✅
+    - `Phase 19: Population Dynamics` ✅ (Rat Race Emergence)
+- **현재 단계:** `Phase 20: The Matrix & Real Estate` 🏗️
+- **다음 단계:** `Option A Expansion (Housing Market) + Cognitive Architecture Overhaul`
 
 ---
 
@@ -56,27 +50,34 @@
 
 ---
 
-## 3. 남은 과업 (Backlog)
-
-### Phase 9: M&A & Bankruptcy ✅
+### Phase 19: Population Dynamics ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Valuation Logic | ✅ | Assets + Profit Premium |
-| M&A Matching | ✅ | Predator (Cash Rich) vs Prey (Poor) |
-| Liquidation | ✅ | Asset fire sale on bankruptcy |
-
-### Phase 10: Central Bank ✅
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| Taylor Rule | ✅ | Inflation/GDP Gap targeting |
-| Rate Transmission | ✅ | Effect Verified (Friedman Effect) |
-
-## 4. 구조적 진단 (Architectural Audit)
-- **발견된 문제**: 중앙은행이 금리를 올려도 가계(AI)가 즉각적으로 저축을 늘리는 로직이 **누락(Missing Link)**됨.
-- **조치 계획**: `AIDrivenHouseholdDecisionEngine`에 금리 민감도(Interest Sensitivity) 휴리스틱 추가 필요.
+| DemographicManager | ✅ | aging/birth/death/inheritance |
+| Expectation Mismatch | ✅ | Education-based Reservation Wage |
+| Time Constraint | ✅ | Childcare opportunity cost |
+| r/K Selection | ✅ | Strategy switching based on Rank |
 
 ---
 
-## 4. 테스트 상태
-- **Iron Test**: `scripts/iron_test.py` (Last Run: Phase 6 Verified)
+## 3. 남은 과업 (Backlog)
+
+### Phase 20: The Matrix & Real Estate (Current)
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Real Estate Market | 🏗️ | Supply, Rent, Mortgage |
+| Double-Process Cognition | 🏗️ | System 1 (Fast) / System 2 (Slow) |
+| Gender/Tech Dynamics | 🏗️ | Lactation, Home Quality Score |
+
+---
+
+## 4. 구조적 진단 (Architectural Audit)
+- **발견된 문제**: 에이전트의 현재 RL 엔진은 즉각적 보상에만 반응하여, 20-40틱 이상의 장기 계획(부동산 매입, 자녀 성인기 투자 등)을 세우기에 한계가 있음.
+- **조치 계획**: Phase 20에서 System 2 (Internal World Model) 도입하여 장기 시나리오 시뮬레이션 기능 추가.
+
+---
+
+## 5. 테스트 상태
+- **Iron Test**: `scripts/iron_test.py` (Last Run: Phase 19 Verified)
+- **Rat Race Experiment**: ✅ Success (Emergence of social extinction confirmed)
 - Unit Tests: All Passed.

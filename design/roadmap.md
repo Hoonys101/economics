@@ -25,22 +25,27 @@
     - [x] 17-2: Raw Materials (Completed)
     - [x] 17-3a: Real Estate Rental (Completed)
     - [x] 17-3b: Real Estate Sales & Mortgage (Completed)
-- [/] 15. **Phase 17-4: The Society of Vanity & Control** (WO-031)
-    - [ ] Task 1: `SimulationConfig` 싱글톤 클래스 구축
-    - [ ] Task 2: 기존 코드 Refactoring (Bank, Gov 등 → Config 참조)
-    - [ ] Task 3: Social Rank & 유틸리티 함수 개편 (Vanity Module)
-    - [ ] Task 4: 베블런재 & 모방 소비 로직
-- [ ] 16. **Phase 17-5: The Leviathan** (Government & Politics - WO-032)
-    - [ ] Task 1: Opinion Polls (Sensor, Lagged Feedback)
-    - [ ] Task 2: Policy & Budget (Actuator, Welfare/Stimulus)
-    - [ ] Task 3: Election & Parties (Judge, Retrospective Voting)
-- [ ] 17. **Phase 19: Population Dynamics** (Birth Strike, Extinction Scenario - WO-033)
-    - [ ] Task 1: Demographic Manager (Birth/Aging/Death System)
-    - [ ] Task 2: Evolutionary Decision Engine (r/K Strategy, Time Allocation)
-    - [ ] Task 3: Household Extensions (Education, Time Budget, Children)
-    - [ ] Task 4: Verification (The Rat Race vs Baby Boom Scenarios)
-- [ ] 19. Commercial Bank Deepening (Lender of Last Resort)
-- [ ] 20. Time Machine (Backtester)
+    - [x] 17-4: The Society of Vanity & Control (Completed)
+    - [x] 17-5: The Leviathan (Completed)
+- [x] 15. **Phase 19: Population Dynamics** (Birth Strike, Extinction Scenario)
+    - [x] Task 1: Demographic Manager (Birth/Aging/Death System)
+    - [x] Task 2: Evolutionary Decision Engine (r/K Strategy, Time Allocation)
+    - [x] Task 3: Household Extensions (Education, Time Budget, Children)
+    - [x] Task 4: Verification (The Rat Race Experiment Success)
+- [/] 16. **Phase 20: The Matrix & Advanced Dynamics** (WBS Integration)
+    - [/] **Step 1: Cognitive Architecture (The Matrix Core)**
+        - [ ] Task 1.1: System 1 (Fast/RL) & System 2 (Slow/Planner) 분리 설계
+        - [ ] Task 1.2: Internal World Model (Lightweight Simulator) 구현
+        - [ ] Task 1.3: Constraint Injection (Saving Mode, etc.) 로직
+    - [ ] **Step 2: Socio-Tech Dynamics (Social Missing Links)**
+        - [ ] Task 2.1: Lactation-Tech dependency (Gendered biology)
+        - [ ] Task 2.2: Gender-Specific Education ROI & Market Access
+        - [ ] Task 2.3: Home Environment Score (Domestic quality vs Outsourcing)
+    - [ ] **Step 3: Real Estate & Integration (Environment)**
+        - [ ] Task 3.1: Supply Dynamics & Immigration Model
+        - [ ] Task 3.2: Scenario Runner (Rat Race vs Baby Boom Phase 20 Ver.)
+- [ ] 17. Commercial Bank Deepening (Lender of Last Resort)
+- [ ] 18. Time Machine (Backtester)
 - [ ] 21. **Config Refactoring Pass 2**: 런타임 조정 시스템 (CLI/API 연동)
 
 ## ⚠️ [MAJOR OVERHAUL REQUIRED] Cognitive Architecture (Phase 20+)
