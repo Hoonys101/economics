@@ -42,8 +42,68 @@
     - [x] Refactor: Data-Driven Sector Logic (WO-023-A) <!-- id: 38a -->
     - [x] Implement Human Capital: Talent & Skill (WO-023-B) <!-- id: 38b -->
     - [x] Verify Structural Transformation (Agriculture -> Industry) <!-- id: 39 -->
-- [ ] Phase 14-3: Interest & Banking System (The Investment) <!-- id: 40 -->
+- [x] Phase 14-3: Interest & Banking System (The Investment) <!-- id: 40 -->
     - [x] Create `design/work_orders/WO-024-Interest-Banking.md` <!-- id: 41 -->
-    - [ ] Implement Fractional Reserve Banking <!-- id: 42 -->
-    - [ ] Implement Interest Rate Mechanism <!-- id: 43 -->
-    - [ ] Verify Passive Income Generation <!-- id: 44 -->
+    - [x] Implement Fractional Reserve Banking <!-- id: 42 -->
+    - [x] Implement Interest Rate Mechanism <!-- id: 43 -->
+    - [x] Implement `_manage_liquidity()` (Deposit/Withdraw Action) <!-- id: 44a -->
+    - [x] Verify Passive Income Generation (M2 > M0) <!-- id: 44 -->
+- [ ] Phase 15: Materiality & Durables (The Weight) <!-- id: 45 -->
+    - [x] Create `design/work_orders/WO-025-Materiality-Durables.md` <!-- id: 46 -->
+    - [x] Implement Durable Asset Lifespan & Quality <!-- id: 47 -->
+    - [x] Implement Utility Saturation Logic <!-- id: 48 -->
+    - [x] Verify Phase 15: Run `scripts/verify_durables.py` and check "The Cliff & Echo" pattern. <!-- id: 22 -->
+- [x] **Phase 16**: Portfolio Optimization (Investment) <!-- id: 23 -->
+    - [x] Design WO-026: The Portfolio Manager (Rational Brain) <!-- id: 51 -->
+    - [x] Implement `risk_aversion` and `PortfolioManager` <!-- id: 52 -->
+    - [x] Integrate Monthly Rebalancing in AI Engine <!-- id: 53 -->
+    - [x] Verify: The Friedman Effect (Interest Rate Sensitivity) <!-- id: 54 -->
+- [ ] **Phase 16-B**: Corporate Intelligence (The CEO Brain) <!-- id: 55 -->
+    - [x] Design WO-027: Corporate CEO Module & R&D Physics <!-- id: 56 -->
+    - [x] Implement `CorporateManager` and R&D Logic <!-- id: 57 -->
+    - [x] Verify: The Innovation War (Market Dominance through R&D) <!-- id: 58 -->
+- [ ] **Phase 14-4**: Stock Exchange & Order Book (WO-028) <!-- id: 59 -->
+    - [x] Design WO-028: Stock Market Mechanism & Valuation Models <!-- id: 60 -->
+    - [x] Implement Batch Auction & Order Book (StockExchange) <!-- id: 61 -->
+    - [x] Implement Household 'Value vs Momentum' Valuation Logic <!-- id: 62 -->
+    - [x] Implement Corporate Treasury Buyback Logic <!-- id: 63 -->
+    - [x] Verify: Bubbles, Crashes, and Price Discovery <!-- id: 64 -->
+- [/] Phase 17+: Market Diversity (The Complexity) <!-- id: 54 -->
+    - [x] Create Work Order `design/work_orders/WO-029-Market-Diversity.md` <!-- id: 54a -->
+    - [x] Phase 17-1: Service Market (The Protocol of Time) <!-- id: 55 -->
+        - [x] Create Spec `design/specs/phase17_1_service_market_spec.md` <!-- id: 55a -->
+        - [x] Implement `ServiceFirm` (Zero Inventory Logic) <!-- id: 55b -->
+        - [x] Implement `ServiceFirmAI` (Utilization-Based Logic) <!-- id: 55d -->
+        - [x] Implement `service.education` sector & Household Consumption <!-- id: 55e -->
+        - [x] Verify: `verify_service_market.py` (Solvency & Adaptation) <!-- id: 55c -->
+    - [x] Phase 17-2: Raw Materials (Supply Chain) <!-- id: 57 -->
+        - [x] Create Spec `design/specs/phase17_2_raw_materials_spec.md` <!-- id: 57a0 -->
+        - [x] Define Material Sectors (`iron`) <!-- id: 57a -->
+        - [x] Implement `InputInventory` & `_manage_procurement()` constraint <!-- id: 57b -->
+        - [x] Verify: Supply Chain mechanics (3 tests passed) <!-- id: 57c -->
+    - [/] Phase 17-3: Real Estate (Asset & Rent) <!-- id: 56 -->
+        - [x] Create Spec `design/specs/phase17_3_real_estate_spec.md` <!-- id: 56a0 -->
+        - [x] Phase 17-3A: Rental Market (Priority) <!-- id: 56a -->
+            - [x] Create `RealEstateUnit` class <!-- id: 56a1 -->
+            - [x] Add `owned_properties`, `residing_property_id`, `is_homeless` to Household <!-- id: 56a2 -->
+            - [x] Implement Rent Collection & Eviction <!-- id: 56a3 -->
+            - [x] Implement Maintenance Cost <!-- id: 56a4 -->
+            - [x] Implement Homeless Penalty <!-- id: 56a5 -->
+            - [x] Initial Distribution (Top 20% + Mortgage) <!-- id: 56a6 -->
+        - [x] Phase 17-3B: Sales Market (Completed) <!-- id: 56b -->
+            - [x] Sales Market Order Book <!-- id: 56b1 -->
+            - [x] Mortgage Integration <!-- id: 56b2 -->
+            - [x] HousingManager NPV Logic <!-- id: 56b3 -->
+            - [x] Verify: `verify_real_estate_sales.py` passed <!-- id: 56b4 -->
+    - [x] Phase 17-4: The Society of Vanity (WO-031) <!-- id: 65 -->
+        - [x] Implement Social Rank & Utility Logic <!-- id: 65a -->
+        - [x] Implement Mimicry Consumption (Panic Buy) <!-- id: 65b -->
+        - [x] Implement Veblen Demand Effect <!-- id: 65c -->
+        - [x] Verify: `verify_vanity_society.py` passed <!-- id: 65d -->
+    - [ ] Phase 17-5: The Leviathan (WO-032) <!-- id: 66 -->
+        - [ ] Task 1: Opinion Polls (Sensor, Lag 4 tick) <!-- id: 66a -->
+        - [ ] Task 2: Government AI Policy & Budget (Actuator) <!-- id: 66b -->
+        - [ ] Task 3: Retrospective Voting Election (Judge) <!-- id: 66c -->
+        - [ ] Verify: `verify_leviathan.py` passed <!-- id: 66d -->
+    - [ ] Phase 19: Population Dynamics (Birth Strike) <!-- id: 67 -->
+    - [ ] Foreclosure & Auction <!-- id: 68 -->
