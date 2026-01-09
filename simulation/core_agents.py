@@ -242,6 +242,10 @@ class Household(BaseAgent):
         self.conformity: float = random.uniform(c_min, c_max)
         self.social_rank: float = 0.5  # Phase 17-4: Percentile Rank (0.0~1.0)
 
+        # --- Phase 17-5: Leviathan (Political Opinion) ---
+        self.approval_rating: int = 1 # 1: Approve, 0: Disapprove
+        self.discontent: float = 0.0
+
         self.patience: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
         self.optimism: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
 
@@ -537,6 +541,7 @@ class Household(BaseAgent):
             "residing_property_id": self.residing_property_id,
             "social_rank": getattr(self, "social_rank", 0.0),
             "conformity": getattr(self, "conformity", 0.5),
+            "approval_rating": getattr(self, "approval_rating", 1), # Phase 17-5
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
@@ -545,6 +550,22 @@ class Household(BaseAgent):
         AI 학습을 위한 이전 상태 데이터를 반환합니다.
         """
         return getattr(self, "pre_state_snapshot", self.get_agent_data())
+
+    def update_political_opinion(self):
+        """
+        Phase 17-5: Update Political Opinion based on Discontent.
+        Discontent = Survival Need / 100.0.
+        Approval = 1 if Discontent < 0.4 else 0.
+        """
+        # Calculate Discontent
+        survival_need = self.needs.get("survival", 0.0)
+        self.discontent = min(1.0, survival_need / 100.0)
+
+        # Determine Approval (Tolerance = 0.4)
+        if self.discontent < 0.4:
+            self.approval_rating = 1
+        else:
+            self.approval_rating = 0
 
     @override
     def make_decision(

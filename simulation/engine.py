@@ -549,11 +549,26 @@ class Simulation:
             ref_std = self._calculate_reference_standard()
             market_data["reference_standard"] = ref_std
 
-        # Phase 4: Welfare Check
-        # run_welfare_check(agents, market_data, current_tick)
-        # Note: market_data needs 'total_production' (GDP) for stimulus check
+        # Phase 17-5: Leviathan Logic Integration
+        # 1. Update Household Political Opinions
+        for h in self.households:
+            if h.is_active:
+                h.update_political_opinion()
+
+        # 2. Government Gathers Opinion
+        self.government.update_public_opinion(self.households)
+
+        # 3. Government Makes Policy Decision
+        # Inject GDP for AI state
         latest_gdp = self.tracker.get_latest_indicators().get("total_production", 0.0)
-        market_data["total_production"] = latest_gdp # Inject for Government
+        market_data["total_production"] = latest_gdp
+
+        self.government.make_policy_decision(market_data, self.time)
+
+        # 4. Election Check
+        self.government.check_election(self.time)
+
+        # Phase 4: Welfare Check (Executes Subsidies based on Policy)
         self.government.run_welfare_check(list(self.agents.values()), market_data, self.time)
 
         # Snapshot agents for learning (Pre-state)
@@ -809,9 +824,9 @@ class Simulation:
                  firm.update_needs(self.time, self.government, market_data, self.reflux_system)
                  
                  # 2a. 법인세(Corporate Tax) 징수 (이익이 발생한 경우)
+                 # [LEVIATHAN UPDATE] use government.calculate_corporate_tax
                  if firm.is_active and firm.current_profit > 0:
-                     corporate_tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
-                     tax_amount = firm.current_profit * corporate_tax_rate
+                     tax_amount = self.government.calculate_corporate_tax(firm.current_profit)
                      firm.assets -= tax_amount
                      self.government.collect_tax(tax_amount, "corporate_tax", firm.id, self.time)
 
