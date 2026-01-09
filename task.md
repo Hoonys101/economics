@@ -100,10 +100,10 @@
         - [x] Implement Mimicry Consumption (Panic Buy) <!-- id: 65b -->
         - [x] Implement Veblen Demand Effect <!-- id: 65c -->
         - [x] Verify: `verify_vanity_society.py` passed <!-- id: 65d -->
-    - [ ] Phase 17-5: The Leviathan (WO-032) <!-- id: 66 -->
-        - [ ] Task 1: Opinion Polls (Sensor, Lag 4 tick) <!-- id: 66a -->
-        - [ ] Task 2: Government AI Policy & Budget (Actuator) <!-- id: 66b -->
-        - [ ] Task 3: Retrospective Voting Election (Judge) <!-- id: 66c -->
-        - [ ] Verify: `verify_leviathan.py` passed <!-- id: 66d -->
+    - [x] Phase 17-5: The Leviathan (WO-032) <!-- id: 66 -->
+        - [x] Task 1: Opinion Polls (Sensor, Lag 4 tick) <!-- id: 66a -->
+        - [x] Task 2: Government AI Policy & Budget (Actuator) <!-- id: 66b -->
+        - [x] Task 3: Retrospective Voting Election (Judge) <!-- id: 66c -->
+        - [x] Verify: `verify_leviathan.py` passed <!-- id: 66d -->
     - [ ] Phase 19: Population Dynamics (Birth Strike) <!-- id: 67 -->
     - [ ] Foreclosure & Auction <!-- id: 68 -->
