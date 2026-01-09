@@ -21,7 +21,6 @@ class RealEstateUnit:
     condition: float = 1.0  # 0.0 = uninhabitable
     estimated_value: float = 10000.0  # Market price anchor
     rent_price: float = 100.0  # Monthly rent set by owner
-    quality_tier: int = 1  # 1=Low (Slum), 2=Mid (Apartment), 3=High (Mansion) (For Phase 17-4 Vanity)
     mortgage_id: Optional[int] = None  # Linked loan ID
 ```
 
