@@ -22,6 +22,7 @@ from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
 from simulation.systems.reflux_system import EconomicRefluxSystem
+from simulation.systems.demographic_manager import DemographicManager # Phase 19
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 
 # Use the repository pattern for data access
@@ -197,6 +198,9 @@ class Simulation:
 
         # Economic Reflux System (Phase 8-B)
         self.reflux_system = EconomicRefluxSystem()
+
+        # Phase 19: Demographic Manager
+        self.demographic_manager = DemographicManager(config_module=self.config_module)
 
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
@@ -767,37 +771,31 @@ class Simulation:
              housing_transactions = self.markets["housing"].match_orders(self.time)
              all_transactions.extend(housing_transactions)
 
-        # --- Mitosis Processing (Agent Evolution) ---
-        # Inserted after consumption reset (which is actually after consumption logic in original flow)
-        # Spec says: After consumption counter reset, Before _handle_agent_lifecycle
+        # --- Phase 19: Population Dynamics ---
+        # 1. Aging
+        self.demographic_manager.process_aging(self.households, self.time)
 
-        # NOTE: Original code had consumption counter reset at the END of run_tick.
-        # But for Mitosis to see updated needs/assets after consumption, it should be here or after.
-        # The spec says "After consumption counter reset". This implies we might need to move the reset earlier
-        # or do Mitosis at the end. However, usually counters are reset for the *next* tick.
-        # Let's put Mitosis here, before lifecycle management.
+        # 2. Reproduction Decision
+        birth_requests = []
+        for household in self.households:
+             if household.is_active:
+                 # Check decision logic
+                 context = DecisionContext(
+                     household=household,
+                     markets=self.markets,
+                     goods_data=self.goods_data,
+                     market_data=consumption_market_data, # Reuse consumption data
+                     current_time=self.time,
+                     government=self.government
+                 )
+                 if household.decision_engine.decide_reproduction(context):
+                     birth_requests.append(household)
 
-        new_children = []
-        # Count active households for dynamic threshold
-        current_pop = len([h for h in self.households if h.is_active])
+        # 3. Execution
+        new_children = self.demographic_manager.process_births(self, birth_requests)
 
-        for household in list(self.households): # Iterate copy in case of modification issues
-            if not household.is_active:
-                continue
-
-            child = household.check_mitosis(
-                current_population=current_pop,
-                target_population=self.config_module.TARGET_POPULATION,
-                new_id=self.next_agent_id
-            )
-
-            if child:
-                self.next_agent_id += 1
-                new_children.append((household, child))
-                current_pop += 1
-
-        # Register new children and inherit brains
-        for parent, child in new_children:
+        # 4. Registration
+        for child in new_children:
             self.households.append(child)
             self.agents[child.id] = child
             child.decision_engine.markets = self.markets
@@ -805,8 +803,9 @@ class Simulation:
             # self.ai_training_manager.agents references self.households, so no need to append again
             # self.ai_training_manager.agents.append(child)
 
-            # Brain Inheritance (Q-Table + Personality)
-            self.ai_training_manager.inherit_brain(parent, child)
+            # Brain inheritance is handled inside DemographicManager.process_births
+            # but we need to ensure AI training manager tracks it?
+            # It just iterates self.households, so appending is enough.
 
             # Update Stock Market Shareholder Registry
             if self.stock_market:
@@ -1795,18 +1794,24 @@ class Simulation:
         # 2. 사망 가계 청산 (Household Liquidation)
         inactive_households = [h for h in self.households if not h.is_active]
         for household in inactive_households:
-            # 2a. 상속세 징수 (잔여 자산 정부 귀속)
-            inheritance_tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 1.0)
-            tax_amount = household.assets * inheritance_tax_rate
-            self.government.collect_tax(tax_amount, "inheritance_tax", household.id, self.time)
+            # Phase 19: Inheritance (via DemographicManager)
+            # Must run BEFORE assets are wiped
+            if hasattr(self, "demographic_manager"):
+                self.demographic_manager.handle_inheritance(household, self)
             
-            self.logger.info(
-                f"HOUSEHOLD_LIQUIDATION | Household {household.id} liquidated. "
-                f"Tax Collected: {tax_amount:.2f}, Inventory: {sum(household.inventory.values()):.2f}",
-                extra={"agent_id": household.id, "tags": ["liquidation", "tax"]}
-            )
-            
-            household.assets = 0.0
+            # Remaining liquidation logic (if any assets left)
+            if household.assets > 0:
+                inheritance_tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 1.0)
+                tax_amount = household.assets * inheritance_tax_rate
+                self.government.collect_tax(tax_amount, "inheritance_tax", household.id, self.time)
+
+                self.logger.info(
+                    f"HOUSEHOLD_LIQUIDATION | Household {household.id} liquidated. "
+                    f"Tax Collected: {tax_amount:.2f}, Inventory: {sum(household.inventory.values()):.2f}",
+                    extra={"agent_id": household.id, "tags": ["liquidation", "tax"]}
+                )
+                household.assets = 0.0
+
             household.inventory.clear()
             household.shares_owned.clear()
 

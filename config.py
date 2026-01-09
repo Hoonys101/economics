@@ -639,3 +639,17 @@ INITIAL_PROPERTY_VALUE = 10000.0
 INITIAL_RENT_PRICE = 100.0
 MAINTENANCE_RATE_PER_TICK = 0.001  # 0.1%
 HOMELESS_PENALTY_PER_TICK = 50.0
+
+# ==============================================================================
+# Phase 19: Population Dynamics
+# ==============================================================================
+REPRODUCTION_AGE_START = 20
+REPRODUCTION_AGE_END = 45
+CHILDCARE_TIME_REQUIRED = 8.0  # 자녀 1명당 하루 필요 시간
+HOUSEWORK_BASE_HOURS = 2.0     # 가구 기본 가사 시간
+EDUCATION_COST_MULTIPLIERS = { # 교육 수준별 기대 임금 배수
+    0: 1.0, 1: 1.5, 2: 2.2, 3: 3.5, 4: 5.0, 5: 8.0
+}
+SOCIAL_CAPILLARITY_COST = 0.5  # 계층 이동 비용 (K-Factor)
+UNNAMED_CHILD_MORTALITY_RATE = 0.001 # 기본 사망률
+EDUCATION_LEVEL_DISTRIBUTION = [0.4, 0.3, 0.15, 0.1, 0.04, 0.01] # 0~5단계 분포
