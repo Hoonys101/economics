@@ -220,20 +220,42 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         ai_decision_engine_instance_firm = ai_trainer.get_engine(firm_value_orientation)
 
         # Instantiate FirmAI, passing the AIDecisionEngine instance
-        firm_ai_instance = FirmAI(
-            agent_id=firm_id,
-            ai_decision_engine=ai_decision_engine_instance_firm,
-            gamma=config.AI_GAMMA,
-            epsilon=config.AI_EPSILON,
-            base_alpha=config.AI_BASE_ALPHA,
-            learning_focus=config.AI_LEARNING_FOCUS,
-        )
+        from simulation.ai.service_firm_ai import ServiceFirmAI
+        from simulation.firms import ServiceFirm
+
+        # Detect Service Sector based on specialization
+        # Check config GOODS for sector
+        good_config = config.GOODS.get(specialization, {})
+        sector = good_config.get("sector", "OTHER")
+        is_service_sector = sector == "SERVICE"
+
+        if is_service_sector:
+            firm_ai_instance = ServiceFirmAI(
+                agent_id=firm_id,
+                ai_decision_engine=ai_decision_engine_instance_firm,
+                gamma=config.AI_GAMMA,
+                epsilon=config.AI_EPSILON,
+                base_alpha=config.AI_BASE_ALPHA,
+                learning_focus=config.AI_LEARNING_FOCUS,
+            )
+        else:
+            firm_ai_instance = FirmAI(
+                agent_id=firm_id,
+                ai_decision_engine=ai_decision_engine_instance_firm,
+                gamma=config.AI_GAMMA,
+                epsilon=config.AI_EPSILON,
+                base_alpha=config.AI_BASE_ALPHA,
+                learning_focus=config.AI_LEARNING_FOCUS,
+            )
+
         firm_decision_engine = AIDrivenFirmDecisionEngine(
             ai_engine=firm_ai_instance, config_module=config
         )
 
         # Create the Firm instance with specialization instead of production_targets
-        firm = Firm(
+        FirmClass = ServiceFirm if is_service_sector else Firm
+
+        firm = FirmClass(
             id=firm_id,
             initial_capital=initial_capital,
             initial_liquidity_need=initial_liquidity_need,
@@ -243,6 +265,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             value_orientation=firm_value_orientation,
             config_module=config,
             logger=main_logger,
+            sector=sector, # Pass sector if Firm constructor supports it (it does)
         )
 
         # Initialize inventory for all possible goods

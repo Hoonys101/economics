@@ -291,6 +291,7 @@ BASE_LEARNING_RATE = 0.1          # 기본 학습률
 MAX_LEARNING_RATE = 0.5           # 최대 학습률
 LEARNING_EFFICIENCY = 1.0         # XP 획득 효율
 SERVICE_WASTE_PENALTY_FACTOR = 0.5 # 서비스 폐기물 페널티 (Phase 17-1)
+SERVICE_SECTORS = ["service.education", "service.medical"]
 
 
 # --- Loan Market (Deprecated/Legacy - overwritten by Banking below) ---

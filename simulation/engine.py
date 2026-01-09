@@ -1156,7 +1156,8 @@ class Simulation:
                 if is_service:
                     # 서비스인 경우 인벤토리를 거치지 않고 즉시 소비 처리
                     if isinstance(buyer, Household):
-                        buyer.consume(tx.item_id, tx.quantity, self.time)
+                        tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
+                        buyer.consume(tx.item_id, tx.quantity, self.time, quality=tx_quality)
                 else:
                     seller.inventory[tx.item_id] = max(
                         0, seller.inventory.get(tx.item_id, 0) - tx.quantity
@@ -1292,7 +1293,9 @@ class Simulation:
 
         # 4. AI 설정
         from simulation.ai.firm_ai import FirmAI
+        from simulation.ai.service_firm_ai import ServiceFirmAI
         from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+        from simulation.firms import ServiceFirm
 
         value_orientation = random.choice([
             self.config_module.VALUE_ORIENTATION_WEALTH_AND_NEEDS,
@@ -1300,11 +1303,21 @@ class Simulation:
         ])
         # Use ai_trainer instead of ai_manager
         ai_decision_engine = self.ai_trainer.get_engine(value_orientation)
-        firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+
+        # Detect Service Sector
+        is_service_sector = sector == "SERVICE"
+
+        if is_service_sector:
+            firm_ai = ServiceFirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+        else:
+            firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+
         firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config_module, self.logger)
 
         # 5. Firm 생성
-        new_firm = Firm(
+        FirmClass = ServiceFirm if is_service_sector else Firm
+
+        new_firm = FirmClass(
             id=new_firm_id,
             initial_capital=startup_cost,
             initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),

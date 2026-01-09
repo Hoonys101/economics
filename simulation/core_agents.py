@@ -686,7 +686,7 @@ class Household(BaseAgent):
             return self.config_module.HOUSEHOLD_LOW_ASSET_WAGE
         return self.config_module.HOUSEHOLD_DEFAULT_WAGE
 
-    def consume(self, item_id: str, quantity: float, current_time: int) -> None:
+    def consume(self, item_id: str, quantity: float, current_time: int, quality: float = 1.0) -> None:
         log_extra = {
             "tick": current_time,
             "agent_id": self.id,
@@ -765,10 +765,19 @@ class Household(BaseAgent):
 
             # Task #6: Gain Education XP
             if item_id == "education_service":
+                # Phase 17-1: Direct skill gain (labor_skill += 0.01 * quality)
+                # Assuming quantity acts as multiplier for "hours/sessions"
+                # Legacy: self.education_xp += quantity * self.config_module.LEARNING_EFFICIENCY
+
+                skill_gain = 0.01 * quality * quantity
+                self.labor_skill += skill_gain
+
+                # Also update XP for backward compatibility or leisure tracking
                 self.education_xp += quantity * self.config_module.LEARNING_EFFICIENCY
+
                 self.logger.debug(
-                    f"EDUCATION | Household {self.id} gained XP. Total XP: {self.education_xp:.2f}",
-                    extra={**log_extra, "education_xp": self.education_xp}
+                    f"EDUCATION | Household {self.id} increased skill by {skill_gain:.4f}. New Skill: {self.labor_skill:.4f}",
+                    extra={**log_extra, "skill_gain": skill_gain, "new_skill": self.labor_skill}
                 )
 
             consumed_good = self.goods_info_map.get(item_id)
