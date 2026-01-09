@@ -6,6 +6,14 @@ load_dotenv()  # Load environment variables from .env file
 # --- Simulation Parameters ---
 from enum import Enum
 
+# --- Phase 20: The Matrix v1 ---
+SYSTEM2_TICKS_PER_CALC = 10
+SYSTEM2_HORIZON = 100
+SYSTEM2_DISCOUNT_RATE = 0.98
+FORMULA_TECH_LEVEL = 0.0
+LACTATION_INTENSITY = 1.0
+HOMEWORK_QUALITY_COEFF = 0.5
+
 # --- Phase 17-4: Vanity System ---
 ENABLE_VANITY_SYSTEM = True
 VANITY_WEIGHT = 1.5           # 허영심 강도 (0=불교, 1=자본주의, 1.5=헬조선)
