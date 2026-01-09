@@ -235,7 +235,13 @@ class Household(BaseAgent):
         # Phase 17-3B: Personality Attributes (WO-029-D)
         # Initializes with 0.5 (Neutral) + small random noise for diversity
         self.ambition: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
-        self.conformity: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
+
+        # Phase 17-4: Vanity - Conformity (Biased Randomization)
+        conformity_ranges = getattr(config_module, "CONFORMITY_RANGES", {})
+        c_min, c_max = conformity_ranges.get(self.personality.name, conformity_ranges.get(None, (0.3, 0.7)))
+        self.conformity: float = random.uniform(c_min, c_max)
+        self.social_rank: float = 0.5  # Phase 17-4: Percentile Rank (0.0~1.0)
+
         self.patience: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
         self.optimism: float = max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3)))
 
@@ -529,6 +535,8 @@ class Household(BaseAgent):
             "is_homeless": self.is_homeless,
             "owned_properties_count": len(self.owned_properties),
             "residing_property_id": self.residing_property_id,
+            "social_rank": getattr(self, "social_rank", 0.0),
+            "conformity": getattr(self, "conformity", 0.5),
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 

@@ -256,4 +256,26 @@ class HouseholdAI(BaseAIEngine):
             (leisure_utility * leisure_weight)
         )
         
+        # --- Phase 17-4: Vanity Reward (Relative Deprivation) ---
+        if self.ai_decision_engine and getattr(self.ai_decision_engine, "config_module", None):
+            config = self.ai_decision_engine.config_module
+            if getattr(config, "ENABLE_VANITY_SYSTEM", False):
+                # Calculate Social Component
+                my_rank = agent_data.get("social_rank", 0.5)
+
+                # Reference Group is Top X% (e.g. 0.20 means Top 20%)
+                # Percentile Threshold = 1.0 - 0.20 = 0.80
+                ref_percentile_threshold = 1.0 - getattr(config, "REFERENCE_GROUP_PERCENTILE", 0.20)
+
+                # Relative Deprivation: Gap from the reference group threshold
+                # If my_rank (0.5) < ref (0.8), component is -0.3
+                social_component = my_rank - ref_percentile_threshold
+
+                # Conformity Weight
+                conformity = agent_data.get("conformity", 0.5) # Fallback 0.5
+                vanity_weight = getattr(config, "VANITY_WEIGHT", 1.0)
+
+                vanity_effect = conformity * social_component * vanity_weight
+                total_reward += (vanity_effect * 100.0)
+
         return total_reward

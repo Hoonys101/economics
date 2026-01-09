@@ -6,6 +6,22 @@ load_dotenv()  # Load environment variables from .env file
 # --- Simulation Parameters ---
 from enum import Enum
 
+# --- Phase 17-4: Vanity System ---
+ENABLE_VANITY_SYSTEM = True
+VANITY_WEIGHT = 1.5           # 허영심 강도 (0=불교, 1=자본주의, 1.5=헬조선)
+MIMICRY_FACTOR = 0.5          # 모방 소비 강도
+REFERENCE_GROUP_PERCENTILE = 0.20  # 상위 20%
+
+# 성격 유형별 Conformity 범위 (Biased Randomization)
+CONFORMITY_RANGES = {
+    "STATUS_SEEKER": (0.7, 0.95),
+    "CONSERVATIVE": (0.5, 0.7),
+    "MISER": (0.1, 0.3),
+    "IMPULSIVE": (0.4, 0.6),  # 중간
+    # 기본값
+    None: (0.3, 0.7)
+}
+
 # --- Gold Standard Mode (WO-016) ---
 GOLD_STANDARD_MODE = True  # True: 금본위 (Full Reserve), False: 현대 금융 (Credit Creation)
 INITIAL_MONEY_SUPPLY = 100_000.0  # 초기 화폐 총량 (검증용 기준값)
@@ -104,6 +120,14 @@ GOODS = {
         "base_lifespan": 50,  # Ticks
         "quality_sensitivity": 0.5,
         "inputs": {"iron": 1.0}, # WO-030: 1 unit of iron per unit of consumer_goods
+    },
+    "luxury_bag": {
+        "production_cost": 500,
+        "initial_price": 2000.0,
+        "utility_effects": {"social": 50},
+        "is_luxury": True,
+        "is_veblen": True,  # 가격↑ → 수요↑
+        "sector": "LUXURY",
     },
 }
 

@@ -22,6 +22,7 @@ from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
 from simulation.systems.reflux_system import EconomicRefluxSystem
+from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -437,6 +438,57 @@ class Simulation:
             extra={"tick": self.time, "tags": ["db_flush"]},
         )
 
+    def _update_social_ranks(self):
+        """Phase 17-4: Update Social Rank (Percentile)"""
+        # 1. Calculate Scores
+        scores = []
+        # Temporary instance for helper
+        hm = HousingManager(None, self.config_module)
+
+        for h in self.households:
+            if not h.is_active: continue
+
+            consumption_score = h.current_consumption * 10.0 # Weight consumption
+            housing_tier = hm.get_housing_tier(h)
+            housing_score = housing_tier * 1000.0 # Tier 1=1000, Tier 3=3000
+
+            total_score = consumption_score + housing_score
+            scores.append((h.id, total_score))
+
+        # 2. Sort and Assign Rank
+        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+        n = len(sorted_scores)
+        if n == 0: return
+
+        for rank_idx, (hid, _) in enumerate(sorted_scores):
+            # Rank 0 (Top) -> Percentile 1.0
+            # Rank N-1 (Bottom) -> Percentile 0.0
+            percentile = 1.0 - (rank_idx / n)
+            agent = self.agents.get(hid)
+            if agent:
+                agent.social_rank = percentile
+
+    def _calculate_reference_standard(self) -> Dict[str, float]:
+        """Phase 17-4: Calculate Top 20% Average Standard"""
+        active_households = [h for h in self.households if h.is_active]
+        if not active_households:
+            return {"avg_consumption": 0.0, "avg_housing_tier": 0.0}
+
+        top_20_count = max(1, int(len(active_households) * 0.20))
+        sorted_hh = sorted(active_households, key=lambda h: getattr(h, "social_rank", 0.0), reverse=True)
+        top_20 = sorted_hh[:top_20_count]
+
+        # Temp helper
+        hm = HousingManager(None, self.config_module)
+
+        avg_cons = sum(h.current_consumption for h in top_20) / len(top_20)
+        avg_tier = sum(hm.get_housing_tier(h) for h in top_20) / len(top_20)
+
+        return {
+            "avg_consumption": avg_cons,
+            "avg_housing_tier": avg_tier
+        }
+
     def run_tick(self) -> None:
         # --- Gold Standard / Money Supply Verification (WO-016) ---
         if self.time == 0:
@@ -486,8 +538,17 @@ class Simulation:
             if isinstance(market, OrderBookMarket):
                 market.clear_orders()
 
+        # Phase 17-4: Update Social Ranks & Calculate Reference Standard
+        if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
+            self._update_social_ranks()
+
         market_data = self._prepare_market_data(self.tracker)
         
+        # Inject Reference Standard
+        if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
+            ref_std = self._calculate_reference_standard()
+            market_data["reference_standard"] = ref_std
+
         # Phase 4: Welfare Check
         # run_welfare_check(agents, market_data, current_tick)
         # Note: market_data needs 'total_production' (GDP) for stimulus check
