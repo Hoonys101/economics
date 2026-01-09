@@ -20,10 +20,20 @@
 - [x] 13. Stock Exchange (Phase 14-4)
 
 ## 🔴 Pending / Future
-- [ ] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
+- [/] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
 - [ ] 15. Commercial Bank Deepening (Lender of Last Resort)
 - [ ] 16. Data Lake & Universe Expansion
 - [ ] 17. Time Machine (Backtester)
+- [ ] 18. **Foreclosure & Auction** (Bank Asset Seizure on Mortgage Default)
+
+## ⚠️ [MAJOR OVERHAUL REQUIRED] Cognitive Architecture (Phase 20+)
+> **Goal**: System 1 (Fast/RL) + System 2 (Slow/Planner) 분리
+> **Trigger**: 부동산/연금 등 초장기 결정이 필요한 기능 확장 시
+> **Reference**: Kahneman's Dual-Process Theory
+
+- **Current State**: RL(Q-Learning)은 단기 보상에만 반응 (근시안적).
+- **Future State**: Model-Based Planning을 통해 미래 시나리오를 시뮬레이션하고 현재 행동을 제약.
+- **Interim Solution**: Phase 17-3에서는 `HousingManager`가 NPV 계산으로 대리 수행.
 
 ## 🟣 Architecture v3.0: High-Performance Simulation (Long-Term)
 > **Goal**: Optimization Strategy for 100k+ Agents (OOP -> DOP Transition)
