@@ -21,10 +21,15 @@
 
 ## 🔴 Pending / Future
 - [/] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
-- [ ] 15. Commercial Bank Deepening (Lender of Last Resort)
-- [ ] 16. Data Lake & Universe Expansion
-- [ ] 17. Time Machine (Backtester)
-- [ ] 18. **Foreclosure & Auction** (Bank Asset Seizure on Mortgage Default)
+    - [x] 17-1: Service Market (Completed)
+    - [x] 17-2: Raw Materials (Completed)
+    - [/] 17-3: Real Estate (Current)
+- [ ] 15. **Phase 17-4: The Vanity Module** (Social Rank, Relative Deprivation, Prestige)
+- [ ] 16. **Phase 18: The Leviathan** (Government AI, Polls, Elections)
+- [ ] 17. **Phase 19: Population Dynamics** (Birth Strike, Extinction Scenario)
+- [ ] 18. **Foreclosure & Auction** (Bank Asset Seizure)
+- [ ] 19. Commercial Bank Deepening (Lender of Last Resort)
+- [ ] 20. Time Machine (Backtester)
 
 ## ⚠️ [MAJOR OVERHAUL REQUIRED] Cognitive Architecture (Phase 20+)
 > **Goal**: System 1 (Fast/RL) + System 2 (Slow/Planner) 분리
