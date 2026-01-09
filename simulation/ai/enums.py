@@ -101,3 +101,11 @@ class Aggressiveness(Enum):
     NORMAL = auto()
     NEUTRAL = auto()
     AGGRESSIVE = auto()
+
+class PoliticalParty(Enum):
+    """
+    Phase 17-5: Leviathan
+    Political Parties with distinct policy biases.
+    """
+    BLUE = auto() # Pro-Corporate (Low Corp Tax, Subsidies)
+    RED = auto()  # Pro-Household (Low Income Tax, Welfare)
