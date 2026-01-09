@@ -35,6 +35,10 @@ class CorporateManager:
         """
         orders: List[Order] = []
 
+        # 0. Procurement Channel (Raw Materials) - WO-030
+        procurement_orders = self._manage_procurement(firm, context.market_data, context.markets)
+        orders.extend(procurement_orders)
+
         # 1. R&D Channel (Innovation)
         self._manage_r_and_d(firm, action_vector.rd_aggressiveness, context.current_time)
 
@@ -57,6 +61,46 @@ class CorporateManager:
         # 6. Hiring Channel (Employment)
         hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data)
         orders.extend(hiring_orders)
+
+        return orders
+
+    def _manage_procurement(self, firm: Firm, market_data: Dict[str, Any], markets: Dict[str, Any]) -> List[Order]:
+        """
+        WO-030: Manage Raw Material Procurement.
+        Checks input requirements and generates BUY orders if deficit exists.
+        Market Taker Strategy: Bid 5% above market price to ensure supply.
+        """
+        orders = []
+        input_config = self.config_module.GOODS.get(firm.specialization, {}).get("inputs", {})
+
+        if not input_config:
+            return orders
+
+        target_production = firm.production_target
+
+        for mat, req_per_unit in input_config.items():
+            needed = target_production * req_per_unit
+            current = firm.input_inventory.get(mat, 0.0)
+            deficit = needed - current
+
+            if deficit > 0:
+                # Market Taker Logic
+                mat_market_data = market_data.get("goods_market", {})
+                last_price_key = f"{mat}_avg_traded_price"
+                fallback_price_key = f"{mat}_current_sell_price"
+
+                last_price = mat_market_data.get(last_price_key, 0.0)
+                if last_price <= 0:
+                     last_price = mat_market_data.get(fallback_price_key, 0.0)
+                if last_price <= 0:
+                     last_price = self.config_module.GOODS.get(mat, {}).get("initial_price", 10.0)
+
+                bid_price = last_price * 1.05 # 5% premium
+
+                # Check affordability? Firm will fail to pay if asset < 0, dealt by transaction/engine.
+                # Just place order.
+
+                orders.append(Order(firm.id, "BUY", mat, deficit, bid_price, mat))
 
         return orders
 

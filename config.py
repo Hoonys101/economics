@@ -85,6 +85,14 @@ GOODS = {
         "is_luxury": False,
         "sector": "SERVICE",
     },
+    # WO-030: Iron (Raw Material)
+    "iron": {
+        "production_cost": 2.0,
+        "initial_price": 8.0,
+        "utility_effects": {},
+        "is_luxury": False,
+        "sector": "MATERIAL",
+    },
     # WO-023: Consumer Goods (Industrial Product)
     "consumer_goods": {
         "production_cost": 5.0,
@@ -95,8 +103,11 @@ GOODS = {
         "is_durable": True,
         "base_lifespan": 50,  # Ticks
         "quality_sensitivity": 0.5,
+        "inputs": {"iron": 1.0}, # WO-030: 1 unit of iron per unit of consumer_goods
     },
 }
+
+RAW_MATERIAL_SECTORS = ["iron"]
 
 
 # Added for explicit reference

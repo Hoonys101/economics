@@ -1163,31 +1163,40 @@ class Simulation:
                         0, seller.inventory.get(tx.item_id, 0) - tx.quantity
                     )
 
-                    # Phase 15: Transfer Quality (Weighted Average)
-                    current_qty = buyer.inventory.get(tx.item_id, 0)
+                    # WO-030: Route Raw Materials to input_inventory
+                    is_raw_material = tx.item_id in getattr(self.config_module, "RAW_MATERIAL_SECTORS", [])
 
-                    # Determine existing quality
-                    existing_quality = 1.0
-                    if isinstance(buyer, Household):
-                        existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
-                    elif isinstance(buyer, Firm):
-                        existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
+                    if is_raw_material and isinstance(buyer, Firm):
+                        # Add to input_inventory
+                        buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
+                        # No quality tracking for input_inventory yet in this spec
+                    else:
+                        # Regular inventory update
+                        # Phase 15: Transfer Quality (Weighted Average)
+                        current_qty = buyer.inventory.get(tx.item_id, 0)
 
-                    # Transaction Quality (passed from Market)
-                    tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
+                        # Determine existing quality
+                        existing_quality = 1.0
+                        if isinstance(buyer, Household):
+                            existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
+                        elif isinstance(buyer, Firm):
+                            existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
 
-                    # Calculate new WA Quality
-                    total_new_qty = current_qty + tx.quantity
-                    new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
+                        # Transaction Quality (passed from Market)
+                        tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
 
-                    # Update Buyer Quality
-                    if isinstance(buyer, Household):
-                        buyer.inventory_quality[tx.item_id] = new_avg_quality
-                    elif isinstance(buyer, Firm):
-                        buyer.inventory_quality[tx.item_id] = new_avg_quality
+                        # Calculate new WA Quality
+                        total_new_qty = current_qty + tx.quantity
+                        new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
 
-                    # Update Quantity
-                    buyer.inventory[tx.item_id] = total_new_qty
+                        # Update Buyer Quality
+                        if isinstance(buyer, Household):
+                            buyer.inventory_quality[tx.item_id] = new_avg_quality
+                        elif isinstance(buyer, Firm):
+                            buyer.inventory_quality[tx.item_id] = new_avg_quality
+
+                        # Update Quantity
+                        buyer.inventory[tx.item_id] = total_new_qty
 
                 if isinstance(seller, Firm):
                     seller.revenue_this_turn += trade_value
@@ -1290,6 +1299,11 @@ class Simulation:
         # Refactored: Map Specialization to Sector using Config
         goods_config = self.config_module.GOODS.get(specialization, {})
         sector = goods_config.get("sector", "OTHER")
+
+        # WO-030: Increase Initial Capital for Manufacturing Firms (Input Constraints)
+        has_inputs = bool(goods_config.get("inputs"))
+        if has_inputs:
+             startup_cost *= 1.5
 
         # 4. AI 설정
         from simulation.ai.firm_ai import FirmAI

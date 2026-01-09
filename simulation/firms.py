@@ -55,6 +55,7 @@ class Firm(BaseAgent):
             self.inventory.update(initial_inventory)
         self.specialization = specialization
         self.inventory_quality: Dict[str, float] = {}  # Phase 15: Weighted Average Quality
+        self.input_inventory: Dict[str, float] = {} # WO-030: Raw Materials
         
         # Phase 14-2 attributes
         self.sector = sector
@@ -308,21 +309,44 @@ class Firm(BaseAgent):
             produced_quantity = 0.0
 
         if produced_quantity > 0:
-            # WO-023: Refactored to use self.specialization directly (Data Driven)
-            item_id = self.specialization
-                
-            current_inventory = self.inventory.get(item_id, 0)
+            # WO-030: Input Constraints Logic
+            input_config = self.config_module.GOODS.get(self.specialization, {}).get("inputs", {})
             
-            # Phase 15: Weighted Average Quality
-            current_quality = self.inventory_quality.get(item_id, 1.0)
+            if input_config:
+                max_by_inputs = float('inf')
+                for mat, req_per_unit in input_config.items():
+                    available = self.input_inventory.get(mat, 0.0)
+                    if req_per_unit > 0:
+                        max_by_inputs = min(max_by_inputs, available / req_per_unit)
 
-            # Formula: ((OldQty * OldQ) + (NewQty * NewQ)) / (OldQty + NewQty)
-            total_qty = current_inventory + produced_quantity
-            new_avg_quality = ((current_inventory * current_quality) + (produced_quantity * actual_quality)) / total_qty
+                # Constrain production
+                actual_produced = min(produced_quantity, max_by_inputs)
 
-            self.inventory_quality[item_id] = new_avg_quality
-            self.inventory[item_id] = total_qty
-            self.current_production = produced_quantity
+                # Deduct used inputs
+                for mat, req_per_unit in input_config.items():
+                    amount_to_deduct = actual_produced * req_per_unit
+                    self.input_inventory[mat] = max(0.0, self.input_inventory.get(mat, 0.0) - amount_to_deduct)
+            else:
+                actual_produced = produced_quantity
+
+            if actual_produced > 0:
+                # WO-023: Refactored to use self.specialization directly (Data Driven)
+                item_id = self.specialization
+
+                current_inventory = self.inventory.get(item_id, 0)
+
+                # Phase 15: Weighted Average Quality
+                current_quality = self.inventory_quality.get(item_id, 1.0)
+
+                # Formula: ((OldQty * OldQ) + (NewQty * NewQ)) / (OldQty + NewQty)
+                total_qty = current_inventory + actual_produced
+                new_avg_quality = ((current_inventory * current_quality) + (actual_produced * actual_quality)) / total_qty
+
+                self.inventory_quality[item_id] = new_avg_quality
+                self.inventory[item_id] = total_qty
+                self.current_production = actual_produced
+            else:
+                self.current_production = 0.0
 
     def issue_shares(self, quantity: float, price: float) -> float:
         """
@@ -478,6 +502,7 @@ class Firm(BaseAgent):
             "assets": self.assets,
             "needs": self.needs.copy(),
             "inventory": self.inventory.copy(),
+            "input_inventory": self.input_inventory.copy(), # WO-030
             "employees": [emp.id for emp in self.employees],  # Only pass employee IDs
             "is_active": self.is_active,
             "current_production": self.current_production,
