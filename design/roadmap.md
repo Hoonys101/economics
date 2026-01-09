@@ -20,16 +20,22 @@
 - [x] 13. Stock Exchange (Phase 14-4)
 
 ## 🔴 Pending / Future
-- [/] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
+- [x] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
     - [x] 17-1: Service Market (Completed)
     - [x] 17-2: Raw Materials (Completed)
-    - [/] 17-3: Real Estate (Current)
-- [ ] 15. **Phase 17-4: The Vanity Module** (Social Rank, Relative Deprivation, Prestige)
+    - [x] 17-3a: Real Estate Rental (Completed)
+    - [x] 17-3b: Real Estate Sales & Mortgage (Completed)
+- [/] 15. **Phase 17-4: The Society of Vanity & Control** (WO-031)
+    - [ ] Task 1: `SimulationConfig` 싱글톤 클래스 구축
+    - [ ] Task 2: 기존 코드 Refactoring (Bank, Gov 등 → Config 참조)
+    - [ ] Task 3: Social Rank & 유틸리티 함수 개편 (Vanity Module)
+    - [ ] Task 4: 베블런재 & 모방 소비 로직
 - [ ] 16. **Phase 18: The Leviathan** (Government AI, Polls, Elections)
 - [ ] 17. **Phase 19: Population Dynamics** (Birth Strike, Extinction Scenario)
 - [ ] 18. **Foreclosure & Auction** (Bank Asset Seizure)
 - [ ] 19. Commercial Bank Deepening (Lender of Last Resort)
 - [ ] 20. Time Machine (Backtester)
+- [ ] 21. **Config Refactoring Pass 2**: 런타임 조정 시스템 (CLI/API 연동)
 
 ## ⚠️ [MAJOR OVERHAUL REQUIRED] Cognitive Architecture (Phase 20+)
 > **Goal**: System 1 (Fast/RL) + System 2 (Slow/Planner) 분리
