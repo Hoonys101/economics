@@ -30,7 +30,10 @@
     - [ ] Task 2: 기존 코드 Refactoring (Bank, Gov 등 → Config 참조)
     - [ ] Task 3: Social Rank & 유틸리티 함수 개편 (Vanity Module)
     - [ ] Task 4: 베블런재 & 모방 소비 로직
-- [ ] 16. **Phase 18: The Leviathan** (Government AI, Polls, Elections)
+- [ ] 16. **Phase 17-5: The Leviathan** (Government & Politics - WO-032)
+    - [ ] Task 1: Opinion Polls (Sensor, Lagged Feedback)
+    - [ ] Task 2: Policy & Budget (Actuator, Welfare/Stimulus)
+    - [ ] Task 3: Election & Parties (Judge, Retrospective Voting)
 - [ ] 17. **Phase 19: Population Dynamics** (Birth Strike, Extinction Scenario)
 - [ ] 18. **Foreclosure & Auction** (Bank Asset Seizure)
 - [ ] 19. Commercial Bank Deepening (Lender of Last Resort)
