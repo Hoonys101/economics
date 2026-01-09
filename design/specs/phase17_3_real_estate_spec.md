@@ -31,6 +31,12 @@ class Household:
     owned_properties: List[int] = []  # IDs of owned RealEstateUnits
     residing_property_id: Optional[int] = None  # Where I live
     is_homeless: bool = False
+    
+    # Personality Attributes (0.0 ~ 1.0)
+    ambition: float = 0.5   # Desire for Tier 3, success
+    conformity: float = 0.5 # Mimicry (Phase 17-4)
+    patience: float = 0.5   # Savings vs Consumption
+    optimism: float = 0.5   # LTV, Future gains bias
 ```
 
 ---
@@ -72,7 +78,7 @@ class Household:
 ### 5.1. Rent vs Buy Calculator
 ```python
 def should_buy(self, household, property_value, rent_price, interest_rate):
-    """NPV-based decision."""
+    """NPV-based decision modulated by Personality."""
     horizon = 120  # ticks
     discount_rate = 0.05 / 100  # per tick
     
@@ -83,17 +89,23 @@ def should_buy(self, household, property_value, rent_price, interest_rate):
     down_payment = property_value * 0.2
     monthly_payment = (property_value * 0.8 * interest_rate) / 12
     maintenance = property_value * 0.001
-    appreciation_rate = 0.002  # per tick
+    
+    # Optimism Bias: Optimists overestimage appreciation
+    estimated_appreciation_rate = 0.002 * (1.0 + (household.optimism - 0.5)) 
     
     buy_cost_npv = down_payment + sum(
         (monthly_payment + maintenance) / (1 + discount_rate)**t 
         for t in range(horizon)
     )
     appreciation_npv = sum(
-        property_value * appreciation_rate / (1 + discount_rate)**t 
+        property_value * estimated_appreciation_rate / (1 + discount_rate)**t 
         for t in range(horizon)
     )
-    buy_npv = buy_cost_npv - appreciation_npv
+    
+    # Ambition Bias: Ambitious agents perceive "Prestige Value" as tangible gain
+    prestige_value = property_value * 0.1 * household.ambition
+    
+    buy_npv = buy_cost_npv - appreciation_npv - prestige_value
     
     return buy_npv < rent_npv
 ```

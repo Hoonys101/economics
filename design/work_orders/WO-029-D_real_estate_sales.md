@@ -1,50 +1,45 @@
-# Work Order: WO-029-D (Phase 17-3B: Real Estate - Sales & Mortgage)
+# Work Order: WO-029-D (Phase 17-3B: Real Estate - Sales & Mortgage) [Updated]
 
-**Objective**: Implement Real Estate Sales Market and Mortgage System.
+**Objective**: Implement Real Estate Sales Market, Mortgage System, and **Personality-driven** Housing Manager.
 
 **Reference Spec**: `design/specs/phase17_3_real_estate_spec.md`
 
 ## Required Changes
 
-### 1. Market Structure (`simulation/markets.py` & `engine.py`)
-- **HousingMarket**: Reuse or extend `OrderBookMarket`.
-    - Transaction item: `real_estate_id` (Unique Item).
-    - Unlike fungible goods (Apple), each order is for specific `RealEstateUnit`.
-- **Engine**: In `_process_market_matching`, handle `housing_market`.
+### 1. Household Update (`simulation/core_agents.py`)
+- **Personality Attributes**:
+    - Add `ambition`, `conformity`, `patience`, `optimism` (float 0.0~1.0).
+    - Initialize with random values (or Gaussian distribution).
 
-### 2. Mortgage System (`simulation/bank.py` or new `mortgage.py`)
-- **Mortgage Loan**:
-    - Principal: `Price * 0.8` (LTV 80%)
-    - Term: 360 ticks (30 years equivalent)
-    - Monthly Payment: Amortization logic.
-    - Collateral: Link to `RealEstateUnit.id`.
-- **Foreclosure Logic**:
-    - If borrower defaults (misses 3 payments?), Bank seizes property.
-    - `unit.owner_id = Bank`, `unit.occupant_id = None` (Eviction).
-    - Bank places SELL order at 80% of value (Fire Sale).
+### 2. HousingManager AI (`simulation/decisions/housing_manager.py`)
+- **Proxy Planner**:
+    - `should_buy(household, unit_price, rent_price)`:
+    - **Base Logic**: NPV(Buy) > NPV(Rent).
+    - **Personality Bias**:
+        - `Optimism`: Increases perceived appreciation rate (overvalues future gains).
+        - `Ambition`: Adds "Prestige Value" to Buy Utility (Buy NPV += Price * 0.1 * Ambition).
+    - If `Buy NPV + Bias > Rent NPV`, return True.
 
-### 3. HousingManager AI (`simulation/decisions/housing_manager.py`)
-**This is the "Proxy Planner" module.**
-- Implement `should_buy(household, unit_price, rent_price)`:
-    - Calculate NPV of Renting vs Buying.
-    - Hardcoded economic wisdom (not RL).
-- **Integration**:
-    - In `AIDrivenHouseholdDecisionEngine`, call `HousingManager`.
-    - If `HousingManager` says BUY, override other consumption signals if affordable.
+### 3. Market Structure (`simulation/markets.py` & `engine.py`)
+- **HousingMarket**: Reuse `OrderBookMarket` with unique `item_id`.
+- **Engine**: Match orders in `_process_market_matching`.
 
-### 4. Engine Integration (`simulation/engine.py`)
-- **Initialization**:
-    - Ensure remaining 80 units (Government/Bank owned) are listed for SALE.
-- **Run Tick**:
-    - Process Mortgage Payments (before Rent).
-    - Match Sales Orders.
-    - Execute Foreclosures.
+### 4. Mortgage System (`simulation/bank.py`)
+- **Mortgage Loan**: LTV 80%, 360 ticks.
+- **Foreclosure**: 3 missed payments -> Seize -> Fire Sale.
+
+### 5. Engine Integration (`simulation/engine.py`)
+- **Run Tick**: Mortgage -> Rent -> Matches -> Foreclosure.
+- **Initialization**: Government sells remaining units.
 
 ---
 
 ## Verification
 Create `tests/verify_real_estate_sales.py`:
-1. **Mortgage Creation**: Buying a house creates a loan with correct LTV.
-2. **Ownership Transfer**: Seller -> Buyer update.
-3. **Foreclosure**: Default -> Bank ownership -> Eviction.
-4. **AI Rationality**: Manager chooses BUY when Price < Rent * Multiplier (NPV logic).
+1. **Mortgage Creation**: Verify Loan parameters.
+2. **Ownership Transfer**: Verify Seller -> Buyer.
+3. **Foreclosure**: Verify Eviction & Fire Sale.
+4. **Personality Bias**:
+    - Create two households: Optimist (opt=1.0) vs Pessimist (opt=0.0).
+    - Verify Optimist buys even when NPV is slightly negative (due to bias).
+    - Verify Pessimist rents even when NPV is slightly positive (optional).
