@@ -20,6 +20,7 @@ from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType
 # Import HouseholdAI and AIDrivenHouseholdDecisionEngine for mitosis
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.ai.system2_planner import System2Planner
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -230,6 +231,11 @@ class Household(BaseAgent):
         # --- Phase 19: Population Dynamics ---
         # Initialize age uniformly between 20 and 60 for initial population
         self.age: float = random.uniform(20.0, 60.0)
+
+        # Phase 20: The Matrix (Gender & Home Quality)
+        self.gender: str = random.choice(["M", "F"])
+        self.home_quality_score: float = 1.0
+        self.system2_planner = System2Planner(config_module, self.logger)
 
         # Education Level (0~5) based on Distribution
         dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
@@ -563,6 +569,7 @@ class Household(BaseAgent):
             "education_level": getattr(self, "education_level", 0),
             "children_count": len(self.children_ids),
             "expected_wage": getattr(self, "expected_wage", 10.0),
+            "gender": getattr(self, "gender", "M"), # Phase 20
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
