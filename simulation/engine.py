@@ -7,6 +7,7 @@ import random
 from simulation.models import Transaction, Order, StockOrder
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
+from simulation.service_firms import ServiceFirm
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
 from simulation.bank import Bank
@@ -1292,6 +1293,7 @@ class Simulation:
 
         # 4. AI 설정
         from simulation.ai.firm_ai import FirmAI
+        from simulation.ai.service_firm_ai import ServiceFirmAI
         from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 
         value_orientation = random.choice([
@@ -1300,23 +1302,45 @@ class Simulation:
         ])
         # Use ai_trainer instead of ai_manager
         ai_decision_engine = self.ai_trainer.get_engine(value_orientation)
-        firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+
+        is_service = specialization in getattr(self.config_module, "SERVICE_SECTORS", [])
+
+        if is_service:
+            firm_ai = ServiceFirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+        else:
+            firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+
         firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config_module, self.logger)
 
         # 5. Firm 생성
-        new_firm = Firm(
-            id=new_firm_id,
-            initial_capital=startup_cost,
-            initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
-            specialization=specialization,
-            productivity_factor=random.uniform(8.0, 12.0),
-            decision_engine=firm_decision_engine,
-            value_orientation=value_orientation,
-            config_module=self.config_module,
-            logger=self.logger,
-            sector=sector,
-            is_visionary=is_visionary,
-        )
+        if is_service:
+            new_firm = ServiceFirm(
+                id=new_firm_id,
+                initial_capital=startup_cost,
+                initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
+                specialization=specialization,
+                productivity_factor=random.uniform(8.0, 12.0),
+                decision_engine=firm_decision_engine,
+                value_orientation=value_orientation,
+                config_module=self.config_module,
+                logger=self.logger,
+                sector=sector,
+                is_visionary=is_visionary,
+            )
+        else:
+            new_firm = Firm(
+                id=new_firm_id,
+                initial_capital=startup_cost,
+                initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
+                specialization=specialization,
+                productivity_factor=random.uniform(8.0, 12.0),
+                decision_engine=firm_decision_engine,
+                value_orientation=value_orientation,
+                config_module=self.config_module,
+                logger=self.logger,
+                sector=sector,
+                is_visionary=is_visionary,
+            )
         new_firm.founder_id = founder_household.id
         # Set loan market if available in simulation
         if "loan_market" in self.markets:
