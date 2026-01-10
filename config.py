@@ -7,8 +7,8 @@ load_dotenv()  # Load environment variables from .env file
 from enum import Enum
 
 # --- Phase 21: Corporate Empires ---
-AUTOMATION_LABOR_REDUCTION = 0.5  # Max 50% reduction in labor alpha
-AUTOMATION_COST_PER_PCT = 1000.0  # Base cost to increase automation by 1% (scaled by assets)
+AUTOMATION_LABOR_REDUCTION = 0.1  # Max 50% reduction in labor alpha
+AUTOMATION_COST_PER_PCT = 10000.0  # Base cost to increase automation by 1% (scaled by assets)
 HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD = 0.7  # Target if Market Cap < 70% of Intrinsic Value
 
 # --- Phase 20: The Matrix v1 ---
