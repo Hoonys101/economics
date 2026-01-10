@@ -290,6 +290,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
                 household_to_hire.is_employed = (
                     True  # Explicitly set is_employed to True
                 )
+                household_to_hire.current_wage = config.INITIAL_WAGE
+                firm.employee_wages[household_to_hire.id] = config.INITIAL_WAGE
                 logging.info(
                     f"Firm {firm.id} initially hired Household {household_to_hire.id}.",
                     extra={"tick": 0, "agent_id": firm.id, "tags": ["hiring", "init"]},

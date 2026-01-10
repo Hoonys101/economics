@@ -168,7 +168,12 @@ class CorporateManager:
 
         # Budget Check (using aggressiveness)
         # If aggressiveness is low, we invest slowly.
-        budget = firm.assets * (aggressiveness * 0.5)
+
+        # [Fix] Solvency Check: Reserve buffer for wages (approx 2000.0)
+        safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
+        investable_cash = max(0.0, firm.assets - safety_margin)
+
+        budget = investable_cash * (aggressiveness * 0.5)
 
         actual_spend = min(cost, budget)
 
@@ -201,8 +206,12 @@ class CorporateManager:
         rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
-        if firm.assets < budget:
-            budget = firm.assets * 0.5
+        # [Fix] Solvency Check
+        safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
+        investable_cash = max(0.0, firm.assets - safety_margin)
+
+        if investable_cash < budget:
+            budget = investable_cash * 0.5
 
         if budget < 10.0:
             return
@@ -242,7 +251,11 @@ class CorporateManager:
         if aggressiveness <= 0.2:
             return
 
-        budget = firm.assets * (aggressiveness * 0.5)
+        # [Fix] Solvency Check
+        safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
+        investable_cash = max(0.0, firm.assets - safety_margin)
+
+        budget = investable_cash * (aggressiveness * 0.5)
 
         if budget < 100.0:
             return
@@ -380,9 +393,39 @@ class CorporateManager:
         except Exception:
              needed_labor_calc = 1.0 # Fallback
 
-        # Soft limit
-        needed_labor = min(int(needed_labor_calc) + 1, 5)
+        # Soft limit removed to allow full employment
+        needed_labor = int(needed_labor_calc) + 1
 
+        current_employees = len(firm.employees)
+
+        # A. Firing Logic (Layoffs)
+        if current_employees > needed_labor:
+            excess = current_employees - needed_labor
+            # Don't fire everyone if inventory is just slightly full?
+            # Cobb-Douglas needs labor. If we fire all, prod=0.
+            # But needed_labor calculated above might be 0 if inventory gap <= 0.
+            # If inventory gap <= 0, we have enough stock. We don't need to produce.
+            # So firing is rational to save wages.
+            # However, firing everyone destroys organization capital.
+            # Let's keep at least 1 employee (skeleton crew) if possible, unless bankrupt.
+
+            # Allow firing down to 1
+            fire_count = min(excess, max(0, current_employees - 1))
+
+            if fire_count > 0:
+                # Fire the most expensive or random? Random for now.
+                # Actually we should iterate copy to modify list safely?
+                # No, we just call employee.quit().
+                # We need to pick employees.
+                candidates = firm.employees[:fire_count] # FIFO firing
+                for emp in candidates:
+                    emp.quit()
+                    self.logger.info(f"LAYOFF | Firm {firm.id} laid off Household {emp.id}. Excess labor.", extra={"tick": 0, "tags": ["hiring", "layoff"]})
+
+                # Firing done. No hiring.
+                return []
+
+        # B. Hiring Logic
         market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
         if "labor" in market_data and "avg_wage" in market_data["labor"]:
              market_wage = market_data["labor"]["avg_wage"]
@@ -391,9 +434,12 @@ class CorporateManager:
         offer_wage = market_wage * (1.0 + adjustment)
         offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
 
-        for _ in range(needed_labor):
-             orders.append(
-                 Order(firm.id, "BUY", "labor", 1, offer_wage, "labor")
-             )
+        # Calculate how many to hire
+        to_hire = needed_labor - current_employees
+        if to_hire > 0:
+            for _ in range(to_hire):
+                 orders.append(
+                     Order(firm.id, "BUY", "labor", 1, offer_wage, "labor")
+                 )
 
         return orders
