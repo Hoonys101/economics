@@ -38,6 +38,18 @@ simulation = st.session_state['simulation']
 if 'history' not in st.session_state:
     st.session_state['history'] = [dashboard_connector.get_metrics(simulation)]
 
+# Agent Selector
+st.sidebar.markdown("---")
+st.sidebar.subheader("Inspector Controls")
+selected_agent_id = st.sidebar.number_input(
+    "Agent ID",
+    min_value=0,
+    value=st.session_state.get('selected_agent_id', 0),
+    step=1
+)
+st.session_state['selected_agent_id'] = selected_agent_id
+
+
 # Get current config values
 current_tech_level = getattr(simulation.config_module, 'FORMULA_TECH_LEVEL', 0.0)
 current_wealth_tax = getattr(simulation.config_module, 'ANNUAL_WEALTH_TAX_RATE', 0.0)
@@ -102,6 +114,31 @@ col2.metric("Population", metrics['total_population'])
 col3.metric("GDP", f"{metrics['gdp']:.2f}")
 col4.metric("Avg Assets", f"{metrics['average_assets']:.2f}")
 col5.metric("Unemployment", f"{metrics['unemployment_rate']:.1f}%")
+
+# --- Agent Mind Inspector ---
+with st.expander("🧠 Agent Mind Inspector", expanded=True):
+    if 'selected_agent_id' in st.session_state:
+        agent_details = dashboard_connector.get_agent_details(simulation, st.session_state['selected_agent_id'])
+
+        if "error" in agent_details:
+            st.error(agent_details["error"])
+        else:
+            # Display Key Stats in Columns
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("ID", agent_details['id'])
+            c2.metric("Assets", f"{agent_details['assets']:.2f}")
+            c3.metric("Age/Gender", f"{agent_details['age']:.1f} / {agent_details['gender']}")
+            c4.metric("Children", agent_details['children_count'])
+
+            st.markdown("#### System 2 Projections")
+            c5, c6, c7 = st.columns(3)
+            c5.metric("NPV Wealth", f"{agent_details['npv_wealth']:.2f}")
+            c6.metric("Bankruptcy Tick", str(agent_details['bankruptcy_tick']))
+            c7.metric("Last Leisure", agent_details['last_leisure_type'])
+
+            # Show raw data for debugging
+            if st.checkbox("Show Raw Agent Data"):
+                st.json(agent_details)
 
 # --- Control Area ---
 st.markdown("---")
