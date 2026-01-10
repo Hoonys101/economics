@@ -66,16 +66,21 @@ class TestPhase20Scaffolding(unittest.TestCase):
 
     def test_system2_planner_projection_positive(self):
         """Verify System2Planner positive projection logic."""
-        planner = System2Planner(config, self.logger)
+        # Create a mock agent for the planner
+        mock_agent = MagicMock()
+        mock_agent.assets = 1000.0
+        mock_agent.expected_wage = 10.0
+        mock_agent.children_ids = []
+        mock_agent.spouse_id = None
+        mock_agent.decision_engine = MagicMock()
+        mock_agent.decision_engine.ai_engine = None
+        mock_agent.get_agent_data.return_value = {"assets": 1000.0, "gender": "M", "children_count": 0}
 
-        agent_data = {
-            "assets": 1000.0,
-            "expected_wage": 10.0
-        }
+        planner = System2Planner(mock_agent, config)
 
         market_data = {
             "goods_market": {
-                "basic_food_avg_traded_price": 5.0
+                "basic_food_current_sell_price": 5.0
             }
         }
 
@@ -85,38 +90,45 @@ class TestPhase20Scaffolding(unittest.TestCase):
         # Food Price = 5.0, Qty = 2.0 -> Expense = 10.0
         # Net Flow = +70.0
 
-        npv, bankruptcy_tick = planner.project_future(agent_data, market_data)
+        result = planner.project_future(0, market_data)
+        npv = result["npv_wealth"]
+        bankruptcy_tick = result["bankruptcy_tick"]
 
-        self.assertEqual(bankruptcy_tick, -1, "Should not go bankrupt with positive flow")
+        self.assertIsNone(bankruptcy_tick, "Should not go bankrupt with positive flow")
         self.assertGreater(npv, 1000.0, "NPV should be greater than initial assets with positive flow")
 
     def test_system2_planner_projection_bankruptcy(self):
         """Verify System2Planner bankruptcy detection."""
-        planner = System2Planner(config, self.logger)
+        # Create a mock agent for the planner
+        mock_agent = MagicMock()
+        mock_agent.assets = 100.0
+        mock_agent.expected_wage = 0.0 # No income
+        mock_agent.children_ids = []
+        mock_agent.spouse_id = None
+        mock_agent.decision_engine = MagicMock()
+        mock_agent.decision_engine.ai_engine = None
+        mock_agent.get_agent_data.return_value = {"assets": 100.0, "gender": "M", "children_count": 0}
 
-        agent_data = {
-            "assets": 100.0,
-            "expected_wage": 0.0 # No income
-        }
+        planner = System2Planner(mock_agent, config)
 
         market_data = {
             "goods_market": {
-                "basic_food_avg_traded_price": 10.0
+                "basic_food_current_sell_price": 10.0
             }
         }
 
         # Expense = 10.0 * 2.0 = 20.0 per tick
         # Assets = 100.0
-        # Should survive 5 ticks (100, 80, 60, 40, 20, 0 -> wait, 0 is usually not dead depending on check <0)
-        # Logic:
+        # Should survive 5 ticks
         # T=1: 100 - 20 = 80
         # T=2: 60
         # T=3: 40
         # T=4: 20
-        # T=5: 0 (Check if < 0: False)
-        # T=6: -20 (Check if < 0: True -> Bankruptcy Tick = 6)
+        # T=5: 0
+        # T=6: -20 (Bankrupt)
 
-        npv, bankruptcy_tick = planner.project_future(agent_data, market_data)
+        result = planner.project_future(0, market_data)
+        bankruptcy_tick = result["bankruptcy_tick"]
 
         self.assertEqual(bankruptcy_tick, 6)
 
