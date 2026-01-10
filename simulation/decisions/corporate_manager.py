@@ -7,6 +7,7 @@ import math
 from simulation.models import Order
 from simulation.schemas import FirmActionVector
 from simulation.dtos import DecisionContext
+from simulation.ai.firm_system2_planner import FirmSystem2Planner
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -35,15 +36,47 @@ class CorporateManager:
         """
         orders: List[Order] = []
 
+        # Phase 21: System 2 Strategic Guidance
+        # Instantiate planner if not present (Lazy Init)
+        if firm.system2_planner is None:
+             firm.system2_planner = FirmSystem2Planner(firm, self.config_module)
+
+        guidance = firm.system2_planner.project_future(context.current_time, context.market_data)
+
         # 0. Procurement Channel (Raw Materials) - WO-030
         procurement_orders = self._manage_procurement(firm, context.market_data, context.markets)
         orders.extend(procurement_orders)
 
-        # 1. R&D Channel (Innovation)
-        self._manage_r_and_d(firm, action_vector.rd_aggressiveness, context.current_time)
+        # Phase 21: Automation Channel (New)
+        # Uses Capital Aggressiveness + System 2 Target
+        # But wait, Capital Channel is _manage_capex. Automation is different form of capital.
+        # Let's add specific method.
+        # We can use 'capital_aggressiveness' to split between CAPEX (Machines) and Automation.
+        self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time)
 
-        # 2. Capital Channel (CAPEX)
-        self._manage_capex(firm, action_vector.capital_aggressiveness, context.reflux_system, context.current_time)
+        # 1. R&D Channel (Innovation)
+        # System 2 guidance might override action vector?
+        # Or bias it.
+        # For now, let action vector drive execution intensity, but System 2 sets 'strategic priority' or modifies it?
+        # Spec: "Personalities dictate the 'Preferred Strategy' ... focus: innovation"
+        # The System 2 planner returns 'rd_intensity'.
+        # Let's blend them or use System 2 to modify action_vector.
+        # But realize_ceo_actions receives a 'fixed' vector from AI.
+        # The AI (RL Agent) learns to output the vector.
+        # System 2 is 'Cognitive Overhead' or 'Advisor'.
+        # If AI is System 1, System 2 should bias the AI? Or bias the execution?
+        # Let's bias the execution here.
+
+        rd_agg = action_vector.rd_aggressiveness
+        if guidance.get("rd_intensity", 0.0) > 0.1:
+             rd_agg = max(rd_agg, 0.5) # Minimum effort if strategic priority
+
+        self._manage_r_and_d(firm, rd_agg, context.current_time)
+
+        # 2. Capital Channel (CAPEX - Physical Machines)
+        # If Automation is prioritized, maybe reduce physical capex?
+        capex_agg = action_vector.capital_aggressiveness
+        self._manage_capex(firm, capex_agg, context.reflux_system, context.current_time)
 
         # 3. Dividend Channel
         self._manage_dividends(firm, action_vector.dividend_aggressiveness)
@@ -54,11 +87,16 @@ class CorporateManager:
 
         # 5. Pricing Channel (Sales)
         sales_order = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.markets, context.current_time)
-        # Note: Sales orders are placed directly via firm.post_ask inside _manage_pricing usually,
-        # or returned. Let's stick to returning orders if possible, but firm.post_ask injects brand info.
-        # firm.post_ask calls market.place_order immediately. So we don't return it here to avoid duplication.
 
         # 6. Hiring Channel (Employment)
+        # If automation is high, maybe hire less?
+        # _manage_hiring logic calculates needed_labor based on productivity.
+        # productivity_factor is TFP.
+        # Automation changes Alpha.
+        # The 'needed_labor' calculation in _manage_hiring is simplistic: inventory_gap / productivity.
+        # It assumes L * TFP = Output.
+        # But Cobb-Douglas is Y = TFP * L^a * K^b.
+        # We need to update hiring logic to inverse the production function properly!
         hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data)
         orders.extend(hiring_orders)
 
@@ -67,8 +105,6 @@ class CorporateManager:
     def _manage_procurement(self, firm: Firm, market_data: Dict[str, Any], markets: Dict[str, Any]) -> List[Order]:
         """
         WO-030: Manage Raw Material Procurement.
-        Checks input requirements and generates BUY orders if deficit exists.
-        Market Taker Strategy: Bid 5% above market price to ensure supply.
         """
         orders = []
         input_config = self.config_module.GOODS.get(firm.specialization, {}).get("inputs", {})
@@ -84,7 +120,6 @@ class CorporateManager:
             deficit = needed - current
 
             if deficit > 0:
-                # Market Taker Logic
                 mat_market_data = market_data.get("goods_market", {})
                 last_price_key = f"{mat}_avg_traded_price"
                 fallback_price_key = f"{mat}_current_sell_price"
@@ -95,65 +130,99 @@ class CorporateManager:
                 if last_price <= 0:
                      last_price = self.config_module.GOODS.get(mat, {}).get("initial_price", 10.0)
 
-                bid_price = last_price * 1.05 # 5% premium
-
-                # Check affordability? Firm will fail to pay if asset < 0, dealt by transaction/engine.
-                # Just place order.
-
+                bid_price = last_price * 1.05
                 orders.append(Order(firm.id, "BUY", mat, deficit, bid_price, mat))
 
         return orders
 
+    def _manage_automation(self, firm: Firm, aggressiveness: float, guidance: Dict[str, Any], current_time: int) -> None:
+        """
+        Phase 21: Automation Investment.
+        """
+        target_a = guidance.get("target_automation", firm.automation_level)
+        current_a = firm.automation_level
+
+        if current_a >= target_a:
+            return # No investment needed (except maintenance, which is handled implicitly? Or should be explicit?)
+            # Firm logic decays automation. So we need to top up.
+
+        gap = target_a - current_a
+
+        # Cost Logic: Base Cost * Asset Scale * Gap
+        cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
+        # Let's treat 'Firm Size' as roughly constant 10000 or Assets.
+        # Spec: "Firm Size (Assets)".
+        # If Assets are huge, cost is huge.
+        # Let's clamp 'Firm Size' factor to avoid runaway costs for rich firms.
+        # Or use Log(Assets)?
+        # For simplicity and testability: Cost = 1000 * Gap.
+        # Wait, if Gap is 0.1 (10%), Cost = 100. Cheap.
+        # Spec says: AUTOMATION_COST_PER_PCT = 1000.0 (Base cost scaling).
+        # Maybe Cost = 1000 * (Gap * 100)?
+        # Let's say to increase 1% (0.01) costs 1000 * scale.
+        # Assuming scale = 1.0 for standard firm.
+        # Let's just use: Cost = AUTOMATION_COST_PER_PCT * (Gap * 100)
+        # So 10% increase = 1000 * 10 = 10,000.
+
+        cost = cost_per_pct * (gap * 100.0)
+
+        # Budget Check (using aggressiveness)
+        # If aggressiveness is low, we invest slowly.
+        budget = firm.assets * (aggressiveness * 0.5)
+
+        actual_spend = min(cost, budget)
+
+        if actual_spend < 100.0:
+            return
+
+        # Execute
+        firm.assets -= actual_spend
+
+        # Calculate gained automation
+        # gained = (spend / cost_per_pct) / 100.0
+        gained_pct = actual_spend / cost_per_pct
+        gained_a = gained_pct / 100.0
+
+        firm.automation_level = min(1.0, firm.automation_level + gained_a)
+
+        self.logger.info(
+            f"AUTOMATION | Firm {firm.id} invested {actual_spend:.1f}, level {current_a:.3f} -> {firm.automation_level:.3f}",
+            extra={"agent_id": firm.id, "tick": current_time, "tags": ["automation"]}
+        )
+
     def _manage_r_and_d(self, firm: Firm, aggressiveness: float, current_time: int) -> None:
         """
         Innovation Physics.
-        Aggressiveness (0.0~1.0) determines % of Revenue spent on R&D.
         """
         if aggressiveness <= 0.1:
             return
 
-        # Budget Calculation
-        # Cap at 20% of revenue for max aggressiveness?
-        # WO says: Chance = Budget / (Revenue * 0.2)
-        revenue_base = max(firm.revenue_this_turn, firm.assets * 0.05) # Fallback to assets if no revenue
-        rd_budget_rate = aggressiveness * 0.20 # Max 20%
+        revenue_base = max(firm.revenue_this_turn, firm.assets * 0.05)
+        rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
-        # Affordability
         if firm.assets < budget:
-            budget = firm.assets * 0.5 # Sanity cap
+            budget = firm.assets * 0.5
 
         if budget < 10.0:
             return
 
-        # Execution
         firm.assets -= budget
         firm.research_history["total_spent"] += budget
 
-        # Success Logic
-        # P = min(1.0, Budget / (Revenue * 0.2)) * Skill_Multiplier
-        # Note: Revenue here should probably be "Expected Revenue" or "Last Revenue".
         denominator = max(firm.revenue_this_turn * 0.2, 100.0)
         base_chance = min(1.0, budget / denominator)
 
-        # Skill Multiplier (Avg Employee Skill)
         avg_skill = 1.0
         if firm.employees:
             avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.employees) / len(firm.employees)
 
         success_chance = base_chance * avg_skill
 
-        # Roll Dice
         if random.random() < success_chance:
-            # SUCCESS!
             firm.research_history["success_count"] += 1
             firm.research_history["last_success_tick"] = current_time
-
-            # Effects
-            # 1. Quality Boost
             firm.base_quality += 0.05
-
-            # 2. Productivity Boost
             firm.productivity_factor *= 1.05
 
             self.logger.info(
@@ -173,21 +242,16 @@ class CorporateManager:
         if aggressiveness <= 0.2:
             return
 
-        # Budget: Up to 50% of assets if aggressive
         budget = firm.assets * (aggressiveness * 0.5)
 
         if budget < 100.0:
             return
 
-        # Execution
         firm.assets -= budget
 
-        # Capture Reflux
         if reflux_system:
              reflux_system.capture(budget, str(firm.id), "capex")
 
-        # Add Capital Stock
-        # Efficiency inverse of Capital Output Ratio
         efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
         added_capital = budget * efficiency
         firm.capital_stock += added_capital
@@ -203,21 +267,13 @@ class CorporateManager:
         """
         base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
         max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
-
-        # Linear Mapping
         firm.dividend_rate = base_rate + (aggressiveness * (max_rate - base_rate))
 
     def _manage_debt(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
         """
         Leverage Management.
-        Aggressive (1.0) -> Target High Leverage -> Borrow
-        Passive (0.0) -> Target Low Leverage -> Repay
         """
         orders = []
-
-        # 1. Determine Target Leverage (Debt / Assets)
-        # 0.0 -> 0%
-        # 1.0 -> 200% (High risk)
         target_leverage = aggressiveness * 2.0
 
         current_debt = 0.0
@@ -228,18 +284,9 @@ class CorporateManager:
         current_assets = max(firm.assets, 1.0)
         current_leverage = current_debt / current_assets
 
-        # 2. Action
         if current_leverage < target_leverage:
-            # Need to BORROW to reach target (Growth mode)
-            # Only borrow if we actually need cash for something?
-            # Or leverage up to buy back shares/invest?
-            # For now, borrow to hold cash (liquidity) or fund operations.
-
-            # Gap calculation
             desired_debt = current_assets * target_leverage
             borrow_amount = desired_debt - current_debt
-
-            # Cap borrow amount per tick
             borrow_amount = min(borrow_amount, current_assets * 0.5)
 
             if borrow_amount > 100.0:
@@ -248,9 +295,8 @@ class CorporateManager:
                 )
 
         elif current_leverage > target_leverage:
-            # Need to REPAY (De-leverage)
             excess_debt = current_debt - (current_assets * target_leverage)
-            repay_amount = min(excess_debt, firm.assets * 0.5) # Don't drain all cash
+            repay_amount = min(excess_debt, firm.assets * 0.5)
 
             if repay_amount > 10.0 and current_debt > 0:
                  orders.append(
@@ -262,8 +308,6 @@ class CorporateManager:
     def _manage_pricing(self, firm: Firm, aggressiveness: float, market_data: Dict, markets: Dict, current_time: int) -> Optional[Order]:
         """
         Sales Channel.
-        Aggressiveness 1.0 -> Low Price (Volume)
-        Aggressiveness 0.0 -> High Price (Margin)
         """
         item_id = firm.specialization
         current_inventory = firm.inventory.get(item_id, 0)
@@ -271,7 +315,6 @@ class CorporateManager:
         if current_inventory <= 0:
             return None
 
-        # Anchor Price
         market_price = 0.0
         if item_id in market_data:
              market_price = market_data[item_id].get('avg_price', 0)
@@ -280,18 +323,9 @@ class CorporateManager:
         if market_price <= 0:
              market_price = self.config_module.GOODS.get(item_id, {}).get("production_cost", 10.0)
 
-        # Adjustment
-        # Agg=0.5 -> Price=Market
-        # Agg=1.0 -> Price=Market * 0.8 (-20%)
-        # Agg=0.0 -> Price=Market * 1.2 (+20%)
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
 
-        # Solvency Check (from AIDrivenFirmDecisionEngine logic, moved/duplicated here?
-        # Ideally we invoke a shared helper or re-implement simple version)
-        # Let's re-implement simple version for now.
-
-        # Decay for old inventory
         sales_vol = getattr(firm, 'last_sales_volume', 1.0)
         if sales_vol <= 0: sales_vol = 1.0
         days_on_hand = current_inventory / sales_vol
@@ -303,17 +337,16 @@ class CorporateManager:
 
         qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
 
-        # Execute
         target_market = markets.get(item_id)
         if target_market:
             firm.post_ask(item_id, target_price, qty, target_market, current_time)
 
-        return None # Already posted
+        return None
 
     def _manage_hiring(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
         """
         Hiring Channel.
-        Aggressiveness 1.0 -> High Wage, Hire More
+        Phase 21: Updated to account for Automation in labor demand.
         """
         orders = []
         target_inventory = firm.production_target
@@ -323,17 +356,37 @@ class CorporateManager:
         if inventory_gap <= 0:
             return []
 
-        needed_labor = max(1, int(inventory_gap / firm.productivity_factor))
-        needed_labor = min(needed_labor, 5)
+        # Calculate needed labor with Cobb-Douglas inversion?
+        # Y = TFP * L^alpha * K^beta
+        # L^alpha = Y / (TFP * K^beta)
+        # L = (Y / (TFP * K^beta)) ^ (1/alpha)
+
+        base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+        automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+        alpha_adjusted = base_alpha * (1.0 - (firm.automation_level * automation_reduction))
+        beta_adjusted = 1.0 - alpha_adjusted
+
+        capital = max(firm.capital_stock, 1.0)
+        tfp = firm.productivity_factor
+
+        # Avoid division by zero
+        if tfp <= 0: tfp = 1.0
+
+        needed_labor_calc = 0.0
+        try:
+             # term = Y / (TFP * K^beta)
+             term = inventory_gap / (tfp * (capital ** beta_adjusted))
+             needed_labor_calc = term ** (1.0 / alpha_adjusted)
+        except Exception:
+             needed_labor_calc = 1.0 # Fallback
+
+        # Soft limit
+        needed_labor = min(int(needed_labor_calc) + 1, 5)
 
         market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
         if "labor" in market_data and "avg_wage" in market_data["labor"]:
              market_wage = market_data["labor"]["avg_wage"]
 
-        # Wage Offer
-        # Agg=0.5 -> Market Wage
-        # Agg=1.0 -> Market + 30%
-        # Agg=0.0 -> Market - 20%
         adjustment = -0.2 + (aggressiveness * 0.5)
         offer_wage = market_wage * (1.0 + adjustment)
         offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)

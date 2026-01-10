@@ -16,6 +16,7 @@ from simulation.ai.enums import Personality
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
+    from simulation.ai.firm_system2_planner import FirmSystem2Planner
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,10 @@ class Firm(BaseAgent):
         self.prev_assets: float = self.assets
         self.prev_avg_quality: float = 1.0
 
+        # Phase 21: Automation
+        self.automation_level: float = 0.0 # 0.0 to 1.0
+        self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
+
         self.decision_engine.loan_market = loan_market
 
     def calculate_valuation(self) -> float:
@@ -176,6 +181,9 @@ class Firm(BaseAgent):
         # 2. Write off Capital Stock
         self.capital_stock = 0.0
         
+        # 3. Write off Automation
+        self.automation_level = 0.0
+
         self.is_bankrupt = True
         return self.assets
 
@@ -267,7 +275,7 @@ class Firm(BaseAgent):
     def produce(self, current_time: int) -> None:
         """
         Cobb-Douglas 생산 함수를 사용한 생산 로직.
-        Phase 6: Update Brand Quality based on Productivity.
+        Phase 21: Modified Cobb-Douglas with Automation.
         """
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
 
@@ -275,37 +283,51 @@ class Firm(BaseAgent):
         depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
         self.capital_stock *= (1.0 - depreciation_rate)
 
-        # 2. 노동 및 자본 투입량 계산
-        # Defensive: Skip employees without labor_skill (e.g., corrupted data)
-        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
-        if not self.employees:
-            total_labor_skill = 1.0  # Prevent zero production with automated factory
-        capital = max(self.capital_stock, 0.01)  # 0 방지
+        # Phase 21: Automation Decay
+        self.automation_level *= 0.995 # Slow decay (0.5% per tick)
+        if self.automation_level < 0.001: self.automation_level = 0.0
 
-        # 3. Cobb-Douglas 생산 함수
-        alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+        # 2. 노동 및 자본 투입량 계산
+        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+
+        # 3. Cobb-Douglas Parameters
+        base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+        automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+
+        # Phase 21: Adjusted Alpha
+        # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
+        # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
+        alpha_adjusted = base_alpha * (1.0 - (self.automation_level * automation_reduction))
+        beta_adjusted = 1.0 - alpha_adjusted
+
+        # Effective Labor & Capital
+        # Even with zero employees, fully automated factory might produce if we allow L -> 0 logic?
+        # But Cobb-Douglas with L=0 is 0.
+        # We need "Minimum Crew" logic or treat automation as Labor Substitute.
+        # Here we stick to Cobb-Douglas. Automation just shifts exponent.
+        # So you STILL need some labor.
+
+        capital = max(self.capital_stock, 0.01)
+
         tfp = self.productivity_factor  # Total Factor Productivity
         
-        # Phase 15: Quality Calculation (Skill-based)
-        # Quality = 1.0 + ln(Avg Labor Skill + 1) * Tech Multiplier
-        # Phase 16-B: base_quality affected by R&D
+        # Phase 15: Quality Calculation
         avg_skill = 0.0
         if self.employees:
-            total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
-            avg_skill = total_skill / len(self.employees)
+            total_skill_val = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+            avg_skill = total_skill_val / len(self.employees)
 
-        # Check config for item specific sensitivity if possible
         item_config = self.config_module.GOODS.get(self.specialization, {})
         quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-
-        # Base Quality (R&D) + Skill Bonus
         actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
         
         self.current_production = 0.0
 
         if total_labor_skill > 0 and capital > 0:
-            produced_quantity = tfp * (total_labor_skill ** alpha) * (capital ** (1 - alpha))
+            produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
         else:
+            # Phase 21: If high automation, maybe allow production with minimal labor?
+            # For now, strict Cobb-Douglas: No Labor = No Output.
             produced_quantity = 0.0
 
         if produced_quantity > 0:
@@ -330,15 +352,10 @@ class Firm(BaseAgent):
                 actual_produced = produced_quantity
 
             if actual_produced > 0:
-                # WO-023: Refactored to use self.specialization directly (Data Driven)
                 item_id = self.specialization
-
                 current_inventory = self.inventory.get(item_id, 0)
-
-                # Phase 15: Weighted Average Quality
                 current_quality = self.inventory_quality.get(item_id, 1.0)
 
-                # Formula: ((OldQty * OldQ) + (NewQty * NewQ)) / (OldQty + NewQty)
                 total_qty = current_inventory + actual_produced
                 new_avg_quality = ((current_inventory * current_quality) + (actual_produced * actual_quality)) / total_qty
 
@@ -517,6 +534,7 @@ class Firm(BaseAgent):
             "capital_stock": self.capital_stock,
             "base_quality": self.base_quality, # AI needs to know this
             "inventory_quality": self.inventory_quality.copy(),
+            "automation_level": self.automation_level, # Phase 21
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:
