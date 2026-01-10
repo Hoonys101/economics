@@ -61,3 +61,14 @@ def get_metrics(simulation: Simulation) -> Dict[str, Any]:
         "inflation_rate": indicators.get("inflation_rate", 0.0),
         "total_consumption": indicators.get("total_consumption", 0.0)
     }
+
+def update_params(simulation: Simulation, new_params: Dict[str, Any]) -> None:
+    """
+    Updates simulation configuration at runtime.
+    """
+    for key, value in new_params.items():
+        if hasattr(simulation.config_module, key):
+            setattr(simulation.config_module, key, value)
+            logger.info(f"[Dashboard] Updated config: {key} -> {value}")
+        else:
+            logger.warning(f"[Dashboard] Unknown config key: {key}")

@@ -26,10 +26,41 @@ if 'simulation' not in st.session_state:
     except Exception as e:
         st.sidebar.error(f"Failed to initialize engine: {e}")
         st.stop()
-else:
-    st.sidebar.success(f"Engine Connected (Tick {st.session_state['tick']})")
 
 simulation = st.session_state['simulation']
+
+# Get current config values
+current_tech_level = getattr(simulation.config_module, 'FORMULA_TECH_LEVEL', 0.0)
+current_wealth_tax = getattr(simulation.config_module, 'ANNUAL_WEALTH_TAX_RATE', 0.0)
+
+# Sliders
+new_tech_level = st.sidebar.slider(
+    "Formula Tech Level",
+    min_value=0.0,
+    max_value=1.0,
+    value=float(current_tech_level),
+    step=0.1
+)
+
+new_wealth_tax = st.sidebar.slider(
+    "Annual Wealth Tax Rate",
+    min_value=0.0,
+    max_value=0.1,
+    value=float(current_wealth_tax),
+    step=0.005,
+    format="%.3f"
+)
+
+if st.sidebar.button("Apply Parameters"):
+    params = {
+        "FORMULA_TECH_LEVEL": new_tech_level,
+        "ANNUAL_WEALTH_TAX_RATE": new_wealth_tax
+    }
+    dashboard_connector.update_params(simulation, params)
+    st.sidebar.success("Parameters Updated!")
+
+# --- Session State Management (Continued) ---
+st.sidebar.success(f"Engine Connected (Tick {st.session_state['tick']})")
 
 # --- Main Area: Metrics ---
 st.subheader("Live Monitor")
