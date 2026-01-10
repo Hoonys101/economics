@@ -11,8 +11,10 @@
 - **완료된 단계(Recent)**:
     - `Phase 17.1-5: Market Diversity & Leviathan` ✅
     - `Phase 19: Population Dynamics` ✅ (Rat Race Emergence)
-- **현재 단계:** `Phase 20: The Matrix & Real Estate` 🏗️
-- **다음 단계:** `Option A Expansion (Housing Market) + Cognitive Architecture Overhaul`
+    - `Phase 20: The Matrix & Real Estate` ✅ (System 2, Socio-Tech, Immigration)
+    - `Phase 20.5: The Simulation Cockpit` ✅ (Dashboard, God Mode, Analytics)
+- **현재 단계:** `Phase 21: Corporate Empires` 🏗️
+- **다음 단계:** `Firm System 2 + Automation + M&A`
 
 ---
 

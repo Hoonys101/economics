@@ -63,12 +63,13 @@
     - Owners vote for Tax Cuts & Asset Protection.
     - Simulation of Gerontocracy (Rule of the Old) vs Youth Disenchantment.
 
-### Vision B: Corporate Empires (Corporate AI Adoption)
+### Vision B: Corporate Empires (Corporate AI Adoption) ⭐ **[NEXT PHASE]**
 - **Goal**: Upgrade Firms to Active AI Agents.
 - **Scenario**:
     - Firms invest in Automation to combat Labor Scarcity (Phase 20 result).
     - Resulting Unemployment vs Productivity Gains.
     - Rise of Monopolies and "Too Big To Fail".
+- **Status**: 🏗️ Planning
 
 ### Vision C: The Central Bank (Macro Control Tower)
 - **Goal**: User-in-the-loop Macroeconomic Control.
