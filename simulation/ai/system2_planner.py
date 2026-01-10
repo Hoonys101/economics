@@ -26,7 +26,7 @@ class System2Planner:
     def project_future(self, current_tick: int, market_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Projects future wealth and survival probability.
-        Jules: Update this to include Housing Costs (Rent/Mortgage) as per WO-036.
+        Phase 20 Step 3: Includes Housing Costs (Rent/Mortgage)
         """
         # Optimization: Run only every X ticks
         if current_tick - self.last_calc_tick < self.calc_interval and self.cached_projection:
@@ -59,8 +59,36 @@ class System2Planner:
         available_work_hours = max(0.0, 14.0 - time_obligations)
         projected_work_hours = min(8.0, available_work_hours)
 
-        # TODO: C. Housing Costs Integration (Rent/Mortgage) - See WO-036
+        # C. Housing Costs Integration (Rent/Mortgage)
         housing_costs = 0.0
+
+        # Scenario 1: Homeowner with Mortgage
+        # We check actual daily interest burden from Bank via injected debt_data
+        debt_data_map = market_data.get("debt_data", {})
+        my_debt = debt_data_map.get(self.agent.id, {})
+        daily_interest = my_debt.get("daily_interest_burden", 0.0)
+
+        # Scenario 2: Renter (or Homeless)
+        # If I don't own the home I live in, or I am homeless -> I pay rent (or should pay rent)
+        # Note: If homeless, cost is 0 financially but huge utility penalty.
+        # But System 2 tracks financial solvency. Homeless people might eventually rent.
+        # However, strictly:
+        # If agent.residing_property_id is NOT in agent.owned_properties -> Renter.
+        # If agent.is_homeless -> Potential Renter (Assumed to pay rent to survive or 0)
+        # Spec says: "If agent.is_homeless or no resident property: deduct avg_rent_price"
+
+        is_homeowner = False
+        if self.agent.residing_property_id is not None:
+            if self.agent.residing_property_id in self.agent.owned_properties:
+                is_homeowner = True
+
+        if is_homeowner:
+            housing_costs = daily_interest # Mortgage Interest
+        else:
+            # Renter or Homeless
+            housing_market = market_data.get("housing_market", {})
+            avg_rent = housing_market.get("avg_rent_price", 100.0)
+            housing_costs = avg_rent
 
         # D. Expenses (Formula)
         extra_expenses = 0.0

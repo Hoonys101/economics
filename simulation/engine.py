@@ -23,6 +23,7 @@ from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
 from simulation.systems.reflux_system import EconomicRefluxSystem
 from simulation.systems.demographic_manager import DemographicManager # Phase 19
+from simulation.systems.immigration_manager import ImmigrationManager # Phase 20-3
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 
 # Use the repository pattern for data access
@@ -201,6 +202,9 @@ class Simulation:
 
         # Phase 19: Demographic Manager
         self.demographic_manager = DemographicManager(config_module=self.config_module)
+
+        # Phase 20-3: Immigration Manager
+        self.immigration_manager = ImmigrationManager(config_module=self.config_module)
 
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
@@ -812,6 +816,15 @@ class Simulation:
                 for firm_id, qty in child.shares_owned.items():
                     self.stock_market.update_shareholder(child.id, firm_id, qty)
 
+        # --- Phase 20-3: Immigration Check ---
+        new_immigrants = self.immigration_manager.process_immigration(self)
+        for imm in new_immigrants:
+            self.households.append(imm)
+            self.agents[imm.id] = imm
+            imm.decision_engine.markets = self.markets
+            imm.decision_engine.goods_data = self.goods_data
+            # No need to explicitly add to ai_training_manager as it refs self.households
+
         # ---------------------------------------------------------
         # Activate Farm Logic (Production & Needs/Wages)
         # ---------------------------------------------------------
@@ -1151,9 +1164,19 @@ class Simulation:
                     price = firm.assets / firm.total_shares if firm.total_shares > 0 else 10.0
                 stock_market_data[firm_item_id] = {"avg_price": price}
 
+        # Calculate Avg Rent Price (Phase 20-3)
+        rent_prices = [u.rent_price for u in self.real_estate_units if u.owner_id is not None]
+        avg_rent = sum(rent_prices) / len(rent_prices) if rent_prices else self.config_module.INITIAL_RENT_PRICE
+
+        # Inject Housing Market Data
+        housing_market_data = {
+            "avg_rent_price": avg_rent
+        }
+
         return {
             "time": self.time,
             "goods_market": goods_market_data,
+            "housing_market": housing_market_data, # Phase 20-3
             "loan_market": {"interest_rate": self.bank.base_rate}, # Use bank base rate
             "stock_market": stock_market_data,
             "all_households": self.households,
