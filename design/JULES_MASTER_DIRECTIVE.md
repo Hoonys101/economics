@@ -152,4 +152,17 @@ Your task is **NOT** to verify:
 
 **Rationale**: If economic behavior is unexpected, it may be a **design flaw (Architect's fault)**, not an implementation bug. Debugging logic without Architect input leads to infinite loops.
 
-**Execute.**
+
+---
+
+## 6. Planning Protocol: Parallel Execution Strategy
+
+**To:** All Agents (Architect & Jules)
+**Directive:** When converting a High-Level Spec (Plan) into Actionable Steps:
+
+1.  **Decompose for Parallelism**: Break down the Work Order into granular tasks that can be executed in parallel (e.g., Track A, Track B, Track C).
+2.  **Verify Independence**: Ensure parallel tracks have minimal dependencies on each other.
+3.  **Atomic Verification**: Each parallel track must have its own verifiable output (e.g., a specific unit test or a distinct UI component).
+4.  **Exception**: If a task requires an overnight run or deep serialization (e.g., training a model), mark it as a "Long-Running Serial Task".
+
+**Goal**: Maximize throughput by allowing multiple streams of work to proceed simultaneously where possible.
