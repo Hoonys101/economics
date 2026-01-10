@@ -654,10 +654,20 @@ HOMELESS_PENALTY_PER_TICK = 50.0
 REPRODUCTION_AGE_START = 20
 REPRODUCTION_AGE_END = 45
 CHILDCARE_TIME_REQUIRED = 8.0  # 자녀 1명당 하루 필요 시간
-HOUSEWORK_BASE_HOURS = 2.0     # 가구 기본 가사 시간
+HOUSEWORK_BASE_HOURS = 6.0     # 가구 기본 가사 시간 (WO-035: 4~6 hours)
 EDUCATION_COST_MULTIPLIERS = { # 교육 수준별 기대 임금 배수
     0: 1.0, 1: 1.5, 2: 2.2, 3: 3.5, 4: 5.0, 5: 8.0
 }
 SOCIAL_CAPILLARITY_COST = 0.5  # 계층 이동 비용 (K-Factor)
 UNNAMED_CHILD_MORTALITY_RATE = 0.001 # 기본 사망률
 EDUCATION_LEVEL_DISTRIBUTION = [0.4, 0.3, 0.15, 0.1, 0.04, 0.01] # 0~5단계 분포
+
+# --- Phase 20: Socio-Tech & System 2 ---
+# ==============================================================================
+SYSTEM2_TICKS_PER_CALC = 10
+SYSTEM2_HORIZON = 100
+SYSTEM2_DISCOUNT_RATE = 0.98
+
+FORMULA_TECH_LEVEL = 0.0   # 0.0: No Formula, 1.0: Full Formula
+LACTATION_INTENSITY = 1.0  # Lock Factor (1.0 = Strong Lock)
+HOMEWORK_QUALITY_COEFF = 0.5 # Impact of appliances

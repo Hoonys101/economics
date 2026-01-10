@@ -406,3 +406,106 @@ class HouseholdAI(BaseAIEngine):
                 total_reward += (vanity_effect * 100.0)
 
         return total_reward
+    def decide_time_allocation(
+        self,
+        agent_data: Dict[str, Any],
+        spouse_data: Optional[Dict[str, Any]] = None,
+        children_data: List[Dict[str, Any]] = [],
+        config_module: Any = None
+    ) -> Dict[str, float]:
+        """
+        Phase 20 Step 2: Socio-Tech Time Demand Model
+
+        Calculates required hours for Housework and Childcare, applying constraints.
+        Returns 'time_budget' dictionary.
+        """
+        if not config_module:
+            # Fallback if config not passed (shouldn't happen in proper integration)
+            config_module = getattr(self.ai_decision_engine, "config_module", None)
+
+        # 1. Base Housework Demand
+        # Range 4-6 hours (randomized or fixed base?) Spec says 4-6h.
+        # Config has HOUSEWORK_BASE_HOURS = 6.0
+        base_housework = getattr(config_module, "HOUSEWORK_BASE_HOURS", 6.0)
+
+        # Tech Effect: Appliances
+        # Logic: If 'appliances' in inventory/installed, reduce housework.
+        # Check agent_data for 'home_quality_score' or 'durable_assets'?
+        # agent_data is simplified dictionary. We might need to inspect actual agent object if not in data.
+        # Ideally agent_data should have 'has_appliances' flag or count.
+        # Or we check 'home_quality_score' > 1.0 implies appliances?
+        # Let's assume agent_data has 'owned_durables' or similar, OR we check utility efficiency.
+        # "Home Quality & Appliances: Appliances reduce housework directly."
+        # If agent_data doesn't have inventory, we rely on a simplified flag injected by Engine or Agent.get_agent_data().
+        # Let's assume get_agent_data needs update OR we infer from home_quality.
+
+        # Assumption: home_quality_score reflects appliances.
+        # Base=1.0. With Appliances=1.5 (due to config utility).
+        # We can use home_quality_score to discount housework?
+        # Spec says "Appliances directly reduce time".
+        # Let's assume a reduction factor if home_quality_score > 1.2
+
+        home_quality = agent_data.get("home_quality_score", 1.0)
+        housework_modifier = 1.0
+        if home_quality > 1.2:
+            housework_modifier = 0.5 # 50% reduction!
+
+        required_housework = base_housework * housework_modifier
+
+        # 2. Childcare Demand (The "Mommy Tax")
+        childcare_hours = 0.0
+        # Check for children aged 0-2
+        has_infant = False
+        for child in children_data:
+            if child.get("age", 5) <= 2:
+                has_infant = True
+                break # Only count once per day? Or per child? Spec: "0~2세 자녀 존재 시 +8시간" (Binary condition effectively)
+
+        if has_infant:
+            childcare_hours = 8.0
+
+        # 3. Lactation Lock & Sharing Logic
+        # Who pays this time cost?
+        # Inputs
+        gender = agent_data.get("gender", "M")
+        tech_level = getattr(config_module, "FORMULA_TECH_LEVEL", 0.0)
+
+        # Determine Share
+        my_share_housework = required_housework
+        my_share_childcare = childcare_hours
+
+        if spouse_data:
+            # Shared Household
+            # Default: Split Housework 50/50? Or Traditional?
+            # Spec says "Variable sharing". Let's assume 50/50 for Housework if not specified.
+            my_share_housework = required_housework * 0.5
+
+            # Childcare Sharing
+            if has_infant:
+                if tech_level < 0.5: # No Formula
+                    # Strong Lactation Lock
+                    # If Female: Take 100% of childcare (8h)
+                    # If Male: Take 0%
+                    if gender == "F":
+                        my_share_childcare = childcare_hours
+                    else:
+                        my_share_childcare = 0.0
+                else:
+                    # Formula Available -> Shared
+                    # 50/50 Split
+                    my_share_childcare = childcare_hours * 0.5
+        else:
+            # Single Parent / Single Household
+            # Takes full burden
+            pass
+
+        # 4. Construct Budget
+        # Total Hours = 24.0
+        # Obligatory = Sleep(8?) + Personal(2?) -> usually modeled as 'leisure' min constraint?
+        # Here we just output the Demands. The 'Labor' availability is calculated by subtraction in System 2 or Decision Engine.
+
+        return {
+            "housework": my_share_housework,
+            "childcare": my_share_childcare,
+            "total_obligated": my_share_housework + my_share_childcare
+        }

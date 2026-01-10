@@ -20,6 +20,7 @@ from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType
 # Import HouseholdAI and AIDrivenHouseholdDecisionEngine for mitosis
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+# Phase 20: System 2
 from simulation.ai.system2_planner import System2Planner
 
 if TYPE_CHECKING:
@@ -228,16 +229,16 @@ class Household(BaseAgent):
         self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
         self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
 
-        # --- Phase 19: Population Dynamics ---
-        # Initialize age uniformly between 20 and 60 for initial population
+        # Phase 19: Population Dynamics
         self.age: float = random.uniform(20.0, 60.0)
 
         # Phase 20: The Matrix (Gender & Home Quality)
         self.gender: str = random.choice(["M", "F"])
         self.home_quality_score: float = 1.0
-        self.system2_planner = System2Planner(config_module, self.logger)
+        self.spouse_id: Optional[int] = None
+        self.system2_planner = System2Planner(self, config_module)
 
-        # Education Level (0~5) based on Distribution
+        # Education Level (0~5) based on Distribution (Phase 19)
         dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
         self.education_level: int = random.choices(range(len(dist)), weights=dist)[0]
 
@@ -569,7 +570,9 @@ class Household(BaseAgent):
             "education_level": getattr(self, "education_level", 0),
             "children_count": len(self.children_ids),
             "expected_wage": getattr(self, "expected_wage", 10.0),
-            "gender": getattr(self, "gender", "M"), # Phase 20
+            "gender": self.gender,
+            "home_quality_score": self.home_quality_score,
+            "spouse_id": self.spouse_id,
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
@@ -1075,6 +1078,11 @@ class Household(BaseAgent):
         cloned_household.owned_properties = self.owned_properties.copy()
         cloned_household.residing_property_id = self.residing_property_id
         cloned_household.is_homeless = self.is_homeless
+
+        # Phase 20
+        cloned_household.gender = random.choice(["M", "F"]) # Offspring gender
+        cloned_household.home_quality_score = 1.0 # Reset
+        cloned_household.system2_planner = System2Planner(cloned_household, self.config_module) # New Planner
 
         return cloned_household
 
