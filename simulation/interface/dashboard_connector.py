@@ -72,3 +72,31 @@ def update_params(simulation: Simulation, new_params: Dict[str, Any]) -> None:
             logger.info(f"[Dashboard] Updated config: {key} -> {value}")
         else:
             logger.warning(f"[Dashboard] Unknown config key: {key}")
+
+def get_agent_details(simulation: Simulation, agent_id: int) -> Dict[str, Any]:
+    """
+    Returns detailed info for a specific agent.
+    Focuses on Household agents and their System 2 Planner state.
+    """
+    agent = simulation.agents.get(agent_id)
+    if not agent:
+        return {"error": f"Agent {agent_id} not found"}
+
+    # Extract System 2 projection if available
+    # System2Planner is usually initialized on Household
+    system2 = getattr(agent, 'system2_planner', None)
+    projection = system2.cached_projection if system2 else {}
+
+    details = {
+        "id": agent.id,
+        "assets": agent.assets,
+        "is_active": getattr(agent, "is_active", False),
+        "gender": getattr(agent, "gender", "N/A"),
+        "age": getattr(agent, "age", 0),
+        "children_count": len(getattr(agent, "children_ids", [])),
+        "npv_wealth": projection.get("npv_wealth", 0.0),
+        "bankruptcy_tick": projection.get("bankruptcy_tick", None),
+        "last_leisure_type": getattr(agent, "last_leisure_type", "N/A"),
+    }
+
+    return details
