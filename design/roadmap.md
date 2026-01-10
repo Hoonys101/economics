@@ -32,18 +32,50 @@
     - [x] Task 2: Evolutionary Decision Engine (r/K Strategy, Time Allocation)
     - [x] Task 3: Household Extensions (Education, Time Budget, Children)
     - [x] Task 4: Verification (The Rat Race Experiment Success)
-- [/] 16. **Phase 20: The Matrix & Advanced Dynamics** (WBS Integration)
-    - [/] **Step 1: Cognitive Architecture (The Matrix Core)**
-        - [ ] Task 1.1: System 1 (Fast/RL) & System 2 (Slow/Planner) 분리 설계
-        - [ ] Task 1.2: Internal World Model (Lightweight Simulator) 구현
-        - [ ] Task 1.3: Constraint Injection (Saving Mode, etc.) 로직
-    - [ ] **Step 2: Socio-Tech Dynamics (Social Missing Links)**
-        - [ ] Task 2.1: Lactation-Tech dependency (Gendered biology)
-        - [ ] Task 2.2: Gender-Specific Education ROI & Market Access
-        - [ ] Task 2.3: Home Environment Score (Domestic quality vs Outsourcing)
-    - [ ] **Step 3: Real Estate & Integration (Environment)**
-        - [ ] Task 3.1: Supply Dynamics & Immigration Model
-        - [ ] Task 3.2: Scenario Runner (Rat Race vs Baby Boom Phase 20 Ver.)
+- [x] 16. **Phase 20: The Matrix & Advanced Dynamics** (Completed)
+    - [x] **Step 1: Cognitive Architecture (The Matrix Core)**
+        - [x] Task 1.1: System 1 (Fast/RL) & System 2 (Slow/Planner) Integrated
+        - [x] Task 1.2: Internal World Model (NPV Projection)
+    - [x] **Step 2: Socio-Tech Dynamics**
+        - [x] Task 2.1: Lactation & Appliance Dependency
+        - [x] Task 2.2: Gender-Specific Education & Market Access
+    - [x] **Step 3: Real Estate & Integration**
+        - [x] Task 3.1: Supply Dynamics & Immigration Model
+        - [x] Task 3.2: Scenario Verification (Housing Costs Impact)
+
+- [x] **Step 3: Real Estate & Integration**
+        - [x] Task 3.1: Supply Dynamics & Immigration Model
+        - [x] Task 3.2: Scenario Verification (Housing Costs Impact)
+
+## 🔭 Phase 20.5: The Simulation Cockpit (Stabilization)
+- **Goal**: Visibility & God-Mode Control (UI).
+- **Tech**: Streamlit.
+- [ ] WO-037: Dashboard Scaffolding (Setup & Engine Bridge).
+- [ ] WO-038: God Mode Controls (Sliders for Macro/Social/Tech).
+- [ ] WO-039: Deep Dive Analytics (System 2 Logs & Heatmaps).
+
+## 🔮 Phase 21+: The Future Visions (Long-Term)
+
+### Vision A: The Political Animal (Politics & Democracy)
+- **Goal**: Introduce Voting Power and Democracy.
+- **Scenario**: 
+    - Renters vote for Rent Control & Subsidies.
+    - Owners vote for Tax Cuts & Asset Protection.
+    - Simulation of Gerontocracy (Rule of the Old) vs Youth Disenchantment.
+
+### Vision B: Corporate Empires (Corporate AI Adoption)
+- **Goal**: Upgrade Firms to Active AI Agents.
+- **Scenario**:
+    - Firms invest in Automation to combat Labor Scarcity (Phase 20 result).
+    - Resulting Unemployment vs Productivity Gains.
+    - Rise of Monopolies and "Too Big To Fail".
+
+### Vision C: The Central Bank (Macro Control Tower)
+- **Goal**: User-in-the-loop Macroeconomic Control.
+- **Scenario**:
+    - User (President/Governor) sets Interest Rates & Tax Policy.
+    - AI-based Policy Optimization (RL Government).
+    - Crisis Management Mode (Great Depression/Hyperinflation).
 - [ ] 17. Commercial Bank Deepening (Lender of Last Resort)
 - [ ] 18. Time Machine (Backtester)
 - [ ] 21. **Config Refactoring Pass 2**: 런타임 조정 시스템 (CLI/API 연동)
