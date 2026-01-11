@@ -11,6 +11,7 @@ from simulation.dtos import DecisionContext
 from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.schemas import HouseholdActionVector
+from simulation.ai.api import Personality
 
 
 # Mock Logger
@@ -58,6 +59,12 @@ def mock_config():
     config.RESERVATION_WAGE_BASE = 1.5
     config.RESERVATION_WAGE_RANGE = 1.0
 
+    # Phase 21.6 Constants
+    config.WAGE_DECAY_RATE = 0.02
+    config.WAGE_RECOVERY_RATE = 0.01
+    config.RESERVATION_WAGE_FLOOR = 0.3
+    config.SURVIVAL_CRITICAL_TURNS = 5
+
     # Phase 8 Constants
     config.PANIC_BUYING_THRESHOLD = 0.05
     config.HOARDING_FACTOR = 0.5
@@ -82,6 +89,11 @@ def mock_household():
     hh.expected_inflation = {}
     hh.value_orientation = "wealth_and_needs"
     hh.current_wage = 0.0
+    hh.personality = Personality.BALANCED
+    hh.wage_modifier = 1.0
+    hh.preference_asset = 1.0
+    hh.preference_social = 1.0
+    hh.preference_growth = 1.0
     return hh
 
 
@@ -182,6 +194,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         # Populate market_data with high price so engine sees it
         market_data = {
             "goods_market": {
+                "luxury_food_current_sell_price": 1000.0,
                 "luxury_food_avg_traded_price": 1000.0
             }
         }
@@ -232,6 +245,10 @@ class TestAIDrivenHouseholdDecisionEngine:
     def test_labor_market_participation_aggressive(
         self, decision_engine, mock_household, mock_ai_engine
     ):
+        # In V2 Phase 21.6, Aggressiveness doesn't affect Price directly anymore.
+        # Price is determined by Adaptive Wage Modifier.
+        # But we still test that an order is generated.
+
         mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
         mock_labor_market.get_all_bids = Mock(
             return_value=[Order(2, "BUY", "labor", 1, 45.0, "labor_market")]
@@ -244,11 +261,22 @@ class TestAIDrivenHouseholdDecisionEngine:
 
         mock_household.get_desired_wage.return_value = 50.0  # Base reservation wage
 
+        # Inject market data for avg wage
+        # Offer must be acceptable (>= 50 * 0.98 = 49.0)
+        market_data = {
+            "goods_market": {
+                "labor": {
+                    "avg_wage": 50.0,
+                    "best_wage_offer": 49.5
+                }
+            }
+        }
+
         context = DecisionContext(
             household=mock_household,
             markets=mock_markets,
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
@@ -257,7 +285,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         labor_order = next((o for o in orders if o.item_id == "labor"), None)
         assert labor_order is not None
         assert labor_order.order_type == "SELL"
-        # High work agg -> Low Reservation Modifier -> Lower Wage
+        # Modifier 1.0 -> 0.98. Price ~ 49.0.
+        # 49.0 < 50.0
         assert labor_order.price < 50.0
 
     def test_labor_market_participation_passive_no_offer(
@@ -300,7 +329,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         # Filter Labor Order
         labor_order = next((o for o in orders if o.item_id == "labor"), None)
         assert labor_order is not None
-        # Check if reservation wage is high
-        # Modifier for 0.1 agg is 1.5 - 0.1 = 1.4.
-        # Res Wage = 50.0 * 1.4 = 70.0
-        assert labor_order.price > 55.0
+        # Phase 21.6: Wage Modifier 1.0 -> 0.98.
+        # Res Wage = 50.0 * 0.98 = 49.0.
+        # Old Expectation: > 55.0. New Expectation: Approx 49.0.
+        assert labor_order.price == 49.0

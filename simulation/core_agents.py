@@ -220,6 +220,7 @@ class Household(BaseAgent):
 
         # Operation Forensics (WO-021)
         self.last_labor_offer_tick: int = 0
+        self.wage_modifier: float = 1.0  # Phase 21.6: Adaptive Wage Modifier (100%)
 
         # Phase 4: Bankruptcy Penalty
         self.credit_frozen_until_tick: int = 0

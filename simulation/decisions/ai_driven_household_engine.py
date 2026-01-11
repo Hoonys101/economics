@@ -226,15 +226,17 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             
             if willingness_to_pay * target_quantity > budget_limit:
                 # Reduce quantity first
-                target_quantity = max(1.0, budget_limit / willingness_to_pay)
-                # If still too expensive, reduce WTP? No, just buy less.
-                if willingness_to_pay * target_quantity > budget_limit:
-                    target_quantity = budget_limit / willingness_to_pay
+                target_quantity = budget_limit / willingness_to_pay
             
             # Final Sanity Check
             if target_quantity >= self.config_module.MIN_PURCHASE_QUANTITY and willingness_to_pay > 0:
+                # Use int for durables, float for others
+                final_quantity = target_quantity
+                if good_info.get("is_durable", False):
+                    final_quantity = max(1, int(target_quantity))
+
                 orders.append(
-                    Order(household.id, "BUY", item_id, max(1, int(target_quantity)), willingness_to_pay, item_id)
+                    Order(household.id, "BUY", item_id, final_quantity, willingness_to_pay, item_id)
                 )
 
         # 3. Execution: Labor Logic
@@ -244,6 +246,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
              
         # Scenario A: Already Employed - Monitor market for better wages
         if household.is_employed:
+            # --- Phase 21.6: Wage Recovery (Adaptive) ---
+            recovery_rate = getattr(self.config_module, "WAGE_RECOVERY_RATE", 0.01)
+            household.wage_modifier *= (1.0 + recovery_rate)
+            household.wage_modifier = min(1.0, household.wage_modifier)
+            # --------------------------------------------
+
             # Mobility Lever: AI determines how much of a gap triggers a quit
             agg_mobility = action_vector.job_mobility_aggressiveness
             
@@ -260,25 +268,52 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         # Scenario B: Unemployed (Default or just quit) - Always look for work
         if not household.is_employed:
-            agg_work = action_vector.work_aggressiveness
-            # Reservation Wage logic: more aggressive workers accept lower wages
-            reservation_modifier = self.config_module.RESERVATION_WAGE_BASE - (agg_work * self.config_module.RESERVATION_WAGE_RANGE) # Range [0.5, 1.5]
-            reservation_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, market_avg_wage * reservation_modifier)
+            # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
 
-            # --- Phase 21.6: The Invisible Hand (Track A: Reservation Wage) ---
-            # Retrieve Market Data (Correctly using data path)
+            # 1. Update Wage Modifier (Adaptive)
+            decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
+            floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
+            household.wage_modifier *= (1.0 - decay_rate)
+            household.wage_modifier = max(floor_mod, household.wage_modifier)
+
+            # 2. Survival Trigger (Panic Mode)
+            food_inventory = household.inventory.get("basic_food", 0.0)
+            food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+            if food_price <= 0: food_price = 10.0
+
+            survival_days = food_inventory + (household.assets / food_price)
+            critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
+
+            is_panic = False
+            if survival_days < critical_turns:
+                is_panic = True
+                reservation_wage = 0.0
+                self.logger.info(
+                    f"PANIC_MODE | Household {household.id} desperate. Survival Days: {survival_days:.1f}. Wage: 0.0",
+                     extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_panic"]}
+                )
+            else:
+                # Normal Adaptive Wage
+                labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+                market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+                reservation_wage = market_avg_wage * household.wage_modifier
+
+            # 3. Generate Order
+            # Retrieve Market Data
             labor_market_info = market_data.get("goods_market", {}).get("labor", {})
             market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
             best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
 
-            # Refuse labor supply if market offer is too low (below 70% of average)
+            # Refuse labor supply if market offer is too low (only if NOT panic)
             effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
-            wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+            # [Fix] Use dynamic reservation_wage as floor, not fixed 0.7 ratio
+            # wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+            wage_floor = reservation_wage
 
-            if effective_offer < wage_floor:
+            if not is_panic and effective_offer < wage_floor:
                 self.logger.info(
                     f"RESERVATION_WAGE | Household {household.id} refused labor. "
-                    f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f})",
+                    f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f}, Mod: {household.wage_modifier:.2f})",
                     extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
                 )
                 # Skip order generation

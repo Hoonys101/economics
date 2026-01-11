@@ -50,6 +50,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
         chosen_tactic: Tactic = Tactic.NO_ACTION
         chosen_aggressiveness: Aggressiveness = Aggressiveness.NEUTRAL
 
+        # 0. Wage Recovery (Employed Case)
+        if household.is_employed:
+             recovery_rate = getattr(self.config_module, "WAGE_RECOVERY_RATE", 0.01)
+             household.wage_modifier *= (1.0 + recovery_rate)
+             household.wage_modifier = min(1.0, household.wage_modifier)
+
         # 1. 생존 욕구 충족 (음식 구매)
         if (
             household.needs["survival"]
@@ -92,43 +98,54 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                 chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
                 chosen_aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 공격성 중립으로 설정
 
-                desired_wage = household.get_desired_wage()
-                
-                # --- Genesis: Wage Surrender (WO-Diag-005) ---
-                survival_need = household.needs.get("survival", 0.0)
-                if survival_need >= self.config_module.SURVIVAL_NEED_THRESHOLD:
-                    # Desperation factor increases as survival need goes from threshold 20 to 100
-                    desperation = (survival_need - self.config_module.SURVIVAL_NEED_THRESHOLD) / (100.0 - self.config_module.SURVIVAL_NEED_THRESHOLD)
-                    desperation = max(0.0, min(1.0, desperation))
-                    
-                    # Apply flexibility factor to drop wage
-                    flexibility = getattr(self.config_module, "GENESIS_WAGE_FLEXIBILITY_FACTOR", 1.0)
-                    reduction = desperation * flexibility
-                    
-                    # New desired wage: drop up to 90% but floor at 1.0
-                    new_wage = max(1.0, desired_wage * (1.0 - (reduction * 0.9)))
-                    
-                    if new_wage < desired_wage:
-                        self.logger.info(
-                            f"WAGE_SURRENDER | Household {household.id} desperate (Survival={survival_need:.1f}). Dropping wage: {desired_wage:.2f} -> {new_wage:.2f}",
-                            extra={"tick": current_time, "agent_id": household.id}
-                        )
-                        desired_wage = new_wage
-                # ---------------------------------------------
+                # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
 
-                # --- Phase 21.6: The Invisible Hand (Track A: Reservation Wage) ---
+                # 1. Update Wage Modifier (Adaptive)
+                decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
+                floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
+                household.wage_modifier *= (1.0 - decay_rate)
+                household.wage_modifier = max(floor_mod, household.wage_modifier)
+                
+                # 2. Survival Trigger (Panic Mode)
+                food_inventory = household.inventory.get("basic_food", 0.0)
+                food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+                if food_price <= 0: food_price = 10.0
+
+                survival_days = food_inventory + (household.assets / food_price)
+                critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
+
+                is_panic = False
+                desired_wage = 0.0
+
+                if survival_days < critical_turns:
+                    is_panic = True
+                    desired_wage = 0.0
+                    self.logger.info(
+                        f"PANIC_MODE | Household {household.id} desperate (RuleBased). Survival Days: {survival_days:.1f}. Wage: 0.0",
+                        extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_panic"]}
+                    )
+                else:
+                    # Normal Adaptive Wage
+                    labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+                    market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+                    desired_wage = market_avg_wage * household.wage_modifier
+
+                # 3. Generate Order
                 # Retrieve Market Data
                 labor_market_info = market_data.get("goods_market", {}).get("labor", {})
                 market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
                 best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
 
+                # Refuse labor supply if market offer is too low (only if NOT panic)
                 effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
-                wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+                # [Fix] Use dynamic reservation_wage as floor, not fixed 0.7 ratio
+                # wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+                wage_floor = desired_wage
 
-                if effective_offer < wage_floor:
+                if not is_panic and effective_offer < wage_floor:
                     self.logger.info(
                         f"RESERVATION_WAGE | Household {household.id} refused labor (RuleBased). "
-                        f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f}",
+                        f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f}, Mod: {household.wage_modifier:.2f})",
                         extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
                     )
                     # Skip order generation
