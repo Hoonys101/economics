@@ -18,6 +18,10 @@ SEVERANCE_PAY_WEEKS = 4             # 해고 시 4주치 임금 지급
 # --- Phase 21.6: The Invisible Hand (WO-045) ---
 LABOR_ELASTICITY_MIN = 0.0              # 가드레일 제거
 RESERVATION_WAGE_FLOOR_RATIO = 0.7      # 시장 평균의 70% 미만 거부
+WAGE_DECAY_RATE = 0.02                  # 실업 시 희망임금 하락률 (2%/틱)
+WAGE_RECOVERY_RATE = 0.01               # 취업 시 희망임금 상승률 (1%/틱)
+RESERVATION_WAGE_FLOOR = 0.3            # 최저 희망임금 (시장 평균의 30%)
+SURVIVAL_CRITICAL_TURNS = 5             # 생존 가능 잔여 기간 임계값
 
 
 # --- Phase 20: The Matrix v1 ---
@@ -225,7 +229,7 @@ INVENTORY_HOLDING_COST_RATE = 0.005
 DIVIDEND_RATE = 0.1  # 기본 배당률
 DIVIDEND_RATE_MIN = 0.05  # 최소 배당률 (저배당 정책)
 DIVIDEND_RATE_MAX = 0.5   # 최대 배당률 (고배당 정책)
-WAGE_DECAY_RATE = 0.9
+# WAGE_DECAY_RATE removed - Overwritten in Phase 21.6 section
 RND_WAGE_PREMIUM = 1.5
 WAGE_COMPETITION_PREMIUM = 0.2
 
