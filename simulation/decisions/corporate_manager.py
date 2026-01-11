@@ -102,6 +102,74 @@ class CorporateManager:
 
         return orders
 
+    def _get_total_liabilities(self, firm: Firm) -> float:
+        """
+        Helper to retrieve total liabilities (principal) from the Bank via LoanMarket.
+        """
+        try:
+            loan_market = getattr(firm.decision_engine, 'loan_market', None)
+            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
+                debt_summary = loan_market.bank.get_debt_summary(firm.id)
+                return debt_summary.get('total_principal', 0.0)
+        except Exception:
+            pass
+        return 0.0
+
+    def _adjust_wage_for_vacancies(self, firm: Firm, needed_labor: int, current_offer_wage: float) -> float:
+        """
+        WO-047-B: Competitive Bidding Logic.
+        Increases wage offer if vacancies exist and firm is solvent.
+        """
+        # 1. Calculate Wage Bill Proxy
+        wage_bill = sum(firm.employee_wages.values())
+        if wage_bill <= 0:
+            # Fallback: LABOR_MARKET_MIN_WAGE * production_target (proxy for scale)
+            min_wage = getattr(self.config_module, 'LABOR_MARKET_MIN_WAGE', 10.0)
+            # Use max(1.0, firm.production_target) to avoid 0
+            wage_bill = min_wage * max(1.0, firm.production_target)
+
+        # 2. Get Liabilities
+        liabilities = self._get_total_liabilities(firm)
+
+        # 3. Solvency Check (Critical Constraint)
+        # If liabilities exist, Solvency = Assets / Liabilities.
+        # If no liabilities, Solvency = Assets / (Wage Bill * 10) (Proxy for risk)
+        if liabilities > 0:
+            solvency = firm.assets / liabilities
+        else:
+            solvency = firm.assets / max(1.0, wage_bill * 10.0)
+
+        # Base decision
+        new_wage = current_offer_wage
+
+        if solvency >= 1.5:
+            # 4. Check Vacancies
+            current_employees = len(firm.employees)
+            unfilled_vacancies = max(0, needed_labor - current_employees)
+
+            if unfilled_vacancies > 0:
+                # Increase by 1% per vacancy, max 5%
+                adjustment_rate = min(0.05, 0.01 * unfilled_vacancies)
+                new_wage = current_offer_wage * (1.0 + adjustment_rate)
+
+        # 5. Constraints
+        min_wage = getattr(self.config_module, 'LABOR_MARKET_MIN_WAGE', 10.0)
+
+        # Ceiling: firm.assets / (current_employees + 1)
+        # Prevents committing more than total assets per capita
+        asset_ceiling = firm.assets / (len(firm.employees) + 1)
+
+        # Apply ceiling first (but don't go below min_wage if possible, or do?)
+        # Standard: Ceiling caps the bid. Floor is legal requirement.
+        # If Ceiling < Floor, the firm effectively can't afford to hire legally.
+        # We return max(min_wage, min(new_wage, asset_ceiling)) to strictly enforce legal floor,
+        # but realistically this firm will fail to hire if assets are that low.
+
+        new_wage = min(new_wage, asset_ceiling)
+        new_wage = max(min_wage, new_wage)
+
+        return new_wage
+
     def _manage_procurement(self, firm: Firm, market_data: Dict[str, Any], markets: Dict[str, Any]) -> List[Order]:
         """
         WO-030: Manage Raw Material Procurement.
@@ -471,7 +539,9 @@ class CorporateManager:
 
         adjustment = -0.2 + (aggressiveness * 0.5)
         offer_wage = market_wage * (1.0 + adjustment)
-        offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
+
+        # WO-047-B: Apply Competitive Bidding
+        offer_wage = self._adjust_wage_for_vacancies(firm, needed_labor, offer_wage)
 
         # Calculate how many to hire
         to_hire = needed_labor - current_employees
