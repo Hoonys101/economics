@@ -2,10 +2,10 @@
 
 ## Summary
 - Ticks: 50
-- Final Population: 35
-- Final GDP: 1010.90
-- Avg Labor Share: 13.9%
-- Max Unemployment: 65.0%
+- Final Population: 34
+- Final GDP: 1053.49
+- Avg Labor Share: 8.0%
+- Max Unemployment: 70.0%
 - Automation Cost: 1000000000.0
 - Labor Reduction: 0.1
 

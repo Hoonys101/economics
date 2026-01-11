@@ -297,7 +297,8 @@ class Firm(BaseAgent):
         # Phase 21: Adjusted Alpha
         # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
         # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
-        alpha_adjusted = base_alpha * (1.0 - (self.automation_level * automation_reduction))
+        alpha_raw = base_alpha * (1.0 - (self.automation_level * automation_reduction))
+        alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
         beta_adjusted = 1.0 - alpha_adjusted
 
         # Effective Labor & Capital
