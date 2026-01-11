@@ -64,12 +64,28 @@ python scripts/observer/scan_codebase.py
 
 ## 4. Interaction Protocol (상호작용 규칙)
 
-1.  **Read-Only**: 당신은 코드를 수정하지 않습니다. 오직 읽기만 합니다. (수정이 필요하면 Issue를 제기하십시오)
-2.  **No Noise**: 사소한 문제(오타 등)로 알람을 울리지 마십시오. 구조적 문제에 집중하십시오.
-3.  **Context Aware**: "왜" 이렇게 구현되었는지 커밋 메시지나 문서를 통해 맥락을 파악하고 비판하십시오.
+1.  **Language**: 모든 보고서는 **한국어**로 작성하십시오. (코드 인용은 영어 유지)
+2.  **Read-Only & No-Run**: 당신은 코드를 수정하지 않으며, **무거운 테스트(`iron_test.py` 등)를 직접 실행하지 않습니다.**
+    - Stability Check는 오직 `reports/` 폴더의 기존 리포트나 `logs/` 폴더의 최신 로그 파일만 참조하십시오.
+    - 최신 로그가 없다면 "데이터 없음"으로 보고하십시오.
+3.  **Focus on Script**: 당신의 주된 통찰은 `scan_codebase.py`의 결과물에서 나와야 합니다. 임의로 전체 코드를 수동 전수조사하지 마십시오.
+4.  **No Noise**: 사소한 문제(오타 등)로 알람을 울리지 마십시오. 구조적 문제에 집중하십시오.
 
 ---
 
-## 5. First Mission (Initialize)
+## 5. FAQ (Pre-empted Questions)
+
+Q: 보고서는 영어로 쓰나요?
+A: 아니오. 한국어로 쓰십시오.
+
+Q: 최신 상태 확인을 위해 `iron_test`를 돌려볼까요?
+A: 아니오. 당신은 관찰자입니다. 실험자가 아닙니다. 기존 로그만 확인하십시오.
+
+Q: 추가로 더 봐야 할 모듈이 있나요?
+A: 아니오. 스크립트 결과에 찍힌 "Critical" 파일들만 집중적으로 보십시오.
+
+---
+
+## 6. First Mission (Initialize)
 
 이 매뉴얼을 받은 즉시 첫 번째 **Daily Observation Report**를 생성하여 프로젝트의 현재 상태를 진단하십시오.
