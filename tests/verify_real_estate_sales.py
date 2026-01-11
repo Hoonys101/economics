@@ -8,9 +8,11 @@ from simulation.bank import Bank, Loan
 from simulation.markets import OrderBookMarket
 from simulation.models import Order
 from simulation.models import RealEstateUnit
+from simulation.ai.enums import Personality
 import config
 
 class MockConfig:
+    CONFORMITY_RANGES = {}
     INITIAL_PROPERTY_VALUE = 10000.0
     INITIAL_RENT_PRICE = 50.0
     MAINTENANCE_RATE_PER_TICK = 0.001
@@ -18,6 +20,8 @@ class MockConfig:
     GOODS = {}
     SERVICE_SECTORS = []
     ADAPTATION_RATE_NORMAL = 0.05
+    ADAPTATION_RATE_IMPULSIVE = 0.1
+    ADAPTATION_RATE_CONSERVATIVE = 0.01
     INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000.0
     INITIAL_HOUSEHOLD_ASSETS_STD = 0.0
     INITIAL_HOUSEHOLD_WAGE_MEAN = 10.0
@@ -52,7 +56,7 @@ class TestRealEstateSales(unittest.TestCase):
             initial_needs={},
             decision_engine=mock_decision_engine,
             value_orientation="WEALTH",
-            personality=None
+            personality=Personality.CONSERVATIVE
         )
         self.housing_manager = HousingManager(self.agent, self.config)
 
@@ -116,7 +120,7 @@ class TestRealEstateSales(unittest.TestCase):
         mock_talent = MagicMock()
         mock_talent.base_learning_rate = 0.5
         mock_talent.max_potential = {}
-        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=None)
+        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=Personality.CONSERVATIVE)
         
         # Need at least one household
         households = [hh1]
