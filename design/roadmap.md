@@ -79,6 +79,26 @@
     - Crisis Management Mode (Great Depression/Hyperinflation).
 - [ ] 17. Commercial Bank Deepening (Lender of Last Resort)
 - [ ] 18. Time Machine (Backtester)
+
+## 🧠 **[CORE PHILOSOPHY] Rule-Based → Adaptive AI Migration**
+> **Goal**: 모든 하드코딩된 규칙 기반 로직을 학습 기반 또는 적응형 시스템으로 전환
+> **Rationale**: 본 프로젝트의 핵심 철학 - 에이전트는 "프로그래밍된 대로" 행동하는 것이 아니라 "경험에서 학습"해야 함
+
+### 현재 Rule-Based 부채 (Technical Debt)
+| Component | 현재 상태 | 목표 상태 |
+|---|---|---|
+| `ActionProposalEngine` | 조건문 기반 행동 제안 | RL Policy Network |
+| `CorporateManager` | 휴리스틱 고용/해고 | Firm System 2 NPV 최적화 |
+| `HousingManager` | NPV 임계값 하드코딩 | 학습된 선호도 |
+| `PortfolioManager` | Value/Momentum 규칙 | Multi-Factor Learning |
+| `DemographicManager` | 조건부 출산 로직 | 적응형 r/K 전략 |
+| `Government.calculate_*` | 고정 세율 공식 | 정책 최적화 RL |
+
+### Migration Strategy
+1. **Phase A**: 규칙을 "Default Policy"로 유지하면서 학습 레이어 추가
+2. **Phase B**: 학습된 정책이 규칙을 점진적으로 대체
+3. **Phase C**: 규칙 완전 제거 (Pure AI)
+
 - [ ] 21. **Config Refactoring Pass 2**: 런타임 조정 시스템 (CLI/API 연동)
 
 ## ⚠️ [MAJOR OVERHAUL REQUIRED] Cognitive Architecture (Phase 20+)
