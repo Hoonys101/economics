@@ -69,3 +69,23 @@
     *   Grace Period 동안 새 집(Buy)이나 전세(Rent)를 구해야 함.
     *   2틱 후에도 거처를 구하지 못하면 `is_homeless = True`로 전환되고 정상 패널티 적용.
 
+## 7. Technical Clarifications for Jules (Architect Prime Guidance)
+
+1.  **Entry Price Tracking**: 
+    - `simulation/models.py`의 `RealEstateUnit` 클래스에 `last_purchase_price: float = 0.0` 필드를 추가한다. (수석 승인)
+    - `HousingSystem.process_transaction`에서 소유권 이전 시 해당 필드를 `tx.price`로 업데이트한다.
+  
+2.  **Distress Sale Threshold**: 
+    - `Distress` 상태는 `agent.assets < (current_monthly_survival_cost * 1.5)`로 정의한다. (약 1.5개월분 생존 비용 미만 시)
+    - `current_monthly_survival_cost`는 `config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK * market_food_price * 30` (월간 추정치)으로 산출한다.
+
+3.  **Selling Price Strategy**:
+    - **Distress Sale**: `unit.estimated_value * 0.95` (급매, 5% 할인).
+    - **Profit Taking**: `unit.estimated_value * 1.05` (차익 실현, 5% 프리미엄).
+
+4.  **Grace Period**:
+    - `Household` 클래스에 `housing_grace_period: int = 0` 필드를 추가한다. (승인)
+
+5.  **Logging & Testing**:
+    - `iron_test.py`의 핵심 로직을 건드리지 말고, `HousingSystem`과 `HouseholdSystem2Planner`에서 `logger.info`를 통해 "DISTRESS_SELL", "PROFIT_SELL", "GRACE_PERIOD_ACTIVE" 등의 로그를 상세히 남겨 기록으로 검증하라.
+
