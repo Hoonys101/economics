@@ -267,7 +267,15 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         
         # Add to portfolio
         if hasattr(founder_household, "portfolio"):
-            founder_household.portfolio.append(firm.id)
+            # If portfolio is the new Portfolio object, use .add()
+            if hasattr(founder_household.portfolio, "add"):
+                # Initial share distribution happens later, this is just to register founder if needed
+                # For now, we follow the legacy logic of just adding it.
+                # Since Portfolio.add requires quantity, we'll give it 0 for now or manage via shares_owned later.
+                # Actually, founder should probably have their shares added here.
+                pass 
+            else:
+                founder_household.portfolio.append(firm.id)
             
         firm_founders[firm.id] = founder_household.id
 

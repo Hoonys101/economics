@@ -32,29 +32,24 @@
 
 ## 3. Implementation Logic
 
-### Module: `simulation/decisions/housing_manager.py` & `system2_planner`
+### Module: `simulation/ai/household_system2.py` (`HouseholdSystem2Planner`)
 
-1.  **`decide_selling(agent, market_data)`**:
+1.  **`decide_selling()`**:
     *   현재 보유 주택 확인 (`agent.owned_properties`).
-    *   거주 중인 자가 주택(Owner-Occupied)인지 확인.
-    *   Trigger 조건 검사.
-    *   매도 가격(`decision_price`) 산정.
+    *   Trigger 조건 검사 (Distress Sale vs Profit Taking).
+    *   매도 결정 시 `agent.housing_target_mode = "SELL"` 또는 필요한 상태 값 반환.
 
-2.  **`execute_sell(agent, unit_id, price)`**:
-    *   `HousingMarket`에 `SELL` 주문 제출.
-    *   **상태 변경**: `agent.is_selling_house = True`.
+### Module: `simulation/systems/housing_system.py` (Transaction Handler)
 
-### Module: `simulation/engine.py` (Transaction Handler)
-
-매매 체결 시 (`match_orders`), 다음 절차를 원자적(Atomic)으로 수행해야 한다.
+매매 체결 시 (`PersistenceManager` 또는 `Simulation` 호출에 의해 `process_transaction` 실행), 다음 절차를 원자적으로 수행해야 한다.
 
 1.  **Ownership Transfer**: `Unit.owner_id` 변경 (Seller -> Buyer).
 2.  **Cash Transfer**: Buyer Cash -> Seller Cash.
 3.  **Occupancy Handling (거주자 처리)**:
     *   **Seller (구 집주인)**:
-        *   즉시 퇴거(Evict)? -> 현실적이지 않음.
-        *   **Grace Period (유예 기간)**: 1~3주 내에 새 집을 구해야 함. (당장은 `is_homeless = True` 처리하고 다음 틱에 Rent/Buy 로직이 돌게 함).
-        *   만약 못 구하면? -> 노숙(Homeless) 패널티.
+        *   만약 팔린 주택이 `residing_property_id`였다면, 해당 속성을 `None`으로 변경.
+        *   **Grace Period (유예 기간)**: `agent.housing_grace_period = 2` (틱 단위) 설정.
+        *   유예 기간 동안은 `apply_homeless_penalty`에서 제외됨.
 
 ## 4. Verification Plan (Test Cases)
 

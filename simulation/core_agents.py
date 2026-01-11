@@ -24,6 +24,9 @@ from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDec
 # Phase 20: System 2
 from simulation.ai.system2_planner import System2Planner
 from simulation.ai.household_system2 import HouseholdSystem2Planner, HousingDecisionInputs
+from simulation.components.consumption_behavior import ConsumptionBehavior
+from simulation.components.psychology_component import PsychologyComponent
+from simulation.components.leisure_manager import LeisureManager
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -161,11 +164,8 @@ class Household(BaseAgent):
             g["id"]: g for g in goods_data
         }
 
-        # Initialize personality and desire weights
+        # Initialize personality
         self.personality = personality
-        self.desire_weights: Dict[str, float] = self._initialize_desire_weights(
-            personality
-        )
 
         # --- 3-Pillars Preferences (Value Orientation) ---
         # Value Orientation determines "What" (ROI weights), independent of Personality ("How fast" needs grow)
@@ -183,6 +183,11 @@ class Household(BaseAgent):
         self.current_food_consumption: float = 0.0
         self.current_consumption: float = 0.0
         self.employer_id: Optional[int] = None
+
+        # Phase 22.5: Component Initialization (Architecture Detox)
+        self.psychology = PsychologyComponent(self, personality, config_module)
+        self.consumption = ConsumptionBehavior(self, config_module)
+        self.leisure = LeisureManager(self, config_module)
         self.shares_owned: Dict[int, float] = {}
         self.is_employed: bool = False
         self.labor_skill: float = 1.0
@@ -242,11 +247,7 @@ class Household(BaseAgent):
         self.system2_planner = System2Planner(self, config_module)
         self.housing_planner = HouseholdSystem2Planner(self, config_module)
         self.housing_target_mode = "RENT"
-        self.housing_price_history = deque(maxlen=12) # 1 year history (assuming monthly updates? No, ticks. Spec says Last 1 year.)
-        # Spec says "Last 1 year". TICKS_PER_YEAR = 100. So maxlen=100.
-        # But wait, T_years=10 in calculation uses monthly steps.
-        # I'll use TICKS_PER_YEAR from config.
-        ticks_per_year = getattr(config_module, "TICKS_PER_YEAR", 100)
+        ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
         self.housing_price_history = deque(maxlen=ticks_per_year)
 
         # Education Level (0~5) based on Distribution (Phase 19)
@@ -359,89 +360,26 @@ class Household(BaseAgent):
     def decide_and_consume(self, current_time: int, market_data: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
         """
         가계가 현재 욕구 상태와 보유 재고를 바탕으로 재화를 소모합니다.
-
-        Returns:
-            Dict[str, float]: 이번 틱에 소비한 아이템과 수량 맵.
         """
-        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["consumption"]}
-        consumed_items: Dict[str, float] = {}
-
-        # 1. 모든 인벤토리 품목에 대해 소비 가능 여부 확인
-        for item_id, inventory_quantity in list(self.inventory.items()):
-            if inventory_quantity <= 0:
-                continue
-
-            good_info = self.goods_info_map.get(item_id)
-            if not good_info:
-                continue
-
-            utility_effects = good_info.get("utility_effects", {})
-            if not utility_effects:
-                continue
-
-            should_consume = False
-            for need_key, effect in utility_effects.items():
-                current_need = self.needs.get(need_key, 0.0)
-                
-                # 소비 문턱값 설정
-                threshold = self.config_module.NEED_MEDIUM_THRESHOLD
-                if need_key == "survival":
-                    threshold = self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD
-                
-                if current_need > threshold:
-                    should_consume = True
-                    break
-            
-            if should_consume:
-                is_durable = good_info.get("is_durable", False)
-                # Fix Logic for Durables: Prevent fractional consumption ("Eating Fridges")
-                if is_durable:
-                    if inventory_quantity < 1.0:
-                        continue  # 1.0개 모일 때까지 절대 소비(설치)하지 말고 대기
-                    quantity_to_consume = 1.0 # 강제로 1개 단위로만 소비
-                else:
-                    quantity_to_consume = min(inventory_quantity, 1.0)
-                
-                if quantity_to_consume > 0:
-                    self.consume(item_id, quantity_to_consume, current_time)
-                    consumed_items[item_id] = consumed_items.get(item_id, 0.0) + quantity_to_consume
-                    self.logger.debug(
-                        f"HOUSEHOLD_CONSUMPTION | Household {self.id} consumed {quantity_to_consume:.2f} {item_id}. Remaining inventory: {self.inventory.get(item_id, 0.0):.2f}",
-                        extra={**log_extra, "item_id": item_id, "quantity": quantity_to_consume}
-                    )
-
-        # 2. 욕구 업데이트 (자연적 증가/감소)
+        consumed_items = self.consumption.decide_and_consume(current_time, market_data)
         self.update_needs(current_time, market_data)
         return consumed_items
 
-    def _initialize_desire_weights(self, personality: Personality) -> Dict[str, float]:
+    def _initialize_desire_weights(self, personality: Personality):
         """
-        주어진 특질에 따라 각 욕구의 성장 가중치를 초기화합니다.
+        Legacy wrapper for desire weights initialization.
         """
-        if personality in [Personality.MISER, Personality.CONSERVATIVE]:
-            return {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5}
-        elif personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
-            return {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5}
-        elif personality == Personality.GROWTH_ORIENTED:
-            return {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5}
-        else:  # Default or unknown personality
-            return {"survival": 1.0, "asset": 1.0, "social": 1.0, "improvement": 1.0}
+        pass # Handled by PsychologyComponent.__init__
+
+    @property
+    def desire_weights(self) -> Dict[str, float]:
+        return self.psychology.desire_weights
 
     def calculate_social_status(self) -> None:
         """
-        가계의 사회적 지위를 계산하고 업데이트합니다.
-        사회적 지위는 가계의 현재 자산과 보유한 사치품의 가치를 기반으로 결정됩니다.
-        결과 값은 `self.social_status`에 저장됩니다.
+        사회적 지위 계산을 PsychologyComponent로 위임합니다.
         """
-        luxury_goods_value = 0.0
-        for item_id, quantity in self.inventory.items():
-            good_info = self.goods_info_map.get(item_id)
-            if good_info and good_info.get("is_luxury", False):
-                luxury_goods_value += quantity
-
-        self.social_status = (
-            self.assets * self.config_module.SOCIAL_STATUS_ASSET_WEIGHT
-        ) + (luxury_goods_value * self.config_module.SOCIAL_STATUS_LUXURY_WEIGHT)
+        self.psychology.calculate_social_status()
 
     @override
     def update_perceived_prices(self, market_data: Dict[str, Any]) -> None:
@@ -499,69 +437,9 @@ class Household(BaseAgent):
         self, leisure_hours: float, consumed_items: Dict[str, float]
     ) -> LeisureEffectDTO:
         """
-        주어진 여가 시간과 소비 아이템에 따라 여가 유형을 결정하고 효과를 계산합니다.
-
-        Args:
-            leisure_hours (float): 할당된 여가 시간.
-            consumed_items (Dict[str, float]): 이번 틱에 소비된 아이템.
-
-        Returns:
-            LeisureEffectDTO: 계산된 여가 효과 데이터.
+        여가 효과 계산을 LeisureManager로 위임합니다.
         """
-        leisure_type: LeisureType = "SELF_DEV"  # Default
-
-        # Determine Leisure Type
-        has_children = len(self.children_ids) > 0
-        has_education = consumed_items.get("education_service", 0.0) > 0
-        has_luxury = (
-            consumed_items.get("luxury_food", 0.0) > 0 or
-            consumed_items.get("clothing", 0.0) > 0
-        )
-
-        if has_children and has_education:
-            leisure_type = "PARENTING"
-        elif has_luxury:
-            leisure_type = "ENTERTAINMENT"
-        else:
-            leisure_type = "SELF_DEV"
-
-        self.last_leisure_type = leisure_type
-
-        # Apply Effects using Coefficients from Config
-        coeffs = self.config_module.LEISURE_COEFFS.get(leisure_type, {})
-        utility_per_hour = coeffs.get("utility_per_hour", 0.0)
-        xp_gain_per_hour = coeffs.get("xp_gain_per_hour", 0.0)
-        productivity_gain = coeffs.get("productivity_gain", 0.0)
-
-        utility_gained = leisure_hours * utility_per_hour
-        xp_gained = leisure_hours * xp_gain_per_hour
-        prod_gained = leisure_hours * productivity_gain
-
-        # Apply Self-Dev productivity gain immediately to self
-        if leisure_type == "SELF_DEV" and prod_gained > 0:
-            # Assuming 'productivity' skill or base talent modification
-            # For simplicity, let's say it increases 'learning' skill if it exists, or just log for now
-            # The spec says "本인 생산성 향상" (Productivity increase)
-            # We can model this as labor_skill increase
-            self.labor_skill += prod_gained
-            self.logger.debug(
-                f"LEISURE_SELF_DEV | Household {self.id} increased labor skill by {prod_gained:.4f}. New Skill: {self.labor_skill:.4f}",
-                extra={"agent_id": self.id, "tags": ["LEISURE_EFFECT"]}
-            )
-        elif leisure_type == "ENTERTAINMENT" and utility_gained > 0:
-            self.logger.debug(
-                f"LEISURE_ENTERTAINMENT | Household {self.id} enjoyed entertainment. Utility: {utility_gained:.4f}",
-                extra={"agent_id": self.id, "tags": ["LEISURE_EFFECT"]}
-            )
-
-        self.last_leisure_type = leisure_type
-
-        return LeisureEffectDTO(
-            leisure_type=leisure_type,
-            leisure_hours=leisure_hours,
-            utility_gained=utility_gained,
-            xp_gained=xp_gained
-        )
+        return self.leisure.apply_leisure_effect(leisure_hours, consumed_items)
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
@@ -1029,125 +907,11 @@ class Household(BaseAgent):
 
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
-        log_extra = {
-            "tick": current_tick,
-            "agent_id": self.id,
-            "tags": ["needs_update"],
-        }
-        self.logger.debug(
-            f"HOUSEHOLD_NEEDS_UPDATE_START | Household {self.id} needs before update: {self.needs}. Survival Need: {self.needs.get('survival', 0):.2f}",
-            extra={**log_extra, "needs_before": self.needs},
-        )
-
-        # Phase 15: Durable Asset Utility & Depreciation
-        # Apply utility from owning durables BEFORE natural decay
-        for asset in list(self.durable_assets):
-            item_id = asset["item_id"]
-            quality = asset["quality"]
-
-            # Depreciation
-            asset["remaining_life"] -= 1
-            if asset["remaining_life"] <= 0:
-                self.durable_assets.remove(asset)
-                self.logger.info(
-                    f"DURABLE_BROKEN | Household {self.id}'s {item_id} broke.",
-                    extra={**log_extra, "item_id": item_id}
-                )
-                continue
-
-            # Utility Application
-            # Durable utility reduces 'quality' need or 'asset' need?
-            # Config says: "utility_effects": {"quality": 10} for consumer_goods
-            good_info = self.goods_info_map.get(item_id, {})
-            utility_effects = good_info.get("utility_effects", {})
-
-            for need_type, base_utility in utility_effects.items():
-                # Utility = Base * Quality
-                effective_utility = base_utility * quality
-                # Satisfy need (reduce it)
-                if need_type in self.needs:
-                    self.needs[need_type] = max(0.0, self.needs[need_type] - effective_utility)
-
-        # --- Personality-driven desire growth ---
-        base_growth = self.config_module.BASE_DESIRE_GROWTH  # From config.py
-
-        # Survival need grows for all
-        self.needs["survival"] += base_growth
-
-        # Other needs grow based on personality weights
-        self.needs["asset"] += base_growth * self.desire_weights["asset"]
-        self.needs["social"] += base_growth * self.desire_weights["social"]
-        self.needs["improvement"] += base_growth * self.desire_weights["improvement"]
-        self.needs["quality"] = self.needs.get("quality", 0.0) + (base_growth * self.desire_weights.get("quality", 1.0)) # WO-023
-
-        # Cap all needs at MAX_DESIRE_VALUE
-        for need_type in ["survival", "asset", "social", "improvement", "quality"]: # WO-023
-            if need_type in self.needs:
-                self.needs[need_type] = min(
-                    self.config_module.MAX_DESIRE_VALUE, self.needs[need_type]
-                )
-        # --- End Personality-driven desire growth ---
-
-        # Check for household death conditions
-        if self.needs["survival"] >= self.config_module.SURVIVAL_NEED_DEATH_THRESHOLD:
-            self.survival_need_high_turns += 1
-        else:
-            self.survival_need_high_turns = 0
-
-        # WO-023-B: Human Capital Update
-        self._update_skill()
-
-        if (
-            self.assets <= self.config_module.ASSETS_DEATH_THRESHOLD
-            or self.survival_need_high_turns
-            >= self.config_module.HOUSEHOLD_DEATH_TURNS_THRESHOLD
-        ):
-            self.is_active = False
-
-            # Operation Forensics (WO-021)
-            # Retrieve forensics data from market_data if available
-            market_food_price = None
-            job_vacancies = 0
-
-            if market_data:
-                 goods_market = market_data.get("goods_market", {})
-                 market_food_price = goods_market.get("basic_food_current_sell_price")
-                 job_vacancies = market_data.get("job_vacancies", 0)
-
-            self.logger.warning(
-                f"AGENT_DEATH | ID: {self.id}",
-                extra={
-                    "tick": current_tick,
-                    "agent_id": self.id,
-                    "cause": "starvation",
-                    "cash_at_death": self.assets,
-                    "food_inventory": self.inventory.get("basic_food", 0),
-                    "market_food_price": market_food_price,
-                    "last_labor_offer_tick": self.last_labor_offer_tick,
-                    "job_vacancies_available": job_vacancies,
-                    "survival_need": self.needs["survival"],
-                    "tags": ["death", "autopsy"]
-                }
-            )
-
-            self.logger.warning(
-                f"HOUSEHOLD_INACTIVE | Household {self.id} became inactive. Assets: {self.assets:.2f}, Survival Need: {self.needs['survival']:.1f}, High Turns: {self.survival_need_high_turns}",
-                extra={
-                    **log_extra,
-                    "assets": self.assets,
-                    "survival_need": self.needs["survival"],
-                    "high_turns": self.survival_need_high_turns,
-                    "tags": ["death"],
-                },
-            )
-        self.logger.debug(
-            f"HOUSEHOLD_NEEDS_UPDATE_END | Household {self.id} needs after update: {self.needs}, is_active={self.is_active}. Survival Need: {self.needs.get('survival', 0):.2f}",
-            extra={
-                **log_extra,
-                "needs_after": self.needs,
-                "is_active_after": self.is_active,
-            },
-        )
+        """
+        욕구 업데이트를 PsychologyComponent로 위임합니다.
+        """
+        self.psychology.update_needs(current_tick, market_data)
+        self.psychology.update_needs(current_tick, market_data)
 
     def _update_skill(self):
         """
@@ -1156,7 +920,6 @@ class Household(BaseAgent):
         """
         import math
         # XP -> Skill Conversion
-        # If XP is 0, log(1)=0 -> Skill=1.0 (Base)
         log_growth = math.log1p(self.education_xp)  # ln(x+1)
         
         # Talent Multiplier
@@ -1169,7 +932,6 @@ class Household(BaseAgent):
         old_skill = self.labor_skill
         self.labor_skill = new_skill
         
-        # Optional: Log if significant change (e.g., > 1% increase) or periodically
         if new_skill > old_skill + 0.1:
             self.logger.debug(
                 f"SKILL_UP | Household {self.id} skill improved: {old_skill:.2f} -> {new_skill:.2f} (XP: {self.education_xp:.1f})",
@@ -1179,63 +941,42 @@ class Household(BaseAgent):
     @override
     def clone(self, new_id: int, initial_assets_from_parent: float) -> "Household":
         """
-        현재 가계 에이전트의 복제본을 생성합니다.
+        현재 가계 에이전트의 복제본을 생성합니다 (Mitosis용).
         """
-        # Note: This is a shallow copy for most attributes.
-        # Deep copy might be needed for mutable objects like decision_engine, skills, inventory, etc.
-        # For now, assuming decision_engine, skills, inventory are re-initialized or handled separately
-        # in the context where clone is called.
         cloned_household = Household(
-            id=new_id,  # ID might need to be new if it's a new agent, or same if it's a snapshot
-            talent=self.talent,  # Talent is immutable, can be shared
+            id=new_id,
+            talent=self.talent,
             goods_data=list(self.goods_info_map.values()),
-            initial_assets=initial_assets_from_parent,  # Use current assets as initial for clone
-            initial_needs=self.needs.copy(),  # Copy current needs
-            decision_engine=self.decision_engine,  # Decision engine might need to be cloned too
+            initial_assets=initial_assets_from_parent,
+            initial_needs=self.needs.copy(),
+            decision_engine=self._create_new_decision_engine(new_id),
             value_orientation=self.value_orientation,
             personality=self.personality,
-            config_module=self.config_module,  # Pass config_module
-            loan_market=self.decision_engine.loan_market,  # Pass loan_market if available
-            risk_aversion=self.risk_aversion,  # Clone risk aversion
+            config_module=self.config_module,
+            loan_market=self.decision_engine.loan_market,
+            risk_aversion=self.risk_aversion,
             logger=self.logger,
         )
-        # Copy mutable attributes
-        cloned_household.skills = self.skills.copy()
+        # Attribute Sync
+        cloned_household.skills = {k: Skill(v.domain, v.value, v.observability) for k, v in self.skills.items()}
         cloned_household.inventory = self.inventory.copy()
-        cloned_household.current_consumption = self.current_consumption
-        cloned_household.employer_id = self.employer_id
-        cloned_household.shares_owned = self.shares_owned.copy()
-        cloned_household.is_employed = self.is_employed
         cloned_household.labor_skill = self.labor_skill
-        cloned_household.survival_need_high_turns = self.survival_need_high_turns
-        cloned_household.social_status = self.social_status
-        cloned_household.perceived_avg_prices = self.perceived_avg_prices.copy()
-        cloned_household.current_food_consumption = self.current_food_consumption
-        cloned_household.credit_frozen_until_tick = self.credit_frozen_until_tick
-        cloned_household.owned_properties = self.owned_properties.copy()
-        cloned_household.residing_property_id = self.residing_property_id
-        cloned_household.is_homeless = self.is_homeless
-
-        # Phase 20
-        cloned_household.gender = random.choice(["M", "F"]) # Offspring gender
-        cloned_household.home_quality_score = 1.0 # Reset
-        cloned_household.system2_planner = System2Planner(cloned_household, self.config_module) # New Planner
-        cloned_household.housing_planner = HouseholdSystem2Planner(cloned_household, self.config_module)
-        cloned_household.housing_target_mode = "RENT"
-
+        cloned_household.generation = self.generation + 1
+        cloned_household.parent_id = self.id
+        
         return cloned_household
 
     def _create_new_decision_engine(self, new_id: int) -> AIDrivenHouseholdDecisionEngine:
         """
-        새로운 DecisionEngine을 생성합니다 (Mitosis용).
-        기존 clone()은 참조만 복사하므로, 완전히 독립적인 새 인스턴스를 생성해야 합니다.
+        새로운 DecisionEngine을 생성합니다.
         """
-        # Access the shared AIDecisionEngine (central AI logic)
+        from simulation.ai.household_ai import HouseholdAI
+        from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+        
         shared_ai_engine = self.decision_engine.ai_engine.ai_decision_engine
 
-        # Create new HouseholdAI
         new_ai_engine = HouseholdAI(
-            agent_id=new_id,
+            agent_id=str(new_id),
             ai_decision_engine=shared_ai_engine,
             gamma=self.decision_engine.ai_engine.gamma,
             epsilon=self.decision_engine.ai_engine.action_selector.epsilon,
@@ -1243,10 +984,34 @@ class Household(BaseAgent):
             learning_focus=self.decision_engine.ai_engine.learning_focus
         )
 
-        # Create new DecisionEngine
-        new_decision_engine = AIDrivenHouseholdDecisionEngine(
+        return AIDrivenHouseholdDecisionEngine(
             ai_engine=new_ai_engine,
             config_module=self.config_module,
             logger=self.logger
         )
-        return new_decision_engine
+
+    def get_generational_similarity(self, other: "Household") -> float:
+        """
+        Phase 19: 가계 간 세대적/유전적 유사도를 계산합니다.
+        """
+        similarity = 0.0
+        # Simple talent comparison
+        talent_diff = abs(self.talent.base_learning_rate - other.talent.base_learning_rate)
+        similarity = max(0.0, 1.0 - talent_diff)
+        return similarity
+
+    def apply_child_inheritance(self, child: "Household"):
+        """
+        Phase 19: 자녀에게 기술 및 특성을 물려줍니다.
+        """
+        # 1. Skill Inheritance (20% of parent's value)
+        for domain, skill in self.skills.items():
+            child.skills[domain] = Skill(
+                domain=domain,
+                value=skill.value * 0.2,
+                observability=skill.observability
+            )
+        
+        # 2. Update expected wage based on inherited education if applicable
+        child.education_level = min(self.education_level, 1) # Reset but maybe give a head start
+        child.expected_wage = self.expected_wage * 0.8 # Legacy expectations

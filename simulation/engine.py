@@ -25,6 +25,9 @@ from simulation.systems.reflux_system import EconomicRefluxSystem
 from simulation.systems.demographic_manager import DemographicManager # Phase 19
 from simulation.systems.immigration_manager import ImmigrationManager # Phase 20-3
 from simulation.systems.inheritance_manager import InheritanceManager # Phase 22 (WO-049)
+from simulation.systems.housing_system import HousingSystem # Phase 22.5
+from simulation.systems.persistence_manager import PersistenceManager # Phase 22.5
+from simulation.systems.firm_management import FirmSystem # Phase 22.5
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 
 # Use the repository pattern for data access
@@ -70,11 +73,6 @@ class Simulation:
         self.config_module = config_module
         self.time: int = 0
 
-        # Buffers for batch database writes
-        self.agent_state_buffer: List[AgentStateData] = []
-        self.transaction_buffer: List[TransactionData] = []
-        self.economic_indicator_buffer: List[EconomicIndicatorData] = []
-        self.market_history_buffer: List[MarketHistoryData] = []
         self.batch_save_interval = (
             self.config_module.BATCH_SAVE_INTERVAL
         )  # Define this in config.py
@@ -171,8 +169,6 @@ class Simulation:
                 if "housing" in self.markets:
                     self.markets["housing"].place_order(sell_order, self.time)
 
-            self.stock_market = None
-
         # 2. 에이전트 욕구 업데이트 (Update Needs)
         for agent in self.households + self.firms:
             agent.update_needs(self.time)
@@ -211,6 +207,19 @@ class Simulation:
         # Phase 22: Inheritance Manager
         self.inheritance_manager = InheritanceManager(config_module=self.config_module)
 
+        # Phase 22.5: Housing System (Refactored)
+        self.housing_system = HousingSystem(config_module=self.config_module)
+
+        # Phase 22.5: Persistence Manager (Refactored)
+        self.persistence_manager = PersistenceManager(
+            run_id=0, # Placeholder, will be set after run_id is generated below
+            config_module=self.config_module,
+            repository=self.repository
+        )
+
+        # Phase 22.5: Firm System (Refactored)
+        self.firm_system = FirmSystem(config_module=self.config_module)
+
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
 
@@ -220,6 +229,7 @@ class Simulation:
             config_hash=config_hash,
             description="Economic simulation run with DB storage",
         )
+        self.persistence_manager.run_id = self.run_id
         self.logger.info(
             f"Simulation run started with run_id: {self.run_id}",
             extra={"run_id": self.run_id},
@@ -227,229 +237,12 @@ class Simulation:
 
     def finalize_simulation(self):
         """시뮬레이션 종료 시 Repository 연결을 닫고, 시뮬레이션 종료 시간을 기록합니다."""
-        self._flush_buffers_to_db()  # Flush any remaining data
+        self.persistence_manager.flush_buffers(self.time)  # Flush any remaining data
         self.repository.update_simulation_run_end_time(self.run_id)
         self.repository.close()
         self.logger.info("Simulation finalized and Repository connection closed.")
 
-    def _save_state_to_db(self, transactions: List[Transaction]):
-        """매 틱의 시뮬레이션 상태를 데이터베이스에 저장합니다."""
-        self.logger.debug(
-            f"DB_SAVE_START | Buffering state for tick {self.time}",
-            extra={"tick": self.time, "tags": ["db_buffer"]},
-        )
 
-        # 1. Buffer agent states
-        for agent in self.agents.values():
-            if not getattr(agent, "is_active", False):
-                continue
-
-            agent_dto = AgentStateData(
-                run_id=self.run_id,
-                time=self.time,
-                agent_id=agent.id,
-                agent_type="",
-                assets=agent.assets,
-                is_active=agent.is_active,
-                generation=getattr(agent, "generation", 0),
-            )
-
-            if isinstance(agent, Household):
-                agent_dto.agent_type = "household"
-                agent_dto.is_employed = agent.is_employed
-                agent_dto.employer_id = agent.employer_id
-                agent_dto.needs_survival = agent.needs.get("survival", 0)
-                agent_dto.needs_labor = agent.needs.get("labor_need", 0)
-                agent_dto.inventory_food = agent.inventory.get("food", 0)
-
-                # Experiment: Time Allocation Tracking
-                time_leisure = self.household_time_allocation.get(agent.id, 0.0)
-                shopping_hours = getattr(self.config_module, "SHOPPING_HOURS", 2.0)
-                hours_per_tick = getattr(self.config_module, "HOURS_PER_TICK", 24.0)
-
-                agent_dto.time_leisure = time_leisure
-                agent_dto.time_worked = max(0.0, hours_per_tick - time_leisure - shopping_hours)
-
-            elif isinstance(agent, Firm):
-                agent_dto.agent_type = "firm"
-                agent_dto.inventory_food = agent.inventory.get("food", 0)
-                agent_dto.current_production = agent.current_production
-                agent_dto.num_employees = len(agent.employees)
-            else:  # Skip bank or other types for now
-                continue
-
-            self.agent_state_buffer.append(agent_dto)
-
-        # 2. Buffer transactions
-        for tx in transactions:
-            tx_dto = TransactionData(
-                run_id=self.run_id,
-                time=self.time,
-                buyer_id=tx.buyer_id,
-                seller_id=tx.seller_id,
-                item_id=tx.item_id,
-                quantity=tx.quantity,
-                price=tx.price,
-                market_id=tx.market_id,
-                transaction_type=tx.transaction_type,
-            )
-            self.transaction_buffer.append(tx_dto)
-
-        # 3. Buffer economic indicators
-        # The following block replaces the original `indicators = self.tracker.get_latest_indicators()` and subsequent `if indicators:` block.
-        # It also includes new calculations for income aggregation.
-        
-        # Calculate indicators directly or retrieve from tracker
-        # Note: unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price
-        # are typically calculated by the tracker. We need to ensure they are available.
-        # For now, we'll assume self.tracker.get_latest_indicators() provides them.
-        
-        # Get latest indicators from tracker
-        tracker_indicators = self.tracker.get_latest_indicators()
-        
-        total_production = sum(
-            agent.current_production
-            for agent in self.firms + self.households
-            if getattr(agent, "current_production", None) is not None
-        )
-        total_consumption = sum(
-            getattr(agent, "last_tick_food_consumption", 0) for agent in self.households
-        )
-        total_household_assets = sum(agent.assets for agent in self.households)
-        # Total Firm Assets should only include Firms?
-        # Correction: The list comprehension above iterates households + firms but checks isinstance Firm.
-        # Ideally: sum(firm.assets for firm in self.firms)
-        total_firm_assets = sum(firm.assets for firm in self.firms)
-
-        total_food_consumption = sum(
-            getattr(agent, "last_tick_food_consumption", 0) for agent in self.households
-        )
-        total_inventory = sum(
-            sum(agent.inventory.values()) for agent in self.households + self.firms
-        )
-        avg_survival_need = (
-            sum(agent.needs["survival"] for agent in self.households)
-            / len(self.households)
-            if self.households
-            else 0.0
-        )
-        
-        # Phase 14-1: Income Aggregation
-        total_labor_income = sum(
-            getattr(h, "labor_income_this_tick", 0.0) for h in self.households
-        )
-        total_capital_income = sum(
-            getattr(h, "capital_income_this_tick", 0.0) for h in self.households
-        )
-
-        # Create DTO using calculated values and values from tracker
-        indicator_dto = EconomicIndicatorData(
-            run_id=self.run_id, # Use self.run_id directly
-            time=self.time,
-            unemployment_rate=tracker_indicators.get("unemployment_rate"),
-            avg_wage=tracker_indicators.get("avg_wage"),
-            food_avg_price=tracker_indicators.get("food_avg_price"),
-            food_trade_volume=tracker_indicators.get("food_trade_volume"),
-            avg_goods_price=tracker_indicators.get("avg_goods_price"),
-            total_production=total_production,
-            total_consumption=total_consumption,
-            total_household_assets=total_household_assets,
-            total_firm_assets=total_firm_assets,
-            total_food_consumption=total_food_consumption,
-            total_inventory=total_inventory,
-            avg_survival_need=avg_survival_need,
-            total_labor_income=total_labor_income,
-            total_capital_income=total_capital_income,
-        )
-        self.economic_indicator_buffer.append(indicator_dto)
-        
-        # 4. Buffer market history
-        for market_id, market in self.markets.items():
-            if isinstance(market, OrderBookMarket):
-                # For OrderBookMarket, we can track multiple items if they exist
-                # Currently, each market name corresponds to a good name, or 'labor_market'
-                items = list(market.buy_orders.keys()) + list(market.sell_orders.keys())
-                # Add historical items too if any
-                items = list(set(items))
-                
-                if not items and market_id in self.config_module.GOODS:
-                    items = [market_id]
-                for item_id in items:
-                    all_bids = market.get_all_bids(item_id)
-                    all_asks = market.get_all_asks(item_id)
-                    
-                    avg_bid = sum(o.price for o in all_bids) / len(all_bids) if all_bids else 0.0
-                    avg_ask = sum(o.price for o in all_asks) / len(all_asks) if all_asks else 0.0
-                    
-                    best_bid = max(o.price for o in all_bids) if all_bids else 0.0
-                    worst_bid = min(o.price for o in all_bids) if all_bids else 0.0
-                    
-                    best_ask = min(o.price for o in all_asks) if all_asks else 0.0
-                    worst_ask = max(o.price for o in all_asks) if all_asks else 0.0
-                    
-                    history_dto = MarketHistoryData(
-                        time=self.time,
-                        market_id=market_id,
-                        item_id=item_id,
-                        avg_price=market.get_daily_avg_price(),
-                        trade_volume=market.get_daily_volume(),
-                        best_ask=best_ask,
-                        best_bid=best_bid,
-                        avg_ask=avg_ask,
-                        avg_bid=avg_bid,
-                        worst_ask=worst_ask,
-                        worst_bid=worst_bid
-                    )
-                    self.market_history_buffer.append(history_dto)
-
-        self.logger.debug(
-            f"DB_SAVE_END | Finished buffering state for tick {self.time}",
-            extra={"tick": self.time, "tags": ["db_buffer"]},
-        )
-
-    def _flush_buffers_to_db(self):
-        """버퍼에 쌓인 데이터를 데이터베이스에 일괄 저장합니다."""
-        if (
-            not self.agent_state_buffer
-            and not self.transaction_buffer
-            and not self.economic_indicator_buffer
-            and not self.market_history_buffer
-        ):
-            return
-
-        self.logger.info(
-            f"DB_FLUSH_START | Flushing buffers to DB at tick {self.time}",
-            extra={"tick": self.time, "tags": ["db_flush"]},
-        )
-
-        if self.agent_state_buffer:
-            self.repository.save_agent_states_batch(
-                self.agent_state_buffer
-            )
-            self.agent_state_buffer.clear()
-
-        if self.transaction_buffer:
-            self.repository.save_transactions_batch(
-                self.transaction_buffer
-            )
-            self.transaction_buffer.clear()
-
-        if self.economic_indicator_buffer:
-            self.repository.save_economic_indicators_batch(
-                self.economic_indicator_buffer
-            )
-            self.economic_indicator_buffer.clear()
-
-        if self.market_history_buffer:
-            self.repository.save_market_history_batch(
-                self.market_history_buffer
-            )
-            self.market_history_buffer.clear()
-
-        self.logger.info(
-            f"DB_FLUSH_END | Finished flushing buffers to DB at tick {self.time}",
-            extra={"tick": self.time, "tags": ["db_flush"]},
-        )
 
     def _update_social_ranks(self):
         """Phase 17-4: Update Social Rank (Percentile)"""
@@ -773,7 +566,8 @@ class Simulation:
                              )
 
         # Phase 17-3B: Process Housing (Mortgage, Rent, Maintenance, Foreclosure)
-        self._process_housing() # Updated to include Mortgage/Foreclosure
+        self.housing_system.process_housing(self)
+        self.housing_system.apply_homeless_penalty(self)
 
         # Phase 17-3B: Housing Market Matching
         if "housing" in self.markets:
@@ -969,7 +763,7 @@ class Simulation:
         self._handle_agent_lifecycle()
 
         # Entrepreneurship Check (Spawn new firms if needed)
-        self._check_entrepreneurship()
+        self.firm_system.check_entrepreneurship(self)
 
         # Phase 5: Finalize Government Stats for the tick
         self.government.finalize_tick(self.time)
@@ -979,11 +773,11 @@ class Simulation:
         self.reflux_system.distribute(self.households)
 
         # Save all state at the end of the tick
-        self._save_state_to_db(all_transactions)
+        self.persistence_manager.buffer_tick_state(self, all_transactions)
 
         # Flush buffers to DB periodically
         if self.time % self.batch_save_interval == 0:
-            self._flush_buffers_to_db()
+            self.persistence_manager.flush_buffers(self.time)
 
         # Reset consumption and income counters for next tick
         for h in self.households:
@@ -1035,51 +829,6 @@ class Simulation:
         for market in self.markets.values():
             market.clear_orders()
 
-    def _process_housing(self):
-        """Process rent collection, maintenance, and homeless penalty."""
-        # 1. Rent Collection & Maintenance
-        for unit in self.real_estate_units:
-            # Rent Collection
-            if unit.occupant_id is not None and unit.owner_id is not None and unit.occupant_id != unit.owner_id:
-                tenant = self.agents.get(unit.occupant_id)
-                landlord = self.agents.get(unit.owner_id)
-                if tenant and landlord and tenant.is_active and landlord.is_active:
-                    if tenant.assets >= unit.rent_price:
-                        tenant.assets -= unit.rent_price
-                        landlord.assets += unit.rent_price
-                    else:
-                        # Eviction
-                        self.logger.info(
-                            f"EVICTION | Household {tenant.id} evicted from Unit {unit.id} (Owner: {unit.owner_id}) due to non-payment.",
-                            extra={"agent_id": tenant.id, "unit_id": unit.id}
-                        )
-                        unit.occupant_id = None
-                        if isinstance(tenant, Household):
-                            tenant.residing_property_id = None
-                            tenant.is_homeless = True
-
-            # Maintenance Cost (Owner pays)
-            if unit.owner_id:
-                owner = self.agents.get(unit.owner_id)
-                if owner and owner.is_active:
-                    maintenance = unit.estimated_value * self.config_module.MAINTENANCE_RATE_PER_TICK
-                    owner.assets -= maintenance
-
-        # 2. Homeless Penalty
-        for hh in self.households:
-            if hh.is_active:
-                # Ensure consistency
-                if hh.residing_property_id is None:
-                    hh.is_homeless = True
-                else:
-                    hh.is_homeless = False # Important: Reset if they have a home
-
-                if hh.is_homeless:
-                    hh.needs["survival"] += self.config_module.HOMELESS_PENALTY_PER_TICK
-                    self.logger.debug(
-                        f"HOMELESS_PENALTY | Household {hh.id} survival need increased by {self.config_module.HOMELESS_PENALTY_PER_TICK}",
-                        extra={"agent_id": hh.id}
-                    )
 
     def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
@@ -1218,80 +967,6 @@ class Simulation:
 
         return total
 
-    def _process_housing(self):
-        """
-        Phase 17-3B: Housing Market Mechanics
-        1. Mortgage Payments (Bank)
-        2. Maintenance Costs (Owner)
-        3. Rent Collection (Tenant -> Landlord)
-        4. Eviction / Foreclosure Checks
-        """
-        config = self.config_module
-
-        # 1. Process Bank/Mortgages
-        for unit in self.real_estate_units:
-             if unit.mortgage_id:
-                loan = self.bank.loans.get(unit.mortgage_id)
-                if loan and loan.is_active:
-                     if loan.missed_payments >= 3:
-                         # Foreclosure
-                         old_owner_id = unit.owner_id
-                         unit.owner_id = -1 
-                         unit.mortgage_id = None 
-                         
-                         # Evict Occupant (if owner was occupying)
-                         if unit.occupant_id == old_owner_id:
-                             unit.occupant_id = None
-                             old_owner_agent = self.agents.get(old_owner_id)
-                             if isinstance(old_owner_agent, Household):
-                                 if unit.id in old_owner_agent.owned_properties:
-                                     old_owner_agent.owned_properties.remove(unit.id)
-                                 old_owner_agent.residing_property_id = None
-                                 old_owner_agent.is_homeless = True
-                                 
-                         self.bank.terminate_loan(loan.id)
-                         
-                         fire_sale_price = unit.estimated_value * 0.8
-                         sell_order = Order(
-                            agent_id=-1,
-                            item_id=f"unit_{unit.id}",
-                            price=fire_sale_price,
-                            quantity=1.0,
-                            market_id="housing",
-                            order_type="SELL"
-                        )
-                         if "housing" in self.markets:
-                             self.markets["housing"].place_order(sell_order, self.time)
-
-        # 2. Rent & Maintenance
-        for unit in self.real_estate_units:
-            # A. Maintenance Cost (Owner pays)
-            if unit.owner_id is not None and unit.owner_id != -1: # -1 is Bank/Govt
-                owner = self.agents.get(unit.owner_id)
-                if owner:
-                    cost = unit.estimated_value * config.MAINTENANCE_RATE_PER_TICK
-                    if owner.assets >= cost:
-                        owner.assets -= cost
-                    else:
-                        owner.assets = 0.0 
-
-            # B. Rent Collection (Tenant pays Owner)
-            if unit.occupant_id is not None and unit.owner_id is not None:
-                if unit.occupant_id == unit.owner_id:
-                    continue
-
-                tenant = self.agents.get(unit.occupant_id)
-                owner = self.agents.get(unit.owner_id)
-
-                if tenant and owner:
-                    rent = unit.rent_price
-                    if tenant.assets >= rent:
-                        tenant.assets -= rent
-                        owner.assets += rent
-                    else:
-                        unit.occupant_id = None
-                        tenant.residing_property_id = None
-                        tenant.is_homeless = True
 
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
@@ -1532,245 +1207,11 @@ class Simulation:
 
             # --- Phase 17-3B: Housing Transaction Logic ---
             elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
-                self._process_housing_transaction(tx, buyer, seller, trade_value)
+                self.housing_system.process_transaction(tx, self)
 
 
 
-    def _process_housing_transaction(self, tx, buyer, seller, trade_value):
-        """Phase 17-3B: Housing Transaction Logic"""
-        # item_id: "unit_{id}"
-        try:
-             unit_id = int(tx.item_id.split("_")[1])
-             unit = next((u for u in self.real_estate_units if u.id == unit_id), None)
-             
-             if not unit:
-                 self.logger.warning(f"HOUSING | Unit {tx.item_id} not found.")
-                 return
 
-             # 1. Mortgage Logic (Atomic Funding)
-             config = self.config_module
-             ltv_ratio = getattr(config, "MORTGAGE_LTV_RATIO", 0.8)
-             mortgage_term = getattr(config, "MORTGAGE_TERM_TICKS", 300)
-             mortgage_rate = getattr(config, "MORTGAGE_INTEREST_RATE", 0.05)
-             
-             use_leverage = False
-             if isinstance(buyer, Household):
-                 use_leverage = True 
-                 
-             if use_leverage:
-                 loan_amount = trade_value * ltv_ratio
-                 # Grant Loan
-                 loan_id = self.bank.grant_loan(
-                     buyer.id,
-                     loan_amount,
-                     term_ticks=mortgage_term,
-                     interest_rate=mortgage_rate
-                 )
-                 
-                 if loan_id:
-                     # Atomic Funding
-                     self.bank.assets -= loan_amount
-                     buyer.assets += loan_amount
-                     unit.mortgage_id = loan_id
-                 else:
-                     # Mortgage failed
-                     if buyer.assets < 0:
-                         self.logger.warning(f"HOUSING | Mortgage denied for {buyer.id}, Agent in debt.")
-                     unit.mortgage_id = None
-             else:
-                 unit.mortgage_id = None
-                 
-             # 2. Transfer Title (Common)
-             old_owner_id = unit.owner_id
-             unit.owner_id = buyer.id
-             
-             # 3. Update Agent Property Lists
-             if isinstance(seller, Household):
-                  if unit.id in seller.owned_properties:
-                      seller.owned_properties.remove(unit.id)
-             
-             if isinstance(buyer, Household):
-                  if unit.id not in buyer.owned_properties:
-                      buyer.owned_properties.append(unit.id)
-                  # Occupancy Update
-                  if buyer.residing_property_id is None:
-                      unit.occupant_id = buyer.id
-                      buyer.residing_property_id = unit.id
-                      buyer.is_homeless = False
-             
-             self.logger.info(
-                 f"REAL_ESTATE | Sold Unit {unit.id} to {buyer.id}. Price: {trade_value:.2f}",
-                 extra={"tick": self.time, "tags": ["real_estate"]}
-             )
-
-        except Exception as e:
-             self.logger.error(f"HOUSING_ERROR | {e}", extra={"error": str(e)})
-             raise e
-
-    def spawn_firm(self, founder_household: "Household") -> Optional["Firm"]:
-        """
-        부유한 가계가 새로운 기업을 설립합니다.
-
-        Args:
-            founder_household: 창업주 가계 에이전트
-
-        Returns:
-            생성된 Firm 객체 또는 None (실패 시)
-        """
-        startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
-
-        # 1. 자본 차감
-        # Using assets as cash proxy
-        if founder_household.assets < startup_cost:
-            return None
-        founder_household.assets -= startup_cost
-
-        # 2. 새 기업 ID 생성
-        max_id = max([a.id for a in self.agents.values()], default=0)
-        new_firm_id = max_id + 1
-
-        # 3. 업종 선택 (Blue Ocean Strategy)
-        # Refactored: Dynamic list from config
-        specializations = list(self.config_module.GOODS.keys())
-        is_visionary = False
-        sector = "OTHER"
-
-        # WO-023: Visionary Mutation (Configurable)
-        mutation_rate = getattr(self.config_module, "VISIONARY_MUTATION_RATE", 0.05)
-        if random.random() < mutation_rate:
-            is_visionary = True
-            
-        # Blue Ocean Logic: If Visionary, look for empty markets
-        if is_visionary:
-            active_specs = {f.specialization for f in self.firms if f.is_active}
-            # Find any specialization not in active_specs
-            potential_blue_oceans = [s for s in specializations if s not in active_specs]
-            
-            if potential_blue_oceans:
-                specialization = random.choice(potential_blue_oceans)
-            else:
-                # If no blue ocean, fallback to consumer_goods if defined, else random
-                if "consumer_goods" in specializations:
-                     specialization = "consumer_goods"
-                else:
-                     specialization = random.choice(specializations)
-        else:
-             # Standard Entrepreneur: Random Choice
-             specialization = random.choice(specializations)
-             
-        # Refactored: Map Specialization to Sector using Config
-        goods_config = self.config_module.GOODS.get(specialization, {})
-        sector = goods_config.get("sector", "OTHER")
-
-        # WO-030: Increase Initial Capital for Manufacturing Firms (Input Constraints)
-        has_inputs = bool(goods_config.get("inputs"))
-        if has_inputs:
-             startup_cost *= 1.5
-
-        # 4. AI 설정
-        from simulation.ai.firm_ai import FirmAI
-        from simulation.ai.service_firm_ai import ServiceFirmAI
-        from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
-
-        value_orientation = random.choice([
-            self.config_module.VALUE_ORIENTATION_WEALTH_AND_NEEDS,
-            self.config_module.VALUE_ORIENTATION_NEEDS_AND_GROWTH,
-        ])
-        # Use ai_trainer instead of ai_manager
-        ai_decision_engine = self.ai_trainer.get_engine(value_orientation)
-
-        is_service = specialization in getattr(self.config_module, "SERVICE_SECTORS", [])
-
-        if is_service:
-            firm_ai = ServiceFirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
-        else:
-            firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
-
-        firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config_module, self.logger)
-
-        # 5. Firm 생성
-        if is_service:
-            new_firm = ServiceFirm(
-                id=new_firm_id,
-                initial_capital=startup_cost,
-                initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
-                specialization=specialization,
-                productivity_factor=random.uniform(8.0, 12.0),
-                decision_engine=firm_decision_engine,
-                value_orientation=value_orientation,
-                config_module=self.config_module,
-                logger=self.logger,
-                sector=sector,
-                is_visionary=is_visionary,
-            )
-        else:
-            new_firm = Firm(
-                id=new_firm_id,
-                initial_capital=startup_cost,
-                initial_liquidity_need=getattr(self.config_module, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
-                specialization=specialization,
-                productivity_factor=random.uniform(8.0, 12.0),
-                decision_engine=firm_decision_engine,
-                value_orientation=value_orientation,
-                config_module=self.config_module,
-                logger=self.logger,
-                sector=sector,
-                is_visionary=is_visionary,
-            )
-        new_firm.founder_id = founder_household.id
-        # Set loan market if available in simulation
-        if "loan_market" in self.markets:
-            new_firm.decision_engine.loan_market = self.markets["loan_market"]
-
-        # 6. 리스트에 추가
-        self.firms.append(new_firm)
-        self.agents[new_firm.id] = new_firm
-
-        # Add to AI training manager
-        self.ai_training_manager.agents.append(new_firm)
-
-        self.logger.info(
-            f"STARTUP | Household {founder_household.id} founded Firm {new_firm_id} "
-            f"(Specialization: {specialization}, Capital: {startup_cost})",
-            extra={"tick": self.time, "agent_id": new_firm_id, "tags": ["entrepreneurship"]}
-        )
-
-        return new_firm
-
-    def _check_entrepreneurship(self):
-        """
-        매 틱마다 창업 조건을 확인하고 신규 기업을 생성합니다.
-        """
-        min_firms = getattr(self.config_module, "MIN_FIRMS_THRESHOLD", 5)
-        startup_cost = getattr(self.config_module, "STARTUP_COST", 15000.0)
-        spirit = getattr(self.config_module, "ENTREPRENEURSHIP_SPIRIT", 0.05)
-        capital_multiplier = getattr(self.config_module, "STARTUP_CAPITAL_MULTIPLIER", 1.5)
-
-        active_firms_count = sum(1 for f in self.firms if f.is_active)
-
-        # Hard Trigger: 기업 수가 최소치 이하
-        if active_firms_count < min_firms:
-            trigger_probability = 0.5  # 50% 창업 확률 (위기 상황)
-        else:
-            trigger_probability = spirit  # 일반 창업 확률 (5%)
-
-        # 부유한 가계 필터링 (use 'assets' property as cash proxy, but 'cash' property might not exist on household directly in this version? Household inherits from BaseAgent which has 'assets'. Instructions used 'cash'. Household code uses 'assets'. 'cash' is likely alias or just assets.)
-        # Checking Household code: it uses self.assets. It doesn't seem to have 'cash' property.
-        # I will replace .cash with .assets as per standard agent.
-
-        wealthy_households = [
-            h for h in self.households
-            if h.is_active and h.assets > startup_cost * capital_multiplier
-        ]
-
-        import random
-        for household in wealthy_households:
-            if random.random() < trigger_probability:
-                # Use assets instead of cash for spawn_firm call inside too
-                # Need to update spawn_firm implementation to use assets if cash is not available.
-                # Actually, I'll update spawn_firm implementation above to use assets.
-                self.spawn_firm(household)
-                break  # 한 틱에 하나씩만 창업
 
     def _handle_agent_lifecycle(self) -> None:
         """비활성화된 에이전트를 청산하고 시뮬레이션에서 제거합니다."""
