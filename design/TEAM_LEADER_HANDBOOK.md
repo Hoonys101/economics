@@ -106,3 +106,12 @@ Level 0: 핵심 원칙 (Always Load)
 2. **roadmap.md**: 새 항목 추가/완료 시 업데이트
 3. **Work Orders**: 작업 시작 전 작성, 완료 후 체크박스
 4. **이 핸드북**: 문서 구조 변경 시 업데이트
+
+---
+
+## 🛑 Jules Communication Protocol
+
+**One-Shot Document Rule (지침 불변성의 원칙)**:
+1. **Initial Command**: 작업 지시서(Work Order)나 코드 변경 사항은 **초기 명령 시점에 확정**됩니다.
+2. **No Resubmission**: 명령 하달 후 문서를 수정하여 다시 푸시(Push)하는 행위는 금지됩니다. (Jules 관점에서 타임라인 꼬임 방지)
+3. **Correction via Prompt**: 수정 사항이 발생하면 문서를 고치지 말고, 반드시 **프롬프트(채팅)를 통해 수정 지침을 직접 전달**해야 합니다.
