@@ -175,6 +175,30 @@ if len(st.session_state['history']) > 0:
         st.markdown("**Average Assets**")
         st.line_chart(df_history['average_assets'])
 
+# --- WO-043: Diagnostics (Diagnostics) ---
+st.subheader("Diagnostics")
+
+if len(st.session_state['history']) > 0:
+    df_history = pd.DataFrame(st.session_state['history'])
+    df_history.set_index('tick', inplace=True)
+
+    col_d1, col_d2, col_d3 = st.columns(3)
+
+    with col_d1:
+        st.markdown("**Labor Share (%)**")
+        st.line_chart(df_history['labor_share'])
+        st.caption("Target: ~60%")
+
+    with col_d2:
+        st.markdown("**Velocity of Money**")
+        st.line_chart(df_history['velocity_of_money'])
+        st.caption("Target: > 2.0")
+
+    with col_d3:
+        st.markdown("**Inventory Turnover**")
+        st.line_chart(df_history['inventory_turnover'])
+        st.caption("Target: > 6.0")
+
 # --- Debug Info ---
 if st.checkbox("Show Raw Metrics"):
     st.json(metrics)
