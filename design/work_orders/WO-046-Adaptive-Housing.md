@@ -13,27 +13,41 @@ Update `HousingManager.should_buy` to compare:
 ### 1. File Modification
 Target: `simulation/decisions/housing_manager.py`
 
+### 1. File Modification
+Target: `simulation/decisions/housing_manager.py`
+
 #### Modify `should_buy` Method
 - **Signature Update**: Ensure it accepts or accesses `risk_free_rate` (default 0.05).
-- **Logic Change**:
-  - `Rent NPV` Calculation:
-    - **Inflow**: Investment Return from `Down Payment` amount over the horizon (10 years).
-      - Formula: `Down Payment * ((1 + risk_free_rate)^t - 1)` discounted? No, consider net wealth at horizon or stream of income.
-      - Better Approach (Net Present Value of Flows):
-        - Inflow: `Down Payment * risk_free_rate` per year (Interest Income).
-        - Outflow: `Rent Price` per year.
-        - `Rent NPV` = Sum of `(Inflow - Outflow) / (1 + discount_rate)^t`
-  - `Buy NPV` Calculation:
-    - **Inflow**: `Utility (Imputed Rent)` per year + `Future Property Value` (at horizon).
-    - **Outflow**: `Mortgage Payment` + `Maintenance` + `Down Payment` (Initial).
-    - `Buy NPV` = `Sum of Flows / Discount` + `Disc. Future Value` - `Down Payment`
-  - **Decision**: Return `True` if `Buy NPV > Rent NPV`.
+- **Revised Logic (Cash Flow & Terminal Value Approach)**:
+  Compare the **Net Present Value (NPV)** of total wealth change over the horizon.
 
-### 2. Constraints
+  - **A. Rent Scenario**:
+    - **Initial**: Keep `Down Payment` as Cash (Invested).
+    - **Flows (t=1..120)**:
+      - Inflow: `Down Payment * (risk_free_rate / 12)` (Monthly Investment Income).
+      - Outflow: `Rent Price`.
+    - **Terminal (t=120)**:
+      - Inflow: `Down Payment` (Principal Recovery).
+    - **NPV_Rent** = `Sum( (InvIncome - Rent) / (1+r)^t )` + `(DownPayment / (1+r)^120)`
+
+  - **B. Buy Scenario**:
+    - **Initial**: Pay `Down Payment` (Outflow).
+    - **Flows (t=1..120)**:
+      - Outflow: `Mortgage Payment` + `Maintenance`.
+      - (Note: Do NOT add "Imputed Rent/Utility" as a monetary inflow here. The benefit of owning is simply *not paying rent*.)
+      - Inflow: `Prestige Bonus` (subjective utility, add as stream or lump sum. Recommendation: Add 1/120 of bonus per tick to represent ongoing satisfaction).
+    - **Terminal (t=120)**:
+      - Inflow: `Future Property Value` (Price * (1 + appreciation)^120).
+    - **NPV_Buy** = `-DownPayment` + `Sum( (Prestige - Mortgage - Maint) / (1+r)^t )` + `(FutureValue / (1+r)^120)`
+
+  - **Decision**: Return `True` if `NPV_Buy > NPV_Rent`.
+
+### 2. Constraints & Clarifications
 - **Horizon**: 120 ticks (10 years).
 - **Discount Rate**: 0.005 (0.5% per tick).
-- **Risk Free Rate**: Use provided logic or default 0.05 (annual) -> convert to monthly.
-- **Biases**: Maintain existing Optimism/Ambition biases impacting `perceived_appreciation` or `utility`.
+- **Interest Rate Conversion**: Use **Simple Division** (Annual / 12) for monthly approximation.
+- **Prestige Bonus**: treat as a subjective **Inflow** in the Buy Scenario.
+- **Principal Recovery**: MUST be included in the Rent Scenario (Terminal Value).
 
 ### 3. Verification
 Create a new test file: `tests/test_housing_decision.py`.
