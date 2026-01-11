@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import Any, Dict, List, Tuple, Optional, TYPE_CHECKING
 
 from .api import BaseAIEngine, Intention, Tactic, Aggressiveness
@@ -174,7 +175,7 @@ class HouseholdAI(BaseAIEngine):
     ) -> bool:
         """
         Phase 19: Evolutionary Reproduction Decision
-        Returns True if the agent decides to reproduce.
+        Revised by WO-048 (Adaptive Breeding)
         """
         # 0. Config Access
         config_module = getattr(self.ai_decision_engine, "config_module", None)
@@ -189,109 +190,51 @@ class HouseholdAI(BaseAIEngine):
         if not (start_age <= age <= end_age):
             return False
 
-        # 2. Time Budget Constraint
-        # Calculate Available Leisure
-        # Time = 24 - Work - Housework
-        # Work Hours comes from current aggressiveness
-        # We assume the agent just decided work_aggressiveness in this same tick
-        # But here we might just use 'time_worked' from last tick or assume current decision context?
-        # Let's use 14.0 * Work_Agg from agent_data (if available?) or estimate.
-        # Ideally, this decision happens *before* or *with* labor decision.
-        # But if it happens after, we check if we *had* time.
+        # Step 1: Technology Check
+        tech_enabled = getattr(config_module, "TECH_CONTRACEPTION_ENABLED", True)
+        if not tech_enabled:
+            fertility_rate = getattr(config_module, "BIOLOGICAL_FERTILITY_RATE", 0.15)
+            return random.random() < fertility_rate
 
-        # Estimate Work Hours based on Employment Status or Aggressiveness
-        is_employed = agent_data.get("is_employed", False)
-        # We can't easily access current tick's work hours here unless passed.
-        # Fallback: Use max possible work hours * 0.8 as conservative estimate if employed
-        work_hours = 0.0
-        if is_employed:
-            work_hours = 8.0 # Standard shift approximation
+        # Step 2: System 2 NPV Calculation (Modern Era)
+        # Parameters
+        child_monthly_cost = getattr(config_module, "CHILD_MONTHLY_COST", 500.0)
+        opp_cost_factor = getattr(config_module, "OPPORTUNITY_COST_FACTOR", 0.5)
+        raising_years = getattr(config_module, "RAISING_YEARS", 20)
+        child_emotional_value_base = getattr(config_module, "CHILD_EMOTIONAL_VALUE_BASE", 200000.0)
+        old_age_support_rate = getattr(config_module, "OLD_AGE_SUPPORT_RATE", 0.1)
+        support_years = getattr(config_module, "SUPPORT_YEARS", 20)
 
-        housework_hours = getattr(config_module, "HOUSEWORK_BASE_HOURS", 2.0)
-        childcare_needed = getattr(config_module, "CHILDCARE_TIME_REQUIRED", 8.0)
-
-        existing_children = agent_data.get("children_count", 0)
-        # Total childcare = Base * (1 + children) ? Or per child? Spec says "per child".
-        # But usually economies of scale. Let's stick to spec: "자녀 1명당 하루 필요 시간" -> implies linear?
-        # "8.0 hours required". If I already have 1 child, I spend 8 hours. 2 children = 16 hours?
-        # That's impossible. Usually it's marginal.
-        # Let's assume the constraint is for the *new* child.
-        # "Can I squeeze in another 8 hours?" (Implies heavy burden)
-        # Or "Can I squeeze in childcare total?"
-        # Let's assume total childcare is capped or shared.
-        # Simpler interpretation: "Do I have 8 hours free RIGHT NOW to dedicate to a NEW child?"
-
-        available_time = 24.0 - work_hours - housework_hours
-        if available_time < childcare_needed:
-            # Time Poverty -> Reject
-            # Unless r-Strategy overrides (ignoring time cost, leading to neglect?)
-            # Prompt says: "High income -> High opportunity cost -> Drop out here".
-            # So we should enforce this.
-            return False
-
-        # 3. Expectation Constraint (Relative Deprivation)
-        # Expected Wage vs Current Income
-        expected_wage = agent_data.get("expected_wage", 10.0)
+        # Proxies
         current_wage = agent_data.get("current_wage", 0.0)
+        monthly_income = current_wage * 8.0 * 20.0
 
-        # If unemployed, wage is 0 -> huge gap -> Dissatisfied?
-        # Or do we compare Utility?
-        # Prompt: "Current_Utility > Reservation_Utility?"
-        # Reservation Utility ~ Expected Wage
-        # Let's proxy Utility by Income for now.
+        # Cost Calculation
+        c_direct = child_monthly_cost * 12 * raising_years
+        c_opp = (monthly_income * opp_cost_factor) * 12 * raising_years
+        total_cost = c_direct + c_opp
 
-        reservation_income = expected_wage * 8.0 # Daily income expectation
-        current_daily_income = current_wage * work_hours if is_employed else 0.0
-        assets = agent_data.get("assets", 0.0)
+        # Benefit Calculation
+        current_children = agent_data.get("children_count", 0)
+        u_emotional = child_emotional_value_base / (current_children + 1)
 
-        # Income sufficiency ratio
-        # If I have high assets, I might ignore wage gap.
-        satisfaction_ratio = (current_daily_income + (assets * 0.01)) / max(1.0, reservation_income)
+        expected_child_income = monthly_income
+        u_support = expected_child_income * old_age_support_rate * 12 * support_years
+        total_benefit = u_emotional + u_support
 
-        # High Education -> High Expected Wage -> Low Satisfaction Ratio if working low job
-        if satisfaction_ratio < 0.8:
-            # Dissatisfied
-            # But check Strategy (r/K)
-            pass
+        # NPV
+        npv = total_benefit - total_cost
 
-        # 4. Strategy Selection (r/K)
-        # Social Rank
-        social_rank = agent_data.get("social_rank", 0.5) # Percentile (1.0 = Top)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"WO-048 Reproduction NPV: Agent={self.agent_id} "
+                f"Wage={current_wage:.2f} Income={monthly_income:.2f} "
+                f"Cost={total_cost:.1f}(Direct={c_direct:.1f}, Opp={c_opp:.1f}) "
+                f"Benefit={total_benefit:.1f}(Emo={u_emotional:.1f}, Sup={u_support:.1f}) "
+                f"NPV={npv:.2f}"
+            )
 
-        # r-Strategy: Low Rank, High Uncertainty? -> Reproduce anyway?
-        # K-Strategy: High Rank, High Competition -> Delay
-
-        # Logic from Prompt:
-        # "Poor + High Uncertainty -> r-Strategy (Reproduce)"
-        # "Middle/Rich + High Competition -> K-Strategy (Cautious)"
-
-        prob_reproduce = 0.0
-
-        if social_rank < 0.3:
-            # Lower Class (Bottom 30%)
-            # r-Strategy tendency
-            # If satisfaction is low, they might still reproduce if 'Hope' is low?
-            # Or "Nothing to lose".
-            prob_reproduce = 0.1 # Base probability
-
-        elif social_rank > 0.7:
-            # Upper Class
-            # K-Strategy: Only if satisfaction is high AND time permits
-            if satisfaction_ratio > 1.2:
-                 prob_reproduce = 0.05
-            else:
-                 prob_reproduce = 0.0 # "Not good enough yet"
-        else:
-            # Middle Class
-            # Highly sensitive to Satisfaction
-            if satisfaction_ratio > 1.0:
-                prob_reproduce = 0.05
-            else:
-                prob_reproduce = 0.01
-
-        # Random Roll
-        import random
-        return random.random() < prob_reproduce
+        return npv > 0
 
     def update_learning_v2(
         self,
