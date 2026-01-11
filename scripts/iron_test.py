@@ -20,37 +20,14 @@ import config
 from main import create_simulation
 
 # Configure Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')
+# Force configuration after main import might have messed with it
 logger = logging.getLogger("IRON_TEST")
-
-def calculate_labor_share(tracker, simulation):
-    """
-    Calculates Labor Share = Total Wage Income / Nominal GDP
-    Nominal GDP = Total Production Quantity * Average Goods Price
-    """
-    indicators = tracker.get_latest_indicators()
-
-    # Nominal GDP = Production * Price
-    total_production = indicators.get("total_production", 0.0)
-    avg_price = indicators.get("avg_goods_price", 0.0)
-    # Fallback to 10.0 if avg_price is 0 (initial)
-    if avg_price <= 0: avg_price = 10.0
-
-    nominal_gdp = total_production * avg_price
-
-    # Total Wages (User Instruction: Fallback Logic)
-    total_wages = indicators.get("total_labor_income", 0.0)
-
-    # Fallback if tracker misses it
-    if total_wages == 0:
-        total_wages = sum(
-            sum(f.employee_wages.values())
-            for f in simulation.firms if f.is_active
-        )
-
-    if nominal_gdp > 0:
-        return total_wages / nominal_gdp
-    return 0.0
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s'))
+    logger.addHandler(handler)
+logger.propagate = False
 
 def run_simulation(ticks: int, overrides: dict = None):
     logger.info(f"=== IRON TEST START: {ticks} Ticks ===")
@@ -90,8 +67,12 @@ def run_simulation(ticks: int, overrides: dict = None):
                 pass
 
             # 2. Labor Share Accumulation
+            # WO-043: Use tracker metrics directly
+            l_share = indicators.get("labor_share", 0.0)
+            velocity = indicators.get("velocity_of_money", 0.0)
+            turnover = indicators.get("inventory_turnover", 0.0)
+
             if t > 10: # Warmup
-                l_share = calculate_labor_share(simulation.tracker, simulation)
                 labor_share_sum += l_share
                 labor_share_count += 1
 
@@ -100,9 +81,16 @@ def run_simulation(ticks: int, overrides: dict = None):
             if t > 10: # Warmup
                 if u_rate > max_unemployment: max_unemployment = u_rate
 
-            if t % 100 == 0:
+            if t % 50 == 0:
                 avg_ls = labor_share_sum / max(1, labor_share_count)
-                logger.info(f"Tick {t} | Avg LaborShare: {avg_ls:.2%} | Unemp: {u_rate:.1%} | GDP: {current_gdp:.2f}")
+                logger.info(
+                    f"Tick {t} | "
+                    f"LS: {l_share:.2%} (Avg: {avg_ls:.2%}) | "
+                    f"V: {velocity:.2f} | "
+                    f"TO: {turnover:.2f} | "
+                    f"U: {u_rate:.1%} | "
+                    f"GDP: {current_gdp:.2f}"
+                )
 
         except Exception as e:
             logger.error(f"Simulation Crashed at tick {t}: {e}")

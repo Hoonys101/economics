@@ -182,16 +182,45 @@ class EconomicIndicatorTracker:
             if active_households_count > 0 else 0.0
         )
 
-        # WO-043: Track Labor Income & Sales Volume
+        # --- WO-043: Comprehensive Metrics ---
+        # 1. Labor Share = Total Labor Income / Nominal GDP
         total_labor_income = sum(
-            getattr(h, "labor_income_this_tick", 0.0) for h in households
+            getattr(h, "labor_income_this_tick", 0.0)
+            for h in households
+            if getattr(h, "is_active", True)
         )
         record["total_labor_income"] = total_labor_income
 
+        # Track Sales Volume from firms
         total_sales_volume = sum(
             getattr(f, "sales_volume_this_tick", 0.0) for f in firms
         )
         record["total_sales_volume"] = total_sales_volume
+
+        # Nominal GDP = Total Production * Avg Goods Price
+        nominal_gdp = record["total_production"] * record["avg_goods_price"]
+
+        if nominal_gdp > 0:
+            record["labor_share"] = total_labor_income / nominal_gdp
+        else:
+            record["labor_share"] = 0.0
+
+        # 2. Velocity of Money = Nominal GDP / Money Supply (M1)
+        # M1 = Household Assets + Firm Assets (excluding Bank/Govt)
+        money_supply_m1 = total_household_assets + total_firm_assets
+        record["money_supply"] = money_supply_m1
+
+        if money_supply_m1 > 0:
+            record["velocity_of_money"] = nominal_gdp / money_supply_m1
+        else:
+            record["velocity_of_money"] = 0.0
+
+        # 3. Inventory Turnover = Sales Volume (Goods) / Total Inventory
+        if total_inventory > 0:
+            record["inventory_turnover"] = total_volume / total_inventory
+        else:
+            record["inventory_turnover"] = 0.0
+
 
         for field in self.all_fieldnames:
             record.setdefault(field, 0.0)
