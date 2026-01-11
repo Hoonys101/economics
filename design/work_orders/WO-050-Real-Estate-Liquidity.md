@@ -64,3 +64,13 @@
 
 ## 5. Constraint
 *   **1가구 1주택**: 현재 시뮬레이션은 다주택 투자를 제한적으로만 허용하므로, 자가 주택 매도 시 "거주지 불명" 상태 처리에 유의할 것.
+
+## 6. Risk Mitigation (Architect Prime Review)
+> **"Rich Homeless" 시나리오 방지**
+> 집을 팔아 현금은 풍부하지만, 다음 틱에 전세/매물을 구하지 못해 노숙 상태로 사망하는 경우.
+
+*   **Solution: Temporary Housing Buffer**
+    *   매도 체결 시, 에이전트는 `is_in_temporary_housing = True` 상태가 되어 2틱(Grace Period) 동안 Survival 패널티를 받지 않음.
+    *   Grace Period 동안 새 집(Buy)이나 전세(Rent)를 구해야 함.
+    *   2틱 후에도 거처를 구하지 못하면 `is_homeless = True`로 전환되고 정상 패널티 적용.
+
