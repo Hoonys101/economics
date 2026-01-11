@@ -29,6 +29,7 @@ from simulation.systems.housing_system import HousingSystem # Phase 22.5
 from simulation.systems.persistence_manager import PersistenceManager # Phase 22.5
 from simulation.systems.firm_management import FirmSystem # Phase 22.5
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
+from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -219,6 +220,9 @@ class Simulation:
 
         # Phase 22.5: Firm System (Refactored)
         self.firm_system = FirmSystem(config_module=self.config_module)
+
+        # WO-051: Vectorized Planner Initialization
+        self.breeding_planner = VectorizedHouseholdPlanner(self.config_module)
 
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
@@ -578,21 +582,21 @@ class Simulation:
         # 1. Aging
         self.demographic_manager.process_aging(self.households, self.time)
 
-        # 2. Reproduction Decision
+        # 2. Reproduction Decision (Vectorized WO-051)
         birth_requests = []
-        for household in self.households:
-             if household.is_active:
-                 # Check decision logic
-                 context = DecisionContext(
-                     household=household,
-                     markets=self.markets,
-                     goods_data=self.goods_data,
-                     market_data=consumption_market_data, # Reuse consumption data
-                     current_time=self.time,
-                     government=self.government
-                 )
-                 if household.decision_engine.decide_reproduction(context):
-                     birth_requests.append(household)
+
+        # Filter Candidates: Active, Age 20-45 (Loose filter for extraction), Female? (Design says Agents are Households, Gender is attribute)
+        # Spec says "20 <= age <= 45".
+        # We can pass all active households to batch planner, and let it filter by age/solvency.
+        # But for efficiency, we pass active households.
+
+        active_households = [h for h in self.households if h.is_active]
+        if active_households:
+            decisions = self.breeding_planner.decide_breeding_batch(active_households)
+
+            for h, decision in zip(active_households, decisions):
+                if decision:
+                    birth_requests.append(h)
 
         # 3. Execution
         new_children = self.demographic_manager.process_births(self, birth_requests)
