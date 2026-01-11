@@ -696,3 +696,4 @@ HOMEWORK_QUALITY_COEFF = 0.5 # Impact of appliances
 
 # --- Phase 21.5: Automation Tax ---
 AUTOMATION_TAX_RATE = 0.05  # Tax rate applied to automation investment (5%)
+HOUSING_EXPECTATION_CAP = 0.05

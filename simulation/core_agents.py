@@ -22,6 +22,7 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 # Phase 20: System 2
 from simulation.ai.system2_planner import System2Planner
+from simulation.ai.household_system2 import HouseholdSystem2Planner, HousingDecisionInputs
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -238,6 +239,14 @@ class Household(BaseAgent):
         self.home_quality_score: float = 1.0
         self.spouse_id: Optional[int] = None
         self.system2_planner = System2Planner(self, config_module)
+        self.housing_planner = HouseholdSystem2Planner(self, config_module)
+        self.housing_target_mode = "RENT"
+        self.housing_price_history = deque(maxlen=12) # 1 year history (assuming monthly updates? No, ticks. Spec says Last 1 year.)
+        # Spec says "Last 1 year". TICKS_PER_YEAR = 100. So maxlen=100.
+        # But wait, T_years=10 in calculation uses monthly steps.
+        # I'll use TICKS_PER_YEAR from config.
+        ticks_per_year = getattr(config_module, "TICKS_PER_YEAR", 100)
+        self.housing_price_history = deque(maxlen=ticks_per_year)
 
         # Education Level (0~5) based on Distribution (Phase 19)
         dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
@@ -599,6 +608,75 @@ class Household(BaseAgent):
         else:
             self.approval_rating = 0
 
+    def decide_housing(self, market_data: Dict[str, Any], current_time: int) -> None:
+        """
+        Executes System 2 Housing Logic.
+        Triggered periodically or on critical events (e.g. homelessness).
+        """
+        # Trigger Condition: Homeless or Monthly Review (e.g., every 30 ticks)
+        if not (self.is_homeless or current_time % 30 == 0):
+            return
+
+        # Prepare Inputs
+        housing_market = market_data.get("housing_market", {})
+        loan_market = market_data.get("loan_market", {})
+
+        # Determine Market Price (Use avg rent / 0.01 / 12 proxy if price unavailable? No, usually separate)
+        # Assuming engine injects 'housing_market' with 'avg_rent_price'
+        # We need housing Sale Price. If missing, we estimate via Rent/Price Ratio or similar.
+        # But let's check if 'avg_price' is available for 'housing' in goods_market?
+        # Housing is usually separate.
+        # Check 'housing' key in markets.
+
+        market_rent = housing_market.get("avg_rent_price", 100.0)
+        # Fallback estimation for sale price
+        market_price = housing_market.get("avg_sale_price")
+        if not market_price:
+             market_price = market_rent * 12 * 20.0
+
+        # Update Price History
+        self.housing_price_history.append(market_price)
+
+        risk_free_rate = loan_market.get("interest_rate", 0.05)
+
+        # Calculate Price Growth Expectation (Adaptive)
+        price_growth = 0.0
+        if len(self.housing_price_history) >= 2:
+            # Simple CAGR or linear growth from start of window to end
+            start_price = self.housing_price_history[0]
+            end_price = self.housing_price_history[-1]
+            if start_price > 0:
+                # Total growth over the window
+                total_growth = (end_price - start_price) / start_price
+                # Annualize? Window is roughly 1 year max.
+                # If window is full (1 year), total_growth is annual growth.
+                # If window is partial, we extrapolate?
+                # Spec says "Rolling average of price change (Last 1 year)".
+                # I'll treat total growth over the available history as the proxy for annual expectation if history is long enough,
+                # or just use it as is.
+                price_growth = total_growth
+
+        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
+        income = self.current_wage * ticks_per_year if self.is_employed else self.expected_wage * ticks_per_year
+
+        inputs = HousingDecisionInputs(
+            current_wealth=self.assets,
+            annual_income=income,
+            market_rent_monthly=market_rent,
+            market_price=market_price,
+            risk_free_rate=risk_free_rate,
+            price_growth_expectation=price_growth
+        )
+
+        decision = self.housing_planner.decide(inputs)
+
+        if decision != self.housing_target_mode:
+            self.logger.info(
+                f"HOUSING_DECISION_CHANGE | Household {self.id} switched housing mode: {self.housing_target_mode} -> {decision}",
+                extra={"tick": current_time, "agent_id": self.id}
+            )
+            self.housing_target_mode = decision
+
     @override
     def make_decision(
         self,
@@ -608,6 +686,9 @@ class Household(BaseAgent):
         current_time: int,
         government: Optional[Any] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
+        # Phase 20: System 2 Housing Check
+        self.decide_housing(market_data, current_time)
+
         self.calculate_social_status()
 
         log_extra = {
@@ -639,6 +720,57 @@ class Household(BaseAgent):
             government=government,
         )
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context)
+
+        # WO-046: Execute System 2 Housing Decision
+        if self.housing_target_mode == "BUY" and self.is_homeless:
+            # Generate Buy Order if we don't own a home and decided to BUY
+            # Strategy: Place order for "housing" generic market or specific units?
+            # Housing Market expects item_id "unit_X". But we might not know which unit.
+            # OrderBookMarket usually handles "housing" as a generic commodity if ID is just "housing"
+            # OR we need to pick a unit.
+            # Simulation.process_transactions handles "housing" generic orders?
+            # Looking at engine.py, it expects item_id="unit_{id}".
+            # So we must pick a unit or place a "Blind" buy order if supported.
+            # Engine._process_transactions logic: if tx.transaction_type == "housing" -> _process_housing_transaction.
+            # _process_housing_transaction parses "unit_{id}".
+            # So we need a target unit.
+            # Scan market for Sell Orders on housing?
+            housing_market = markets.get("housing")
+            if housing_market:
+                # Find cheapest unit or random unit
+                # HousingMarket is OrderBookMarket.
+                # We need to scan asks. But asks are keyed by item_id.
+                # We iterate all asks?
+                target_unit_id = None
+                best_price = float('inf')
+
+                # Check for available units in market_data or query market directly
+                # OrderBookMarket structure: sell_orders = {item_id: [Order...]}
+                if hasattr(housing_market, "sell_orders"):
+                    for item_id, sell_orders in housing_market.sell_orders.items():
+                        if item_id.startswith("unit_") and sell_orders:
+                            ask_price = sell_orders[0].price # Assuming sorted? OrderBookMarket usually sorts heaps.
+                            # OrderBookMarket uses heapq for buy_orders (max heap) and sell_orders (min heap).
+                            # So sell_orders[0] is lowest price.
+                            if ask_price < best_price:
+                                best_price = ask_price
+                                target_unit_id = item_id
+
+                if target_unit_id:
+                     # Check affordability (assets + mortgage)
+                     # Mortgage covers 80%. We need 20%.
+                     down_payment = best_price * 0.2
+                     if self.assets >= down_payment:
+                         buy_order = Order(
+                             agent_id=self.id,
+                             item_id=target_unit_id,
+                             price=best_price,
+                             quantity=1.0,
+                             market_id="housing",
+                             order_type="BUY"
+                         )
+                         orders.append(buy_order)
+                         self.logger.info(f"HOUSING_BUY | Household {self.id} decided to buy {target_unit_id} at {best_price}")
 
         # --- Phase 6: Targeted Order Refinement ---
         # The AI decides "What to buy", the Household Logic decides "From Whom".
@@ -1084,6 +1216,8 @@ class Household(BaseAgent):
         cloned_household.gender = random.choice(["M", "F"]) # Offspring gender
         cloned_household.home_quality_score = 1.0 # Reset
         cloned_household.system2_planner = System2Planner(cloned_household, self.config_module) # New Planner
+        cloned_household.housing_planner = HouseholdSystem2Planner(cloned_household, self.config_module)
+        cloned_household.housing_target_mode = "RENT"
 
         return cloned_household
 
