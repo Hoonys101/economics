@@ -47,7 +47,7 @@ def scan_directory(root_dir: str) -> Dict[str, Dict]:
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
         
         # Exclude observer script directory to avoid self-flagging
-        if "scripts" in root and "observer" in root:
+        if "scripts\\observer" in root or "scripts/observer" in root:
             continue
         
         for file in files:
