@@ -265,9 +265,27 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             reservation_modifier = self.config_module.RESERVATION_WAGE_BASE - (agg_work * self.config_module.RESERVATION_WAGE_RANGE) # Range [0.5, 1.5]
             reservation_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, market_avg_wage * reservation_modifier)
 
-            orders.append(
-                Order(household.id, "SELL", "labor", 1, reservation_wage, "labor")
-            )
+            # --- Phase 21.6: The Invisible Hand (Track A: Reservation Wage) ---
+            # Retrieve Market Data (Correctly using data path)
+            labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+            market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+            best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
+
+            # Refuse labor supply if market offer is too low (below 70% of average)
+            effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
+            wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+
+            if effective_offer < wage_floor:
+                self.logger.info(
+                    f"RESERVATION_WAGE | Household {household.id} refused labor. "
+                    f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f})",
+                    extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
+                )
+                # Skip order generation
+            else:
+                orders.append(
+                    Order(household.id, "SELL", "labor", 1, reservation_wage, "labor")
+                )
 
         # ---------------------------------------------------------
         # 4. Execution: Stock Investment Logic

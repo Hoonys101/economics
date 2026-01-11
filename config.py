@@ -12,8 +12,12 @@ AUTOMATION_COST_PER_PCT = 10000.0  # Base cost to increase automation by 1% (sca
 HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD = 0.7  # Target if Market Cap < 70% of Intrinsic Value
 
 # --- Phase 21.5: Stabilization (WO-044) ---
-LABOR_ELASTICITY_MIN = 0.3          # α 하한선 (30% 노동분배 보장)
+# LABOR_ELASTICITY_MIN moved to Phase 21.6
 SEVERANCE_PAY_WEEKS = 4             # 해고 시 4주치 임금 지급
+
+# --- Phase 21.6: The Invisible Hand (WO-045) ---
+LABOR_ELASTICITY_MIN = 0.0              # 가드레일 제거
+RESERVATION_WAGE_FLOOR_RATIO = 0.7      # 시장 평균의 70% 미만 거부
 
 
 # --- Phase 20: The Matrix v1 ---

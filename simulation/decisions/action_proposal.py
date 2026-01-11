@@ -89,6 +89,18 @@ class ActionProposalEngine:
                     },
                 )
                 # 노동 시장에 노동력 판매 주문
+                # --- Phase 21.6: The Invisible Hand (Track A: Reservation Wage) ---
+                # Legacy Support: Accessing market_data via agent if available
+                should_refuse = False
+                if hasattr(agent, "decision_engine") and hasattr(agent.decision_engine, "context"):
+                    # Only if context is persisted, which is unlikely in V1 proposal logic.
+                    # Best effort: Use simple assumption or skip for legacy
+                    pass
+
+                # Check for Market Data availability (if passed or attached)
+                # Assuming ActionProposal doesn't strictly enforce this check
+                # but we will try to mimic if possible.
+
                 desired_wage = (
                     self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
                 )

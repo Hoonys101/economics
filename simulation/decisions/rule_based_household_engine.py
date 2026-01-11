@@ -116,20 +116,37 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                         desired_wage = new_wage
                 # ---------------------------------------------
 
-                orders.append(
-                    Order(
-                        household.id,
-                        "SELL",
-                        "labor",
-                        1.0,  # 1 unit of labor
-                        desired_wage,
-                        "labor_market",
+                # --- Phase 21.6: The Invisible Hand (Track A: Reservation Wage) ---
+                # Retrieve Market Data
+                labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+                market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+                best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
+
+                effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
+                wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+
+                if effective_offer < wage_floor:
+                    self.logger.info(
+                        f"RESERVATION_WAGE | Household {household.id} refused labor (RuleBased). "
+                        f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f}",
+                        extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
                     )
-                )
-                self.logger.info(
-                    f"Household {household.id} offers labor at wage {desired_wage:.2f}",
-                    extra={"tick": current_time, "agent_id": household.id, "tactic": chosen_tactic.name}
-                )
+                    # Skip order generation
+                else:
+                    orders.append(
+                        Order(
+                            household.id,
+                            "SELL",
+                            "labor",
+                            1.0,  # 1 unit of labor
+                            desired_wage,
+                            "labor_market",
+                        )
+                    )
+                    self.logger.info(
+                        f"Household {household.id} offers labor at wage {desired_wage:.2f}",
+                        extra={"tick": current_time, "agent_id": household.id, "tactic": chosen_tactic.name}
+                    )
 
         # TODO: 다른 규칙 기반 로직 (예: 저축, 투자, 사치품 구매 등) 추가
         
