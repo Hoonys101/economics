@@ -1,57 +1,65 @@
 # Work Order: WO-046 Adaptive Housing Brain [Engineering Spec]
 
 > [!IMPORTANT]
-> **Spec-First Directive**: All formulas and logic are defined here. Implement EXACTLY as specified. Do not invent new logic.
+> **Spec-First Directive**: All formulas and logic are defined here. Implement EXACTLY as specified.
+> **Architecture Update**: Use a dedicated System 2 module (`HouseholdSystem2Planner`) instead of cluttering existing managers.
 
-## 1. Core Logic: When to Decide? (Trigger Conditions)
-We optimize performance by restricting *when* the System 2 logic runs.
+## 1. System Architecture
+*   **New Module:** `simulation/ai/household_system2.py`
+    *   **Class:** `HouseholdSystem2Planner`
+    *   **Role:** Handles computationally expensive logic (System 2) for households.
+*   **Integration:** 
+    *   `Household` agent calls `decide_housing()` -> Delegates to `HouseholdSystem2Planner.calculate_housing_npv()`.
 
-**Implement in `Household.decide_housing()`:**
-- **homeless**: Calculate every tick (Priority).
-- **tenant**: Calculate only if `contract_remaining < 30` (Expiration imminent).
-- **wealth_shock**: Calculate if `cash > memory['last_check_cash'] * 1.2` (Rich enough to reconsider).
+## 2. Logic Specification (Algorithm)
 
-## 2. Decision Logic (NPV Formula)
+### A. Input Data
+The Planner must act on a snapshot of data:
+*   `current_wealth`: Household Assets (Cash + Deposits + Equities).
+*   `income`: Annual Income (`daily_wage * 360` approximation).
+*   `market_rent`: Current Monthly Rent (`daily_rent * 30`).
+*   `market_price`: Current Mean Housing Price.
+*   `interest_rate`: `risk_free_rate` (Annual).
+*   `price_growth_expectation`: Rolling average of price change (Last 1 year), **Capped at 5% (0.05)**.
 
-**Class: `HousingManager`**
-**Method: `should_buy(property_price, rent_price, market_data)`**
+### B. Decision Formulas (NPV Comparison)
 
-### A. Buy Valuation (`NPV_Buy`)
+**1. Buy Valuation (`NPV_Buy`)**
 $$ NPV_{Buy} = \sum_{t=1}^{T} \frac{U_{shelter} - Cost_{own}}{(1+r)^t} + \frac{P_{future}}{(1+r)^T} - P_{initial} $$
 
-- **$P_{initial}$**: `property_price` (Asking Price).
-- **$U_{shelter}$**: `rent_price` (Avoiding rent is the utility).
-- **$Cost_{own}$**: `MortgagePayment` + `Maintenance` (0.1% of price/tick).
-- **$P_{future}$**: `property_price * (1 + min(trend, 0.05/12))^T`.
-  - **Constraint**: `trend` is capped at 5% annual (`MAX_EXPECTATION`) to prevent FOMO.
-- **$r$**: `risk_free_rate` / 12 (Monthly Discount Rate).
-- **$T$**: 120 ticks (10 years).
+*   $T$: 10 years (Using **Monthly** steps, i.e., 120 months).
+*   $r$: Monthly Discount Rate (`(interest_rate + 0.02) / 12`).
+*   $P_{initial}$: `market_price`.
+*   $U_{shelter}$: `market_rent` (Utility gained by avoiding rent).
+*   $Cost_{own}$: `(market_price * 0.01) / 12` (Maintenance/Tax per month).
+*   $P_{future}$: `market_price * (1 + g)^10`. ($g$ = Capped expectation).
 
-### B. Rent Valuation (`NPV_Rent`)
+**2. Rent Valuation (`NPV_Rent`)**
 $$ NPV_{Rent} = \sum_{t=1}^{T} \frac{Income_{invest} - Cost_{rent}}{(1+r)^t} + \frac{Principal}{(1+r)^T} $$
 
-- **$Principal$**: `Down Payment` amount (Assumed 20% of `property_price` that *would* have been spent).
-- **$Income_{invest}$**: `Principal * r` (Monthly Risk-free return).
-- **$Cost_{rent}$**: `rent_price`.
+*   $Principal$: Down Payment Amount (Assumed 20% of `market_price`).
+    *   *Note: This represents the Opportunity Cost of Equity.*
+*   $Income_{invest}$: `Principal * (interest_rate / 12)`.
+*   $Cost_{rent}$: `market_rent`.
 
-### C. Final Decision
+### C. Final Decision Logic
 ```python
-if dti_ratio > 0.4: return False  # Safety Guardrail (Debt-to-Income)
-return NPV_Buy > NPV_Rent
+def decide(self, inputs):
+    # 1. Safety Guardrail (DTI)
+    loan_amount = inputs.market_price * 0.8
+    annual_mortgage_cost = loan_amount * inputs.interest_rate
+    if annual_mortgage_cost > inputs.income * 0.4:
+        return "RENT" (Force Rent due to DTI)
+
+    # 2. Rational Choice
+    if npv_buy > npv_rent:
+        return "BUY"
+    else:
+        return "RENT"
 ```
 
-## 3. Implementation Details
-
-### Required Helper Methods
-- `_calculate_mortgage_payment(principal, rate, years=30)`: Standard amortization formula.
-- `_get_price_trend(market_data)`: Extract rolling average price change.
-
-### Logic Placement
-- **Location**: `simulation/decisions/housing_manager.py`
-- Modify `should_buy` to implement the formulae above STRICTLY.
-
-## 4. Verification (Unit Test)
-- **File**: `tests/test_housing_spec.py`
-- **Case 1 (Bubble)**: High Trend (>10%) -> Capped at 5% -> Check Decision.
-- **Case 2 (High Rate)**: Interest Rate 15% -> Rent Limit (High Opportunity Cost).
-- **Case 3 (DTI Fail)**: `NPV_Buy` is high, but Income is low -> Return False.
+## 3. Implementation Steps
+1.  **Create Module**: `simulation/ai/household_system2.py`.
+2.  **Config**: Add `HOUSING_EXPECTATION_CAP = 0.05` to `config.py`.
+3.  **Integrate**: Modify `simulation/agents/household.py` to use `HouseholdSystem2Planner`.
+4.  **Verify**: Add tests in `tests/test_household_system2.py`.
