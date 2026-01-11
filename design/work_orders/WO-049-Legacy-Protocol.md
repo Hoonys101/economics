@@ -33,7 +33,7 @@ $$ TotalWealth = Cash + (House \times P_{market}) + (Stocks \times P_{current}) 
 *   **Hanodver**:
     *   `Cash`: Add to Heir's wallet.
     *   `RealEstate`: Update Registry Owner ID.
-    *   `Stock`: Transfer share counts to Heir's Portfolio.
+    *   `Stock`: **CRITICAL** - Do not overwrite `heir.portfolio`. Implement and use `Portfolio.merge(other_portfolio)` to sum quantities and recalculate average costs.
 
 ### Step 4. Cleanup (Reincarnation)
 *   Unregister Agent ID from Simulation Registry.
