@@ -709,16 +709,4 @@ CHILD_EMOTIONAL_VALUE_BASE = 500000.0 # 자녀 1명당 느끼는 정서적 가�
 OLD_AGE_SUPPORT_RATE = 0.1          # 자녀 소득의 10%를 노후 용돈으로 받음
 SUPPORT_YEARS = 20                  # 은퇴 후 부양받는 기간
 
-# --- WO-048: Adaptive Breeding Parameters ---
-TECH_CONTRACEPTION_ENABLED = True   # True: System 2 (NPV), False: System 1 (Random)
-BIOLOGICAL_FERTILITY_RATE = 0.15    # 피임 없을 때의 월간 임신 확률
 
-# Cost Factors
-CHILD_MONTHLY_COST = 500.0          # 직접 양육비 (식비+교육비)
-OPPORTUNITY_COST_FACTOR = 0.5       # 육아로 인한 임금 감소율 (50%)
-RAISING_YEARS = 20                  # 양육 기간 (성인까지)
-
-# Benefit Factors
-CHILD_EMOTIONAL_VALUE_BASE = 200000.0 # 자녀 1명당 느끼는 정서적 가치의 총량 (화폐 환산)
-OLD_AGE_SUPPORT_RATE = 0.1          # 자녀 소득의 10%를 노후 용돈으로 받음
-SUPPORT_YEARS = 20                  # 은퇴 후 부양받는 기간

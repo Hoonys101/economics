@@ -209,6 +209,13 @@ class HouseholdAI(BaseAIEngine):
         current_wage = agent_data.get("current_wage", 0.0)
         monthly_income = current_wage * 8.0 * 20.0
 
+        # Step 1.5: Solvency Check (Affordability)
+        # Ensure household has buffer (2.5x cost)
+        if monthly_income < child_monthly_cost * 2.5:
+            return False
+
+        # Cost Calculation
+
         # Cost Calculation
         c_direct = child_monthly_cost * 12 * raising_years
         c_opp = (monthly_income * opp_cost_factor) * 12 * raising_years
