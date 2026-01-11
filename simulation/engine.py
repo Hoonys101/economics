@@ -844,7 +844,8 @@ class Simulation:
                      self.government.collect_tax(tax_amount, "corporate_tax", firm.id, self.time)
 
         # Update tracker with the latest data after transactions and consumption
-        self.tracker.track(self.time, self.households, self.firms, self.markets)
+        money_supply = self._calculate_total_money()
+        self.tracker.track(self.time, self.households, self.firms, self.markets, money_supply=money_supply)
 
         # 2b. 정부 인프라 투자 (예산 충족 시)
         # Phase 8-B: Pass reflux_system to capture infrastructure spending

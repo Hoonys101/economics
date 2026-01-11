@@ -26,6 +26,9 @@ class EconomicIndicatorTracker:
             "goods_price_index": [],
             "unemployment_rate": [],
             "avg_wage": [],
+            "money_supply": [],
+            "total_labor_income": [],
+            "total_sales_volume": [],
         }
         self.config_module = config_module  # Store config_module
         self.all_fieldnames: List[
@@ -53,6 +56,7 @@ class EconomicIndicatorTracker:
         households: List[Household],
         firms: List[Firm],
         markets: Dict[str, Market],
+        money_supply: float = 0.0,
     ) -> None:
         """현재 시뮬레이션 틱의 경제 지표를 계산하고 기록합니다."""
         self.logger.debug(
@@ -60,6 +64,9 @@ class EconomicIndicatorTracker:
             extra={"tick": time, "tags": ["tracker"]},
         )
         record: Dict[str, Any] = {"time": time}
+
+        # WO-043: Track Money Supply
+        record["money_supply"] = money_supply
 
         # Perform calculations...
         total_household_assets = sum(
@@ -174,6 +181,17 @@ class EconomicIndicatorTracker:
             total_survival_need / active_households_count
             if active_households_count > 0 else 0.0
         )
+
+        # WO-043: Track Labor Income & Sales Volume
+        total_labor_income = sum(
+            getattr(h, "labor_income_this_tick", 0.0) for h in households
+        )
+        record["total_labor_income"] = total_labor_income
+
+        total_sales_volume = sum(
+            getattr(f, "sales_volume_this_tick", 0.0) for f in firms
+        )
+        record["total_sales_volume"] = total_sales_volume
 
         for field in self.all_fieldnames:
             record.setdefault(field, 0.0)

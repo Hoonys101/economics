@@ -51,6 +51,30 @@ def get_metrics(simulation: Simulation) -> Dict[str, Any]:
     # Unemployment Rate
     unemployment_rate = indicators.get("unemployment_rate", 0.0)
 
+    # --- WO-043: Advanced Metrics ---
+    # 1. Labor Share = (Total Labor Income / Nominal GDP) * 100
+    total_labor_income = indicators.get("total_labor_income", 0.0)
+    avg_goods_price = indicators.get("avg_goods_price", 0.0)
+    total_production = indicators.get("total_production", 0.0)
+    nominal_gdp = total_production * avg_goods_price
+
+    labor_share = 0.0
+    if nominal_gdp > 0:
+        labor_share = (total_labor_income / nominal_gdp) * 100.0
+
+    # 2. Velocity of Money = Nominal GDP / Money Supply
+    money_supply = indicators.get("money_supply", 0.0)
+    velocity_of_money = 0.0
+    if money_supply > 0:
+        velocity_of_money = nominal_gdp / money_supply
+
+    # 3. Inventory Turnover = Total Sales Volume / Total Inventory
+    total_sales_volume = indicators.get("total_sales_volume", 0.0)
+    total_inventory = indicators.get("total_inventory", 0.0)
+    inventory_turnover = 0.0
+    if total_inventory > 0:
+        inventory_turnover = total_sales_volume / total_inventory
+
     return {
         "tick": simulation.time,
         "total_population": total_population,
@@ -59,7 +83,14 @@ def get_metrics(simulation: Simulation) -> Dict[str, Any]:
         "unemployment_rate": unemployment_rate,
         # Additional useful metrics
         "inflation_rate": indicators.get("inflation_rate", 0.0),
-        "total_consumption": indicators.get("total_consumption", 0.0)
+        "total_consumption": indicators.get("total_consumption", 0.0),
+        # WO-043 Metrics
+        "money_supply": money_supply,
+        "nominal_gdp": nominal_gdp,
+        "total_labor_income": total_labor_income,
+        "labor_share": labor_share,
+        "velocity_of_money": velocity_of_money,
+        "inventory_turnover": inventory_turnover
     }
 
 def update_params(simulation: Simulation, new_params: Dict[str, Any]) -> None:
