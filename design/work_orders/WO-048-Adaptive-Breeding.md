@@ -1,65 +1,86 @@
-# Work Order: WO-048-Adaptive-Breeding
+# Work Order: WO-048-Adaptive-Breeding (Finalized Spec)
 
-**Date:** 2026-01-11
-**Phase:** Phase 22 (The Awakening) - Step 4
-**Status:** Queued (After WO-050)
+**Author:** Architect Prime
 **Assignee:** Jules (Worker AI)
-**Objective:** 가계(Household)가 경제적 효용/비용 분석(NPV)에 기반하여 출산 여부를 결정하도록 System 2 로직을 구현한다.
+**Status:** Ready for Implementation (W-2)
 
-## 1. System Architecture (Hybrid Model)
+## 1. Configuration (`config.py`)
 
-피임 기술 보급 여부에 따라 의사결정 방식이 달라진다.
-
-### Precondition: Technology Check
-*   **Config Variable:** `TECH_CONTRACEPTION_ENABLED` (default: `True`)
-*   **Logic:**
-    *   `False` (Pre-Modern): System 1 작동 (확률 기반, 고출산).
-    *   `True` (Modern): System 2 작동 (NPV 계산, 합리적 출산).
-
-## 2. Decision Logic (Pseudo-code)
+기존 계획에 더해, NPV 계산의 균형을 맞추기 위한 **정서적 효용의 기준값(`CHILD_EMOTIONAL_VALUE_BASE`)**을 추가합니다. 이 값이 없으면 비용만 너무 커서 아무도 아이를 낳지 않는 '인류 멸망 시나리오'가 발생할 수 있습니다.
 
 ```python
-def decide_reproduction(agent):
-    if not is_fertile(agent):
-        return False
+# --- WO-048: Adaptive Breeding Parameters ---
+TECH_CONTRACEPTION_ENABLED = True   # True: System 2 (NPV), False: System 1 (Random)
+BIOLOGICAL_FERTILITY_RATE = 0.15    # 피임 없을 때의 월간 임신 확률
 
-    if not CONFIG.TECH_CONTRACEPTION_ENABLED:
-        # Pre-Modern: Biological Imperative
-        return random.random() < BIOLOGICAL_FERTILITY_RATE
+# Cost Factors
+CHILD_MONTHLY_COST = 500.0          # 직접 양육비 (식비+교육비)
+OPPORTUNITY_COST_FACTOR = 0.5       # 육아로 인한 임금 감소율 (50%)
+RAISING_YEARS = 20                  # 양육 기간 (성인까지)
 
-    # Modern: System 2 Rational Calculation
-    cost = calculate_total_cost(agent)
-    benefit = calculate_total_benefit(agent)
-    npv = benefit - cost
-
-    return npv > 0
+# Benefit Factors
+CHILD_EMOTIONAL_VALUE_BASE = 200000.0 # 자녀 1명당 느끼는 정서적 가치의 총량 (화폐 환산)
+OLD_AGE_SUPPORT_RATE = 0.1          # 자녀 소득의 10%를 노후 용돈으로 받음
+SUPPORT_YEARS = 20                  # 은퇴 후 부양받는 기간
 ```
 
-## 3. NPV Factors
+## 2. Logic Implementation (`household_ai.py`)
 
-### Cost (-)
-*   **Raising Cost (C_raising):** `CHILD_MONTHLY_COST * 12 * 20` (월 양육비 × 20년).
-*   **Opportunity Cost (C_opportunity):** `agent.wage * 0.5 * 20_years` (육아로 인한 소득 감소).
-    *   **핵심 메커니즘:** 고소득자일수록 기회비용이 커져 출산을 기피함.
+`HouseholdAI` 클래스 내 `decide_reproduction` 메서드를 아래 로직으로 재작성합니다.
 
-### Benefit (+)
-*   **Emotional Utility (B_emotional):** 상수 또는 자산 대비 감소 함수.
-*   **Old Age Support (B_support):** `Expected_Child_Income * 0.1` (자녀 용돈 기대).
-    *   사회보장제도가 약할수록 이 값이 커짐 (후진국형 다산 재현).
+### 🧠 Decision Algorithm
 
-## 4. Config Parameters
+**Step 1: Technology Check**
 
-```python
-TECH_CONTRACEPTION_ENABLED = True
-BIOLOGICAL_FERTILITY_RATE = 0.15  # 피임 없을 때 월간 임신 확률
-CHILD_MONTHLY_COST = 500.0
-OPPORTUNITY_COST_FACTOR = 0.5  # 육아 시 소득 감소율
-OLD_AGE_SUPPORT_RATE = 0.1
-```
+* `if not config.TECH_CONTRACEPTION_ENABLED:`
+    * **Action:** `return random.random() < config.BIOLOGICAL_FERTILITY_RATE`
+    * (단, 에이전트 나이가 가임기인지 확인하는 기본 로직은 유지)
 
-## 5. Verification Plan
+**Step 2: System 2 NPV Calculation (Modern Era)**
 
-1.  **Pre-Modern Test:** `TECH_CONTRACEPTION_ENABLED = False` → 고출산 확인.
-2.  **Modern Test (High Income):** 고소득 가계 → 출산율 0.5명 미만 확인.
-3.  **Modern Test (Low Income):** 저소득 가계 → 양육비 부담으로 출산 기피 확인.
-4.  **Policy Test:** 정부 양육비 지원 → 출산율 반등 확인.
+* **Cost Calculation (총비용):**
+    1. **Direct Cost:** `C_direct = CHILD_MONTHLY_COST * 12 * RAISING_YEARS`
+    2. **Opportunity Cost:** `C_opp = (agent.monthly_income * OPPORTUNITY_COST_FACTOR) * 12 * RAISING_YEARS`
+        * *Note*: `agent.monthly_income` might need to be estimated from `current_wage * 20 days` (assuming 20 working days) or using `current_daily_income * 20`. Use `agent_data.get("current_wage", 0.0) * 8.0 * 20` as a standard monthly proxy if actual monthly income isn't tracked directly.
+    3. `Total_Cost = C_direct + C_opp`
+
+* **Benefit Calculation (총효용):**
+    1. **Emotional Utility:** 한계효용 체감 법칙 적용.
+        * `U_emotional = CHILD_EMOTIONAL_VALUE_BASE / (agent.children_count + 1)`
+    2. **Old Age Support:** "내 자식은 나만큼은 번다"는 가정(Inherited Status) 적용.
+        * `Expected_Child_Income = agent.monthly_income` (현재 부모 소득을 대리 변수로 사용)
+        * `U_support = Expected_Child_Income * OLD_AGE_SUPPORT_RATE * 12 * SUPPORT_YEARS`
+    3. `Total_Benefit = U_emotional + U_support`
+
+* **Step 3: Final Decision**
+    * `NPV = Total_Benefit - Total_Cost`
+    * **Log Logic:** 디버깅을 위해 `NPV`, `Cost`, `Benefit` 값을 로그로 남길 것 (DEBUG Level).
+    * **Result:** `return NPV > 0`
+
+## 3. Verification Plan (`tests/test_wo048_breeding.py`)
+
+다음 시나리오를 검증하는 독립형 테스트 스크립트를 작성하십시오.
+
+### Scenario A: Pre-Modern Era
+* **Set:** `TECH_CONTRACEPTION_ENABLED = False`
+* **Expectation:** 소득과 무관하게 약 15% 확률로 `True` 반환.
+
+### Scenario B: The Modernity Trap (High Income)
+* **Set:** `TECH_CONTRACEPTION_ENABLED = True`
+* **Agent:** 월 소득 10,000 (고소득)
+* **Analysis:**
+    * `C_opp`가 매우 높음 (10,000 * 0.5 * 12 * 20 = 1,200,000).
+    * `U_support`도 높지만 (10,000 * 0.1 * 12 * 20 = 240,000), `C_opp`를 상쇄하기 힘듦.
+* **Expectation:** `NPV < 0`  **출산 거부 (`False`)**
+
+### Scenario C: The Poverty Trap (Low Income)
+* **Agent:** 월 소득 1,000 (저소득)
+* **Analysis:**
+    * `C_direct` (500 * 12 * 20 = 120,000)가 소득 대비 비중이 너무 큼.
+* **Expectation:** `NPV < 0`  **출산 거부 (`False`)**
+
+### Scenario D: The Golden Mean (Middle Income) - *Calibration Target*
+* **Agent:** 월 소득 3,000 ~ 5,000 (중산층)
+* **Analysis:**
+    * `U_emotional`이 비용을 상회하는 구간이 존재해야 함.
+* **Expectation:** `NPV > 0`  **출산 (`True`)**

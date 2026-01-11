@@ -146,3 +146,28 @@ Level 0: 핵심 원칙 (Always Load)
     git branch -d <local_temp_branch>
     ```
 
+
+## 👑 Spec & Delegation Protocol (Zero-Question Standard)
+
+**"Spec은 무엇을 할지(WHAT) 뿐만 아니라, 어떻게 할지(HOW)까지 포함해야 한다."**
+
+### 1. Workflow Pipeline
+
+1.  **Phase 1: Concept & Logic (Chief Architect -> Antigravity)**
+    *   **Input**: 슈도코드(Pseudo-code) 수준의 기획서.
+    *   **Goal**: 비즈니스 로직과 알고리즘의 핵심을 정의합니다. 추상적인 요구사항을 배제하고 코드 레벨의 논리를 확정합니다.
+
+2.  **Phase 2: Concretization (Antigravity Internal)**
+    *   **Action**: 수석의 슈도코드를 **'구현 직전의 문서(Pre-Implementation Spec)'**로 변환합니다.
+    *   **Criteria (Zero-Question Test)**: Jules가 문서를 보고 **"단 하나의 질문도 없이"** 코드를 작성할 수 있어야 합니다.
+    *   **Components**:
+        *   구체적인 파일 경로 및 파일명.
+        *   데이터 구조 (DTO, Enum) 및 타입 힌트.
+        *   상수(Config) 이름 및 값.
+        *   핵심 함수 시그니처 및 예외 처리 로직.
+
+3.  **Phase 3: Delegation (Antigravity -> Jules)**
+    *   **Action**: 완성된 Spec 문서를 전달(Push)하고 구현을 지시합니다.
+    *   **Principle**: Jules에게 "생각"을 요구하지 말고 "번역(Spec -> Code)"을 요구하십시오.
+
+

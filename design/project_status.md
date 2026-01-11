@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-01-10
+**최종 업데이트**: 2026-01-11
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -12,16 +12,31 @@
     - `Phase 19: Population Dynamics` ✅
     - `Phase 20: The Matrix & Real Estate` ✅
     - `Phase 21: Corporate Empires` ✅
+    - `Phase 22.5: Architecture Detox` ✅ (Decoupled Engine, Household Refactor)
 - **현재 단계:** `Phase 22: The Awakening (Adaptive AI)` 🏗️
-    - Step 1: Housing (WO-046) ✅
+    - Step 1: Housing Brain (WO-046) ✅
     - Step 2: Inheritance (WO-049) ✅
-    - Step 3: Selling (WO-050) 🏗️
+    - Step 3: Selling & Liquidity (WO-050) ✅
 - **다음 단계:** `Step 4: Breeding (WO-048)`
-
 
 ---
 
 ## 2. 완료된 작업 요약 (Recent)
+
+### Phase 22.5: Architecture Detox ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Engine Decoupling | ✅ | Extracted `HousingSystem`, `FirmSystem`, `PersistenceManager` |
+| Household Refactor | ✅ | Split into `Psychology`, `Consumption`, `Leisure` components |
+| System 2 Integration | ✅ | `HouseholdSystem2Planner` for Housing logic |
+| Verification | ✅ | `iron_test.py` 100 ticks passed without crash |
+
+### WO-050: Real Estate Liquidity ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Distress Sale | ✅ | Sell house when assets < 1.5 months survival cost |
+| Grace Period | ✅ | 2-tick homeless penalty exemption after selling |
+| Market Logic | ✅ | Transactions clear usage rights correctly |
 
 ### Phase 8: Inflation Psychology ✅
 | 항목 | 상태 | 비고 |
@@ -67,22 +82,28 @@
 
 ## 3. 남은 과업 (Backlog)
 
+### Phase 22: The Awakening (Next)
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Adaptive Breeding (WO-048) | 📅 | `decide_reproduction` update |
+| Social Mobility Analysis | 📅 | Gini Coefficient & Class Mobility |
+| System 2 Expansion | 📅 | Career Planning, Investment Strategy |
+
 ### Phase 20: The Matrix & Real Estate (Current)
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Real Estate Market | 🏗️ | Supply, Rent, Mortgage |
 | Double-Process Cognition | 🏗️ | System 1 (Fast) / System 2 (Slow) |
 | Gender/Tech Dynamics | 🏗️ | Lactation, Home Quality Score |
 
 ---
 
 ## 4. 구조적 진단 (Architectural Audit)
-- **발견된 문제**: 에이전트의 현재 RL 엔진은 즉각적 보상에만 반응하여, 20-40틱 이상의 장기 계획(부동산 매입, 자녀 성인기 투자 등)을 세우기에 한계가 있음.
-- **조치 계획**: Phase 20에서 System 2 (Internal World Model) 도입하여 장기 시나리오 시뮬레이션 기능 추가.
+- **완료된 조치**: Phase 22.5를 통해 `engine.py`의 비대화를 해소하고 `Household` 에이전트를 컴포넌트 단위로 분리함.
+- **향후 계획**: `Firm` 에이전트 및 `Government` 에이전트의 모듈화 진행 필요.
+- **W-3.5**: PR 리뷰 시 아키텍처 위생(SoC) 점검 절차 도입.
 
 ---
 
 ## 5. 테스트 상태
-- **Iron Test**: `scripts/iron_test.py` (Last Run: Phase 19 Verified)
-- **Rat Race Experiment**: ✅ Success (Emergence of social extinction confirmed)
-- Unit Tests: All Passed.
+- **Iron Test**: `scripts/iron_test.py` (Last Run: Phase 22.5 Verified)
+- **Unit Tests**: All Passed.
