@@ -46,6 +46,10 @@ def scan_directory(root_dir: str) -> Dict[str, Dict]:
         # Filter directories
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
         
+        # Exclude observer script directory to avoid self-flagging
+        if "scripts" in root and "observer" in root:
+            continue
+        
         for file in files:
             if any(file.endswith(ext) for ext in TARGET_EXTENSIONS):
                 filepath = os.path.join(root, file)

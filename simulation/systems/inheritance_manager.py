@@ -176,22 +176,44 @@ class InheritanceManager:
                 heirs.append(child)
 
         if not heirs:
-            # State Confiscation
+            # 1. State Confiscation (Cash)
             surplus = deceased.assets
             if surplus > 0:
                 deceased.assets = 0
                 simulation.government.assets += surplus
                 self.logger.info(
-                    f"NO_HEIRS | Confiscated remaining {surplus:.2f} to Government.",
+                    f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
                     extra={"agent_id": deceased.id}
                 )
-            # Stocks/RE already liquidated or remain with Deceased?
-            # Any remaining stocks (if not liquidated) go to Govt?
-            # If we didn't liquidate all stocks (only needed amount), remaining stocks go to Govt.
-            # TODO: Handle remaining assets for No Heir case.
-            # Loop portfolio -> Govt (Burn?). Loop RE -> Govt.
-            # Current logic: If NO heirs, we should have liquidated everything or transferred to Govt.
-            # Let's assume remaining assets are seized.
+
+            # 2. State Confiscation (Stocks)
+            # Transfer all remaining shares to Government
+            for firm_id, share in list(deceased.portfolio.holdings.items()):
+                 qty = share.quantity
+                 if qty > 0:
+                     # Update Shareholder Registry: Deceased -> 0, Govt -> +qty
+                     if simulation.stock_market:
+                         simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
+                         simulation.stock_market.update_shareholder(simulation.government.id, firm_id, qty)
+            
+            # Clear Deceased Portfolio
+            deceased.portfolio.holdings.clear()
+            deceased.shares_owned.clear()
+
+            # 3. State Confiscation (Real Estate)
+            # Transfer all remaining properties to Government
+            remaining_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
+            for unit in remaining_units:
+                unit.owner_id = simulation.government.id
+                # Note: deceased.owned_properties will be cleared below
+            
+            deceased.owned_properties.clear()
+            
+            self.logger.info(
+                 f"NO_HEIRS_ASSETS | Confiscated {len(remaining_units)} properties and portfolio to Government.",
+                 extra={"agent_id": deceased.id}
+            )
+
             return
 
         # Split Remaining Assets

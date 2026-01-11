@@ -19,6 +19,7 @@
     - Step 3: Selling & Liquidity (WO-050) ✅
     - Step 4: Breeding (WO-048) ✅ (Adaptive NPV + Solvency Check)
     - Step 5: Engine Vectorization (WO-051) ✅ (NumPy Batch Processing)
+    - Step 6: Maintenance (WO-052) 🔧 (Inheritance Leak & Observer Fix)
 - **다음 단계:** `Social Mobility Analysis` (Gini, Class Mobility)
 
 
