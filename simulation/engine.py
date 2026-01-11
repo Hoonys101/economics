@@ -24,6 +24,7 @@ from simulation.systems.ma_manager import MAManager
 from simulation.systems.reflux_system import EconomicRefluxSystem
 from simulation.systems.demographic_manager import DemographicManager # Phase 19
 from simulation.systems.immigration_manager import ImmigrationManager # Phase 20-3
+from simulation.systems.inheritance_manager import InheritanceManager # Phase 22 (WO-049)
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 
 # Use the repository pattern for data access
@@ -206,6 +207,9 @@ class Simulation:
 
         # Phase 20-3: Immigration Manager
         self.immigration_manager = ImmigrationManager(config_module=self.config_module)
+
+        # Phase 22: Inheritance Manager
+        self.inheritance_manager = InheritanceManager(config_module=self.config_module)
 
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
@@ -1489,17 +1493,28 @@ class Simulation:
                 
                 # 매도자의 주식 감소
                 if isinstance(seller, Household):
+                    # Legacy Sync
                     current_shares = seller.shares_owned.get(firm_id, 0)
                     seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
-                    if seller.shares_owned[firm_id] == 0:
-                        del seller.shares_owned[firm_id]
+                    if seller.shares_owned[firm_id] <= 0:
+                        if firm_id in seller.shares_owned:
+                            del seller.shares_owned[firm_id]
+                    # Portfolio Update
+                    if hasattr(seller, "portfolio"):
+                        seller.portfolio.remove(firm_id, tx.quantity)
+
                 elif isinstance(seller, Firm) and seller.id == firm_id:
                     # 자사주 매각
                     seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
                 
                 # 매수자의 주식 증가
                 if isinstance(buyer, Household):
+                    # Legacy Sync
                     buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
+                    # Portfolio Update
+                    if hasattr(buyer, "portfolio"):
+                        buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+
                 elif isinstance(buyer, Firm) and buyer.id == firm_id:
                     # 자사주 매입 (Buyback) -> Treasury Shares 증가
                     buyer.treasury_shares += tx.quantity
@@ -1819,26 +1834,16 @@ class Simulation:
         # 2. 사망 가계 청산 (Household Liquidation)
         inactive_households = [h for h in self.households if not h.is_active]
         for household in inactive_households:
-            # Phase 19: Inheritance (via DemographicManager)
-            # Must run BEFORE assets are wiped
-            if hasattr(self, "demographic_manager"):
-                self.demographic_manager.handle_inheritance(household, self)
+            # Phase 22: Inheritance (WO-049)
+            # Replaces Phase 19 DemographicManager logic and standard liquidation
+            if hasattr(self, "inheritance_manager"):
+                self.inheritance_manager.process_death(household, self.government, self)
             
-            # Remaining liquidation logic (if any assets left)
-            if household.assets > 0:
-                inheritance_tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 1.0)
-                tax_amount = household.assets * inheritance_tax_rate
-                self.government.collect_tax(tax_amount, "inheritance_tax", household.id, self.time)
-
-                self.logger.info(
-                    f"HOUSEHOLD_LIQUIDATION | Household {household.id} liquidated. "
-                    f"Tax Collected: {tax_amount:.2f}, Inventory: {sum(household.inventory.values()):.2f}",
-                    extra={"agent_id": household.id, "tags": ["liquidation", "tax"]}
-                )
-                household.assets = 0.0
-
+            # Remaining cleanup (Inventory/Metadata)
             household.inventory.clear()
+            # Shares should be cleared by InheritanceManager, but double check
             household.shares_owned.clear()
+            household.portfolio.holdings.clear()
 
             # [Mitosis] Clear shareholder registry for this household
             if self.stock_market:

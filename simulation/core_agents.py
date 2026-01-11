@@ -16,6 +16,7 @@ from simulation.ai.api import (
 )
 from simulation.core_markets import Market  # Import Market
 from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType
+from simulation.portfolio import Portfolio
 
 # Import HouseholdAI and AIDrivenHouseholdDecisionEngine for mitosis
 from simulation.ai.household_ai import HouseholdAI
@@ -292,6 +293,9 @@ class Household(BaseAgent):
         self.children_ids: List[int] = []         # 자녀 가구 ID 목록
         self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
         self.last_leisure_type: LeisureType = "IDLE"  # For visualization aggregation
+
+        # Phase 22: Portfolio System (Option B: Wrapper)
+        self.portfolio = Portfolio(self.id)
 
 
         self.decision_engine.loan_market = loan_market
