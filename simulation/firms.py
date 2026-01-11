@@ -683,11 +683,32 @@ class Firm(BaseAgent):
                 self.expenses_this_tick += wage
                 self.cost_this_turn += wage
             else:
-                # Cannot afford wage! Fire employee
-                self.logger.warning(f"Firm {self.id} cannot afford wage for Household {employee.id}. Firing.")
-                employee.quit()
-                if employee.id in self.employee_wages:
-                    del self.employee_wages[employee.id]
+                # WO-044-Track-C: Severance Pay & Insolvency Protection
+                # If cannot afford wage, check severance pay (Insolvency Firing)
+                severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
+                severance_pay = wage * severance_weeks
+
+                if self.assets >= severance_pay:
+                    # Can pay severance -> Fire with severance
+                    self.assets -= severance_pay
+                    employee.assets += severance_pay
+
+                    self.logger.info(
+                        f"SEVERANCE | Firm {self.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
+                        extra={**log_extra, "severance_pay": severance_pay}
+                    )
+
+                    employee.quit()
+                    if employee.id in self.employee_wages:
+                        del self.employee_wages[employee.id]
+                else:
+                    # Cannot pay severance -> Zombie Employee (No Fire, No Pay)
+                    self.logger.warning(
+                        f"ZOMBIE | Firm {self.id} cannot afford wage OR severance for Household {employee.id}. Employment retained (unpaid).",
+                        extra={**log_extra, "wage_deficit": wage - self.assets}
+                    )
+                    # Do not fire, do not pay wage.
+                    continue
         
         if total_wages > 0:
             self.logger.info(

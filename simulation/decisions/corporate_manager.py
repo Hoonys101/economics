@@ -433,9 +433,33 @@ class CorporateManager:
                 # No, we just call employee.quit().
                 # We need to pick employees.
                 candidates = firm.employees[:fire_count] # FIFO firing
+
+                # WO-044-Track-C: Strategic Firing Severance Check
+                severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
+
                 for emp in candidates:
-                    emp.quit()
-                    self.logger.info(f"LAYOFF | Firm {firm.id} laid off Household {emp.id}. Excess labor.", extra={"tick": 0, "tags": ["hiring", "layoff"]})
+                    # Estimate wage (Strategic firing happens before update_needs, so check current wage)
+                    wage = firm.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+                    # Correct for skill
+                    skill = getattr(emp, 'labor_skill', 1.0)
+                    wage *= skill
+
+                    severance_pay = wage * severance_weeks
+
+                    if firm.assets >= severance_pay:
+                        firm.assets -= severance_pay
+                        emp.assets += severance_pay
+
+                        emp.quit()
+                        self.logger.info(
+                            f"LAYOFF | Firm {firm.id} laid off Household {emp.id} with Severance {severance_pay:.2f}. Excess labor.",
+                            extra={"tick": 0, "tags": ["hiring", "layoff", "severance"]}
+                        )
+                    else:
+                        self.logger.warning(
+                            f"LAYOFF ABORTED | Firm {firm.id} cannot afford Severance {severance_pay:.2f} for Household {emp.id}. Firing cancelled.",
+                             extra={"tick": 0, "tags": ["hiring", "layoff_aborted"]}
+                        )
 
                 # Firing done. No hiring.
                 return []
