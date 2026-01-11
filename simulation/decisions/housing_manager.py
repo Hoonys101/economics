@@ -71,74 +71,92 @@ class HousingManager:
              )
         return None
 
-    def should_buy(self, property_value: float, rent_price: float, interest_rate: float = 0.05) -> bool:
+    def should_buy(self, property_value: float, rent_price: float, risk_free_rate: float = 0.05) -> bool:
         """
         Determines whether to buy a property based on NPV calculation biased by personality.
-        
+        Compares NPV of Renting (Invested Capital) vs Buying (Equity + Utility).
+
         Args:
             property_value: Asking price of the property.
             rent_price: Current or expected monthly rent.
-            interest_rate: Annual mortgage interest rate (approximate).
+            risk_free_rate: Annual risk-free interest rate (opportunity cost).
 
         Returns:
             True if the agent should buy, False otherwise.
         """
         # 1. Base Economic Parameters
         horizon = 120  # 10 years (120 ticks) horizon for calculation
-        discount_rate = 0.005 # 0.5% per tick discount rate
-        maintenance_rate = self.config.MAINTENANCE_RATE_PER_TICK # 0.1%
-        
+        discount_rate = 0.005  # 0.5% per tick discount rate
+        maintenance_rate = self.config.MAINTENANCE_RATE_PER_TICK  # 0.1%
+
+        # Monthly rates
+        monthly_rfr = risk_free_rate / 12.0
+
+        # Mortgage Parameters (Risk Free + Spread)
+        mortgage_spread = 0.02
+        mortgage_rate_annual = risk_free_rate + mortgage_spread
+        monthly_mortgage_rate = mortgage_rate_annual / 12.0
+
+        ltv = 0.8
+        down_payment = property_value * (1.0 - ltv)
+        loan_principal = property_value * ltv
+
+        # Calculate Monthly Mortgage Payment (30 years = 360 ticks)
+        if monthly_mortgage_rate > 0:
+            mortgage_payment = loan_principal * (monthly_mortgage_rate * (1 + monthly_mortgage_rate) ** 360) / (
+                        (1 + monthly_mortgage_rate) ** 360 - 1)
+        else:
+            mortgage_payment = loan_principal / 360.0
+
         # 2. Personality-Biased Parameters
-        
+
         # Optimism Bias: Optimists over-estimate future appreciation
         # Base appreciation 0.2% per tick. Optimist (1.0) sees 0.4%, Pessimist (0.0) sees 0.0%
         base_appreciation = 0.002
         perceived_appreciation_rate = base_appreciation * (0.5 + self.agent.optimism)
-        
+
         # Ambition Bias: Ambitious agents perceive "Prestige Value" as tangible benefit
         # Ambition 1.0 adds 10% of property value to total utility
-        prestige_bonus = 0.0
+        prestige_total = 0.0
         if hasattr(self.agent, 'ambition'):
-             prestige_bonus = property_value * 0.1 * self.agent.ambition
+            prestige_total = property_value * 0.1 * self.agent.ambition
+        prestige_per_tick = prestige_total / horizon
 
         # 3. NPV Calculation
-        
-        # Cost of Renting (Outflow)
-        rent_npv = 0.0
-        for t in range(horizon):
-            rent_npv += rent_price / ((1 + discount_rate) ** t)
-            
-        # Cost of Buying (Outflow - Inflow)
-        # Outflows: Down Payment, Mortgage Pmt, Maintenance
-        # Inflow: Asset Value at horizon (Appreciated)
-        
-        ltv = 0.8
-        down_payment = property_value * (1 - ltv)
-        loan_principal = property_value * ltv
-        
-        # Mortgage Payment (Simplified Amortization for calc)
-        # Monthly Rate = Interest Rate / 12 (approx, since ticks are months)
-        monthly_rate = interest_rate / 12
-        if monthly_rate > 0:
-            monthly_payment = loan_principal * (monthly_rate * (1 + monthly_rate) ** 360) / ((1 + monthly_rate) ** 360 - 1)
-        else:
-            monthly_payment = loan_principal / 360
-            
-        buy_outflow_npv = down_payment
-        for t in range(horizon):
-            maintenance_cost = property_value * maintenance_rate
-            total_monthly_cost = monthly_payment + maintenance_cost
-            buy_outflow_npv += total_monthly_cost / ((1 + discount_rate) ** t)
-            
+
+        # A. Rent Scenario
+        # Initial: Keep Down Payment (Invested). Not a flow in differential analysis, but we track wealth.
+        # Flows: Interest Income - Rent
+        # Terminal: Principal Recovery
+        npv_rent_flows = 0.0
+        monthly_inv_income = down_payment * monthly_rfr
+
+        for t in range(1, horizon + 1):
+            net_flow = monthly_inv_income - rent_price
+            npv_rent_flows += net_flow / ((1 + discount_rate) ** t)
+
+        # Terminal Value (Recover Principal)
+        npv_rent_terminal = down_payment / ((1 + discount_rate) ** horizon)
+
+        npv_rent = npv_rent_flows + npv_rent_terminal
+
+        # B. Buy Scenario
+        # Initial: Pay Down Payment (Outflow)
+        # Flows: Prestige (Inflow) - Mortgage (Outflow) - Maintenance (Outflow)
+        # Terminal: Future Property Value (Inflow)
+
+        npv_buy_initial = -down_payment
+        maintenance_cost = property_value * maintenance_rate
+
+        npv_buy_flows = 0.0
+        for t in range(1, horizon + 1):
+            net_flow = prestige_per_tick - mortgage_payment - maintenance_cost
+            npv_buy_flows += net_flow / ((1 + discount_rate) ** t)
+
         future_value = property_value * ((1 + perceived_appreciation_rate) ** horizon)
-        future_value_npv = future_value / ((1 + discount_rate) ** horizon)
-        
-        # Net Cost of Buying (Cost - Asset Value - Prestige)
-        # Note: We compare Costs. Lower is better.
-        # So we treat Gain as Negative Cost.
-        
-        net_buy_cost = buy_outflow_npv - future_value_npv - prestige_bonus
-        
+        npv_buy_terminal = future_value / ((1 + discount_rate) ** horizon)
+
+        npv_buy = npv_buy_initial + npv_buy_flows + npv_buy_terminal
+
         # 4. Decision
-        # If Buying is cheaper (or has more utility) than Renting
-        return net_buy_cost < rent_npv
+        return npv_buy > npv_rent
