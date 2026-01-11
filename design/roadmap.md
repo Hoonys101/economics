@@ -63,7 +63,15 @@
     - Owners vote for Tax Cuts & Asset Protection.
     - Simulation of Gerontocracy (Rule of the Old) vs Youth Disenchantment.
 
-### Vision B: Corporate Empires (Corporate AI Adoption) ⭐ **[NEXT PHASE]**
+### Phase 22: The Awakening (Adaptive AI) ⭐ **[NEXT PHASE]**
+- **Goal**: Wake up the Agents (System 2 Activation).
+- **Tasks**:
+    - [x] WO-047: Liquidity Crisis Resolution (Capital Injection & Bidding)
+    - [ ] WO-046: Adaptive Housing (Buy vs Rent Logic)
+    - [ ] WO-048: Education ROI Calculation
+    - [ ] WO-049: The Great Filter (Evolutionary Pruning)
+
+### Vision B: Corporate Empires (Corporate AI Adoption)
 - **Goal**: Upgrade Firms to Active AI Agents.
 - **Scenario**:
     - Firms invest in Automation to combat Labor Scarcity (Phase 20 result).

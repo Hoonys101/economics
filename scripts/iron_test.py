@@ -172,7 +172,7 @@ if __name__ == "__main__":
     overrides["INITIAL_FIRM_INVENTORY_MEAN"] = 5.0 # Low -> force immediate hiring
     overrides["INITIAL_HOUSEHOLD_FOOD_INVENTORY"] = 2.0 # Force Immediate Demand
     overrides["FIRM_MAINTENANCE_FEE"] = 0.0 # No bleed during startup
-    overrides["FIRM_PRODUCTIVITY_FACTOR"] = 0.1 # Very Labor Intensive
+    overrides["FIRM_PRODUCTIVITY_FACTOR"] = 5.0 # WO-047: Balanced Labor Intensity (was 0.1 = extreme)
     overrides["FIRM_MIN_PRODUCTION_TARGET"] = 30.0 # Force Medium Production (Sustainable)
     overrides["HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY"] = 10000.0 # Force labor participation
     overrides["INVENTORY_HOLDING_COST_RATE"] = 0.001 # Reduce bleeding
