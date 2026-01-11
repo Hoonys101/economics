@@ -52,7 +52,7 @@ class CorporateManager:
         # But wait, Capital Channel is _manage_capex. Automation is different form of capital.
         # Let's add specific method.
         # We can use 'capital_aggressiveness' to split between CAPEX (Machines) and Automation.
-        self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time)
+        self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time, context.government)
 
         # 1. R&D Channel (Innovation)
         # System 2 guidance might override action vector?
@@ -135,7 +135,7 @@ class CorporateManager:
 
         return orders
 
-    def _manage_automation(self, firm: Firm, aggressiveness: float, guidance: Dict[str, Any], current_time: int) -> None:
+    def _manage_automation(self, firm: Firm, aggressiveness: float, guidance: Dict[str, Any], current_time: int, government: Optional[Any] = None) -> None:
         """
         Phase 21: Automation Investment.
         """
@@ -182,6 +182,21 @@ class CorporateManager:
 
         # Execute
         firm.assets -= actual_spend
+
+        # WO-044-Track-B: Automation Tax
+        # Logic: actual_spend * AUTOMATION_TAX_RATE
+        automation_tax_rate = getattr(self.config_module, "AUTOMATION_TAX_RATE", 0.05)
+        tax_amount = actual_spend * automation_tax_rate
+
+        if tax_amount > 0 and government:
+            if firm.assets >= tax_amount:
+                firm.assets -= tax_amount
+                government.collect_tax(tax_amount, "automation_tax", firm.id, current_time)
+
+                self.logger.info(
+                    f"AUTOMATION_TAX | Firm {firm.id} paid {tax_amount:.2f} tax on {actual_spend:.2f} investment.",
+                    extra={"agent_id": firm.id, "tick": current_time, "tags": ["tax", "automation"]}
+                )
 
         # Calculate gained automation
         # gained = (spend / cost_per_pct) / 100.0

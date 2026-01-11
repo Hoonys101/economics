@@ -683,3 +683,6 @@ SYSTEM2_DISCOUNT_RATE = 0.98
 FORMULA_TECH_LEVEL = 0.0   # 0.0: No Formula, 1.0: Full Formula
 LACTATION_INTENSITY = 1.0  # Lock Factor (1.0 = Strong Lock)
 HOMEWORK_QUALITY_COEFF = 0.5 # Impact of appliances
+
+# --- Phase 21.5: Automation Tax ---
+AUTOMATION_TAX_RATE = 0.05  # Tax rate applied to automation investment (5%)
