@@ -1,12 +1,13 @@
 # Iron Test Phase 21 Result
 
 ## Summary
-- Ticks: 100
-- Final Population: 37
-- Final GDP: 31.59
-- Avg Labor Share: 110.0%
+- Ticks: 50
+- Final Population: 8
+- Final GDP: 0.00
+- Avg Labor Share: 84.9%
 - Max Unemployment: 0.0%
 - Automation Cost: 1000000000.0
 - Labor Reduction: 0.1
 
-## Verdict: PASS
+## Verdict: FAIL
+**Reason**:  | Population Collapse | Zombie Economy (GDP: 0.0)
