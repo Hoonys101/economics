@@ -202,8 +202,10 @@ class Household(BaseAgent):
 
         # Phase 17-3B: Real Estate Attributes
         self.owned_properties: List[int] = []
+        self.property_purchase_prices: Dict[int, float] = {}  # WO-050: Track Purchase Prices
         self.residing_property_id: Optional[int] = None
         self.is_homeless: bool = True
+        self.temporary_housing_expiry_tick: int = 0  # WO-050: Grace Period Buffer
 
 
         # Initialize price history deques
@@ -775,6 +777,23 @@ class Household(BaseAgent):
                          )
                          orders.append(buy_order)
                          self.logger.info(f"HOUSING_BUY | Household {self.id} decided to buy {target_unit_id} at {best_price}")
+
+        # WO-050: System 2 Selling Logic (Distress / Profit Taking)
+        if self.housing_planner:
+            decision_signal = self.housing_planner.decide_selling(self, market_data, current_time)
+            if decision_signal:
+                action, unit_id, target_price = decision_signal
+                if action == "SELL":
+                    sell_order = Order(
+                        agent_id=self.id,
+                        item_id=f"unit_{unit_id}" if not str(unit_id).startswith("unit_") else unit_id,
+                        price=target_price,
+                        quantity=1.0,
+                        market_id="housing",
+                        order_type="SELL"
+                    )
+                    orders.append(sell_order)
+                    self.logger.info(f"HOUSING_SELL | Household {self.id} generated SELL order for unit_{unit_id} at {target_price:.2f}")
 
         # --- Phase 6: Targeted Order Refinement ---
         # The AI decides "What to buy", the Household Logic decides "From Whom".
