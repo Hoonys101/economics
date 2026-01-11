@@ -3,17 +3,26 @@
 다음 세션의 명확한 출발점이자 현황판입니다.
 
 ## 1. 🔍 현재 상태 (Where We Are)
-*   **최근 완료**: `Phase 17.5 Leviathan` 병합 완료.
-    *   **정부 AI**: 지지율을 방어하기 위해 재정(복지/보조금) 정책을 학습함.
-    *   **정치 메커니즘**: 지지율 40% 미만 시 정당 교체(`BLUE` <-> `RED`) 및 정책 기조 급변.
-    *   **검증**: `verify_leviathan.py`를 통해 지연된 여론 피드백 루프 확인.
+*  - **완료된 단계(Recent)**:
+    - `Phase 17.1-5: Market Diversity & Leviathan` ✅
+    - `Phase 19: Population Dynamics` ✅
+    - `Phase 20: The Matrix & Real Estate` ✅
+    - `Phase 21: Corporate Empires` ✅
+- **현재 단계:** `Phase 22: The Awakening (Adaptive AI)` 🏗️
+    - Step 1: Housing (WO-046) ✅
+    - Step 2: Inheritance (WO-049) 🏗️
+- **다음 단계:** `Step 3: Breeding (WO-048)`
 
 ## 2. 🏗️ 진행 중인 작업 (What's Ongoing)
-*   **미션**: **`Phase 19: Population Dynamics` (진화적 재생산)**.
-*   **설계 완료**: `phase19_population_dynamics_spec.md` 및 Jules 지시서 작성 완료.
-*   **핵심 도전**:
-    *   에이전트들이 "기대수익 불일치"와 "시간 빈곤"으로 인해 **스스로 출산을 포기**하는 시나리오 재현.
-    *   `DemographicManager`를 통한 세대 교체 체계 구축.
+*   **Goal**: "Zero Leak" 상속 시스템.
+*   **Key Logic**:
+    *   강제 청산(Forced Liquidation): 상속세 납부 재원 부족 시 부동산/주식 매각.
+    *   Portfolio Merge: 주식을 덮어쓰지 않고 합산.
+
+## 3. 🎯 다음 세션 목표 (Immediate Goals)
+1.  **Jules 구현물 수령**: WO-049 상속 매니저 구현 확인.
+2.  **Iron Test 검증**: "부모 사망 후 자녀의 현금/부동산이 정확히 증가했는가?" 검증.
+3.  **Step 3 준비**: WO-048 (Adaptive Breeding) 설계 착수.
 
 ## 3. 🎯 다음 세션 목표 (Immediate Goals)
 1.  **Jules 구현물 수령**: `phase-19-population` 브랜치의 구현 확인.

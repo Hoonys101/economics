@@ -9,12 +9,15 @@
 ## 1. 현재 개발 단계
 
 - **완료된 단계(Recent)**:
-    - `Phase 17.1-5: Market Diversity & Leviathan` ✅
-    - `Phase 19: Population Dynamics` ✅ (Rat Race Emergence)
-    - `Phase 20: The Matrix & Real Estate` ✅ (System 2, Socio-Tech, Immigration)
-    - `Phase 20.5: The Simulation Cockpit` ✅ (Dashboard, God Mode, Analytics)
-- **현재 단계:** `Phase 21: Corporate Empires` 🏗️
-- **다음 단계:** `Firm System 2 + Automation + M&A`
+    - `Phase 19: Population Dynamics` ✅
+    - `Phase 20: The Matrix & Real Estate` ✅
+    - `Phase 21: Corporate Empires` ✅
+- **현재 단계:** `Phase 22: The Awakening (Adaptive AI)` 🏗️
+    - Step 1: Housing (WO-046) ✅
+    - Step 2: Inheritance (WO-049) ✅
+    - Step 3: Selling (WO-050) 🏗️
+- **다음 단계:** `Step 4: Breeding (WO-048)`
+
 
 ---
 
