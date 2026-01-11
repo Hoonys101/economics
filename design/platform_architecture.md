@@ -31,6 +31,10 @@
 - **구조**: Multi-Channel Aggressiveness Vector 방식.
 - **학습**: Q-Table 기반 강화학습. `AITrainingManager`를 통해 주기적으로 우수 에이전트의 전략을 복제/변이(Evolutionary Learning)합니다.
 
+### 2.5. Optimization Layer (WO-051)
+- **VectorizedHouseholdPlanner**: `numpy`를 활용한 벡터화된 의사결정 엔진.
+- **ETL Pattern**: Agent Data Extract -> Matrix Computation -> Result Inject 패턴을 사용하여 대규모 에이전트의 반복 연산(예: 출산 결정)을 가속화합니다.
+
 ### 2.4. Data Persistence (`simulation/db/`)
 - **SQLite**: 시뮬레이션의 모든 상태(거래, 에이전트 상태, 지표)를 저장합니다.
 - **Repository Pattern**: `SimulationRepository`를 통해 DB 접근을 추상화했습니다.

@@ -17,7 +17,9 @@
     - Step 1: Housing Brain (WO-046) ✅
     - Step 2: Inheritance (WO-049) ✅
     - Step 3: Selling & Liquidity (WO-050) ✅
-- **다음 단계:** `Step 4: Breeding (WO-048)`
+    - Step 4: Breeding (WO-048) ✅ (Adaptive NPV + Solvency Check)
+- **다음 단계:** `Step 5: Engine Vectorization (WO-051)` 🚀
+
 
 ---
 
