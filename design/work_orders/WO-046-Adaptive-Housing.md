@@ -1,59 +1,57 @@
-# Work Order: WO-046 Adaptive Housing Brain
+# Work Order: WO-046 Adaptive Housing Brain [Engineering Spec]
 
-## Context
-Phase 22 requires Households to exhibit "System 2" thinking in the property market. Currently, agents blindly buy houses if they have 20% down payment. We need to introduce an NPV-based decision model that considers **Opportunity Cost**.
+> [!IMPORTANT]
+> **Spec-First Directive**: All formulas and logic are defined here. Implement EXACTLY as specified. Do not invent new logic.
 
-## Objective
-Update `HousingManager.should_buy` to compare:
-1.  **Buy Option**: Buying the house and paying a mortgage.
-2.  **Rent Option**: Renting the house and **investing the down payment** elsewhere.
+## 1. Core Logic: When to Decide? (Trigger Conditions)
+We optimize performance by restricting *when* the System 2 logic runs.
 
-## Instructions (Jules)
+**Implement in `Household.decide_housing()`:**
+- **homeless**: Calculate every tick (Priority).
+- **tenant**: Calculate only if `contract_remaining < 30` (Expiration imminent).
+- **wealth_shock**: Calculate if `cash > memory['last_check_cash'] * 1.2` (Rich enough to reconsider).
 
-### 1. File Modification
-Target: `simulation/decisions/housing_manager.py`
+## 2. Decision Logic (NPV Formula)
 
-### 1. File Modification
-Target: `simulation/decisions/housing_manager.py`
+**Class: `HousingManager`**
+**Method: `should_buy(property_price, rent_price, market_data)`**
 
-#### Modify `should_buy` Method
-- **Signature Update**: Ensure it accepts or accesses `risk_free_rate` (default 0.05).
-- **Revised Logic (Cash Flow & Terminal Value Approach)**:
-  Compare the **Net Present Value (NPV)** of total wealth change over the horizon.
+### A. Buy Valuation (`NPV_Buy`)
+$$ NPV_{Buy} = \sum_{t=1}^{T} \frac{U_{shelter} - Cost_{own}}{(1+r)^t} + \frac{P_{future}}{(1+r)^T} - P_{initial} $$
 
-  - **A. Rent Scenario**:
-    - **Initial**: Keep `Down Payment` as Cash (Invested).
-    - **Flows (t=1..120)**:
-      - Inflow: `Down Payment * (risk_free_rate / 12)` (Monthly Investment Income).
-      - Outflow: `Rent Price`.
-    - **Terminal (t=120)**:
-      - Inflow: `Down Payment` (Principal Recovery).
-    - **NPV_Rent** = `Sum( (InvIncome - Rent) / (1+r)^t )` + `(DownPayment / (1+r)^120)`
+- **$P_{initial}$**: `property_price` (Asking Price).
+- **$U_{shelter}$**: `rent_price` (Avoiding rent is the utility).
+- **$Cost_{own}$**: `MortgagePayment` + `Maintenance` (0.1% of price/tick).
+- **$P_{future}$**: `property_price * (1 + min(trend, 0.05/12))^T`.
+  - **Constraint**: `trend` is capped at 5% annual (`MAX_EXPECTATION`) to prevent FOMO.
+- **$r$**: `risk_free_rate` / 12 (Monthly Discount Rate).
+- **$T$**: 120 ticks (10 years).
 
-  - **B. Buy Scenario**:
-    - **Initial**: Pay `Down Payment` (Outflow).
-    - **Flows (t=1..120)**:
-      - Outflow: `Mortgage Payment` + `Maintenance`.
-      - (Note: Do NOT add "Imputed Rent/Utility" as a monetary inflow here. The benefit of owning is simply *not paying rent*.)
-      - Inflow: `Prestige Bonus` (subjective utility, add as stream or lump sum. Recommendation: Add 1/120 of bonus per tick to represent ongoing satisfaction).
-    - **Terminal (t=120)**:
-      - Inflow: `Future Property Value` (Price * (1 + appreciation)^120).
-    - **NPV_Buy** = `-DownPayment` + `Sum( (Prestige - Mortgage - Maint) / (1+r)^t )` + `(FutureValue / (1+r)^120)`
+### B. Rent Valuation (`NPV_Rent`)
+$$ NPV_{Rent} = \sum_{t=1}^{T} \frac{Income_{invest} - Cost_{rent}}{(1+r)^t} + \frac{Principal}{(1+r)^T} $$
 
-  - **Decision**: Return `True` if `NPV_Buy > NPV_Rent`.
+- **$Principal$**: `Down Payment` amount (Assumed 20% of `property_price` that *would* have been spent).
+- **$Income_{invest}$**: `Principal * r` (Monthly Risk-free return).
+- **$Cost_{rent}$**: `rent_price`.
 
-### 2. Constraints & Clarifications
-- **Horizon**: 120 ticks (10 years).
-- **Discount Rate**: 0.005 (0.5% per tick).
-- **Interest Rate Conversion**: Use **Simple Division** (Annual / 12) for monthly approximation.
-- **Prestige Bonus**: treat as a subjective **Inflow** in the Buy Scenario.
-- **Principal Recovery**: MUST be included in the Rent Scenario (Terminal Value).
+### C. Final Decision
+```python
+if dti_ratio > 0.4: return False  # Safety Guardrail (Debt-to-Income)
+return NPV_Buy > NPV_Rent
+```
 
-### 3. Verification
-Create a new test file: `tests/test_housing_decision.py`.
-- **Test Case A (High Interest)**: Interest Rate 15%. Logic should prefer **RENTER** (high opportunity cost of down payment).
-- **Test Case B (Low Interest)**: Interest Rate 1%. Logic should prefer **BUYER** (cheap leverage).
+## 3. Implementation Details
 
-## Definition of Done
-- `HousingManager.should_buy` implements the new comparison logic.
-- Unit tests pass and demonstrate sensitivity to interest rates.
+### Required Helper Methods
+- `_calculate_mortgage_payment(principal, rate, years=30)`: Standard amortization formula.
+- `_get_price_trend(market_data)`: Extract rolling average price change.
+
+### Logic Placement
+- **Location**: `simulation/decisions/housing_manager.py`
+- Modify `should_buy` to implement the formulae above STRICTLY.
+
+## 4. Verification (Unit Test)
+- **File**: `tests/test_housing_spec.py`
+- **Case 1 (Bubble)**: High Trend (>10%) -> Capped at 5% -> Check Decision.
+- **Case 2 (High Rate)**: Interest Rate 15% -> Rent Limit (High Opportunity Cost).
+- **Case 3 (DTI Fail)**: `NPV_Buy` is high, but Income is low -> Return False.
