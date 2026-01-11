@@ -11,6 +11,9 @@ AUTOMATION_LABOR_REDUCTION = 0.1  # Max 50% reduction in labor alpha
 AUTOMATION_COST_PER_PCT = 10000.0  # Base cost to increase automation by 1% (scaled by assets)
 HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD = 0.7  # Target if Market Cap < 70% of Intrinsic Value
 
+# --- Phase 21.5: Stabilization (WO-044) ---
+SEVERANCE_PAY_WEEKS = 4  # 해고 시 4주치 임금 지급
+
 # --- Phase 20: The Matrix v1 ---
 SYSTEM2_TICKS_PER_CALC = 10
 SYSTEM2_HORIZON = 100

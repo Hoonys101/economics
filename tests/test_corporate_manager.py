@@ -35,6 +35,14 @@ def firm_mock():
     firm.last_prices = {"food": 10.0}
     firm.employees = []
     firm.personality = Personality.BALANCED
+    firm.system2_planner = None # Add system2_planner attribute
+    firm.last_revenue = 200.0 # Add last_revenue for system2_planner
+    firm.expenses_this_tick = 50.0
+    firm.retained_earnings = 1000.0
+    firm.profit_history = []
+    firm.employee_wages = {} # Add employee_wages
+    firm.consecutive_loss_ticks_for_bankruptcy_threshold = 5
+    firm.automation_level = 0.0 # Add automation_level
     return firm
 
 @pytest.fixture
