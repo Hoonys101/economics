@@ -84,6 +84,16 @@
 > **Goal**: 모든 하드코딩된 규칙 기반 로직을 학습 기반 또는 적응형 시스템으로 전환
 > **Rationale**: 본 프로젝트의 핵심 철학 - 에이전트는 "프로그래밍된 대로" 행동하는 것이 아니라 "경험에서 학습"해야 함
 
+### ⚠️ Architect Prime Diagnosis: The Asymmetry of Intelligence
+> **현재 경제 붕괴 원인:** 지능의 비대칭 (Asymmetry)
+
+| Agent | Intelligence Level | 결과 |
+|---|---|---|
+| **Corporate (Capital)** | System 2 (AI/Optimization) ✅ | 노동 비용 0으로 최적화 |
+| **Government/Labor** | Rule-Based (Fixed) ❌ | AI 기업 통제 불가 |
+
+→ **"똑똑한 악당(기업)"과 "멍청한 경찰(정부)"의 싸움** = 디스토피아 필연
+
 ### 현재 Rule-Based 부채 (Technical Debt)
 | Component | 현재 상태 | 목표 상태 |
 |---|---|---|
@@ -94,10 +104,25 @@
 | `DemographicManager` | 조건부 출산 로직 | 적응형 r/K 전략 |
 | `Government.calculate_*` | 고정 세율 공식 | 정책 최적화 RL |
 
-### Migration Strategy
-1. **Phase A**: 규칙을 "Default Policy"로 유지하면서 학습 레이어 추가
-2. **Phase B**: 학습된 정책이 규칙을 점진적으로 대체
-3. **Phase C**: 규칙 완전 제거 (Pure AI)
+### Migration Strategy (3-Phase)
+```
+Phase A (Current): Rule-Based 가드레일로 AI 폭주 통제
+                   └─ LABOR_ELASTICITY_MIN, AUTOMATION_TAX 등 하드 제약
+Phase B (Next):    학습된 정책이 규칙을 점진적 대체
+                   └─ RL Government가 세율/규제를 동적 조정
+Phase C (Target):  규칙 완전 제거 (Pure AI Ecosystem)
+                   └─ 모든 에이전트가 학습 기반
+```
+
+### Phase A 가드레일 (WO-043/044)
+| Guardrail | 기능 | 파라미터 |
+|---|---|---|
+| **노동 분배율 하한** | AI가 α < X% 만들지 못함 | `LABOR_ELASTICITY_MIN = 0.3` |
+| **자동화세** | 자동화 비용 기하급수 증가 | `AUTOMATION_TAX_RATE` |
+| **해고 비용** | 대량 해고 시 퇴직금 강제 | `SEVERANCE_PAY_WEEKS` |
+| **최저 임금 연동** | 생산성 상승 시 임금도 상승 | `MIN_WAGE_PRODUCTIVITY_LINK` |
+
+
 
 - [ ] 21. **Config Refactoring Pass 2**: 런타임 조정 시스템 (CLI/API 연동)
 
