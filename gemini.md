@@ -67,6 +67,47 @@
 
 ---
 
+## W-3.5 Architecture Hygiene (Post-PR SoC Review)
+
+Jules의 PR을 머지한 후, 코드가 "동작은 하지만 구조적으로 비대하거나 SoC 위반이 의심될 때" 실행하는 리팩토링 프로세스입니다.
+
+### Trigger
+- 머지된 코드가 단일 파일/클래스에 과도한 책임을 부여함
+- 중복 로직 또는 순환 의존성 발견
+- 모듈 간 결합도가 과도하게 높아짐
+
+### Procedure
+
+1.  **Antigravity (Team Leader)** 가 머지된 코드의 SoC 위반 여부를 평가.
+2.  리팩토링이 필요하면, **`[Refactor Request]`** 형식의 새로운 지침서를 작성:
+    - 분리할 클래스/함수의 **새 시그니처(API)**
+    - 이동할 로직의 **책임 경계(DTO/Interface)**
+    - 테스트 전략 (기존 테스트가 통과해야 함)
+3.  이 지침서를 **프롬프트로 Jules에게 전달** (파일 Push 후 참조 링크 제공).
+4.  Jules가 리팩토링 완료 후 **W-3 리뷰 재진행**.
+
+### Refactor Request Template
+
+```markdown
+# [Refactor Request] <대상 모듈/파일명>
+
+## 1. 분리 대상 (What to Extract)
+- `ClassA.method_x()` → 새 클래스 `ServiceX`로 이동
+
+## 2. 새 API 시그니처 (New Signature)
+- class ServiceX:
+    def execute(self, dto: InputDTO) -> OutputDTO
+
+## 3. 테스트 요구사항
+- 기존 테스트 `test_class_a.py` 통과 필수
+- 새 테스트 `test_service_x.py` 추가
+
+## 4. 참조 파일
+- [원본 파일](file:///path/to/original.py)
+- [관련 DTO](file:///path/to/dtos.py)
+```
+
+
 ## 6. 기획 → 실행 계획 변환 프로세스 (Planning to Execution Process)
 
 수석 아키텍트(Architect Prime)의 기획을 받아 실행 가능한 Work Order로 변환하는 표준 프로세스입니다.
