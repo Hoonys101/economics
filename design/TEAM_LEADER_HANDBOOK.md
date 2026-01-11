@@ -115,3 +115,34 @@ Level 0: 핵심 원칙 (Always Load)
 1. **Initial Command**: 작업 지시서(Work Order)나 코드 변경 사항은 **초기 명령 시점에 확정**됩니다.
 2. **No Resubmission**: 명령 하달 후 문서를 수정하여 다시 푸시(Push)하는 행위는 금지됩니다. (Jules 관점에서 타임라인 꼬임 방지)
 3. **Correction via Prompt**: 수정 사항이 발생하면 문서를 고치지 말고, 반드시 **프롬프트(채팅)를 통해 수정 지침을 직접 전달**해야 합니다.
+
+---
+
+## 🛠️ Jules PR 처리 루틴 (Standard PR Routine)
+
+**Remote PR을 로컬로 가져와 검토, 병합, 배포, 정리하는 표준 절차입니다.**
+
+1.  **Fetch & Checkout (가져오기)**
+    ```bash
+    git fetch origin <remote_branch_name>:<local_temp_branch>
+    git checkout <local_temp_branch>
+    ```
+    *   *검토(Review) 수행: 코드 확인, 테스트 실행.*
+
+2.  **Merge (병합)**
+    ```bash
+    git checkout main
+    git merge <local_temp_branch> --no-edit
+    ```
+    *   *충돌 발생 시 해결 후 커밋.*
+
+3.  **Push (배포)**
+    ```bash
+    git push origin main
+    ```
+
+4.  **Clean Up (정리)**
+    ```bash
+    git branch -d <local_temp_branch>
+    ```
+
