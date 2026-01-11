@@ -695,8 +695,19 @@ LACTATION_INTENSITY = 1.0  # Lock Factor (1.0 = Strong Lock)
 HOMEWORK_QUALITY_COEFF = 0.5 # Impact of appliances
 
 # --- Phase 21.5: Automation Tax ---
-AUTOMATION_TAX_RATE = 0.05  # Tax rate applied to automation investment (5%)
-HOUSING_EXPECTATION_CAP = 0.05
+# --- WO-048: Adaptive Breeding Parameters ---
+TECH_CONTRACEPTION_ENABLED = True   # True: System 2 (NPV), False: System 1 (Random)
+BIOLOGICAL_FERTILITY_RATE = 0.15    # 피임 없을 때의 월간 임신 확률
+
+# Cost Factors
+CHILD_MONTHLY_COST = 500.0          # 직접 양육비 (식비+교육비)
+OPPORTUNITY_COST_FACTOR = 0.3       # 육아로 인한 임금 감소율 (30%로 하향 조정 - Middle Income Trap 완화)
+RAISING_YEARS = 20                  # 양육 기간 (성인까지)
+
+# Benefit Factors
+CHILD_EMOTIONAL_VALUE_BASE = 500000.0 # 자녀 1명당 느끼는 정서적 가치의 총량 (500k로 상향 - Middle Income Trap 완화)
+OLD_AGE_SUPPORT_RATE = 0.1          # 자녀 소득의 10%를 노후 용돈으로 받음
+SUPPORT_YEARS = 20                  # 은퇴 후 부양받는 기간
 
 # --- WO-048: Adaptive Breeding Parameters ---
 TECH_CONTRACEPTION_ENABLED = True   # True: System 2 (NPV), False: System 1 (Random)
