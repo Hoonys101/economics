@@ -127,3 +127,31 @@ class HouseholdSystem2Planner:
         )
 
         return decision
+
+    def decide_selling(self, market_data: Dict[str, Any], current_time: int) -> Optional[str]:
+        """
+        WO-050: Determines if the agent should sell their property.
+        Returns "SELL_DISTRESS", "SELL_PROFIT", or None.
+        """
+        # 1. Check if agent owns properties
+        owned_properties = getattr(self.agent, 'owned_properties', [])
+        if not owned_properties:
+            return None
+
+        # 2. Calculate Distress Threshold
+        goods_market = market_data.get("goods_market", {})
+        # Note: 'basic_food_avg_traded_price' is more stable than 'current_sell_price'
+        food_price = goods_market.get("basic_food_avg_traded_price", 5.0)
+        daily_food_consumption = getattr(self.config, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 2.0)
+        monthly_survival_cost = daily_food_consumption * food_price * 30.0
+        distress_threshold = monthly_survival_cost * 1.5
+
+        # 3. Distress Check
+        if self.agent.assets < distress_threshold:
+            logger.info(f"DISTRESS_SELL | Agent {self.agent.id} triggered distress sale.")
+            return "SELL_DISTRESS"
+
+        # 4. Profit Check (Placeholder)
+        # if market_price > last_purchase_price * 1.2: return "SELL_PROFIT"
+
+        return None

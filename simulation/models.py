@@ -65,3 +65,4 @@ class RealEstateUnit:
     estimated_value: float = 10000.0
     rent_price: float = 100.0
     mortgage_id: Optional[int] = None
+    last_purchase_price: float = 0.0

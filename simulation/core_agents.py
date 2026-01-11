@@ -209,6 +209,7 @@ class Household(BaseAgent):
         self.owned_properties: List[int] = []
         self.residing_property_id: Optional[int] = None
         self.is_homeless: bool = True
+        self.housing_grace_period: int = 0
 
 
         # Initialize price history deques
@@ -495,6 +496,16 @@ class Household(BaseAgent):
         Executes System 2 Housing Logic.
         Triggered periodically or on critical events (e.g. homelessness).
         """
+        # WO-050: Option A - Run Sell Check First (Always)
+        sell_decision = self.housing_planner.decide_selling(market_data, current_time)
+        if sell_decision:
+             self.housing_target_mode = "SELL"
+             self.logger.info(
+                 f"HOUSING_DECISION_CHANGE | Household {self.id} switched to SELL mode ({sell_decision})",
+                 extra={"tick": current_time, "agent_id": self.id}
+             )
+             return  # Skip Buy/Rent logic if selling
+
         # Trigger Condition: Homeless or Monthly Review (e.g., every 30 ticks)
         if not (self.is_homeless or current_time % 30 == 0):
             return

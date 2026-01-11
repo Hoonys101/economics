@@ -98,6 +98,7 @@ class HousingSystem:
     def apply_homeless_penalty(self, simulation: "Simulation"):
         """
         Applies survival penalties to homeless agents.
+        Phase 22.5: Supports Grace Period.
         """
         for hh in simulation.households:
             if hh.is_active:
@@ -107,6 +108,15 @@ class HousingSystem:
                     hh.is_homeless = False
 
                 if hh.is_homeless:
+                    # WO-050: Check Grace Period
+                    if getattr(hh, "housing_grace_period", 0) > 0:
+                        hh.housing_grace_period -= 1
+                        logger.debug(
+                            f"HOMELESS_GRACE | Household {hh.id} penalty skipped. Remaining: {hh.housing_grace_period}",
+                            extra={"agent_id": hh.id}
+                        )
+                        continue
+
                     hh.needs["survival"] += self.config.HOMELESS_PENALTY_PER_TICK
                     logger.debug(
                         f"HOMELESS_PENALTY | Household {hh.id} survival need increased.",
@@ -159,11 +169,21 @@ class HousingSystem:
                 
             # 2. Transfer Title
             unit.owner_id = buyer.id
+            unit.last_purchase_price = tx.price
             
             # 3. Update Agent Property Lists
             if hasattr(seller, "owned_properties"):
                 if unit.id in seller.owned_properties:
                     seller.owned_properties.remove(unit.id)
+
+                # WO-050: Handle Seller Residency & Grace Period
+                if getattr(seller, "residing_property_id", None) == unit.id:
+                    seller.residing_property_id = None
+                    seller.housing_grace_period = 2
+                    logger.info(
+                        f"SELLER_MOVE_OUT | Seller {seller.id} moved out of Unit {unit.id}. Grace Period Active.",
+                        extra={"agent_id": seller.id}
+                    )
             
             if hasattr(buyer, "owned_properties"):
                 if unit.id not in buyer.owned_properties:

@@ -403,7 +403,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                      if should_buy:
                          # Place BUY Order
                          buy_order = Order(
-                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "real_estate"
+                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
                          )
                          orders.append(buy_order)
 
