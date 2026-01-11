@@ -473,6 +473,9 @@ class CorporateManager:
         offer_wage = market_wage * (1.0 + adjustment)
         offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
 
+        # WO-047-B: Competitive Bidding Adjustment
+        offer_wage = self._adjust_wage_for_vacancies(firm, offer_wage, needed_labor)
+
         # Calculate how many to hire
         to_hire = needed_labor - current_employees
         if to_hire > 0:
@@ -482,3 +485,56 @@ class CorporateManager:
                  )
 
         return orders
+
+    def _get_total_liabilities(self, firm: Firm) -> float:
+        """Helper to get total liabilities from Bank logic (WO-047-B)."""
+        try:
+            loan_market = getattr(firm.decision_engine, 'loan_market', None)
+            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
+                debt_summary = loan_market.bank.get_debt_summary(firm.id)
+                return debt_summary.get('total_principal', 0.0)
+        except Exception:
+            pass
+        return 0.0
+
+    def _adjust_wage_for_vacancies(self, firm: Firm, base_offer_wage: float, needed_labor: int) -> float:
+        """
+        WO-047-B: Competitive Bidding Logic.
+        If firm has vacancies and is solvent, bid up the wage.
+        """
+        current_employees = len(firm.employees)
+        vacancies = max(0, needed_labor - current_employees)
+        
+        if vacancies <= 0:
+            return base_offer_wage
+
+        # 1. 1.5x Solvency Check (Guardrail)
+        total_liabilities = self._get_total_liabilities(firm)
+        if total_liabilities > 0:
+            solvency_ratio = firm.assets / total_liabilities
+            if solvency_ratio < 1.5:
+                # Insolvent or risky: Cannot afford bidding war
+                return base_offer_wage
+        
+        # 2. Wage Bill Cap Check (Fallback for 0 liabilities)
+        # Check if we have enough cash runway (e.g., 2 ticks)
+        # Using current wage bill as proxy
+        wage_bill = sum(firm.employee_wages.values()) if firm.employee_wages else 0.0
+        if wage_bill > 0 and firm.assets < wage_bill * 2: 
+             return base_offer_wage
+
+        # 3. Calculate Increase
+        # Increase by 1% per vacancy, max 5%
+        increase_rate = min(0.05, 0.01 * vacancies)
+        new_wage = base_offer_wage * (1.0 + increase_rate)
+
+        # 4. Absolute Ceiling Check (Safety Net)
+        # Ensures firm doesn't commit to a wage causing immediate insolvency next tick
+        # Logic: Assets should cover (Current Employees + New Hires + 1) * New Wage
+        # This is a bit conservative but safe.
+        max_affordable = firm.assets / (current_employees + vacancies + 1)
+        if new_wage > max_affordable:
+            new_wage = max(base_offer_wage, max_affordable)
+
+        # Ensure we don't accidentally lower it below base
+        return max(base_offer_wage, new_wage)
