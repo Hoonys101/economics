@@ -67,8 +67,10 @@
 - **Goal**: Wake up the Agents (System 2 Activation).
 - **Tasks**:
     - [x] WO-047: Liquidity Crisis Resolution (Capital Injection & Bidding)
+    - [x] WO-048: Adaptive Breeding (System 2 NPV Mode)
+    - [x] WO-051: Engine Vectorization (NPV Matrix Optimization)
     - [ ] WO-046: Adaptive Housing (Buy vs Rent Logic)
-    - [ ] WO-048: Education ROI Calculation
+    - [ ] WO-052: The Dynasty Report (Social Mobility Analysis)
     - [ ] WO-049: The Great Filter (Evolutionary Pruning)
 
 ### Vision B: Corporate Empires (Corporate AI Adoption)

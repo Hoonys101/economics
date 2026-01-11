@@ -19,8 +19,9 @@
     - Step 3: Selling & Liquidity (WO-050) ✅
     - Step 4: Breeding (WO-048) ✅ (Adaptive NPV + Solvency Check)
     - Step 5: Engine Vectorization (WO-051) ✅ (NumPy Batch Processing)
-    - Step 6: Maintenance (WO-052) 🔧 (Inheritance Leak & Observer Fix)
-- **다음 단계:** `Social Mobility Analysis` (Gini, Class Mobility)
+    - Step 6: Maintenance (M-052a) ✅ (Inheritance Leak & Observer Fix)
+    - Step 7: Social Mobility Analysis (WO-052) 🔍 (The Dynasty Report)
+- **다음 단계:** `Social Mobility Analysis` (IGE Analysis)
 
 
 ---
@@ -98,6 +99,13 @@
 |---|---|---|
 | Double-Process Cognition | 🏗️ | System 1 (Fast) / System 2 (Slow) |
 | Gender/Tech Dynamics | 🏗️ | Lactation, Home Quality Score |
+
+### WO-052: The Dynasty Report (Social Mobility) 🔍
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| MobilityTracker | 🏗️ | Parent/Child wealth tracking |
+| Log-Log Regression | 🏗️ | IGE ($\beta$) calculation |
+| 1,000 Ticks Run | 🏗️ | Long-term simulation |
 
 ---
 
