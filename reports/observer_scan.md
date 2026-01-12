@@ -1,21 +1,21 @@
 # 🕵️ Observer Scan Report
-**Date:** 2026-01-11 22:47:49
-**Total Files:** 387
-**Total Lines:** 50341
+**Date:** 2026-01-12 21:18:04
+**Total Files:** 409
+**Total Lines:** 52683
 
 ## 1. 🏗️ Complexity Watchlist (Top 10 Big Files)
 | File | Lines | Status |
 |---|---|---|
-| `simulation/engine.py` | 1309 | 🔴 Critical |
-| `simulation/core_agents.py` | 1017 | 🔴 Critical |
-| `simulation/firms.py` | 919 | 🔴 Critical |
+| `simulation/engine.py` | 1156 | 🔴 Critical |
+| `simulation/core_agents.py` | 1046 | 🔴 Critical |
+| `simulation/firms.py` | 781 | 🟡 Warning |
 | `simulation/db/repository.py` | 745 | 🟡 Warning |
-| `config.py` | 712 | 🟡 Warning |
+| `config.py` | 731 | 🟡 Warning |
 | `tests/test_engine.py` | 702 | 🟡 Warning |
 | `simulation/decisions/ai_driven_household_engine.py` | 657 | 🟡 Warning |
 | `app.py` | 617 | 🟡 Warning |
 | `tests/test_firm_decision_engine_new.py` | 602 | 🟡 Warning |
-| `simulation/decisions/corporate_manager.py` | 540 | 🟡 Warning |
+| `simulation/agents/government.py` | 585 | 🟡 Warning |
 
 ## 2. 🏷️ Tech Debt Tags
 | Tag | Count | Description |
