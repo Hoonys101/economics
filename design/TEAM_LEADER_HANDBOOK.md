@@ -191,9 +191,11 @@ Level 0: 핵심 원칙 (Always Load)
 
 **"구현 시 질문이 나온다면 그것은 팀장의 설계 결함이다."**
 
-### 1. Accuracy of Instructions
-- **Bad**: "~할 준비를 하십시오." (모호함 유발)
-- **Good**: "`X` 함수를 `Y` 로직으로 구현하고, `Z` 파일에 적용하십시오." (동작 확정)
+### 1. Accuracy of Instructions (절대 경로 및 확정적 동작)
+- **Absolute Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **절대 경로(Absolute Path)**로 제공해야 합니다. 저장소를 뒤지게 만들거나 추측하게 하는 행위는 팀장의 직무 유기입니다.
+    - **Bad**: "저장소의 `DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오."
+    - **Good**: "`c:\coding\economics\design\work_orders\DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오."
+- **Good Behavior**: "`X` 함수를 `Y` 로직으로 구현하고, `Z` 파일에 적용하십시오." (동작 확정)
 
 ### 2. Technical Definitions
 - 추상적인 경제 용어는 반드시 **코드 레벨의 정의(Logic Map)**를 포함해야 합니다.
