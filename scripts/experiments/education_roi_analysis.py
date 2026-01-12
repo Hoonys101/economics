@@ -1,12 +1,16 @@
 
 import logging
 import sys
+import os
+
+# Add project root to sys.path before importing local modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import numpy as np
 import pandas as pd
 from typing import List, Dict, Any
 import random
 import config
-import os
 import logging.config
 
 # Configure logger
@@ -201,7 +205,7 @@ Simulation confirms the **"Pareto-Iron Law"**:
 
     report_path = "reports/dynasty_report_v2.md"
     os.makedirs("reports", exist_ok=True)
-    with open(report_path, "w") as f:
+    with open(report_path, "w", encoding="utf-8") as f:
         f.write(report_content)
 
     logger.info(f"Report generated at {report_path}")

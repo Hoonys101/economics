@@ -251,9 +251,20 @@ class Household(BaseAgent):
         ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
         self.housing_price_history = deque(maxlen=ticks_per_year)
 
-        # Education Level (0~5) based on Distribution (Phase 19)
-        dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
-        self.education_level: int = random.choices(range(len(dist)), weights=dist)[0]
+        # Education Level (0~5)
+        # WO-Sociologist: The Social Ladder (Asset-based Determination)
+        wealth_thresholds = getattr(config_module, "EDUCATION_WEALTH_THRESHOLDS", None)
+        if wealth_thresholds:
+            # Deterministic, Wealth-Gated Education
+            level = 0
+            for lvl, threshold in sorted(wealth_thresholds.items()):
+                if initial_assets >= threshold:
+                    level = max(level, lvl)
+            self.education_level = level
+        else:
+            # Legacy: Random Distribution
+            dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
+            self.education_level: int = random.choices(range(len(dist)), weights=dist)[0]
 
         # Expected Wage Calculation
         base_wage = getattr(config_module, "INITIAL_WAGE", 10.0)
