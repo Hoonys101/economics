@@ -1,7 +1,9 @@
 # 팀장 핸드북 (Team Leader Handbook)
 
-**Purpose:** 팀장(Antigravity) 업무 수행 시 필요한 문서 계층 구조
-**Last Updated:** 2026-01-11
+**PM (Project Manager):** Hoonys101 (사용자) - 최종 의사결정 및 비전 제시
+**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리
+**Member:** Jules 요원 (Alpha, Bravo, Charlie) - 구현 및 기술적 타협점 보고
+**Last Updated:** 2026-01-12
 
 ---
 
