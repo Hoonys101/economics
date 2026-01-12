@@ -43,6 +43,12 @@ class TransactionProcessor:
             if tx.transaction_type in ["goods", "stock"]:
                 # 거래세(부가가치세) 적용: 매수자가 추가로 지불
                 tax_amount = trade_value * sales_tax_rate
+                
+                # Phase 23.5: Solvency Check (If bank/agent can borrow)
+                if hasattr(buyer, 'check_solvency'):
+                    if buyer.assets < (trade_value + tax_amount):
+                        buyer.check_solvency(government)
+
                 buyer.assets -= (trade_value + tax_amount)
                 seller.assets += trade_value
                 government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)

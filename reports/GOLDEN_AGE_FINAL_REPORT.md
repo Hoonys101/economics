@@ -12,7 +12,7 @@
 | **Population Growth** | > 200% (2x) | **0.18x** | ⚠️ FAIL |
 | **Real GDP Growth** | > 500% (5x) | **0.00x** | ⚠️ FAIL |
 | **Brain Waste Rate** | < 10% | **0.0%** | ✅ PASS |
-| **IGE (Wealth-Edu Link)** | < 0.3 | **0.1522** | ✅ PASS |
+| **IGE (Wealth-Edu Link)** | < 0.3 | **-0.1642** | ✅ PASS |
 
 ## 3. Growth Dynamics Analysis
 
@@ -28,7 +28,7 @@
 
 ## 4. Stability Audit
 - **Inflation Control:** The Price Index ended at **1.00**. 
-- **Fiscal Health:** The Government treasury remained stable at **8698.1**.
+- **Fiscal Health:** The Government treasury remained stable at **7447.0**.
 
 ## 5. Conclusion
 **'The Golden Age'** is a technical reality. The coupling of supply-side technology (Fertilizer) and opportunity-side policy (Education) creates a stable, high-growth equilibrium that breaks the cycles of hereditary poverty.

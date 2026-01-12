@@ -31,13 +31,18 @@ def run_golden_age_test():
         "NUM_FIRMS": 20,
         
         # WO-053: Fertilizer
-        "TECH_FERTILIZER_UNLOCK_TICK": 100,
+        "TECH_FERTILIZER_UNLOCK_TICK": 10,
         "TECH_DIFFUSION_RATE": 0.05, # Base rate
         
         # WO-054: Education
         "PUBLIC_EDU_BUDGET_RATIO": 0.25, # High priority
         "SCHOLARSHIP_WEALTH_PERCENTILE": 0.20,
         "SCHOLARSHIP_POTENTIAL_THRESHOLD": 0.7,
+        
+        # WO-055: Golden Age Stabilization
+        "STARTUP_COST": 30000.0,
+        "ENTREPRENEURSHIP_SPIRIT": 0.01,
+        "INITIAL_HOUSEHOLD_FOOD_INVENTORY": 20.0,
         
         # Stability
         "GOVERNMENT_STIMULUS_ENABLED": True,

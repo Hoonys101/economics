@@ -113,9 +113,9 @@ class VectorizedHouseholdPlanner:
         consume_amounts = np.minimum(consume_amounts, inventories)
 
         # B. Purchase Decision (Survival Logic)
-        # Need > Threshold AND Inventory < 1.0 (Buffer)
+        # Need > Threshold AND Inventory < 3.0 (Buffer for safety)
         # AND Assets > Price
-        should_buy = (survival_needs > self.survival_threshold) & (inventories < 1.0) & (assets >= food_price)
+        should_buy = (survival_needs > self.survival_threshold) & (inventories < 3.0) & (assets >= food_price)
 
         # Buy Amount: Max Purchase Qty (5.0) or afford limit
         # Simple Logic: Buy 5.0 to restock buffer

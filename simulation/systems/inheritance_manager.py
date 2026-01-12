@@ -102,7 +102,8 @@ class InheritanceManager:
                 # Transfer: Deceased -> Cash, Government -> Stock (or burn?)
                 # If Govt buys, it pays Cash.
                 deceased.assets += proceeds
-                simulation.government.assets -= proceeds # Government spends money
+                simulation.government.assets -= proceeds
+                simulation.government.total_money_issued += proceeds # Injection (Bank/Gov Buyout)
 
                 liquidation_proceeds += proceeds
 
@@ -144,6 +145,7 @@ class InheritanceManager:
                 # Govt buys unit
                 deceased.assets += sale_price
                 simulation.government.assets -= sale_price
+                simulation.government.total_money_issued += sale_price # Injection
 
                 # Transfer Title
                 unit.owner_id = None # Government/Public
@@ -180,7 +182,7 @@ class InheritanceManager:
             surplus = deceased.assets
             if surplus > 0:
                 deceased.assets = 0
-                simulation.government.assets += surplus
+                simulation.government.collect_tax(surplus, "escheatment", deceased.id, simulation.time)
                 self.logger.info(
                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
                     extra={"agent_id": deceased.id}
