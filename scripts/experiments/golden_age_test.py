@@ -40,7 +40,7 @@ def run_golden_age_test():
         
         # Stability
         "GOVERNMENT_STIMULUS_ENABLED": True,
-        "DEFAULT_ENGINE_TYPE": "RuleBased", # Stability for long run
+        # "DEFAULT_ENGINE_TYPE": "RuleBased", # REMOVED: Using AIDrivenHouseholdDecisionEngine for full Education/Growth features
         
         # Performance
         "BATCH_SAVE_INTERVAL": 100,
