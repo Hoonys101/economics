@@ -27,7 +27,8 @@ def run_golden_age_test():
     overrides = {
         "SIMULATION_TICKS": 1000,
         "HALO_EFFECT": 0.20,
-        "INITIAL_POPULATION": 100, # Start small to see boom
+        "NUM_HOUSEHOLDS": 100,
+        "NUM_FIRMS": 20,
         
         # WO-053: Fertilizer
         "TECH_FERTILIZER_UNLOCK_TICK": 100,

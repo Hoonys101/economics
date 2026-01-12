@@ -538,9 +538,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                  # So equity funds remain in Cash (Wallet).
 
             # Now, simply check if we have enough Cash (after planned deposit/withdraw)
+            # SURVIVAL BUFFER (Phase 23.5 Fix)
+            # Households must keep a buffer for food/tax before investing everything.
             projected_cash = cash - max(0, diff_deposit) + max(0, -diff_deposit)
+            survival_buffer = 2000.0
 
-            if projected_cash >= startup_cost:
+            if projected_cash >= (startup_cost + survival_buffer):
                 orders.append(Order(household.id, "INVEST", "startup", 1.0, startup_cost, "admin"))
 
         return orders

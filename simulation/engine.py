@@ -484,6 +484,12 @@ class Simulation:
                 self.household_time_allocation[household.id] = leisure_hours
 
                 for order in household_orders:
+                    # [Phase 23.5 Fix] Handle INVEST orders for startup creation (Active Entrepreneurship)
+                    if order.order_type == "INVEST" and order.market_id == "admin":
+                        self.logger.info(f"FOUND_INVEST_ORDER | Agent {household.id} attempting startup via admin market.")
+                        self.firm_system.spawn_firm(self, household)
+                        continue
+
                     # Determine target market based on Order Type or ID
                     target_market_id = order.market_id
 

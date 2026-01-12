@@ -934,7 +934,6 @@ class Household(BaseAgent):
         욕구 업데이트를 PsychologyComponent로 위임합니다.
         """
         self.psychology.update_needs(current_tick, market_data)
-        self.psychology.update_needs(current_tick, market_data)
 
     def _update_skill(self):
         """
