@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-01-11
+**최종 업데이트**: 2026-01-13
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -12,115 +12,30 @@
     - `Phase 19: Population Dynamics` ✅
     - `Phase 20: The Matrix & Real Estate` ✅
     - `Phase 21: Corporate Empires` ✅
-    - `Phase 22.5: Architecture Detox` ✅ (Decoupled Engine, Household Refactor)
-- **현재 단계:** `Phase 22: The Awakening (Adaptive AI)` 🏗️
-    - Step 1: Housing Brain (WO-046) ✅
-    - Step 2: Inheritance (WO-049) ✅
-    - Step 3: Selling & Liquidity (WO-050) ✅
-    - Step 4: Breeding (WO-048) ✅ (Adaptive NPV + Solvency Check)
-    - Step 5: Engine Vectorization (WO-051) ✅ (NumPy Batch Processing)
-    - Step 6: Maintenance (M-052a) ✅ (Inheritance Leak & Observer Fix)
-    - Step 7: Social Mobility Analysis (WO-052) ⏩ (Deferred to Phase 23)
-- **현재 단계:** `Phase 23: The Great Expansion` 🚀
-    - Step 1: Productivity Revolution (WO-053) 🏗️
-        - **Goal**: Introduce Chemical Fertilizer to break Malthusian Trap.
-    - Step 2: Public Education (WO-054) 📅
-
-- **다음 단계:** `Public Education System`
-
+    - `Phase 22.5: Architecture Detox` ✅
+    - `Phase 23: The Great Expansion` ✅ (Fertilizer, Education, Golden Age)
+- **현재 단계:** `Phase 24: Adaptive Intelligence & Evolution` 🚀
+    - Step 1: SoC Refactor Phase 1 (Firm Modularization) ✅
+    - Step 2: Golden Age Stabilization (WO-055) ✅
+    - Step 3: The Invisible Hand (WO-056) 🏗️
 
 ---
 
 ## 2. 완료된 작업 요약 (Recent)
 
-### Phase 22.5: Architecture Detox ✅
+### WO-055: Golden Age Stabilization ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Engine Decoupling | ✅ | Extracted `HousingSystem`, `FirmSystem`, `PersistenceManager` |
-| Household Refactor | ✅ | Split into `Psychology`, `Consumption`, `Leisure` components |
-| System 2 Integration | ✅ | `HouseholdSystem2Planner` for Housing logic |
-| Verification | ✅ | `iron_test.py` 100 ticks passed without crash |
+| Money Supply Anti-Leak | ✅ | Fixed Inheritance, Education, and Liquidation leaks |
+| Lender of Last Resort | ✅ | Bank liquidity injection mechanism implemented |
+| Labor Guard | ✅ | Firm creation cap (`Pop / 15`) to prevent labor dilution |
+| Starvation Fix | ✅ | Inventory threshold raised to 3.0 in VectorizedPlanner |
 
-### WO-050: Real Estate Liquidity ✅
+### Phase 23: The Great Expansion ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Distress Sale | ✅ | Sell house when assets < 1.5 months survival cost |
-| Grace Period | ✅ | 2-tick homeless penalty exemption after selling |
-| Market Logic | ✅ | Transactions clear usage rights correctly |
+| Chemical Fertilizer | ✅ | Malthusian Trap broken (Supply floor raised) |
+| Public Education | ✅ | Meritocratic scholarship & tech-diffusion loop |
+| Socio-Econ Test | ✅ | 1,000-tick Golden Age test run verified |
 
-### Phase 8: Inflation Psychology ✅
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| Price Memory (deque) | ✅ | `Household.price_history` |
-| Adaptive Expectations | ✅ | $\lambda$ adjustment (Impulsive/Conservative) |
-| Panic Buying / Deflation Wait | ✅ | Threshold-based behavior |
-| Verification | ✅ | `verify_inflation_psychology.py` passed |
-
-### Phase 6: Brand Economy ✅
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| BrandManager | ✅ | Awareness & Quality tracking |
-| Targeted Matching | ✅ | `OrderBookMarket` update |
-| Veblen Effect | ✅ | Utility function update |
-
-### Phase 14-4: Stock Exchange ✅
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| Batch Auction | ✅ | Equilibrium Pricing |
-| Valuation Models | ✅ | Value vs Momentum |
-| Stock Buyback | ✅ | Share Retirement (Burn) |
-| Verification | ✅ | `verify_stock_market.py` passed |
-
-### Phase 16-B: Corporate Intelligence ✅
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| R&D Physics | ✅ | Innovation War Verified |
-| 6-Channel Actions | ✅ | Sales, Hiring, R&D, Capex, Div, Debt |
-| CEO Personality | ✅ | Balanced, Growth, Cash Cow |
-
----
-
-### Phase 19: Population Dynamics ✅
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| DemographicManager | ✅ | aging/birth/death/inheritance |
-| Expectation Mismatch | ✅ | Education-based Reservation Wage |
-| Time Constraint | ✅ | Childcare opportunity cost |
-| r/K Selection | ✅ | Strategy switching based on Rank |
-
----
-
-## 3. 남은 과업 (Backlog)
-
-### Phase 22: The Awakening (Next)
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| Adaptive Breeding (WO-048) | 📅 | `decide_reproduction` update |
-| Social Mobility Analysis | 📅 | Gini Coefficient & Class Mobility |
-| System 2 Expansion | 📅 | Career Planning, Investment Strategy |
-
-### Phase 20: The Matrix & Real Estate (Current)
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| Double-Process Cognition | 🏗️ | System 1 (Fast) / System 2 (Slow) |
-| Gender/Tech Dynamics | 🏗️ | Lactation, Home Quality Score |
-
-### WO-052: The Dynasty Report (Social Mobility) 🔍
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| MobilityTracker | 🏗️ | Parent/Child wealth tracking |
-| Log-Log Regression | 🏗️ | IGE ($\beta$) calculation |
-| 1,000 Ticks Run | 🏗️ | Long-term simulation |
-
----
-
-## 4. 구조적 진단 (Architectural Audit)
-- **완료된 조치**: Phase 22.5를 통해 `engine.py`의 비대화를 해소하고 `Household` 에이전트를 컴포넌트 단위로 분리함.
-- **향후 계획**: `Firm` 에이전트 및 `Government` 에이전트의 모듈화 진행 필요.
-- **W-3.5**: PR 리뷰 시 아키텍처 위생(SoC) 점검 절차 도입.
-
----
-
-## 5. 테스트 상태
-- **Iron Test**: `scripts/iron_test.py` (Last Run: Phase 22.5 Verified)
-- **Unit Tests**: All Passed.
+... (Following legacy phases omitted for brevity / check structure.md)
