@@ -153,6 +153,7 @@ class Household(BaseAgent):
             logger=logger,
         )
         self.credit_frozen_until_tick: int = 0  # Phase 4: Bankruptcy Penalty
+        self.initial_assets_record = initial_assets # WO-Sociologist: Track starting point
         self.logger.debug(
             f"HOUSEHOLD_INIT | Household {self.id} initialized. Initial Needs: {self.needs}",
             extra={"tags": ["household_init"]},
@@ -250,9 +251,20 @@ class Household(BaseAgent):
         ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
         self.housing_price_history = deque(maxlen=ticks_per_year)
 
-        # Education Level (0~5) based on Distribution (Phase 19)
-        dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
-        self.education_level: int = random.choices(range(len(dist)), weights=dist)[0]
+        # Education Level (0~5)
+        # WO-Sociologist: The Social Ladder (Asset-based Determination)
+        wealth_thresholds = getattr(config_module, "EDUCATION_WEALTH_THRESHOLDS", None)
+        if wealth_thresholds:
+            # Deterministic, Wealth-Gated Education
+            level = 0
+            for lvl, threshold in sorted(wealth_thresholds.items()):
+                if initial_assets >= threshold:
+                    level = max(level, lvl)
+            self.education_level = level
+        else:
+            # Legacy: Random Distribution
+            dist = getattr(config_module, "EDUCATION_LEVEL_DISTRIBUTION", [1.0])
+            self.education_level: int = random.choices(range(len(dist)), weights=dist)[0]
 
         # Expected Wage Calculation
         base_wage = getattr(config_module, "INITIAL_WAGE", 10.0)
@@ -374,6 +386,10 @@ class Household(BaseAgent):
     @property
     def desire_weights(self) -> Dict[str, float]:
         return self.psychology.desire_weights
+
+    @property
+    def children_count(self) -> int:
+        return len(self.children_ids)
 
     def calculate_social_status(self) -> None:
         """

@@ -257,7 +257,8 @@ class InheritanceManager:
             target_heir = heirs[i % num_heirs]
 
             unit.owner_id = target_heir.id
-            target_heir.owned_properties.append(unit.id)
+            if hasattr(target_heir, 'owned_properties'):
+                target_heir.owned_properties.append(unit.id)
             # Deceased removed locally from list (we iterate copy or access simulation list)
             # deceased.owned_properties already handled? No.
             # We iterate `remaining_units` which is fresh list.

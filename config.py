@@ -355,6 +355,15 @@ EDUCATION_SENSITIVITY = 0.1       # 교육 효과 민감도
 BASE_LEARNING_RATE = 0.1          # 기본 학습률
 MAX_LEARNING_RATE = 0.5           # 최대 학습률
 LEARNING_EFFICIENCY = 1.0         # XP 획득 효율
+HALO_EFFECT = 0.15                # 학벌 프리미엄 (15% per Level)
+EDUCATION_WEALTH_THRESHOLDS = {   # 자산별 시작 교육 수준
+    0: 0.0,
+    1: 2000.0,
+    2: 5000.0,
+    3: 10000.0,
+    4: 20000.0,
+    5: 50000.0
+}
 
 
 # --- Loan Market (Deprecated/Legacy - overwritten by Banking below) ---
@@ -708,5 +717,3 @@ RAISING_YEARS = 20                  # 양육 기간 (성인까지)
 CHILD_EMOTIONAL_VALUE_BASE = 500000.0 # 자녀 1명당 느끼는 정서적 가치의 총량 (500k로 상향 - Middle Income Trap 완화)
 OLD_AGE_SUPPORT_RATE = 0.1          # 자녀 소득의 10%를 노후 용돈으로 받음
 SUPPORT_YEARS = 20                  # 은퇴 후 부양받는 기간
-
-

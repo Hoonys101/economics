@@ -1,17 +1,6 @@
-# 📔 Technical Debt Ledger (기술부채 부기표)
-
-이 문서는 프로젝트 수행 중 전략적으로 선택하거나 발생한 기술부채를 기록하고 관리하는 장부입니다. 모든 부채는 상환 조건이 충족될 때 해결되어야 합니다.
-
----
-
-## 🚩 Active Debts (현재 부채 목록)
-
-| ID | 발생일 | 부채 내용 | 상환 조건 (Cleanup Trigger) | 리스크 / 영향 | 상태 |
-|---|---|---|---|---|---|
-| TD-001 | 2026-01-12 | `engine.py` 내 `batch_save_interval = 50` 하드코딩 (Alpha Optimizer) | Phase 22.5 종료 후 Config 시스템 정식 통합 시 | 시뮬레이션 설정 유연성 저하 | **Recognized** |
-| TD-002 | 2026-01-12 | `VectorizedHouseholdPlanner` 내 소비 로직 단순화 (필수재 중심) | Phase 23 고도화 통계 모듈 통합 시 | 사치재/서비스 소비 누락 가능성 | **Recognized** |
-| TD-003 | 2026-01-12 | `MobilityTracker` 내 IGE 계산 시 단순 선형 회귀 사용 | 정밀 통계 엔진(SciPy 등) 도입 시 | 통계적 엄밀함 부족 | **Recognized** |
-| TD-004 | 2026-01-12 | `AIDecisionEngine.inherit_brain` No-op 스텁 (Bravo Fix) | 개별 에이전트 학습(Per-agent learning) 도입 시 | 유전적 특성 전이 불가 | **Recognized** |
+| TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **Recognized** |
+| TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **Recognized** |
+| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **Recognized** |
 
 ---
 

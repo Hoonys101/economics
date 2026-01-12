@@ -652,11 +652,16 @@ class Firm(BaseAgent):
 
             base_wage = self.employee_wages.get(employee.id, self.config_module.LABOR_MARKET_MIN_WAGE)
             
-            # WO-023-B: Skill-based Wage Bonus
+            # WO-023-B: Skill-based Wage Bonus & WO-Sociologist: Halo Effect
             # High skill workers get paid more (Meritocracy)
             # If labor_skill is 1.0, wage is base_wage. If 2.0, wage is double.
             actual_skill = getattr(employee, 'labor_skill', 1.0)
-            wage = base_wage * actual_skill
+
+            # Credential Premium (Halo Effect)
+            education_level = getattr(employee, 'education_level', 0)
+            halo_modifier = 1.0 + (education_level * getattr(self.config_module, "HALO_EFFECT", 0.0))
+
+            wage = base_wage * actual_skill * halo_modifier
             
             # Affordability check
             if self.assets >= wage:
