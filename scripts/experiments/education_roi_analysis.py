@@ -27,7 +27,7 @@ def run_experiment():
     # Override config to ensure Halo Effect is active
     overrides = {
         "HALO_EFFECT": 0.15,
-        "SIMULATION_TICKS": 500, # Increased to 500 as per new directive
+        "SIMULATION_TICKS": 1000, # Increased to 1000 per directive
         # Adjusted Thresholds for 500.0 Mean (Range 100-900)
         "EDUCATION_WEALTH_THRESHOLDS": {0: 0, 1: 300, 2: 400, 3: 500, 4: 600, 5: 700},
 
@@ -58,7 +58,7 @@ def run_experiment():
     sim = create_simulation(overrides)
 
     # 2. Run Simulation
-    target_ticks = 500
+    target_ticks = 1000
 
     logger.info(f"Running simulation for {target_ticks} ticks...")
 
@@ -112,24 +112,26 @@ def run_experiment():
 
     # 3. Collect Data from Agents (Cumulative)
     logger.info("Collecting agent data...")
-    agents_data = history_data # Use data collected during loop (not implemented yet, fixing below)
-
-    # We need to collect data periodically inside the loop
-    # Re-implementing loop logic to collect data
-    pass
+    agents_data = history_data
 
     df = pd.DataFrame(agents_data)
 
+    # Calculate Final Employment Rate
+    active_households = [h for h in sim.households if h.is_active]
+    final_active_count = len(active_households)
+    final_employed_count = len([h for h in active_households if h.is_employed])
+    employment_rate = final_employed_count / final_active_count if final_active_count > 0 else 0.0
+
     if df.empty:
         logger.error("No employed agents found. Simulation failed to generate valid data.")
-        # Proceed with empty report to avoid crash, or exit?
-        # Exit to signal failure
+        # Generate Failure Report
+        _generate_report(None, None, None, None, 0.0, employment_rate, target_ticks, 0, "FAIL - NO DATA")
         return
 
     # 4. Analysis: Mincer Equation
     # log(Wage) = a + b*Edu + c*Skill
 
-    df["log_wage"] = np.log(df["wage"])
+    df["log_wage"] = np.log(df["wage"].replace(0, 0.001)) # Avoid log(0)
 
     # Simple Regression using numpy (Least Squares)
     # Model 1: log(Wage) ~ Edu + Skill (Signaling)
@@ -142,6 +144,7 @@ def run_experiment():
         intercept1, coeff_edu_signaling, coeff_skill = beta1
     except Exception as e:
         logger.error(f"Regression failed: {e}")
+        _generate_report(None, None, None, None, 0.0, employment_rate, target_ticks, len(df), f"FAIL - REGRESSION ERROR: {e}")
         return
 
     # Model 2: log(Wage) ~ Edu (Total Return)
@@ -149,21 +152,63 @@ def run_experiment():
     beta2, residuals2, rank2, s2 = np.linalg.lstsq(X2, y, rcond=None)
     intercept2, coeff_edu_total = beta2
 
-    # Signaling Share = Coeff_Edu_Signaling / Coeff_Edu_Total (roughly)
-    # Or simply report the premium.
-    # Theoretical Halo is 15% per level (approx 0.15 log diff if linear approx).
-
     # 5. Generational Mobility (Ladder)
     # Correlation between Initial Assets and Education Level
     corr_wealth_edu = df["initial_assets"].corr(df["education_level"])
+    corr_wealth_wage = df["initial_assets"].corr(df["wage"])
 
-    # 6. Generate Report
-    report_content = f"""# 🎓 Education ROI & Social Ladder Report (Dynasty Report v2)
+    # 6. Success Criteria Check
+    # Correlation(Assets, Education) > 0.9
+    # Credential Premium (coeff_edu_signaling) > 0.10 (10%)
+    # Employment Rate > 0.80 (80%)
+
+    pass_criteria = True
+    status_msg = ""
+
+    if corr_wealth_edu < 0.9:
+        pass_criteria = False
+        status_msg += f"FAIL: Wealth-Edu Corr {corr_wealth_edu:.2f} < 0.9. "
+
+    if coeff_edu_signaling < 0.10:
+        pass_criteria = False
+        status_msg += f"FAIL: Credential Premium {coeff_edu_signaling:.2f} < 0.10. "
+
+    if employment_rate < 0.80:
+        pass_criteria = False
+        status_msg += f"FAIL: Employment Rate {employment_rate:.2f} < 0.80. "
+
+    final_status = "[PASS]" if pass_criteria else f"[FAIL] {status_msg}"
+
+    # 7. Generate Report
+    _generate_report(coeff_edu_signaling, coeff_skill, intercept1, coeff_edu_total, corr_wealth_edu, employment_rate, target_ticks, len(df), final_status, corr_wealth_wage)
+
+
+def _generate_report(coeff_edu_signaling, coeff_skill, intercept1, coeff_edu_total, corr_wealth_edu, employment_rate, target_ticks, data_points, status, corr_wealth_wage=0.0):
+
+    if coeff_edu_signaling is None:
+        # Failure Fallback
+        report_content = f"""# 🎓 Education ROI & Social Ladder Report (Dynasty Report v2)
 
 ## 1. Experiment Summary
+- **Status**: **{status}**
 - **Ticks**: {target_ticks}
-- **Agents Analyzed**: {len(df)} (Employed only)
-- **Halo Effect Config**: {config.HALO_EFFECT} (15%)
+- **Agents Analyzed**: {data_points}
+- **Employment Rate**: {employment_rate:.2%}
+
+## 2. Error
+Analysis failed to complete successfully.
+"""
+    else:
+        # Success (or partial success with Fail status)
+        signaling_share = (coeff_edu_signaling / coeff_edu_total * 100) if abs(coeff_edu_total) > 0.001 else 0.0
+
+        report_content = f"""# 🎓 Education ROI & Social Ladder Report (Dynasty Report v2)
+
+## 1. Experiment Summary
+- **Status**: **{status}**
+- **Ticks**: {target_ticks}
+- **Agents Analyzed**: {data_points} (Employed only)
+- **Employment Rate**: {employment_rate:.2%} (Target > 80%)
 - **Wealth-Edu Link**: Active
 - **Scenario**: Industrial Revolution (Stress Test)
 
@@ -175,7 +220,7 @@ We decomposed wage determinants into Education (Credential) and Skill (Human Cap
 
 | Coefficient | Value | Interpretation |
 | :--- | :--- | :--- |
-| **β1 (Credential Premium)** | **{coeff_edu_signaling:.4f}** | Wage increase per Education Level (holding skill constant) |
+| **β1 (Credential Premium)** | **{coeff_edu_signaling:.4f}** | Wage increase per Education Level (Target > 0.10) |
 | **β2 (Productivity Return)** | **{coeff_skill:.4f}** | Wage increase per unit of Skill |
 | Intercept | {intercept1:.4f} | Base log wage |
 
@@ -184,15 +229,15 @@ We decomposed wage determinants into Education (Credential) and Skill (Human Cap
 - **Total Return (β_total)**: {coeff_edu_total:.4f}
 
 ### C. Signaling Share
-- **Signaling Contribution**: {coeff_edu_signaling / coeff_edu_total * 100 if abs(coeff_edu_total) > 0.001 else 0.0:.1f}% of the total education premium is due to the Halo Effect (vs Skill correlation).
+- **Signaling Contribution**: {signaling_share:.1f}% of the total education premium is due to the Halo Effect (vs Skill correlation).
 
 ## 3. The Social Ladder (Generational Mobility)
 Did initial wealth determine destiny?
 
 - **Correlation (Initial Assets vs Education)**: **{corr_wealth_edu:.4f}**
-  - High correlation (> 0.8) indicates a rigid class structure where wealth buys credentials.
+  - Target > 0.9. High correlation indicates a rigid class structure where wealth buys credentials.
 
-- **Correlation (Initial Assets vs Final Wage)**: **{df["initial_assets"].corr(df["wage"]):.4f}**
+- **Correlation (Initial Assets vs Final Wage)**: **{corr_wealth_wage:.4f}**
   - Proves the economic transmission of advantage.
 
 ## 4. Conclusion

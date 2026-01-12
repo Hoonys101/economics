@@ -1,9 +1,10 @@
 # 🎓 Education ROI & Social Ladder Report (Dynasty Report v2)
 
 ## 1. Experiment Summary
-- **Ticks**: 500
-- **Agents Analyzed**: 48 (Employed only)
-- **Halo Effect Config**: 0.15 (15%)
+- **Status**: **[FAIL] FAIL: Employment Rate 0.00 < 0.80. **
+- **Ticks**: 1000
+- **Agents Analyzed**: 116 (Employed only)
+- **Employment Rate**: 0.00% (Target > 80%)
 - **Wealth-Edu Link**: Active
 - **Scenario**: Industrial Revolution (Stress Test)
 
@@ -15,29 +16,29 @@ We decomposed wage determinants into Education (Credential) and Skill (Human Cap
 
 | Coefficient | Value | Interpretation |
 | :--- | :--- | :--- |
-| **β1 (Credential Premium)** | **-0.0599** | Wage increase per Education Level (holding skill constant) |
-| **β2 (Productivity Return)** | **0.3421** | Wage increase per unit of Skill |
-| Intercept | 0.9855 | Base log wage |
+| **β1 (Credential Premium)** | **0.4510** | Wage increase per Education Level (Target > 0.10) |
+| **β2 (Productivity Return)** | **-3.5469** | Wage increase per unit of Skill |
+| Intercept | 4.1181 | Base log wage |
 
 ### B. Total Return to Education
 **Model**: `log(Wage) = α + β_total * Education`
-- **Total Return (β_total)**: -0.0189
+- **Total Return (β_total)**: 0.2197
 
 ### C. Signaling Share
-- **Signaling Contribution**: 317.1% of the total education premium is due to the Halo Effect (vs Skill correlation).
+- **Signaling Contribution**: 205.2% of the total education premium is due to the Halo Effect (vs Skill correlation).
 
 ## 3. The Social Ladder (Generational Mobility)
 Did initial wealth determine destiny?
 
-- **Correlation (Initial Assets vs Education)**: **0.9742**
-  - High correlation (> 0.8) indicates a rigid class structure where wealth buys credentials.
+- **Correlation (Initial Assets vs Education)**: **0.9552**
+  - Target > 0.9. High correlation indicates a rigid class structure where wealth buys credentials.
 
-- **Correlation (Initial Assets vs Final Wage)**: **-0.0719**
+- **Correlation (Initial Assets vs Final Wage)**: **0.5370**
   - Proves the economic transmission of advantage.
 
 ## 4. Conclusion
 Simulation confirms the **"Pareto-Iron Law"**:
-1.  **Credentialism**: Firms overpay for degrees (-6.0% premium per level) regardless of skill.
-2.  **Caste System**: Education is strictly gated by initial wealth (Corr: 0.97).
+1.  **Credentialism**: Firms overpay for degrees (45.1% premium per level) regardless of skill.
+2.  **Caste System**: Education is strictly gated by initial wealth (Corr: 0.96).
 3.  **Result**: The rich get credentials, and credentials get wages, enforcing a rigid social ladder.
 
