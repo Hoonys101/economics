@@ -11,6 +11,7 @@
 | TD-001 | 2026-01-12 | `engine.py` 내 `batch_save_interval = 50` 하드코딩 (Alpha Optimizer) | Phase 22.5 종료 후 Config 시스템 정식 통합 시 | 시뮬레이션 설정 유연성 저하 | **Recognized** |
 | TD-002 | 2026-01-12 | `VectorizedHouseholdPlanner` 내 소비 로직 단순화 (필수재 중심) | Phase 23 고도화 통계 모듈 통합 시 | 사치재/서비스 소비 누락 가능성 | **Recognized** |
 | TD-003 | 2026-01-12 | `MobilityTracker` 내 IGE 계산 시 단순 선형 회귀 사용 | 정밀 통계 엔진(SciPy 등) 도입 시 | 통계적 엄밀함 부족 | **Recognized** |
+| TD-004 | 2026-01-12 | `AIDecisionEngine.inherit_brain` No-op 스텁 (Bravo Fix) | 개별 에이전트 학습(Per-agent learning) 도입 시 | 유전적 특성 전이 불가 | **Recognized** |
 
 ---
 
