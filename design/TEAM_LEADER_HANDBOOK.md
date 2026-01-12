@@ -124,12 +124,31 @@ Level 0: 핵심 원칙 (Always Load)
 
 ---
 
-## 🛑 Jules Communication Protocol
+## 🛑 Jules Communication Protocol (Zero-Question Standard)
 
-**One-Shot Document Rule (지침 불변성의 원칙)**:
-1. **Initial Command**: 작업 지시서(Work Order)나 코드 변경 사항은 **초기 명령 시점에 확정**됩니다.
-2. **No Resubmission**: 명령 하달 후 문서를 수정하여 다시 푸시(Push)하는 행위는 금지됩니다. (Jules 관점에서 타임라인 꼬임 방지)
-3. **Correction via Prompt**: 수정 사항이 발생하면 문서를 고치지 말고, 반드시 **프롬프트(채팅)를 통해 수정 지침을 직접 전달**해야 합니다.
+**1. One-Shot Document Rule (지침 불변성의 원칙)**:
+- **Initial Command**: 작업 지시서(Work Order)나 코드 변경 사항은 **초기 명령 시점에 확정**됩니다.
+- **No Resubmission**: 명령 하달 후 문서를 수정하여 다시 푸시(Push)하는 행위는 금지됩니다. (Jules 관점에서 타임라인 꼬임 방지)
+- **Correction via Prompt**: 수정 사항이 발생하면 문서를 고치지 말고, 반드시 **프롬프트(채팅)를 통해 수정 지침을 직접 전달**해야 합니다.
+
+**2. 📝 Zero-Question Work Order 작성 요령 (Jules 생산성 극대화)**
+> **핵심 목표**: Jules가 프로젝트 전체 파일을 읽는 오버헤드를 0으로 만들고, 오직 타겟 로직에만 집중하게 한다.
+
+- **📂 컨텍스트 및 관련 파일 그룹화 (Context Table) 필수 포함**
+    Jules에게 역할별 파일 리스트를 테이블로 제공한다.
+
+| 분류 | 역할 | 활용 가이드 |
+| :--- | :--- | :--- |
+| **Source (출처)** | 로직을 추출해낼 원본 파일 | 특정 메서드/클래스의 로직만 참고/추출 |
+| **Contract (계약)** | 준수해야 할 DTO, Interface | 데이터 시그니처와 타입 힌트 확인 용도 |
+| **Destination (목적지)** | 코드가 새로 배치될 위치 | 신규 생성 또는 로직이 이식될 파일 |
+
+- **💡 메서드 단위 이식 전략 (Transplant Strategy) 명시**
+    작업을 '함수/메서드 단위의 이식 수술'로 정의하고 구체적으로 지시한다.
+- **⚠️ GitHub Alerts 활용**
+    중요한 제약 사항(`[!IMPORTANT]`)이나 팁(`[!TIP]`)을 시각적으로 강조한다.
+- **🧠 실무자 인사이트 공유 (Mandatory Insight Reporting)**
+    Jules가 작업을 수행하며 발견한 구조적 결함이나 아키텍처적 아이디어를 `communications/insights/`에 별도 보고서로 제출하도록 강제한다.
 
 ---
 
@@ -203,21 +222,24 @@ Level 0: 핵심 원칙 (Always Load)
 - **Reporting**: Jules에게 지시 시 "최적화 전후의 TPS(Ticks Per Second) 변화" 또는 "작업 전후의 시뮬레이션 완주 시간"을 반드시 보고하도록 강제하십시오.
 - **Feedback Loop**: 측정된 효율성을 기반으로 다음 작업 분할 시 분계점(Segmentation)을 조정합니다.
 
-## 👑 Spec & Delegation Protocol (Zero-Question Standard)
+## 👑 Spec & Delegation Protocol
 
-**"구현 시 질문이 나온다면 그것은 팀장의 설계 결함이다."**
+### 1. Spec 에스컬레이션 워크플로우 (Spec Escalation Workflow)
+> **핵심 원칙**: Spec은 "무엇을(What)"뿐만 아니라 "어떻게(How)"까지 포함해야 한다. 추상적 지시로 인한 '바이브 코딩'과 기술 부채 발생을 원천 차단한다.
 
-### 1. Accuracy of Instructions (상대 경로 및 확정적 동작)
-- **Repo-Relative Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **저장소 루트 기준 상대 경로(Relative Path from Root)**로 제공해야 합니다. Git 기반 협업 및 이동성을 보장하기 위함입니다.
-    - **Bad**: "저장소의 `DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오." (모호함)
-    - **Good**: `design/work_orders/DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오. (저장소 어디서든 접근 가능)
+```mermaid
+graph TD
+    A[Architect Prime: 수석 아키텍트] -- "Conceptual Design (What)" --> B[Antigravity: Team Leader]
+    B -- "Technical Spec & API Design (How)" --> C[Jules: Implementer]
+    C -- "Insight Reporting" --> B
+    B -- "Review & Verification" --> A
+```
+
+### 2. Accuracy of Instructions (상대 경로 및 확정적 동작)
+- **Repo-Relative Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **저장소 루트 기준 상대 경로(Relative Path from Root)**로 제공해야 합니다.
 - **Good Behavior**: "`X` 함수를 `Y` 로직으로 구현하고, `Z` 파일에 적용하십시오." (동작 확정)
 
-### 2. Technical Definitions
+### 3. Technical Definitions
 - 추상적인 경제 용어는 반드시 **코드 레벨의 정의(Logic Map)**를 포함해야 합니다.
     - 예: `Credential Premium` = (동일 기술 수준 그룹 내) 학위에 따른 임금 차액 산출법 명시.
-
-### 3. Workflow Pipeline
-... (생략)
-
-
+```

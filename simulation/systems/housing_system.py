@@ -68,8 +68,13 @@ class HousingSystem:
                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
                     if owner.assets >= cost:
                         owner.assets -= cost
+                        if simulation.reflux_system:
+                            simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
                     else:
+                        taken = owner.assets
                         owner.assets = 0.0
+                        if simulation.reflux_system:
+                            simulation.reflux_system.capture(taken, f"{owner.id}", "housing_maintenance")
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:

@@ -75,7 +75,7 @@ class Government:
         self.gdp_history_window = 20
         
         # WO-056: Shadow Policy Metrics
-        ticks_per_year = getattr(config_module, "TICKS_PER_YEAR", 100)
+        ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
 
         self.revenue_this_tick = 0.0
@@ -653,9 +653,11 @@ class Government:
 
                         # Student pays share
                         agent.assets -= student_share
+                        if reflux_system:
+                            reflux_system.capture(student_share, f"Household_{agent.id}", "education_tuition")
 
                         logger.info(
-                            f"EDU_SCHOLARSHIP | Household {agent.id} (Aptitude {agent.aptitude:.2f}) promoted to Level {next_level}. Subsidy: {subsidy:.2f}",
+                            f"EDU_SCHOLARSHIP | Household {agent.id} (Aptitude {agent.aptitude:.2f}) promoted to Level {next_level}. Subsidy: {subsidy:.2f}, Student Share: {student_share:.2f}",
                             extra={"tick": current_tick, "agent_id": self.id, "target_id": agent.id, "aptitude": agent.aptitude}
                         )
 
