@@ -43,7 +43,7 @@ class VectorizedHouseholdPlanner:
         wages = np.array([getattr(a, "current_wage", 0.0) for a in agents], dtype=np.float32)
         monthly_incomes = wages * 8.0 * 20.0
 
-        children_counts = np.array([a.children_count for a in agents], dtype=np.float32)
+        children_counts = np.array([len(a.children_ids) for a in agents], dtype=np.float32)
 
         # 2. Vectorized Computation (핵심 최적화 구간)
 

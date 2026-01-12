@@ -72,7 +72,7 @@ class PsychologyComponent:
 
         # 2. Natural Growth based on Personality
         base_growth = self.config.BASE_DESIRE_GROWTH
-        self.owner.needs["survival"] += base_growth
+        self.owner.needs["survival"] = self.owner.needs.get("survival", 0.0) + base_growth
         
         for k in ["asset", "social", "improvement", "quality"]:
             weight = self.desire_weights.get(k, 1.0)

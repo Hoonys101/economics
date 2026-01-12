@@ -109,3 +109,15 @@ class AIEngineRegistry:
             "All AI models saved at the end of the episode.",
             extra={"tags": ["ai_model", "save_all"]},
         )
+
+    def inherit_brain(self, parent: Any, child: Any) -> None:
+        """
+        Copies decision making policies/weights from parent to child.
+        Legacy support for 'demographic_manager.process_births'.
+        For now, this is a no-op as the shared model is used via get_engine.
+        If individual learning is implemented, this would copy specific weights.
+        """
+        # In current architecture, agents share the same model instance based on Value Orientation.
+        # So explicit weight copying is not needed unless we have per-agent models.
+        # But we must implement this method to prevent AttributeError.
+        pass
