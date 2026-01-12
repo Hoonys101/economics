@@ -33,3 +33,4 @@
 - **Target File**: `scripts/experiments/dynasty_report.py`
 - **Action**: 해당 파일이 존재하지 않는다면, 최근 수행한 `Lively God Mode` 실험 코드를 바탕으로 **신규 생성**하십시오. (기존 `scripts/run_experiment.py` 등을 참고하여 1,000틱 완주 스크립트로 정형화)
 - **Verification**: `scripts/iron_test.py`에 소요 시간 대비 처리 틱 수(`TPS = Total Ticks / Total Time`)를 출력하는 로직을 추가하여 성능 향상을 증명하십시오.
+- **Reporting**: 구현 중 기술적 제약이나 예외 상황으로 인해 '임시 로직'이 불가피할 경우, 팀장에게 즉시 보고하십시오. 팀장이 해당 사항의 기술부채 수용 여부를 결정할 것입니다.

@@ -151,11 +151,12 @@ Level 0: 핵심 원칙 (Always Load)
 
 **"인지되지 않은 부채는 사고지만, 인지된 부채는 전략적 선택이다."**
 
-### 1. Recognition & Documentation
-- **Decision Loop**: Jules와 협업 중 일정이나 구현 난이도 문제로 기술부채(임시 로직, 하드코딩, 성능 병목 감수 등)를 허용하기로 결정했다면, 이를 즉시 **문서화**해야 합니다.
+### 1. Recognition & Documentation (팀장의 고유 권한)
+- **Decision Loop**: Jules가 기술적 한계나 일정 문제로 '임시 구현'을 제안하거나, 팀장이 속도 향상을 위해 로직의 단순화를 결정한 경우, **팀장이 직접** 이 부기표에 부채로 기록합니다.
+- **Reporting Rule**: 팀원은 부채를 직접 기록하지 않습니다. 팀원은 발생 가능한 기술적 타협점(Trade-off)을 팀장에게 **보고**하고, 팀장의 결정(Acceptance)이 내려진 후에 팀장이 관리 대장에 올립니다.
 - **Artifacts**: 
     - **`roadmap.md`**: 상위 단계에서 해결해야 할 기술적 과제로 등록.
-    - **`TECH_DEBT_LEDGER.md` (부기표)**: 부채의 내용, 발생 원인, 상환 조건(Cleanup Trigger)을 기록.
+    - **`design/TECH_DEBT_LEDGER.md` (부기표)**: 팀장이 직접 부채의 내용, 상환 조건을 기록.
 
 ### 2. Debt Recording Format
 부채 기록 시 다음 항목을 필수로 포함하십시오:

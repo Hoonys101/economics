@@ -28,3 +28,4 @@
 
 ## 3. ✅ Verification
 - **Mincer Equation**: `log(Wage) = a + b*Education + c*Experience`. 여기서 `b`(교육 수익률)를 산출하고, 이 중 `Signaling`이 차지하는 비중을 %로 리포트하십시오.
+- **Reporting**: 구현 과정에서 일정이나 기술적 제약으로 타협이 필요한 로직이 발생하면, 즉시 팀장에게 보고하여 기술부채 수용 여부를 컨펌받으십시오.
