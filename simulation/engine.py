@@ -74,9 +74,7 @@ class Simulation:
         self.config_module = config_module
         self.time: int = 0
 
-        self.batch_save_interval = (
-            self.config_module.BATCH_SAVE_INTERVAL
-        )  # Define this in config.py
+        self.batch_save_interval = 50 # WO-051: Hardcoded I/O Optimization
 
         self.bank = Bank(
             id=self.next_agent_id,
@@ -542,10 +540,50 @@ class Simulation:
         consumption_market_data = market_data.copy()
         consumption_market_data["job_vacancies"] = current_vacancies
 
-        for household in self.households:
+        # WO-051: Vectorized Consumption Logic
+        # Pre-calculate consumption/purchase decisions for all households
+        batch_decisions = self.breeding_planner.decide_consumption_batch(self.households, consumption_market_data)
+        consume_list = batch_decisions['consume']
+        buy_list = batch_decisions['buy']
+        food_price = batch_decisions['price']
+
+        for i, household in enumerate(self.households):
              if household.is_active:
-                 # 1. Consumption
-                 consumed_items = household.decide_and_consume(self.time, consumption_market_data)
+                 # 1. Consumption (Vectorized Optimization)
+                 # Replace decide_and_consume with vectorized result application
+                 consumed_items = {}
+
+                 # 1a. Fast Consumption (Basic Food)
+                 if i < len(consume_list):
+                     c_amt = consume_list[i]
+                     if c_amt > 0:
+                         household.consume("basic_food", c_amt, self.time)
+                         consumed_items["basic_food"] = c_amt
+
+                 # 1b. Fast Purchase (Survival Rescue - Logic Map Item 3)
+                 if i < len(buy_list):
+                     b_amt = buy_list[i]
+                     if b_amt > 0:
+                         cost = b_amt * food_price
+                         if household.assets >= cost:
+                             household.assets -= cost
+                             household.inventory["basic_food"] = household.inventory.get("basic_food", 0) + b_amt
+                             # To prevent money destruction, we route this to Reflux System (Sink)
+                             self.reflux_system.capture(cost, source=f"Household_{household.id}", category="emergency_food")
+                             self.logger.debug(
+                                 f"VECTOR_BUY | Household {household.id} bought {b_amt:.1f} food (Fast Track)",
+                                 extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
+                             )
+                             # Consume immediately if they were starving and bought it?
+                             # The planner separates buy/consume. If they bought, they might consume next tick
+                             # or we can force consume now if consumption was 0?
+                             # Vector planner logic for consumption relies on Inventory > 0.
+                             # If inventory was 0, c_amt is 0.
+                             # If we buy now, we should probably allow immediate consumption.
+                             if c_amt == 0:
+                                 consume_now = min(b_amt, getattr(self.config_module, "FOOD_CONSUMPTION_QUANTITY", 1.0))
+                                 household.consume("basic_food", consume_now, self.time)
+                                 consumed_items["basic_food"] = consume_now
 
                  # 2. Phase 5: Leisure Effect Application
                  leisure_hours = household_time_allocation.get(household.id, 0.0)

@@ -170,8 +170,11 @@ class DemographicManager:
             parent.children_ids.append(child_id)
 
             # Brain Weight Inheritance
-            # ai_trainer.inherit_brain(parent, child) # Use existing utility
-            ai_trainer.inherit_brain(parent, child)
+            if hasattr(simulation, "ai_training_manager"):
+                simulation.ai_training_manager.inherit_brain(parent, child)
+            else:
+                # Fallback if manager not found (e.g. mocked simulation)
+                self.logger.warning("AITrainingManager not found for brain inheritance.")
 
             new_children.append(child)
 
