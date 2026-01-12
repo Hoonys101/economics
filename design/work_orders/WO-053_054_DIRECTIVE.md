@@ -1,40 +1,39 @@
-# 🏗️ [Directive] Phase 22.1: The Great Acceleration & Baselines
+# ⚔️ [Multi-Agent Mission Brief] Phase 22.1: The Great Acceleration
 
-Jules, WO-052(Social Mobility Baseline)의 성공적인 구현을 확인했습니다. 'Lively God Mode' 전략은 아주 탁월한 선택이었습니다. 이제 우리는 시뮬레이션의 **연산 효율**을 극대화하고, **기술적 베이스라인(멜서스 트랩)**과 **현대적 성장(인적 자본)** 분석으로 나아가야 합니다.
-
-본 지침에 따라 다음 업무를 순차적으로 수행하십시오.
+사용자의 요청에 따라, 우리는 **3명의 Jules 요원**을 각각 다른 분대에 배치하여 병렬로 업무를 수행합니다. 각 요원은 자신의 전공 분야에 집중하며, 파일 충돌(Conflict)을 방지하기 위해 지정된 영역 내에서만 작업하십시오.
 
 ---
 
-## Task 1: Engine Booster (WO-051+ Speed-Up)
-시뮬레이션 1,000틱 완주 시간을 단축하기 위한 최적화를 우선 적용합니다.
+## 🏎️ 분대 A: Jules-Optimizer (Core Engine)
+**Mission: 연산 병목 제거 및 엔진 가속화**
 
-1. **DB I/O Batching**: 
-    - `c:\coding\economics\simulation\engine.py`의 `BATCH_SAVE_INTERVAL`을 `50`으로 상향하여 DB 플래싱 부하를 1/50로 줄이십시오.
-2. **Log Suppression**: 
-    - 시뮬레이션 메인 루프에서 매 틱 발생하는 `INFO` 로그를 `WARNING` 수준으로 상향하거나 노이즈가 심한 로거(`government`, `central_bank`)를 Mute 처리하십시오.
-3. **Vectorization Expansion**: 
-    - `VectorizedHouseholdPlanner`를 확장하여 `decide_consumption` 로직을 배치 연산으로 전환하십시오.
+1. **DB I/O Batching**: `engine.py`의 `BATCH_SAVE_INTERVAL`을 `50`으로 상향.
+2. **Log Suppression**: 매 틱 발생하는 `INFO` 로그를 `WARNING`으로 상향 및 무력화.
+3. **Vectorization Expansion**: `VectorizedHouseholdPlanner`를 확장하여 소비 결정 배치 처리 구현.
+    - **Target Files**: `simulation/engine.py`, `simulation/ai/vectorized_planner.py`, `config.py`
 
 ---
 
-## Task 2: Pre-Modern Baseline (WO-054 Malthusian Trap)
-기술 발전이 없던 시절의 '멜서스 트랩'을 먼저 증명하여 현대적 성장의 대조군을 확보합니다.
+## 🏛️ 분대 B: Jules-Archaeologist (Malthusian Trap)
+**Mission: 전근대 멜서스 트랩 베이스라인 구축**
 
-1. **Fixed Land Setup**: 기업의 `capital_stock` 투자를 차단하고 토지 성격의 고정 자본으로 취급하십시오.
-2. **System 1 Breeding**: 피임을 비활성화하고 본능적 번식 모드(`TECH_CONTRACEPTION_ENABLED = False`)를 가동하십시오.
-3. **Iron Ceiling Report**: 인구가 특정 지점에서 꺾이며 기아가 발생하는 '멜서스의 재앙'을 시각화하십시오.
-
----
-
-## Task 3: The Social Ladder (WO-053 Education ROI)
-'Lively God Mode'와 앞서 설계한 'Mincer Link'를 결합하여 교육의 실제 수익률을 분석합니다.
-
-1. **Skill-Based Wage**: 기업이 숙련도 핵심 성과 지표(Total Skill Units)를 기반으로 임금을 제시하게 하십시오.
-2. **Dual ROI Analysis**: 실제 생산성 향상(Human Capital)과 단순 학벌 효과(Signaling)를 구분하여 리포트하십시오.
+1. **Fixed Land Logic**: 자본을 토지로 취급하는 고정 자본 로직 구현.
+2. **System 1 Simulation**: 본능적 번식 시뮬레이션 및 '기아의 철의 천장' 증명.
+3. **Malthusian Catastrophe Report**: 인구/임금 역상관 리포트 생성.
+    - **Target Files**: `scripts/experiments/malthusian_trap_baseline.py` (New), `simulation/agents/government.py` (Override logic)
 
 ---
 
-### [Jules: Reporting Protocol]
-- 모든 작업이 완료되면 `reports/dynasty_report_20260112.md`를 업데이트하여 **[정체 사회] vs [멜서스 사회] vs [인적자본 사회]**의 IGE 지표를 대조하여 리포트하십시오.
-- 최적화 적용 전후의 1,000틱 완주 시간을 명시하십시오.
+## 🎓 분대 C: Jules-Sociologist (Education ROI)
+**Mission: 인적 자본 vs 후광 효과 심층 분석**
+
+1. **Dual ROI Logic**: 생산성 기여(Human Capital)와 학벌 효과(Signaling) 구분 추적.
+2. **Skill-Based Wage**: 기업의 숙련도 기반 임금 제시 로직 구현.
+3. **The Social Ladder Report**: 교육이 계층 이동의 사다리인지 판정.
+    - **Target Files**: `simulation/metrics/mobility_tracker.py`, `simulation/firms.py`, `scripts/experiments/dynasty_report.py`
+
+---
+
+### [Collab Protocol]
+- **Optimizer**가 엔진 수정을 완료하면, **Archaeologist**와 **Sociologist**는 최적화된 엔진 위에서 최종 시뮬레이션을 돌려 결과를 제출하십시오.
+- 각 리포트의 끝에는 자신의 작업이 전체 성능 및 지표에 기여한 바를 명시하십시오.
