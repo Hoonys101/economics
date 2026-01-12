@@ -147,6 +147,27 @@ Level 0: 핵심 원칙 (Always Load)
     ```
 
 
+## 🛡️ Technical Debt Governance (기술부채 관리 규약)
+
+**"인지되지 않은 부채는 사고지만, 인지된 부채는 전략적 선택이다."**
+
+### 1. Recognition & Documentation
+- **Decision Loop**: Jules와 협업 중 일정이나 구현 난이도 문제로 기술부채(임시 로직, 하드코딩, 성능 병목 감수 등)를 허용하기로 결정했다면, 이를 즉시 **문서화**해야 합니다.
+- **Artifacts**: 
+    - **`roadmap.md`**: 상위 단계에서 해결해야 할 기술적 과제로 등록.
+    - **`TECH_DEBT_LEDGER.md` (부기표)**: 부채의 내용, 발생 원인, 상환 조건(Cleanup Trigger)을 기록.
+
+### 2. Debt Recording Format
+부채 기록 시 다음 항목을 필수로 포함하십시오:
+- **ID / 발생일**: 부채 식별 번호 및 날짜.
+- **부채 내용**: 타협한 기술적 사항 (예: "Caching logic skipped for faster iteration").
+- **상환 조건**: 해당 부채를 언제, 어떤 기준으로 해결할 것인가 (예: "Phase 23 시작 전 리팩토링").
+- **리스크**: 상환하지 않았을 때 도래할 위험 요소.
+
+---
+
+
+
 ## ⚔️ Parallel Management & Efficiency (Multi-Agent Protocol)
 
 **"일을 그냥 토스하는 것이 아니라, 효율성의 중심에서 설계하는 것이 팀장의 핵심 역량이다."**
