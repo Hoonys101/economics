@@ -67,13 +67,13 @@ class MobilityTracker:
 
 ## 3. Deliverables
 
-Jules는 다음 결과를 로그 및 콘솔에 산출해야 한다.
-1.  **Survival Rate**: 1,000틱 이후 생존 인구수.
-2.  **IGE Verdict**: 계산된 IGE 값 ($\beta$). 
-    - `IGE ≈ 0.0`: Meritocracy
-    - `IGE ≈ 0.5`: Status Quo
-    - `IGE > 0.8`: Caste System
-3.  **ASCII Scatter Plot**: **콘솔(stdout)**에 부모 자산 vs 자녀 자산의 대략적인 분포를 시각화하라.
+Jules는 시뮬레이션 종료 후 다음 결과를 **`reports/dynasty_report_20260112.md`** 파일로 생성해야 한다.
+1.  **Survival Rate**: 1,000틱 이후 생존 인구수 및 세대별 인구 분포.
+2.  **IGE Metric**:
+    - 계산된 IGE 값 ($\beta$).
+    - 결정계수 ($R^2$) - 데이터의 설명력 확인용.
+3.  **The Verdict**: IGE 값에 따른 사회 계층 고착화 진단.
+4.  **ASCII/Log Scatter Plot**: 부모 자산(log) vs 자녀 자산(log)의 분포를 Markdown 코드 블록 내에 시각화하라.
 
 ## 4. Acceptance Criteria
 - 1,000틱 완주 성공.
