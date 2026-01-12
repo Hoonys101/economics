@@ -40,7 +40,7 @@ def run_golden_age_test():
         
         # Stability
         "GOVERNMENT_STIMULUS_ENABLED": True,
-        "DEFAULT_ENGINE_TYPE": "RuleBased", # Stability for long run
+        "DEFAULT_ENGINE_TYPE": "AIDriven", # Phase 23: Education/Growth requires AI complexity
         
         # Performance
         "BATCH_SAVE_INTERVAL": 100,
