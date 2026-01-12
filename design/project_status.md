@@ -20,8 +20,13 @@
     - Step 4: Breeding (WO-048) ✅ (Adaptive NPV + Solvency Check)
     - Step 5: Engine Vectorization (WO-051) ✅ (NumPy Batch Processing)
     - Step 6: Maintenance (M-052a) ✅ (Inheritance Leak & Observer Fix)
-    - Step 7: Social Mobility Analysis (WO-052) 🔍 (The Dynasty Report)
-- **다음 단계:** `Social Mobility Analysis` (IGE Analysis)
+    - Step 7: Social Mobility Analysis (WO-052) ⏩ (Deferred to Phase 23)
+- **현재 단계:** `Phase 23: The Great Expansion` 🚀
+    - Step 1: Productivity Revolution (WO-053) 🏗️
+        - **Goal**: Introduce Chemical Fertilizer to break Malthusian Trap.
+    - Step 2: Public Education (WO-054) 📅
+
+- **다음 단계:** `Public Education System`
 
 
 ---

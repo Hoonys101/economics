@@ -28,8 +28,10 @@ from simulation.systems.inheritance_manager import InheritanceManager # Phase 22
 from simulation.systems.housing_system import HousingSystem # Phase 22.5
 from simulation.systems.persistence_manager import PersistenceManager # Phase 22.5
 from simulation.systems.firm_management import FirmSystem # Phase 22.5
+from simulation.systems.technology_manager import TechnologyManager # Phase 23 (WO-053)
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+from simulation.systems.transaction_processor import TransactionProcessor # SoC Refactor
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -219,8 +221,14 @@ class Simulation:
         # Phase 22.5: Firm System (Refactored)
         self.firm_system = FirmSystem(config_module=self.config_module)
 
+        # Phase 23: Technology Manager
+        self.technology_manager = TechnologyManager(config_module=self.config_module, logger=self.logger)
+
         # WO-051: Vectorized Planner Initialization
         self.breeding_planner = VectorizedHouseholdPlanner(self.config_module)
+
+        # SoC Refactor: Transaction Processor
+        self.transaction_processor = TransactionProcessor(self.config_module)
 
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
@@ -390,22 +398,25 @@ class Simulation:
         firm_pre_states = {}
         for firm in self.firms:
             if firm.is_active:
-                pre_strategic_state = (
-                    firm.decision_engine.ai_engine._get_strategic_state(
-                        firm.get_agent_data(), market_data
+                # Guard for AI-driven engines (RuleBased engines don't have ai_engine)
+                if hasattr(firm.decision_engine, 'ai_engine') and firm.decision_engine.ai_engine:
+                    pre_strategic_state = (
+                        firm.decision_engine.ai_engine._get_strategic_state(
+                            firm.get_agent_data(), market_data
+                        )
                     )
-                )
-                pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(
-                    firm.decision_engine.ai_engine.chosen_intention,
-                    firm.get_agent_data(),
-                    market_data,
-                )
-                firm_pre_states[firm.id] = {
-                    "pre_strategic_state": pre_strategic_state,
-                    "pre_tactical_state": pre_tactical_state,
-                    "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
-                    "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
-                }
+                    pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(
+                        firm.decision_engine.ai_engine.chosen_intention,
+                        firm.get_agent_data(),
+                        market_data,
+                    )
+                    firm_pre_states[firm.id] = {
+                        "pre_strategic_state": pre_strategic_state,
+                        "pre_tactical_state": pre_tactical_state,
+                        "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
+                        "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
+                    }
+
                 # Phase 8-B: Pass reflux_system to firm.make_decision for CAPEX capture
                 firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time, self.government, self.reflux_system)
                 for order in firm_orders:
@@ -435,14 +446,17 @@ class Simulation:
         household_time_allocation = {}  # Store time allocation for later use
         for household in self.households:
             if household.is_active:
-                pre_strategic_state = (
-                    household.decision_engine.ai_engine._get_strategic_state(
-                        household.get_agent_data(), market_data
+                # Guard for AI-driven engines (RuleBased engines don't have ai_engine)
+                if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
+                    pre_strategic_state = (
+                        household.decision_engine.ai_engine._get_strategic_state(
+                            household.get_agent_data(), market_data
+                        )
                     )
-                )
-                household_pre_states[household.id] = {
-                    "pre_strategic_state": pre_strategic_state, # Legacy support
-                }
+                    household_pre_states[household.id] = {
+                        "pre_strategic_state": pre_strategic_state, # Legacy support
+                    }
+
                 # make_decision return (orders, vector)
                 household_orders, action_vector = household.make_decision(
                     self.markets, self.goods_data, market_data, self.time, self.government
@@ -451,7 +465,11 @@ class Simulation:
                 # Phase 5: Calculate Time Allocation (Hydraulic Model)
                 # work_hours = work_agg * MAX_WORK_HOURS
                 # leisure_hours = 24 - work_hours - SHOPPING_HOURS
-                work_aggressiveness = action_vector.work_aggressiveness
+                # Guard: RuleBased engines return tuple, not ActionVector DTO
+                if hasattr(action_vector, 'work_aggressiveness'):
+                    work_aggressiveness = action_vector.work_aggressiveness
+                else:
+                    work_aggressiveness = 0.5 # Default for RuleBased
                 max_work_hours = self.config_module.MAX_WORK_HOURS
                 shopping_hours = getattr(self.config_module, "SHOPPING_HOURS", 2.0)
                 hours_per_tick = getattr(self.config_module, "HOURS_PER_TICK", 24.0)
@@ -543,12 +561,13 @@ class Simulation:
         # WO-051: Vectorized Consumption Logic
         # Pre-calculate consumption/purchase decisions for all households
         batch_decisions = self.breeding_planner.decide_consumption_batch(self.households, consumption_market_data)
-        consume_list = batch_decisions['consume']
-        buy_list = batch_decisions['buy']
-        food_price = batch_decisions['price']
+        consume_list = batch_decisions.get('consume', [0] * len(self.households))
+        buy_list = batch_decisions.get('buy', [0] * len(self.households))
+        food_price = batch_decisions.get('price', 5.0)  # Default food price
 
         for i, household in enumerate(self.households):
              if household.is_active:
+
                  # 1. Consumption (Vectorized Optimization)
                  # Replace decide_and_consume with vectorized result application
                  consumed_items = {}
@@ -606,6 +625,9 @@ class Simulation:
                                  f"PARENTING_XP_TRANSFER | Parent {household.id} -> Child {child_id}. XP: {effect_dto.xp_gained:.4f}",
                                  extra={"agent_id": household.id, "tags": ["LEISURE_EFFECT", "parenting"]}
                              )
+
+        # --- Phase 23: Technology Manager Update ---
+        self.technology_manager.update(self.time, self)
 
         # Phase 17-3B: Process Housing (Mortgage, Rent, Maintenance, Foreclosure)
         self.housing_system.process_housing(self)
@@ -671,7 +693,8 @@ class Simulation:
         # ---------------------------------------------------------
         for firm in self.firms:
              if firm.is_active:
-                 firm.produce(self.time)
+                 # Phase 23: Pass Technology Manager for Productivity
+                 firm.produce(self.time, technology_manager=self.technology_manager)
                  # Phase 4: Pass government and market_data for income tax withholding
                  # Phase 8-B: Pass reflux_system for expense capture
                  firm.update_needs(self.time, self.government, market_data, self.reflux_system)
@@ -1023,233 +1046,16 @@ class Simulation:
         return all_agents
 
     def _process_transactions(self, transactions: List[Transaction]) -> None:
-        """발생한 거래들을 처리하여 에이전트의 자산, 재고, 고용 상태 등을 업데이트합니다."""
-        for tx in transactions:
-            buyer = self.agents.get(tx.buyer_id)
-            seller = self.agents.get(tx.seller_id)
-
-            if not buyer or not seller:
-                continue
-
-            trade_value = tx.quantity * tx.price
-            sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
-            income_tax_rate = getattr(self.config_module, "INCOME_TAX_RATE", 0.1)
-
-            # --- 1. 기본 자산 이동 및 세금 처리 ---
-            if tx.transaction_type in ["goods", "stock"]:
-                # 거래세(부가가치세) 적용: 매수자가 추가로 지불
-                tax_amount = trade_value * sales_tax_rate
-                buyer.assets -= (trade_value + tax_amount)
-                seller.assets += trade_value
-                self.government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, self.time)
-            
-            elif tx.transaction_type in ["labor", "research_labor"]:
-                # 소득세 적용 (INCOME_TAX_PAYER 설정에 따름)
-                tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
-
-                # Phase 4: Progressive Tax
-                # Calculate Survival Cost for Tax Bracket
-                avg_food_price = 0.0
-                goods_market_data = self._prepare_market_data(self.tracker).get("goods_market", {})
-                if "basic_food_current_sell_price" in goods_market_data:
-                    avg_food_price = goods_market_data["basic_food_current_sell_price"]
-                else:
-                    avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
-                daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
-                survival_cost = max(avg_food_price * daily_food_need, 10.0)
-
-                tax_amount = self.government.calculate_income_tax(trade_value, survival_cost)
-                
-                if tax_payer == "FIRM":
-                    # 기업이 세금을 추가로 납부 (가계는 trade_value 전액 수령)
-                    buyer.assets -= (trade_value + tax_amount)
-                    seller.assets += trade_value
-                    self.government.collect_tax(tax_amount, "income_tax_firm", buyer.id, self.time)
-                else:
-                    # 가계가 세금을 납부 (원천징수, 기본값)
-                    buyer.assets -= trade_value
-                    seller.assets += (trade_value - tax_amount)
-                    self.government.collect_tax(tax_amount, "income_tax_household", seller.id, self.time)
-            
-            else:
-                # 기타 거래 (대출 등) - 현재는 세금 없음
-                buyer.assets -= trade_value
-                seller.assets += trade_value
-
-            # --- 2. 유형별 특수 로직 ---
-            if (
-                tx.transaction_type == "labor"
-                or tx.transaction_type == "research_labor"
-            ):
-                if isinstance(seller, Household):
-                    if (
-                        seller.is_employed
-                        and seller.employer_id is not None
-                        and seller.employer_id != buyer.id
-                    ):
-                        previous_employer = self.agents.get(seller.employer_id)
-                        if (
-                            isinstance(previous_employer, Firm)
-                            and seller in previous_employer.employees
-                        ):
-                            previous_employer.employees.remove(seller)
-
-                    seller.is_employed = True
-                    seller.employer_id = buyer.id
-                    seller.current_wage = tx.price # Store wage
-                    seller.needs["labor_need"] = 0.0
-
-                    # Track Labor Income (Net) - for first hiring, assuming payment
-                    # Note: Usually actual payment is in Firm.update_needs.
-                    # But if this transaction involves money transfer (it does below),
-                    # we should record it.
-                    # However, logic above:
-                    # buyer.assets -= ...
-                    # seller.assets += (trade_value - tax_amount)
-                    # So seller received net income.
-                    if hasattr(seller, "labor_income_this_tick"):
-                        net_income = trade_value - tax_amount
-                        seller.labor_income_this_tick += net_income
-
-                if isinstance(buyer, Firm):
-                    if seller not in buyer.employees:
-                        buyer.employees.append(seller)
-                    buyer.employee_wages[seller.id] = tx.price # Store wage
-                    buyer.cost_this_turn += trade_value
-
-                    if tx.transaction_type == "research_labor":
-                        research_skill = seller.skills.get(
-                            "research", Skill("research")
-                        ).value
-                        buyer.productivity_factor += (
-                            research_skill
-                            * self.config_module.RND_PRODUCTIVITY_MULTIPLIER
-                        )
-
-            elif tx.transaction_type == "dividend":
-                # Firm (Seller) pays Household (Buyer)
-                # Correction: distribute_dividends sets Seller=Firm, Buyer=Household.
-                # Standard logic above: Buyer pays Seller.
-                # We need REVERSE logic for Dividend.
-
-                # Firm (Seller) pays Dividend
-                seller.assets -= trade_value
-
-                # Household (Buyer) receives Dividend
-                buyer.assets += trade_value
-
-                if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
-                    buyer.capital_income_this_tick += trade_value
-
-            elif tx.transaction_type == "goods":
-                good_info = self.config_module.GOODS.get(tx.item_id, {})
-                is_service = good_info.get("is_service", False)
-
-                if is_service:
-                    # 서비스인 경우 인벤토리를 거치지 않고 즉시 소비 처리
-                    if isinstance(buyer, Household):
-                        buyer.consume(tx.item_id, tx.quantity, self.time)
-                else:
-                    seller.inventory[tx.item_id] = max(
-                        0, seller.inventory.get(tx.item_id, 0) - tx.quantity
-                    )
-
-                    # WO-030: Route Raw Materials to input_inventory
-                    is_raw_material = tx.item_id in getattr(self.config_module, "RAW_MATERIAL_SECTORS", [])
-
-                    if is_raw_material and isinstance(buyer, Firm):
-                        # Add to input_inventory
-                        buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
-                        # No quality tracking for input_inventory yet in this spec
-                    else:
-                        # Regular inventory update
-                        # Phase 15: Transfer Quality (Weighted Average)
-                        current_qty = buyer.inventory.get(tx.item_id, 0)
-
-                        # Determine existing quality
-                        existing_quality = 1.0
-                        if isinstance(buyer, Household):
-                            existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
-                        elif isinstance(buyer, Firm):
-                            existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
-
-                        # Transaction Quality (passed from Market)
-                        tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
-
-                        # Calculate new WA Quality
-                        total_new_qty = current_qty + tx.quantity
-                        new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
-
-                        # Update Buyer Quality
-                        if isinstance(buyer, Household):
-                            buyer.inventory_quality[tx.item_id] = new_avg_quality
-                        elif isinstance(buyer, Firm):
-                            buyer.inventory_quality[tx.item_id] = new_avg_quality
-
-                        # Update Quantity
-                        buyer.inventory[tx.item_id] = total_new_qty
-
-                if isinstance(seller, Firm):
-                    seller.revenue_this_turn += trade_value
-                
-                if isinstance(buyer, Household):
-                    # 서비스는 consume()에서 이미 처리되었으므로 비서비스 상품만 여기서 추가
-                    if not is_service:
-                        buyer.current_consumption += tx.quantity
-                        if tx.item_id == "basic_food":
-                            buyer.current_food_consumption += tx.quantity
-
-                # Track Sales Volume for Solvency Logic
-                if isinstance(seller, Firm):
-                    seller.sales_volume_this_tick += tx.quantity
-
-            elif tx.transaction_type == "stock":
-                # 주식 거래 처리
-                # item_id 형식: "stock_{firm_id}"
-                firm_id = int(tx.item_id.split("_")[1])
-                
-                # 매도자의 주식 감소
-                if isinstance(seller, Household):
-                    # Legacy Sync
-                    current_shares = seller.shares_owned.get(firm_id, 0)
-                    seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
-                    if seller.shares_owned[firm_id] <= 0:
-                        if firm_id in seller.shares_owned:
-                            del seller.shares_owned[firm_id]
-                    # Portfolio Update
-                    if hasattr(seller, "portfolio"):
-                        seller.portfolio.remove(firm_id, tx.quantity)
-
-                elif isinstance(seller, Firm) and seller.id == firm_id:
-                    # 자사주 매각
-                    seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
-                
-                # 매수자의 주식 증가
-                if isinstance(buyer, Household):
-                    # Legacy Sync
-                    buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
-                    # Portfolio Update
-                    if hasattr(buyer, "portfolio"):
-                        buyer.portfolio.add(firm_id, tx.quantity, tx.price)
-
-                elif isinstance(buyer, Firm) and buyer.id == firm_id:
-                    # 자사주 매입 (Buyback) -> Treasury Shares 증가
-                    buyer.treasury_shares += tx.quantity
-                    # Buyback은 유통 주식 수를 줄임
-                    buyer.total_shares -= tx.quantity
-
-                # [Mitosis] Update Shareholder Registry in StockMarket
-                if self.stock_market:
-                    # Update Seller
-                    if isinstance(seller, Household):
-                        self.stock_market.update_shareholder(seller.id, firm_id, seller.shares_owned.get(firm_id, 0))
-                    # Update Buyer
-                if isinstance(buyer, Household):
-                    self.stock_market.update_shareholder(buyer.id, firm_id, buyer.shares_owned.get(firm_id, 0))
-
-            # --- Phase 17-3B: Housing Transaction Logic ---
-            elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
-                self.housing_system.process_transaction(tx, self)
+        """발생한 거래들을 처리하여 에측된 가계/기업 상태 등을 업데이트합니다."""
+        # SoC Refactor: Logic moved to TransactionProcessor
+        market_data_cb = lambda: self._prepare_market_data(self.tracker).get("goods_market", {})
+        self.transaction_processor.process(
+            transactions=transactions,
+            agents=self.agents,
+            government=self.government,
+            current_time=self.time,
+            market_data_callback=market_data_cb
+        )
 
 
 

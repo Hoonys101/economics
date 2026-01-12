@@ -272,7 +272,7 @@ class Firm(BaseAgent):
         self.last_revenue = self.revenue_this_turn
         self.last_marketing_spend = self.marketing_budget
 
-    def produce(self, current_time: int) -> None:
+    def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         """
         Cobb-Douglas 생산 함수를 사용한 생산 로직.
         Phase 21: Modified Cobb-Douglas with Automation.
@@ -310,8 +310,25 @@ class Firm(BaseAgent):
 
         capital = max(self.capital_stock, 0.01)
 
-        tfp = self.productivity_factor  # Total Factor Productivity
+        # Technology Multiplier (WO-053)
+        tech_multiplier = 1.0
+        # Check if technology_manager is available in config or reflux_system?
+        # Passed via engine? Currently make_decision has limited context.
+        # But produce is called by engine.py directly.
+        # We need to change produce signature or attach tech_manager to firm?
+        # Better: pass tech_manager to produce() args.
         
+        # Currently: def produce(self, current_time: int) -> None:
+        # We need: def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
+        
+        # Assuming we change signature below.
+        
+        tfp = self.productivity_factor * tech_multiplier  # Total Factor Productivity
+        
+        if technology_manager:
+            tech_multiplier = technology_manager.get_productivity_multiplier(self.id, self.sector)
+            tfp *= tech_multiplier
+
         # Phase 15: Quality Calculation
         avg_skill = 0.0
         if self.employees:
