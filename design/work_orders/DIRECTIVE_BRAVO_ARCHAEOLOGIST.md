@@ -5,7 +5,7 @@
 
 ## 2. 🧱 Technical Task (Zero-Question Spec)
 
-### A. Experiment Script: `c:\coding\economics\scripts\experiments\malthusian_trap_baseline.py`
+### A. Experiment Script: `scripts/experiments/malthusian_trap_baseline.py`
 이 파일은 단순 Config 모음이 아니라, 시뮬레이션을 제어하고 데이터를 수집하는 **실행 스크립트**입니다.
 - **Overrides**:
     - `CAPITAL_DEPRECIATION_RATE = 0.0` (자본의 소멸을 막아 토지와 같은 고정 자산으로 취급)
@@ -23,5 +23,5 @@
     3. `Population` 그래프가 특정 상한선(`Iron Ceiling`)에서 진동하거나 급락(Catastrophe)하는 지점을 리포트에 명시.
 
 ## 3. ✅ Verification
-- `c:\coding\economics\reports\malthusian_trap_report.md` 생성.
+- `reports/malthusian_trap_report.md` 생성.
 - **Metric**: "인구가 2배 늘어날 때 실질 임금이 몇 % 하락하는가?" (역상관 계수)를 산출하여 리포트하십시오.

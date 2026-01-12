@@ -191,10 +191,10 @@ Level 0: 핵심 원칙 (Always Load)
 
 **"구현 시 질문이 나온다면 그것은 팀장의 설계 결함이다."**
 
-### 1. Accuracy of Instructions (절대 경로 및 확정적 동작)
-- **Absolute Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **절대 경로(Absolute Path)**로 제공해야 합니다. 저장소를 뒤지게 만들거나 추측하게 하는 행위는 팀장의 직무 유기입니다.
-    - **Bad**: "저장소의 `DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오."
-    - **Good**: "`c:\coding\economics\design\work_orders\DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오."
+### 1. Accuracy of Instructions (상대 경로 및 확정적 동작)
+- **Repo-Relative Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **저장소 루트 기준 상대 경로(Relative Path from Root)**로 제공해야 합니다. Git 기반 협업 및 이동성을 보장하기 위함입니다.
+    - **Bad**: "저장소의 `DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오." (모호함)
+    - **Good**: `design/work_orders/DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오. (저장소 어디서든 접근 가능)
 - **Good Behavior**: "`X` 함수를 `Y` 로직으로 구현하고, `Z` 파일에 적용하십시오." (동작 확정)
 
 ### 2. Technical Definitions
