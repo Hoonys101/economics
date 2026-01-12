@@ -25,8 +25,12 @@
         2. `market_data`에서 상품 가격 배열 생성.
         3. 가계 자산 내에서 생존 필수품(Food)을 최대치로 구매하도록 하는 Boolean Mask 연산 수행.
 - **Target File**: `simulation/engine.py`
-- **Action**: `run_tick` 내의 가계 소비 루프(line ~545)를 위 `decide_consumption_batch` 결과에 따른 일괄 구매 반영 로직으로 교체하십시오.
+- **Action**: 
+    1. **Integrity Preservation**: `run_tick` 내의 가계 소비 루프(line ~545)는 **제거하지 마십시오**. `apply_leisure_effect`와 `update_needs`는 시뮬레이션의 생존 논리(Integrity)를 위해 필수적입니다.
+    2. **Optimization**: `Household.decide_and_consume` 내부의 복잡한 연산을 `VectorizedHouseholdPlanner`의 계산 결과로 대체하십시오. 즉, 루프는 돌되 내부의 무거운 '결정 로직'만 벡터화된 값으로 치환하는 방식입니다.
 
-## 3. ✅ Verification
-- **Speed Test**: 최적화 전후의 **초당 틱(TPS) 속도**를 측정하여 리포트하십시오.
-- **Integrity Test**: `iron_test.py`를 실행하여 가계의 굶주림(Survival need)이 정상적으로 해결되고 있는지 확인하십시오.
+### D. Missing Script & Testing
+- **Target File**: `scripts/experiments/dynasty_report.py`
+- **Action**: 해당 파일이 존재하지 않는다면, 최근 수행한 `Lively God Mode` 실험 코드를 바탕으로 **신규 생성**하십시오. (기존 `scripts/run_experiment.py` 등을 참고하여 1,000틱 완주 스크립트로 정형화)
+- **Verification**: `scripts/iron_test.py`에 소요 시간 대비 처리 틱 수(`TPS = Total Ticks / Total Time`)를 출력하는 로직을 추가하여 성능 향상을 증명하십시오.
+- **Reporting**: 구현 중 기술적 제약이나 예외 상황으로 인해 '임시 로직'이 불가피할 경우, 팀장에게 즉시 보고하십시오. 팀장이 해당 사항의 기술부채 수용 여부를 결정할 것입니다.
