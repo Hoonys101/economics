@@ -56,23 +56,24 @@ class MobilityTracker:
 ## 2. Integration Requirements
 
 1.  **DemographicManager (`simulation/systems/demographic_manager.py`)**:
-    *   `process_births` 시점에 `simulation.mobility_tracker.register_birth`를 호출하여 부모 자산을 기록하라.
+    *   `process_births` 내에서 **상속 gift(10%)가 차감되기 직전**의 부모 자산을 `mobility_tracker.register_birth`로 기록하라.
 2.  **Simulation Engine (`simulation/engine.py`)**:
     *   `self.mobility_tracker = MobilityTracker()`를 초기화하라.
-    *   에이전트가 사망(`is_active=False`) 시점에 `mobility_tracker.record_final_wealth`를 호출하라.
+    *   에이전트가 사망(`is_active=False`) 시점에, **InheritanceManager가 자산을 영(0)으로 만들기 직전**의 최종 자산을 `record_final_wealth`에 반영하라.
 3.  **Experiment Script (`scripts/experiments/dynasty_report.py`)**:
     *   초기 인구 50명으로 1,000틱 시뮬레이션을 Headless 모드로 구동하는 스크립트를 작성하라.
+    *   **Engine Stability**: 기본 `config.py`를 사용하되, 시뮬레이션이 경제 붕괴(Population < 5)로 조기 종료될 경우 `WAGE_DECAY_RATE`를 0.01로 완화하거나 `GOVERNMENT_UNEMPLOYMENT_BENEFIT`을 상향 조정하는 `STABILITY_PATCH` 모드를 활성화할 수 있다.
     *   종료 시 살아있는 모든 에이전트의 현재 자산을 `record_final_wealth`에 반영한 후, IGE 성적표를 출력하라.
 
 ## 3. Deliverables
 
-Jules는 다음 결과를 로그 또는 파일로 산출해야 한다.
+Jules는 다음 결과를 로그 및 콘솔에 산출해야 한다.
 1.  **Survival Rate**: 1,000틱 이후 생존 인구수.
 2.  **IGE Verdict**: 계산된 IGE 값 ($\beta$). 
     - `IGE ≈ 0.0`: Meritocracy
     - `IGE ≈ 0.5`: Status Quo
     - `IGE > 0.8`: Caste System
-3.  **ASCII Scatter Plot**: 로그 파일에 부모 자산 vs 자녀 자산의 대략적인 분포를 시각화하라 (선택 사항이나 권장).
+3.  **ASCII Scatter Plot**: **콘솔(stdout)**에 부모 자산 vs 자녀 자산의 대략적인 분포를 시각화하라.
 
 ## 4. Acceptance Criteria
 - 1,000틱 완주 성공.
