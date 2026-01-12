@@ -18,6 +18,7 @@ from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
 from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
+from simulation.metrics.mobility_tracker import MobilityTracker # WO-052
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
@@ -198,6 +199,9 @@ class Simulation:
 
         # Economic Reflux System (Phase 8-B)
         self.reflux_system = EconomicRefluxSystem()
+
+        # WO-052: Mobility Tracker
+        self.mobility_tracker = MobilityTracker()
 
         # Phase 19: Demographic Manager
         self.demographic_manager = DemographicManager(config_module=self.config_module)
@@ -1279,6 +1283,9 @@ class Simulation:
         # 2. 사망 가계 청산 (Household Liquidation)
         inactive_households = [h for h in self.households if not h.is_active]
         for household in inactive_households:
+            # WO-052: Record Final Wealth before Inheritance wipes it
+            self.mobility_tracker.record_final_wealth(household.id, household.assets)
+
             # Phase 22: Inheritance (WO-049)
             # Replaces Phase 19 DemographicManager logic and standard liquidation
             if hasattr(self, "inheritance_manager"):

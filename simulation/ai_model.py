@@ -99,6 +99,37 @@ class AIEngineRegistry:
             self._engines[value_orientation] = engine
         return self._engines[value_orientation]
 
+    def inherit_brain(self, parent_agent: Any, child_agent: Any):
+        """
+        Transfers learned knowledge (Q-tables) from parent to child.
+        """
+        import copy
+
+        # Access underlying AI engines
+        # Structure: Agent -> decision_engine (AIDrivenHouseholdDecisionEngine) -> ai_engine (HouseholdAI)
+
+        parent_ai = getattr(parent_agent.decision_engine, "ai_engine", None)
+        child_ai = getattr(child_agent.decision_engine, "ai_engine", None)
+
+        if not (parent_ai and child_ai):
+            return
+
+        # Copy Work Q-Table
+        if hasattr(parent_ai, "q_work") and hasattr(child_ai, "q_work"):
+            child_ai.q_work.q_table = copy.deepcopy(parent_ai.q_work.q_table)
+
+        # Copy Consumption Q-Tables
+        if hasattr(parent_ai, "q_consumption") and hasattr(child_ai, "q_consumption"):
+            for item_id, q_mgr in parent_ai.q_consumption.items():
+                if item_id not in child_ai.q_consumption:
+                    from simulation.ai.q_table_manager import QTableManager
+                    child_ai.q_consumption[item_id] = QTableManager()
+                child_ai.q_consumption[item_id].q_table = copy.deepcopy(q_mgr.q_table)
+
+        # Copy Investment Q-Table
+        if hasattr(parent_ai, "q_investment") and hasattr(child_ai, "q_investment"):
+             child_ai.q_investment.q_table = copy.deepcopy(parent_ai.q_investment.q_table)
+
     def end_episode(self, all_agents: List[Any]):
         """
         에피소드(시뮬레이션) 종료 시 모든 AI 모델을 저장한다.

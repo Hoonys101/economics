@@ -96,6 +96,11 @@ class DemographicManager:
             # but usually children start with 0 or small amount.
             # Let's assume standard INITIAL_ASSETS or small portion from parent.
             # "Initial 자산은 부모 자산의 일부 이전"
+
+            # WO-052: Record Parent Wealth before gift for Mobility Analysis
+            if hasattr(simulation, "mobility_tracker"):
+                simulation.mobility_tracker.register_birth(parent.id, child_id, parent.assets)
+
             initial_gift = parent.assets * 0.1
             parent.assets -= initial_gift
 
@@ -149,7 +154,7 @@ class DemographicManager:
                 talent=child_talent,
                 goods_data=simulation.goods_data,
                 initial_assets=initial_gift,
-                initial_needs={}, # Default reset
+                initial_needs={"survival": 0.0, "asset": 0.0, "social": 0.0, "improvement": 0.0},
                 decision_engine=new_decision_engine,
                 value_orientation=value_orientation,
                 personality=child_personality,

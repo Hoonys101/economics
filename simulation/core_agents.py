@@ -990,6 +990,10 @@ class Household(BaseAgent):
             logger=self.logger
         )
 
+    @property
+    def children_count(self) -> int:
+        return len(self.children_ids)
+
     def get_generational_similarity(self, other: "Household") -> float:
         """
         Phase 19: 가계 간 세대적/유전적 유사도를 계산합니다.
