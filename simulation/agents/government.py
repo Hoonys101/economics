@@ -3,6 +3,7 @@ from typing import Dict, List, Any, Deque
 from collections import deque
 from simulation.ai.enums import PoliticalParty
 from simulation.ai.government_ai import GovernmentAI
+from simulation.utils.shadow_logger import log_shadow
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,10 @@ class Government:
         self.gdp_history: List[float] = []
         self.gdp_history_window = 20
         
+        # WO-056: Shadow Policy Metrics
+        ticks_per_year = getattr(config_module, "TICKS_PER_YEAR", 100)
+        self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
+
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
@@ -264,6 +269,85 @@ class Government:
 
         # Update AI Learning (using current perceived opinion as proxy for immediate reward, or wait for next tick)
         self.ai.update_learning_with_state(self.perceived_public_opinion, market_data)
+
+        # WO-056: Shadow Mode Policy Logic
+        self._calculate_taylor_rule(market_data, current_tick)
+
+    def _calculate_taylor_rule(self, market_data: Dict[str, Any], current_tick: int) -> None:
+        """
+        WO-056: Stage 1 Shadow Mode (Central Bank/Fiscal Taylor Rule).
+        Calculates and logs the target interest rate based on Taylor Rule 2.0.
+        Note: Typically Central Bank does this, but Spec puts it in Government/Policy Shadow.
+        """
+        # 1. Update Price History for Inflation Calculation
+        avg_price = market_data.get("avg_goods_price", 10.0)
+        self.price_history_shadow.append(avg_price)
+
+        # 2. Calculate Inflation (YoY)
+        inflation = 0.0
+        if len(self.price_history_shadow) >= 2:
+            current_p = self.price_history_shadow[-1]
+            past_p = self.price_history_shadow[0] # Oldest available
+            if past_p > 0:
+                inflation = (current_p - past_p) / past_p
+
+        # 3. Calculate Real GDP Growth
+        real_gdp_growth = 0.0
+        if len(self.gdp_history) >= 2:
+            current_gdp = self.gdp_history[-1]
+            past_gdp = self.gdp_history[-2] # Tick-to-tick or smoothed?
+            # Spec says "Real_GDP_Growth".
+            # GDP History stores nominal or real? Usually nominal if prices rise.
+            # Real Growth approx = Nominal Growth - Inflation.
+            # Let's use Nominal Growth for now or small window.
+            if past_gdp > 0:
+                nominal_growth = (current_gdp - past_gdp) / past_gdp
+                # Crude Real Growth
+                real_gdp_growth = nominal_growth # If time step is small, inflation is negligible?
+                # Actually, better to use gdp_history[-2] vs [-1]
+
+        # 4. Calculate GDP Gap
+        # Gap = (Current - Potential) / Potential
+        # Potential is self.potential_gdp (tracked elsewhere or EMA)
+        # Initialize potential if needed
+        if self.potential_gdp == 0.0:
+            self.potential_gdp = market_data.get("total_production", 100.0)
+
+        gdp_gap = 0.0
+        if self.potential_gdp > 0:
+            current_gdp = market_data.get("total_production", 0.0)
+            gdp_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
+
+            # Simple EMA update for Potential GDP
+            alpha = 0.01
+            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+
+        # 5. Taylor Rule 2.0
+        # Target_Rate = Real_GDP_Growth + Inflation + 0.5*(Inf - Target_Inf) + 0.5*(GDP_Gap)
+        target_inflation = getattr(self.config_module, "CB_INFLATION_TARGET", 0.02)
+
+        # Neutral Rate assumption: Real Growth
+        neutral_rate = max(0.01, real_gdp_growth) # Floor at 1%?
+
+        target_rate = neutral_rate + inflation + 0.5 * (inflation - target_inflation) + 0.5 * gdp_gap
+
+        # 6. Log
+        # Get current base rate from market_data["loan_market"] or similar
+        current_base_rate = 0.05
+        if "loan_market" in market_data:
+            current_base_rate = market_data["loan_market"].get("interest_rate", 0.05)
+
+        gap = target_rate - current_base_rate
+
+        log_shadow(
+            tick=current_tick,
+            agent_id=self.id,
+            agent_type="Government",
+            metric="taylor_rule_rate",
+            current_value=current_base_rate,
+            shadow_value=target_rate,
+            details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
+        )
 
     def provide_subsidy(self, target_agent: Any, amount: float, current_tick: int):
         """

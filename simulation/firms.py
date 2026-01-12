@@ -17,6 +17,7 @@ from simulation.ai.enums import Personality
 # SoC Refactor
 from simulation.components.hr_department import HRDepartment
 from simulation.components.finance_department import FinanceDepartment
+from simulation.utils.shadow_logger import log_shadow
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -643,6 +644,10 @@ class Firm(BaseAgent):
             reflux_system=reflux_system,
         )
         decisions, tactic = self.decision_engine.make_decisions(context)
+
+        # WO-056: Shadow Mode Calculation
+        self._calculate_invisible_hand_price(markets, current_time)
+
         self.logger.debug(
             f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
             extra={
@@ -654,6 +659,55 @@ class Firm(BaseAgent):
             },
         )
         return decisions, tactic
+
+    def _calculate_invisible_hand_price(self, markets: Dict[str, Any], current_tick: int) -> None:
+        """
+        WO-056: Stage 1 Shadow Mode (Price Discovery 2.0).
+        Calculates and logs the shadow price based on Excess Demand.
+        """
+        market = markets.get(self.specialization)
+        # Check if market supports order book inspection
+        if not market or not hasattr(market, 'get_all_bids'):
+            return
+
+        # 1. Get Demand and Supply (Market-wide for this good)
+        bids = market.get_all_bids(self.specialization)
+        asks = market.get_all_asks(self.specialization)
+
+        demand = sum(o.quantity for o in bids)
+        supply = sum(o.quantity for o in asks)
+
+        # 2. Calculate Excess Demand Ratio
+        # Formula: (Demand - Supply) / Supply
+        if supply > 0:
+            excess_demand_ratio = (demand - supply) / supply
+        else:
+            # If supply is 0, treat as high demand pressure if demand exists
+            excess_demand_ratio = 1.0 if demand > 0 else 0.0
+
+        # 3. Calculate Candidate Price
+        # Sensitivity: Default 0.1 if not configured
+        sensitivity = getattr(self.config_module, "INVISIBLE_HAND_SENSITIVITY", 0.1)
+
+        # Current Price: Use firm's last price or market avg fallback
+        current_price = self.last_prices.get(self.specialization, 10.0)
+
+        candidate_price = current_price * (1.0 + (sensitivity * excess_demand_ratio))
+
+        # 4. Smoothing (Shadow Price)
+        # Shadow_Price = (Candidate * 0.2) + (Current * 0.8)
+        shadow_price = (candidate_price * 0.2) + (current_price * 0.8)
+
+        # 5. Log
+        log_shadow(
+            tick=current_tick,
+            agent_id=self.id,
+            agent_type="Firm",
+            metric="shadow_price",
+            current_value=current_price,
+            shadow_value=shadow_price,
+            details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
+        )
 
     @override
     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
