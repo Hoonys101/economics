@@ -538,9 +538,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                  # So equity funds remain in Cash (Wallet).
 
             # Now, simply check if we have enough Cash (after planned deposit/withdraw)
+            # SURVIVAL BUFFER (Phase 23.5 Fix)
+            # Households must keep a buffer for food/tax before investing everything.
             projected_cash = cash - max(0, diff_deposit) + max(0, -diff_deposit)
+            survival_buffer = 2000.0
 
-            if projected_cash >= startup_cost:
+            if projected_cash >= (startup_cost + survival_buffer):
                 orders.append(Order(household.id, "INVEST", "startup", 1.0, startup_cost, "admin"))
 
         return orders
@@ -589,7 +592,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         
         # 투자 예산 계산
         budget_ratio = getattr(self.config_module, "HOUSEHOLD_INVESTMENT_BUDGET_RATIO", 0.2)
-        investment_budget = household.assets * budget_ratio * agg_invest
+        survival_buffer = 2000.0
+        available_for_investment = max(0.0, household.assets - survival_buffer)
+        investment_budget = min(available_for_investment, household.assets * budget_ratio * agg_invest)
         
         # A. 매도 결정
         sell_threshold = getattr(self.config_module, "STOCK_SELL_PROFIT_THRESHOLD", 0.15)

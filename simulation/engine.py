@@ -321,7 +321,7 @@ class Simulation:
         )
 
         # WO-054: Government Public Education Logic (START OF TICK)
-        self.government.run_public_education(self.households, self.config_module, self.time)
+        self.government.run_public_education(self.households, self.config_module, self.time, self.reflux_system)
 
         if (
             self.time > 0
@@ -484,6 +484,12 @@ class Simulation:
                 self.household_time_allocation[household.id] = leisure_hours
 
                 for order in household_orders:
+                    # [Phase 23.5 Fix] Handle INVEST orders for startup creation (Active Entrepreneurship)
+                    if order.order_type == "INVEST" and order.market_id == "admin":
+                        self.logger.info(f"FOUND_INVEST_ORDER | Agent {household.id} attempting startup via admin market.")
+                        self.firm_system.spawn_firm(self, household)
+                        continue
+
                     # Determine target market based on Order Type or ID
                     target_market_id = order.market_id
 
@@ -872,6 +878,9 @@ class Simulation:
 
         # --- Gold Standard / Money Supply Verification (WO-016) ---
         if self.time >= 1:
+            # Phase 23.5: Final Solvency Check (Clear negative artifacts)
+            self.bank.check_solvency(self.government)
+
             current_money = self._calculate_total_money()
             expected_money = getattr(self, "baseline_money_supply", 0.0)
             if hasattr(self.government, "get_monetary_delta"):
@@ -1108,6 +1117,11 @@ class Simulation:
                                 f"{distribution:.2f} from Firm {firm.id} liquidation",
                                 extra={"agent_id": household.id, "tags": ["liquidation"]}
                             )
+                else:
+                    # No active shareholders: Escheat to Government (Money Destruction)
+                    from simulation.agents.government import Government
+                    if isinstance(self.government, Government):
+                        self.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, self.time)
             
             # 1e. 주주들의 해당 기업 주식 보유량 삭제
             for household in self.households:

@@ -438,6 +438,7 @@ class Government:
 
         if self.assets >= effective_cost:
             self.assets -= effective_cost
+            self.total_money_issued += effective_cost # Correct money supply accounting
             self.expenditure_this_tick += effective_cost
             if reflux_system:
                 reflux_system.capture(effective_cost, str(self.id), "infrastructure")
@@ -506,7 +507,7 @@ class Government:
         }
 
     # WO-054: Public Education System
-    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> None:
+    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:
         """
         WO-054: Public Education System Implementation.
         1. Free Basic Education (Level 0 -> 1)
@@ -575,7 +576,9 @@ class Government:
                         )
 
         self.expenditure_this_tick += spent_total
-        self.total_money_issued += spent_total # Technically transfer to nowhere (burned/consumed) but for tracking flow
+        self.total_money_issued += spent_total 
+        if reflux_system:
+            reflux_system.capture(spent_total, str(self.id), "education_services")
         # Actually education cost usually goes to "Education Service" provider if it exists.
         # But here we assume it's just state investment (sunk cost or transfer to abstraction).
         # Since Education Service exists as a generic sector, maybe we should buy it?

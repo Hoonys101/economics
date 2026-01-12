@@ -377,6 +377,32 @@ class Bank:
         )
         return True
 
+    def _borrow_from_central_bank(self, amount: float):
+        """
+        Phase 23.5: Lender of Last Resort.
+        Creates money via Government to cover liquidity gaps.
+        """
+        self.assets += amount
+        if self.config_module and hasattr(self.config_module, 'GOVERNMENT_ID'):
+             # If we have a reference to government via simulation later, but here we take config
+             pass
+        
+        # We need a way to increment gov.total_money_issued. 
+        # Since Bank doesn't have gov reference directly, we'll return the amount
+        # or rely on the engine to track it if we flag it.
+        # Better: Pass government to Bank.run_tick or check_solvency.
+        logger.warning(f"BANK_BORROWING | Central Bank injected {amount:.2f} into Bank {self.id} reserves.")
+
+    def check_solvency(self, government: Any):
+        """
+        Phase 23.5: Ensuring Bank always has positive reserves for TransactionProcessor.
+        """
+        if self.assets < 0:
+            borrow_amount = abs(self.assets) + 1000.0 # Maintain buffer
+            self.assets += borrow_amount
+            government.total_money_issued += borrow_amount
+            logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government.")
+
     def process_default(self, agent: Any, loan: Loan, current_tick: int):
         """
         Phase 4: Handles loan default.

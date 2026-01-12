@@ -123,6 +123,10 @@ class FirmSystem:
         capital_multiplier = getattr(self.config, "STARTUP_CAPITAL_MULTIPLIER", 1.5)
 
         active_firms_count = sum(1 for f in simulation.firms if f.is_active)
+        max_firms = max(5, int(len(simulation.households) / 15))
+
+        if active_firms_count >= max_firms:
+            return # Prevent over-creation of firms (Labor Dilution)
 
         if active_firms_count < min_firms:
             trigger_probability = 0.5
