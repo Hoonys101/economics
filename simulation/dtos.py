@@ -57,6 +57,11 @@ class EconomicIndicatorData:
     avg_survival_need: Optional[float] = None
     total_labor_income: Optional[float] = None
     total_capital_income: Optional[float] = None
+    # Phase 23: Education & Opportunity Metrics
+    avg_education_level: Optional[float] = None
+    education_spending: Optional[float] = None
+    education_coverage: Optional[float] = None
+    brain_waste_count: Optional[int] = None
 
 @dataclass
 class MarketHistoryData:
@@ -249,6 +254,9 @@ class SocietyTabDataDTO:
     # Phase 5 Additions
     time_allocation: Dict[str, float] # e.g., {"WORK": 100, "PARENTING": 20}
     avg_leisure_hours: float
+    # Phase 23: Opportunity Index
+    avg_education_level: float
+    brain_waste_count: int
 
 @dataclass
 class GovernmentTabDataDTO:
@@ -259,6 +267,9 @@ class GovernmentTabDataDTO:
     welfare_spending: float
     current_avg_tax_rate: float
     welfare_history: List[Dict[str, float]] # Last 50 ticks spending
+    # Phase 23: Education Spending
+    education_spending: float
+    education_history: List[Dict[str, float]] # Last 50 ticks spending
 
 @dataclass
 class MarketTabDataDTO:

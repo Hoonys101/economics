@@ -221,6 +221,25 @@ class EconomicIndicatorTracker:
         else:
             record["inventory_turnover"] = 0.0
 
+        # --- Phase 23: Opportunity Index & Education Metrics ---
+        # 1. Average Education Level
+        total_edu = sum(getattr(h, "education_level", 0.0) for h in households if getattr(h, "is_active", True))
+        record["avg_education_level"] = total_edu / total_households if total_households > 0 else 0.0
+
+        # 2. Brain Waste Count (Aptitude >= 0.8 but Education < Level 2)
+        brain_waste = [
+            h for h in households 
+            if getattr(h, "is_active", True) 
+            and getattr(h, "aptitude", 0.0) >= 0.8 
+            and getattr(h, "education_level", 0.0) < 2.0
+        ]
+        record["brain_waste_count"] = len(brain_waste)
+
+        # 3. Government Education Spending (from direct state)
+        # Note: This relies on Simulation passing the spent amount or Government state being visible.
+        # However, track() doesn't receive Government instance directly. 
+        # But we can assume it will be added to record via engine integration or by passing govt.
+
 
         for field in self.all_fieldnames:
             record.setdefault(field, 0.0)

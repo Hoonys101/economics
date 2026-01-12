@@ -221,7 +221,9 @@ class SnapshotViewModel:
             mitosis_cost=mitosis_cost,
             unemployment_pie=unemployment_pie,
             time_allocation=time_allocation,
-            avg_leisure_hours=avg_leisure_hours
+            avg_leisure_hours=avg_leisure_hours,
+            avg_education_level=simulation.tracker.get_latest_indicators().get("avg_education_level", 0.0),
+            brain_waste_count=int(simulation.tracker.get_latest_indicators().get("brain_waste_count", 0))
         )
 
     def _get_government_data(self, simulation: Simulation, current_tick: int) -> GovernmentTabDataDTO:
@@ -259,7 +261,9 @@ class SnapshotViewModel:
             tax_revenue_history=tax_history,
             welfare_spending=current_welfare,
             current_avg_tax_rate=current_avg_tax_rate,
-            welfare_history=welfare_history
+            welfare_history=welfare_history,
+            education_spending=simulation.government.current_tick_stats.get("education_spending", 0.0) if hasattr(simulation.government, "education_history") else 0.0,
+            education_history=getattr(simulation.government, "education_history", [])
         )
 
     def _get_market_data(self, simulation: Simulation, current_tick: int) -> MarketTabDataDTO:
