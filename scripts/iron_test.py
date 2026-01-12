@@ -12,6 +12,7 @@ import os
 import argparse
 import logging
 import json
+import time # Added for TPS
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,6 +32,8 @@ logger.propagate = False
 
 def run_simulation(ticks: int, overrides: dict = None):
     logger.info(f"=== IRON TEST START: {ticks} Ticks ===")
+
+    start_time = time.time() # Start Timer
 
     # Initialize Simulation via Factory
     simulation = create_simulation(overrides=overrides)
@@ -101,6 +104,10 @@ def run_simulation(ticks: int, overrides: dict = None):
             break
 
     # Final Checks
+    end_time = time.time() # End Timer
+    total_time = end_time - start_time
+    tps = ticks / total_time if total_time > 0 else 0
+
     final_indicators = simulation.tracker.get_latest_indicators()
     final_gdp = final_indicators.get("total_production", 0.0)
     final_pop = sum(1 for h in households if h.is_active)
@@ -140,7 +147,7 @@ def run_simulation(ticks: int, overrides: dict = None):
         if not passed:
             f.write(f"**Reason**: {failure_reason}\n")
 
-    logger.info(f"Test Complete. Verdict: {'PASS' if passed else 'FAIL'}")
+    logger.info(f"Test Complete. Verdict: {'PASS' if passed else 'FAIL'} | TPS: {tps:.2f}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -13,6 +13,11 @@ class VectorizedHouseholdPlanner:
         self.tech_enabled = getattr(config, "TECH_CONTRACEPTION_ENABLED", True)
         self.fertility_rate = getattr(config, "BIOLOGICAL_FERTILITY_RATE", 0.15)
 
+        # Consumption Constants
+        self.survival_threshold = getattr(config, "SURVIVAL_NEED_CONSUMPTION_THRESHOLD", 50.0)
+        self.food_consumption_qty = getattr(config, "FOOD_CONSUMPTION_QUANTITY", 1.0)
+        self.max_purchase_qty = getattr(config, "FOOD_PURCHASE_MAX_PER_TICK", 5.0)
+
         self.logger = logging.getLogger(__name__)
 
     def decide_breeding_batch(self, agents: list):
@@ -75,3 +80,56 @@ class VectorizedHouseholdPlanner:
         decisions = (npv > 0) & is_solvent & is_fertile
 
         return decisions.tolist()
+
+    def decide_consumption_batch(self, agents: list, market_data: dict):
+        """
+        WO-051: Vectorized Consumption Logic
+        Determines who should consume food (from inventory) and who should buy food (from market).
+        """
+        count = len(agents)
+        if count == 0:
+            return {'consume': [], 'buy': []}
+
+        # 1. Extract State
+        # Inventory: "basic_food"
+        inventories = np.array([a.inventory.get("basic_food", 0.0) for a in agents], dtype=np.float32)
+        assets = np.array([a.assets for a in agents], dtype=np.float32)
+        survival_needs = np.array([a.needs.get("survival", 0.0) for a in agents], dtype=np.float32)
+
+        # 2. Market Data
+        # Get "basic_food" price
+        goods_market = market_data.get("goods_market", {})
+        food_price = goods_market.get("basic_food_current_sell_price", 5.0)
+        if food_price <= 0: food_price = 5.0 # Fallback
+
+        # 3. Vectorized Logic
+
+        # A. Consumption Decision
+        # Need > Threshold AND Inventory > 0
+        should_consume = (survival_needs > self.survival_threshold) & (inventories > 0)
+        # Quantity: 1.0 (Fixed by Config usually, simplifying to 1.0 for vector speed)
+        consume_amounts = np.where(should_consume, self.food_consumption_qty, 0.0)
+        # Cap by inventory
+        consume_amounts = np.minimum(consume_amounts, inventories)
+
+        # B. Purchase Decision (Survival Logic)
+        # Need > Threshold AND Inventory < 1.0 (Buffer)
+        # AND Assets > Price
+        should_buy = (survival_needs > self.survival_threshold) & (inventories < 1.0) & (assets >= food_price)
+
+        # Buy Amount: Max Purchase Qty (5.0) or afford limit
+        # Simple Logic: Buy 5.0 to restock buffer
+        buy_amounts = np.where(should_buy, self.max_purchase_qty, 0.0)
+
+        # Affordability check
+        max_affordable = assets / food_price
+        buy_amounts = np.minimum(buy_amounts, max_affordable)
+
+        # Only buy integer units? Market usually allows floats but households often buy 1.0.
+        # Let's keep it float.
+
+        return {
+            'consume': consume_amounts.tolist(),
+            'buy': buy_amounts.tolist(),
+            'price': float(food_price)
+        }

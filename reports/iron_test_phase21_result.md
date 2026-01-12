@@ -2,12 +2,11 @@
 
 ## Summary
 - Ticks: 100
-- Final Population: 19
-- Final GDP: 1101.71
-- Avg Labor Share: 4.2%
-- Max Unemployment: 80.0%
+- Final Population: 20
+- Final GDP: 2138.47
+- Avg Labor Share: 1.1%
+- Max Unemployment: 0.0%
 - Automation Cost: 1000000000.0
 - Labor Reduction: 0.1
 
-## Verdict: FAIL
-**Reason**:  | Population Collapse
+## Verdict: PASS
