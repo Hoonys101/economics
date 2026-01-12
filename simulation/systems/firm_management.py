@@ -124,6 +124,13 @@ class FirmSystem:
 
         active_firms_count = sum(1 for f in simulation.firms if f.is_active)
 
+        # WO-055 Labor Guard: Cap firm count based on population to prevent labor dilution
+        active_population = sum(1 for h in simulation.households if h.is_active)
+        max_firms = max(min_firms, int(active_population / 15))
+
+        if active_firms_count >= max_firms:
+            return
+
         if active_firms_count < min_firms:
             trigger_probability = 0.5
         else:

@@ -43,7 +43,14 @@ class TransactionProcessor:
             if tx.transaction_type in ["goods", "stock"]:
                 # 거래세(부가가치세) 적용: 매수자가 추가로 지불
                 tax_amount = trade_value * sales_tax_rate
-                buyer.assets -= (trade_value + tax_amount)
+                total_cost = trade_value + tax_amount
+
+                # Check solvency
+                if buyer.assets < total_cost:
+                    # Transaction Failed due to Insufficient Funds
+                    continue
+
+                buyer.assets -= total_cost
                 seller.assets += trade_value
                 government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
             

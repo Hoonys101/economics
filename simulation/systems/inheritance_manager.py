@@ -104,6 +104,9 @@ class InheritanceManager:
                 deceased.assets += proceeds
                 simulation.government.assets -= proceeds # Government spends money
 
+                # Treat as Money Issuance (Injecting liquidity)
+                simulation.government.total_money_issued += proceeds
+
                 liquidation_proceeds += proceeds
 
                 # Remove from Deceased Portfolio
@@ -145,6 +148,9 @@ class InheritanceManager:
                 deceased.assets += sale_price
                 simulation.government.assets -= sale_price
 
+                # Treat as Money Issuance
+                simulation.government.total_money_issued += sale_price
+
                 # Transfer Title
                 unit.owner_id = None # Government/Public
                 # Or set to Government ID?
@@ -180,7 +186,8 @@ class InheritanceManager:
             surplus = deceased.assets
             if surplus > 0:
                 deceased.assets = 0
-                simulation.government.assets += surplus
+                # Use collect_tax to track money destruction
+                simulation.government.collect_tax(surplus, "escheatment_no_heirs", deceased.id, simulation.time)
                 self.logger.info(
                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
                     extra={"agent_id": deceased.id}

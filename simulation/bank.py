@@ -62,6 +62,10 @@ class Bank:
         self.next_loan_id = 0
         self.next_deposit_id = 0
 
+        # Government Reference for Lender of Last Resort
+        self.government: Optional[Any] = None
+        self.total_borrowed_from_cb: float = 0.0
+
         # Dummy attrs for compatibility
         self.value_orientation = "N/A"
         self.needs: Dict[str, float] = {}
@@ -69,6 +73,29 @@ class Bank:
         logger.info(
             f"Bank {self.id} initialized. Assets: {self.assets:.2f}, Base Rate: {self.base_rate:.2%}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
+        )
+
+    def set_government(self, government: Any):
+        """Dependency Injection for Lender of Last Resort."""
+        self.government = government
+
+    def _borrow_from_central_bank(self, amount: float):
+        """
+        Lender of Last Resort (Central Bank Window).
+        Injects liquidity by increasing Bank Reserves and Government's Issued Money counter.
+        """
+        if amount <= 0:
+            return
+
+        self.assets += amount
+        self.total_borrowed_from_cb += amount
+
+        if self.government:
+            self.government.total_money_issued += amount
+
+        logger.warning(
+            f"LENDER_OF_LAST_RESORT | Bank borrowed {amount:.2f} from Central Bank. Total Borrowed: {self.total_borrowed_from_cb:.2f}",
+            extra={"agent_id": self.id, "tags": ["bank", "central_bank", "liquidity_injection"]}
         )
 
     def _get_config(self, key: str, default: Any) -> Any:
@@ -149,11 +176,9 @@ class Bank:
         # Modern Finance: In current implementation (Phase 3/4), we also check liquidity (Full Reserve by default).
         # To support fractional reserve in future, this check would be relaxed or removed here.
         elif self.assets < amount:
-             logger.warning(
-                f"LOAN_DENIED | Bank has insufficient liquidity for {amount:.2f}",
-                extra={"agent_id": self.id, "tags": ["bank", "loan"]}
-            )
-             return None
+             # Lender of Last Resort Logic
+             shortfall = amount - self.assets
+             self._borrow_from_central_bank(shortfall + 1000.0) # Borrow needed + buffer
 
         # 3. Execution (Update Bank State Only)
         # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction
@@ -313,6 +338,9 @@ class Bank:
             reflux_system.capture(net_profit, "Bank", "net_profit")
             logger.info(f"BANK_PROFIT_CAPTURE | Transferred {net_profit:.2f} to Reflux System.")
 
+        # Lender of Last Resort: Check for Overdraft (Negative Assets due to withdrawals)
+        self.check_solvency()
+
         logger.info(
             f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Net Profit: {net_profit:.2f}, Reserves: {self.assets:.2f}",
             extra={"agent_id": self.id, "tags": ["bank", "tick"]}
@@ -376,6 +404,15 @@ class Bank:
             extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
         )
         return True
+
+    def check_solvency(self):
+        """
+        Lender of Last Resort: Auto-refill reserves if negative.
+        Called at end of tick or after heavy transactions.
+        """
+        if self.assets < 0:
+            deficit = abs(self.assets)
+            self._borrow_from_central_bank(deficit + 1000.0) # Cover deficit + buffer
 
     def process_default(self, agent: Any, loan: Loan, current_tick: int):
         """

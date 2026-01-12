@@ -30,17 +30,25 @@ def run_golden_age_test():
         "INITIAL_POPULATION": 100, # Start small to see boom
         
         # WO-053: Fertilizer
-        "TECH_FERTILIZER_UNLOCK_TICK": 100,
-        "TECH_DIFFUSION_RATE": 0.05, # Base rate
+        "TECH_FERTILIZER_UNLOCK_TICK": 10,  # Early unlock (Tick 10)
+        "TECH_DIFFUSION_RATE": 0.10,        # Faster diffusion (5% -> 10%)
         
         # WO-054: Education
-        "PUBLIC_EDU_BUDGET_RATIO": 0.25, # High priority
-        "SCHOLARSHIP_WEALTH_PERCENTILE": 0.20,
-        "SCHOLARSHIP_POTENTIAL_THRESHOLD": 0.7,
+        "PUBLIC_EDU_BUDGET_RATIO": 0.50,    # Very Aggressive Education Investment
+        "SCHOLARSHIP_WEALTH_PERCENTILE": 0.30, # Broader access
+        "SCHOLARSHIP_POTENTIAL_THRESHOLD": 0.6, # Lower bar for scholarship
         
-        # Stability
+        # Stability & Growth
         "GOVERNMENT_STIMULUS_ENABLED": True,
-        "DEFAULT_ENGINE_TYPE": "AIDriven", # Phase 23: Education/Growth requires AI complexity
+        "DEFAULT_ENGINE_TYPE": "AIDriven",
+
+        # Tuning for Startup Viability
+        "STARTUP_COST": 30000.0,            # High barrier (prevent mass CEO)
+        "INITIAL_HOUSEHOLD_ASSETS_MEAN": 10000.0, # Wealthier start
+        "FIRM_MAINTENANCE_FEE": 10.0,       # Lower burden but sustainable
+        "ENTREPRENEURSHIP_SPIRIT": 0.01,    # Slower startup rate (1%)
+        "INITIAL_FIRM_INVENTORY_MEAN": 100.0, # Firm Food buffer
+        "INITIAL_HOUSEHOLD_FOOD_INVENTORY": 20.0, # Household Food buffer (Starvation Trap)
         
         # Performance
         "BATCH_SAVE_INTERVAL": 100,

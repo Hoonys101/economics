@@ -95,6 +95,9 @@ class Simulation:
         self.agents[self.government.id] = self.government
         self.next_agent_id += 1
 
+        # Dependency Injection for Lender of Last Resort
+        self.bank.set_government(self.government)
+
         # Tracker initialization (Done below, but CentralBank needs it)
         # So we move Tracker init up or init CentralBank later.
         # Moving Tracker init up.
@@ -321,7 +324,7 @@ class Simulation:
         )
 
         # WO-054: Government Public Education Logic (START OF TICK)
-        self.government.run_public_education(self.households, self.config_module, self.time)
+        self.government.run_public_education(self.households, self.config_module, self.time, reflux_system=self.reflux_system)
 
         if (
             self.time > 0
@@ -492,6 +495,11 @@ class Simulation:
                         target_market_id = "loan_market"
                     elif order.item_id in ["deposit", "currency"]: # Fallback
                         target_market_id = "loan_market"
+
+                    # Special Routing for INVEST orders (Entrepreneurship)
+                    if order.order_type == "INVEST":
+                        self.firm_system.spawn_firm(self, household)
+                        continue
 
                     household_target_market = self.markets.get(target_market_id)
 
@@ -870,6 +878,9 @@ class Simulation:
             f.expenses_this_tick = 0.0 # Reset expenses as well
             f.revenue_this_tick = 0.0 # Reset revenue
 
+        # Ensure Bank Solvency (Lender of Last Resort) before Money Check
+        self.bank.check_solvency()
+
         # --- Gold Standard / Money Supply Verification (WO-016) ---
         if self.time >= 1:
             current_money = self._calculate_total_money()
@@ -1117,6 +1128,14 @@ class Simulation:
                     if self.stock_market:
                         self.stock_market.update_shareholder(household.id, firm.id, 0)
             
+            # If assets remain (no shareholders or fractional issues), escheat to Government (Reflux or Tax)
+            if firm.assets > 0:
+                self.government.collect_tax(firm.assets, "escheatment", firm.id, self.time)
+                self.logger.info(
+                    f"LIQUIDATION_ESCHEATMENT | Captured {firm.assets:.2f} remaining assets from Firm {firm.id}",
+                    extra={"agent_id": firm.id, "tags": ["liquidation"]}
+                )
+
             firm.assets = 0.0
             self.logger.info(
                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",

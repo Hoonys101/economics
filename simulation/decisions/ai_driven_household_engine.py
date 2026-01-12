@@ -149,6 +149,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                     f"ConsROI: {consumption_roi:.2f} vs SavROI: {savings_roi:.4f} | AggBuy: {agg_buy:.2f}"
                 )
             
+            # --- Survival Override (Guardrail) ---
+            # If survival need is critical, force purchase regardless of AI/Savings
+            if max_need_value > 80.0:
+                agg_buy = max(agg_buy, 0.9)
+                debt_penalty = 1.0 # Ignore debt panic if starving
+
             agg_buy *= debt_penalty # Apply liquidity constraint
             agg_buy = max(0.0, agg_buy)
 
@@ -481,6 +487,19 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         elif diff_deposit < -10.0:
             # Need to Withdraw
             amount_to_withdraw = abs(diff_deposit)
+
+            # Ensure survival buffer (2000.0)
+            if (cash + amount_to_withdraw) < 2000.0:
+                amount_to_withdraw = max(0.0, 2000.0 - cash) # Withdraw enough to reach buffer if possible, but optimizing assumes cash is target.
+                # Actually, optimize_portfolio outputs target_cash.
+                # If target_cash is low, we might be starving.
+                # We should force target_cash >= 2000.0 in logic or just accept user instruction here.
+                # But here we are just executing the diff.
+                pass
+
+            # Conservative withdrawal to avoid bank rejection due to precision or stale data
+            amount_to_withdraw *= 0.99
+
             orders.append(Order(household.id, "WITHDRAW", "currency", amount_to_withdraw, 1.0, "currency"))
 
         # B. Investment (Startup)
@@ -540,7 +559,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             # Now, simply check if we have enough Cash (after planned deposit/withdraw)
             projected_cash = cash - max(0, diff_deposit) + max(0, -diff_deposit)
 
-            if projected_cash >= startup_cost:
+            # Enforce Survival Buffer (2000.0)
+            if projected_cash >= startup_cost + 2000.0:
                 orders.append(Order(household.id, "INVEST", "startup", 1.0, startup_cost, "admin"))
 
         return orders
@@ -557,6 +577,10 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             if deposit_balance > 10.0:
                 # Emergency Withdraw
                 amount = min(deposit_balance, 50.0) # Withdraw a small buffer
+
+                # Conservative withdrawal to avoid bank rejection due to precision or stale data
+                amount *= 0.99
+
                 orders.append(Order(household.id, "WITHDRAW", "currency", amount, 1.0, "currency"))
 
         return orders
@@ -615,8 +639,23 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             if current_price < ref_price * (1 - buy_discount):
                 buy_prob = 0.2 * agg_invest
                 if random.random() < buy_prob:
-                    max_quantity = investment_budget / current_price
+                    # Enforce Survival Buffer Check (2000.0)
+                    cost_per_share = current_price * 1.02
+                    available_cash_for_stock = household.assets - 2000.0
+
+                    if available_cash_for_stock <= 0:
+                        continue
+
+                    # Adjust investment budget to respect buffer
+                    effective_budget = min(investment_budget, available_cash_for_stock)
+
+                    max_quantity = effective_budget / cost_per_share
                     buy_quantity = max(1.0, min(10.0, max_quantity * 0.5))
+
+                    # Double check affordability logic
+                    if buy_quantity * cost_per_share > effective_budget:
+                        buy_quantity = effective_budget / cost_per_share
+
                     if buy_quantity >= 1.0:
                         stock_orders.append(StockOrder(household.id, "BUY", firm_id, buy_quantity, current_price * 1.02))
                         investment_budget -= buy_quantity * current_price
