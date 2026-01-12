@@ -14,6 +14,10 @@ from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
 from simulation.ai.enums import Personality
 
+# SoC Refactor
+from simulation.components.hr_department import HRDepartment
+from simulation.components.finance_department import FinanceDepartment
+
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
     from simulation.ai.firm_system2_planner import FirmSystem2Planner
@@ -65,14 +69,16 @@ class Firm(BaseAgent):
         
         # Phase 16-B: Personality & Innovation Attributes
         self.personality = personality or Personality.BALANCED
-        self.retained_earnings: float = 0.0
         self.base_quality: float = 1.0
         self.research_history: Dict[str, Any] = {
             "total_spent": 0.0,
             "success_count": 0,
             "last_success_tick": -1
         }
-        self.dividends_paid_last_tick: float = 0.0 # Track for CASH_COW reward
+
+        # SoC Refactor: HR and Finance Components
+        self.hr = HRDepartment(self)
+        self.finance = FinanceDepartment(self, config_module)
 
         # Set bankruptcy threshold based on visionary status
         base_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5)
@@ -84,28 +90,16 @@ class Firm(BaseAgent):
         self.production_target: float = (
             config_module.FIRM_MIN_PRODUCTION_TARGET
         )  # Initialize production target
-        self.employees: List[Household] = []
-        self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
-        self.consecutive_loss_turns: int = 0
-        self.current_profit: float = 0.0
-        self.revenue_this_turn: float = 0.0
-        self.cost_this_turn: float = 0.0
+
+        # Property redirections for compatibility
+        # self.employees -> self.hr.employees
+        # self.employee_wages -> self.hr.employee_wages
+
         self.current_production: float = 0.0
         self.productivity_factor: float = productivity_factor
         self.total_shares: float = self.config_module.FIRM_DEFAULT_TOTAL_SHARES
         self.last_prices: Dict[str, float] = {}
-        self.hires_last_tick: int = 0
-        # --- GEMINI_PROPOSED_ADDITION_START ---
-        # design/project_management/dynamic_wage_design_spec.md
-        self.profit_history: deque[float] = deque(maxlen=self.config_module.PROFIT_HISTORY_TICKS)
-        self.revenue_this_tick = 0.0
-        self.expenses_this_tick = 0.0
-
-        # Solvency-Driven Logic Support
-        self.last_daily_expenses: float = 10.0  # Seed with non-zero to prevent inf runway
-        self.last_sales_volume: float = 1.0     # Seed with non-zero
-        self.sales_volume_this_tick: float = 0.0
-        # --- GEMINI_PROPOSED_ADDITION_END ---
+        self.hires_last_tick: int = 0 # Handled in HR but maybe exposed here?
         
         # --- Phase 9: M&A Attributes ---
         self.is_bankrupt: bool = False
@@ -118,8 +112,6 @@ class Firm(BaseAgent):
         self.prev_awareness: float = 0.0  # For AI Reward Calculation
         # ROI Optimization
         self.marketing_budget_rate: float = 0.05  # Initial 5%
-        self.last_revenue: float = 0.0
-        self.last_marketing_spend: float = 0.0
 
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
@@ -141,6 +133,136 @@ class Firm(BaseAgent):
 
         self.decision_engine.loan_market = loan_market
 
+    # --- Properties to maintain Interface Compatibility ---
+    @property
+    def employees(self) -> List[Household]:
+        return self.hr.employees
+
+    @employees.setter
+    def employees(self, value):
+        self.hr.employees = value
+
+    @property
+    def employee_wages(self) -> Dict[int, float]:
+        return self.hr.employee_wages
+
+    @employee_wages.setter
+    def employee_wages(self, value):
+        self.hr.employee_wages = value
+
+    @property
+    def retained_earnings(self) -> float:
+        return self.finance.retained_earnings
+
+    @retained_earnings.setter
+    def retained_earnings(self, value):
+        self.finance.retained_earnings = value
+
+    @property
+    def dividends_paid_last_tick(self) -> float:
+        return self.finance.dividends_paid_last_tick
+
+    @dividends_paid_last_tick.setter
+    def dividends_paid_last_tick(self, value):
+        self.finance.dividends_paid_last_tick = value
+
+    @property
+    def consecutive_loss_turns(self) -> int:
+        return self.finance.consecutive_loss_turns
+
+    @consecutive_loss_turns.setter
+    def consecutive_loss_turns(self, value):
+        self.finance.consecutive_loss_turns = value
+
+    @property
+    def current_profit(self) -> float:
+        return self.finance.current_profit
+
+    @current_profit.setter
+    def current_profit(self, value):
+        self.finance.current_profit = value
+
+    @property
+    def revenue_this_turn(self) -> float:
+        return self.finance.revenue_this_turn
+
+    @revenue_this_turn.setter
+    def revenue_this_turn(self, value):
+        self.finance.revenue_this_turn = value
+
+    @property
+    def cost_this_turn(self) -> float:
+        return self.finance.cost_this_turn
+
+    @cost_this_turn.setter
+    def cost_this_turn(self, value):
+        self.finance.cost_this_turn = value
+
+    @property
+    def revenue_this_tick(self) -> float:
+        return self.finance.revenue_this_tick
+
+    @revenue_this_tick.setter
+    def revenue_this_tick(self, value):
+        self.finance.revenue_this_tick = value
+
+    @property
+    def expenses_this_tick(self) -> float:
+        return self.finance.expenses_this_tick
+
+    @expenses_this_tick.setter
+    def expenses_this_tick(self, value):
+        self.finance.expenses_this_tick = value
+
+    @property
+    def profit_history(self) -> deque[float]:
+        return self.finance.profit_history
+
+    @profit_history.setter
+    def profit_history(self, value):
+        self.finance.profit_history = value
+
+    @property
+    def last_revenue(self) -> float:
+        return self.finance.last_revenue
+
+    @last_revenue.setter
+    def last_revenue(self, value):
+        self.finance.last_revenue = value
+
+    @property
+    def last_marketing_spend(self) -> float:
+        return self.finance.last_marketing_spend
+
+    @last_marketing_spend.setter
+    def last_marketing_spend(self, value):
+        self.finance.last_marketing_spend = value
+
+    @property
+    def last_daily_expenses(self) -> float:
+        return self.finance.last_daily_expenses
+
+    @last_daily_expenses.setter
+    def last_daily_expenses(self, value):
+        self.finance.last_daily_expenses = value
+
+    @property
+    def last_sales_volume(self) -> float:
+        return self.finance.last_sales_volume
+
+    @last_sales_volume.setter
+    def last_sales_volume(self, value):
+        self.finance.last_sales_volume = value
+
+    @property
+    def sales_volume_this_tick(self) -> float:
+        return self.finance.sales_volume_this_tick
+
+    @sales_volume_this_tick.setter
+    def sales_volume_this_tick(self, value):
+        self.finance.sales_volume_this_tick = value
+
+
     def calculate_valuation(self) -> float:
         """
         Calculate Firm Valuation based on Net Assets + Profit Potential.
@@ -149,8 +271,8 @@ class Firm(BaseAgent):
         net_assets = self.assets + self.get_inventory_value() + self.capital_stock 
         
         avg_profit = 0.0
-        if len(self.profit_history) > 0:
-            avg_profit = sum(self.profit_history) / len(self.profit_history)
+        if len(self.finance.profit_history) > 0:
+            avg_profit = sum(self.finance.profit_history) / len(self.finance.profit_history)
         
         profit_premium = max(0.0, avg_profit) * getattr(self.config_module, "VALUATION_PER_MULTIPLIER", 10.0)
         
@@ -246,13 +368,13 @@ class Firm(BaseAgent):
         # Skip first tick or zero previous spend
         # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.
         # But we also need to avoid division by zero.
-        if delta_spend <= 0 or self.last_marketing_spend <= 0:
-            self.last_revenue = self.revenue_this_turn
-            self.last_marketing_spend = self.marketing_budget
+        if delta_spend <= 0 or self.finance.last_marketing_spend <= 0:
+            self.finance.last_revenue = self.finance.revenue_this_turn
+            self.finance.last_marketing_spend = self.marketing_budget
             return
 
-        delta_revenue = self.revenue_this_turn - self.last_revenue
-        efficiency = delta_revenue / self.last_marketing_spend
+        delta_revenue = self.finance.revenue_this_turn - self.finance.last_revenue
+        efficiency = delta_revenue / self.finance.last_marketing_spend
 
         # Decision Rules
         saturation_level = getattr(self.config_module, "BRAND_AWARENESS_SATURATION", 0.9)
@@ -269,8 +391,8 @@ class Firm(BaseAgent):
             self.marketing_budget_rate = max(min_rate, self.marketing_budget_rate * 0.9)
 
         # Update tracking
-        self.last_revenue = self.revenue_this_turn
-        self.last_marketing_spend = self.marketing_budget
+        self.finance.last_revenue = self.finance.revenue_this_turn
+        self.finance.last_marketing_spend = self.marketing_budget
 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         """
@@ -288,7 +410,8 @@ class Firm(BaseAgent):
         if self.automation_level < 0.001: self.automation_level = 0.0
 
         # 2. 노동 및 자본 투입량 계산
-        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+        # SoC Refactor: Get total labor skill from HR
+        total_labor_skill = self.hr.get_total_labor_skill()
 
         # 3. Cobb-Douglas Parameters
         base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
@@ -302,26 +425,10 @@ class Firm(BaseAgent):
         beta_adjusted = 1.0 - alpha_adjusted
 
         # Effective Labor & Capital
-        # Even with zero employees, fully automated factory might produce if we allow L -> 0 logic?
-        # But Cobb-Douglas with L=0 is 0.
-        # We need "Minimum Crew" logic or treat automation as Labor Substitute.
-        # Here we stick to Cobb-Douglas. Automation just shifts exponent.
-        # So you STILL need some labor.
-
         capital = max(self.capital_stock, 0.01)
 
         # Technology Multiplier (WO-053)
         tech_multiplier = 1.0
-        # Check if technology_manager is available in config or reflux_system?
-        # Passed via engine? Currently make_decision has limited context.
-        # But produce is called by engine.py directly.
-        # We need to change produce signature or attach tech_manager to firm?
-        # Better: pass tech_manager to produce() args.
-        
-        # Currently: def produce(self, current_time: int) -> None:
-        # We need: def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
-        
-        # Assuming we change signature below.
         
         tfp = self.productivity_factor * tech_multiplier  # Total Factor Productivity
         
@@ -330,10 +437,7 @@ class Firm(BaseAgent):
             tfp *= tech_multiplier
 
         # Phase 15: Quality Calculation
-        avg_skill = 0.0
-        if self.employees:
-            total_skill_val = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
-            avg_skill = total_skill_val / len(self.employees)
+        avg_skill = self.hr.get_avg_skill()
 
         item_config = self.config_module.GOODS.get(self.specialization, {})
         quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
@@ -344,8 +448,6 @@ class Firm(BaseAgent):
         if total_labor_skill > 0 and capital > 0:
             produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
         else:
-            # Phase 21: If high automation, maybe allow production with minimal labor?
-            # For now, strict Cobb-Douglas: No Labor = No Output.
             produced_quantity = 0.0
 
         if produced_quantity > 0:
@@ -484,51 +586,8 @@ class Firm(BaseAgent):
         return new_firm
 
     def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
-        transactions = []
-        distributable_profit = max(
-            0, self.current_profit * self.dividend_rate
-        )
-
-        # Reset tracker for this tick
-        self.dividends_paid_last_tick = 0.0
-
-        if distributable_profit > 0:
-            for household in households:
-                shares = household.shares_owned.get(self.id, 0.0)
-                if shares > 0:
-                    dividend_amount = distributable_profit * (
-                        shares / self.total_shares
-                    )
-                    transactions.append(
-                        Transaction(
-                            buyer_id=household.id,
-                            seller_id=self.id,
-                            item_id="dividend",
-                            quantity=dividend_amount,
-                            price=1.0,
-                            market_id="financial",
-                            transaction_type="dividend",
-                            time=current_time,
-                        )
-                    )
-                    self.dividends_paid_last_tick += dividend_amount
-                    self.logger.info(
-                        f"Firm {self.id} distributed {dividend_amount:.2f} dividend to Household {household.id}.",
-                        extra={
-                            "tick": current_time,
-                            "agent_id": self.id,
-                            "household_id": household.id,
-                            "amount": dividend_amount,
-                            "tags": ["dividend"],
-                        },
-                    )
-
-        self.current_profit = 0.0
-        self.revenue_this_turn = 0.0
-        self.cost_this_turn = 0.0
-        self.revenue_this_tick = 0.0
-        self.expenses_this_tick = 0.0
-        return transactions
+        # SoC Refactor
+        return self.finance.distribute_dividends(households, current_time)
 
     @override
     def get_agent_data(self) -> Dict[str, Any]:
@@ -609,32 +668,10 @@ class Firm(BaseAgent):
             },
         )
 
-        # Reset per-tick trackers at start of needs update (or keep cumulative if needs update called multiple times?)
-        # Normally update_needs is called once per tick.
-        # self.dividends_paid_last_tick should NOT be reset here if update_needs comes after distribute_dividends in the loop.
-        # In engine.py: produce -> update_needs -> taxes -> government -> distribute_profit (this is OLD flow?)
-        # Let's check engine.py
-
-        # engine.py:
-        # 1. run_tick starts
-        # ...
-        # 2. distribute_profit (Phase 14-1) -> calls distribute_dividends internally?
-        #    Wait, distribute_profit calls distribute_dividends?
-        #    Let's check distribute_profit method in Firm.
-
-        # 3. firm.produce
-        # 4. firm.update_needs
-        # ...
-
-        # If distribute_profit is called early, dividends_paid_last_tick is set.
-        # If we reset it in update_needs, we lose it before AI learning at end of tick.
-        # So do NOT reset here. Reset in distribute_dividends or start of tick.
-        # I added reset in distribute_dividends.
-
         inventory_value = sum(self.inventory.values())
         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
         self.assets -= holding_cost
-        self.cost_this_turn += holding_cost
+        self.finance.record_expense(holding_cost)
 
         # Phase 8-B: Capture holding cost (Storage Service Fee)
         if holding_cost > 0:
@@ -645,94 +682,10 @@ class Firm(BaseAgent):
                 extra={**log_extra, "holding_cost": holding_cost},
             )
 
-        # Pay wages to employees
-        total_wages = 0.0
-        total_tax_withheld = 0.0
-
-        # Calculate survival cost for tax logic (if government/market_data is available)
-        survival_cost = 10.0 # Default fallback
-        if government and market_data:
-            survival_cost = government.get_survival_cost(market_data)
-
-        for employee in list(self.employees):
-            # Defensive: Skip invalid objects (e.g., Firm accidentally in employees)
-            if not hasattr(employee, 'employer_id') or not hasattr(employee, 'is_employed'):
-                self.employees.remove(employee)
-                continue
-            
-            # Clean up employees who no longer work here (quit or hired elsewhere)
-            if employee.employer_id != self.id or not employee.is_employed:
-                self.employees.remove(employee)
-                if employee.id in self.employee_wages:
-                    del self.employee_wages[employee.id]
-                continue
-
-            base_wage = self.employee_wages.get(employee.id, self.config_module.LABOR_MARKET_MIN_WAGE)
-            
-            # WO-023-B: Skill-based Wage Bonus & WO-Sociologist: Halo Effect
-            # High skill workers get paid more (Meritocracy)
-            # If labor_skill is 1.0, wage is base_wage. If 2.0, wage is double.
-            actual_skill = getattr(employee, 'labor_skill', 1.0)
-
-            # Credential Premium (Halo Effect)
-            education_level = getattr(employee, 'education_level', 0)
-            halo_modifier = 1.0 + (education_level * getattr(self.config_module, "HALO_EFFECT", 0.0))
-
-            wage = base_wage * actual_skill * halo_modifier
-            
-            # Affordability check
-            if self.assets >= wage:
-                # Calculate Tax
-                income_tax = 0.0
-                if government:
-                    income_tax = government.calculate_income_tax(wage, survival_cost)
-                
-                net_wage = wage - income_tax
-
-                # Transactions
-                self.assets -= wage
-                employee.assets += net_wage # Pay Net Wage
-                
-                # Track Labor Income (Net)
-                if hasattr(employee, "labor_income_this_tick"):
-                    employee.labor_income_this_tick += net_wage
-
-                if income_tax > 0 and government:
-                    government.collect_tax(income_tax, "income_tax", employee.id, current_time)
-                    total_tax_withheld += income_tax
-
-                total_wages += wage
-                self.expenses_this_tick += wage
-                self.cost_this_turn += wage
-            else:
-                # WO-044-Track-C: Severance Pay & Insolvency Protection
-                # If cannot afford wage, check severance pay (Insolvency Firing)
-                severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
-                severance_pay = wage * severance_weeks
-
-                if self.assets >= severance_pay:
-                    # Can pay severance -> Fire with severance
-                    self.assets -= severance_pay
-                    employee.assets += severance_pay
-
-                    self.logger.info(
-                        f"SEVERANCE | Firm {self.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
-                        extra={**log_extra, "severance_pay": severance_pay}
-                    )
-
-                    employee.quit()
-                    if employee.id in self.employee_wages:
-                        del self.employee_wages[employee.id]
-                else:
-                    # Cannot pay severance -> Zombie Employee (No Fire, No Pay)
-                    self.logger.warning(
-                        f"ZOMBIE | Firm {self.id} cannot afford wage OR severance for Household {employee.id}. Employment retained (unpaid).",
-                        extra={**log_extra, "wage_deficit": wage - self.assets}
-                    )
-                    # Do not fire, do not pay wage.
-                    continue
-        
+        # Pay wages to employees (SoC: HR Delegate)
+        total_wages = self.hr.process_payroll(current_time, government, market_data)
         if total_wages > 0:
+            self.finance.record_expense(total_wages)
             self.logger.info(
                 f"Paid total wages: {total_wages:.2f} to {len(self.employees)} employees.",
                 extra={**log_extra, "total_wages": total_wages},
@@ -742,7 +695,7 @@ class Firm(BaseAgent):
         # Adaptive Budgeting
         marketing_spend = 0.0
         if self.assets > 100.0:
-            marketing_spend = max(10.0, self.revenue_this_turn * self.marketing_budget_rate)
+            marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
         
         # Check affordability
         if self.assets < marketing_spend:
@@ -751,7 +704,7 @@ class Firm(BaseAgent):
         # Apply spend
         if marketing_spend > 0:
              self.assets -= marketing_spend
-             self.cost_this_turn += marketing_spend
+             self.finance.record_expense(marketing_spend)
              # Phase 8-B: Capture marketing spend (Ad Agency Fee)
              if reflux_system:
                  reflux_system.capture(marketing_spend, str(self.id), "marketing")
@@ -768,8 +721,9 @@ class Firm(BaseAgent):
 
         # --- Phase 2: System Stabilization (Tax & Fees) ---
         if government:
-            self._pay_maintenance(government, reflux_system, current_time)
-            self._pay_taxes(government, current_time)
+            # SoC: Finance Delegate
+            self.finance.pay_maintenance(government, reflux_system, current_time)
+            self.finance.pay_taxes(government, current_time)
         # ---------------------------------------------
 
         brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
@@ -787,10 +741,7 @@ class Firm(BaseAgent):
         self.needs["liquidity_need"] += self.config_module.LIQUIDITY_NEED_INCREASE_RATE
         self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"])
 
-        if self.current_profit < 0:
-            self.consecutive_loss_turns += 1
-        else:
-            self.consecutive_loss_turns = 0
+        self.finance.check_bankruptcy()
 
         if (
             self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD
@@ -820,122 +771,11 @@ class Firm(BaseAgent):
             },
         )
 
-    def _pay_maintenance(self, government: Any, reflux_system: Optional[Any], current_time: int) -> None:
-        """Pay fixed maintenance fee to government."""
-        fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
-        
-        # Force payment (can go negative or zero out)
-        # If assets < fee, take all assets? Or allow debt?
-        # Simulation simplifies: take all, if < fee -> bankruptcy risk increases naturally
-        payment = min(self.assets, fee)
-        
-        if payment > 0:
-            self.assets -= payment
-            self.cost_this_turn += payment
-            self.expenses_this_tick += payment
-            government.collect_tax(payment, "firm_maintenance", self.id, current_time)
-            
-            self.logger.info(
-                f"Paid maintenance fee: {payment:.2f}",
-                extra={"tick": current_time, "agent_id": self.id, "tags": ["tax", "maintenance"]}
-            )
-
-    def _pay_taxes(self, government: Any, current_time: int) -> None:
-        """Pay corporate tax on profit."""
-        # Calculate Net Profit for Tax purposes
-        # Revenue is accumulated in revenue_this_turn
-        # Expenses are accumulated in cost_this_turn (wages, holding cost, marketing, maintenance)
-        
-        net_profit = self.revenue_this_turn - self.cost_this_turn
-        
-        # Calculate Retained Earnings Logic
-        # profit is net of tax.
-
-        if net_profit > 0:
-            tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
-            tax_amount = net_profit * tax_rate
-            
-            # Affordability check (should be affordable if profit is real cash, but cash flow might differ)
-            payment = min(self.assets, tax_amount)
-            
-            if payment > 0:
-                self.assets -= payment
-                government.collect_tax(payment, "corporate_tax", self.id, current_time)
-                
-                # Update retained earnings with AFTER-TAX profit (before dividends)
-                after_tax_profit = net_profit - payment
-                self.retained_earnings += after_tax_profit
-
-                self.logger.info(
-                    f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}. Retained Earnings increased by {after_tax_profit:.2f}",
-                    extra={"tick": current_time, "agent_id": self.id, "tags": ["tax", "corporate_tax"]}
-                )
+    # Legacy: _pay_maintenance and _pay_taxes removed as they are now in FinanceDepartment
 
     def distribute_profit(self, agents: Dict[int, Any], current_time: int) -> float:
         """
         Phase 14-1: Mandatory Dividend Rule.
         Distribute surplus cash to owner if reserves are met.
-        Returns:
-            amount_distributed (float)
         """
-        if self.owner_id is None:
-            return 0.0
-
-        # owner_id validation
-        owner = agents.get(self.owner_id)
-        if owner is None:
-            # Owner might be dead or invalid
-            return 0.0
-
-        # 1. Calculate Required Reserves (Maintenance + Wages coverage)
-        # Using config or defaults
-        maintenance_fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 0.0)
-        
-        avg_wage = 0.0
-        if self.employees:
-             avg_wage = sum(self.employee_wages.values()) / len(self.employees)
-        
-        # Reserve buffer: 6 months approx equivalent. 
-        # Let's say 20 ticks.
-        reserve_period = 20
-        # Operational Cost per tick = Maintenance + (Avg Wage * Count)
-        weekly_burn_rate = maintenance_fee + (avg_wage * len(self.employees))
-        required_reserves = weekly_burn_rate * reserve_period
-        
-        # 2. Calculate Distributable Cash
-        # Distributable = Current Assets - Required Reserves
-        distributable_cash = self.assets - required_reserves
-        
-        # 3. Distribute
-        if distributable_cash > 0:
-            dividend_amount = distributable_cash
-            self.assets -= dividend_amount
-            
-            # Transfer to Owner
-            owner.assets += dividend_amount
-            
-            # Record Income for Analytics (Phase 14-1)
-            # Assuming Household has tracked attributes (added in core_agents.py)
-            if hasattr(owner, 'income_capital_cumulative'):
-                owner.income_capital_cumulative += dividend_amount
-            if hasattr(owner, 'capital_income_this_tick'):
-                owner.capital_income_this_tick += dividend_amount
-
-            # Reduce Retained Earnings (Payout)
-            self.retained_earnings -= dividend_amount
-
-            # Track for AI Reward
-            # Note: This method (distribute_profit) is the private owner one.
-            # The method distribute_dividends is for PUBLIC shareholders.
-            # Which one does CASH_COW track? Likely both total payouts.
-            self.dividends_paid_last_tick += dividend_amount
-
-            if self.logger:
-                self.logger.info(
-                    f"DIVIDEND | Firm {self.id} -> Household {self.owner_id} : ${dividend_amount:.2f}",
-                    extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
-                )
-            
-            return dividend_amount
-            
-        return 0.0
+        return self.finance.distribute_profit_private(agents, current_time)

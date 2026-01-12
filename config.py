@@ -717,3 +717,15 @@ RAISING_YEARS = 20                  # 양육 기간 (성인까지)
 CHILD_EMOTIONAL_VALUE_BASE = 500000.0 # 자녀 1명당 느끼는 정서적 가치의 총량 (500k로 상향 - Middle Income Trap 완화)
 OLD_AGE_SUPPORT_RATE = 0.1          # 자녀 소득의 10%를 노후 용돈으로 받음
 SUPPORT_YEARS = 20                  # 은퇴 후 부양받는 기간
+
+# --- Phase 23: Public Education System (WO-054) ---
+PUBLIC_EDU_BUDGET_RATIO = 0.20  # 정부 예산의 20%를 교육에 투자
+EDUCATION_COST_PER_LEVEL = {
+    1: 500,    # 기초 교육
+    2: 2000,   # 중등 교육
+    3: 5000,   # 고등 교육
+    4: 15000,  # 대학
+    5: 50000   # 대학원/전문직
+}
+SCHOLARSHIP_WEALTH_PERCENTILE = 0.20  # 하위 20%
+SCHOLARSHIP_POTENTIAL_THRESHOLD = 0.7  # 잠재력 상위 30%

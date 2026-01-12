@@ -320,6 +320,9 @@ class Simulation:
             extra={"tick": self.time, "tags": ["tick_start"]},
         )
 
+        # WO-054: Government Public Education Logic (START OF TICK)
+        self.government.run_public_education(self.households, self.config_module, self.time)
+
         if (
             self.time > 0
             and self.time % self.config_module.IMITATION_LEARNING_INTERVAL == 0

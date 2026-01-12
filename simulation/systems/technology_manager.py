@@ -33,6 +33,8 @@ class TechnologyManager:
         # Adoption Registry: {FirmID: {TechID}}
         self.adoption_registry: Dict[int, Set[str]] = {}
         
+        self.human_capital_index: float = 1.0 # WO-054
+
         self._initialize_tech_tree()
 
     def _initialize_tech_tree(self):
@@ -54,6 +56,9 @@ class TechnologyManager:
         1. Check Unlocks.
         2. Process Diffusion (Spread).
         """
+        # WO-054: Update Human Capital Index based on average education
+        self._update_human_capital_index(simulation.households)
+
         # 1. Unlock Check
         for tech in self.tech_tree.values():
             if not tech.is_unlocked and current_tick >= tech.unlock_tick:
@@ -61,6 +66,20 @@ class TechnologyManager:
 
         # 2. Diffusion Process (S-Curve)
         self._process_diffusion(simulation)
+
+    def _update_human_capital_index(self, households: List[Any]):
+        """WO-054: Calculate average education level."""
+        total_edu = 0
+        count = 0
+        for h in households:
+            if h.is_active:
+                total_edu += getattr(h, "education_level", 0)
+                count += 1
+
+        if count > 0:
+            self.human_capital_index = total_edu / count
+        else:
+            self.human_capital_index = 1.0 # Default baseline
 
     def _unlock_tech(self, tech: TechNode, simulation: Any):
         """Unlock technology and assign to Early Adopters (Visionaries)."""
@@ -85,6 +104,19 @@ class TechnologyManager:
             extra={"tick": simulation.time, "tech_id": tech.id}
         )
 
+    def _get_effective_diffusion_rate(self, base_rate: float) -> float:
+        """
+        WO-054: Tech Diffusion Feedback Loop
+        current_rate = base_rate * (1 + min(1.5, 0.5 * (avg_edu_level - 1.0)))
+        """
+        # avg_edu_level is self.human_capital_index
+        # Formula: 1.0 + min(1.5, 0.5 * (HCI - 1.0))
+        # Example: HCI=4.0 -> 0.5 * 3.0 = 1.5 -> Boost = 1.5 -> Rate = Base * 2.5
+        # Example: HCI=1.0 -> 0.0 -> Boost = 0.0 -> Rate = Base * 1.0
+
+        boost = min(1.5, 0.5 * max(0.0, self.human_capital_index - 1.0))
+        return base_rate * (1.0 + boost)
+
     def _process_diffusion(self, simulation: Any):
         """
         Simulate the spread of technology to non-adopters.
@@ -92,6 +124,9 @@ class TechnologyManager:
         for tech_id in self.active_techs:
             tech = self.tech_tree[tech_id]
             
+            # WO-054: Calculate effective rate
+            effective_rate = self._get_effective_diffusion_rate(tech.diffusion_rate)
+
             # Potential Adopters: Firms in relevant sector who haven't adopted yet
             for firm in simulation.firms:
                 if not firm.is_active: continue
@@ -110,10 +145,10 @@ class TechnologyManager:
                     continue
                 
                 # Diffusion Chance
-                if random.random() < tech.diffusion_rate:
+                if random.random() < effective_rate:
                     self._adopt(firm, tech)
                     self.logger.info(
-                        f"TECH_DIFFUSION | Firm {firm.id} adopted {tech.name}.",
+                        f"TECH_DIFFUSION | Firm {firm.id} adopted {tech.name}. Rate: {effective_rate:.4f} (Base: {tech.diffusion_rate})",
                         extra={"tick": simulation.time, "agent_id": firm.id, "tech_id": tech.id}
                     )
 

@@ -111,6 +111,7 @@ class Household(BaseAgent):
         social_status (float): 가계의 사회적 지위. 자산과 사치품 소비에 기반하여 계산됩니다.
         perceived_avg_prices (Dict[str, float]): 가계가 인지하는 상품별 평균 가격 (재화 ID: 가격 맵).
         current_food_consumption (float): 현재 턴의 식량 소비량.
+        aptitude (float): 잠재적 학습 능력 및 지능 (0.0 ~ 1.0, Gaussian Dist).
     """
 
     def __init__(
@@ -167,6 +168,11 @@ class Household(BaseAgent):
 
         # Initialize personality
         self.personality = personality
+
+        # WO-054: Aptitude (Hidden Trait)
+        # Gaussian: Mean 0.5, Std 0.15, Clamped 0.0-1.0
+        raw_aptitude = random.gauss(0.5, 0.15)
+        self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
 
         # --- 3-Pillars Preferences (Value Orientation) ---
         # Value Orientation determines "What" (ROI weights), independent of Personality ("How fast" needs grow)
@@ -481,6 +487,7 @@ class Household(BaseAgent):
             "gender": self.gender,
             "home_quality_score": self.home_quality_score,
             "spouse_id": self.spouse_id,
+            "aptitude": self.aptitude, # WO-054
         }
     # AI 상태 결정에 필요한 다른 데이터 추가 가능
 
@@ -980,6 +987,12 @@ class Household(BaseAgent):
         cloned_household.generation = self.generation + 1
         cloned_household.parent_id = self.id
         
+        # Aptitude Inheritance (WO-054)
+        # Regression toward the mean?
+        # Child Aptitude = 0.6*Parent + 0.4*Random
+        raw_aptitude = (self.aptitude * 0.6) + (random.gauss(0.5, 0.15) * 0.4)
+        cloned_household.aptitude = max(0.0, min(1.0, raw_aptitude))
+
         return cloned_household
 
     def _create_new_decision_engine(self, new_id: int) -> AIDrivenHouseholdDecisionEngine:
