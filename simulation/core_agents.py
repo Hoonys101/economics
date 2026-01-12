@@ -153,6 +153,7 @@ class Household(BaseAgent):
             logger=logger,
         )
         self.credit_frozen_until_tick: int = 0  # Phase 4: Bankruptcy Penalty
+        self.initial_assets_record = initial_assets # WO-Sociologist: Track starting point
         self.logger.debug(
             f"HOUSEHOLD_INIT | Household {self.id} initialized. Initial Needs: {self.needs}",
             extra={"tags": ["household_init"]},
@@ -374,6 +375,10 @@ class Household(BaseAgent):
     @property
     def desire_weights(self) -> Dict[str, float]:
         return self.psychology.desire_weights
+
+    @property
+    def children_count(self) -> int:
+        return len(self.children_ids)
 
     def calculate_social_status(self) -> None:
         """

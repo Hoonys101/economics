@@ -69,7 +69,8 @@ class AITrainingManager:
             child_agent.personality = parent_agent.personality
 
         # Recalculate desire weights based on (possibly new) personality
-        child_agent.desire_weights = child_agent._initialize_desire_weights(child_agent.personality)
+        # Fix: Interact with psychology component directly as desire_weights is a property without setter
+        child_agent.psychology._initialize_desire_weights(child_agent.personality)
 
         # 2. Q-Table Cloning
         self._clone_and_mutate_q_table(parent_agent, child_agent)

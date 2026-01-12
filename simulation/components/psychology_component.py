@@ -72,6 +72,11 @@ class PsychologyComponent:
 
         # 2. Natural Growth based on Personality
         base_growth = self.config.BASE_DESIRE_GROWTH
+
+        # Ensure key exists
+        if "survival" not in self.owner.needs:
+            self.owner.needs["survival"] = 0.0
+
         self.owner.needs["survival"] += base_growth
         
         for k in ["asset", "social", "improvement", "quality"]:
