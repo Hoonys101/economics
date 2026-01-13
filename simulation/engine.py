@@ -386,6 +386,10 @@ class Simulation:
             if isinstance(market, OrderBookMarket):
                 market.clear_orders()
 
+        # WO-057-Fix: Update tracker with the latest data before government decisions
+        money_supply = self._calculate_total_money()
+        self.tracker.track(self.time, self.households, self.firms, self.markets, money_supply=money_supply)
+
         # Phase 17-4: Update Social Ranks & Calculate Reference Standard
         if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
             self._update_social_ranks()
@@ -448,7 +452,8 @@ class Simulation:
             unemployment_sma=calculate_sma(self.unemployment_buffer),
             gdp_growth_sma=calculate_sma(self.gdp_growth_buffer),
             wage_sma=calculate_sma(self.wage_buffer),
-            approval_sma=calculate_sma(self.approval_buffer)
+            approval_sma=calculate_sma(self.approval_buffer),
+            current_gdp=current_gdp
         )
 
         # Supply to Government
@@ -792,10 +797,6 @@ class Simulation:
                      tax_amount = self.government.calculate_corporate_tax(firm.current_profit)
                      firm.assets -= tax_amount
                      self.government.collect_tax(tax_amount, "corporate_tax", firm.id, self.time)
-
-        # Update tracker with the latest data after transactions and consumption
-        money_supply = self._calculate_total_money()
-        self.tracker.track(self.time, self.households, self.firms, self.markets, money_supply=money_supply)
 
         # 2b. 정부 인프라 투자 (예산 충족 시)
         # Phase 8-B: Pass reflux_system to capture infrastructure spending

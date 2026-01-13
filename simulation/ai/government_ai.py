@@ -50,7 +50,7 @@ class GovernmentAI:
         self.ACTION_FISCAL_EASE = 3
         self.ACTION_FISCAL_TIGHT = 4
 
-    def _get_state(self, market_data: Dict[str, Any]) -> Tuple[int, int, int, int]:
+    def _get_state(self) -> Tuple[int, int, int, int]:
         """
         Discretize Macro Indicators into 81 States (3^4).
         Variables: Inflation, Unemployment, GDP Growth, Debt Ratio.
@@ -71,7 +71,7 @@ class GovernmentAI:
         gdp_growth = self.agent.sensory_data.gdp_growth_sma
 
         # Debt Gap (calculated live, as it depends on current assets)
-        current_gdp = market_data.get("total_production", 0.0) # Still need this for debt ratio
+        current_gdp = self.agent.sensory_data.current_gdp
         assets = getattr(self.agent, "assets", 0.0)
         debt = max(0.0, -assets)
         debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
@@ -103,7 +103,7 @@ class GovernmentAI:
 
         return (s_inf, s_unemp, s_gdp, s_debt)
 
-    def calculate_reward(self, market_data: Dict[str, Any]) -> float:
+    def calculate_reward(self) -> float:
         """
         Calculate Reward based on Macro Stability from the Sensory Module.
         R = - ( 0.5*Inf_Gap^2 + 0.4*Unemp_Gap^2 + 0.1*Debt_Gap^2 )
@@ -121,7 +121,7 @@ class GovernmentAI:
         unemployment = self.agent.sensory_data.unemployment_sma
 
         # Recalculate debt ratio live
-        current_gdp = market_data.get("total_production", 0.0)
+        current_gdp = self.agent.sensory_data.current_gdp
         assets = getattr(self.agent, "assets", 0.0)
         debt = max(0.0, -assets)
         debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
@@ -137,14 +137,14 @@ class GovernmentAI:
 
         return reward
 
-    def decide_policy(self, market_data: Dict[str, Any], current_tick: int) -> int:
+    def decide_policy(self, current_tick: int) -> int:
         """
         Main decision method.
         1. Observe Current State (S_t).
         2. Select Action (A_t) using Epsilon-Greedy.
         3. Store context for future learning.
         """
-        state = self._get_state(market_data)
+        state = self._get_state()
 
         # Action Selection
         action_idx = self.action_selector.choose_action(self.q_table, state, self.actions, current_tick=current_tick)
@@ -164,7 +164,7 @@ class GovernmentAI:
 
         return action_idx
 
-    def update_learning(self, reward: float, market_data: Dict[str, Any], current_tick: int):
+    def update_learning(self, reward: float, current_tick: int):
         """
         Update Q-Table using the reward from the PREVIOUS action and the CURRENT state.
         Transition: (last_state, last_action, reward, current_state)
@@ -177,9 +177,9 @@ class GovernmentAI:
 
         # Enforce WO-057-A Reward Logic (Ignoring the passed argument if it's from legacy policy)
         # We recalculate strictly based on current macro indicators.
-        real_reward = self.calculate_reward(market_data)
+        real_reward = self.calculate_reward()
 
-        current_state = self._get_state(market_data)
+        current_state = self._get_state()
 
         # Update Q-Table
         self.q_table.update_q_table(

@@ -338,3 +338,4 @@ class GovernmentStateDTO:
     gdp_growth_sma: float
     wage_sma: float
     approval_sma: float
+    current_gdp: float
