@@ -7,6 +7,7 @@ from simulation.policies.taylor_rule_policy import TaylorRulePolicy
 from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 from simulation.dtos import GovernmentStateDTO
 from typing import Optional
+from simulation.utils.shadow_logger import log_shadow
 
 logger = logging.getLogger(__name__)
 
@@ -279,6 +280,22 @@ class Government:
             # Simple EMA update for Potential GDP
             alpha = 0.01
             self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+
+        # 1. Calculate Inflation (YoY)
+        inflation = 0.0
+        if len(self.price_history_shadow) >= 2:
+            current_p = self.price_history_shadow[-1]
+            past_p = self.price_history_shadow[0]
+            if past_p > 0:
+                inflation = (current_p - past_p) / past_p
+
+        # 2. Calculate Real GDP Growth
+        real_gdp_growth = 0.0
+        if len(self.gdp_history) >= 2:
+            current_gdp = self.gdp_history[-1]
+            past_gdp = self.gdp_history[-2]
+            if past_gdp > 0:
+                real_gdp_growth = (current_gdp - past_gdp) / past_gdp
 
         # 5. Taylor Rule 2.0
         # Target_Rate = Real_GDP_Growth + Inflation + 0.5*(Inf - Target_Inf) + 0.5*(GDP_Gap)
