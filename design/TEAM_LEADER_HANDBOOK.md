@@ -1,7 +1,9 @@
 # 팀장 핸드북 (Team Leader Handbook)
 
 **PM (Project Manager):** Hoonys101 (사용자) - 최종 의사결정 및 비전 제시
-**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**, **오케스트레이터(Orchestrator)**
+**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**, **오케스트레이터(Orchestrator)**. 
+> [!IMPORTANT]
+> **Non-Coding Rule**: 팀장은 직접 코딩을 하지 않습니다. 모든 구현, 버그 수정, 테스트 실행은 sub-agent(Jules)에게 위임하여 수행합니다. 팀장의 역할은 명세 작성, 코드 리뷰, 그리고 전체 데이터 흐름의 정합성 검증에 국한됩니다.
 **Member:** Jules 요원 (Alpha, Bravo, Charlie) - 구현 및 기술적 타협점 보고
 **Last Updated:** 2026-01-13
 
