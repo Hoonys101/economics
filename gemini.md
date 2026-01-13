@@ -138,15 +138,17 @@ Jules의 PR을 머지한 후, 코드가 "동작은 하지만 구조적으로 비
 
 **사용법:**
 ```powershell
-python scripts/gemini_worker.py <worker_type> "<Instruction>"
+python scripts/gemini_worker.py <worker_type> "<Instruction>" [--context <file1> <file2> ...]
+# 또는 짧게
+python scripts/gemini_worker.py <worker_type> "<Instruction>" [-c <file1> ...]
 ```
 
 **제공되는 Worker Type:**
 1. **`spec` (Spec Writer)**: 기획안을 상세 명세로 변환.
-    *   Example: `python scripts/gemini_worker.py spec "뉴스 수집기 설계해줘"`
+    *   Example: `python scripts/gemini_worker.py spec "이 코드를 리팩토링하는 명세를 작성해줘" -c simulation/engine.py`
     *   Manual: `design/manuals/spec_writer.md`
-2. **`git` (Git Operator)**: 버전 관리 명령어 생성.
-    *   Example: `python scripts/gemini_worker.py git "현재 변경사항을 feat/news 브랜치로 커밋해줘"`
+2. **`git` (Git Operator)**: 버전 관리 명령어 생성 및 실행.
+    *   Example: `python scripts/gemini_worker.py git "현재 변경사항을 커밋해줘" --auto-run`
     *   Manual: `design/manuals/git_operator.md`
 
 
