@@ -27,6 +27,7 @@ from simulation.ai.household_system2 import HouseholdSystem2Planner, HousingDeci
 from simulation.components.consumption_behavior import ConsumptionBehavior
 from simulation.components.psychology_component import PsychologyComponent
 from simulation.components.leisure_manager import LeisureManager
+from simulation.utils.shadow_logger import log_shadow
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -354,6 +355,10 @@ class Household(BaseAgent):
         )
         self.expected_inflation: Dict[str, float] = defaultdict(float)
         
+        # WO-056: Shadow Labor Market Attributes
+        self.market_wage_history: deque[float] = deque(maxlen=30) # For 30-tick avg
+        self.shadow_reservation_wage: float = 0.0 # Will be initialized based on current_wage or expected_wage
+
         # [Refactoring] Standardized Memory Structure
         # Used for storing generic agent history/state (e.g. past perceptions, triggers)
         self.memory: Dict[str, Any] = {}
@@ -513,6 +518,58 @@ class Household(BaseAgent):
         else:
             self.approval_rating = 0
 
+    def _calculate_shadow_reservation_wage(self, market_data: Dict[str, Any], current_tick: int) -> None:
+        """
+        WO-056: Stage 1 Shadow Mode (Labor Market Mechanism).
+        Calculates and logs the shadow reservation wage and startup cost index.
+        """
+        # 1. Update Market Wage History
+        avg_market_wage = 0.0
+        if market_data and "labor" in market_data:
+             avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
+
+        if avg_market_wage > 0:
+            self.market_wage_history.append(avg_market_wage)
+
+        # 2. Calculate Startup Cost Shadow Index
+        # Formula: Avg_Wage_last_30_ticks * 6
+        startup_cost_index = 0.0
+        if self.market_wage_history:
+            avg_wage_30 = sum(self.market_wage_history) / len(self.market_wage_history)
+            startup_cost_index = avg_wage_30 * 6.0
+
+        # 3. Calculate Shadow Reservation Wage (Sticky Logic)
+        # Initialize if zero (e.g. first run)
+        if self.shadow_reservation_wage <= 0.0:
+            self.shadow_reservation_wage = self.current_wage if self.is_employed else self.expected_wage
+
+        # Logic:
+        # Wage Increase Rate: 0.05 (if employed or market rising?)
+        # Wage Decay Rate: 0.02 (if unemployed)
+        # Spec says: "Wage Increase: 0.05 (Employment/Rise), Wage Decay: 0.02 (Unemployment)"
+
+        if self.is_employed:
+            target = max(self.current_wage, self.shadow_reservation_wage)
+            self.shadow_reservation_wage = (self.shadow_reservation_wage * 0.95) + (target * 0.05)
+        else:
+            # Decay Logic: If unemployed, it decays.
+            self.shadow_reservation_wage *= (1.0 - 0.02)
+            # Apply floor (Survival minimum)
+            min_wage = getattr(self.config_module, "HOUSEHOLD_MIN_WAGE_DEMAND", 6.0)
+            if self.shadow_reservation_wage < min_wage:
+                self.shadow_reservation_wage = min_wage
+
+        # 4. Log
+        log_shadow(
+            tick=current_tick,
+            agent_id=self.id,
+            agent_type="Household",
+            metric="shadow_wage",
+            current_value=self.current_wage if self.is_employed else self.expected_wage,
+            shadow_value=self.shadow_reservation_wage,
+            details=f"Employed={self.is_employed}, StartupIdx={startup_cost_index:.2f}"
+        )
+
     def decide_housing(self, market_data: Dict[str, Any], current_time: int) -> None:
         """
         Executes System 2 Housing Logic.
@@ -625,6 +682,9 @@ class Household(BaseAgent):
             government=government,
         )
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context)
+
+        # WO-056: Shadow Mode Labor Logic
+        self._calculate_shadow_reservation_wage(market_data, current_time)
 
         # WO-046: Execute System 2 Housing Decision
         if self.housing_target_mode == "BUY" and self.is_homeless:

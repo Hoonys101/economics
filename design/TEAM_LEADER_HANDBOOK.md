@@ -1,9 +1,9 @@
 # 팀장 핸드북 (Team Leader Handbook)
 
 **PM (Project Manager):** Hoonys101 (사용자) - 최종 의사결정 및 비전 제시
-**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**
+**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**, **오케스트레이터(Orchestrator)**
 **Member:** Jules 요원 (Alpha, Bravo, Charlie) - 구현 및 기술적 타협점 보고
-**Last Updated:** 2026-01-12
+**Last Updated:** 2026-01-13
 
 ---
 
@@ -37,6 +37,7 @@ Level 0: 핵심 원칙 (Always Load)
 | 문서 | 경로 | 용도 |
 |---|---|---|
 | **GEMINI.md** | `/GEMINI.md` | 프로젝트 지침, 디버깅 프로토콜, 기획→실행 프로세스 |
+| **AGENTS.md** | `/AGENTS.md` | **(New)** Jules 요원 대상 프로젝트 규칙 및 아키텍처 컨텍스트 |
 | **Core Philosophy** | `/design/roadmap.md#core-philosophy` | Rule-Based → Adaptive AI 철학 |
 
 ---
@@ -78,12 +79,13 @@ Level 0: 핵심 원칙 (Always Load)
 ### Work Orders (진행 중)
 | 문서 | 경로 |
 |---|---|
-| **WO-045-Revision** | `/design/work_orders/WO-045-Revision-Adaptive-Equilibrium.md` |
+| **WO-057-Smart-Leviathan** | `/design/work_orders/WO-057-Smart-Leviathan.md` |
+| **WO-057-A/B/C** | `/design/work_orders/WO-057-[A/B/C]-*.md` |
 
 ### Specs (Phase별)
 ```
 /design/specs/
-├── phase21_corporate_empires_spec.md
+├── phase24_smart_leviathan_spec.md
 ├── engine_spec.md
 ├── banking_spec.md
 ├── fiscal_policy_spec.md
@@ -96,7 +98,7 @@ Level 0: 핵심 원칙 (Always Load)
 
 | 폴더 | 경로 | 내용 |
 |---|---|---|
-| **_archive/** | `/design/_archive/` | 과거 설계 문서 (53 files) |
+| **_archive/** | `/design/_archive/` | 과거 설계 문서 |
 | **HERITAGE_ASSETS.md** | `/design/HERITAGE_ASSETS.md` | 레거시 자산 목록 |
 | **PROJ_HISTORY.md** | `/design/PROJ_HISTORY.md` | 프로젝트 역사 |
 
@@ -108,7 +110,7 @@ Level 0: 핵심 원칙 (Always Load)
 |---|---|
 | **새 세션 시작** | GEMINI.md → project_status.md → roadmap.md |
 | **수석 기획 수신** | GEMINI.md (섹션 6: 기획→실행) |
-| **Jules 작업 배정** | JULES_MASTER_DIRECTIVE.md → Work Order 작성 |
+| **Jules 작업 배정** | **AGENTS.md** → Work Order 작성 |
 | **PR 머지** | project_status.md 업데이트 |
 | **새 Phase 시작** | roadmap.md → specs/ 폴더에 명세 작성 |
 | **디버깅** | GEMINI.md (섹션 5: 문제 해결) |
@@ -124,12 +126,57 @@ Level 0: 핵심 원칙 (Always Load)
 
 ---
 
-## 🛑 Jules Communication Protocol
+## 🤖 Jules Automation Protocol (API-Based Delegation)
 
-**One-Shot Document Rule (지침 불변성의 원칙)**:
-1. **Initial Command**: 작업 지시서(Work Order)나 코드 변경 사항은 **초기 명령 시점에 확정**됩니다.
-2. **No Resubmission**: 명령 하달 후 문서를 수정하여 다시 푸시(Push)하는 행위는 금지됩니다. (Jules 관점에서 타임라인 꼬임 방지)
-3. **Correction via Prompt**: 수정 사항이 발생하면 문서를 고치지 말고, 반드시 **프롬프트(채팅)를 통해 수정 지침을 직접 전달**해야 합니다.
+Jules API를 사용하여 개발 프로세스를 자동화할 때 반드시 준수해야 하는 프로토콜입니다.
+
+### 1. Mandatory Chief Architect Review (수석 승인 필수)
+Jules에게 작업을 위임(`create-session`)하기 전, 반드시 수석 아키텍트(사용자)에게 **프롬프트와 계획(Work Order)**을 검토받아야 합니다.
+
+**Workflow:**
+1. **Draft Prompt**: Antigravity가 Jules에게 보낼 프롬프트와 참조할 Work Order를 작성합니다.
+2. **Review Request**: `notify_user` 또는 대화를 통해 수석에게 검토를 요청합니다.
+    - "다음 내용으로 Jules에게 작업을 위임해도 되겠습니까?"
+    - "프롬프트: ..."
+    - "참조 문서: ..."
+3. **Approval**: 수석의 승인("진행해", "좋아")이 있어야만 API를 호출합니다.
+4. **Execution**: 승인 후 `python scripts/jules_bridge.py create-session` 실행.
+
+### 2. Post-Assignment Monitoring
+작업 위임 후, 방치하지 않고 주기적으로 상태를 점검합니다.
+
+- **Monitor**: `python scripts/jules_monitor.py` (수석 PC 실행 권장) 또는 수동 체크.
+- **Intervention**: Jules가 질문을 하거나 오류 발생 시 즉시 개입하여 해결합니다.
+- **Result Report**: 작업 완료 및 PR 생성 시 수석에게 즉시 보고 및 리뷰를 요청합니다.
+
+---
+
+## 🛑 Jules Communication Protocol (Zero-Question Standard)
+
+**1. One-Shot Document Rule (지침 불변성의 원칙)**:
+- **Single-Pull Constraint**: Jules는 세션 시작 시 단 한 번만 코드를 Pull합니다.
+- **No Mid-Session Updates**: 명령 하달 후 Work Order나 AGENTS.md를 수정하여 Push하더라도 Jules는 이를 인지하지 못하며, 이는 최종 병합 시 컨플릭트만 유발할 뿐입니다.
+- **Initial Confirmation**: 따라서 모든 지침은 세션 시작 전에 완벽히 확정되어야 합니다.
+- **Correction via Prompt**: 불가피하게 중간에 수정이 필요한 경우, 파일을 고치지 말고 반드시 **프롬프트(채팅/메시지/sendMessage API)**를 통해 직접 수정 지침을 전달하십시오.
+
+**2. 📝 Zero-Question Work Order 작성 요령 (Jules 생산성 극대화)**
+> **핵심 목표**: Jules가 프로젝트 전체 파일을 읽는 오버헤드를 0으로 만들고, 오직 타겟 로직에만 집중하게 한다.
+
+- **📂 컨텍스트 및 관련 파일 그룹화 (Context Table) 필수 포함**
+    Jules에게 역할별 파일 리스트를 테이블로 제공한다.
+
+| 분류 | 역할 | 활용 가이드 |
+| :--- | :--- | :--- |
+| **Source (출처)** | 로직을 추출해낼 원본 파일 | 특정 메서드/클래스의 로직만 참고/추출 |
+| **Contract (계약)** | 준수해야 할 DTO, Interface | 데이터 시그니처와 타입 힌트 확인 용도 |
+| **Destination (목적지)** | 코드가 새로 배치될 위치 | 신규 생성 또는 로직이 이식될 파일 |
+
+- **💡 메서드 단위 이식 전략 (Transplant Strategy) 명시**
+    작업을 '함수/메서드 단위의 이식 수술'로 정의하고 구체적으로 지시한다.
+- **⚠️ GitHub Alerts 활용**
+    중요한 제약 사항(`[!IMPORTANT]`)이나 팁(`[!TIP]`)을 시각적으로 강조한다.
+- **🧠 실무자 인사이트 공유 (Mandatory Insight Reporting)**
+    Jules가 작업을 수행하며 발견한 구조적 결함이나 아키텍처적 아이디어를 `communications/insights/`에 별도 보고서로 제출하도록 강제한다.
 
 ---
 
@@ -192,7 +239,7 @@ Level 0: 핵심 원칙 (Always Load)
 - **Logic**: 대단위 작업을 파일 충돌(File Conflict)이 없는 독립적인 영역으로 쪼개어 여러 Jules에게 배분합니다.
 - **Assignment**:
     - **分隊 A (Engine/System)**: 핵심 인프라 및 전역 설정 담당.
-    - **分隊 B (Experiment/Data)**: 독립된 스크립트 기반 실험 및 데이터 수집 담당.
+    - **분대 B (Experiment/Data)**: 독립된 스크립트 기반 실험 및 데이터 수집 담당.
     - **分隊 C (Analytics/UI)**: 지표 분석기 및 상위 레이어 로직 담당.
 
 ### 2. Efficiency Bottleneck Management
@@ -203,21 +250,23 @@ Level 0: 핵심 원칙 (Always Load)
 - **Reporting**: Jules에게 지시 시 "최적화 전후의 TPS(Ticks Per Second) 변화" 또는 "작업 전후의 시뮬레이션 완주 시간"을 반드시 보고하도록 강제하십시오.
 - **Feedback Loop**: 측정된 효율성을 기반으로 다음 작업 분할 시 분계점(Segmentation)을 조정합니다.
 
-## 👑 Spec & Delegation Protocol (Zero-Question Standard)
+## 👑 Spec & Delegation Protocol
 
-**"구현 시 질문이 나온다면 그것은 팀장의 설계 결함이다."**
+### 1. Spec 에스컬레이션 워크플로우 (Spec Escalation Workflow)
+> **핵심 원칙**: Spec은 "무엇을(What)"뿐만 아니라 "어떻게(How)"까지 포함해야 한다. 추상적 지시로 인한 '바이브 코딩'과 기술 부채 발생을 원천 차단한다.
 
-### 1. Accuracy of Instructions (상대 경로 및 확정적 동작)
-- **Repo-Relative Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **저장소 루트 기준 상대 경로(Relative Path from Root)**로 제공해야 합니다. Git 기반 협업 및 이동성을 보장하기 위함입니다.
-    - **Bad**: "저장소의 `DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오." (모호함)
-    - **Good**: `design/work_orders/DIRECTIVE_BRAVO_ARCHAEOLOGIST.md`를 참고하십시오. (저장소 어디서든 접근 가능)
+```mermaid
+graph TD
+    A[Architect Prime: 수석 아키텍트] -- "Conceptual Design (What)" --> B[Antigravity: Team Leader]
+    B -- "Technical Spec & API Design (How)" --> C[Jules: Implementer]
+    C -- "Insight Reporting" --> B
+    B -- "Review & Verification" --> A
+```
+
+### 2. Accuracy of Instructions (상대 경로 및 확정적 동작)
+- **Repo-Relative Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **저장소 루트 기준 상대 경로(Relative Path from Root)**로 제공해야 합니다.
 - **Good Behavior**: "`X` 함수를 `Y` 로직으로 구현하고, `Z` 파일에 적용하십시오." (동작 확정)
 
-### 2. Technical Definitions
+### 3. Technical Definitions
 - 추상적인 경제 용어는 반드시 **코드 레벨의 정의(Logic Map)**를 포함해야 합니다.
     - 예: `Credential Premium` = (동일 기술 수준 그룹 내) 학위에 따른 임금 차액 산출법 명시.
-
-### 3. Workflow Pipeline
-... (생략)
-
-

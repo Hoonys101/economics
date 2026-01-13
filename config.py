@@ -557,11 +557,14 @@ MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
 # --- Phase 4: Fiscal Policy ---
 
 # --- Phase 7: Adaptive Fiscal Policy ---
+GOV_ACTION_INTERVAL = 30                # Actuator silent interval
 FISCAL_SENSITIVITY_ALPHA = 0.5          # Output gap -> fiscal stance conversion
 POTENTIAL_GDP_WINDOW = 50               # Ticks for moving average
 TAX_RATE_MIN = 0.05
-TAX_RATE_MAX = 0.30
+TAX_RATE_MAX = 0.50
 TAX_RATE_BASE = 0.10                    # Neutral rate (boom/bust neutral)
+BUDGET_ALLOCATION_MIN = 0.1
+BUDGET_ALLOCATION_MAX = 1.0
 DEBT_CEILING_RATIO = 2.0                # Max debt/GDP (Increased to 2.0 for stability)
 FISCAL_STANCE_EXPANSION_THRESHOLD = 0.025   # +2.5% stance -> expand
 FISCAL_STANCE_CONTRACTION_THRESHOLD = -0.025 # -2.5% stance -> contract
@@ -729,3 +732,11 @@ EDUCATION_COST_PER_LEVEL = {
 }
 SCHOLARSHIP_WEALTH_PERCENTILE = 0.20  # 하위 20%
 SCHOLARSHIP_POTENTIAL_THRESHOLD = 0.7  # 잠재력 상위 30%
+
+# --- Phase 24: Adaptive Evolution (WO-057) ---
+GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"  # "TAYLOR_RULE" (WO-056) or "AI_ADAPTIVE" (WO-057)
+TARGET_INFLATION_RATE = 0.02      # 2%
+TARGET_UNEMPLOYMENT_RATE = 0.04   # 4%
+GOV_ACTION_INTERVAL = 30          # 의사결정 주기 (30틱 = 1개월)
+RL_LEARNING_RATE = 0.1
+RL_DISCOUNT_FACTOR = 0.95

@@ -2,7 +2,11 @@ import logging
 from typing import Dict, List, Any, Deque
 from collections import deque
 from simulation.ai.enums import PoliticalParty
-from simulation.ai.government_ai import GovernmentAI
+from simulation.interfaces.policy_interface import IGovernmentPolicy
+from simulation.policies.taylor_rule_policy import TaylorRulePolicy
+from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
+from simulation.dtos import GovernmentStateDTO
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +36,15 @@ class Government:
         self.gdp_ema: float = 0.0
         self.fiscal_stance: float = 0.0
 
-        # --- Phase 17-5: Leviathan (AI Government) ---
-        self.ai = GovernmentAI(self, config_module)
+        # --- Phase 24: Policy Strategy Selection ---
+        policy_mode = getattr(config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
+        if policy_mode == "AI_ADAPTIVE":
+            self.policy_engine: IGovernmentPolicy = SmartLeviathanPolicy(self, config_module)
+        else:
+            self.policy_engine: IGovernmentPolicy = TaylorRulePolicy(config_module)
+
+        # Legacy / Compatibility
+        self.ai = getattr(self.policy_engine, "ai", None)
 
         # Political State
         self.ruling_party: PoliticalParty = PoliticalParty.BLUE # Default
@@ -73,16 +84,36 @@ class Government:
         self.gdp_history: List[float] = []
         self.gdp_history_window = 20
         
+        # WO-056: Shadow Policy Metrics
+        ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
+        self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
+
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
         
         self.average_approval_rating = 0.5
 
+        # WO-057-B: Sensory Data Container
+        self.sensory_data: Optional[GovernmentStateDTO] = None
+
         logger.info(
             f"Government {self.id} initialized with assets: {self.assets}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
+
+    def update_sensory_data(self, dto: GovernmentStateDTO):
+        """
+        WO-057-B: Sensory Module Interface.
+        Receives 10-tick SMA macro data from the Engine.
+        """
+        self.sensory_data = dto
+        # Log reception (Debug)
+        if dto.tick % 50 == 0:
+            logger.debug(
+                f"SENSORY_UPDATE | Government received macro data. Inflation_SMA: {dto.inflation_sma:.4f}, Approval_SMA: {dto.approval_sma:.2f}",
+                extra={"tick": dto.tick, "agent_id": self.id, "tags": ["sensory", "wo-057-b"]}
+            )
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """
@@ -226,44 +257,55 @@ class Government:
 
     def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int):
         """
-        AI makes policy decision based on state.
-        Adjusts tax rates and spending multipliers.
+        정책 엔진에게 의사결정을 위임하고 결과를 반영합니다.
+        (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
-        # Execute AI Decision
-        action = self.ai.decide_policy(market_data, current_tick)
+        # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
+        decision = self.policy_engine.decide(self, market_data, current_tick)
+        
+        # 2. 결과 로깅 (엔진 내부에서 상세 로깅 수행)
+        if decision.get("status") == "EXECUTED":
+             logger.debug(
+                f"POLICY_EXECUTED | Tick: {current_tick} | Action: {decision.get('action_taken')}",
+                extra={"tick": current_tick, "agent_id": self.id}
+            )
 
-        # Action Map
-        # 0: EXPAND, 1: CONTRACT, 2: HOLD
 
-        # Hyperparameters for adjustments
-        tax_step = 0.01
-        multiplier_step = 0.1
+        gdp_gap = 0.0
+        if self.potential_gdp > 0:
+            current_gdp = market_data.get("total_production", 0.0)
+            gdp_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
 
-        base_rate = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
-        corp_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2) # Initial reference
+            # Simple EMA update for Potential GDP
+            alpha = 0.01
+            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
 
-        if action == self.ai.ACTION_EXPAND:
-            if self.ruling_party == PoliticalParty.BLUE:
-                # Blue Expansion: Cut Corp Tax, Increase Firm Subsidy
-                self.corporate_tax_rate = max(0.0, self.corporate_tax_rate - tax_step)
-                self.firm_subsidy_budget_multiplier += multiplier_step
-            else:
-                # Red Expansion: Cut Income Tax, Increase Welfare
-                self.income_tax_rate = max(0.0, self.income_tax_rate - tax_step)
-                self.welfare_budget_multiplier += multiplier_step
+        # 5. Taylor Rule 2.0
+        # Target_Rate = Real_GDP_Growth + Inflation + 0.5*(Inf - Target_Inf) + 0.5*(GDP_Gap)
+        target_inflation = getattr(self.config_module, "CB_INFLATION_TARGET", 0.02)
 
-        elif action == self.ai.ACTION_CONTRACT:
-            if self.ruling_party == PoliticalParty.BLUE:
-                # Blue Contraction: Raise Income Tax (Shift burden), Cut Welfare
-                self.income_tax_rate += tax_step
-                self.welfare_budget_multiplier = max(0.0, self.welfare_budget_multiplier - multiplier_step)
-            else:
-                # Red Contraction: Raise Corp Tax (Shift burden), Cut Firm Subsidy
-                self.corporate_tax_rate += tax_step
-                self.firm_subsidy_budget_multiplier = max(0.0, self.firm_subsidy_budget_multiplier - multiplier_step)
+        # Neutral Rate assumption: Real Growth
+        neutral_rate = max(0.01, real_gdp_growth) # Floor at 1%?
 
-        # Update AI Learning (using current perceived opinion as proxy for immediate reward, or wait for next tick)
-        self.ai.update_learning_with_state(self.perceived_public_opinion, market_data)
+        target_rate = neutral_rate + inflation + 0.5 * (inflation - target_inflation) + 0.5 * gdp_gap
+
+        # 6. Log
+        # Get current base rate from market_data["loan_market"] or similar
+        current_base_rate = 0.05
+        if "loan_market" in market_data:
+            current_base_rate = market_data["loan_market"].get("interest_rate", 0.05)
+
+        gap = target_rate - current_base_rate
+
+        log_shadow(
+            tick=current_tick,
+            agent_id=self.id,
+            agent_type="Government",
+            metric="taylor_rule_rate",
+            current_value=current_base_rate,
+            shadow_value=target_rate,
+            details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
+        )
 
     def provide_subsidy(self, target_agent: Any, amount: float, current_tick: int):
         """
@@ -569,9 +611,11 @@ class Government:
 
                         # Student pays share
                         agent.assets -= student_share
+                        if reflux_system:
+                            reflux_system.capture(student_share, f"Household_{agent.id}", "education_tuition")
 
                         logger.info(
-                            f"EDU_SCHOLARSHIP | Household {agent.id} (Aptitude {agent.aptitude:.2f}) promoted to Level {next_level}. Subsidy: {subsidy:.2f}",
+                            f"EDU_SCHOLARSHIP | Household {agent.id} (Aptitude {agent.aptitude:.2f}) promoted to Level {next_level}. Subsidy: {subsidy:.2f}, Student Share: {student_share:.2f}",
                             extra={"tick": current_tick, "agent_id": self.id, "target_id": agent.id, "aptitude": agent.aptitude}
                         )
 
