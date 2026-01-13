@@ -336,7 +336,7 @@ class Simulation:
         # ===== Chaos Injection Events =====
         if self.time == 200:
             self.logger.warning("🔥 CHAOS: Inflation Shock at Tick 200!")
-            for market_name, market in getattr(self, 'goods_markets', {}).items():
+            for market_name, market in self.markets.items():
                 if hasattr(market, 'current_price'):
                     market.current_price *= 1.5
                 if hasattr(market, 'avg_price'):

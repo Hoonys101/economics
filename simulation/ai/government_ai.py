@@ -229,7 +229,7 @@ class GovernmentAI:
         )
 
         logger.debug(
-            f"GOV_AI_LEARN | Reward: {real_reward:.5f} (Ignored Input: {reward}) | State: {self.last_state} -> {current_state} | Action: {self.last_action_idx}",
+            f"GOV_AI_LEARN | [Tick {current_tick}] Reward: {real_reward:.5f} (Ignored Input: {reward}) | State: {self.last_state} -> {current_state} | Action: {self.last_action_idx}",
             extra={"tick": current_tick}
         )
 
