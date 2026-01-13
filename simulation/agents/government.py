@@ -228,39 +228,79 @@ class Government:
         """
         AI makes policy decision based on state.
         Adjusts tax rates and spending multipliers.
+        Implements Brain(Alpha) safety protocols.
         """
+        # Architect Prime's Directive: 30-tick (1 month) silent interval
+        gov_action_interval = getattr(self.config_module, "GOV_ACTION_INTERVAL", 30)
+        if current_tick > 0 and current_tick % gov_action_interval != 0:
+            return
+
         # Execute AI Decision
         action = self.ai.decide_policy(market_data, current_tick)
 
-        # Action Map
-        # 0: EXPAND, 1: CONTRACT, 2: HOLD
+        # Store old values for logging
+        old_income_tax = self.income_tax_rate
+        old_corp_tax = self.corporate_tax_rate
+        old_welfare_budget = self.welfare_budget_multiplier
+        old_firm_subsidy = self.firm_subsidy_budget_multiplier
 
-        # Hyperparameters for adjustments
-        tax_step = 0.01
-        multiplier_step = 0.1
+        if action != self.ai.ACTION_HOLD:
+            # Architect Prime's Directive: Baby Step principle
+            tax_step = 0.01  # Tax +-1.0%
+            multiplier_step = 0.1 # Budget step
 
-        base_rate = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
-        corp_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2) # Initial reference
+            if action == self.ai.ACTION_EXPAND:
+                if self.ruling_party == PoliticalParty.BLUE:
+                    # Blue Expansion: Cut Corp Tax, Increase Firm Subsidy
+                    self.corporate_tax_rate -= tax_step
+                    self.firm_subsidy_budget_multiplier += multiplier_step
+                else:
+                    # Red Expansion: Cut Income Tax, Increase Welfare
+                    self.income_tax_rate -= tax_step
+                    self.welfare_budget_multiplier += multiplier_step
 
-        if action == self.ai.ACTION_EXPAND:
-            if self.ruling_party == PoliticalParty.BLUE:
-                # Blue Expansion: Cut Corp Tax, Increase Firm Subsidy
-                self.corporate_tax_rate = max(0.0, self.corporate_tax_rate - tax_step)
-                self.firm_subsidy_budget_multiplier += multiplier_step
-            else:
-                # Red Expansion: Cut Income Tax, Increase Welfare
-                self.income_tax_rate = max(0.0, self.income_tax_rate - tax_step)
-                self.welfare_budget_multiplier += multiplier_step
+            elif action == self.ai.ACTION_CONTRACT:
+                if self.ruling_party == PoliticalParty.BLUE:
+                    # Blue Contraction: Raise Income Tax (Shift burden), Cut Welfare
+                    self.income_tax_rate += tax_step
+                    self.welfare_budget_multiplier -= multiplier_step
+                else:
+                    # Red Contraction: Raise Corp Tax (Shift burden), Cut Firm Subsidy
+                    self.corporate_tax_rate += tax_step
+                    self.firm_subsidy_budget_multiplier -= multiplier_step
 
-        elif action == self.ai.ACTION_CONTRACT:
-            if self.ruling_party == PoliticalParty.BLUE:
-                # Blue Contraction: Raise Income Tax (Shift burden), Cut Welfare
-                self.income_tax_rate += tax_step
-                self.welfare_budget_multiplier = max(0.0, self.welfare_budget_multiplier - multiplier_step)
-            else:
-                # Red Contraction: Raise Corp Tax (Shift burden), Cut Firm Subsidy
-                self.corporate_tax_rate += tax_step
-                self.firm_subsidy_budget_multiplier = max(0.0, self.firm_subsidy_budget_multiplier - multiplier_step)
+            # Architect Prime's Directive: STRICT CLAMPING
+            tax_rate_min = getattr(self.config_module, "TAX_RATE_MIN", 0.05)
+            tax_rate_max = getattr(self.config_module, "TAX_RATE_MAX", 0.50)
+            budget_min = getattr(self.config_module, "BUDGET_ALLOCATION_MIN", 0.1)
+            budget_max = getattr(self.config_module, "BUDGET_ALLOCATION_MAX", 1.0)
+
+            self.income_tax_rate = max(tax_rate_min, min(tax_rate_max, self.income_tax_rate))
+            self.corporate_tax_rate = max(tax_rate_min, min(tax_rate_max, self.corporate_tax_rate))
+            self.welfare_budget_multiplier = max(budget_min, min(budget_max, self.welfare_budget_multiplier))
+            self.firm_subsidy_budget_multiplier = max(budget_min, min(budget_max, self.firm_subsidy_budget_multiplier))
+
+            # Architect Prime's Directive: Log every change
+            if abs(old_income_tax - self.income_tax_rate) > 1e-9:
+                logger.warning(
+                    f"BABY_STEP | Income Tax: {old_income_tax:.4f} -> {self.income_tax_rate:.4f}",
+                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["policy", "tax", "babystep"]}
+                )
+            if abs(old_corp_tax - self.corporate_tax_rate) > 1e-9:
+                logger.warning(
+                    f"BABY_STEP | Corp Tax: {old_corp_tax:.4f} -> {self.corporate_tax_rate:.4f}",
+                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["policy", "tax", "babystep"]}
+                )
+            if abs(old_welfare_budget - self.welfare_budget_multiplier) > 1e-9:
+                logger.warning(
+                    f"BABY_STEP | Welfare Budget: {old_welfare_budget:.4f} -> {self.welfare_budget_multiplier:.4f}",
+                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["policy", "budget", "babystep"]}
+                )
+            if abs(old_firm_subsidy - self.firm_subsidy_budget_multiplier) > 1e-9:
+                logger.warning(
+                    f"BABY_STEP | Firm Subsidy: {old_firm_subsidy:.4f} -> {self.firm_subsidy_budget_multiplier:.4f}",
+                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["policy", "budget", "babystep"]}
+                )
 
         # Update AI Learning (using current perceived opinion as proxy for immediate reward, or wait for next tick)
         self.ai.update_learning_with_state(self.perceived_public_opinion, market_data)

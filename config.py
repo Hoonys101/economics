@@ -557,11 +557,14 @@ MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
 # --- Phase 4: Fiscal Policy ---
 
 # --- Phase 7: Adaptive Fiscal Policy ---
+GOV_ACTION_INTERVAL = 30                # Actuator silent interval
 FISCAL_SENSITIVITY_ALPHA = 0.5          # Output gap -> fiscal stance conversion
 POTENTIAL_GDP_WINDOW = 50               # Ticks for moving average
 TAX_RATE_MIN = 0.05
-TAX_RATE_MAX = 0.30
+TAX_RATE_MAX = 0.50
 TAX_RATE_BASE = 0.10                    # Neutral rate (boom/bust neutral)
+BUDGET_ALLOCATION_MIN = 0.1
+BUDGET_ALLOCATION_MAX = 1.0
 DEBT_CEILING_RATIO = 2.0                # Max debt/GDP (Increased to 2.0 for stability)
 FISCAL_STANCE_EXPANSION_THRESHOLD = 0.025   # +2.5% stance -> expand
 FISCAL_STANCE_CONTRACTION_THRESHOLD = -0.025 # -2.5% stance -> contract
