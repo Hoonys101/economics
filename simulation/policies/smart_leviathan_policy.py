@@ -100,7 +100,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
 
         # 6. Reward & Learning
         reward = self._calculate_reward(government, market_data)
-        self.ai.update_learning_with_state(reward, market_data, current_tick)
+        self.ai.update_learning(reward, market_data, current_tick)
 
         return {
             "policy_type": "AI_ADAPTIVE",

@@ -229,9 +229,5 @@ class GovernmentAI:
         )
 
         logger.debug(
-            f"GOV_AI_LEARN | [Tick {current_tick}] Reward: {real_reward:.5f} (Ignored Input: {reward}) | State: {self.last_state} -> {current_state} | Action: {self.last_action_idx}",
-            extra={"tick": current_tick}
+            f"GOV_AI_LEARN | Reward: {real_reward:.5f} | Tick: {current_tick}"
         )
-
-    # Alias for SmartLeviathanPolicy compatibility
-    update_learning_with_state = update_learning
