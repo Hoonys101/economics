@@ -130,24 +130,41 @@ class JulesBridge:
             source=source
         )
 
-    def get_session(self, session_id: str) -> Dict[str, Any]:
-        """Get details of a specific session."""
+    def get_session(self, session_id: str, compact: bool = False) -> Dict[str, Any]:
+        """Get details of a specific session. Use compact=True for minimal output."""
         response = requests.get(
             f"{JULES_API_BASE}/sessions/{session_id}",
             headers=self.headers
         )
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        if compact:
+            return {
+                "id": data.get("id"),
+                "title": data.get("title"),
+                "state": data.get("state"),
+                "updateTime": data.get("updateTime"),
+                "pr_url": next((o["pullRequest"]["url"] for o in data.get("outputs", []) if "pullRequest" in o), None)
+            }
+        return data
 
-    def list_sessions(self, page_size: int = 10) -> List[Dict[str, Any]]:
-        """List recent sessions."""
+    def list_sessions(self, page_size: int = 10, summary: bool = False) -> List[Dict[str, Any]]:
+        """List recent sessions. Use summary=True for minimal output."""
         response = requests.get(
             f"{JULES_API_BASE}/sessions",
             headers=self.headers,
             params={"pageSize": page_size}
         )
         response.raise_for_status()
-        return response.json().get("sessions", [])
+        sessions = response.json().get("sessions", [])
+        if summary:
+            return [{
+                "id": s.get("id"),
+                "title": s.get("title"),
+                "state": s.get("state"),
+                "updateTime": s.get("updateTime")
+            } for s in sessions]
+        return sessions
 
     def approve_plan(self, session_id: str) -> bool:
         """Approve the plan for a session that requires approval."""
@@ -188,6 +205,25 @@ class JulesBridge:
         for output in outputs:
             if "pullRequest" in output:
                 return output["pullRequest"].get("url")
+        return None
+
+    def wait_for_agent_response(self, session_id: str, last_act_id: Optional[str] = None, timeout: int = 60) -> Optional[Dict[str, Any]]:
+        """메시지 전송 후 에이전트의 응답(Activity)이 올 때까지 대기"""
+        import time
+        start_time = time.time()
+        logger.info(f"Waiting for agent response in session {session_id}...")
+        
+        while time.time() - start_time < timeout:
+            activities = self.list_activities(session_id, page_size=5)
+            if activities:
+                # 가장 최근 활동이 에이전트 것이고, 이전 활동과 다르면 반환
+                latest = activities[0]
+                if latest.get("originator") == "agent" and latest.get("id") != last_act_id:
+                    return latest
+            
+            time.sleep(3)
+        
+        logger.warning("Timed out waiting for agent response.")
         return None
 
 
@@ -282,33 +318,20 @@ if __name__ == "__main__":
         print(json.dumps(sources, indent=2))
     
     elif command == "list-sessions":
-        sessions = bridge.list_sessions()
+        use_summary = "--summary" in sys.argv
+        limit = 10
+        for arg in sys.argv:
+            if arg.startswith("--limit="):
+                limit = int(arg.split("=")[1])
+        sessions = bridge.list_sessions(page_size=limit, summary=use_summary)
         print(json.dumps(sessions, indent=2))
     
     elif command == "create" and len(sys.argv) >= 4:
-        import argparse
-        parser = argparse.ArgumentParser()
-        parser.add_argument("cmd")
-        parser.add_argument("title")
-        parser.add_argument("prompt")
-        parser.add_argument("--branch", default="main")
-        parser.add_argument("--mode", default="AUTO_CREATE_PR")
-        parser.add_argument("--approval", action="store_true")
-        
-        args = parser.parse_args(sys.argv[1:])
-        
-        automation_mode = AutomationMode.AUTO_CREATE_PR if args.mode == "AUTO_CREATE_PR" else AutomationMode.MANUAL
-        
-        session = bridge.create_session(
-            prompt=args.prompt, 
-            title=args.title,
-            starting_branch=args.branch,
-            automation_mode=automation_mode,
-            require_plan_approval=args.approval
-        )
+        title = sys.argv[2]
+        prompt = sys.argv[3]
+        session = bridge.create_session(prompt=prompt, title=title)
         print(f"Session created: {session.id}")
         print(f"Name: {session.name}")
-        print(f"Branch: {args.branch}")
     
     elif command == "status" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
@@ -318,8 +341,25 @@ if __name__ == "__main__":
     elif command == "send-message" and len(sys.argv) >= 4:
         session_id = sys.argv[2]
         message = sys.argv[3]
+        
+        # 메시지 전송 전 최신 활동 ID 가져오기
+        activities = bridge.list_activities(session_id, page_size=1)
+        last_id = activities[0].get("id") if activities else None
+        
         success = bridge.send_message(session_id, message)
         print(f"Message sent successfully to {session_id}")
+        
+        # --wait 옵션이 있거나 기본적으로 응답 대기 수행 (선택적)
+        if "--wait" in sys.argv or True: # 일단 기본으로 대기하게 설정 (사용자 편의)
+            response = bridge.wait_for_agent_response(session_id, last_act_id=last_id)
+            if response:
+                print("\n🤖 Jules Response:")
+                progress = response.get("progressUpdated", {})
+                print(f"Title: {progress.get('title')}")
+                if progress.get('description'):
+                    print(f"Description: {progress.get('description')}")
+            else:
+                print("\n⏳ No immediate response from agent (check activities later).")
 
     elif command == "activities" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
