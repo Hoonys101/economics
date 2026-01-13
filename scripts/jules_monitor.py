@@ -87,6 +87,11 @@ class JulesMonitor:
             events = []
             
             for session in sessions:
+                # 필터링: 'economics' 저장소 관련 세션만 처리
+                source_name = session.get("sourceContext", {}).get("source", "")
+                if "economics" not in source_name.lower():
+                    continue
+
                 session_id = session.get("id")
                 session_name = session.get("title", "Untitled")
                 

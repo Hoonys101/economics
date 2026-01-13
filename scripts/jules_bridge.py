@@ -286,11 +286,29 @@ if __name__ == "__main__":
         print(json.dumps(sessions, indent=2))
     
     elif command == "create" and len(sys.argv) >= 4:
-        title = sys.argv[2]
-        prompt = sys.argv[3]
-        session = bridge.create_session(prompt=prompt, title=title)
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("cmd")
+        parser.add_argument("title")
+        parser.add_argument("prompt")
+        parser.add_argument("--branch", default="main")
+        parser.add_argument("--mode", default="AUTO_CREATE_PR")
+        parser.add_argument("--approval", action="store_true")
+        
+        args = parser.parse_args(sys.argv[1:])
+        
+        automation_mode = AutomationMode.AUTO_CREATE_PR if args.mode == "AUTO_CREATE_PR" else AutomationMode.MANUAL
+        
+        session = bridge.create_session(
+            prompt=args.prompt, 
+            title=args.title,
+            starting_branch=args.branch,
+            automation_mode=automation_mode,
+            require_plan_approval=args.approval
+        )
         print(f"Session created: {session.id}")
         print(f"Name: {session.name}")
+        print(f"Branch: {args.branch}")
     
     elif command == "status" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
