@@ -1,9 +1,9 @@
 # 팀장 핸드북 (Team Leader Handbook)
 
 **PM (Project Manager):** Hoonys101 (사용자) - 최종 의사결정 및 비전 제시
-**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**
+**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**, **오케스트레이터(Orchestrator)**
 **Member:** Jules 요원 (Alpha, Bravo, Charlie) - 구현 및 기술적 타협점 보고
-**Last Updated:** 2026-01-12
+**Last Updated:** 2026-01-13
 
 ---
 
@@ -37,6 +37,7 @@ Level 0: 핵심 원칙 (Always Load)
 | 문서 | 경로 | 용도 |
 |---|---|---|
 | **GEMINI.md** | `/GEMINI.md` | 프로젝트 지침, 디버깅 프로토콜, 기획→실행 프로세스 |
+| **AGENTS.md** | `/AGENTS.md` | **(New)** Jules 요원 대상 프로젝트 규칙 및 아키텍처 컨텍스트 |
 | **Core Philosophy** | `/design/roadmap.md#core-philosophy` | Rule-Based → Adaptive AI 철학 |
 
 ---
@@ -78,12 +79,13 @@ Level 0: 핵심 원칙 (Always Load)
 ### Work Orders (진행 중)
 | 문서 | 경로 |
 |---|---|
-| **WO-045-Revision** | `/design/work_orders/WO-045-Revision-Adaptive-Equilibrium.md` |
+| **WO-057-Smart-Leviathan** | `/design/work_orders/WO-057-Smart-Leviathan.md` |
+| **WO-057-A/B/C** | `/design/work_orders/WO-057-[A/B/C]-*.md` |
 
 ### Specs (Phase별)
 ```
 /design/specs/
-├── phase21_corporate_empires_spec.md
+├── phase24_smart_leviathan_spec.md
 ├── engine_spec.md
 ├── banking_spec.md
 ├── fiscal_policy_spec.md
@@ -96,7 +98,7 @@ Level 0: 핵심 원칙 (Always Load)
 
 | 폴더 | 경로 | 내용 |
 |---|---|---|
-| **_archive/** | `/design/_archive/` | 과거 설계 문서 (53 files) |
+| **_archive/** | `/design/_archive/` | 과거 설계 문서 |
 | **HERITAGE_ASSETS.md** | `/design/HERITAGE_ASSETS.md` | 레거시 자산 목록 |
 | **PROJ_HISTORY.md** | `/design/PROJ_HISTORY.md` | 프로젝트 역사 |
 
@@ -108,7 +110,7 @@ Level 0: 핵심 원칙 (Always Load)
 |---|---|
 | **새 세션 시작** | GEMINI.md → project_status.md → roadmap.md |
 | **수석 기획 수신** | GEMINI.md (섹션 6: 기획→실행) |
-| **Jules 작업 배정** | JULES_MASTER_DIRECTIVE.md → Work Order 작성 |
+| **Jules 작업 배정** | **AGENTS.md** → Work Order 작성 |
 | **PR 머지** | project_status.md 업데이트 |
 | **새 Phase 시작** | roadmap.md → specs/ 폴더에 명세 작성 |
 | **디버깅** | GEMINI.md (섹션 5: 문제 해결) |
@@ -121,6 +123,31 @@ Level 0: 핵심 원칙 (Always Load)
 2. **roadmap.md**: 새 항목 추가/완료 시 업데이트
 3. **Work Orders**: 작업 시작 전 작성, 완료 후 체크박스
 4. **이 핸드북**: 문서 구조 변경 시 업데이트
+
+---
+
+## 🤖 Jules Automation Protocol (API-Based Delegation)
+
+Jules API를 사용하여 개발 프로세스를 자동화할 때 반드시 준수해야 하는 프로토콜입니다.
+
+### 1. Mandatory Chief Architect Review (수석 승인 필수)
+Jules에게 작업을 위임(`create-session`)하기 전, 반드시 수석 아키텍트(사용자)에게 **프롬프트와 계획(Work Order)**을 검토받아야 합니다.
+
+**Workflow:**
+1. **Draft Prompt**: Antigravity가 Jules에게 보낼 프롬프트와 참조할 Work Order를 작성합니다.
+2. **Review Request**: `notify_user` 또는 대화를 통해 수석에게 검토를 요청합니다.
+    - "다음 내용으로 Jules에게 작업을 위임해도 되겠습니까?"
+    - "프롬프트: ..."
+    - "참조 문서: ..."
+3. **Approval**: 수석의 승인("진행해", "좋아")이 있어야만 API를 호출합니다.
+4. **Execution**: 승인 후 `python scripts/jules_bridge.py create-session` 실행.
+
+### 2. Post-Assignment Monitoring
+작업 위임 후, 방치하지 않고 주기적으로 상태를 점검합니다.
+
+- **Monitor**: `python scripts/jules_monitor.py` (수석 PC 실행 권장) 또는 수동 체크.
+- **Intervention**: Jules가 질문을 하거나 오류 발생 시 즉시 개입하여 해결합니다.
+- **Result Report**: 작업 완료 및 PR 생성 시 수석에게 즉시 보고 및 리뷰를 요청합니다.
 
 ---
 
@@ -211,7 +238,7 @@ Level 0: 핵심 원칙 (Always Load)
 - **Logic**: 대단위 작업을 파일 충돌(File Conflict)이 없는 독립적인 영역으로 쪼개어 여러 Jules에게 배분합니다.
 - **Assignment**:
     - **分隊 A (Engine/System)**: 핵심 인프라 및 전역 설정 담당.
-    - **分隊 B (Experiment/Data)**: 독립된 스크립트 기반 실험 및 데이터 수집 담당.
+    - **분대 B (Experiment/Data)**: 독립된 스크립트 기반 실험 및 데이터 수집 담당.
     - **分隊 C (Analytics/UI)**: 지표 분석기 및 상위 레이어 로직 담당.
 
 ### 2. Efficiency Bottleneck Management
@@ -242,4 +269,3 @@ graph TD
 ### 3. Technical Definitions
 - 추상적인 경제 용어는 반드시 **코드 레벨의 정의(Logic Map)**를 포함해야 합니다.
     - 예: `Credential Premium` = (동일 기술 수준 그룹 내) 학위에 따른 임금 차액 산출법 명시.
-```
