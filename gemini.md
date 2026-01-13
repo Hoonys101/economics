@@ -128,9 +128,29 @@ Jules의 PR을 머지한 후, 코드가 "동작은 하지만 구조적으로 비
 [실험 설계] 가설 + 성공 기준 정의
     ↓
 [업무 분할] Jules Track 배정
+    ↓
+[Spec Draft] scripts/gemini_worker.py spec "..." 실행
 ```
 
-### 6.2 ROI 분석 매트릭스 (예시)
+### 6.2 Gemini CLI (Administrative Assistant) 활용
+
+`gemini-cli`는 단순 반복 작업을 수행하는 행정 비서입니다. `scripts/gemini_worker.py` 스크립트를 통해 다양한 페르소나(Manual)를 로드하여 작업을 수행합니다.
+
+**사용법:**
+```powershell
+python scripts/gemini_worker.py <worker_type> "<Instruction>"
+```
+
+**제공되는 Worker Type:**
+1. **`spec` (Spec Writer)**: 기획안을 상세 명세로 변환.
+    *   Example: `python scripts/gemini_worker.py spec "뉴스 수집기 설계해줘"`
+    *   Manual: `design/manuals/spec_writer.md`
+2. **`git` (Git Operator)**: 버전 관리 명령어 생성.
+    *   Example: `python scripts/gemini_worker.py git "현재 변경사항을 feat/news 브랜치로 커밋해줘"`
+    *   Manual: `design/manuals/git_operator.md`
+
+
+### 6.3 ROI 분석 매트릭스 (예시)
 
 | 기준 | 옵션 A | 옵션 B | 옵션 C |
 |---|---|---|---|

@@ -179,8 +179,13 @@ Jules에게 작업을 위임(`create-session`)하기 전, 반드시 수석 아�
     중요한 제약 사항(`[!IMPORTANT]`)이나 팁(`[!TIP]`)을 시각적으로 강조한다.
 - **🧠 실무자 인사이트 공유 (Mandatory Insight Reporting)**
     Jules가 작업을 수행하며 발견한 구조적 결함이나 아키텍처적 아이디어를 `communications/insights/`에 별도 보고서로 제출하도록 강제한다.
+    *   **Delegation Rule**: 해당 보고서의 정리 및 요약은 **Drafting Assistant(Gemini CLI)**가 수행하며, 팀장은 최종 승인만 한다.
+- **Jules (Sub-agent - Doer)**: 내부 로직 구현, 테스트 코드 작성, 디버깅.
+- **Drafting Assistant (Gemini CLI - Free Worker)**: Antigravity의 지시를 받아 `spec.md` 및 `api.py`의 초안(Draft)을 작성하여 팀장의 인지 부하를 줄임.
 
 ---
+
+## 🏗️ 아키텍처 및 코드 표준 (Architecture & Standards)
 
 ## 🛠️ Jules PR 처리 루틴 (Standard PR Routine)
 
@@ -293,6 +298,16 @@ python scripts/jules_bridge.py approve-plan <session_id>
     - **分隊 A (Engine/System)**: 핵심 인프라 및 전역 설정 담당.
     - **분대 B (Experiment/Data)**: 독립된 스크립트 기반 실험 및 데이터 수집 담당.
     - **分隊 C (Analytics/UI)**: 지표 분석기 및 상위 레이어 로직 담당.
+
+### 3. 워크플로우 토폴로지 (Workflow Topology)
+
+### 3.1 모듈 설계 및 구현 프로세스 (W-1 ~ W-2)
+
+1. **Architect Prime (User)**: 개념 기획 및 요구사항 전달.
+2. **Gemini CLI (Drafting)**: `python scripts/gemini_worker.py spec "..."`를 실행하여 초안 작성.
+3. **Antigravity (Review)**: CLI의 초안을 검수하고 최종 확정 (Cognitive Load 80% 감소).
+4. **Jules (Implement)**: 확정된 Spec을 바탕으로 구현 및 테스트 수행.
+5. **Gemini CLI (Post-Process)**: Jules의 작업 로그를 바탕으로 인사이트 정리 및 장부(TODO, TECH_DEBT) 업데이트.
 
 ### 2. Efficiency Bottleneck Management
 - **Prioritization**: 다른 작업의 병목을 만드는 '엔진 최적화(Speed-Up)' 등은 가장 먼저 수행하거나 전담 요원을 배치하여 전체 처리량을 확보합니다.

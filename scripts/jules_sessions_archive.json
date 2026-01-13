@@ -1,0 +1,58 @@
+{
+  "archived_sessions": [
+    {
+      "id": "2815981828400076595",
+      "title": "WO-057-D: Operation Awakening (1,000 Tick Run)",
+      "work_order": "WO-057-D-Awakening.md",
+      "branch": "feature/operation-awakening-2815981828400076595",
+      "status": "MERGED",
+      "created": "2026-01-13T13:24:00Z",
+      "completed": "2026-01-13T13:52:00Z"
+    },
+    {
+      "id": "12699424393220073727",
+      "title": "WO-057-C: Policy Actuator & Safety Lock Implementation",
+      "work_order": "WO-057-C-Actuator.md",
+      "branch": "feat/wo-057-actuator-logic-12699424393220073727",
+      "status": "MERGED",
+      "created": "2026-01-13T04:05:00Z",
+      "completed": "2026-01-13T04:12:00Z"
+    },
+    {
+      "id": "7829201602248741876",
+      "title": "WO-057-C: Policy Actuator & Safety Lock Implementation (First Attempt)",
+      "work_order": "WO-057-C-Actuator.md",
+      "branch": "feat/implement-brain-alpha-safety-protocols-7829201602248741876",
+      "status": "MERGED",
+      "created": "2026-01-13T04:00:00Z",
+      "completed": "2026-01-13T04:10:00Z"
+    },
+    {
+      "id": "12388773851961283868",
+      "title": "WO-057-Refine: Operation Shock Therapy (Awakening v2)",
+      "work_order": "WO-057-Refine-ShockTherapy.md",
+      "branch": "feat/implement-shock-therapy-12388773851961283868",
+      "status": "MERGED",
+      "created": "2026-01-13T14:09:00Z",
+      "completed": "2026-01-13T16:00:00Z"
+    },
+    {
+      "id": "11167967594341127768",
+      "title": "WO-057-Shock: Execution & Analysis (Awakening v2.1)",
+      "work_order": "WO-057-Shock-Analysis-v2.1.md",
+      "branch": "feature/shock-therapy-analysis-v2.1-11167967594341127768",
+      "status": "MERGED",
+      "created": "2026-01-13T15:00:00Z",
+      "completed": "2026-01-13T16:00:00Z"
+    },
+    {
+      "id": "14341111805412001431",
+      "title": "Aggregate Learning Progress",
+      "work_order": "WO-057-Learning-Tracker.md",
+      "branch": "feature-aggregate-learning-progress-14341111805412001431",
+      "status": "MERGED",
+      "created": "2026-01-13T15:00:00Z",
+      "completed": "2026-01-13T16:00:00Z"
+    }
+  ]
+}

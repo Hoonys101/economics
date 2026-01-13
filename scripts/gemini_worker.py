@@ -1,0 +1,211 @@
+
+import subprocess
+import sys
+import os
+from pathlib import Path
+import shutil
+import argparse
+from abc import ABC, abstractmethod
+
+# Configuration
+BASE_DIR = Path(__file__).parent.parent
+MANUALS_DIR = BASE_DIR / "design" / "manuals"
+
+class BaseGeminiWorker(ABC):
+    """
+    Abstract base class for Gemini Workers.
+    Handles the interaction with gemini-cli using a specific manual.
+    """
+    def __init__(self, manual_filename: str):
+        self.manual_path = MANUALS_DIR / manual_filename
+        if not self.manual_path.exists():
+            raise FileNotFoundError(f"❌ Manual not found: {self.manual_path}")
+        
+        if not shutil.which("gemini"):
+            raise EnvironmentError("❌ 'gemini' command not found in PATH.")
+
+    def get_system_prompt(self) -> str:
+        try:
+            with open(self.manual_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            raise RuntimeError(f"❌ Error reading manual: {e}")
+
+    def run_gemini(self, instruction: str, context_files: list[str] = None) -> str:
+        """
+        Executes gemini-cli with the system prompt, context files, and instruction.
+        """
+        system_prompt = self.get_system_prompt()
+        
+        # Build Context Block
+        context_block = ""
+        if context_files:
+            context_block += "\n\n[Context Files]\n"
+            for file_path in context_files:
+                path = BASE_DIR / file_path
+                if path.exists():
+                    try:
+                        content = path.read_text(encoding='utf-8')
+                        context_block += f"\nFile: {file_path}\n```\n{content}\n```\n"
+                        print(f"📖 Attached context: {file_path}")
+                    except Exception as e:
+                        print(f"⚠️ Failed to read context file {file_path}: {e}")
+                else:
+                    print(f"⚠️ Context file not found: {file_path}")
+
+        full_input = f"{system_prompt}{context_block}\n\n---\n\n{instruction}"
+
+        print(f"🚀 [GeminiWorker] Running task with manual: {self.manual_path.name}")
+        
+        try:
+            process = subprocess.run(
+                ["gemini"], 
+                input=full_input, 
+                text=True, 
+                capture_output=True, 
+                encoding='utf-8',
+                shell=True 
+            )
+            
+            if process.returncode != 0:
+                raise RuntimeError(f"Gemini CLI Error (Code {process.returncode}):\n{process.stderr}")
+            
+            return process.stdout
+
+        except Exception as e:
+            raise RuntimeError(f"Error executing gemini subprocess: {e}")
+
+    @abstractmethod
+    def execute(self, instruction: str, context_files: list[str] = None, **kwargs):
+        """
+        Specific execution logic for the worker.
+        """
+        pass
+
+class SpecDrafter(BaseGeminiWorker):
+    """
+    Worker for drafting specifications.
+    Saves output to design/drafts/
+    """
+    def __init__(self):
+        super().__init__("spec_writer.md")
+
+    def execute(self, instruction: str, context_files: list[str] = None, **kwargs):
+        print(f"📄 Drafting Spec with instruction: '{instruction}'...")
+        result = self.run_gemini(instruction, context_files)
+        
+        # Save to draft file
+        output_dir = BASE_DIR / "design" / "drafts"
+        output_dir.mkdir(exist_ok=True, parents=True)
+        
+        safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:30]]).strip("_")
+        output_file = output_dir / f"draft_{safe_name}.md"
+        
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(result)
+            
+        print(f"\n✅ Spec Draft Saved: {output_file}")
+        print("="*60)
+        print(result)
+        print("="*60)
+
+class GitOperator(BaseGeminiWorker):
+    """
+    Worker for generating Git commands.
+    Can auto-execute commands if requested.
+    """
+    def __init__(self):
+        super().__init__("git_operator.md")
+
+    def execute(self, instruction: str, context_files: list[str] = None, auto_run: bool = False, **kwargs):
+        print(f"🐙 analyzing Git operation: '{instruction}'...")
+        
+        # Enhance instruction with current git status if possible
+        try:
+            status_proc = subprocess.run(["git", "status"], cwd=BASE_DIR, capture_output=True, text=True, encoding='utf-8')
+            git_status = status_proc.stdout
+            instruction += f"\n\n[Current Git Status]\n{git_status}"
+        except Exception as e:
+            print(f"⚠️ Could not fetch git status: {e}")
+
+        result = self.run_gemini(instruction, context_files)
+        
+        # Parse JSON
+        import json
+        import re
+        
+        try:
+            # Extract JSON block if surrounded by markdown code fences
+            json_match = re.search(r'\{.*\}', result, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+            else:
+                json_str = result
+
+            plan = json.loads(json_str)
+            
+            print("\n🤖 [GitPlan]")
+            print(f"Reasoning: {plan.get('reasoning', 'No reasoning provided')}")
+            print(f"Risk Level: {plan.get('risk_level', 'UNKNOWN')}")
+            print("Commands:")
+            for cmd in plan.get('commands', []):
+                print(f"  $ {cmd}")
+                
+            if auto_run:
+                if plan.get('risk_level') == 'HIGH':
+                    print("\n⚠️ HIGH RISK DETECTED. Stopping auto-run for safety.")
+                    return
+
+                print("\n🚀 Auto-Running Commands...")
+                for cmd in plan.get('commands', []):
+                    print(f"Executing: {cmd}")
+                    # Use string command for shell=True, ensure quotes are handled by shell
+                    proc = subprocess.run(cmd, shell=True, cwd=BASE_DIR)
+                    if proc.returncode != 0:
+                        print(f"❌ Command failed: {cmd}")
+                        break
+                print("✅ Git Operation Completed.")
+
+        except json.JSONDecodeError:
+            print(f"❌ Failed to parse JSON response from Gemini CLI:\n{result}")
+        except Exception as e:
+            print(f"❌ Error during execution: {e}")
+
+def main():
+    parser = argparse.ArgumentParser(description="Gemini Worker Interface")
+    subparsers = parser.add_subparsers(dest="worker_type", help="Type of worker to run")
+    subparsers.required = True
+
+    # Spec Drafter
+    spec_parser = subparsers.add_parser("spec", help="Draft a new specification")
+    spec_parser.add_argument("instruction", help="Instruction for the spec writer")
+    spec_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+
+    # Git Operator
+    git_parser = subparsers.add_parser("git", help="Generate git commands")
+    git_parser.add_argument("instruction", help="Instruction for the git operator")
+    git_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+    git_parser.add_argument("--auto-run", action="store_true", help="Automatically execute the generated commands")
+
+    args = parser.parse_args()
+
+    try:
+        worker_map = {
+            "spec": SpecDrafter,
+            "git": GitOperator
+        }
+        
+        if args.worker_type in worker_map:
+            worker = worker_map[args.worker_type]()
+            worker.execute(
+                args.instruction, 
+                context_files=getattr(args, 'context', None),
+                auto_run=getattr(args, 'auto_run', False)
+            )
+            
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
