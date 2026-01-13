@@ -19,6 +19,16 @@ import requests
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+
+# .env 파일 로드
+try:
+    from dotenv import load_dotenv
+    # 프로젝트 루트의 .env 파일 로드
+    env_path = Path(__file__).parent.parent / ".env"
+    load_dotenv(env_path)
+except ImportError:
+    pass  # python-dotenv가 없으면 시스템 환경변수만 사용
 
 # ============================================================================
 # Configuration
