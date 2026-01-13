@@ -13,11 +13,6 @@
       "style": "%"
     }
   },
-  "filters": {
-    "sampling_filter": {
-      "()": "utils.logging_manager.SamplingFilter"
-    }
-  },
   "handlers": {
     "console": {
       "class": "logging.StreamHandler",
@@ -27,27 +22,26 @@
     },
     "file": {
       "class": "logging.FileHandler",
-      "formatter": "csv_formatter",
+      "formatter": "standard",
       "level": "DEBUG",
-      "filename": "logs/simulation_log_StandardLog.csv",
-      "mode": "w",
-      "filters": ["sampling_filter"]
+      "filename": "simulation.log",
+      "mode": "w"
     }
   },
   "loggers": {
     "simulation": {
       "handlers": ["console", "file"],
-      "level": "WARNING",
+      "level": "DEBUG",
       "propagate": false
     },
     "main": {
       "handlers": ["console", "file"],
-      "level": "WARNING",
+      "level": "DEBUG",
       "propagate": false
-    },
-    "root": {
-      "handlers": ["console", "file"],
-      "level": "WARNING"
     }
+  },
+  "root": {
+    "handlers": ["console", "file"],
+    "level": "DEBUG"
   }
 }

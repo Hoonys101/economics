@@ -200,7 +200,7 @@ class GovernmentAI:
 
         return action_idx
 
-    def update_learning(self, reward: float, market_data: Dict[str, Any]):
+    def update_learning(self, reward: float, market_data: Dict[str, Any], current_tick: int):
         """
         Update Q-Table using the reward from the PREVIOUS action and the CURRENT state.
         Transition: (last_state, last_action, reward, current_state)
@@ -230,7 +230,7 @@ class GovernmentAI:
 
         logger.debug(
             f"GOV_AI_LEARN | Reward: {real_reward:.5f} (Ignored Input: {reward}) | State: {self.last_state} -> {current_state} | Action: {self.last_action_idx}",
-            extra={"tick": self.agent.id} # Using agent ID as proxy if tick not passed
+            extra={"tick": current_tick}
         )
 
     # Alias for SmartLeviathanPolicy compatibility

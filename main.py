@@ -26,6 +26,7 @@ main_logger = logging.getLogger(__name__)
 
 # --- Setup Logging ---
 setup_logging()  # Call the setup function
+logging.getLogger().setLevel(logging.DEBUG) # Force DEBUG level for all loggers
 
 # Get the SamplingFilter instance and set sampling rates
 sampling_filter: SamplingFilter | None = None
