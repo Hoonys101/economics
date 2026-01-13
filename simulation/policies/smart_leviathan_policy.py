@@ -30,17 +30,30 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         self.last_action_tick = current_tick
 
         # 2. 결과 가공 (Action Index -> Policy Deltas)
-        # Spec에 정의된 0: Dovish, 1: Hold, 2: Hawkish 등등 매핑
+        # Spec에 정의된 5-Action Mapping
+        # 0: Dovish (-0.25%p)
+        # 1: Hold
+        # 2: Hawkish (+0.25%p)
+        # 3: Expansion (-1.0%p Tax)
+        # 4: Contraction (+1.0%p Tax)
+
         deltas = {"interest_rate_delta": 0.0, "tax_rate_delta": 0.0}
+        label = "Hold"
         
         if action == 0: # Dovish
             deltas["interest_rate_delta"] = -0.0025
+            label = "Dovish"
+        elif action == 1: # Hold
+            label = "Hold"
         elif action == 2: # Hawkish
             deltas["interest_rate_delta"] = 0.0025
+            label = "Hawkish"
         elif action == 3: # Expansion
             deltas["tax_rate_delta"] = -0.01
+            label = "Expansion"
         elif action == 4: # Contraction
             deltas["tax_rate_delta"] = 0.01
+            label = "Contraction"
             
         # 3. 학습 업데이트
         # perceived_public_opinion 등을 reward로 사용하도록 유도
@@ -51,7 +64,8 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
             "interest_rate_delta": deltas["interest_rate_delta"],
             "tax_rate_delta": deltas["tax_rate_delta"],
             "policy_type": "AI_ADAPTIVE",
-            "action_taken": action
+            "action_taken": action,
+            "action_label": label
         }
 
     def _calculate_reward(self, government: Any, market_data: Dict[str, Any]) -> float:

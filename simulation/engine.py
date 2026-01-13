@@ -1015,6 +1015,7 @@ class Simulation:
             "avg_goods_price": avg_goods_price_for_market_data,
             "debt_data": debt_data_map, # Injected Debt Data
             "deposit_data": deposit_data_map, # Injected Deposit Data
+            "central_bank": self.central_bank, # Exposed for Government AI Policy
         }
 
     def _calculate_total_money(self) -> float:

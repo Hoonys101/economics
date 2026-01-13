@@ -245,19 +245,84 @@ class Government:
         
         # AI 적응형 정책인 경우 델타값을 반영
         if decision.get("policy_type") == "AI_ADAPTIVE":
+            if decision.get("status") == "COOLDOWN":
+                return
+
             ir_delta = decision.get("interest_rate_delta", 0.0)
             tx_delta = decision.get("tax_rate_delta", 0.0)
+            action_label = decision.get("action_label", "Unknown")
+
+            # 1. 금리 반영 (Delegated via Central Bank link)
+            old_rate = 0.0
+            new_rate = 0.0
+            if "central_bank" in market_data:
+                cb = market_data["central_bank"]
+                old_rate = cb.base_rate
+                # Apply delta and clamp (Zero Lower Bound)
+                cb.base_rate = max(0.0, cb.base_rate + ir_delta)
+                new_rate = cb.base_rate
             
-            # 1. 금리 반영 (베이비스텝 가드레일은 Policy 엔진 내부 혹은 여기서 강제)
-            # 여기서는 엔진 결과를 믿되, 최종 안전장치로 Clamp 가능
+            # 2. 세율 반영
+            old_tax = self.income_tax_rate
             self.income_tax_rate = max(0.0, min(0.5, self.income_tax_rate + tx_delta))
+            new_tax = self.income_tax_rate
             
-            # 2. 로그 기록
-            if ir_delta != 0 or tx_delta != 0:
-                logger.info(
-                    f"POLICY_CHANGE | Mode: AI | IR_Delta: {ir_delta:.4f}, Tax_Delta: {tx_delta:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id}
-                )
+            # 3. 로그 기록 (Strict Format)
+            # Calculate Inflation & Unemployment for logging
+            # Inflation
+            inflation = 0.0
+            if len(self.price_history_shadow) >= 2:
+                current_p = self.price_history_shadow[-1]
+                past_p = self.price_history_shadow[0]
+                if past_p > 0:
+                    inflation = (current_p - past_p) / past_p
+
+            # Unemployment
+            unemp_rate = 0.0
+            # Assuming we can get it from market_data["labor"] or tracker
+            # market_data["labor"] has "avg_wage" etc, not unemp rate directly.
+            # But the 'unemployment_gap' calculation in Spec implies it's available.
+            # Let's check 'unemployment_rate' in tracker which runs before this.
+            # But here we only have market_data.
+            # Let's check if 'market_data' has unemp info? usually not explicitly passed unless added.
+            # However, we can approximate or use self.approval_rating logic which uses household states.
+            # Or use global tracker if we have access? Government doesn't hold tracker reference.
+            # But 'simulation/engine.py' passes 'market_data' prepared by '_prepare_market_data'.
+            # '_prepare_market_data' does not add unemployment rate.
+            # However, we can use the 'job_vacancies' and 'all_households' passed in market_data to calc it?
+            # Or simplified: if not available, use 0.0.
+            # Actually, `SmartLeviathanPolicy` might know it? No.
+            # Wait, `run_tick` calls `make_policy_decision` AFTER `tracker.track`.
+            # We can grab it from tracker if we had access.
+            # Let's iterate households in market_data["all_households"] (which IS passed!)
+
+            households = market_data.get("all_households", [])
+            total_labor_force = 0
+            unemployed = 0
+            for h in households:
+                if h.is_active:
+                    total_labor_force += 1 # Simplify: all active are labor force
+                    if not h.is_employed:
+                        unemployed += 1
+
+            if total_labor_force > 0:
+                unemp_rate = unemployed / total_labor_force
+
+            logger.info(
+                f"POLICY_CHANGE | Mode: AI | Action: {action_label} | "
+                f"IR: {old_rate:.2%}->{new_rate:.2%} | Tax: {old_tax:.1%}->{new_tax:.1%} | "
+                f"Reason: Inf={inflation:.1%}, Unemp={unemp_rate:.1%}",
+                extra={
+                    "tick": current_tick,
+                    "agent_id": self.id,
+                    "action": action_label,
+                    "ir_delta": ir_delta,
+                    "tax_delta": tx_delta,
+                    "inflation": inflation,
+                    "unemployment": unemp_rate,
+                    "tags": ["policy", "ai_leviathan"]
+                }
+            )
 
         # 테일러 준칙(Shadow) 모드인 경우 로깅은 엔진 내부에서 수행됨
 
