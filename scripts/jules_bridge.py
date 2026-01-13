@@ -108,6 +108,14 @@ class SessionTracker:
         data = self._load()
         return data["sessions"][:limit]
     
+    def find_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Find a specific session by ID."""
+        data = self._load()
+        for s in data["sessions"]:
+            if s["id"] == session_id:
+                return s
+        return None
+    
     def sync_with_api(self, bridge: 'JulesBridge'):
         """Sync local tracking with API status."""
         data = self._load()
@@ -418,6 +426,15 @@ if __name__ == "__main__":
                 limit = int(arg.split("=")[1])
         sessions = tracker.get_my_sessions(limit)
         print(json.dumps(sessions, indent=2))
+    
+    elif command == "find" and len(sys.argv) >= 3:
+        session_id = sys.argv[2]
+        tracker = SessionTracker()
+        session = tracker.find_session(session_id)
+        if session:
+            print(json.dumps(session, indent=2))
+        else:
+            print(f"Session {session_id} not found in local tracking.")
     
     elif command == "sync":
         tracker = SessionTracker()
