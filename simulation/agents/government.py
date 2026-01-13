@@ -2,8 +2,9 @@ import logging
 from typing import Dict, List, Any, Deque
 from collections import deque
 from simulation.ai.enums import PoliticalParty
-from simulation.ai.government_ai import GovernmentAI
-from simulation.utils.shadow_logger import log_shadow
+from simulation.interfaces.policy_interface import IGovernmentPolicy
+from simulation.policies.taylor_rule_policy import TaylorRulePolicy
+from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +34,15 @@ class Government:
         self.gdp_ema: float = 0.0
         self.fiscal_stance: float = 0.0
 
-        # --- Phase 17-5: Leviathan (AI Government) ---
-        self.ai = GovernmentAI(self, config_module)
+        # --- Phase 24: Policy Strategy Selection ---
+        policy_mode = getattr(config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
+        if policy_mode == "AI_ADAPTIVE":
+            self.policy_engine: IGovernmentPolicy = SmartLeviathanPolicy(self, config_module)
+        else:
+            self.policy_engine: IGovernmentPolicy = TaylorRulePolicy(config_module)
+
+        # Legacy / Compatibility
+        self.ai = getattr(self.policy_engine, "ai", None)
 
         # Political State
         self.ruling_party: PoliticalParty = PoliticalParty.BLUE # Default
@@ -231,47 +239,27 @@ class Government:
 
     def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int):
         """
-        AI makes policy decision based on state.
-        Adjusts tax rates and spending multipliers.
+        정책 엔진에게 의사결정을 위임하고 결과를 반영합니다.
         """
-        # Execute AI Decision
-        action = self.ai.decide_policy(market_data, current_tick)
+        decision = self.policy_engine.decide(self, market_data, current_tick)
+        
+        # AI 적응형 정책인 경우 델타값을 반영
+        if decision.get("policy_type") == "AI_ADAPTIVE":
+            ir_delta = decision.get("interest_rate_delta", 0.0)
+            tx_delta = decision.get("tax_rate_delta", 0.0)
+            
+            # 1. 금리 반영 (베이비스텝 가드레일은 Policy 엔진 내부 혹은 여기서 강제)
+            # 여기서는 엔진 결과를 믿되, 최종 안전장치로 Clamp 가능
+            self.income_tax_rate = max(0.0, min(0.5, self.income_tax_rate + tx_delta))
+            
+            # 2. 로그 기록
+            if ir_delta != 0 or tx_delta != 0:
+                logger.info(
+                    f"POLICY_CHANGE | Mode: AI | IR_Delta: {ir_delta:.4f}, Tax_Delta: {tx_delta:.2f}",
+                    extra={"tick": current_tick, "agent_id": self.id}
+                )
 
-        # Action Map
-        # 0: EXPAND, 1: CONTRACT, 2: HOLD
-
-        # Hyperparameters for adjustments
-        tax_step = 0.01
-        multiplier_step = 0.1
-
-        base_rate = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
-        corp_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2) # Initial reference
-
-        if action == self.ai.ACTION_EXPAND:
-            if self.ruling_party == PoliticalParty.BLUE:
-                # Blue Expansion: Cut Corp Tax, Increase Firm Subsidy
-                self.corporate_tax_rate = max(0.0, self.corporate_tax_rate - tax_step)
-                self.firm_subsidy_budget_multiplier += multiplier_step
-            else:
-                # Red Expansion: Cut Income Tax, Increase Welfare
-                self.income_tax_rate = max(0.0, self.income_tax_rate - tax_step)
-                self.welfare_budget_multiplier += multiplier_step
-
-        elif action == self.ai.ACTION_CONTRACT:
-            if self.ruling_party == PoliticalParty.BLUE:
-                # Blue Contraction: Raise Income Tax (Shift burden), Cut Welfare
-                self.income_tax_rate += tax_step
-                self.welfare_budget_multiplier = max(0.0, self.welfare_budget_multiplier - multiplier_step)
-            else:
-                # Red Contraction: Raise Corp Tax (Shift burden), Cut Firm Subsidy
-                self.corporate_tax_rate += tax_step
-                self.firm_subsidy_budget_multiplier = max(0.0, self.firm_subsidy_budget_multiplier - multiplier_step)
-
-        # Update AI Learning (using current perceived opinion as proxy for immediate reward, or wait for next tick)
-        self.ai.update_learning_with_state(self.perceived_public_opinion, market_data)
-
-        # WO-056: Shadow Mode Policy Logic
-        self._calculate_taylor_rule(market_data, current_tick)
+        # 테일러 준칙(Shadow) 모드인 경우 로깅은 엔진 내부에서 수행됨
 
     def _calculate_taylor_rule(self, market_data: Dict[str, Any], current_tick: int) -> None:
         """
