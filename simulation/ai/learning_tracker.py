@@ -90,9 +90,51 @@ class LearningTracker:
         """
         전체 시뮬레이션 동안의 학습 진행 상황에 대한 요약 통계를 반환합니다.
         """
-        # TODO: 집계 로직 구현 (예: 에이전트별 평균 Q-테이블 변화량, 보상 총합 등)
+        if not self.history:
+            return {"total_ticks_tracked": 0, "message": "No learning data tracked."}
+
+        overall_q_change = 0.0
+        overall_reward = 0.0
+        total_records = 0
+
+        per_agent_stats = defaultdict(lambda: {"total_q_change": 0.0, "total_reward": 0.0, "record_count": 0})
+
+        for tick, tick_data in self.history.items():
+            for agent_id, records in tick_data.items():
+                for record in records:
+                    q_change = record.get("q_table_change", 0.0)
+                    reward = record.get("reward", 0.0)
+
+                    # Aggregate overall stats
+                    overall_q_change += q_change
+                    overall_reward += reward
+                    total_records += 1
+
+                    # Aggregate per-agent stats
+                    agent_summary = per_agent_stats[agent_id]
+                    agent_summary["total_q_change"] += q_change
+                    agent_summary["total_reward"] += reward
+                    agent_summary["record_count"] += 1
+
+        # Calculate averages
+        avg_q_change = overall_q_change / total_records if total_records > 0 else 0.0
+        avg_reward = overall_reward / total_records if total_records > 0 else 0.0
+
+        # Finalize per-agent stats with averages
+        for agent_id, stats in per_agent_stats.items():
+            count = stats["record_count"]
+            stats["avg_q_change"] = stats["total_q_change"] / count if count > 0 else 0.0
+            stats["avg_reward"] = stats["total_reward"] / count if count > 0 else 0.0
+
         summary = {
             "total_ticks_tracked": len(self.history),
-            "placeholder": "Summary logic to be implemented.",
+            "overall": {
+                "record_count": total_records,
+                "total_q_table_change": overall_q_change,
+                "average_q_table_change": avg_q_change,
+                "total_reward": overall_reward,
+                "average_reward": avg_reward,
+            },
+            "per_agent": dict(per_agent_stats),
         }
         return summary
