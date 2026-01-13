@@ -210,6 +210,56 @@ Jules에게 작업을 위임(`create-session`)하기 전, 반드시 수석 아�
     git branch -d <local_temp_branch>
     ```
 
+---
+
+## 🤖 Jules Automation Protocol (자동화 절차)
+
+### 1. 세션 생성 (Task Delegation)
+```bash
+python scripts/jules_bridge.py create "<title>" "<prompt>" --branch main --mode AUTO_CREATE_PR --approval
+```
+
+### 2. 세션 상태 조회 (Status Check)
+```bash
+# 간략 조회 (권장)
+python scripts/jules_bridge.py list-sessions --summary --limit=5
+
+# 상세 조회
+python scripts/jules_bridge.py status <session_id>
+```
+
+### 3. 계획 승인 (Plan Approval)
+```bash
+python scripts/jules_bridge.py approve-plan <session_id>
+```
+
+### 4. 세션 ID 관리 (Session Tracking)
+> [!IMPORTANT]
+> 팀장이 관리하는 모든 Jules 세션은 `scripts/jules_sessions.json`에 기록합니다.
+
+**JSON 형식:**
+```json
+{
+  "sessions": [
+    {
+      "id": "<session_id>",
+      "title": "<work_order_title>",
+      "work_order": "<WO-XXX.md>",
+      "branch": "<feature_branch_name>",
+      "status": "PENDING | COMPLETED | MERGED",
+      "created": "<ISO_datetime>",
+      "completed": "<ISO_datetime>"
+    }
+  ]
+}
+```
+
+### 5. 완료 후 처리 (Post-Completion)
+1. PR 생성 확인 → 브랜치 Fetch
+2. 코드 리뷰 (diff 확인)
+3. `jules_sessions.json` 업데이트 (status: "MERGED")
+4. Merge & Push
+
 
 ## 🛡️ Technical Debt Governance (기술부채 관리 규약)
 
