@@ -52,6 +52,77 @@ class JulesSession:
     pr_url: Optional[str] = None
 
 
+class SessionTracker:
+    """Manages local tracking of Jules sessions in a JSON file."""
+    
+    def __init__(self, json_path: Optional[Path] = None):
+        self.json_path = json_path or Path(__file__).parent / "jules_sessions.json"
+        self._ensure_file_exists()
+    
+    def _ensure_file_exists(self):
+        """Create the JSON file if it doesn't exist."""
+        if not self.json_path.exists():
+            self.json_path.write_text(json.dumps({"sessions": []}, indent=2))
+    
+    def _load(self) -> Dict[str, Any]:
+        """Load sessions from JSON file."""
+        return json.loads(self.json_path.read_text(encoding='utf-8'))
+    
+    def _save(self, data: Dict[str, Any]):
+        """Save sessions to JSON file."""
+        self.json_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
+    
+    def add_session(self, session_id: str, title: str, work_order: str = "", branch: str = "pending"):
+        """Add a new session to tracking."""
+        from datetime import datetime
+        data = self._load()
+        
+        # Check if already exists
+        for s in data["sessions"]:
+            if s["id"] == session_id:
+                return  # Already tracked
+        
+        data["sessions"].insert(0, {
+            "id": session_id,
+            "title": title,
+            "work_order": work_order,
+            "branch": branch,
+            "status": "PENDING",
+            "created": datetime.now().isoformat() + "Z",
+            "completed": None
+        })
+        self._save(data)
+        logger.info(f"Session {session_id} added to tracking.")
+    
+    def update_session(self, session_id: str, **kwargs):
+        """Update a tracked session's fields."""
+        data = self._load()
+        for s in data["sessions"]:
+            if s["id"] == session_id:
+                s.update(kwargs)
+                self._save(data)
+                return
+    
+    def get_my_sessions(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get sessions tracked by this Team Leader."""
+        data = self._load()
+        return data["sessions"][:limit]
+    
+    def sync_with_api(self, bridge: 'JulesBridge'):
+        """Sync local tracking with API status."""
+        data = self._load()
+        for s in data["sessions"]:
+            if s["status"] not in ["MERGED", "ABANDONED"]:
+                try:
+                    api_status = bridge.get_session(s["id"], compact=True)
+                    s["status"] = api_status.get("state", s["status"])
+                    if api_status.get("pr_url"):
+                        s["branch"] = api_status["pr_url"]
+                except Exception:
+                    pass
+        self._save(data)
+
+
 class JulesBridge:
     """
     Bridge between Antigravity and Jules API.
@@ -330,12 +401,38 @@ if __name__ == "__main__":
         title = sys.argv[2]
         prompt = sys.argv[3]
         session = bridge.create_session(prompt=prompt, title=title)
+        
+        # Auto-track the session
+        tracker = SessionTracker()
+        tracker.add_session(session.id, title)
+        
         print(f"Session created: {session.id}")
         print(f"Name: {session.name}")
+        print(f"[Auto-tracked in jules_sessions.json]")
+    
+    elif command == "my-sessions":
+        tracker = SessionTracker()
+        limit = 10
+        for arg in sys.argv:
+            if arg.startswith("--limit="):
+                limit = int(arg.split("=")[1])
+        sessions = tracker.get_my_sessions(limit)
+        print(json.dumps(sessions, indent=2))
+    
+    elif command == "sync":
+        tracker = SessionTracker()
+        tracker.sync_with_api(bridge)
+        print("Session tracking synced with API.")
+        print(json.dumps(tracker.get_my_sessions(5), indent=2))
     
     elif command == "status" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
         status = check_jules_status(session_id)
+        
+        # Update local tracking
+        tracker = SessionTracker()
+        tracker.update_session(session_id, status=status["session"].get("state"))
+        
         print(json.dumps(status, indent=2, default=str))
     
     elif command == "send-message" and len(sys.argv) >= 4:
@@ -375,7 +472,9 @@ if __name__ == "__main__":
     else:
         print("Usage:")
         print("  python jules_bridge.py list-sources")
-        print("  python jules_bridge.py list-sessions")
+        print("  python jules_bridge.py list-sessions [--summary] [--limit=N]")
+        print("  python jules_bridge.py my-sessions [--limit=N]    # Show locally tracked sessions")
+        print("  python jules_bridge.py sync                       # Sync local tracking with API")
         print("  python jules_bridge.py create <title> <prompt>")
         print("  python jules_bridge.py status <session_id>")
         print("  python jules_bridge.py send-message <session_id> <message>")
