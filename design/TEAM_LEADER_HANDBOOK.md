@@ -154,9 +154,10 @@ Jules에게 작업을 위임(`create-session`)하기 전, 반드시 수석 아�
 ## 🛑 Jules Communication Protocol (Zero-Question Standard)
 
 **1. One-Shot Document Rule (지침 불변성의 원칙)**:
-- **Initial Command**: 작업 지시서(Work Order)나 코드 변경 사항은 **초기 명령 시점에 확정**됩니다.
-- **No Resubmission**: 명령 하달 후 문서를 수정하여 다시 푸시(Push)하는 행위는 금지됩니다. (Jules 관점에서 타임라인 꼬임 방지)
-- **Correction via Prompt**: 수정 사항이 발생하면 문서를 고치지 말고, 반드시 **프롬프트(채팅)를 통해 수정 지침을 직접 전달**해야 합니다.
+- **Single-Pull Constraint**: Jules는 세션 시작 시 단 한 번만 코드를 Pull합니다.
+- **No Mid-Session Updates**: 명령 하달 후 Work Order나 AGENTS.md를 수정하여 Push하더라도 Jules는 이를 인지하지 못하며, 이는 최종 병합 시 컨플릭트만 유발할 뿐입니다.
+- **Initial Confirmation**: 따라서 모든 지침은 세션 시작 전에 완벽히 확정되어야 합니다.
+- **Correction via Prompt**: 불가피하게 중간에 수정이 필요한 경우, 파일을 고치지 말고 반드시 **프롬프트(채팅/메시지/sendMessage API)**를 통해 직접 수정 지침을 전달하십시오.
 
 **2. 📝 Zero-Question Work Order 작성 요령 (Jules 생산성 극대화)**
 > **핵심 목표**: Jules가 프로젝트 전체 파일을 읽는 오버헤드를 0으로 만들고, 오직 타겟 로직에만 집중하게 한다.

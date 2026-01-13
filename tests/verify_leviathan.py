@@ -95,27 +95,27 @@ class TestLeviathan(unittest.TestCase):
         # Case 1: BLUE Party + Expansion
         self.gov.ruling_party = PoliticalParty.BLUE
         self.gov.corporate_tax_rate = 0.2
-        self.gov.firm_subsidy_budget_multiplier = 1.0
+        self.gov.firm_subsidy_budget_multiplier = 0.9
 
         # Force AI to choose EXPAND (Action 0)
         with patch.object(self.gov.ai, 'decide_policy', return_value=0):
-            self.gov.make_policy_decision(market_data, 1)
+            self.gov.make_policy_decision(market_data, 30)
 
         # Expect Corp Tax Cut, Subsidy Increase
         self.assertLess(self.gov.corporate_tax_rate, 0.2)
-        self.assertGreater(self.gov.firm_subsidy_budget_multiplier, 1.0)
+        self.assertGreater(self.gov.firm_subsidy_budget_multiplier, 0.9)
 
         # Case 2: RED Party + Expansion
         self.gov.ruling_party = PoliticalParty.RED
         self.gov.income_tax_rate = 0.1
-        self.gov.welfare_budget_multiplier = 1.0
+        self.gov.welfare_budget_multiplier = 0.9
 
         with patch.object(self.gov.ai, 'decide_policy', return_value=0):
-            self.gov.make_policy_decision(market_data, 1)
+            self.gov.make_policy_decision(market_data, 30)
 
         # Expect Income Tax Cut, Welfare Increase
         self.assertLess(self.gov.income_tax_rate, 0.1)
-        self.assertGreater(self.gov.welfare_budget_multiplier, 1.0)
+        self.assertGreater(self.gov.welfare_budget_multiplier, 0.9)
 
 if __name__ == '__main__':
     unittest.main()

@@ -258,66 +258,18 @@ class Government:
     def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int):
         """
         정책 엔진에게 의사결정을 위임하고 결과를 반영합니다.
+        (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
+        # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
         decision = self.policy_engine.decide(self, market_data, current_tick)
         
-        # AI 적응형 정책인 경우 델타값을 반영
-        if decision.get("policy_type") == "AI_ADAPTIVE":
-            ir_delta = decision.get("interest_rate_delta", 0.0)
-            tx_delta = decision.get("tax_rate_delta", 0.0)
-            
-            # 1. 금리 반영 (베이비스텝 가드레일은 Policy 엔진 내부 혹은 여기서 강제)
-            # 여기서는 엔진 결과를 믿되, 최종 안전장치로 Clamp 가능
-            self.income_tax_rate = max(0.0, min(0.5, self.income_tax_rate + tx_delta))
-            
-            # 2. 로그 기록
-            if ir_delta != 0 or tx_delta != 0:
-                logger.info(
-                    f"POLICY_CHANGE | Mode: AI | IR_Delta: {ir_delta:.4f}, Tax_Delta: {tx_delta:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id}
-                )
+        # 2. 결과 로깅 (엔진 내부에서 상세 로깅 수행)
+        if decision.get("status") == "EXECUTED":
+             logger.debug(
+                f"POLICY_EXECUTED | Tick: {current_tick} | Action: {decision.get('action_taken')}",
+                extra={"tick": current_tick, "agent_id": self.id}
+            )
 
-        # 테일러 준칙(Shadow) 모드인 경우 로깅은 엔진 내부에서 수행됨
-
-    def _calculate_taylor_rule(self, market_data: Dict[str, Any], current_tick: int) -> None:
-        """
-        WO-056: Stage 1 Shadow Mode (Central Bank/Fiscal Taylor Rule).
-        Calculates and logs the target interest rate based on Taylor Rule 2.0.
-        Note: Typically Central Bank does this, but Spec puts it in Government/Policy Shadow.
-        """
-        # 1. Update Price History for Inflation Calculation
-        avg_price = market_data.get("avg_goods_price", 10.0)
-        self.price_history_shadow.append(avg_price)
-
-        # 2. Calculate Inflation (YoY)
-        inflation = 0.0
-        if len(self.price_history_shadow) >= 2:
-            current_p = self.price_history_shadow[-1]
-            past_p = self.price_history_shadow[0] # Oldest available
-            if past_p > 0:
-                inflation = (current_p - past_p) / past_p
-
-        # 3. Calculate Real GDP Growth
-        real_gdp_growth = 0.0
-        if len(self.gdp_history) >= 2:
-            current_gdp = self.gdp_history[-1]
-            past_gdp = self.gdp_history[-2] # Tick-to-tick or smoothed?
-            # Spec says "Real_GDP_Growth".
-            # GDP History stores nominal or real? Usually nominal if prices rise.
-            # Real Growth approx = Nominal Growth - Inflation.
-            # Let's use Nominal Growth for now or small window.
-            if past_gdp > 0:
-                nominal_growth = (current_gdp - past_gdp) / past_gdp
-                # Crude Real Growth
-                real_gdp_growth = nominal_growth # If time step is small, inflation is negligible?
-                # Actually, better to use gdp_history[-2] vs [-1]
-
-        # 4. Calculate GDP Gap
-        # Gap = (Current - Potential) / Potential
-        # Potential is self.potential_gdp (tracked elsewhere or EMA)
-        # Initialize potential if needed
-        if self.potential_gdp == 0.0:
-            self.potential_gdp = market_data.get("total_production", 100.0)
 
         gdp_gap = 0.0
         if self.potential_gdp > 0:
