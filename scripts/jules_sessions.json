@@ -1,6 +1,15 @@
 {
   "sessions": [
     {
+      "id": "12388773851961283868",
+      "title": "WO-057-Refine: Operation Shock Therapy (Awakening v2)",
+      "work_order": "WO-057-Refine-ShockTherapy.md",
+      "branch": "pending",
+      "status": "PENDING",
+      "created": "2026-01-13T14:09:00Z",
+      "completed": null
+    },
+    {
       "id": "2815981828400076595",
       "title": "WO-057-D: Operation Awakening (1,000 Tick Run)",
       "work_order": "WO-057-D-Awakening.md",
