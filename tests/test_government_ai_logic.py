@@ -129,7 +129,7 @@ class TestGovernmentAILogic(unittest.TestCase):
         # So Reward should be -0.0.
 
         dummy_reward = -999.0 # Should be ignored
-        self.ai.update_learning_with_state(dummy_reward, market_data, current_tick=2)
+        self.ai.update_learning(dummy_reward, market_data, current_tick=2)
 
         # Check Q Value updated
         # New = Old + alpha * (RealReward + gamma*NextMax - Old)
