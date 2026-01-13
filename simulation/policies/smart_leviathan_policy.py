@@ -20,38 +20,66 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
 
     def decide(self, government: Any, market_data: Dict[str, Any], current_tick: int) -> Dict[str, Any]:
         action_interval = getattr(self.config, "GOV_ACTION_INTERVAL", 30)
-        
-        # 30틱 주기로만 의사결정 수행
-        if current_tick - self.last_action_tick < action_interval:
-            return {"policy_type": "AI_ADAPTIVE", "status": "COOLDOWN"}
 
-        # 1. AI에게 결정 위임
-        action = self.ai.decide_policy(market_data, current_tick)
-        self.last_action_tick = current_tick
+        # Enforce 30-tick (1 month) silent interval
+        if current_tick % action_interval != 0:
+            return {"policy_type": "AI_ADAPTIVE", "status": "HOLD_INTERVAL"}
 
-        # 2. 결과 가공 (Action Index -> Policy Deltas)
-        # Spec에 정의된 0: Dovish, 1: Hold, 2: Hawkish 등등 매핑
-        deltas = {"interest_rate_delta": 0.0, "tax_rate_delta": 0.0}
-        
-        if action == 0: # Dovish
-            deltas["interest_rate_delta"] = -0.0025
-        elif action == 2: # Hawkish
-            deltas["interest_rate_delta"] = 0.0025
-        elif action == 3: # Expansion
-            deltas["tax_rate_delta"] = -0.01
-        elif action == 4: # Contraction
-            deltas["tax_rate_delta"] = 0.01
-            
-        # 3. 학습 업데이트
-        # perceived_public_opinion 등을 reward로 사용하도록 유도
+        # 1. AI Brain makes a decision
+        action_idx = self.ai.decide_policy(market_data, current_tick)
+
+        # Get current policy values
+        central_bank = market_data["central_bank"]
+        old_rate = central_bank.base_rate
+        old_tax = government.tax_rate
+        old_budget = government.budget_allocation
+
+        new_rate = old_rate
+        new_tax = old_tax
+        new_budget = old_budget
+
+        # 2. Translate Action Index to Policy Delta (Baby Step principle)
+        if action_idx == 0:  # Dovish
+            new_rate -= 0.0025
+        elif action_idx == 1:  # Neutral
+            pass # No change
+        elif action_idx == 2:  # Hawkish
+            new_rate += 0.0025
+        elif action_idx == 3:  # Fiscal Ease
+            new_tax -= 0.01
+        elif action_idx == 4:  # Fiscal Tight
+            new_tax += 0.01
+            new_budget -= 0.05
+
+        # 3. Enforce STRICT CLAMPING (Safety Valve)
+        clamped_rate = max(0.0, min(0.20, new_rate))
+        clamped_tax = max(0.05, min(0.50, new_tax))
+        clamped_budget = max(0.1, min(1.0, new_budget))
+
+        # 4. Log every change
+        if old_rate != clamped_rate:
+            logger.info(f"BABY_STEP | Rate: {old_rate:.4f} -> {clamped_rate:.4f}", extra={"tick": current_tick})
+        if old_tax != clamped_tax:
+            logger.info(f"BABY_STEP | Tax: {old_tax:.4f} -> {clamped_tax:.4f}", extra={"tick": current_tick})
+        if old_budget != clamped_budget:
+            logger.info(f"BABY_STEP | Budget: {old_budget:.4f} -> {clamped_budget:.4f}", extra={"tick": current_tick})
+
+        # 5. Update System State
+        central_bank.base_rate = clamped_rate
+        government.tax_rate = clamped_tax
+        government.budget_allocation = clamped_budget
+
+        # 6. Trigger AI Learning Update
         reward = self._calculate_reward(government, market_data)
         self.ai.update_learning_with_state(reward, market_data)
 
         return {
-            "interest_rate_delta": deltas["interest_rate_delta"],
-            "tax_rate_delta": deltas["tax_rate_delta"],
             "policy_type": "AI_ADAPTIVE",
-            "action_taken": action
+            "status": "ACTION_TAKEN",
+            "action": action_idx,
+            "base_rate": clamped_rate,
+            "tax_rate": clamped_tax,
+            "budget_allocation": clamped_budget,
         }
 
     def _calculate_reward(self, government: Any, market_data: Dict[str, Any]) -> float:
