@@ -265,6 +265,30 @@ class Government:
         # Update AI Learning (using current perceived opinion as proxy for immediate reward, or wait for next tick)
         self.ai.update_learning_with_state(self.perceived_public_opinion, market_data)
 
+        # WO-056: Shadow Mode (Taylor Rule 2.0)
+        # Note: In real setup, CentralBank handles this. But WO specified Government agent.
+        # We assume Govt observes CB or acts as monetary authority proxy for logging.
+        self._calculate_shadow_target_rate(0.05, 0.02, 0.0, current_tick) # Using placeholders if data not in args
+
+    # Phase 24: The Invisible Hand (Taylor Rule 2.0)
+    def _calculate_shadow_target_rate(self, current_rate: float, inflation: float, gdp_gap: float, current_tick: int) -> float:
+        """
+        Calculate Shadow Target Rate (Taylor Rule 2.0).
+        Formula: Target = Real_Growth + Inflation + 0.5*(Inf - Target_Inf) + 0.5*GDP_Gap
+        Note: Real_Growth is proxied by GDP_Gap trend or fixed estimate (e.g. 0.03).
+        """
+        # Hardcoded Targets for Shadow Mode
+        TARGET_INFLATION = 0.02
+        REAL_GROWTH_ESTIMATE = 0.03
+
+        target_rate = REAL_GROWTH_ESTIMATE + inflation + 0.5 * (inflation - TARGET_INFLATION) + 0.5 * gdp_gap
+
+        logger.info(
+            f"SHADOW_HAND_RATE | Tick {current_tick}: Current {current_rate:.4f} -> Shadow Target {target_rate:.4f} (Gap: {target_rate - current_rate:.4f})",
+            extra={"agent_id": self.id, "tick": current_tick, "tags": ["shadow_mode"], "shadow_rate": target_rate}
+        )
+        return target_rate
+
     def provide_subsidy(self, target_agent: Any, amount: float, current_tick: int):
         """
         보조금을 지급합니다.

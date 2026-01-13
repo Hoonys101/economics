@@ -100,6 +100,9 @@ class Simulation:
         # Moving Tracker init up.
         self.tracker = EconomicIndicatorTracker(config_module=config_module)
 
+        # Economic Reflux System (Phase 8-B) - Moved up for init usage
+        self.reflux_system = EconomicRefluxSystem()
+
         # Central Bank Initialization (Phase 10)
         self.central_bank = CentralBank(
             tracker=self.tracker,
@@ -171,8 +174,13 @@ class Simulation:
                     self.markets["housing"].place_order(sell_order, self.time)
 
         # 2. 에이전트 욕구 업데이트 (Update Needs)
+        # Fix Money Leak: Pass reflux_system to capture initial expenses (e.g. Marketing)
+        # Also pass government for consistency (though tax usually requires profit/income)
         for agent in self.households + self.firms:
-            agent.update_needs(self.time)
+            if isinstance(agent, Firm):
+                 agent.update_needs(self.time, self.government, None, self.reflux_system)
+            else:
+                 agent.update_needs(self.time)
             
         # 3. 에이전트 의사결정 및 행동 (Decisions & Actions)
         for agent in self.households + self.firms:
@@ -195,9 +203,6 @@ class Simulation:
         
         # M&A Manager System
         self.ma_manager = MAManager(self, self.config_module)
-
-        # Economic Reflux System (Phase 8-B)
-        self.reflux_system = EconomicRefluxSystem()
 
         # Phase 19: Demographic Manager
         self.demographic_manager = DemographicManager(config_module=self.config_module)

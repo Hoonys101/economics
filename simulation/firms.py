@@ -655,6 +655,67 @@ class Firm(BaseAgent):
         )
         return decisions, tactic
 
+    # Phase 24: The Invisible Hand (Shadow Price)
+    def _calculate_invisible_hand_price(self, item_id: str, current_price: float, market_data: Dict[str, Any]) -> float:
+        """
+        Calculate the 'Shadow Price' based on Excess Demand, without affecting real market.
+        Formula: Candidate = P * (1 + Sensitivity * (Demand - Supply) / Supply)
+        Shadow = Candidate * 0.2 + P * 0.8 (Smoothing)
+        """
+        SHADOW_SENSITIVITY = 0.1 # Default Sensitivity
+
+        # Get Market Stats
+        market_info = market_data.get("goods_market", {})
+
+        # Estimate Excess Demand (Proxy: Job Vacancies? No, Goods Excess Demand)
+        # We need Order Book depth? 'market_data' usually has minimal info.
+        # But we can't easily access OrderBook directly here without 'markets' object.
+        # update_needs doesn't receive 'markets', only 'market_data'.
+        # However, we can use Sales Volume vs Inventory as proxy?
+        # Or Price Trend?
+        # WO-056 says "(Demand - Supply) / Supply".
+        # This requires Market Depth access.
+        # If we can't get it, we use Inventory Turnover?
+        # Let's assume market_data might get enriched or we use Price Change as proxy for Excess Demand?
+        # "Excess Demand % approx = Price Change % / Lambda"?
+        # Let's stick to Price Change: if price rose, demand > supply.
+        # But Shadow Price wants to *predict* equilibrium.
+        # Let's use simplified logic:
+        # If Sold Out (Inventory near 0) -> High Demand (Increase)
+        # If High Inventory (Low Sales) -> Low Demand (Decrease)
+
+        # Current Inventory
+        inventory = self.inventory.get(item_id, 0.0)
+        # Last Sales Volume (Daily)
+        sales = self.sales_volume_this_tick # This is reset in engine after tick. In update_needs, it accumulates?
+        # No, update_needs runs at end of tick. sales_volume_this_tick should be populated by transactions.
+
+        supply = max(inventory + sales, 1.0) # Total available today
+        demand = sales # Realized demand (lower bound)
+        # If inventory is 0, demand might be > sales.
+        # But we only know sales.
+
+        excess_demand_ratio = 0.0
+        if inventory < 1.0 and sales > 0:
+             # Stockout: Assume Demand was higher. +10%?
+             excess_demand_ratio = 0.1
+        elif supply > 0:
+             # Normal: (Sales - Supply) / Supply?
+             # No, Demand ~= Sales (if not stockout).
+             # If Inventory is high, Sales/Supply is low.
+             # We want (Demand - Supply)/Supply = (Sales - (Sales+Inv))/(Sales+Inv) = -Inv/Supply.
+             excess_demand_ratio = -inventory / supply
+
+        # Apply Formula
+        candidate_price = current_price * (1.0 + SHADOW_SENSITIVITY * excess_demand_ratio)
+        shadow_price = (candidate_price * 0.2) + (current_price * 0.8)
+
+        self.logger.info(
+            f"SHADOW_HAND_PRICE | Firm {self.id} Item {item_id}: Current {current_price:.2f} -> Shadow {shadow_price:.2f} (ExcessRatio: {excess_demand_ratio:.3f})",
+            extra={"agent_id": self.id, "tick": self.finance.firm.id, "tags": ["shadow_mode"], "shadow_price": shadow_price}
+        )
+        return shadow_price
+
     @override
     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
@@ -667,6 +728,12 @@ class Firm(BaseAgent):
                 "num_employees_before": len(self.employees),
             },
         )
+
+        # WO-056: Shadow Mode Logging
+        if market_data:
+             item_id = self.specialization
+             current_price = self.last_prices.get(item_id, 10.0)
+             self._calculate_invisible_hand_price(item_id, current_price, market_data)
 
         inventory_value = sum(self.inventory.values())
         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
@@ -708,6 +775,12 @@ class Firm(BaseAgent):
              # Phase 8-B: Capture marketing spend (Ad Agency Fee)
              if reflux_system:
                  reflux_system.capture(marketing_spend, str(self.id), "marketing")
+             else:
+                 # Debug Leak: If reflux missing, log warning
+                 self.logger.warning(
+                     f"MARKETING_LEAK_DETECTED | Firm {self.id} spent {marketing_spend:.2f} but reflux_system is None!",
+                     extra=log_extra
+                 )
 
         # Update state for AI/ROI (Explicitly assign to instance variable)
         self.marketing_budget = marketing_spend

@@ -52,7 +52,7 @@ class CorporateManager:
         # But wait, Capital Channel is _manage_capex. Automation is different form of capital.
         # Let's add specific method.
         # We can use 'capital_aggressiveness' to split between CAPEX (Machines) and Automation.
-        self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time, context.government)
+        self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time, context.government, context.reflux_system)
 
         # 1. R&D Channel (Innovation)
         # System 2 guidance might override action vector?
@@ -71,7 +71,7 @@ class CorporateManager:
         if guidance.get("rd_intensity", 0.0) > 0.1:
              rd_agg = max(rd_agg, 0.5) # Minimum effort if strategic priority
 
-        self._manage_r_and_d(firm, rd_agg, context.current_time)
+        self._manage_r_and_d(firm, rd_agg, context.current_time, context.reflux_system)
 
         # 2. Capital Channel (CAPEX - Physical Machines)
         # If Automation is prioritized, maybe reduce physical capex?
@@ -135,7 +135,7 @@ class CorporateManager:
 
         return orders
 
-    def _manage_automation(self, firm: Firm, aggressiveness: float, guidance: Dict[str, Any], current_time: int, government: Optional[Any] = None) -> None:
+    def _manage_automation(self, firm: Firm, aggressiveness: float, guidance: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None) -> None:
         """
         Phase 21: Automation Investment.
         """
@@ -183,6 +183,10 @@ class CorporateManager:
         # Execute
         firm.assets -= actual_spend
 
+        # Phase 8-B: Reflux Capture (Automation is intangible investment)
+        if reflux_system:
+            reflux_system.capture(actual_spend, str(firm.id), "automation")
+
         # WO-044-Track-B: Automation Tax
         # Logic: actual_spend * AUTOMATION_TAX_RATE
         automation_tax_rate = getattr(self.config_module, "AUTOMATION_TAX_RATE", 0.05)
@@ -210,7 +214,7 @@ class CorporateManager:
             extra={"agent_id": firm.id, "tick": current_time, "tags": ["automation"]}
         )
 
-    def _manage_r_and_d(self, firm: Firm, aggressiveness: float, current_time: int) -> None:
+    def _manage_r_and_d(self, firm: Firm, aggressiveness: float, current_time: int, reflux_system: Optional[Any] = None) -> None:
         """
         Innovation Physics.
         """
@@ -232,6 +236,11 @@ class CorporateManager:
             return
 
         firm.assets -= budget
+
+        # Phase 8-B: Reflux Capture (R&D Sunk Cost)
+        if reflux_system:
+            reflux_system.capture(budget, str(firm.id), "rnd")
+
         firm.research_history["total_spent"] += budget
 
         denominator = max(firm.revenue_this_turn * 0.2, 100.0)

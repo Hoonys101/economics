@@ -928,11 +928,38 @@ class Household(BaseAgent):
                 extra=log_extra,
             )
 
+    # Phase 24: The Invisible Hand (Shadow Wage)
+    def _calculate_shadow_reservation_wage(self, current_wage: float, is_employed: bool) -> float:
+        """
+        Calculate 'Shadow Reservation Wage' based on employment status.
+        Stickiness Logic:
+        - Employed: Increase by 5% (Confidence)
+        - Unemployed: Decay by 2% (Desperation)
+        """
+        if is_employed:
+            shadow_wage = current_wage * 1.05
+        else:
+            shadow_wage = current_wage * 0.98
+
+        # Startup Cost Shadow Index
+        # Cost approx 6 months of wages? (WO-056 says Avg_Wage * 6)
+        # Using self.expected_wage as proxy for Avg_Wage if unknown
+        startup_index = self.expected_wage * 6.0
+
+        self.logger.info(
+            f"SHADOW_HAND_WAGE | Household {self.id}: Current {current_wage:.2f} -> Shadow {shadow_wage:.2f} (Employed: {is_employed})",
+            extra={"agent_id": self.id, "tick": 0, "tags": ["shadow_mode"], "shadow_wage": shadow_wage, "startup_index": startup_index}
+        )
+        return shadow_wage
+
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         """
         욕구 업데이트를 PsychologyComponent로 위임합니다.
         """
+        # WO-056: Shadow Mode Logging
+        self._calculate_shadow_reservation_wage(self.current_wage, self.is_employed)
+
         self.psychology.update_needs(current_tick, market_data)
 
     def _update_skill(self):
