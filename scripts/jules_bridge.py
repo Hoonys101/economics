@@ -52,85 +52,6 @@ class JulesSession:
     pr_url: Optional[str] = None
 
 
-class SessionTracker:
-    """Manages local tracking of Jules sessions in a JSON file."""
-    
-    def __init__(self, json_path: Optional[Path] = None):
-        self.json_path = json_path or Path(__file__).parent / "jules_sessions.json"
-        self._ensure_file_exists()
-    
-    def _ensure_file_exists(self):
-        """Create the JSON file if it doesn't exist."""
-        if not self.json_path.exists():
-            self.json_path.write_text(json.dumps({"sessions": []}, indent=2))
-    
-    def _load(self) -> Dict[str, Any]:
-        """Load sessions from JSON file."""
-        return json.loads(self.json_path.read_text(encoding='utf-8'))
-    
-    def _save(self, data: Dict[str, Any]):
-        """Save sessions to JSON file."""
-        self.json_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
-    
-    def add_session(self, session_id: str, title: str, work_order: str = "", branch: str = "pending"):
-        """Add a new session to tracking."""
-        from datetime import datetime
-        data = self._load()
-        
-        # Check if already exists
-        for s in data["sessions"]:
-            if s["id"] == session_id:
-                return  # Already tracked
-        
-        data["sessions"].insert(0, {
-            "id": session_id,
-            "title": title,
-            "work_order": work_order,
-            "branch": branch,
-            "status": "PENDING",
-            "created": datetime.now().isoformat() + "Z",
-            "completed": None
-        })
-        self._save(data)
-        logger.info(f"Session {session_id} added to tracking.")
-    
-    def update_session(self, session_id: str, **kwargs):
-        """Update a tracked session's fields."""
-        data = self._load()
-        for s in data["sessions"]:
-            if s["id"] == session_id:
-                s.update(kwargs)
-                self._save(data)
-                return
-    
-    def get_my_sessions(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Get sessions tracked by this Team Leader."""
-        data = self._load()
-        return data["sessions"][:limit]
-    
-    def find_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Find a specific session by ID."""
-        data = self._load()
-        for s in data["sessions"]:
-            if s["id"] == session_id:
-                return s
-        return None
-    
-    def sync_with_api(self, bridge: 'JulesBridge'):
-        """Sync local tracking with API status."""
-        data = self._load()
-        for s in data["sessions"]:
-            if s["status"] not in ["MERGED", "ABANDONED"]:
-                try:
-                    api_status = bridge.get_session(s["id"], compact=True)
-                    s["status"] = api_status.get("state", s["status"])
-                    if api_status.get("pr_url"):
-                        s["branch"] = api_status["pr_url"]
-                except Exception:
-                    pass
-        self._save(data)
-
-
 class JulesBridge:
     """
     Bridge between Antigravity and Jules API.
@@ -295,15 +216,64 @@ class JulesBridge:
         while time.time() - start_time < timeout:
             activities = self.list_activities(session_id, page_size=5)
             if activities:
-                # 가장 최근 활동이 에이전트 것이고, 이전 활동과 다르면 반환
                 latest = activities[0]
                 if latest.get("originator") == "agent" and latest.get("id") != last_act_id:
                     return latest
-            
             time.sleep(3)
         
         logger.warning("Timed out waiting for agent response.")
         return None
+
+
+# =============================================================================
+# Session Registry (team_assignments.json 자동 관리)
+# =============================================================================
+
+REGISTRY_PATH = Path(__file__).parent.parent / "communications" / "team_assignments.json"
+
+def _load_registry() -> Dict:
+    if REGISTRY_PATH.exists():
+        with open(REGISTRY_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {"antigravity": {"project": DEFAULT_SOURCE.split('/')[-1], "active_sessions": {}}}
+
+def _save_registry(data: Dict):
+    REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(REGISTRY_PATH, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+def register_session(session_id: str, title: str):
+    """새 세션을 레지스트리에 등록"""
+    registry = _load_registry()
+    registry.setdefault("antigravity", {}).setdefault("active_sessions", {})
+    registry["antigravity"]["active_sessions"][session_id] = title
+    _save_registry(registry)
+    logger.info(f"Session registered: {session_id} - {title}")
+
+def complete_session(session_id: str):
+    """세션을 완료 상태로 마킹"""
+    registry = _load_registry()
+    sessions = registry.get("antigravity", {}).get("active_sessions", {})
+    if session_id in sessions:
+        current_title = sessions[session_id]
+        if "(COMPLETED)" not in current_title:
+            sessions[session_id] = f"{current_title} (COMPLETED)"
+        _save_registry(registry)
+        logger.info(f"Session completed: {session_id}")
+
+def get_my_sessions() -> Dict[str, str]:
+    """현재 담당 세션 목록 반환 (토큰 절약)"""
+    registry = _load_registry()
+    return registry.get("antigravity", {}).get("active_sessions", {})
+
+def archive_session(session_id: str):
+    """완료된 세션을 레지스트리에서 제거"""
+    registry = _load_registry()
+    sessions = registry.get("antigravity", {}).get("active_sessions", {})
+    if session_id in sessions:
+        del sessions[session_id]
+        _save_registry(registry)
+        logger.info(f"Session archived: {session_id}")
 
 
 # =============================================================================
@@ -317,18 +287,9 @@ def assign_task_to_jules(
 ) -> JulesSession:
     """
     Assign a task to Jules with optional work order context.
-    
-    Args:
-        task_description: What Jules should do.
-        task_title: Short title for the task.
-        work_order_path: Optional path to a Work Order file for context.
-        
-    Returns:
-        JulesSession object.
     """
     bridge = JulesBridge()
     
-    # If work order path provided, include it in the prompt
     if work_order_path and os.path.exists(work_order_path):
         with open(work_order_path, 'r', encoding='utf-8') as f:
             work_order_content = f.read()
@@ -409,62 +370,27 @@ if __name__ == "__main__":
         title = sys.argv[2]
         prompt = sys.argv[3]
         session = bridge.create_session(prompt=prompt, title=title)
-        
-        # Auto-track the session
-        tracker = SessionTracker()
-        tracker.add_session(session.id, title)
-        
+        register_session(session.id, title)  # 자동 등록
         print(f"Session created: {session.id}")
         print(f"Name: {session.name}")
-        print(f"[Auto-tracked in jules_sessions.json]")
-    
-    elif command == "my-sessions":
-        tracker = SessionTracker()
-        limit = 10
-        for arg in sys.argv:
-            if arg.startswith("--limit="):
-                limit = int(arg.split("=")[1])
-        sessions = tracker.get_my_sessions(limit)
-        print(json.dumps(sessions, indent=2))
-    
-    elif command == "find" and len(sys.argv) >= 3:
-        session_id = sys.argv[2]
-        tracker = SessionTracker()
-        session = tracker.find_session(session_id)
-        if session:
-            print(json.dumps(session, indent=2))
-        else:
-            print(f"Session {session_id} not found in local tracking.")
-    
-    elif command == "sync":
-        tracker = SessionTracker()
-        tracker.sync_with_api(bridge)
-        print("Session tracking synced with API.")
-        print(json.dumps(tracker.get_my_sessions(5), indent=2))
+        print(f"Registered to team_assignments.json")
     
     elif command == "status" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
         status = check_jules_status(session_id)
-        
-        # Update local tracking
-        tracker = SessionTracker()
-        tracker.update_session(session_id, status=status["session"].get("state"))
-        
         print(json.dumps(status, indent=2, default=str))
     
     elif command == "send-message" and len(sys.argv) >= 4:
         session_id = sys.argv[2]
         message = sys.argv[3]
         
-        # 메시지 전송 전 최신 활동 ID 가져오기
         activities = bridge.list_activities(session_id, page_size=1)
         last_id = activities[0].get("id") if activities else None
         
         success = bridge.send_message(session_id, message)
         print(f"Message sent successfully to {session_id}")
         
-        # --wait 옵션이 있거나 기본적으로 응답 대기 수행 (선택적)
-        if "--wait" in sys.argv or True: # 일단 기본으로 대기하게 설정 (사용자 편의)
+        if "--wait" in sys.argv or True:
             response = bridge.wait_for_agent_response(session_id, last_act_id=last_id)
             if response:
                 print("\n🤖 Jules Response:")
@@ -486,15 +412,40 @@ if __name__ == "__main__":
         success = bridge.approve_plan(session_id)
         print(f"Plan approved for {session_id}: {success}")
     
+    elif command == "my-sessions":
+        sessions = get_my_sessions()
+        for sid, title in sessions.items():
+            if "(COMPLETED)" in title:
+                print(f"✅ {sid}: {title}")
+            else:
+                try:
+                    info = bridge.get_session(sid, compact=True)
+                    state = info.get("state", "UNKNOWN")
+                    pr = info.get("pr_url", "")
+                    print(f"🔄 {sid}: {title} [{state}]" + (f" PR: {pr}" if pr else ""))
+                except Exception:
+                    print(f"❓ {sid}: {title} [조회 실패]")
+
+    elif command == "complete" and len(sys.argv) >= 3:
+        session_id = sys.argv[2]
+        complete_session(session_id)
+        print(f"Session {session_id} marked as COMPLETED")
+
+    elif command == "archive" and len(sys.argv) >= 3:
+        session_id = sys.argv[2]
+        archive_session(session_id)
+        print(f"Session {session_id} archived (removed from registry)")
+    
     else:
         print("Usage:")
         print("  python jules_bridge.py list-sources")
-        print("  python jules_bridge.py list-sessions [--summary] [--limit=N]")
-        print("  python jules_bridge.py my-sessions [--limit=N]    # Show locally tracked sessions")
-        print("  python jules_bridge.py sync                       # Sync local tracking with API")
+        print("  python jules_bridge.py list-sessions --summary --limit=N")
         print("  python jules_bridge.py create <title> <prompt>")
         print("  python jules_bridge.py status <session_id>")
         print("  python jules_bridge.py send-message <session_id> <message>")
         print("  python jules_bridge.py activities <session_id> [page_size]")
         print("  python jules_bridge.py approve-plan <session_id>")
+        print("  python jules_bridge.py my-sessions              # 담당 세션 조회")
+        print("  python jules_bridge.py complete <session_id>    # 완료 마킹")
+        print("  python jules_bridge.py archive <session_id>     # 레지스트리에서 삭제")
         sys.exit(1)
