@@ -50,137 +50,101 @@ class GovernmentAI:
         self.ACTION_FISCAL_EASE = 3
         self.ACTION_FISCAL_TIGHT = 4
 
-    def _get_state(self, market_data: Dict[str, Any]) -> Tuple[int, int, int, int]:
+    def _get_state(self) -> Tuple[int, int, int, int]:
         """
         Discretize Macro Indicators into 81 States (3^4).
-        Variables: Inflation Gap, Unemployment Gap, GDP Gap, Debt Gap.
+        Variables: Inflation, Unemployment, GDP Growth, Debt Ratio.
         Levels: 0 (Low), 1 (Ideal), 2 (High).
+        -- WO-057-Fix: Re-wired to use live Sensory Module DTO --
         """
+        # WO-057-Fix: Use live sensory data. If not available, return neutral state.
+        if not self.agent.sensory_data:
+            return (1, 1, 1, 1) # Neutral state
+
         # 1. Retrieve Targets from Config
         target_inflation = getattr(self.config_module, "TARGET_INFLATION_RATE", 0.02)
         target_unemployment = getattr(self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04)
 
-        # 2. Retrieve Current Metrics
-        # Inflation: Using Government's shadow tracking or market avg price change
-        # Assuming Government has updated price history.
-        # If not, we calculate from market_data if available, or rely on agent attributes.
-        inflation = 0.0
-        if hasattr(self.agent, "price_history_shadow") and len(self.agent.price_history_shadow) >= 2:
-            current_p = self.agent.price_history_shadow[-1]
-            past_p = self.agent.price_history_shadow[0]  # Oldest in window (1 year)
-            if past_p > 0:
-                inflation = (current_p - past_p) / past_p
+        # 2. Retrieve Current Metrics from Sensory DTO
+        inflation = self.agent.sensory_data.inflation_sma
+        unemployment = self.agent.sensory_data.unemployment_sma
+        gdp_growth = self.agent.sensory_data.gdp_growth_sma
 
-        # Unemployment
-        unemployment = 0.0
-        # market_data usually contains 'unemployment_rate'
-        if "unemployment_rate" in market_data:
-            unemployment = market_data["unemployment_rate"]
-
-        # GDP Gap
-        current_gdp = market_data.get("total_production", 0.0) # Using production as GDP proxy
-        potential_gdp = getattr(self.agent, "potential_gdp", 100.0)
-        gdp_gap_val = 0.0
-        if potential_gdp > 0:
-            gdp_gap_val = (current_gdp - potential_gdp) / potential_gdp
-
-        # Debt Gap
-        # Debt Ratio = max(0, -assets) / GDP
+        # Debt Gap (calculated live, as it depends on current assets)
+        current_gdp = self.agent.sensory_data.current_gdp
         assets = getattr(self.agent, "assets", 0.0)
         debt = max(0.0, -assets)
-        debt_ratio = 0.0
-        if current_gdp > 0:
-            debt_ratio = debt / current_gdp
+        debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
         debt_gap_val = debt_ratio - 0.60 # Target Debt Ratio 60%
 
         # 3. Discretize
         # Inflation Gap: I - I*
         inf_gap_val = inflation - target_inflation
-        # Thresholds: +/- 1% deviation?
-        # Let's use 0.01 (1%) as tolerance
-        if inf_gap_val < -0.01:
-            s_inf = 0 # Low
-        elif inf_gap_val > 0.01:
-            s_inf = 2 # High
-        else:
-            s_inf = 1 # Ideal
+        if inf_gap_val < -0.01: s_inf = 0
+        elif inf_gap_val > 0.01: s_inf = 2
+        else: s_inf = 1
 
         # Unemployment Gap: U - U*
         unemp_gap_val = unemployment - target_unemployment
-        # Tolerance: +/- 1%
-        if unemp_gap_val < -0.01:
-            s_unemp = 0 # Low (Too hot? Good?) -> Usually Low Unemp is Good, but 'Gap' implies deviation.
-            # Context: Phillips curve tradeoff. Low unemp might drive inflation.
-            # Let's keep it simply descriptive: Low, Ideal, High.
-        elif unemp_gap_val > 0.01:
-            s_unemp = 2 # High
-        else:
-            s_unemp = 1 # Ideal
+        if unemp_gap_val < -0.01: s_unemp = 0
+        elif unemp_gap_val > 0.01: s_unemp = 2
+        else: s_unemp = 1
 
-        # GDP Gap: (Y-Y*)/Y*
-        # Tolerance: +/- 1%
-        if gdp_gap_val < -0.01:
-            s_gdp = 0 # Low (Recession)
-        elif gdp_gap_val > 0.01:
-            s_gdp = 2 # High (Overheating)
-        else:
-            s_gdp = 1 # Ideal
+        # GDP Growth (Directly, not as a gap)
+        # Thresholds: <0% is bad, >2% is good? Let's use -0.5% and +0.5% for now.
+        if gdp_growth < -0.005: s_gdp = 0 # Low (Recession)
+        elif gdp_growth > 0.005: s_gdp = 2 # High (Overheating)
+        else: s_gdp = 1 # Ideal
 
         # Debt Gap: Ratio - 0.6
-        # Tolerance: +/- 5%?
-        if debt_gap_val < -0.05:
-            s_debt = 0 # Low
-        elif debt_gap_val > 0.05:
-            s_debt = 2 # High
-        else:
-            s_debt = 1 # Ideal
+        if debt_gap_val < -0.05: s_debt = 0 # Low
+        elif debt_gap_val > 0.05: s_debt = 2 # High
+        else: s_debt = 1 # Ideal
 
         return (s_inf, s_unemp, s_gdp, s_debt)
 
-    def calculate_reward(self, market_data: Dict[str, Any]) -> float:
+    def calculate_reward(self) -> float:
         """
-        Calculate Reward based on Macro Stability.
+        Calculate Reward based on Macro Stability from the Sensory Module.
         R = - ( 0.5*Inf_Gap^2 + 0.4*Unemp_Gap^2 + 0.1*Debt_Gap^2 )
+        -- WO-057-Fix: Re-wired to use live Sensory Module DTO --
         """
+        # WO-057-Fix: Use live sensory data. If not available, return 0 reward.
+        if not self.agent.sensory_data:
+            return 0.0
+
         target_inflation = getattr(self.config_module, "TARGET_INFLATION_RATE", 0.02)
         target_unemployment = getattr(self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04)
 
-        # Re-calculate metrics (identical logic to _get_state, but continuous values)
-        inflation = 0.0
-        if hasattr(self.agent, "price_history_shadow") and len(self.agent.price_history_shadow) >= 2:
-            current_p = self.agent.price_history_shadow[-1]
-            past_p = self.agent.price_history_shadow[0]
-            if past_p > 0:
-                inflation = (current_p - past_p) / past_p
+        # Retrieve metrics from Sensory DTO
+        inflation = self.agent.sensory_data.inflation_sma
+        unemployment = self.agent.sensory_data.unemployment_sma
 
-        unemployment = market_data.get("unemployment_rate", 0.0)
-
-        current_gdp = market_data.get("total_production", 0.0)
+        # Recalculate debt ratio live
+        current_gdp = self.agent.sensory_data.current_gdp
         assets = getattr(self.agent, "assets", 0.0)
         debt = max(0.0, -assets)
-        debt_ratio = 0.0
-        if current_gdp > 0:
-            debt_ratio = debt / current_gdp
+        debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
 
+        # Calculate gaps
         inf_gap = inflation - target_inflation
         unemp_gap = unemployment - target_unemployment
         debt_gap = debt_ratio - 0.60
 
-        # Calculate Reward
-        # Minimizing loss -> Maximizing negative weighted sum of squares
+        # Calculate Reward (Loss Function)
         loss = (0.5 * (inf_gap ** 2)) + (0.4 * (unemp_gap ** 2)) + (0.1 * (debt_gap ** 2))
-        reward = -loss * 100.0  # ×100 스케일링 적용
+        reward = -loss * 100.0  # Scale for significance
 
         return reward
 
-    def decide_policy(self, market_data: Dict[str, Any], current_tick: int) -> int:
+    def decide_policy(self, current_tick: int) -> int:
         """
         Main decision method.
         1. Observe Current State (S_t).
         2. Select Action (A_t) using Epsilon-Greedy.
         3. Store context for future learning.
         """
-        state = self._get_state(market_data)
+        state = self._get_state()
 
         # Action Selection
         action_idx = self.action_selector.choose_action(self.q_table, state, self.actions, current_tick=current_tick)
@@ -200,7 +164,7 @@ class GovernmentAI:
 
         return action_idx
 
-    def update_learning(self, reward: float, market_data: Dict[str, Any], current_tick: int):
+    def update_learning(self, reward: float, current_tick: int):
         """
         Update Q-Table using the reward from the PREVIOUS action and the CURRENT state.
         Transition: (last_state, last_action, reward, current_state)
@@ -213,9 +177,9 @@ class GovernmentAI:
 
         # Enforce WO-057-A Reward Logic (Ignoring the passed argument if it's from legacy policy)
         # We recalculate strictly based on current macro indicators.
-        real_reward = self.calculate_reward(market_data)
+        real_reward = self.calculate_reward()
 
-        current_state = self._get_state(market_data)
+        current_state = self._get_state()
 
         # Update Q-Table
         self.q_table.update_q_table(

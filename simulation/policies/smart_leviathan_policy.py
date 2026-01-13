@@ -30,7 +30,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
             return {"policy_type": "AI_ADAPTIVE", "status": "COOLDOWN"}
 
         # 1. Observe and Decide (Brain)
-        action = self.ai.decide_policy(market_data, current_tick)
+        action = self.ai.decide_policy(current_tick)
         self.last_action_tick = current_tick
 
         # 2. Execution (Actuator)
@@ -100,7 +100,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
 
         # 6. Reward & Learning
         reward = self._calculate_reward(government, market_data)
-        self.ai.update_learning_with_state(reward, market_data, current_tick)
+        self.ai.update_learning_with_state(reward, current_tick)
 
         return {
             "policy_type": "AI_ADAPTIVE",
