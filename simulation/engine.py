@@ -333,6 +333,22 @@ class Simulation:
             extra={"tick": self.time, "tags": ["tick_start"]},
         )
 
+        # ===== Chaos Injection Events =====
+        if self.time == 200:
+            self.logger.warning("🔥 CHAOS: Inflation Shock at Tick 200!")
+            for market_name, market in getattr(self, 'goods_markets', {}).items():
+                if hasattr(market, 'current_price'):
+                    market.current_price *= 1.5
+                if hasattr(market, 'avg_price'):
+                    market.avg_price *= 1.5
+
+        if self.time == 600:
+            self.logger.warning("🔥 CHAOS: Recession Shock at Tick 600!")
+            for household in self.households:
+                household.assets *= 0.5
+                # Tech Note WO-057: Asset shock was deemed sufficient.
+                # If further impact is needed, household.monthly_income could also be reduced by 50%.
+
         # WO-054: Government Public Education Logic (START OF TICK)
         self.government.run_public_education(self.households, self.config_module, self.time, self.reflux_system)
 

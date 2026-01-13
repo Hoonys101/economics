@@ -15,12 +15,24 @@ class ActionSelector:
     def __init__(self, epsilon: float = 0.1):
         self.epsilon = epsilon
 
+    def get_epsilon(self, current_tick: int) -> float:
+        """Linear Decay: 0.5 → 0.05 over 700 ticks."""
+        initial = 0.5
+        final = 0.05
+        decay_steps = 700
+
+        if current_tick >= decay_steps:
+            return final
+
+        return initial - (initial - final) * (current_tick / decay_steps)
+
     def choose_action(
         self,
         q_table_manager: QTableManager,
         state: Tuple,
         actions: List[Any],
         personality: Optional[Personality] = None,
+        current_tick: Optional[int] = None
     ) -> Any:
         """
         현재 상태에서 Q-테이블을 보고 최적의 행동을 선택하거나, 탐험을 위해 무작위 행동을 선택한다.
@@ -30,13 +42,18 @@ class ActionSelector:
         :param state: 현재 상태.
         :param actions: 선택 가능한 행동 목록.
         :param personality: (선택 사항) 에이전트의 특성(Personality).
+        :param current_tick: (선택 사항) 동적 엡실론 계산을 위한 현재 틱.
         :return: 선택된 행동.
         """
         if not actions:
             return None  # 선택 가능한 행동이 없으면 None 반환
 
+        epsilon_to_use = self.epsilon
+        if current_tick is not None:
+            epsilon_to_use = self.get_epsilon(current_tick)
+
         # 입실론-그리디 정책
-        if random.uniform(0, 1) < self.epsilon:
+        if random.uniform(0, 1) < epsilon_to_use:
             return random.choice(actions)  # 탐험: 무작위 행동 선택
         else:
             # 활용: Q-값이 가장 높은 행동 선택

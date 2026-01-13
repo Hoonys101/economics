@@ -169,7 +169,7 @@ class GovernmentAI:
         # Calculate Reward
         # Minimizing loss -> Maximizing negative weighted sum of squares
         loss = (0.5 * (inf_gap ** 2)) + (0.4 * (unemp_gap ** 2)) + (0.1 * (debt_gap ** 2))
-        reward = -loss
+        reward = -loss * 100.0  # ×100 스케일링 적용
 
         return reward
 
@@ -183,7 +183,7 @@ class GovernmentAI:
         state = self._get_state(market_data)
 
         # Action Selection
-        action_idx = self.action_selector.choose_action(self.q_table, state, self.actions)
+        action_idx = self.action_selector.choose_action(self.q_table, state, self.actions, current_tick=current_tick)
 
         # Learning happens in update_learning, called separately (or before next decision)
         # We just return the decision here.
