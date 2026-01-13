@@ -89,10 +89,10 @@ class TestGovernmentAILogic(unittest.TestCase):
         # Debt Gap: 0.0 -> Sq: 0.0
 
         # Loss = 0.5 * 0.0009 = 0.00045
-        # Reward = -0.00045
+        # Reward = -0.00045 * 100 = -0.045
 
         reward = self.ai.calculate_reward(market_data)
-        self.assertAlmostEqual(reward, -0.00045, places=5)
+        self.assertAlmostEqual(reward, -0.045, places=5)
 
     def test_learning_flow(self):
         """Test Q-Table Update Sequence"""
@@ -147,12 +147,12 @@ class TestGovernmentAILogic(unittest.TestCase):
         # Let's re-use.
         self.ai.update_learning(dummy_reward, market_data, current_tick=3)
 
-        # Now Reward is -0.00045.
+        # Now Reward is -0.045.
         # But wait, Q-table was updated in previous call.
         # Previous Q was 0.0.
-        # New = 0.0 + 0.1 * (-0.00045 + 0.95*0.0 - 0.0) = -0.000045
+        # New = 0.0 + 0.1 * (-0.045 + 0.95*0.0 - 0.0) = -0.0045
         updated_q_2 = self.ai.q_table.get_q_value(previous_state, previous_action)
-        self.assertAlmostEqual(updated_q_2, -0.000045, places=6)
+        self.assertAlmostEqual(updated_q_2, -0.0045, places=6)
 
 if __name__ == '__main__':
     unittest.main()
