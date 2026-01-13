@@ -29,7 +29,14 @@
 ### 3. [Actuator Module] Policy Execution (담당: Jules Charlie)
 - **Task**: `simulation/agents/government.py` 내의 정책 실행 로직 교체.
 - **Method Strategy**: `adjust_fiscal_policy` 메서드를 삭제하고, AI 액션 수령 후 현재 금리/세율에 델타값을 더하는 `apply_policy_delta` 구현.
+- **Decision Frequency**: 정부의 행동(Action)은 매 틱이 아닌 **`GOV_ACTION_INTERVAL` (30틱)** 마다 단 한 번씩만 수행합니다. (FOMC 원칙 준수)
 - **Alert**: [!IMPORTANT] 금리 ±0.25%p, 세율 ±1.0%p Clipping 필수.
+
+## 🛡️ Architect Prime's Technical Review (Implementation Notes)
+
+- **State Discretization (Alpha)**: 상태 변수(Inf, Unemp 등)를 너무 세밀하게 나누지 마십시오. 설계서에 명시된 대로 각 3단계(Low/Ideal/High)로 이산화하여 총 81개 상태 내에서 빠르게 수집되도록 하십시오.
+- **Action Throttling (Charlie)**: 정책 효과가 나타날 시간적 여유를 주기 위해 반드시 30틱 간격의 의사결정 주기를 준수하십시오.
+- **Target Constants**: `config.py`에 정의된 `TARGET_INFLATION_RATE(2%)`와 `TARGET_UNEMPLOYMENT_RATE(4%)`를 보상 함수의 정답지로 사용하십시오.
 
 ## ⚠️ 기술부채 및 인사이트 보고 (Insight Reporting)
 작업 중 발견한 **'정책 시차에 따른 오버슈팅'** 문제나 **'보상 함수의 가중치 불균형'**에 대한 통찰을 `communications/insights/WO-057-Insight.md`에 상세히 기록하십시오.

@@ -12,12 +12,14 @@
 ### 2.1 GovernmentStateDTO
 정부 AI가 관측하는 거시 경제 상태 변수입니다.
 
-| Attribute | Type | Description | Discretization (Row index) |
+| Attribute | Type | Description | Discretization (States) |
 | :--- | :--- | :--- | :--- |
-| `inflation_gap` | `float` | `Current_Inf - Target_Inf(2.0%)` | `(-Inf, -1%), [-1%, 1%], (1%, Inf)` |
-| `output_gap` | `float` | `(Actual_GDP - Potential_GDP) / Potential_GDP` | `Negative, Neutral, Positive` |
-| `unemployment_gap`| `float` | `Actual_Unemp - Natural_Unemp(4.0%)` | `Low, Normal, High` |
-| `fiscal_health` | `float` | `Debt / GDP Ratio` | `Safe, Warning, Critical` |
+| `inflation_gap` | `float` | `Current_Inf - Target_Inf` | `Low (<0%), Ideal (0~3%), High (>3%)` |
+| `unemployment_gap`| `float` | `Actual_Unemp - Natural_Unemp`| `Low (<3%), Ideal (3~5%), High (>5%)` |
+| `output_gap` | `float` | `Actual_GDP - Potential_GDP` | `Negative, Neutral, Positive` |
+| `fiscal_health` | `float` | `Debt / GDP Ratio` | `Safe (<60%), Warning (60-100%), Critical (>100%)` |
+
+> **Total States**: 3^4 = 81 States (수렴 최적화)
 
 ### 2.2 Action Space (Delta-Based)
 경제 쇼크 방지를 위한 Clipping이 적용된 증분 액션입니다.
@@ -38,9 +40,9 @@
 > `Reward = - ( w1 * (Inf_Gap^2) + w2 * (Unemp_Gap^2) + w3 * (Debt_Gap^2) )`
 - **Initial Weight**: `w1(물가)=0.5`, `w2(고용)=0.4`, `w3(재정)=0.1`
 
-### 3.2 정책 시차 (Policy Lag & Smoothing)
-- **Observation Lag**: 정부는 매 틱 직접적인 값을 보지 않고, 최근 **10틱 이동평균(SMA)** 데이터를 관측합니다.
-- **Decision Window**: 매 틱 결정하지 않고, `CB_UPDATE_INTERVAL` (기본 10틱) 마다 액션을 취합니다.
+### 3.2 정책 시차 및 빈도 제어 (Lag & Throttling)
+- **Observation Lag**: 정부는 최근 **10틱 이동평균(SMA)** 데이터를 관측하여 단기 노이즈를 필터링합니다.
+- **Decision Frequency**: 매 틱 액션을 취하지 않고, **`GOV_ACTION_INTERVAL` (30틱, 약 1개월)** 마다 한 번씩만 정책 결정을 수행합니다. (FOMC 원칙)
 
 ## 4. 클래스 설계 (Class Design)
 
