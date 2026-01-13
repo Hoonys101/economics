@@ -5,6 +5,8 @@ from simulation.ai.enums import PoliticalParty
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.policies.taylor_rule_policy import TaylorRulePolicy
 from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
+from simulation.dtos import GovernmentStateDTO
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +94,26 @@ class Government:
         
         self.average_approval_rating = 0.5
 
+        # WO-057-B: Sensory Data Container
+        self.sensory_data: Optional[GovernmentStateDTO] = None
+
         logger.info(
             f"Government {self.id} initialized with assets: {self.assets}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
+
+    def update_sensory_data(self, dto: GovernmentStateDTO):
+        """
+        WO-057-B: Sensory Module Interface.
+        Receives 10-tick SMA macro data from the Engine.
+        """
+        self.sensory_data = dto
+        # Log reception (Debug)
+        if dto.tick % 50 == 0:
+            logger.debug(
+                f"SENSORY_UPDATE | Government received macro data. Inflation_SMA: {dto.inflation_sma:.4f}, Approval_SMA: {dto.approval_sma:.2f}",
+                extra={"tick": dto.tick, "agent_id": self.id, "tags": ["sensory", "wo-057-b"]}
+            )
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """

@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional
 import logging
 import hashlib
 import random
+from collections import deque
 
 from simulation.models import Transaction, Order, StockOrder, RealEstateUnit
 from simulation.core_agents import Household, Skill
@@ -45,6 +46,7 @@ from simulation.dtos import (
     WealthDistributionData,
     PersonalityStatisticsData,
     DecisionContext,
+    GovernmentStateDTO,
 )
 
 logger = logging.getLogger(__name__)
@@ -233,6 +235,17 @@ class Simulation:
         # Time allocation tracking
         self.household_time_allocation: Dict[int, float] = {}
 
+        # WO-057-B: Sensory Module - SMA Buffers
+        self.inflation_buffer = deque(maxlen=10)
+        self.unemployment_buffer = deque(maxlen=10)
+        self.gdp_growth_buffer = deque(maxlen=10)
+        self.wage_buffer = deque(maxlen=10)
+        self.approval_buffer = deque(maxlen=10)
+
+        # WO-057-B: Sensory Module - State Tracking
+        self.last_avg_price_for_sma = 10.0
+        self.last_gdp_for_sma = 0.0
+
         config_content = str(self.config_module.__dict__)
         config_hash = hashlib.sha256(config_content.encode()).hexdigest()
         self.run_id = self.repository.save_simulation_run(
@@ -376,6 +389,55 @@ class Simulation:
 
         # 2. Government Gathers Opinion
         self.government.update_public_opinion(self.households)
+
+        # --- WO-057-B: Sensory Module Pipeline ---
+        # Collect Raw Data
+        latest_indicators = self.tracker.get_latest_indicators()
+
+        # Inflation (Price Change)
+        current_price = latest_indicators.get("avg_goods_price", 10.0)
+        last_price = self.last_avg_price_for_sma
+        inflation_rate = (current_price - last_price) / last_price if last_price > 0 else 0.0
+        self.last_avg_price_for_sma = current_price
+
+        # Unemployment
+        unemployment_rate = latest_indicators.get("unemployment_rate", 0.0)
+
+        # GDP Growth
+        current_gdp = latest_indicators.get("total_production", 0.0)
+        last_gdp = self.last_gdp_for_sma
+        gdp_growth = (current_gdp - last_gdp) / last_gdp if last_gdp > 0 else 0.0
+        self.last_gdp_for_sma = current_gdp
+
+        # Wage
+        avg_wage = latest_indicators.get("avg_wage", 0.0)
+
+        # Approval
+        approval = self.government.approval_rating
+
+        # Append to Buffers
+        self.inflation_buffer.append(inflation_rate)
+        self.unemployment_buffer.append(unemployment_rate)
+        self.gdp_growth_buffer.append(gdp_growth)
+        self.wage_buffer.append(avg_wage)
+        self.approval_buffer.append(approval)
+
+        # Calculate SMA
+        def calculate_sma(buffer: deque) -> float:
+            return sum(buffer) / len(buffer) if buffer else 0.0
+
+        sensory_dto = GovernmentStateDTO(
+            tick=self.time,
+            inflation_sma=calculate_sma(self.inflation_buffer),
+            unemployment_sma=calculate_sma(self.unemployment_buffer),
+            gdp_growth_sma=calculate_sma(self.gdp_growth_buffer),
+            wage_sma=calculate_sma(self.wage_buffer),
+            approval_sma=calculate_sma(self.approval_buffer)
+        )
+
+        # Supply to Government
+        self.government.update_sensory_data(sensory_dto)
+        # -----------------------------------------
 
         # 3. Government Makes Policy Decision
         # Inject GDP for AI state
