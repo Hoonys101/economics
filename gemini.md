@@ -56,14 +56,9 @@
     - **코드 품질 검사:** `ruff check .` 명령을 실행하여 코드 스타일 및 잠재적 오류를 점검합니다.
 
 **5. 해결 및 문서화 (Resolution & Documentation)**
-    - **해결 확인:** 시뮬레이션을 다시 실행하거나 테스트를 통해 문제가 완전히 해결되었는지 최종 확인합니다.
-    - **트러블슈팅 가이드 업데이트:**
-        - 해당 모듈의 트러블슈팅 파일(예: `modules/<module_name>/troubleshooting.md`)에 "문제 인식, 확인 방법, 해결 방법, 인사이트" 형식으로 기록합니다.
-        - 여러 모듈에 걸친 중요 문제일 경우, `design/project_management/troubleshooting_guide.md` 파일에 해당 내용을 추가할 것을 제안합니다.
-
-**6. 사후 검토 및 재발 방지 (Post-Mortem & Prevention)**
-    - **근본 원인 분석:** 해결된 문제의 근본 원인을 다시 한번 검토합니다.
-    - **재발 방지 대책 수립:** 동일하거나 유사한 문제의 재발을 막기 위해 추가적인 테스트 케이스 작성, 로직 개선, 설계 변경 등을 고려하고 제안합니다.
+    - **해결 확인**: 시뮬레이션을 다시 실행하거나 테스트를 통해 문제가 완전히 해결되었는지 최종 확인합니다.
+    - **루틴 동기화 (Automated)**: `python scripts/checkpoint.py`를 실행하여 인사이트 보고, 기술 부채 기록, 그리고 프로젝트 문서 동기화를 자동으로 수행합니다.
+    - **사후 검토**: 다음 세션을 위한 Warm Boot 프롬프트를 확인합니다 (`design/snapshots/latest_snapshot.md`).
 
 ---
 
@@ -112,44 +107,25 @@ Jules의 PR을 머지한 후, 코드가 "동작은 하지만 구조적으로 비
 
 수석 아키텍트(Architect Prime)의 기획을 받아 실행 가능한 Work Order로 변환하는 표준 프로세스입니다.
 
-### 6.1 사고 과정 (Thinking Process)
-
-```
-[수석 기획] 추상적 목표/철학
-    ↓
-[핵심 문제 정의] "왜?"를 추출
-    ↓
-[메커니즘 분해] 해법을 구성요소로 분리
-    ↓
-[ROI 분석] 복잡도 vs 효과 매트릭스
-    ↓
-[우선순위 결정] 최소 변경, 최대 효과 선택
-    ↓
-[실험 설계] 가설 + 성공 기준 정의
-    ↓
-[업무 분할] Jules Track 배정
-    ↓
-[Spec Draft] scripts/gemini_worker.py spec "..." 실행
-```
-
 ### 6.2 Gemini CLI (Administrative Assistant) 활용
+`gemini-cli`는 단순 반복 및 루틴 작업을 전담합니다.
 
-`gemini-cli`는 단순 반복 작업을 수행하는 행정 비서입니다. `scripts/gemini_worker.py` 스크립트를 통해 다양한 페르소나(Manual)를 로드하여 작업을 수행합니다.
-
-**사용법:**
-```powershell
-python scripts/gemini_worker.py <worker_type> "<Instruction>" [--context <file1> <file2> ...]
-# 또는 짧게
-python scripts/gemini_worker.py <worker_type> "<Instruction>" [-c <file1> ...]
-```
+**핵심 명령어:**
+1. **`python scripts/gemini_worker.py spec "<기획안>"`**: 상세 명세(Spec) 및 API 초안 자동 작성. (인사이트 보고 지침 자동 포함)
+2. **`python scripts/gemini_worker.py verify -c <파일>`**: 아키텍처 및 SOC 위반 자동 검증.
+3. **`python scripts/checkpoint.py`**: 세션 종료 전 모든 문서(Status, Tech Debt, Snapshot) 자동 동기화.
 
 **제공되는 Worker Type:**
-1. **`spec` (Spec Writer)**: 기획안을 상세 명세로 변환.
-    *   Example: `python scripts/gemini_worker.py spec "이 코드를 리팩토링하는 명세를 작성해줘" -c simulation/engine.py`
-    *   Manual: `design/manuals/spec_writer.md`
-2. **`git` (Git Operator)**: 버전 관리 명령어 생성 및 실행.
-    *   Example: `python scripts/gemini_worker.py git "현재 변경사항을 커밋해줘" --auto-run`
-    *   Manual: `design/manuals/git_operator.md`
+1. **`spec`**: 기획안 → 상세 명세 변환.
+2. **`verify`**: SoC & DTO 프로토콜 검증.
+3. **`context`**: 세션 압축 및 Warm Boot 프롬프트 생성.
+4. **`git`**: Git 작업 자동화.
+5. **`reporter`**: 코드 분석 및 대량 데이터 리포트 생성.
+
+**✅ Best Practice: Contract Context**
+- 함수나 클래스 명세를 작성할 때(`spec`), 대상 파일만 주면 존재하지 않는 타입이나 메서드를 창조(Hallucination)할 위험이 있습니다.
+- 반드시 `simulation/dtos.py`나 `simulation/interfaces/`와 같은 **계약(Contract)** 파일을 함께 제공하십시오.
+- 예: `python scripts/gemini_worker.py spec "..." -c simulation/target.py simulation/dtos.py`
 
 
 ### 6.3 ROI 분석 매트릭스 (예시)

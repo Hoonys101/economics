@@ -164,7 +164,7 @@ class GovernmentAI:
 
         return action_idx
 
-    def update_learning(self, reward: float, current_tick: int):
+    def update_learning_with_state(self, reward: float, current_tick: int):
         """
         Update Q-Table using the reward from the PREVIOUS action and the CURRENT state.
         Transition: (last_state, last_action, reward, current_state)

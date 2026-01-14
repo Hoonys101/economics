@@ -457,7 +457,13 @@ class Simulation:
         )
 
         # Supply to Government
+        # Supply to Government
         self.government.update_sensory_data(sensory_dto)
+
+        # [DEBUG WO-057]
+        self.logger.info(f"DEBUG_WO057 | Tick {self.time} | Indicators: {list(latest_indicators.keys())}")
+        self.logger.info(f"DEBUG_WO057 | AvgPrice: {latest_indicators.get('avg_goods_price', 'MISSING')}")
+        self.logger.info(f"DEBUG_WO057 | SensoryDTO: InfSMA={sensory_dto.inflation_sma:.4f}, UnempSMA={sensory_dto.unemployment_sma:.4f}, DebtRat={sensory_dto.current_gdp:.4f}")
         # -----------------------------------------
 
         # 3. Government Makes Policy Decision

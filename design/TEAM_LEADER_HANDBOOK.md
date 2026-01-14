@@ -301,13 +301,71 @@ python scripts/jules_bridge.py approve-plan <session_id>
 
 ### 3. 워크플로우 토폴로지 (Workflow Topology)
 
-### 3.1 모듈 설계 및 구현 프로세스 (W-1 ~ W-2)
+### 3.1 모듈 설계 및 구현 프로세스 (Standard Delegation Process)
+**"Gemini CLI Assisted 6-Step Workflow"**
 
-1. **Architect Prime (User)**: 개념 기획 및 요구사항 전달.
-2. **Gemini CLI (Drafting)**: `python scripts/gemini_worker.py spec "..."`를 실행하여 초안 작성.
-3. **Antigravity (Review)**: CLI의 초안을 검수하고 최종 확정 (Cognitive Load 80% 감소).
-4. **Jules (Implement)**: 확정된 Spec을 바탕으로 구현 및 테스트 수행.
-5. **Gemini CLI (Post-Process)**: Jules의 작업 로그를 바탕으로 인사이트 정리 및 장부(TODO, TECH_DEBT) 업데이트.
+이 프로세스는 팀장의 인지 부하를 줄이고, 명세의 구체성을 극대화하기 위해 설계되었습니다.
+
+1.  **Concept Design (Architect Prime)**
+    *   **Role**: 사용자 (PM)
+    *   **Action**: 자연어로 개념 기획 및 요구사항 전달. (예: "GDP 0일 때 비상 모드 추가해줘")
+
+2.  **Schema Design (Team Leader)**
+    *   **Role**: Antigravity (Thinker)
+    *   **Action**: 요구사항을 **데이터 구조(Schema)**와 **API 인터페이스** 레벨로 구체화합니다.
+    *   **Output**: `design/specs/WO-XXX_Schema.md` (DTO, 함수 시그니처 정의)
+
+3.  **Pseudo-code Planning (Gemini CLI)**
+    *   **Role**: Drafting Assistant
+    *   **Action**: `scripts/gemini_worker.py spec` 명령을 통해 Schema를 **단계별 의사코드(Implementation Plan)**로 확장합니다.
+    *   **Context Strategy (Critical)**: 할루시네이션 방지를 위해 반드시 **Contract(DTO/Interface)** 파일을 컨텍스트로 함께 제공해야 합니다.
+        *   ✅ `python scripts/gemini_worker.py spec "..." -c simulation/dtos.py simulation/firms.py`
+        *   ❌ `python scripts/gemini_worker.py spec "..." -c simulation/firms.py` (DTO 누락 시 타입 할루시네이션 발생 가능)
+    *   **Output**: `design/specs/WO-XXX_Plan.md` (구체적 로직 포함)
+
+4.  **Verification (Team Leader)**
+    *   **Role**: Antigravity (Reviewer)
+    *   **Action**: AI가 생성한 계획이 Schema 및 의도와 일치하는지 검증하고 수정합니다.
+    *   **Automation**:
+        *   `python scripts/verify_module.py`: 모듈 구조 검증
+        *   `python scripts/test_doctor.py`: 테스트 실패 시 3줄 요약 진단
+
+---
+
+## 5. 🚜 Automation Suite (Zero-Token Ops)
+수동 작업을 최소화하기 위해 다음 자동화 스크립트 사용을 **의무화**합니다.
+
+### 5.1 일상 루틴 (Daily Routine)
+| 상황 | 명령어 | 역할 |
+|---|---|---|
+| **기획 (Spec)** | `python scripts/gemini_worker.py spec "..." -c simulation/dtos.py simulation/target.py` | 할루시네이션 없는 DTO 기반 명세 작성 |
+| **퇴근/세션종료** | `python scripts/checkpoint.py` | 정합성 검사 + 커밋 + 문서화/대장정리 + 핸드오버 리포트 생성 (All-in-One) |
+
+### 5.2 개발 지원 (Dev Ops)
+| 상황 | 명령어 | 역할 |
+|---|---|---|
+| **테스트 실패** | `python scripts/test_doctor.py` | 수백 줄 로그 대신 **3줄 요약 진단서** 출력 |
+| **PR 병합** | `python scripts/pr_manager.py <branch>` | 테스트 → 병합 → 푸시 → 정리 (완전 자동) |
+| **구조 검증** | `python scripts/gemini_worker.py verify -c <file>` | SoC/DTO 위반 여부 아키텍처 검증 |
+
+### 5.3 Jules 관리 (Agent Ops)
+| 상황 | 명령어 | 역할 |
+|---|---|---|
+| **세션 목록** | `python scripts/jules_bridge.py my-sessions` | **토큰 절약형** 활성 세션 요약 조회 |
+| **진행 상황** | `python scripts/jules_bridge.py status <ID>` | 최근 활동 및 PR 링크 요약 조회 |
+| **메시지 전송** | `python scripts/jules_bridge.py send-message <ID> "..."` | 에이전트에게 추가 지시 (프로젝트 격리 보호됨) |
+
+---
+
+5.  **Alignment Check (Architect Prime)**
+    *   **Role**: 사용자 (Approver)
+    *   **Action**: 계획안(Plan)이 최초 기획 의도와 정합하는지 최종 확인합니다.
+
+6.  **Dispatch (Team Leader)**
+    *   **Role**: Antigravity (Commander)
+    *   **Action**: 승인된 문서를 바탕으로 Jules에게 구현을 지시합니다. (`create-session`)
+
+---
 
 ### 2. Efficiency Bottleneck Management
 - **Prioritization**: 다른 작업의 병목을 만드는 '엔진 최적화(Speed-Up)' 등은 가장 먼저 수행하거나 전담 요원을 배치하여 전체 처리량을 확보합니다.

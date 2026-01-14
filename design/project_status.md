@@ -41,9 +41,16 @@
 ### WO-057: The Smart Leviathan (AI Policy) 🏗️
 | 모듈 | 담당 | 상태 | 비고 |
 |---|---|---|---|
-| Brain (Q-Learning) | Jules Alpha | 📝 | 81-State 엔진, Spec Clarification 발급 완료 |
-| Sensory (SMA Pipeline) | Jules Bravo | ✅ | `GovernmentStateDTO`, 10-Tick SMA 병합 완료 |
-| Actuator (Policy Exec) | Jules Charlie | 📝 | 5-Action 매핑, Spec Clarification 발급 완료 |
+| Brain (Q-Learning) | Jules Alpha | ✅ | 81-State, Q-Table mutation implemented |
+| Sensory (SMA Pipeline) | Jules Bravo | ✅ | **Manual Fix**: "Crisis Override" for GDP=0 added |
+| Actuator (Policy Exec) | Jules Charlie | ✅ | Policy translation layer implemented |
+| **System Check** | Team Leader | ⚠️ | **Sensor OK**, but Economy Dead (WO-058) |
+
+### WO-058: Economic CPR (Production Rescue) 🏗️
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Diagnosis | Jules | 🏗️ | Investigating L=0, K=0, Supply=0 |
+| Bootstrap Fix | Jules | 📝 | Planned: Init Inventory Injection |
 
 ---
 

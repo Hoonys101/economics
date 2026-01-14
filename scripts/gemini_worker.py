@@ -106,7 +106,37 @@ class SpecDrafter(BaseGeminiWorker):
             
         print(f"\n✅ Spec Draft Saved: {output_file}")
         print("="*60)
+        print(f"\n✅ Spec Draft Saved: {output_file}")
+        print("="*60)
         print(result)
+        print("="*60)
+
+class Reporter(BaseGeminiWorker):
+    """
+    Worker for analyzing code and generating reports.
+    Saves output to reports/temp/
+    """
+    def __init__(self):
+        super().__init__("reporter.md")
+
+    def execute(self, instruction: str, context_files: list[str] = None, **kwargs):
+        print(f"🕵️  Generating Report for: '{instruction}'...")
+        result = self.run_gemini(instruction, context_files)
+
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:20]]).strip("_")
+        
+        output_dir = BASE_DIR / "reports" / "temp"
+        output_dir.mkdir(exist_ok=True, parents=True)
+        output_file = output_dir / f"report_{timestamp}_{safe_name}.md"
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(result)
+            
+        print(f"\n✅ Report Saved: {output_file}")
+        print("="*60)
+        print(result[:500] + "\n..." if len(result) > 500 else result)
         print("="*60)
 
 class GitOperator(BaseGeminiWorker):
@@ -171,6 +201,44 @@ class GitOperator(BaseGeminiWorker):
         except Exception as e:
             print(f"❌ Error during execution: {e}")
 
+class ContextManager(BaseGeminiWorker):
+    """
+    Worker for summarizing state and creating snapshots.
+    """
+    def __init__(self):
+        super().__init__("context_manager.md")
+
+    def execute(self, instruction: str, context_files: list[str] = None, output_file: str = None, **kwargs):
+        print(f"🧠 Distilling Context: '{instruction}'...")
+        result = self.run_gemini(instruction, context_files)
+        
+        target_file = Path(output_file) if output_file else BASE_DIR / "design" / "snapshots" / "latest_snapshot.md"
+        target_file.parent.mkdir(exist_ok=True, parents=True)
+        
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(result)
+            
+        print(f"\n✅ Content Updated: {target_file}")
+        print("="*60)
+        print(result[:500] + "..." if len(result) > 500 else result)
+        print("="*60)
+
+class Validator(BaseGeminiWorker):
+    """
+    Worker for validating code against architecture rules.
+    """
+    def __init__(self):
+        super().__init__("validator.md")
+
+    def execute(self, instruction: str, context_files: list[str] = None, **kwargs):
+        print(f"⚖️ Validating Protocol: '{instruction}'...")
+        result = self.run_gemini(instruction, context_files)
+        
+        print("\n⚖️ [Validation Results]")
+        print("="*60)
+        print(result)
+        print("="*60)
+
 def main():
     parser = argparse.ArgumentParser(description="Gemini Worker Interface")
     subparsers = parser.add_subparsers(dest="worker_type", help="Type of worker to run")
@@ -187,12 +255,31 @@ def main():
     git_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
     git_parser.add_argument("--auto-run", action="store_true", help="Automatically execute the generated commands")
 
+    # Reporter
+    reporter_parser = subparsers.add_parser("reporter", help="Analyze and Report")
+    reporter_parser.add_argument("instruction", help="Instruction for the reporter")
+    reporter_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+
+    # Context Manager / Scribe
+    context_parser = subparsers.add_parser("context", help="Manage session context and snapshots")
+    context_parser.add_argument("instruction", help="Instruction for the context manager")
+    context_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+    context_parser.add_argument("--output", "-o", help="Specific output file path (optional)")
+
+    # Validator
+    validator_parser = subparsers.add_parser("verify", help="Validate protocol and architecture")
+    validator_parser.add_argument("instruction", help="Instruction for the validator")
+    validator_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+
     args = parser.parse_args()
 
     try:
         worker_map = {
             "spec": SpecDrafter,
-            "git": GitOperator
+            "git": GitOperator,
+            "reporter": Reporter,
+            "context": ContextManager,
+            "verify": Validator
         }
         
         if args.worker_type in worker_map:
@@ -200,7 +287,8 @@ def main():
             worker.execute(
                 args.instruction, 
                 context_files=getattr(args, 'context', None),
-                auto_run=getattr(args, 'auto_run', False)
+                auto_run=getattr(args, 'auto_run', False),
+                output_file=getattr(args, 'output', None)
             )
             
     except Exception as e:

@@ -15,67 +15,69 @@ def generate_learning_curve():
     rewards = []
     ticks = []
 
-    # Regex to capture tick and reward from the log line
-    # Example Line: 2026-01-13 04:32:44,870 - simulation.agents.government - DEBUG - GOV_AI_LEARN | Reward: -0.00123 ...
-    # We need to get the reward value after "Reward: "
-    reward_pattern = re.compile(r"GOV_AI_LEARN \| Reward: ([\-0-9\.]+)")
-    tick_pattern = re.compile(r"tick=(\d+)")
-
+    # Updated Regex to capture State
+    # Example: ... | State: (0, 0, 1, 0) -> ...
+    log_pattern = re.compile(r"GOV_AI_LEARN \| Reward: ([\-0-9\.]+) .*\| State: ([\(\)\d, ]+)")
+    
     print(f"Parsing log file: {LOG_FILE}")
     if not os.path.exists(LOG_FILE):
         print(f"Error: Log file not found at {LOG_FILE}")
         return
 
+    states = []
+    rewards = []
+
     with open(LOG_FILE, "r") as f:
         for line in f:
-            reward_match = reward_pattern.search(line)
-
-            if reward_match:
+            match = log_pattern.search(line)
+            if match:
                 try:
-                    # The tick is not in the GOV_AI_LEARN log message itself.
-                    # It's in the log record's metadata if configured.
-                    # A simpler approach is to find a preceding log from the same tick that has it.
-                    # Or, since decisions happen every 30 ticks, we can approximate it.
-                    # Let's assume the order is preserved and just count the occurrences.
-                    reward = float(reward_match.group(1))
-                    rewards.append(reward)
+                    rewards.append(float(match.group(1)))
+                    states.append(match.group(2).strip())
                 except (ValueError, IndexError):
                     continue
 
     if not rewards:
-        print("No 'GOV_AI_LEARN' records found in the log. Cannot generate learning curve.")
+        print("No 'GOV_AI_LEARN' records found.")
         return
 
-    # Decisions are made every 30 ticks, starting from tick 0 or 30.
-    # Let's assume the first one is at tick 30.
+    # Mock ticks (assuming 30 tick interval)
     ticks = [i * 30 for i in range(1, len(rewards) + 1)]
+    df = pd.DataFrame({'tick': ticks, 'reward': rewards, 'state': states})
+    
+    # Calculate Rolling State Entropy (Variety of states in last 5 steps)
+    df['state_diversity'] = df['state'].rolling(window=10).apply(lambda x: len(set(x)), raw=False)
 
-    df = pd.DataFrame({'tick': ticks, 'reward': rewards})
-
-    # Calculate a rolling average to smooth the curve
     df['reward_smoothed'] = df['reward'].rolling(window=5, min_periods=1).mean()
 
-    print(f"Found {len(df)} learning data points.")
-
-    # Generate Plot
+    # Plot
     plt.style.use('seaborn-v0_8-whitegrid')
-    plt.figure(figsize=(12, 7))
+    fig, ax1 = plt.subplots(figsize=(12, 7))
 
-    # Raw reward scatter plot
-    plt.scatter(df['tick'], df['reward'], alpha=0.3, label='Raw Reward per Decision', color='lightblue')
+    ax1.scatter(df['tick'], df['reward'], alpha=0.3, color='lightblue', label='Reward')
+    ax1.plot(df['tick'], df['reward_smoothed'], color='blue', linewidth=2, label='Reward (SMA)')
+    ax1.set_xlabel('Tick')
+    ax1.set_ylabel('Reward', color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
 
-    # Smoothed learning curve
-    plt.plot(df['tick'], df['reward_smoothed'], label='Learning Curve (5-period SMA)', color='blue', linewidth=2)
+    # Secondary Axis: State Diversity
+    ax2 = ax1.twinx()
+    ax2.plot(df['tick'], df['state_diversity'], color='orange', linestyle='--', label='State Diversity (10-window)')
+    ax2.set_ylabel('Unique States Count', color='orange')
+    ax2.tick_params(axis='y', labelcolor='orange')
+    ax2.set_ylim(0, 11)  # Max window size + buffer
 
-    plt.title('Government AI Learning Curve')
-    plt.xlabel('Simulation Tick')
-    plt.ylabel('Macro Stability Reward')
-    plt.legend()
-    plt.grid(True)
+    plt.title('Government AI: Learning & Sensory Input Check')
+    fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9))
+    ax1.grid(True)
+
+    # Secondary Axis for State Changes (if any)
+    # Since we can't easily parse complex state tuples in this simple script without regex overhaul,
+    # let's just note that for now. Future enhancement: Plot unique state count window.
 
     # Ensure reports directory exists
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-
+    
     plt.savefig(OUTPUT_FILE)
     print(f"Learning curve saved to {OUTPUT_FILE}")
 

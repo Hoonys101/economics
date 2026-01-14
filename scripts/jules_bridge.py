@@ -100,6 +100,12 @@ class JulesBridge:
         Returns:
             JulesSession object with session details.
         """
+        if source != DEFAULT_SOURCE:
+            # Safety Guard: Prevent accidental assignment to wrong project
+            logger.warning(f"Target source '{source}' differs from default '{DEFAULT_SOURCE}'.")
+            # For strict mode, we could raise an error here.
+            # raise ValueError(f"Project Safety Guard: Cannot assign to external source '{source}'")
+            
         payload = {
             "prompt": prompt,
             "title": title,
@@ -377,35 +383,83 @@ if __name__ == "__main__":
     
     elif command == "status" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
+        verbose = "--verbose" in sys.argv
+        
         status = check_jules_status(session_id)
-        print(json.dumps(status, indent=2, default=str))
-    
+        
+        if verbose:
+            print(json.dumps(status, indent=2, default=str))
+        else:
+            # Summary Mode (Token Efficient)
+            sess = status.get("session", {})
+            acts = status.get("recent_activities", [])
+            pr = status.get("pr_url")
+            
+            print(f"\n📊 Session Status: {sess.get('title')}")
+            print(f"ID: {sess.get('id')}")
+            print(f"State: {sess.get('state')}")
+            if pr:
+                print(f"🔗 PR: {pr}")
+            
+            print("\n📝 Latest Activity:")
+            if acts:
+                latest = acts[0]
+                desc = latest.get("description", "No description")
+                # Truncate description to save tokens
+                if len(desc) > 200:
+                    desc = desc[:197] + "..."
+                print(f"   [{latest.get('createTime')}] {latest.get('type')}: {desc}")
+            else:
+                print("   (No activities recorded)")
+            print("-" * 40)
+
     elif command == "send-message" and len(sys.argv) >= 4:
         session_id = sys.argv[2]
         message = sys.argv[3]
         
+        # Safety Check: Ensure we are not messaging a session from another project
+        # (This relies on the registry or we could check session source if we fetched it)
+        # For now, we assume if you have the ID, you know what you are doing, 
+        # but let's at least warn if it's not in our local registry.
+        registry = _load_registry()
+        my_sessions = registry.get("antigravity", {}).get("active_sessions", {})
+        if session_id not in my_sessions:
+            print(f"⚠️ Warning: Session {session_id} is not in your local active registry. Proceeding anyway...")
+
         activities = bridge.list_activities(session_id, page_size=1)
         last_id = activities[0].get("id") if activities else None
         
         success = bridge.send_message(session_id, message)
         print(f"Message sent successfully to {session_id}")
         
-        if "--wait" in sys.argv or True:
+        if "--wait" in sys.argv:
             response = bridge.wait_for_agent_response(session_id, last_act_id=last_id)
             if response:
                 print("\n🤖 Jules Response:")
                 progress = response.get("progressUpdated", {})
                 print(f"Title: {progress.get('title')}")
-                if progress.get('description'):
-                    print(f"Description: {progress.get('description')}")
+                desc = progress.get('description', '')
+                if desc:
+                     print(f"Description: {desc[:500]}..." if len(desc) > 500 else f"Description: {desc}")
             else:
-                print("\n⏳ No immediate response from agent (check activities later).")
+                print("\n⏳ No immediate response from agent.")
 
     elif command == "activities" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
-        page_size = int(sys.argv[3]) if len(sys.argv) >= 4 else 30
+        page_size = int(sys.argv[3]) if len(sys.argv) >= 4 and sys.argv[3].isdigit() else 5
+        verbose = "--verbose" in sys.argv
+        
         activities = bridge.list_activities(session_id, page_size=page_size)
-        print(json.dumps(activities, indent=2, default=str))
+        
+        if verbose:
+            print(json.dumps(activities, indent=2, default=str))
+        else:
+            print(f"\n📜 Recent Activities ({len(activities)}):")
+            for act in activities:
+                desc = act.get("description", "")
+                if len(desc) > 100:
+                    desc = desc[:97] + "..."
+                print(f"   - [{act.get('type')}] {desc}")
 
     elif command == "approve-plan" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
@@ -414,17 +468,19 @@ if __name__ == "__main__":
     
     elif command == "my-sessions":
         sessions = get_my_sessions()
+        print(f"\n🗂️ Active Sessions ({len(sessions)}):")
         for sid, title in sessions.items():
             if "(COMPLETED)" in title:
-                print(f"✅ {sid}: {title}")
+                print(f"   ✅ {sid}: {title}")
             else:
+                # Minimal info fetch
                 try:
                     info = bridge.get_session(sid, compact=True)
                     state = info.get("state", "UNKNOWN")
                     pr = info.get("pr_url", "")
-                    print(f"🔄 {sid}: {title} [{state}]" + (f" PR: {pr}" if pr else ""))
+                    print(f"   🔄 {sid}: {title} [{state}]" + (f" -> PR: {pr}" if pr else ""))
                 except Exception:
-                    print(f"❓ {sid}: {title} [조회 실패]")
+                    print(f"   ❓ {sid}: {title} [Fetch Failed]")
 
     elif command == "complete" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
@@ -434,18 +490,15 @@ if __name__ == "__main__":
     elif command == "archive" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
         archive_session(session_id)
-        print(f"Session {session_id} archived (removed from registry)")
+        print(f"Session {session_id} archived")
     
     else:
         print("Usage:")
         print("  python jules_bridge.py list-sources")
-        print("  python jules_bridge.py list-sessions --summary --limit=N")
+        print("  python jules_bridge.py list-sessions --summary")
         print("  python jules_bridge.py create <title> <prompt>")
-        print("  python jules_bridge.py status <session_id>")
-        print("  python jules_bridge.py send-message <session_id> <message>")
-        print("  python jules_bridge.py activities <session_id> [page_size]")
-        print("  python jules_bridge.py approve-plan <session_id>")
-        print("  python jules_bridge.py my-sessions              # 담당 세션 조회")
-        print("  python jules_bridge.py complete <session_id>    # 완료 마킹")
-        print("  python jules_bridge.py archive <session_id>     # 레지스트리에서 삭제")
+        print("  python jules_bridge.py status <session_id> [--verbose]")
+        print("  python jules_bridge.py send-message <session_id> <message> [--wait]")
+        print("  python jules_bridge.py activities <session_id> [limit] [--verbose]")
+        print("  python jules_bridge.py my-sessions")
         sys.exit(1)
