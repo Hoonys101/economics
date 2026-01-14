@@ -231,6 +231,7 @@ class Simulation:
         # [WO-058] Bootstrapper Injection (Economic CPR)
         # Ensure firms have resources to start production
         Bootstrapper.inject_initial_liquidity(self.firms, self.config_module)
+        Bootstrapper.force_assign_workers(self.firms, self.households)
 
         # WO-058: Generational Wealth Audit
         self.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config_module)

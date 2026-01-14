@@ -400,91 +400,103 @@ class Firm(BaseAgent):
         Cobb-Douglas 생산 함수를 사용한 생산 로직.
         Phase 21: Modified Cobb-Douglas with Automation.
         """
-        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
-
-        # 1. 감가상각 처리
-        depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
-        self.capital_stock *= (1.0 - depreciation_rate)
-
-        # Phase 21: Automation Decay
-        self.automation_level *= 0.995 # Slow decay (0.5% per tick)
-        if self.automation_level < 0.001: self.automation_level = 0.0
-
-        # 2. 노동 및 자본 투입량 계산
-        # SoC Refactor: Get total labor skill from HR
-        total_labor_skill = self.hr.get_total_labor_skill()
-
-        # 3. Cobb-Douglas Parameters
-        base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
-        automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
-
-        # Phase 21: Adjusted Alpha
-        # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
-        # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
-        alpha_raw = base_alpha * (1.0 - (self.automation_level * automation_reduction))
-        alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
-        beta_adjusted = 1.0 - alpha_adjusted
-
-        # Effective Labor & Capital
-        capital = max(self.capital_stock, 0.01)
-
-        # Technology Multiplier (WO-053)
-        tech_multiplier = 1.0
-        
-        tfp = self.productivity_factor * tech_multiplier  # Total Factor Productivity
-        
-        if technology_manager:
-            tech_multiplier = technology_manager.get_productivity_multiplier(self.id, self.sector)
-            tfp *= tech_multiplier
-
-        # Phase 15: Quality Calculation
-        avg_skill = self.hr.get_avg_skill()
-
-        item_config = self.config_module.GOODS.get(self.specialization, {})
-        quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-        actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
-        
-        self.current_production = 0.0
-
-        if total_labor_skill > 0 and capital > 0:
-            produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
-        else:
-            produced_quantity = 0.0
-
-        if produced_quantity > 0:
-            # WO-030: Input Constraints Logic
-            input_config = self.config_module.GOODS.get(self.specialization, {}).get("inputs", {})
-            
-            if input_config:
-                max_by_inputs = float('inf')
-                for mat, req_per_unit in input_config.items():
-                    available = self.input_inventory.get(mat, 0.0)
-                    if req_per_unit > 0:
-                        max_by_inputs = min(max_by_inputs, available / req_per_unit)
-
-                # Constrain production
-                actual_produced = min(produced_quantity, max_by_inputs)
-
-                # Deduct used inputs
-                for mat, req_per_unit in input_config.items():
-                    amount_to_deduct = actual_produced * req_per_unit
-                    self.input_inventory[mat] = max(0.0, self.input_inventory.get(mat, 0.0) - amount_to_deduct)
-            else:
-                actual_produced = produced_quantity
-
-            if actual_produced > 0:
-                item_id = self.specialization
-                current_inventory = self.inventory.get(item_id, 0)
-                current_quality = self.inventory_quality.get(item_id, 1.0)
-
-                total_qty = current_inventory + actual_produced
-                new_avg_quality = ((current_inventory * current_quality) + (actual_produced * actual_quality)) / total_qty
-
-                self.inventory_quality[item_id] = new_avg_quality
-                self.inventory[item_id] = total_qty
-                self.current_production = actual_produced
-            else:
+        try:
+            # [EARLY EXIT]
+            if len(self.hr.employees) == 0:
                 self.current_production = 0.0
+                return
+
+            log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
+
+            # 1. 감가상각 처리
+            depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
+            self.capital_stock *= (1.0 - depreciation_rate)
+
+            # Phase 21: Automation Decay
+            self.automation_level *= 0.995 # Slow decay (0.5% per tick)
+            if self.automation_level < 0.001: self.automation_level = 0.0
+
+            # 2. 노동 및 자본 투입량 계산
+            # SoC Refactor: Get total labor skill from HR
+            total_labor_skill = self.hr.get_total_labor_skill()
+
+            # 3. Cobb-Douglas Parameters
+            base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+            automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+
+            # Phase 21: Adjusted Alpha
+            # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
+            # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
+            alpha_raw = base_alpha * (1.0 - (self.automation_level * automation_reduction))
+            alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
+            beta_adjusted = 1.0 - alpha_adjusted
+
+            # Effective Labor & Capital
+            capital = max(self.capital_stock, 0.01)
+
+            # Technology Multiplier (WO-053)
+            tech_multiplier = 1.0
+
+            tfp = self.productivity_factor * tech_multiplier  # Total Factor Productivity
+
+            if technology_manager:
+                tech_multiplier = technology_manager.get_productivity_multiplier(self.id, self.sector)
+                tfp *= tech_multiplier
+
+            # Phase 15: Quality Calculation
+            avg_skill = self.hr.get_avg_skill()
+
+            item_config = self.config_module.GOODS.get(self.specialization, {})
+            quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
+            actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+
+            self.current_production = 0.0
+
+            if total_labor_skill > 0 and capital > 0:
+                produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
+            else:
+                produced_quantity = 0.0
+
+            if produced_quantity > 0:
+                # WO-030: Input Constraints Logic
+                input_config = self.config_module.GOODS.get(self.specialization, {}).get("inputs", {})
+
+                if input_config:
+                    max_by_inputs = float('inf')
+                    for mat, req_per_unit in input_config.items():
+                        available = self.input_inventory.get(mat, 0.0)
+                        if req_per_unit > 0:
+                            max_by_inputs = min(max_by_inputs, available / req_per_unit)
+
+                    # Constrain production
+                    actual_produced = min(produced_quantity, max_by_inputs)
+
+                    # Deduct used inputs
+                    for mat, req_per_unit in input_config.items():
+                        amount_to_deduct = actual_produced * req_per_unit
+                        self.input_inventory[mat] = max(0.0, self.input_inventory.get(mat, 0.0) - amount_to_deduct)
+                else:
+                    actual_produced = produced_quantity
+
+                if actual_produced > 0:
+                    item_id = self.specialization
+                    current_inventory = self.inventory.get(item_id, 0)
+                    current_quality = self.inventory_quality.get(item_id, 1.0)
+
+                    total_qty = current_inventory + actual_produced
+                    new_avg_quality = ((current_inventory * current_quality) + (actual_produced * actual_quality)) / total_qty
+
+                    self.inventory_quality[item_id] = new_avg_quality
+                    self.inventory[item_id] = total_qty
+                    self.current_production = actual_produced
+                else:
+                    self.current_production = 0.0
+        except Exception as e:
+            import traceback
+            logger.error(f'FIRM_CRASH_PREVENTED | Firm {self.id}: {e}')
+            logger.debug(traceback.format_exc())
+            self.current_production = 0.0
+            return
 
     def issue_shares(self, quantity: float, price: float) -> float:
         """
