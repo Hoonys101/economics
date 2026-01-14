@@ -1,7 +1,9 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {},
+    "active_sessions": {
+      "15007179683109829611": "WO-060"
+    },
     "completed_sessions": {
       "3778947626343557354": "WO-057-Refine Shock Therapy (Retry) - MERGED 2026-01-14",
       "11626928342509996952": "TD-014: Government SoC Refactoring - MERGED 2026-01-14",

@@ -145,16 +145,18 @@ class Simulation:
         # Pass agents reference to LoanMarket for credit check
         self.markets["loan_market"].agents_ref = self.agents
         
-        self.stock_market: Optional[StockMarket] = None
-        # 주식 시장 초기화
         if getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
-            self.stock_market = StockMarket(
-                config_module=self.config_module,
-                logger=self.logger,
-            )
+            self.stock_market = StockMarket(config_module=self.config_module, logger=self.logger)
+            self.stock_tracker = StockMarketTracker(config_module=self.config_module)
             self.markets["stock_market"] = self.stock_market
+            
+            # Phase 25/WO-060: Automatic IPO for existing firms
+            for firm in self.firms:
+                if hasattr(firm, "init_ipo"):
+                    firm.init_ipo(self.stock_market)
         else:
             self.stock_market = None
+            self.stock_tracker = None
 
         # Phase 17-3B: Housing Market & Initial Sales
         self.markets["housing"] = OrderBookMarket(market_id="housing")
@@ -190,7 +192,6 @@ class Simulation:
         
         # 추가 지표 Tracker 초기화
         self.inequality_tracker = InequalityTracker(config_module=config_module)
-        self.stock_tracker = StockMarketTracker(config_module=config_module)
         self.personality_tracker = PersonalityStatisticsTracker(config_module=config_module)
         
         self.ai_training_manager = AITrainingManager(
@@ -400,6 +401,11 @@ class Simulation:
         money_supply = self._calculate_total_money()
         self.tracker.track(self.time, self.households, self.firms, self.markets, money_supply=money_supply)
 
+        # [WO-060] Update stock market reference prices at the start of the tick
+        if self.stock_market is not None:
+            active_firms = {f.id: f for f in self.firms if f.is_active}
+            self.stock_market.update_reference_prices(active_firms)
+
         # Phase 17-4: Update Social Ranks & Calculate Reference Standard
         if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
             self._update_social_ranks()
@@ -524,23 +530,7 @@ class Simulation:
                 for order in firm_orders:
                     target_market = self.markets.get(order.market_id)
                     if target_market:
-                        if order.market_id == "stock_market" and isinstance(target_market, StockMarket):
-                            # Convert Order to StockOrder for stock market compatibility
-                            try:
-                                firm_id_str = order.item_id.split("_")[-1]
-                                firm_id = int(firm_id_str)
-                                s_order = StockOrder(
-                                    agent_id=order.agent_id,
-                                    order_type=order.order_type,
-                                    firm_id=firm_id,
-                                    quantity=order.quantity,
-                                    price=order.price
-                                )
-                                target_market.place_order(s_order, self.time)
-                            except (ValueError, IndexError):
-                                self.logger.error(f"Invalid stock item_id pattern: {order.item_id}")
-                        else:
-                            target_market.place_order(order, self.time)
+                        target_market.place_order(order, self.time)
                 
                 self.logger.debug(f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets.")
 
@@ -601,23 +591,7 @@ class Simulation:
                     household_target_market = self.markets.get(target_market_id)
 
                     if household_target_market:
-                        if target_market_id == "stock_market" and isinstance(household_target_market, StockMarket):
-                            # Convert Order to StockOrder
-                            try:
-                                firm_id_str = order.item_id.split("_")[-1]
-                                firm_id = int(firm_id_str)
-                                s_order = StockOrder(
-                                    agent_id=order.agent_id,
-                                    order_type=order.order_type,
-                                    firm_id=firm_id,
-                                    quantity=order.quantity,
-                                    price=order.price
-                                )
-                                household_target_market.place_order(s_order, self.time)
-                            except (ValueError, IndexError):
-                                self.logger.error(f"Invalid stock item_id pattern: {order.item_id}")
-                        else:
-                            household_target_market.place_order(order, self.time)
+                        household_target_market.place_order(order, self.time)
                     else:
                         self.logger.warning(
                             f"Market '{order.market_id}' not found for order from agent {household.id}",
@@ -634,15 +608,10 @@ class Simulation:
         # Stock Market Matching
         # ---------------------------------------------------------
         if self.stock_market is not None:
-            # 기업 기준가 업데이트
-            firms_dict = {f.id: f for f in self.firms if f.is_active}
-            self.stock_market.update_reference_prices(firms_dict)
-            
             # 주식 거래 매칭
             stock_transactions = self.stock_market.match_orders(self.time)
+            self._process_stock_transactions(stock_transactions)
             all_transactions.extend(stock_transactions)
-            
-            # 만료된 주문 정리
             self.stock_market.clear_expired_orders(self.time)
 
         self._process_transactions(all_transactions)
@@ -1005,6 +974,10 @@ class Simulation:
         for market in self.markets.values():
             market.clear_orders()
 
+        # Track stock market
+        if self.stock_market is not None:
+            self.stock_tracker.track_all_firms([f for f in self.firms if f.is_active], self.stock_market)
+
 
     def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
@@ -1168,7 +1141,59 @@ class Simulation:
             market_data_callback=market_data_cb
         )
 
+    def _process_stock_transactions(self, transactions: List[Transaction]) -> None:
+        """Process stock transactions."""
+        for tx in transactions:
+            buyer_id = tx.buyer_id
+            seller_id = tx.seller_id
+            buyer = self.agents.get(buyer_id)
+            seller = self.agents.get(seller_id)
+            # Correct firm_id parsing from stock_{id}
+            try:
+                firm_id = int(tx.item_id.split("_")[1])
+            except (IndexError, ValueError):
+                continue
 
+            if buyer and seller:
+                cost = tx.price * tx.quantity
+
+                # Buyer: Update assets and Portfolio
+                buyer.assets -= cost
+                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+                # Sync legacy dict
+                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
+
+                # Seller: Update assets
+                seller.assets += cost
+
+                # Update treasury shares if firm is the seller (SEO)
+                if isinstance(seller, Firm) and seller.id == firm_id:
+                    seller.treasury_shares -= tx.quantity
+                elif hasattr(seller, "portfolio"):
+                    # Secondary market trade
+                    seller.portfolio.remove(firm_id, tx.quantity)
+                
+                # Sync Legacy Dictionaries for Seller
+                if hasattr(seller, "shares_owned"):
+                    if firm_id in seller.portfolio.holdings:
+                        seller.shares_owned[firm_id] = seller.portfolio.holdings[firm_id].quantity
+                    elif firm_id in seller.shares_owned:
+                        del seller.shares_owned[firm_id]
+
+                # Synchronize Market Shareholder Registry (CRITICAL for Dividends)
+                if self.stock_market:
+                    # Sync Buyer
+                    self.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
+                    # Sync Seller
+                    if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+                        self.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
+                    else:
+                        self.stock_market.update_shareholder(seller.id, firm_id, 0.0)
+
+                self.logger.info(
+                    f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
+                    extra={"tick": self.time, "tags": ["stock_market", "transaction"]}
+                )
 
 
 

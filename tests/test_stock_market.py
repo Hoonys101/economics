@@ -3,7 +3,7 @@
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 from simulation.markets.stock_market import StockMarket
 from simulation.models import StockOrder, Transaction
 
@@ -12,11 +12,32 @@ from simulation.models import StockOrder, Transaction
 def mock_config():
     config = Mock()
     config.STOCK_MARKET_ENABLED = True
-    config.STOCK_PRICE_LIMIT_RATE = 0.10
+    config.STOCK_PRICE_LIMIT_RATE = 0.15
     config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
     config.STOCK_MIN_ORDER_QUANTITY = 1.0
     config.STOCK_ORDER_EXPIRY_TICKS = 5
     config.STOCK_TRANSACTION_FEE_RATE = 0.001
+    config.IPO_INITIAL_SHARES = 1000.0
+    config.STARTUP_COST = 30000.0
+    config.VALUE_ORIENTATION_MAPPING = {
+        "v": {
+            "preference_asset": 1.0,
+            "preference_social": 1.0,
+            "preference_growth": 1.0,
+        }
+    }
+    config.TICKS_PER_YEAR = 100
+    config.SEO_TRIGGER_RATIO = 0.5
+    config.EDUCATION_WEALTH_THRESHOLDS = {}
+    config.SEO_MAX_SELL_RATIO = 0.1
+    config.EDUCATION_LEVEL_DISTRIBUTION = [1.0]
+    config.INITIAL_WAGE = 10.0
+    config.EDUCATION_COST_MULTIPLIERS = {}
+    config.QUALITY_PREF_SNOB_MIN = 0.7
+    config.QUALITY_PREF_MISER_MAX = 0.3
+    config.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0
+    config.STOCK_INVESTMENT_DIVERSIFICATION_COUNT = 3
+    config.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD = 10.0
     return config
 
 
@@ -252,3 +273,98 @@ class TestMarketSummary:
         assert summary["daily_volume"] == 100.0
         assert summary["daily_high"] == 55.0
         assert summary["daily_low"] == 48.0
+
+def test_ipo_share_count(stock_market, mock_config):
+    from simulation.firms import Firm
+    mock_config.PROFIT_HISTORY_TICKS = 10
+    firm_decision_engine = MagicMock()
+    firm = Firm(id=1, initial_capital=10000, initial_liquidity_need=100, specialization="food",
+                productivity_factor=1, decision_engine=firm_decision_engine, value_orientation="v",
+                config_module=mock_config)
+
+    firm.init_ipo(stock_market)
+
+    assert firm.total_shares == 1000.0
+    assert firm.treasury_shares == 1000.0
+    assert stock_market.shareholders[firm.id][firm.id] == 1000.0
+
+def test_seo_triggers(stock_market, mock_config):
+    from simulation.firms import Firm
+    from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+    mock_config.PROFIT_HISTORY_TICKS = 10
+    firm_decision_engine = AIDrivenFirmDecisionEngine(ai_engine=MagicMock(), config_module=mock_config)
+    firm = Firm(id=1, initial_capital=10000, initial_liquidity_need=100, specialization="food",
+                productivity_factor=1, decision_engine=firm_decision_engine, value_orientation="v",
+                config_module=mock_config)
+    firm.assets = mock_config.STARTUP_COST * 0.4  # Below threshold
+    firm.treasury_shares = 500
+
+    context = MagicMock()
+    context.firm = firm
+    context.markets = {"stock_market": stock_market}
+    context.current_time = 1
+
+    with patch.object(stock_market, 'get_stock_price', return_value=10.0):
+        order = firm_decision_engine.corporate_manager._attempt_secondary_offering(firm, context)
+
+    assert order is not None
+    assert order.agent_id == firm.id
+    assert order.firm_id == firm.id
+    assert order.order_type == "SELL"
+    assert order.quantity == 50.0 # 10% of 500
+
+def test_household_investment(stock_market, mock_config):
+    from simulation.core_agents import Household, Talent
+    from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+    from simulation.ai.api import Personality
+    mock_config.PROFIT_HISTORY_TICKS = 10
+    mock_config.CONFORMITY_RANGES = {
+        "STATUS_SEEKER": (0.7, 0.95),
+        "CONSERVATIVE": (0.5, 0.7),
+        "MISER": (0.1, 0.3),
+        "IMPULSIVE": (0.4, 0.6),
+        None: (0.3, 0.7)
+    }
+    mock_config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000.0
+    mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0
+    mock_config.GOODS = {"basic_food": {"initial_price": 5.0}}
+    household_decision_engine = AIDrivenHouseholdDecisionEngine(ai_engine=MagicMock(), config_module=mock_config)
+    talent = Talent(base_learning_rate=0.1, max_potential={"labor": 10})
+    household = Household(id=1, initial_assets=1000.0, initial_needs={}, decision_engine=household_decision_engine,
+                          value_orientation="v", config_module=mock_config, talent=talent, goods_data=[], personality=Personality.BALANCED)
+
+    stock_market.last_prices = {1: 10.0}
+
+    stock_market.reference_prices = {1: 10.0, 2: 20.0, 3: 30.0, 4: 40.0}
+
+    with patch('simulation.decisions.portfolio_manager.PortfolioManager.optimize_portfolio', return_value=(100, 400, 500)) as mock_optimize:
+
+        # We need a market_data structure for the test
+        market_data = {
+            "loan_market": {"interest_rate": 0.03},
+            "avg_dividend_yield": 0.05,
+            "inflation": 0.02,
+            "goods_market": {"basic_food_current_sell_price": 5.0}
+        }
+
+        # Directly test the order creation logic
+        orders = household_decision_engine._place_buy_orders(household, 500, stock_market, 1)
+
+        assert len(orders) > 0
+        assert isinstance(orders[0], StockOrder)
+        assert orders[0].order_type == "BUY"
+        assert orders[0].agent_id == household.id
+
+def test_price_limit(stock_market):
+    firm_id = 1
+    stock_market.reference_prices[firm_id] = 100.0
+
+    # Test upper limit
+    order = StockOrder(agent_id=1, firm_id=firm_id, order_type="BUY", quantity=1, price=120.0)
+    stock_market.place_order(order, 1)
+    assert order.price == pytest.approx(115.0)
+
+    # Test lower limit
+    order = StockOrder(agent_id=1, firm_id=firm_id, order_type="BUY", quantity=1, price=80.0)
+    stock_market.place_order(order, 1)
+    assert order.price == pytest.approx(85.0)

@@ -582,52 +582,94 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         stock_market = markets.get("stock_market")
         if stock_market is None:
             return stock_orders
-        
-        # 투자 가능 여부 확인
-        min_assets = getattr(self.config_module, "HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT", 500.0)
-        if household.assets < min_assets:
-            return stock_orders
-        
-        agg_invest = action_vector.investment_aggressiveness
-        
-        # 투자 예산 계산
-        budget_ratio = getattr(self.config_module, "HOUSEHOLD_INVESTMENT_BUDGET_RATIO", 0.2)
-        survival_buffer = 2000.0
-        available_for_investment = max(0.0, household.assets - survival_buffer)
-        investment_budget = min(available_for_investment, household.assets * budget_ratio * agg_invest)
-        
-        # A. 매도 결정
-        sell_threshold = getattr(self.config_module, "STOCK_SELL_PROFIT_THRESHOLD", 0.15)
-        for firm_id, shares_owned in list(household.shares_owned.items()):
-            if shares_owned <= 0: continue
-            current_price = stock_market.get_stock_price(firm_id)
-            if current_price is None: continue
-            ref_price = stock_market.reference_prices.get(firm_id, current_price)
-            if current_price > ref_price * (1 + sell_threshold):
-                sell_prob = 0.3 * (1 - agg_invest)
-                if random.random() < sell_prob:
-                    sell_quantity = min(shares_owned, max(1.0, shares_owned * 0.5))
-                    stock_orders.append(StockOrder(household.id, "SELL", firm_id, sell_quantity, current_price * 0.98))
-        
-        # B. 매수 결정
-        if investment_budget < getattr(self.config_module, "STOCK_MIN_ORDER_QUANTITY", 1.0) * 10:
-            return stock_orders
-        
-        buy_discount = getattr(self.config_module, "STOCK_BUY_DISCOUNT_THRESHOLD", 0.10)
-        for firm_id, ref_price in stock_market.reference_prices.items():
-            if ref_price <= 0: continue
-            current_price = stock_market.get_stock_price(firm_id) or ref_price
-            if current_price < ref_price * (1 - buy_discount):
-                buy_prob = 0.2 * agg_invest
-                if random.random() < buy_prob:
-                    max_quantity = investment_budget / current_price
-                    buy_quantity = max(1.0, min(10.0, max_quantity * 0.5))
-                    if buy_quantity >= 1.0:
-                        stock_orders.append(StockOrder(household.id, "BUY", firm_id, buy_quantity, current_price * 1.02))
-                        investment_budget -= buy_quantity * current_price
-                        if investment_budget <= 0: break
+
+        if household.assets < self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT:
+            return stock_orders  # Survival first
+
+        # Get market metrics
+        avg_dividend_yield = market_data.get("avg_dividend_yield", 0.05)
+        risk_free_rate = market_data.get("loan_market", {}).get("interest_rate", 0.03)
+
+        goods_market = market_data.get("goods_market", {})
+        food_price = goods_market.get("basic_food_current_sell_price", 5.0)
+        if not food_price or food_price <= 0:
+            food_price = self.config_module.GOODS.get("basic_food", {}).get("initial_price", 5.0)
+        daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 2.0)
+        survival_cost = food_price * daily_consumption * 30.0
+
+        # Risk aversion based on personality
+        risk_aversion = self._get_risk_aversion(household.personality)
+
+        # Optimize allocation
+        target_cash, target_deposit, target_equity = PortfolioManager.optimize_portfolio(
+            total_liquid_assets=household.assets,
+            risk_aversion=risk_aversion,
+            risk_free_rate=risk_free_rate,
+            equity_return_proxy=avg_dividend_yield,
+            survival_cost=survival_cost,
+            inflation_expectation=market_data.get("inflation", 0.02)
+        )
+
+        # Calculate delta and place orders
+        current_prices = {firm_id: stock_market.get_stock_price(firm_id) for firm_id in household.portfolio.holdings.keys()}
+        current_equity_value = household.portfolio.get_valuation(current_prices)
+        equity_delta = target_equity - current_equity_value
+
+        if equity_delta > self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD:  # Buy threshold
+            stock_orders.extend(self._place_buy_orders(household, equity_delta, stock_market, current_time))
+        elif equity_delta < -self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD:  # Sell threshold
+            stock_orders.extend(self._place_sell_orders(household, -equity_delta, stock_market, current_time))
         
         return stock_orders
+
+    def _get_risk_aversion(self, personality_type: Personality) -> float:
+        if personality_type == Personality.STATUS_SEEKER:
+            return 0.5
+        elif personality_type == Personality.CONSERVATIVE:
+            return 5.0
+        return 2.0
+
+    def _place_buy_orders(self, household: "Household", amount_to_invest: float, stock_market: Any, tick: int) -> List[StockOrder]:
+        orders = []
+        # Simplified: Invest in a few random stocks
+        available_stocks = [fid for fid in stock_market.reference_prices.keys() if stock_market.get_stock_price(fid) > 0]
+        if not available_stocks:
+            return orders
+
+        diversification_count = self.config_module.STOCK_INVESTMENT_DIVERSIFICATION_COUNT
+        investment_per_stock = amount_to_invest / diversification_count
+        for _ in range(diversification_count):
+            firm_id = random.choice(available_stocks)
+            price = stock_market.get_stock_price(firm_id)
+            if price > 0:
+                quantity = investment_per_stock / price
+                if quantity >= 1.0:
+                    order = StockOrder(household.id, order_type="BUY", firm_id=firm_id, quantity=quantity, price=price * 1.05)
+                    orders.append(order)
+        return orders
+
+    def _place_sell_orders(self, household: "Household", amount_to_sell: float, stock_market: Any, tick: int) -> List[StockOrder]:
+        orders = []
+        # Simplified: Sell from largest holdings first
+        sorted_holdings = sorted(
+            household.portfolio.holdings.items(),
+            key=lambda item: item[1] * stock_market.get_stock_price(item[0]),
+            reverse=True
+        )
+
+        for firm_id, quantity in sorted_holdings:
+            if amount_to_sell <= 0:
+                break
+            price = stock_market.get_stock_price(firm_id)
+            if price > 0:
+                value_of_holding = quantity * price
+                sell_value = min(amount_to_sell, value_of_holding)
+                sell_quantity = sell_value / price
+                if sell_quantity >= 1.0:
+                    order = StockOrder(household.id, order_type="SELL", firm_id=firm_id, quantity=sell_quantity, price=price * 0.95)
+                    orders.append(order)
+                    amount_to_sell -= sell_value
+        return orders
 
     def _calculate_savings_roi(self, household: "Household", nominal_rate: float) -> float:
         """가계의 저축 ROI(미래 효용)를 계산합니다."""

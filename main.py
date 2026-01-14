@@ -268,22 +268,15 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         
         # Add to portfolio
         if hasattr(founder_household, "portfolio"):
-            # If portfolio is the new Portfolio object, use .add()
-            if hasattr(founder_household.portfolio, "add"):
-                # Initial share distribution happens later, this is just to register founder if needed
-                # For now, we follow the legacy logic of just adding it.
-                # Since Portfolio.add requires quantity, we'll give it 0 for now or manage via shares_owned later.
-                # Actually, founder should probably have their shares added here.
-                pass 
-            else:
-                founder_household.portfolio.append(firm.id)
+            # Portfolio is now a Portfolio object, not a list.
+            # Initially, all shares are treasury shares, so we don't add them to the founder's portfolio yet.
+            # They are registered as owner/founder in the firm object itself.
+            pass
             
         firm_founders[firm.id] = founder_household.id
 
-        # Compatible with Stock Market (Shares)
-        shares_per_household = firm.total_shares / num_households
-        for household in households:
-            household.shares_owned[firm.id] = shares_per_household
+        # Removed legacy share distribution. Firms hold 100% treasury shares initially.
+        # Registration in StockMarket is handled by Simulation.init_ipo.
             
     num_to_employ = int(num_households * config.INITIAL_EMPLOYMENT_RATE)
     unemployed_households = list(households)

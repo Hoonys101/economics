@@ -22,6 +22,7 @@ from simulation.utils.shadow_logger import log_shadow
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
     from simulation.ai.firm_system2_planner import FirmSystem2Planner
+    from simulation.markets.stock_market import StockMarket
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class Firm(BaseAgent):
 
         self.current_production: float = 0.0
         self.productivity_factor: float = productivity_factor
-        self.total_shares: float = self.config_module.FIRM_DEFAULT_TOTAL_SHARES
+        self.total_shares: float = getattr(config_module, "IPO_INITIAL_SHARES", 1000.0)
         self.last_prices: Dict[str, float] = {}
         self.hires_last_tick: int = 0 # Handled in HR but maybe exposed here?
         
@@ -120,7 +121,7 @@ class Firm(BaseAgent):
         self.dividend_rate: float = getattr(
             config_module, "DIVIDEND_RATE", 0.3
         )  # 기업별 배당률 (기본값: config)
-        self.treasury_shares: float = 0.0  # 자사주 보유량
+        self.treasury_shares: float = self.total_shares  # 자사주 보유량
         self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
 
         # Phase 16-B: Rewards Tracking (Delta storage)
@@ -133,6 +134,15 @@ class Firm(BaseAgent):
         self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
 
         self.decision_engine.loan_market = loan_market
+
+    def init_ipo(self, stock_market: StockMarket):
+        """Register firm in stock market order book."""
+        par_value = self.assets / self.total_shares if self.total_shares > 0 else 1.0
+        stock_market.update_shareholder(self.id, self.id, self.treasury_shares)
+        self.logger.info(
+            f"IPO | Firm {self.id} initialized IPO with {self.total_shares} shares. Par value: {par_value:.2f}",
+            extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]}
+        )
 
     # --- Properties to maintain Interface Compatibility ---
     @property

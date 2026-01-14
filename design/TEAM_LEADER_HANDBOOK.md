@@ -3,7 +3,7 @@
 **PM (Project Manager):** Hoonys101 (사용자) - 최종 의사결정 및 비전 제시
 **Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**, **오케스트레이터(Orchestrator)**. 
 > [!IMPORTANT]
-> **Non-Coding Rule**: 팀장은 직접 코딩을 하지 않습니다. 모든 구현, 버그 수정, 테스트 실행은 sub-agent(Jules)에게 위임하여 수행합니다. 팀장의 역할은 명세 작성, 코드 리뷰, 그리고 전체 데이터 흐름의 정합성 검증에 국한됩니다.
+> **Non-Coding & Non-Execution Rule**: 팀장은 직접 코딩을 하지 않으며, **gemini-cli 또한 자신의 터미널에서 직접 실행하지 않습니다.** 모든 구현은 Jules에게, 모든 AI 보조 작업은 `gemini-go.bat` 생성을 통해 수석 아키텍트(사용자)의 실행 승인을 거쳐 수행합니다.
 **Member:** Jules 요원 (Alpha, Bravo, Charlie) - 구현 및 기술적 타협점 보고
 **Last Updated:** 2026-01-13
 
@@ -395,3 +395,24 @@ graph TD
 ### 3. Technical Definitions
 - 추상적인 경제 용어는 반드시 **코드 레벨의 정의(Logic Map)**를 포함해야 합니다.
     - 예: `Credential Premium` = (동일 기술 수준 그룹 내) 학위에 따른 임금 차액 산출법 명시.
+
+---
+
+## 🛡️ Human-in-the-Loop 2.0 (HITL) Protocol
+
+**"모든 AI 보조 작업은 수석 아키텍트의 손을 거쳐야 한다."**
+
+### 1. Operation Cycle
+1.  **Command Prep**: Antigravity가 작업에 필요한 `gemini_worker.py` 명령어를 설계.
+2.  **Artifact Creation**: 저장소 루트에 `gemini-go.bat` 파일을 생성/업데이트.
+    *   **Output Redirection**: 모든 출력은 반드시 `design/gemini_output/last_run.md` 및 `last_run.log`로 리다이렉션되도록 구성.
+3.  **User Trigger**: 사용자에게 실행 요청 ("`gemini-go.bat` 실행 부탁드립니다").
+4.  **Verification**: 사용자로부터 "완료" 신호를 받은 후 `design/gemini_output/`의 결과를 읽고 후속 작업 진행.
+
+### 2. Unified Storage
+- **Path**: `design/gemini_output/`
+- **Files**:
+    - `last_run.md`: 직전 실행된 AI의 본문 답변.
+    - `last_run.log`: 실행 로그 및 에러 메시지.
+
+---

@@ -4,6 +4,7 @@
 
 ## 1. 🚦 Project Status & Roadmap
 - **[PROJECT_STATUS.md](project_status.md)**: 🔥 **가장 먼저 읽어야 할 문서**. 현재 진행 상황, 완료된 기능, 다음 과업이 요약되어 있음.
+- **[TECH_DEBT_LEDGER.md](TECH_DEBT_LEDGER.md)**: 유예된 기술적 과제 및 상환 계획.
 - **[HANDOVER.md](HANDOVER.md)**: 📦 **새 세션 시작을 위한 핸드오버 문서**. 가장 최근의 기술적 맥락 포함.
 - **[CURRENT_BRIEFING.md](CURRENT_BRIEFING.md)**: 실시간 전략 브리핑.
 - **[GEMINI.md](../GEMINI.md)**: 프로젝트 핵심 지침 및 워크플로우 가이드.

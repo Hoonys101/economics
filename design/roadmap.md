@@ -15,9 +15,9 @@
 - [x] 8. Adaptive Price Expectations (Phase 8)
 - [x] 9. Corporate M&A (Phase 9)
 - [x] 10. Monetary Policy (Phase 10)
-- [x] 11. Portfolio Optimization (Phase 16)
+- [x] 11. Portfolio Optimization (Phase 16 -> Phase 25)
 - [x] 12. Corporate Intelligence (Phase 16-B)
-- [x] 13. Stock Exchange (Phase 14-4)
+- [x] 13. Stock Exchange High-Fidelity Activation (Phase 25)
 
 ## 🔴 Pending / Future
 - [x] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
@@ -70,12 +70,25 @@
     - [x] WO-054: Public Education System (Social Mobility)
     - [x] WO-055: The Baby Boom (Golden Age Stabilization)
 
-### Phase 24: Adaptive Evolution (The Invisible Hand) ⭐ **[NEXT PHASE]**
+### Phase 24: Adaptive Evolution (The Invisible Hand) ✅
 - **Goal**: Transition from manual guardrails to automated market equilibrium.
 - **Tasks**:
-    - [ ] WO-056: The Invisible Hand (Market Auto-Balancer) **[PRIORITY]**
-    - [ ] WO-057: Adaptive Policy Evolution (RL Government)
-    - [ ] WO-058: Generational Wealth Audit (Long-term Stability)
+    - [x] WO-056: The Invisible Hand (Market Auto-Balancer)
+    - [x] WO-057: Adaptive Policy Evolution (RL Government)
+    - [x] WO-058: Economic CPR (Bootstrap Logic)
+
+### Phase 25: The Financial Superstructure (Stock Market) ✅
+- **Goal**: Realistic capital markets and wealth-biased investment.
+- **Tasks**:
+    - [x] WO-060: Stock Exchange High-Fidelity Activation
+    - [x] WO-061: Portfolio Manager with Wealth Bias
+
+### Phase 26: Financial Strategy Integration ⭐ **[CURRENT]**
+- **Goal**: Link macro environment to retail/institutional strategy.
+- **Tasks**:
+    - [ ] WO-062: Signal Intelligence Engine (Judge & Sentinel) **[PRIORITY]**
+    - [ ] WO-063: Inverse ETF & Hedging Mechanism
+    - [ ] WO-064: Strategy Backtest Framework
 
 ### Phase 22: The Awakening (Adaptive AI) **[COMPLETED]**
 - **Goal**: Wake up the Agents (System 2 Activation).

@@ -9,6 +9,8 @@
 | TD-009 | 2026-01-14 | CPR Bailouts are Unconditional Grants | Convert Bailouts to Government Loans/Bonds (Fiscal Policy) | Lack of Fiscal Consequence, Inflationary bias | **Recognized** |
 | TD-010 | 2026-01-14 | Government AI Sensory Lag (`run_tick` order) | Sync `market_data` or pre-calc indicators before `decide_policy` | AI decisions based on stale/zero data (Sensory Deprivation) | **CRITICAL** |
 | TD-025 | 2026-01-14 | Tracker Blindness & Infra Gap (WO-057) | Refactor `MarketDataDAO` & Enhance `Tracker` Fallback | AI Reward Flatline, 2008/2022 Validation Impossible | **Blocking** |
+| TD-028 | 2026-01-15 | Lack of Bear Market Instruments (Short/Hedge) | Implement Inverse ETF or Short Selling logic | Market collapse recovery depends only on long-only logic | **Recognized** |
+| TD-029 | 2026-01-15 | Simplistic Price Discovery (EPS Correlation) | Enhance `StockMarket` to factor in long-term earnings growth | Bubbles/Crashes less meaningful without valuation link | **Recognized** |
 
 ---
 
