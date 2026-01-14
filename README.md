@@ -62,4 +62,19 @@ python tests/verify_real_estate_sales.py
 ```
 
 ---
-*Last Updated: 2026-01-09 (Phase 17.5 Integration Completed)*
+*Last Updated: 2026-01-14 (Phase 24: Canary Signal Integration)*
+
+---
+
+## 🧠 System Capabilities (Intel)
+
+### 🦅 Capability Added: Canary Signal (Decoupling Detection)
+* **Updated:** 2026-01-14 (Phase 24)
+* **Concept:** "스마트 머니(Tier 1)는 탈출하는데 개미(Tier 2)만 남는 현상"을 감지.
+* **Logic:**
+    1.  **Dual-Track Breadth:** 시장을 `Tier 1 (Leader)`과 `Tier 2 (Follower)`로 분리하여 각각의 Market Breadth를 계산.
+    2.  **Spread Analysis:** `Breadth_Tier1 - Breadth_Tier2` (괴리율) 계산.
+    3.  **Trigger:**
+        * **CRITICAL:** Tier 1 자체가 붕괴 수준일 때 (Absolute Panic).
+        * **WARNING:** 괴리율(Spread)이 임계값(예: 0.2)을 초과할 때 (Decoupling).
+* **Impact:** 2020년 코로나 사태와 같은 급락장(Flash Crash) 직전의 전조 증상을 포착하여 선제적 방어(Shutdown/Reduce Exposure) 가능.

@@ -8,8 +8,8 @@ Promotion requires 3 consecutive successes (Calibration Mode) to Reach Level 2, 
 | Category (Worker + Manual) | Current Level | Calibration Progress | Review Progress | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **Reporter** (`reporter.md`) | **Level 2** | ✅ 3/3 | ⬜ 1/3 | Review Mode |
-| **Spec Drafter** (`spec_writer.md`) | **Level 2** | ✅ 3/3 | ⬜ 2/3 | Review Mode |
-| **Validator** (`validator.md`) | **Level 2** | ✅ 3/3 | ⬜ 0/3 | Review Mode |
+| **Spec Drafter** (`spec_writer.md`) | **Level 3** | ✅ 3/3 | ✅ 3/3 | **Antigravity-Autonomous** (User Approval Required) |
+| **Validator** (`validator.md`) | **Level 2** | ✅ 3/3 | ✅ 1/3 | Review Mode |
 | **State Auditor** (`state_auditor.md`) | **Level 2** | ✅ 3/3 | ⬜ 0/3 | Review Mode |
 | **Context Manager** (`context_manager.md`) | **Level 1** | ⬜ 2/3 | ⬜ 0/3 | Calibration Mode |
 | **Git Operator** (`git_operator.md`) | **Level 2** | ✅ 3/3 | ⬜ 0/3 | Review Mode |
@@ -31,9 +31,13 @@ Promotion requires 3 consecutive successes (Calibration Mode) to Reach Level 2, 
    - Result: PASS. High-quality protocols and API definitions.
 5. ✅ **Case 5: AssetLiquiditySystem Spec (v2)** (2026-01-14)
    - Result: PASS. Comprehensive waterfall and haircut logic.
+6. ✅ **Case 6: TD-014 Government SoC Spec** (2026-01-14)
+   - Result: PASS. Drafted TaxAgency and MinistryOfEducation specs correctly (B+).
+   - **PROMOTED TO LEVEL 3 (ANTIGRAVITY-AUTONOMOUS)**
 
 ### [Category: Validator]
-... (lines 42-48 remains)
+1. ✅ **Case 1: TD-014 SoC Verify** (2026-01-14)
+   - Result: PASS. Correctly verified delegation logic in Government agent.
 
 ### [Category: State Auditor]
 ... (lines 51-57 remains)
@@ -61,7 +65,7 @@ Promotion requires 3 consecutive successes (Calibration Mode) to Reach Level 2, 
 | Category | Level | Required review successes for Level 3 |
 | :--- | :--- | :--- |
 | **Reporter** | **Level 2** | ✅ ⬜ ⬜ |
-| **Spec Drafter** | **Level 2** | ✅ ✅ ⬜ |
+| **Spec Drafter** | **Level 3** | ✅ ✅ ✅ (COMPLETED) |
 | **Validator** | **Level 2** | ⬜ ⬜ ⬜ |
 | **State Auditor** | **Level 2** | ⬜ ⬜ ⬜ |
 | **Git Operator** | **Level 2** | ⬜ ⬜ ⬜ |

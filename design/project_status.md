@@ -44,13 +44,14 @@
 | Brain (Q-Learning) | Jules Alpha | ✅ | 81-State, Q-Table mutation implemented |
 | Sensory (SMA Pipeline) | Jules Bravo | ✅ | **Manual Fix**: "Crisis Override" for GDP=0 added |
 | Actuator (Policy Exec) | Jules Charlie | ✅ | Policy translation layer implemented |
-| **System Check** | Team Leader | ⚠️ | **Sensor OK**, but Economy Dead (WO-058) |
+| **System Check** | Team Leader | ✅ | **Sensor OK**, Economy Revived (WO-058 DONE) |
 
 ### WO-058: Economic CPR (Production Rescue) 🏗️
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Diagnosis | Jules | 🏗️ | Investigating L=0, K=0, Supply=0 |
-| Bootstrap Fix | Jules | 📝 | Planned: Init Inventory Injection |
+| Diagnosis | Jules | ✅ | Deadlock Found (No Capital/Inventory) |
+| Bootstrap Fix | Jules | ✅ | **Implemented**: Capital+Inventory+Worker Injection |
+| **System Check** | Team Leader | ✅ | **Simulation Alive** (Tick 10+), but Mass Starvation (WO-056 Area) |
 
 ---
 
@@ -76,5 +77,15 @@
 
 - **활성 브랜치**: `main`, `feat/wo-057-smart-leviathan`
 - **정리 완료**: 25개 오래된 브랜치 삭제 (2026-01-13)
+
+---
+
+## 5. Technical Debt & Backlog
+
+### TD-024: Test Path Correction ⚠️
+- **Type**: CI/CD, Testing
+- **Status**: Open
+- **Description**: `pytest` 실행 시 테스트 경로 오류 발생. 로컬 및 CI 환경에서 테스트가 깨지는 현상 수정 필요.
+- **Action**: Phase 25 착수 전 해결 필수.
 
 ... (Following legacy phases omitted for brevity / check structure.md)

@@ -1,8 +1,13 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {
-      "13507557150808850601": "--file"
+    "active_sessions": {},
+    "completed_sessions": {
+      "11626928342509996952": "TD-014: Government SoC Refactoring - MERGED 2026-01-14",
+      "10078451815509526740": "WO-058-Retry: Operation Defibrillator - MERGED 2026-01-14",
+      "4444007150223365139": "WO-058 Economic CPR - MERGED 2026-01-14",
+      "16031090481298584395": "WO-056/058: Systemic Stabilization - ARCHIVED 2026-01-14",
+      "13507557150808850601": "Legacy Session - ARCHIVED 2026-01-14"
     }
   }
 }
