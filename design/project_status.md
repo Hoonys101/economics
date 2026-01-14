@@ -13,12 +13,11 @@
     - `Phase 20: The Matrix & Real Estate` ✅
     - `Phase 21: Corporate Empires` ✅
     - `Phase 22.5: Architecture Detox` ✅
-    - `Phase 23: The Great Expansion` ✅ (Fertilizer, Education, Golden Age)
-- **현재 단계:** `Phase 24: Adaptive Intelligence & Evolution` 🚀
-    - Step 1: SoC Refactor Phase 1 (Firm Modularization) ✅
-    - Step 2: Golden Age Stabilization (WO-055) ✅
-    - Step 3: The Invisible Hand (WO-056) 🏗️ - Shadow Mode 디버깅 중
-    - Step 4: The Smart Leviathan (WO-057) 🏗️ - AI 정책 엔진 개발 중
+    - `Phase 23: The Great Expansion` ✅
+    - `Phase 24: Adaptive Intelligence & Evolution` ✅
+- **현재 단계:** `Phase 25: Strategy Engine Integration` 🚀
+    - Step 1: Solve TD-025 (Data Pipeline Gap) 🏗️
+    - Step 2: Signal-Strategy Linkage 🏗️
 
 ---
 
@@ -38,20 +37,20 @@
 | Taylor Rule Shadow | ✅ | Shadow price/wage/interest logging implemented |
 | Money Leak Hotfix | 🏗️ | -999.8 누출 잔존, Jules 디버깅 중 |
 
-### WO-057: The Smart Leviathan (AI Policy) 🏗️
-| 모듈 | 담당 | 상태 | 비고 |
-|---|---|---|---|
-| Brain (Q-Learning) | Jules Alpha | ✅ | 81-State, Q-Table mutation implemented |
-| Sensory (SMA Pipeline) | Jules Bravo | ✅ | **Manual Fix**: "Crisis Override" for GDP=0 added |
-| Actuator (Policy Exec) | Jules Charlie | ✅ | Policy translation layer implemented |
-| **System Check** | Team Leader | ✅ | **Sensor OK**, Economy Revived (WO-058 DONE) |
-
-### WO-058: Economic CPR (Production Rescue) 🏗️
+### WO-057: The Smart Leviathan (AI Policy) ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Diagnosis | Jules | ✅ | Deadlock Found (No Capital/Inventory) |
-| Bootstrap Fix | Jules | ✅ | **Implemented**: Capital+Inventory+Worker Injection |
-| **System Check** | Team Leader | ✅ | **Simulation Alive** (Tick 10+), but Mass Starvation (WO-056 Area) |
+| Brain (Q-Learning) | ✅ | 81-State, Q-Table mutation implemented |
+| Sensory (SMA Pipeline) | ✅ | **Manual Fix**: "Crisis Override" for GDP=0 added |
+| Actuator (Policy Exec) | ✅ | Policy translation layer implemented |
+| **Verification** | ⚠️ | **Conditional Approved** (TD-025: Data Gap accepted) |
+
+### WO-058: Economic CPR (Production Rescue) ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Diagnosis | ✅ | Deadlock Found (No Capital/Inventory) |
+| Bootstrap Fix | ✅ | **Implemented**: Capital + Inventory + Worker Injection |
+| **System Check** | ✅ | **Simulation Alive**, CPR Successful |
 
 ---
 
