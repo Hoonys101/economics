@@ -15,6 +15,7 @@ class TestMinistryOfEducation(unittest.TestCase):
 
         self.mock_government = MagicMock()
         self.mock_government.assets = 10000
+        self.mock_government.revenue_this_tick = 10000  # Simulate 10k revenue for budget calcs
         self.mock_government.id = 1
         self.mock_government.expenditure_this_tick = 0
         self.mock_government.total_money_issued = 0

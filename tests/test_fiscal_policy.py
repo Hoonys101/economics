@@ -15,6 +15,7 @@ class TestFiscalPolicy(unittest.TestCase):
         self.config.DEBT_CEILING_RATIO = 1.0
         self.config.FISCAL_STANCE_EXPANSION_THRESHOLD = 0.025
         self.config.FISCAL_STANCE_CONTRACTION_THRESHOLD = -0.025
+        self.config.TICKS_PER_YEAR = 100  # Added for TaylorRulePolicy initialization
 
         # Government Instance
         self.gov = Government(id=1, initial_assets=1000.0, config_module=self.config)

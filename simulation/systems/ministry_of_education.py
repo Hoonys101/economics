@@ -14,7 +14,8 @@ class MinistryOfEducation:
         2. Meritocratic Scholarship (Top Talent + Low Wealth)
         """
         budget_ratio = getattr(self.config_module, "PUBLIC_EDU_BUDGET_RATIO", 0.20)
-        edu_budget = government.assets * budget_ratio
+        # WO-057 Deficit Spending: Budget is based on REVENUE, not ASSETS
+        edu_budget = government.revenue_this_tick * budget_ratio
         spent_total = 0.0
 
         active_households = [h for h in households if getattr(h, "is_active", False)]

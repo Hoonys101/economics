@@ -122,7 +122,7 @@ class TestGovernmentAILogic(unittest.TestCase):
         # Test with Bad Condition to ensure learning happens
         # High Inflation -> Reward -0.045
         self.mock_agent.sensory_data.inflation_sma = 0.05
-        self.ai.update_learning(dummy_reward, current_tick=3)
+        self.ai.update_learning_with_state(dummy_reward, current_tick=3)
 
         # Previous Q was 0.0.
         # New = 0.0 + 0.1 * (-0.045 + 0.95*0.0 - 0.0) = -0.0045

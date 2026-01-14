@@ -283,11 +283,6 @@ class Government:
         if not getattr(self.config_module, "GOVERNMENT_STIMULUS_ENABLED", True):
             return 0.0
 
-        if self.assets < effective_amount:
-            # Partial payment? Or reject.
-            # Logging rejection once per tick might be better to reduce noise, but let's keep logic simple.
-            return 0.0
-
         self.assets -= effective_amount
         self.total_spent_subsidies += effective_amount
         self.expenditure_this_tick += effective_amount
@@ -434,28 +429,24 @@ class Government:
         if self.firm_subsidy_budget_multiplier < 0.8:
             return False
 
-        if self.assets >= effective_cost:
-            self.assets -= effective_cost
-            self.total_money_issued += effective_cost # Correct money supply accounting
-            self.expenditure_this_tick += effective_cost
-            if reflux_system:
-                reflux_system.capture(effective_cost, str(self.id), "infrastructure")
+        self.assets -= effective_cost
+        self.total_money_issued += effective_cost
+        self.expenditure_this_tick += effective_cost
+        if reflux_system:
+            reflux_system.capture(effective_cost, str(self.id), "infrastructure")
 
-            self.infrastructure_level += 1
-            
-            logger.info(
-                f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Cost: {effective_cost}",
-                extra={
-                    "tick": current_tick,
-                    "agent_id": self.id,
-                    "level": self.infrastructure_level,
-                    "tags": ["investment", "infrastructure"]
-                }
-            )
-            return True
-        else:
-            # Silent rejection to avoid log spam if just poor
-            return False
+        self.infrastructure_level += 1
+
+        logger.info(
+            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Cost: {effective_cost}",
+            extra={
+                "tick": current_tick,
+                "agent_id": self.id,
+                "level": self.infrastructure_level,
+                "tags": ["investment", "infrastructure"]
+            }
+        )
+        return True
 
     def finalize_tick(self, current_tick: int):
         """
@@ -464,6 +455,12 @@ class Government:
         revenue_snapshot = self.current_tick_stats["tax_revenue"].copy()
         revenue_snapshot["tick"] = current_tick
         revenue_snapshot["total"] = self.current_tick_stats["total_collected"]
+
+        # WO-057 Deficit Spending: Update total_debt based on negative assets
+        if self.assets < 0:
+            self.total_debt = abs(self.assets)
+        else:
+            self.total_debt = 0.0
 
         self.tax_history.append(revenue_snapshot)
         if len(self.tax_history) > self.history_window_size:
