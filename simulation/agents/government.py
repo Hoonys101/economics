@@ -8,6 +8,8 @@ from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 from simulation.dtos import GovernmentStateDTO
 from typing import Optional
 from simulation.utils.shadow_logger import log_shadow
+from simulation.systems.tax_agency import TaxAgency
+from simulation.systems.ministry_of_education import MinistryOfEducation
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,9 @@ class Government:
         self.assets = initial_assets
         self.config_module = config_module
         
+        self.tax_agency = TaxAgency(config_module)
+        self.ministry_of_education = MinistryOfEducation(config_module)
+
         self.total_collected_tax: float = 0.0
         self.total_spent_subsidies: float = 0.0
         self.infrastructure_level: int = 0
@@ -117,51 +122,13 @@ class Government:
             )
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
-        """
-        Calculates income tax based on TAX_MODE and income_tax_rate.
-        """
+        """Delegates income tax calculation to the TaxAgency."""
         tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
-
-        if tax_mode == "FLAT":
-            return income * self.income_tax_rate
-
-        # Progressive Logic
-        tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
-        if not tax_brackets:
-            return income * self.income_tax_rate
-
-        # Calculate raw tax based on brackets
-        raw_tax = 0.0
-        remaining_income = income
-        previous_limit_abs = 0.0
-
-        for multiple, rate in tax_brackets:
-            limit_abs = multiple * survival_cost
-            upper_bound = min(income, limit_abs)
-            lower_bound = max(0, previous_limit_abs)
-            taxable_amount = max(0.0, upper_bound - lower_bound)
-
-            if taxable_amount > 0:
-                raw_tax += taxable_amount * rate
-
-            if income <= limit_abs:
-                break
-            previous_limit_abs = limit_abs
-
-        # Scale tax based on current income_tax_rate vs base rate in config
-        # If policy lowers tax rate, we scale the bracket result down.
-        base_rate_config = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
-        if base_rate_config > 0:
-            adjustment_factor = self.income_tax_rate / base_rate_config
-            return raw_tax * adjustment_factor
-        else:
-            return raw_tax
+        return self.tax_agency.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
 
     def calculate_corporate_tax(self, profit: float) -> float:
-        """Calculates corporate tax."""
-        if profit <= 0:
-            return 0.0
-        return profit * self.corporate_tax_rate
+        """Delegates corporate tax calculation to the TaxAgency."""
+        return self.tax_agency.calculate_corporate_tax(profit, self.corporate_tax_rate)
 
     def reset_tick_flow(self):
         """
@@ -177,35 +144,7 @@ class Government:
 
     def collect_tax(self, amount: float, tax_type: str, source_id: int, current_tick: int):
         """세금을 징수합니다."""
-        if amount <= 0:
-            return 0.0
-            
-        self.assets += amount
-        self.total_collected_tax += amount
-        self.revenue_this_tick += amount
-
-        # Money Destruction (Gold Standard / Fiat Sink)
-        self.total_money_destroyed += amount
-        
-        # 세목별 집계 (Cumulative)
-        self.tax_revenue[tax_type] = self.tax_revenue.get(tax_type, 0.0) + amount
-
-        # Current Tick Stats
-        self.current_tick_stats["tax_revenue"][tax_type] = self.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
-        self.current_tick_stats["total_collected"] += amount
-
-        logger.info(
-            f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {source_id}",
-            extra={
-                "tick": current_tick,
-                "agent_id": self.id,
-                "amount": amount,
-                "tax_type": tax_type,
-                "source_id": source_id,
-                "tags": ["tax", "revenue"]
-            }
-        )
-        return amount
+        return self.tax_agency.collect_tax(self, amount, tax_type, source_id, current_tick)
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -568,82 +507,7 @@ class Government:
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:
         """
-        WO-054: Public Education System Implementation.
-        1. Free Basic Education (Level 0 -> 1)
-        2. Meritocratic Scholarship (Top Talent + Low Wealth)
+        Delegates public education logic to the Ministry of Education.
         """
-        budget_ratio = getattr(config_module, "PUBLIC_EDU_BUDGET_RATIO", 0.20)
-        edu_budget = self.assets * budget_ratio
-        spent_total = 0.0
-
-        # Sort agents by wealth to identify scholarship candidates (Bottom 20%)
-        active_households = [a for a in agents if getattr(a, "is_active", False) and a.__class__.__name__ == "Household"]
-        if not active_households:
-            return
-
-        active_households.sort(key=lambda x: x.assets)
-        cutoff_idx = int(len(active_households) * getattr(config_module, "SCHOLARSHIP_WEALTH_PERCENTILE", 0.20))
-        # Poor households set
-        poor_households = set(h.id for h in active_households[:cutoff_idx])
-
-        # Cost map
-        costs = getattr(config_module, "EDUCATION_COST_PER_LEVEL", {1: 500})
-        scholarship_potential_threshold = getattr(config_module, "SCHOLARSHIP_POTENTIAL_THRESHOLD", 0.7)
-
-        for agent in active_households:
-            current_level = getattr(agent, "education_level", 0)
-            next_level = current_level + 1
-            cost = costs.get(next_level, 100000.0) # High default if not in map
-
-            # 1. Free Basic Education (0 -> 1)
-            if current_level == 0:
-                if edu_budget >= cost:
-                    agent.education_level = 1
-                    edu_budget -= cost
-                    self.assets -= cost
-                    spent_total += cost
-
-                    # Log event
-                    logger.debug(
-                        f"EDU_BASIC_GRANT | Household {agent.id} promoted to Level 1. Cost: {cost}",
-                        extra={"tick": current_tick, "agent_id": self.id, "target_id": agent.id}
-                    )
-
-            # 2. Meritocratic Scholarship (Level 1+)
-            elif current_level >= 1:
-                # Eligibility: Poor AND High Aptitude
-                is_poor = agent.id in poor_households
-                has_potential = getattr(agent, "aptitude", 0.0) >= scholarship_potential_threshold
-
-                if is_poor and has_potential:
-                    subsidy = cost * 0.8 # 80% subsidy
-                    student_share = cost * 0.2
-
-                    if edu_budget >= subsidy and agent.assets >= student_share:
-                        agent.education_level = next_level
-                        # Pay subsidy
-                        edu_budget -= subsidy
-                        self.assets -= subsidy
-                        spent_total += subsidy
-
-                        # Student pays share
-                        agent.assets -= student_share
-                        if reflux_system:
-                            reflux_system.capture(student_share, f"Household_{agent.id}", "education_tuition")
-
-                        logger.info(
-                            f"EDU_SCHOLARSHIP | Household {agent.id} (Aptitude {agent.aptitude:.2f}) promoted to Level {next_level}. Subsidy: {subsidy:.2f}, Student Share: {student_share:.2f}",
-                            extra={"tick": current_tick, "agent_id": self.id, "target_id": agent.id, "aptitude": agent.aptitude}
-                        )
-
-        self.expenditure_this_tick += spent_total
-        self.total_money_issued += spent_total 
-        if reflux_system:
-            reflux_system.capture(spent_total, str(self.id), "education_services")
-        # Actually education cost usually goes to "Education Service" provider if it exists.
-        # But here we assume it's just state investment (sunk cost or transfer to abstraction).
-        # Since Education Service exists as a generic sector, maybe we should buy it?
-        # But WO-054 implies direct level up.
-        # We'll treat it as expenditure.
-
-        self.current_tick_stats["education_spending"] = spent_total
+        households = [a for a in agents if hasattr(a, 'education_level')]
+        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
