@@ -16,7 +16,7 @@ def generate_learning_curve():
     ticks = []
 
     # Corrected Regex to capture Reward and Tick
-    log_pattern = re.compile(r"GOV_AI_LEARN \| Reward: ([\-0-9\.]+) \| Tick: (\d+)")
+    log_pattern = re.compile(r"GOV_AI_LEARN \| Reward: (-?[\d\.]+) \| Tick: (\d+)")
     
     print(f"Parsing log file: {LOG_FILE}")
     if not os.path.exists(LOG_FILE):
