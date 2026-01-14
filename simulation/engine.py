@@ -149,6 +149,11 @@ class Simulation:
             self.stock_market = StockMarket(config_module=self.config_module, logger=self.logger)
             self.stock_tracker = StockMarketTracker(config_module=self.config_module)
             self.markets["stock_market"] = self.stock_market
+            
+            # Phase 25/WO-060: Automatic IPO for existing firms
+            for firm in self.firms:
+                if hasattr(firm, "init_ipo"):
+                    firm.init_ipo(self.stock_market)
         else:
             self.stock_market = None
             self.stock_tracker = None
@@ -187,7 +192,6 @@ class Simulation:
         
         # 추가 지표 Tracker 초기화
         self.inequality_tracker = InequalityTracker(config_module=config_module)
-        self.stock_tracker = StockMarketTracker(config_module=config_module)
         self.personality_tracker = PersonalityStatisticsTracker(config_module=config_module)
         
         self.ai_training_manager = AITrainingManager(
@@ -1140,26 +1144,51 @@ class Simulation:
     def _process_stock_transactions(self, transactions: List[Transaction]) -> None:
         """Process stock transactions."""
         for tx in transactions:
-            buyer = self.agents.get(tx.buyer_id)
-            seller = self.agents.get(tx.seller_id)
-            firm_id = tx.firm_id
+            buyer_id = tx.buyer_id
+            seller_id = tx.seller_id
+            buyer = self.agents.get(buyer_id)
+            seller = self.agents.get(seller_id)
+            # Correct firm_id parsing from stock_{id}
+            try:
+                firm_id = int(tx.item_id.split("_")[1])
+            except (IndexError, ValueError):
+                continue
 
-            if buyer and seller and firm_id is not None:
+            if buyer and seller:
                 cost = tx.price * tx.quantity
 
-                # Buyer
+                # Buyer: Update assets and Portfolio
                 buyer.assets -= cost
-                buyer.portfolio.add_holding(firm_id, tx.quantity)
+                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+                # Sync legacy dict
+                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
 
-                # Seller
+                # Seller: Update assets
                 seller.assets += cost
 
                 # Update treasury shares if firm is the seller (SEO)
                 if isinstance(seller, Firm) and seller.id == firm_id:
                     seller.treasury_shares -= tx.quantity
-                else:
-                    # Otherwise, it's a secondary market trade from another agent's portfolio
-                    seller.portfolio.remove_holding(firm_id, tx.quantity)
+                elif hasattr(seller, "portfolio"):
+                    # Secondary market trade
+                    seller.portfolio.remove(firm_id, tx.quantity)
+                
+                # Sync Legacy Dictionaries for Seller
+                if hasattr(seller, "shares_owned"):
+                    if firm_id in seller.portfolio.holdings:
+                        seller.shares_owned[firm_id] = seller.portfolio.holdings[firm_id].quantity
+                    elif firm_id in seller.shares_owned:
+                        del seller.shares_owned[firm_id]
+
+                # Synchronize Market Shareholder Registry (CRITICAL for Dividends)
+                if self.stock_market:
+                    # Sync Buyer
+                    self.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
+                    # Sync Seller
+                    if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+                        self.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
+                    else:
+                        self.stock_market.update_shareholder(seller.id, firm_id, 0.0)
 
                 self.logger.info(
                     f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",

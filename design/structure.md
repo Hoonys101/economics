@@ -43,13 +43,20 @@ graph TD
     BM -->|Deposit Rate| HH
     BM -->|Loan Rate| Firm
     
+    %% Capital Markets (Phase 25)
+    SM -->|Dividends| HH
+    HH -->|Investment (Orders)| SM
+    Firm -->|SEO (Treasury Shares)| SM
+    SM -->|Capital Injection| Firm
+    
     %% The Missing Link (Restored)
     HH -- High Rates --> |Increases| Savings(Deposits)
     HH -- Low Rates --> |Increases| Consumption
     
-    %% Corporate Metabolism (Phase 9)
+    %% Corporate Metabolism (Phase 9/25)
     Firm -- M&A --> Firm
     Firm -- Bankruptcy --> Liquidation
+    Firm -- IPO/SEO --> SM
 ```
 
 ## 2. Logic Flow (The Pulse)
@@ -61,23 +68,25 @@ graph TD
     *   *Logic*: $C = f(\text{Needs}, \text{Assets}, \text{Prices}, \text{Inflation Expectation}, \text{Interest Rate})$.
 4.  **Profit**: Firms earn Revenue ($P \times Q$).
 
-### B. The Financial Loop (Money & Rates)
+### B. The Financial Loop (Money, Rates & Equity)
 1.  **Inflation Sensing**: `Tracker` detects Price ($P$) changes.
 2.  **Monetary Reaction**: `CentralBank` adjusts `Base Rate` ($i$) via Taylor Rule.
     *   $i = r^* + \pi + 0.5(\pi - \pi^*) + 0.5(y)$
 3.  **Transmission**:
     *   `Bank` updates `Deposit Rate` and `Loan Rate`.
-    *   **Households**: If $i - \pi^e > 3\%$, reduce Consumption (Save).
-    *   **Firms**: If Loan Cost > ROI, reduce Borrowing/Investment.
+    *   **Equity Market**: Households allocate to `StockMarket` based on Merton's optimal weight.
+    *   **Portfolio Management**: Assets move across Cash <-> Deposit <-> Equities.
+4.  **Capital Reallocation**: Firms raise cash via `Secondary Offerings` of Treasury shares when liquidity is low.
 
-### C. The Life Cycle (Birth & Death)
+### C. The Life Cycle & Ownership (Birth, death & IPO)
 1.  **Households**:
     *   **Mitosis**: If Assets > Threshold, split (reproduce).
     *   **Death**: If Assets < 0 for too long (Starvation).
 2.  **Firms**:
-    *   **Startup**: Rich Households start new Firms.
-    *   **M&A**: Rich Firms buy Poor Firms.
-    *   **Bankruptcy**: Insolvent Firms are liquidated.
+    *   **Startup & IPO**: Rich Households start new Firms with automatic IPO.
+    *   **Treasury Management**: Firm AI decides whether to sell or buy back shares.
+    *   **M&A**: Rich Firms buy Poor Firms via market transactions.
+    *   **Bankruptcy**: Insolvent Firms are liquidated; shareholders lose value.
 
 ---
 
