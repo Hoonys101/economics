@@ -70,7 +70,6 @@ class EngineType(Enum):
 DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
 
 # --- Initial Agent Configuration ---
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 50.0
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
@@ -323,7 +322,7 @@ AI_GROWTH_REWARD_WEIGHT = 7.0
 AI_WEALTH_REWARD_WEIGHT = 3.0
 
 # --- Genesis: Activation Energy (WO-047: Capital Injection) ---
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 50.0  # 10.0 -> 50.0 (5x Booster)
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0  # 50.0 -> 5000.0 (100x Booster)
 INITIAL_FIRM_CAPITAL_MEAN = 50000.0   # 1000.0 -> 50000.0 (50x Runway for Regulations)
 
 # --- Genesis: Market Flexibility Multipliers ---
