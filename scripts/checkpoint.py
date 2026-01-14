@@ -44,17 +44,25 @@ def main():
     # 3. Insight Accumulation
     print("\n🧐 Step 3: Accumulating Insights & Tech Debt...")
     drafts_dir = BASE_DIR / "design" / "drafts"
-    recent_drafts = sorted(drafts_dir.glob("*.md"), key=os.path.getmtime, reverse=True)[:3]
+    reports_dir = BASE_DIR / "reports"
     
-    if recent_drafts:
-        print(f"   Found {len(recent_drafts)} recent drafts. Merging into Ledger...")
+    # helper to get recent files
+    def get_recent_files(directory, pattern="*.md", limit=3):
+        return sorted(directory.glob(pattern), key=os.path.getmtime, reverse=True)[:limit]
+
+    recent_docs = get_recent_files(drafts_dir) + get_recent_files(reports_dir)
+    # unique files based on path
+    recent_docs = list({p: p for p in recent_docs}.values())
+    
+    if recent_docs:
+        print(f"   Found {len(recent_docs)} recent documents (Drafts/Reports). Merging into Ledger...")
         ledger_path = "design/TECH_DEBT_LEDGER.md"
-        context_for_merge = [str(p.relative_to(BASE_DIR)) for p in recent_drafts]
+        context_for_merge = [str(p.relative_to(BASE_DIR)) for p in recent_docs]
         context_for_merge.append(ledger_path)
         
         instruction = (
-            "Read the recent drafts and the Tech Debt Ledger. "
-            "Extract any 'Insights' or 'Tech Debt' sections from the drafts and APPEND them to the Ledger "
+            "Read the recent drafts/reports and the Tech Debt Ledger. "
+            "Extract any 'Insights', 'Action Items', or 'Refactoring Candidates' and APPEND them to the Ledger "
             "in a structured format. Do not duplicate existing items. "
             "Output the FULL CONTENT of the updated Ledger."
         )
@@ -64,7 +72,7 @@ def main():
         cmd.extend(["--context"] + context_for_merge)
         subprocess.run(cmd, text=True)
     else:
-        print("   No recent drafts found. Skipping accumulation.")
+        print("   No recent documents found. Skipping accumulation.")
 
     # 3.5 Handover Report Auto-Gen (New)
     print("\n🤝 Step 3.5: Generating Handover Report...")
