@@ -556,6 +556,10 @@ MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
 # --- Phase 4: Fiscal Policy ---
 
 # --- Phase 7: Adaptive Fiscal Policy ---
+DEFICIT_SPENDING_ENABLED = True
+DEFICIT_SPENDING_LIMIT_RATIO = 0.30     # Max Debt / GDP Ratio
+EMERGENCY_BUDGET_MULTIPLIER_CAP = 2.0   # 2.0x spending in crisis
+NORMAL_BUDGET_MULTIPLIER_CAP = 1.0      # 1.0x spending in normal times
 GOV_ACTION_INTERVAL = 30                # Actuator silent interval
 FISCAL_SENSITIVITY_ALPHA = 0.5          # Output gap -> fiscal stance conversion
 POTENTIAL_GDP_WINDOW = 50               # Ticks for moving average

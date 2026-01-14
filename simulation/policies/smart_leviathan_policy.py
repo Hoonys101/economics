@@ -90,8 +90,17 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         government.income_tax_rate = max(tax_min, min(tax_max, government.income_tax_rate))
         government.corporate_tax_rate = max(tax_min, min(tax_max, government.corporate_tax_rate))
         
-        # Budget Allocation [10% ~ 100%]
-        budget_min, budget_max = 0.1, 1.0 # Min 10% for baseline survival
+        # Budget Allocation [10% ~ 100% or 200% in emergency]
+        budget_min = getattr(self.config, "BUDGET_ALLOCATION_MIN", 0.1)
+
+        # WO-057-Active: Emergency AI Levers
+        budget_max = getattr(self.config, "NORMAL_BUDGET_MULTIPLIER_CAP", 1.0)
+        if government.sensory_data:
+            is_crisis = (government.sensory_data.gdp_growth_sma < -0.05 or
+                         government.sensory_data.unemployment_sma > 0.10)
+            if is_crisis:
+                budget_max = getattr(self.config, "EMERGENCY_BUDGET_MULTIPLIER_CAP", 2.0)
+
         government.welfare_budget_multiplier = max(budget_min, min(budget_max, government.welfare_budget_multiplier))
         government.firm_subsidy_budget_multiplier = max(budget_min, min(budget_max, government.firm_subsidy_budget_multiplier))
 

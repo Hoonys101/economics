@@ -280,8 +280,23 @@ class Government:
         if effective_amount <= 0:
             return 0.0
 
-        if not getattr(self.config_module, "GOVERNMENT_STIMULUS_ENABLED", True):
-            return 0.0
+        if not getattr(self.config_module, "DEFICIT_SPENDING_ENABLED", False):
+            if self.assets < effective_amount:
+                return 0.0
+        else:
+            # WO-057-Active: Debt Ceiling Logic
+            if self.sensory_data and self.sensory_data.current_gdp > 0:
+                limit_ratio = getattr(self.config_module, "DEFICIT_SPENDING_LIMIT_RATIO", 0.3)
+                debt_limit = self.sensory_data.current_gdp * limit_ratio
+
+                projected_assets = self.assets - effective_amount
+
+                if abs(projected_assets) > debt_limit and projected_assets < 0:
+                    logger.warning(
+                        f"FISCAL_CLIFF_REACHED | Spending blocked. Debt {abs(self.assets):.2f} vs Limit {debt_limit:.2f}",
+                        extra={"tick": current_tick, "agent_id": self.id, "tags": ["fiscal_cliff", "deficit"]}
+                    )
+                    return 0.0
 
         self.assets -= effective_amount
         self.total_spent_subsidies += effective_amount
@@ -428,6 +443,21 @@ class Government:
         # If multiplier < 1.0 (Austerity), maybe we skip investment?
         if self.firm_subsidy_budget_multiplier < 0.8:
             return False
+
+        # WO-057-Active CRITICAL FIX: Apply Debt Ceiling to Infrastructure
+        if getattr(self.config_module, "DEFICIT_SPENDING_ENABLED", False):
+            if self.sensory_data and self.sensory_data.current_gdp > 0:
+                limit_ratio = getattr(self.config_module, "DEFICIT_SPENDING_LIMIT_RATIO", 0.3)
+                debt_limit = self.sensory_data.current_gdp * limit_ratio
+                projected_assets = self.assets - effective_cost
+                if abs(projected_assets) > debt_limit and projected_assets < 0:
+                    logger.warning(
+                        f"FISCAL_CLIFF_REACHED | Infrastructure investment blocked. Debt {abs(self.assets):.2f} vs Limit {debt_limit:.2f}",
+                        extra={"tick": current_tick, "agent_id": self.id, "tags": ["fiscal_cliff", "deficit"]}
+                    )
+                    return False
+        elif self.assets < effective_cost:
+            return False # Fallback to old behavior if deficit spending is off
 
         self.assets -= effective_cost
         self.total_money_issued += effective_cost
