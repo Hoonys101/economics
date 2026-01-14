@@ -142,7 +142,23 @@ class EconomicIndicatorTracker:
         if total_volume > 0:
             record["avg_goods_price"] = weighted_price_sum / total_volume
         else:
-            record["avg_goods_price"] = 0.0
+            # Fallback: 거래가 없을 때도 호가(Current Price)나 기준가(Avg Price)를 반영
+            fallback_prices = []
+            for market_id, market in markets.items():
+                if market_id in ["labor", "loan_market", "stock_market", "housing"]:
+                    continue
+                # 우선순위: 1. current_price (현재 호가/체결가), 2. avg_price (엔진 강제값)
+                price = getattr(market, "current_price", None)
+                if price is None or price <= 0:
+                    price = getattr(market, "avg_price", 0.0)
+                
+                if price > 0:
+                    fallback_prices.append(price)
+
+            if fallback_prices:
+                record["avg_goods_price"] = sum(fallback_prices) / len(fallback_prices)
+            else:
+                record["avg_goods_price"] = 0.0
 
         # ... other metric calculations ...
         total_production = sum(
