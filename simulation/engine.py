@@ -926,7 +926,7 @@ class Simulation:
         self._handle_agent_lifecycle()
 
         # Entrepreneurship Check (Spawn new firms if needed)
-        self.firm_system.check_entrepreneurship(self)
+        self.firm_system.check_entrepreneurship(self, self.tracker)
 
         # Phase 5: Finalize Government Stats for the tick
         self.government.finalize_tick(self.time)

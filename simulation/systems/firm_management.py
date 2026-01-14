@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from simulation.engine import Simulation
     from simulation.core_agents import Household
     from simulation.firms import Firm
+    from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,13 @@ class FirmSystem:
 
         # 1. Capital Deduction
         if founder_household.assets < startup_cost:
-            return None
-        founder_household.assets -= startup_cost
+            # For CPR, we allow government to be the founder, and it has infinite assets
+            if founder_household.id != getattr(simulation.government, 'id', -1):
+                 return None
+
+        if founder_household.id != getattr(simulation.government, 'id', -1):
+            founder_household.assets -= startup_cost
+
 
         # 2. Generate New Firm ID
         max_id = max([a.id for a in simulation.agents.values()], default=0)
@@ -113,10 +119,32 @@ class FirmSystem:
         )
         return new_firm
 
-    def check_entrepreneurship(self, simulation: "Simulation"):
+    def check_entrepreneurship(self, simulation: "Simulation", tracker: "EconomicIndicatorTracker"):
         """
         Checks entrepreneurship conditions and spawns new firms.
+        Includes Economic CPR logic to bootstrap a collapsed economy.
         """
+        enable_cpr = getattr(self.config, "ENABLE_ECONOMIC_CPR", False)
+
+        # --- Economic CPR Logic ---
+        if enable_cpr:
+            cpr_unemployment_threshold = getattr(self.config, "CPR_UNEMPLOYMENT_THRESHOLD", 0.25)
+            latest_indicators = tracker.get_latest_indicators()
+            current_unemployment = latest_indicators.get("unemployment_rate", 0.0)
+
+            if current_unemployment > cpr_unemployment_threshold:
+                batch_size = getattr(self.config, "CPR_FIRM_CREATION_BATCH_SIZE", 5)
+                logger.warning(
+                    f"ECONOMIC_CPR_TRIGGERED | Unemployment at {current_unemployment:.2%} > "
+                    f"{cpr_unemployment_threshold:.2%}. Spawning {batch_size} new firms."
+                )
+                # Use the government as a "founder" to inject capital without taking it from a household
+                # This simulates a government stimulus/bailout program
+                for _ in range(batch_size):
+                    self.spawn_firm(simulation, simulation.government)
+                return # CPR takes precedence over regular entrepreneurship this tick
+
+        # --- Standard Entrepreneurship Logic ---
         min_firms = getattr(self.config, "MIN_FIRMS_THRESHOLD", 5)
         startup_cost = getattr(self.config, "STARTUP_COST", 15000.0)
         spirit = getattr(self.config, "ENTREPRENEURSHIP_SPIRIT", 0.05)

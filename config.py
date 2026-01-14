@@ -740,3 +740,8 @@ TARGET_UNEMPLOYMENT_RATE = 0.04   # 4%
 GOV_ACTION_INTERVAL = 30          # 의사결정 주기 (30틱 = 1개월)
 RL_LEARNING_RATE = 0.1
 RL_DISCOUNT_FACTOR = 0.95
+
+# --- Phase 25: Economic CPR Bootstrapper (WO-058) ---
+ENABLE_ECONOMIC_CPR = True
+CPR_UNEMPLOYMENT_THRESHOLD = 0.25   # 25% unemployment triggers CPR
+CPR_FIRM_CREATION_BATCH_SIZE = 5      # Create 5 firms at once
