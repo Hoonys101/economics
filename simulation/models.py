@@ -42,6 +42,7 @@ class StockOrder:
     firm_id: int           # 대상 기업 ID
     quantity: float        # 주문 수량
     price: float           # 호가 (주당 가격)
+    market_id: str = "stock_market"
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
 
 

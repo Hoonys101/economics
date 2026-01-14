@@ -107,6 +107,9 @@ class FirmSystem:
         simulation.agents[new_firm.id] = new_firm
         simulation.ai_training_manager.agents.append(new_firm)
 
+        if simulation.stock_market:
+            new_firm.init_ipo(simulation.stock_market)
+
         logger.info(
             f"STARTUP | Household {founder_household.id} founded Firm {new_firm_id} "
             f"(Specialization: {specialization}, Capital: {startup_cost})"

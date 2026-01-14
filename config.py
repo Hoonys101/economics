@@ -509,7 +509,7 @@ AI_MIN_PRICE_FLOOR = 0.1            # AI가 설정 가능한 최저 가격 하�
 
 # --- 기본 설정 ---
 STOCK_MARKET_ENABLED = True         # 주식 시장 활성화 여부
-STOCK_PRICE_LIMIT_RATE = 0.10       # 일일 가격 변동폭 제한 (±10%)
+STOCK_PRICE_LIMIT_RATE = 0.15       # 일일 가격 변동폭 제한 (±15%) Circuit Breaker
 
 # --- 주가 결정 방식 ---
 STOCK_PRICE_METHOD = "book_value"   # "book_value" 또는 "market_price"
@@ -525,6 +525,13 @@ HOUSEHOLD_INVESTMENT_BUDGET_RATIO = 0.2  # 자산 대비 최대 투자 비율
 HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0  # 투자를 위한 최소 자산
 STOCK_SELL_PROFIT_THRESHOLD = 0.15  # 매도 고려 수익률 임계값 (15%)
 STOCK_BUY_DISCOUNT_THRESHOLD = 0.10 # 매수 고려 할인율 임계값 (10%)
+STOCK_INVESTMENT_DIVERSIFICATION_COUNT = 3 # Number of stocks to diversify into
+STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD = 10.0 # Threshold for buy/sell decisions based on portfolio optimization
+
+# --- IPO / SEO ---
+IPO_INITIAL_SHARES = 1000.0
+SEO_TRIGGER_RATIO = 0.5              # Trigger SEO when assets < STARTUP_COST * ratio
+SEO_MAX_SELL_RATIO = 0.10            # Max 10% of treasury per tick
 
 # --- Phase 3.1: Government & Taxation ---
 INCOME_TAX_RATE = 0.0                 # Laissez-Faire: Zero Tax

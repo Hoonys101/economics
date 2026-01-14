@@ -4,10 +4,11 @@ import logging
 import random
 import math
 
-from simulation.models import Order
+from simulation.models import Order, StockOrder
 from simulation.schemas import FirmActionVector
 from simulation.dtos import DecisionContext
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
+from simulation.markets.stock_market import StockMarket
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -100,7 +101,49 @@ class CorporateManager:
         hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data)
         orders.extend(hiring_orders)
 
+        # 7. Secondary Offering (SEO)
+        seo_order = self._attempt_secondary_offering(firm, context)
+        if seo_order:
+            orders.append(seo_order)
+
         return orders
+
+    def _attempt_secondary_offering(self, firm: Firm, context: DecisionContext) -> Optional[StockOrder]:
+        """Sell treasury shares to raise capital when cash is low."""
+        startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
+        trigger_ratio = getattr(self.config_module, "SEO_TRIGGER_RATIO", 0.5)
+
+        if firm.assets >= startup_cost * trigger_ratio:
+            return None
+        if firm.treasury_shares <= 0:
+            return None
+
+        stock_market = context.markets.get("stock_market")
+        if not stock_market or not isinstance(stock_market, StockMarket):
+            return None
+
+        max_sell_ratio = getattr(self.config_module, "SEO_MAX_SELL_RATIO", 0.10)
+        sell_qty = min(firm.treasury_shares * max_sell_ratio, firm.treasury_shares)
+
+        if sell_qty < 1.0:
+            return None
+
+        price = stock_market.get_stock_price(firm.id)
+        if price is None or price <= 0:
+            price = firm.get_book_value_per_share()
+
+        if price <= 0:
+            return None
+
+        order = StockOrder(
+            agent_id=firm.id,
+            firm_id=firm.id,
+            order_type="SELL",
+            quantity=sell_qty,
+            price=price
+        )
+        self.logger.info(f"SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}")
+        return order
 
     def _manage_procurement(self, firm: Firm, market_data: Dict[str, Any], markets: Dict[str, Any]) -> List[Order]:
         """
