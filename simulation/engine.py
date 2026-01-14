@@ -30,6 +30,7 @@ from simulation.systems.housing_system import HousingSystem # Phase 22.5
 from simulation.systems.persistence_manager import PersistenceManager # Phase 22.5
 from simulation.systems.firm_management import FirmSystem # Phase 22.5
 from simulation.systems.technology_manager import TechnologyManager # Phase 23 (WO-053)
+from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.systems.transaction_processor import TransactionProcessor # SoC Refactor
@@ -225,6 +226,9 @@ class Simulation:
 
         # Phase 23: Technology Manager
         self.technology_manager = TechnologyManager(config_module=self.config_module, logger=self.logger)
+
+        # WO-058: Generational Wealth Audit
+        self.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config_module)
 
         # WO-051: Vectorized Planner Initialization
         self.breeding_planner = VectorizedHouseholdPlanner(self.config_module)
@@ -975,6 +979,10 @@ class Simulation:
                  self.logger.warning(msg, extra=extra_data)
             else:
                  self.logger.info(msg, extra=extra_data)
+
+        # WO-058: Generational Wealth Audit
+        if self.time % 100 == 0:
+             self.generational_wealth_audit.run_audit(self.households, self.time)
 
         self.logger.info(
             f"--- Ending Tick {self.time} ---",
