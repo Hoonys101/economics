@@ -30,6 +30,7 @@ from simulation.systems.housing_system import HousingSystem # Phase 22.5
 from simulation.systems.persistence_manager import PersistenceManager # Phase 22.5
 from simulation.systems.firm_management import FirmSystem # Phase 22.5
 from simulation.systems.technology_manager import TechnologyManager # Phase 23 (WO-053)
+from simulation.systems.bootstrapper import Bootstrapper # WO-058
 from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
@@ -226,6 +227,10 @@ class Simulation:
 
         # Phase 23: Technology Manager
         self.technology_manager = TechnologyManager(config_module=self.config_module, logger=self.logger)
+
+        # [WO-058] Bootstrapper Injection (Economic CPR)
+        # Ensure firms have resources to start production
+        Bootstrapper.inject_initial_liquidity(self.firms, self.config_module)
 
         # WO-058: Generational Wealth Audit
         self.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config_module)
