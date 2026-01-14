@@ -133,19 +133,20 @@ def run_simulation(ticks: int, overrides: dict = None):
     simulation.finalize_simulation()
     
     # Report
-    with open("reports/iron_test_phase21_result.md", "w") as f:
-        f.write(f"# Iron Test Phase 21 Result\n\n")
-        f.write(f"## Summary\n")
-        f.write(f"- Ticks: {ticks}\n")
-        f.write(f"- Final Population: {final_pop}\n")
-        f.write(f"- Final GDP: {final_gdp:.2f}\n")
-        f.write(f"- Avg Labor Share: {avg_labor_share:.1%}\n")
-        f.write(f"- Max Unemployment: {max_unemployment:.1%}\n")
-        f.write(f"- Automation Cost: {getattr(config, 'AUTOMATION_COST_PER_PCT', 'N/A')}\n")
-        f.write(f"- Labor Reduction: {getattr(config, 'AUTOMATION_LABOR_REDUCTION', 'N/A')}\n")
-        f.write(f"\n## Verdict: {'PASS' if passed else 'FAIL'}\n")
-        if not passed:
-            f.write(f"**Reason**: {failure_reason}\n")
+    # Report Generation Disabled for Git Safety
+    # with open("reports/iron_test_phase21_result.md", "w") as f:
+    #     f.write(f"# Iron Test Phase 21 Result\n\n")
+    #     f.write(f"## Summary\n")
+    #     f.write(f"- Ticks: {ticks}\n")
+    #     f.write(f"- Final Population: {final_pop}\n")
+    #     f.write(f"- Final GDP: {final_gdp:.2f}\n")
+    #     f.write(f"- Avg Labor Share: {avg_labor_share:.1%}\n")
+    #     f.write(f"- Max Unemployment: {max_unemployment:.1%}\n")
+    #     f.write(f"- Automation Cost: {getattr(config, 'AUTOMATION_COST_PER_PCT', 'N/A')}\n")
+    #     f.write(f"- Labor Reduction: {getattr(config, 'AUTOMATION_LABOR_REDUCTION', 'N/A')}\n")
+    #     f.write(f"\n## Verdict: {'PASS' if passed else 'FAIL'}\n")
+    #     if not passed:
+    #         f.write(f"**Reason**: {failure_reason}\n")
 
     logger.info(f"Test Complete. Verdict: {'PASS' if passed else 'FAIL'} | TPS: {tps:.2f}")
 
