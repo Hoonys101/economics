@@ -345,6 +345,7 @@ class MacroFinancialContext:
     """
     WO-062: Macro-Linked Portfolio Decisions.
     Transfers macro financial data to portfolio decision modules.
+    This DTO is activated by the MACRO_PORTFOLIO_ADJUSTMENT_ENABLED flag.
     """
     inflation_rate: float
     gdp_growth_rate: float
