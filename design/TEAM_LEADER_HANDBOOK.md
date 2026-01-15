@@ -32,6 +32,12 @@
 
 ## 📋 IF-THEN 업무 지침
 
+### 막혔을 때
+```
+IF 작업 중 문제 발생
+THEN 먼저 읽을 문서: design/TROUBLESHOOTING.md
+```
+
 ### 세션 시작 시
 ```
 IF 새 세션 시작
