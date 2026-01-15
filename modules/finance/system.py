@@ -25,7 +25,7 @@ class FinanceSystem(IFinanceSystem):
             # Runway Check for startups
             monthly_wage_bill = firm.hr.get_total_wage_bill() * 4  # Approximate monthly
             required_runway = monthly_wage_bill * 3
-            return firm.assets >= required_runway
+            return firm.cash_reserve >= required_runway
         else:
             # Altman Z-Score for established firms
             z_score = firm.finance.calculate_altman_z_score()
@@ -33,34 +33,46 @@ class FinanceSystem(IFinanceSystem):
 
     def issue_treasury_bonds(self, amount: float, current_tick: int) -> List[BondDTO]:
         """
-        Issues new treasury bonds to the market.
-        Yield is determined by the base rate plus a risk premium based on Debt-to-GDP ratio.
+        Issues new treasury bonds to the market, allowing for crowding out.
+        The Central Bank only intervenes if yields exceed a critical threshold.
         """
-        # This is a simplified auction. A real implementation would involve market participants.
         base_rate = self.central_bank.get_interest_rate()
         debt_to_gdp = self.government.get_debt_to_gdp_ratio()
 
-        # Exponential risk premium
+        # Config-driven risk premium tiers
+        risk_premium_tiers = getattr(self.config_module, "DEBT_RISK_PREMIUM_TIERS", {
+            1.2: 0.05,
+            0.9: 0.02,
+            0.6: 0.005,
+        })
+
         risk_premium = 0.0
-        if debt_to_gdp > 1.2:
-            risk_premium = 0.05
-        elif debt_to_gdp > 0.9:
-            risk_premium = 0.02
-        elif debt_to_gdp > 0.6:
-            risk_premium = 0.005
+        for threshold, premium in sorted(risk_premium_tiers.items(), reverse=True):
+            if debt_to_gdp > threshold:
+                risk_premium = premium
+                break
 
         yield_rate = base_rate + risk_premium
 
-        # For now, assume the central bank buys all bonds as the buyer of last resort
+        bond_maturity = getattr(self.config_module, "BOND_MATURITY_TICKS", 400)
         new_bond = BondDTO(
             id=f"BOND_{current_tick}",
             issuer="GOVERNMENT",
             face_value=amount,
             yield_rate=yield_rate,
-            maturity_date=current_tick + getattr(self.config_module, "BOND_MATURITY_TICKS", 400) # 4 years
+            maturity_date=current_tick + bond_maturity
         )
+
+        qe_threshold = getattr(self.config_module, "QE_INTERVENTION_YIELD_THRESHOLD", 0.10)
+        if yield_rate > qe_threshold:
+            # Central Bank intervenes as buyer of last resort
+            self.central_bank.purchase_bonds(new_bond)
+        else:
+            # Bonds are sold to the market (households and firms), "crowding out" private investment.
+            # This is a simplified model; in a real simulation, this would involve an auction.
+            pass
+
         self.outstanding_bonds.append(new_bond)
-        self.central_bank.purchase_bonds(new_bond)
         self.government.assets += amount
 
         return [new_bond]
@@ -76,7 +88,8 @@ class FinanceSystem(IFinanceSystem):
             interest_rate=base_rate + penalty_premium,
             covenants={
                 "dividends_allowed": False,
-                "executive_salary_freeze": True
+                "executive_salary_freeze": True,
+                "mandatory_repayment": 0.5
             }
         )
 

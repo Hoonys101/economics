@@ -134,6 +134,7 @@ class Firm(BaseAgent):
         self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
 
         self.age = 0
+        self.cash_reserve = initial_capital
         self.decision_engine.loan_market = loan_market
 
     def init_ipo(self, stock_market: StockMarket):
