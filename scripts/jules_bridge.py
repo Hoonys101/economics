@@ -14,11 +14,14 @@ from enum import Enum
 import logging
 from pathlib import Path
 
+# Configuration
+BASE_DIR = Path(__file__).parent.parent
+
 # Load .env file
 try:
     from dotenv import load_dotenv
     # Find .env in project root
-    env_path = Path(__file__).parent.parent / ".env"
+    env_path = BASE_DIR / ".env"
     load_dotenv(env_path)
 except ImportError:
     pass  # dotenv not installed, rely on system env vars
@@ -26,7 +29,6 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("JulesBridge")
 
-# Configuration
 JULES_API_BASE = "https://jules.googleapis.com/v1alpha"
 JULES_API_KEY = os.getenv("JULES_API_KEY")
 
@@ -230,12 +232,54 @@ class JulesBridge:
         logger.warning("Timed out waiting for agent response.")
         return None
 
+    def sync_git(self, title: str) -> bool:
+        """
+        Auto-push latest changes to ensure Jules gets fresh code.
+        Returns True if successful.
+        """
+        import subprocess
+        print(f"📦 Syncing Git changes for task: {title}...")
+        try:
+            # Check if there are changes to commit
+            status_result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True, text=True, cwd=BASE_DIR
+            )
+            if status_result.stdout.strip():
+                # There are uncommitted changes
+                subprocess.run(["git", "add", "."], cwd=BASE_DIR, check=True)
+                subprocess.run(
+                    ["git", "commit", "-m", f"chore: Pre-Jules dispatch for {title}"],
+                    cwd=BASE_DIR, check=True
+                )
+                print("   ✅ Changes committed")
+            else:
+                print("   ℹ️ No uncommitted changes")
+            
+            # Always push to ensure remote is up-to-date
+            push_result = subprocess.run(
+                ["git", "push"],
+                capture_output=True, text=True, cwd=BASE_DIR
+            )
+            if push_result.returncode == 0:
+                print("   ✅ Pushed to remote")
+                return True
+            else:
+                print(f"   ⚠️ Push warning: {push_result.stderr.strip()}")
+                return False
+        except subprocess.CalledProcessError as e:
+            print(f"   ⚠️ Git operation failed: {e}")
+            return False
+        except FileNotFoundError:
+            print("   ⚠️ Git not found")
+            return False
+
 
 # =============================================================================
 # Session Registry (team_assignments.json 자동 관리)
 # =============================================================================
 
-REGISTRY_PATH = Path(__file__).parent.parent / "communications" / "team_assignments.json"
+REGISTRY_PATH = BASE_DIR / "communications" / "team_assignments.json"
 
 def _load_registry() -> Dict:
     if REGISTRY_PATH.exists():
@@ -353,6 +397,7 @@ if __name__ == "__main__":
         print("  python jules_bridge.py list-sources")
         print("  python jules_bridge.py list-sessions")
         print("  python jules_bridge.py create <title> <prompt>")
+        print("  python jules_bridge.py sync-git <title>")
         print("  python jules_bridge.py status <session_id>")
         sys.exit(1)
     
@@ -376,48 +421,18 @@ if __name__ == "__main__":
         title = sys.argv[2]
         prompt = sys.argv[3]
         
-        # Auto-push before creating session (ensures Jules gets latest code)
-        import subprocess
-        print("📦 Auto-pushing latest changes to ensure Jules gets fresh code...")
-        try:
-            # Check if there are changes to commit
-            status_result = subprocess.run(
-                ["git", "status", "--porcelain"],
-                capture_output=True, text=True, cwd=Path(__file__).parent.parent
-            )
-            if status_result.stdout.strip():
-                # There are uncommitted changes
-                subprocess.run(
-                    ["git", "add", "."],
-                    cwd=Path(__file__).parent.parent, check=True
-                )
-                subprocess.run(
-                    ["git", "commit", "-m", f"chore: Pre-Jules dispatch for {title}"],
-                    cwd=Path(__file__).parent.parent, check=True
-                )
-                print("   ✅ Changes committed")
-            else:
-                print("   ℹ️ No uncommitted changes")
-            
-            # Always push to ensure remote is up-to-date
-            push_result = subprocess.run(
-                ["git", "push"],
-                capture_output=True, text=True, cwd=Path(__file__).parent.parent
-            )
-            if push_result.returncode == 0:
-                print("   ✅ Pushed to remote")
-            else:
-                print(f"   ⚠️ Push warning: {push_result.stderr.strip()}")
-        except subprocess.CalledProcessError as e:
-            print(f"   ⚠️ Git operation failed: {e} (continuing anyway)")
-        except FileNotFoundError:
-            print("   ⚠️ Git not found (continuing anyway)")
+        # Auto-sync Git
+        bridge.sync_git(title)
         
         session = bridge.create_session(prompt=prompt, title=title)
         register_session(session.id, title)  # 자동 등록
-        print(f"Session created: {session.id}")
-        print(f"Name: {session.name}")
-        print(f"Registered to team_assignments.json")
+        print(f"✅ Session created: {session.id}")
+        print(f"✅ Name: {session.name}")
+        print(f"✅ Registered to team_assignments.json")
+
+    elif command == "sync-git" and len(sys.argv) >= 3:
+        title = sys.argv[2]
+        bridge.sync_git(title)
     
     elif command == "status" and len(sys.argv) >= 3:
         session_id = sys.argv[2]

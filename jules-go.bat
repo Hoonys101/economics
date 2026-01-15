@@ -24,8 +24,8 @@ set PYTHONIOENCODING=utf-8
 ::
 :: ==============================================================================
 :: [CURRENT CONTEXT]
-:: Target: TD-024 (Pytest Path Fix) - Phase 26 Pre-requisite
-:: Action: Jules Warm-up Task
+:: Target: WO-072 (Sovereign Debt)
+:: Action: Logic Review & Correction Dispatch
 :: ==============================================================================
 set PYTHONIOENCODING=utf-8
 
@@ -33,13 +33,13 @@ if not exist "communications\jules_logs" (
     mkdir "communications\jules_logs"
 )
 
-echo [Jules-Bridge] Creating TD-024 session...
+echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: WO-072 (Phase 26.5)
-:: Action: Implement Sovereign Debt & Bailout Finance System
-python scripts/jules_bridge.py create "WO-072: Sovereign Debt & Financial Credit" "Mission: '공짜 점심'의 시대를 끝내고 부채 기반의 책임 경제를 구축하라. Reference: design/specs/SOVEREIGN_DEBT_SPEC.md. Tasks: 1) modules/finance/api.py에 DTO 및 인터페이스 정의. 2) Altman Z-Score 기반 솔벤시 체크 구현 (Startup Grace Period 준수). 3) 국채 발행 및 시장 금리 형성 로직 구현. 4) 구제금융을 보조금에서 이자부 대출로 전환하라. Success Criteria: Z-Score 1.81 미만의 좀비 기업 퇴출 및 국채 금리에 따른 자금 위축(Crowding out) 증명. Reporting: insights/에 mass liquidation 리스크 보고." > communications\jules_logs\last_run.md 2>&1
+:: Target: WO-072 (Sovereign Debt) - Action: Core Logic Correction
+:: 리뷰 결과(QE 조건, 상환 규약, 하드코딩)를 바탕으로 로직 수정을 지시합니다.
+python scripts/jules_bridge.py send-message 7617648577093442794 "Review complete. I have identified 3 critical logic gaps in your WIP PR. Prioritize fixing these before worrying about the unit tests: 1) QE Violation: Limit Central Bank intervention only when yields exceed 10%. Currently, you are masking the Crowding Out effect. 2) Missing Covenant: Implement mandatory repayment (50% of profit) in the bailout loan logic. 3) New Hardcoding Debt: Refactor static bond maturity and risk premium tiers to use config constants. See 'design/gemini_output/pr_review_sovereign-debt-wip-7617648577093442794.md' for details. Fix the heart of the system first." > communications\jules_logs\last_run.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.

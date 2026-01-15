@@ -47,11 +47,12 @@ THEN 읽을 문서:
   - design/HANDOVER_*.md (직전 세션 인수인계)
 ```
 
-### 기획/명세 작성 시
+### 기획/명세/감사 시
 ```
-IF Spec 또는 Work Order 작성 필요
+IF Spec/Work Order 작성 또는 코드 감사(Audit) 필요
 THEN 도구: .\gemini-go.bat
-     출력: design/gemini_output/spec_draft.md
+     기능: 파일 뿐만 아니라 <<디렉토리>> 컨텍스트 주입 가능
+     출력: design/gemini_output/spec_draft.md (또는 지정된 파일)
 ```
 
 ### Jules 작업 발주 시

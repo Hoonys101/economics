@@ -41,17 +41,27 @@ class BaseGeminiWorker(ABC):
         context_block = ""
         if context_files:
             context_block += "\n\n[Context Files]\n"
-            for file_path in context_files:
-                path = BASE_DIR / file_path
-                if path.exists():
-                    try:
-                        content = path.read_text(encoding='utf-8')
-                        context_block += f"\nFile: {file_path}\n```\n{content}\n```\n"
-                        print(f"📖 Attached context: {file_path}")
-                    except Exception as e:
-                        print(f"⚠️ Failed to read context file {file_path}: {e}")
+            expanded_files = []
+            for item in context_files:
+                path = BASE_DIR / item
+                if path.is_dir():
+                    # If it's a directory, add all .py files within it
+                    for py_file in path.glob("**/*.py"):
+                        expanded_files.append(py_file.relative_to(BASE_DIR))
                 else:
-                    print(f"⚠️ Context file not found: {file_path}")
+                    expanded_files.append(Path(item))
+
+            for rel_path in expanded_files:
+                abs_path = BASE_DIR / rel_path
+                if abs_path.exists() and abs_path.is_file():
+                    try:
+                        content = abs_path.read_text(encoding='utf-8')
+                        context_block += f"\nFile: {rel_path}\n```\n{content}\n```\n"
+                        print(f"📖 Attached context: {rel_path}")
+                    except Exception as e:
+                        print(f"⚠️ Failed to read context file {rel_path}: {e}")
+                else:
+                    print(f"⚠️ Context file not found or is not a file: {rel_path}")
 
         full_input = f"{system_prompt}{context_block}\n\n---\n\n{instruction}"
 
@@ -271,6 +281,11 @@ def main():
     validator_parser.add_argument("instruction", help="Instruction for the validator")
     validator_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
 
+    # Auditor (Uses Reporter logic)
+    auditor_parser = subparsers.add_parser("audit", help="Identify technical debt and patterns")
+    auditor_parser.add_argument("instruction", help="Instruction for the auditor")
+    auditor_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+
     args = parser.parse_args()
 
     try:
@@ -279,7 +294,8 @@ def main():
             "git": GitOperator,
             "reporter": Reporter,
             "context": ContextManager,
-            "verify": Validator
+            "verify": Validator,
+            "audit": Reporter
         }
         
         if args.worker_type in worker_map:

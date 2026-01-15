@@ -7,12 +7,13 @@ set PYTHONIOENCODING=utf-8
 :: Gemini-CLI HITL 2.0: Spec Drafting
 :: ==============================================================================
 ::
-:: +-------------------------------------------------------------------------+
-:: |  ANTIGRAVITY SELF-REFERENCE MANUAL                                      |
-:: |  Available workers: spec, git, verify, context, scribe                  |
-:: |  Usage: python scripts/gemini_worker.py <worker> "<instruction>" -c ... |
-:: |  OUTPUT: design\gemini_output\spec_draft.md                             |
-:: +-------------------------------------------------------------------------+
+:: +-----------------------------------------------------------------------------+
+:: |  ANTIGRAVITY SELF-REFERENCE MANUAL                                          |
+:: |  Available workers: spec, git, verify, context, scribe, audit               |
+:: |  Usage: python scripts/gemini_worker.py <worker> "<instruction>" -c ...     |
+:: |  << DIR CONTEXT >>: Dir path is allowed for -c (Auto-recurse all .py)       |
+:: |  OUTPUT: design\gemini_output\spec_draft.md (or designated file)            |
+:: +-----------------------------------------------------------------------------+
 ::
 :: ==============================================================================
 :: [CURRENT CONTEXT]
@@ -29,14 +30,14 @@ echo [Gemini-CLI] Drafting spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: Phase 26.5 Sovereign Debt & Bailout Refactor
-:: Task: Create Zero-Question Spec for National Debt and Loan-based CPR
+:: Target: Technical Debt Audit (Hardcoded/Rule-based)
+:: Task: Identify all magic numbers and rigid heuristics.
 
-python scripts/gemini_worker.py spec "Task: Create a detailed specification for 'Sovereign Debt & Corporate Bailout System'. Context: Currently, bailouts are free grants. We need to convert them to Senior Debt Loans and introduce Government Bonds (Sovereign Debt) to bridge fiscal deficits. Key Requirements: 1) CPR Refactor: AS-IS Grants -> TO-BE Interest-bearing Loans. Covenants: No dividends and executive salary freeze for debtors. 2) Solvency Check: Simplified Altman Z-Score (LiquidAssets, RetainedEarnings) to filter 'Zombie Firms'. 3) Bond Issuance: Market-driven bond yields acting as a benchmark. Roles of Banks, Households, and CB (QE). Include: Data structures (BondDTO, BailoutLoanDTO), pseudo-code for eligibility/issuance logic, and Phase 26 integration. Output: Markdown format." -c simulation/agents/government.py simulation/systems/bootstrapper.py simulation/agents/firm.py > design\gemini_output\spec_draft.md 2>&1
+python scripts/gemini_worker.py audit "Task: Identify all hardcoded magic numbers and rule-based heuristics across the codebase. Focus: 1) config.py: Arbitrary constants. 2) simulation/agents/: Hardcoded thresholds, fixed rates, and deterministic if/else decision logic. 3) simulation/systems/: Rigid formulas that should be adaptive. Output: A detailed list of Technical Debts (TD-XXX) with file paths, code snippets, and why they require re-planning for 'Adaptive AI Migration'." -c simulation/ config.py > design\gemini_output\audit_hardcoded_debt.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Spec drafting failed.
+    echo [ERROR] Gemini task execution failed. Check logs.
 ) else (
-    echo [SUCCESS] Spec draft saved to design\gemini_output\spec_draft.md
+    echo [SUCCESS] Gemini task completed successfully. Check design\gemini_output\
 )
 endlocal
