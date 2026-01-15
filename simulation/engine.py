@@ -528,10 +528,6 @@ class Simulation:
         # 4. Election Check
         self.government.check_election(self.time)
 
-        # Age firms
-        for firm in self.firms:
-            firm.age += 1
-
         # Service national debt
         self.finance_system.service_debt(self.time)
 
@@ -760,7 +756,7 @@ class Simulation:
 
         # --- Phase 19: Population Dynamics ---
         # 1. Aging
-        self.demographic_manager.process_aging(self.households, self.time)
+        self.demographic_manager.process_aging(self.households + self.firms, self.time)
 
         # 2. Reproduction Decision (Vectorized WO-051)
         birth_requests = []

@@ -756,3 +756,4 @@ RL_DISCOUNT_FACTOR = 0.95
 # Phase 26: Macro-Linked Portfolio (WO-062)
 # ==============================================================================
 MACRO_PORTFOLIO_ADJUSTMENT_ENABLED = True
+BAILOUT_REPAYMENT_RATIO = 0.5

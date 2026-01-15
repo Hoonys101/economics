@@ -94,7 +94,7 @@ class FinanceSystem(IFinanceSystem):
             covenants={
                 "dividends_allowed": False,
                 "executive_salary_freeze": True,
-                "mandatory_repayment": 0.5
+                "mandatory_repayment": getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
             }
         )
 

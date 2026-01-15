@@ -613,7 +613,7 @@ class Firm(BaseAgent):
 
     def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
         # SoC Refactor
-        return self.finance.distribute_dividends(households, current_time)
+        return self.finance.process_profit_distribution(households, current_time)
 
     @override
     def get_agent_data(self) -> Dict[str, Any]:

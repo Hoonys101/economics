@@ -274,7 +274,10 @@ class Government:
 
         if self.assets < effective_amount:
             needed = effective_amount - self.assets
-            self.finance_system.issue_treasury_bonds(needed, current_tick)
+            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
+            if not issued_bonds:
+                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
+                return 0.0
 
         self.assets -= effective_amount
         self.total_spent_subsidies += effective_amount
@@ -425,7 +428,10 @@ class Government:
 
         if self.assets < effective_cost:
             needed = effective_cost - self.assets
-            self.finance_system.issue_treasury_bonds(needed, current_tick)
+            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
+            if not issued_bonds:
+                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                return False
 
         self.assets -= effective_cost
         self.expenditure_this_tick += effective_cost
