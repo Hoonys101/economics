@@ -16,6 +16,7 @@ def mock_config():
     config.QE_INTERVENTION_YIELD_THRESHOLD = 0.10
     config.BAILOUT_PENALTY_PREMIUM = 0.05
     config.BAILOUT_REPAYMENT_RATIO = 0.5
+    config.TICKS_PER_YEAR = 48
     return config
 
 @pytest.fixture
@@ -108,3 +109,41 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
     assert loan.covenants["mandatory_repayment"] == mock_config.BAILOUT_REPAYMENT_RATIO
     assert mock_government.assets == initial_gov_assets - amount
     mock_firm.finance.add_liability.assert_called_once_with(amount, loan.interest_rate)
+
+def test_service_debt_central_bank_repayment(finance_system, mock_government, mock_central_bank, mock_config):
+    """
+    Verify that when a bond held by the Central Bank matures, the repayment
+    is correctly credited to the Central Bank's assets, preventing the
+    "money destruction" bug.
+    """
+    # 1. Setup: Issue a bond that will be bought by the Central Bank via QE
+    mock_government.get_debt_to_gdp_ratio.return_value = 1.5
+    mock_central_bank.get_base_rate.return_value = 0.06
+    mock_central_bank.assets = {"bonds": [], "cash": 10000.0}
+
+    amount = 1000.0
+    issue_tick = 100
+    bonds = finance_system.issue_treasury_bonds(amount, issue_tick)
+    bond = bonds[0]
+
+    # Mock the purchase_bonds call to add the bond to CB's assets
+    # In a real scenario, purchase_bonds would do this. Here we do it manually for the mock.
+    if bond:
+        mock_central_bank.assets["bonds"].append(bond)
+
+    # 2. Action: Service the debt at the bond's maturity date
+    maturity_date = bond.maturity_date
+    initial_gov_assets = mock_government.assets
+    initial_cb_cash = mock_central_bank.assets["cash"]
+
+    finance_system.service_debt(maturity_date)
+
+    # 3. Assertion: Verify the money was transferred correctly
+    bond_lifetime_years = mock_config.BOND_MATURITY_TICKS / mock_config.TICKS_PER_YEAR
+    interest = amount * bond.yield_rate * bond_lifetime_years
+    total_repayment = amount + interest
+
+    assert mock_government.assets == initial_gov_assets - total_repayment
+    assert mock_central_bank.assets["cash"] == initial_cb_cash + total_repayment
+    assert bond not in finance_system.outstanding_bonds
+    assert bond not in mock_central_bank.assets["bonds"]

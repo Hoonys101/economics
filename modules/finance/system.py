@@ -131,6 +131,9 @@ class FinanceSystem(IFinanceSystem):
             if bond in self.central_bank.assets.get("bonds", []):
                 # Central Bank gets the money back (e.g., QE unwind)
                 self.central_bank.assets["bonds"].remove(bond)
+                # BUG FIX: Transfer the repayment to the Central Bank's assets
+                # This prevents the "money destruction" bug.
+                self.central_bank.assets["cash"] = self.central_bank.assets.get("cash", 0) + total_repayment
             else:
                 # Assume the commercial bank holds it
                 self.bank.assets += total_repayment
