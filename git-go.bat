@@ -16,9 +16,11 @@ setlocal
 :: |    git-go.bat fix/sensory-dataflow-789 "Check SoC compliance"           |
 :: |                                                                         |
 :: |  PIPELINE:                                                              |
-:: |    Step 1: git fetch origin <branch>                                    |
-:: |    Step 2: git diff main..origin/<branch> > diff file                   |
-:: |    Step 3: gemini_worker.py git <instruction> -c <diff file>            |
+:: |    Step 1: Syncs with remote using 'scripts/git_sync_checker.py'        |
+:: |            (Finds absolute latest commit hash, bypassing local cache)   |
+:: |    Step 2: git diff main..<LATEST_COMMIT> > diff file                   |
+:: |    Step 3: gemini_worker.py git-review <instruction> -c <diff file>     |
+:: |            (Uses 'git_reviewer.md' persona for detailed Code Review)    |
 :: |    Step 4: Output saved to design/gemini_output/                        |
 :: +-------------------------------------------------------------------------+
 ::
@@ -81,7 +83,8 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo [Step 3] Running Gemini Analysis...
-python scripts/gemini_worker.py git "%AUDIT_INSTRUCTION%" -c design\gemini_output\pr_diff_%SHORT_NAME%.txt > design\gemini_output\pr_review_%SHORT_NAME%.md 2>&1
+:: Use 'git-review' worker to generate a specialized code review report based on git diffs
+python scripts/gemini_worker.py git-review "%AUDIT_INSTRUCTION%" -c design\gemini_output\pr_diff_%SHORT_NAME%.txt > design\gemini_output\pr_review_%SHORT_NAME%.md 2>&1
 
 echo.
 echo ============================================================

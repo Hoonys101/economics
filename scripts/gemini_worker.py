@@ -121,6 +121,33 @@ class SpecDrafter(BaseGeminiWorker):
         print(result)
         print("="*60)
 
+class GitReviewer(BaseGeminiWorker):
+    """
+    Worker for analyzing git diffs and generating code review reports.
+    """
+    def __init__(self):
+        super().__init__("git_reviewer.md")
+
+    def execute(self, instruction: str, context_files: list[str] = None, **kwargs):
+        print(f"🕵️  Reviewing Code with instruction: '{instruction}'...")
+        result = self.run_gemini(instruction, context_files)
+
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:20]]).strip("_")
+        
+        output_dir = BASE_DIR / "design" / "gemini_output" 
+        output_dir.mkdir(exist_ok=True, parents=True)
+        
+        print("\n📝 [Review Report]")
+        print("="*60)
+        print(result)
+        print("="*60)
+        
+        output_file = output_dir / f"review_backup_{timestamp}_{safe_name}.md"
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(result)
+            
 class Reporter(BaseGeminiWorker):
     """
     Worker for analyzing code and generating reports.
@@ -286,6 +313,11 @@ def main():
     auditor_parser.add_argument("instruction", help="Instruction for the auditor")
     auditor_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
 
+    # Git Reviewer
+    reviewer_parser = subparsers.add_parser("git-review", help="Analyze git diffs and report issues")
+    reviewer_parser.add_argument("instruction", help="Instruction for the reviewer")
+    reviewer_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+
     args = parser.parse_args()
 
     try:
@@ -295,7 +327,8 @@ def main():
             "reporter": Reporter,
             "context": ContextManager,
             "verify": Validator,
-            "audit": Reporter
+            "audit": Reporter,
+            "git-review": GitReviewer
         }
         
         if args.worker_type in worker_map:

@@ -470,6 +470,16 @@ if __name__ == "__main__":
         session_id = sys.argv[2]
         message = sys.argv[3]
         
+        # Support for file input via --file or -f
+        if (message == "--file" or message == "-f") and len(sys.argv) >= 5:
+            file_path = Path(sys.argv[4])
+            if file_path.exists():
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    message = f.read()
+            else:
+                print(f"❌ Error: File not found: {file_path}")
+                sys.exit(1)
+        
         # Safety Check: Ensure we are not messaging a session from another project
         # (This relies on the registry or we could check session source if we fetched it)
         # For now, we assume if you have the ID, you know what you are doing, 

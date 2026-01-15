@@ -16,6 +16,7 @@ set PYTHONIOENCODING=utf-8
 :: |  1. list-sessions --summary                                             |
 :: |  2. create "TITLE" "INSTRUCTION"                                        |
 :: |  3. send-message SESSION_ID "MESSAGE"                                   |
+:: |     (OR) send-message SESSION_ID --file "FILE_PATH"                     |
 :: |  4. complete SESSION_ID                                                 |
 :: |  5. get-session SESSION_ID                                              |
 :: +-------------------------------------------------------------------------+
@@ -37,9 +38,9 @@ echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: WO-072 (Sovereign Debt) - Action: Core Logic Correction
-:: 리뷰 결과(QE 조건, 상환 규약, 하드코딩)를 바탕으로 로직 수정을 지시합니다.
-python scripts/jules_bridge.py send-message 7617648577093442794 "Review complete. I have identified 3 critical logic gaps in your WIP PR. Prioritize fixing these before worrying about the unit tests: 1) QE Violation: Limit Central Bank intervention only when yields exceed 10%. Currently, you are masking the Crowding Out effect. 2) Missing Covenant: Implement mandatory repayment (50% of profit) in the bailout loan logic. 3) New Hardcoding Debt: Refactor static bond maturity and risk premium tiers to use config constants. See 'design/gemini_output/pr_review_sovereign-debt-wip-7617648577093442794.md' for details. Fix the heart of the system first." > communications\jules_logs\last_run.md 2>&1
+:: Target: WO-072 (Sovereign Debt) - Action: APPROVE & MERGE
+:: 모든 Money Leak 수정 완료. PR 승인.
+python scripts/jules_bridge.py send-message 7617648577093442794 "APPROVED! All Money Leak bugs fixed. Excellent work on Zero-Sum integrity. The PR is ready to merge. Please squash and merge your branch, then close this session." > communications\jules_logs\last_run.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.

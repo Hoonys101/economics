@@ -1,92 +1,129 @@
-# System Architecture & Economic Cycle (Architectural Audit)
+# System Architecture & Economic Cycle (Living Documentation)
 
-**Date**: 2026-01-02
-**Version**: 3.0 (Post-Audit)
+**Date**: 2026-01-15
+**Version**: 4.0 (The Living World Update)
+**Audit Status**: Verified by Gemini (Reflects `simulation/` codebase)
 
 ---
 
-## 1. The Macro-Economic Machine
+## 1. The Macro-Economic Machine (Updated)
 
 ```mermaid
 graph TD
-    %% Core Entities
-    HH[Households (Consumers/Workers)]
-    Firm[Firms (Producers/Employers)]
-    Gov[Government (Fiscal Policy)]
-    CB[Central Bank (Monetary Policy)]
-    
+    %% Core Entities & Components
+    subgraph Household_Sector [Household Sector]
+        HH[Households]
+        H_Comp[Components: Psychology, Labour, Consumption]
+        H_Sys2[System 2: Planner (NPV)]
+        HH --- H_Comp
+        HH --- H_Sys2
+    end
+
+    subgraph Corporate_Sector [Corporate Sector]
+        Firm[Firms]
+        F_Dept[Departments: HR, Finance, Production]
+        F_Sys2[System 2: Planner (Automation/Expansion)]
+        MAManager[M&A Manager (Corporate Metabolism)]
+        Firm --- F_Dept
+        Firm --- F_Sys2
+        Firm --- MAManager
+    end
+
+    %% Government & Policy
+    subgraph Public_Sector [Public Sector]
+        Gov[Government]
+        Tax[Tax Agency]
+        Edu[Ministry of Education]
+        FinanceSys[Finance System (Debt/Bailouts)]
+        CB[Central Bank (Monetary Policy)]
+        Tech[Technology Manager (R&D Diffusion)]
+        FirmMgmt[Firm Management (Entrepreneurship)]
+        
+        Gov --- Tax
+        Gov --- Edu
+        Gov --- FinanceSys
+        Gov --- Tech
+        Gov --- FirmMgmt
+    end
+
     %% Markets
     GM[Goods Market]
     LM[Labor Market]
     BM[Loan Market (Banks)]
     SM[Stock Market]
+    HM[Housing Market]
 
-    %% Interactions
+    %% Systems
+    Reflux[Reflux System (Economic Recycling)]
+    Life[Lifecycle System (Demo/Immig/Inherit)]
+
+    %% Interactions - Real Economy
     HH -->|Labor| LM
-    LM -->|Wages| HH
-    
-    Firm -->|Wages| LM
+    LM -->|Wages| Firm
     Firm -->|Goods| GM
-    
-    HH -->|Consumption Payment| GM
-    GM -->|Goods| HH
     GM -->|Revenue| Firm
+    HH -->|Consumption Payment| GM
     
-    %% Fiscal Policy (Phase 4.5)
-    HH -->|Income Tax| Gov
-    Firm -->|Corporate Tax| Gov
-    Gov -->|Infrastructure Invest (TFP)| Firm
-    Gov -->|Welfare/Subsidy| HH
-    
-    %% Monetary Policy (Phase 10 & Audit)
-    CB -->|Base Rate (Taylor Rule)| BM
-    BM -->|Deposit Rate| HH
-    BM -->|Loan Rate| Firm
-    
-    %% Capital Markets (Phase 25)
-    SM -->|Dividends| HH
-    HH -->|Investment (Orders)| SM
-    Firm -->|SEO (Treasury Shares)| SM
-    SM -->|Capital Injection| Firm
-    
-    %% The Missing Link (Restored)
-    HH -- High Rates --> |Increases| Savings(Deposits)
-    HH -- Low Rates --> |Increases| Consumption
-    
-    %% Corporate Metabolism (Phase 9/25)
-    Firm -- M&A --> Firm
-    Firm -- Bankruptcy --> Liquidation
-    Firm -- IPO/SEO --> SM
+    %% Interactions - Financial Economy
+    CB -->|Base Rate| BM
+    BM -->|Loans/Deposits| Firm
+    BM -->|Loans/Deposits| HH
+    SM -->|Capital/Dividends| Firm
+    SM -->|Investment| HH
+    FinanceSys -->|Bonds| CB
+    FinanceSys -->|Bonds| BM
+    FinanceSys -->|Bailouts| Firm
+
+    %% Interactions - Asset Economy
+    HM -->|Housing Services| HH
+    HH -->|Rent/Mortgage| HM
+    Gov -->|Property Tax| HM
+
+    %% Interactions - Systemic
+    Reflux -->|Recycled Capital| HH
+    Tech -->|Productivity Boost (TFP)| Firm
+    Life -->|Birth/Death/Migration| HH
 ```
 
-## 2. Logic Flow (The Pulse)
+## 2. Logic Flow & Systems (The Pulse)
 
-### A. The Real Economy (Goods & Labor)
-1.  **Production**: Firms produce goods using Capital ($K$) and Labor ($L$).
-2.  **Income**: Firms pay Wages ($W$) to Households.
-3.  **Consumption**: Households spend Income on Goods ($C$).
-    *   *Logic*: $C = f(\text{Needs}, \text{Assets}, \text{Prices}, \text{Inflation Expectation}, \text{Interest Rate})$.
-4.  **Profit**: Firms earn Revenue ($P \times Q$).
+### A. The Cognitive Architecture (Dual Process)
+1.  **System 1 (Fast/Reactive)**:
+    *   **RL Agents (Q-Learning)**: `GovernmentAI`, `FirmAI`, `HouseholdAI` optimize short-term rewards via mutation and selection.
+    *   **Heuristics**: `ActionProposalEngine` suggests immediate actions based on `Aggressiveness` vectors.
+2.  **System 2 (Slow/Deliberative)**:
+    *   **Planners**: `HouseholdSystem2`, `FirmSystem2Planner` simulate future scenarios (NPV) to make long-term decisions (Housing, Automation, R&D).
+    *   **Internal World Model**: Agents project cash flows to determine `Solvency` and `Liquidity` risks.
 
-### B. The Financial Loop (Money, Rates & Equity)
-1.  **Inflation Sensing**: `Tracker` detects Price ($P$) changes.
-2.  **Monetary Reaction**: `CentralBank` adjusts `Base Rate` ($i$) via Taylor Rule.
-    *   $i = r^* + \pi + 0.5(\pi - \pi^*) + 0.5(y)$
-3.  **Transmission**:
-    *   `Bank` updates `Deposit Rate` and `Loan Rate`.
-    *   **Equity Market**: Households allocate to `StockMarket` based on Merton's optimal weight.
-    *   **Portfolio Management**: Assets move across Cash <-> Deposit <-> Equities.
-4.  **Capital Reallocation**: Firms raise cash via `Secondary Offerings` of Treasury shares when liquidity is low.
+### B. The Real Economy (Supply Chain)
+1.  **Production & Technology**:
+    *   Firms produce goods using $K$ and $L$.
+    *   **Technology Manager**: Unlocks S-Curve TFP boosts (e.g., Chemical Fertilizer) which diffuse through the sector.
+2.  **Labor & Components**:
+    *   `HRDepartment`: Manages hiring/firing based on `Marginal Revenue Product of Labor` (MRPL).
+    *   `LeisureManager`: Households trade off labor vs leisure based on utility.
+3.  **Consumption & Reflux**:
+    *   `ConsumptionBehavior`: Needs-based spending (Maslow-lite).
+    *   **Reflux System**: Captures leakage (Marketing, CAPEX) and recycles it as "Service Income" to households, preserving Money Supply (M2).
 
-### C. The Life Cycle & Ownership (Birth, death & IPO)
-1.  **Households**:
-    *   **Mitosis**: If Assets > Threshold, split (reproduce).
-    *   **Death**: If Assets < 0 for too long (Starvation).
-2.  **Firms**:
-    *   **Startup & IPO**: Rich Households start new Firms with automatic IPO.
-    *   **Treasury Management**: Firm AI decides whether to sell or buy back shares.
-    *   **M&A**: Rich Firms buy Poor Firms via market transactions.
-    *   **Bankruptcy**: Insolvent Firms are liquidated; shareholders lose value.
+### C. The Financial Superstructure (Phase 25/26)
+1.  **Banking & Credit**:
+    *   `Fractional Reserve`: Banks create money via loans.
+    *   `Central Bank`: Sets Base Rate via Taylor Rule; acts as Lender of Last Resort.
+2.  **Capital Markets**:
+    *   `Stock Market`: IPOs, SEOs, and Buybacks. Households optimize portfolios using Merton's Model.
+    *   `Finance System`: **(New)** Sovereign Debt issuance (Bonds) and Corporate Bailouts (Senior Loans). Solvency checked via Altman Z-Score.
+3.  **Real Estate**:
+    *   `Housing System`: Manages Land supply, Rental logic, and Mortgage amortization.
+    *   `Immigration`: Population inflows driven by Housing affordability and Wage premiums.
+
+### D. Lifecycle & Evolution
+1.  **Demographics**:
+    *   `DemographicManager`: Handles Aging, Birth (Fertility Rate), and Death.
+    *   `InheritanceManager`: Transfers assets from deceased to heirs (Zero-Leak).
+2.  **Evolution**:
+    *   Firms with low profitability face `Bankruptcy` (Liquidation).
+    *   Households with high assets reproduce (Mitosis); poor ones starve (Death).
 
 ---
 
@@ -94,10 +131,10 @@ graph TD
 - **Blue**: Implemented & Verified.
 - **Red**: Missing or Broken.
 
-1.  [Blue] Market Clearing (Order Book)
-2.  [Blue] Fiscal Loop (Tax/Spend)
-3.  [Blue] Inflation Psychology (Adaptive Expectations)
-4.  [Blue] M&A (Predator/Prey)
-5.  [Blue] **Interest Rate Channel** (Restored via `AIDrivenHouseholdDecisionEngine` heuristic)
+1.  [Blue] **Zero-Leak Inheritance** (Verified)
+2.  [Blue] **Economic Reflux** (Verified)
+3.  [Blue] **Stock Market Sync** (Verified)
+4.  [Blue] **Tech Diffusion** (Verified)
+5.  [Red] **Sovereign Debt Zero-Sum** (In Progress: WO-072 Money Leak identified)
 
-**System is now aligned with the Blueprint.**
+**System is now aligned with the Codebase (simulation/).**

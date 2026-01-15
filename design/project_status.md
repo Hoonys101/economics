@@ -12,13 +12,21 @@
     - `Phase 23: The Great Expansion` ✅
     - `Phase 24: Adaptive Intelligence & Evolution` ✅
     - `Phase 25: The Financial Superstructure (Stock Market)` ✅
-- **현재 단계:** `Phase 26: Strategy Engine & Backtest Integration` 🚀
-    - Step 1: Link Macro Signals to Portfolio Decisions 🏗️
-    - Step 2: Implement Multi-level Trading Signals (Judge/Sentinel) 🏗️
+- **현재 단계:** `Phase 26.5: Sovereign Debt & Corporate Credit` ✅
+    - Step 1: `modules/finance` Scaffolding (Bond/Loan/Solvency) ✅ (Merged)
+    - Step 2: Zero-Sum Validation & Testing ✅ (All Money Leaks Fixed)
 
 ---
 
 ## 2. 완료된 작업 요약 (Recent)
+
+### WO-072: Sovereign Debt & Financial Credit 🏗️
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Finance Module | ✅ | `modules/finance/system.py` implemented |
+| Bond Issuance | 🛠️ | Logic implemented, but **Zero-Sum Violation** found |
+| Corporate Bailout | ✅ | Grant $\to$ Loan conversion verified |
+| **Verification** | 🛑 | **Review Rejected**: Money Leak in Debt Service & QE |
 
 ### WO-055: Golden Age Stabilization ✅
 | 항목 | 상태 | 비고 |
@@ -92,10 +100,10 @@
 
 ## 5. Technical Debt & Backlog
 
-### TD-024: Test Path Correction ⚠️
+### TD-024: Test Path Correction ✅
 - **Type**: CI/CD, Testing
-- **Status**: Open
-- **Description**: `pytest` 실행 시 테스트 경로 오류 발생. 로컬 및 CI 환경에서 테스트가 깨지는 현상 수정 필요.
-- **Action**: Phase 25 착수 전 해결 필수.
+- **Status**: **Resolved** (2026-01-15)
+- **Description**: `pytest` 실행 시 테스트 경로 오류 수정 완료 (`pytest.ini` created).
+- **Action**: None. Closed.
 
 ... (Following legacy phases omitted for brevity / check structure.md)

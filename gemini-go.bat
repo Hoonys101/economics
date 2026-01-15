@@ -30,10 +30,9 @@ echo [Gemini-CLI] Drafting spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: Technical Debt Audit (Hardcoded/Rule-based)
-:: Task: Identify all magic numbers and rigid heuristics.
-
-python scripts/gemini_worker.py audit "Task: Identify all hardcoded magic numbers and rule-based heuristics across the codebase. Focus: 1) config.py: Arbitrary constants. 2) simulation/agents/: Hardcoded thresholds, fixed rates, and deterministic if/else decision logic. 3) simulation/systems/: Rigid formulas that should be adaptive. Output: A detailed list of Technical Debts (TD-XXX) with file paths, code snippets, and why they require re-planning for 'Adaptive AI Migration'." -c simulation/ config.py > design\gemini_output\audit_hardcoded_debt.md 2>&1
+:: Target: Architecture Reality Check
+:: Task: Verify consistency between structure.md and the actual codebase.
+python scripts/gemini_worker.py verify "Compare the `structure.md` architecture diagram and descriptions against the actual codebase in `simulation/`. 1) Are all modules/agents listed in structure.md present in the code? 2) Are there major implemented systems (like 'FinanceSystem', 'StockMarket', 'ScenarioLoader') in the code that are MISSING from or OUTDATED in structure.md? Report discrepancies." -c design/structure.md simulation/ > design\gemini_output\architecture_verification.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Gemini task execution failed. Check logs.

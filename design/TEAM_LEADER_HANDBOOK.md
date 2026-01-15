@@ -67,6 +67,9 @@ THEN 도구: .\jules-go.bat
 ```
 IF Jules로부터 PR 도착
 THEN 도구: .\git-go.bat <브랜치명>
+     프로세스:
+       1. 원격 동기화 (git_sync_checker.py) -> 최신 HEAD 커밋 확보
+       2. Diff 생성 -> git-review 워커(보안/정합성 분석) 실행
      출력: design/gemini_output/pr_review_<브랜치>.md
      후속: 테스트 실행 → 병합 → 세션 완료 처리
 ```
