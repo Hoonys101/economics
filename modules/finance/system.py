@@ -6,9 +6,10 @@ from simulation.firms import Firm
 class FinanceSystem(IFinanceSystem):
     """Manages sovereign debt, corporate bailouts, and solvency checks."""
 
-    def __init__(self, government: 'Government', central_bank: 'CentralBank', config_module: any):
+    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: any):
         self.government = government
         self.central_bank = central_bank
+        self.bank = bank
         self.config_module = config_module
         self.outstanding_bonds: List[BondDTO] = []
 
@@ -67,10 +68,14 @@ class FinanceSystem(IFinanceSystem):
         if yield_rate > qe_threshold:
             # Central Bank intervenes as buyer of last resort
             self.central_bank.purchase_bonds(new_bond)
+            # Money is created here, which is the point of QE.
         else:
-            # Bonds are sold to the market (households and firms), "crowding out" private investment.
-            # This is a simplified model; in a real simulation, this would involve an auction.
-            pass
+            # Sell to the market (simplified: the commercial bank buys it)
+            if self.bank.assets >= amount:
+                self.bank.assets -= amount
+            else:
+                # Bond issuance fails if no one can buy it
+                return []
 
         self.outstanding_bonds.append(new_bond)
         self.government.assets += amount

@@ -119,6 +119,7 @@ class Simulation:
         self.finance_system = FinanceSystem(
             government=self.government,
             central_bank=self.central_bank,
+            bank=self.bank,
             config_module=self.config_module
         )
         self.government.finance_system = self.finance_system # Inject into government

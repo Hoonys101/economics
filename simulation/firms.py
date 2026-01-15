@@ -135,6 +135,7 @@ class Firm(BaseAgent):
 
         self.age = 0
         self.cash_reserve = initial_capital
+        self.has_bailout_loan = False
         self.decision_engine.loan_market = loan_market
 
     def init_ipo(self, stock_market: StockMarket):

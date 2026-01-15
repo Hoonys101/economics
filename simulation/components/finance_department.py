@@ -91,6 +91,12 @@ class FinanceDepartment:
 
     def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
         """Public Shareholders Dividend"""
+        if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
+            repayment = self.current_profit * 0.5
+            self.firm.total_debt -= repayment
+            self.current_profit -= repayment
+            self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan.")
+
         transactions = []
         distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)
 
