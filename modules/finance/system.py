@@ -66,20 +66,20 @@ class FinanceSystem(IFinanceSystem):
 
         qe_threshold = getattr(self.config_module, "QE_INTERVENTION_YIELD_THRESHOLD", 0.10)
         if yield_rate > qe_threshold:
-            # Central Bank intervenes as buyer of last resort
+            # Central Bank intervenes as buyer of last resort (QE)
             self.central_bank.purchase_bonds(new_bond)
-            # Money is created here, which is the point of QE.
+            # Transfer funds from Central Bank to Government
+            self._transfer(debtor=self.central_bank, creditor=self.government, amount=amount)
         else:
-            # Sell to the market (simplified: the commercial bank buys it)
+            # Sell to the market (commercial bank buys it)
             if self.bank.assets >= amount:
-                self.bank.assets -= amount
+                # Transfer funds from commercial bank to Government
+                self._transfer(debtor=self.bank, creditor=self.government, amount=amount)
             else:
                 # Bond issuance fails if no one can buy it
                 return []
 
         self.outstanding_bonds.append(new_bond)
-        self.government.assets += amount
-
         return [new_bond]
 
     def grant_bailout_loan(self, firm: 'Firm', amount: float) -> BailoutLoanDTO:
@@ -98,13 +98,48 @@ class FinanceSystem(IFinanceSystem):
             }
         )
 
+        # Transfer funds from Government to the firm
+        self._transfer(debtor=self.government, creditor=firm, amount=amount)
+
         # The government provides the funds, which become a liability for the firm
-        self.government.assets -= amount
         firm.finance.add_liability(amount, loan.interest_rate)
         firm.has_bailout_loan = True
 
         return loan
 
+
+    def _transfer(self, debtor: any, creditor: any, amount: float) -> None:
+        """
+        Handles the movement of funds between two entities, ensuring double-entry.
+        This is a private helper method.
+
+        Args:
+            debtor: The entity from which money is withdrawn.
+            creditor: The entity to which money is deposited.
+            amount: The amount of money to transfer.
+        """
+        if amount <= 0:
+            return
+
+        # --- Debtor (Debit) ---
+        if hasattr(debtor, 'assets') and isinstance(debtor.assets, dict): # CentralBank
+             debtor.assets['cash'] = debtor.assets.get('cash', 0) - amount
+        elif hasattr(debtor, 'cash_reserve'): # Firm
+            debtor.cash_reserve -= amount
+        elif hasattr(debtor, 'assets'): # Government, Bank
+            debtor.assets -= amount
+        else:
+            raise TypeError(f"Unsupported debtor type: {type(debtor)}")
+
+        # --- Creditor (Credit) ---
+        if hasattr(creditor, 'assets') and isinstance(creditor.assets, dict): # CentralBank
+             creditor.assets['cash'] = creditor.assets.get('cash', 0) + amount
+        elif hasattr(creditor, 'cash_reserve'): # Firm
+            creditor.cash_reserve += amount
+        elif hasattr(creditor, 'assets'): # Government, Bank
+            creditor.assets += amount
+        else:
+            raise TypeError(f"Unsupported creditor type: {type(creditor)}")
 
     def service_debt(self, current_tick: int) -> None:
         """

@@ -1,6 +1,9 @@
 from typing import Protocol, Dict, List
 from dataclasses import dataclass
 
+# Forward reference for type hinting
+class Firm: pass
+
 @dataclass
 class BondDTO:
     """Data Transfer Object for government bonds."""
@@ -25,10 +28,14 @@ class IFinanceSystem(Protocol):
         """Evaluates a firm's solvency to determine bailout eligibility."""
         ...
 
-    def issue_treasury_bonds(self, amount: float) -> List[BondDTO]:
+    def issue_treasury_bonds(self, amount: float, current_tick: int) -> List[BondDTO]:
         """Issues new treasury bonds to the market."""
         ...
 
-    def service_debt(self) -> None:
+    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> BailoutLoanDTO:
+        """Converts a bailout from a grant to an interest-bearing senior loan."""
+        ...
+
+    def service_debt(self, current_tick: int) -> None:
         """Manages the servicing of outstanding government debt."""
         ...

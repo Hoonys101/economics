@@ -19,41 +19,58 @@ def mock_config():
     config.TICKS_PER_YEAR = 48
     return config
 
+# Define simple stub classes for entity behavior
+class StubGovernment:
+    def __init__(self, assets=10000.0):
+        self.assets = assets
+        self.debt_to_gdp_ratio = 0.5
+    def get_debt_to_gdp_ratio(self):
+        return self.debt_to_gdp_ratio
+
+class StubCentralBank:
+    def __init__(self, cash=50000.0):
+        self.assets = {'cash': cash, 'bonds': []}
+        self.base_rate = 0.02
+    def get_base_rate(self):
+        return self.base_rate
+    def purchase_bonds(self, bond):
+        self.assets['bonds'].append(bond)
+
+class StubBank:
+    def __init__(self, assets=100000.0):
+        self.assets = assets
+
 @pytest.fixture
 def mock_government():
-    gov = Mock()
-    gov.assets = 10000.0
-    gov.get_debt_to_gdp_ratio.return_value = 0.5
-    return gov
+    return StubGovernment()
 
 @pytest.fixture
 def mock_central_bank():
-    cb = Mock()
-    cb.get_base_rate.return_value = 0.02
-    return cb
+    return StubCentralBank()
 
 @pytest.fixture
 def mock_bank():
-    bank = Mock()
-    bank.assets = 100000.0
-    return bank
+    return StubBank()
 
 @pytest.fixture
 def finance_system(mock_government, mock_central_bank, mock_bank, mock_config):
     return FinanceSystem(mock_government, mock_central_bank, mock_bank, mock_config)
 
+class StubFirm:
+    def __init__(self):
+        self.id = 1
+        self.age = 100
+        self.assets = 10000.0
+        self.cash_reserve = 5000.0
+        self.hr = Mock()
+        self.hr.get_total_wage_bill.return_value = 1000.0
+        self.finance = MagicMock()
+        self.finance.calculate_altman_z_score.return_value = 2.0
+        self.has_bailout_loan = False
+
 @pytest.fixture
 def mock_firm():
-    firm = Mock()
-    firm.id = 1
-    firm.age = 100
-    firm.assets = 10000.0
-    firm.cash_reserve = 5000.0
-    firm.hr = Mock()
-    firm.hr.get_total_wage_bill.return_value = 1000.0
-    firm.finance = Mock()
-    firm.finance.calculate_altman_z_score.return_value = 2.0
-    return firm
+    return StubFirm()
 
 def test_evaluate_solvency_startup_pass(finance_system, mock_firm):
     mock_firm.age = 10
@@ -83,17 +100,19 @@ def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank)
     assert mock_government.assets == initial_gov_assets + amount
 
 def test_issue_treasury_bonds_qe(finance_system, mock_government, mock_central_bank):
-    mock_government.get_debt_to_gdp_ratio.return_value = 1.5
+    mock_government.debt_to_gdp_ratio = 1.5
     # Fix: The yield rate (base + risk premium) must exceed the QE threshold.
     # Original: 0.02 (base) + 0.05 (risk) = 0.07 <= 0.10 (QE threshold) -> No QE
     # New: 0.06 (base) + 0.05 (risk) = 0.11 > 0.10 (QE threshold) -> QE triggered
-    mock_central_bank.get_base_rate.return_value = 0.06
+    mock_central_bank.base_rate = 0.06
     amount = 1000.0
     initial_gov_assets = mock_government.assets
+    initial_cb_cash = mock_central_bank.assets['cash']
     bonds = finance_system.issue_treasury_bonds(amount, 100)
     assert len(bonds) == 1
-    mock_central_bank.purchase_bonds.assert_called_once()
+    assert len(mock_central_bank.assets['bonds']) == 1
     assert mock_government.assets == initial_gov_assets + amount
+    assert mock_central_bank.assets['cash'] == initial_cb_cash - amount
 
 def test_issue_treasury_bonds_fail(finance_system, mock_government, mock_bank):
     amount = 200000.0
@@ -103,11 +122,13 @@ def test_issue_treasury_bonds_fail(finance_system, mock_government, mock_bank):
 def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_config):
     amount = 5000.0
     initial_gov_assets = mock_government.assets
+    initial_firm_cash = mock_firm.cash_reserve
     loan = finance_system.grant_bailout_loan(mock_firm, amount)
     assert loan.firm_id == mock_firm.id
     assert loan.amount == amount
     assert loan.covenants["mandatory_repayment"] == mock_config.BAILOUT_REPAYMENT_RATIO
     assert mock_government.assets == initial_gov_assets - amount
+    assert mock_firm.cash_reserve == initial_firm_cash + amount
     mock_firm.finance.add_liability.assert_called_once_with(amount, loan.interest_rate)
 
 def test_service_debt_central_bank_repayment(finance_system, mock_government, mock_central_bank, mock_config):
@@ -117,19 +138,14 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
     "money destruction" bug.
     """
     # 1. Setup: Issue a bond that will be bought by the Central Bank via QE
-    mock_government.get_debt_to_gdp_ratio.return_value = 1.5
-    mock_central_bank.get_base_rate.return_value = 0.06
+    mock_government.debt_to_gdp_ratio = 1.5
+    mock_central_bank.base_rate = 0.06
     mock_central_bank.assets = {"bonds": [], "cash": 10000.0}
 
     amount = 1000.0
     issue_tick = 100
     bonds = finance_system.issue_treasury_bonds(amount, issue_tick)
     bond = bonds[0]
-
-    # Mock the purchase_bonds call to add the bond to CB's assets
-    # In a real scenario, purchase_bonds would do this. Here we do it manually for the mock.
-    if bond:
-        mock_central_bank.assets["bonds"].append(bond)
 
     # 2. Action: Service the debt at the bond's maturity date
     maturity_date = bond.maturity_date
