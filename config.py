@@ -54,6 +54,7 @@ CONFORMITY_RANGES = {
 
 # --- Gold Standard Mode (WO-016) ---
 GOLD_STANDARD_MODE = True  # True: 금본위 (Full Reserve), False: 현대 금융 (Credit Creation)
+RESERVE_REQ_RATIO = 0.1    # 지급준비율 (10%) - WO-064
 INITIAL_MONEY_SUPPLY = 100_000.0  # 초기 화폐 총량 (검증용 기준값)
 
 # --- Simulation Parameters ---

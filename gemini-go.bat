@@ -1,34 +1,20 @@
 @echo off
 setlocal
 :: ==============================================================================
-:: Gemini-CLI HITL 2.0 Git Execution Runner (Remote Sync Version)
+:: Gemini-CLI HITL 2.0: Drafting WO-065 (Monetary Integrity & Suture)
 :: ==============================================================================
-echo 🚀 Executing Git Sync, Merge & Cleanup Routine...
+set PYTHONIOENCODING=utf-8
 
-:: 1. Stage and Commit local changes in feature branch
-echo 📝 Staging changes in feature branch...
-git add .
-git commit -m "feat(WO-060): complete stock market activation and finalized design docs"
+if not exist "design\gemini_output" (
+    mkdir "design\gemini_output"
+)
 
-:: 2. Switch to main and pull latest remote changes
-echo 🔄 Switching to main and pulling latest from remote...
-git checkout main
-git pull origin main --rebase
+:: [Track B Spec Drafting]
+python scripts/gemini_worker.py spec "WO-065: Monetary Integrity & Suture 구현 명세 작성. 핵심 과제: 1) simulation/systems/inheritance_manager.py 수정: 상속 시 현금뿐만 아니라 은행 예금(bank.deposits)도 상속인에게 이전하거나 국고로 환수하는 로직 구현. 2) simulation/engine.py 수정: Tick 600 쇼크(자산 반토막) 시 감소한 자산만큼 government.total_money_destroyed에 합산하여 장부 동기화. 3) 가계 사망/기업 청산 시 남은 자금을 국고(Government Assets)로 귀속시키는 'Escheatment' 로직 보강. 4) 통화 정합성 검증 테스트 설계." -c simulation/systems/inheritance_manager.py simulation/engine.py simulation/bank.py > design\gemini_output\last_run.md 2>&1
 
-:: 3. Merge feature branch into updated main
-echo 🔄 Merging feature branch into main...
-:: Note: Using full branch name from git status check
-git merge feature/WO-060-stock-market-15007179683109829611 --no-edit
-
-:: 4. Push combined results to remote
-echo ⬆️ Pushing merged main to origin...
-git push origin main
-
-:: 5. Cleanup local feature branch
-echo 🧹 Cleaning up temporary branch...
-git branch -d feature/WO-060-stock-market-15007179683109829611
-
-echo ✅ Git Sync & Merge Completed. Current branch:
-git branch --show-current
-
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Spec drafting failed.
+) else (
+    echo [SUCCESS] WO-065 Spec Draft saved to design\gemini_output\last_run.md
+)
 endlocal

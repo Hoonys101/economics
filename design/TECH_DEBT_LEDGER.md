@@ -11,6 +11,8 @@
 | TD-025 | 2026-01-14 | Tracker Blindness & Infra Gap (WO-057) | Refactor `MarketDataDAO` & Enhance `Tracker` Fallback | AI Reward Flatline, 2008/2022 Validation Impossible | **Blocking** |
 | TD-028 | 2026-01-15 | Lack of Bear Market Instruments (Short/Hedge) | Implement Inverse ETF or Short Selling logic | Market collapse recovery depends only on long-only logic | **Recognized** |
 | TD-029 | 2026-01-15 | Simplistic Price Discovery (EPS Correlation) | Enhance `StockMarket` to factor in long-term earnings growth | Bubbles/Crashes less meaningful without valuation link | **Recognized** |
+| TD-030 | 2026-01-15 | Missing Fractional Reserve System (WO-024) | `bank.py`의 `grant_loan` 자산 체크 완화, `RESERVE_REQ_RATIO` 도입, `check_solvency` 연동 | Money Multiplier effect blocked, structural liquidity shortage | **CRITICAL** |
+| TD-031 | 2026-01-15 | Systemic Money Leakage (Monetary Integrity) | `InheritanceManager`의 예금 상속 추가, `engine.py` 쇼크 시 장부 동기화, 청산 자금 국고 귀속 | Permanent deflationary bias, unreliable AI sensory data | **Blocking** |
 
 ---
 
