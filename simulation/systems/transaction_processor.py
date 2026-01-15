@@ -100,24 +100,11 @@ class TransactionProcessor:
                 self._handle_stock_transaction(tx, buyer, seller)
 
             elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
-                self._handle_housing_transaction(tx, buyer, seller, trade_value, agents)
-
-    def _handle_housing_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, agents: Dict[int, Any]):
-        from modules.economy.stabilization.api import MonetaryAuthority, AssetSaleRecord
-
-        if isinstance(seller, MonetaryAuthority):
-            record = AssetSaleRecord(
-                tick=tx.time,
-                buyer_id=buyer.id,
-                item_id=tx.item_id,
-                price=tx.price,
-                quantity=tx.quantity,
-                total_value=trade_value,
-                asset_type="real_estate"
-            )
-            seller.record_asset_sale(trade_value, record)
-        else:
-            seller.assets += trade_value
+                # Housing transactions are now fully handled in HousingSystem.process_transaction
+                # This ensures that mortgage creation, title transfer, and fund movement
+                # are all handled in a single, dedicated location.
+                # The logic was removed from here to avoid duplication and maintain SoC.
+                pass
 
     def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, tax_amount: float, agents: Dict[int, Any]):
         if isinstance(seller, Household):
