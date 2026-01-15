@@ -37,9 +37,9 @@ echo [Jules-Bridge] Creating TD-024 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: WO-068 (Phase 26 Step 1)
-:: Action: Implement Macro-Linked Portfolio Decisions for Households
-python scripts/jules_bridge.py create "WO-068: Macro-Linked Portfolio" "Mission: 에이전트들에게 '거시 경제의 눈(Macro Context)'을 가르쳐라. Reference: design/drafts/draft_Phase_26_Step_1__Link_Macro_Si.md. Tasks: 1) MacroFinancialContext DTO 구현하여 거시 지표 전달 케이퍼빌리티 확보. 2) 거시 스트레스에 따른 위험 회피 성향(Risk Aversion) 동적 조절 로직 구현. 3) Stagflation 시나리오에서 Safety Preference가 급증하는지 테스트로 증명하라. Reporting: 매크로 민감도 가중치 등 튜닝 인사이트를 communications/insights/에 상세히 기록할 것." > communications\jules_logs\last_run.md 2>&1
+:: Target: WO-072 (Phase 26.5)
+:: Action: Implement Sovereign Debt & Bailout Finance System
+python scripts/jules_bridge.py create "WO-072: Sovereign Debt & Financial Credit" "Mission: '공짜 점심'의 시대를 끝내고 부채 기반의 책임 경제를 구축하라. Reference: design/specs/SOVEREIGN_DEBT_SPEC.md. Tasks: 1) modules/finance/api.py에 DTO 및 인터페이스 정의. 2) Altman Z-Score 기반 솔벤시 체크 구현 (Startup Grace Period 준수). 3) 국채 발행 및 시장 금리 형성 로직 구현. 4) 구제금융을 보조금에서 이자부 대출로 전환하라. Success Criteria: Z-Score 1.81 미만의 좀비 기업 퇴출 및 국채 금리에 따른 자금 위축(Crowding out) 증명. Reporting: insights/에 mass liquidation 리스크 보고." > communications\jules_logs\last_run.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.

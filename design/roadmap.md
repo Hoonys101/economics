@@ -86,12 +86,19 @@
 ### Phase 26: Financial Strategy Integration ⭐ **[CURRENT]**
 - **Goal**: Link macro environment to retail/institutional strategy.
 - **Pre-requisite**:
-    - [ ] **TD-024**: Test Path Correction (Pytest 경로 오류 해결) **[BLOCKER]**
+    - [x] **TD-024**: Test Path Correction (Pytest 경로 오류 해결) **[BLOCKER]**
 - **Tasks**:
-    - [ ] WO-068: Macro-Linked Portfolio (Dynamic Risk Aversion)
+    - [x] WO-068: Macro-Linked Portfolio (Dynamic Risk Aversion)
     - [ ] WO-069: Signal Intelligence Engine (Judge & Sentinel)
     - [ ] WO-070: Inverse ETF & Hedging Mechanism
     - [ ] WO-071: Strategy Backtest Framework
+
+### Phase 26.5: Sovereign Debt & Corporate Credit ⭐
+- **Goal**: Transition to debt-based financing and market-driven interest rates.
+- **Tasks**:
+    - [ ] WO-072: Finance System Scaffolding (api.py & DTOs)
+    - [ ] WO-073: Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period)
+    - [ ] WO-074: National Debt Auction & Yield Curve Mechanism
 
 ### Phase 27: Social Dynamics & Realism **[DEFERRED]**
 - **Goal**: 시뮬레이션 리얼리티 향상 및 기술부채 상환
