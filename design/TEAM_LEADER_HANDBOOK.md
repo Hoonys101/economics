@@ -402,17 +402,25 @@ graph TD
 
 **"모든 AI 보조 작업은 수석 아키텍트의 손을 거쳐야 한다."**
 
-### 1. Operation Cycle
-1.  **Command Prep**: Antigravity가 작업에 필요한 `gemini_worker.py` 명령어를 설계.
-2.  **Artifact Creation**: 저장소 루트에 `gemini-go.bat` 파일을 생성/업데이트.
-    *   **Output Redirection**: 모든 출력은 반드시 `design/gemini_output/last_run.md` 및 `last_run.log`로 리다이렉션되도록 구성.
-3.  **User Trigger**: 사용자에게 실행 요청 ("`gemini-go.bat` 실행 부탁드립니다").
-4.  **Verification**: 사용자로부터 "완료" 신호를 받은 후 `design/gemini_output/`의 결과를 읽고 후속 작업 진행.
+### 도구 사용 시점 (When to Use)
 
-### 2. Unified Storage
-- **Path**: `design/gemini_output/`
-- **Files**:
-    - `last_run.md`: 직전 실행된 AI의 본문 답변.
-    - `last_run.log`: 실행 로그 및 에러 메시지.
+| 상황 | 도구 | 설명 |
+|---|---|---|
+| **Spec/기획 작성** | `gemini-go.bat` | 새로운 Work Order나 명세서 초안이 필요할 때 |
+| **Jules 작업 발주/통신** | `jules-go.bat` | 새 세션 생성, 메시지 전송, 상태 확인 |
+| **PR 분석** | `git-go.bat <브랜치명>` | Jules PR 도착 시 자동 분석 |
+
+### 사용법 (How to Use)
+
+**각 bat 파일 상단의 Self-Reference Manual을 참조하십시오.**
+- Antigravity가 명령을 주입 → 수석이 실행 → 결과 확인
+
+### 출력 파일 위치
+
+| 도구 | 출력 파일 |
+|---|---|
+| `gemini-go.bat` | `design/gemini_output/spec_draft.md` |
+| `jules-go.bat` | `communications/jules_logs/last_run.md` |
+| `git-go.bat` | `design/gemini_output/pr_review_<브랜치>.md` |
 
 ---
