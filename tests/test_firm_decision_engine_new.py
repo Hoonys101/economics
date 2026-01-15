@@ -304,7 +304,7 @@ class TestFirmDecisionEngine:
     ):
         mock_firm.employees = []
         mock_firm.inventory["food"] = 0  # Ensure production is needed
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 

@@ -250,17 +250,19 @@ def simulation_instance(
     mock_config_module,
     mock_tracker,
 ):
-    sim = Simulation(
-        mock_households,
-        mock_firms,
-        mock_ai_trainer,
-        mock_repository,
-        mock_config_module,
-        mock_goods_data,
-    )
-    sim.government.finance_system = Mock()
-    sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)
-    return sim
+    with patch('simulation.engine.TransactionProcessor') as MockTransactionProcessor:
+        sim = Simulation(
+            mock_households,
+            mock_firms,
+            mock_ai_trainer,
+            mock_repository,
+            mock_config_module,
+            mock_goods_data,
+        )
+        sim.government.finance_system = Mock()
+        sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)
+        sim.transaction_processor = MockTransactionProcessor.return_value
+        return sim
 
 
 # Test Cases for Simulation class

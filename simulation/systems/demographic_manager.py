@@ -28,7 +28,7 @@ class DemographicManager:
         self.initialized = True
         self.logger.info("DemographicManager initialized.")
 
-    def process_aging(self, agents: List, current_tick: int) -> None:
+    def process_aging(self, agents: List[Household], current_tick: int) -> None:
         """
         Increments age for all households.
         Handles natural death (old age).
@@ -40,19 +40,15 @@ class DemographicManager:
             if not agent.is_active:
                 continue
 
-            if isinstance(agent, Household):
-                # Increment Age for households
-                agent.age += (1.0 / ticks_per_year)
+            # Increment Age for households
+            agent.age += (1.0 / ticks_per_year)
 
-                # Check Natural Death (Gompertz-Makeham law simplified)
-                if agent.age > 80:
-                    death_prob = 0.05 + (agent.age - 80) * 0.01
-                    death_prob_per_tick = death_prob / ticks_per_year
-                    if random.random() < death_prob_per_tick:
-                        self._execute_natural_death(agent, current_tick)
-            elif hasattr(agent, 'age'):
-                # Increment age for firms
-                agent.age += 1
+            # Check Natural Death (Gompertz-Makeham law simplified)
+            if agent.age > 80:
+                death_prob = 0.05 + (agent.age - 80) * 0.01
+                death_prob_per_tick = death_prob / ticks_per_year
+                if random.random() < death_prob_per_tick:
+                    self._execute_natural_death(agent, current_tick)
 
     def _execute_natural_death(self, agent: Household, current_tick: int):
         """
