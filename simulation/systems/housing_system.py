@@ -2,6 +2,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, List, Optional
 from simulation.models import Order, Transaction
+from modules.economy.stabilization.api import MonetaryAuthority, AssetSaleRecord
+
 
 if TYPE_CHECKING:
     from simulation.engine import Simulation
@@ -162,10 +164,27 @@ class HousingSystem:
             else:
                 unit.mortgage_id = None
                 
-            # 2. Transfer Title
+            # 2. Process Funds Transfer
+            buyer.assets -= trade_value
+
+            if isinstance(seller, MonetaryAuthority):
+                record = AssetSaleRecord(
+                    tick=simulation.time,
+                    buyer_id=buyer.id,
+                    item_id=tx.item_id,
+                    price=tx.price,
+                    quantity=tx.quantity,
+                    total_value=trade_value,
+                    asset_type="real_estate"
+                )
+                seller.record_asset_sale(trade_value, record)
+            else:
+                seller.assets += trade_value
+
+            # 3. Transfer Title
             unit.owner_id = buyer.id
             
-            # 3. Update Agent Property Lists
+            # 4. Update Agent Property Lists
             if hasattr(seller, "owned_properties"):
                 if unit.id in seller.owned_properties:
                     seller.owned_properties.remove(unit.id)
