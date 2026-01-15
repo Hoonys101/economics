@@ -7,12 +7,7 @@
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **Recognized** |
 | TD-008 | 2026-01-14 | Primitive Valuation Logic in CPR (`cpr` module) | Implement comprehensive Solvency/Liquidity metric | Inefficient CPR targeting (Bailing out Zombie Firms) | **Recognized** |
 | TD-009 | 2026-01-14 | CPR Bailouts are Unconditional Grants | Convert Bailouts to Government Loans/Bonds (Fiscal Policy) | Lack of Fiscal Consequence, Inflationary bias | **Recognized** |
-| TD-010 | 2026-01-14 | Government AI Sensory Lag (`run_tick` order) | Sync `market_data` or pre-calc indicators before `decide_policy` | AI decisions based on stale/zero data (Sensory Deprivation) | **CRITICAL** |
-| TD-025 | 2026-01-14 | Tracker Blindness & Infra Gap (WO-057) | Refactor `MarketDataDAO` & Enhance `Tracker` Fallback | AI Reward Flatline, 2008/2022 Validation Impossible | **Blocking** |
-| TD-028 | 2026-01-15 | Lack of Bear Market Instruments (Short/Hedge) | Implement Inverse ETF or Short Selling logic | Market collapse recovery depends only on long-only logic | **Recognized** |
-| TD-029 | 2026-01-15 | Simplistic Price Discovery (EPS Correlation) | Enhance `StockMarket` to factor in long-term earnings growth | Bubbles/Crashes less meaningful without valuation link | **Recognized** |
-| TD-030 | 2026-01-15 | Missing Fractional Reserve System (WO-024) | `bank.py`의 `grant_loan` 자산 체크 완화, `RESERVE_REQ_RATIO` 도입, `check_solvency` 연동 | Money Multiplier effect blocked, structural liquidity shortage | **CRITICAL** |
-| TD-031 | 2026-01-15 | Systemic Money Leakage (Monetary Integrity) | `InheritanceManager`의 예금 상속 추가, `engine.py` 쇼크 시 장부 동기화, 청산 자금 국고 귀속 | Permanent deflationary bias, unreliable AI sensory data | **Blocking** |
+
 
 ---
 
@@ -20,7 +15,12 @@
 
 | ID | 발생일 | 해결일 | 부채 내용 | 해결 방법 |
 |---|---|---|---|---|
-| - | - | - | - | - |
+| TD-030 | 2026-01-15 | 2026-01-15 | Missing Fractional Reserve System | Implemented Fractional Reserve & Credit Creation (WO-064) |
+| TD-010 | 2026-01-14 | 2026-01-15 | Government AI Sensory Lag | Implemented High-Fidelity Sensory Architecture (WO-066) |
+| TD-025 | 2026-01-14 | 2026-01-15 | Tracker Blindness & Infra Gap | Implemented LKP Fallback (WO-066) |
+| TD-031 | 2026-01-15 | 2026-01-15 | Systemic Money Leakage | Implemented Monetary Integrity & Suture (WO-065) |
+| TD-028 | 2026-01-15 | 2026-01-15 | Bear Market Instruments | Marked Out of Scope (Wrong Project) |
+| TD-029 | 2026-01-15 | 2026-01-15 | Price Discovery | Marked Out of Scope (Wrong Project) |
 
 ---
 
