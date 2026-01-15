@@ -195,13 +195,14 @@ class Government:
                     extra={"tick": current_tick, "agent_id": self.id, "tags": ["election"]}
                 )
 
-    def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int):
+    def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int, central_bank: "CentralBank"):
         """
         정책 엔진에게 의사결정을 위임하고 결과를 반영합니다.
         (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
-        decision = self.policy_engine.decide(self, market_data, current_tick)
+        # WO-057-B FIX: Pass the smoothed sensory data, not the raw market_data
+        decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)
         
         # 2. 결과 로깅 (엔진 내부에서 상세 로깅 수행)
         if decision.get("status") == "EXECUTED":

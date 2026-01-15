@@ -504,7 +504,7 @@ class Simulation:
         latest_gdp = self.tracker.get_latest_indicators().get("total_production", 0.0)
         market_data["total_production"] = latest_gdp
 
-        self.government.make_policy_decision(market_data, self.time)
+        self.government.make_policy_decision(market_data, self.time, self.central_bank)
 
         # 4. Election Check
         self.government.check_election(self.time)

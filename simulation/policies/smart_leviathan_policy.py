@@ -18,7 +18,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         self.ai = GovernmentAI(government, config_module)
         self.last_action_tick = -999
 
-    def decide(self, government: Any, market_data: Dict[str, Any], current_tick: int) -> Dict[str, Any]:
+    def decide(self, government: Any, sensory_data: "GovernmentStateDTO", current_tick: int, central_bank: "CentralBank") -> Dict[str, Any]:
         """
         Policy Decision Cycle.
         Enforces 30-tick (1 month) silent interval as per Architect Prime's Directive.
@@ -30,6 +30,8 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
             return {"policy_type": "AI_ADAPTIVE", "status": "COOLDOWN"}
 
         # 1. Observe and Decide (Brain)
+        # Note: The AI's internal state representation is now directly tied to the
+        # government agent's `sensory_data` attribute, which is updated by the engine.
         action = self.ai.decide_policy(current_tick)
         self.last_action_tick = current_tick
 
@@ -42,8 +44,6 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
             "subsidy": government.firm_subsidy_budget_multiplier
         }
         
-        # Central Bank (Rate) control
-        central_bank = market_data.get("central_bank")
         old_rate = central_bank.base_rate if central_bank else 0.0
 
         # Constants from Architect Directive
@@ -108,8 +108,9 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         self._log_changes(government, old_values, central_bank, old_rate, action, current_tick)
 
         # 6. Reward & Learning
-        reward = self._calculate_reward(government, market_data)
-        self.ai.update_learning_with_state(reward, current_tick)
+        # The real reward calculation now happens inside the AI module using the sensory data.
+        # This call just triggers the Q-table update. The passed reward value is ignored.
+        self.ai.update_learning_with_state(reward=0.0, current_tick=current_tick)
 
         return {
             "policy_type": "AI_ADAPTIVE",
@@ -137,10 +138,3 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
             
         if abs(old_val["subsidy"] - gov.firm_subsidy_budget_multiplier) > 1e-9:
             logger.info(f"BABY_STEP | Firm Subsidy: {old_val['subsidy']:.2f} -> {gov.firm_subsidy_budget_multiplier:.2f}", **log_tag)
-
-    def _calculate_reward(self, government: Any, market_data: Dict[str, Any]) -> float:
-        """
-        While Brain (Alpha) recalculates reward internally for Q-Learning,
-        we provide the baseline (Approval Rating) here for legacy metrics.
-        """
-        return getattr(government, "perceived_public_opinion", 0.5)
