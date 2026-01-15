@@ -59,16 +59,21 @@ echo ============================================================
 if not exist "design\gemini_output" mkdir "design\gemini_output"
 
 echo.
-echo [Step 1] Fetching branch from origin...
-git fetch origin %BRANCH_NAME%
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Failed to fetch branch. Check branch name.
+echo.
+echo [Step 1] Syncing with Remote & Finding Head...
+:: Capture the output directly into LATEST_COMMIT variable
+for /f "delims=" %%i in ('python scripts/git_sync_checker.py %BRANCH_NAME%') do set LATEST_COMMIT=%%i
+
+if "%LATEST_COMMIT%"=="" (
+    echo [ERROR] Failed to sync and find latest commit.
     exit /b 1
 )
 
+echo [Target Commit] %LATEST_COMMIT%
+
 echo.
-echo [Step 2] Generating diff (main vs PR)...
-git diff main..origin/%BRANCH_NAME% > design\gemini_output\pr_diff_%SHORT_NAME%.txt
+echo [Step 2] Generating diff (main vs %LATEST_COMMIT%)...
+git diff main..%LATEST_COMMIT% > design\gemini_output\pr_diff_%SHORT_NAME%.txt
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to generate diff.
     exit /b 1
