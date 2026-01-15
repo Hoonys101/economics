@@ -1,426 +1,110 @@
 # 팀장 핸드북 (Team Leader Handbook)
 
-**PM (Project Manager):** Hoonys101 (사용자) - 최종 의사결정 및 비전 제시
-**Team Leader:** Antigravity (AI) - 기술 설계, Jules 요원 지휘, 기술부채 관리, **적극적 조력자(Reviewer)**, **오케스트레이터(Orchestrator)**. 
-> [!IMPORTANT]
-> **Non-Coding & Non-Execution Rule**: 팀장은 직접 코딩을 하지 않으며, **gemini-cli 또한 자신의 터미널에서 직접 실행하지 않습니다.** 모든 구현은 Jules에게, 모든 AI 보조 작업은 `gemini-go.bat` 생성을 통해 수석 아키텍트(사용자)의 실행 승인을 거쳐 수행합니다.
-**Member:** Jules 요원 (Alpha, Bravo, Charlie) - 구현 및 기술적 타협점 보고
-**Last Updated:** 2026-01-13
+**Last Updated**: 2026-01-15
 
 ---
 
-## 🎖️ 팀장 운영 철학 (Team Leader Philosophy)
+## � 핵심 역할
 
-**1. 조력자로서의 적극성 (Proactive Reviewer)**: 
-팀장은 단순한 검수자가 아닙니다. "상대가 이 일을 할 때 어떤 정보가 더 필요했을까?", "기획 단계에서 무엇을 놓쳤길래 구현이 막히는가?"를 끊임없이 고민하며 양쪽의 품질을 높이는 **적극적 조력자**가 되어야 합니다.
-
-**2. 로드 밸런싱 (Load Balancing)**:
-기획(Gemini)과 구현(Jules) 사이에서 균형을 유지합니다. 어느 한쪽에 과하게 매몰되어 병목이 되어서도 안 되며, 반대로 방관하여 품질 저하를 방치해서도 안 됩니다.
-
-**3. 직무 집중 (Focus on Needs)**:
-작업자가 일을 할 때 "어떤 것을 했어야 했는가?"에 집중하십시오. 미처 챙기지 못한 엣지 케이스나 누락된 명세를 선제적으로 보완하는 것이 팀장의 존재 이유입니다.
+| 역할 | 담당자 | 책임 |
+|---|---|---|
+| **PM** | 사용자 (Hoonys101) | 최종 의사결정, 비전 제시 |
+| **Team Leader** | Antigravity (AI) | 기획 → 구현 오케스트레이션, 기술부채 관리 |
+| **Implementer** | Jules 요원 | 코드 구현, 테스트 작성 |
 
 ---
 
-## 📚 문서 계층 구조 (중요도 순)
+## ⚔️ 핵심 원칙 (불변)
 
+1. **위임 우선 (Delegation First)**
+   - 팀장은 **직접 코딩하지 않는다**
+   - 모든 구현은 Jules에게, 모든 기획은 Gemini에게 위임
+
+2. **HITL 2.0 (Human-In-The-Loop)**
+   - AI 도구 실행은 **수석의 승인** 후에만 진행
+   - bat 파일 준비 → 수석 실행 → 결과 확인
+
+3. **Zero-Question Spec**
+   - Jules가 추가 질문 없이 구현 가능한 수준으로 명세 작성
+   - 모호함은 기술부채의 원천
+
+---
+
+## 📋 IF-THEN 업무 지침
+
+### 세션 시작 시
 ```
-Level 0: 핵심 원칙 (Always Load)
-└── Level 1: 프로젝트 현황 (Session Start)
-    └── Level 2: 워크플로우 (On Demand)
-        └── Level 3: 상세 명세 (Implementation)
-            └── Level 4: 아카이브 (Reference Only)
+IF 새 세션 시작
+THEN 읽을 문서:
+  - design/project_status.md (현재 Phase)
+  - design/TECH_DEBT_LEDGER.md (미해결 부채)
+  - design/HANDOVER_*.md (직전 세션 인수인계)
+```
+
+### 기획/명세 작성 시
+```
+IF Spec 또는 Work Order 작성 필요
+THEN 도구: .\gemini-go.bat
+     출력: design/gemini_output/spec_draft.md
+```
+
+### Jules 작업 발주 시
+```
+IF 구현 작업 위임 필요
+THEN 도구: .\jules-go.bat
+     출력: communications/jules_logs/last_run.md
+     참조: design/work_orders/WO-XXX.md 먼저 작성
+```
+
+### PR 도착 시
+```
+IF Jules로부터 PR 도착
+THEN 도구: .\git-go.bat <브랜치명>
+     출력: design/gemini_output/pr_review_<브랜치>.md
+     후속: 테스트 실행 → 병합 → 세션 완료 처리
+```
+
+### 기술부채 발생 시
+```
+IF 기술적 타협 필요
+THEN 기록: design/TECH_DEBT_LEDGER.md
+     형식: ID, 날짜, 내용, 상환조건, 리스크
+```
+
+### 세션 종료 시
+```
+IF 세션 종료
+THEN 작성: design/HANDOVER_<날짜>.md
+     커밋: git add . && git commit && git push
 ```
 
 ---
 
-## Level 0: 핵심 원칙 (매 세션 참조)
+## 🛠️ 도구 매뉴얼 위치
 
-| 문서 | 경로 | 용도 |
+각 bat 파일 **상단 주석**에 Self-Reference Manual이 포함되어 있습니다.
+
+| 도구 | 용도 | 상세 사용법 |
 |---|---|---|
-| **GEMINI.md** | `/GEMINI.md` | 프로젝트 지침, 디버깅 프로토콜, 기획→실행 프로세스 |
-| **AGENTS.md** | `/AGENTS.md` | **(New)** Jules 요원 대상 프로젝트 규칙 및 아키텍처 컨텍스트 |
-| **Core Philosophy** | `/design/roadmap.md#core-philosophy` | Rule-Based → Adaptive AI 철학 |
+| `gemini-go.bat` | Spec/기획 | 파일 상단 주석 참조 |
+| `jules-go.bat` | 요원 통신 | 파일 상단 주석 참조 |
+| `git-go.bat` | PR 분석 | 파일 상단 주석 참조 |
 
 ---
 
-## Level 1: 프로젝트 현황 (세션 시작 시)
+## 📚 상세 문서 인덱스
 
-| 문서 | 경로 | 용도 |
-|---|---|---|
-| **project_status.md** | `/design/project_status.md` | 현재 Phase, 진행 상황 |
-| **roadmap.md** | `/design/roadmap.md` | 전체 로드맵, 미완료 항목 |
-| **CURRENT_BRIEFING.md** | `/design/CURRENT_BRIEFING.md` | 현재 작업 컨텍스트 |
-
----
-
-## Level 2: 워크플로우 (업무별 참조)
-
-### Jules 관리
-| 문서 | 경로 | 용도 |
-|---|---|---|
-| **JULES_MASTER_DIRECTIVE.md** | `/design/JULES_MASTER_DIRECTIVE.md` | Jules 행동 규칙 |
-| **JULES_DOCUMENTATION_GUIDE.md** | `/design/JULES_DOCUMENTATION_GUIDE.md` | Jules 문서화 가이드 |
-
-### 기획 → 실행
-| 문서 | 경로 | 용도 |
-|---|---|---|
-| **PLAYBOOK.md** | `/design/PLAYBOOK.md` | 표준 작업 절차 |
-| **implementation_plan.md** | `/design/implementation_plan.md` | 현재 구현 계획 |
-
-### 아키텍처
-| 문서 | 경로 | 용도 |
-|---|---|---|
-| **platform_architecture.md** | `/design/platform_architecture.md` | 시스템 아키텍처 |
-| **structure.md** | `/design/structure.md` | 코드 구조 |
-
----
-
-## Level 3: 상세 명세 (구현 시)
-
-### Work Orders (진행 중)
-| 문서 | 경로 |
+| 주제 | 문서 경로 |
 |---|---|
-| **WO-057-Smart-Leviathan** | `/design/work_orders/WO-057-Smart-Leviathan.md` |
-| **WO-057-A/B/C** | `/design/work_orders/WO-057-[A/B/C]-*.md` |
-
-### Specs (Phase별)
-```
-/design/specs/
-├── phase24_smart_leviathan_spec.md
-├── engine_spec.md
-├── banking_spec.md
-├── fiscal_policy_spec.md
-└── ... (33 files)
-```
+| 프로젝트 지침 | `GEMINI.md` |
+| 프로젝트 현황 | `design/project_status.md` |
+| 로드맵 | `design/roadmap.md` |
+| 기술부채 | `design/TECH_DEBT_LEDGER.md` |
+| 아키텍처 | `design/structure.md` |
+| Jules 규칙 | `AGENTS.md` |
+| 명세서들 | `design/specs/*.md` |
+| 작업지시서들 | `design/work_orders/*.md` |
 
 ---
 
-## Level 4: 아카이브 (참조용)
-
-| 폴더 | 경로 | 내용 |
-|---|---|---|
-| **_archive/** | `/design/_archive/` | 과거 설계 문서 |
-| **HERITAGE_ASSETS.md** | `/design/HERITAGE_ASSETS.md` | 레거시 자산 목록 |
-| **PROJ_HISTORY.md** | `/design/PROJ_HISTORY.md` | 프로젝트 역사 |
-
----
-
-## 🔍 상황별 참조 가이드
-
-| 상황 | 참조 문서 |
-|---|---|
-| **새 세션 시작** | GEMINI.md → project_status.md → roadmap.md |
-| **수석 기획 수신** | GEMINI.md (섹션 6: 기획→실행) |
-| **Jules 작업 배정** | **AGENTS.md** → Work Order 작성 |
-| **PR 머지** | project_status.md 업데이트 |
-| **새 Phase 시작** | roadmap.md → specs/ 폴더에 명세 작성 |
-| **디버깅** | GEMINI.md (섹션 5: 문제 해결) |
-
----
-
-## 📝 문서 업데이트 규칙
-
-1. **project_status.md**: 매 Phase 완료 시 업데이트
-2. **roadmap.md**: 새 항목 추가/완료 시 업데이트
-3. **Work Orders**: 작업 시작 전 작성, 완료 후 체크박스
-4. **이 핸드북**: 문서 구조 변경 시 업데이트
-
----
-
-## 🤖 Jules Automation Protocol (API-Based Delegation)
-
-Jules API를 사용하여 개발 프로세스를 자동화할 때 반드시 준수해야 하는 프로토콜입니다.
-
-### 1. Mandatory Chief Architect Review (수석 승인 필수)
-Jules에게 작업을 위임(`create-session`)하기 전, 반드시 수석 아키텍트(사용자)에게 **프롬프트와 계획(Work Order)**을 검토받아야 합니다.
-
-**Workflow:**
-1. **Draft Prompt**: Antigravity가 Jules에게 보낼 프롬프트와 참조할 Work Order를 작성합니다.
-2. **Review Request**: `notify_user` 또는 대화를 통해 수석에게 검토를 요청합니다.
-    - "다음 내용으로 Jules에게 작업을 위임해도 되겠습니까?"
-    - "프롬프트: ..."
-    - "참조 문서: ..."
-3. **Approval**: 수석의 승인("진행해", "좋아")이 있어야만 API를 호출합니다.
-4. **Execution**: 승인 후 `python scripts/jules_bridge.py create-session` 실행.
-
-### 2. Post-Assignment Monitoring
-작업 위임 후, 방치하지 않고 주기적으로 상태를 점검합니다.
-
-- **Monitor**: `python scripts/jules_monitor.py` (수석 PC 실행 권장) 또는 수동 체크.
-- **Intervention**: Jules가 질문을 하거나 오류 발생 시 즉시 개입하여 해결합니다.
-- **Result Report**: 작업 완료 및 PR 생성 시 수석에게 즉시 보고 및 리뷰를 요청합니다.
-
----
-
-## 🛑 Jules Communication Protocol (Zero-Question Standard)
-
-**1. One-Shot Document Rule (지침 불변성의 원칙)**:
-- **Single-Pull Constraint**: Jules는 세션 시작 시 단 한 번만 코드를 Pull합니다.
-- **No Mid-Session Updates**: 명령 하달 후 Work Order나 AGENTS.md를 수정하여 Push하더라도 Jules는 이를 인지하지 못하며, 이는 최종 병합 시 컨플릭트만 유발할 뿐입니다.
-- **Initial Confirmation**: 따라서 모든 지침은 세션 시작 전에 완벽히 확정되어야 합니다.
-- **Correction via Prompt**: 불가피하게 중간에 수정이 필요한 경우, 파일을 고치지 말고 반드시 **프롬프트(채팅/메시지/sendMessage API)**를 통해 직접 수정 지침을 전달하십시오.
-
-**2. 📝 Zero-Question Work Order 작성 요령 (Jules 생산성 극대화)**
-> **핵심 목표**: Jules가 프로젝트 전체 파일을 읽는 오버헤드를 0으로 만들고, 오직 타겟 로직에만 집중하게 한다.
-
-- **📂 컨텍스트 및 관련 파일 그룹화 (Context Table) 필수 포함**
-    Jules에게 역할별 파일 리스트를 테이블로 제공한다.
-
-| 분류 | 역할 | 활용 가이드 |
-| :--- | :--- | :--- |
-| **Source (출처)** | 로직을 추출해낼 원본 파일 | 특정 메서드/클래스의 로직만 참고/추출 |
-| **Contract (계약)** | 준수해야 할 DTO, Interface | 데이터 시그니처와 타입 힌트 확인 용도 |
-| **Destination (목적지)** | 코드가 새로 배치될 위치 | 신규 생성 또는 로직이 이식될 파일 |
-
-- **💡 메서드 단위 이식 전략 (Transplant Strategy) 명시**
-    작업을 '함수/메서드 단위의 이식 수술'로 정의하고 구체적으로 지시한다.
-- **⚠️ GitHub Alerts 활용**
-    중요한 제약 사항(`[!IMPORTANT]`)이나 팁(`[!TIP]`)을 시각적으로 강조한다.
-- **🧠 실무자 인사이트 공유 (Mandatory Insight Reporting)**
-    Jules가 작업을 수행하며 발견한 구조적 결함이나 아키텍처적 아이디어를 `communications/insights/`에 별도 보고서로 제출하도록 강제한다.
-    *   **Delegation Rule**: 해당 보고서의 정리 및 요약은 **Drafting Assistant(Gemini CLI)**가 수행하며, 팀장은 최종 승인만 한다.
-- **Jules (Sub-agent - Doer)**: 내부 로직 구현, 테스트 코드 작성, 디버깅.
-- **Drafting Assistant (Gemini CLI - Free Worker)**: Antigravity의 지시를 받아 `spec.md` 및 `api.py`의 초안(Draft)을 작성하여 팀장의 인지 부하를 줄임.
-
----
-
-## 🏗️ 아키텍처 및 코드 표준 (Architecture & Standards)
-
-## 🛠️ Jules PR 처리 루틴 (Standard PR Routine)
-
-**Remote PR을 로컬로 가져와 검토, 병합, 배포, 정리하는 표준 절차입니다.**
-
-1.  **Fetch & Checkout (가져오기)**
-    ```bash
-    git fetch origin <remote_branch_name>:<local_temp_branch>
-    git checkout <local_temp_branch>
-    ```
-    *   *검토(Review) 수행: 코드 확인, 테스트 실행.*
-
-2.  **Merge (병합)**
-    ```bash
-    git checkout main
-    git merge <local_temp_branch> --no-edit
-    ```
-    *   *충돌 발생 시 해결 후 커밋.*
-
-3.  **Push (배포)**
-    ```bash
-    git push origin main
-    ```
-
-4.  **Clean Up (정리)**
-    ```bash
-    git branch -d <local_temp_branch>
-    ```
-
----
-
-## 🤖 Jules Automation Protocol (자동화 절차)
-
-### 1. 세션 생성 (Task Delegation)
-```bash
-python scripts/jules_bridge.py create "<title>" "<prompt>" --branch main --mode AUTO_CREATE_PR --approval
-```
-
-### 2. 세션 상태 조회 (Status Check)
-```bash
-# 간략 조회 (권장)
-python scripts/jules_bridge.py list-sessions --summary --limit=5
-
-# 상세 조회
-python scripts/jules_bridge.py status <session_id>
-```
-
-### 3. 계획 승인 (Plan Approval)
-```bash
-python scripts/jules_bridge.py approve-plan <session_id>
-```
-
-### 4. 세션 ID 관리 (Session Tracking)
-> [!IMPORTANT]
-> 팀장이 관리하는 모든 Jules 세션은 `scripts/jules_sessions.json`에 기록합니다.
-
-**JSON 형식:**
-```json
-{
-  "sessions": [
-    {
-      "id": "<session_id>",
-      "title": "<work_order_title>",
-      "work_order": "<WO-XXX.md>",
-      "branch": "<feature_branch_name>",
-      "status": "PENDING | COMPLETED | MERGED",
-      "created": "<ISO_datetime>",
-      "completed": "<ISO_datetime>"
-    }
-  ]
-}
-```
-
-### 5. 완료 후 처리 (Post-Completion)
-1. PR 생성 확인 → 브랜치 Fetch
-2. 코드 리뷰 (diff 확인)
-3. `jules_sessions.json` 업데이트 (status: "MERGED")
-4. Merge & Push
-
-
-## 🛡️ Technical Debt Governance (기술부채 관리 규약)
-
-**"인지되지 않은 부채는 사고지만, 인지된 부채는 전략적 선택이다."**
-
-### 1. Recognition & Documentation (팀장의 고유 권한)
-- **Decision Loop**: Jules가 기술적 한계나 일정 문제로 '임시 구현'을 제안하거나, 팀장이 속도 향상을 위해 로직의 단순화를 결정한 경우, **팀장이 직접** 이 부기표에 부채로 기록합니다.
-- **Reporting Rule**: 팀원은 부채를 직접 기록하지 않습니다. 팀원은 발생 가능한 기술적 타협점(Trade-off)을 팀장에게 **보고**하고, 팀장의 결정(Acceptance)이 내려진 후에 팀장이 관리 대장에 올립니다.
-- **Artifacts**: 
-    - **`roadmap.md`**: 상위 단계에서 해결해야 할 기술적 과제로 등록.
-    - **`design/TECH_DEBT_LEDGER.md` (부기표)**: 팀장이 직접 부채의 내용, 상환 조건을 기록.
-
-### 2. Debt Recording Format
-부채 기록 시 다음 항목을 필수로 포함하십시오:
-- **ID / 발생일**: 부채 식별 번호 및 날짜.
-- **부채 내용**: 타협한 기술적 사항 (예: "Caching logic skipped for faster iteration").
-- **상환 조건**: 해당 부채를 언제, 어떤 기준으로 해결할 것인가 (예: "Phase 23 시작 전 리팩토링").
-- **리스크**: 상환하지 않았을 때 도래할 위험 요소.
-
----
-
-
-
-## ⚔️ Parallel Management & Efficiency (Multi-Agent Protocol)
-
-**"일을 그냥 토스하는 것이 아니라, 효율성의 중심에서 설계하는 것이 팀장의 핵심 역량이다."**
-
-### 1. Parallel Task Segmentation
-- **Logic**: 대단위 작업을 파일 충돌(File Conflict)이 없는 독립적인 영역으로 쪼개어 여러 Jules에게 배분합니다.
-- **Assignment**:
-    - **分隊 A (Engine/System)**: 핵심 인프라 및 전역 설정 담당.
-    - **분대 B (Experiment/Data)**: 독립된 스크립트 기반 실험 및 데이터 수집 담당.
-    - **分隊 C (Analytics/UI)**: 지표 분석기 및 상위 레이어 로직 담당.
-
-### 3. 워크플로우 토폴로지 (Workflow Topology)
-
-### 3.1 모듈 설계 및 구현 프로세스 (Standard Delegation Process)
-**"Gemini CLI Assisted 6-Step Workflow"**
-
-이 프로세스는 팀장의 인지 부하를 줄이고, 명세의 구체성을 극대화하기 위해 설계되었습니다.
-
-1.  **Concept Design (Architect Prime)**
-    *   **Role**: 사용자 (PM)
-    *   **Action**: 자연어로 개념 기획 및 요구사항 전달. (예: "GDP 0일 때 비상 모드 추가해줘")
-
-2.  **Schema Design (Team Leader)**
-    *   **Role**: Antigravity (Thinker)
-    *   **Action**: 요구사항을 **데이터 구조(Schema)**와 **API 인터페이스** 레벨로 구체화합니다.
-    *   **Output**: `design/specs/WO-XXX_Schema.md` (DTO, 함수 시그니처 정의)
-
-3.  **Pseudo-code Planning (Gemini CLI)**
-    *   **Role**: Drafting Assistant
-    *   **Action**: `scripts/gemini_worker.py spec` 명령을 통해 Schema를 **단계별 의사코드(Implementation Plan)**로 확장합니다.
-    *   **Context Strategy (Critical)**: 할루시네이션 방지를 위해 반드시 **Contract(DTO/Interface)** 파일을 컨텍스트로 함께 제공해야 합니다.
-        *   ✅ `python scripts/gemini_worker.py spec "..." -c simulation/dtos.py simulation/firms.py`
-        *   ❌ `python scripts/gemini_worker.py spec "..." -c simulation/firms.py` (DTO 누락 시 타입 할루시네이션 발생 가능)
-    *   **Output**: `design/specs/WO-XXX_Plan.md` (구체적 로직 포함)
-
-4.  **Verification (Team Leader)**
-    *   **Role**: Antigravity (Reviewer)
-    *   **Action**: AI가 생성한 계획이 Schema 및 의도와 일치하는지 검증하고 수정합니다.
-    *   **Automation**:
-        *   `python scripts/verify_module.py`: 모듈 구조 검증
-        *   `python scripts/test_doctor.py`: 테스트 실패 시 3줄 요약 진단
-
----
-
-## 5. 🚜 Automation Suite (Zero-Token Ops)
-수동 작업을 최소화하기 위해 다음 자동화 스크립트 사용을 **의무화**합니다.
-
-### 5.1 일상 루틴 (Daily Routine)
-| 상황 | 명령어 | 역할 |
-|---|---|---|
-| **기획 (Spec)** | `python scripts/gemini_worker.py spec "..." -c simulation/dtos.py simulation/target.py` | 할루시네이션 없는 DTO 기반 명세 작성 |
-| **퇴근/세션종료** | `python scripts/checkpoint.py` | 정합성 검사 + 커밋 + 문서화/대장정리 + 핸드오버 리포트 생성 (All-in-One) |
-
-### 5.2 개발 지원 (Dev Ops)
-| 상황 | 명령어 | 역할 |
-|---|---|---|
-| **테스트 실패** | `python scripts/test_doctor.py` | 수백 줄 로그 대신 **3줄 요약 진단서** 출력 |
-| **PR 병합** | `python scripts/pr_manager.py <branch>` | 테스트 → 병합 → 푸시 → 정리 (완전 자동) |
-| **구조 검증** | `python scripts/gemini_worker.py verify -c <file>` | SoC/DTO 위반 여부 아키텍처 검증 |
-
-### 5.3 Jules 관리 (Agent Ops)
-| 상황 | 명령어 | 역할 |
-|---|---|---|
-| **세션 목록** | `python scripts/jules_bridge.py my-sessions` | **토큰 절약형** 활성 세션 요약 조회 |
-| **진행 상황** | `python scripts/jules_bridge.py status <ID>` | 최근 활동 및 PR 링크 요약 조회 |
-| **메시지 전송** | `python scripts/jules_bridge.py send-message <ID> "..."` | 에이전트에게 추가 지시 (프로젝트 격리 보호됨) |
-
----
-
-5.  **Alignment Check (Architect Prime)**
-    *   **Role**: 사용자 (Approver)
-    *   **Action**: 계획안(Plan)이 최초 기획 의도와 정합하는지 최종 확인합니다.
-
-6.  **Dispatch (Team Leader)**
-    *   **Role**: Antigravity (Commander)
-    *   **Action**: 승인된 문서를 바탕으로 Jules에게 구현을 지시합니다. (`create-session`)
-
----
-
-### 2. Efficiency Bottleneck Management
-- **Prioritization**: 다른 작업의 병목을 만드는 '엔진 최적화(Speed-Up)' 등은 가장 먼저 수행하거나 전담 요원을 배치하여 전체 처리량을 확보합니다.
-
-### 3. Parallel Efficiency Measurement (성과 측정)
-- **Metrics**: 병렬 수행 시의 총 소요 시간(Wall Clock Time)과 개별 요원의 기여도를 측정합니다.
-- **Reporting**: Jules에게 지시 시 "최적화 전후의 TPS(Ticks Per Second) 변화" 또는 "작업 전후의 시뮬레이션 완주 시간"을 반드시 보고하도록 강제하십시오.
-- **Feedback Loop**: 측정된 효율성을 기반으로 다음 작업 분할 시 분계점(Segmentation)을 조정합니다.
-
-## 👑 Spec & Delegation Protocol
-
-### 1. Spec 에스컬레이션 워크플로우 (Spec Escalation Workflow)
-> **핵심 원칙**: Spec은 "무엇을(What)"뿐만 아니라 "어떻게(How)"까지 포함해야 한다. 추상적 지시로 인한 '바이브 코딩'과 기술 부채 발생을 원천 차단한다.
-
-```mermaid
-graph TD
-    A[Architect Prime: 수석 아키텍트] -- "Conceptual Design (What)" --> B[Antigravity: Team Leader]
-    B -- "Technical Spec & API Design (How)" --> C[Jules: Implementer]
-    C -- "Insight Reporting" --> B
-    B -- "Review & Verification" --> A
-```
-
-### 2. Accuracy of Instructions (상대 경로 및 확정적 동작)
-- **Repo-Relative Path Rule**: Jules에게 지시 시 모든 파일 경로는 반드시 **저장소 루트 기준 상대 경로(Relative Path from Root)**로 제공해야 합니다.
-- **Good Behavior**: "`X` 함수를 `Y` 로직으로 구현하고, `Z` 파일에 적용하십시오." (동작 확정)
-
-### 3. Technical Definitions
-- 추상적인 경제 용어는 반드시 **코드 레벨의 정의(Logic Map)**를 포함해야 합니다.
-    - 예: `Credential Premium` = (동일 기술 수준 그룹 내) 학위에 따른 임금 차액 산출법 명시.
-
----
-
-## 🛡️ Human-in-the-Loop 2.0 (HITL) Protocol
-
-**"모든 AI 보조 작업은 수석 아키텍트의 손을 거쳐야 한다."**
-
-### 도구 사용 시점 (When to Use)
-
-| 상황 | 도구 | 설명 |
-|---|---|---|
-| **Spec/기획 작성** | `gemini-go.bat` | 새로운 Work Order나 명세서 초안이 필요할 때 |
-| **Jules 작업 발주/통신** | `jules-go.bat` | 새 세션 생성, 메시지 전송, 상태 확인 |
-| **PR 분석** | `git-go.bat <브랜치명>` | Jules PR 도착 시 자동 분석 |
-
-### 사용법 (How to Use)
-
-**각 bat 파일 상단의 Self-Reference Manual을 참조하십시오.**
-- Antigravity가 명령을 주입 → 수석이 실행 → 결과 확인
-
-### 출력 파일 위치
-
-| 도구 | 출력 파일 |
-|---|---|
-| `gemini-go.bat` | `design/gemini_output/spec_draft.md` |
-| `jules-go.bat` | `communications/jules_logs/last_run.md` |
-| `git-go.bat` | `design/gemini_output/pr_review_<브랜치>.md` |
-
----
+*상세 절차가 필요하면 해당 문서를 직접 참조하십시오.*
