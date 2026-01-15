@@ -1,7 +1,10 @@
-from typing import Dict, Any, Deque
+from typing import Dict, Any, Deque, TYPE_CHECKING
 from collections import deque
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.utils.shadow_logger import log_shadow
+
+if TYPE_CHECKING:
+    from simulation.dtos import GovernmentStateDTO
 
 class TaylorRulePolicy(IGovernmentPolicy):
     """
@@ -15,39 +18,43 @@ class TaylorRulePolicy(IGovernmentPolicy):
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
         self.potential_gdp = 0.0
 
-    def decide(self, government: Any, market_data: Dict[str, Any], current_tick: int) -> Dict[str, Any]:
-        # 1. Update Price History
-        avg_price = market_data.get("avg_goods_price", 10.0)
-        self.price_history_shadow.append(avg_price)
+    def decide(self, government: Any, sensory_data: "GovernmentStateDTO", current_tick: int, central_bank: Any) -> Dict[str, Any]:
+        # Refactored to use sensory DTO instead of raw market_data
+        if not sensory_data:
+            return {"status": "NO_DATA"}
 
-        # 2. Calculate Inflation (YoY)
-        inflation = 0.0
-        if len(self.price_history_shadow) >= 2:
-            current_p = self.price_history_shadow[-1]
-            past_p = self.price_history_shadow[0]
-            if past_p > 0:
-                inflation = (current_p - past_p) / past_p
+        # 2. Use smoothed inflation from DTO
+        inflation = sensory_data.inflation_sma
 
-        # 3. Calculate GDP Gap
-        current_gdp = market_data.get("total_production", 0.0)
-        if self.potential_gdp == 0.0:
-            self.potential_gdp = current_gdp
-            
+        # 3. Calculate GDP Gap & Update Government State
+        current_gdp = sensory_data.current_gdp
+        if government.potential_gdp == 0.0:
+            government.potential_gdp = current_gdp
+
         gdp_gap = 0.0
-        if self.potential_gdp > 0:
-            gdp_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
-            # EMA Update for Potential
-            alpha = 0.01
-            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+        if government.potential_gdp > 0:
+            gdp_gap = (current_gdp - government.potential_gdp) / government.potential_gdp
 
-        # 4. Taylor Rule 2.0 Calculation
+        # EMA Update for Potential
+        if government.potential_gdp != 0.0:
+            alpha = 0.01
+            government.potential_gdp = (alpha * current_gdp) + ((1-alpha) * government.potential_gdp)
+
+        # 4. Update Fiscal Stance and Tax Rate
+        if getattr(self.config, "AUTO_COUNTER_CYCLICAL_ENABLED", False):
+            sensitivity = getattr(self.config, "FISCAL_SENSITIVITY_ALPHA", 0.5)
+            base_tax_rate = getattr(self.config, "INCOME_TAX_RATE", 0.1)
+
+            government.fiscal_stance = -sensitivity * gdp_gap
+            new_tax_rate = base_tax_rate * (1 - government.fiscal_stance)
+            government.income_tax_rate = new_tax_rate
+
+
+        # 5. Taylor Rule (Shadow Logging)
         target_inflation = getattr(self.config, "CB_INFLATION_TARGET", 0.02)
-        # Neutral Rate assumption: Real Growth (Simplified or Fixed for now)
         neutral_rate = 0.02 
         target_rate = neutral_rate + inflation + 0.5 * (inflation - target_inflation) + 0.5 * gdp_gap
-
-        # 5. Shadow Logging
-        current_base_rate = market_data.get("loan_market", {}).get("interest_rate", 0.05)
+        current_base_rate = central_bank.get_base_rate()
         log_shadow(
             tick=current_tick,
             agent_id=government.id,
@@ -58,9 +65,9 @@ class TaylorRulePolicy(IGovernmentPolicy):
             details=f"Inf={inflation:.2%}, Gap={gdp_gap:.2%}"
         )
 
-        # TaylorRulePolicy는 실제 정책을 변경하지 않고 Shadow만 남기거나, 
-        # 필요 시 기본 상태를 반환합니다.
         return {
             "interest_rate_target": target_rate,
-            "policy_type": "TAYLOR_RULE"
+            "policy_type": "TAYLOR_RULE",
+            "status": "EXECUTED",
+            "action_taken": "Updated tax rate based on Taylor Rule fiscal stance."
         }

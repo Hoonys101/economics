@@ -102,6 +102,7 @@ class Government:
 
         # WO-057-B: Sensory Data Container
         self.sensory_data: Optional[GovernmentStateDTO] = None
+        self.finance_system = None
 
         logger.info(
             f"Government {self.id} initialized with assets: {self.assets}",
@@ -264,61 +265,42 @@ class Government:
             details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
         )
 
-    def provide_subsidy(self, target_agent: Any, amount: float, current_tick: int):
-        """
-        보조금을 지급합니다.
-        AI Spending Multiplier 적용.
-        """
-        # Apply Multiplier based on Target
-        effective_amount = amount
-        agent_type = "household"
-        if hasattr(target_agent, "employees"): # Duck typing Firm
-            effective_amount *= self.firm_subsidy_budget_multiplier
-            agent_type = "firm"
-        else:
-            effective_amount *= self.welfare_budget_multiplier
+    def provide_household_support(self, household: Any, amount: float, current_tick: int):
+        """Provides subsidies to households (e.g., unemployment, stimulus)."""
+        effective_amount = amount * self.welfare_budget_multiplier
 
         if effective_amount <= 0:
             return 0.0
 
-        if not getattr(self.config_module, "DEFICIT_SPENDING_ENABLED", False):
-            if self.assets < effective_amount:
+        if self.assets < effective_amount:
+            needed = effective_amount - self.assets
+            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
+            if not issued_bonds:
+                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
                 return 0.0
-        else:
-            # WO-057-Active: Debt Ceiling Logic
-            if self.sensory_data and self.sensory_data.current_gdp > 0:
-                limit_ratio = getattr(self.config_module, "DEFICIT_SPENDING_LIMIT_RATIO", 0.3)
-                debt_limit = self.sensory_data.current_gdp * limit_ratio
-
-                projected_assets = self.assets - effective_amount
-
-                if abs(projected_assets) > debt_limit and projected_assets < 0:
-                    logger.warning(
-                        f"FISCAL_CLIFF_REACHED | Spending blocked. Debt {abs(self.assets):.2f} vs Limit {debt_limit:.2f}",
-                        extra={"tick": current_tick, "agent_id": self.id, "tags": ["fiscal_cliff", "deficit"]}
-                    )
-                    return 0.0
 
         self.assets -= effective_amount
         self.total_spent_subsidies += effective_amount
         self.expenditure_this_tick += effective_amount
-
-        self.total_money_issued += effective_amount
-
-        target_agent.assets += effective_amount
+        household.assets += effective_amount
         self.current_tick_stats["welfare_spending"] += effective_amount
 
         logger.info(
-            f"SUBSIDY_PAID | Paid {effective_amount:.2f} subsidy to {target_agent.id} ({agent_type})",
-            extra={
-                "tick": current_tick,
-                "agent_id": self.id,
-                "amount": effective_amount,
-                "target_id": target_agent.id,
-                "tags": ["subsidy", "expenditure"]
-            }
+            f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
+            extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
         )
         return effective_amount
+
+    def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int):
+        """Provides a bailout loan to a firm if it's eligible."""
+        if self.finance_system.evaluate_solvency(firm, current_tick):
+            logger.info(f"BAILOUT_APPROVED | Firm {firm.id} is eligible for a bailout.")
+            loan = self.finance_system.grant_bailout_loan(firm, amount)
+            self.expenditure_this_tick += amount
+            return loan
+        else:
+            logger.warning(f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout.")
+            return None
 
     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
         """ Calculates current survival cost based on food prices. """
@@ -398,8 +380,7 @@ class Government:
 
                 # B. Unemployment Benefit
                 if not agent.is_employed:
-                    # provide_subsidy now applies welfare_budget_multiplier
-                    self.provide_subsidy(agent, benefit_amount, current_tick)
+                    self.provide_household_support(agent, benefit_amount, current_tick)
                     total_welfare_paid += benefit_amount
 
         # 3. Stimulus Check (Legacy Logic, now influenced by AI multiplier)
@@ -445,23 +426,14 @@ class Government:
         if self.firm_subsidy_budget_multiplier < 0.8:
             return False
 
-        # WO-057-Active CRITICAL FIX: Apply Debt Ceiling to Infrastructure
-        if getattr(self.config_module, "DEFICIT_SPENDING_ENABLED", False):
-            if self.sensory_data and self.sensory_data.current_gdp > 0:
-                limit_ratio = getattr(self.config_module, "DEFICIT_SPENDING_LIMIT_RATIO", 0.3)
-                debt_limit = self.sensory_data.current_gdp * limit_ratio
-                projected_assets = self.assets - effective_cost
-                if abs(projected_assets) > debt_limit and projected_assets < 0:
-                    logger.warning(
-                        f"FISCAL_CLIFF_REACHED | Infrastructure investment blocked. Debt {abs(self.assets):.2f} vs Limit {debt_limit:.2f}",
-                        extra={"tick": current_tick, "agent_id": self.id, "tags": ["fiscal_cliff", "deficit"]}
-                    )
-                    return False
-        elif self.assets < effective_cost:
-            return False # Fallback to old behavior if deficit spending is off
+        if self.assets < effective_cost:
+            needed = effective_cost - self.assets
+            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
+            if not issued_bonds:
+                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                return False
 
         self.assets -= effective_cost
-        self.total_money_issued += effective_cost
         self.expenditure_this_tick += effective_cost
         if reflux_system:
             reflux_system.capture(effective_cost, str(self.id), "infrastructure")
@@ -531,6 +503,14 @@ class Government:
             "corporate_tax_rate": self.corporate_tax_rate,
             "perceived_public_opinion": self.perceived_public_opinion
         }
+
+    def get_debt_to_gdp_ratio(self) -> float:
+        """Calculates the debt-to-GDP ratio."""
+        if not self.sensory_data or self.sensory_data.current_gdp == 0:
+            return 0.0
+
+        debt = max(0.0, -self.assets)
+        return debt / self.sensory_data.current_gdp
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:

@@ -40,20 +40,13 @@ class DemographicManager:
             if not agent.is_active:
                 continue
 
-            # Increment Age
-            # We assume age is float or int ticks?
-            # Let's track age in years for logic, but update per tick?
-            # Usually agents have 'age' attribute initialized.
-            # If agent.age is in years:
+            # Increment Age for households
             agent.age += (1.0 / ticks_per_year)
 
             # Check Natural Death (Gompertz-Makeham law simplified)
-            # Probability increases exponentially after 60
             if agent.age > 80:
-                death_prob = 0.05 + (agent.age - 80) * 0.01 # Increases 1% per year after 80
-                # Per tick probability adjustment
+                death_prob = 0.05 + (agent.age - 80) * 0.01
                 death_prob_per_tick = death_prob / ticks_per_year
-
                 if random.random() < death_prob_per_tick:
                     self._execute_natural_death(agent, current_tick)
 

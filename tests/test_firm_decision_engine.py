@@ -72,7 +72,7 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
     employee1 = MockHousehold(id=101, labor_skill=1.0)
     employee2 = MockHousehold(id=102, labor_skill=0.8)
     sample_firm.employees = [employee1, employee2]
-    sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = (
+    sample_firm.decision_engine.ai_engine.decide_action_vector.return_value = (
         Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
     )
 
@@ -83,6 +83,7 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
         goods_data=[],
         market_data=sample_market_data,
         current_time=0,
+        government=None,
     )
     orders, _ = sample_firm.decision_engine.make_decisions(context)
 
@@ -113,7 +114,7 @@ def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
     # Set inventory to meet or exceed target
     sample_firm.inventory[sample_firm.specialization] = 150.0  # Above target of 100
     sample_firm.employees = []  # Ensure no employees are present to focus on inventory decision
-    sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = (
+    sample_firm.decision_engine.ai_engine.decide_action_vector.return_value = (
         Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
     )
 
@@ -123,6 +124,7 @@ def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
         goods_data=[],
         market_data=sample_market_data,
         current_time=0,
+        government=None,
     )
     orders, _ = sample_firm.decision_engine.make_decisions(context)
 
@@ -153,7 +155,7 @@ def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
     # Set inventory to 0, so it needs to produce
     sample_firm.inventory[sample_firm.specialization] = 0.0
     sample_firm.employees = []  # No employees
-    sample_firm.decision_engine.ai_engine.decide_and_learn.return_value = (
+    sample_firm.decision_engine.ai_engine.decide_action_vector.return_value = (
         Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
     )
 
@@ -163,6 +165,7 @@ def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
         goods_data=[],
         market_data=sample_market_data,
         current_time=0,
+        government=None,
     )
     orders, _ = sample_firm.decision_engine.make_decisions(context)
 

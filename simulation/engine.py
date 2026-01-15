@@ -35,6 +35,7 @@ from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
 from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.systems.transaction_processor import TransactionProcessor # SoC Refactor
+from modules.finance.system import FinanceSystem
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -113,6 +114,15 @@ class Simulation:
         # Central Bank is not in self.agents dict as it's a special system agent
         # similar to how markets are handled, or we can add it if needed.
         # But it doesn't participate in normal transactions.
+
+        # Finance System (Sovereign Debt)
+        self.finance_system = FinanceSystem(
+            government=self.government,
+            central_bank=self.central_bank,
+            bank=self.bank,
+            config_module=self.config_module
+        )
+        self.government.finance_system = self.finance_system # Inject into government
 
         # Phase 17-3A: Initialize Real Estate Units
         self.real_estate_units: List[RealEstateUnit] = [
@@ -517,6 +527,13 @@ class Simulation:
 
         # 4. Election Check
         self.government.check_election(self.time)
+
+        # Age firms
+        for firm in self.firms:
+            firm.age += 1
+
+        # Service national debt
+        self.finance_system.service_debt(self.time)
 
         # Phase 4: Welfare Check (Executes Subsidies based on Policy)
         self.government.run_welfare_check(list(self.agents.values()), market_data, self.time)

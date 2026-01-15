@@ -14,6 +14,9 @@ class CentralBank:
         self.tracker = tracker
         self.config_module = config_module
 
+        # Balance Sheet
+        self.assets: Dict[str, List[Any]] = {"bonds": []}
+
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
 
@@ -30,6 +33,18 @@ class CentralBank:
         logger.info(
             f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}",
             extra={"tick": 0, "tags": ["central_bank", "init"]}
+        )
+
+    def purchase_bonds(self, bond: Any) -> None:
+        """
+        Purchases government bonds, adding them to the Central Bank's balance sheet.
+        This is a key part of Quantitative Easing (QE).
+        """
+        self.assets["bonds"].append(bond)
+        logger.info(
+            f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}. "
+            f"Total bonds held: {len(self.assets['bonds'])}",
+            extra={"tags": ["central_bank", "qe"]}
         )
 
     def get_base_rate(self) -> float:

@@ -89,8 +89,30 @@ class FinanceDepartment:
                     extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
                 )
 
-    def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
+    def process_profit_distribution(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
         """Public Shareholders Dividend"""
+        if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
+            repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+            repayment = self.current_profit * repayment_ratio
+
+            # Ensure total_debt exists before attempting to modify
+            if not hasattr(self.firm, 'total_debt'):
+                self.firm.total_debt = 0.0
+
+            # Money Leak Fix: Transfer repayment to the government
+            self.firm.assets -= repayment
+            government.assets += repayment
+
+            self.firm.total_debt -= repayment
+            self.current_profit -= repayment
+            self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan to the government.")
+
+            # Check if the loan is fully repaid
+            if self.firm.total_debt <= 0:
+                self.firm.total_debt = 0.0
+                self.firm.has_bailout_loan = False
+                self.firm.logger.info(f"BAILOUT_PAID_OFF | Firm {self.firm.id} has fully repaid its bailout loan.")
+
         transactions = []
         distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)
 
@@ -174,6 +196,43 @@ class FinanceDepartment:
             return dividend_amount
 
         return 0.0
+
+    def add_liability(self, amount: float, interest_rate: float):
+        """Adds a liability (like a loan) to the firm's balance sheet."""
+        # This is a simplified implementation. A real one would track multiple loans.
+        self.firm.assets += amount  # The loan increases cash assets
+        # In a more complex model, this would be a separate liability account
+        # For now, we'll just track the total debt.
+        if not hasattr(self.firm, 'total_debt'):
+            self.firm.total_debt = 0.0
+        self.firm.total_debt += amount
+
+    def calculate_altman_z_score(self) -> float:
+        """
+        Calculates the Altman Z-Score for solvency, simplified for this model.
+        Z = 1.2*X1 + 1.4*X2 + 3.3*X3
+        X1: Working Capital / Total Assets
+        X2: Retained Earnings / Total Assets
+        X3: Average Profit / Total Assets
+        """
+        total_assets = self.firm.assets + self.firm.capital_stock + self.firm.get_inventory_value()
+        if total_assets == 0:
+            return 0.0
+
+        # X1: Working Capital / Total Assets
+        # Working Capital = Current Assets - Current Liabilities. Assume liabilities are total_debt for now.
+        working_capital = self.firm.assets - getattr(self.firm, 'total_debt', 0.0)
+        x1 = working_capital / total_assets
+
+        # X2: Retained Earnings / Total Assets
+        x2 = self.retained_earnings / total_assets
+
+        # X3: Average Profit / Total Assets
+        avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
+        x3 = avg_profit / total_assets
+
+        z_score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3
+        return z_score
 
     def check_bankruptcy(self):
         if self.current_profit < 0:

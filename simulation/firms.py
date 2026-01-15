@@ -133,6 +133,9 @@ class Firm(BaseAgent):
         self.automation_level: float = 0.0 # 0.0 to 1.0
         self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
 
+        self.age = 0
+        self.cash_reserve = initial_capital
+        self.has_bailout_loan = False
         self.decision_engine.loan_market = loan_market
 
     def init_ipo(self, stock_market: StockMarket):
@@ -608,9 +611,9 @@ class Firm(BaseAgent):
         )
         return new_firm
 
-    def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
+    def distribute_dividends(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
         # SoC Refactor
-        return self.finance.distribute_dividends(households, current_time)
+        return self.finance.process_profit_distribution(households, government, current_time)
 
     @override
     def get_agent_data(self) -> Dict[str, Any]:

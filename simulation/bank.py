@@ -71,6 +71,10 @@ class Bank:
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
         )
 
+    def get_interest_rate(self) -> float:
+        """Returns the current base interest rate."""
+        return self.base_rate
+
     def _get_config(self, key: str, default: Any) -> Any:
         return getattr(self.config_module, key, default)
 
