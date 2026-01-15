@@ -94,9 +94,20 @@ class FinanceDepartment:
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
             repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
             repayment = self.current_profit * repayment_ratio
+
+            # Ensure total_debt exists before attempting to modify
+            if not hasattr(self.firm, 'total_debt'):
+                self.firm.total_debt = 0.0
+
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
             self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan.")
+
+            # Check if the loan is fully repaid
+            if self.firm.total_debt <= 0:
+                self.firm.total_debt = 0.0
+                self.firm.has_bailout_loan = False
+                self.firm.logger.info(f"BAILOUT_PAID_OFF | Firm {self.firm.id} has fully repaid its bailout loan.")
 
         transactions = []
         distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)

@@ -28,7 +28,7 @@ def mock_government():
 @pytest.fixture
 def mock_central_bank():
     cb = Mock()
-    cb.get_interest_rate.return_value = 0.02
+    cb.get_base_rate.return_value = 0.02
     return cb
 
 @pytest.fixture
@@ -56,6 +56,8 @@ def mock_firm():
 
 def test_evaluate_solvency_startup_pass(finance_system, mock_firm):
     mock_firm.age = 10
+    # Fix: Required runway is 3 * (1000 * 4) = 12000. Set cash reserve to match.
+    mock_firm.cash_reserve = 12000.0
     assert finance_system.evaluate_solvency(mock_firm, 100) is True
 
 def test_evaluate_solvency_startup_fail(finance_system, mock_firm):
@@ -81,6 +83,10 @@ def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank)
 
 def test_issue_treasury_bonds_qe(finance_system, mock_government, mock_central_bank):
     mock_government.get_debt_to_gdp_ratio.return_value = 1.5
+    # Fix: The yield rate (base + risk premium) must exceed the QE threshold.
+    # Original: 0.02 (base) + 0.05 (risk) = 0.07 <= 0.10 (QE threshold) -> No QE
+    # New: 0.06 (base) + 0.05 (risk) = 0.11 > 0.10 (QE threshold) -> QE triggered
+    mock_central_bank.get_base_rate.return_value = 0.06
     amount = 1000.0
     initial_gov_assets = mock_government.assets
     bonds = finance_system.issue_treasury_bonds(amount, 100)

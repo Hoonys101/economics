@@ -37,7 +37,7 @@ class FinanceSystem(IFinanceSystem):
         Issues new treasury bonds to the market, allowing for crowding out.
         The Central Bank only intervenes if yields exceed a critical threshold.
         """
-        base_rate = self.central_bank.get_interest_rate()
+        base_rate = self.central_bank.get_base_rate()
         debt_to_gdp = self.government.get_debt_to_gdp_ratio()
 
         # Config-driven risk premium tiers
@@ -84,7 +84,7 @@ class FinanceSystem(IFinanceSystem):
 
     def grant_bailout_loan(self, firm: 'Firm', amount: float) -> BailoutLoanDTO:
         """Converts a bailout from a grant to an interest-bearing senior loan."""
-        base_rate = self.central_bank.get_interest_rate()
+        base_rate = self.central_bank.get_base_rate()
         penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
 
         loan = BailoutLoanDTO(
@@ -101,15 +101,29 @@ class FinanceSystem(IFinanceSystem):
         # The government provides the funds, which become a liability for the firm
         self.government.assets -= amount
         firm.finance.add_liability(amount, loan.interest_rate)
+        firm.has_bailout_loan = True
 
         return loan
 
 
     def service_debt(self, current_tick: int) -> None:
-        """Manages the servicing of outstanding government debt."""
-        # This is a simplified version. A real implementation would handle interest payments
-        # and bond maturation.
+        """
+        Manages the servicing of outstanding government debt.
+        When bonds mature, both principal and accrued simple interest are paid.
+        """
         matured_bonds = [b for b in self.outstanding_bonds if b.maturity_date <= current_tick]
+
+        bond_maturity_ticks = getattr(self.config_module, "BOND_MATURITY_TICKS", 400)
+        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 48)
+
         for bond in matured_bonds:
-            self.government.assets -= bond.face_value
+            # Calculate simple interest accrued over the bond's lifetime
+            interest_amount = bond.face_value * bond.yield_rate * (bond_maturity_ticks / ticks_per_year)
+            total_repayment = bond.face_value + interest_amount
+
+            # This is a critical monetary operation. Failure to pay destroys sovereign credit.
+            # For now, we assume the government can always pay. A future feature could model default.
+            self.government.assets -= total_repayment
+
+            # The bond is removed from the outstanding list
             self.outstanding_bonds.remove(bond)

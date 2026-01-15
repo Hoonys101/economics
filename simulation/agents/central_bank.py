@@ -14,6 +14,9 @@ class CentralBank:
         self.tracker = tracker
         self.config_module = config_module
 
+        # Balance Sheet
+        self.assets: Dict[str, List[Any]] = {"bonds": []}
+
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
 
@@ -33,10 +36,16 @@ class CentralBank:
         )
 
     def purchase_bonds(self, bond: Any) -> None:
-        """Purchases government bonds, effectively performing QE."""
-        # In a real model, this would add to the CB's balance sheet.
-        # For now, this is a placeholder to complete the transaction loop.
-        logger.info(f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}")
+        """
+        Purchases government bonds, adding them to the Central Bank's balance sheet.
+        This is a key part of Quantitative Easing (QE).
+        """
+        self.assets["bonds"].append(bond)
+        logger.info(
+            f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}. "
+            f"Total bonds held: {len(self.assets['bonds'])}",
+            extra={"tags": ["central_bank", "qe"]}
+        )
 
     def get_base_rate(self) -> float:
         return self.base_rate
