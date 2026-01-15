@@ -50,8 +50,10 @@ class CentralBank:
             else:
                 self.potential_gdp = (self.gdp_ema_alpha * current_gdp) + ((1 - self.gdp_ema_alpha) * self.potential_gdp)
 
-        # 2. Check Update Interval
-        if current_tick > 0 and current_tick % self.update_interval == 0:
+        # 2. Check Update Interval (and if AI is not in control)
+        is_ai_controlled = getattr(self.config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE") == "AI_ADAPTIVE"
+
+        if not is_ai_controlled and current_tick > 0 and current_tick % self.update_interval == 0:
             self.calculate_rate(current_tick, current_gdp)
 
     def calculate_rate(self, current_tick: int, current_gdp: float):

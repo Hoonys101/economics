@@ -331,7 +331,7 @@ class Simulation:
             "avg_housing_tier": avg_tier
         }
 
-    def run_tick(self) -> None:
+    def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
         # --- Gold Standard / Money Supply Verification (WO-016) ---
         if self.time == 0:
             self.baseline_money_supply = self._calculate_total_money()
@@ -381,10 +381,6 @@ class Simulation:
         else:
              self.bank.run_tick(self.agents)
 
-        # 1c. 통화 정책 업데이트 (Central Bank) - Phase 10
-        self.central_bank.step(self.time)
-        new_base_rate = self.central_bank.get_base_rate()
-        self.bank.update_base_rate(new_base_rate)
 
         # Legacy call removed: self.government.update_monetary_policy(...)
 
@@ -476,7 +472,14 @@ class Simulation:
 
         # Supply to Government
         # Supply to Government
-        self.government.update_sensory_data(sensory_dto)
+        if injectable_sensory_dto and injectable_sensory_dto.tick == self.time:
+            self.government.update_sensory_data(injectable_sensory_dto)
+            self.logger.warning(
+                f"INJECTED_SENSORY_DATA | Overrode sensory data for tick {self.time} with custom DTO.",
+                extra={"tick": self.time, "tags": ["test_injection"]}
+            )
+        else:
+            self.government.update_sensory_data(sensory_dto)
 
         # --- WO-062: Macro-Financial Context for Households ---
         macro_financial_context = None
@@ -505,6 +508,12 @@ class Simulation:
         market_data["total_production"] = latest_gdp
 
         self.government.make_policy_decision(market_data, self.time, self.central_bank)
+
+        # Monetary policy is updated AFTER the government's fiscal/AI decision
+        # This allows the AI to influence the Central Bank's rate for the current tick
+        self.central_bank.step(self.time)
+        new_base_rate = self.central_bank.get_base_rate()
+        self.bank.update_base_rate(new_base_rate)
 
         # 4. Election Check
         self.government.check_election(self.time)

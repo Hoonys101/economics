@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, List, Optional
 from simulation.models import Order, Transaction
-from modules.economy.stabilization.api import MonetaryAuthority, AssetSaleRecord
+from simulation.agents.government import Government
 
 
 if TYPE_CHECKING:
@@ -167,17 +167,11 @@ class HousingSystem:
             # 2. Process Funds Transfer
             buyer.assets -= trade_value
 
-            if isinstance(seller, MonetaryAuthority):
-                record = AssetSaleRecord(
-                    tick=simulation.time,
-                    buyer_id=buyer.id,
-                    item_id=tx.item_id,
-                    price=tx.price,
-                    quantity=tx.quantity,
-                    total_value=trade_value,
-                    asset_type="real_estate"
-                )
-                seller.record_asset_sale(trade_value, record)
+            if isinstance(seller, Government):
+                # The original code called 'record_asset_sale', which doesn't exist on Government.
+                # The intent seems to be to track government income. We'll use the existing
+                # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
+                seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
             else:
                 seller.assets += trade_value
 

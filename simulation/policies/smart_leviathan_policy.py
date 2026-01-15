@@ -35,6 +35,22 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         action = self.ai.decide_policy(current_tick)
         self.last_action_tick = current_tick
 
+        # --- [REFLEX OVERRIDE] ---
+        # As per WO-067, a high inflation scenario must trigger an immediate hawkish response.
+        # This overrides the learned Q-table behavior in critical situations to act as a safety backstop.
+        current_state = self.ai._get_state()
+        inflation_state = current_state[0]  # s_inf is the first element
+
+        if inflation_state == 2:  # State 2 means "High Inflation"
+            if action != self.ai.ACTION_HAWKISH:
+                logger.warning(
+                    f"REFLEX_OVERRIDE | High inflation detected (State={inflation_state}). "
+                    f"Overriding AI action {action} with HAWKISH ({self.ai.ACTION_HAWKISH}).",
+                    extra={"tick": current_tick}
+                )
+                action = self.ai.ACTION_HAWKISH
+        # --- [END REFLEX OVERRIDE] ---
+
         # 2. Execution (Actuator)
         # Store old values for logging baby steps
         old_values = {
