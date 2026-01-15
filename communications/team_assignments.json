@@ -3,7 +3,8 @@
     "project": "economics",
     "active_sessions": {
       "10854377176396676821": "TD-024: Pytest Path Correction (Phase 26 Pre-req)",
-      "5283327958326335498": "TD-024: Post-Fix Test Stabilization"
+      "5283327958326335498": "TD-024: Post-Fix Test Stabilization",
+      "15420605320896780216": "TD-024: Pytest Infrastructure Fix"
     },
     "completed_sessions": {
       "15007179683109829611": "WO-060 - MERGED 2026-01-15",

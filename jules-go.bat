@@ -35,8 +35,8 @@ echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
 :: Target: TD-024 Pytest Path Standardization (Full Restart)
-:: Action: Create new Jules session with comprehensive context
-python scripts/jules_bridge.py create "TD-024: Pytest Infrastructure Fix" "Mission: 완벽한 Pytest 환경 표준화 및 수집 에러 해결. Reference: design/specs/TD-024_pytest_path_fix_spec.md. Tasks: 1) Ensure pytest.ini is correctly configured in the root (pythonpath = .). 2) Remove sys.path hacks from tests/conftest.py. 3) CRITICAL: Fix 'pytest tests/' collection error (exit code 1). Run 'pytest --collect-only' to diagnose broken imports or configuration conflicts. 4) Verify all tests pass without ModuleNotFoundError. Reporting: Log all fixed errors in communications/insights/ upon completion." > communications\jules_logs\last_run.md 2>&1
+:: Action: Create new Jules session with pure English instructions
+python scripts/jules_bridge.py create "TD-024: Pytest Infrastructure Fix" "Mission: Standardize Pytest environment and fix collection errors. Reference: design/specs/TD-024_pytest_path_fix_spec.md. Tasks: 1) Ensure pytest.ini is correctly configured in root (pythonpath = .). 2) Remove sys.path hacks from tests/conftest.py. 3) CRITICAL: Fix 'pytest tests/' collection error (exit code 1). Use 'pytest --collect-only' to diagnose broken imports or config conflicts. 4) Verify all tests pass without ModuleNotFoundError. Reporting: Log all fixed errors in communications/insights/." > communications\jules_logs\last_run.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.
