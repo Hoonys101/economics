@@ -15,7 +15,7 @@ from simulation.ai.api import (
     Aggressiveness,
 )
 from simulation.core_markets import Market  # Import Market
-from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType
+from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext
 from simulation.portfolio import Portfolio
 
 # Import HouseholdAI and AIDrivenHouseholdDecisionEngine for mitosis
@@ -647,6 +647,7 @@ class Household(BaseAgent):
         market_data: Dict[str, Any],
         current_time: int,
         government: Optional[Any] = None,
+        macro_context: Optional[MacroFinancialContext] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
         # Phase 20: System 2 Housing Check
         self.decide_housing(market_data, current_time)
@@ -681,7 +682,7 @@ class Household(BaseAgent):
             current_time=current_time,
             government=government,
         )
-        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context)
+        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
 
         # WO-056: Shadow Mode Labor Logic
         self._calculate_shadow_reservation_wage(market_data, current_time)

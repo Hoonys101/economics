@@ -339,3 +339,14 @@ class GovernmentStateDTO:
     wage_sma: float
     approval_sma: float
     current_gdp: float
+
+@dataclass
+class MacroFinancialContext:
+    """
+    WO-062: Macro-Linked Portfolio Decisions.
+    Transfers macro financial data to portfolio decision modules.
+    """
+    inflation_rate: float
+    gdp_growth_rate: float
+    market_volatility: float
+    interest_rate_trend: float

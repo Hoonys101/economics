@@ -6,7 +6,7 @@ import random
 from simulation.models import Order, StockOrder
 from simulation.ai.api import Tactic, Aggressiveness, Personality
 from .base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext
+from simulation.dtos import DecisionContext, MacroFinancialContext
 from simulation.decisions.portfolio_manager import PortfolioManager
 
 if TYPE_CHECKING:
@@ -36,6 +36,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
     def make_decisions(
         self,
         context: DecisionContext,
+        macro_context: Optional[MacroFinancialContext] = None,
     ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
         """
         AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
@@ -326,7 +327,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # 4. Execution: Stock Investment Logic
         # ---------------------------------------------------------
         stock_orders = self._make_stock_investment_decisions(
-            household, markets, market_data, action_vector, current_time
+            household, markets, market_data, action_vector, current_time, macro_context
         )
         # Current: Submit stock orders directly to markets
         stock_market = markets.get("stock_market")
@@ -340,7 +341,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # Phase 16: Portfolio Manager (WO-026)
         # Run monthly rebalancing (every 30 ticks)
         if current_time % 30 == 0:
-            portfolio_orders = self._manage_portfolio(household, market_data, current_time)
+            portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
             orders.extend(portfolio_orders)
         else:
             # Simple liquidity check for emergencies (Withdraw if cash is critical)
@@ -415,7 +416,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         return orders, action_vector
 
-    def _manage_portfolio(self, household: "Household", market_data: Dict[str, Any], current_time: int) -> List[Order]:
+    def _manage_portfolio(self, household: "Household", market_data: Dict[str, Any], current_time: int, macro_context: Optional[MacroFinancialContext] = None) -> List[Order]:
         """
         Executes Portfolio Optimization (WO-026).
         """
@@ -462,7 +463,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             risk_free_rate=risk_free_rate,
             equity_return_proxy=equity_return,
             survival_cost=monthly_survival_cost,
-            inflation_expectation=avg_inflation
+            inflation_expectation=avg_inflation,
+            macro_context=macro_context
         )
 
         # 3. Generate Orders
@@ -571,6 +573,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         market_data: Dict[str, Any],
         action_vector: Any,
         current_time: int,
+        macro_context: Optional[MacroFinancialContext] = None,
     ) -> List[StockOrder]:
         """주식 투자 의사결정을 수행합니다."""
         stock_orders: List[StockOrder] = []
@@ -607,7 +610,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             risk_free_rate=risk_free_rate,
             equity_return_proxy=avg_dividend_yield,
             survival_cost=survival_cost,
-            inflation_expectation=market_data.get("inflation", 0.02)
+            inflation_expectation=market_data.get("inflation", 0.02),
+            macro_context=macro_context
         )
 
         # Calculate delta and place orders
