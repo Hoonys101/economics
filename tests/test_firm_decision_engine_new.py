@@ -62,8 +62,10 @@ def mock_firm(mock_config):
     firm.cost_this_turn = 0.0
     firm.profit_history = deque(maxlen=mock_config.PROFIT_HISTORY_TICKS)
     firm.specialization = "food"
-    # Add a mock for the logger attribute
     firm.logger = MagicMock()
+    firm.age = 25 # Add age for solvency checks
+    firm.finance = Mock() # Mock the finance department
+    firm.hr = Mock() # Mock the HR department
     return firm
 
 
@@ -93,7 +95,7 @@ class TestFirmDecisionEngine:
     def test_make_decisions_overstock_reduces_target(
         self, firm_decision_engine_instance, mock_firm, mock_config
     ):
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
         )
         mock_firm.inventory["food"] = 150.0 # Force overstock (150 > 100 * 1.2)
@@ -106,6 +108,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -120,7 +123,7 @@ class TestFirmDecisionEngine:
     ):
         mock_firm.inventory["food"] = 50.0
         initial_target = mock_firm.production_target
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
         )
 
@@ -130,6 +133,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -144,7 +148,7 @@ class TestFirmDecisionEngine:
     ):
         mock_firm.inventory["food"] = 100.0
         initial_target = mock_firm.production_target
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
         )
 
@@ -154,6 +158,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -162,7 +167,7 @@ class TestFirmDecisionEngine:
     def test_make_decisions_target_min_max_bounds(
         self, firm_decision_engine_instance, mock_firm, mock_config
     ):
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_PRODUCTION, Aggressiveness.NORMAL
         )
         # Test min bound
@@ -174,6 +179,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         assert mock_firm.production_target == mock_config.FIRM_MIN_PRODUCTION_TARGET
@@ -187,6 +193,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         assert mock_firm.production_target == mock_config.FIRM_MAX_PRODUCTION_TARGET
@@ -196,7 +203,7 @@ class TestFirmDecisionEngine:
     ):
         mock_firm.employees = []
         mock_firm.inventory["food"] = 0  # Ensure production is needed
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
@@ -206,6 +213,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={"avg_wage": 10.0},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -214,7 +222,7 @@ class TestFirmDecisionEngine:
         ]
         assert len(buy_labor_orders) > 0
         assert buy_labor_orders[0].quantity == 1.0
-        assert buy_labor_orders[0].market_id == "labor_market"
+        assert buy_labor_orders[0].market_id == "labor"
 
     def test_make_decisions_hires_for_needed_labor(
         self, firm_decision_engine_instance, mock_firm, mock_config
@@ -222,7 +230,7 @@ class TestFirmDecisionEngine:
         mock_firm.employees = [Mock()]
         mock_firm.production_target = 500
         mock_firm.inventory["food"] = 0  # Ensure production is needed
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
@@ -232,6 +240,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={"avg_wage": 10.0},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -246,7 +255,7 @@ class TestFirmDecisionEngine:
     ):
         mock_firm.employees = [Mock() for _ in range(mock_config.FIRM_MAX_EMPLOYEES)]
         mock_firm.production_target = 500
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
@@ -256,6 +265,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -270,7 +280,7 @@ class TestFirmDecisionEngine:
         mock_firm.employees = [Mock() for _ in range(10)]
         mock_firm.production_target = 0
         mock_firm.inventory = {"food": 1000}
-        firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
             Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
         )
 
@@ -280,6 +290,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -312,7 +323,7 @@ class TestFirmDecisionEngine:
         assert labor_order is not None
         assert labor_order.agent_id == mock_firm.id
         assert labor_order.quantity == 1.0
-        assert labor_order.market_id == "labor_market"
+        assert labor_order.market_id == "labor"
 
     def test_make_decisions_does_not_sell_if_understocked(
         self, firm_decision_engine_instance, mock_firm
@@ -327,6 +338,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_orders = [
@@ -347,6 +359,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_orders = [
@@ -368,6 +381,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
@@ -389,6 +403,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
@@ -412,6 +427,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
@@ -429,6 +445,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
@@ -450,6 +467,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
@@ -473,6 +491,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
@@ -498,6 +517,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -523,6 +543,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -548,6 +569,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
@@ -576,6 +598,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(
@@ -594,6 +617,7 @@ class TestFirmDecisionEngine:
             goods_data=[],
             market_data={},
             current_time=1,
+            government=None,
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
         sell_order = next(

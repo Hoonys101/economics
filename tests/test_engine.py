@@ -180,6 +180,7 @@ def mock_firms(mock_config_module):
     f1.is_active = True
     f1.total_shares = 1000.0
     f1.treasury_shares = 0.0
+    f1.age = 25 # Set age for testing
 
     f2 = Firm(
         id=102,
@@ -195,6 +196,7 @@ def mock_firms(mock_config_module):
     f2.is_active = False  # Inactive firm
     f2.total_shares = 1000.0
     f2.treasury_shares = 0.0
+    f2.age = 25 # Set age for testing
     return [f1, f2]
 
 
@@ -256,6 +258,8 @@ def simulation_instance(
         mock_config_module,
         mock_goods_data,
     )
+    sim.government.finance_system = Mock()
+    sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)
     return sim
 
 

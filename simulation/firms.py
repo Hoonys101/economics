@@ -133,6 +133,7 @@ class Firm(BaseAgent):
         self.automation_level: float = 0.0 # 0.0 to 1.0
         self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
 
+        self.age = 0
         self.decision_engine.loan_market = loan_market
 
     def init_ipo(self, stock_market: StockMarket):

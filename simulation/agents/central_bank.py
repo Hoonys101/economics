@@ -32,6 +32,12 @@ class CentralBank:
             extra={"tick": 0, "tags": ["central_bank", "init"]}
         )
 
+    def purchase_bonds(self, bond: Any) -> None:
+        """Purchases government bonds, effectively performing QE."""
+        # In a real model, this would add to the CB's balance sheet.
+        # For now, this is a placeholder to complete the transaction loop.
+        logger.info(f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}")
+
     def get_base_rate(self) -> float:
         return self.base_rate
 

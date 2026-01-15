@@ -48,18 +48,30 @@ def mock_firm(mock_config):
     firm.employees = []
     firm.profit_history = []
     firm.productivity_factor = 1.0
+    firm.age = 25 # Add age for solvency checks
+    firm.finance = Mock() # Mock the finance department
     return firm
 
 
 def test_adjust_price_tactic(firm_decision_engine_instance, mock_firm):
     """Test that the ADJUST_PRICE tactic correctly adjusts the price."""
+    from simulation.dtos import DecisionContext
+
     mock_firm.inventory["food"] = 200
     mock_firm.production_target = 100
-    firm_decision_engine_instance.ai_engine.decide_and_learn.return_value = (
-        Tactic.ADJUST_PRICE
+    firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = (
+        (Tactic.ADJUST_PRICE, 1.0)
     )
 
-    orders, _ = firm_decision_engine_instance.make_decisions(mock_firm, {}, [], {}, 1)
+    context = DecisionContext(
+        firm=mock_firm,
+        markets={},
+        goods_data=[],
+        market_data={},
+        current_time=1,
+        government=None,
+    )
+    orders, _ = firm_decision_engine_instance.make_decisions(context)
 
     assert len(orders) == 1
     order = orders[0]
