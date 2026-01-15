@@ -85,10 +85,22 @@
 
 ### Phase 26: Financial Strategy Integration ⭐ **[CURRENT]**
 - **Goal**: Link macro environment to retail/institutional strategy.
+- **Pre-requisite**:
+    - [ ] **TD-024**: Test Path Correction (Pytest 경로 오류 해결) **[BLOCKER]**
 - **Tasks**:
-    - [ ] WO-062: Signal Intelligence Engine (Judge & Sentinel) **[PRIORITY]**
-    - [ ] WO-063: Inverse ETF & Hedging Mechanism
-    - [ ] WO-064: Strategy Backtest Framework
+    - [ ] WO-068: Macro-Linked Portfolio (Dynamic Risk Aversion)
+    - [ ] WO-069: Signal Intelligence Engine (Judge & Sentinel)
+    - [ ] WO-070: Inverse ETF & Hedging Mechanism
+    - [ ] WO-071: Strategy Backtest Framework
+
+### Phase 27: Social Dynamics & Realism **[DEFERRED]**
+- **Goal**: 시뮬레이션 리얼리티 향상 및 기술부채 상환
+- **Deferred Technical Debts**:
+    - [ ] TD-005: Halo Effect 하드코딩 → Dynamic Interview 시스템
+    - [ ] TD-006: Deterministic Class Caste → Dynamic Education Market
+    - [ ] TD-007: Industrial Revolution Stress Test Config → Natural Equilibrium Tuning
+    - [ ] TD-008: CPR Primitive Valuation → Solvency/Liquidity 메트릭
+    - [ ] TD-009: CPR Unconditional Grants → Government Loans/Bonds
 
 ### Phase 22: The Awakening (Adaptive AI) **[COMPLETED]**
 - **Goal**: Wake up the Agents (System 2 Activation).

@@ -1,15 +1,14 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {
-      "15007179683109829611": "WO-060 (COMPLETED)",
-      "7095675393629273222": "WO-064: Banking Credit Engine Implementation (COMPLETED)",
-      "10296031762289509515": "WO-065: Monetary Integrity & Suture Implementation (COMPLETED)",
-      "14018014647659914271": "WO-062: Macro-Linked Portfolio Implementation (COMPLETED)",
-      "9343683714945509652": "WO-066: High-Fidelity Sensory Architecture",
-      "9719318674264407147": "WO-067: High-Fidelity Reaction Test"
-    },
+    "active_sessions": {},
     "completed_sessions": {
+      "15007179683109829611": "WO-060 - MERGED 2026-01-15",
+      "7095675393629273222": "WO-064: Banking Credit Engine - MERGED 2026-01-15",
+      "10296031762289509515": "WO-065: Monetary Integrity & Suture - MERGED 2026-01-15",
+      "14018014647659914271": "WO-062: Macro-Linked Portfolio - MERGED 2026-01-15",
+      "9343683714945509652": "WO-066: High-Fidelity Sensory Architecture - MERGED 2026-01-15",
+      "9719318674264407147": "WO-067: High-Fidelity Reaction Test - MERGED 2026-01-15",
       "3778947626343557354": "WO-057-Refine Shock Therapy (Retry) - MERGED 2026-01-14",
       "11626928342509996952": "TD-014: Government SoC Refactoring - MERGED 2026-01-14",
       "10078451815509526740": "WO-058-Retry: Operation Defibrillator - MERGED 2026-01-14",

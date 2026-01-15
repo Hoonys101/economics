@@ -1,12 +1,20 @@
 # Technical Debt Ledger (기술부채 관리대장)
 
+## 🔴 BLOCKER (진행 불가 - 즉시 해결 필요)
+
+| ID | Date | Description | Impact | Status |
+|---|---|---|---|---|
+| TD-024 | 2026-01-15 | `pytest` 실행 시 테스트 경로 오류 | Phase 26 착수 불가 (테스트 신뢰성 훼손) | **BLOCKER** |
+
+## 🟡 DEFERRED (Phase 27 상환 예정)
+
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
-| TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **Recognized** |
-| TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **Recognized** |
-| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **Recognized** |
-| TD-008 | 2026-01-14 | Primitive Valuation Logic in CPR (`cpr` module) | Implement comprehensive Solvency/Liquidity metric | Inefficient CPR targeting (Bailing out Zombie Firms) | **Recognized** |
-| TD-009 | 2026-01-14 | CPR Bailouts are Unconditional Grants | Convert Bailouts to Government Loans/Bonds (Fiscal Policy) | Lack of Fiscal Consequence, Inflationary bias | **Recognized** |
+| TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **DEFERRED** |
+| TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
+| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **DEFERRED** |
+| TD-008 | 2026-01-14 | Primitive Valuation Logic in CPR (`cpr` module) | Implement comprehensive Solvency/Liquidity metric | Inefficient CPR targeting (Bailing out Zombie Firms) | **DEFERRED** |
+| TD-009 | 2026-01-14 | CPR Bailouts are Unconditional Grants | Convert Bailouts to Government Loans/Bonds (Fiscal Policy) | Lack of Fiscal Consequence, Inflationary bias | **DEFERRED** |
 
 
 ---
