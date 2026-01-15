@@ -1,7 +1,7 @@
 @echo off
 setlocal
 :: ==============================================================================
-:: Gemini-CLI HITL 2.0: PR Analysis & Drafting (Track A: WO-064)
+:: Gemini-CLI HITL 2.0: PR Analysis (Track C: WO-062)
 :: ==============================================================================
 set PYTHONIOENCODING=utf-8
 
@@ -10,10 +10,10 @@ if not exist "design\gemini_output" (
 )
 
 :: [PR Drafting Task]
-:: 브랜치: feature/banking-credit-engine-7095675393629273222
-:: 상세 내용: "This commit introduces a fractional-reserve banking system, enabling credit creation within the simulation. The new `grant_loan` logic in `simulation/bank.py` now uses the `RESERVE_REQ_RATIO` from `config.py` when `GOLD_STANDARD_MODE` is disabled. The changes have been verified using the `scripts/verify_banking.py` script, which confirms a money multiplier greater than 1 and ensures bank solvency."
+:: 브랜치: feature/macro-linked-portfolio-14018014647659914271
+:: 상세 내용: "This change implements the Macro-Linked Portfolio logic as specified in the work order. It introduces a new feature that dynamically adjusts household portfolio risk aversion based on macroeconomic conditions, gated by a feature flag. The implementation includes a new DTO for macroeconomic data, a VIX proxy for market volatility, and unit tests for the new logic. All code review feedback has been addressed."
 
-python scripts/gemini_worker.py git "feature/banking-credit-engine-7095675393629273222 브랜치의 작업 내용을 분석하고, 제공된 설명을 바탕으로 정식 Pull Request(PR) 본문을 작성해줘. 변경된 파일들의 SoC 준수 여부와 기술적 무결성을 검토하고, main 브랜치와의 병합 적합성을 평가해줘." > design\gemini_output\last_run.md 2>&1
+python scripts/gemini_worker.py git "feature/macro-linked-portfolio-14018014647659914271 브랜치를 분석하여 PR 본문을 작성해줘. 1) PortfolioManager에 MacroFinancialContext 연동 여부, 2) 위험 회피도(Lambda) 동적 조정 로직의 적절성, 3) VIX proxy 구현 방식을 중점적으로 검토하고, TD-031(통화 무결성) 패치와 충돌 가능성이 있는지 확인해줘." > design\gemini_output\last_run.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] PR Analysis failed.

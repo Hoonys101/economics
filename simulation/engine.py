@@ -49,6 +49,7 @@ from simulation.dtos import (
     PersonalityStatisticsData,
     DecisionContext,
     GovernmentStateDTO,
+    MacroFinancialContext,
 )
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,7 @@ class Simulation:
         # WO-057-B: Sensory Module - State Tracking
         self.last_avg_price_for_sma = 10.0
         self.last_gdp_for_sma = 0.0
+        self.last_interest_rate = self.bank.base_rate
 
         config_content = str(self.config_module.__dict__)
         config_hash = hashlib.sha256(config_content.encode()).hexdigest()
@@ -476,6 +478,21 @@ class Simulation:
         # Supply to Government
         self.government.update_sensory_data(sensory_dto)
 
+        # --- WO-062: Macro-Financial Context for Households ---
+        macro_financial_context = None
+        if getattr(self.config_module, "MACRO_PORTFOLIO_ADJUSTMENT_ENABLED", False):
+            interest_rate_trend = self.bank.base_rate - self.last_interest_rate
+            self.last_interest_rate = self.bank.base_rate
+
+            market_volatility = self.stock_tracker.get_market_volatility() if self.stock_tracker else 0.0
+
+            macro_financial_context = MacroFinancialContext(
+                inflation_rate=sensory_dto.inflation_sma,
+                gdp_growth_rate=sensory_dto.gdp_growth_sma,
+                market_volatility=market_volatility,
+                interest_rate_trend=interest_rate_trend
+            )
+
         # [DEBUG WO-057]
         self.logger.info(f"DEBUG_WO057 | Tick {self.time} | Indicators: {list(latest_indicators.keys())}")
         self.logger.info(f"DEBUG_WO057 | AvgPrice: {latest_indicators.get('avg_goods_price', 'MISSING')}")
@@ -551,7 +568,7 @@ class Simulation:
 
                 # make_decision return (orders, vector)
                 household_orders, action_vector = household.make_decision(
-                    self.markets, self.goods_data, market_data, self.time, self.government
+                    self.markets, self.goods_data, market_data, self.time, self.government, macro_financial_context
                 )
 
                 # Phase 5: Calculate Time Allocation (Hydraulic Model)

@@ -7,6 +7,8 @@
 from typing import Dict, List, Any, Optional, TYPE_CHECKING
 import logging
 from statistics import median
+from collections import deque
+import numpy as np
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -24,7 +26,23 @@ class StockMarketTracker:
         
         # 이전 틱의 기업 데이터 (수익률 계산용)
         self.previous_firm_data: Dict[int, Dict[str, float]] = {}
+        self.market_price_history = deque(maxlen=30)
         
+    def get_market_volatility(self) -> float:
+        """
+        Calculates the annualized market volatility (VIX proxy).
+        """
+        if len(self.market_price_history) < 2:
+            return 0.0
+
+        prices = list(self.market_price_history)
+        log_returns = np.log(prices[1:]) - np.log(prices[:-1])
+        daily_volatility = np.std(log_returns)
+
+        # Annualize
+        annualized_volatility = daily_volatility * np.sqrt(self.config_module.TICKS_PER_YEAR)
+        return annualized_volatility
+
     def track_firm_stock_data(
         self,
         firm: "Firm",
@@ -75,10 +93,17 @@ class StockMarketTracker:
         모든 기업의 주식 시장 데이터를 수집합니다.
         """
         results = []
+        prices = []
         for firm in firms:
             if firm.is_active:
                 data = self.track_firm_stock_data(firm, stock_market)
                 results.append(data)
+                prices.append(data['stock_price'])
+
+        if prices:
+            avg_price = sum(prices) / len(prices)
+            self.market_price_history.append(avg_price)
+
         return results
     
     def calculate_aggregate_metrics(

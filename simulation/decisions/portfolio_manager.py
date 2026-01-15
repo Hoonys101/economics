@@ -1,11 +1,41 @@
 from typing import Tuple, Dict
 import math
+from simulation.dtos import MacroFinancialContext
 
 class PortfolioManager:
     """
     Implements the Rational Investor brain (WO-026).
     Maximizes Utility U = E(R) - lambda * sigma^2
     """
+
+    # Constants for risk aversion calculation
+    CONST_INFLATION_TARGET = 0.02
+    INFLATION_STRESS_MULTIPLIER = 10.0
+    RECESSION_STRESS_MULTIPLIER = 5.0
+    INTEREST_RATE_STRESS_MULTIPLIER = 2.0
+    TOTAL_STRESS_MULTIPLIER_CAP = 3.0
+
+    @staticmethod
+    def calculate_effective_risk_aversion(base_lambda: float, context: MacroFinancialContext) -> float:
+        # 1. Inflation Stress (Fear increases when inflation exceeds the 2% target)
+        inflation_excess = max(0.0, context.inflation_rate - PortfolioManager.CONST_INFLATION_TARGET)
+        stress_inflation = inflation_excess * PortfolioManager.INFLATION_STRESS_MULTIPLIER  # Sensitivity weight (tuning required)
+
+        # 2. Recession Stress (Fear increases sharply during negative growth)
+        stress_recession = 0.0
+        if context.gdp_growth_rate < 0.0:
+            stress_recession = abs(context.gdp_growth_rate) * PortfolioManager.RECESSION_STRESS_MULTIPLIER # Sensitivity weight
+
+        # 3. Interest Rate Volatility (Optional)
+        # A sharp rise in interest rates is bad for both bonds and stocks, increasing cash preference
+        stress_rate = max(0.0, context.interest_rate_trend) * PortfolioManager.INTEREST_RATE_STRESS_MULTIPLIER
+
+        total_stress_multiplier = 1.0 + stress_inflation + stress_recession + stress_rate
+
+        # Apply a cap to prevent overly extreme aversion (e.g., max 3x)
+        total_stress_multiplier = min(PortfolioManager.TOTAL_STRESS_MULTIPLIER_CAP, total_stress_multiplier)
+
+        return base_lambda * total_stress_multiplier
 
     @staticmethod
     def optimize_portfolio(
@@ -14,7 +44,8 @@ class PortfolioManager:
         risk_free_rate: float,
         equity_return_proxy: float,
         survival_cost: float,
-        inflation_expectation: float
+        inflation_expectation: float,
+        macro_context: MacroFinancialContext = None
     ) -> Tuple[float, float, float]:
         """
         Calculates optimal allocation between Consumption(Cash), Risk-Free(Deposit), and Risky(Equity/Startup).
@@ -26,10 +57,14 @@ class PortfolioManager:
             equity_return_proxy: Expected return on equity (e.g. Dividend Yield or Avg ROI).
             survival_cost: Monthly survival cost (Safety Margin base).
             inflation_expectation: Expected inflation rate.
+            macro_context: MacroFinancialContext object.
 
         Returns:
             Tuple[float, float, float]: (Target Cash, Target Deposit, Target Equity Investment)
         """
+        effective_risk_aversion = risk_aversion
+        if macro_context:
+            effective_risk_aversion = PortfolioManager.calculate_effective_risk_aversion(risk_aversion, macro_context)
 
         # 1. Safety Margin Logic (Cash/Risk-Free)
         # "Safety Margin: 3 months of survival cost... MUST be kept in Cash/Risk-Free Deposit"
@@ -79,7 +114,7 @@ class PortfolioManager:
 
         # Expected Utility of Equity
         # U_e = R_e - lambda * sigma^2
-        u_equity = equity_return_proxy - (risk_aversion * sigma_equity_sq)
+        u_equity = equity_return_proxy - (effective_risk_aversion * sigma_equity_sq)
 
         # Threshold Check
         # If U_equity > U_deposit, allocate portion to Equity.
@@ -92,16 +127,16 @@ class PortfolioManager:
         # Log-odds or simple ratio?
         # Let's use a sigmoid-like or linear scale.
 
-        risk_premium_required = risk_aversion * sigma_equity_sq
+        risk_premium_required = effective_risk_aversion * sigma_equity_sq
         excess_return = equity_return_proxy - risk_free_rate
 
         if excess_return > risk_premium_required:
             # Attractive!
             # Allocation % = (E(R) - Rf) / (lambda * sigma^2)  <-- Merton's Portfolio Problem solution
-            # optimal_equity_weight = excess_return / (risk_aversion * sigma_equity_sq)
+            # optimal_equity_weight = excess_return / (effective_risk_aversion * sigma_equity_sq)
 
             # Avoid division by zero
-            denom = max(0.0001, risk_aversion * sigma_equity_sq)
+            denom = max(0.0001, effective_risk_aversion * sigma_equity_sq)
             optimal_equity_weight = excess_return / denom
 
             # Cap at 1.0 (100% of surplus)
