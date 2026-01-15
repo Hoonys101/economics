@@ -138,22 +138,39 @@ class Bank:
             # I will assume LoanMarket handles the denial based on the flag I added to Household.
             pass
 
-        # 3. Gold Standard (Full Reserve) Check
-        if self._get_config("GOLD_STANDARD_MODE", False):
+        # 3. Gold Standard (Full Reserve) Check vs. Fractional Reserve (WO-064)
+        gold_standard_mode = self._get_config("GOLD_STANDARD_MODE", False)
+
+        if gold_standard_mode:
+            # Gold Standard: 100% reserve requirement
             if self.assets < amount:
                 logger.warning(
                     f"LOAN_REJECTED | Insufficient reserves (Gold Standard) for {amount:.2f}. Reserves: {self.assets:.2f}",
                     extra={"agent_id": self.id, "tags": ["bank", "loan", "gold_standard"]}
                 )
                 return None
-        # Modern Finance: In current implementation (Phase 3/4), we also check liquidity (Full Reserve by default).
-        # To support fractional reserve in future, this check would be relaxed or removed here.
-        elif self.assets < amount:
-             logger.warning(
-                f"LOAN_DENIED | Bank has insufficient liquidity for {amount:.2f}",
-                extra={"agent_id": self.id, "tags": ["bank", "loan"]}
-            )
-             return None
+        else:
+            # Fractional Reserve Logic
+            reserve_ratio = self._get_config("RESERVE_REQ_RATIO", 0.1)
+            total_deposits = sum(d.amount for d in self.deposits.values())
+            # Required reserves are based on total liabilities (deposits) after the new loan is notionally added
+            required_reserves = (total_deposits + amount) * reserve_ratio
+
+            if self.assets < required_reserves:
+                logger.warning(
+                    f"LOAN_DENIED | Insufficient reserves for fractional lending. "
+                    f"Assets: {self.assets:.2f}, Required: {required_reserves:.2f} "
+                    f"(Deposits: {total_deposits:.2f}, Loan: {amount:.2f}, Ratio: {reserve_ratio:.2%})",
+                    extra={"agent_id": self.id, "tags": ["bank", "loan", "fractional_reserve"]}
+                )
+                return None
+
+            # If assets are less than the loan amount, but we have enough reserves, this is credit creation.
+            if self.assets < amount:
+                logger.info(
+                    f"[CREDIT_CREATION] Bank {self.id} created {amount} credit. Reserves: {self.assets:.2f}",
+                    extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation"]}
+                )
 
         # 3. Execution (Update Bank State Only)
         # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction
