@@ -15,6 +15,17 @@
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **DEFERRED** |
 | TD-008 | 2026-01-14 | Primitive Valuation Logic in CPR | Implement Altman Z-Score solvency check | Inefficient CPR (Zombie Firms) | **DESIGNED** (P26.5) |
 | TD-009 | 2026-01-14 | CPR Bailouts are Unconditional Grants | Convert to Interest-bearing Loans/Bonds | Lack of Fiscal Consequence | **DESIGNED** (P26.5) |
+| TD-032 | 2026-01-15 | `FinanceSystem` QE Violation | Central Bank must only purchase bonds if yield > 10% | Monetary integrity compromised | **DEFERRED** |
+| TD-033 | 2026-01-15 | Bailout Loan Covenant Missing | Repayment from profit must be a senior covenant | Moral hazard for bailed-out firms | **DEFERRED** |
+| TD-034 | 2026-01-15 | Hardcoded Debt Parameters | Bond maturity, risk premia must be config-driven | Reduced model configurability | **DEFERRED** |
+| TD-035 | 2026-01-15 | Incorrect Startup Runway Check | Solvency check uses `assets` instead of `cash_reserve` | Inaccurate solvency assessment | **DEFERRED** |
+| TD-036 | 2026-01-15 | Monetary Integrity Violation (Debt Service) | `service_debt` only pays principal, not interest | Creates money from thin air | **DEFERRED** |
+| TD-037 | 2026-01-15 | Monetary Integrity Violation (QE) | QE creates money without CB balance sheet operation | Breaks zero-sum principle | **DEFERRED** |
+| TD-038 | 2026-01-15 | Missing Bailout State Tracking | No flag to track if a firm `has_bailout_loan` | Inability to enforce covenants | **DEFERRED** |
+| TD-039 | 2026-01-15 | SoC Violation (`DemographicManager`) | `DemographicManager` should not be aging firms | Blurs architectural boundaries | **DEFERRED** |
+| TD-040 | 2026-01-15 | Fiscal Cliff Risk | Government spends money before confirming bond issuance | Potential for un-funded spending | **DEFERRED** |
+| TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
+| TD-042 | 2026-01-15 | Incomplete Test Suite | Major new `FinanceSystem` lacks dedicated unit tests | High risk of un-caught regressions | **DEFERRED** |
 
 
 ---

@@ -87,7 +87,7 @@ def run_verification():
     for t in range(5):
         # Force dividend distribution manually to trigger signals
         sim.time = t
-        firm.distribute_dividends(sim.households, t)
+        firm.distribute_dividends(sim.households, sim.government, t)
         
         # Prepare Market Data
         market_data = {

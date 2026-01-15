@@ -125,5 +125,15 @@ class FinanceSystem(IFinanceSystem):
             # For now, we assume the government can always pay. A future feature could model default.
             self.government.assets -= total_repayment
 
+            # Money Leak Fix: Transfer the repayment to the bondholder.
+            # We need to determine who holds the bond.
+            # Simplified: Check if it's on the Central Bank's balance sheet.
+            if bond in self.central_bank.assets.get("bonds", []):
+                # Central Bank gets the money back (e.g., QE unwind)
+                self.central_bank.assets["bonds"].remove(bond)
+            else:
+                # Assume the commercial bank holds it
+                self.bank.assets += total_repayment
+
             # The bond is removed from the outstanding list
             self.outstanding_bonds.remove(bond)

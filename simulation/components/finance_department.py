@@ -89,7 +89,7 @@ class FinanceDepartment:
                     extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
                 )
 
-    def process_profit_distribution(self, households: List[Household], current_time: int) -> List[Transaction]:
+    def process_profit_distribution(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
         """Public Shareholders Dividend"""
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
             repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
@@ -99,9 +99,13 @@ class FinanceDepartment:
             if not hasattr(self.firm, 'total_debt'):
                 self.firm.total_debt = 0.0
 
+            # Money Leak Fix: Transfer repayment to the government
+            self.firm.assets -= repayment
+            government.assets += repayment
+
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
-            self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan.")
+            self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan to the government.")
 
             # Check if the loan is fully repaid
             if self.firm.total_debt <= 0:
