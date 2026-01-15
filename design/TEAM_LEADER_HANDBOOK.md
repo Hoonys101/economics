@@ -21,8 +21,9 @@
    - 모든 구현은 Jules에게, 모든 기획은 Gemini에게 위임
 
 2. **HITL 2.0 (Human-In-The-Loop)**
-   - AI 도구 실행은 **수석의 승인** 후에만 진행
-   - bat 파일 준비 → 수석 실행 → 결과 확인
+   - AI 도구(`gemini-go.bat`, `jules-go.bat`, `git-go.bat`) 실행은 **오직 사용자만** 수행
+   - 팀장(Antigravity)은 **bat 파일 명령어 작성** → **사용자에게 실행 요청** → 결과 확인
+   - ⛔ **팀장이 직접 bat 파일을 실행하는 것은 엄격히 금지**
 
 3. **Zero-Question Spec**
    - Jules가 추가 질문 없이 구현 가능한 수준으로 명세 작성

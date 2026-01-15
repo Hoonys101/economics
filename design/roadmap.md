@@ -93,12 +93,13 @@
     - [ ] WO-070: Inverse ETF & Hedging Mechanism
     - [ ] WO-071: Strategy Backtest Framework
 
-### Phase 26.5: Sovereign Debt & Corporate Credit ⭐ **[ACTIVE]**
+### Phase 26.5: Sovereign Debt & Corporate Credit ⭐ **[IN PROGRESS]**
 - **Goal**: Transition to debt-based financing and market-driven interest rates.
 - **Tasks**:
-    - [~] WO-072: Finance System Scaffolding (api.py & DTOs) **[IN REVIEW: Money Leak Fix]**
-    - [ ] WO-073: Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period)
-    - [ ] WO-074: National Debt Auction & Yield Curve Mechanism
+    - [x] WO-072: Finance System Scaffolding (api.py & DTOs) ✅ **[MERGED 2026-01-16]**
+    - [ ] WO-073: Finance System Double-Entry Refactor (Zero-Question Spec) ⭐ **[NEXT]**
+    - [ ] WO-074: Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period)
+    - [ ] WO-075: National Debt Auction & Yield Curve Mechanism
 
 ### Phase 27: Social Dynamics & Realism **[DEFERRED]**
 - **Goal**: 시뮬레이션 리얼리티 향상 및 기술부채 상환

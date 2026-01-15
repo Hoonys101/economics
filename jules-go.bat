@@ -38,9 +38,9 @@ echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: WO-072 (Sovereign Debt) - Action: APPROVE & MERGE
-:: 모든 Money Leak 수정 완료. PR 승인.
-python scripts/jules_bridge.py send-message 7617648577093442794 "APPROVED! All Money Leak bugs fixed. Excellent work on Zero-Sum integrity. The PR is ready to merge. Please squash and merge your branch, then close this session." > communications\jules_logs\last_run.md 2>&1
+:: Target: WO-073 (Finance Refactor) - Action: CREATE NEW SESSION
+:: 복식부기 리팩토링 및 버그 수정 착수
+python scripts/jules_bridge.py create "WO-073 Finance Double-Entry Refactor" "Mission: Execute the Critical Refactoring defined in `design/work_orders/WO-073_Finance_Refactor.md`. Use the detailed spec at `design/gemini_output/double_entry_refactor_spec.md`. Goal: Enforce Double-Entry Bookkeeping in `modules/finance/system.py` to fix QE and Bailout money leaks." > communications\jules_logs\last_run.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.

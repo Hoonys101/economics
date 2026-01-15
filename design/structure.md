@@ -135,6 +135,6 @@ graph TD
 2.  [Blue] **Economic Reflux** (Verified)
 3.  [Blue] **Stock Market Sync** (Verified)
 4.  [Blue] **Tech Diffusion** (Verified)
-5.  [Red] **Sovereign Debt Zero-Sum** (In Progress: WO-072 Money Leak identified)
+5.  [Blue] **Sovereign Debt Zero-Sum** (Verified: WO-072 Merged 2026-01-16)
 
 **System is now aligned with the Codebase (simulation/).**

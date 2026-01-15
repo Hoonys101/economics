@@ -30,9 +30,9 @@ echo [Gemini-CLI] Drafting spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: Architecture Reality Check
-:: Task: Verify consistency between structure.md and the actual codebase.
-python scripts/gemini_worker.py verify "Compare the `structure.md` architecture diagram and descriptions against the actual codebase in `simulation/`. 1) Are all modules/agents listed in structure.md present in the code? 2) Are there major implemented systems (like 'FinanceSystem', 'StockMarket', 'ScenarioLoader') in the code that are MISSING from or OUTDATED in structure.md? Report discrepancies." -c design/structure.md simulation/ > design\gemini_output\architecture_verification.md 2>&1
+:: Target: W-1 Redesign - Double-Entry Bookkeeping Refactoring Spec
+:: Task: Create Zero-Question Spec for Finance Module refactoring
+python scripts/gemini_worker.py spec "Write a Zero-Question Implementation Spec for refactoring `modules/finance/system.py` to enforce Double-Entry Bookkeeping. REQUIREMENTS: 1) Replace one-way `grant()` with bidirectional `transfer(debtor, creditor, amount)` pattern. 2) Fix `grant_bailout_loan`: add `firm.cash_reserve += amount` after government deduction. 3) Fix `issue_treasury_bonds` QE path: add `central_bank.assets['cash'] -= amount` when CB purchases bonds. 4) All monetary ops must have explicit DEBTOR and CREDITOR. Include: Data Flow Diagram, Pseudo-code, Test Cases. Output in Korean." -c modules/finance/system.py modules/finance/api.py design/specs/SOVEREIGN_DEBT_SPEC.md reports/temp/report_20260116_073516_Analyze__modules_fin.md > design\gemini_output\double_entry_refactor_spec.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Gemini task execution failed. Check logs.
