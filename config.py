@@ -528,7 +528,6 @@ STOCK_SELL_PROFIT_THRESHOLD = 0.15  # 매도 고려 수익률 임계값 (15%)
 STOCK_BUY_DISCOUNT_THRESHOLD = 0.10 # 매수 고려 할인율 임계값 (10%)
 STOCK_INVESTMENT_DIVERSIFICATION_COUNT = 3 # Number of stocks to diversify into
 STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD = 10.0 # Threshold for buy/sell decisions based on portfolio optimization
-MACRO_PORTFOLIO_ADJUSTMENT_ENABLED = True
 
 # --- IPO / SEO ---
 IPO_INITIAL_SHARES = 1000.0
