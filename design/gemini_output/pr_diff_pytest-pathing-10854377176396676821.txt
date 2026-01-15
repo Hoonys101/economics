@@ -1,0 +1,24 @@
+diff --git a/pytest.ini b/pytest.ini
+new file mode 100644
+index 0000000..5b4fe5b
+--- /dev/null
++++ b/pytest.ini
+@@ -0,0 +1,8 @@
++[pytest]
++minversion = 7.0
++addopts = -ra -q
++testpaths =
++    tests
++pythonpath = .
++log_cli = true
++log_cli_level = INFO
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 0689269..e69de29 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -1,5 +0,0 @@
+-import sys
+-import os
+-
+-# Add the project root directory to the Python path
+-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

@@ -1,7 +1,9 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {},
+    "active_sessions": {
+      "10854377176396676821": "TD-024: Pytest Path Correction (Phase 26 Pre-req)"
+    },
     "completed_sessions": {
       "15007179683109829611": "WO-060 - MERGED 2026-01-15",
       "7095675393629273222": "WO-064: Banking Credit Engine - MERGED 2026-01-15",

@@ -375,6 +375,44 @@ if __name__ == "__main__":
     elif command == "create" and len(sys.argv) >= 4:
         title = sys.argv[2]
         prompt = sys.argv[3]
+        
+        # Auto-push before creating session (ensures Jules gets latest code)
+        import subprocess
+        print("📦 Auto-pushing latest changes to ensure Jules gets fresh code...")
+        try:
+            # Check if there are changes to commit
+            status_result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True, text=True, cwd=Path(__file__).parent.parent
+            )
+            if status_result.stdout.strip():
+                # There are uncommitted changes
+                subprocess.run(
+                    ["git", "add", "."],
+                    cwd=Path(__file__).parent.parent, check=True
+                )
+                subprocess.run(
+                    ["git", "commit", "-m", f"chore: Pre-Jules dispatch for {title}"],
+                    cwd=Path(__file__).parent.parent, check=True
+                )
+                print("   ✅ Changes committed")
+            else:
+                print("   ℹ️ No uncommitted changes")
+            
+            # Always push to ensure remote is up-to-date
+            push_result = subprocess.run(
+                ["git", "push"],
+                capture_output=True, text=True, cwd=Path(__file__).parent.parent
+            )
+            if push_result.returncode == 0:
+                print("   ✅ Pushed to remote")
+            else:
+                print(f"   ⚠️ Push warning: {push_result.stderr.strip()}")
+        except subprocess.CalledProcessError as e:
+            print(f"   ⚠️ Git operation failed: {e} (continuing anyway)")
+        except FileNotFoundError:
+            print("   ⚠️ Git not found (continuing anyway)")
+        
         session = bridge.create_session(prompt=prompt, title=title)
         register_session(session.id, title)  # 자동 등록
         print(f"Session created: {session.id}")
