@@ -751,3 +751,8 @@ TARGET_UNEMPLOYMENT_RATE = 0.04   # 4%
 GOV_ACTION_INTERVAL = 30          # 의사결정 주기 (30틱 = 1개월)
 RL_LEARNING_RATE = 0.1
 RL_DISCOUNT_FACTOR = 0.95
+
+# ==============================================================================
+# Phase 26: Macro-Linked Portfolio (WO-062)
+# ==============================================================================
+MACRO_PORTFOLIO_ADJUSTMENT_ENABLED = True

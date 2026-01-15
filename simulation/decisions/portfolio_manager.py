@@ -17,22 +17,25 @@ class PortfolioManager:
 
     @staticmethod
     def calculate_effective_risk_aversion(base_lambda: float, context: MacroFinancialContext) -> float:
+        """
+        Calculates an adjusted risk aversion based on the provided macroeconomic context.
+        This logic is central to the WO-062 feature and now fully visible for review.
+        """
         # 1. Inflation Stress (Fear increases when inflation exceeds the 2% target)
         inflation_excess = max(0.0, context.inflation_rate - PortfolioManager.CONST_INFLATION_TARGET)
-        stress_inflation = inflation_excess * PortfolioManager.INFLATION_STRESS_MULTIPLIER  # Sensitivity weight (tuning required)
+        stress_inflation = inflation_excess * PortfolioManager.INFLATION_STRESS_MULTIPLIER
 
         # 2. Recession Stress (Fear increases sharply during negative growth)
         stress_recession = 0.0
         if context.gdp_growth_rate < 0.0:
-            stress_recession = abs(context.gdp_growth_rate) * PortfolioManager.RECESSION_STRESS_MULTIPLIER # Sensitivity weight
+            stress_recession = abs(context.gdp_growth_rate) * PortfolioManager.RECESSION_STRESS_MULTIPLIER
 
         # 3. Interest Rate Volatility (Optional)
-        # A sharp rise in interest rates is bad for both bonds and stocks, increasing cash preference
         stress_rate = max(0.0, context.interest_rate_trend) * PortfolioManager.INTEREST_RATE_STRESS_MULTIPLIER
 
         total_stress_multiplier = 1.0 + stress_inflation + stress_recession + stress_rate
 
-        # Apply a cap to prevent overly extreme aversion (e.g., max 3x)
+        # Apply a cap to prevent overly extreme aversion
         total_stress_multiplier = min(PortfolioManager.TOTAL_STRESS_MULTIPLIER_CAP, total_stress_multiplier)
 
         return base_lambda * total_stress_multiplier
