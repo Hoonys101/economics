@@ -111,9 +111,10 @@ Jules의 PR을 머지한 후, 코드가 "동작은 하지만 구조적으로 비
 `gemini-cli`는 단순 반복 및 루틴 작업을 전담합니다.
 
 **핵심 명령어:**
-1. **`python scripts/gemini_worker.py spec "<기획안>"`**: 상세 명세(Spec) 및 API 초안 자동 작성. (인사이트 보고 지침 자동 포함)
-2. **`python scripts/gemini_worker.py verify -c <파일>`**: 아키텍처 및 SOC 위반 자동 검증.
-3. **`python scripts/checkpoint.py`**: 세션 종료 전 모든 문서(Status, Tech Debt, Snapshot) 자동 동기화.
+1. **`python scripts/gemini_worker.py audit "<타겟 분석>"`**: [NEW] 리팩토링/대규모 수정 전 **선행 감사(Pre-flight Audit)** 수행. 구조적 결함 식별 용도.
+2. **`python scripts/gemini_worker.py spec "<기획안>"`**: 상세 명세(Spec) 및 API 초안 자동 작성. (Audit 결과 반영)
+3. **`python scripts/gemini_worker.py verify -c <파일>`**: 아키텍처 및 SOC 위반 자동 검증.
+4. **`python scripts/check_point.py`**: 세션 종료 전 모든 문서(Status, Tech Debt, Snapshot) 자동 동기화.
 
 **제공되는 Worker Type:**
 1. **`spec`**: 기획안 → 상세 명세 변환.

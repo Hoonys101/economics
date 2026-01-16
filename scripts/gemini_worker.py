@@ -31,11 +31,18 @@ class BaseGeminiWorker(ABC):
         except Exception as e:
             raise RuntimeError(f"❌ Error reading manual: {e}")
 
-    def run_gemini(self, instruction: str, context_files: list[str] = None) -> str:
+    def run_gemini(self, instruction: str, context_files: list[str] = None, manual_override: Path = None) -> str:
         """
         Executes gemini-cli with the system prompt, context files, and instruction.
+        If manual_override is provided, use that manual instead of self.manual_path.
         """
-        system_prompt = self.get_system_prompt()
+        # Use override manual if provided, otherwise use default
+        manual_to_use = manual_override if manual_override else self.manual_path
+        try:
+            with open(manual_to_use, "r", encoding="utf-8") as f:
+                system_prompt = f.read()
+        except Exception as e:
+            raise RuntimeError(f"❌ Error reading manual {manual_to_use}: {e}")
         
         # Build Context Block
         context_block = ""
@@ -65,7 +72,7 @@ class BaseGeminiWorker(ABC):
 
         full_input = f"{system_prompt}{context_block}\n\n---\n\n{instruction}"
 
-        print(f"🚀 [GeminiWorker] Running task with manual: {self.manual_path.name}")
+        print(f"🚀 [GeminiWorker] Running task with manual: {manual_to_use.name}")
         
         try:
             process = subprocess.run(
@@ -100,25 +107,70 @@ class SpecDrafter(BaseGeminiWorker):
     def __init__(self):
         super().__init__("spec_writer.md")
 
-    def execute(self, instruction: str, context_files: list[str] = None, **kwargs):
-        print(f"📄 Drafting Spec with instruction: '{instruction}'...")
-        result = self.run_gemini(instruction, context_files)
+    def execute(self, instruction: str, context_files: list[str] = None, audit_file: str = None, **kwargs):
+        # 1. Internal Pre-flight Audit (Auto-Encapsulated)
+        audit_context = ""
+        if context_files:
+            print(f"🔍 [Auto-Audit] Analyzing context files for architectural risks...")
+            audit_instruction = (
+                f"Perform a strict Pre-flight Audit on the provided context files based on the task: '{instruction}'.\n"
+                "Identify:\n"
+                "1. Hidden dependencies or God Classes.\n"
+                "2. Potential circular imports.\n"
+                "3. Violations of Single Responsibility Principle (SRP).\n"
+                "4. Risks to existing tests.\n"
+                "Output ONLY the critical risks and architectural constraints that must be respected in the Spec."
+            )
+            try:
+                # Use reporter.md manual for audit pass (different from spec_writer.md)
+                audit_result = self.run_gemini(audit_instruction, context_files, manual_override=MANUALS_DIR / "reporter.md")
+                audit_context = (
+                    "\n\n" + "="*40 + "\n"
+                    "🔍 [AUTO-AUDIT FINDINGS]\n"
+                    "The following architectural risks were identified during the internal pre-flight check.\n"
+                    "You MUST address these items in the Specification:\n\n"
+                    + audit_result + "\n"
+                    + "="*40 + "\n\n"
+                )
+                print("✅ Auto-Audit Complete. Findings integrated into Spec Context.")
+            except Exception as e:
+                print(f"⚠️ Auto-Audit failed (skipping): {e}")
+
+        # 2. External Audit File Injection (Optional Override)
+        if audit_file:
+            audit_path = BASE_DIR / audit_file
+            if audit_path.exists():
+                print(f"🚨 Injecting External Audit Findings from: {audit_path.name}")
+                audit_content = audit_path.read_text(encoding='utf-8')
+                # Append external audit to internal audit context
+                audit_context += (
+                    "\n\n" + "="*40 + "\n"
+                    "🚨 [EXTERNAL AUDIT REPORT]\n"
+                    + audit_content + "\n"
+                    + "="*40 + "\n\n"
+                )
+
+        # 3. Main Spec Drafting
+        full_instruction = audit_context + instruction
+        
+        print(f"📄 Drafting Spec with instruction: '{instruction[:60]}...'")
+        result = self.run_gemini(full_instruction, context_files)
         
         # Save to draft file
         output_dir = BASE_DIR / "design" / "drafts"
         output_dir.mkdir(exist_ok=True, parents=True)
         
-        safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:30]]).strip("_")
-        output_file = output_dir / f"draft_{safe_name}.md"
+        safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:30] if c.isalnum() or c == ' ']).strip().replace(" ", "_")[:30]
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%H%M%S") 
+        output_file = output_dir / f"draft_{timestamp}_{safe_name}.md"
         
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(result)
             
         print(f"\n✅ Spec Draft Saved: {output_file}")
         print("="*60)
-        print(f"\n✅ Spec Draft Saved: {output_file}")
-        print("="*60)
-        print(result)
+        print(result[:1000] + "\n..." if len(result) > 1000 else result)
         print("="*60)
 
 class GitReviewer(BaseGeminiWorker):
@@ -285,6 +337,7 @@ def main():
     spec_parser = subparsers.add_parser("spec", help="Draft a new specification")
     spec_parser.add_argument("instruction", help="Instruction for the spec writer")
     spec_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+    spec_parser.add_argument("--audit", "-a", help="Path to Pre-flight Audit report to inject as context")
 
     # Git Operator
     git_parser = subparsers.add_parser("git", help="Generate git commands")
@@ -337,7 +390,8 @@ def main():
                 args.instruction, 
                 context_files=getattr(args, 'context', None),
                 auto_run=getattr(args, 'auto_run', False),
-                output_file=getattr(args, 'output', None)
+                output_file=getattr(args, 'output', None),
+                audit_file=getattr(args, 'audit', None)
             )
             
     except Exception as e:

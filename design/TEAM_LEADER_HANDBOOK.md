@@ -60,6 +60,16 @@ IF Spec/Work Order 작성 또는 코드 감사(Audit) 필요
 THEN 도구: .\gemini-go.bat
      기능: 파일 뿐만 아니라 <<디렉토리>> 컨텍스트 주입 가능
      출력: design/gemini_output/spec_draft.md (또는 지정된 파일)
+
+### 사전 감사 (Pre-flight Audit) [NEW]
+```
+IF 리팩토링 또는 레거시 코드 수정 작업 착수 전
+THEN 필수 절차: W-0.5 Pre-flight Audit
+     도구: .\gemini-go.bat (audit 워커)
+     목적: 숨겨진 의존성(Hidden Dependencies), God Class, 순환 참조 등 "구현 블로커"를 사전에 식별
+     원칙: "감사 없는 명세는 도박이다."
+     출력: design/gemini_output/audit_preflight_<task>.md
+```
 ```
 
 ### Jules 작업 발주 시
@@ -81,6 +91,18 @@ THEN 도구: .\git-go.bat <브랜치명>
        2. Diff 생성 -> git-review 워커(보안/정합성 분석) 실행
      출력: design/gemini_output/pr_review_<브랜치>.md
      후속: 테스트 실행 → 병합 → 세션 완료 처리
+```
+
+### 단순 병합 시 [NEW]
+```
+IF PR 리뷰 결과가 APPROVE이고 충돌 없음
+THEN 도구: .\merge-go.bat <브랜치명>
+     프로세스:
+       1. main 체크아웃 및 업데이트
+       2. 원격 브랜치 병합 (--no-edit)
+       3. main Push
+       4. 원격 브랜치 자동 삭제 (클린업)
+     예시: .\merge-go.bat WO-078-engine-soc-17119948573295953717
 ```
 
 ### PR 리젝 및 보완 지시 시 (W-4)

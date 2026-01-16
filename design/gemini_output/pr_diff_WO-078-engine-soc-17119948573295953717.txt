@@ -1,0 +1,1065 @@
+diff --git a/main.py b/main.py
+index 56bf856..e6b33d8 100644
+--- a/main.py
++++ b/main.py
+@@ -299,16 +299,19 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+                     extra={"tick": 0, "agent_id": firm.id, "tags": ["hiring", "init"]},
+                 )
+ 
+-    # Pass the repository to the Simulation constructor
+-    sim = Simulation(
+-        households,
+-        firms,
+-        ai_trainer,
+-        repository,
++    from simulation.initialization.initializer import SimulationInitializer
++
++    # Use the new SimulationInitializer
++    initializer = SimulationInitializer(
+         config_module=config,
+         goods_data=goods_data,
++        repository=repository,
+         logger=main_logger,
++        households=households,
++        firms=firms,
++        ai_trainer=ai_trainer,
+     )
++    sim = initializer.build_simulation()
+ 
+     return sim
+ 
+diff --git a/requirements.txt b/requirements.txt
+index e4a117f..a8af180 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,4 +1,3 @@
+-flask
+ python-dotenv
+ joblib>=1.0.0
+ numpy
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index b3faeac..41bf90e 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -1081,7 +1081,7 @@ class Household(BaseAgent):
+         cloned_household = Household(
+             id=new_id,
+             talent=self.talent,
+-            goods_data=list(self.goods_info_map.values()),
++            goods_data=self.goods_data,
+             initial_assets=initial_assets_from_parent,
+             initial_needs=self.needs.copy(),
+             decision_engine=self._create_new_decision_engine(new_id),
+diff --git a/simulation/engine.py b/simulation/engine.py
+index 138163a..ded4490 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -61,225 +61,64 @@ class Simulation:
+ 
+     def __init__(
+         self,
+-        households: List[Household],
+-        firms: List[Firm],
+-        ai_trainer: AIEngineRegistry,
+-        repository: SimulationRepository,
+         config_module: Any,
+-        goods_data: List[Dict[str, Any]],
+-        logger: logging.Logger | None = None,
++        logger: logging.Logger,
++        repository: SimulationRepository
+     ) -> None:
+-        """Simulation 클래스를 초기화합니다."""
+-        self.logger = logger if logger else logging.getLogger(__name__)
+-        self.households = households
+-        self.firms = firms
+-        self.goods_data = goods_data
+-        self.agents: Dict[int, Any] = {h.id: h for h in households}
+-        self.agents.update({f.id: f for f in firms})
+-        self.next_agent_id = len(households) + len(firms)
+-
+-        self.ai_trainer = ai_trainer
++        """
++        초기화된 구성 요소들을 할당받습니다.
++        실제 생성 로직은 SimulationInitializer에 의해 외부에서 수행됩니다.
++        """
+         self.config_module = config_module
+-        self.time: int = 0
+-
+-        self.batch_save_interval = 50 # WO-051: Hardcoded I/O Optimization
+-
+-        self.bank = Bank(
+-            id=self.next_agent_id,
+-            initial_assets=self.config_module.INITIAL_BANK_ASSETS,
+-            config_module=self.config_module
+-        )
+-        self.agents[self.bank.id] = self.bank
+-        self.next_agent_id += 1
+-
+-        # 정부 에이전트 초기화
+-        self.government = Government(
+-            id=self.next_agent_id, 
+-            initial_assets=0.0, 
+-            config_module=self.config_module
+-        )
+-        self.agents[self.government.id] = self.government
+-        self.next_agent_id += 1
+-
+-        # Tracker initialization (Done below, but CentralBank needs it)
+-        # So we move Tracker init up or init CentralBank later.
+-        # Moving Tracker init up.
+-        self.tracker = EconomicIndicatorTracker(config_module=config_module)
+-
+-        # Central Bank Initialization (Phase 10)
+-        self.central_bank = CentralBank(
+-            tracker=self.tracker,
+-            config_module=self.config_module
+-        )
+-        # Central Bank is not in self.agents dict as it's a special system agent
+-        # similar to how markets are handled, or we can add it if needed.
+-        # But it doesn't participate in normal transactions.
+-
+-        # Finance System (Sovereign Debt)
+-        self.finance_system = FinanceSystem(
+-            government=self.government,
+-            central_bank=self.central_bank,
+-            bank=self.bank,
+-            config_module=self.config_module
+-        )
+-        self.government.finance_system = self.finance_system # Inject into government
+-
+-        # Phase 17-3A: Initialize Real Estate Units
+-        self.real_estate_units: List[RealEstateUnit] = [
+-            RealEstateUnit(id=i, estimated_value=self.config_module.INITIAL_PROPERTY_VALUE,
+-                           rent_price=self.config_module.INITIAL_RENT_PRICE)
+-            for i in range(self.config_module.NUM_HOUSING_UNITS)
+-        ]
+-
+-        # Distribute to top 20% households
+-        top_20_count = len(self.households) // 5
+-        top_households = sorted(self.households, key=lambda h: h.assets, reverse=True)[:top_20_count]
+-
+-        for i, hh in enumerate(top_households):
+-            if i < len(self.real_estate_units):
+-                unit = self.real_estate_units[i]
+-                unit.owner_id = hh.id
+-                hh.owned_properties.append(unit.id)
+-                # Owner occupies their own unit initially
+-                unit.occupant_id = hh.id
+-                hh.residing_property_id = unit.id
+-                hh.is_homeless = False
+-
+-        self.markets: Dict[str, Market] = {
+-            good_name: OrderBookMarket(market_id=good_name)
+-            for good_name in self.config_module.GOODS
+-        }
+-        self.markets["labor"] = OrderBookMarket(market_id="labor")
+-        self.markets["loan_market"] = LoanMarket(
+-            market_id="loan_market", bank=self.bank, config_module=self.config_module
+-        )
+-        # Pass agents reference to LoanMarket for credit check
+-        self.markets["loan_market"].agents_ref = self.agents
+-        
+-        if getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
+-            self.stock_market = StockMarket(config_module=self.config_module, logger=self.logger)
+-            self.stock_tracker = StockMarketTracker(config_module=self.config_module)
+-            self.markets["stock_market"] = self.stock_market
+-            
+-            # Phase 25/WO-060: Automatic IPO for existing firms
+-            for firm in self.firms:
+-                if hasattr(firm, "init_ipo"):
+-                    firm.init_ipo(self.stock_market)
+-        else:
+-            self.stock_market = None
+-            self.stock_tracker = None
+-
+-        # Phase 17-3B: Housing Market & Initial Sales
+-        self.markets["housing"] = OrderBookMarket(market_id="housing")
+-        
+-        # Government places SELL orders for unowned properties (80 units)
+-        for unit in self.real_estate_units:
+-            if unit.owner_id is None:
+-                # Sell Order: item_id="unit_{id}", price=estimated_value, qty=1
+-                sell_order = Order(
+-                    agent_id=self.government.id, # Government ID
+-                    item_id=f"unit_{unit.id}",
+-                    price=unit.estimated_value,
+-                    quantity=1.0,
+-                    market_id="housing",
+-                    order_type="SELL"
+-                )
+-                if "housing" in self.markets:
+-                    self.markets["housing"].place_order(sell_order, self.time)
+-
+-        # 2. 에이전트 욕구 업데이트 (Update Needs)
+-        for agent in self.households + self.firms:
+-            agent.update_needs(self.time)
+-            
+-        # 3. 에이전트 의사결정 및 행동 (Decisions & Actions)
+-        for agent in self.households + self.firms:
+-            agent.decision_engine.markets = self.markets
+-            agent.decision_engine.goods_data = self.goods_data
+-            if isinstance(agent, Firm):
+-                agent.config_module = self.config_module
+-
++        self.logger = logger
+         self.repository = repository
+-        # self.tracker = EconomicIndicatorTracker(config_module=config_module) # Moved up
+-        
+-        # 추가 지표 Tracker 초기화
+-        self.inequality_tracker = InequalityTracker(config_module=config_module)
+-        self.personality_tracker = PersonalityStatisticsTracker(config_module=config_module)
+-        
+-        self.ai_training_manager = AITrainingManager(
+-            self.households, self.config_module
+-        )
+-        
+-        # M&A Manager System
+-        self.ma_manager = MAManager(self, self.config_module)
+-
+-        # Economic Reflux System (Phase 8-B)
+-        self.reflux_system = EconomicRefluxSystem()
+-
+-        # Phase 19: Demographic Manager
+-        self.demographic_manager = DemographicManager(config_module=self.config_module)
+-
+-        # Phase 20-3: Immigration Manager
+-        self.immigration_manager = ImmigrationManager(config_module=self.config_module)
+-
+-        # Phase 22: Inheritance Manager
+-        self.inheritance_manager = InheritanceManager(config_module=self.config_module)
+-
+-        # Phase 22.5: Housing System (Refactored)
+-        self.housing_system = HousingSystem(config_module=self.config_module)
+-
+-        # Phase 22.5: Persistence Manager (Refactored)
+-        self.persistence_manager = PersistenceManager(
+-            run_id=0, # Placeholder, will be set after run_id is generated below
+-            config_module=self.config_module,
+-            repository=self.repository
+-        )
+ 
+-        # Phase 22.5: Firm System (Refactored)
+-        self.firm_system = FirmSystem(config_module=self.config_module)
+-
+-        # Phase 23: Technology Manager
+-        self.technology_manager = TechnologyManager(config_module=self.config_module, logger=self.logger)
+-
+-        # [WO-058] Bootstrapper Injection (Economic CPR)
+-        # Ensure firms have resources to start production
+-        Bootstrapper.inject_initial_liquidity(self.firms, self.config_module)
+-        Bootstrapper.force_assign_workers(self.firms, self.households)
+-
+-        # WO-058: Generational Wealth Audit
+-        self.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config_module)
+-
+-        # WO-051: Vectorized Planner Initialization
+-        self.breeding_planner = VectorizedHouseholdPlanner(self.config_module)
+-
+-        # SoC Refactor: Transaction Processor
+-        self.transaction_processor = TransactionProcessor(self.config_module)
+-
+-        # Time allocation tracking
++        # These attributes are populated by the SimulationInitializer
++        self.time: int = 0
++        self.run_id: int = 0
++        self.households: List[Household] = []
++        self.firms: List[Firm] = []
++        self.agents: Dict[int, Any] = {}
++        self.next_agent_id: int = 0
++        self.markets: Dict[str, Market] = {}
++        self.bank: Optional[Bank] = None
++        self.government: Optional[Government] = None
++        self.central_bank: Optional[CentralBank] = None
++        self.stock_market: Optional[StockMarket] = None
++        self.tracker: Optional[EconomicIndicatorTracker] = None
++        self.inequality_tracker: Optional[InequalityTracker] = None
++        self.stock_tracker: Optional[StockMarketTracker] = None
++        self.personality_tracker: Optional[PersonalityStatisticsTracker] = None
++        self.ai_training_manager: Optional[AITrainingManager] = None
++        self.ma_manager: Optional[MAManager] = None
++        self.reflux_system: Optional[EconomicRefluxSystem] = None
++        self.demographic_manager: Optional[DemographicManager] = None
++        self.immigration_manager: Optional[ImmigrationManager] = None
++        self.inheritance_manager: Optional[InheritanceManager] = None
++        self.housing_system: Optional[HousingSystem] = None
++        self.persistence_manager: Optional[PersistenceManager] = None
++        self.firm_system: Optional[FirmSystem] = None
++        self.technology_manager: Optional[TechnologyManager] = None
++        self.generational_wealth_audit: Optional[GenerationalWealthAudit] = None
++        self.breeding_planner: Optional[VectorizedHouseholdPlanner] = None
++        self.transaction_processor: Optional[TransactionProcessor] = None
++        self.lifecycle_manager: Optional[Any] = None # To be AgentLifecycleManager
++        self.goods_data: List[Dict[str, Any]] = []
++        self.real_estate_units: List[RealEstateUnit] = []
++        self.finance_system: Optional[FinanceSystem] = None
++        self.ai_trainer: Optional[AIEngineRegistry] = None
++
++        # Attributes with default values
++        self.batch_save_interval: int = 50
+         self.household_time_allocation: Dict[int, float] = {}
+-
+-        # WO-057-B: Sensory Module - SMA Buffers
+-        self.inflation_buffer = deque(maxlen=10)
+-        self.unemployment_buffer = deque(maxlen=10)
+-        self.gdp_growth_buffer = deque(maxlen=10)
+-        self.wage_buffer = deque(maxlen=10)
+-        self.approval_buffer = deque(maxlen=10)
+-
+-        # WO-057-B: Sensory Module - State Tracking
+-        self.last_avg_price_for_sma = 10.0
+-        self.last_gdp_for_sma = 0.0
+-        self.last_interest_rate = self.bank.base_rate
+-
+-        config_content = str(self.config_module.__dict__)
+-        config_hash = hashlib.sha256(config_content.encode()).hexdigest()
+-        self.run_id = self.repository.save_simulation_run(
+-            config_hash=config_hash,
+-            description="Economic simulation run with DB storage",
+-        )
+-        self.persistence_manager.run_id = self.run_id
+-        self.logger.info(
+-            f"Simulation run started with run_id: {self.run_id}",
+-            extra={"run_id": self.run_id},
+-        )
++        self.inflation_buffer: deque = deque(maxlen=10)
++        self.unemployment_buffer: deque = deque(maxlen=10)
++        self.gdp_growth_buffer: deque = deque(maxlen=10)
++        self.wage_buffer: deque = deque(maxlen=10)
++        self.approval_buffer: deque = deque(maxlen=10)
++        self.last_avg_price_for_sma: float = 10.0
++        self.last_gdp_for_sma: float = 0.0
++        self.last_interest_rate: float = 0.0 # Will be set from bank
+ 
+     def finalize_simulation(self):
+         """시뮬레이션 종료 시 Repository 연결을 닫고, 시뮬레이션 종료 시간을 기록합니다."""
+@@ -759,54 +598,11 @@ class Simulation:
+              all_transactions.extend(housing_transactions)
+ 
+         # --- Phase 19: Population Dynamics ---
+-        # 1. Aging
+-        self.demographic_manager.process_aging(self.households, self.time)
+-
+-        # 2. Reproduction Decision (Vectorized WO-051)
+-        birth_requests = []
+-
+-        # Filter Candidates: Active, Age 20-45 (Loose filter for extraction), Female? (Design says Agents are Households, Gender is attribute)
+-        # Spec says "20 <= age <= 45".
+-        # We can pass all active households to batch planner, and let it filter by age/solvency.
+-        # But for efficiency, we pass active households.
+-
+-        active_households = [h for h in self.households if h.is_active]
+-        if active_households:
+-            decisions = self.breeding_planner.decide_breeding_batch(active_households)
+-
+-            for h, decision in zip(active_households, decisions):
+-                if decision:
+-                    birth_requests.append(h)
+-
+-        # 3. Execution
+-        new_children = self.demographic_manager.process_births(self, birth_requests)
+-
+-        # 4. Registration
+-        for child in new_children:
+-            self.households.append(child)
+-            self.agents[child.id] = child
+-            child.decision_engine.markets = self.markets
+-            child.decision_engine.goods_data = self.goods_data
+-            # self.ai_training_manager.agents references self.households, so no need to append again
+-            # self.ai_training_manager.agents.append(child)
+-
+-            # Brain inheritance is handled inside DemographicManager.process_births
+-            # but we need to ensure AI training manager tracks it?
+-            # It just iterates self.households, so appending is enough.
+-
+-            # Update Stock Market Shareholder Registry
+-            if self.stock_market:
+-                for firm_id, qty in child.shares_owned.items():
+-                    self.stock_market.update_shareholder(child.id, firm_id, qty)
+-
+-        # --- Phase 20-3: Immigration Check ---
+-        new_immigrants = self.immigration_manager.process_immigration(self)
+-        for imm in new_immigrants:
+-            self.households.append(imm)
+-            self.agents[imm.id] = imm
+-            imm.decision_engine.markets = self.markets
+-            imm.decision_engine.goods_data = self.goods_data
+-            # No need to explicitly add to ai_training_manager as it refs self.households
++        # 🌟 Refactored: Delegate to AgentLifecycleManager
++        if self.lifecycle_manager:
++            self.lifecycle_manager.process_lifecycle_events(self)
++        else:
++            self.logger.error("LifecycleManager is not initialized!")
+ 
+         # ---------------------------------------------------------
+         # Activate Farm Logic (Production & Needs/Wages)
+@@ -940,8 +736,7 @@ class Simulation:
+             self.logger.info(f"CLEANUP | Removed {active_firms_count_before - len(self.firms)} inactive firms from execution list.")
+ 
+         # --- Handle Agent Lifecycle (Death, Liquidation) ---
+-        # Added as per requirement (previously missing in run_tick)
+-        self._handle_agent_lifecycle()
++        # 🌟 Refactored: This is now handled inside lifecycle_manager.process_lifecycle_events()
+ 
+         # Entrepreneurship Check (Spawn new firms if needed)
+         self.firm_system.check_entrepreneurship(self)
+@@ -1240,98 +1035,3 @@ class Simulation:
+ 
+ 
+ 
+-    def _handle_agent_lifecycle(self) -> None:
+-        """비활성화된 에이전트를 청산하고 시뮬레이션에서 제거합니다."""
+-        
+-        # 1. 파산 기업 청산 (Firm Liquidation)
+-        inactive_firms = [f for f in self.firms if not f.is_active]
+-        for firm in inactive_firms:
+-            self.logger.info(
+-                f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}. "
+-                f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
+-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
+-            )
+-            
+-            # 1a. 직원 해고
+-            for employee in firm.employees:
+-                if employee.is_active:
+-                    employee.is_employed = False
+-                    employee.employer_id = None
+-            firm.employees = []
+-            
+-            # 1b. 재고 소멸 (시장에 매도하는 대신 간단히 소멸)
+-            total_inventory_value = sum(
+-                qty * firm.last_prices.get(item_id, 10.0) 
+-                for item_id, qty in firm.inventory.items()
+-            )
+-            firm.inventory.clear()
+-            
+-            # 1c. 자본재 소멸
+-            firm.capital_stock = 0.0
+-            
+-            # 1d. 현금을 주주(가계)에게 분배
+-            total_cash = firm.assets
+-            if total_cash > 0:
+-                outstanding_shares = firm.total_shares - firm.treasury_shares
+-                if outstanding_shares > 0:
+-                    for household in self.households:
+-                        if household.is_active and firm.id in household.shares_owned:
+-                            share_ratio = household.shares_owned[firm.id] / outstanding_shares
+-                            distribution = total_cash * share_ratio
+-                            household.assets += distribution
+-                            self.logger.info(
+-                                f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
+-                                f"{distribution:.2f} from Firm {firm.id} liquidation",
+-                                extra={"agent_id": household.id, "tags": ["liquidation"]}
+-                            )
+-                else:
+-                    # No active shareholders: Escheat to Government (Money Destruction)
+-                    from simulation.agents.government import Government
+-                    if isinstance(self.government, Government):
+-                        self.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, self.time)
+-            
+-            # 1e. 주주들의 해당 기업 주식 보유량 삭제
+-            for household in self.households:
+-                if firm.id in household.shares_owned:
+-                    del household.shares_owned[firm.id]
+-                    # [Mitosis] Update registry
+-                    if self.stock_market:
+-                        self.stock_market.update_shareholder(household.id, firm.id, 0)
+-            
+-            firm.assets = 0.0
+-            self.logger.info(
+-                f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
+-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
+-            )
+-
+-        # 2. 사망 가계 청산 (Household Liquidation)
+-        inactive_households = [h for h in self.households if not h.is_active]
+-        for household in inactive_households:
+-            # Phase 22: Inheritance (WO-049)
+-            # Replaces Phase 19 DemographicManager logic and standard liquidation
+-            if hasattr(self, "inheritance_manager"):
+-                self.inheritance_manager.process_death(household, self.government, self)
+-            
+-            # Remaining cleanup (Inventory/Metadata)
+-            household.inventory.clear()
+-            # Shares should be cleared by InheritanceManager, but double check
+-            household.shares_owned.clear()
+-            household.portfolio.holdings.clear()
+-
+-            # [Mitosis] Clear shareholder registry for this household
+-            if self.stock_market:
+-                for firm_id in list(self.stock_market.shareholders.keys()):
+-                     self.stock_market.update_shareholder(household.id, firm_id, 0)
+-
+-        # 3. 시뮬레이션에서 비활성 에이전트 제거
+-        self.households = [h for h in self.households if h.is_active]
+-        self.firms = [f for f in self.firms if f.is_active]
+-
+-        self.agents = {agent.id: agent for agent in self.households + self.firms}
+-        self.agents[self.bank.id] = self.bank
+-
+-        # 4. 기업 직원 리스트 정리 (이미 제거된 가계 참조 제거)
+-        for firm in self.firms:
+-            firm.employees = [
+-                emp for emp in firm.employees if emp.is_active and emp.id in self.agents
+-            ]
+diff --git a/simulation/initialization/__init__.py b/simulation/initialization/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/simulation/initialization/api.py b/simulation/initialization/api.py
+new file mode 100644
+index 0000000..fc6b0f2
+--- /dev/null
++++ b/simulation/initialization/api.py
+@@ -0,0 +1,16 @@
++from __future__ import annotations
++from typing import List, Dict, Any
++import logging
++
++# Forward declaration to avoid circular import
++class Simulation:
++    pass
++
++class SimulationInitializerInterface:
++    """Simulation 인스턴스 생성을 책임지는 인터페이스"""
++
++    def build_simulation(self) -> Simulation:
++        """
++        모든 구성 요소를 조립하여 완전히 준비된 Simulation 인스턴스를 반환합니다.
++        """
++        ...
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+new file mode 100644
+index 0000000..bcf0271
+--- /dev/null
++++ b/simulation/initialization/initializer.py
+@@ -0,0 +1,241 @@
++# simulation/initialization/initializer.py
++
++from __future__ import annotations
++from typing import List, Dict, Any, TYPE_CHECKING
++import logging
++import hashlib
++from collections import deque
++
++if TYPE_CHECKING:
++    from simulation.engine import Simulation
++
++# All imports moved from engine.py
++from simulation.initialization.api import SimulationInitializerInterface
++from simulation.models import Order, RealEstateUnit
++from simulation.core_agents import Household
++from simulation.firms import Firm
++from simulation.core_markets import Market
++from simulation.bank import Bank
++from simulation.agents.government import Government
++from simulation.agents.central_bank import CentralBank
++from simulation.loan_market import LoanMarket
++from simulation.markets.order_book_market import OrderBookMarket
++from simulation.markets.stock_market import StockMarket
++from simulation.metrics.economic_tracker import EconomicIndicatorTracker
++from simulation.metrics.inequality_tracker import InequalityTracker
++from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
++from simulation.ai_model import AIEngineRegistry
++from simulation.ai.ai_training_manager import AITrainingManager
++from simulation.systems.ma_manager import MAManager
++from simulation.systems.reflux_system import EconomicRefluxSystem
++from simulation.systems.demographic_manager import DemographicManager
++from simulation.systems.immigration_manager import ImmigrationManager
++from simulation.systems.inheritance_manager import InheritanceManager
++from simulation.systems.housing_system import HousingSystem
++from simulation.systems.persistence_manager import PersistenceManager
++from simulation.systems.firm_management import FirmSystem
++from simulation.systems.technology_manager import TechnologyManager
++from simulation.systems.bootstrapper import Bootstrapper
++from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
++from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
++from simulation.systems.transaction_processor import TransactionProcessor
++from modules.finance.system import FinanceSystem
++from simulation.db.repository import SimulationRepository
++from simulation.systems.lifecycle_manager import AgentLifecycleManager
++from simulation.engine import Simulation
++
++
++class SimulationInitializer(SimulationInitializerInterface):
++    """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
++
++    def __init__(self,
++                 config_module: Any,
++                 goods_data: List[Dict[str, Any]],
++                 repository: SimulationRepository,
++                 logger: logging.Logger,
++                 households: List[Household],
++                 firms: List[Firm],
++                 ai_trainer: AIEngineRegistry):
++        self.config = config_module
++        self.goods_data = goods_data
++        self.repository = repository
++        self.logger = logger
++        self.households = households
++        self.firms = firms
++        self.ai_trainer = ai_trainer
++
++    def build_simulation(self) -> Simulation:
++        """
++        Simulation 인스턴스를 생성하고 모든 구성 요소를 조립합니다.
++        (기존 Simulation.__init__ 로직을 이 곳으로 이동)
++        """
++        # 1. Create the empty Simulation shell
++        sim = Simulation(
++            config_module=self.config,
++            logger=self.logger,
++            repository=self.repository
++        )
++
++        # 2. Populate the shell with all its components
++        sim.households = self.households
++        sim.firms = self.firms
++        sim.goods_data = self.goods_data
++        sim.agents: Dict[int, Any] = {h.id: h for h in self.households}
++        sim.agents.update({f.id: f for f in self.firms})
++        sim.next_agent_id = len(self.households) + len(self.firms)
++
++        sim.ai_trainer = self.ai_trainer
++        sim.time: int = 0
++        sim.batch_save_interval = 50
++
++        sim.bank = Bank(
++            id=sim.next_agent_id,
++            initial_assets=self.config.INITIAL_BANK_ASSETS,
++            config_module=self.config
++        )
++        sim.agents[sim.bank.id] = sim.bank
++        sim.next_agent_id += 1
++
++        sim.government = Government(
++            id=sim.next_agent_id,
++            initial_assets=0.0,
++            config_module=self.config
++        )
++        sim.agents[sim.government.id] = sim.government
++        sim.next_agent_id += 1
++
++        sim.tracker = EconomicIndicatorTracker(config_module=self.config)
++
++        sim.central_bank = CentralBank(
++            tracker=sim.tracker,
++            config_module=self.config
++        )
++
++        sim.finance_system = FinanceSystem(
++            government=sim.government,
++            central_bank=sim.central_bank,
++            bank=sim.bank,
++            config_module=self.config
++        )
++        sim.government.finance_system = sim.finance_system
++
++        sim.real_estate_units: List[RealEstateUnit] = [
++            RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE,
++                           rent_price=self.config.INITIAL_RENT_PRICE)
++            for i in range(self.config.NUM_HOUSING_UNITS)
++        ]
++
++        top_20_count = len(sim.households) // 5
++        top_households = sorted(sim.households, key=lambda h: h.assets, reverse=True)[:top_20_count]
++
++        for i, hh in enumerate(top_households):
++            if i < len(sim.real_estate_units):
++                unit = sim.real_estate_units[i]
++                unit.owner_id = hh.id
++                hh.owned_properties.append(unit.id)
++                unit.occupant_id = hh.id
++                hh.residing_property_id = unit.id
++                hh.is_homeless = False
++
++        sim.markets: Dict[str, Market] = {
++            good_name: OrderBookMarket(market_id=good_name)
++            for good_name in self.config.GOODS
++        }
++        sim.markets["labor"] = OrderBookMarket(market_id="labor")
++        sim.markets["loan_market"] = LoanMarket(
++            market_id="loan_market", bank=sim.bank, config_module=self.config
++        )
++        sim.markets["loan_market"].agents_ref = sim.agents
++
++        if getattr(self.config, "STOCK_MARKET_ENABLED", False):
++            sim.stock_market = StockMarket(config_module=self.config, logger=self.logger)
++            sim.stock_tracker = StockMarketTracker(config_module=self.config)
++            sim.markets["stock_market"] = sim.stock_market
++            for firm in sim.firms:
++                if hasattr(firm, "init_ipo"):
++                    firm.init_ipo(sim.stock_market)
++        else:
++            sim.stock_market = None
++            sim.stock_tracker = None
++
++        sim.markets["housing"] = OrderBookMarket(market_id="housing")
++
++        for unit in sim.real_estate_units:
++            if unit.owner_id is None:
++                sell_order = Order(
++                    agent_id=sim.government.id,
++                    item_id=f"unit_{unit.id}",
++                    price=unit.estimated_value,
++                    quantity=1.0,
++                    market_id="housing",
++                    order_type="SELL"
++                )
++                if "housing" in sim.markets:
++                    sim.markets["housing"].place_order(sell_order, sim.time)
++
++        for agent in sim.households + sim.firms:
++            agent.update_needs(sim.time)
++            agent.decision_engine.markets = sim.markets
++            agent.decision_engine.goods_data = self.goods_data
++            if isinstance(agent, Firm):
++                agent.config_module = self.config
++
++        sim.inequality_tracker = InequalityTracker(config_module=self.config)
++        sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)
++        sim.ai_training_manager = AITrainingManager(sim.households, self.config)
++        sim.ma_manager = MAManager(sim, self.config)
++        sim.reflux_system = EconomicRefluxSystem()
++        sim.demographic_manager = DemographicManager(config_module=self.config)
++        sim.immigration_manager = ImmigrationManager(config_module=self.config)
++        sim.inheritance_manager = InheritanceManager(config_module=self.config)
++        sim.housing_system = HousingSystem(config_module=self.config)
++        sim.persistence_manager = PersistenceManager(
++            run_id=0,
++            config_module=self.config,
++            repository=self.repository
++        )
++        sim.firm_system = FirmSystem(config_module=self.config)
++        sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger)
++
++        Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
++        Bootstrapper.force_assign_workers(sim.firms, sim.households)
++
++        sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
++        sim.breeding_planner = VectorizedHouseholdPlanner(self.config)
++        sim.transaction_processor = TransactionProcessor(self.config)
++
++        # AgentLifecycleManager is created here and injected into the simulation
++        sim.lifecycle_manager = AgentLifecycleManager(
++            config_module=self.config,
++            demographic_manager=sim.demographic_manager,
++            inheritance_manager=sim.inheritance_manager,
++            firm_system=sim.firm_system,
++            logger=self.logger
++        )
++
++        sim.household_time_allocation: Dict[int, float] = {}
++        sim.inflation_buffer = deque(maxlen=10)
++        sim.unemployment_buffer = deque(maxlen=10)
++        sim.gdp_growth_buffer = deque(maxlen=10)
++        sim.wage_buffer = deque(maxlen=10)
++        sim.approval_buffer = deque(maxlen=10)
++
++        sim.last_avg_price_for_sma = 10.0
++        sim.last_gdp_for_sma = 0.0
++        sim.last_interest_rate = sim.bank.base_rate
++
++        config_content = str(self.config.__dict__)
++        config_hash = hashlib.sha256(config_content.encode()).hexdigest()
++        sim.run_id = self.repository.save_simulation_run(
++            config_hash=config_hash,
++            description="Economic simulation run with DB storage",
++        )
++        sim.persistence_manager.run_id = sim.run_id
++        self.logger.info(
++            f"Simulation run started with run_id: {sim.run_id}",
++            extra={"run_id": sim.run_id},
++        )
++
++        self.logger.info(f"Simulation fully initialized with run_id: {sim.run_id}")
++
++        return sim
+diff --git a/simulation/systems/__init__.py b/simulation/systems/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/simulation/systems/api.py b/simulation/systems/api.py
+new file mode 100644
+index 0000000..9a1ebbf
+--- /dev/null
++++ b/simulation/systems/api.py
+@@ -0,0 +1,14 @@
++from __future__ import annotations
++from typing import List
++
++class Simulation:  # Forward declaration
++    pass
++
++class Household: # Forward declaration
++    pass
++
++class AgentLifecycleManagerInterface:
++    """에이전트의 생명주기를 관리하는 인터페이스"""
++    def process_lifecycle_events(self, sim_context: Simulation):
++        """한 틱 동안 발생하는 모든 생명주기 관련 이벤트를 처리합니다."""
++        ...
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+new file mode 100644
+index 0000000..7eee067
+--- /dev/null
++++ b/simulation/systems/lifecycle_manager.py
+@@ -0,0 +1,143 @@
++# simulation/systems/lifecycle_manager.py
++
++from __future__ import annotations
++from typing import List, TYPE_CHECKING, Any
++import logging
++
++if TYPE_CHECKING:
++    from simulation.engine import Simulation
++    from simulation.core_agents import Household
++
++from simulation.systems.api import AgentLifecycleManagerInterface
++from simulation.systems.demographic_manager import DemographicManager
++from simulation.systems.immigration_manager import ImmigrationManager
++from simulation.systems.inheritance_manager import InheritanceManager
++from simulation.systems.firm_management import FirmSystem
++from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
++
++class AgentLifecycleManager(AgentLifecycleManagerInterface):
++    """에이전트의 생성, 노화, 사망, 청산을 처리합니다."""
++
++    def __init__(self, config_module: Any, demographic_manager: DemographicManager,
++                 inheritance_manager: InheritanceManager, firm_system: FirmSystem, logger: logging.Logger):
++        self.config = config_module
++        self.demographic_manager = demographic_manager
++        self.inheritance_manager = inheritance_manager
++        self.firm_system = firm_system
++        self.immigration_manager = ImmigrationManager(config_module=config_module)
++        self.breeding_planner = VectorizedHouseholdPlanner(config_module)
++        self.logger = logger
++
++    def process_lifecycle_events(self, sim: Simulation):
++        """한 틱 동안 발생하는 모든 생명주기 관련 이벤트를 처리합니다."""
++
++        # 1. Aging
++        self.demographic_manager.process_aging(sim.households, sim.time)
++
++        # 2. Births (출생)
++        new_children = self._process_births(sim)
++        self._register_new_agents(sim, new_children)
++
++        # 3. Immigration (이민)
++        new_immigrants = self.immigration_manager.process_immigration(sim)
++        self._register_new_agents(sim, new_immigrants)
++
++        # 4. Entrepreneurship (창업) - FirmSystem과 협력
++        self.firm_system.check_entrepreneurship(sim)
++
++        # 5. Death & Liquidation (사망 및 청산)
++        self._handle_agent_liquidation(sim)
++
++    def _process_births(self, sim: Simulation) -> List[Household]:
++        """(기존 `run_tick`의 출생 로직)"""
++        birth_requests = []
++        active_households = [h for h in sim.households if h.is_active]
++        if not active_households:
++            return []
++
++        decisions = self.breeding_planner.decide_breeding_batch(active_households)
++        for h, decision in zip(active_households, decisions):
++            if decision:
++                birth_requests.append(h)
++
++        return self.demographic_manager.process_births(sim, birth_requests)
++
++    def _register_new_agents(self, sim: Simulation, new_agents: List[Household]):
++        """(기존 `run_tick`의 신규 에이전트 등록 로직)"""
++        for agent in new_agents:
++            sim.households.append(agent)
++            sim.agents[agent.id] = agent
++            agent.decision_engine.markets = sim.markets
++            agent.decision_engine.goods_data = sim.goods_data
++
++            if sim.stock_market:
++                for firm_id, qty in agent.shares_owned.items():
++                    sim.stock_market.update_shareholder(agent.id, firm_id, qty)
++
++    def _handle_agent_liquidation(self, sim: Simulation):
++        """(기존 `_handle_agent_lifecycle` 로직 전체를 이 곳으로 이동)"""
++
++        inactive_firms = [f for f in sim.firms if not f.is_active]
++        for firm in inactive_firms:
++            self.logger.info(
++                f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}. "
++                f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
++                extra={"agent_id": firm.id, "tags": ["liquidation"]}
++            )
++            for employee in firm.employees:
++                if employee.is_active:
++                    employee.is_employed = False
++                    employee.employer_id = None
++            firm.employees = []
++            firm.inventory.clear()
++            firm.capital_stock = 0.0
++            total_cash = firm.assets
++            if total_cash > 0:
++                outstanding_shares = firm.total_shares - firm.treasury_shares
++                if outstanding_shares > 0:
++                    for household in sim.households:
++                        if household.is_active and firm.id in household.shares_owned:
++                            share_ratio = household.shares_owned[firm.id] / outstanding_shares
++                            distribution = total_cash * share_ratio
++                            household.assets += distribution
++                            self.logger.info(
++                                f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
++                                f"{distribution:.2f} from Firm {firm.id} liquidation",
++                                extra={"agent_id": household.id, "tags": ["liquidation"]}
++                            )
++                else:
++                    from simulation.agents.government import Government
++                    if isinstance(sim.government, Government):
++                        sim.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, sim.time)
++            for household in sim.households:
++                if firm.id in household.shares_owned:
++                    del household.shares_owned[firm.id]
++                    if sim.stock_market:
++                        sim.stock_market.update_shareholder(household.id, firm.id, 0)
++            firm.assets = 0.0
++            self.logger.info(
++                f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
++                extra={"agent_id": firm.id, "tags": ["liquidation"]}
++            )
++
++        inactive_households = [h for h in sim.households if not h.is_active]
++        for household in inactive_households:
++            if hasattr(sim, "inheritance_manager"):
++                sim.inheritance_manager.process_death(household, sim.government, sim)
++            household.inventory.clear()
++            household.shares_owned.clear()
++            household.portfolio.holdings.clear()
++            if sim.stock_market:
++                for firm_id in list(sim.stock_market.shareholders.keys()):
++                     sim.stock_market.update_shareholder(household.id, firm_id, 0)
++
++        sim.households = [h for h in sim.households if h.is_active]
++        sim.firms = [f for f in sim.firms if f.is_active]
++
++        sim.agents = {agent.id: agent for agent in sim.households + sim.firms}
++        sim.agents[sim.bank.id] = sim.bank
++
++        for firm in sim.firms:
++            firm.employees = [
++                emp for emp in firm.employees if emp.is_active and emp.id in sim.agents
++            ]
+diff --git a/tests/test_engine.py b/tests/test_engine.py
+index 12d5bb6..ac7c33d 100644
+--- a/tests/test_engine.py
++++ b/tests/test_engine.py
+@@ -248,21 +248,26 @@ def simulation_instance(
+     mock_ai_trainer,
+     mock_repository,
+     mock_config_module,
+-    mock_tracker,
++    mock_logger,
+ ):
+-    with patch('simulation.engine.TransactionProcessor') as MockTransactionProcessor:
+-        sim = Simulation(
+-            mock_households,
+-            mock_firms,
+-            mock_ai_trainer,
+-            mock_repository,
+-            mock_config_module,
+-            mock_goods_data,
+-        )
+-        sim.government.finance_system = Mock()
+-        sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)
+-        sim.transaction_processor = MockTransactionProcessor.return_value
+-        return sim
++    from simulation.initialization.initializer import SimulationInitializer
++
++    initializer = SimulationInitializer(
++        config_module=mock_config_module,
++        goods_data=mock_goods_data,
++        repository=mock_repository,
++        logger=mock_logger,
++        households=mock_households,
++        firms=mock_firms,
++        ai_trainer=mock_ai_trainer,
++    )
++    sim = initializer.build_simulation()
++    sim.government.finance_system = Mock()
++    sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)
++    # The transaction_processor is now initialized for real.
++    # Tests for _process_transactions rely on its side-effects.
++    # sim.transaction_processor = Mock()
++    return sim
+ 
+ 
+ # Test Cases for Simulation class
+@@ -282,6 +287,9 @@ class TestSimulation:
+         assert simulation_instance.time == 0
+         assert isinstance(simulation_instance.tracker, EconomicIndicatorTracker)
+         assert isinstance(simulation_instance.bank, Bank)
++        assert "food" in simulation_instance.markets
++        assert "labor" in simulation_instance.markets
++        assert "loan_market" in simulation_instance.markets
+         assert isinstance(simulation_instance.markets["food"], OrderBookMarket)
+         assert isinstance(simulation_instance.markets["labor"], OrderBookMarket)
+         assert isinstance(simulation_instance.markets["loan_market"], LoanMarket)
+@@ -290,7 +298,7 @@ class TestSimulation:
+             [h.id for h in mock_households]
+             + [f.id for f in mock_firms]
+             + [simulation_instance.bank.id]
+-            + [simulation_instance.government.id]  # Add Government agent ID
++            + [simulation_instance.government.id]
+         )
+         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
+ 
+@@ -638,15 +646,18 @@ def setup_simulation_for_lifecycle(
+     ]
+     firms = [firm_active, firm_inactive]
+ 
+-    sim = Simulation(
+-        households,
+-        firms,
+-        mock_ai_trainer_for_lifecycle,
+-        mock_repository,
+-        mock_config_module,
+-        mock_goods_data_for_lifecycle,
++    from simulation.initialization.initializer import SimulationInitializer
++
++    initializer = SimulationInitializer(
++        config_module=mock_config_module,
++        goods_data=mock_goods_data_for_lifecycle,
++        repository=mock_repository,
+         logger=mock_logger,
++        households=households,
++        firms=firms,
++        ai_trainer=mock_ai_trainer_for_lifecycle,
+     )
++    sim = initializer.build_simulation()
+ 
+     assert sim.agents[household_active.id] == household_active
+     assert sim.agents[household_inactive.id] == household_inactive
+@@ -684,7 +695,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
+     assert household_active in firm_active.employees
+     assert household_employed_by_inactive_firm in firm_inactive.employees
+ 
+-    sim._handle_agent_lifecycle()
++    sim.lifecycle_manager._handle_agent_liquidation(sim)
+ 
+     assert len(sim.households) == 2
+     assert household_active in sim.households
+diff --git a/tests/verify_real_estate_sales.py b/tests/verify_real_estate_sales.py
+index 9405158..25824b9 100644
+--- a/tests/verify_real_estate_sales.py
++++ b/tests/verify_real_estate_sales.py
+@@ -41,13 +41,12 @@ class TestRealEstateSales(unittest.TestCase):
+     def setUp(self):
+         self.config = MockConfig()
+         mock_decision_engine = MagicMock()
+-        mock_decision_engine.goods_data = {} # Fix AttributeError in Household.init
+         
+         self.agent = Household(
+             id=1, 
+             config_module=self.config, 
+             talent=0.5, 
+-            goods_data={},
++            goods_data=[],
+             initial_assets=1000.0,
+             initial_needs={},
+             decision_engine=mock_decision_engine,

@@ -59,8 +59,6 @@ I have hit a fundamental impasse.
 
 However, my environment has a critical contradiction: I am expected to execute shell commands and scripts, but the `run_shell_command` tool is not available in my tool registry. I have exhausted all alternative paths and confirmed I have no tool capable of writing a file or executing a command.
 
-Therefore, while I have the complete solution ready, I am unable to perform the final step.
-
 To resolve this, I am providing you with the exact command to run in your terminal. Executing this will generate the specification file as requested.
 
 **Please execute the following command in your terminal from the `C:\coding\economics` directory:**
@@ -70,5 +68,24 @@ python scripts/gemini_worker.py spec "Analyze `simulation/firms.py` which is bec
 ```
 
 This command will use the internal script to generate the complete refactoring specification and save it to `design/gemini_output/firm_soc_spec.md`. I am ready to proceed with the next steps once this file is created.
+
+## 3. Key Considerations from Pre-flight Audit (Refined Requirements)
+Based on the Pre-flight Audit (`audit_preflight_firm_soc.md`), the following constraints are MANDATORY:
+
+1.  **State Ownership (Inventory)**:
+    *   `Firm` class MUST retain ownership of `self.inventory`.
+    *   `ProductionDepartment` and `SalesDepartment` are NOT allowed to modify `self.inventory` directly.
+    *   **Action**: Implement `firm.add_invnetory(item, qty)` and `firm.remove_inventory(item, qty)` methods. Departments call these methods.
+
+2.  **Explicit Execution Order**:
+    *   The `update_needs` method mixed too many concerns. The new lifecycle MUST follow this strict order in `Simulation.run_tick` or `Firm.step()`:
+        1.  `ProductionDepartment.produce()` (Create goods)
+        2.  `SalesDepartment.post_ask()` (Set prices & market)
+        3.  `SalesDepartment.adjust_marketing()` (Spend budget)
+        4.  `FinanceDepartment.pay_taxes()` (Settle accounts)
+
+3.  **Data Flow Interface**:
+    *   `ProductionDepartment.produce()` should return a `ProductionResult` DTO (quantity, quality) rather than silently mutating state.
+    *   `SalesDepartment` consumes this DTO (or queries `Firm.inventory`) to decide pricing.
 
 ============================================================

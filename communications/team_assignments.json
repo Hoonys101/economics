@@ -16,6 +16,10 @@
       "10452416812953510617": {
         "title": "WO-077: Config Automation",
         "initial_mission": "Implement Centralized Config System (TD-007). REFERENCE: Strictly follow the Zero-Question Spec in `design/gemini_output/stress_test_config_spec.md`. TASK: 1) Create `simulation/config.py` with `SimulationConfig` dataclass hierarchy. 2) Implement JSON profile loader. 3) Refactor `engine.py` and `firms.py` to use `sim_config` instead of hardcoded constants. 4) Create `test_config_loading.py` verification."
+      },
+      "17119948573295953717": {
+        "title": "WO-078: The Great Refactoring",
+        "initial_mission": "EXECUTE WO-078 WAR PROTOCOL: Phase 1 IS MANDATORY BEFORE Phase 2.\\n\\n[PHASE 1: Engine SoC] Refactor `Simulation` God Class. Extract `SimulationInitializer` and `AgentLifecycleManager`. (Ref: `design/gemini_output/simulation_soc_spec.md`)\\n\\n[PHASE 2: Config Automation] ONLY after Phase 1 tests pass, implement `SimulationConfig` and migrate constants. (Ref: `design/gemini_output/stress_test_config_spec.md`)\\n\\nGOAL: Break the dependency/test cycle by fixing the architecture first."
       }
     },
     "completed_sessions": {

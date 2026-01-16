@@ -30,13 +30,13 @@ echo [Gemini-CLI] Drafting Stress Test Config spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: WO-077 (Root Cause Analysis) - Action: AUDIT ENGINE COMPLEXITY
-set JOB_ID=Audit_Engine_Complexity
-python scripts/gemini_worker.py audit "Analyze `simulation/engine.py` (specifically `__init__` and `run_tick`) and `tests/test_engine.py`. Determine if the high coupling and heavy initialization logic in `Simulation` are the root causes of the WO-077 test failures. Verify if separating `SimulationInitializer` (TD-043) is a necessary pre-requisite to fix the fragile tests. Output the analysis to `design/gemini_output/audit_engine_complexity.md`." -c simulation/engine.py tests/test_engine.py > design\gemini_output\audit_engine_complexity.md 2>&1
+:: Target: TD-044 (Household SoC) - Action: DESIGN SPEC (Auto-Audit Enabled)
+set JOB_ID=TD-044_Household_SoC
+python scripts/gemini_worker.py spec "Analyze `simulation/core_agents.py`. The `Household` class is a God Class mixing demographics, labor, and consumption logic. Write a Zero-Question Implementation Spec to refactor it using Composition. Extract `EconomyManager` (consumption, savings, tax) and `LaborManager` (work, skill, job search). `Household` should remain the identity/coordinator. The spec MUST address risks identified by the Auto-Audit. TARGET: `design/gemini_output/household_soc_spec.md`" -c simulation/core_agents.py > design\gemini_output\household_soc_spec.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Gemini audit failed. Check logs.
+    echo [ERROR] Gemini task execution failed. Check logs.
 ) else (
-    echo [SUCCESS] Engine complexity audit completed. Check design\gemini_output\audit_engine_complexity.md
+    echo [SUCCESS] Gemini spec drafting with Auto-Audit completed. Check design\gemini_output\household_soc_spec.md
 )
 endlocal
