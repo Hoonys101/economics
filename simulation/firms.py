@@ -581,7 +581,7 @@ class Firm(BaseAgent):
 
 
     @override
-    def clone(self, new_id: int, initial_assets_from_parent: float) -> "Firm":
+    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Firm":
         """
         현재 기업 인스턴스를 복제하여 새로운 기업을 생성합니다.
         AI 모델(decision_engine)을 포함하여 깊은 복사를 수행합니다.

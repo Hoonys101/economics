@@ -23,7 +23,14 @@ if project_root not in sys.path:
 # Mock Decision Engines for testing
 class MockHouseholdDecisionEngine(AIDrivenHouseholdDecisionEngine):
     def __init__(self):
-        pass
+        self.ai_engine = Mock()
+        self.ai_engine.ai_decision_engine = Mock()
+        self.ai_engine.gamma = 0.99
+        self.ai_engine.action_selector.epsilon = 0.1
+        self.ai_engine.base_alpha = 0.1
+        self.ai_engine.learning_focus = 0.5
+        self.config_module = config
+        self.logger = Mock()
 
     def make_decisions(self, household, market_data, current_time):
         return [], None
@@ -49,7 +56,7 @@ def test_base_agent_abstract_methods():
         def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
             return [], None
 
-        def clone(self):
+        def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
             pass
 
     agent = ConcreteAgent(
@@ -64,7 +71,7 @@ def test_base_agent_abstract_methods():
 
 
 # Test Household inheritance and initialization
-def test_household_inheritance_and_init():
+def test_household_clone():
     initial_assets = 100.0
     initial_needs = {
         "survival_need": 50.0,
@@ -91,13 +98,16 @@ def test_household_inheritance_and_init():
         config_module=config,
     )
 
-    assert isinstance(household, BaseAgent)
-    assert household.id == 1
-    assert household.assets == initial_assets
+    clone = household.clone(2, 50.0, 1)
+
+    assert isinstance(clone, BaseAgent)
+    assert clone.id == 2
+    assert clone.assets == 50.0
     # assert household.needs == initial_needs
-    assert household.decision_engine == decision_engine
-    assert household.name == "Household_1"
-    assert household.talent == talent
+    assert clone.name == "Household_2"
+    assert clone.talent == talent
+    assert clone.demographics.parent_id == 1
+    assert clone.demographics.generation == 1
 
 
 # Test Firm inheritance and initialization
