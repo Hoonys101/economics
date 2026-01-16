@@ -13,13 +13,22 @@ class BondDTO:
     yield_rate: float
     maturity_date: int
 
+from dataclasses import dataclass
+
+@dataclass
+class BailoutCovenant:
+    """Defines the restrictive conditions attached to a bailout loan."""
+    dividends_allowed: bool
+    executive_salary_freeze: bool
+    mandatory_repayment: float # Ratio of profit to be repaid
+
 @dataclass
 class BailoutLoanDTO:
     """Data Transfer Object for corporate bailout loans."""
     firm_id: int
     amount: float
     interest_rate: float
-    covenants: Dict[str, bool]
+    covenants: BailoutCovenant
 
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""

@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional
 import logging
-from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, IFinancialEntity, InsufficientFundsError
+from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
 # Forward reference for type hinting
 from simulation.firms import Firm
 
@@ -17,10 +17,25 @@ class FinanceSystem(IFinanceSystem):
         self.outstanding_bonds: List[BondDTO] = []
 
     def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
-        """
-        Evaluates a firm's solvency to determine bailout eligibility.
-        - Startups (< 24 ticks old) are checked for a 3-month wage runway.
-        - Established firms are evaluated using the Altman Z-Score.
+        """Evaluates a firm's solvency to determine bailout eligibility.
+
+        This method uses two distinct evaluation paths based on the firm's age:
+        1.  **Startup Runway Check**: For new firms still within their grace period
+            (defined by `STARTUP_GRACE_PERIOD_TICKS` from the config), solvency
+            is determined by their cash runway. The check ensures they have enough
+            cash reserves to cover their wage bill for a defined period (e.g., 3 months).
+        2.  **Altman Z-Score**: For established firms beyond the grace period,
+            solvency is assessed using the Altman Z-Score, a more comprehensive
+            financial health metric. A score above the `ALTMAN_Z_SCORE_THRESHOLD`
+            (from the config) is considered solvent.
+
+        Args:
+            firm: The firm entity to be evaluated.
+            current_tick: The current simulation tick, used for age calculation.
+
+        Returns:
+            True if the firm is deemed solvent and thus ineligible for a bailout,
+            False otherwise.
         """
         startup_grace_period = getattr(self.config_module, "STARTUP_GRACE_PERIOD_TICKS", 24)
         z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
@@ -93,15 +108,16 @@ class FinanceSystem(IFinanceSystem):
         base_rate = self.central_bank.get_base_rate()
         penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
 
+        covenants = BailoutCovenant(
+            dividends_allowed=False,
+            executive_salary_freeze=True,
+            mandatory_repayment=getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+        )
         loan = BailoutLoanDTO(
             firm_id=firm.id,
             amount=amount,
             interest_rate=base_rate + penalty_premium,
-            covenants={
-                "dividends_allowed": False,
-                "executive_salary_freeze": True,
-                "mandatory_repayment": getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
-            }
+            covenants=covenants
         )
 
         # Transfer funds from Government to the firm

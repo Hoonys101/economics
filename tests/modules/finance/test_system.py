@@ -162,7 +162,7 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
     loan = finance_system.grant_bailout_loan(mock_firm, amount)
     assert loan.firm_id == mock_firm.id
     assert loan.amount == amount
-    assert loan.covenants["mandatory_repayment"] == mock_config.BAILOUT_REPAYMENT_RATIO
+    assert loan.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
     assert mock_government.assets == initial_gov_assets - amount
     assert mock_firm.cash_reserve == initial_firm_cash + amount
     mock_firm.finance.add_liability.assert_called_once_with(amount, loan.interest_rate)

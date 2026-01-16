@@ -208,12 +208,28 @@ class FinanceDepartment:
         self.firm.total_debt += amount
 
     def calculate_altman_z_score(self) -> float:
-        """
-        Calculates the Altman Z-Score for solvency, simplified for this model.
+        """Calculates the Altman Z-Score for solvency, simplified for this model.
+
+        The formula used is a modified version for non-manufacturing or service companies:
         Z = 1.2*X1 + 1.4*X2 + 3.3*X3
-        X1: Working Capital / Total Assets
-        X2: Retained Earnings / Total Assets
-        X3: Average Profit / Total Assets
+
+        Where:
+            X1 (Working Capital / Total Assets): Measures liquid assets in relation
+               to the size of the company. A firm with significant working capital
+               is less likely to face immediate financial distress.
+               - Working Capital = Firm's cash reserves - total debt.
+               - Total Assets = Cash + Capital Stock + Inventory Value.
+            X2 (Retained Earnings / Total Assets): Measures cumulative profitability.
+               A higher value indicates a history of reinvesting profits,
+               strengthening the company's financial foundation.
+            X3 (Average Profit / Total Assets): Measures recent operational efficiency.
+               Uses a moving average of profit to gauge how effectively the firm
+               is generating earnings from its assets.
+
+        Returns:
+            The calculated Z-Score. A score below 1.81 typically indicates a firm
+            is heading for bankruptcy, while a score above 3.0 suggests a healthy
+            financial position.
         """
         total_assets = self.firm.assets + self.firm.capital_stock + self.firm.get_inventory_value()
         if total_assets == 0:
