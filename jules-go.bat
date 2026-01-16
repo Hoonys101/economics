@@ -38,21 +38,21 @@ echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: WO-077 (Config Automation) - Action: CREATE NEW SESSION
-set TARGET="WO-077: Config Automation"
-set MISSION="Implement Centralized Config System (TD-007). REFERENCE: Strictly follow the Zero-Question Spec in `design/gemini_output/stress_test_config_spec.md`. TASK: 1) Create `simulation/config.py` with `SimulationConfig` dataclass hierarchy. 2) Implement JSON profile loader. 3) Refactor `engine.py` and `firms.py` to use `sim_config` instead of hardcoded constants. 4) Create `test_config_loading.py` verification."
+:: Target: WO-078 (Engine SoC & Config) - Action: CREATE NEW SESSION
+set TARGET="WO-078: The Great Refactoring"
+set MISSION="EXECUTE WO-078 WAR PROTOCOL: Phase 1 IS MANDATORY BEFORE Phase 2.\n\n[PHASE 1: Engine SoC] Refactor `Simulation` God Class. Extract `SimulationInitializer` and `AgentLifecycleManager`. (Ref: `design/gemini_output/simulation_soc_spec.md`)\n\n[PHASE 2: Config Automation] ONLY after Phase 1 tests pass, implement `SimulationConfig` and migrate constants. (Ref: `design/gemini_output/stress_test_config_spec.md`)\n\nGOAL: Break the dependency/test cycle by fixing the architecture first."
 
 :: 1. Create Session & Send Initial Mission
-:: Note: 'create' command now accepts (Title, Prompt) thanks to previous update
 python scripts/jules_bridge.py create %TARGET% %MISSION% > communications\jules_logs\last_run.md 2>&1
 
 :: 2. Auto-Record to Session Ledger (Append mode)
-echo ^| %DATE% ^| %SESSION_ID% ^| %TARGET% ^| %MISSION% ^| >> design\SESSION_LEDGER.md
+:: echo ^| %DATE% ^| [NEW_SESSION] ^| WO-078 ^| SESSION STARTED ^| >> design\SESSION_LEDGER.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.
 ) else (
-    echo [SUCCESS] WO-076 mission dispatched and recorded to SESSION_LEDGER.md.
+    echo [SUCCESS] WO-077 mission dispatched.
+    echo [NOTE] Please check 'communications\jules_logs\last_run.md' for the Session ID.
     type communications\jules_logs\last_run.md
 )
 endlocal

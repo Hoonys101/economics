@@ -30,13 +30,13 @@ echo [Gemini-CLI] Drafting Stress Test Config spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: TD-043 (Simulation God Class) - Action: DESIGN SPEC
-set JOB_ID=TD-043_Simulation_SoC
-python scripts/gemini_worker.py spec "Analyze `simulation/engine.py` which has become a God Class. Write a Zero-Question Implementation Spec to refactor it by extracting `AgentLifecycleManager` (handling agent creation, death, aging) and `SimulationInitializer` (handling setup). Use Composition/DI. The spec must include updated class diagrams, data flow, and precise pythonic pseudo-code. TARGET: `design/gemini_output/simulation_soc_spec.md`" -c simulation/engine.py > design\gemini_output\simulation_soc_spec.md 2>&1
+:: Target: WO-077 (Root Cause Analysis) - Action: AUDIT ENGINE COMPLEXITY
+set JOB_ID=Audit_Engine_Complexity
+python scripts/gemini_worker.py audit "Analyze `simulation/engine.py` (specifically `__init__` and `run_tick`) and `tests/test_engine.py`. Determine if the high coupling and heavy initialization logic in `Simulation` are the root causes of the WO-077 test failures. Verify if separating `SimulationInitializer` (TD-043) is a necessary pre-requisite to fix the fragile tests. Output the analysis to `design/gemini_output/audit_engine_complexity.md`." -c simulation/engine.py tests/test_engine.py > design\gemini_output\audit_engine_complexity.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Gemini task execution failed. Check logs.
+    echo [ERROR] Gemini audit failed. Check logs.
 ) else (
-    echo [SUCCESS] Gemini task completed successfully. Check design\gemini_output\
+    echo [SUCCESS] Engine complexity audit completed. Check design\gemini_output\audit_engine_complexity.md
 )
 endlocal

@@ -12,6 +12,10 @@
       "5786201121844758932": {
         "title": "WO-076: Household God Class SoC - Demographics Extraction",
         "initial_mission": "Execute the refactoring of the Household god class (TD-044) by extracting a DemographicsComponent. Follow the spec in design/gemini_output/household_soc_spec.md strictly. Use the Component/Delegate pattern. The final implementation must pass all tests."
+      },
+      "10452416812953510617": {
+        "title": "WO-077: Config Automation",
+        "initial_mission": "Implement Centralized Config System (TD-007). REFERENCE: Strictly follow the Zero-Question Spec in `design/gemini_output/stress_test_config_spec.md`. TASK: 1) Create `simulation/config.py` with `SimulationConfig` dataclass hierarchy. 2) Implement JSON profile loader. 3) Refactor `engine.py` and `firms.py` to use `sim_config` instead of hardcoded constants. 4) Create `test_config_loading.py` verification."
       }
     },
     "completed_sessions": {
