@@ -79,6 +79,8 @@ def mock_household():
     hh = Mock(spec=Household)
     hh.id = 1
     hh.assets = 100.0
+    hh.economy_manager = Mock()
+    hh.labor_manager = Mock()
     hh.needs = {"survival": 0.8, "leisure": 0.5}
     hh.get_agent_data.return_value = {}
     hh.get_pre_state_data.return_value = {}

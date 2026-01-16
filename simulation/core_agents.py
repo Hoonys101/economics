@@ -29,6 +29,8 @@ from simulation.components.psychology_component import PsychologyComponent
 from simulation.components.leisure_manager import LeisureManager
 from simulation.utils.shadow_logger import log_shadow
 from simulation.components.demographics_component import DemographicsComponent
+from simulation.components.economy_manager import EconomyManager
+from simulation.components.labor_manager import LaborManager
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -202,6 +204,8 @@ class Household(BaseAgent):
         self.psychology = PsychologyComponent(self, personality, config_module)
         self.consumption = ConsumptionBehavior(self, config_module)
         self.leisure = LeisureManager(self, config_module)
+        self.economy_manager = EconomyManager(self, config_module)
+        self.labor_manager = LaborManager(self, config_module)
         self.shares_owned: Dict[int, float] = {}
         self.is_employed: bool = False
         self.labor_skill: float = 1.0
@@ -418,6 +422,44 @@ class Household(BaseAgent):
     @property
     def desire_weights(self) -> Dict[str, float]:
         return self.psychology.desire_weights
+
+    @property
+    def income(self) -> float:
+        """Facade property to get income from the LaborManager."""
+        return self.labor_manager.get_income()
+
+    def adjust_assets(self, delta: float) -> None:
+        """
+        Adjusts the household's assets by a given delta.
+
+        Args:
+            delta: The amount to add (positive) or subtract (negative) from assets.
+        """
+        self.assets += delta
+
+    def modify_inventory(self, item_id: str, quantity: float) -> None:
+        """
+        Modifies the household's inventory for a given item.
+
+        Args:
+            item_id: The ID of the item to modify.
+            quantity: The quantity to add (positive) or remove (negative).
+        """
+        if item_id not in self.inventory:
+            self.inventory[item_id] = 0
+        self.inventory[item_id] += quantity
+
+    def add_education_xp(self, xp: float) -> None:
+        """Adds education experience points."""
+        self.education_xp += xp
+
+    def add_durable_asset(self, asset: Dict[str, Any]) -> None:
+        """Adds a durable asset to the household."""
+        self.durable_assets.append(asset)
+
+    def add_labor_income(self, income: float) -> None:
+        """Adds labor income for the current tick."""
+        self.labor_income_this_tick += income
 
     # --- Pass-through Properties ---
     @property
@@ -912,160 +954,43 @@ class Household(BaseAgent):
             return self.config_module.HOUSEHOLD_LOW_ASSET_WAGE
         return self.config_module.HOUSEHOLD_DEFAULT_WAGE
 
-    def consume(self, item_id: str, quantity: float, current_time: int) -> None:
-        log_extra = {
-            "tick": current_time,
-            "agent_id": self.id,
-            "item_id": item_id,
-            "quantity": quantity,
-            "tags": ["household_consumption"],
-        }
-        self.logger.debug(
-            f"CONSUME_METHOD_START | Household {self.id} attempting to consume: Item={item_id}, Qty={quantity:.1f}, Inventory={self.inventory.get(item_id, 0):.1f}",
-            extra=log_extra,
-        )
-        good_info = self.goods_info_map.get(item_id, {})
-        is_service = good_info.get("is_service", False)
-
-        if is_service or self.inventory.get(item_id, 0) >= quantity:
-            # Phase 15: Durable Asset Logic
-            is_durable = good_info.get("is_durable", False)
-
-            if is_durable and not is_service:
-                # Durables must be consumed in integer units to function
-                # Relaxed check for float precision (0.9 instead of 1.0)
-                if quantity < 0.9:
-                    self.logger.debug(
-                        f"DURABLE_CONSUME_FAIL | Household {self.id} tried to consume partial {item_id}: {quantity:.2f}. Minimum 1.0 required.",
-                        extra=log_extra
-                    )
-                    return # Do not consume inventory
-
-                # If quantity valid for durable, reduce inventory
-                self.inventory[item_id] -= quantity
-
-                base_lifespan = good_info.get("base_lifespan", 50)
-                # Use stored quality or default
-                quality = self.inventory_quality.get(item_id, 1.0)
-
-                # Create Asset (Round to nearest integer to handle 0.99 -> 1)
-                num_assets = int(round(quantity))
-                for _ in range(num_assets):
-                    asset = {
-                        "item_id": item_id,
-                        "quality": quality,
-                        "remaining_life": base_lifespan
-                    }
-                    self.durable_assets.append(asset)
-                    self.logger.info(
-                        f"DURABLE_ACQUIRED | Household {self.id} installed {item_id}. Quality: {quality:.2f}, Life: {base_lifespan}",
-                         extra={**log_extra, "quality": quality}
-                    )
-
-            elif not is_service:
-                # Standard Consumable
-                self.logger.debug(
-                    f"CONSUME_METHOD_INVENTORY_OK | Household {self.id} has enough {item_id}. Inventory BEFORE: {self.inventory.get(item_id, 0):.1f}. Survival Need BEFORE: {self.needs.get('survival', 0):.1f}",
-                    extra={
-                        **log_extra,
-                        "inventory_before": self.inventory.get(item_id, 0),
-                        "survival_need_before": self.needs.get("survival", 0),
-                    },
-                )
-                self.inventory[item_id] -= quantity
-
-            self.current_consumption += quantity
-
-
-            if item_id == "food":
-                self.current_food_consumption += quantity
-                self.logger.debug(
-                    f"CONSUME_METHOD_FOOD_UPDATE | Household {self.id} consumed food. Current food consumption: {self.current_food_consumption:.1f}. Inventory AFTER: {self.inventory.get(item_id, 0.0):.1f}. Survival Need AFTER: {self.needs.get('survival', 0):.1f}",
-                    extra={
-                        **log_extra,
-                        "current_food_consumption": self.current_food_consumption,
-                        "inventory_after": self.inventory.get(item_id, 0),
-                        "survival_need_after": self.needs.get("survival", 0),
-                    },
-                )
-
-            # Task #6: Gain Education XP
-            if item_id == "education_service":
-                self.education_xp += quantity * self.config_module.LEARNING_EFFICIENCY
-                self.logger.debug(
-                    f"EDUCATION | Household {self.id} gained XP. Total XP: {self.education_xp:.2f}",
-                    extra={**log_extra, "education_xp": self.education_xp}
-                )
-
-            consumed_good = self.goods_info_map.get(item_id)
-            # GEMINI_FIX: Check for "utility_effects" (used in config/decide_and_consume) OR "utility_per_need"
-            utility_map = None
-            if consumed_good:
-                if "utility_effects" in consumed_good:
-                    utility_map = consumed_good["utility_effects"]
-                elif "utility_per_need" in consumed_good:
-                    utility_map = consumed_good["utility_per_need"]
-
-            if utility_map:
-                for need_type, utility_value in utility_map.items():
-                    # Ensure need_type is one of the new needs
-                    if need_type in ["survival", "asset", "social", "improvement"]:
-                        self.needs[need_type] = max(
-                            0, self.needs.get(need_type, 0) - (utility_value * quantity)
-                        )
-                self.logger.debug(
-                    f"CONSUME_METHOD_NEEDS_UPDATE | Household {self.id} consumed {quantity:.1f} of {item_id}. Needs after consumption: Survival={self.needs.get('survival', 0):.1f}, Asset={self.needs.get('asset', 0):.1f}, Social={self.needs.get('social', 0):.1f}, Improvement={self.needs.get('improvement', 0):.1f}",
-                    extra={
-                        **log_extra,
-                        "survival_need": self.needs.get("survival", 0),
-                        "asset_need": self.needs.get("asset", 0),
-                        "social_need": self.needs.get("social", 0),
-                        "improvement_need": self.needs.get("improvement", 0),
-                    },
-
-                )
-            else:
-                self.logger.debug(
-                    f"CONSUME_METHOD_NO_UTILITY | Household {self.id} consumed {item_id} but no utility_per_need defined or needs not updated.",
-                    extra=log_extra,
-                )
-        else:
-            self.logger.debug(
-                f"CONSUME_METHOD_INVENTORY_EMPTY | Household {self.id} tried to consume {item_id} but inventory is empty or insufficient. Inventory: {self.inventory.get(item_id, 0):.1f}, Quantity: {quantity:.1f}",
-                extra=log_extra,
-            )
+    def consume(
+        self, item_id: str, quantity: float, current_time: int
+    ) -> "ConsumptionResult":
+        """Delegates consumption to the EconomyManager."""
+        return self.economy_manager.consume(item_id, quantity, current_time)
 
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         """
-        욕구 업데이트를 PsychologyComponent로 위임합니다.
+        Orchestrates the household's tick-level updates in a specific order:
+        1. Work to earn income.
+        2. Consume goods to satisfy needs.
+        3. Pay taxes.
+        4. Update psychological needs.
         """
+        # 1. Work (via LaborManager)
+        # Assuming a fixed 8 hours of work per tick if employed
+        work_hours = 8.0 if self.is_employed else 0.0
+        self.labor_manager.work(work_hours)
+
+        # 2. Consume (via ConsumptionBehavior, which should call EconomyManager)
+        # The existing decide_and_consume already handles this part.
+        # We just need to ensure the orchestration order.
+        # The actual consumption logic is now in EconomyManager,
+        # but the decision to consume is in ConsumptionBehavior.
+        # Let's assume decide_and_consume calls self.consume which is now delegated.
+        self.decide_and_consume(current_tick, market_data)
+
+        # 3. Pay Taxes (via EconomyManager)
+        self.economy_manager.pay_taxes()
+
+        # 4. Update Psychological Needs (existing PsychologyComponent)
         self.psychology.update_needs(current_tick, market_data)
 
     def _update_skill(self):
-        """
-        WO-023-B: Human Capital Growth Formula
-        Labor Skill = 1.0 + ln(XP + 1) * Talent
-        """
-        import math
-        # XP -> Skill Conversion
-        log_growth = math.log1p(self.education_xp)  # ln(x+1)
-        
-        # Talent Multiplier
-        talent_factor = self.talent.base_learning_rate
-        
-        # New Skill Level
-        new_skill = 1.0 + (log_growth * talent_factor)
-        
-        # Update
-        old_skill = self.labor_skill
-        self.labor_skill = new_skill
-        
-        if new_skill > old_skill + 0.1:
-            self.logger.debug(
-                f"SKILL_UP | Household {self.id} skill improved: {old_skill:.2f} -> {new_skill:.2f} (XP: {self.education_xp:.1f})",
-                 extra={"tags": ["education", "productivity"]}
-            )
+        """Delegates skill updates to the LaborManager."""
+        self.labor_manager.update_skills()
 
     @override
     def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Household":
@@ -1081,7 +1006,7 @@ class Household(BaseAgent):
         cloned_household = Household(
             id=new_id,
             talent=self.talent,
-            goods_data=self.goods_data,
+            goods_data=[g for g in self.goods_info_map.values()],
             initial_assets=initial_assets_from_parent,
             initial_needs=self.needs.copy(),
             decision_engine=self._create_new_decision_engine(new_id),

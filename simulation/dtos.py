@@ -351,3 +351,17 @@ class MacroFinancialContext:
     gdp_growth_rate: float
     market_volatility: float
     interest_rate_trend: float
+
+
+@dataclass
+class LaborResult:
+    """Represents the result of a household's labor activities for a tick."""
+    hours_worked: float
+    income_earned: float
+
+
+@dataclass
+class ConsumptionResult:
+    """Represents the result of a household's consumption activities for a tick."""
+    items_consumed: Dict[str, float]
+    satisfaction: float

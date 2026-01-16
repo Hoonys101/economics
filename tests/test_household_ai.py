@@ -79,7 +79,6 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         personality=Personality.MISER,
         config_module=config,
     )
-    household.decision_engine.markets = markets
 
     market_data = {"time": 1, "goods_data": goods_data}
     orders, _ = household.make_decision(markets, goods_data, market_data, 1)
@@ -125,7 +124,6 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         personality=Personality.STATUS_SEEKER,
         config_module=config,
     )
-    household.decision_engine.markets = markets
 
     market_data = {
         "time": 1,
