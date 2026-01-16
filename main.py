@@ -299,16 +299,19 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
                     extra={"tick": 0, "agent_id": firm.id, "tags": ["hiring", "init"]},
                 )
 
-    # Pass the repository to the Simulation constructor
-    sim = Simulation(
-        households,
-        firms,
-        ai_trainer,
-        repository,
+    from simulation.initialization.initializer import SimulationInitializer
+
+    # Use the new SimulationInitializer
+    initializer = SimulationInitializer(
         config_module=config,
         goods_data=goods_data,
+        repository=repository,
         logger=main_logger,
+        households=households,
+        firms=firms,
+        ai_trainer=ai_trainer,
     )
+    sim = initializer.build_simulation()
 
     return sim
 

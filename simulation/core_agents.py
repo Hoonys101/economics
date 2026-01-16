@@ -1081,7 +1081,7 @@ class Household(BaseAgent):
         cloned_household = Household(
             id=new_id,
             talent=self.talent,
-            goods_data=list(self.goods_info_map.values()),
+            goods_data=self.goods_data,
             initial_assets=initial_assets_from_parent,
             initial_needs=self.needs.copy(),
             decision_engine=self._create_new_decision_engine(new_id),

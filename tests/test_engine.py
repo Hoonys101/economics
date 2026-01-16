@@ -248,21 +248,26 @@ def simulation_instance(
     mock_ai_trainer,
     mock_repository,
     mock_config_module,
-    mock_tracker,
+    mock_logger,
 ):
-    with patch('simulation.engine.TransactionProcessor') as MockTransactionProcessor:
-        sim = Simulation(
-            mock_households,
-            mock_firms,
-            mock_ai_trainer,
-            mock_repository,
-            mock_config_module,
-            mock_goods_data,
-        )
-        sim.government.finance_system = Mock()
-        sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)
-        sim.transaction_processor = MockTransactionProcessor.return_value
-        return sim
+    from simulation.initialization.initializer import SimulationInitializer
+
+    initializer = SimulationInitializer(
+        config_module=mock_config_module,
+        goods_data=mock_goods_data,
+        repository=mock_repository,
+        logger=mock_logger,
+        households=mock_households,
+        firms=mock_firms,
+        ai_trainer=mock_ai_trainer,
+    )
+    sim = initializer.build_simulation()
+    sim.government.finance_system = Mock()
+    sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)
+    # The transaction_processor is now initialized for real.
+    # Tests for _process_transactions rely on its side-effects.
+    # sim.transaction_processor = Mock()
+    return sim
 
 
 # Test Cases for Simulation class
@@ -282,6 +287,9 @@ class TestSimulation:
         assert simulation_instance.time == 0
         assert isinstance(simulation_instance.tracker, EconomicIndicatorTracker)
         assert isinstance(simulation_instance.bank, Bank)
+        assert "food" in simulation_instance.markets
+        assert "labor" in simulation_instance.markets
+        assert "loan_market" in simulation_instance.markets
         assert isinstance(simulation_instance.markets["food"], OrderBookMarket)
         assert isinstance(simulation_instance.markets["labor"], OrderBookMarket)
         assert isinstance(simulation_instance.markets["loan_market"], LoanMarket)
@@ -290,7 +298,7 @@ class TestSimulation:
             [h.id for h in mock_households]
             + [f.id for f in mock_firms]
             + [simulation_instance.bank.id]
-            + [simulation_instance.government.id]  # Add Government agent ID
+            + [simulation_instance.government.id]
         )
         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
 
@@ -638,15 +646,18 @@ def setup_simulation_for_lifecycle(
     ]
     firms = [firm_active, firm_inactive]
 
-    sim = Simulation(
-        households,
-        firms,
-        mock_ai_trainer_for_lifecycle,
-        mock_repository,
-        mock_config_module,
-        mock_goods_data_for_lifecycle,
+    from simulation.initialization.initializer import SimulationInitializer
+
+    initializer = SimulationInitializer(
+        config_module=mock_config_module,
+        goods_data=mock_goods_data_for_lifecycle,
+        repository=mock_repository,
         logger=mock_logger,
+        households=households,
+        firms=firms,
+        ai_trainer=mock_ai_trainer_for_lifecycle,
     )
+    sim = initializer.build_simulation()
 
     assert sim.agents[household_active.id] == household_active
     assert sim.agents[household_inactive.id] == household_inactive
@@ -684,7 +695,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     assert household_active in firm_active.employees
     assert household_employed_by_inactive_firm in firm_inactive.employees
 
-    sim._handle_agent_lifecycle()
+    sim.lifecycle_manager._handle_agent_liquidation(sim)
 
     assert len(sim.households) == 2
     assert household_active in sim.households

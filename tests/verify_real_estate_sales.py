@@ -41,13 +41,12 @@ class TestRealEstateSales(unittest.TestCase):
     def setUp(self):
         self.config = MockConfig()
         mock_decision_engine = MagicMock()
-        mock_decision_engine.goods_data = {} # Fix AttributeError in Household.init
         
         self.agent = Household(
             id=1, 
             config_module=self.config, 
             talent=0.5, 
-            goods_data={},
+            goods_data=[],
             initial_assets=1000.0,
             initial_needs={},
             decision_engine=mock_decision_engine,
