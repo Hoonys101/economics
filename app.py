@@ -17,6 +17,7 @@ from simulation.ai_model import AIEngineRegistry
 from simulation.ai.api import Personality
 from simulation.dtos import DecisionContext
 from simulation.ai.state_builder import StateBuilder
+from modules.common.config_manager.api import ConfigManager as RealConfigManager
 from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
@@ -47,8 +48,9 @@ app = Flask(__name__)
 simulation_instance: Simulation | None = None
 simulation_lock = threading.Lock()
 
+config_manager = RealConfigManager()
 state_builder = StateBuilder()
-action_proposal_engine = ActionProposalEngine(config_module=config)
+action_proposal_engine = ActionProposalEngine(config_module=config, config_manager=config_manager)
 ai_manager = AIEngineRegistry(
     action_proposal_engine=action_proposal_engine, state_builder=state_builder
 )  # AI Training Manager 인스턴스 생성

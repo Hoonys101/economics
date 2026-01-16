@@ -1,6 +1,8 @@
 import logging
 import random
 from typing import Optional, Any, List
+
+from modules.common.config_manager.api import ConfigManager
 from simulation.models import Order
 
 
@@ -13,10 +15,12 @@ class ActionProposalEngine:
     def __init__(
         self,
         config_module: Any,
+        config_manager: ConfigManager,
         n_action_samples: int = 10,
         logger: Optional[logging.Logger] = None,
     ) -> None:
         self.config_module = config_module
+        self.config_manager = config_manager
         self.n_action_samples = n_action_samples
         self.logger = (
             logger if logger else logging.getLogger(__name__)
@@ -110,10 +114,7 @@ class ActionProposalEngine:
             else:
                 # 상품 시장에서 상품 구매 주문
                 if agent.assets > 1:  # 최소한의 자산이 있을 때만 구매 시도
-                    available_goods = [
-                        "food",
-                        "luxury_food",
-                    ]  # TODO: 설정 파일에서 읽어오기
+                    available_goods = self.config_manager.get('simulation.consumables')
                     good_to_trade = random.choice(available_goods)
 
                     # --- 개선된 구매 수량 로직 ---
