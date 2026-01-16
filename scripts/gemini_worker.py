@@ -220,18 +220,24 @@ class Reporter(BaseGeminiWorker):
         print(f"🕵️  Generating Report for: '{instruction}'...")
         result = self.run_gemini(instruction, context_files)
 
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:20]]).strip("_")
-        
-        output_dir = BASE_DIR / "reports" / "temp"
-        output_dir.mkdir(exist_ok=True, parents=True)
-        output_file = output_dir / f"report_{timestamp}_{safe_name}.md"
+        output_file_path = None
+        if kwargs.get('output_file'):
+            output_file_path = Path(kwargs['output_file'])
+        else:
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:20]]).strip("_")
+            output_dir = BASE_DIR / "reports" / "temp"
+            output_dir.mkdir(exist_ok=True, parents=True)
+            output_file_path = output_dir / f"report_{timestamp}_{safe_name}.md"
 
-        with open(output_file, "w", encoding="utf-8") as f:
+        # Ensure parent dir exists
+        output_file_path.parent.mkdir(exist_ok=True, parents=True)
+
+        with open(output_file_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        print(f"\n✅ Report Saved: {output_file}")
+        print(f"\n✅ Report Saved: {output_file_path}")
         print("="*60)
         print(result[:500] + "\n..." if len(result) > 500 else result)
         print("="*60)
@@ -358,6 +364,7 @@ def main():
     reporter_parser = subparsers.add_parser("reporter", help="Analyze and Report")
     reporter_parser.add_argument("instruction", help="Instruction for the reporter")
     reporter_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+    reporter_parser.add_argument("--output", "-o", help="Specific output file path")
 
     # Context Manager / Scribe
     context_parser = subparsers.add_parser("context", help="Manage session context and snapshots")
@@ -374,6 +381,7 @@ def main():
     auditor_parser = subparsers.add_parser("audit", help="Identify technical debt and patterns")
     auditor_parser.add_argument("instruction", help="Instruction for the auditor")
     auditor_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+    auditor_parser.add_argument("--output", "-o", help="Specific output file path")
 
     # Git Reviewer
     reviewer_parser = subparsers.add_parser("git-review", help="Analyze git diffs and report issues")

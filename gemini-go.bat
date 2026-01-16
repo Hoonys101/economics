@@ -30,9 +30,9 @@ echo [Gemini-CLI] Drafting Stress Test Config spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: WO-037 (Simulation Cockpit) - Action: DRAFT SPECIFICATION
-set JOB_ID=WO-037_Simulation_Cockpit
-python scripts/gemini_worker.py spec "Draft a Zero-Question Spec for 'WO-037: Simulation Cockpit (Dashboard)'. GOALS: 1. Create a Streamlit app in 'dashboard/app.py'. 2. Read ONLY from 'simulation_data.db' using 'modules/analytics/loader.py'. 3. Visualize Key Metrics: GDP (Real/Nominal), Inflation (CPI), Population, Gini Coefficient. 4. NO WRITE ACCESS to simulation core. TARGET: 'design/specs/WO-037_Simulation_Cockpit_Spec.md'. OUTPUT FORMAT: Strict Markdown." -c modules/analytics/loader.py design/roadmap.md -o design\specs\WO-037_Simulation_Cockpit_Spec.md
+:: Target: WO-079 (Config Automation) - Action: DRAFT SPECIFICATION V2
+set JOB_ID=WO-079_Config_Automation_v2
+python scripts/gemini_worker.py spec "Draft a Zero-Question Spec for 'WO-079: Config Automation (v2)'. GOALS: 1. Implement 'simulation/config_manager.py' as a Leaf Node. 2. Use a Hybrid approach (YAML + legacy config.py fallbacks). 3. Organize constants into ai.yaml, finance.yaml, simulation.yaml. 4. MANDATORY: Provide a testing strategy to avoid breaking 80+ existing tests using monkeypatch. TARGET: 'design/specs/WO-079_Config_Automation_v2.md'." -c simulation/bank.py simulation/engine.py scripts/gemini_worker.py -a design/gemini_output/audit_preflight_WO-079.md -o design/specs/WO-079_Config_Automation_v2.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Gemini task execution failed. Check logs.

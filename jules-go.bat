@@ -1,8 +1,9 @@
 @echo off
 setlocal
-:: 터미널 출력 및 인자 전달 인코딩을 UTF-8로 설정
+:: Set terminal and argument encoding to UTF-8
 chcp 65001 > nul
 set PYTHONIOENCODING=utf-8
+
 :: ==============================================================================
 :: Jules-CLI Bridge 1.0: Agent Command Interface (HITL 2.0)
 :: ==============================================================================
@@ -25,33 +26,24 @@ set PYTHONIOENCODING=utf-8
 ::
 :: ==============================================================================
 :: [CURRENT CONTEXT]
-:: Target: WO-072 (Sovereign Debt)
-:: Action: Logic Review & Correction Dispatch
+:: Target: WO-079 (Config Automation)
+:: Action: Test Failure Diagnosis
 :: ==============================================================================
-set PYTHONIOENCODING=utf-8
 
 if not exist "communications\jules_logs" (
     mkdir "communications\jules_logs"
 )
 
-echo [Jules-Bridge] Sending message to WO-072 session...
-echo ----------------------------------------------------
-
-:: Target: WO-037 (Simulation Cockpit) - Action: DISPATCH TO JULES
-set JOB_ID=WO-037_Simulation_Cockpit
-set INSTRUCTION="Implement WO-037 Simulation Cockpit. 1. Create 'dashboard/app.py' using code from 'design/specs/WO-037_Simulation_Cockpit_Spec.md'. 2. STRICTLY READ-ONLY. Import ONLY 'modules.analytics.loader.DataLoader'. 3. Verify by running 'streamlit run dashboard/app.py' (or check no import errors). 4. Do NOT modify 'loader.py' or 'engine.py'."
-
-:: 1. Create Session
-python scripts/jules_bridge.py create "WO-037 Simulation Cockpit" %INSTRUCTION% > communications\jules_logs\last_run.md 2>&1
-
-:: 2. Auto-Record to Session Ledger
-:: echo ^| %DATE% ^| [START] ^| WO-037 ^| Simulation Cockpit Dispatch ^| >> design\SESSION_LEDGER.md
+:: [COMMAND SLOT]
+:: Target: Jules (Implementer) - Action: WO-079 v2 IMPLEMENTATION
+set JOB_ID=WO-079_Config_Automation_v2
+python scripts/jules_bridge.py create "WO-079_Config_Automation_v2" "Implement WO-079 v2: High-reliability Config Automation. MISSION: 1. Create 'modules/common/config_manager/impl.py' based on the spec. 2. Ensure NO circular dependencies (Leaf Node). 3. Implement Hybrid loading (YAML with legacy config.py fallbacks). 4. MANDATORY: Verify that existing tests still pass by providing the 'set_value_for_test' interface. TARGET_SPEC: 'design/specs/WO-079_Config_Automation_v2.md'. WORK_ORDER: 'design/work_orders/WO-079_Config_Automation_v2.md'." --wait > communications\jules_logs\last_run.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.
 ) else (
-    echo [SUCCESS] Jules Dispatch Complete.
-    echo [NOTE] Check 'communications\jules_logs\last_run.md' for session ID.
+    echo [SUCCESS] Jules task (WO-079 v2) created.
+    echo [NOTE] Check 'communications\jules_logs\last_run.md' for details.
     type communications\jules_logs\last_run.md
 )
 endlocal

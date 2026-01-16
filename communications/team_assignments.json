@@ -2,51 +2,18 @@
   "antigravity": {
     "project": "economics",
     "active_sessions": {
-      "10854377176396676821": "TD-024: Pytest Path Correction (Phase 26 Pre-req)",
       "5283327958326335498": "TD-024: Post-Fix Test Stabilization",
-      "15420605320896780216": "TD-024: Pytest Infrastructure Fix",
-      "15308963882295599607": "TD-024: Pytest Infrastructure Fix",
-      "15094787074309037083": "WO-068: Macro-Linked Portfolio",
-      "7617648577093442794": "WO-072: Sovereign Debt & Financial Credit",
-      "11970536560282331303": "WO-073 Finance Double-Entry Refactor",
-      "5786201121844758932": {
-        "title": "WO-076: Household God Class SoC - Demographics Extraction",
-        "initial_mission": "Execute the refactoring of the Household god class (TD-044) by extracting a DemographicsComponent. Follow the spec in design/gemini_output/household_soc_spec.md strictly. Use the Component/Delegate pattern. The final implementation must pass all tests."
-      },
-      "10452416812953510617": {
-        "title": "WO-077: Config Automation",
-        "initial_mission": "Implement Centralized Config System (TD-007). REFERENCE: Strictly follow the Zero-Question Spec in `design/gemini_output/stress_test_config_spec.md`. TASK: 1) Create `simulation/config.py` with `SimulationConfig` dataclass hierarchy. 2) Implement JSON profile loader. 3) Refactor `engine.py` and `firms.py` to use `sim_config` instead of hardcoded constants. 4) Create `test_config_loading.py` verification."
-      },
-      "17119948573295953717": {
-        "title": "WO-078: The Great Refactoring",
-        "initial_mission": "EXECUTE WO-078 WAR PROTOCOL: Phase 1 IS MANDATORY BEFORE Phase 2.\\n\\n[PHASE 1: Engine SoC] Refactor `Simulation` God Class. Extract `SimulationInitializer` and `AgentLifecycleManager`. (Ref: `design/gemini_output/simulation_soc_spec.md`)\\n\\n[PHASE 2: Config Automation] ONLY after Phase 1 tests pass, implement `SimulationConfig` and migrate constants. (Ref: `design/gemini_output/stress_test_config_spec.md`)\\n\\nGOAL: Break the dependency/test cycle by fixing the architecture first."
-      },
       "12543922642187456551": {
         "title": "TD-045: Firm God Class Refactoring",
-        "initial_mission": "REFACTOR `simulation/firms.py` following `design/gemini_output/firm_soc_spec.md`. KEY CONSTRAINTS from Pre-flight Audit: 1. Firm OWNS inventory state. Departments use `firm.add_inventory()` methods only. 2. Execution order: produce -> post_ask -> pay_taxes. TASKS: 1. Create `simulation/components/production_department.py`. 2. Create `simulation/components/sales_department.py`. 3. Firm becomes coordinator using Composition. VERIFY: All existing tests in `tests/test_firms.py` must pass."
+        "initial_mission": "REFACTOR `simulation/firms.py` following `design/gemini_output/firm_soc_spec.md`. ..."
       },
       "4889257989211040620": {
         "title": "TD-044: Household God Class Refactoring",
-        "initial_mission": "REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. PATTERN: Same as TD-045 (Firm SoC). KEY CONSTRAINTS: 1. Household OWNS state (assets, inventory). Managers use `household.adjust_assets()` methods. 2. Use Facade pattern - external API unchanged. 3. Execution order: work -> consume -> pay_taxes. TASKS: 1. Create `simulation/components/economy_manager.py`. 2. Create `simulation/components/labor_manager.py`. 3. Household becomes coordinator. VERIFY: All tests in `tests/test_core_agents.py` must pass."
-      },
-      "361829578013016781": {
-        "title": "TD-044: Household God Class Refactoring",
-        "initial_mission": "REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. PATTERN: Same as TD-045 (Firm SoC). KEY CONSTRAINTS: 1. Household OWNS state (assets, inventory). Managers use `household.adjust_assets()` methods. 2. Use Facade pattern - external API unchanged. 3. Execution order: work -> consume -> pay_taxes. TASKS: 1. Create `simulation/components/economy_manager.py`. 2. Create `simulation/components/labor_manager.py`. 3. Household becomes coordinator. VERIFY: All tests in `tests/test_core_agents.py` must pass."
-      },
-      "1781228977548149949": {
-        "title": "WO-079: Config Automation",
-        "initial_mission": "Execute 'design/work_orders/WO-079_Config_Automation.md'. PRIORITY: 1. Create 'simulation/config.py' (SimulationConfig) & 'profiles/default.json'. 2. Refactor 'SimulationInitializer' to load config. 3. Inject config into Engine/Firms/Agents and replace hardcoded constants. 4. Verify with 'tests/simulation/test_config_loading.py' and existing Engine tests."
-      },
-      "11171363570807026466": {
-        "title": "WO-079: Config Automation",
-        "initial_mission": "Execute 'design/work_orders/WO-079_Config_Automation.md'. PRIORITY: 1. Create 'simulation/config.py' (SimulationConfig) & 'profiles/default.json'. 2. Refactor 'SimulationInitializer' to load config. 3. Inject config into Engine/Firms/Agents and replace hardcoded constants. 4. Verify with 'tests/simulation/test_config_loading.py' and existing Engine tests."
-      },
-      "8465436477342866436": {
-        "title": "WO-037 Simulation Cockpit",
-        "initial_mission": "Implement WO-037 Simulation Cockpit. 1. Create 'dashboard/app.py' using code from 'design/specs/WO-037_Simulation_Cockpit_Spec.md'. 2. STRICTLY READ-ONLY. Import ONLY 'modules.analytics.loader.DataLoader'. 3. Verify by running 'streamlit run dashboard/app.py' (or check no import errors). 4. Do NOT modify 'loader.py' or 'engine.py'."
+        "initial_mission": "REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. ..."
       }
     },
     "completed_sessions": {
+      "8465436477342866436": "WO-037 Simulation Cockpit - MERGED 2026-01-16",
       "15007179683109829611": "WO-060 - MERGED 2026-01-15",
       "7095675393629273222": "WO-064: Banking Credit Engine - MERGED 2026-01-15",
       "10296031762289509515": "WO-065: Monetary Integrity & Suture - MERGED 2026-01-15",
@@ -56,9 +23,7 @@
       "3778947626343557354": "WO-057-Refine Shock Therapy (Retry) - MERGED 2026-01-14",
       "11626928342509996952": "TD-014: Government SoC Refactoring - MERGED 2026-01-14",
       "10078451815509526740": "WO-058-Retry: Operation Defibrillator - MERGED 2026-01-14",
-      "4444007150223365139": "WO-058 Economic CPR - MERGED 2026-01-14",
-      "16031090481298584395": "WO-056/058: Systemic Stabilization - ARCHIVED 2026-01-14",
-      "13507557150808850601": "Legacy Session - ARCHIVED 2026-01-14"
+      "4444007150223365139": "WO-058 Economic CPR - MERGED 2026-01-14"
     }
   }
 }

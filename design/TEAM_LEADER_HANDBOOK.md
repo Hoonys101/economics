@@ -61,6 +61,17 @@ THEN 도구: .\gemini-go.bat
      기능: 파일 뿐만 아니라 <<디렉토리>> 컨텍스트 주입 가능
      출력: design/gemini_output/spec_draft.md (또는 지정된 파일)
 
+### 명세 위험 검토 (W-1 Spec Audit) [NEW]
+```
+IF gemini-cli가 명세 초안을 산출한 경우
+THEN 필수 검토 항목: 명세 하단의 '🚨 Risk & Impact Audit' 섹션
+     집중 분석:
+       1. 순환 참조 위험: 제안된 모듈 임포트 구조가 기존 트리와 충돌하는가?
+       2. 테스트 회귀: Mock 객체 수정이 주변 테스트(test_engine.py 등)를 파괴하는가?
+       3. 선행 작업 필요성: 기술 부채(God Class 등) 해결 없이 직진 구현인가?
+     원칙: "위험도가 고(High)이거나 리팩토링 선행 권고가 있다면, 즉시 구현 중단 및 선행 과제(TD-XXX) 별도 발주."
+```
+
 ### 사전 감사 (Pre-flight Audit) [NEW]
 ```
 IF 리팩토링 또는 레거시 코드 수정 작업 착수 전
@@ -125,8 +136,9 @@ THEN 기록: design/TECH_DEBT_LEDGER.md
 ### 세션 종료 시
 ```
 IF 세션 종료
-THEN 작성: design/HANDOVER_<날짜>.md
-     커밋: git add . && git commit && git push
+THEN 1. 필수 절차: design/manuals/session_conclusion.md 준수
+     2. 작성: design/HANDOVER_<날짜>.md
+     3. 커밋: git add . && git commit && git push
 ```
 
 ---

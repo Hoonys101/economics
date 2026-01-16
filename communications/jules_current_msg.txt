@@ -1,0 +1,15 @@
+[Antigravity Debug Advice] You have 3 main issues in your tests:
+
+1. **TypeError (Mock * float)**: In `simulation/systems/transaction_processor.py:151`, `tx_quality` is a `Mock` object because `test_process_transactions_goods_trade` doesn't define it. 
+   - **FIX**: In `tests/test_engine.py`, update the mock transaction setup to include `tx.quality = 1.0`.
+
+2. **AttributeError (Missing Constant)**: `SimulationConfig` is missing `RND_PRODUCTIVITY_MULTIPLIER`.
+   - **FIX**: Add `RND_PRODUCTIVITY_MULTIPLIER = 0.01` (or your default value) to the appropriate sub-dataclass in `simulation/config.py` and update the access path in `transaction_processor.py:131`.
+
+3. **AssertionError (Tax Mismatch)**: `test_process_transactions_labor_trade` expected 2.0 tax but got 1.0. 
+   - **REASON**: New logic uses a `survival_cost` exemption. If trade is 20.0 and survival cost is 10.0, only 10.0 is taxable. 10% of 10.0 is 1.0.
+   - **FIX**: Update the assertion in `tests/test_engine.py` to expect 1.0 tax instead of 2.0.
+
+4. **ModuleNotFoundError**: If still failing, ensure `simulation/config.py` has ZERO imports from `simulation.*` (except DTOs) to avoid circularity.
+
+Push these fixes and re-run. We are close!

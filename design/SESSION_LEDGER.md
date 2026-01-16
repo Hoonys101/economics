@@ -1,1 +1,8 @@
-| 2026-01-16 |  | "WO-077: Config Automation" | "Implement Centralized Config System (TD-007). REFERENCE: Strictly follow the Zero-Question Spec in `design/gemini_output/stress_test_config_spec.md`. TASK: 1) Create `simulation/config.py` with `SimulationConfig` dataclass hierarchy. 2) Implement JSON profile loader. 3) Refactor `engine.py` and `firms.py` to use `sim_config` instead of hardcoded constants. 4) Create `test_config_loading.py` verification." | 
+# Session Ledger
+
+| Date | Session ID | Task | Status / Summary |
+|---|---|---|---|
+| 2026-01-16 | 11171363570807026466 | WO-079: Config Automation | [CANCELLED] Reliability Failure. Spec omitted risk audit. |
+| 2026-01-16 | 1781228977548149949 | WO-079: Config Automation | [CANCELLED] Redundant session due to bridge error. |
+| 2026-01-16 | 8465436477342866436 | WO-037: Simulation Cockpit | [COMPLETED] Merged feat branch into main. Dashboard available. |
+| 2026-01-16 | - | TD-008: Finance Upgrade Spec | [READY] Spec drafted using Gemini-CLI. |
