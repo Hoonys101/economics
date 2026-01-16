@@ -52,7 +52,7 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
-    def clone(self, new_id: int, initial_assets_from_parent: float) -> "BaseAgent":
+    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
         """
         현재 에이전트 인스턴스를 복제하여 새로운 에이전트를 생성합니다.
         AI 모델(decision_engine)을 포함하여 깊은 복사를 수행합니다.

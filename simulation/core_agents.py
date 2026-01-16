@@ -28,6 +28,7 @@ from simulation.components.consumption_behavior import ConsumptionBehavior
 from simulation.components.psychology_component import PsychologyComponent
 from simulation.components.leisure_manager import LeisureManager
 from simulation.utils.shadow_logger import log_shadow
+from simulation.components.demographics_component import DemographicsComponent
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -129,6 +130,11 @@ class Household(BaseAgent):
         loan_market: Optional[LoanMarket] = None,
         risk_aversion: float = 1.0,
         logger: Optional[Logger] = None,
+        # Demographics
+        initial_age: Optional[float] = None,
+        gender: Optional[str] = None,
+        parent_id: Optional[int] = None,
+        generation: Optional[int] = None,
     ) -> None:
         """Household 클래스의 생성자입니다.
 
@@ -245,13 +251,30 @@ class Household(BaseAgent):
         self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
         self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
 
-        # Phase 19: Population Dynamics
-        self.age: float = random.uniform(20.0, 60.0)
+        # === DEMOGRAPHICS REFACTORING START ===
+
+        # 1. DemographicsComponent 인스턴스화
+        # If demographic data is not provided, generate it for a new agent.
+        if initial_age is None:
+            initial_age = random.uniform(20.0, 60.0)
+        if gender is None:
+            gender = random.choice(["M", "F"])
+        if generation is None:
+            generation = 0
+
+        self.demographics = DemographicsComponent(
+            owner=self,
+            initial_age=initial_age,
+            gender=gender,
+            parent_id=parent_id,
+            generation=generation,
+            config_module=self.config_module
+        )
+
+        # === DEMOGRAPHICS REFACTORING END ===
 
         # Phase 20: The Matrix (Gender & Home Quality)
-        self.gender: str = random.choice(["M", "F"])
         self.home_quality_score: float = 1.0
-        self.spouse_id: Optional[int] = None
         self.system2_planner = System2Planner(self, config_module)
         self.housing_planner = HouseholdSystem2Planner(self, config_module)
         self.housing_target_mode = "RENT"
@@ -310,8 +333,6 @@ class Household(BaseAgent):
         self.income_capital_cumulative: float = 0.0
         self.labor_income_this_tick: float = 0.0
         self.capital_income_this_tick: float = 0.0
-        self.children_ids: List[int] = []         # 자녀 가구 ID 목록
-        self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
         self.last_leisure_type: LeisureType = "IDLE"  # For visualization aggregation
 
         # Phase 22: Portfolio System (Option B: Wrapper)
@@ -398,9 +419,34 @@ class Household(BaseAgent):
     def desire_weights(self) -> Dict[str, float]:
         return self.psychology.desire_weights
 
+    # --- Pass-through Properties ---
+    @property
+    def age(self) -> float:
+        return self.demographics.age
+
+    @property
+    def gender(self) -> str:
+        return self.demographics.gender
+
+    @property
+    def parent_id(self) -> Optional[int]:
+        return self.demographics.parent_id
+
+    @property
+    def spouse_id(self) -> Optional[int]:
+        return self.demographics.spouse_id
+
+    @property
+    def children_ids(self) -> List[int]:
+        return self.demographics.children_ids
+
+    @property
+    def generation(self) -> int:
+        return self.demographics.generation
+
     @property
     def children_count(self) -> int:
-        return len(self.children_ids)
+        return self.demographics.children_count
 
     def calculate_social_status(self) -> None:
         """
@@ -485,9 +531,9 @@ class Household(BaseAgent):
             "social_rank": getattr(self, "social_rank", 0.0),
             "conformity": getattr(self, "conformity", 0.5),
             "approval_rating": getattr(self, "approval_rating", 1), # Phase 17-5
-            "age": getattr(self, "age", 30.0),
+            "age": self.age,
             "education_level": getattr(self, "education_level", 0),
-            "children_count": len(self.children_ids),
+            "children_count": self.children_count,
             "expected_wage": getattr(self, "expected_wage", 10.0),
             "gender": self.gender,
             "home_quality_score": self.home_quality_score,
@@ -1022,10 +1068,16 @@ class Household(BaseAgent):
             )
 
     @override
-    def clone(self, new_id: int, initial_assets_from_parent: float) -> "Household":
+    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Household":
         """
         현재 가계 에이전트의 복제본을 생성합니다 (Mitosis용).
         """
+        # === DEMOGRAPHICS REFACTORING START ===
+
+        # 1. 자손의 인구통계 정보 생성 위임
+        offspring_demo_data = self.demographics.create_offspring_demographics(new_id, current_tick)
+
+        # 2. 새로운 Household 생성
         cloned_household = Household(
             id=new_id,
             talent=self.talent,
@@ -1039,13 +1091,15 @@ class Household(BaseAgent):
             loan_market=self.decision_engine.loan_market,
             risk_aversion=self.risk_aversion,
             logger=self.logger,
+            **offspring_demo_data
         )
+
+        # === DEMOGRAPHICS REFACTORING END ===
+
         # Attribute Sync
         cloned_household.skills = {k: Skill(v.domain, v.value, v.observability) for k, v in self.skills.items()}
         cloned_household.inventory = self.inventory.copy()
         cloned_household.labor_skill = self.labor_skill
-        cloned_household.generation = self.generation + 1
-        cloned_household.parent_id = self.id
         
         # Aptitude Inheritance (WO-054)
         # Regression toward the mean?
@@ -1080,14 +1134,8 @@ class Household(BaseAgent):
         )
 
     def get_generational_similarity(self, other: "Household") -> float:
-        """
-        Phase 19: 가계 간 세대적/유전적 유사도를 계산합니다.
-        """
-        similarity = 0.0
-        # Simple talent comparison
-        talent_diff = abs(self.talent.base_learning_rate - other.talent.base_learning_rate)
-        similarity = max(0.0, 1.0 - talent_diff)
-        return similarity
+        """다른 Household의 demographics 컴포넌트에 위임"""
+        return self.demographics.get_generational_similarity(other.demographics)
 
     def apply_child_inheritance(self, child: "Household"):
         """

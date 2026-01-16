@@ -47,6 +47,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
         data = h1.get_agent_data()
         self.assertIn("gender", data)
         self.assertEqual(data["gender"], h1.gender)
+        self.assertEqual(h1.demographics.generation, 0)
 
     def test_gender_distribution(self):
         """Verify roughly 50:50 distribution (probabilistic)."""
