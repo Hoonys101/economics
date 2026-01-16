@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 # Mock necessary modules and classes that FinanceSystem depends on
 from modules.finance.system import FinanceSystem
+from modules.finance.api import InsufficientFundsError
 
 # Mock objects that will be passed to FinanceSystem
 class MockGovernment:
@@ -11,7 +12,10 @@ class MockGovernment:
     def get_debt_to_gdp_ratio(self):
         return 0.5
     def deposit(self, amount): self.assets += amount
-    def withdraw(self, amount): self.assets -= amount
+    def withdraw(self, amount):
+        if self.assets < amount:
+            raise InsufficientFundsError()
+        self.assets -= amount
 
 class MockCentralBank:
     def __init__(self, initial_cash):
@@ -21,13 +25,19 @@ class MockCentralBank:
     def purchase_bonds(self, bond):
         self.assets["bonds"].append(bond)
     def deposit(self, amount): self.assets['cash'] += amount
-    def withdraw(self, amount): self.assets['cash'] -= amount
+    def withdraw(self, amount):
+        if self.assets['cash'] < amount:
+            raise InsufficientFundsError()
+        self.assets['cash'] -= amount
 
 class MockBank:
     def __init__(self, initial_assets):
         self.assets = initial_assets
     def deposit(self, amount): self.assets += amount
-    def withdraw(self, amount): self.assets -= amount
+    def withdraw(self, amount):
+        if self.assets < amount:
+            raise InsufficientFundsError()
+        self.assets -= amount
 
 class MockFirm:
     def __init__(self, id, initial_cash_reserve):
@@ -37,7 +47,10 @@ class MockFirm:
         self.finance = MagicMock()
         self.has_bailout_loan = False
     def deposit(self, amount): self.cash_reserve += amount
-    def withdraw(self, amount): self.cash_reserve -= amount
+    def withdraw(self, amount):
+        if self.cash_reserve < amount:
+            raise InsufficientFundsError()
+        self.cash_reserve -= amount
 
 class MockConfig:
     QE_INTERVENTION_YIELD_THRESHOLD = 0.05
@@ -127,6 +140,26 @@ class TestDoubleEntry(unittest.TestCase):
         final_total_assets = self.mock_gov.assets + self.mock_bank.assets
         self.assertEqual(initial_total_assets, final_total_assets)
 
+
+    def test_transfer_fails_on_insufficient_funds(self):
+        """
+        Verify that a transfer does not occur if the debtor has insufficient funds.
+        """
+        # Government has 10000, Firm has 100
+        initial_gov_assets = self.mock_gov.assets
+        initial_firm_cash = self.mock_firm.cash_reserve
+
+        # Try to grant a bailout that the government cannot afford
+        bailout_amount = 15000
+
+        # The grant_bailout_loan should fail because the _transfer will return False
+        loan = self.finance_system.grant_bailout_loan(self.mock_firm, bailout_amount)
+
+        # Assertions
+        self.assertIsNone(loan)
+        self.assertEqual(self.mock_gov.assets, initial_gov_assets)
+        self.assertEqual(self.mock_firm.cash_reserve, initial_firm_cash)
+        self.assertFalse(self.mock_firm.has_bailout_loan)
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 import math
+from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
@@ -468,5 +469,6 @@ class Bank:
     def withdraw(self, amount: float) -> None:
         """Withdraws a given amount from the bank's assets."""
         if amount > 0:
-            # Prevent the bank from having negative assets from transfers
-            self.assets = max(0, self.assets - amount)
+            if self.assets < amount:
+                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+            self.assets -= amount

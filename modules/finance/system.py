@@ -1,7 +1,10 @@
-from typing import List, Dict
-from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, IFinancialEntity
+from typing import List, Dict, Optional
+import logging
+from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, IFinancialEntity, InsufficientFundsError
 # Forward reference for type hinting
 from simulation.firms import Firm
+
+logger = logging.getLogger(__name__)
 
 class FinanceSystem(IFinanceSystem):
     """Manages sovereign debt, corporate bailouts, and solvency checks."""
@@ -82,8 +85,11 @@ class FinanceSystem(IFinanceSystem):
         self.outstanding_bonds.append(new_bond)
         return [new_bond]
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> BailoutLoanDTO:
-        """Converts a bailout from a grant to an interest-bearing senior loan."""
+    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[BailoutLoanDTO]:
+        """
+        Converts a bailout from a grant to an interest-bearing senior loan.
+        Returns the loan DTO on success, or None if the transfer fails.
+        """
         base_rate = self.central_bank.get_base_rate()
         penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
 
@@ -99,30 +105,38 @@ class FinanceSystem(IFinanceSystem):
         )
 
         # Transfer funds from Government to the firm
-        self._transfer(debtor=self.government, creditor=firm, amount=amount)
+        if self._transfer(debtor=self.government, creditor=firm, amount=amount):
+            # The government provides the funds, which become a liability for the firm
+            firm.finance.add_liability(amount, loan.interest_rate)
+            firm.has_bailout_loan = True
+            return loan
+        else:
+            logger.error(f"BAILOUT_FAILED | Could not transfer {amount:.2f} to Firm {firm.id} for bailout.")
+            return None
 
-        # The government provides the funds, which become a liability for the firm
-        firm.finance.add_liability(amount, loan.interest_rate)
-        firm.has_bailout_loan = True
 
-        return loan
-
-
-    def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float) -> None:
+    def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float) -> bool:
         """
-        Handles the movement of funds between two entities using the IFinancialEntity protocol,
-        ensuring double-entry bookkeeping.
+        Atomically handles the movement of funds between two entities using the IFinancialEntity protocol.
 
         Args:
             debtor: The entity from which money is withdrawn.
             creditor: The entity to which money is deposited.
             amount: The amount of money to transfer.
+
+        Returns:
+            True if the transfer was successful, False otherwise.
         """
         if amount <= 0:
-            return
+            return True # A zero-amount transfer is trivially successful.
 
-        debtor.withdraw(amount)
-        creditor.deposit(amount)
+        try:
+            debtor.withdraw(amount)
+            creditor.deposit(amount)
+            return True
+        except InsufficientFundsError as e:
+            logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
+            return False
 
     def service_debt(self, current_tick: int) -> None:
         """

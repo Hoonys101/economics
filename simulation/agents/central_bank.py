@@ -1,6 +1,7 @@
 import logging
 from typing import Any, List, Optional
 import numpy as np
+from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
@@ -161,4 +162,7 @@ class CentralBank:
     def withdraw(self, amount: float) -> None:
         """Withdraws a given amount from the central bank's cash reserves."""
         if amount > 0:
-            self.assets['cash'] = self.assets.get('cash', 0) - amount
+            current_cash = self.assets.get('cash', 0)
+            if current_cash < amount:
+                raise InsufficientFundsError(f"Central Bank has insufficient cash for withdrawal of {amount:.2f}. Available: {current_cash:.2f}")
+            self.assets['cash'] = current_cash - amount

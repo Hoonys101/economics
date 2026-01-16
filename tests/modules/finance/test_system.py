@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock, MagicMock
 from modules.finance.system import FinanceSystem
+from modules.finance.api import InsufficientFundsError
 
 @pytest.fixture
 def mock_config():
@@ -27,7 +28,10 @@ class StubGovernment:
     def get_debt_to_gdp_ratio(self):
         return self.debt_to_gdp_ratio
     def deposit(self, amount): self.assets += amount
-    def withdraw(self, amount): self.assets -= amount
+    def withdraw(self, amount):
+        if self.assets < amount:
+            raise InsufficientFundsError()
+        self.assets -= amount
 
 class StubCentralBank:
     def __init__(self, cash=50000.0):
@@ -38,13 +42,19 @@ class StubCentralBank:
     def purchase_bonds(self, bond):
         self.assets['bonds'].append(bond)
     def deposit(self, amount): self.assets['cash'] += amount
-    def withdraw(self, amount): self.assets['cash'] -= amount
+    def withdraw(self, amount):
+        if self.assets['cash'] < amount:
+            raise InsufficientFundsError()
+        self.assets['cash'] -= amount
 
 class StubBank:
     def __init__(self, assets=100000.0):
         self.assets = assets
     def deposit(self, amount): self.assets += amount
-    def withdraw(self, amount): self.assets -= amount
+    def withdraw(self, amount):
+        if self.assets < amount:
+            raise InsufficientFundsError()
+        self.assets -= amount
 
 @pytest.fixture
 def mock_government():
@@ -74,7 +84,10 @@ class StubFirm:
         self.finance.calculate_altman_z_score.return_value = 2.0
         self.has_bailout_loan = False
     def deposit(self, amount): self.cash_reserve += amount
-    def withdraw(self, amount): self.cash_reserve -= amount
+    def withdraw(self, amount):
+        if self.cash_reserve < amount:
+            raise InsufficientFundsError()
+        self.cash_reserve -= amount
 
 @pytest.fixture
 def mock_firm():
@@ -123,9 +136,24 @@ def test_issue_treasury_bonds_qe(finance_system, mock_government, mock_central_b
     assert mock_central_bank.assets['cash'] == initial_cb_cash - amount
 
 def test_issue_treasury_bonds_fail(finance_system, mock_government, mock_bank):
-    amount = 200000.0
+    amount = 200000.0 # More than the bank's assets
     bonds = finance_system.issue_treasury_bonds(amount, 100)
     assert len(bonds) == 0
+
+def test_bailout_fails_with_insufficient_government_funds(finance_system, mock_government, mock_firm):
+    """Verify that a bailout loan is not granted if the government cannot afford it."""
+    mock_government.assets = 100.0  # Not enough for the bailout
+    amount = 500.0
+    initial_gov_assets = mock_government.assets
+    initial_firm_cash = mock_firm.cash_reserve
+
+    loan = finance_system.grant_bailout_loan(mock_firm, amount)
+
+    assert loan is None
+    # Assert that no funds were moved
+    assert mock_government.assets == initial_gov_assets
+    assert mock_firm.cash_reserve == initial_firm_cash
+    assert not mock_firm.has_bailout_loan
 
 def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_config):
     amount = 5000.0

@@ -40,6 +40,10 @@ class IFinanceSystem(Protocol):
         """Manages the servicing of outstanding government debt."""
         ...
 
+class InsufficientFundsError(Exception):
+    """Raised when a withdrawal is attempted with insufficient funds."""
+    pass
+
 class IFinancialEntity(Protocol):
     """Protocol for any entity that can hold and transfer funds."""
 
@@ -48,5 +52,10 @@ class IFinancialEntity(Protocol):
         ...
 
     def withdraw(self, amount: float) -> None:
-        """Withdraws a given amount from the entity's account."""
+        """
+        Withdraws a given amount from the entity's account.
+
+        Raises:
+            InsufficientFundsError: If the withdrawal amount exceeds available funds.
+        """
         ...
