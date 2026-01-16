@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 import math
+from modules.common.config_manager.api import ConfigManager
 from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
@@ -44,20 +45,17 @@ class Bank:
     Manages loans, deposits, and monetary policy interaction.
     """
 
-    def __init__(self, id: int, initial_assets: float, config_module: Any = None):
+    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager):
         self.id = id
         self.assets = initial_assets # Reserves
-        self.config_module = config_module
+        self.config_manager = config_manager
 
         # Data Stores
         self.loans: Dict[str, Loan] = {}
         self.deposits: Dict[str, Deposit] = {}
 
         # Policy Rates
-        if config_module:
-            self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", INITIAL_BASE_ANNUAL_RATE)
-        else:
-            self.base_rate = INITIAL_BASE_ANNUAL_RATE
+        self.base_rate = self._get_config("bank_defaults.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE)
 
         # Counters
         self.next_loan_id = 0
@@ -77,7 +75,7 @@ class Bank:
         return self.base_rate
 
     def _get_config(self, key: str, default: Any) -> Any:
-        return getattr(self.config_module, key, default)
+        return self.config_manager.get(key, default)
 
     def update_base_rate(self, new_rate: float):
         """
@@ -113,17 +111,17 @@ class Bank:
         """
         # 1. Config Check
         if not term_ticks:
-            term_ticks = self._get_config("LOAN_DEFAULT_TERM", 50)
+            term_ticks = self._get_config("loan.default_term", 50)
 
         if interest_rate is not None:
             annual_rate = interest_rate
         else:
-            credit_spread = self._get_config("CREDIT_SPREAD_BASE", 0.02)
+            credit_spread = self._get_config("bank_defaults.credit_spread_base", 0.02)
             annual_rate = self.base_rate + credit_spread
 
         # 2. Liquidity Check
         # 1a. Credit Jail Check (Phase 4)
-        if hasattr(self.config_module, "CREDIT_RECOVERY_TICKS"):
+        if self._get_config("credit_recovery_ticks", None) is not None:
             # We assume borrower_id maps to an agent object passed somewhere, but here we only have ID.
             # We need to access the agent to check 'credit_frozen_until_tick'.
             # Bank doesn't have direct access to agent list in grant_loan signature.
@@ -144,7 +142,7 @@ class Bank:
             pass
 
         # 3. Gold Standard (Full Reserve) Check vs. Fractional Reserve (WO-064)
-        gold_standard_mode = self._get_config("GOLD_STANDARD_MODE", False)
+        gold_standard_mode = self._get_config("gold_standard_mode", False)
 
         if gold_standard_mode:
             # Gold Standard: 100% reserve requirement
@@ -156,7 +154,7 @@ class Bank:
                 return None
         else:
             # Fractional Reserve Logic
-            reserve_ratio = self._get_config("RESERVE_REQ_RATIO", 0.1)
+            reserve_ratio = self._get_config("reserve_req_ratio", 0.1)
             total_deposits = sum(d.amount for d in self.deposits.values())
             # Required reserves are based on total liabilities (deposits) after the new loan is notionally added
             required_reserves = (total_deposits + amount) * reserve_ratio
@@ -204,8 +202,8 @@ class Bank:
         Accepts a deposit from an agent.
         Does NOT transfer assets directly; returns deposit ID for Transaction creation.
         """
-        margin = self._get_config("BANK_MARGIN", 0.02)
-        deposit_rate = max(0.0, self.base_rate + self._get_config("CREDIT_SPREAD_BASE", 0.02) - margin)
+        margin = self._get_config("bank_defaults.bank_margin", 0.02)
+        deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
 
         # self.assets += amount <-- REMOVED: Asset transfer handled by LoanMarket Transaction
 
@@ -231,7 +229,7 @@ class Bank:
         """Returns debt info for AI state."""
         total_principal = 0.0
         daily_interest_burden = 0.0
-        ticks_per_year = self._get_config("TICKS_PER_YEAR", TICKS_PER_YEAR)
+        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
 
         for loan in self.loans.values():
             if loan.borrower_id == agent_id:
@@ -256,7 +254,7 @@ class Bank:
         Process interest payments and distributions.
         Must be called every tick.
         """
-        ticks_per_year = self._get_config("TICKS_PER_YEAR", TICKS_PER_YEAR)
+        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
 
         # 1. Collect Interest from Loans
         total_loan_interest = 0.0
@@ -405,7 +403,7 @@ class Bank:
         Creates money via Government to cover liquidity gaps.
         """
         self.assets += amount
-        if self.config_module and hasattr(self.config_module, 'GOVERNMENT_ID'):
+        if self._get_config("government_id", None) is not None:
              # If we have a reference to government via simulation later, but here we take config
              pass
         
@@ -447,12 +445,12 @@ class Bank:
 
         # 3. Penalty
         # Credit Jail
-        jail_ticks = getattr(self.config_module, "CREDIT_RECOVERY_TICKS", 100)
+        jail_ticks = self._get_config("credit_recovery_ticks", 100)
         if hasattr(agent, "credit_frozen_until_tick"):
             agent.credit_frozen_until_tick = current_tick + jail_ticks
 
         # 4. XP Penalty
-        xp_penalty = getattr(self.config_module, "BANKRUPTCY_XP_PENALTY", 0.2)
+        xp_penalty = self._get_config("bankruptcy_xp_penalty", 0.2)
         if hasattr(agent, "education_xp"):
              agent.education_xp *= (1.0 - xp_penalty)
         if hasattr(agent, "skills"):

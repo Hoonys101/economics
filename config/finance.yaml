@@ -1,0 +1,5 @@
+bank_defaults:
+  ticks_per_year: 100
+  initial_base_annual_rate: 0.05
+  credit_spread_base: 0.02
+  bank_margin: 0.02

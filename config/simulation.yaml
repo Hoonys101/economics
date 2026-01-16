@@ -1,0 +1,9 @@
+batch_save_interval: 50
+sma_buffer_window: 10
+chaos_events:
+  - tick: 200
+    type: "inflation_shock"
+    value: 1.5
+  - tick: 600
+    type: "recession_shock"
+    value: 0.5

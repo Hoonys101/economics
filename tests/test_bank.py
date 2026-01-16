@@ -9,13 +9,22 @@ def mock_logger():
         mock_get_logger.return_value = mock_logger_instance
         yield mock_logger_instance
 
+from modules.common.config_manager.impl import ConfigManagerImpl
+from pathlib import Path
+
 @pytest.fixture
-def bank_instance():
+def config_manager(tmp_path: Path):
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    return ConfigManagerImpl(config_dir)
+
+@pytest.fixture
+def bank_instance(config_manager: ConfigManagerImpl):
     # Initialize with enough assets for tests
-    return Bank(id=1, initial_assets=10000.0)
+    return Bank(id=1, initial_assets=10000.0, config_manager=config_manager)
 
 class TestBank:
-    def test_initialization(self, bank_instance):
+    def test_initialization(self, bank_instance: Bank):
         assert bank_instance.id == 1
         assert bank_instance.assets == 10000.0
         assert bank_instance.loans == {}
@@ -23,7 +32,9 @@ class TestBank:
         assert bank_instance.value_orientation == "N/A"
         assert bank_instance.needs == {}
 
-    def test_grant_loan_successful(self, bank_instance):
+    def test_grant_loan_successful(self, bank_instance: Bank):
+        bank_instance.config_manager.set_value_for_test("bank_defaults.initial_base_annual_rate", 0.05)
+        bank_instance.config_manager.set_value_for_test("bank_defaults.credit_spread_base", 0.02)
         initial_assets = bank_instance.assets
         # Mock a borrower agent
         borrower_id = 101
@@ -49,7 +60,8 @@ class TestBank:
         assert loan.term_ticks == 50
         assert bank_instance.next_loan_id == 1
 
-    def test_grant_loan_insufficient_assets(self, bank_instance):
+    def test_grant_loan_insufficient_assets(self, bank_instance: Bank):
+        bank_instance.config_manager.set_value_for_test("gold_standard_mode", True)
         initial_assets = bank_instance.assets
         borrower_id = 101
 

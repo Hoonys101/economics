@@ -56,11 +56,15 @@ from simulation.dtos import (
 logger = logging.getLogger(__name__)
 
 
+from modules.common.config_manager.api import ConfigManager
+
+
 class Simulation:
     """경제 시뮬레이션의 전체 흐름을 관리하고 조정하는 핵심 엔진 클래스."""
 
     def __init__(
         self,
+        config_manager: ConfigManager,
         config_module: Any,
         logger: logging.Logger,
         repository: SimulationRepository
@@ -69,6 +73,7 @@ class Simulation:
         초기화된 구성 요소들을 할당받습니다.
         실제 생성 로직은 SimulationInitializer에 의해 외부에서 수행됩니다.
         """
+        self.config_manager = config_manager
         self.config_module = config_module
         self.logger = logger
         self.repository = repository

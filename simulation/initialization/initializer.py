@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from simulation.engine import Simulation
 
 # All imports moved from engine.py
+from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
 from simulation.core_agents import Household
@@ -49,6 +50,7 @@ class SimulationInitializer(SimulationInitializerInterface):
     """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
 
     def __init__(self,
+                 config_manager: ConfigManager,
                  config_module: Any,
                  goods_data: List[Dict[str, Any]],
                  repository: SimulationRepository,
@@ -56,6 +58,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                  households: List[Household],
                  firms: List[Firm],
                  ai_trainer: AIEngineRegistry):
+        self.config_manager = config_manager
         self.config = config_module
         self.goods_data = goods_data
         self.repository = repository
@@ -71,6 +74,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         """
         # 1. Create the empty Simulation shell
         sim = Simulation(
+            config_manager=self.config_manager,
             config_module=self.config,
             logger=self.logger,
             repository=self.repository
@@ -91,7 +95,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.bank = Bank(
             id=sim.next_agent_id,
             initial_assets=self.config.INITIAL_BANK_ASSETS,
-            config_module=self.config
+            config_manager=self.config_manager
         )
         sim.agents[sim.bank.id] = sim.bank
         sim.next_agent_id += 1
