@@ -30,9 +30,9 @@ echo [Gemini-CLI] Drafting Stress Test Config spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: TD-044 (Household SoC) - Action: DESIGN SPEC (Auto-Audit Enabled)
-set JOB_ID=TD-044_Household_SoC
-python scripts/gemini_worker.py spec "Analyze `simulation/core_agents.py`. The `Household` class is a God Class mixing demographics, labor, and consumption logic. Write a Zero-Question Implementation Spec to refactor it using Composition. Extract `EconomyManager` (consumption, savings, tax) and `LaborManager` (work, skill, job search). `Household` should remain the identity/coordinator. The spec MUST address risks identified by the Auto-Audit. TARGET: `design/gemini_output/household_soc_spec.md`" -c simulation/core_agents.py > design\gemini_output\household_soc_spec.md 2>&1
+:: Target: WO-079 (Config Automation) - Action: DRAFT WORK ORDER
+set JOB_ID=WO-079_Config_Automation
+python scripts/gemini_worker.py spec "Draft 'design/work_orders/WO-079_Config_Automation.md' based on the 'Phase 2: Configuration Automation' section of the attached spec. Context: WO-078 (Engine SoC) is completed. Focus on TD-007 (Hardcoded Constants). Define 'SimulationConfig' class in 'simulation/config.py', JSON profile loading, and migration of constants from 'simulation/engine.py' & 'simulation/firms.py'. Include 'test_config_loading.py' blueprint." -c design/gemini_output/stress_test_config_spec.md > design\work_orders\WO-079_Config_Automation.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Gemini task execution failed. Check logs.

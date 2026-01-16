@@ -27,7 +27,7 @@
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
 | TD-042 | 2026-01-15 | Incomplete Test Suite | Major new `FinanceSystem` lacks dedicated unit tests | High risk of un-caught regressions | **RESOLVED** (WO-072) |
 | TD-043 | 2026-01-16 | God Class: `Simulation` in `engine.py` | Decompose into specialized managers (Lifecycle, Initializer) | SoC Violation, maintenance risk | **RESOLVED** (WO-078) |
-| TD-044 | 2026-01-16 | God Class: `Household` in `core_agents.py` | Refactor into components (Economy, Labor) | Tightly coupled state/logic | **READY** (Spec Done) |
+| TD-044 | 2026-01-16 | God Class: `Household` in `core_agents.py` | Refactor into components (Economy, Labor) | Tightly coupled state/logic | **RESOLVED** (PR Merged) |
 | TD-045 | 2026-01-16 | God Class: `Firm` in `firms.py` | Deepen departmentalization (Production, Sales) | Production/Finance coupling | **RESOLVED** (TD-045 PR) |
 | TD-046 | 2026-01-16 | Hardcoded Constants in SoC Components | Migrate `0.995`, `1.1`, `0.9`, `10.0`, `100.0` to config | Reduced configurability | **DEFERRED** (TD-007 시 일괄처리) |
 

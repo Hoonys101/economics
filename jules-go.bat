@@ -37,21 +37,20 @@ if not exist "communications\jules_logs" (
 echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
-:: [COMMAND SLOT]
-:: Target: TD-044 (Household SoC) - Action: CREATE NEW SESSION
-set TARGET="TD-044: Household God Class Refactoring"
-set MISSION="REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. PATTERN: Same as TD-045 (Firm SoC). KEY CONSTRAINTS: 1. Household OWNS state (assets, inventory). Managers use `household.adjust_assets()` methods. 2. Use Facade pattern - external API unchanged. 3. Execution order: work -> consume -> pay_taxes. TASKS: 1. Create `simulation/components/economy_manager.py`. 2. Create `simulation/components/labor_manager.py`. 3. Household becomes coordinator. VERIFY: All tests in `tests/test_core_agents.py` must pass."
+:: Target: WO-079 (Config Automation) - Action: CREATE NEW SESSION
+set TARGET="WO-079: Config Automation"
+set MISSION="Execute 'design/work_orders/WO-079_Config_Automation.md'. PRIORITY: 1. Create 'simulation/config.py' (SimulationConfig) & 'profiles/default.json'. 2. Refactor 'SimulationInitializer' to load config. 3. Inject config into Engine/Firms/Agents and replace hardcoded constants. 4. Verify with 'tests/simulation/test_config_loading.py' and existing Engine tests."
 
 :: 1. Create Session & Send Initial Mission
 python scripts/jules_bridge.py create %TARGET% %MISSION% > communications\jules_logs\last_run.md 2>&1
 
 :: 2. Auto-Record to Session Ledger
-:: echo ^| %DATE% ^| [NEW_SESSION] ^| TD-044 ^| SESSION STARTED ^| >> design\SESSION_LEDGER.md
+:: echo ^| %DATE% ^| [NEW_SESSION] ^| WO-079 ^| SESSION STARTED ^| >> design\SESSION_LEDGER.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.
 ) else (
-    echo [SUCCESS] WO-077 mission dispatched.
+    echo [SUCCESS] WO-079 mission dispatched.
     echo [NOTE] Please check 'communications\jules_logs\last_run.md' for the Session ID.
     type communications\jules_logs\last_run.md
 )
