@@ -251,7 +251,6 @@ class Household(BaseAgent):
         self.credit_frozen_until_tick: int = 0
 
         # Phase 5: Genealogy & Time Allocation
-        self.parent_id: Optional[int] = None      # 부모 가구 ID
         self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
         self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
 
