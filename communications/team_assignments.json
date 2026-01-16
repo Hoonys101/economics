@@ -20,6 +20,10 @@
       "17119948573295953717": {
         "title": "WO-078: The Great Refactoring",
         "initial_mission": "EXECUTE WO-078 WAR PROTOCOL: Phase 1 IS MANDATORY BEFORE Phase 2.\\n\\n[PHASE 1: Engine SoC] Refactor `Simulation` God Class. Extract `SimulationInitializer` and `AgentLifecycleManager`. (Ref: `design/gemini_output/simulation_soc_spec.md`)\\n\\n[PHASE 2: Config Automation] ONLY after Phase 1 tests pass, implement `SimulationConfig` and migrate constants. (Ref: `design/gemini_output/stress_test_config_spec.md`)\\n\\nGOAL: Break the dependency/test cycle by fixing the architecture first."
+      },
+      "12543922642187456551": {
+        "title": "TD-045: Firm God Class Refactoring",
+        "initial_mission": "REFACTOR `simulation/firms.py` following `design/gemini_output/firm_soc_spec.md`. KEY CONSTRAINTS from Pre-flight Audit: 1. Firm OWNS inventory state. Departments use `firm.add_inventory()` methods only. 2. Execution order: produce -> post_ask -> pay_taxes. TASKS: 1. Create `simulation/components/production_department.py`. 2. Create `simulation/components/sales_department.py`. 3. Firm becomes coordinator using Composition. VERIFY: All existing tests in `tests/test_firms.py` must pass."
       }
     },
     "completed_sessions": {

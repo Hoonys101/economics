@@ -38,15 +38,15 @@ echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: TD-045 (Firm SoC) - Action: CREATE NEW SESSION
-set TARGET="TD-045: Firm God Class Refactoring"
-set MISSION="REFACTOR `simulation/firms.py` following `design/gemini_output/firm_soc_spec.md`. KEY CONSTRAINTS from Pre-flight Audit: 1. Firm OWNS inventory state. Departments use `firm.add_inventory()` methods only. 2. Execution order: produce -> post_ask -> pay_taxes. TASKS: 1. Create `simulation/components/production_department.py`. 2. Create `simulation/components/sales_department.py`. 3. Firm becomes coordinator using Composition. VERIFY: All existing tests in `tests/test_firms.py` must pass."
+:: Target: TD-044 (Household SoC) - Action: CREATE NEW SESSION
+set TARGET="TD-044: Household God Class Refactoring"
+set MISSION="REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. PATTERN: Same as TD-045 (Firm SoC). KEY CONSTRAINTS: 1. Household OWNS state (assets, inventory). Managers use `household.adjust_assets()` methods. 2. Use Facade pattern - external API unchanged. 3. Execution order: work -> consume -> pay_taxes. TASKS: 1. Create `simulation/components/economy_manager.py`. 2. Create `simulation/components/labor_manager.py`. 3. Household becomes coordinator. VERIFY: All tests in `tests/test_core_agents.py` must pass."
 
 :: 1. Create Session & Send Initial Mission
 python scripts/jules_bridge.py create %TARGET% %MISSION% > communications\jules_logs\last_run.md 2>&1
 
 :: 2. Auto-Record to Session Ledger
-:: echo ^| %DATE% ^| [NEW_SESSION] ^| TD-045 ^| SESSION STARTED ^| >> design\SESSION_LEDGER.md
+:: echo ^| %DATE% ^| [NEW_SESSION] ^| TD-044 ^| SESSION STARTED ^| >> design\SESSION_LEDGER.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.

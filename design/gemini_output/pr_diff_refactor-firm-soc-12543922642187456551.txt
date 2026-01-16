@@ -1,0 +1,689 @@
+diff --git a/simulation/components/production_department.py b/simulation/components/production_department.py
+new file mode 100644
+index 0000000..9fbce19
+--- /dev/null
++++ b/simulation/components/production_department.py
+@@ -0,0 +1,107 @@
++from __future__ import annotations
++from typing import TYPE_CHECKING
++import logging
++import math
++
++if TYPE_CHECKING:
++    from simulation.firms import Firm
++
++logger = logging.getLogger(__name__)
++
++class ProductionDepartment:
++    """Handles the production logic for a firm."""
++
++    def __init__(self, firm: Firm, config_module: any):
++        self.firm = firm
++        self.config_module = config_module
++
++    def produce(self, current_time: int, technology_manager: any = None) -> float:
++        """
++        Cobb-Douglas 생산 함수를 사용한 생산 로직.
++        Phase 21: Modified Cobb-Douglas with Automation.
++        """
++        try:
++            # [EARLY EXIT]
++            if len(self.firm.hr.employees) == 0:
++                return 0.0
++
++            log_extra = {"tick": current_time, "agent_id": self.firm.id, "tags": ["production"]}
++
++            # 1. 감가상각 처리
++            depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
++            self.firm.capital_stock *= (1.0 - depreciation_rate)
++
++            # Phase 21: Automation Decay
++            self.firm.automation_level *= 0.995 # Slow decay (0.5% per tick)
++            if self.firm.automation_level < 0.001: self.firm.automation_level = 0.0
++
++            # 2. 노동 및 자본 투입량 계산
++            # SoC Refactor: Get total labor skill from HR
++            total_labor_skill = self.firm.hr.get_total_labor_skill()
++
++            # 3. Cobb-Douglas Parameters
++            base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
++            automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
++
++            # Phase 21: Adjusted Alpha
++            # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
++            # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
++            alpha_raw = base_alpha * (1.0 - (self.firm.automation_level * automation_reduction))
++            alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
++            beta_adjusted = 1.0 - alpha_adjusted
++
++            # Effective Labor & Capital
++            capital = max(self.firm.capital_stock, 0.01)
++
++            # Technology Multiplier (WO-053)
++            tech_multiplier = 1.0
++
++            tfp = self.firm.productivity_factor * tech_multiplier  # Total Factor Productivity
++
++            if technology_manager:
++                tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id, self.firm.sector)
++                tfp *= tech_multiplier
++
++            # Phase 15: Quality Calculation
++            avg_skill = self.firm.hr.get_avg_skill()
++
++            item_config = self.config_module.GOODS.get(self.firm.specialization, {})
++            quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
++            actual_quality = self.firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
++
++            produced_quantity = 0.0
++            if total_labor_skill > 0 and capital > 0:
++                produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
++
++            actual_produced = 0.0
++            if produced_quantity > 0:
++                # WO-030: Input Constraints Logic
++                input_config = self.config_module.GOODS.get(self.firm.specialization, {}).get("inputs", {})
++
++                if input_config:
++                    max_by_inputs = float('inf')
++                    for mat, req_per_unit in input_config.items():
++                        available = self.firm.input_inventory.get(mat, 0.0)
++                        if req_per_unit > 0:
++                            max_by_inputs = min(max_by_inputs, available / req_per_unit)
++
++                    # Constrain production
++                    actual_produced = min(produced_quantity, max_by_inputs)
++
++                    # Deduct used inputs
++                    for mat, req_per_unit in input_config.items():
++                        amount_to_deduct = actual_produced * req_per_unit
++                        self.firm.input_inventory[mat] = max(0.0, self.firm.input_inventory.get(mat, 0.0) - amount_to_deduct)
++                else:
++                    actual_produced = produced_quantity
++
++                if actual_produced > 0:
++                    self.firm.add_inventory(self.firm.specialization, actual_produced, actual_quality)
++
++            return actual_produced
++
++        except Exception as e:
++            import traceback
++            logger.error(f'FIRM_CRASH_PREVENTED | Firm {self.firm.id}: {e}')
++            logger.debug(traceback.format_exc())
++            return 0.0
+diff --git a/simulation/components/sales_department.py b/simulation/components/sales_department.py
+new file mode 100644
+index 0000000..8fe51fe
+--- /dev/null
++++ b/simulation/components/sales_department.py
+@@ -0,0 +1,81 @@
++from __future__ import annotations
++from typing import TYPE_CHECKING, Dict, Any
++
++if TYPE_CHECKING:
++    from simulation.firms import Firm
++    from simulation.markets.order_book_market import OrderBookMarket
++
++from simulation.models import Order
++
++class SalesDepartment:
++    """Handles the sales and marketing logic for a firm."""
++
++    def __init__(self, firm: Firm, config_module: any):
++        self.firm = firm
++        self.config_module = config_module
++
++    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
++        """
++        판매 주문을 생성하고 시장에 제출합니다.
++        Brand Metadata를 자동으로 주입합니다.
++        """
++        # 1. 브랜드 정보 스냅샷
++        brand_snapshot = {
++            "brand_awareness": self.firm.brand_manager.brand_awareness,
++            "perceived_quality": self.firm.brand_manager.perceived_quality,
++            "quality": self.firm.inventory_quality.get(item_id, 1.0), # Phase 15: Physical Quality
++        }
++
++        # 2. 주문 생성 (brand_info 자동 주입)
++        order = Order(
++            agent_id=self.firm.id,
++            order_type="SELL",
++            item_id=item_id,
++            quantity=quantity,
++            price=price,
++            market_id=market.id,
++            brand_info=brand_snapshot  # <-- Critical Injection
++        )
++
++        # 3. 시장에 제출
++        market.place_order(order, current_tick)
++
++        self.firm.logger.debug(
++            f"FIRM_POST_ASK | Firm {self.firm.id} posted SELL order for {quantity:.1f} {item_id} @ {price:.2f} with brand_info",
++            extra={"agent_id": self.firm.id, "tick": current_tick, "brand_awareness": brand_snapshot["brand_awareness"]}
++        )
++
++        return order
++
++    def adjust_marketing_budget(self) -> None:
++        """Adjust marketing budget rate based on ROI."""
++        delta_spend = self.firm.marketing_budget  # Current tick spend
++
++        # Skip first tick or zero previous spend
++        # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.
++        # But we also need to avoid division by zero.
++        if delta_spend <= 0 or self.firm.finance.last_marketing_spend <= 0:
++            self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
++            self.firm.finance.last_marketing_spend = self.firm.marketing_budget
++            return
++
++        delta_revenue = self.firm.finance.revenue_this_turn - self.firm.finance.last_revenue
++        efficiency = delta_revenue / self.firm.finance.last_marketing_spend
++
++        # Decision Rules
++        saturation_level = getattr(self.config_module, "BRAND_AWARENESS_SATURATION", 0.9)
++        high_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5)
++        low_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8)
++        min_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MIN", 0.01)
++        max_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MAX", 0.20)
++
++        if self.firm.brand_manager.brand_awareness >= saturation_level:
++            pass  # Maintain (Saturation)
++        elif efficiency > high_eff_threshold:
++            self.firm.marketing_budget_rate = min(max_rate, self.firm.marketing_budget_rate * 1.1)
++        elif efficiency < low_eff_threshold:
++            self.firm.marketing_budget_rate = max(min_rate, self.firm.marketing_budget_rate * 0.9)
++
++        # Update tracking
++        self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
++        self.firm.finance.last_marketing_spend = self.firm.marketing_budget
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 3d970e2..08568f4 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -17,6 +17,8 @@ from simulation.ai.enums import Personality
+ # SoC Refactor
+ from simulation.components.hr_department import HRDepartment
+ from simulation.components.finance_department import FinanceDepartment
++from simulation.components.production_department import ProductionDepartment
++from simulation.components.sales_department import SalesDepartment
+ from simulation.utils.shadow_logger import log_shadow
+ from modules.finance.api import InsufficientFundsError
+ 
+@@ -82,6 +84,8 @@ class Firm(BaseAgent):
+         # SoC Refactor: HR and Finance Components
+         self.hr = HRDepartment(self)
+         self.finance = FinanceDepartment(self, config_module)
++        self.production = ProductionDepartment(self, config_module)
++        self.sales = SalesDepartment(self, config_module)
+ 
+         # Set bankruptcy threshold based on visionary status
+         base_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5)
+@@ -324,38 +328,20 @@ class Firm(BaseAgent):
+         self.is_bankrupt = True
+         return self.assets
+ 
+-    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+-        """
+-        판매 주문을 생성하고 시장에 제출합니다.
+-        Brand Metadata를 자동으로 주입합니다.
+-        """
+-        # 1. 브랜드 정보 스냅샷
+-        brand_snapshot = {
+-            "brand_awareness": self.brand_manager.brand_awareness,
+-            "perceived_quality": self.brand_manager.perceived_quality,
+-            "quality": self.inventory_quality.get(item_id, 1.0), # Phase 15: Physical Quality
+-        }
++    def add_inventory(self, item_id: str, quantity: float, quality: float):
++        """Adds items to the firm's inventory and updates the average quality."""
++        current_inventory = self.inventory.get(item_id, 0)
++        current_quality = self.inventory_quality.get(item_id, 1.0)
+ 
+-        # 2. 주문 생성 (brand_info 자동 주입)
+-        order = Order(
+-            agent_id=self.id,
+-            order_type="SELL",
+-            item_id=item_id,
+-            quantity=quantity,
+-            price=price,
+-            market_id=market.id,
+-            brand_info=brand_snapshot  # <-- Critical Injection
+-        )
++        total_qty = current_inventory + quantity
++        if total_qty > 0:
++            new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
++            self.inventory_quality[item_id] = new_avg_quality
+ 
+-        # 3. 시장에 제출
+-        market.place_order(order, current_tick)
++        self.inventory[item_id] = total_qty
+ 
+-        self.logger.debug(
+-            f"FIRM_POST_ASK | Firm {self.id} posted SELL order for {quantity:.1f} {item_id} @ {price:.2f} with brand_info",
+-            extra={"agent_id": self.id, "tick": current_tick, "brand_awareness": brand_snapshot["brand_awareness"]}
+-        )
+-
+-        return order
++    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
++        return self.sales.post_ask(item_id, price, quantity, market, current_tick)
+ 
+     def calculate_brand_premium(self, market_data: Dict[str, Any]) -> float:
+         """
+@@ -377,140 +363,10 @@ class Firm(BaseAgent):
+         return brand_premium
+ 
+     def _adjust_marketing_budget(self) -> None:
+-        """Adjust marketing budget rate based on ROI."""
+-        delta_spend = self.marketing_budget  # Current tick spend
+-
+-        # Skip first tick or zero previous spend
+-        # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.
+-        # But we also need to avoid division by zero.
+-        if delta_spend <= 0 or self.finance.last_marketing_spend <= 0:
+-            self.finance.last_revenue = self.finance.revenue_this_turn
+-            self.finance.last_marketing_spend = self.marketing_budget
+-            return
+-
+-        delta_revenue = self.finance.revenue_this_turn - self.finance.last_revenue
+-        efficiency = delta_revenue / self.finance.last_marketing_spend
+-
+-        # Decision Rules
+-        saturation_level = getattr(self.config_module, "BRAND_AWARENESS_SATURATION", 0.9)
+-        high_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5)
+-        low_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8)
+-        min_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MIN", 0.01)
+-        max_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MAX", 0.20)
+-
+-        if self.brand_manager.brand_awareness >= saturation_level:
+-            pass  # Maintain (Saturation)
+-        elif efficiency > high_eff_threshold:
+-            self.marketing_budget_rate = min(max_rate, self.marketing_budget_rate * 1.1)
+-        elif efficiency < low_eff_threshold:
+-            self.marketing_budget_rate = max(min_rate, self.marketing_budget_rate * 0.9)
+-
+-        # Update tracking
+-        self.finance.last_revenue = self.finance.revenue_this_turn
+-        self.finance.last_marketing_spend = self.marketing_budget
++        self.sales.adjust_marketing_budget()
+ 
+     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
+-        """
+-        Cobb-Douglas 생산 함수를 사용한 생산 로직.
+-        Phase 21: Modified Cobb-Douglas with Automation.
+-        """
+-        try:
+-            # [EARLY EXIT]
+-            if len(self.hr.employees) == 0:
+-                self.current_production = 0.0
+-                return
+-
+-            log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
+-
+-            # 1. 감가상각 처리
+-            depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
+-            self.capital_stock *= (1.0 - depreciation_rate)
+-
+-            # Phase 21: Automation Decay
+-            self.automation_level *= 0.995 # Slow decay (0.5% per tick)
+-            if self.automation_level < 0.001: self.automation_level = 0.0
+-
+-            # 2. 노동 및 자본 투입량 계산
+-            # SoC Refactor: Get total labor skill from HR
+-            total_labor_skill = self.hr.get_total_labor_skill()
+-
+-            # 3. Cobb-Douglas Parameters
+-            base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+-            automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+-
+-            # Phase 21: Adjusted Alpha
+-            # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
+-            # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
+-            alpha_raw = base_alpha * (1.0 - (self.automation_level * automation_reduction))
+-            alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
+-            beta_adjusted = 1.0 - alpha_adjusted
+-
+-            # Effective Labor & Capital
+-            capital = max(self.capital_stock, 0.01)
+-
+-            # Technology Multiplier (WO-053)
+-            tech_multiplier = 1.0
+-
+-            tfp = self.productivity_factor * tech_multiplier  # Total Factor Productivity
+-
+-            if technology_manager:
+-                tech_multiplier = technology_manager.get_productivity_multiplier(self.id, self.sector)
+-                tfp *= tech_multiplier
+-
+-            # Phase 15: Quality Calculation
+-            avg_skill = self.hr.get_avg_skill()
+-
+-            item_config = self.config_module.GOODS.get(self.specialization, {})
+-            quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
+-            actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+-
+-            self.current_production = 0.0
+-
+-            if total_labor_skill > 0 and capital > 0:
+-                produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
+-            else:
+-                produced_quantity = 0.0
+-
+-            if produced_quantity > 0:
+-                # WO-030: Input Constraints Logic
+-                input_config = self.config_module.GOODS.get(self.specialization, {}).get("inputs", {})
+-
+-                if input_config:
+-                    max_by_inputs = float('inf')
+-                    for mat, req_per_unit in input_config.items():
+-                        available = self.input_inventory.get(mat, 0.0)
+-                        if req_per_unit > 0:
+-                            max_by_inputs = min(max_by_inputs, available / req_per_unit)
+-
+-                    # Constrain production
+-                    actual_produced = min(produced_quantity, max_by_inputs)
+-
+-                    # Deduct used inputs
+-                    for mat, req_per_unit in input_config.items():
+-                        amount_to_deduct = actual_produced * req_per_unit
+-                        self.input_inventory[mat] = max(0.0, self.input_inventory.get(mat, 0.0) - amount_to_deduct)
+-                else:
+-                    actual_produced = produced_quantity
+-
+-                if actual_produced > 0:
+-                    item_id = self.specialization
+-                    current_inventory = self.inventory.get(item_id, 0)
+-                    current_quality = self.inventory_quality.get(item_id, 1.0)
+-
+-                    total_qty = current_inventory + actual_produced
+-                    new_avg_quality = ((current_inventory * current_quality) + (actual_produced * actual_quality)) / total_qty
+-
+-                    self.inventory_quality[item_id] = new_avg_quality
+-                    self.inventory[item_id] = total_qty
+-                    self.current_production = actual_produced
+-                else:
+-                    self.current_production = 0.0
+-        except Exception as e:
+-            import traceback
+-            logger.error(f'FIRM_CRASH_PREVENTED | Firm {self.id}: {e}')
+-            logger.debug(traceback.format_exc())
+-            self.current_production = 0.0
+-            return
++        self.current_production = self.production.produce(current_time, technology_manager)
+ 
+     def issue_shares(self, quantity: float, price: float) -> float:
+         """
+@@ -736,7 +592,7 @@ class Firm(BaseAgent):
+         )
+ 
+     @override
+-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
++    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
+         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
+         self.logger.debug(
+             f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}",
+@@ -748,12 +604,16 @@ class Firm(BaseAgent):
+             },
+         )
+ 
++        # --- Core Operations (SoC Refactor) ---
++        # 1. Produce
++        self.produce(current_time, technology_manager)
++
++        # 2. Pay Wages & Holding Costs
+         inventory_value = sum(self.inventory.values())
+         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
+         self.assets -= holding_cost
+         self.finance.record_expense(holding_cost)
+ 
+-        # Phase 8-B: Capture holding cost (Storage Service Fee)
+         if holding_cost > 0:
+             if reflux_system:
+                 reflux_system.capture(holding_cost, str(self.id), "fixed_cost")
+@@ -762,7 +622,6 @@ class Firm(BaseAgent):
+                 extra={**log_extra, "holding_cost": holding_cost},
+             )
+ 
+-        # Pay wages to employees (SoC: HR Delegate)
+         total_wages = self.hr.process_payroll(current_time, government, market_data)
+         if total_wages > 0:
+             self.finance.record_expense(total_wages)
+@@ -770,41 +629,29 @@ class Firm(BaseAgent):
+                 f"Paid total wages: {total_wages:.2f} to {len(self.employees)} employees.",
+                 extra={**log_extra, "total_wages": total_wages},
+             )
+-        
+-        # --- Phase 6: Marketing Spend & Brand Update ---
+-        # Adaptive Budgeting
++
++        # 3. Marketing & Brand Update
+         marketing_spend = 0.0
+         if self.assets > 100.0:
+             marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
+         
+-        # Check affordability
+         if self.assets < marketing_spend:
+              marketing_spend = 0.0
+ 
+-        # Apply spend
+         if marketing_spend > 0:
+              self.assets -= marketing_spend
+              self.finance.record_expense(marketing_spend)
+-             # Phase 8-B: Capture marketing spend (Ad Agency Fee)
+              if reflux_system:
+                  reflux_system.capture(marketing_spend, str(self.id), "marketing")
+ 
+-        # Update state for AI/ROI (Explicitly assign to instance variable)
+         self.marketing_budget = marketing_spend
++        self.brand_manager.update(marketing_spend, self.productivity_factor / 10.0)
++        self.sales.adjust_marketing_budget() # Note: Renamed from _adjust_marketing_budget
+ 
+-        # Update Brand Assets
+-        actual_quality = self.productivity_factor / 10.0
+-        self.brand_manager.update(marketing_spend, actual_quality)
+-
+-        # Adjust Budget Rate based on ROI
+-        self._adjust_marketing_budget()
+-
+-        # --- Phase 2: System Stabilization (Tax & Fees) ---
++        # 4. Pay Taxes (after all other expenses)
+         if government:
+-            # SoC: Finance Delegate
+             self.finance.pay_maintenance(government, reflux_system, current_time)
+             self.finance.pay_taxes(government, current_time)
+-        # ---------------------------------------------
+ 
+         brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
+         self.logger.info(
+@@ -818,16 +665,11 @@ class Firm(BaseAgent):
+             }
+         )
+ 
+-        self.needs["liquidity_need"] += self.config_module.LIQUIDITY_NEED_INCREASE_RATE
+-        self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"])
+-
++        # --- Final State Updates & Checks ---
++        self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"] + self.config_module.LIQUIDITY_NEED_INCREASE_RATE)
+         self.finance.check_bankruptcy()
+ 
+-        if (
+-            self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD
+-            or self.consecutive_loss_turns
+-            >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD
+-        ):
++        if self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD or self.consecutive_loss_turns >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD:
+             self.is_active = False
+             self.logger.warning(
+                 f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.consecutive_loss_turns}",
+@@ -838,6 +680,7 @@ class Firm(BaseAgent):
+                     "tags": ["firm_closure"],
+                 },
+             )
++
+         self.logger.debug(
+             f"FIRM_NEEDS_UPDATE_END | Firm {self.id} needs after update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}",
+             extra={
+diff --git a/tests/test_firms.py b/tests/test_firms.py
+index 6224310..47eeb69 100644
+--- a/tests/test_firms.py
++++ b/tests/test_firms.py
+@@ -1,7 +1,10 @@
+ 
+ import pytest
+ from unittest.mock import Mock, MagicMock
++import math
+ from simulation.firms import Firm
++from simulation.components.production_department import ProductionDepartment
++from simulation.components.sales_department import SalesDepartment
+ 
+ class TestFirmBookValue:
+     @pytest.fixture
+@@ -12,9 +15,12 @@ class TestFirmBookValue:
+     def mock_config(self):
+         config = Mock()
+         config.FIRM_MIN_PRODUCTION_TARGET = 10.0
+-        config.FIRM_DEFAULT_TOTAL_SHARES = 100.0
++        config.IPO_INITIAL_SHARES = 100.0
+         config.PROFIT_HISTORY_TICKS = 10
+         config.INITIAL_FIRM_LIQUIDITY_NEED = 100.0
++        config.LABOR_ALPHA = 0.7
++        config.CAPITAL_DEPRECIATION_RATE = 0.05
++        config.GOODS = {"test": {}}
+         return config
+ 
+     @pytest.fixture
+@@ -31,7 +37,8 @@ class TestFirmBookValue:
+         )
+ 
+     def test_book_value_no_liabilities(self, firm):
+-        # Assets 1000, Shares 100, Treasury 0
++        # Assets 1000, Shares 100, Treasury 100
++        firm.treasury_shares = 0
+         assert firm.get_book_value_per_share() == 10.0
+ 
+     def test_book_value_with_liabilities(self, firm, mock_decision_engine):
+@@ -41,6 +48,7 @@ class TestFirmBookValue:
+ 
+         mock_decision_engine.loan_market = mock_loan_market
+         mock_loan_market.bank = mock_bank
++        firm.treasury_shares = 0
+ 
+         mock_bank.get_debt_summary.return_value = {"total_principal": 200.0}
+ 
+@@ -58,6 +66,7 @@ class TestFirmBookValue:
+         mock_bank = Mock()
+         mock_decision_engine.loan_market = mock_loan_market
+         mock_loan_market.bank = mock_bank
++        firm.treasury_shares = 0
+ 
+         mock_bank.get_debt_summary.return_value = {"total_principal": 2000.0}
+ 
+@@ -67,4 +76,108 @@ class TestFirmBookValue:
+ 
+     def test_book_value_zero_shares(self, firm):
+         firm.total_shares = 0.0
++        firm.treasury_shares = 0.0
+         assert firm.get_book_value_per_share() == 0.0
++
++class TestProductionDepartment:
++    @pytest.fixture
++    def mock_config(self):
++        config = Mock()
++        config.LABOR_ALPHA = 0.7
++        config.AUTOMATION_LABOR_REDUCTION = 0.5
++        config.LABOR_ELASTICITY_MIN = 0.3
++        config.CAPITAL_DEPRECIATION_RATE = 0.05
++        config.GOODS = {"test": {"quality_sensitivity": 0.5}}
++        return config
++
++    @pytest.fixture
++    def firm(self, mock_config):
++        firm = Mock(spec=Firm)
++        firm.id = 1
++        firm.hr = Mock()
++        firm.hr.employees = [Mock()] * 5
++        firm.capital_stock = 100.0
++        firm.automation_level = 0.0
++        firm.productivity_factor = 1.0
++        firm.specialization = "test"
++        firm.input_inventory = {}
++        firm.inventory = {}
++        firm.inventory_quality = {}
++        firm.base_quality = 1.0
++        firm.hr.get_total_labor_skill.return_value = 5.0
++        firm.hr.get_avg_skill.return_value = 1.0
++        return firm
++
++    def test_produce(self, firm, mock_config):
++        prod_dept = ProductionDepartment(firm, mock_config)
++        produced_quantity = prod_dept.produce(0)
++
++        assert produced_quantity > 0
++        assert firm.capital_stock < 100.0
++
++        # Replicate the quality calculation to get the expected value
++        avg_skill = firm.hr.get_avg_skill.return_value
++        quality_sensitivity = mock_config.GOODS["test"]["quality_sensitivity"]
++        expected_quality = firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
++
++        firm.add_inventory.assert_called_once_with("test", produced_quantity, expected_quality)
++
++class TestSalesDepartment:
++    @pytest.fixture
++    def mock_config(self):
++        config = Mock()
++        config.BRAND_AWARENESS_SATURATION = 0.9
++        config.MARKETING_EFFICIENCY_HIGH_THRESHOLD = 1.5
++        config.MARKETING_EFFICIENCY_LOW_THRESHOLD = 0.8
++        config.MARKETING_BUDGET_RATE_MIN = 0.01
++        config.MARKETING_BUDGET_RATE_MAX = 0.20
++        return config
++
++    @pytest.fixture
++    def firm(self, mock_config):
++        firm = Mock(spec=Firm)
++        firm.id = 1
++        firm.brand_manager = Mock()
++        firm.finance = Mock()
++        firm.brand_manager.brand_awareness = 0.5
++        firm.inventory_quality = {}
++        firm.marketing_budget = 100.0
++        firm.finance.last_marketing_spend = 50.0 # Lower spend last tick
++        firm.finance.revenue_this_turn = 200.0
++        firm.finance.last_revenue = 100.0
++        firm.marketing_budget_rate = 0.1
++        firm.logger = Mock()
++        return firm
++
++    def test_post_ask(self, firm, mock_config):
++        sales_dept = SalesDepartment(firm, mock_config)
++        market = Mock()
++        order = sales_dept.post_ask("test", 10.0, 5.0, market, 0)
++
++        market.place_order.assert_called_once()
++        assert order.agent_id == firm.id
++        assert order.item_id == "test"
++
++    def test_adjust_marketing_budget_increase(self, firm, mock_config):
++        # High ROI should increase the budget rate
++        firm.finance.last_marketing_spend = 50.0
++        firm.finance.revenue_this_turn = 200.0
++        firm.finance.last_revenue = 100.0
++
++        sales_dept = SalesDepartment(firm, mock_config)
++        initial_rate = firm.marketing_budget_rate
++        sales_dept.adjust_marketing_budget()
++
++        assert firm.marketing_budget_rate > initial_rate
++
++    def test_adjust_marketing_budget_decrease(self, firm, mock_config):
++        # Low ROI should decrease the budget rate
++        firm.finance.last_marketing_spend = 200.0 # High spend
++        firm.finance.revenue_this_turn = 110.0 # Low return
++        firm.finance.last_revenue = 100.0
++
++        sales_dept = SalesDepartment(firm, mock_config)
++        initial_rate = firm.marketing_budget_rate
++        sales_dept.adjust_marketing_budget()
++
++        assert firm.marketing_budget_rate < initial_rate
