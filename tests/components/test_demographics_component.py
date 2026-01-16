@@ -81,13 +81,7 @@ class TestDemographicsComponent(unittest.TestCase):
 
     def test_get_generational_similarity(self):
         """Test the calculation of generational similarity."""
-        mock_other_owner = MagicMock()
-        mock_other_owner.talent.base_learning_rate = 0.6
-
-        mock_other_demographics = MagicMock()
-        type(mock_other_demographics).owner = PropertyMock(return_value=mock_other_owner)
-
-        similarity = self.component.get_generational_similarity(mock_other_demographics)
+        similarity = self.component.get_generational_similarity(0.5, 0.6)
         self.assertAlmostEqual(similarity, 0.9) # 1.0 - abs(0.5 - 0.6)
 
     def test_create_offspring_demographics(self):

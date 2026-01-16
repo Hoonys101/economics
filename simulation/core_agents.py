@@ -1135,7 +1135,7 @@ class Household(BaseAgent):
 
     def get_generational_similarity(self, other: "Household") -> float:
         """다른 Household의 demographics 컴포넌트에 위임"""
-        return self.demographics.get_generational_similarity(other.demographics)
+        return self.demographics.get_generational_similarity(self.talent.base_learning_rate, other.talent.base_learning_rate)
 
     def apply_child_inheritance(self, child: "Household"):
         """

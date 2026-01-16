@@ -111,9 +111,9 @@ class IDemographicsComponent(Protocol):
         """Adds a child."""
         ...
 
-    def get_generational_similarity(self, other_demographics: "IDemographicsComponent") -> float:
+    def get_generational_similarity(self, talent_learning_rate_1: float, talent_learning_rate_2: float) -> float:
         """
-        Calculates the generational/genetic similarity with another household.
+        Calculates the generational/genetic similarity based on talent learning rates.
         Mainly used for spouse selection.
         """
         ...

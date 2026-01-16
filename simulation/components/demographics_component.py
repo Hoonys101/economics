@@ -112,11 +112,11 @@ class DemographicsComponent:
         if child_id not in self._children_ids:
             self._children_ids.append(child_id)
 
-    def get_generational_similarity(self, other_demographics: "IDemographicsComponent") -> float:
-        """Calculates the generational/genetic similarity between two households."""
+    def get_generational_similarity(self, talent_learning_rate_1: float, talent_learning_rate_2: float) -> float:
+        """Calculates the generational/genetic similarity based on talent learning rates."""
 
         # A simple comparison of talents.
-        talent_diff = abs(self.owner.talent.base_learning_rate - other_demographics.owner.talent.base_learning_rate)
+        talent_diff = abs(talent_learning_rate_1 - talent_learning_rate_2)
         similarity = max(0.0, 1.0 - talent_diff)
         return similarity
 
