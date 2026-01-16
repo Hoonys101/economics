@@ -30,13 +30,14 @@ echo [Gemini-CLI] Drafting Stress Test Config spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: WO-079 (Config Automation) - Action: DRAFT WORK ORDER
-set JOB_ID=WO-079_Config_Automation
-python scripts/gemini_worker.py spec "Draft 'design/work_orders/WO-079_Config_Automation.md' based on the 'Phase 2: Configuration Automation' section of the attached spec. Context: WO-078 (Engine SoC) is completed. Focus on TD-007 (Hardcoded Constants). Define 'SimulationConfig' class in 'simulation/config.py', JSON profile loading, and migration of constants from 'simulation/engine.py' & 'simulation/firms.py'. Include 'test_config_loading.py' blueprint." -c design/gemini_output/stress_test_config_spec.md > design\work_orders\WO-079_Config_Automation.md 2>&1
+:: Target: TD-008 (Finance Upgrade) - Action: DRAFT SPECIFICATION
+set JOB_ID=TD-008_Finance_Upgrade
+python scripts/gemini_worker.py spec "Draft a Zero-Question Spec for 'TD-008: Advanced Finance System'. GOALS: 1. Implement 'Altman Z-Score' for firm valuation (replacing primitive asset check). 2. Convert Bailouts from Grants to 'Callable Loans' (Debt) with interest. 3. Define 'BailoutCovenant' class. TARGET: 'design/specs/TD-008_Finance_Upgrade_Spec.md'. OUTPUT FORMAT: Strict Markdown. No conversational filler." -c modules/finance/system.py simulation/firms.py -o design\specs\TD-008_Finance_Upgrade_Spec.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Gemini task execution failed. Check logs.
 ) else (
-    echo [SUCCESS] Gemini spec drafting with Auto-Audit completed. Check design\gemini_output\household_soc_spec.md
+    echo [SUCCESS] Gemini Task %JOB_ID% completed.
+    echo [OUTPUT] Check design\specs(%JOB_ID%_Spec.md) or work_orders(%JOB_ID%.md)
 )
 endlocal

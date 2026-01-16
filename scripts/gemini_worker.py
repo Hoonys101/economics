@@ -157,18 +157,26 @@ class SpecDrafter(BaseGeminiWorker):
         result = self.run_gemini(full_instruction, context_files)
         
         # Save to draft file
-        output_dir = BASE_DIR / "design" / "drafts"
-        output_dir.mkdir(exist_ok=True, parents=True)
+        # Save to draft file or specified output file
+        output_file_path = None
+        if kwargs.get('output_file'):
+            output_file_path = Path(kwargs['output_file'])
+        else:
+            output_dir = BASE_DIR / "design" / "drafts"
+            output_dir.mkdir(exist_ok=True, parents=True)
+            
+            safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:30] if c.isalnum() or c == ' ']).strip().replace(" ", "_")[:30]
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%H%M%S") 
+            output_file_path = output_dir / f"draft_{timestamp}_{safe_name}.md"
         
-        safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:30] if c.isalnum() or c == ' ']).strip().replace(" ", "_")[:30]
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%H%M%S") 
-        output_file = output_dir / f"draft_{timestamp}_{safe_name}.md"
-        
-        with open(output_file, "w", encoding="utf-8") as f:
+        # Ensure parent dir exists
+        output_file_path.parent.mkdir(exist_ok=True, parents=True)
+
+        with open(output_file_path, "w", encoding="utf-8") as f:
             f.write(result)
             
-        print(f"\n✅ Spec Draft Saved: {output_file}")
+        print(f"\n✅ Spec Saved: {output_file_path}")
         print("="*60)
         print(result[:1000] + "\n..." if len(result) > 1000 else result)
         print("="*60)
@@ -338,6 +346,7 @@ def main():
     spec_parser.add_argument("instruction", help="Instruction for the spec writer")
     spec_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
     spec_parser.add_argument("--audit", "-a", help="Path to Pre-flight Audit report to inject as context")
+    spec_parser.add_argument("--output", "-o", help="Specific output file path")
 
     # Git Operator
     git_parser = subparsers.add_parser("git", help="Generate git commands")
