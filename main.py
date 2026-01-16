@@ -13,6 +13,7 @@ from simulation.ai.firm_ai import FirmAI
 from simulation.engine import Simulation
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.state_builder import StateBuilder
+from modules.common.config_manager.api import ConfigManager as RealConfigManager
 from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from simulation.decisions.ai_driven_household_engine import (
@@ -73,8 +74,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     repository = SimulationRepository()
     repository.clear_all_data()  # Clear existing data for a clean start
 
+    config_manager = RealConfigManager()
     state_builder = StateBuilder()
-    action_proposal_engine = ActionProposalEngine(config_module=config)
+    action_proposal_engine = ActionProposalEngine(config_module=config, config_manager=config_manager)
     ai_trainer = AIEngineRegistry(
         action_proposal_engine=action_proposal_engine, state_builder=state_builder
     )

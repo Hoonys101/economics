@@ -7,3 +7,7 @@ chaos_events:
   - tick: 600
     type: "recession_shock"
     value: 0.5
+simulation:
+  consumables:
+    - "basic_food"
+    - "luxury_food"
