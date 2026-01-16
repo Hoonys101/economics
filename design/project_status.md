@@ -12,9 +12,12 @@
     - `Phase 23: The Great Expansion` ✅
     - `Phase 24: Adaptive Intelligence & Evolution` ✅
     - `Phase 25: The Financial Superstructure (Stock Market)` ✅
+    - `Phase- [DONE] **WO-073**: Finance System Double-Entry & Atomicity Refactor (Implemented Protocol-based _transfer)`
 - **현재 단계:** `Phase 26.5: Sovereign Debt & Corporate Credit` ✅
     - Step 1: `modules/finance` Scaffolding (Bond/Loan/Solvency) ✅ (Merged)
     - Step 2: Zero-Sum Validation & Testing ✅ (All Money Leaks Fixed)
+- [ACTIVE] **WO-076**: Household God Class SoC - Demographics Extraction (Planning Stage)
+- [PENDING] **WO-077**: Config Automation & Stress Test Threshold Migration
 
 ---
 

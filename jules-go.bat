@@ -38,14 +38,22 @@ echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: WO-073 (Finance Refactor) - Action: CREATE NEW SESSION
-:: 복식부기 리팩토링 및 버그 수정 착수
-python scripts/jules_bridge.py create "WO-073 Finance Double-Entry Refactor" "Mission: Execute the Critical Refactoring defined in `design/work_orders/WO-073_Finance_Refactor.md`. Use the detailed spec at `design/gemini_output/double_entry_refactor_spec.md`. Goal: Enforce Double-Entry Bookkeeping in `modules/finance/system.py` to fix QE and Bailout money leaks." > communications\jules_logs\last_run.md 2>&1
+:: Target: WO-073 (Finance Refactor) - Action: FIX ATOMICITY BUG
+set SESSION_ID=11970536560282331303
+set TARGET=WO-073 (Atomicity)
+set MISSION="CRITICAL BUG FOUND: 'Money Duplication' due to lack of atomicity in `_transfer`. Current implementation allows creditor to receive full amount even if debtor's withdraw() is capped by max(0, ...). TASK: 1) Update `IFinancialEntity.withdraw` to raise an `InsufficientFundsError` if funds are insufficient. 2) Refactor `_transfer` to use a try-except block: only call .deposit() if .withdraw() succeeds without error. 3) Ensure consistency across all entities (Bank, Firm, Gov). This is the final step to guarantee monetary integrity."
+
+:: 1. Send Message to Jules
+python scripts/jules_bridge.py send-message %SESSION_ID% %MISSION% > communications\jules_logs\last_run.md 2>&1
+
+:: 2. Auto-Record to Session Ledger (Append mode)
+:: Windows %DATE% variable usage (Locale dependent, but works for logging)
+echo ^| %DATE% ^| %SESSION_ID% ^| %TARGET% ^| %MISSION% ^| >> design\SESSION_LEDGER.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.
 ) else (
-    echo [SUCCESS] Command executed. Output:
+    echo [SUCCESS] Atomic transfer instruction sent and recorded.
     type communications\jules_logs\last_run.md
 )
 endlocal

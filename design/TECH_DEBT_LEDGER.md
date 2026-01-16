@@ -26,6 +26,9 @@
 | TD-040 | 2026-01-15 | Fiscal Cliff Risk | Government spends money before confirming bond issuance | Potential for un-funded spending | **RESOLVED** (WO-072) |
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
 | TD-042 | 2026-01-15 | Incomplete Test Suite | Major new `FinanceSystem` lacks dedicated unit tests | High risk of un-caught regressions | **RESOLVED** (WO-072) |
+| TD-043 | 2026-01-16 | God Class: `Simulation` in `engine.py` | Decompose into specialized managers (Lifecycle, Initializer) | SoC Violation, maintenance risk | **DEFERRED** (Phase 27+) |
+| TD-044 | 2026-01-16 | God Class: `Household` in `core_agents.py` | Refactor into components (Demographics, Economy, Labor) | Tightly coupled state/logic | **DEFERRED** (Phase 27+) |
+| TD-045 | 2026-01-16 | God Class: `Firm` in `firms.py` | Deepen departmentalization (Production, Sales) | Production/Finance coupling | **DEFERRED** (Phase 27+) |
 
 ---
 

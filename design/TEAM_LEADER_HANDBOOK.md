@@ -60,7 +60,9 @@ THEN 도구: .\gemini-go.bat
 ```
 IF 구현 작업 위임 필요
 THEN 도구: .\jules-go.bat
+     기능: 발주 시 전달한 <핵심 미션 텍스트>를 기록 관리
      출력: communications/jules_logs/last_run.md
+     기록: design/SESSION_LEDGER.md 에 세션 ID와 미션 전문 기록
      참조: design/work_orders/WO-XXX.md 먼저 작성
 ```
 
@@ -73,6 +75,16 @@ THEN 도구: .\git-go.bat <브랜치명>
        2. Diff 생성 -> git-review 워커(보안/정합성 분석) 실행
      출력: design/gemini_output/pr_review_<브랜치>.md
      후속: 테스트 실행 → 병합 → 세션 완료 처리
+```
+
+### PR 리젝 및 보완 지시 시 (W-4)
+```
+IF 리뷰 결과가 부적합(REQUEST CHANGES)하거나 보완이 필요한 경우
+THEN 1. 근거 확인: pr_review_*.md 또는 audit_*.md 보고서의 핵심 지적사항 파악
+     2. 구체적 지시: 단순히 "수정바람"이 아닌, 보고서를 근거로 상세 기술 지침 하달
+        - 예: "보고서의 가독성 저하 지적에 따라, X 클래스를 Protocol 기반 인터페이스로 분리하라."
+        - 예: "Pseudo-code Z를 참고하여 _transfer 메서드의 타입 체크 로직을 개선하라."
+     3. 위임 도구: .\jules-go.bat 을 통해 보완 명령(send-message) 전달
 ```
 
 ### 기술부채 발생 시
@@ -100,6 +112,7 @@ THEN 작성: design/HANDOVER_<날짜>.md
 | `gemini-go.bat` | Spec/기획 | 파일 상단 주석 참조 |
 | `jules-go.bat` | 요원 통신 | 파일 상단 주석 참조 |
 | `git-go.bat` | PR 분석 | 파일 상단 주석 참조 |
+| `harvest-go.bat` | 보고서 수집 | 원격 브랜치의 새 보고서 자동 수령 |
 
 ---
 

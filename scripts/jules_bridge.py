@@ -292,11 +292,14 @@ def _save_registry(data: Dict):
     with open(REGISTRY_PATH, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-def register_session(session_id: str, title: str):
-    """새 세션을 레지스트리에 등록"""
+def register_session(session_id: str, title: str, prompt: str = ""):
+    """새 세션을 레지스트리에 등록 (초기 미션 포함)"""
     registry = _load_registry()
     registry.setdefault("antigravity", {}).setdefault("active_sessions", {})
-    registry["antigravity"]["active_sessions"][session_id] = title
+    registry["antigravity"]["active_sessions"][session_id] = {
+        "title": title,
+        "initial_mission": prompt
+    }
     _save_registry(registry)
     logger.info(f"Session registered: {session_id} - {title}")
 
@@ -305,9 +308,15 @@ def complete_session(session_id: str):
     registry = _load_registry()
     sessions = registry.get("antigravity", {}).get("active_sessions", {})
     if session_id in sessions:
-        current_title = sessions[session_id]
-        if "(COMPLETED)" not in current_title:
-            sessions[session_id] = f"{current_title} (COMPLETED)"
+        entry = sessions[session_id]
+        if isinstance(entry, dict):
+            current_title = entry["title"]
+            if "(COMPLETED)" not in current_title:
+                entry["title"] = f"{current_title} (COMPLETED)"
+        else:
+            # Legacy support
+            if "(COMPLETED)" not in entry:
+                sessions[session_id] = f"{entry} (COMPLETED)"
         _save_registry(registry)
         logger.info(f"Session completed: {session_id}")
 
@@ -425,10 +434,10 @@ if __name__ == "__main__":
         bridge.sync_git(title)
         
         session = bridge.create_session(prompt=prompt, title=title)
-        register_session(session.id, title)  # 자동 등록
+        register_session(session.id, title, prompt)  # 자동 등록 (Prompt 포함)
         print(f"✅ Session created: {session.id}")
         print(f"✅ Name: {session.name}")
-        print(f"✅ Registered to team_assignments.json")
+        print(f"✅ Registered to team_assignments.json with initial mission")
 
     elif command == "sync-git" and len(sys.argv) >= 3:
         title = sys.argv[2]
@@ -532,7 +541,8 @@ if __name__ == "__main__":
     elif command == "my-sessions":
         sessions = get_my_sessions()
         print(f"\n🗂️ Active Sessions ({len(sessions)}):")
-        for sid, title in sessions.items():
+        for sid, entry in sessions.items():
+            title = entry["title"] if isinstance(entry, dict) else entry
             if "(COMPLETED)" in title:
                 print(f"   ✅ {sid}: {title}")
             else:
