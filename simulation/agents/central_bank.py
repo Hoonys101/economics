@@ -152,3 +152,13 @@ class CentralBank:
                 "tags": ["central_bank", "policy"]
             }
         )
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the central bank's cash reserves."""
+        if amount > 0:
+            self.assets['cash'] = self.assets.get('cash', 0) + amount
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the central bank's cash reserves."""
+        if amount > 0:
+            self.assets['cash'] = self.assets.get('cash', 0) - amount

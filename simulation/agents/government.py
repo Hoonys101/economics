@@ -519,3 +519,13 @@ class Government:
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
         self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the government's assets."""
+        if amount > 0:
+            self.assets += amount
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the government's assets."""
+        if amount > 0:
+            self.assets -= amount

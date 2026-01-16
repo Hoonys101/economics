@@ -39,3 +39,14 @@ class IFinanceSystem(Protocol):
     def service_debt(self, current_tick: int) -> None:
         """Manages the servicing of outstanding government debt."""
         ...
+
+class IFinancialEntity(Protocol):
+    """Protocol for any entity that can hold and transfer funds."""
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the entity's account."""
+        ...
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the entity's account."""
+        ...

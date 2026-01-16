@@ -10,6 +10,8 @@ class MockGovernment:
         self.assets = initial_assets
     def get_debt_to_gdp_ratio(self):
         return 0.5
+    def deposit(self, amount): self.assets += amount
+    def withdraw(self, amount): self.assets -= amount
 
 class MockCentralBank:
     def __init__(self, initial_cash):
@@ -18,10 +20,14 @@ class MockCentralBank:
         return 0.01
     def purchase_bonds(self, bond):
         self.assets["bonds"].append(bond)
+    def deposit(self, amount): self.assets['cash'] += amount
+    def withdraw(self, amount): self.assets['cash'] -= amount
 
 class MockBank:
     def __init__(self, initial_assets):
         self.assets = initial_assets
+    def deposit(self, amount): self.assets += amount
+    def withdraw(self, amount): self.assets -= amount
 
 class MockFirm:
     def __init__(self, id, initial_cash_reserve):
@@ -30,6 +36,8 @@ class MockFirm:
         # Mock the finance component of the firm
         self.finance = MagicMock()
         self.has_bailout_loan = False
+    def deposit(self, amount): self.cash_reserve += amount
+    def withdraw(self, amount): self.cash_reserve -= amount
 
 class MockConfig:
     QE_INTERVENTION_YIELD_THRESHOLD = 0.05

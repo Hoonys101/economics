@@ -26,6 +26,8 @@ class StubGovernment:
         self.debt_to_gdp_ratio = 0.5
     def get_debt_to_gdp_ratio(self):
         return self.debt_to_gdp_ratio
+    def deposit(self, amount): self.assets += amount
+    def withdraw(self, amount): self.assets -= amount
 
 class StubCentralBank:
     def __init__(self, cash=50000.0):
@@ -35,10 +37,14 @@ class StubCentralBank:
         return self.base_rate
     def purchase_bonds(self, bond):
         self.assets['bonds'].append(bond)
+    def deposit(self, amount): self.assets['cash'] += amount
+    def withdraw(self, amount): self.assets['cash'] -= amount
 
 class StubBank:
     def __init__(self, assets=100000.0):
         self.assets = assets
+    def deposit(self, amount): self.assets += amount
+    def withdraw(self, amount): self.assets -= amount
 
 @pytest.fixture
 def mock_government():
@@ -67,6 +73,8 @@ class StubFirm:
         self.finance = MagicMock()
         self.finance.calculate_altman_z_score.return_value = 2.0
         self.has_bailout_loan = False
+    def deposit(self, amount): self.cash_reserve += amount
+    def withdraw(self, amount): self.cash_reserve -= amount
 
 @pytest.fixture
 def mock_firm():

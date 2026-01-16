@@ -1,5 +1,5 @@
 from typing import List, Dict
-from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO
+from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, IFinancialEntity
 # Forward reference for type hinting
 from simulation.firms import Firm
 
@@ -108,10 +108,10 @@ class FinanceSystem(IFinanceSystem):
         return loan
 
 
-    def _transfer(self, debtor: any, creditor: any, amount: float) -> None:
+    def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float) -> None:
         """
-        Handles the movement of funds between two entities, ensuring double-entry.
-        This is a private helper method.
+        Handles the movement of funds between two entities using the IFinancialEntity protocol,
+        ensuring double-entry bookkeeping.
 
         Args:
             debtor: The entity from which money is withdrawn.
@@ -121,25 +121,8 @@ class FinanceSystem(IFinanceSystem):
         if amount <= 0:
             return
 
-        # --- Debtor (Debit) ---
-        if hasattr(debtor, 'assets') and isinstance(debtor.assets, dict): # CentralBank
-             debtor.assets['cash'] = debtor.assets.get('cash', 0) - amount
-        elif hasattr(debtor, 'cash_reserve'): # Firm
-            debtor.cash_reserve -= amount
-        elif hasattr(debtor, 'assets'): # Government, Bank
-            debtor.assets -= amount
-        else:
-            raise TypeError(f"Unsupported debtor type: {type(debtor)}")
-
-        # --- Creditor (Credit) ---
-        if hasattr(creditor, 'assets') and isinstance(creditor.assets, dict): # CentralBank
-             creditor.assets['cash'] = creditor.assets.get('cash', 0) + amount
-        elif hasattr(creditor, 'cash_reserve'): # Firm
-            creditor.cash_reserve += amount
-        elif hasattr(creditor, 'assets'): # Government, Bank
-            creditor.assets += amount
-        else:
-            raise TypeError(f"Unsupported creditor type: {type(creditor)}")
+        debtor.withdraw(amount)
+        creditor.deposit(amount)
 
     def service_debt(self, current_tick: int) -> None:
         """

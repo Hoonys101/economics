@@ -858,3 +858,13 @@ class Firm(BaseAgent):
         Distribute surplus cash to owner if reserves are met.
         """
         return self.finance.distribute_profit_private(agents, current_time)
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the firm's cash reserves."""
+        if amount > 0:
+            self.cash_reserve += amount
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the firm's cash reserves."""
+        if amount > 0:
+            self.cash_reserve -= amount
