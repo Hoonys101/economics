@@ -1,22 +1,13 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {
-      "5283327958326335498": "TD-024: Post-Fix Test Stabilization",
-      "12543922642187456551": {
-        "title": "TD-045: Firm God Class Refactoring",
-        "initial_mission": "REFACTOR `simulation/firms.py` following `design/gemini_output/firm_soc_spec.md`. ..."
-      },
-      "4889257989211040620": {
-        "title": "TD-044: Household God Class Refactoring",
-        "initial_mission": "REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. ..."
-      },
-      "2244231495852370011": {
-        "title": "WO-079_Config_Automation_v2",
-        "initial_mission": "Implement WO-079 v2: High-reliability Config Automation. MISSION: 1. Create 'modules/common/config_manager/impl.py' based on the spec. 2. Ensure NO circular dependencies (Leaf Node). 3. Implement Hybrid loading (YAML with legacy config.py fallbacks). 4. MANDATORY: Verify that existing tests still pass by providing the 'set_value_for_test' interface. TARGET_SPEC: 'design/specs/WO-079_Config_Automation_v2.md'. WORK_ORDER: 'design/work_orders/WO-079_Config_Automation_v2.md'."
-      }
-    },
+    "active_sessions": {},
     "completed_sessions": {
+      "14826170066369985962": "TD-008 Finance Upgrade - MERGED 2026-01-16",
+      "2244231495852370011": "WO-079 Config Automation v2 - MERGED 2026-01-16",
+      "12543922642187456551": "TD-045 Firm God Class - COMPLETED 2026-01-16",
+      "4889257989211040620": "TD-044 Household God Class - COMPLETED 2026-01-16",
+      "5283327958326335498": "TD-024 Post-Fix Test - COMPLETED 2026-01-16",
       "8465436477342866436": "WO-037 Simulation Cockpit - MERGED 2026-01-16",
       "15007179683109829611": "WO-060 - MERGED 2026-01-15",
       "7095675393629273222": "WO-064: Banking Credit Engine - MERGED 2026-01-15",

@@ -18,6 +18,7 @@ class BaseGeminiWorker(ABC):
     """
     def __init__(self, manual_filename: str):
         self.manual_path = MANUALS_DIR / manual_filename
+        self.model = None # Default model
         if not self.manual_path.exists():
             raise FileNotFoundError(f"❌ Manual not found: {self.manual_path}")
         
@@ -75,8 +76,12 @@ class BaseGeminiWorker(ABC):
         print(f"🚀 [GeminiWorker] Running task with manual: {manual_to_use.name}")
         
         try:
+            cmd = ["gemini"]
+            if hasattr(self, 'model') and self.model:
+                cmd.extend(["--model", self.model])
+            
             process = subprocess.run(
-                ["gemini"], 
+                cmd, 
                 input=full_input, 
                 text=True, 
                 capture_output=True, 
@@ -352,7 +357,9 @@ def main():
     spec_parser.add_argument("instruction", help="Instruction for the spec writer")
     spec_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
     spec_parser.add_argument("--audit", "-a", help="Path to Pre-flight Audit report to inject as context")
+
     spec_parser.add_argument("--output", "-o", help="Specific output file path")
+    spec_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
 
     # Git Operator
     git_parser = subparsers.add_parser("git", help="Generate git commands")
@@ -403,6 +410,12 @@ def main():
         
         if args.worker_type in worker_map:
             worker = worker_map[args.worker_type]()
+
+            
+            # Inject model if specified
+            if getattr(args, 'model', None):
+                worker.model = args.model
+                
             worker.execute(
                 args.instruction, 
                 context_files=getattr(args, 'context', None),

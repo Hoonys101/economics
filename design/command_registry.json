@@ -1,7 +1,7 @@
 {
   "gemini": {
-    "worker": "analysis",
-    "instruction": "Analyze the codebase to prepare for Phase 28 (Macro-Stability Stress Testing). TASKS: 1. Identify all configurable economic variables in 'simulation/config.py' and 'modules/common/config_manager'. 2. Propose 3 stress scenarios: 'Hyperinflation' (High Demand/Low Supply), 'Deflationary Spiral' (Low Demand/Hoarding), and 'Supply Shock' (Productivity Collapse). 3. Map which Agent behaviors (e.g., 'price_sensitivity', 'panic_selling') need to be parameterized for these tests. OUTPUT: 'design/gemini_output/analysis_phase28_stress_scenarios.md'.",
+    "worker": "spec",
+    "instruction": "Analyze the codebase to prepare for Phase 28 (Macro-Stability Stress Testing). TASKS: 1. Identify all configurable economic variables in 'simulation/config.py' and 'modules/common/config_manager'. 2. Propose 3 stress scenarios: 'Hyperinflation' (High Demand/Low Supply), 'Deflationary Spiral' (Low Demand/Hoarding), and 'Supply Shock' (Productivity Collapse). 3. Map which Agent behaviors (e.g., 'price_sensitivity', 'panic_selling') need to be parameterized for these tests. IMPORTANT: Do NOT try to use any tools (like write_file). Just OUTPUT the raw markdown content directly. The system will save it for you. OUTPUT: 'design/gemini_output/analysis_phase28_stress_scenarios.md'.",
     "context": [
       "simulation/config.py",
       "simulation/engine.py",
@@ -9,13 +9,14 @@
       "modules/finance/system.py"
     ],
     "output": "design/gemini_output/analysis_phase28_stress_scenarios.md",
-    "audit": ""
+    "audit": "",
+    "model": "pro"
   },
   "jules": {
     "command": "create",
     "session_id": "",
-    "title": "TD-008_Finance_Upgrade",
-    "instruction": "Implement TD-008: Finance System Upgrade. TASKS: 1. Create 'BailoutCovenant' dataclass in api.py. 2. Update BailoutLoanDTO.covenants type from Dict to BailoutCovenant. 3. Modify grant_bailout_loan to use new class. 4. Add Google-style docstrings to calculate_altman_z_score and evaluate_solvency. 5. Create tests/test_finance_bailout.py with covenant type check, money flow verification, and regression tests. TARGET_FILES: modules/finance/api.py, modules/finance/system.py, simulation/components/finance_department.py. SPEC: design/specs/TD-008_Finance_Upgrade_Spec.md. CONSTRAINTS: Do NOT touch Frontend files.",
+    "title": "ActionProposal_Config_Refactor",
+    "instruction": "Refactor ActionProposalEngine config loading. TASKS: 1. Modify `simulation/decisions/action_proposal.py` to inject `ConfigManager` in `__init__` and replace hardcoded goods list with `self.config_manager.get('simulation.consumables')`. 2. Update `simulation/initialization/initializer.py` to pass `config_manager` to `ActionProposalEngine`. 3. Update `config/simulation.yaml` to add `consumables: ['basic_food', 'luxury_food']` (Correcting 'food' to 'basic_food'). 4. Create `tests/simulation/test_action_proposal.py` to verify config loading with a mock ConfigManager. REFERENCE: implementation_plan.md.",
     "file": "",
     "wait": true
   },
@@ -24,7 +25,7 @@
     "instruction": "Analyze this PR. Check implementation completeness, test coverage, SoC compliance, and potential regressions."
   },
   "merge": {
-    "branch": ""
+    "branch": "feature/TD-008-finance-system-upgrade-14826170066369985962"
   },
   "harvest": {
     "note": "Report Harvester takes no direct arguments in JSON usually."

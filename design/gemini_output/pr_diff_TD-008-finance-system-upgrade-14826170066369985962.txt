@@ -1,0 +1,288 @@
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 711229f..eb594d2 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -13,13 +13,22 @@ class BondDTO:
+     yield_rate: float
+     maturity_date: int
+ 
++from dataclasses import dataclass
++
++@dataclass
++class BailoutCovenant:
++    """Defines the restrictive conditions attached to a bailout loan."""
++    dividends_allowed: bool
++    executive_salary_freeze: bool
++    mandatory_repayment: float # Ratio of profit to be repaid
++
+ @dataclass
+ class BailoutLoanDTO:
+     """Data Transfer Object for corporate bailout loans."""
+     firm_id: int
+     amount: float
+     interest_rate: float
+-    covenants: Dict[str, bool]
++    covenants: BailoutCovenant
+ 
+ class IFinanceSystem(Protocol):
+     """Interface for the sovereign debt and corporate bailout system."""
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index bdd335e..eba2ad2 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -1,6 +1,6 @@
+ from typing import List, Dict, Optional
+ import logging
+-from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, IFinancialEntity, InsufficientFundsError
++from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
+ # Forward reference for type hinting
+ from simulation.firms import Firm
+ 
+@@ -17,10 +17,25 @@ class FinanceSystem(IFinanceSystem):
+         self.outstanding_bonds: List[BondDTO] = []
+ 
+     def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+-        """
+-        Evaluates a firm's solvency to determine bailout eligibility.
+-        - Startups (< 24 ticks old) are checked for a 3-month wage runway.
+-        - Established firms are evaluated using the Altman Z-Score.
++        """Evaluates a firm's solvency to determine bailout eligibility.
++
++        This method uses two distinct evaluation paths based on the firm's age:
++        1.  **Startup Runway Check**: For new firms still within their grace period
++            (defined by `STARTUP_GRACE_PERIOD_TICKS` from the config), solvency
++            is determined by their cash runway. The check ensures they have enough
++            cash reserves to cover their wage bill for a defined period (e.g., 3 months).
++        2.  **Altman Z-Score**: For established firms beyond the grace period,
++            solvency is assessed using the Altman Z-Score, a more comprehensive
++            financial health metric. A score above the `ALTMAN_Z_SCORE_THRESHOLD`
++            (from the config) is considered solvent.
++
++        Args:
++            firm: The firm entity to be evaluated.
++            current_tick: The current simulation tick, used for age calculation.
++
++        Returns:
++            True if the firm is deemed solvent and thus ineligible for a bailout,
++            False otherwise.
+         """
+         startup_grace_period = getattr(self.config_module, "STARTUP_GRACE_PERIOD_TICKS", 24)
+         z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
+@@ -93,15 +108,16 @@ class FinanceSystem(IFinanceSystem):
+         base_rate = self.central_bank.get_base_rate()
+         penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
+ 
++        covenants = BailoutCovenant(
++            dividends_allowed=False,
++            executive_salary_freeze=True,
++            mandatory_repayment=getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
++        )
+         loan = BailoutLoanDTO(
+             firm_id=firm.id,
+             amount=amount,
+             interest_rate=base_rate + penalty_premium,
+-            covenants={
+-                "dividends_allowed": False,
+-                "executive_salary_freeze": True,
+-                "mandatory_repayment": getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+-            }
++            covenants=covenants
+         )
+ 
+         # Transfer funds from Government to the firm
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index b794c28..ef73f9c 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -208,12 +208,28 @@ class FinanceDepartment:
+         self.firm.total_debt += amount
+ 
+     def calculate_altman_z_score(self) -> float:
+-        """
+-        Calculates the Altman Z-Score for solvency, simplified for this model.
++        """Calculates the Altman Z-Score for solvency, simplified for this model.
++
++        The formula used is a modified version for non-manufacturing or service companies:
+         Z = 1.2*X1 + 1.4*X2 + 3.3*X3
+-        X1: Working Capital / Total Assets
+-        X2: Retained Earnings / Total Assets
+-        X3: Average Profit / Total Assets
++
++        Where:
++            X1 (Working Capital / Total Assets): Measures liquid assets in relation
++               to the size of the company. A firm with significant working capital
++               is less likely to face immediate financial distress.
++               - Working Capital = Firm's cash reserves - total debt.
++               - Total Assets = Cash + Capital Stock + Inventory Value.
++            X2 (Retained Earnings / Total Assets): Measures cumulative profitability.
++               A higher value indicates a history of reinvesting profits,
++               strengthening the company's financial foundation.
++            X3 (Average Profit / Total Assets): Measures recent operational efficiency.
++               Uses a moving average of profit to gauge how effectively the firm
++               is generating earnings from its assets.
++
++        Returns:
++            The calculated Z-Score. A score below 1.81 typically indicates a firm
++            is heading for bankruptcy, while a score above 3.0 suggests a healthy
++            financial position.
+         """
+         total_assets = self.firm.assets + self.firm.capital_stock + self.firm.get_inventory_value()
+         if total_assets == 0:
+diff --git a/tests/modules/finance/test_system.py b/tests/modules/finance/test_system.py
+index 17309c7..9249e79 100644
+--- a/tests/modules/finance/test_system.py
++++ b/tests/modules/finance/test_system.py
+@@ -162,7 +162,7 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
+     loan = finance_system.grant_bailout_loan(mock_firm, amount)
+     assert loan.firm_id == mock_firm.id
+     assert loan.amount == amount
+-    assert loan.covenants["mandatory_repayment"] == mock_config.BAILOUT_REPAYMENT_RATIO
++    assert loan.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
+     assert mock_government.assets == initial_gov_assets - amount
+     assert mock_firm.cash_reserve == initial_firm_cash + amount
+     mock_firm.finance.add_liability.assert_called_once_with(amount, loan.interest_rate)
+diff --git a/tests/test_finance_bailout.py b/tests/test_finance_bailout.py
+new file mode 100644
+index 0000000..702df77
+--- /dev/null
++++ b/tests/test_finance_bailout.py
+@@ -0,0 +1,139 @@
++import pytest
++from unittest.mock import Mock, MagicMock
++
++from modules.finance.api import BailoutCovenant, BailoutLoanDTO, InsufficientFundsError
++from modules.finance.system import FinanceSystem
++
++# A simple stub class for config attributes
++class MockConfig:
++    BAILOUT_PENALTY_PREMIUM = 0.05
++    BAILOUT_REPAYMENT_RATIO = 0.5
++
++@pytest.fixture
++def finance_test_environment():
++    """Sets up a test environment with mocked financial entities."""
++    mock_government = Mock()
++    mock_government.assets = 1_000_000  # Starting with 1M in assets
++
++    # We need to mock the withdraw/deposit methods to simulate transactions
++    def withdraw(amount):
++        if mock_government.assets >= amount:
++            mock_government.assets -= amount
++        else:
++            raise InsufficientFundsError("Not enough assets.")
++    def deposit(amount):
++        mock_government.assets += amount
++
++    mock_government.withdraw.side_effect = withdraw
++    mock_government.deposit.side_effect = deposit
++
++    mock_central_bank = Mock()
++    mock_central_bank.get_base_rate.return_value = 0.02
++
++    mock_bank = Mock()
++
++    # Mock the Firm and its departments
++    mock_firm = Mock()
++    mock_firm.id = 1
++    mock_firm.assets = 100_000
++    mock_firm.total_debt = 0.0
++    mock_firm.has_bailout_loan = False
++
++    # Mock the finance department and its add_liability method
++    mock_firm.finance = Mock()
++
++    def add_liability_side_effect(amount, interest_rate):
++        # Simulate the firm receiving cash and taking on debt
++        mock_firm.assets += amount
++        mock_firm.total_debt += amount
++
++    mock_firm.finance.add_liability.side_effect = add_liability_side_effect
++
++    # We need a deposit method on the firm for the _transfer to work
++    def firm_deposit(amount):
++        # This is separate from add_liability; it just handles the cash transfer part.
++        # The liability logic is handled in the mocked add_liability.
++        pass # In the real code, add_liability handles the asset increase.
++             # In our mock, the side_effect for add_liability handles it, so we do nothing here.
++
++    mock_firm.deposit.side_effect = firm_deposit
++
++
++    config = MockConfig()
++
++    # Instantiate the system with mocks
++    finance_system = FinanceSystem(mock_government, mock_central_bank, mock_bank, config)
++
++    return finance_system, mock_government, mock_firm
++
++def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
++    """
++    Tests that a bailout loan is granted successfully, all money flows are correct,
++    and the returned DTO has the correct covenant type.
++    """
++    finance_system, mock_government, mock_firm = finance_test_environment
++    initial_govt_assets = mock_government.assets
++    initial_firm_assets = mock_firm.assets
++    initial_firm_debt = mock_firm.total_debt
++    loan_amount = 50_000
++
++    # Act
++    loan_dto = finance_system.grant_bailout_loan(mock_firm, loan_amount)
++
++    # Assert - DTO and Covenant Type
++    assert loan_dto is not None
++    assert isinstance(loan_dto, BailoutLoanDTO)
++    assert isinstance(loan_dto.covenants, BailoutCovenant)
++    assert loan_dto.covenants.dividends_allowed is False
++    assert loan_dto.covenants.mandatory_repayment == 0.5
++
++    # Assert - Money Flow Verification
++    # 1. Government assets should decrease
++    assert mock_government.assets == initial_govt_assets - loan_amount
++    # 2. Firm should have received the funds and taken on the liability
++    mock_firm.finance.add_liability.assert_called_once()
++    # 3. Verify firm's final state
++    assert mock_firm.assets == initial_firm_assets + loan_amount
++    assert mock_firm.total_debt == initial_firm_debt + loan_amount
++    # 4. Firm should be marked as having a bailout loan
++    assert mock_firm.has_bailout_loan is True
++
++    # Assert - Regression check for money creation/destruction
++    final_total_assets = mock_government.assets + mock_firm.assets
++    initial_total_assets = initial_govt_assets + initial_firm_assets
++    assert final_total_assets == initial_total_assets
++
++
++def test_grant_bailout_loan_insufficient_government_funds(finance_test_environment):
++    """
++    Tests that the bailout loan is not granted if the government has insufficient funds.
++    """
++    finance_system, mock_government, mock_firm = finance_test_environment
++
++    # Arrange: Government has less money than the loan amount
++    loan_amount = 2_000_000
++    mock_government.assets = 1_000_000 # Government has 1M, loan is 2M
++
++    initial_govt_assets = mock_government.assets
++    initial_firm_assets = mock_firm.assets
++    initial_firm_debt = mock_firm.total_debt
++
++    # Redefine the side effect for this specific test case to raise the error
++    def limited_withdraw(amount):
++        if mock_government.assets < amount:
++            raise InsufficientFundsError("Test: Not enough funds")
++        mock_government.assets -= amount
++    mock_government.withdraw.side_effect = limited_withdraw
++
++    # Act
++    loan_dto = finance_system.grant_bailout_loan(mock_firm, loan_amount)
++
++    # Assert
++    # 1. No loan DTO should be returned
++    assert loan_dto is None
++    # 2. No money should have moved
++    assert mock_government.assets == initial_govt_assets
++    assert mock_firm.assets == initial_firm_assets
++    assert mock_firm.total_debt == initial_firm_debt
++    # 3. Firm should not be marked as having a loan
++    assert mock_firm.has_bailout_loan is False

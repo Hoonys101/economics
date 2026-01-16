@@ -20,8 +20,8 @@
     - **TD-046**: Hardcoded Constants Migration ✅
     
 - **현재 단계:** `Phase 27: Architecture Consolidation`
-    - **TD-008**: Advanced Finance System (Altman Z-Score) 📋 (Spec Ready)
-    - **Phase 28**: Macro-Stability Stress Testing 🚀 (Next)
+    - **TD-008**: Advanced Finance System (Altman Z-Score) ✅
+    - **Phase 28**: Macro-Stability Stress Testing 📋 (Analysis Done)
 
 ---
 

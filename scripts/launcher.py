@@ -34,7 +34,9 @@ def run_gemini(args, registry):
     instruction = data.get("instruction", "")
     context = data.get("context", [])
     output = data.get("output", "")
+    output = data.get("output", "")
     audit = data.get("audit", "")
+    model = data.get("model", "")
 
     cmd = [sys.executable, str(BASE_DIR / "scripts" / "gemini_worker.py"), worker, instruction]
     if context:
@@ -43,6 +45,8 @@ def run_gemini(args, registry):
         cmd.extend(["-o", output])
     if audit:
         cmd.extend(["-a", audit])
+    if model:
+        cmd.extend(["--model", model])
     
     run_command(cmd)
 
