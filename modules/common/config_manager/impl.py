@@ -46,3 +46,6 @@ class ConfigManagerImpl(ConfigManager):
         for part in parts[:-1]:
             node = node.setdefault(part, {})
         node[parts[-1]] = value
+
+    def __getattr__(self, name: str) -> Any:
+        return self.get(name)

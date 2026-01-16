@@ -80,7 +80,15 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         config_module=config,
     )
 
-    market_data = {"time": 1, "goods_data": goods_data}
+    market_data = {
+        "time": 1,
+        "goods_data": goods_data,
+        "goods_market": {
+             "food_current_sell_price": 10.0,
+             "basic_food_current_sell_price": 10.0,
+             "luxury_food_current_sell_price": 50.0,
+        }
+    }
     orders, _ = household.make_decision(markets, goods_data, market_data, 1)
 
     assert orders is not None
@@ -128,7 +136,11 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
     market_data = {
         "time": 1,
         "goods_data": goods_data,
-        "goods_market": markets["goods_market"],
+        "goods_market": {
+             "luxury_food_current_sell_price": 50.0,
+             "basic_food_current_sell_price": 10.0,
+             "food_current_sell_price": 10.0,
+        }
     }
     orders, chosen_tactic_tuple = household.make_decision(markets, goods_data, market_data, 1)
     chosen_tactic, _ = chosen_tactic_tuple

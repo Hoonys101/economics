@@ -25,7 +25,11 @@ class BaseAgent(ABC):
         self.logger = logger if logger is not None else logging.getLogger(self.name)
         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
-        self.generation: int = 0
+        try:
+            self.generation: int = 0
+        except AttributeError:
+            # If generation is a property (e.g. in Household), it cannot be set here.
+            pass
         
         # [Cleanup] Standardized Memory Structure
         self.memory: Dict[str, Any] = {}

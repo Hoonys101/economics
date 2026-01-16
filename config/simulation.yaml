@@ -1,5 +1,6 @@
 batch_save_interval: 50
 sma_buffer_window: 10
+household_consumable_goods: ["basic_food", "luxury_food"]
 chaos_events:
   - tick: 200
     type: "inflation_shock"

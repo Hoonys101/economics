@@ -7,6 +7,8 @@ from utils.logging_manager import (
     SamplingFilter,
 )  # Import the new setup function
 import config
+from pathlib import Path
+from modules.common.config_manager.impl import ConfigManagerImpl
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.ai.firm_ai import FirmAI
@@ -73,8 +75,11 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     repository = SimulationRepository()
     repository.clear_all_data()  # Clear existing data for a clean start
 
+    # Initialize ConfigManager
+    config_manager = ConfigManagerImpl(Path("config"), legacy_config=config)
+
     state_builder = StateBuilder()
-    action_proposal_engine = ActionProposalEngine(config_module=config)
+    action_proposal_engine = ActionProposalEngine(config_module=config_manager)
     ai_trainer = AIEngineRegistry(
         action_proposal_engine=action_proposal_engine, state_builder=state_builder
     )
@@ -165,7 +170,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
         # Instantiate HouseholdDecisionEngine with the HouseholdAI instance and config_module
         household_decision_engine = AIDrivenHouseholdDecisionEngine(
-            ai_engine=household_ai_instance, config_module=config
+            ai_engine=household_ai_instance, config_module=config_manager
         )
 
         # Generate Risk Aversion (0.1 ~ 10.0)
@@ -183,7 +188,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             decision_engine=household_decision_engine,
             value_orientation=value_orientation,
             personality=personality,
-            config_module=config,
+            config_module=config_manager,
             risk_aversion=risk_aversion,
             logger=main_logger,
         )
@@ -230,7 +235,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             learning_focus=config.AI_LEARNING_FOCUS,
         )
         firm_decision_engine = AIDrivenFirmDecisionEngine(
-            ai_engine=firm_ai_instance, config_module=config
+            ai_engine=firm_ai_instance, config_module=config_manager
         )
 
         # Create the Firm instance with specialization instead of production_targets
@@ -242,7 +247,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             productivity_factor=config.FIRM_PRODUCTIVITY_FACTOR,
             decision_engine=firm_decision_engine,
             value_orientation=firm_value_orientation,
-            config_module=config,
+            config_module=config_manager,
             logger=main_logger,
         )
 
@@ -303,6 +308,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
     # Use the new SimulationInitializer
     initializer = SimulationInitializer(
+        config_manager=config_manager,
         config_module=config,
         goods_data=goods_data,
         repository=repository,

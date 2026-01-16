@@ -110,10 +110,15 @@ class ActionProposalEngine:
             else:
                 # 상품 시장에서 상품 구매 주문
                 if agent.assets > 1:  # 최소한의 자산이 있을 때만 구매 시도
-                    available_goods = [
-                        "food",
-                        "luxury_food",
-                    ]  # TODO: 설정 파일에서 읽어오기
+                    # Read available goods from config with fallback
+                    if hasattr(self.config_module, "get"):
+                        available_goods = self.config_module.get(
+                            "simulation.household_consumable_goods",
+                            ["basic_food", "luxury_food"],
+                        )
+                    else:
+                        available_goods = ["basic_food", "luxury_food"]
+
                     good_to_trade = random.choice(available_goods)
 
                     # --- 개선된 구매 수량 로직 ---
