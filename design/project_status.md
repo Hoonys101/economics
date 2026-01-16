@@ -16,8 +16,9 @@
 - **현재 단계:** `Phase 26.5: Sovereign Debt & Corporate Credit` ✅
     - Step 1: `modules/finance` Scaffolding (Bond/Loan/Solvency) ✅ (Merged)
     - Step 2: Zero-Sum Validation & Testing ✅ (All Money Leaks Fixed)
-- [ACTIVE] **WO-076**: Household God Class SoC - Demographics Extraction (Planning Stage)
-- [PENDING] **WO-077**: Config Automation & Stress Test Threshold Migration
+- [DONE] **WO-076**: Household God Class SoC - Demographics Extraction (Merged)
+- [ACTIVE] **WO-077**: Config Automation & Stress Test Threshold Migration (Spec Ready)
+- [PLANNED] **TD-043**: Simulation God Class SoC - engine.py Refactor
 
 ---
 

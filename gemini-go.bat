@@ -30,9 +30,9 @@ echo [Gemini-CLI] Drafting Stress Test Config spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: W-1 Design - Config-driven Stress Test & Threshold Migration
-:: Task: Create Zero-Question Spec for TD-007
-python scripts/gemini_worker.py spec "Write a Zero-Question Implementation Spec for fixing TD-007 (Industrial Revolution Stress Test Config). GOAL: Identify all hardcoded 'magic numbers' related to economic thresholds (demand caps, supply floor, wage stickiness) across the simulation engine and move them to a centralized `config.py` structure. IMPLEMENTATION: 1) Propose a hierarchical Config Class structure. 2) Define a migration map for `simulation/engine.py` and `simulation/firms.py`. 3) Design a 'Stress Test Profile' loader that can override multiple config values at once for scenarios like the Industrial Revolution. Include: Config Schema, Migration Pseudo-code, and Scenario Loading Logic in Korean." -c config.py simulation/engine.py simulation/firms.py design/TECH_DEBT_LEDGER.md > design\gemini_output\stress_test_config_spec.md 2>&1
+:: Target: TD-043 (Simulation God Class) - Action: DESIGN SPEC
+set JOB_ID=TD-043_Simulation_SoC
+python scripts/gemini_worker.py spec "Analyze `simulation/engine.py` which has become a God Class. Write a Zero-Question Implementation Spec to refactor it by extracting `AgentLifecycleManager` (handling agent creation, death, aging) and `SimulationInitializer` (handling setup). Use Composition/DI. The spec must include updated class diagrams, data flow, and precise pythonic pseudo-code. TARGET: `design/gemini_output/simulation_soc_spec.md`" -c simulation/engine.py > design\gemini_output\simulation_soc_spec.md 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Gemini task execution failed. Check logs.

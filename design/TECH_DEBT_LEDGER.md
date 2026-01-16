@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|
 | TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **DEFERRED** |
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
-| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **DEFERRED** |
+| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **READY** (WO-077 Spec Done) |
 | TD-008 | 2026-01-14 | Primitive Valuation Logic in CPR | Implement Altman Z-Score solvency check | Inefficient CPR (Zombie Firms) | **DESIGNED** (P26.5) |
 | TD-009 | 2026-01-14 | CPR Bailouts are Unconditional Grants | Convert to Interest-bearing Loans/Bonds | Lack of Fiscal Consequence | **DESIGNED** (P26.5) |
 | TD-032 | 2026-01-15 | `FinanceSystem` QE Violation | Central Bank must only purchase bonds if yield > 10% | Monetary integrity compromised | **RESOLVED** (WO-072) |
@@ -27,7 +27,7 @@
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
 | TD-042 | 2026-01-15 | Incomplete Test Suite | Major new `FinanceSystem` lacks dedicated unit tests | High risk of un-caught regressions | **RESOLVED** (WO-072) |
 | TD-043 | 2026-01-16 | God Class: `Simulation` in `engine.py` | Decompose into specialized managers (Lifecycle, Initializer) | SoC Violation, maintenance risk | **DEFERRED** (Phase 27+) |
-| TD-044 | 2026-01-16 | God Class: `Household` in `core_agents.py` | Refactor into components (Demographics, Economy, Labor) | Tightly coupled state/logic | **DEFERRED** (Phase 27+) |
+| TD-044 | 2026-01-16 | God Class: `Household` in `core_agents.py` | Refactor into components (Demographics, Economy, Labor) | Tightly coupled state/logic | **IN PROGRESS** (Demographics Done) |
 | TD-045 | 2026-01-16 | God Class: `Firm` in `firms.py` | Deepen departmentalization (Production, Sales) | Production/Finance coupling | **DEFERRED** (Phase 27+) |
 
 ---
@@ -40,7 +40,7 @@
 | TD-030 | 2026-01-15 | 2026-01-15 | Missing Fractional Reserve System | Implemented Fractional Reserve & Credit Creation (WO-064) |
 | TD-010 | 2026-01-14 | 2026-01-15 | Government AI Sensory Lag | Implemented High-Fidelity Sensory Architecture (WO-066) |
 | TD-025 | 2026-01-14 | 2026-01-15 | Tracker Blindness & Infra Gap | Implemented LKP Fallback (WO-066) |
-| TD-031 | 2026-01-15 | 2026-01-15 | Systemic Money Leakage | Implemented Monetary Integrity & Suture (WO-065) |
+| TD-031 | 2026-01-15 | 2026-01-16 | Systemic Money Leakage in Finance | Implemented Atomic Protocol-based Transfer (WO-073) |
 | TD-028 | 2026-01-15 | 2026-01-15 | Bear Market Instruments | Marked Out of Scope (Wrong Project) |
 | TD-029 | 2026-01-15 | 2026-01-15 | Price Discovery | Marked Out of Scope (Wrong Project) |
 

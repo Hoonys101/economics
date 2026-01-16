@@ -1,0 +1,24 @@
+  origin/HEAD -> origin/main
+  origin/WO-073-finance-refactor-11970536560282331303
+  origin/chore/observer-daily-plan-2401130676649347005
+  origin/feat/WO-057-Refine-ShockTherapy-18029109563235706397
+  origin/feat/add-audit-report-phase-21-24-9363061901898935869
+  origin/feat/add-policy-reaction-verification-script-9719318674264407147
+  origin/feat/economic-cpr-bootstrapper-4444007150223365139
+  origin/feat/implement-shock-therapy-12388773851961283868
+  origin/feature/WO-057-Refine-ShockTherapy-3778947626343557354
+  origin/feature/WO-058-generational-wealth-audit-11673875313802732213
+  origin/feature/WO-060-stock-market-15007179683109829611
+  origin/feature/WO-065-monetary-integrity-10296031762289509515
+  origin/feature/banking-credit-engine-7095675393629273222
+  origin/feature/deficit-spending-556780349694491581
+  origin/feature/macro-linked-portfolio-14018014647659914271
+  origin/feature/macro-linked-portfolio-15094787074309037083
+  origin/fix/TD-024-pytest-path-15308963882295599607
+  origin/fix/WO-057-blind-pilot-3937070660345951823
+  origin/fix/WO-058-economic-cpr-10078451815509526740
+  origin/fix/pytest-pathing-10854377176396676821
+  origin/fix/sensory-architecture-dataflow-9343683714945509652
+  origin/main
+  origin/refactor/soc-proposal-6447261066050356848
+  origin/td-014-government-soc-refactor-11626928342509996952

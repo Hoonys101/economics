@@ -38,22 +38,21 @@ echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
 :: [COMMAND SLOT]
-:: Target: WO-073 (Finance Refactor) - Action: FIX ATOMICITY BUG
-set SESSION_ID=11970536560282331303
-set TARGET=WO-073 (Atomicity)
-set MISSION="CRITICAL BUG FOUND: 'Money Duplication' due to lack of atomicity in `_transfer`. Current implementation allows creditor to receive full amount even if debtor's withdraw() is capped by max(0, ...). TASK: 1) Update `IFinancialEntity.withdraw` to raise an `InsufficientFundsError` if funds are insufficient. 2) Refactor `_transfer` to use a try-except block: only call .deposit() if .withdraw() succeeds without error. 3) Ensure consistency across all entities (Bank, Firm, Gov). This is the final step to guarantee monetary integrity."
+:: Target: WO-077 (Config Automation) - Action: CREATE NEW SESSION
+set TARGET="WO-077: Config Automation"
+set MISSION="Implement Centralized Config System (TD-007). REFERENCE: Strictly follow the Zero-Question Spec in `design/gemini_output/stress_test_config_spec.md`. TASK: 1) Create `simulation/config.py` with `SimulationConfig` dataclass hierarchy. 2) Implement JSON profile loader. 3) Refactor `engine.py` and `firms.py` to use `sim_config` instead of hardcoded constants. 4) Create `test_config_loading.py` verification."
 
-:: 1. Send Message to Jules
-python scripts/jules_bridge.py send-message %SESSION_ID% %MISSION% > communications\jules_logs\last_run.md 2>&1
+:: 1. Create Session & Send Initial Mission
+:: Note: 'create' command now accepts (Title, Prompt) thanks to previous update
+python scripts/jules_bridge.py create %TARGET% %MISSION% > communications\jules_logs\last_run.md 2>&1
 
 :: 2. Auto-Record to Session Ledger (Append mode)
-:: Windows %DATE% variable usage (Locale dependent, but works for logging)
 echo ^| %DATE% ^| %SESSION_ID% ^| %TARGET% ^| %MISSION% ^| >> design\SESSION_LEDGER.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.
 ) else (
-    echo [SUCCESS] Atomic transfer instruction sent and recorded.
+    echo [SUCCESS] WO-076 mission dispatched and recorded to SESSION_LEDGER.md.
     type communications\jules_logs\last_run.md
 )
 endlocal

@@ -1,0 +1,646 @@
+diff --git a/simulation/base_agent.py b/simulation/base_agent.py
+index dd22f72..c0200f7 100644
+--- a/simulation/base_agent.py
++++ b/simulation/base_agent.py
+@@ -52,7 +52,7 @@ class BaseAgent(ABC):
+         pass
+ 
+     @abstractmethod
+-    def clone(self, new_id: int, initial_assets_from_parent: float) -> "BaseAgent":
++    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
+         """
+         현재 에이전트 인스턴스를 복제하여 새로운 에이전트를 생성합니다.
+         AI 모델(decision_engine)을 포함하여 깊은 복사를 수행합니다.
+diff --git a/simulation/components/api.py b/simulation/components/api.py
+new file mode 100644
+index 0000000..fc0bb6c
+--- /dev/null
++++ b/simulation/components/api.py
+@@ -0,0 +1,133 @@
++from __future__ import annotations
++from typing import Dict, Any, Optional, List, Protocol, TYPE_CHECKING
++from dataclasses import dataclass, field
++import random
++
++if TYPE_CHECKING:
++    from simulation.core_agents import Household
++
++# ===================================================================================
++# 1. Data Transfer Objects (DTOs)
++# ===================================================================================
++
++@dataclass
++class DemographicsDTO:
++    """
++    A data transfer object for the demographic information of a household.
++    """
++    age: float
++    gender: str
++    generation: int
++    parent_id: Optional[int] = None
++    spouse_id: Optional[int] = None
++    children_ids: List[int] = field(default_factory=list)
++
++    @classmethod
++    def from_component(cls, component: "IDemographicsComponent") -> "DemographicsDTO":
++        """Creates a DTO from a component instance."""
++        return cls(
++            age=component.age,
++            gender=component.gender,
++            generation=component.generation,
++            parent_id=component.parent_id,
++            spouse_id=component.spouse_id,
++            children_ids=component.children_ids.copy(),
++        )
++
++
++# ===================================================================================
++# 2. Component Interfaces (Protocols)
++# ===================================================================================
++
++class IDemographicsComponent(Protocol):
++    """
++    An interface for a component that manages the demographic attributes and lifecycle
++    (birth, aging, marriage, death) of a household. The Household class delegates
++    demographic functionality to this interface.
++    """
++
++    # --- Properties (State Access) ---
++    @property
++    def owner(self) -> "Household":
++        """The Household agent that owns this component."""
++        ...
++
++    @property
++    def age(self) -> float:
++        """The current age of the household."""
++        ...
++
++    @property
++    def gender(self) -> str:
++        """The gender of the household ('M' or 'F')."""
++        ...
++
++    @property
++    def generation(self) -> int:
++        """The generation of the household (starting from 0)."""
++        ...
++
++    @property
++    def parent_id(self) -> Optional[int]:
++        """The ID of the parent household."""
++        ...
++
++    @property
++    def spouse_id(self) -> Optional[int]:
++        """The ID of the spouse household."""
++        ...
++
++    @property
++    def children_ids(self) -> List[int]:
++        """A list of child household IDs."""
++        ...
++
++    @property
++    def children_count(self) -> int:
++        """The number of children."""
++        ...
++
++    # --- Lifecycle Methods (Lifecycle Management) ---
++    def age_one_tick(self, current_tick: int) -> None:
++        """
++        Ages the household by one tick and handles any age-related state changes (e.g., death).
++        """
++        ...
++
++    def handle_death(self, current_tick: int) -> bool:
++        """
++        Checks the conditions for death and returns the result after handling it.
++
++        Returns:
++            bool: True if the household has died, False otherwise.
++        """
++        ...
++
++    def set_spouse(self, spouse_id: int) -> None:
++        """Sets the spouse."""
++        ...
++
++    def add_child(self, child_id: int) -> None:
++        """Adds a child."""
++        ...
++
++    def get_generational_similarity(self, talent_learning_rate_1: float, talent_learning_rate_2: float) -> float:
++        """
++        Calculates the generational/genetic similarity based on talent learning rates.
++        Mainly used for spouse selection.
++        """
++        ...
++
++    def create_offspring_demographics(self, new_id: int, current_tick: int) -> Dict[str, Any]:
++        """
++        Creates and returns the initial demographic data for an offspring.
++        (Used for creating the offspring Household object)
++
++        Args:
++            new_id (int): The ID of the new offspring to be created.
++            current_tick (int): The current simulation tick.
++
++        Returns:
++            Dict[str, Any]: A dictionary of the initial demographic attributes for the offspring.
++        """
++        ...
+diff --git a/simulation/components/demographics_component.py b/simulation/components/demographics_component.py
+new file mode 100644
+index 0000000..03fe8d8
+--- /dev/null
++++ b/simulation/components/demographics_component.py
+@@ -0,0 +1,130 @@
++from __future__ import annotations
++from typing import Dict, Any, Optional, List, TYPE_CHECKING
++import random
++import logging
++
++from simulation.components.api import IDemographicsComponent
++
++if TYPE_CHECKING:
++    from simulation.core_agents import Household, Talent
++    # from config import YourConfigModule # TBD: 실제 설정 모듈 경로로 변경
++import config
++
++class DemographicsComponent:
++    """Handles the demographic data and lifecycle logic for a Household."""
++
++    def __init__(self, owner: "Household", initial_age: float, gender: str, generation: int = 0, parent_id: Optional[int] = None, config_module: Any = config):
++        self._owner = owner
++        self._age = initial_age
++        self._gender = gender
++        self._generation = generation
++        self._parent_id = parent_id
++        self._spouse_id: Optional[int] = None
++        self._children_ids: List[int] = []
++
++        self.config_module = config_module
++        self.logger = owner.logger
++
++    # --- Properties ---
++    @property
++    def owner(self) -> "Household":
++        return self._owner
++
++    @property
++    def age(self) -> float:
++        return self._age
++
++    @property
++    def gender(self) -> str:
++        return self._gender
++
++    @property
++    def generation(self) -> int:
++        return self._generation
++
++    @property
++    def parent_id(self) -> Optional[int]:
++        return self._parent_id
++
++    @property
++    def spouse_id(self) -> Optional[int]:
++        return self._spouse_id
++
++    @property
++    def children_ids(self) -> List[int]:
++        return self._children_ids
++
++    @property
++    def children_count(self) -> int:
++        return len(self._children_ids)
++
++    # --- Methods ---
++    def age_one_tick(self, current_tick: int) -> None:
++        """Ages the agent by one tick and checks for death."""
++        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
++        self._age += 1.0 / ticks_per_year
++
++        if self.handle_death(current_tick):
++            self.logger.info(f"DEATH | Household {self.owner.id} has died at age {self._age:.1f}.")
++
++    def handle_death(self, current_tick: int) -> bool:
++        """
++        There is a chance of death, which increases with age.
++        If the agent dies, its is_active status is set to False.
++        """
++
++        # The chance of death per year, based on age.
++        age_death_probabilities = {
++            60: 0.01,
++            70: 0.02,
++            80: 0.05,
++            90: 0.15,
++            100: 0.50,
++        }
++
++        # Find the highest age threshold that the agent's age has surpassed
++        # and get the corresponding death probability.
++        death_prob_per_year = 0
++        for age_threshold, prob in age_death_probabilities.items():
++            if self._age >= age_threshold:
++                death_prob_per_year = prob
++
++        # If the agent's age has not surpassed any of the thresholds,
++        # there is no chance of death.
++        if death_prob_per_year == 0:
++            return False
++
++        # Convert the annual probability to a per-tick probability.
++        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
++        death_prob_per_tick = death_prob_per_year / ticks_per_year
++
++        # Check if the agent dies.
++        if random.random() < death_prob_per_tick:
++            self.owner.is_active = False
++            return True
++
++        return False
++
++    def set_spouse(self, spouse_id: int) -> None:
++        self._spouse_id = spouse_id
++
++    def add_child(self, child_id: int) -> None:
++        if child_id not in self._children_ids:
++            self._children_ids.append(child_id)
++
++    def get_generational_similarity(self, talent_learning_rate_1: float, talent_learning_rate_2: float) -> float:
++        """Calculates the generational/genetic similarity based on talent learning rates."""
++
++        # A simple comparison of talents.
++        talent_diff = abs(talent_learning_rate_1 - talent_learning_rate_2)
++        similarity = max(0.0, 1.0 - talent_diff)
++        return similarity
++
++    def create_offspring_demographics(self, new_id: int, current_tick: int) -> Dict[str, Any]:
++        """Creates the initial demographic attributes for an offspring."""
++        return {
++            "generation": self._generation + 1,
++            "parent_id": self.owner.id,
++            "initial_age": 0.0,
++            "gender": random.choice(["M", "F"])
++        }
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index a5ce790..b3faeac 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -28,6 +28,7 @@ from simulation.components.consumption_behavior import ConsumptionBehavior
+ from simulation.components.psychology_component import PsychologyComponent
+ from simulation.components.leisure_manager import LeisureManager
+ from simulation.utils.shadow_logger import log_shadow
++from simulation.components.demographics_component import DemographicsComponent
+ 
+ if TYPE_CHECKING:
+     from simulation.loan_market import LoanMarket
+@@ -129,6 +130,11 @@ class Household(BaseAgent):
+         loan_market: Optional[LoanMarket] = None,
+         risk_aversion: float = 1.0,
+         logger: Optional[Logger] = None,
++        # Demographics
++        initial_age: Optional[float] = None,
++        gender: Optional[str] = None,
++        parent_id: Optional[int] = None,
++        generation: Optional[int] = None,
+     ) -> None:
+         """Household 클래스의 생성자입니다.
+ 
+@@ -245,13 +251,30 @@ class Household(BaseAgent):
+         self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
+         self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
+ 
+-        # Phase 19: Population Dynamics
+-        self.age: float = random.uniform(20.0, 60.0)
++        # === DEMOGRAPHICS REFACTORING START ===
++
++        # 1. DemographicsComponent 인스턴스화
++        # If demographic data is not provided, generate it for a new agent.
++        if initial_age is None:
++            initial_age = random.uniform(20.0, 60.0)
++        if gender is None:
++            gender = random.choice(["M", "F"])
++        if generation is None:
++            generation = 0
++
++        self.demographics = DemographicsComponent(
++            owner=self,
++            initial_age=initial_age,
++            gender=gender,
++            parent_id=parent_id,
++            generation=generation,
++            config_module=self.config_module
++        )
++
++        # === DEMOGRAPHICS REFACTORING END ===
+ 
+         # Phase 20: The Matrix (Gender & Home Quality)
+-        self.gender: str = random.choice(["M", "F"])
+         self.home_quality_score: float = 1.0
+-        self.spouse_id: Optional[int] = None
+         self.system2_planner = System2Planner(self, config_module)
+         self.housing_planner = HouseholdSystem2Planner(self, config_module)
+         self.housing_target_mode = "RENT"
+@@ -310,8 +333,6 @@ class Household(BaseAgent):
+         self.income_capital_cumulative: float = 0.0
+         self.labor_income_this_tick: float = 0.0
+         self.capital_income_this_tick: float = 0.0
+-        self.children_ids: List[int] = []         # 자녀 가구 ID 목록
+-        self.generation: int = 0                  # 세대 (0=Original, 1=Child, ...)
+         self.last_leisure_type: LeisureType = "IDLE"  # For visualization aggregation
+ 
+         # Phase 22: Portfolio System (Option B: Wrapper)
+@@ -398,9 +419,34 @@ class Household(BaseAgent):
+     def desire_weights(self) -> Dict[str, float]:
+         return self.psychology.desire_weights
+ 
++    # --- Pass-through Properties ---
++    @property
++    def age(self) -> float:
++        return self.demographics.age
++
++    @property
++    def gender(self) -> str:
++        return self.demographics.gender
++
++    @property
++    def parent_id(self) -> Optional[int]:
++        return self.demographics.parent_id
++
++    @property
++    def spouse_id(self) -> Optional[int]:
++        return self.demographics.spouse_id
++
++    @property
++    def children_ids(self) -> List[int]:
++        return self.demographics.children_ids
++
++    @property
++    def generation(self) -> int:
++        return self.demographics.generation
++
+     @property
+     def children_count(self) -> int:
+-        return len(self.children_ids)
++        return self.demographics.children_count
+ 
+     def calculate_social_status(self) -> None:
+         """
+@@ -485,9 +531,9 @@ class Household(BaseAgent):
+             "social_rank": getattr(self, "social_rank", 0.0),
+             "conformity": getattr(self, "conformity", 0.5),
+             "approval_rating": getattr(self, "approval_rating", 1), # Phase 17-5
+-            "age": getattr(self, "age", 30.0),
++            "age": self.age,
+             "education_level": getattr(self, "education_level", 0),
+-            "children_count": len(self.children_ids),
++            "children_count": self.children_count,
+             "expected_wage": getattr(self, "expected_wage", 10.0),
+             "gender": self.gender,
+             "home_quality_score": self.home_quality_score,
+@@ -1022,10 +1068,16 @@ class Household(BaseAgent):
+             )
+ 
+     @override
+-    def clone(self, new_id: int, initial_assets_from_parent: float) -> "Household":
++    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Household":
+         """
+         현재 가계 에이전트의 복제본을 생성합니다 (Mitosis용).
+         """
++        # === DEMOGRAPHICS REFACTORING START ===
++
++        # 1. 자손의 인구통계 정보 생성 위임
++        offspring_demo_data = self.demographics.create_offspring_demographics(new_id, current_tick)
++
++        # 2. 새로운 Household 생성
+         cloned_household = Household(
+             id=new_id,
+             talent=self.talent,
+@@ -1039,13 +1091,15 @@ class Household(BaseAgent):
+             loan_market=self.decision_engine.loan_market,
+             risk_aversion=self.risk_aversion,
+             logger=self.logger,
++            **offspring_demo_data
+         )
++
++        # === DEMOGRAPHICS REFACTORING END ===
++
+         # Attribute Sync
+         cloned_household.skills = {k: Skill(v.domain, v.value, v.observability) for k, v in self.skills.items()}
+         cloned_household.inventory = self.inventory.copy()
+         cloned_household.labor_skill = self.labor_skill
+-        cloned_household.generation = self.generation + 1
+-        cloned_household.parent_id = self.id
+         
+         # Aptitude Inheritance (WO-054)
+         # Regression toward the mean?
+@@ -1080,14 +1134,8 @@ class Household(BaseAgent):
+         )
+ 
+     def get_generational_similarity(self, other: "Household") -> float:
+-        """
+-        Phase 19: 가계 간 세대적/유전적 유사도를 계산합니다.
+-        """
+-        similarity = 0.0
+-        # Simple talent comparison
+-        talent_diff = abs(self.talent.base_learning_rate - other.talent.base_learning_rate)
+-        similarity = max(0.0, 1.0 - talent_diff)
+-        return similarity
++        """다른 Household의 demographics 컴포넌트에 위임"""
++        return self.demographics.get_generational_similarity(self.talent.base_learning_rate, other.talent.base_learning_rate)
+ 
+     def apply_child_inheritance(self, child: "Household"):
+         """
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 43017e6..3d970e2 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -581,7 +581,7 @@ class Firm(BaseAgent):
+ 
+ 
+     @override
+-    def clone(self, new_id: int, initial_assets_from_parent: float) -> "Firm":
++    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Firm":
+         """
+         현재 기업 인스턴스를 복제하여 새로운 기업을 생성합니다.
+         AI 모델(decision_engine)을 포함하여 깊은 복사를 수행합니다.
+diff --git a/tests/components/test_demographics_component.py b/tests/components/test_demographics_component.py
+new file mode 100644
+index 0000000..02a0ac0
+--- /dev/null
++++ b/tests/components/test_demographics_component.py
+@@ -0,0 +1,97 @@
++import unittest
++from unittest.mock import MagicMock, PropertyMock
++import pytest
++from simulation.components.demographics_component import DemographicsComponent
++
++class TestDemographicsComponent(unittest.TestCase):
++
++    def setUp(self):
++        """Set up a mock owner and config for the component tests."""
++        self.mock_owner = MagicMock()
++        self.mock_owner.id = 1
++        self.mock_owner.logger = MagicMock()
++
++        # Mock talent for get_generational_similarity
++        self.mock_owner.talent.base_learning_rate = 0.5
++        self.mock_owner.is_active = True
++
++        self.mock_config = MagicMock()
++        self.mock_config.TICKS_PER_YEAR = 100
++
++        self.component = DemographicsComponent(
++            owner=self.mock_owner,
++            initial_age=30.0,
++            gender="F",
++            config_module=self.mock_config
++        )
++
++    def test_initialization(self):
++        """Test that the component initializes with the correct attributes."""
++        self.assertEqual(self.component.owner.id, 1)
++        self.assertEqual(self.component.age, 30.0)
++        self.assertEqual(self.component.gender, "F")
++        self.assertEqual(self.component.generation, 0)
++        self.assertIsNone(self.component.parent_id)
++        self.assertIsNone(self.component.spouse_id)
++        self.assertEqual(self.component.children_ids, [])
++
++    def test_age_one_tick(self):
++        """Test that the age increases correctly after one tick."""
++        initial_age = self.component.age
++        self.component.age_one_tick(current_tick=1)
++        self.assertAlmostEqual(self.component.age, initial_age + 0.01)
++
++    def test_handle_death_under_threshold(self):
++        """Test that the agent does not die if below the age threshold."""
++        self.component._age = 50 # Below the first threshold of 60
++        self.assertFalse(self.component.handle_death(current_tick=1))
++        self.assertTrue(self.mock_owner.is_active)
++
++    def test_handle_death_above_threshold(self):
++        """Test that the agent has a chance to die if above the age threshold."""
++        self.component._age = 85
++
++        # Since death is probabilistic, we can't guarantee it.
++        # Instead, we check if the logic runs without error and returns a boolean.
++        # To make it deterministic for a test, we could mock random.random
++        with unittest.mock.patch('random.random', return_value=0.0): # Force death
++            self.assertTrue(self.component.handle_death(current_tick=1))
++            self.assertFalse(self.mock_owner.is_active)
++
++        # Reset and test the case where it doesn't die
++        self.mock_owner.is_active = True
++        with unittest.mock.patch('random.random', return_value=0.99): # Prevent death
++            self.assertFalse(self.component.handle_death(current_tick=1))
++            self.assertTrue(self.mock_owner.is_active)
++
++    def test_set_spouse(self):
++        """Test setting a spouse."""
++        self.component.set_spouse(2)
++        self.assertEqual(self.component.spouse_id, 2)
++
++    def test_add_child(self):
++        """Test adding a child."""
++        self.component.add_child(3)
++        self.assertIn(3, self.component.children_ids)
++        self.assertEqual(self.component.children_count, 1)
++
++        # Test adding the same child again (should not duplicate)
++        self.component.add_child(3)
++        self.assertEqual(self.component.children_count, 1)
++
++    def test_get_generational_similarity(self):
++        """Test the calculation of generational similarity."""
++        similarity = self.component.get_generational_similarity(0.5, 0.6)
++        self.assertAlmostEqual(similarity, 0.9) # 1.0 - abs(0.5 - 0.6)
++
++    def test_create_offspring_demographics(self):
++        """Test the creation of demographic data for an offspring."""
++        offspring_data = self.component.create_offspring_demographics(new_id=10, current_tick=100)
++
++        self.assertEqual(offspring_data["generation"], 1)
++        self.assertEqual(offspring_data["parent_id"], self.mock_owner.id)
++        self.assertEqual(offspring_data["initial_age"], 0.0)
++        self.assertIn(offspring_data["gender"], ["M", "F"])
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/tests/test_base_agent.py b/tests/test_base_agent.py
+index c47f5f1..9a92ca7 100644
+--- a/tests/test_base_agent.py
++++ b/tests/test_base_agent.py
+@@ -23,7 +23,14 @@ if project_root not in sys.path:
+ # Mock Decision Engines for testing
+ class MockHouseholdDecisionEngine(AIDrivenHouseholdDecisionEngine):
+     def __init__(self):
+-        pass
++        self.ai_engine = Mock()
++        self.ai_engine.ai_decision_engine = Mock()
++        self.ai_engine.gamma = 0.99
++        self.ai_engine.action_selector.epsilon = 0.1
++        self.ai_engine.base_alpha = 0.1
++        self.ai_engine.learning_focus = 0.5
++        self.config_module = config
++        self.logger = Mock()
+ 
+     def make_decisions(self, household, market_data, current_time):
+         return [], None
+@@ -49,7 +56,7 @@ def test_base_agent_abstract_methods():
+         def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
+             return [], None
+ 
+-        def clone(self):
++        def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
+             pass
+ 
+     agent = ConcreteAgent(
+@@ -64,7 +71,7 @@ def test_base_agent_abstract_methods():
+ 
+ 
+ # Test Household inheritance and initialization
+-def test_household_inheritance_and_init():
++def test_household_clone():
+     initial_assets = 100.0
+     initial_needs = {
+         "survival_need": 50.0,
+@@ -91,13 +98,16 @@ def test_household_inheritance_and_init():
+         config_module=config,
+     )
+ 
+-    assert isinstance(household, BaseAgent)
+-    assert household.id == 1
+-    assert household.assets == initial_assets
++    clone = household.clone(2, 50.0, 1)
++
++    assert isinstance(clone, BaseAgent)
++    assert clone.id == 2
++    assert clone.assets == 50.0
+     # assert household.needs == initial_needs
+-    assert household.decision_engine == decision_engine
+-    assert household.name == "Household_1"
+-    assert household.talent == talent
++    assert clone.name == "Household_2"
++    assert clone.talent == talent
++    assert clone.demographics.parent_id == 1
++    assert clone.demographics.generation == 1
+ 
+ 
+ # Test Firm inheritance and initialization
+diff --git a/tests/test_phase20_scaffolding.py b/tests/test_phase20_scaffolding.py
+index 1f1db1b..d36dfda 100644
+--- a/tests/test_phase20_scaffolding.py
++++ b/tests/test_phase20_scaffolding.py
+@@ -47,6 +47,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
+         data = h1.get_agent_data()
+         self.assertIn("gender", data)
+         self.assertEqual(data["gender"], h1.gender)
++        self.assertEqual(h1.demographics.generation, 0)
+ 
+     def test_gender_distribution(self):
+         """Verify roughly 50:50 distribution (probabilistic)."""
