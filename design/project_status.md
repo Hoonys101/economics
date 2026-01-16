@@ -16,15 +16,12 @@
     - **WO-078**: The Great Refactoring (Simulation Engine SoC) ✅
     - **TD-045**: Firm God Class Refactoring ✅
     - **TD-044**: Household God Class Refactoring ✅
+    - **WO-079**: Config Automation v2 (High Reliability) ✅
+    - **TD-046**: Hardcoded Constants Migration ✅
     
 - **현재 단계:** `Phase 27: Architecture Consolidation`
-    - **WO-079**: Config Automation & Stress Test 🛑 **CANCELLED (RELIABILITY FAILURE)**
     - **TD-008**: Advanced Finance System (Altman Z-Score) 📋 (Spec Ready)
-    - **TD-046**: Hardcoded Constants Migration 📋 (WO-079 통합 진행 중)
-
-### 🚨 긴급 조치 사항 (Emergency Action)
-- WO-079는 설계 단계의 위험 분석 미비로 인해 Jules 세션이 오염되었습니다.
-- 모든 진행 사항을 폐기하고, **[Guardian Spec Protocol]**에 따라 설계를 재검토한 후 다음 세션에서 가장 먼저 '리셋 및 재착수'해야 합니다.
+    - **Phase 28**: Macro-Stability Stress Testing 🚀 (Next)
 
 ---
 

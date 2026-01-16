@@ -10,6 +10,10 @@
       "4889257989211040620": {
         "title": "TD-044: Household God Class Refactoring",
         "initial_mission": "REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. ..."
+      },
+      "2244231495852370011": {
+        "title": "WO-079_Config_Automation_v2",
+        "initial_mission": "Implement WO-079 v2: High-reliability Config Automation. MISSION: 1. Create 'modules/common/config_manager/impl.py' based on the spec. 2. Ensure NO circular dependencies (Leaf Node). 3. Implement Hybrid loading (YAML with legacy config.py fallbacks). 4. MANDATORY: Verify that existing tests still pass by providing the 'set_value_for_test' interface. TARGET_SPEC: 'design/specs/WO-079_Config_Automation_v2.md'. WORK_ORDER: 'design/work_orders/WO-079_Config_Automation_v2.md'."
       }
     },
     "completed_sessions": {

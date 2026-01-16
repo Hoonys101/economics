@@ -29,11 +29,11 @@
    - Jules가 추가 질문 없이 구현 가능한 수준으로 명세 작성
    - 모호함은 기술부채의 원천
 
-4. **🚀 The Launcher Protocol (발사대 장전 원칙)**
-   - **동적 장전 (Dynamic Loading)**: `jules-go.bat`과 `gemini-go.bat` 내부에는 다양한 명령어(`create`, `send-message`, `spec` 등)가 주석으로 포함되어 있다.
-   - **장전의 의무 (Duty to Load)**: Antigravity(팀장)는 현재 상황에 맞는 명령어를 선택하여 **[COMMAND SLOT]** 영역에 코드로 작성(수정)해야 한다.
-     > *예: 새로운 작업을 시작할 때는 `send-message`가 아니라 `create` 명령어로 코드를 교체해야 한다.*
-   - **실행 요청**: 올바른 명령어가 장전된 후, 사용자에게 실행을 요청한다. 팀장은 절대 직접 실행하지 않는다.
+4. **🚀 The SCR Launcher Protocol (구조적 명령 레지스트리)**
+   - **데이터 중심 제어 (Data-Driven Control)**: 모든 도구의 인자(`worker`, `instruction`, `context`, `session_id` 등)는 `design/command_registry.json`에 저장된다.
+   - **장전의 의무 (Duty to Load)**: Antigravity(팀장)는 현재 상황에 맞는 데이터를 JSON에 작성하여 **명령을 장전**해야 한다.
+   - **실행 엔진**: `launcher.py`가 JSON을 읽어 가장 안정적인 파이썬 호출문으로 변환한다. 배치 파일 구문 오류를 원천 차단한다.
+   - **실행 요청**: 명령 장전 후, 사용자에게 해당 `.bat` 파일 실행을 요청한다. 팀장은 절대 직접 실행하지 않는다.
 
 ---
 
@@ -57,10 +57,10 @@ THEN 읽을 문서:
 ### 기획/명세/감사 시
 ```
 IF Spec/Work Order 작성 또는 코드 감사(Audit) 필요
-THEN 도구: .\gemini-go.bat
-     기능: 파일 뿐만 아니라 <<디렉토리>> 컨텍스트 주입 가능
-     출력: design/gemini_output/spec_draft.md (또는 지정된 파일)
-
+THEN 1. 장전: design/command_registry.json 의 'gemini' 섹션 업데이트
+     2. 도구: .\gemini-go.bat
+     필수: 사전 감사 보고서(-a)를 컨텍스트로 활용 (Guardian Protocol)
+```
 ### 명세 위험 검토 (W-1 Spec Audit) [NEW]
 ```
 IF gemini-cli가 명세 초안을 산출한 경우
@@ -107,13 +107,8 @@ THEN 도구: .\git-go.bat <브랜치명>
 ### 단순 병합 시 [NEW]
 ```
 IF PR 리뷰 결과가 APPROVE이고 충돌 없음
-THEN 도구: .\merge-go.bat <브랜치명>
-     프로세스:
-       1. main 체크아웃 및 업데이트
-       2. 원격 브랜치 병합 (--no-edit)
-       3. main Push
-       4. 원격 브랜치 자동 삭제 (클린업)
-     예시: .\merge-go.bat WO-078-engine-soc-17119948573295953717
+THEN 1. 장전: design/command_registry.json 의 'merge' 섹션에 브랜치명 기입
+     2. 도구: .\merge-go.bat
 ```
 
 ### PR 리젝 및 보완 지시 시 (W-4)
@@ -149,10 +144,11 @@ THEN 1. 필수 절차: design/manuals/session_conclusion.md 준수
 
 | 도구 | 용도 | 상세 사용법 |
 |---|---|---|
-| `gemini-go.bat` | Spec/기획 | 파일 상단 주석 참조 |
-| `jules-go.bat` | 요원 통신 | 파일 상단 주석 참조 |
-| `git-go.bat` | PR 분석 | 파일 상단 주석 참조 |
-| `harvest-go.bat` | 보고서 수집 | 원격 브랜치의 새 보고서 자동 수령 |
+| `gemini-go.bat` | Spec/기획 | SCR Registry (gemini 섹션) 참조 |
+| `jules-go.bat` | 요원 통신 | SCR Registry (jules 섹션) 참조 |
+| `git-go.bat` | PR 분석 | SCR Registry (git_review 섹션) 참조 |
+| `merge-go.bat` | 안전 병합 | SCR Registry (merge 섹션) 참조 |
+| `harvest-go.bat` | 보고서 수집 | `report_harvester.py` 실행 |
 
 ---
 
