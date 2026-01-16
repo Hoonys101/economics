@@ -10,6 +10,7 @@ from typing import Optional
 from simulation.utils.shadow_logger import log_shadow
 from simulation.systems.tax_agency import TaxAgency
 from simulation.systems.ministry_of_education import MinistryOfEducation
+from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
@@ -519,3 +520,15 @@ class Government:
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
         self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the government's assets."""
+        if amount > 0:
+            self.assets += amount
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the government's assets."""
+        if amount > 0:
+            if self.assets < amount:
+                raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+            self.assets -= amount

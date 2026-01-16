@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 import math
+from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
@@ -459,3 +460,15 @@ class Bank:
                  skill.value *= (1.0 - xp_penalty)
 
         logger.info(f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP.")
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the bank's assets."""
+        if amount > 0:
+            self.assets += amount
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the bank's assets."""
+        if amount > 0:
+            if self.assets < amount:
+                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+            self.assets -= amount

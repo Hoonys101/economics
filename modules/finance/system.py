@@ -1,7 +1,10 @@
-from typing import List, Dict
-from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO
+from typing import List, Dict, Optional
+import logging
+from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, IFinancialEntity, InsufficientFundsError
 # Forward reference for type hinting
 from simulation.firms import Firm
+
+logger = logging.getLogger(__name__)
 
 class FinanceSystem(IFinanceSystem):
     """Manages sovereign debt, corporate bailouts, and solvency checks."""
@@ -66,24 +69,27 @@ class FinanceSystem(IFinanceSystem):
 
         qe_threshold = getattr(self.config_module, "QE_INTERVENTION_YIELD_THRESHOLD", 0.10)
         if yield_rate > qe_threshold:
-            # Central Bank intervenes as buyer of last resort
+            # Central Bank intervenes as buyer of last resort (QE)
             self.central_bank.purchase_bonds(new_bond)
-            # Money is created here, which is the point of QE.
+            # Transfer funds from Central Bank to Government
+            self._transfer(debtor=self.central_bank, creditor=self.government, amount=amount)
         else:
-            # Sell to the market (simplified: the commercial bank buys it)
+            # Sell to the market (commercial bank buys it)
             if self.bank.assets >= amount:
-                self.bank.assets -= amount
+                # Transfer funds from commercial bank to Government
+                self._transfer(debtor=self.bank, creditor=self.government, amount=amount)
             else:
                 # Bond issuance fails if no one can buy it
                 return []
 
         self.outstanding_bonds.append(new_bond)
-        self.government.assets += amount
-
         return [new_bond]
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> BailoutLoanDTO:
-        """Converts a bailout from a grant to an interest-bearing senior loan."""
+    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[BailoutLoanDTO]:
+        """
+        Converts a bailout from a grant to an interest-bearing senior loan.
+        Returns the loan DTO on success, or None if the transfer fails.
+        """
         base_rate = self.central_bank.get_base_rate()
         penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
 
@@ -98,13 +104,39 @@ class FinanceSystem(IFinanceSystem):
             }
         )
 
-        # The government provides the funds, which become a liability for the firm
-        self.government.assets -= amount
-        firm.finance.add_liability(amount, loan.interest_rate)
-        firm.has_bailout_loan = True
+        # Transfer funds from Government to the firm
+        if self._transfer(debtor=self.government, creditor=firm, amount=amount):
+            # The government provides the funds, which become a liability for the firm
+            firm.finance.add_liability(amount, loan.interest_rate)
+            firm.has_bailout_loan = True
+            return loan
+        else:
+            logger.error(f"BAILOUT_FAILED | Could not transfer {amount:.2f} to Firm {firm.id} for bailout.")
+            return None
 
-        return loan
 
+    def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float) -> bool:
+        """
+        Atomically handles the movement of funds between two entities using the IFinancialEntity protocol.
+
+        Args:
+            debtor: The entity from which money is withdrawn.
+            creditor: The entity to which money is deposited.
+            amount: The amount of money to transfer.
+
+        Returns:
+            True if the transfer was successful, False otherwise.
+        """
+        if amount <= 0:
+            return True # A zero-amount transfer is trivially successful.
+
+        try:
+            debtor.withdraw(amount)
+            creditor.deposit(amount)
+            return True
+        except InsufficientFundsError as e:
+            logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
+            return False
 
     def service_debt(self, current_tick: int) -> None:
         """

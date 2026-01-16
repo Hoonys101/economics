@@ -18,6 +18,7 @@ from simulation.ai.enums import Personality
 from simulation.components.hr_department import HRDepartment
 from simulation.components.finance_department import FinanceDepartment
 from simulation.utils.shadow_logger import log_shadow
+from modules.finance.api import InsufficientFundsError
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -858,3 +859,15 @@ class Firm(BaseAgent):
         Distribute surplus cash to owner if reserves are met.
         """
         return self.finance.distribute_profit_private(agents, current_time)
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the firm's cash reserves."""
+        if amount > 0:
+            self.cash_reserve += amount
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the firm's cash reserves."""
+        if amount > 0:
+            if self.cash_reserve < amount:
+                raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.cash_reserve:.2f}")
+            self.cash_reserve -= amount
