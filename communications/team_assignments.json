@@ -40,6 +40,10 @@
       "11171363570807026466": {
         "title": "WO-079: Config Automation",
         "initial_mission": "Execute 'design/work_orders/WO-079_Config_Automation.md'. PRIORITY: 1. Create 'simulation/config.py' (SimulationConfig) & 'profiles/default.json'. 2. Refactor 'SimulationInitializer' to load config. 3. Inject config into Engine/Firms/Agents and replace hardcoded constants. 4. Verify with 'tests/simulation/test_config_loading.py' and existing Engine tests."
+      },
+      "8465436477342866436": {
+        "title": "WO-037 Simulation Cockpit",
+        "initial_mission": "Implement WO-037 Simulation Cockpit. 1. Create 'dashboard/app.py' using code from 'design/specs/WO-037_Simulation_Cockpit_Spec.md'. 2. STRICTLY READ-ONLY. Import ONLY 'modules.analytics.loader.DataLoader'. 3. Verify by running 'streamlit run dashboard/app.py' (or check no import errors). 4. Do NOT modify 'loader.py' or 'engine.py'."
       }
     },
     "completed_sessions": {
