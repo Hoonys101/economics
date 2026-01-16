@@ -592,7 +592,7 @@ class Firm(BaseAgent):
         )
 
     @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
         self.logger.debug(
             f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}",
@@ -606,7 +606,7 @@ class Firm(BaseAgent):
 
         # --- Core Operations (SoC Refactor) ---
         # 1. Produce
-        self.produce(current_time)
+        self.produce(current_time, technology_manager)
 
         # 2. Pay Wages & Holding Costs
         inventory_value = sum(self.inventory.values())
