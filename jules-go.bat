@@ -37,21 +37,21 @@ if not exist "communications\jules_logs" (
 echo [Jules-Bridge] Sending message to WO-072 session...
 echo ----------------------------------------------------
 
-:: Target: WO-079 (Config Automation) - Action: CREATE NEW SESSION
-set TARGET="WO-079: Config Automation"
-set MISSION="Execute 'design/work_orders/WO-079_Config_Automation.md'. PRIORITY: 1. Create 'simulation/config.py' (SimulationConfig) & 'profiles/default.json'. 2. Refactor 'SimulationInitializer' to load config. 3. Inject config into Engine/Firms/Agents and replace hardcoded constants. 4. Verify with 'tests/simulation/test_config_loading.py' and existing Engine tests."
+:: Target: WO-037 (Simulation Cockpit) - Action: DISPATCH TO JULES
+set JOB_ID=WO-037_Simulation_Cockpit
+set INSTRUCTION="Implement WO-037 Simulation Cockpit. 1. Create 'dashboard/app.py' using code from 'design/specs/WO-037_Simulation_Cockpit_Spec.md'. 2. STRICTLY READ-ONLY. Import ONLY 'modules.analytics.loader.DataLoader'. 3. Verify by running 'streamlit run dashboard/app.py' (or check no import errors). 4. Do NOT modify 'loader.py' or 'engine.py'."
 
-:: 1. Create Session & Send Initial Mission
-python scripts/jules_bridge.py create %TARGET% %MISSION% > communications\jules_logs\last_run.md 2>&1
+:: 1. Create Session
+python scripts/jules_bridge.py create "WO-037 Simulation Cockpit" %INSTRUCTION% > communications\jules_logs\last_run.md 2>&1
 
 :: 2. Auto-Record to Session Ledger
-:: echo ^| %DATE% ^| [NEW_SESSION] ^| WO-079 ^| SESSION STARTED ^| >> design\SESSION_LEDGER.md
+:: echo ^| %DATE% ^| [START] ^| WO-037 ^| Simulation Cockpit Dispatch ^| >> design\SESSION_LEDGER.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Command failed. Check logs.
 ) else (
-    echo [SUCCESS] WO-079 mission dispatched.
-    echo [NOTE] Please check 'communications\jules_logs\last_run.md' for the Session ID.
+    echo [SUCCESS] Jules Dispatch Complete.
+    echo [NOTE] Check 'communications\jules_logs\last_run.md' for session ID.
     type communications\jules_logs\last_run.md
 )
 endlocal

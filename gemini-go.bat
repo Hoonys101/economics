@@ -30,14 +30,14 @@ echo [Gemini-CLI] Drafting Stress Test Config spec...
 echo ============================================================
 
 :: [COMMAND SLOT]
-:: Target: TD-008 (Finance Upgrade) - Action: DRAFT SPECIFICATION
-set JOB_ID=TD-008_Finance_Upgrade
-python scripts/gemini_worker.py spec "Draft a Zero-Question Spec for 'TD-008: Advanced Finance System'. GOALS: 1. Implement 'Altman Z-Score' for firm valuation (replacing primitive asset check). 2. Convert Bailouts from Grants to 'Callable Loans' (Debt) with interest. 3. Define 'BailoutCovenant' class. TARGET: 'design/specs/TD-008_Finance_Upgrade_Spec.md'. OUTPUT FORMAT: Strict Markdown. No conversational filler." -c modules/finance/system.py simulation/firms.py -o design\specs\TD-008_Finance_Upgrade_Spec.md
+:: Target: WO-037 (Simulation Cockpit) - Action: DRAFT SPECIFICATION
+set JOB_ID=WO-037_Simulation_Cockpit
+python scripts/gemini_worker.py spec "Draft a Zero-Question Spec for 'WO-037: Simulation Cockpit (Dashboard)'. GOALS: 1. Create a Streamlit app in 'dashboard/app.py'. 2. Read ONLY from 'simulation_data.db' using 'modules/analytics/loader.py'. 3. Visualize Key Metrics: GDP (Real/Nominal), Inflation (CPI), Population, Gini Coefficient. 4. NO WRITE ACCESS to simulation core. TARGET: 'design/specs/WO-037_Simulation_Cockpit_Spec.md'. OUTPUT FORMAT: Strict Markdown." -c modules/analytics/loader.py design/roadmap.md -o design\specs\WO-037_Simulation_Cockpit_Spec.md
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Gemini task execution failed. Check logs.
 ) else (
     echo [SUCCESS] Gemini Task %JOB_ID% completed.
-    echo [OUTPUT] Check design\specs(%JOB_ID%_Spec.md) or work_orders(%JOB_ID%.md)
+    echo [OUTPUT] Check design\specs\%JOB_ID%_Spec.md or work_orders\%JOB_ID%.md
 )
 endlocal

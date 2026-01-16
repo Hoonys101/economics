@@ -36,6 +36,10 @@
       "1781228977548149949": {
         "title": "WO-079: Config Automation",
         "initial_mission": "Execute 'design/work_orders/WO-079_Config_Automation.md'. PRIORITY: 1. Create 'simulation/config.py' (SimulationConfig) & 'profiles/default.json'. 2. Refactor 'SimulationInitializer' to load config. 3. Inject config into Engine/Firms/Agents and replace hardcoded constants. 4. Verify with 'tests/simulation/test_config_loading.py' and existing Engine tests."
+      },
+      "11171363570807026466": {
+        "title": "WO-079: Config Automation",
+        "initial_mission": "Execute 'design/work_orders/WO-079_Config_Automation.md'. PRIORITY: 1. Create 'simulation/config.py' (SimulationConfig) & 'profiles/default.json'. 2. Refactor 'SimulationInitializer' to load config. 3. Inject config into Engine/Firms/Agents and replace hardcoded constants. 4. Verify with 'tests/simulation/test_config_loading.py' and existing Engine tests."
       }
     },
     "completed_sessions": {
