@@ -31,6 +31,9 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.components.demographics_component import DemographicsComponent
 from simulation.components.economy_manager import EconomyManager
 from simulation.components.labor_manager import LaborManager
+from simulation.components.agent_lifecycle import AgentLifecycleComponent
+from simulation.components.market_interaction import MarketComponent
+from simulation.systems.api import ILearningAgent, LearningUpdateContext, LifecycleContext, MarketInteractionContext
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -214,6 +217,10 @@ class Household(BaseAgent):
         self.social_status: float = 0.0
         self.perceived_avg_prices: Dict[str, float] = {}
         self.education_xp: float = 0.0  # Task #6: Education XP
+
+        # New Components from God Class Refactoring
+        self.lifecycle_component = AgentLifecycleComponent(self, config_module)
+        self.market_component = MarketComponent(self, config_module)
 
         # Income Tracking (Reset every tick)
         self.labor_income_this_tick: float = 0.0
@@ -776,42 +783,20 @@ class Household(BaseAgent):
 
         # WO-046: Execute System 2 Housing Decision
         if self.housing_target_mode == "BUY" and self.is_homeless:
-            # Generate Buy Order if we don't own a home and decided to BUY
-            # Strategy: Place order for "housing" generic market or specific units?
-            # Housing Market expects item_id "unit_X". But we might not know which unit.
-            # OrderBookMarket usually handles "housing" as a generic commodity if ID is just "housing"
-            # OR we need to pick a unit.
-            # Simulation.process_transactions handles "housing" generic orders?
-            # Looking at engine.py, it expects item_id="unit_{id}".
-            # So we must pick a unit or place a "Blind" buy order if supported.
-            # Engine._process_transactions logic: if tx.transaction_type == "housing" -> _process_housing_transaction.
-            # _process_housing_transaction parses "unit_{id}".
-            # So we need a target unit.
-            # Scan market for Sell Orders on housing?
             housing_market = markets.get("housing")
             if housing_market:
-                # Find cheapest unit or random unit
-                # HousingMarket is OrderBookMarket.
-                # We need to scan asks. But asks are keyed by item_id.
-                # We iterate all asks?
                 target_unit_id = None
                 best_price = float('inf')
 
-                # Check for available units in market_data or query market directly
-                # OrderBookMarket structure: sell_orders = {item_id: [Order...]}
                 if hasattr(housing_market, "sell_orders"):
                     for item_id, sell_orders in housing_market.sell_orders.items():
                         if item_id.startswith("unit_") and sell_orders:
-                            ask_price = sell_orders[0].price # Assuming sorted? OrderBookMarket usually sorts heaps.
-                            # OrderBookMarket uses heapq for buy_orders (max heap) and sell_orders (min heap).
-                            # So sell_orders[0] is lowest price.
+                            ask_price = sell_orders[0].price
                             if ask_price < best_price:
                                 best_price = ask_price
                                 target_unit_id = item_id
 
                 if target_unit_id:
-                     # Check affordability (assets + mortgage)
-                     # Mortgage covers 80%. We need 20%.
                      down_payment = best_price * 0.2
                      if self.assets >= down_payment:
                          buy_order = Order(
@@ -826,20 +811,16 @@ class Household(BaseAgent):
                          self.logger.info(f"HOUSING_BUY | Household {self.id} decided to buy {target_unit_id} at {best_price}")
 
         # --- Phase 6: Targeted Order Refinement ---
-        # The AI decides "What to buy", the Household Logic decides "From Whom".
         refined_orders = []
         for order in orders:
             if order.order_type == "BUY" and order.target_agent_id is None:
-                # Select best seller
-                best_seller_id, best_price = self.choose_best_seller(markets, order.item_id)
+                # Delegate to MarketComponent
+                interaction_context: MarketInteractionContext = {'markets': markets}
+                best_seller_id, best_price = self.market_component.choose_best_seller(order.item_id, interaction_context)
+
                 if best_seller_id:
                     order.target_agent_id = best_seller_id
-                    # Update price to seller's ask price if logic dictates, 
-                    # but usually Order price is 'Max Willingness to Pay'.
-                    # If we target, we usually agree to pay Ask Price if it's <= our Order Price.
-                    # Or we just set target and let Market handle price check.
-                    # The Spec says "Place BuyOrder with target_agent_id".
-                    pass 
+
             refined_orders.append(order)
         orders = refined_orders
         # ------------------------------------------
@@ -864,58 +845,11 @@ class Household(BaseAgent):
 
     def choose_best_seller(self, markets: Dict[str, "Market"], item_id: str) -> Tuple[Optional[int], float]:
         """
-        Phase 6: Utility-based Seller Selection.
-        Returns (BestSellerID, BestAskPrice)
+        Legacy method kept for backward compatibility if any external caller exists.
+        Logic is delegated to MarketComponent.
         """
-        market = markets.get(item_id)
-        if not market:
-            return None, 0.0
-        
-        # This requires Market to expose 'get_all_asks' with Seller Info
-        # We assume order_book_market has get_all_asks(item_id) returning list of SellOrders
-        # And SellOrder has agent_id.
-        # But we need metadata (Quality, Awareness) which isn't in Order DTO yet?
-        # WAIT. The Spec said "Firm places order, it stamps current Brand/Quality on it".
-        # I didn't verify SellOrder metadata.
-        # IF metadata is missing, we default to 0.5.
-        
-        asks = market.get_all_asks(item_id) # Should return List[Order]
-        if not asks:
-            return None, 0.0
-            
-        best_u = -float('inf')
-        best_seller = None
-        best_price = 0.0
-        
-        avg_sales = 10.0 # Default network effect base if unknown
-        
-        for ask in asks:
-            price = ask.price
-            seller_id = ask.agent_id
-            
-            # Phase 6: Read brand metadata from Order (Firm stamps it on SellOrder)
-            brand_data = ask.brand_info or {}
-            quality = brand_data.get("perceived_quality", 1.0)
-            awareness = brand_data.get("brand_awareness", 0.0)
-            
-            loyalty = self.brand_loyalty.get(seller_id, 1.0)
-            
-            # Utility Function: U = (Quality * (1 + Awareness * Pref) * Loyalty) / Price
-            # Beta (Brand Sensitivity) from Config
-            beta = getattr(self.config_module, "BRAND_SENSITIVITY_BETA", 0.5)
-            
-            # Revised Formula: Q^alpha * (1+A)^beta / P
-            # Note: Previous code used (1 + A * Pref). Spec says (1+A)^beta or similar.
-            # Architect Prime Spec: U = (Q^alpha * (1+A)^beta) / P
-            numerator = (quality ** self.quality_preference) * ((1.0 + awareness) ** beta)
-            utility = (numerator * loyalty) / max(0.01, price)
-            
-            if utility > best_u:
-                best_u = utility
-                best_seller = seller_id
-                best_price = price
-        
-        return best_seller, best_price
+        context: MarketInteractionContext = {'markets': markets}
+        return self.market_component.choose_best_seller(item_id, context)
 
     def execute_tactic(
         self,
@@ -962,30 +896,14 @@ class Household(BaseAgent):
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         """
-        Orchestrates the household's tick-level updates in a specific order:
-        1. Work to earn income.
-        2. Consume goods to satisfy needs.
-        3. Pay taxes.
-        4. Update psychological needs.
+        Delegates the household's tick-level updates to AgentLifecycleComponent.
         """
-        # 1. Work (via LaborManager)
-        # Assuming a fixed 8 hours of work per tick if employed
-        work_hours = 8.0 if self.is_employed else 0.0
-        self.labor_manager.work(work_hours)
-
-        # 2. Consume (via ConsumptionBehavior, which should call EconomyManager)
-        # The existing decide_and_consume already handles this part.
-        # We just need to ensure the orchestration order.
-        # The actual consumption logic is now in EconomyManager,
-        # but the decision to consume is in ConsumptionBehavior.
-        # Let's assume decide_and_consume calls self.consume which is now delegated.
-        self.decide_and_consume(current_tick, market_data)
-
-        # 3. Pay Taxes (via EconomyManager)
-        self.economy_manager.pay_taxes()
-
-        # 4. Update Psychological Needs (existing PsychologyComponent)
-        self.psychology.update_needs(current_tick, market_data)
+        context: LifecycleContext = {
+            'household': self,
+            'market_data': market_data or {},
+            'time': current_tick
+        }
+        self.lifecycle_component.run_tick(context)
 
     def _update_skill(self):
         """Delegates skill updates to the LaborManager."""
@@ -1076,3 +994,23 @@ class Household(BaseAgent):
         # 2. Update expected wage based on inherited education if applicable
         child.education_level = min(self.education_level, 1) # Reset but maybe give a head start
         child.expected_wage = self.expected_wage * 0.8 # Legacy expectations
+
+    def update_learning(self, context: LearningUpdateContext) -> None:
+        """
+        시뮬레이션 엔진이 에이전트의 내부 AI 학습 프로세스를 트리거하기 위한 메서드.
+        """
+        # 엔진은 더 이상 household.decision_engine.ai_engine에 접근하지 않음
+        if hasattr(self.decision_engine, 'ai_engine') and self.decision_engine.ai_engine:
+            # We already calculated reward in Simulation.run_tick before calling this in the old code.
+            # But the spec says: "The Simulation engine calls update_learning... Agent is responsible for delegating."
+            # The context has 'reward'.
+
+            reward = context['reward']
+            next_agent_data = context['next_agent_data']
+            next_market_data = context['next_market_data']
+
+            self.decision_engine.ai_engine.update_learning_v2(
+                reward=reward,
+                next_agent_data=next_agent_data,
+                next_market_data=next_market_data,
+            )

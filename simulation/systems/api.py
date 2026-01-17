@@ -4,11 +4,11 @@ God Class 리팩토링을 위한 새로운 시스템 및 컴포넌트의 계약�
 이 파일은 새로운 아키텍처 요소의 공개 API를 설정하여 명확한 경계와 타입 안전성을 보장합니다.
 """
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, Protocol, TypedDict, Deque
+from typing import List, Dict, Any, Optional, Protocol, TypedDict, Deque, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 # 순환 참조를 피하기 위한 Forward declarations
-if 'TYPE_CHECKING':
+if TYPE_CHECKING:
     from simulation.core_agents import Household, Firm
     from simulation.agents.government import Government
     from simulation.config import SimulationConfig
@@ -49,12 +49,14 @@ class CommerceContext(TypedDict):
     market_data: Dict[str, Any]
     config: 'SimulationConfig'
     time: int
+    labor_market_analyzer: 'ILaborMarketAnalyzer' # Added for dependency injection
 
 class LifecycleContext(TypedDict):
     """에이전트 생명주기 관리에 필요한 데이터입니다."""
     household: 'Household' # 개별 가계를 대상으로 실행
     market_data: Dict[str, Any]
     time: int
+    labor_market_analyzer: 'ILaborMarketAnalyzer' # Added for dependency injection
 
 class MarketInteractionContext(TypedDict):
     """시장 상호작용 컴포넌트에 필요한 데이터입니다."""
@@ -135,6 +137,12 @@ class IAgentLifecycleComponent(Protocol):
     def run_tick(self, context: LifecycleContext) -> None:
         """
         에이전트의 틱(일하기, 소비하기, 세금내기, 심리상태 업데이트)을 조율합니다.
+        """
+        ...
+
+    def work(self) -> None:
+        """
+        노동을 수행합니다 (Simulation orchestration에서 직접 호출 가능).
         """
         ...
 

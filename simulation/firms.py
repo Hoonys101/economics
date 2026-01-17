@@ -21,6 +21,7 @@ from simulation.components.production_department import ProductionDepartment
 from simulation.components.sales_department import SalesDepartment
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError
+from simulation.systems.api import ILearningAgent, LearningUpdateContext
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -714,3 +715,19 @@ class Firm(BaseAgent):
             if self.cash_reserve < amount:
                 raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.cash_reserve:.2f}")
             self.cash_reserve -= amount
+
+    def update_learning(self, context: LearningUpdateContext) -> None:
+        """
+        시뮬레이션 엔진이 에이전트의 내부 AI 학습 프로세스를 트리거하기 위한 메서드.
+        """
+        # 엔진은 더 이상 firm.decision_engine.ai_engine에 접근하지 않음
+        if hasattr(self.decision_engine, 'ai_engine') and self.decision_engine.ai_engine:
+            reward = context['reward']
+            next_agent_data = context['next_agent_data']
+            next_market_data = context['next_market_data']
+
+            self.decision_engine.ai_engine.update_learning_v2(
+                reward=reward,
+                next_agent_data=next_agent_data,
+                next_market_data=next_market_data,
+            )
