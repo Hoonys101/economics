@@ -252,9 +252,9 @@ class JulesBridge:
                     ["git", "commit", "-m", f"chore: Pre-Jules dispatch for {title}"],
                     cwd=BASE_DIR, check=True
                 )
-                print("   ✅ Changes committed")
+                print("   [x] Changes committed")
             else:
-                print("   ℹ️ No uncommitted changes")
+                print("   [i] No uncommitted changes")
             
             # Always push to ensure remote is up-to-date
             push_result = subprocess.run(
@@ -262,7 +262,7 @@ class JulesBridge:
                 capture_output=True, text=True, cwd=BASE_DIR
             )
             if push_result.returncode == 0:
-                print("   ✅ Pushed to remote")
+                print("   [x] Pushed to remote")
                 return True
             else:
                 print(f"   ⚠️ Push warning: {push_result.stderr.strip()}")
