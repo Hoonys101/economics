@@ -1,7 +1,12 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {},
+    "active_sessions": {
+      "298579565746718624": {
+        "title": "ActionProposal_Config_Refactor",
+        "initial_mission": "Refactor ActionProposalEngine config loading. TASKS: 1. Modify `simulation/decisions/action_proposal.py` to inject `ConfigManager` in `__init__` and replace hardcoded goods list with `self.config_manager.get('simulation.consumables')`. 2. Update `simulation/initialization/initializer.py` to pass `config_manager` to `ActionProposalEngine`. 3. Update `config/simulation.yaml` to add `consumables: ['basic_food', 'luxury_food']` (Correcting 'food' to 'basic_food'). 4. Create `tests/simulation/test_action_proposal.py` to verify config loading with a mock ConfigManager. REFERENCE: implementation_plan.md."
+      }
+    },
     "completed_sessions": {
       "14826170066369985962": "TD-008 Finance Upgrade - MERGED 2026-01-16",
       "2244231495852370011": "WO-079 Config Automation v2 - MERGED 2026-01-16",

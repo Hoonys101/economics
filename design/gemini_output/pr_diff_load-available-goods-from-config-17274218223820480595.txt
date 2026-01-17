@@ -1,0 +1,906 @@
+diff --git a/communications/team_assignments.json b/communications/team_assignments.json
+index 35212b5..01a321e 100644
+--- a/communications/team_assignments.json
++++ b/communications/team_assignments.json
+@@ -1,13 +1,22 @@
+ {
+   "antigravity": {
+     "project": "economics",
+-    "active_sessions": {},
++    "active_sessions": {
++      "5283327958326335498": "TD-024: Post-Fix Test Stabilization",
++      "12543922642187456551": {
++        "title": "TD-045: Firm God Class Refactoring",
++        "initial_mission": "REFACTOR `simulation/firms.py` following `design/gemini_output/firm_soc_spec.md`. ..."
++      },
++      "4889257989211040620": {
++        "title": "TD-044: Household God Class Refactoring",
++        "initial_mission": "REFACTOR `simulation/core_agents.py` following `design/gemini_output/household_soc_spec.md`. ..."
++      },
++      "2244231495852370011": {
++        "title": "WO-079_Config_Automation_v2",
++        "initial_mission": "Implement WO-079 v2: High-reliability Config Automation. MISSION: 1. Create 'modules/common/config_manager/impl.py' based on the spec. 2. Ensure NO circular dependencies (Leaf Node). 3. Implement Hybrid loading (YAML with legacy config.py fallbacks). 4. MANDATORY: Verify that existing tests still pass by providing the 'set_value_for_test' interface. TARGET_SPEC: 'design/specs/WO-079_Config_Automation_v2.md'. WORK_ORDER: 'design/work_orders/WO-079_Config_Automation_v2.md'."
++      }
++    },
+     "completed_sessions": {
+-      "14826170066369985962": "TD-008 Finance Upgrade - MERGED 2026-01-16",
+-      "2244231495852370011": "WO-079 Config Automation v2 - MERGED 2026-01-16",
+-      "12543922642187456551": "TD-045 Firm God Class - COMPLETED 2026-01-16",
+-      "4889257989211040620": "TD-044 Household God Class - COMPLETED 2026-01-16",
+-      "5283327958326335498": "TD-024 Post-Fix Test - COMPLETED 2026-01-16",
+       "8465436477342866436": "WO-037 Simulation Cockpit - MERGED 2026-01-16",
+       "15007179683109829611": "WO-060 - MERGED 2026-01-15",
+       "7095675393629273222": "WO-064: Banking Credit Engine - MERGED 2026-01-15",
+diff --git a/config/simulation.yaml b/config/simulation.yaml
+index adde18c..63adaaa 100644
+--- a/config/simulation.yaml
++++ b/config/simulation.yaml
+@@ -1,5 +1,6 @@
+ batch_save_interval: 50
+ sma_buffer_window: 10
++household_consumable_goods: ["basic_food", "luxury_food"]
+ chaos_events:
+   - tick: 200
+     type: "inflation_shock"
+diff --git a/design/HANDOVER_2026-01-16.md b/design/HANDOVER_2026-01-16.md
+index 730d50e..832f118 100644
+--- a/design/HANDOVER_2026-01-16.md
++++ b/design/HANDOVER_2026-01-16.md
+@@ -22,18 +22,11 @@
+ ---
+ 
+ ## 3. 🚩 다음 세션 첫 번째 할 일 (Top Priority)
+-### [Phase 28] Macro-Stability Stress Testing
+-- **상태**: 분석 보고서(`design/gemini_output/analysis_phase28_stress_scenarios.md`) 생성 완료.
+-- **주요 내용**:
+-    - 거시 경제 변수 식별 및 DTO(`StressScenarioConfig`) 설계 제안.
+-    - 3대 시나리오(초인플레이션, 디플레이션, 공급 충격) 정의.
++### [TD-008] Advanced Finance System (Altman Z-Score) 구현
++- **상태**: 명세서(`design/specs/TD-008_Finance_Upgrade_Spec.md`) 작성 완료.
+ - **다음 작업**: 
+-    1. 분석 보고서 검토 및 승인.
+-    2. Jules에게 시나리오 구현 발주.
+-
+-### 📜 완료된 주요 작업 (Archived this session)
+-- **TD-008 Finance System Upgrade**: `BailoutCovenant` 리팩토링 및 Z-Score 문서화 완료 (MERGED).
+-- **Gemini-CLI Upgrade**: `pro` 모델 선택 기능 추가 및 인자 충돌 버그 수정.
++    1. `command_registry.json`의 `jules` 섹션에 TD-008 미션 내용 '장전'.
++    2. `.\jules-go.bat` 실행 요청하여 발주.
+ 
+ ---
+ 
+diff --git a/design/SESSION_LEDGER.md b/design/SESSION_LEDGER.md
+index 964c0c9..55db77a 100644
+--- a/design/SESSION_LEDGER.md
++++ b/design/SESSION_LEDGER.md
+@@ -6,4 +6,4 @@
+ | 2026-01-16 | 1781228977548149949 | WO-079: Config Automation | [CANCELLED] Redundant session due to bridge error. |
+ | 2026-01-16 | 8465436477342866436 | WO-037: Simulation Cockpit | [COMPLETED] Merged feat branch into main. Dashboard available. |
+ | 2026-01-16 | 2244231495852370011 | WO-079: Config Automation v2 | [COMPLETED] Merged and verified via SCR. |
+-| 2026-01-16 | 14826170066369985962 | TD-008: Finance System Upgrade | [COMPLETED] Merged into main. Bailout system refactored. |
++| 2026-01-16 | - | TD-008: Finance Upgrade Spec | [READY] Spec drafted using Gemini-CLI. |
+diff --git a/design/command_registry.json b/design/command_registry.json
+index f8443e3..b2c4e1b 100644
+--- a/design/command_registry.json
++++ b/design/command_registry.json
+@@ -1,7 +1,7 @@
+ {
+   "gemini": {
+-    "worker": "spec",
+-    "instruction": "Analyze the codebase to prepare for Phase 28 (Macro-Stability Stress Testing). TASKS: 1. Identify all configurable economic variables in 'simulation/config.py' and 'modules/common/config_manager'. 2. Propose 3 stress scenarios: 'Hyperinflation' (High Demand/Low Supply), 'Deflationary Spiral' (Low Demand/Hoarding), and 'Supply Shock' (Productivity Collapse). 3. Map which Agent behaviors (e.g., 'price_sensitivity', 'panic_selling') need to be parameterized for these tests. IMPORTANT: Do NOT try to use any tools (like write_file). Just OUTPUT the raw markdown content directly. The system will save it for you. OUTPUT: 'design/gemini_output/analysis_phase28_stress_scenarios.md'.",
++    "worker": "analysis",
++    "instruction": "Analyze the codebase to prepare for Phase 28 (Macro-Stability Stress Testing). TASKS: 1. Identify all configurable economic variables in 'simulation/config.py' and 'modules/common/config_manager'. 2. Propose 3 stress scenarios: 'Hyperinflation' (High Demand/Low Supply), 'Deflationary Spiral' (Low Demand/Hoarding), and 'Supply Shock' (Productivity Collapse). 3. Map which Agent behaviors (e.g., 'price_sensitivity', 'panic_selling') need to be parameterized for these tests. OUTPUT: 'design/gemini_output/analysis_phase28_stress_scenarios.md'.",
+     "context": [
+       "simulation/config.py",
+       "simulation/engine.py",
+@@ -9,14 +9,13 @@
+       "modules/finance/system.py"
+     ],
+     "output": "design/gemini_output/analysis_phase28_stress_scenarios.md",
+-    "audit": "",
+-    "model": "pro"
++    "audit": ""
+   },
+   "jules": {
+     "command": "create",
+     "session_id": "",
+-    "title": "ActionProposal_Config_Refactor",
+-    "instruction": "Refactor ActionProposalEngine config loading. TASKS: 1. Modify `simulation/decisions/action_proposal.py` to inject `ConfigManager` in `__init__` and replace hardcoded goods list with `self.config_manager.get('simulation.consumables')`. 2. Update `simulation/initialization/initializer.py` to pass `config_manager` to `ActionProposalEngine`. 3. Update `config/simulation.yaml` to add `consumables: ['basic_food', 'luxury_food']` (Correcting 'food' to 'basic_food'). 4. Create `tests/simulation/test_action_proposal.py` to verify config loading with a mock ConfigManager. REFERENCE: implementation_plan.md.",
++    "title": "TD-008_Finance_Upgrade",
++    "instruction": "Implement TD-008: Finance System Upgrade. TASKS: 1. Create 'BailoutCovenant' dataclass in api.py. 2. Update BailoutLoanDTO.covenants type from Dict to BailoutCovenant. 3. Modify grant_bailout_loan to use new class. 4. Add Google-style docstrings to calculate_altman_z_score and evaluate_solvency. 5. Create tests/test_finance_bailout.py with covenant type check, money flow verification, and regression tests. TARGET_FILES: modules/finance/api.py, modules/finance/system.py, simulation/components/finance_department.py. SPEC: design/specs/TD-008_Finance_Upgrade_Spec.md. CONSTRAINTS: Do NOT touch Frontend files.",
+     "file": "",
+     "wait": true
+   },
+@@ -25,7 +24,7 @@
+     "instruction": "Analyze this PR. Check implementation completeness, test coverage, SoC compliance, and potential regressions."
+   },
+   "merge": {
+-    "branch": "feature/TD-008-finance-system-upgrade-14826170066369985962"
++    "branch": ""
+   },
+   "harvest": {
+     "note": "Report Harvester takes no direct arguments in JSON usually."
+diff --git a/design/gemini_output/analysis_phase28_stress_scenarios.md b/design/gemini_output/analysis_phase28_stress_scenarios.md
+deleted file mode 100644
+index 4760c68..0000000
+--- a/design/gemini_output/analysis_phase28_stress_scenarios.md
++++ /dev/null
+@@ -1,151 +0,0 @@
+-```markdown
+-# Phase 28 Stress Test Analysis & Implementation Plan
+-
+-This document outlines the analysis and proposed implementation strategy for Phase 28: Macro-Stability Stress Testing. It identifies key economic variables, defines three core stress scenarios, and proposes an architecturally-sound approach for implementation that respects the findings of the pre-flight audit.
+-
+-## 1. Key Configurable Economic Variables
+-
+-Based on an analysis of the codebase, the following variables are central to the simulation's economic behavior. They are categorized by their primary domain of influence.
+-
+-### Agent Behavior (Households & Firms)
+-- **Psychology & Preferences:**
+-  - `ADAPTATION_RATE_*`: Controls how quickly households adapt to new inflation expectations.
+-  - `PERCEIVED_PRICE_UPDATE_FACTOR`: Smoothing factor for how households perceive price changes.
+-  - `INFLATION_MEMORY_WINDOW`: The time horizon for remembering past prices.
+-  - `QUALITY_PREFERENCE`, `BRAND_SENSITIVITY_BETA`: Governs household preference for quality and brand over price.
+-  - `VALUE_ORIENTATION_MAPPING`: Defines core preferences for asset, social, and growth goals.
+-  - `CONFORMITY_RANGES`: Controls the tendency of households to follow social trends.
+-  - `RISK_AVERSION`: General modifier for financial risk-taking.
+-- **Labor & Consumption:**
+-  - `MAX_WORK_HOURS`, `SHOPPING_HOURS`: Defines the household time budget.
+-  - `HOUSEHOLD_MIN_WAGE_DEMAND`, `HOUSEHOLD_DEFAULT_WAGE`: Base parameters for household wage expectations.
+-  - `FOOD_CONSUMPTION_QUANTITY`: Minimum survival consumption amount.
+-  - `HOUSEHOLD_LOW_ASSET_THRESHOLD`: Asset level below which households accept lower wages.
+-- **Education & Skills:**
+-  - `EDUCATION_WEALTH_THRESHOLDS`: Asset gates for achieving higher education levels.
+-  - `EDUCATION_COST_MULTIPLIERS`: Determines the wage premium for education.
+-- **Firm Logic:**
+-  - `STARTUP_GRACE_PERIOD_TICKS`: How long startups are exempt from strict solvency checks.
+-  - `ALTMAN_Z_SCORE_THRESHOLD`: The threshold for firm bankruptcy.
+-
+-### Market & System Dynamics
+-- `INITIAL_RENT_PRICE`, `INITIAL_WAGE`: Core price anchors at simulation start.
+-- `INFRASTRUCTURE_TFP_BOOST`: Productivity increase from government investment.
+-- `IMITATION_LEARNING_INTERVAL`: Frequency of the AI's imitation learning cycle.
+-- `BOND_MATURITY_TICKS`: The term length for government bonds.
+-- `TICKS_PER_YEAR`: Defines the conversion rate between ticks and years for financial calculations.
+-
+-### Government & Central Bank Policy
+-- `DEBT_RISK_PREMIUM_TIERS`: Defines the risk premium on government debt based on Debt-to-GDP ratio.
+-- `QE_INTERVENTION_YIELD_THRESHOLD`: The bond yield that triggers Central Bank intervention (Quantitative Easing).
+-- `BAILOUT_PENALTY_PREMIUM`, `BAILOUT_REPAYMENT_RATIO`: Terms for corporate bailout loans.
+-- **Tax Policy**: (Implicitly configured in `Government` class) Corporate and income tax rates.
+-
+-## 2. Proposed Stress Scenarios & Behavioral Parameterization
+-
+-To avoid polluting the global `config_module` and to heed the audit's warnings, all new scenario-specific parameters should be encapsulated in a dedicated DTO, `StressScenarioConfig`, and passed explicitly to agents.
+-
+-```python
+-# Proposed DTO structure (to be defined in a new file, e.g., simulation/dtos/scenario.py)
+-from dataclasses import dataclass, field
+-from typing import Optional
+-
+-@dataclass
+-class StressScenarioConfig:
+-    # General Scenario Flags
+-    is_active: bool = False
+-    scenario_name: Optional[str] = None
+-
+-    # Hyperinflation Parameters
+-    inflation_expectation_multiplier: float = 1.0  # Multiplies household adaptation_rate
+-    hoarding_propensity_factor: float = 0.0      # Extra goods to buy when inflation is high (0.0 = none)
+-
+-    # Deflationary Spiral Parameters
+-    panic_selling_enabled: bool = False               # Enable asset fire-sales
+-    debt_aversion_multiplier: float = 1.0             # Multiplies desire to repay debt vs consume
+-    consumption_pessimism_factor: float = 0.0         # % reduction in consumption if unemployed/pessimistic (0.0 = none)
+-
+-    # Supply Shock Parameters
+-    exogenous_productivity_shock: Dict[str, float] = field(default_factory=dict) # e.g., {"firm_type_A": 0.5}
+-```
+-
+----
+-
+-### Scenario 1: Hyperinflation (Demand-Pull / Cost-Push)
+-
+-- **Goal:** Test the stability of the currency and market pricing mechanisms under rapidly rising prices and inflation expectations.
+-- **Triggers:**
+-  1.  **Demand-Pull:** At `tick == SCENARIO_START_TICK`, inject a large amount of cash directly into all household assets ("Helicopter Money").
+-  2.  **Cost-Push:** At `tick == SCENARIO_START_TICK`, dramatically increase a core input cost for all firms (e.g., by doubling the `labor` price in `market_data` for one tick).
+-- **Key Behaviors & Parameters:**
+-  - **Accelerated Inflation Expectations:** Households must react faster to price changes.
+-    - **Parameter:** `StressScenarioConfig.inflation_expectation_multiplier`.
+-    - **Injection Point:** In `Household.update_perceived_prices`, the `adaptation_rate` would be multiplied by this factor, making `expected_inflation` more sensitive.
+-  - **Pre-emptive Hoarding:** Households buy more non-durable goods than immediately necessary, expecting future price rises.
+-    - **Parameter:** `StressScenarioConfig.hoarding_propensity_factor`.
+-    - **Injection Point:** In `Household.make_decision` (or its `ConsumptionBehavior` component), the quantity for `BUY` orders for goods like `basic_food` would be increased if `expected_inflation` is high.
+-  - **Rapid Price Adjustments (Firms):** Firms update their sell prices more frequently and aggressively.
+-    - **Injection Point:** In `Firm.make_decision`, when setting sell order prices, firms would react more strongly to their own rising costs or observed market price changes, instead of using smoothed averages.
+-
+----
+-
+-### Scenario 2: Deflationary Spiral (Debt-Deflation)
+-
+-- **Goal:** Test the system's resilience against a collapse in asset values, falling demand, and rising real debt burdens.
+-- **Triggers:**
+-  1.  **Asset Shock:** At `tick == SCENARIO_START_TICK`, execute a large, one-time reduction in all household and firm assets (e.g., `assets *= 0.5`), simulating a market crash.
+-  2.  **Credit Crunch:** The `Bank` dramatically increases its `base_rate`.
+-- **Key Behaviors & Parameters:**
+-  - **Panic Selling / Fire Sales:** Households and firms liquidate assets (stocks, property) to raise cash, further depressing prices.
+-    - **Parameter:** `StressScenarioConfig.panic_selling_enabled`.
+-    - **Injection Point:** In `Household.make_decision`, if this flag is true and `assets` are below a threshold, the agent will generate `SELL` orders for items in its `portfolio`, ignoring long-term value.
+-  - **Consumption Collapse:** Unemployed or pessimistic households drastically cut spending.
+-    - **Parameter:** `StressScenarioConfig.consumption_pessimism_factor`.
+-    - **Injection Point:** In `Household.make_decision`, the budget allocated for consumption would be reduced by this factor if `is_employed == False`.
+-  - **Debt Aversion:** Agents prioritize debt repayment over all other spending.
+-    - **Parameter:** `StressScenarioConfig.debt_aversion_multiplier`.
+-    - **Injection Point:** In `Household.make_decision`, the logic for creating `REPAYMENT` orders would be given higher priority and a larger budget allocation, multiplied by this factor.
+-  - **Investment Freeze (Firms):** Firms cancel all expansionary investment (hiring, R&D) and focus solely on survival.
+-    - **Injection Point:** In `Firm.make_decision`, logic for creating `BUY` orders for labor or CAPEX-related goods would be suppressed if demand is falling.
+-
+----
+-
+-### Scenario 3: Supply Shock (Productivity Collapse)
+-
+-- **Goal:** Test the system's ability to adapt to a sudden, structural inability to produce essential goods.
+-- **Triggers:**
+-  1.  **Productivity Shock:** At `tick == SCENARIO_START_TICK`, permanently reduce the `productivity_factor` of firms in a critical sector (e.g., `Farm` firms producing `basic_food`). This is done via the `exogenous_productivity_shock` parameter.
+-- **Key Behaviors & Parameters:**
+-  - **Labor Shedding vs. Hoarding (Firms):** Firms must decide whether to fire workers they can no longer use productively or keep them on the payroll, expecting a recovery.
+-    - **Injection Point:** In `Firm.make_decision`, the logic that determines the quantity for `labor` `BUY` orders would need to be adjusted. A new firm-level "patience" or "optimism" trait could be parameterized here.
+-  - **Input Substitution (Firms/Households):** When an input/good becomes scarce and expensive, agents must try to use an alternative.
+-    - **Injection Point:** This reveals a weakness noted in the audit. The current logic in `Household.decide_and_consume` is likely hardcoded to specific goods. A refactoring would be needed to create a `good_utility_map` that could be dynamically adjusted based on price and availability, representing substitution.
+-  - **Price Gouging vs. Price Smoothing (Firms):** Do firms with remaining supply exploit the shortage by raising prices astronomically, or do they smooth prices to maintain brand loyalty?
+-    - **Injection Point:** In `Firm.make_decision`, the pricing logic for `SELL` orders could be modified to be more or less reactive to the supply/demand imbalance, potentially controlled by a firm's `Personality`.
+-
+-## 3. Implementation Strategy (Architectural Recommendations)
+-
+-This strategy is designed to introduce stress testing capabilities without exacerbating the existing architectural debt identified in the pre-flight audit.
+-
+-1.  **Introduce a `StressScenarioConfig` DTO:**
+-    - Create a new, dedicated dataclass in `simulation/dtos/`. This object will hold all scenario-specific parameters.
+-    - An instance of this DTO will be created by the `Simulation` initializer.
+-    - **This avoids adding more unstructured `getattr` calls to the fragile `config_module`.**
+-
+-2.  **Explicit Parameter Passing (No God Object Modification):**
+-    - The `StressScenarioConfig` object must be passed **explicitly** down the call stack.
+-    - `Simulation.run_tick()` will pass it to `Household.make_decision()` and `Firm.make_decision()`.
+-    - **DO NOT** make it a global or an attribute of the `Simulation` object that agents can access directly. This maintains clear data flow.
+-
+-3.  **Isolate Scenario Triggers:**
+-    - The *triggers* for each scenario (e.g., the initial asset shock or productivity drop) should be implemented as a simple, self-contained `if self.time == SCENARIO_START_TICK:` block at the **top** of the `Simulation.run_tick()` method.
+-    - This block reads from the `StressScenarioConfig` to activate the correct shock.
+-    - **This contains the only modification to the `run_tick` monolith, keeping it minimal and predictable.**
+-
+-4.  **Agent-Level Behavioral Modification:**
+-    - The actual *behavioral changes* during a scenario are implemented entirely within the agents' decision-making methods (`make_decision`).
+-    - These methods will read the `StressScenarioConfig` DTO they receive as an argument and modify their logic accordingly (e.g., `if scenario_config.panic_selling_enabled:`).
+-    - This respects the principle of agent autonomy and keeps complex conditional logic out of the `Simulation` engine.
+-
+-By following this strategy, we can introduce powerful stress-testing capabilities while promoting better architectural hygiene, ensuring that the new features are modular, testable, and do not add to the project's existing technical debt.
+-```
+diff --git a/design/gemini_output/pr_diff_TD-008-finance-system-upgrade-14826170066369985962.txt b/design/gemini_output/pr_diff_TD-008-finance-system-upgrade-14826170066369985962.txt
+deleted file mode 100644
+index 3f2ec71..0000000
+--- a/design/gemini_output/pr_diff_TD-008-finance-system-upgrade-14826170066369985962.txt
++++ /dev/null
+@@ -1,288 +0,0 @@
+-diff --git a/modules/finance/api.py b/modules/finance/api.py
+-index 711229f..eb594d2 100644
+---- a/modules/finance/api.py
+-+++ b/modules/finance/api.py
+-@@ -13,13 +13,22 @@ class BondDTO:
+-     yield_rate: float
+-     maturity_date: int
+- 
+-+from dataclasses import dataclass
+-+
+-+@dataclass
+-+class BailoutCovenant:
+-+    """Defines the restrictive conditions attached to a bailout loan."""
+-+    dividends_allowed: bool
+-+    executive_salary_freeze: bool
+-+    mandatory_repayment: float # Ratio of profit to be repaid
+-+
+- @dataclass
+- class BailoutLoanDTO:
+-     """Data Transfer Object for corporate bailout loans."""
+-     firm_id: int
+-     amount: float
+-     interest_rate: float
+--    covenants: Dict[str, bool]
+-+    covenants: BailoutCovenant
+- 
+- class IFinanceSystem(Protocol):
+-     """Interface for the sovereign debt and corporate bailout system."""
+-diff --git a/modules/finance/system.py b/modules/finance/system.py
+-index bdd335e..eba2ad2 100644
+---- a/modules/finance/system.py
+-+++ b/modules/finance/system.py
+-@@ -1,6 +1,6 @@
+- from typing import List, Dict, Optional
+- import logging
+--from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, IFinancialEntity, InsufficientFundsError
+-+from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
+- # Forward reference for type hinting
+- from simulation.firms import Firm
+- 
+-@@ -17,10 +17,25 @@ class FinanceSystem(IFinanceSystem):
+-         self.outstanding_bonds: List[BondDTO] = []
+- 
+-     def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+--        """
+--        Evaluates a firm's solvency to determine bailout eligibility.
+--        - Startups (< 24 ticks old) are checked for a 3-month wage runway.
+--        - Established firms are evaluated using the Altman Z-Score.
+-+        """Evaluates a firm's solvency to determine bailout eligibility.
+-+
+-+        This method uses two distinct evaluation paths based on the firm's age:
+-+        1.  **Startup Runway Check**: For new firms still within their grace period
+-+            (defined by `STARTUP_GRACE_PERIOD_TICKS` from the config), solvency
+-+            is determined by their cash runway. The check ensures they have enough
+-+            cash reserves to cover their wage bill for a defined period (e.g., 3 months).
+-+        2.  **Altman Z-Score**: For established firms beyond the grace period,
+-+            solvency is assessed using the Altman Z-Score, a more comprehensive
+-+            financial health metric. A score above the `ALTMAN_Z_SCORE_THRESHOLD`
+-+            (from the config) is considered solvent.
+-+
+-+        Args:
+-+            firm: The firm entity to be evaluated.
+-+            current_tick: The current simulation tick, used for age calculation.
+-+
+-+        Returns:
+-+            True if the firm is deemed solvent and thus ineligible for a bailout,
+-+            False otherwise.
+-         """
+-         startup_grace_period = getattr(self.config_module, "STARTUP_GRACE_PERIOD_TICKS", 24)
+-         z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
+-@@ -93,15 +108,16 @@ class FinanceSystem(IFinanceSystem):
+-         base_rate = self.central_bank.get_base_rate()
+-         penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
+- 
+-+        covenants = BailoutCovenant(
+-+            dividends_allowed=False,
+-+            executive_salary_freeze=True,
+-+            mandatory_repayment=getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+-+        )
+-         loan = BailoutLoanDTO(
+-             firm_id=firm.id,
+-             amount=amount,
+-             interest_rate=base_rate + penalty_premium,
+--            covenants={
+--                "dividends_allowed": False,
+--                "executive_salary_freeze": True,
+--                "mandatory_repayment": getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+--            }
+-+            covenants=covenants
+-         )
+- 
+-         # Transfer funds from Government to the firm
+-diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+-index b794c28..ef73f9c 100644
+---- a/simulation/components/finance_department.py
+-+++ b/simulation/components/finance_department.py
+-@@ -208,12 +208,28 @@ class FinanceDepartment:
+-         self.firm.total_debt += amount
+- 
+-     def calculate_altman_z_score(self) -> float:
+--        """
+--        Calculates the Altman Z-Score for solvency, simplified for this model.
+-+        """Calculates the Altman Z-Score for solvency, simplified for this model.
+-+
+-+        The formula used is a modified version for non-manufacturing or service companies:
+-         Z = 1.2*X1 + 1.4*X2 + 3.3*X3
+--        X1: Working Capital / Total Assets
+--        X2: Retained Earnings / Total Assets
+--        X3: Average Profit / Total Assets
+-+
+-+        Where:
+-+            X1 (Working Capital / Total Assets): Measures liquid assets in relation
+-+               to the size of the company. A firm with significant working capital
+-+               is less likely to face immediate financial distress.
+-+               - Working Capital = Firm's cash reserves - total debt.
+-+               - Total Assets = Cash + Capital Stock + Inventory Value.
+-+            X2 (Retained Earnings / Total Assets): Measures cumulative profitability.
+-+               A higher value indicates a history of reinvesting profits,
+-+               strengthening the company's financial foundation.
+-+            X3 (Average Profit / Total Assets): Measures recent operational efficiency.
+-+               Uses a moving average of profit to gauge how effectively the firm
+-+               is generating earnings from its assets.
+-+
+-+        Returns:
+-+            The calculated Z-Score. A score below 1.81 typically indicates a firm
+-+            is heading for bankruptcy, while a score above 3.0 suggests a healthy
+-+            financial position.
+-         """
+-         total_assets = self.firm.assets + self.firm.capital_stock + self.firm.get_inventory_value()
+-         if total_assets == 0:
+-diff --git a/tests/modules/finance/test_system.py b/tests/modules/finance/test_system.py
+-index 17309c7..9249e79 100644
+---- a/tests/modules/finance/test_system.py
+-+++ b/tests/modules/finance/test_system.py
+-@@ -162,7 +162,7 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
+-     loan = finance_system.grant_bailout_loan(mock_firm, amount)
+-     assert loan.firm_id == mock_firm.id
+-     assert loan.amount == amount
+--    assert loan.covenants["mandatory_repayment"] == mock_config.BAILOUT_REPAYMENT_RATIO
+-+    assert loan.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
+-     assert mock_government.assets == initial_gov_assets - amount
+-     assert mock_firm.cash_reserve == initial_firm_cash + amount
+-     mock_firm.finance.add_liability.assert_called_once_with(amount, loan.interest_rate)
+-diff --git a/tests/test_finance_bailout.py b/tests/test_finance_bailout.py
+-new file mode 100644
+-index 0000000..702df77
+---- /dev/null
+-+++ b/tests/test_finance_bailout.py
+-@@ -0,0 +1,139 @@
+-+import pytest
+-+from unittest.mock import Mock, MagicMock
+-+
+-+from modules.finance.api import BailoutCovenant, BailoutLoanDTO, InsufficientFundsError
+-+from modules.finance.system import FinanceSystem
+-+
+-+# A simple stub class for config attributes
+-+class MockConfig:
+-+    BAILOUT_PENALTY_PREMIUM = 0.05
+-+    BAILOUT_REPAYMENT_RATIO = 0.5
+-+
+-+@pytest.fixture
+-+def finance_test_environment():
+-+    """Sets up a test environment with mocked financial entities."""
+-+    mock_government = Mock()
+-+    mock_government.assets = 1_000_000  # Starting with 1M in assets
+-+
+-+    # We need to mock the withdraw/deposit methods to simulate transactions
+-+    def withdraw(amount):
+-+        if mock_government.assets >= amount:
+-+            mock_government.assets -= amount
+-+        else:
+-+            raise InsufficientFundsError("Not enough assets.")
+-+    def deposit(amount):
+-+        mock_government.assets += amount
+-+
+-+    mock_government.withdraw.side_effect = withdraw
+-+    mock_government.deposit.side_effect = deposit
+-+
+-+    mock_central_bank = Mock()
+-+    mock_central_bank.get_base_rate.return_value = 0.02
+-+
+-+    mock_bank = Mock()
+-+
+-+    # Mock the Firm and its departments
+-+    mock_firm = Mock()
+-+    mock_firm.id = 1
+-+    mock_firm.assets = 100_000
+-+    mock_firm.total_debt = 0.0
+-+    mock_firm.has_bailout_loan = False
+-+
+-+    # Mock the finance department and its add_liability method
+-+    mock_firm.finance = Mock()
+-+
+-+    def add_liability_side_effect(amount, interest_rate):
+-+        # Simulate the firm receiving cash and taking on debt
+-+        mock_firm.assets += amount
+-+        mock_firm.total_debt += amount
+-+
+-+    mock_firm.finance.add_liability.side_effect = add_liability_side_effect
+-+
+-+    # We need a deposit method on the firm for the _transfer to work
+-+    def firm_deposit(amount):
+-+        # This is separate from add_liability; it just handles the cash transfer part.
+-+        # The liability logic is handled in the mocked add_liability.
+-+        pass # In the real code, add_liability handles the asset increase.
+-+             # In our mock, the side_effect for add_liability handles it, so we do nothing here.
+-+
+-+    mock_firm.deposit.side_effect = firm_deposit
+-+
+-+
+-+    config = MockConfig()
+-+
+-+    # Instantiate the system with mocks
+-+    finance_system = FinanceSystem(mock_government, mock_central_bank, mock_bank, config)
+-+
+-+    return finance_system, mock_government, mock_firm
+-+
+-+def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
+-+    """
+-+    Tests that a bailout loan is granted successfully, all money flows are correct,
+-+    and the returned DTO has the correct covenant type.
+-+    """
+-+    finance_system, mock_government, mock_firm = finance_test_environment
+-+    initial_govt_assets = mock_government.assets
+-+    initial_firm_assets = mock_firm.assets
+-+    initial_firm_debt = mock_firm.total_debt
+-+    loan_amount = 50_000
+-+
+-+    # Act
+-+    loan_dto = finance_system.grant_bailout_loan(mock_firm, loan_amount)
+-+
+-+    # Assert - DTO and Covenant Type
+-+    assert loan_dto is not None
+-+    assert isinstance(loan_dto, BailoutLoanDTO)
+-+    assert isinstance(loan_dto.covenants, BailoutCovenant)
+-+    assert loan_dto.covenants.dividends_allowed is False
+-+    assert loan_dto.covenants.mandatory_repayment == 0.5
+-+
+-+    # Assert - Money Flow Verification
+-+    # 1. Government assets should decrease
+-+    assert mock_government.assets == initial_govt_assets - loan_amount
+-+    # 2. Firm should have received the funds and taken on the liability
+-+    mock_firm.finance.add_liability.assert_called_once()
+-+    # 3. Verify firm's final state
+-+    assert mock_firm.assets == initial_firm_assets + loan_amount
+-+    assert mock_firm.total_debt == initial_firm_debt + loan_amount
+-+    # 4. Firm should be marked as having a bailout loan
+-+    assert mock_firm.has_bailout_loan is True
+-+
+-+    # Assert - Regression check for money creation/destruction
+-+    final_total_assets = mock_government.assets + mock_firm.assets
+-+    initial_total_assets = initial_govt_assets + initial_firm_assets
+-+    assert final_total_assets == initial_total_assets
+-+
+-+
+-+def test_grant_bailout_loan_insufficient_government_funds(finance_test_environment):
+-+    """
+-+    Tests that the bailout loan is not granted if the government has insufficient funds.
+-+    """
+-+    finance_system, mock_government, mock_firm = finance_test_environment
+-+
+-+    # Arrange: Government has less money than the loan amount
+-+    loan_amount = 2_000_000
+-+    mock_government.assets = 1_000_000 # Government has 1M, loan is 2M
+-+
+-+    initial_govt_assets = mock_government.assets
+-+    initial_firm_assets = mock_firm.assets
+-+    initial_firm_debt = mock_firm.total_debt
+-+
+-+    # Redefine the side effect for this specific test case to raise the error
+-+    def limited_withdraw(amount):
+-+        if mock_government.assets < amount:
+-+            raise InsufficientFundsError("Test: Not enough funds")
+-+        mock_government.assets -= amount
+-+    mock_government.withdraw.side_effect = limited_withdraw
+-+
+-+    # Act
+-+    loan_dto = finance_system.grant_bailout_loan(mock_firm, loan_amount)
+-+
+-+    # Assert
+-+    # 1. No loan DTO should be returned
+-+    assert loan_dto is None
+-+    # 2. No money should have moved
+-+    assert mock_government.assets == initial_govt_assets
+-+    assert mock_firm.assets == initial_firm_assets
+-+    assert mock_firm.total_debt == initial_firm_debt
+-+    # 3. Firm should not be marked as having a loan
+-+    assert mock_firm.has_bailout_loan is False
+diff --git a/design/gemini_output/pr_review_TD-008-finance-system-upgrade-14826170066369985962.md b/design/gemini_output/pr_review_TD-008-finance-system-upgrade-14826170066369985962.md
+deleted file mode 100644
+index 7087645..0000000
+--- a/design/gemini_output/pr_review_TD-008-finance-system-upgrade-14826170066369985962.md
++++ /dev/null
+@@ -1,37 +0,0 @@
+-🕵️  Reviewing Code with instruction: 'Analyze this PR. Check implementation completeness, test coverage, SoC compliance, and potential regressions.'...
+-📖 Attached context: C:\coding\economics\design\gemini_output\pr_diff_TD-008-finance-system-upgrade-14826170066369985962.txt
+-🚀 [GeminiWorker] Running task with manual: git_reviewer.md
+-
+-📝 [Review Report]
+-============================================================
+-### 🔍 Summary
+-
+-본 변경 사항은 구제금융(Bailout) 시스템의 계약(Covenant) 구조를 기존의 `Dict`에서 명시적인 `BailoutCovenant` 데이터 클래스로 리팩토링하여 코드의 타입 안정성과 명확성을 크게 향상했습니다. 또한, 구제금융 지급 로직에 대한 테스트 커버리지를 대폭 강화하여, 성공 시나리오뿐만 아니라 정부 자금 부족과 같은 실패 시나리오까지 검증합니다. 특히, 자금 이동의 정합성을 보장하기 위한 제로섬(Zero-Sum) 검증 테스트가 추가된 점이 인상적입니다.
+-
+----
+-
+-### 🚨 Critical Issues
+-
+-- 발견된 사항 없음.
+-
+----
+-
+-### ⚠️ Logic & Spec Gaps
+-
+-- 발견된 사항 없음. 리팩토링과 함께 추가된 테스트 코드가 오히려 기존에 존재할 수 있었던 잠재적 논리 오류(자금 생성/소멸)를 명시적으로 검증하고 있어 시스템의 안정성을 높였습니다.
+-
+----
+-
+-### 💡 Suggestions
+-
+-- **테스트 로직 개선 (선택 사항)**: `tests/test_finance_bailout.py`의 `test_grant_bailout_loan_insufficient_government_funds` 함수 내에서 `mock_government.withdraw.side_effect`를 재정의하는 부분이 있습니다. 이는 기능적으로 문제가 없지만, 테스트의 일관성을 위해 `finance_test_environment` 픽스처의 `withdraw` 로직을 그대로 활용하고, 대신 테스트 시작(Arrange) 단계에서 `mock_government.assets`를 대출금액보다 낮은 값으로 설정하는 것이 더 간결한 접근일 수 있습니다. 이는 필수 수정 사항은 아니며, 코드 가독성에 대한 제안입니다.
+-
+----
+-
+-### ✅ Verdict
+-
+-**APPROVE**
+-
+-전반적으로 매우 훌륭한 변경입니다. 핵심 로직의 안정성을 높이는 리팩토링, 상세한 문서화, 그리고 무엇보다 자금 흐름의 무결성을 보장하는 견고한 테스트 케이스 추가까지 모범적인 Pull Request입니다. 즉시 병합해도 문제없을 것으로 판단됩니다.
+-
+-============================================================
+diff --git a/design/gemini_output/review_backup_20260116_230058_Analyze_this_PR__Che.md b/design/gemini_output/review_backup_20260116_230058_Analyze_this_PR__Che.md
+deleted file mode 100644
+index 201d2d6..0000000
+--- a/design/gemini_output/review_backup_20260116_230058_Analyze_this_PR__Che.md
++++ /dev/null
+@@ -1,29 +0,0 @@
+-### 🔍 Summary
+-
+-본 변경 사항은 구제금융(Bailout) 시스템의 계약(Covenant) 구조를 기존의 `Dict`에서 명시적인 `BailoutCovenant` 데이터 클래스로 리팩토링하여 코드의 타입 안정성과 명확성을 크게 향상했습니다. 또한, 구제금융 지급 로직에 대한 테스트 커버리지를 대폭 강화하여, 성공 시나리오뿐만 아니라 정부 자금 부족과 같은 실패 시나리오까지 검증합니다. 특히, 자금 이동의 정합성을 보장하기 위한 제로섬(Zero-Sum) 검증 테스트가 추가된 점이 인상적입니다.
+-
+----
+-
+-### 🚨 Critical Issues
+-
+-- 발견된 사항 없음.
+-
+----
+-
+-### ⚠️ Logic & Spec Gaps
+-
+-- 발견된 사항 없음. 리팩토링과 함께 추가된 테스트 코드가 오히려 기존에 존재할 수 있었던 잠재적 논리 오류(자금 생성/소멸)를 명시적으로 검증하고 있어 시스템의 안정성을 높였습니다.
+-
+----
+-
+-### 💡 Suggestions
+-
+-- **테스트 로직 개선 (선택 사항)**: `tests/test_finance_bailout.py`의 `test_grant_bailout_loan_insufficient_government_funds` 함수 내에서 `mock_government.withdraw.side_effect`를 재정의하는 부분이 있습니다. 이는 기능적으로 문제가 없지만, 테스트의 일관성을 위해 `finance_test_environment` 픽스처의 `withdraw` 로직을 그대로 활용하고, 대신 테스트 시작(Arrange) 단계에서 `mock_government.assets`를 대출금액보다 낮은 값으로 설정하는 것이 더 간결한 접근일 수 있습니다. 이는 필수 수정 사항은 아니며, 코드 가독성에 대한 제안입니다.
+-
+----
+-
+-### ✅ Verdict
+-
+-**APPROVE**
+-
+-전반적으로 매우 훌륭한 변경입니다. 핵심 로직의 안정성을 높이는 리팩토링, 상세한 문서화, 그리고 무엇보다 자금 흐름의 무결성을 보장하는 견고한 테스트 케이스 추가까지 모범적인 Pull Request입니다. 즉시 병합해도 문제없을 것으로 판단됩니다.
+diff --git a/design/project_status.md b/design/project_status.md
+index 5cdc7a0..e2dc5fe 100644
+--- a/design/project_status.md
++++ b/design/project_status.md
+@@ -20,8 +20,8 @@
+     - **TD-046**: Hardcoded Constants Migration ✅
+     
+ - **현재 단계:** `Phase 27: Architecture Consolidation`
+-    - **TD-008**: Advanced Finance System (Altman Z-Score) ✅
+-    - **Phase 28**: Macro-Stability Stress Testing 📋 (Analysis Done)
++    - **TD-008**: Advanced Finance System (Altman Z-Score) 📋 (Spec Ready)
++    - **Phase 28**: Macro-Stability Stress Testing 🚀 (Next)
+ 
+ ---
+ 
+diff --git a/main.py b/main.py
+index e6b33d8..ae7b285 100644
+--- a/main.py
++++ b/main.py
+@@ -7,6 +7,8 @@ from utils.logging_manager import (
+     SamplingFilter,
+ )  # Import the new setup function
+ import config
++from pathlib import Path
++from modules.common.config_manager.impl import ConfigManagerImpl
+ from simulation.core_agents import Household, Talent
+ from simulation.firms import Firm
+ from simulation.ai.firm_ai import FirmAI
+@@ -73,8 +75,11 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+     repository = SimulationRepository()
+     repository.clear_all_data()  # Clear existing data for a clean start
+ 
++    # Initialize ConfigManager
++    config_manager = ConfigManagerImpl(Path("config"), legacy_config=config)
++
+     state_builder = StateBuilder()
+-    action_proposal_engine = ActionProposalEngine(config_module=config)
++    action_proposal_engine = ActionProposalEngine(config_module=config_manager)
+     ai_trainer = AIEngineRegistry(
+         action_proposal_engine=action_proposal_engine, state_builder=state_builder
+     )
+@@ -165,7 +170,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+ 
+         # Instantiate HouseholdDecisionEngine with the HouseholdAI instance and config_module
+         household_decision_engine = AIDrivenHouseholdDecisionEngine(
+-            ai_engine=household_ai_instance, config_module=config
++            ai_engine=household_ai_instance, config_module=config_manager
+         )
+ 
+         # Generate Risk Aversion (0.1 ~ 10.0)
+@@ -183,7 +188,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+             decision_engine=household_decision_engine,
+             value_orientation=value_orientation,
+             personality=personality,
+-            config_module=config,
++            config_module=config_manager,
+             risk_aversion=risk_aversion,
+             logger=main_logger,
+         )
+@@ -230,7 +235,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+             learning_focus=config.AI_LEARNING_FOCUS,
+         )
+         firm_decision_engine = AIDrivenFirmDecisionEngine(
+-            ai_engine=firm_ai_instance, config_module=config
++            ai_engine=firm_ai_instance, config_module=config_manager
+         )
+ 
+         # Create the Firm instance with specialization instead of production_targets
+@@ -242,7 +247,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+             productivity_factor=config.FIRM_PRODUCTIVITY_FACTOR,
+             decision_engine=firm_decision_engine,
+             value_orientation=firm_value_orientation,
+-            config_module=config,
++            config_module=config_manager,
+             logger=main_logger,
+         )
+ 
+@@ -303,6 +308,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+ 
+     # Use the new SimulationInitializer
+     initializer = SimulationInitializer(
++        config_manager=config_manager,
+         config_module=config,
+         goods_data=goods_data,
+         repository=repository,
+diff --git a/modules/common/config_manager/impl.py b/modules/common/config_manager/impl.py
+index 9280dc2..afb3b11 100644
+--- a/modules/common/config_manager/impl.py
++++ b/modules/common/config_manager/impl.py
+@@ -46,3 +46,6 @@ class ConfigManagerImpl(ConfigManager):
+         for part in parts[:-1]:
+             node = node.setdefault(part, {})
+         node[parts[-1]] = value
++
++    def __getattr__(self, name: str) -> Any:
++        return self.get(name)
+diff --git a/scripts/gemini_worker.py b/scripts/gemini_worker.py
+index 46165f6..28cd6b6 100644
+--- a/scripts/gemini_worker.py
++++ b/scripts/gemini_worker.py
+@@ -18,7 +18,6 @@ class BaseGeminiWorker(ABC):
+     """
+     def __init__(self, manual_filename: str):
+         self.manual_path = MANUALS_DIR / manual_filename
+-        self.model = None # Default model
+         if not self.manual_path.exists():
+             raise FileNotFoundError(f"❌ Manual not found: {self.manual_path}")
+         
+@@ -76,12 +75,8 @@ class BaseGeminiWorker(ABC):
+         print(f"🚀 [GeminiWorker] Running task with manual: {manual_to_use.name}")
+         
+         try:
+-            cmd = ["gemini"]
+-            if hasattr(self, 'model') and self.model:
+-                cmd.extend(["--model", self.model])
+-            
+             process = subprocess.run(
+-                cmd, 
++                ["gemini"], 
+                 input=full_input, 
+                 text=True, 
+                 capture_output=True, 
+@@ -357,9 +352,7 @@ def main():
+     spec_parser.add_argument("instruction", help="Instruction for the spec writer")
+     spec_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+     spec_parser.add_argument("--audit", "-a", help="Path to Pre-flight Audit report to inject as context")
+-
+     spec_parser.add_argument("--output", "-o", help="Specific output file path")
+-    spec_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
+ 
+     # Git Operator
+     git_parser = subparsers.add_parser("git", help="Generate git commands")
+@@ -410,12 +403,6 @@ def main():
+         
+         if args.worker_type in worker_map:
+             worker = worker_map[args.worker_type]()
+-
+-            
+-            # Inject model if specified
+-            if getattr(args, 'model', None):
+-                worker.model = args.model
+-                
+             worker.execute(
+                 args.instruction, 
+                 context_files=getattr(args, 'context', None),
+diff --git a/scripts/launcher.py b/scripts/launcher.py
+index d6f18a7..73ce9ec 100644
+--- a/scripts/launcher.py
++++ b/scripts/launcher.py
+@@ -34,9 +34,7 @@ def run_gemini(args, registry):
+     instruction = data.get("instruction", "")
+     context = data.get("context", [])
+     output = data.get("output", "")
+-    output = data.get("output", "")
+     audit = data.get("audit", "")
+-    model = data.get("model", "")
+ 
+     cmd = [sys.executable, str(BASE_DIR / "scripts" / "gemini_worker.py"), worker, instruction]
+     if context:
+@@ -45,8 +43,6 @@ def run_gemini(args, registry):
+         cmd.extend(["-o", output])
+     if audit:
+         cmd.extend(["-a", audit])
+-    if model:
+-        cmd.extend(["--model", model])
+     
+     run_command(cmd)
+ 
+diff --git a/simulation/base_agent.py b/simulation/base_agent.py
+index c0200f7..d817551 100644
+--- a/simulation/base_agent.py
++++ b/simulation/base_agent.py
+@@ -25,7 +25,11 @@ class BaseAgent(ABC):
+         self.logger = logger if logger is not None else logging.getLogger(self.name)
+         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
+         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
+-        self.generation: int = 0
++        try:
++            self.generation: int = 0
++        except AttributeError:
++            # If generation is a property (e.g. in Household), it cannot be set here.
++            pass
+         
+         # [Cleanup] Standardized Memory Structure
+         self.memory: Dict[str, Any] = {}
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 8218882..c1c0a01 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -251,7 +251,6 @@ class Household(BaseAgent):
+         self.credit_frozen_until_tick: int = 0
+ 
+         # Phase 5: Genealogy & Time Allocation
+-        self.parent_id: Optional[int] = None      # 부모 가구 ID
+         self.last_fired_tick: int = -1  # 마지막으로 해고된 Tick (-1이면 없음)
+         self.job_search_patience: int = 0 # 구직 활동 기간 (틱 단위)
+ 
+diff --git a/simulation/decisions/action_proposal.py b/simulation/decisions/action_proposal.py
+index 23a6307..bc06415 100644
+--- a/simulation/decisions/action_proposal.py
++++ b/simulation/decisions/action_proposal.py
+@@ -110,10 +110,15 @@ class ActionProposalEngine:
+             else:
+                 # 상품 시장에서 상품 구매 주문
+                 if agent.assets > 1:  # 최소한의 자산이 있을 때만 구매 시도
+-                    available_goods = [
+-                        "food",
+-                        "luxury_food",
+-                    ]  # TODO: 설정 파일에서 읽어오기
++                    # Read available goods from config with fallback
++                    if hasattr(self.config_module, "get"):
++                        available_goods = self.config_module.get(
++                            "simulation.household_consumable_goods",
++                            ["basic_food", "luxury_food"],
++                        )
++                    else:
++                        available_goods = ["basic_food", "luxury_food"]
++
+                     good_to_trade = random.choice(available_goods)
+ 
+                     # --- 개선된 구매 수량 로직 ---
+diff --git a/tests/test_household_ai.py b/tests/test_household_ai.py
+index 270507e..6eecb05 100644
+--- a/tests/test_household_ai.py
++++ b/tests/test_household_ai.py
+@@ -80,7 +80,15 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
+         config_module=config,
+     )
+ 
+-    market_data = {"time": 1, "goods_data": goods_data}
++    market_data = {
++        "time": 1,
++        "goods_data": goods_data,
++        "goods_market": {
++             "food_current_sell_price": 10.0,
++             "basic_food_current_sell_price": 10.0,
++             "luxury_food_current_sell_price": 50.0,
++        }
++    }
+     orders, _ = household.make_decision(markets, goods_data, market_data, 1)
+ 
+     assert orders is not None
+@@ -128,7 +136,11 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
+     market_data = {
+         "time": 1,
+         "goods_data": goods_data,
+-        "goods_market": markets["goods_market"],
++        "goods_market": {
++             "luxury_food_current_sell_price": 50.0,
++             "basic_food_current_sell_price": 10.0,
++             "food_current_sell_price": 10.0,
++        }
+     }
+     orders, chosen_tactic_tuple = household.make_decision(markets, goods_data, market_data, 1)
+     chosen_tactic, _ = chosen_tactic_tuple

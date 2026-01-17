@@ -238,7 +238,7 @@ class JulesBridge:
         Returns True if successful.
         """
         import subprocess
-        print(f"📦 Syncing Git changes for task: {title}...")
+        print(f"[GIT] Syncing Git changes for task: {title}...")
         try:
             # Check if there are changes to commit
             status_result = subprocess.run(

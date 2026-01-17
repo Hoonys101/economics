@@ -18,7 +18,7 @@ def run_command(cmd_list, capture_output=False):
     """Executes a command list securely."""
     print(f"🚀 Executing: {' '.join(cmd_list)}")
     try:
-        result = subprocess.run(cmd_list, cwd=BASE_DIR, capture_output=capture_output, text=True, encoding='utf-8', shell=True)
+        result = subprocess.run(cmd_list, cwd=BASE_DIR, capture_output=capture_output, text=True, encoding='utf-8', shell=False)
         if result.returncode != 0:
             print(f"❌ Command failed with return code {result.returncode}")
             if result.stderr:

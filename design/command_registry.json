@@ -1,22 +1,23 @@
 {
   "gemini": {
     "worker": "spec",
-    "instruction": "Analyze the codebase to prepare for Phase 28 (Macro-Stability Stress Testing). TASKS: 1. Identify all configurable economic variables in 'simulation/config.py' and 'modules/common/config_manager'. 2. Propose 3 stress scenarios: 'Hyperinflation' (High Demand/Low Supply), 'Deflationary Spiral' (Low Demand/Hoarding), and 'Supply Shock' (Productivity Collapse). 3. Map which Agent behaviors (e.g., 'price_sensitivity', 'panic_selling') need to be parameterized for these tests. IMPORTANT: Do NOT try to use any tools (like write_file). Just OUTPUT the raw markdown content directly. The system will save it for you. OUTPUT: 'design/gemini_output/analysis_phase28_stress_scenarios.md'.",
+    "instruction": "Draft the 'Zero-Question Spec' for Refactoring God Classes (TD-043/044/045). \n\nTASKS:\n1. Define the APIs for the new Systems extracted from `Simulation` (SocialSystem, EventSystem, SensorySystem, CommerceSystem).\n2. Define the APIs for the new Components extracted from `Household` (LifecycleManager, MarketComponent).\n3. Define the `update_learning` contract for `Firm`.\n4. Ensure DTOs are defined for data passing between these systems.\n5. Address risks identified in the Audit Report.",
     "context": [
-      "simulation/config.py",
+      "implementation_plan.md",
+      "reports/temp/audit_god_classes_20260117.md",
       "simulation/engine.py",
       "simulation/core_agents.py",
-      "modules/finance/system.py"
+      "modules/firms/firms.py"
     ],
-    "output": "design/gemini_output/analysis_phase28_stress_scenarios.md",
-    "audit": "",
+    "output": "design/specs/refactor_god_classes.md",
+    "audit": "reports/temp/audit_god_classes_20260117.md",
     "model": "pro"
   },
   "jules": {
     "command": "create",
     "session_id": "",
-    "title": "ActionProposal_Config_Refactor",
-    "instruction": "Refactor ActionProposalEngine config loading. TASKS: 1. Modify `simulation/decisions/action_proposal.py` to inject `ConfigManager` in `__init__` and replace hardcoded goods list with `self.config_manager.get('simulation.consumables')`. 2. Update `simulation/initialization/initializer.py` to pass `config_manager` to `ActionProposalEngine`. 3. Update `config/simulation.yaml` to add `consumables: ['basic_food', 'luxury_food']` (Correcting 'food' to 'basic_food'). 4. Create `tests/simulation/test_action_proposal.py` to verify config loading with a mock ConfigManager. REFERENCE: implementation_plan.md.",
+    "title": "TD-043_God_Class_Refactor",
+    "instruction": "Execute God Class Refactoring based on 'design/specs/refactor_god_classes.md'. \n\nPHASE 1 (Simulation): \n1. Create the new System files in `simulation/systems/`.\n2. Implement the logic extracted from `run_tick`.\n3. Verify `main.py` runs.\n\nREFERENCE: design/specs/refactor_god_classes.md",
     "file": "",
     "wait": true
   },
@@ -25,7 +26,7 @@
     "instruction": "Analyze this PR. Check implementation completeness, test coverage, SoC compliance, and potential regressions."
   },
   "merge": {
-    "branch": "feature/TD-008-finance-system-upgrade-14826170066369985962"
+    "branch": "load-available-goods-from-config-17274218223820480595"
   },
   "harvest": {
     "note": "Report Harvester takes no direct arguments in JSON usually."

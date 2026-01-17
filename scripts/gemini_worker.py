@@ -366,34 +366,40 @@ def main():
     git_parser.add_argument("instruction", help="Instruction for the git operator")
     git_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
     git_parser.add_argument("--auto-run", action="store_true", help="Automatically execute the generated commands")
+    git_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
 
     # Reporter
     reporter_parser = subparsers.add_parser("reporter", help="Analyze and Report")
     reporter_parser.add_argument("instruction", help="Instruction for the reporter")
     reporter_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
     reporter_parser.add_argument("--output", "-o", help="Specific output file path")
+    reporter_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
 
     # Context Manager / Scribe
     context_parser = subparsers.add_parser("context", help="Manage session context and snapshots")
     context_parser.add_argument("instruction", help="Instruction for the context manager")
     context_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
     context_parser.add_argument("--output", "-o", help="Specific output file path (optional)")
+    context_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
 
     # Validator
     validator_parser = subparsers.add_parser("verify", help="Validate protocol and architecture")
     validator_parser.add_argument("instruction", help="Instruction for the validator")
     validator_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+    validator_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
 
     # Auditor (Uses Reporter logic)
     auditor_parser = subparsers.add_parser("audit", help="Identify technical debt and patterns")
     auditor_parser.add_argument("instruction", help="Instruction for the auditor")
     auditor_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
     auditor_parser.add_argument("--output", "-o", help="Specific output file path")
+    auditor_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
 
     # Git Reviewer
     reviewer_parser = subparsers.add_parser("git-review", help="Analyze git diffs and report issues")
     reviewer_parser.add_argument("instruction", help="Instruction for the reviewer")
     reviewer_parser.add_argument("--context", "-c", nargs="+", help="List of files to read as context")
+    reviewer_parser.add_argument("--model", "-m", help="Gemini model to use (e.g. pro, flash)")
 
     args = parser.parse_args()
 
