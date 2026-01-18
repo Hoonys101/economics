@@ -9,6 +9,10 @@
       "17210430308583135228": {
         "title": "TD-043_God_Class_Refactor",
         "initial_mission": "Execute God Class Refactoring based on 'design/specs/refactor_god_classes.md'. "
+      },
+      "13562555080450173908": {
+        "title": "TD-044_Household_God_Class_Refactor",
+        "initial_mission": "Execute Household God Class Refactoring based on 'design/specs/refactor_god_classes.md'. "
       }
     },
     "completed_sessions": {
