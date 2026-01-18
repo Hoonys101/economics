@@ -31,6 +31,9 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.components.demographics_component import DemographicsComponent
 from simulation.components.economy_manager import EconomyManager
 from simulation.components.labor_manager import LaborManager
+from simulation.components.market_component import MarketComponent
+from simulation.components.agent_lifecycle_component import AgentLifecycleComponent
+from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -206,6 +209,8 @@ class Household(BaseAgent):
         self.leisure = LeisureManager(self, config_module)
         self.economy_manager = EconomyManager(self, config_module)
         self.labor_manager = LaborManager(self, config_module)
+        self.market_component = MarketComponent(self, config_module)
+        self.lifecycle_component = AgentLifecycleComponent(self, config_module)
         self.shares_owned: Dict[int, float] = {}
         self.is_employed: bool = False
         self.labor_skill: float = 1.0
@@ -407,9 +412,12 @@ class Household(BaseAgent):
     def decide_and_consume(self, current_time: int, market_data: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
         """
         가계가 현재 욕구 상태와 보유 재고를 바탕으로 재화를 소모합니다.
+
+        Deprecated: The orchestration is now handled by CommerceSystem and AgentLifecycleComponent.
+        This method is kept for legacy compatibility but avoids the circular dependency.
         """
         consumed_items = self.consumption.decide_and_consume(current_time, market_data)
-        self.update_needs(current_time, market_data)
+        # Removed self.update_needs call to fix infinite recursion and align with new architecture.
         return consumed_items
 
     def _initialize_desire_weights(self, personality: Personality):
@@ -864,58 +872,10 @@ class Household(BaseAgent):
 
     def choose_best_seller(self, markets: Dict[str, "Market"], item_id: str) -> Tuple[Optional[int], float]:
         """
-        Phase 6: Utility-based Seller Selection.
-        Returns (BestSellerID, BestAskPrice)
+        Delegates seller selection to MarketComponent.
         """
-        market = markets.get(item_id)
-        if not market:
-            return None, 0.0
-        
-        # This requires Market to expose 'get_all_asks' with Seller Info
-        # We assume order_book_market has get_all_asks(item_id) returning list of SellOrders
-        # And SellOrder has agent_id.
-        # But we need metadata (Quality, Awareness) which isn't in Order DTO yet?
-        # WAIT. The Spec said "Firm places order, it stamps current Brand/Quality on it".
-        # I didn't verify SellOrder metadata.
-        # IF metadata is missing, we default to 0.5.
-        
-        asks = market.get_all_asks(item_id) # Should return List[Order]
-        if not asks:
-            return None, 0.0
-            
-        best_u = -float('inf')
-        best_seller = None
-        best_price = 0.0
-        
-        avg_sales = 10.0 # Default network effect base if unknown
-        
-        for ask in asks:
-            price = ask.price
-            seller_id = ask.agent_id
-            
-            # Phase 6: Read brand metadata from Order (Firm stamps it on SellOrder)
-            brand_data = ask.brand_info or {}
-            quality = brand_data.get("perceived_quality", 1.0)
-            awareness = brand_data.get("brand_awareness", 0.0)
-            
-            loyalty = self.brand_loyalty.get(seller_id, 1.0)
-            
-            # Utility Function: U = (Quality * (1 + Awareness * Pref) * Loyalty) / Price
-            # Beta (Brand Sensitivity) from Config
-            beta = getattr(self.config_module, "BRAND_SENSITIVITY_BETA", 0.5)
-            
-            # Revised Formula: Q^alpha * (1+A)^beta / P
-            # Note: Previous code used (1 + A * Pref). Spec says (1+A)^beta or similar.
-            # Architect Prime Spec: U = (Q^alpha * (1+A)^beta) / P
-            numerator = (quality ** self.quality_preference) * ((1.0 + awareness) ** beta)
-            utility = (numerator * loyalty) / max(0.01, price)
-            
-            if utility > best_u:
-                best_u = utility
-                best_seller = seller_id
-                best_price = price
-        
-        return best_seller, best_price
+        context = MarketInteractionContext(markets=markets)
+        return self.market_component.choose_best_seller(item_id, context)
 
     def execute_tactic(
         self,
@@ -962,30 +922,150 @@ class Household(BaseAgent):
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         """
-        Orchestrates the household's tick-level updates in a specific order:
-        1. Work to earn income.
-        2. Consume goods to satisfy needs.
-        3. Pay taxes.
-        4. Update psychological needs.
+        Delegates tick lifecycle updates to AgentLifecycleComponent.
         """
-        # 1. Work (via LaborManager)
-        # Assuming a fixed 8 hours of work per tick if employed
-        work_hours = 8.0 if self.is_employed else 0.0
-        self.labor_manager.work(work_hours)
+        context = LifecycleContext(
+            household=self,
+            market_data=market_data,
+            time=current_tick
+        )
+        self.lifecycle_component.run_tick(context)
 
-        # 2. Consume (via ConsumptionBehavior, which should call EconomyManager)
-        # The existing decide_and_consume already handles this part.
-        # We just need to ensure the orchestration order.
-        # The actual consumption logic is now in EconomyManager,
-        # but the decision to consume is in ConsumptionBehavior.
-        # Let's assume decide_and_consume calls self.consume which is now delegated.
-        self.decide_and_consume(current_tick, market_data)
+    def update_learning(self, context: LearningUpdateContext) -> None:
+        """
+        Updates the agent's AI learning based on the provided context.
+        Implements ILearningAgent protocol.
+        """
+        # Engine calls this, so we delegate to internal AI engine
+        # "Tell, Don't Ask"
+        if hasattr(self.decision_engine, 'ai_engine') and self.decision_engine.ai_engine:
+            # We need to reconstruct the arguments expected by _calculate_reward or update_learning_v2
+            # The context provides reward, next_agent_data, next_market_data.
+            # But wait, the Spec says:
+            # "Engine calculates reward and passes it in context" OR "Engine calls update_learning and Agent calculates reward?"
+            # Spec says:
+            # "def update_learning(self, context): ... self.decision_engine.ai_engine.update_learning_v2(...)"
+            # And Context has 'reward'.
+            # So Simulation calculates reward?
+            # In Simulation.run_tick (original):
+            # reward = household.decision_engine.ai_engine._calculate_reward(...)
+            # household.decision_engine.ai_engine.update_learning_v2(reward=reward, ...)
 
-        # 3. Pay Taxes (via EconomyManager)
-        self.economy_manager.pay_taxes()
+            # The Spec for ILearningAgent.update_learning says:
+            # "Simulation engine triggers ... agent delegates to internal component ... Tell Don't Ask"
+            # It also says Context has 'reward'.
+            # If Context has reward, then Simulation must have calculated it.
+            # But we want to ENCAPSULATE logic.
+            # Spec Pseudo-code for Firm says:
+            # reward = self.decision_engine.ai_engine.calculate_reward(...)
+            # self.decision_engine.ai_engine.update_learning_v2(...)
 
-        # 4. Update Psychological Needs (existing PsychologyComponent)
-        self.psychology.update_needs(current_tick, market_data)
+            # So the Agent should calculate the reward internally if it's not provided?
+            # Or Simulation calculates it and passes it?
+            # If `context` has `reward`, we use it.
+            # If `context` has data to calculate reward, we calculate it.
+            # `LearningUpdateContext` has `reward: float`.
+
+            # So Simulation MUST calculate reward before calling this if it follows the Context definition strictly.
+            # However, looking at the Spec's Pseudo-code:
+            # def update_learning(self, context):
+            #      reward = self.decision_engine.ai_engine.calculate_reward(...)
+            #      ...
+
+            # This implies `context` might NOT have the reward, or we ignore it/recalculate it?
+            # But the `LearningUpdateContext` TypedDict definition includes `reward: float`.
+
+            # To resolve this:
+            # I will assume the Simulation does the heavy lifting of gathering data (Pre/Post/Market),
+            # but if we want true encapsulation, the Agent should calculate Reward.
+            # But Simulation code I read earlier *already* does:
+            # reward = household..._calculate_reward(...)
+            # So I should probably move that call INSIDE this method if I want to refactor Simulation to be cleaner.
+
+            # Let's see what Simulation does in my plan for `run_tick`.
+            # If I follow "Tell Don't Ask", Simulation shouldn't call `_calculate_reward`.
+            # Simulation should just say `agent.update_learning(context)`.
+            # And `context` should probably contain the DATA needed for reward calculation,
+            # NOT the reward itself, UNLESS the reward is external.
+            # But in this system, reward is internal (based on agent state change).
+
+            # So `LearningUpdateContext` definition in `api.py` might be slightly misleading or I should interpret it as "External Reward" (if any).
+            # But `api.py` defined `LearningUpdateContext` with `reward: float`.
+            # If I look at the draft spec:
+            # class LearningUpdateContext(TypedDict):
+            #    reward: float  <-- This suggests it's passed in.
+
+            # BUT the Pseudo-code says:
+            # def update_learning(self, context: LearningUpdateContext):
+            #     if hasattr(..., 'ai_engine'):
+            #         reward = self.decision_engine.ai_engine.calculate_reward(...)
+
+            # Use the provided reward if available, else calculate?
+            # Or maybe the spec meant "Context for calculating update", and the result is the update.
+            # I will implement it such that if `reward` is in context and not None, use it.
+            # Wait, TypedDict keys are mandatory unless using `total=False`.
+            # `LearningUpdateContext` didn't specify `total=False`.
+
+            # I will trust the Pseudo-code in the description over the TypedDict definition if they conflict,
+            # or assume the TypedDict was meant to carry the calculated reward if the architecture splits calculation and update.
+            # BUT the goal is encapsulation.
+
+            # I will change the logic to:
+            # 1. Use reward from context.
+            # 2. Delegate to `update_learning_v2`.
+
+            # Ideally, Simulation calculates reward using `agent.calculate_reward()` then passes it back? No that's asking.
+            # The best approach for "Tell Don't Ask":
+            # Simulation gathers environment data (Next Market Data).
+            # Agent knows its own Previous and Current state.
+            # Agent calculates reward.
+            # Agent updates itself.
+
+            # But `LearningUpdateContext` forces me to pass `reward`.
+            # I'll stick to the `api.py` I wrote: `reward` is passed in.
+            # That means Simulation calculates it.
+            # Wait, if Simulation calculates it, it needs to access `ai_engine._calculate_reward`.
+            # That violates "Tell Don't Ask" if we call `agent.decision_engine.ai_engine...`.
+            # But if we call `agent.calculate_reward(...)` it's better.
+
+            # Let's look at `Firm` refactoring plan.
+            # `Firm` has `get_pre_state_data`.
+
+            # I'll stick to the pattern:
+            # Simulation does:
+            # reward = agent.decision_engine.ai_engine._calculate_reward(...) (This is existing code)
+            # Refactoring this to:
+            # context = {reward: ..., ...}
+            # agent.update_learning(context)
+
+            # But `agent.decision_engine.ai_engine._calculate_reward` is deep access.
+            # I should probably move `calculate_reward` to be accessible on `Agent` or handle it inside `update_learning`
+            # but that would mean `context` shouldn't require `reward`.
+
+            # Since I already created `api.py` with `reward: float` in `LearningUpdateContext`,
+            # I must pass a reward.
+            # This implies the caller (Simulation) provides the reward.
+            # I will implement `update_learning` to use the passed reward.
+            # If I need to fix the "Deep Access" in Simulation later, I'll need to add a helper method on Agent to calculate reward,
+            # or just accept that Simulation calls the engine for now.
+            # OR, I can populate `reward` in context with a dummy value if the agent calculates it?
+            # No, that breaks the contract.
+
+            # Let's assume Simulation calculates it for now (as it does),
+            # and we just encapsulate the `update_learning_v2` call.
+
+            self.decision_engine.ai_engine.update_learning_v2(
+                reward=context["reward"],
+                next_agent_data=context["next_agent_data"],
+                next_market_data=context["next_market_data"]
+            )
+
+            # Also log it here? Simulation was logging it.
+            # Simulation logging had `run_id`, etc.
+            # Agent doesn't know `run_id`.
+            # I'll leave logging in Simulation or move it here if I pass `run_id` in context?
+            # Context doesn't have `run_id`.
+            pass
 
     def _update_skill(self):
         """Delegates skill updates to the LaborManager."""
