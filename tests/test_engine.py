@@ -41,12 +41,21 @@ def mock_config_module():
     mock_config.INHERITANCE_TAX_RATE = 1.0
     mock_config.TICKS_PER_YEAR = 100.0
     mock_config.INITIAL_BASE_ANNUAL_RATE = 0.05
+    # To support string formatting in mock
+    mock_config.initial_base_annual_rate = 0.05
     mock_config.CREDIT_SPREAD_BASE = 0.02
     mock_config.BANK_MARGIN = 0.02
     mock_config.LOAN_DEFAULT_TERM = 50
     mock_config.CREDIT_RECOVERY_TICKS = 100
     mock_config.BANKRUPTCY_XP_PENALTY = 0.2
     mock_config.INVENTORY_HOLDING_COST_RATE = 0.005
+    mock_config.INITIAL_PROPERTY_VALUE = 1000.0
+    mock_config.INITIAL_RENT_PRICE = 10.0
+    mock_config.NUM_HOUSING_UNITS = 10
+    mock_config.HALO_EFFECT = 0.1
+    mock_config.CHILD_MONTHLY_COST = 500.0
+    mock_config.OPPORTUNITY_COST_FACTOR = 0.3
+    mock_config.RAW_MATERIAL_SECTORS = []
     mock_config.MARKETING_DECAY_RATE = 0.8
     mock_config.MARKETING_EFFICIENCY = 0.01
     mock_config.PERCEIVED_QUALITY_ALPHA = 0.2
@@ -113,6 +122,11 @@ def mock_config_module():
         }
     }
 
+    mock_config.EDUCATION_WEALTH_THRESHOLDS = {0: 0, 1: 1000}
+    mock_config.INITIAL_WAGE = 10.0
+    mock_config.EDUCATION_COST_MULTIPLIERS = {0: 1.0, 1: 1.5}
+    mock_config.CONFORMITY_RANGES = {}
+
     return mock_config
 
 # Fixtures for common dependencies
@@ -144,6 +158,7 @@ def mock_households(mock_config_module):
     hh1.update_needs = Mock()
     hh1.talent = Mock(spec=Talent)
     hh1.talent.base_learning_rate = 0.1
+    hh1.inventory_quality = {}
 
     hh2 = Mock(spec=Household)
     hh2.id = 2
@@ -161,6 +176,7 @@ def mock_households(mock_config_module):
     hh2.update_needs = Mock()
     hh2.talent = Mock(spec=Talent)
     hh2.talent.base_learning_rate = 0.1
+    hh2.inventory_quality = {}
     return [hh1, hh2]
 
 
@@ -251,8 +267,21 @@ def simulation_instance(
     mock_logger,
 ):
     from simulation.initialization.initializer import SimulationInitializer
+    from modules.common.config_manager.api import ConfigManager
+
+    # Create a mock ConfigManager
+    mock_config_manager = Mock(spec=ConfigManager)
+    # Configure mock for __format__ (float) by making it behave like a float in formatting
+    # This is tricky with Mock objects.
+    # Instead of mocking __float__ (which is dunder), we mock the attribute that is formatted.
+    # The error is in Bank.__init__: Base Rate: {self.base_rate:.2%}
+    # self.base_rate comes from config.
+    # mock_config_manager.get() should return a float, not a Mock object.
+
+    mock_config_manager.get.return_value = 0.05
 
     initializer = SimulationInitializer(
+        config_manager=mock_config_manager,
         config_module=mock_config_module,
         goods_data=mock_goods_data,
         repository=mock_repository,
@@ -370,6 +399,7 @@ class TestSimulation:
         tx.item_id = "basic_food"
         tx.quantity = 5.0
         tx.price = 10.0
+        tx.quality = 1.0 # Ensure quality is a float
         tx.transaction_type = "goods"
 
         simulation_instance._process_transactions([tx])
@@ -647,8 +677,15 @@ def setup_simulation_for_lifecycle(
     firms = [firm_active, firm_inactive]
 
     from simulation.initialization.initializer import SimulationInitializer
+    from modules.common.config_manager.api import ConfigManager
+
+    mock_config_manager = Mock(spec=ConfigManager)
+    # Configure mock for __format__ (float)
+    mock_config_manager.initial_base_annual_rate = 0.05
+    mock_config_manager.get.return_value = 0.05
 
     initializer = SimulationInitializer(
+        config_manager=mock_config_manager,
         config_module=mock_config_module,
         goods_data=mock_goods_data_for_lifecycle,
         repository=mock_repository,

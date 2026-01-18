@@ -31,6 +31,9 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.components.demographics_component import DemographicsComponent
 from simulation.components.economy_manager import EconomyManager
 from simulation.components.labor_manager import LaborManager
+from simulation.components.agent_lifecycle import AgentLifecycleComponent
+from simulation.components.market_component import MarketComponent
+from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -91,7 +94,7 @@ class Skill:
         self.observability = observability
 
 
-class Household(BaseAgent):
+class Household(BaseAgent, ILearningAgent):
     """
     가계 주체. 소비와 노동 공급의 주체이며, 다양한 욕구를 가지고 의사결정을 수행합니다.
     경제 시뮬레이션 내에서 재화 소비, 노동 시장 참여, 자산 관리 등의 활동을 합니다.
@@ -206,6 +209,8 @@ class Household(BaseAgent):
         self.leisure = LeisureManager(self, config_module)
         self.economy_manager = EconomyManager(self, config_module)
         self.labor_manager = LaborManager(self, config_module)
+        self.lifecycle_component = AgentLifecycleComponent(self, config_module)
+        self.market_component = MarketComponent(self, config_module)
         self.shares_owned: Dict[int, float] = {}
         self.is_employed: bool = False
         self.labor_skill: float = 1.0
@@ -865,57 +870,10 @@ class Household(BaseAgent):
     def choose_best_seller(self, markets: Dict[str, "Market"], item_id: str) -> Tuple[Optional[int], float]:
         """
         Phase 6: Utility-based Seller Selection.
-        Returns (BestSellerID, BestAskPrice)
+        Delegates to MarketComponent.
         """
-        market = markets.get(item_id)
-        if not market:
-            return None, 0.0
-        
-        # This requires Market to expose 'get_all_asks' with Seller Info
-        # We assume order_book_market has get_all_asks(item_id) returning list of SellOrders
-        # And SellOrder has agent_id.
-        # But we need metadata (Quality, Awareness) which isn't in Order DTO yet?
-        # WAIT. The Spec said "Firm places order, it stamps current Brand/Quality on it".
-        # I didn't verify SellOrder metadata.
-        # IF metadata is missing, we default to 0.5.
-        
-        asks = market.get_all_asks(item_id) # Should return List[Order]
-        if not asks:
-            return None, 0.0
-            
-        best_u = -float('inf')
-        best_seller = None
-        best_price = 0.0
-        
-        avg_sales = 10.0 # Default network effect base if unknown
-        
-        for ask in asks:
-            price = ask.price
-            seller_id = ask.agent_id
-            
-            # Phase 6: Read brand metadata from Order (Firm stamps it on SellOrder)
-            brand_data = ask.brand_info or {}
-            quality = brand_data.get("perceived_quality", 1.0)
-            awareness = brand_data.get("brand_awareness", 0.0)
-            
-            loyalty = self.brand_loyalty.get(seller_id, 1.0)
-            
-            # Utility Function: U = (Quality * (1 + Awareness * Pref) * Loyalty) / Price
-            # Beta (Brand Sensitivity) from Config
-            beta = getattr(self.config_module, "BRAND_SENSITIVITY_BETA", 0.5)
-            
-            # Revised Formula: Q^alpha * (1+A)^beta / P
-            # Note: Previous code used (1 + A * Pref). Spec says (1+A)^beta or similar.
-            # Architect Prime Spec: U = (Q^alpha * (1+A)^beta) / P
-            numerator = (quality ** self.quality_preference) * ((1.0 + awareness) ** beta)
-            utility = (numerator * loyalty) / max(0.01, price)
-            
-            if utility > best_u:
-                best_u = utility
-                best_seller = seller_id
-                best_price = price
-        
-        return best_seller, best_price
+        context: MarketInteractionContext = {"markets": markets}
+        return self.market_component.choose_best_seller(item_id, context)
 
     def execute_tactic(
         self,
@@ -962,30 +920,14 @@ class Household(BaseAgent):
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         """
-        Orchestrates the household's tick-level updates in a specific order:
-        1. Work to earn income.
-        2. Consume goods to satisfy needs.
-        3. Pay taxes.
-        4. Update psychological needs.
+        Delegates the household's tick-level updates to AgentLifecycleComponent.
         """
-        # 1. Work (via LaborManager)
-        # Assuming a fixed 8 hours of work per tick if employed
-        work_hours = 8.0 if self.is_employed else 0.0
-        self.labor_manager.work(work_hours)
-
-        # 2. Consume (via ConsumptionBehavior, which should call EconomyManager)
-        # The existing decide_and_consume already handles this part.
-        # We just need to ensure the orchestration order.
-        # The actual consumption logic is now in EconomyManager,
-        # but the decision to consume is in ConsumptionBehavior.
-        # Let's assume decide_and_consume calls self.consume which is now delegated.
-        self.decide_and_consume(current_tick, market_data)
-
-        # 3. Pay Taxes (via EconomyManager)
-        self.economy_manager.pay_taxes()
-
-        # 4. Update Psychological Needs (existing PsychologyComponent)
-        self.psychology.update_needs(current_tick, market_data)
+        context: LifecycleContext = {
+            "household": self,
+            "market_data": market_data if market_data else {},
+            "time": current_tick
+        }
+        self.lifecycle_component.run_tick(context)
 
     def _update_skill(self):
         """Delegates skill updates to the LaborManager."""
@@ -1076,3 +1018,23 @@ class Household(BaseAgent):
         # 2. Update expected wage based on inherited education if applicable
         child.education_level = min(self.education_level, 1) # Reset but maybe give a head start
         child.expected_wage = self.expected_wage * 0.8 # Legacy expectations
+
+    def update_learning(self, context: LearningUpdateContext) -> None:
+        """
+        ILearningAgent implementation.
+        Updates the internal AI engine with the new state and reward.
+        """
+        # Inject Leisure Utility if present in context (it might be passed as part of next_agent_data by CommerceSystem? No, it's separate)
+        # Actually in Simulation.run_tick, we were injecting it into agent_data manually.
+        # Ideally, context should carry it or we put it in next_agent_data.
+        # The spec says: context has reward, next_agent_data, next_market_data.
+
+        reward = context["reward"]
+        next_agent_data = context["next_agent_data"]
+        next_market_data = context["next_market_data"]
+
+        self.decision_engine.ai_engine.update_learning_v2(
+            reward=reward,
+            next_agent_data=next_agent_data,
+            next_market_data=next_market_data,
+        )

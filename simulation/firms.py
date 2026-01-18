@@ -21,6 +21,7 @@ from simulation.components.production_department import ProductionDepartment
 from simulation.components.sales_department import SalesDepartment
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError
+from simulation.systems.api import ILearningAgent, LearningUpdateContext
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(BaseAgent):
+class Firm(BaseAgent, ILearningAgent):
     """기업 주체. 생산과 고용의 주체."""
 
     def __init__(
@@ -714,3 +715,20 @@ class Firm(BaseAgent):
             if self.cash_reserve < amount:
                 raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.cash_reserve:.2f}")
             self.cash_reserve -= amount
+
+    def update_learning(self, context: LearningUpdateContext) -> None:
+        """
+        ILearningAgent implementation.
+        Updates the internal AI engine with the new state and reward.
+        """
+        reward = context["reward"]
+        next_agent_data = context["next_agent_data"]
+        next_market_data = context["next_market_data"]
+
+        # 엔진은 더 이상 firm.decision_engine.ai_engine에 직접 접근하지 않고 이 메서드를 통해 요청합니다.
+        if hasattr(self.decision_engine, 'ai_engine'):
+            self.decision_engine.ai_engine.update_learning_v2(
+                reward=reward,
+                next_agent_data=next_agent_data,
+                next_market_data=next_market_data,
+            )

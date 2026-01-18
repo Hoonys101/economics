@@ -4,18 +4,21 @@ God Class 리팩토링을 위한 새로운 시스템 및 컴포넌트의 계약�
 이 파일은 새로운 아키텍처 요소의 공개 API를 설정하여 명확한 경계와 타입 안전성을 보장합니다.
 """
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, Protocol, TypedDict, Deque
+from typing import List, Dict, Any, Optional, Protocol, TypedDict, Deque, Tuple
 from abc import ABC, abstractmethod
 
 # 순환 참조를 피하기 위한 Forward declarations
-if 'TYPE_CHECKING':
-    from simulation.core_agents import Household, Firm
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from simulation.core_agents import Household
+    from simulation.firms import Firm
     from simulation.agents.government import Government
     from simulation.config import SimulationConfig
     from simulation.systems.reflux_system import EconomicRefluxSystem
     from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
     from simulation.metrics.economic_tracker import EconomicIndicatorTracker
-    from simulation.dtos import GovernmentStateDTO
+    from simulation.dtos import GovernmentStateDTO, LeisureEffectDTO
     from simulation.markets.market import Market
 
 
@@ -26,7 +29,7 @@ if 'TYPE_CHECKING':
 class SocialMobilityContext(TypedDict):
     """사회적 이동성 계산에 필요한 데이터입니다."""
     households: List['Household']
-    housing_manager: Any # API 단순화를 위해 Any, 실제로는 HousingManager 인스턴스
+    # housing_manager: Any # API 단순화를 위해 Any, 실제로는 HousingManager 인스턴스
 
 class EventContext(TypedDict):
     """이벤트 처리에 필요한 데이터입니다."""
@@ -47,7 +50,7 @@ class CommerceContext(TypedDict):
     household_time_allocation: Dict[int, float]
     reflux_system: 'EconomicRefluxSystem'
     market_data: Dict[str, Any]
-    config: 'SimulationConfig'
+    config: Any
     time: int
 
 class LifecycleContext(TypedDict):
@@ -72,7 +75,7 @@ class LearningUpdateContext(TypedDict):
 
 class ISocialSystem(Protocol):
     """사회적 순위 및 지위와 같은 동적 요소를 관리하는 시스템의 인터페이스입니다."""
-    def __init__(self, config: 'SimulationConfig'): ...
+    def __init__(self, config: Any): ...
 
     def update_social_ranks(self, context: SocialMobilityContext) -> None:
         """모든 가계의 사회적 순위 백분위를 계산하고 할당합니다."""
@@ -85,7 +88,7 @@ class ISocialSystem(Protocol):
 
 class IEventSystem(Protocol):
     """예약되거나 트리거된 시뮬레이션 전반의 이벤트를 관리하는 시스템의 인터페이스입니다."""
-    def __init__(self, config: 'SimulationConfig'): ...
+    def __init__(self, config: Any): ...
 
     def execute_scheduled_events(self, time: int, context: EventContext) -> None:
         """현재 틱에 예약된 카오스 이벤트나 다른 시나리오를 실행합니다."""
@@ -106,7 +109,7 @@ class ISensorySystem(Protocol):
     last_avg_price_for_sma: float
     last_gdp_for_sma: float
 
-    def __init__(self, config: 'SimulationConfig'): ...
+    def __init__(self, config: Any): ...
 
     def generate_government_sensory_dto(self, context: SensoryContext) -> 'GovernmentStateDTO':
         """주요 지표의 SMA를 계산하고 DTO로 패키징합니다."""
@@ -115,10 +118,14 @@ class ISensorySystem(Protocol):
 
 class ICommerceSystem(Protocol):
     """틱의 소비 및 여가 부분을 관리하는 시스템의 인터페이스입니다."""
-    def __init__(self, config: 'SimulationConfig', reflux_system: 'EconomicRefluxSystem'): ...
+    def __init__(self, config: Any, reflux_system: 'EconomicRefluxSystem'): ...
 
-    def execute_consumption_and_leisure(self, context: CommerceContext) -> None:
-        """가계 소비, 긴급 구매(fast-track purchases), 여가 효과를 조율합니다."""
+    def execute_consumption_and_leisure(self, context: CommerceContext) -> Dict[int, float]:
+        """
+        가계 소비, 긴급 구매(fast-track purchases), 여가 효과를 조율합니다.
+        Returns:
+            Dict[int, float]: 가계 ID별 여가 효용(Leisure Utility) 맵.
+        """
         ...
 
 # ===================================================================
@@ -130,7 +137,7 @@ class IAgentLifecycleComponent(Protocol):
     에이전트의 틱당 생명주기를 조율하는 컴포넌트 인터페이스입니다.
     혼란스러웠던 `update_needs` 메서드를 대체합니다.
     """
-    def __init__(self, owner: 'Household', config: 'SimulationConfig'): ...
+    def __init__(self, owner: 'Household', config: Any): ...
 
     def run_tick(self, context: LifecycleContext) -> None:
         """
@@ -141,9 +148,9 @@ class IAgentLifecycleComponent(Protocol):
 
 class IMarketComponent(Protocol):
     """판매자 선택과 같은 시장 상호작용을 책임지는 컴포넌트 인터페이스입니다."""
-    def __init__(self, owner: 'Household', config: 'SimulationConfig'): ...
+    def __init__(self, owner: 'Household', config: Any): ...
 
-    def choose_best_seller(self, item_id: str, context: MarketInteractionContext) -> tuple[Optional[int], float]:
+    def choose_best_seller(self, item_id: str, context: MarketInteractionContext) -> Tuple[Optional[int], float]:
         """
         가격, 품질, 브랜드 인지도, 충성도를 포함하는 효용에 기반하여
         주어진 아이템에 대한 최적의 판매자를 선택합니다.
@@ -157,7 +164,7 @@ class ILaborMarketAnalyzer(Protocol):
     """
     market_wage_history: Deque[float]
 
-    def __init__(self, config: 'SimulationConfig'): ...
+    def __init__(self, config: Any): ...
 
     def calculate_shadow_reservation_wage(self, agent: 'Household', market_data: Dict[str, Any]) -> float:
         """가계의 고정적인 유보 임금을 계산합니다."""

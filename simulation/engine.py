@@ -36,6 +36,16 @@ from simulation.decisions.housing_manager import HousingManager # For rank/tier 
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.systems.transaction_processor import TransactionProcessor # SoC Refactor
 from modules.finance.system import FinanceSystem
+from simulation.systems.api import (
+    EventContext, SocialMobilityContext, SensoryContext, CommerceContext,
+    LearningUpdateContext
+)
+from simulation.systems.social_system import SocialSystem
+from simulation.systems.event_system import EventSystem
+from simulation.systems.sensory_system import SensorySystem
+from simulation.systems.commerce_system import CommerceSystem
+from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+from simulation.components.agent_lifecycle import AgentLifecycleComponent
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -113,16 +123,16 @@ class Simulation:
         self.finance_system: Optional[FinanceSystem] = None
         self.ai_trainer: Optional[AIEngineRegistry] = None
 
+        # New Systems
+        self.social_system: Optional[SocialSystem] = None
+        self.event_system: Optional[EventSystem] = None
+        self.sensory_system: Optional[SensorySystem] = None
+        self.commerce_system: Optional[CommerceSystem] = None
+        self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
+
         # Attributes with default values
         self.batch_save_interval: int = 50
         self.household_time_allocation: Dict[int, float] = {}
-        self.inflation_buffer: deque = deque(maxlen=10)
-        self.unemployment_buffer: deque = deque(maxlen=10)
-        self.gdp_growth_buffer: deque = deque(maxlen=10)
-        self.wage_buffer: deque = deque(maxlen=10)
-        self.approval_buffer: deque = deque(maxlen=10)
-        self.last_avg_price_for_sma: float = 10.0
-        self.last_gdp_for_sma: float = 0.0
         self.last_interest_rate: float = 0.0 # Will be set from bank
 
     def finalize_simulation(self):
@@ -134,56 +144,7 @@ class Simulation:
 
 
 
-    def _update_social_ranks(self):
-        """Phase 17-4: Update Social Rank (Percentile)"""
-        # 1. Calculate Scores
-        scores = []
-        # Temporary instance for helper
-        hm = HousingManager(None, self.config_module)
-
-        for h in self.households:
-            if not h.is_active: continue
-
-            consumption_score = h.current_consumption * 10.0 # Weight consumption
-            housing_tier = hm.get_housing_tier(h)
-            housing_score = housing_tier * 1000.0 # Tier 1=1000, Tier 3=3000
-
-            total_score = consumption_score + housing_score
-            scores.append((h.id, total_score))
-
-        # 2. Sort and Assign Rank
-        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
-        n = len(sorted_scores)
-        if n == 0: return
-
-        for rank_idx, (hid, _) in enumerate(sorted_scores):
-            # Rank 0 (Top) -> Percentile 1.0
-            # Rank N-1 (Bottom) -> Percentile 0.0
-            percentile = 1.0 - (rank_idx / n)
-            agent = self.agents.get(hid)
-            if agent:
-                agent.social_rank = percentile
-
-    def _calculate_reference_standard(self) -> Dict[str, float]:
-        """Phase 17-4: Calculate Top 20% Average Standard"""
-        active_households = [h for h in self.households if h.is_active]
-        if not active_households:
-            return {"avg_consumption": 0.0, "avg_housing_tier": 0.0}
-
-        top_20_count = max(1, int(len(active_households) * 0.20))
-        sorted_hh = sorted(active_households, key=lambda h: getattr(h, "social_rank", 0.0), reverse=True)
-        top_20 = sorted_hh[:top_20_count]
-
-        # Temp helper
-        hm = HousingManager(None, self.config_module)
-
-        avg_cons = sum(h.current_consumption for h in top_20) / len(top_20)
-        avg_tier = sum(hm.get_housing_tier(h) for h in top_20) / len(top_20)
-
-        return {
-            "avg_consumption": avg_cons,
-            "avg_housing_tier": avg_tier
-        }
+    # _update_social_ranks and _calculate_reference_standard moved to SocialSystem
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
         # --- Gold Standard / Money Supply Verification (WO-016) ---
@@ -200,21 +161,14 @@ class Simulation:
             extra={"tick": self.time, "tags": ["tick_start"]},
         )
 
-        # ===== Chaos Injection Events =====
-        if self.time == 200:
-            self.logger.warning("🔥 CHAOS: Inflation Shock at Tick 200!")
-            for market_name, market in self.markets.items():
-                if hasattr(market, 'current_price'):
-                    market.current_price *= 1.5
-                if hasattr(market, 'avg_price'):
-                    market.avg_price *= 1.5
-
-        if self.time == 600:
-            self.logger.warning("🔥 CHAOS: Recession Shock at Tick 600!")
-            for household in self.households:
-                household.assets *= 0.5
-                # Tech Note WO-057: Asset shock was deemed sufficient.
-                # If further impact is needed, household.monthly_income could also be reduced by 50%.
+        # ===== Chaos Injection Events (via EventSystem) =====
+        if self.event_system:
+             context: EventContext = {
+                 "households": self.households,
+                 "firms": self.firms,
+                 "markets": self.markets
+             }
+             self.event_system.execute_scheduled_events(self.time, context)
 
         # WO-054: Government Public Education Logic (START OF TICK)
         self.government.run_public_education(self.households, self.config_module, self.time, self.reflux_system)
@@ -258,15 +212,15 @@ class Simulation:
             active_firms = {f.id: f for f in self.firms if f.is_active}
             self.stock_market.update_reference_prices(active_firms)
 
-        # Phase 17-4: Update Social Ranks & Calculate Reference Standard
-        if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
-            self._update_social_ranks()
-
+        # Phase 17-4: Update Social Ranks & Calculate Reference Standard (via SocialSystem)
         market_data = self._prepare_market_data(self.tracker)
         
-        # Inject Reference Standard
-        if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
-            ref_std = self._calculate_reference_standard()
+        if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False) and self.social_system:
+            context: SocialMobilityContext = {
+                "households": self.households
+            }
+            self.social_system.update_social_ranks(context)
+            ref_std = self.social_system.calculate_reference_standard(context)
             market_data["reference_standard"] = ref_std
 
         # Phase 17-5: Leviathan Logic Integration
@@ -278,53 +232,38 @@ class Simulation:
         # 2. Government Gathers Opinion
         self.government.update_public_opinion(self.households)
 
-        # --- WO-057-B: Sensory Module Pipeline ---
-        # Collect Raw Data
-        latest_indicators = self.tracker.get_latest_indicators()
+        # --- WO-057-B: Sensory Module Pipeline (via SensorySystem) ---
+        sensory_context: SensoryContext = {
+            "tracker": self.tracker,
+            "government": self.government,
+            "time": self.time
+        }
 
-        # Inflation (Price Change)
-        current_price = latest_indicators.get("avg_goods_price", 10.0)
-        last_price = self.last_avg_price_for_sma
-        inflation_rate = (current_price - last_price) / last_price if last_price > 0 else 0.0
-        self.last_avg_price_for_sma = current_price
+        # We need to initialize systems if not present (should be done in initializer ideally)
+        # Assuming they are injected or initialized.
+        # Check if we should initialize here for backward compat or fail?
+        # The prompt implies we are refactoring, so let's assume SimulationInitializer does it.
+        # But SimulationInitializer code isn't provided to modify.
+        # So we MUST initialize default systems here if they are None to avoid crashes,
+        # OR modify SimulationInitializer.
+        # Given I cannot modify other files easily without checking,
+        # I'll add lazy init or rely on injection.
+        # Actually, let's assume they are injected. If not, we might need a Lazy Loading pattern.
 
-        # Unemployment
-        unemployment_rate = latest_indicators.get("unemployment_rate", 0.0)
+        if not self.sensory_system:
+             self.sensory_system = SensorySystem(self.config_module)
+        if not self.social_system:
+             self.social_system = SocialSystem(self.config_module)
+        if not self.event_system:
+             self.event_system = EventSystem(self.config_module)
+        if not self.commerce_system:
+             self.commerce_system = CommerceSystem(self.config_module, self.reflux_system)
+        if not self.labor_market_analyzer:
+             self.labor_market_analyzer = LaborMarketAnalyzer(self.config_module)
 
-        # GDP Growth
-        current_gdp = latest_indicators.get("total_production", 0.0)
-        last_gdp = self.last_gdp_for_sma
-        gdp_growth = (current_gdp - last_gdp) / last_gdp if last_gdp > 0 else 0.0
-        self.last_gdp_for_sma = current_gdp
 
-        # Wage
-        avg_wage = latest_indicators.get("avg_wage", 0.0)
+        sensory_dto = self.sensory_system.generate_government_sensory_dto(sensory_context)
 
-        # Approval
-        approval = self.government.approval_rating
-
-        # Append to Buffers
-        self.inflation_buffer.append(inflation_rate)
-        self.unemployment_buffer.append(unemployment_rate)
-        self.gdp_growth_buffer.append(gdp_growth)
-        self.wage_buffer.append(avg_wage)
-        self.approval_buffer.append(approval)
-
-        # Calculate SMA
-        def calculate_sma(buffer: deque) -> float:
-            return sum(buffer) / len(buffer) if buffer else 0.0
-
-        sensory_dto = GovernmentStateDTO(
-            tick=self.time,
-            inflation_sma=calculate_sma(self.inflation_buffer),
-            unemployment_sma=calculate_sma(self.unemployment_buffer),
-            gdp_growth_sma=calculate_sma(self.gdp_growth_buffer),
-            wage_sma=calculate_sma(self.wage_buffer),
-            approval_sma=calculate_sma(self.approval_buffer),
-            current_gdp=current_gdp
-        )
-
-        # Supply to Government
         # Supply to Government
         if injectable_sensory_dto and injectable_sensory_dto.tick == self.time:
             self.government.update_sensory_data(injectable_sensory_dto)
@@ -504,12 +443,8 @@ class Simulation:
         self._process_transactions(all_transactions)
 
         # ---------------------------------------------------------
-        # Activate Consumption Logic & Leisure Effects
+        # Activate Consumption Logic & Leisure Effects (via CommerceSystem)
         # ---------------------------------------------------------
-        # After transactions, households have goods in inventory.
-        # Now they must consume them to satisfy needs.
-        household_leisure_effects = {} # Store utility for AI reward injection
-
         # Recalculate vacancy count for correct death classification
         current_vacancies = 0
         labor_market = self.markets.get("labor")
@@ -518,77 +453,20 @@ class Simulation:
                  for order in item_orders:
                      current_vacancies += order.quantity
 
-        # Create a consumption-specific market data context
         consumption_market_data = market_data.copy()
         consumption_market_data["job_vacancies"] = current_vacancies
 
-        # WO-051: Vectorized Consumption Logic
-        # Pre-calculate consumption/purchase decisions for all households
-        batch_decisions = self.breeding_planner.decide_consumption_batch(self.households, consumption_market_data)
-        consume_list = batch_decisions.get('consume', [0] * len(self.households))
-        buy_list = batch_decisions.get('buy', [0] * len(self.households))
-        food_price = batch_decisions.get('price', 5.0)  # Default food price
+        commerce_context: CommerceContext = {
+            "households": self.households,
+            "breeding_planner": self.breeding_planner,
+            "household_time_allocation": household_time_allocation,
+            "reflux_system": self.reflux_system,
+            "market_data": consumption_market_data,
+            "config": self.config_module,
+            "time": self.time
+        }
 
-        for i, household in enumerate(self.households):
-             if household.is_active:
-
-                 # 1. Consumption (Vectorized Optimization)
-                 # Replace decide_and_consume with vectorized result application
-                 consumed_items = {}
-
-                 # 1a. Fast Consumption (Basic Food)
-                 if i < len(consume_list):
-                     c_amt = consume_list[i]
-                     if c_amt > 0:
-                         household.consume("basic_food", c_amt, self.time)
-                         consumed_items["basic_food"] = c_amt
-
-                 # 1b. Fast Purchase (Survival Rescue - Logic Map Item 3)
-                 if i < len(buy_list):
-                     b_amt = buy_list[i]
-                     if b_amt > 0:
-                         cost = b_amt * food_price
-                         if household.assets >= cost:
-                             household.assets -= cost
-                             household.inventory["basic_food"] = household.inventory.get("basic_food", 0) + b_amt
-                             # To prevent money destruction, we route this to Reflux System (Sink)
-                             self.reflux_system.capture(cost, source=f"Household_{household.id}", category="emergency_food")
-                             self.logger.debug(
-                                 f"VECTOR_BUY | Household {household.id} bought {b_amt:.1f} food (Fast Track)",
-                                 extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
-                             )
-                             # Consume immediately if they were starving and bought it?
-                             # The planner separates buy/consume. If they bought, they might consume next tick
-                             # or we can force consume now if consumption was 0?
-                             # Vector planner logic for consumption relies on Inventory > 0.
-                             # If inventory was 0, c_amt is 0.
-                             # If we buy now, we should probably allow immediate consumption.
-                             if c_amt == 0:
-                                 consume_now = min(b_amt, getattr(self.config_module, "FOOD_CONSUMPTION_QUANTITY", 1.0))
-                                 household.consume("basic_food", consume_now, self.time)
-                                 consumed_items["basic_food"] = consume_now
-
-                 # 2. Phase 5: Leisure Effect Application
-                 leisure_hours = household_time_allocation.get(household.id, 0.0)
-                 effect_dto = household.apply_leisure_effect(leisure_hours, consumed_items)
-                 
-                 # 3. Lifecycle Update [BUGFIX: WO-Diag-003]
-                 household.update_needs(self.time, consumption_market_data)
-
-                 # Store utility for reward injection
-                 household_leisure_effects[household.id] = effect_dto.utility_gained
-
-                 # Apply XP to Children (if Parenting)
-                 if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:
-                     for child_id in household.children_ids:
-                         # Children might be in self.agents
-                         child = self.agents.get(child_id)
-                         if child and isinstance(child, Household) and child.is_active:
-                             child.education_xp += effect_dto.xp_gained
-                             self.logger.debug(
-                                 f"PARENTING_XP_TRANSFER | Parent {household.id} -> Child {child_id}. XP: {effect_dto.xp_gained:.4f}",
-                                 extra={"agent_id": household.id, "tags": ["LEISURE_EFFECT", "parenting"]}
-                             )
+        household_leisure_effects = self.commerce_system.execute_consumption_and_leisure(commerce_context)
 
         # --- Phase 23: Technology Manager Update ---
         self.technology_manager.update(self.time, self)
@@ -640,93 +518,69 @@ class Simulation:
             )
 
 
+        # --- AI Learning Update (Unified) ---
+        market_data_for_learning = self._prepare_market_data(self.tracker)
+
+        # Firms
         for firm in self.firms:
             if firm.is_active and firm.id in firm_pre_states:
-                post_state_data = firm.get_agent_data()
                 agent_data = firm.get_agent_data()
-                market_data = self._prepare_market_data(self.tracker)
                 
-                # Calculate Reward using new method for Firms (Brand Valuation)
                 reward = firm.decision_engine.ai_engine.calculate_reward(
                     firm, firm.get_pre_state_data(), agent_data
                 )
                 
-                # Update Learning V2
-                firm.decision_engine.ai_engine.update_learning_v2(
-                    reward=reward,
-                    next_agent_data=agent_data,
-                    next_market_data=market_data,
-                )
-                
+                context: LearningUpdateContext = {
+                    "reward": reward,
+                    "next_agent_data": agent_data,
+                    "next_market_data": market_data_for_learning
+                }
+                firm.update_learning(context)
+
                 decision_data = AIDecisionData(
                     run_id=self.run_id,
                     tick=self.time,
                     agent_id=firm.id,
                     decision_type="VECTOR_V2",
-                    decision_details={
-                       "reward": reward
-                    },
+                    decision_details={"reward": reward},
                     predicted_reward=None,
                     actual_reward=reward,
                 )
                 self.repository.save_ai_decision(decision_data)
-                self.logger.debug(
-                    f"FIRM_LEARNING_UPDATE | Firm {firm.id} updated learning. Reward: {reward:.2f}",
-                    extra={
-                        "tick": self.time,
-                        "agent_id": firm.id,
-                        "reward": reward,
-                        "tags": ["ai_learning"],
-                    },
-                )
 
-        # --- AI Learning Update for Households ---
+        # Households
         for household in self.households:
             if household.is_active and household.id in household_pre_states:
                 post_state_data = household.get_agent_data()
                 agent_data = household.get_agent_data()
-                market_data = self._prepare_market_data(self.tracker)
                 
-                # Inject Phase 5 Leisure Utility into agent_data for Reward Calculation
                 leisure_utility = household_leisure_effects.get(household.id, 0.0)
                 agent_data["leisure_utility"] = leisure_utility
 
-                # Calculate Reward
                 reward = household.decision_engine.ai_engine._calculate_reward(
                     household.get_pre_state_data(),
                     post_state_data,
                     agent_data,
-                    market_data,
+                    market_data_for_learning,
                 )
-                
-                # Update Learning V2
-                household.decision_engine.ai_engine.update_learning_v2(
-                    reward=reward,
-                    next_agent_data=agent_data,
-                    next_market_data=market_data,
-                )
+
+                context: LearningUpdateContext = {
+                    "reward": reward,
+                    "next_agent_data": agent_data,
+                    "next_market_data": market_data_for_learning
+                }
+                household.update_learning(context)
 
                 decision_data = AIDecisionData(
                     run_id=self.run_id,
                     tick=self.time,
                     agent_id=household.id,
                     decision_type="VECTOR_V2",
-                    decision_details={
-                        "reward": reward
-                    },
+                    decision_details={"reward": reward},
                     predicted_reward=None,
                     actual_reward=reward,
                 )
                 self.repository.save_ai_decision(decision_data)
-                self.logger.debug(
-                    f"HOUSEHOLD_LEARNING_UPDATE | Household {household.id} updated learning. Reward: {reward:.2f}",
-                    extra={
-                        "tick": self.time,
-                        "agent_id": household.id,
-                        "reward": reward,
-                        "tags": ["ai_learning"],
-                    },
-                )
 
         # 8. M&A 및 파산 처리 (Corporate Metabolism)
         self.ma_manager.process_market_exits_and_entries(self.time)

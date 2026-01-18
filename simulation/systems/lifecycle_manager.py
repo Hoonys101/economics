@@ -8,14 +8,14 @@ if TYPE_CHECKING:
     from simulation.engine import Simulation
     from simulation.core_agents import Household
 
-from simulation.systems.api import AgentLifecycleManagerInterface
+# from simulation.systems.api import AgentLifecycleManagerInterface # Removed import
 from simulation.systems.demographic_manager import DemographicManager
 from simulation.systems.immigration_manager import ImmigrationManager
 from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.firm_management import FirmSystem
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 
-class AgentLifecycleManager(AgentLifecycleManagerInterface):
+class AgentLifecycleManager: # Removed inheritance from AgentLifecycleManagerInterface
     """에이전트의 생성, 노화, 사망, 청산을 처리합니다."""
 
     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
