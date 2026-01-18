@@ -17,7 +17,7 @@
     "command": "create",
     "session_id": "",
     "title": "TD-044_Household_God_Class_Refactor",
-    "instruction": "Execute Household God Class Refactoring based on 'design/specs/refactor_god_classes.md'. \n\nPHASE 2 (Household): \n1. Extract `AgentLifecycleComponent` and `MarketComponent` from Household.\n2. Ensure `Household` delegates logic to these components using `simulation/systems/api.py` protocols.\n3. Implement `update_learning` contract for `Household`.\n4. Verify `main.py` runs and the simulation passes 3 ticks.\n\nREFERENCE: design/specs/refactor_god_classes.md",
+    "instruction": "Execute Household God Class Refactoring based on 'design/specs/refactor_god_classes.md'. \n\n**CONTEXT UPDATE**: `tests/test_engine.py` has been patched to fix `ConfigManager` mocking errors (TypeError). Relies on `mock_config_manager` injection. DO NOT REVERT THIS TEST FIX.\n\nPHASE 2 (Household): \n1. Extract `AgentLifecycleComponent` and `MarketComponent` from Household.\n2. Ensure `Household` delegates logic to these components using `simulation/systems/api.py` protocols.\n3. Implement `update_learning` contract for `Household`.\n4. Verify `main.py` runs and the simulation passes 3 ticks.\n\nREFERENCE: design/specs/refactor_god_classes.md",
     "file": "",
     "wait": true
   },

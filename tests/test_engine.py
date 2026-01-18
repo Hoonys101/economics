@@ -251,8 +251,15 @@ def simulation_instance(
     mock_logger,
 ):
     from simulation.initialization.initializer import SimulationInitializer
+    from modules.common.config_manager.api import ConfigManager
+
+    # Create and configure mock_config_manager
+    mock_config_manager = Mock(spec=ConfigManager)
+    # Configure get() to return the default value if provided, or a sane default
+    mock_config_manager.get.side_effect = lambda key, default=None: default
 
     initializer = SimulationInitializer(
+        config_manager=mock_config_manager,
         config_module=mock_config_module,
         goods_data=mock_goods_data,
         repository=mock_repository,
@@ -647,8 +654,13 @@ def setup_simulation_for_lifecycle(
     firms = [firm_active, firm_inactive]
 
     from simulation.initialization.initializer import SimulationInitializer
+    from modules.common.config_manager.api import ConfigManager
+
+    mock_config_manager = Mock(spec=ConfigManager)
+    mock_config_manager.get.side_effect = lambda key, default=None: default
 
     initializer = SimulationInitializer(
+        config_manager=mock_config_manager,
         config_module=mock_config_module,
         goods_data=mock_goods_data_for_lifecycle,
         repository=mock_repository,
