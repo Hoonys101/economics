@@ -1,0 +1,151 @@
+2026-01-17 12:51:01,957 - root - INFO - Logging setup complete from config file.
+2026-01-17 12:51:01,957 - root - WARNING - SamplingFilter not found in logging handlers. Sampling rates not applied.
+2026-01-17 12:51:01,957 - root - INFO - Initializing simulation.
+2026-01-17 12:51:02,002 - simulation.db.repository - INFO - All simulation data cleared and VACUUMed database.
+2026-01-17 12:51:02,007 - simulation.ai.model_wrapper - INFO - Model for wealth_and_needs loaded.
+2026-01-17 12:51:02,008 - simulation.ai.model_wrapper - INFO - Model for needs_and_growth loaded.
+2026-01-17 12:51:02,009 - simulation.ai.model_wrapper - INFO - Model for needs_and_social_status loaded.
+2026-01-17 12:51:02,009 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,010 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,010 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,011 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,011 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,012 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,013 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,013 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,014 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,014 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,014 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,014 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,015 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,015 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,015 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,015 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,015 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,016 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,016 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,016 - simulation.decisions.ai_driven_household_engine - INFO - AIDrivenHouseholdDecisionEngine initialized.
+2026-01-17 12:51:02,016 - simulation.decisions.ai_driven_firm_engine - INFO - AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-17 12:51:02,016 - simulation.decisions.ai_driven_firm_engine - INFO - AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-17 12:51:02,016 - simulation.decisions.ai_driven_firm_engine - INFO - AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-17 12:51:02,017 - simulation.decisions.ai_driven_firm_engine - INFO - AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-17 12:51:02,017 - root - INFO - Firm 20 initially hired Household 1.
+2026-01-17 12:51:02,017 - root - INFO - Firm 20 initially hired Household 11.
+2026-01-17 12:51:02,017 - root - INFO - Firm 21 initially hired Household 6.
+2026-01-17 12:51:02,017 - root - INFO - Firm 21 initially hired Household 3.
+2026-01-17 12:51:02,017 - root - INFO - Firm 22 initially hired Household 12.
+2026-01-17 12:51:02,017 - root - INFO - Firm 22 initially hired Household 17.
+2026-01-17 12:51:02,017 - root - INFO - Firm 23 initially hired Household 10.
+2026-01-17 12:51:02,017 - root - INFO - Firm 23 initially hired Household 0.
+2026-01-17 12:51:02,022 - simulation.bank - INFO - Bank 24 initialized. Assets: 1000000.00, Base Rate: 5.00%
+2026-01-17 12:51:02,023 - simulation.agents.government - INFO - Government 25 initialized with assets: 0.0
+2026-01-17 12:51:02,023 - simulation.agents.central_bank - INFO - CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+2026-01-17 12:51:02,023 - Market_basic_food - INFO - OrderBookMarket basic_food initialized.
+2026-01-17 12:51:02,023 - Market_clothing - INFO - OrderBookMarket clothing initialized.
+2026-01-17 12:51:02,023 - Market_luxury_food - INFO - OrderBookMarket luxury_food initialized.
+2026-01-17 12:51:02,023 - Market_education_service - INFO - OrderBookMarket education_service initialized.
+2026-01-17 12:51:02,023 - Market_iron - INFO - OrderBookMarket iron initialized.
+2026-01-17 12:51:02,023 - Market_consumer_goods - INFO - OrderBookMarket consumer_goods initialized.
+2026-01-17 12:51:02,024 - Market_luxury_bag - INFO - OrderBookMarket luxury_bag initialized.
+2026-01-17 12:51:02,024 - Market_labor - INFO - OrderBookMarket labor initialized.
+2026-01-17 12:51:02,024 - simulation.loan_market - INFO - LoanMarket loan_market initialized with bank: 24
+2026-01-17 12:51:02,025 - __main__ - INFO - IPO | Firm 20 initialized IPO with 1000.0 shares. Par value: 50.90
+2026-01-17 12:51:02,025 - __main__ - INFO - IPO | Firm 21 initialized IPO with 1000.0 shares. Par value: 54.57
+2026-01-17 12:51:02,025 - __main__ - INFO - IPO | Firm 22 initialized IPO with 1000.0 shares. Par value: 54.30
+2026-01-17 12:51:02,025 - __main__ - INFO - IPO | Firm 23 initialized IPO with 1000.0 shares. Par value: 59.66
+2026-01-17 12:51:02,025 - Market_housing - INFO - OrderBookMarket housing initialized.
+2026-01-17 12:51:02,031 - __main__ - INFO - Paid inventory holding cost: 0.64
+2026-01-17 12:51:02,032 - __main__ - INFO - Paid total wages: 26.00 to 2 employees.
+2026-01-17 12:51:02,032 - __main__ - INFO - FIRM_BRAND_METRICS | Firm 20: Awareness=0.0952, Quality=0.4000, Premium=0.00
+2026-01-17 12:51:02,033 - __main__ - INFO - Paid inventory holding cost: 0.64
+2026-01-17 12:51:02,033 - __main__ - INFO - Paid total wages: 23.00 to 2 employees.
+2026-01-17 12:51:02,033 - __main__ - INFO - FIRM_BRAND_METRICS | Firm 21: Awareness=0.0952, Quality=0.4000, Premium=0.00
+2026-01-17 12:51:02,033 - __main__ - INFO - Paid inventory holding cost: 0.64
+2026-01-17 12:51:02,033 - __main__ - INFO - Paid total wages: 24.50 to 2 employees.
+2026-01-17 12:51:02,033 - __main__ - INFO - FIRM_BRAND_METRICS | Firm 22: Awareness=0.0952, Quality=0.4000, Premium=0.00
+2026-01-17 12:51:02,034 - __main__ - INFO - Paid inventory holding cost: 0.64
+2026-01-17 12:51:02,034 - __main__ - INFO - Paid total wages: 26.00 to 2 employees.
+2026-01-17 12:51:02,034 - __main__ - INFO - FIRM_BRAND_METRICS | Firm 23: Awareness=0.0952, Quality=0.4000, Premium=0.00
+2026-01-17 12:51:02,034 - simulation.ai.ai_training_manager - INFO - AITrainingManager initialized.
+2026-01-17 12:51:02,034 - simulation.systems.demographic_manager - INFO - DemographicManager initialized.
+2026-01-17 12:51:02,034 - simulation.systems.bootstrapper - INFO - BOOTSTRAPPER | Injected resources into 0 firms.
+2026-01-17 12:51:02,034 - simulation.systems.bootstrapper - INFO - BOOTSTRAPPER | Total force-assigned workers: 0
+2026-01-17 12:51:02,051 - simulation.db.repository - INFO - Started new simulation run with ID: 64
+2026-01-17 12:51:02,051 - __main__ - INFO - Simulation run started with run_id: 64
+2026-01-17 12:51:02,051 - __main__ - INFO - Simulation fully initialized with run_id: 64
+2026-01-17 12:51:02,051 - __main__ - INFO - MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: 1499313.77
+2026-01-17 12:51:02,051 - __main__ - INFO - --- Starting Tick 1 ---
+2026-01-17 12:51:02,052 - simulation.bank - INFO - BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 1000000.00
+2026-01-17 12:51:02,052 - __main__ - INFO - DIVIDEND | Firm 20 -> Household 0 : $98600.00
+2026-01-17 12:51:02,053 - __main__ - INFO - DIVIDEND | Firm 21 -> Household 1 : $98600.00
+2026-01-17 12:51:02,053 - __main__ - INFO - DIVIDEND | Firm 22 -> Household 2 : $98600.00
+2026-01-17 12:51:02,053 - __main__ - INFO - DIVIDEND | Firm 23 -> Household 3 : $98600.00
+2026-01-17 12:51:02,055 - __main__ - INFO - DEBUG_WO057 | Tick 1 | Indicators: ['unemployment_rate', 'avg_wage', 'money_supply', 'total_labor_income', 'total_sales_volume', 'total_household_assets', 'total_firm_assets', 'food_avg_price', 'food_trade_volume', 'avg_goods_price', 'total_production', 'total_consumption', 'total_food_consumption', 'total_inventory', 'avg_survival_need', 'labor_share', 'velocity_of_money', 'inventory_turnover', 'avg_education_level', 'brain_waste_count']
+2026-01-17 12:51:02,055 - __main__ - INFO - DEBUG_WO057 | AvgPrice: 0.0
+2026-01-17 12:51:02,055 - __main__ - INFO - DEBUG_WO057 | SensoryDTO: InfSMA=-1.0000, UnempSMA=60.0000, DebtRat=509.4811
+2026-01-17 12:51:02,057 - simulation.utils.shadow_logger - INFO - ShadowLogger initialized at logs/shadow_hand_stage1.csv
+2026-01-17 12:51:02,058 - simulation.systems.tax_agency - INFO - TAX_COLLECTED | Collected 10.89 as wealth_tax from 0
+2026-01-17 12:51:02,058 - simulation.systems.tax_agency - INFO - TAX_COLLECTED | Collected 10.85 as wealth_tax from 1
+2026-01-17 12:51:02,059 - simulation.systems.tax_agency - INFO - TAX_COLLECTED | Collected 10.63 as wealth_tax from 2
+2026-01-17 12:51:02,059 - simulation.systems.tax_agency - INFO - TAX_COLLECTED | Collected 10.55 as wealth_tax from 3
+2026-01-17 12:51:02,060 - simulation.decisions.ai_driven_firm_engine - INFO - SEO | Firm 20 offering 100.0 shares at 0.01
+2026-01-17 12:51:02,061 - __main__ - INFO - Stock SELL order placed: 100.0 shares of firm 20 at 0.01
+2026-01-17 12:51:02,062 - simulation.decisions.ai_driven_firm_engine - INFO - SEO | Firm 21 offering 100.0 shares at 0.01
+2026-01-17 12:51:02,062 - __main__ - INFO - Stock SELL order placed: 100.0 shares of firm 21 at 0.01
+2026-01-17 12:51:02,063 - simulation.decisions.ai_driven_firm_engine - INFO - SEO | Firm 22 offering 100.0 shares at 0.01
+2026-01-17 12:51:02,063 - __main__ - INFO - Stock SELL order placed: 100.0 shares of firm 22 at 0.01
+2026-01-17 12:51:02,064 - simulation.decisions.ai_driven_firm_engine - INFO - SEO | Firm 23 offering 100.0 shares at 0.01
+2026-01-17 12:51:02,064 - __main__ - INFO - Stock SELL order placed: 100.0 shares of firm 23 at 0.01
+2026-01-17 12:51:02,078 - __main__ - INFO - MONETARY_TRANS | HH 7 | clothing | Need: 59.0 | ConsROI: 2.75 vs SavROI: 0.8400 | AggBuy: 0.00
+2026-01-17 12:51:02,083 - __main__ - INFO - MONETARY_TRANS | HH 9 | education_service | Need: 10.5 | ConsROI: 0.31 vs SavROI: 1.0080 | AggBuy: 0.23
+2026-01-17 12:51:02,090 - __main__ - INFO - MONETARY_TRANS | HH 12 | clothing | Need: 63.6 | ConsROI: 6.36 vs SavROI: 0.8820 | AggBuy: 0.25
+2026-01-17 12:51:02,092 - __main__ - INFO - MONETARY_TRANS | HH 13 | luxury_food | Need: 57.7 | ConsROI: 1.35 vs SavROI: 0.6720 | AggBuy: 1.00
+2026-01-17 12:51:02,110 - Market_basic_food - INFO - Starting order matching for items: ['basic_food']
+2026-01-17 12:51:02,110 - Market_basic_food - INFO - MATCHED_TARGETED | 3.00 of basic_food at 1.50. Buyer 16 -> Seller 22 (Targeted)
+2026-01-17 12:51:02,110 - Market_basic_food - INFO - MATCHED_TARGETED | 1.00 of basic_food at 1.50. Buyer 8 -> Seller 22 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - Starting order matching for items: ['clothing']
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 3.00 of clothing at 2.50. Buyer 4 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 3.00 of clothing at 2.50. Buyer 5 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 3.00 of clothing at 2.50. Buyer 8 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 3.00 of clothing at 2.50. Buyer 6 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 3.00 of clothing at 2.50. Buyer 18 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 9 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 3.00 of clothing at 2.50. Buyer 11 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 1 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 0 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 19 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,111 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 3 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 2 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 16 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 10 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 12 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 15 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 13 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 14 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 7 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_clothing - INFO - MATCHED_TARGETED | 1.00 of clothing at 2.50. Buyer 17 -> Seller 23 (Targeted)
+2026-01-17 12:51:02,112 - Market_luxury_food - INFO - Starting order matching for items: ['luxury_food']
+2026-01-17 12:51:02,113 - Market_education_service - INFO - Starting order matching for items: ['education_service']
+2026-01-17 12:51:02,113 - Market_iron - INFO - Starting order matching for items: ['iron']
+2026-01-17 12:51:02,113 - Market_consumer_goods - INFO - Starting order matching for items: ['consumer_goods']
+2026-01-17 12:51:02,113 - Market_luxury_bag - INFO - Starting order matching for items: ['luxury_bag']
+2026-01-17 12:51:02,113 - Market_labor - INFO - Starting order matching for items: ['labor']
+2026-01-17 12:51:02,113 - Market_housing - INFO - No items to match in market housing at tick 1
+2026-01-17 12:51:02,120 - Market_housing - INFO - No items to match in market housing at tick 1
+Traceback (most recent call last):
+  File "C:\coding\economics\main.py", line 375, in <module>
+    run_simulation(output_filename=output_filename)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\coding\economics\main.py", line 355, in run_simulation
+    sim.run_tick()
+    ~~~~~~~~~~~~^^
+  File "C:\coding\economics\simulation\engine.py", line 486, in run_tick
+    self.lifecycle_manager.process_lifecycle_events(self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\coding\economics\simulation\systems\lifecycle_manager.py", line 35, in process_lifecycle_events
+    self.demographic_manager.process_aging(sim.households, sim.time)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\coding\economics\simulation\systems\demographic_manager.py", line 44, in process_aging
+    agent.age += (1.0 / ticks_per_year)
+    ^^^^^^^^^
+AttributeError: property 'age' of 'Household' object has no setter

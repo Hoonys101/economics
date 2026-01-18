@@ -435,9 +435,9 @@ if __name__ == "__main__":
         
         session = bridge.create_session(prompt=prompt, title=title)
         register_session(session.id, title, prompt)  # 자동 등록 (Prompt 포함)
-        print(f"✅ Session created: {session.id}")
-        print(f"✅ Name: {session.name}")
-        print(f"✅ Registered to team_assignments.json with initial mission")
+        print(f"   [x] Session created: {session.id}")
+        print(f"   [x] Name: {session.name}")
+        print(f"   [x] Registered to team_assignments.json with initial mission")
 
     elif command == "sync-git" and len(sys.argv) >= 3:
         title = sys.argv[2]
@@ -457,13 +457,13 @@ if __name__ == "__main__":
             acts = status.get("recent_activities", [])
             pr = status.get("pr_url")
             
-            print(f"\n📊 Session Status: {sess.get('title')}")
+            print(f"\n[Session Status]: {sess.get('title')}")
             print(f"ID: {sess.get('id')}")
             print(f"State: {sess.get('state')}")
             if pr:
-                print(f"🔗 PR: {pr}")
+                print(f"   [PR]: {pr}")
             
-            print("\n📝 Latest Activity:")
+            print("\n[Latest Activity]:")
             if acts:
                 latest = acts[0]
                 desc = latest.get("description", "No description")
@@ -507,14 +507,14 @@ if __name__ == "__main__":
         if "--wait" in sys.argv:
             response = bridge.wait_for_agent_response(session_id, last_act_id=last_id)
             if response:
-                print("\n🤖 Jules Response:")
+                print("\n[Jules Response]:")
                 progress = response.get("progressUpdated", {})
                 print(f"Title: {progress.get('title')}")
                 desc = progress.get('description', '')
                 if desc:
                      print(f"Description: {desc[:500]}..." if len(desc) > 500 else f"Description: {desc}")
             else:
-                print("\n⏳ No immediate response from agent.")
+                print("\n[!] No immediate response from agent.")
 
     elif command == "activities" and len(sys.argv) >= 3:
         session_id = sys.argv[2]
@@ -526,7 +526,7 @@ if __name__ == "__main__":
         if verbose:
             print(json.dumps(activities, indent=2, default=str))
         else:
-            print(f"\n📜 Recent Activities ({len(activities)}):")
+            print(f"\n[Recent Activities] ({len(activities)}):")
             for act in activities:
                 desc = act.get("description", "")
                 if len(desc) > 100:
@@ -540,20 +540,20 @@ if __name__ == "__main__":
     
     elif command == "my-sessions":
         sessions = get_my_sessions()
-        print(f"\n🗂️ Active Sessions ({len(sessions)}):")
+        print(f"\n[Active Sessions] ({len(sessions)}):")
         for sid, entry in sessions.items():
             title = entry["title"] if isinstance(entry, dict) else entry
             if "(COMPLETED)" in title:
-                print(f"   ✅ {sid}: {title}")
+                print(f"   [x] {sid}: {title}")
             else:
                 # Minimal info fetch
                 try:
                     info = bridge.get_session(sid, compact=True)
                     state = info.get("state", "UNKNOWN")
                     pr = info.get("pr_url", "")
-                    print(f"   🔄 {sid}: {title} [{state}]" + (f" -> PR: {pr}" if pr else ""))
+                    print(f"   [*] {sid}: {title} [{state}]" + (f" -> PR: {pr}" if pr else ""))
                 except Exception:
-                    print(f"   ❓ {sid}: {title} [Fetch Failed]")
+                    print(f"   [?] {sid}: {title} [Fetch Failed]")
 
     elif command == "complete" and len(sys.argv) >= 3:
         session_id = sys.argv[2]

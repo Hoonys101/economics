@@ -39,6 +39,8 @@
 | TD-028 | 2026-01-15 | 2026-01-15 | Bear Market Instruments | Marked Out of Scope |
 | TD-029 | 2026-01-15 | 2026-01-15 | Price Discovery | Marked Out of Scope |
 | TD-048 | 2026-01-16 | 2026-01-17 | Environment Instability | Pinned `requirements.txt` versions (TD-048) |
+| TD-049 | 2026-01-17 | 2026-01-17 | Firm Object Pollution in Households List | Fixed aliasing in `firm_management.py` (Firm System) |
+| TD-043 | 2026-01-16 | 2026-01-17 | God Class: `Simulation` in `engine.py` | Refactoring Verified (Tick 0-3 passed) |
 
 
 ---

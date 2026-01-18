@@ -105,7 +105,6 @@ class FirmSystem:
         # 6. Add to Simulation
         simulation.firms.append(new_firm)
         simulation.agents[new_firm.id] = new_firm
-        simulation.ai_training_manager.agents.append(new_firm)
 
         if simulation.stock_market:
             new_firm.init_ipo(simulation.stock_market)

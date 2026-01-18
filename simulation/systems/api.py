@@ -123,6 +123,16 @@ class ICommerceSystem(Protocol):
         """가계 소비, 긴급 구매(fast-track purchases), 여가 효과를 조율합니다."""
         ...
 
+
+class AgentLifecycleManagerInterface(Protocol):
+    """에이전트의 생성, 노화, 사망, 청산을 처리하는 시스템의 인터페이스입니다."""
+    def __init__(self, config_module: Any, demographic_manager: Any,
+                 inheritance_manager: Any, firm_system: Any, logger: Any): ...
+
+    def process_lifecycle_events(self, sim: 'Simulation') -> None:
+        """한 틱 동안 발생하는 모든 생명주기 관련 이벤트를 처리합니다."""
+        ...
+
 # ===================================================================
 # 3. 에이전트 컴포넌트 인터페이스 (Household 클래스에서 추출)
 # ===================================================================

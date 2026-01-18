@@ -5,6 +5,10 @@
       "298579565746718624": {
         "title": "ActionProposal_Config_Refactor",
         "initial_mission": "Refactor ActionProposalEngine config loading. TASKS: 1. Modify `simulation/decisions/action_proposal.py` to inject `ConfigManager` in `__init__` and replace hardcoded goods list with `self.config_manager.get('simulation.consumables')`. 2. Update `simulation/initialization/initializer.py` to pass `config_manager` to `ActionProposalEngine`. 3. Update `config/simulation.yaml` to add `consumables: ['basic_food', 'luxury_food']` (Correcting 'food' to 'basic_food'). 4. Create `tests/simulation/test_action_proposal.py` to verify config loading with a mock ConfigManager. REFERENCE: implementation_plan.md."
+      },
+      "17210430308583135228": {
+        "title": "TD-043_God_Class_Refactor",
+        "initial_mission": "Execute God Class Refactoring based on 'design/specs/refactor_god_classes.md'. "
       }
     },
     "completed_sessions": {

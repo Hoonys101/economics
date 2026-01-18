@@ -472,6 +472,10 @@ class Household(BaseAgent):
     def age(self) -> float:
         return self.demographics.age
 
+    @age.setter
+    def age(self, value: float) -> None:
+        self.demographics._age = value
+
     @property
     def gender(self) -> str:
         return self.demographics.gender
@@ -479,6 +483,10 @@ class Household(BaseAgent):
     @property
     def parent_id(self) -> Optional[int]:
         return self.demographics.parent_id
+
+    @parent_id.setter
+    def parent_id(self, value: Optional[int]) -> None:
+        self.demographics._parent_id = value
 
     @property
     def spouse_id(self) -> Optional[int]:
@@ -491,6 +499,10 @@ class Household(BaseAgent):
     @property
     def generation(self) -> int:
         return self.demographics.generation
+
+    @generation.setter
+    def generation(self, value: int) -> None:
+        self.demographics._generation = value
 
     @property
     def children_count(self) -> int:

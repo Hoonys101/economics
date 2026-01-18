@@ -16,8 +16,8 @@
   "jules": {
     "command": "create",
     "session_id": "",
-    "title": "TD-043_God_Class_Refactor",
-    "instruction": "Execute God Class Refactoring based on 'design/specs/refactor_god_classes.md'. \n\nPHASE 1 (Simulation): \n1. Create the new System files in `simulation/systems/`.\n2. Implement the logic extracted from `run_tick`.\n3. Verify `main.py` runs.\n\nREFERENCE: design/specs/refactor_god_classes.md",
+    "title": "TD-044_Household_God_Class_Refactor",
+    "instruction": "Execute Household God Class Refactoring based on 'design/specs/refactor_god_classes.md'. \n\nPHASE 2 (Household): \n1. Extract `AgentLifecycleComponent` and `MarketComponent` from Household.\n2. Ensure `Household` delegates logic to these components using `simulation/systems/api.py` protocols.\n3. Implement `update_learning` contract for `Household`.\n4. Verify `main.py` runs and the simulation passes 3 ticks.\n\nREFERENCE: design/specs/refactor_god_classes.md",
     "file": "",
     "wait": true
   },

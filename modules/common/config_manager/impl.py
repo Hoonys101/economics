@@ -48,4 +48,7 @@ class ConfigManagerImpl(ConfigManager):
         node[parts[-1]] = value
 
     def __getattr__(self, name: str) -> Any:
-        return self.get(name)
+        value = self.get(name, default=AttributeError)
+        if value is AttributeError:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        return value
