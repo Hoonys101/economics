@@ -18,6 +18,7 @@
     - **TD-044**: Household God Class Refactoring ✅
     - **WO-079**: Config Automation v2 (High Reliability) ✅
     - **TD-046**: Hardcoded Constants Migration ✅
+    - **TD-043/044/045**: God Class Refactoring (Simulation/Household/Firm) ✅ (2026-01-18)
     
 - **현재 단계:** `Phase 27: Architecture Consolidation`
     - **TD-008**: Advanced Finance System (Altman Z-Score) ✅

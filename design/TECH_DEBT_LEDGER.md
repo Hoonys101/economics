@@ -17,9 +17,7 @@
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
 | TD-046 | 2026-01-16 | Hardcoded Constants in SoC Components | Migrate constants to config system | Reduced configurability | **IN_PROGRESS** (WO-079 통합 진행) |
 
-| TD-043 | 2026-01-16 | God Class: `Simulation` in `engine.py` | SoC Refactoring (Wait for WO-Soc-2) | High Coupling, Low Maintainability | **REOPENED** (SoC Failed/Partial) |
-| TD-044 | 2026-01-16 | God Class: `Household` in `core_agents.py` | SoC Refactoring (Wait for WO-Soc-2) | High Coupling, Low Maintainability | **REOPENED** (SoC Failed/Partial) |
-| TD-045 | 2026-01-16 | God Class: `Firm` in `firms.py` | SoC Refactoring (Wait for WO-Soc-2) | High Coupling, Low Maintainability | **REOPENED** (SoC Failed/Partial) |
+
 
 ---
 
@@ -39,6 +37,9 @@
 | TD-028 | 2026-01-15 | 2026-01-15 | Bear Market Instruments | Marked Out of Scope |
 | TD-029 | 2026-01-15 | 2026-01-15 | Price Discovery | Marked Out of Scope |
 | TD-048 | 2026-01-16 | 2026-01-17 | Environment Instability | Pinned `requirements.txt` versions (TD-048) |
+| TD-043 | 2026-01-16 | 2026-01-18 | God Class: `Simulation` | Extracted Systems (Social, Event, Commerce, Sensory) |
+| TD-044 | 2026-01-16 | 2026-01-18 | God Class: `Household` | Extracted Components (AgentLifecycle, Market) |
+| TD-045 | 2026-01-16 | 2026-01-18 | God Class: `Firm` | Implemented ILearningAgent support |
 
 
 ---

@@ -7,3 +7,4 @@
 | 2026-01-16 | 8465436477342866436 | WO-037: Simulation Cockpit | [COMPLETED] Merged feat branch into main. Dashboard available. |
 | 2026-01-16 | 2244231495852370011 | WO-079: Config Automation v2 | [COMPLETED] Merged and verified via SCR. |
 | 2026-01-16 | 14826170066369985962 | TD-008: Finance System Upgrade | [COMPLETED] Merged into main. Bailout system refactored. |
+| 2026-01-18 | 5597989927571483094 | TD-043/044/045: God Class Refactoring | [COMPLETED] Merged. Simulation/Household separated into Systems/Components. |

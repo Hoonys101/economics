@@ -14,10 +14,10 @@
     "model": "pro"
   },
   "jules": {
-    "command": "create",
-    "session_id": "",
-    "title": "TD-043_God_Class_Refactor",
-    "instruction": "Execute God Class Refactoring based on 'design/specs/refactor_god_classes.md'. \n\nPHASE 1 (Simulation): \n1. Create the new System files in `simulation/systems/`.\n2. Implement the logic extracted from `run_tick`.\n3. Verify `main.py` runs.\n\nREFERENCE: design/specs/refactor_god_classes.md",
+    "command": "send-message",
+    "session_id": "5597989927571483094",
+    "title": "TD-044_Household_God_Class_Refactor",
+    "instruction": "Review PR feedback (Critical Logic Gaps):\n1. **Performance**: Fix O(n) lookup in `commerce_system.py` (parenting logic). Use O(1) agents dict.\n2. **Architecture**: Fix cyclical dependency between `CommerceSystem` and `AgentLifecycle` (consumption logic).\n3. **Anti-Pattern**: Remove lazy initialization in `engine.py`. Initialize in `__init__`.\n4. **Interface**: Restore `AgentLifecycleManagerInterface` if needed.\n\nNOTE: `tests/test_engine.py` is FIXED (mock config). Do not regress.",
     "file": "",
     "wait": true
   },
