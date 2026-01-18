@@ -7,8 +7,10 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, Protocol, TypedDict, Deque
 from abc import ABC, abstractmethod
 
+from typing import TYPE_CHECKING
+
 # 순환 참조를 피하기 위한 Forward declarations
-if 'TYPE_CHECKING':
+if TYPE_CHECKING:
     from simulation.core_agents import Household, Firm
     from simulation.agents.government import Government
     from simulation.config import SimulationConfig

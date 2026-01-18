@@ -21,6 +21,7 @@ from simulation.components.production_department import ProductionDepartment
 from simulation.components.sales_department import SalesDepartment
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError
+from simulation.systems.api import LearningUpdateContext
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -714,3 +715,17 @@ class Firm(BaseAgent):
             if self.cash_reserve < amount:
                 raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.cash_reserve:.2f}")
             self.cash_reserve -= amount
+
+    def update_learning(self, context: LearningUpdateContext) -> None:
+        """
+        Updates the agent's AI learning based on the provided context.
+        Implements ILearningAgent protocol.
+        """
+        # Engine calls this, so we delegate to internal AI engine
+        # "Tell, Don't Ask"
+        if hasattr(self.decision_engine, 'ai_engine') and self.decision_engine.ai_engine:
+            self.decision_engine.ai_engine.update_learning_v2(
+                reward=context["reward"],
+                next_agent_data=context["next_agent_data"],
+                next_market_data=context["next_market_data"]
+            )
