@@ -239,30 +239,14 @@ class Simulation:
             "time": self.time
         }
 
-        # We need to initialize systems if not present (should be done in initializer ideally)
-        # Assuming they are injected or initialized.
-        # Check if we should initialize here for backward compat or fail?
-        # The prompt implies we are refactoring, so let's assume SimulationInitializer does it.
-        # But SimulationInitializer code isn't provided to modify.
-        # So we MUST initialize default systems here if they are None to avoid crashes,
-        # OR modify SimulationInitializer.
-        # Given I cannot modify other files easily without checking,
-        # I'll add lazy init or rely on injection.
-        # Actually, let's assume they are injected. If not, we might need a Lazy Loading pattern.
-
-        if not self.sensory_system:
-             self.sensory_system = SensorySystem(self.config_module)
-        if not self.social_system:
-             self.social_system = SocialSystem(self.config_module)
-        if not self.event_system:
-             self.event_system = EventSystem(self.config_module)
-        if not self.commerce_system:
-             self.commerce_system = CommerceSystem(self.config_module, self.reflux_system)
-        if not self.labor_market_analyzer:
-             self.labor_market_analyzer = LaborMarketAnalyzer(self.config_module)
-
-
-        sensory_dto = self.sensory_system.generate_government_sensory_dto(sensory_context)
+        # Anti-Pattern Fix: Removed lazy initialization.
+        # Systems MUST be initialized by SimulationInitializer.
+        if self.sensory_system:
+            sensory_dto = self.sensory_system.generate_government_sensory_dto(sensory_context)
+        else:
+            self.logger.error("SensorySystem not initialized! Check SimulationInitializer.")
+            # Fallback to empty DTO to prevent crash if critical, but log error
+            sensory_dto = GovernmentStateDTO(self.time, 0, 0, 0, 0, 0, 0)
 
         # Supply to Government
         if injectable_sensory_dto and injectable_sensory_dto.tick == self.time:
@@ -458,6 +442,7 @@ class Simulation:
 
         commerce_context: CommerceContext = {
             "households": self.households,
+            "agents": self.agents,
             "breeding_planner": self.breeding_planner,
             "household_time_allocation": household_time_allocation,
             "reflux_system": self.reflux_system,
@@ -466,7 +451,11 @@ class Simulation:
             "time": self.time
         }
 
-        household_leisure_effects = self.commerce_system.execute_consumption_and_leisure(commerce_context)
+        if self.commerce_system:
+            household_leisure_effects = self.commerce_system.execute_consumption_and_leisure(commerce_context)
+        else:
+            self.logger.error("CommerceSystem not initialized! Skipping consumption cycle.")
+            household_leisure_effects = {}
 
         # --- Phase 23: Technology Manager Update ---
         self.technology_manager.update(self.time, self)

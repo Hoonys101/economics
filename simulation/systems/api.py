@@ -46,6 +46,7 @@ class SensoryContext(TypedDict):
 class CommerceContext(TypedDict):
     """상거래 시스템이 소비를 실행하는 데 필요한 데이터입니다."""
     households: List['Household']
+    agents: Dict[int, Any] # For O(1) lookup
     breeding_planner: 'VectorizedHouseholdPlanner'
     household_time_allocation: Dict[int, float]
     reflux_system: 'EconomicRefluxSystem'
@@ -192,4 +193,11 @@ class ILearningAgent(Protocol):
 
         이는 "묻지 말고 시켜라(Tell, Don't Ask)" 원칙을 강제합니다.
         """
+        ...
+
+class AgentLifecycleManagerInterface(Protocol):
+    """
+    Interface for AgentLifecycleManager to ensure contract compliance.
+    """
+    def process_lifecycle_events(self, sim: Any) -> None:
         ...

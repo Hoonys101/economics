@@ -102,12 +102,11 @@ class CommerceSystem(ICommerceSystem):
 
             # 5. Parenting XP Transfer
             if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:
+                agents = context.get("agents", {})
                 for child_id in household.children_ids:
-                    # Find child in households list? Or need global agent lookup?
-                    # The context only provides households list.
-                    # We might need to iterate households list to find child.
-                    child = next((h for h in households if h.id == child_id), None)
-                    if child and child.is_active:
+                    # Use O(1) lookup from agents dict
+                    child = agents.get(child_id)
+                    if child and getattr(child, "is_active", False):
                         child.education_xp += effect_dto.xp_gained
 
         return household_leisure_effects

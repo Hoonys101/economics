@@ -44,6 +44,11 @@ from modules.finance.system import FinanceSystem
 from simulation.db.repository import SimulationRepository
 from simulation.systems.lifecycle_manager import AgentLifecycleManager
 from simulation.engine import Simulation
+from simulation.systems.social_system import SocialSystem
+from simulation.systems.event_system import EventSystem
+from simulation.systems.sensory_system import SensorySystem
+from simulation.systems.commerce_system import CommerceSystem
+from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
 
 
 class SimulationInitializer(SimulationInitializerInterface):
@@ -216,6 +221,13 @@ class SimulationInitializer(SimulationInitializerInterface):
             firm_system=sim.firm_system,
             logger=self.logger
         )
+
+        # Initialize New Systems (Social, Event, Sensory, Commerce, Labor)
+        sim.social_system = SocialSystem(self.config)
+        sim.event_system = EventSystem(self.config)
+        sim.sensory_system = SensorySystem(self.config)
+        sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
+        sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 
         sim.household_time_allocation: Dict[int, float] = {}
         sim.inflation_buffer = deque(maxlen=10)
