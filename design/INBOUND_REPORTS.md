@@ -21,3 +21,8 @@
 - **daily_action_plan_20260117.md** (from `observer-action-plan-01-3668774630791999408`) -> `observer-action-plan-01-3668774630791999408_daily_action_plan_20260117.md`
 - **observer_scan.md** (from `observer-action-plan-01-3668774630791999408`) -> `observer-action-plan-01-3668774630791999408_observer_scan.md`
 - **2026-01-17_refactoring_proposal_soc.md** (from `refactor/soc-proposal-2460652686838241933`) -> `refactor_soc-proposal-2460652686838241933_2026-01-17_refactoring_proposal_soc.md`
+
+## Harvested on 2026-01-20 08:48:49
+- **daily_action_plan_20260119.md** (from `observer-daily-plan-20260119-14898370987513280755`) -> `observer-daily-plan-20260119-14898370987513280755_daily_action_plan_20260119.md`
+- **observer_scan.md** (from `observer-daily-plan-20260119-14898370987513280755`) -> `observer-daily-plan-20260119-14898370987513280755_observer_scan.md`
+- **2026-01-19_refactoring_proposal_soc.md** (from `refactor-proposal-soc-14876576136625405681`) -> `refactor-proposal-soc-14876576136625405681_2026-01-19_refactoring_proposal_soc.md`

@@ -7,6 +7,11 @@ Run the existing simulation engine to generate **"Golden Fixtures"** (verified c
 
 ## 🔨 Tasks
 
+### 0. Fix Critical Bug (TD-064)
+- **Problem**: `Household.age` property lacks a setter, causing crashes when `DemographicsManager` tries to update it.
+- **Action**: Add a setter to `Household.age` in `simulation/core_agents.py` that delegates to `self.demographics.age`.
+- **Verify**: Ensure basic simulation tick runs without `AttributeError`.
+
 ### 1. Fix `scripts/generate_golden_fixtures.py`
 - Ensure it imports `Simulation` correctly (handle `sys.path` issue if needed).
 - Update logic to handle any API changes from `WO-081` (Bank Refactor), although the Simulation engine should already handle this.
