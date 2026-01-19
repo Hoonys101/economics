@@ -17,10 +17,11 @@
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
 | TD-050 | 2026-01-17 | Observer Scanner Path Inclusion | Exclude `scripts/observer` from scan loop | False positives in complexity reports | **DEFERRED** |
 | TD-051 | 2026-01-17 | Documentation Placeholders | Replace `WO-XXX` with actual IDs in manuals | Confusion in developer onboarding | **DEFERRED** |
-| TD-058 | 2026-01-19 | `FinanceSystem` - `Firm` Tight Coupling | Introduce `FinancialStatementDTO` in `Firm` | Architecture Rigidity / Brittle Tests | **DEFERRED** |
+| TD-058 | 2026-01-19 | `FinanceSystem` - `Firm` Tight Coupling | Introduce `FinancialStatementDTO` in `Firm` | Architecture Rigidity / Brittle Tests | **RESOLVED** (Phase 29) |
 | TD-059 | 2026-01-19 | Legacy Logic in `FinanceDepartment` | Refactor component to use `AltmanZScoreCalculator` | Logic Duplication / SSOT Violation | **DEFERRED** |
-| TD-060 | 2026-01-19 | Hardcoded Scenario Path in `Initializer` | Implement dynamic lookup in `ConfigManager` | Low Configurability / Brittle Tests | **PENDING** |
-| TD-061 | 2026-01-19 | Mock Fragility in Stress Testing | Collect 'Golden Data' and implement typed mocks | Brittle Tests / High Dev Friction | **PENDING** |
+| TD-060 | 2026-01-19 | Hardcoded Scenario Path in `Initializer` | Implement dynamic lookup in `ConfigManager` | Low Configurability / Brittle Tests | **RESOLVED** (Phase 29) |
+| TD-061 | 2026-01-19 | Mock Fragility in Stress Testing | Collect 'Golden Data' and implement typed mocks | Brittle Tests / High Dev Friction | **IN_PROGRESS** (WO-080) |
+| TD-062 | 2026-01-19 | `Bank` Interface Mismatch | Implement `IFinancialEntity` interface in `Bank` | Test Inconsistency / Type Issues | **DEFERRED** |
 
 
 

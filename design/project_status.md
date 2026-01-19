@@ -23,7 +23,11 @@
 - **현재 단계:** `Phase 29: The Great Depression & Crisis Monitor` 🏗️
     - **TD-008**: Advanced Finance System (Altman Z-Score) ✅
     - **Phase 28**: Macro-Stability Stress Testing ✅ (Verified with Scenarios)
-    - **Phase 29**: Depression Simulation & Monitor ✅ (Implemented & Debugged)
+    - **Phase 29**: Depression Simulation & Crisis Monitor ✅ (Verified & Handover Ready)
+    
+- **현재 단계:** `Phase 30: The Great Depression (Simulation)` 🏗️
+    - **WO-080**: Golden Fixture Test Migration 🏗️ (In Progress)
+    - **TD-062**: Bank Interface Mismatch (Deferred)
 
 ---
 

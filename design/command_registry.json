@@ -9,10 +9,10 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-080: Golden Fixture Migration",
+    "title": "WO-081: Bank Interface Segregation",
     "session_id": "",
-    "instruction": "Migrate tests to use Golden Fixtures. Read design/work_orders/WO-080-Golden-Fixture-Migration.md for details.",
-    "file": "design/work_orders/WO-080-Golden-Fixture-Migration.md",
+    "instruction": "Refactor Bank interface to separate customer service from financial entity logic. Read design/work_orders/WO-081-Bank-Interface.md for details.",
+    "file": "design/work_orders/WO-081-Bank-Interface.md",
     "wait": true
   },
   "git_review": {
