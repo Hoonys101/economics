@@ -1,25 +1,17 @@
-[CRITICAL MISSION] TD-008: Advanced Finance System Upgrade
+The USER has requested the implementation of Phase 29: The Great Depression Simulation.
 
-수석 아키텍트 프라임의 명령에 따라, 현재 진행 중인 모든 대시보드 작업을 중단하고 금융 시스템의 건전성 확보를 위한 'Altman Z-Score' 로직 구현에 집중하십시오.
+## Context
+We have verified the Altman Z-Score implementation (TD-008) and Behavioral Economics (Phase 28).
+Now, we must test the system under extreme stress conditions to verify the "Crash" mechanics.
 
-### 미션 개요:
-1. **Altman Z-Score 구현**: `design/specs/TD-008_Finance_Upgrade_Spec.md`의 수식과 로직을 엄격히 따라 `modules/finance` 내에 기업 건전성 분류 로직을 구현하세요.
-2. **대상 파일**: 
-   - `modules/finance/system.py`
-   - `modules/finance/domain/corporate_finance.py`
-3. **제약 사항**: 
-   - 프론트엔드(UI) 코드에는 절대 손대지 마십시오.
-   - 오직 백엔드 금융 엔진의 정합성 확보에만 집중하십시오.
+## Mission
+1.  **Scenario Configuration**: Create `config/scenarios/phase29_depression.json` to simulate increased interest rates and taxes ("Black Thursday").
+2.  **Crisis Monitor**: Implement `modules/analysis/crisis_monitor.py` to track firm solvency (safe/gray/distress) over time.
+3.  **Integration**: Hook the monitor into the `Simulation` loop in `engine.py`.
 
----
+## Reference
+Please strictly follow the specification in: `design/specs/phase29_depression_spec.md`.
 
-### [💡 실무자 보고서 (Technical Debt Reporting) - 필수]
-작업 완료 후, 구현 과정에서 발견하거나 유발한 기술적 한계 및 부채를 상세히 기술한 보고서를 함께 제출하세요. 팀장인 제가 기술부채 대장을 업데이트할 수 있도록 다음 내용을 포함해야 합니다.
-
-1. **발견된 스파게티 코드**: 금융 시스템 내의 기존 비상식적 구조나 악취.
-2. **구현의 병목**: Z-Score 로직을 더 깔끔하게 짤 수 없었던 구조적 한계.
-3. **신규 부채**: 이번 구현 중 어쩔 수 없이 추가한 임시방편(Dirty Hack).
-4. **상환 권고**: 금융 시스템의 근본적인 안정을 위해 시급히 리팩토링이 필요한 부분.
-
-"우리는 보여주기 위한 대시보드가 아니라, 작동하는 경제를 먼저 만듭니다."
-구현을 시작하십시오.
+## Output
+- A PR containing the new scenario, the monitor module, and the engine integration.
+- A report on the Z-Score sensitivity observed during your local tests.

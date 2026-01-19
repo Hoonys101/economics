@@ -5,7 +5,8 @@
   - [x] Fix `Firm` pollution bug
   - [x] Fix `ConfigManager` Mock tests
 - [x] **WO-079**: Configuration Automation v2
-- [ ] **Phase 28**: Macro-Stability Stress Testing (TD-007)
-  - [ ] Review Analysis Report (`design/gemini_output/analysis_phase28_stress_scenarios.md`)
-  - [ ] Implement Stress Scenarios
+- [x] **Phase 28**: Macro-Stability Stress Testing (TD-007)
+  - [x] Review Analysis Report (`design/gemini_output/analysis_phase28_stress_scenarios.md`)
+  - [x] Implement Stress Scenarios & Behavioral Logic
+- [x] **TD-008**: Advanced Finance System (Altman Z-Score)
 - [ ] **Validation**: Verify Config Automation Integration

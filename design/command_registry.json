@@ -15,7 +15,7 @@
   },
   "jules": {
     "command": "create",
-    "title": "TD-008_Advanced_Finance_System",
+    "title": "Phase-29_The_Great_Depression",
     "instruction": "",
     "file": "design/jules_instruction.txt",
     "wait": true

@@ -17,6 +17,8 @@
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
 | TD-050 | 2026-01-17 | Observer Scanner Path Inclusion | Exclude `scripts/observer` from scan loop | False positives in complexity reports | **DEFERRED** |
 | TD-051 | 2026-01-17 | Documentation Placeholders | Replace `WO-XXX` with actual IDs in manuals | Confusion in developer onboarding | **DEFERRED** |
+| TD-058 | 2026-01-19 | `FinanceSystem` - `Firm` Tight Coupling | Introduce `FinancialStatementDTO` in `Firm` | Architecture Rigidity / Brittle Tests | **DEFERRED** |
+| TD-059 | 2026-01-19 | Legacy Logic in `FinanceDepartment` | Refactor component to use `AltmanZScoreCalculator` | Logic Duplication / SSOT Violation | **DEFERRED** |
 
 
 
@@ -33,7 +35,7 @@
 | TD-031 | 2026-01-15 | 2026-01-16 | Systemic Money Leakage in Finance | Implemented Atomic Protocol-based Transfer (WO-073) |
 | TD-047 | 2026-01-16 | 2026-01-16 | Startup Crash: Household Generation Attribute | Fixed via `try/except` in `BaseAgent` |
 | TD-032~042 | 2026-01-15 | 2026-01-16 | Finance System Flaws (QE, Bailouts, etc.) | Resolved via WO-072/073 |
-| TD-008 | 2026-01-14 | 2026-01-17 | Primitive Valuation Logic in CPR | Implemented Altman Z-Score (TD-008) |
+| TD-008 | 2026-01-14 | 2026-01-19 | Primitive Valuation Logic in CPR | Implemented Domain-driven Altman Z-Score |
 | TD-009 | 2026-01-14 | 2026-01-17 | CPR Bailouts are Unconditional Grants | Implemented Bailout Loans (TD-008) |
 | TD-028 | 2026-01-15 | 2026-01-15 | Bear Market Instruments | Marked Out of Scope |
 | TD-029 | 2026-01-15 | 2026-01-15 | Price Discovery | Marked Out of Scope |
