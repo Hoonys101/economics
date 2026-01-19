@@ -1,114 +1,118 @@
 {
   "metadata": {
-    "captured_at": "2026-01-19T06:45:26.875429",
+    "captured_at": "2026-01-19T07:44:07.372073",
     "tick": 10,
     "household_count": 5,
     "firm_count": 5
   },
   "households": [
     {
-      "id": 4,
-      "assets": 13050.540647652953,
+      "id": 0,
+      "assets": 62789.781037961926,
       "is_active": true,
-      "is_employed": false,
-      "employer_id": null,
-      "age": 59.75320147093375,
+      "is_employed": true,
+      "employer_id": 22,
+      "age": 28.57033851578025,
       "education_level": 2,
-      "current_wage": 0.0,
+      "current_wage": 10.0,
       "needs": {
-        "survival": 50.23212521056311,
-        "social": 34.694878738987725,
-        "improvement": 15.642671270426629,
-        "asset": 16.28329430212697,
-        "imitation_need": 14.132579172993074,
+        "survival": 41.07304420048839,
+        "social": 26.221749372873344,
+        "improvement": 25.869747522171664,
+        "asset": 15.23198810384152,
+        "imitation_need": 14.523812878639117,
         "labor_need": 0.0,
-        "liquidity_need": 50.108177498959606,
+        "liquidity_need": 57.86536870192166,
         "quality": 11.0
       },
       "inventory": {
-        "basic_food": 9.0,
-        "clothing": 1.0
+        "basic_food": 10.0,
+        "clothing": 3.0,
+        "iron": 2.0
       },
       "approval_rating": 0
     },
     {
-      "id": 5,
-      "assets": 12984.587637654906,
+      "id": 2,
+      "assets": 89838.70776578865,
       "is_active": true,
-      "is_employed": false,
-      "employer_id": null,
-      "age": 27.71920514124902,
+      "is_employed": true,
+      "employer_id": 20,
+      "age": 41.72867932946703,
       "education_level": 2,
-      "current_wage": 0.0,
+      "current_wage": 10.0,
       "needs": {
-        "survival": 45.65753809876118,
-        "social": 31.54466486661161,
-        "improvement": 21.16990181295625,
-        "asset": 20.028475369294572,
-        "imitation_need": 15.142450614549652,
+        "survival": 46.576661404901444,
+        "social": 34.817506824137936,
+        "improvement": 15.741909169978719,
+        "asset": 14.73948730739483,
+        "imitation_need": 15.242528712104194,
         "labor_need": 0.0,
-        "liquidity_need": 51.654918982002485,
+        "liquidity_need": 56.120987691526295,
         "quality": 11.0
       },
       "inventory": {
         "basic_food": 7.0,
-        "clothing": 5.0
+        "clothing": 1.0,
+        "iron": 3.0
       },
       "approval_rating": 0
     },
     {
-      "id": 9,
-      "assets": 13180.23428325562,
+      "id": 4,
+      "assets": 10081.036873101826,
       "is_active": true,
       "is_employed": false,
       "employer_id": null,
-      "age": 55.69245235372364,
+      "age": 53.037475290137664,
       "education_level": 2,
       "current_wage": 0.0,
       "needs": {
-        "survival": 48.445200882784626,
-        "social": 34.553420331716644,
-        "improvement": 16.417733297762737,
-        "asset": 16.41324494206144,
-        "imitation_need": 13.748785428917072,
+        "survival": 42.44793932956515,
+        "social": 25.87658443563101,
+        "improvement": 27.318059646350257,
+        "asset": 15.537758028297823,
+        "imitation_need": 13.610100891672744,
         "labor_need": 0.0,
-        "liquidity_need": 53.19837799021771,
+        "liquidity_need": 54.74366927388168,
         "quality": 11.0
       },
       "inventory": {
-        "basic_food": 8.0,
-        "clothing": 4.0
+        "basic_food": 7.0,
+        "clothing": 3.0,
+        "iron": 1.0
       },
       "approval_rating": 0
     },
     {
-      "id": 11,
-      "assets": 13124.22217282695,
+      "id": 13,
+      "assets": 9985.584924405053,
       "is_active": true,
-      "is_employed": true,
-      "employer_id": 23,
-      "age": 21.719439214309123,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 56.54607691336864,
       "education_level": 2,
-      "current_wage": 10.0,
+      "current_wage": 0.0,
       "needs": {
-        "survival": 50.19405976856118,
-        "social": 26.389157938521095,
-        "improvement": 15.549262375489834,
-        "asset": 26.966460454594277,
-        "imitation_need": 14.885329295917419,
+        "survival": 50.43511001591827,
+        "social": 31.830951003301838,
+        "improvement": 21.295854349147852,
+        "asset": 21.547984265398966,
+        "imitation_need": 15.08029170284943,
         "labor_need": 0.0,
-        "liquidity_need": 52.04939942887757,
+        "liquidity_need": 58.91997192432571,
         "quality": 11.0
       },
       "inventory": {
         "basic_food": 9.0,
-        "clothing": 3.0
+        "clothing": 1.0,
+        "iron": 1.0
       },
       "approval_rating": 0
     },
     {
-      "id": 30,
-      "assets": 10428.463191666366,
+      "id": 32,
+      "assets": 3749.074887783303,
       "is_active": true,
       "is_employed": false,
       "employer_id": null,
@@ -119,7 +123,8 @@
         "liquidity_need": 100.0
       },
       "inventory": {
-        "basic_food": 2616.9529304585008,
+        "iron": 2205.733629038661,
+        "basic_food": 4.0,
         "clothing": 26.0
       },
       "approval_rating": 1.0
@@ -128,13 +133,13 @@
   "firms": [
     {
       "id": 20,
-      "assets": 621.4371334658707,
+      "assets": 531.8306842915842,
       "is_active": true,
       "specialization": "basic_food",
       "productivity_factor": 32.57789253554884,
-      "employees_count": 0,
+      "employees_count": 1,
       "inventory": {
-        "basic_food": 1428.8540080447178,
+        "basic_food": 2391.298103372857,
         "clothing": 0.0,
         "luxury_food": 0.0,
         "education_service": 0.0,
@@ -144,18 +149,18 @@
       },
       "retained_earnings": -98600.0,
       "total_debt": 0.0,
-      "current_profit": -822.7761620869511,
+      "current_profit": -909.458167065433,
       "consecutive_loss_turns": 11
     },
     {
       "id": 21,
-      "assets": 622.8298032624488,
+      "assets": 606.3762331282156,
       "is_active": true,
       "specialization": "basic_food",
       "productivity_factor": 32.57789253554884,
       "employees_count": 0,
       "inventory": {
-        "basic_food": 1446.4461506109424,
+        "basic_food": 1448.3813788748143,
         "clothing": 0.0,
         "luxury_food": 0.0,
         "education_service": 0.0,
@@ -165,18 +170,18 @@
       },
       "retained_earnings": -98600.0,
       "total_debt": 0.0,
-      "current_profit": -813.0890480945684,
+      "current_profit": -831.0606182288008,
       "consecutive_loss_turns": 11
     },
     {
       "id": 22,
-      "assets": 621.4824644228199,
+      "assets": 531.0878817709654,
       "is_active": true,
       "specialization": "basic_food",
       "productivity_factor": 32.57789253554884,
-      "employees_count": 0,
+      "employees_count": 1,
       "inventory": {
-        "basic_food": 1453.210875376739,
+        "basic_food": 2366.9273226720547,
         "clothing": 0.0,
         "luxury_food": 0.0,
         "education_service": 0.0,
@@ -186,19 +191,19 @@
       },
       "retained_earnings": -98600.0,
       "total_debt": 0.0,
-      "current_profit": -812.1543869341969,
+      "current_profit": -905.6689695860512,
       "consecutive_loss_turns": 11
     },
     {
       "id": 23,
-      "assets": 653.4093874917127,
+      "assets": 728.1519109738337,
       "is_active": true,
       "specialization": "clothing",
       "productivity_factor": 32.57789253554884,
-      "employees_count": 1,
+      "employees_count": 0,
       "inventory": {
         "basic_food": 0.0,
-        "clothing": 2296.6482699468743,
+        "clothing": 1342.649709864588,
         "luxury_food": 0.0,
         "education_service": 0.0,
         "iron": 0.0,
@@ -207,23 +212,24 @@
       },
       "retained_earnings": -98600.0,
       "total_debt": 0.0,
-      "current_profit": -905.3098743335191,
+      "current_profit": -827.0145034237117,
       "consecutive_loss_turns": 11
     },
     {
-      "id": 30,
-      "assets": 10428.463191666366,
+      "id": 32,
+      "assets": 3749.074887783303,
       "is_active": true,
-      "specialization": "basic_food",
-      "productivity_factor": 26.959338412776198,
+      "specialization": "iron",
+      "productivity_factor": 22.279105751849666,
       "employees_count": 0,
       "inventory": {
-        "basic_food": 2616.9529304585008,
+        "iron": 2205.733629038661,
+        "basic_food": 4.0,
         "clothing": 26.0
       },
       "retained_earnings": 0.0,
       "total_debt": 0.0,
-      "current_profit": -779.3771329918724,
+      "current_profit": -774.715023374921,
       "consecutive_loss_turns": 10
     }
   ],
@@ -654,7 +660,6 @@
     "SALES_TAX_RATE": 0.0,
     "SCHOLARSHIP_POTENTIAL_THRESHOLD": 0.7,
     "SCHOLARSHIP_WEALTH_PERCENTILE": 0.2,
-    "SECRET_TOKEN": "your-super-secret-token",
     "SEO_MAX_SELL_RATIO": 0.1,
     "SEO_TRIGGER_RATIO": 0.5,
     "SERVICE_SECTORS": [

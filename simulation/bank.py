@@ -197,33 +197,41 @@ class Bank:
         )
         return loan_id
 
-    def deposit(self, depositor_id: int, amount: float) -> Optional[str]:
+    def deposit(self, *args) -> Optional[str]:
         """
-        Accepts a deposit from an agent.
-        Does NOT transfer assets directly; returns deposit ID for Transaction creation.
+        Polymorphic deposit method to support:
+        1. deposit(depositor_id, amount) -> for agent deposits (returns deposit_id)
+        2. deposit(amount) -> for direct asset injection (e.g. from Government)
         """
-        margin = self._get_config("bank_defaults.bank_margin", 0.02)
-        deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
+        if len(args) == 2:
+            depositor_id, amount = args
+            margin = self._get_config("bank_defaults.bank_margin", 0.02)
+            deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
 
-        # self.assets += amount <-- REMOVED: Asset transfer handled by LoanMarket Transaction
+            deposit_id = f"dep_{self.next_deposit_id}"
+            self.next_deposit_id += 1
 
-        deposit_id = f"dep_{self.next_deposit_id}"
-        self.next_deposit_id += 1
+            new_deposit = Deposit(
+                depositor_id=depositor_id,
+                amount=amount,
+                annual_interest_rate=deposit_rate
+            )
 
-        new_deposit = Deposit(
-            depositor_id=depositor_id,
-            amount=amount,
-            annual_interest_rate=deposit_rate
-        )
+            self.deposits[deposit_id] = new_deposit
 
-        self.deposits[deposit_id] = new_deposit
-
-        logger.info(
-            f"DEPOSIT_ACCEPTED | Deposit {deposit_id} from Agent {depositor_id}. "
-            f"Amt: {amount:.2f}, Rate: {deposit_rate:.2%}",
-            extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
-        )
-        return deposit_id
+            logger.info(
+                f"DEPOSIT_ACCEPTED | Deposit {deposit_id} from Agent {depositor_id}. "
+                f"Amt: {amount:.2f}, Rate: {deposit_rate:.2%}",
+                extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
+            )
+            return deposit_id
+        elif len(args) == 1:
+            amount = args[0]
+            if amount > 0:
+                self.assets += amount
+            return None
+        else:
+            raise TypeError(f"Bank.deposit() expected 1 or 2 arguments, got {len(args)}")
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Returns debt info for AI state."""
@@ -362,40 +370,48 @@ class Bank:
                 extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
             )
 
-    def withdraw(self, depositor_id: int, amount: float) -> bool:
+    def withdraw(self, *args) -> bool:
         """
-        Withdraws from depositor's account.
-        Returns True if successful, False if insufficient balance.
+        Polymorphic withdraw method to support:
+        1. withdraw(depositor_id, amount) -> for agent withdrawals (returns True/False)
+        2. withdraw(amount) -> for direct asset withdrawal (e.g. from Government) (raises if insufficient)
         """
-        # Find deposit by depositor_id
-        # We need to scan because key is deposit_id
-        # Or should we store deposits by depositor_id?
-        # Current struct: self.deposits: Dict[str, Deposit] (key=dep_id)
-        # Scan
-        target_deposit = None
-        target_dep_id = None
-        for dep_id, deposit in self.deposits.items():
-            if deposit.depositor_id == depositor_id:
-                target_deposit = deposit
-                target_dep_id = dep_id
-                break
+        if len(args) == 2:
+            depositor_id, amount = args
+            # Find deposit by depositor_id
+            target_deposit = None
+            target_dep_id = None
+            for dep_id, deposit in self.deposits.items():
+                if deposit.depositor_id == depositor_id:
+                    target_deposit = deposit
+                    target_dep_id = dep_id
+                    break
 
-        if target_deposit is None or target_deposit.amount < amount:
-            return False
+            if target_deposit is None or target_deposit.amount < amount:
+                return False
 
-        target_deposit.amount -= amount
-        # self.assets -= amount # Handled by Transaction
+            target_deposit.amount -= amount
+            # self.assets -= amount # Handled by Transaction in LoanMarket
 
-        # If deposit is empty, remove it
-        if target_deposit.amount <= 0:
-            if target_dep_id:
-                del self.deposits[target_dep_id]
+            # If deposit is empty, remove it
+            if target_deposit.amount <= 0:
+                if target_dep_id:
+                    del self.deposits[target_dep_id]
 
-        logger.info(
-            f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
-            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
-        )
-        return True
+            logger.info(
+                f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
+                extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
+            )
+            return True
+        elif len(args) == 1:
+            amount = args[0]
+            if amount > 0:
+                if self.assets < amount:
+                    raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+                self.assets -= amount
+            return True
+        else:
+            raise TypeError(f"Bank.withdraw() expected 1 or 2 arguments, got {len(args)}")
 
     def _borrow_from_central_bank(self, amount: float):
         """
