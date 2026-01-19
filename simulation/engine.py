@@ -234,7 +234,7 @@ class Simulation:
         # Phase 17-5: Leviathan Logic Integration
         # 1. Update Household Political Opinions
         for h in self.households:
-            if h.is_active:
+            if h.is_active and isinstance(h, Household):
                 h.update_political_opinion()
 
         # 2. Government Gathers Opinion
@@ -412,7 +412,7 @@ class Simulation:
                     # Routing Logic for Deposit/Withdraw/Loan
                     if order.order_type in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
                         target_market_id = "loan_market"
-                    elif order.item_id in ["deposit", "currency"]: # Fallback
+                    elif hasattr(order, "item_id") and order.item_id in ["deposit", "currency"]: # Fallback
                         target_market_id = "loan_market"
 
                     household_target_market = self.markets.get(target_market_id)

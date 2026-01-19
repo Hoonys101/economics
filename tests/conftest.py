@@ -155,3 +155,28 @@ def golden_config():
     if loader is None:
         return None
     return loader.create_config_mock()
+
+
+@pytest.fixture
+def golden_initial_households():
+    """Tick 0 Initial State Households"""
+    loader = _get_golden_loader("initial_state.json")
+    return loader.create_household_mocks() if loader else []
+
+@pytest.fixture
+def golden_initial_firms():
+    """Tick 0 Initial State Firms"""
+    loader = _get_golden_loader("initial_state.json")
+    return loader.create_firm_mocks() if loader else []
+
+@pytest.fixture
+def golden_stable_households():
+    """Tick 100 Stable Economy Households"""
+    loader = _get_golden_loader("stable_economy.json")
+    return loader.create_household_mocks() if loader else []
+
+@pytest.fixture
+def golden_stable_firms():
+    """Tick 100 Stable Economy Firms"""
+    loader = _get_golden_loader("stable_economy.json")
+    return loader.create_firm_mocks() if loader else []

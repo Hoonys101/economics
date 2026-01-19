@@ -45,6 +45,7 @@ class SocialSystem(ISocialSystem):
 
         for h in households:
             if not h.is_active: continue
+            if not hasattr(h, 'current_consumption'): continue
 
             # Calculate Score
             consumption_score = h.current_consumption * 10.0

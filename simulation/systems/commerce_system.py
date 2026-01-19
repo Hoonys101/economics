@@ -44,6 +44,10 @@ class CommerceSystem(ICommerceSystem):
             if not household.is_active:
                 continue
 
+            # Ensure it is a Household (skip Firms if passed by mistake or mixed list)
+            if not hasattr(household, 'consume'):
+                continue
+
             consumed_items = {}
 
             # 2a. Fast Consumption

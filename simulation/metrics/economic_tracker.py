@@ -83,7 +83,7 @@ class EconomicIndicatorTracker:
             [
                 h
                 for h in households
-                if getattr(h, "is_active", True) and not h.is_employed
+                if getattr(h, "is_active", True) and isinstance(h, Household) and not h.is_employed
             ]
         )
         record["unemployment_rate"] = (
@@ -169,7 +169,7 @@ class EconomicIndicatorTracker:
         record["total_production"] = total_production
 
         total_consumption = sum(
-            h.current_consumption for h in households if getattr(h, "is_active", True)
+            h.current_consumption for h in households if getattr(h, "is_active", True) and isinstance(h, Household)
         )
         record["total_consumption"] = total_consumption
 
