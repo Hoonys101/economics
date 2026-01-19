@@ -164,3 +164,4 @@ simulation_results/
 # gemini.md.bak
 # design/JULES_DOCUMENTATION_GUIDE.md
 .agent/
+reports/*.csv

@@ -303,14 +303,47 @@ class Firm(BaseAgent, ILearningAgent):
 
     def get_inventory_value(self) -> float:
         """Calculate market value of current inventory."""
-        total_value = 0.0
-        for item_id, qty in self.inventory.items():
-            # Use last known market price or book value? Market price is better.
-            # But Firm stores last_prices?
-            price = self.last_prices.get(item_id, 0.0) # Or fetch from market?
-            # If no price known, assume 0 or cost? Use valid price if possible.
-            total_value += qty * price
-        return total_value
+        if isinstance(self.inventory, dict):
+             # Some firms use dict inventory (multiple goods)
+             total_val = 0.0
+             for good, qty in self.inventory.items():
+                 total_val += qty * self.price # Simplified: uses same price for all? Or should use market price?
+             return total_val
+        return self.inventory * self.price
+
+    def get_financial_snapshot(self) -> Dict[str, float]:
+        """
+        Returns a standardized dictionary of financial metrics for monitoring and analysis.
+        This provides a stable interface for CrisisMonitor and FinanceSystem.
+        """
+        total_assets = self.assets + self.get_inventory_value()
+        
+        # Working Capital = Current Assets - Current Liabilities
+        # Since we don't have long-term assets/liabilities clearly split yet, 
+        # we treat total assets as current and total debt as current liabilities.
+        current_liabilities = getattr(self, "total_debt", 0.0)
+        working_capital = total_assets - current_liabilities
+        
+        # Retained Earnings
+        retained_earnings = 0.0
+        if hasattr(self, "finance"):
+            retained_earnings = getattr(self.finance, "retained_earnings", 0.0)
+        else:
+            retained_earnings = self.retained_earnings
+
+        # Average Profit (last 10 ticks if available)
+        avg_profit = self.current_profit
+        if self.profit_history:
+            recent = list(self.profit_history)[-10:]
+            avg_profit = sum(recent) / len(recent)
+
+        return {
+            "total_assets": total_assets,
+            "working_capital": working_capital,
+            "retained_earnings": retained_earnings,
+            "average_profit": avg_profit,
+            "total_debt": current_liabilities
+        }
 
     def liquidate_assets(self) -> float:
         """

@@ -284,8 +284,16 @@ class Simulation:
         # [DEBUG WO-057]
         latest_indicators = self.tracker.get_latest_indicators()
         self.logger.info(f"DEBUG_WO057 | Tick {self.time} | Indicators: {list(latest_indicators.keys())}")
-        self.logger.info(f"DEBUG_WO057 | AvgPrice: {latest_indicators.get('avg_goods_price', 'MISSING')}")
-        self.logger.info(f"DEBUG_WO057 | SensoryDTO: InfSMA={sensory_dto.inflation_sma:.4f}, UnempSMA={sensory_dto.unemployment_sma:.4f}, DebtRat={sensory_dto.current_gdp:.4f}")
+        
+        avg_price = latest_indicators.get('avg_goods_price', 'MISSING')
+        avg_price_val = avg_price if isinstance(avg_price, (int, float)) else 0.0
+        self.logger.info(f"DEBUG_WO057 | AvgPrice: {avg_price_val:.4f}")
+        
+        inf_sma = sensory_dto.inflation_sma if isinstance(sensory_dto.inflation_sma, (int, float)) else 0.0
+        unemp_sma = sensory_dto.unemployment_sma if isinstance(sensory_dto.unemployment_sma, (int, float)) else 0.0
+        debt_rat = sensory_dto.current_gdp if isinstance(sensory_dto.current_gdp, (int, float)) else 0.0
+        
+        self.logger.info(f"DEBUG_WO057 | SensoryDTO: InfSMA={inf_sma:.4f}, UnempSMA={unemp_sma:.4f}, DebtRat={debt_rat:.4f}")
         # -----------------------------------------
 
         # 3. Government Makes Policy Decision

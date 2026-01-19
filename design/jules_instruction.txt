@@ -1,17 +1,4 @@
-The USER has requested the implementation of Phase 29: The Great Depression Simulation.
+Smart move on disabling reproduction to isolate the test. Our priority is verifying the 'Crisis Monitor' and 'Shock Trigger'.
 
-## Context
-We have verified the Altman Z-Score implementation (TD-008) and Behavioral Economics (Phase 28).
-Now, we must test the system under extreme stress conditions to verify the "Crash" mechanics.
-
-## Mission
-1.  **Scenario Configuration**: Create `config/scenarios/phase29_depression.json` to simulate increased interest rates and taxes ("Black Thursday").
-2.  **Crisis Monitor**: Implement `modules/analysis/crisis_monitor.py` to track firm solvency (safe/gray/distress) over time.
-3.  **Integration**: Hook the monitor into the `Simulation` loop in `engine.py`.
-
-## Reference
-Please strictly follow the specification in: `design/specs/phase29_depression_spec.md`.
-
-## Output
-- A PR containing the new scenario, the monitor module, and the engine integration.
-- A report on the Z-Score sensitivity observed during your local tests.
+Proceed with the current logic. Do NOT spend more time on perfect mocking of unrelated systems.
+If the test passes and the monitor logs data, create the PR immediately. We will tune the Z-Score coefficients later based on your report.

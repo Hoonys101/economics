@@ -118,8 +118,10 @@ class Government:
         self.sensory_data = dto
         # Log reception (Debug)
         if dto.tick % 50 == 0:
+            inf_sma = dto.inflation_sma if isinstance(dto.inflation_sma, (int, float)) else 0.0
+            app_sma = dto.approval_sma if isinstance(dto.approval_sma, (int, float)) else 0.0
             logger.debug(
-                f"SENSORY_UPDATE | Government received macro data. Inflation_SMA: {dto.inflation_sma:.4f}, Approval_SMA: {dto.approval_sma:.2f}",
+                f"SENSORY_UPDATE | Government received macro data. Inflation_SMA: {inf_sma:.4f}, Approval_SMA: {app_sma:.2f}",
                 extra={"tick": dto.tick, "agent_id": self.id, "tags": ["sensory", "wo-057-b"]}
             )
 

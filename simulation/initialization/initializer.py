@@ -241,24 +241,28 @@ class SimulationInitializer(SimulationInitializerInterface):
         from simulation.dtos.scenario import StressScenarioConfig
         sim.stress_scenario_config = StressScenarioConfig()
 
-        # Load Scenario from JSON if exists
-        scenario_path = "config/scenarios/phase29_depression.json"
-        if os.path.exists(scenario_path):
-             try:
-                 with open(scenario_path, 'r') as f:
-                     scenario_data = json.load(f)
+        # Load Scenario from JSON if directed by config
+        active_scenario_name = self.config_manager.get("simulation.active_scenario")
+        if active_scenario_name:
+            scenario_path = f"config/scenarios/{active_scenario_name}.json"
+            if os.path.exists(scenario_path):
+                 try:
+                     with open(scenario_path, 'r') as f:
+                         scenario_data = json.load(f)
 
-                 sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
-                 sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", "phase29_depression")
-                 sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
+                     sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
+                     sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", active_scenario_name)
+                     sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
 
-                 params = scenario_data.get("parameters", {})
-                 sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
-                 sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
+                     params = scenario_data.get("parameters", {})
+                     sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
+                     sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
 
-                 self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
-             except Exception as e:
-                 self.logger.error(f"Failed to load scenario file: {e}")
+                     self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
+                 except Exception as e:
+                     self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
+            else:
+                self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
 
         sim.household_time_allocation: Dict[int, float] = {}
         sim.inflation_buffer = deque(maxlen=10)

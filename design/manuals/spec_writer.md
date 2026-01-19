@@ -12,6 +12,7 @@
 - 반드시 DTO 필드 정의, DAO 인터페이스, 예외 처리 로직(Pseudo-code) 포함.
 - **[Routine] Mandatory Reporting**: 모든 명세 하단에 Jules가 작업 중 발견한 인사이트와 기술 부채를 `communications/insights/` 폴더에 보고하도록 하는 지침을 반드시 포함합니다.
 - **[Audit] Pre-Implementation Risk Analysis**: 모든 설계 초안 작성 시, 코드 구현 전 발생할 수 있는 '아키텍처적 지뢰'를 분석하여 보고하는 섹션을 포함해야 합니다. (순환 참조, 테스트 모킹 파괴, 설정값 누락 등)
+- **[Test] Golden Data & Mock Strategy**: 새 모듈/컴포넌트 설계 시, 실제 데이터 샘플(Golden Data)을 정의하고 이를 기반으로 한 전용 Mock 클래스 또는 Fixture 가이드를 설계에 포함합니다. 이는 `MagicMock` 사용으로 인한 타입 오류를 방지하고 테스트 안정성을 높이기 위함입니다.
 
 ### 2. 인사이트 및 사후 리포트 정리 (Insight Aggregator)
 - Jules의 구현 로그나 PR 코멘트를 분석하여 `communications/insights/` 및 `TECH_DEBT_LEDGER.md` 업데이트 초안 작성.
@@ -37,6 +38,7 @@
 3. **Type Hinting & Docstrings**: 모든 클래스와 메서드는 명확한 타입 힌트와 Google Style Docstrings를 포함해야 합니다.
 4. **C&C (Container & Component) 분리**: 비즈니스 로직(Container)과 단순 실행부(Component)를 명확히 구분합니다.
 5. **Contract Adherence (Strict)**: 제공된 Context에 `dtos.py`나 Interface 파일이 있다면, 반드시 해당 정의를 따르고 없는 필드를 창조(Hallucination)하지 마십시오.
+6. **Golden Data & Mock Implementation**: 모듈 설계 시 현실적인 입력/출력 샘플(Golden Data)을 정의하고, 이를 사용하는 Mock 구현체나 데이터 생성기를 제공하여 하위 컴포넌트의 테스트 환경을 보호해야 합니다.
 
 ---
 
@@ -52,6 +54,7 @@
 - **예외 처리**: 발생 가능한 에러와 대응 방안 기술.
 - **인터페이스 명세**: DTO 필드 구조 요약.
 - **검증 계획**: 테스트 케이스와 Golden Sample 정의.
+- **Mocking 가이드**: 타 모듈에서 이 모듈을 Mocking할 때 사용할 고정 데이터(Golden Data) 및 Mock 객체 구현 예시.
 - **🚨 Risk & Impact Audit (기술적 위험 분석)**:
     - **순환 참조 위험**: 새 모듈이 기존 모듈과 임포트 루프를 형성할 가능성 분석.
     - **테스트 영향도**: 기존 유닛 테스트의 Mock 객체가 수정된 클래스/필드에 의존하고 있지는 않은가?

@@ -4,7 +4,8 @@ chcp 65001 > nul
 set PYTHONIOENCODING=utf-8
 
 :: Structured Command Registry (HITL 2.0)
-:: This tool uses design/command_registry.json for its parameters.
+:: This tool runs independently of the json registry.
+:: Usage: git-go.bat <branch_name> [instruction]
 
 python scripts/launcher.py git-review %*
 

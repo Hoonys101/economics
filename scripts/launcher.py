@@ -177,7 +177,6 @@ def main():
 
     tool = sys.argv[1]
     extra_args = sys.argv[2:]
-    registry = load_registry()
 
     dispatch = {
         "gemini": run_gemini,
@@ -187,8 +186,12 @@ def main():
         "harvest": run_harvest
     }
 
-    if tool in dispatch:
+    if tool in ["gemini", "jules"]:
+        registry = load_registry()
         dispatch[tool](extra_args, registry)
+    elif tool in dispatch:
+        # For git-review, merge, harvest, passed registry is None or empty dict if not loaded
+        dispatch[tool](extra_args, {})
     else:
         print(f"❌ Unknown tool: {tool}")
         sys.exit(1)

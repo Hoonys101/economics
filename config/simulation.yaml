@@ -8,3 +8,4 @@ chaos_events:
   - tick: 600
     type: "recession_shock"
     value: 0.5
+active_scenario: "phase29_depression"

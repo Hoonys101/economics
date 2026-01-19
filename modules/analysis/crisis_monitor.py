@@ -83,53 +83,13 @@ class CrisisMonitor:
     def _calculate_z_score_for_firm(self, firm: 'Firm') -> float:
         """
         Helper to calculate Z-Score for a firm instance using the domain calculator.
+        Uses the standardized financial snapshot from the Firm object.
         """
-        # Data extraction logic mapped to what AltmanZScoreCalculator.calculate expects
-
-        # 1. Total Assets
-        total_assets = firm.assets
-        # Note: In some implementations, inventory value is added.
-        # But `firm.assets` is usually cash.
-        # If firm has `inventory` and `price`, we should add it.
-        # Checking `Firm` implementation would be ideal, but for now using standard `assets`.
-        # Assuming `assets` includes liquid assets.
-        # If we have `inventory` count, we should value it.
-        if hasattr(firm, "inventory") and hasattr(firm, "price"):
-             # Handle dict inventory (common in this codebase)
-             if isinstance(firm.inventory, dict):
-                 inventory_qty = sum(firm.inventory.values())
-                 total_assets += inventory_qty * firm.price
-             else:
-                 # Fallback if float/int
-                 total_assets += firm.inventory * firm.price
-
-        # 2. Working Capital = Current Assets - Current Liabilities
-        current_assets = total_assets # Simplified if no long-term assets
-
-        current_liabilities = 0.0
-        if hasattr(firm, "total_debt"):
-            current_liabilities = firm.total_debt
-
-        working_capital = current_assets - current_liabilities
-
-        # 3. Retained Earnings
-        retained_earnings = 0.0
-        if hasattr(firm, "retained_earnings"):
-             retained_earnings = firm.retained_earnings
-        elif hasattr(firm, "finance") and hasattr(firm.finance, "retained_earnings"):
-             retained_earnings = firm.finance.retained_earnings
-
-        # 4. Average Profit (EBIT)
-        # We use a moving average if available, else current profit.
-        average_profit = firm.current_profit
-        if hasattr(firm, "profit_history") and len(firm.profit_history) > 0:
-             # Take average of last 10 ticks?
-             recent_profits = firm.profit_history[-10:]
-             average_profit = sum(recent_profits) / len(recent_profits)
+        snapshot = firm.get_financial_snapshot()
 
         return AltmanZScoreCalculator.calculate(
-            total_assets=total_assets,
-            working_capital=working_capital,
-            retained_earnings=retained_earnings,
-            average_profit=average_profit
+            total_assets=snapshot["total_assets"],
+            working_capital=snapshot["working_capital"],
+            retained_earnings=snapshot["retained_earnings"],
+            average_profit=snapshot["average_profit"]
         )

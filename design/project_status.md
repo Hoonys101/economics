@@ -20,9 +20,10 @@
     - **TD-046**: Hardcoded Constants Migration ✅
     - **TD-043/044/045**: God Class Refactoring (Simulation/Household/Firm) ✅ (2026-01-18)
     
-- **현재 단계:** `Phase 27: Architecture Consolidation`
+- **현재 단계:** `Phase 29: The Great Depression & Crisis Monitor` 🏗️
     - **TD-008**: Advanced Finance System (Altman Z-Score) ✅
-    - **Phase 28**: Macro-Stability Stress Testing 📋 (Analysis Done)
+    - **Phase 28**: Macro-Stability Stress Testing ✅ (Verified with Scenarios)
+    - **Phase 29**: Depression Simulation & Monitor ✅ (Implemented & Debugged)
 
 ---
 

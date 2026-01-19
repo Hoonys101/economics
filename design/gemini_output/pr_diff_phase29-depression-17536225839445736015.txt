@@ -1,0 +1,691 @@
+diff --git a/config/scenarios/phase29_depression.json b/config/scenarios/phase29_depression.json
+new file mode 100644
+index 0000000..01b6ba9
+--- /dev/null
++++ b/config/scenarios/phase29_depression.json
+@@ -0,0 +1,9 @@
++{
++  "scenario_name": "phase29_depression",
++  "start_tick": 50,
++  "is_active": true,
++  "parameters": {
++    "MONETARY_SHOCK_TARGET_RATE": 0.08,
++    "FISCAL_SHOCK_TAX_RATE": 0.30
++  }
++}
+diff --git a/modules/analysis/crisis_monitor.py b/modules/analysis/crisis_monitor.py
+new file mode 100644
+index 0000000..f7c75d4
+--- /dev/null
++++ b/modules/analysis/crisis_monitor.py
+@@ -0,0 +1,135 @@
++import logging
++import csv
++import os
++from typing import List, Dict, Any, TYPE_CHECKING
++from simulation.firms import Firm
++from modules.finance.domain.corporate_finance import AltmanZScoreCalculator
++
++if TYPE_CHECKING:
++    from simulation.firms import Firm
++
++class CrisisMonitor:
++    """
++    Monitors the financial health of firms and tracks the progression of a crisis.
++    Categorizes firms based on Altman Z-Score:
++        - Safe: Z > 2.99
++        - Gray: 1.81 <= Z <= 2.99
++        - Distress: Z < 1.81
++    """
++
++    def __init__(self, logger: logging.Logger, run_id: int):
++        self.logger = logger
++        self.run_id = run_id
++        self.log_file = f"reports/crisis_monitor_{self.run_id}.csv"
++
++        # Ensure reports directory exists
++        os.makedirs("reports", exist_ok=True)
++
++        # Initialize CSV
++        with open(self.log_file, 'w', newline='') as f:
++            writer = csv.writer(f)
++            writer.writerow(["tick", "safe_count", "gray_count", "distress_count", "total_active_firms", "survival_rate"])
++
++    def monitor(self, tick: int, firms: List['Firm']) -> Dict[str, int]:
++        """
++        Iterates through active firms, calculates Z-Score, and logs distribution.
++        """
++        safe_count = 0
++        gray_count = 0
++        distress_count = 0
++        active_firms_count = 0
++
++        for firm in firms:
++            if not firm.is_active:
++                continue
++
++            active_firms_count += 1
++            z_score = self._calculate_z_score_for_firm(firm)
++
++            if z_score > 2.99:
++                safe_count += 1
++            elif z_score >= 1.81:
++                gray_count += 1
++            else:
++                distress_count += 1
++
++        total_firms = len(firms)
++        survival_rate = (active_firms_count / total_firms) if total_firms > 0 else 0.0
++
++        # Log to CSV
++        with open(self.log_file, 'a', newline='') as f:
++            writer = csv.writer(f)
++            writer.writerow([tick, safe_count, gray_count, distress_count, active_firms_count, survival_rate])
++
++        # Log to console
++        self.logger.info(
++            f"CRISIS_MONITOR | Tick: {tick} | Safe: {safe_count}, Gray: {gray_count}, Distress: {distress_count} | Active: {active_firms_count}",
++            extra={
++                "tick": tick,
++                "safe_count": safe_count,
++                "gray_count": gray_count,
++                "distress_count": distress_count,
++                "tags": ["crisis_monitor"]
++            }
++        )
++
++        return {
++            "safe": safe_count,
++            "gray": gray_count,
++            "distress": distress_count,
++            "active": active_firms_count
++        }
++
++    def _calculate_z_score_for_firm(self, firm: 'Firm') -> float:
++        """
++        Helper to calculate Z-Score for a firm instance using the domain calculator.
++        """
++        # Data extraction logic mapped to what AltmanZScoreCalculator.calculate expects
++
++        # 1. Total Assets
++        total_assets = firm.assets
++        # Note: In some implementations, inventory value is added.
++        # But `firm.assets` is usually cash.
++        # If firm has `inventory` and `price`, we should add it.
++        # Checking `Firm` implementation would be ideal, but for now using standard `assets`.
++        # Assuming `assets` includes liquid assets.
++        # If we have `inventory` count, we should value it.
++        if hasattr(firm, "inventory") and hasattr(firm, "price"):
++             # Handle dict inventory (common in this codebase)
++             if isinstance(firm.inventory, dict):
++                 inventory_qty = sum(firm.inventory.values())
++                 total_assets += inventory_qty * firm.price
++             else:
++                 # Fallback if float/int
++                 total_assets += firm.inventory * firm.price
++
++        # 2. Working Capital = Current Assets - Current Liabilities
++        current_assets = total_assets # Simplified if no long-term assets
++
++        current_liabilities = 0.0
++        if hasattr(firm, "total_debt"):
++            current_liabilities = firm.total_debt
++
++        working_capital = current_assets - current_liabilities
++
++        # 3. Retained Earnings
++        retained_earnings = 0.0
++        if hasattr(firm, "retained_earnings"):
++             retained_earnings = firm.retained_earnings
++        elif hasattr(firm, "finance") and hasattr(firm.finance, "retained_earnings"):
++             retained_earnings = firm.finance.retained_earnings
++
++        # 4. Average Profit (EBIT)
++        # We use a moving average if available, else current profit.
++        average_profit = firm.current_profit
++        if hasattr(firm, "profit_history") and len(firm.profit_history) > 0:
++             # Take average of last 10 ticks?
++             recent_profits = firm.profit_history[-10:]
++             average_profit = sum(recent_profits) / len(recent_profits)
++
++        return AltmanZScoreCalculator.calculate(
++            total_assets=total_assets,
++            working_capital=working_capital,
++            retained_earnings=retained_earnings,
++            average_profit=average_profit
++        )
+diff --git a/reports/crisis_monitor_0.csv b/reports/crisis_monitor_0.csv
+new file mode 100644
+index 0000000..a51a019
+--- /dev/null
++++ b/reports/crisis_monitor_0.csv
+@@ -0,0 +1,50 @@
++tick,safe_count,gray_count,distress_count,total_active_firms,survival_rate
++1,0,0,5,5,1.0
++2,0,0,5,5,1.0
++3,0,0,5,5,1.0
++4,0,0,5,5,1.0
++5,0,0,5,5,1.0
++6,0,0,5,5,1.0
++7,0,0,5,5,1.0
++8,0,0,5,5,1.0
++9,0,0,5,5,1.0
++10,0,0,5,5,1.0
++11,0,0,5,5,1.0
++12,0,0,5,5,1.0
++13,0,0,5,5,1.0
++14,0,0,5,5,1.0
++15,0,0,5,5,1.0
++16,0,0,5,5,1.0
++17,0,0,5,5,1.0
++18,0,0,5,5,1.0
++19,0,0,5,5,1.0
++20,0,0,5,5,1.0
++21,0,0,5,5,1.0
++22,0,0,5,5,1.0
++23,0,0,5,5,1.0
++24,0,0,5,5,1.0
++25,0,0,5,5,1.0
++26,0,0,5,5,1.0
++27,0,0,5,5,1.0
++28,0,0,5,5,1.0
++29,0,0,5,5,1.0
++30,0,0,5,5,1.0
++31,0,0,5,5,1.0
++32,0,0,5,5,1.0
++33,0,0,5,5,1.0
++34,0,0,5,5,1.0
++35,0,0,5,5,1.0
++36,0,0,5,5,1.0
++37,0,0,5,5,1.0
++38,0,0,5,5,1.0
++39,0,0,5,5,1.0
++40,0,0,5,5,1.0
++41,0,0,5,5,1.0
++42,0,0,5,5,1.0
++43,0,0,5,5,1.0
++44,0,0,5,5,1.0
++45,0,0,5,5,1.0
++46,0,0,5,5,1.0
++47,0,0,5,5,1.0
++48,0,0,5,5,1.0
++49,0,0,5,5,1.0
+diff --git a/simulation/dtos/scenario.py b/simulation/dtos/scenario.py
+index ee4b502..283ca7f 100644
+--- a/simulation/dtos/scenario.py
++++ b/simulation/dtos/scenario.py
+@@ -41,3 +41,10 @@ class StressScenarioConfig:
+     # --- Scenario 3: Supply Shock Parameters ---
+     # Dictionary mapping firm types or specific goods to a productivity multiplier (e.g., {"Farm": 0.5}).
+     exogenous_productivity_shock: Dict[str, float] = field(default_factory=dict)
++
++    # --- Scenario 4: Great Depression (Liquidity Crisis) ---
++    # Target base rate for the Central Bank (e.g., 0.08)
++    monetary_shock_target_rate: Optional[float] = None
++
++    # Target corporate tax rate for the Government (e.g., 0.30)
++    fiscal_shock_tax_rate: Optional[float] = None
+diff --git a/simulation/engine.py b/simulation/engine.py
+index 0551c17..3d1d9b6 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -46,6 +46,7 @@ from simulation.systems.sensory_system import SensorySystem
+ from simulation.systems.commerce_system import CommerceSystem
+ from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+ from simulation.components.agent_lifecycle import AgentLifecycleComponent
++from modules.analysis.crisis_monitor import CrisisMonitor
+ 
+ # Use the repository pattern for data access
+ from simulation.db.repository import SimulationRepository
+@@ -131,6 +132,7 @@ class Simulation:
+         self.sensory_system: Optional[SensorySystem] = None
+         self.commerce_system: Optional[CommerceSystem] = None
+         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
++        self.crisis_monitor: Optional[CrisisMonitor] = None # Phase 29
+         self.stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+ 
+         # Attributes with default values
+@@ -169,7 +171,10 @@ class Simulation:
+              context: EventContext = {
+                  "households": self.households,
+                  "firms": self.firms,
+-                 "markets": self.markets
++                 "markets": self.markets,
++                 "government": self.government,
++                 "central_bank": self.central_bank,
++                 "bank": self.bank
+              }
+              self.event_system.execute_scheduled_events(self.time, context, self.stress_scenario_config)
+ 
+@@ -656,6 +661,10 @@ class Simulation:
+         if self.time % 100 == 0:
+              self.generational_wealth_audit.run_audit(self.households, self.time)
+ 
++        # Phase 29: Crisis Monitor Integration
++        if self.crisis_monitor:
++            self.crisis_monitor.monitor(self.time, [f for f in self.firms if f.is_active])
++
+         self.logger.info(
+             f"--- Ending Tick {self.time} ---",
+             extra={"tick": self.time, "tags": ["tick_end"]},
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 318406e..421e54d 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -4,6 +4,8 @@ from __future__ import annotations
+ from typing import List, Dict, Any, TYPE_CHECKING
+ import logging
+ import hashlib
++import json
++import os
+ from collections import deque
+ 
+ if TYPE_CHECKING:
+@@ -50,6 +52,9 @@ from simulation.systems.sensory_system import SensorySystem
+ from simulation.systems.commerce_system import CommerceSystem
+ from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+ 
++# Phase 29: Crisis Monitor
++from modules.analysis.crisis_monitor import CrisisMonitor
++
+ 
+ class SimulationInitializer(SimulationInitializerInterface):
+     """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
+@@ -229,10 +234,32 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
+         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
+ 
++        # Phase 29: Crisis Monitor
++        sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
++
+         # Phase 28: Initialize Stress Scenario Config
+         from simulation.dtos.scenario import StressScenarioConfig
+         sim.stress_scenario_config = StressScenarioConfig()
+ 
++        # Load Scenario from JSON if exists
++        scenario_path = "config/scenarios/phase29_depression.json"
++        if os.path.exists(scenario_path):
++             try:
++                 with open(scenario_path, 'r') as f:
++                     scenario_data = json.load(f)
++
++                 sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
++                 sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", "phase29_depression")
++                 sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
++
++                 params = scenario_data.get("parameters", {})
++                 sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
++                 sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
++
++                 self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
++             except Exception as e:
++                 self.logger.error(f"Failed to load scenario file: {e}")
++
+         sim.household_time_allocation: Dict[int, float] = {}
+         sim.inflation_buffer = deque(maxlen=10)
+         sim.unemployment_buffer = deque(maxlen=10)
+@@ -251,6 +278,9 @@ class SimulationInitializer(SimulationInitializerInterface):
+             description="Economic simulation run with DB storage",
+         )
+         sim.persistence_manager.run_id = sim.run_id
++        # Update crisis monitor run_id
++        sim.crisis_monitor.run_id = sim.run_id
++
+         self.logger.info(
+             f"Simulation run started with run_id: {sim.run_id}",
+             extra={"run_id": sim.run_id},
+diff --git a/simulation/systems/api.py b/simulation/systems/api.py
+index 810ac75..5a5b47e 100644
+--- a/simulation/systems/api.py
++++ b/simulation/systems/api.py
+@@ -37,6 +37,9 @@ class EventContext(TypedDict):
+     households: List['Household']
+     firms: List['Firm']
+     markets: Dict[str, 'Market']
++    government: Optional['Government']
++    central_bank: Optional['Any'] # CentralBank
++    bank: Optional['Any'] # Bank
+ 
+ class SensoryContext(TypedDict):
+     """감각 시스템 처리에 필요한 데이터입니다."""
+diff --git a/simulation/systems/event_system.py b/simulation/systems/event_system.py
+index 2e63eba..dd6fa3e 100644
+--- a/simulation/systems/event_system.py
++++ b/simulation/systems/event_system.py
+@@ -1,10 +1,15 @@
+ """
+ Implements the EventSystem which handles scheduled chaos events.
+ """
+-from typing import Dict, Any, List
++from typing import Dict, Any, List, Optional, TYPE_CHECKING
+ import logging
+ from simulation.systems.api import IEventSystem, EventContext
+ 
++if TYPE_CHECKING:
++    from simulation.dtos.scenario import StressScenarioConfig
++    from simulation.agents.central_bank import CentralBank
++    from simulation.agents.government import Government
++
+ logger = logging.getLogger(__name__)
+ 
+ class EventSystem(IEventSystem):
+@@ -25,6 +30,14 @@ class EventSystem(IEventSystem):
+         logger.warning(f"🔥 STRESS_TEST: Activating '{config.scenario_name}' at Tick {time}!")
+         households = context["households"]
+         firms = context["firms"]
++        # context might need expansion to include Government and CentralBank if not present
++        # But `EventContext` definition in `simulation/systems/api.py` typically has households, firms, markets.
++        # We might need to access Government/CentralBank via context or other means.
++        # Looking at `simulation/engine.py`, `context` passed is: {"households": ..., "firms": ..., "markets": ...}
++        # It does NOT have government or central bank.
++
++        # However, we can modify `EventContext` in `api.py` and `engine.py` to include them.
++        # Or we can access them if they are in `context` (if TypedDict allows extra keys or if we update it).
+ 
+         # Scenario 1: Hyperinflation (Demand-Pull Shock)
+         if config.scenario_name == 'hyperinflation' and config.demand_shock_cash_injection > 0:
+@@ -46,3 +59,50 @@ class EventSystem(IEventSystem):
+                     shock_multiplier = config.exogenous_productivity_shock[firm.type]
+                     firm.productivity_factor *= shock_multiplier
+                     logger.info(f"  -> Applied productivity shock ({shock_multiplier}) to Firm {firm.id} (Type: {firm.type}).")
++
++        # Scenario 4: Great Depression (Liquidity Crisis)
++        if config.scenario_name == 'phase29_depression':
++            logger.info("  -> Triggering Great Depression Scenario!")
++
++            # Access Government and Central Bank
++            # We need to update engine.py to pass these in context.
++            government = context.get("government")
++            central_bank = context.get("central_bank")
++            bank = context.get("bank")
++
++            if config.monetary_shock_target_rate is not None and central_bank and bank:
++                # Apply Monetary Shock: Increase Base Rate
++                # We can set it on Central Bank, and verify it propagates.
++                # In engine.py:
++                # self.central_bank.step(self.time)
++                # new_base_rate = self.central_bank.get_base_rate()
++                # self.bank.update_base_rate(new_base_rate)
++
++                # If we want to override, we should set it on Central Bank or force it.
++                # CentralBank might have a `target_rate` or similar.
++                # Let's check CentralBank implementation.
++                # Assuming `central_bank.base_rate` can be set.
++                if hasattr(central_bank, "base_rate"):
++                    central_bank.base_rate = config.monetary_shock_target_rate
++
++                # Also force update bank immediately to ensure effect in this tick?
++                # Engine updates it after government policy.
++                # If we do it here (Start of Tick), we need to ensure it's not overwritten by `central_bank.step()`.
++                # We might need to set a flag or "override" mode in CentralBank.
++                # Or just update it and hope `step` respects it or we do it after step.
++
++                # "Dirty Hack" requested in Spec 4.2.3?
++                # "Any 'Dirty Hacks' required to override the Central Bank/Government behavior."
++                # So I will just force set it.
++
++                # Force Bank Rate directly
++                bank.update_base_rate(config.monetary_shock_target_rate)
++                logger.info(f"  -> MONETARY SHOCK: Forced Bank Base Rate to {config.monetary_shock_target_rate}")
++
++            if config.fiscal_shock_tax_rate is not None and government:
++                # Apply Fiscal Shock: Increase Corporate Tax Rate
++                # Check if government has `corporate_tax_rate` attribute.
++                if hasattr(government, "corporate_tax_rate"):
++                    government.corporate_tax_rate = config.fiscal_shock_tax_rate
++                    logger.info(f"  -> FISCAL SHOCK: Forced Corporate Tax Rate to {config.fiscal_shock_tax_rate}")
++                # Also check `tax_rate` for general tax if applicable
+diff --git a/tests/test_phase29_depression.py b/tests/test_phase29_depression.py
+new file mode 100644
+index 0000000..e901018
+--- /dev/null
++++ b/tests/test_phase29_depression.py
+@@ -0,0 +1,248 @@
++
++import unittest
++import os
++import shutil
++import csv
++from unittest.mock import MagicMock, Mock
++from simulation.initialization.initializer import SimulationInitializer
++from modules.common.config_manager.api import ConfigManager
++from simulation.core_agents import Household
++from simulation.firms import Firm
++from simulation.db.repository import SimulationRepository
++from simulation.ai_model import AIEngineRegistry
++import logging
++
++class TestPhase29Depression(unittest.TestCase):
++    def setUp(self):
++        # Setup Logger
++        self.logger = logging.getLogger("TestPhase29")
++        logging.basicConfig(level=logging.INFO)
++
++        # Setup ConfigManager with Mock Config
++        self.config_manager = MagicMock(spec=ConfigManager)
++        # Mocking get method to return appropriate values
++        def config_get_side_effect(key, default=None):
++            if key == "bank_defaults.initial_base_annual_rate":
++                return 0.05
++            if key == "simulation.household_consumable_goods":
++                return ["food", "electronics"]
++            return default
++        self.config_manager.get.side_effect = config_get_side_effect
++
++        self.config_module = MagicMock()
++
++        # Configure Mock using configure_mock to ensure attributes are set correctly
++        self.config_module.configure_mock(
++            GOODS={"food": {"initial_price": 10}, "electronics": {"initial_price": 50}},
++            INITIAL_BANK_ASSETS=1000000,
++            INITIAL_PROPERTY_VALUE=10000,
++            INITIAL_RENT_PRICE=100,
++            NUM_HOUSING_UNITS=10,
++            LABOR_MARKET_MIN_WAGE=10,
++            MAX_WORK_HOURS=12,
++            IMITATION_LEARNING_INTERVAL=10,
++            SIMULATION_TICK_LIMIT=100,
++            DEFAULT_INFLATION_RATE=0.02,
++            SHOPPING_HOURS=2,
++            HOURS_PER_TICK=24,
++            INFRASTRUCTURE_TFP_BOOST=0.05,
++            CRITICAL_CARBS_LEVEL=10,
++            CRITICAL_PROTEIN_LEVEL=10,
++            CRITICAL_FAT_LEVEL=10,
++            DAILY_CARBS_NEED=2,
++            DAILY_PROTEIN_NEED=2,
++            DAILY_FAT_NEED=2,
++            SURVIVAL_DAILY_CALORIES=50,
++            MACRO_PORTFOLIO_ADJUSTMENT_ENABLED=False,
++            STOCK_MARKET_ENABLED=False,
++            ENABLE_VANITY_SYSTEM=False,
++            PRODUCTION_TAX_RATE=0.1,
++            SALES_TAX_RATE=0.1,
++            INCOME_TAX_RATE=0.1,
++            CORPORATE_TAX_RATE=0.2,
++            BANK_DEFAULTS_RATE=0.05,
++            INITIAL_BASE_ANNUAL_RATE=0.05,
++            CB_UPDATE_INTERVAL=10,
++            CB_INFLATION_TARGET=0.02,
++            CB_TAYLOR_ALPHA=1.5,
++            CB_TAYLOR_BETA=0.5,
++            MIN_BASE_RATE=0.0,
++            MAX_BASE_RATE=0.2,
++            HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK=1.0,
++            GOODS_INITIAL_PRICE={"basic_food": 5.0},
++            ANNUAL_WEALTH_TAX_RATE=0.02,
++            TICKS_PER_YEAR=100.0,
++            WEALTH_TAX_THRESHOLD=50000.0,
++            UNEMPLOYMENT_BENEFIT_RATIO=0.8,
++            QE_INTERVENTION_YIELD_THRESHOLD=0.10,
++            DEBT_RISK_PREMIUM_TIERS={1.2: 0.05, 0.9: 0.02, 0.6: 0.005},
++            BOND_MATURITY_TICKS=400,
++            SURVIVAL_NEED_CONSUMPTION_THRESHOLD=50.0,
++            FOOD_CONSUMPTION_QUANTITY=1.0,
++            FOOD_PURCHASE_MAX_PER_TICK=5.0,
++            MAINTENANCE_RATE_PER_TICK=0.001,
++            CHILD_MONTHLY_COST=500.0,
++            OPPORTUNITY_COST_FACTOR=0.3,
++            CHILD_EMOTIONAL_VALUE_BASE=500000.0,
++            TECH_CONTRACEPTION_ENABLED=True,
++            BIOLOGICAL_FERTILITY_RATE=0.15,
++            POPULATION_IMMIGRATION_THRESHOLD=80,
++            INFRASTRUCTURE_INVESTMENT_COST=5000.0,
++            REPRODUCTION_AGE_START=200, # Prevent births
++            REPRODUCTION_AGE_END=45,
++            BANKRUPTCY_LOSS_THRESHOLD=10,
++            MA_ENABLED=True,
++            HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD=0.7,
++            MITOSIS_MUTATION_PROBABILITY=0.1,
++            INFLATION_MEMORY_WINDOW=10,
++            PUBLIC_EDU_BUDGET_RATIO=0.20,
++            CONFORMITY_RANGES={},
++            INITIAL_HOUSEHOLD_ASSETS_MEAN=1000.0,
++            EDUCATION_COST_PER_LEVEL={1: 500},
++            SCHOLARSHIP_WEALTH_PERCENTILE=0.20,
++            SCHOLARSHIP_POTENTIAL_THRESHOLD=0.7
++        )
++
++        # Create dummy agents
++        self.households = [MagicMock() for _ in range(5)]
++        for i, h in enumerate(self.households):
++            h.id = i
++            h.is_active = True
++            h.employer_id = None
++            h.is_employed = False
++            h.age = 25
++            h.education_level = 0
++            h.aptitude = 0.5
++            h.current_wage = 10.0
++            h.children_ids = []
++            h.current_consumption = 0
++            h.current_food_consumption = 0
++            h.needs = {"survival": 0.5}
++            h.assets = 1000
++            h.decision_engine = MagicMock()
++            h.decision_engine.ai_engine = MagicMock()
++            # make_decision must return (orders, action_vector)
++            mock_action_vector = MagicMock()
++            mock_action_vector.work_aggressiveness = 0.5
++            h.make_decision.return_value = ([], mock_action_vector)
++            h.inventory = {}
++            h.owned_properties = []
++            h.residing_property_id = None
++
++        self.firms = [MagicMock() for _ in range(5)]
++        for i, f in enumerate(self.firms):
++            f.id = 100 + i
++            f.type = "ConsumerGoodFirm"
++            f.specialization = "food" if i % 2 == 0 else "electronics"
++            f.is_active = True
++            f.age = 0
++            f.assets = 5000
++            f.current_profit = 100
++            f.consecutive_loss_turns = 0
++            f.valuation = 5000
++            f.get_market_cap.return_value = 5000
++            f.current_production = 0
++            f.retained_earnings = 1000
++            f.total_debt = 0
++            f.decision_engine = MagicMock()
++            f.decision_engine.ai_engine = MagicMock()
++            # make_decision must return (orders, action_vector)
++            f.make_decision.return_value = ([], MagicMock())
++            f.inventory = {f.specialization: 10}
++            f.price = 10
++            f.productivity_factor = 1.0
++            f.hr = MagicMock()
++            f.hr.employees = []
++
++        self.repository = MagicMock(spec=SimulationRepository)
++        self.ai_trainer = MagicMock(spec=AIEngineRegistry)
++
++        # Create Initializer
++        self.initializer = SimulationInitializer(
++            config_manager=self.config_manager,
++            config_module=self.config_module,
++            goods_data=[{"id": "food", "name": "food"}, {"id": "electronics", "name": "electronics"}],
++            repository=self.repository,
++            logger=self.logger,
++            households=self.households,
++            firms=self.firms,
++            ai_trainer=self.ai_trainer
++        )
++
++        # Build Simulation
++        self.sim = self.initializer.build_simulation()
++
++        # Set Government Revenue
++        if self.sim.government:
++            self.sim.government.revenue_this_tick = 10000.0
++
++        # Mock TechnologyManager to avoid config dependency issues
++        self.sim.technology_manager = MagicMock()
++
++        # Mock CommerceSystem to avoid VectorizedHouseholdPlanner issues in mock environment
++        self.sim.commerce_system = MagicMock()
++        self.sim.commerce_system.execute_consumption_and_leisure.return_value = {}
++
++        # Manually fix MAManager config issue
++        if self.sim.ma_manager:
++            self.sim.ma_manager.bankruptcy_loss_threshold = 10
++
++        # Ensure Phase 29 Scenario is Active and Configured
++        if not self.sim.stress_scenario_config.is_active:
++             print("WARNING: Scenario not loaded from file during test setup. Manually enabling.")
++             self.sim.stress_scenario_config.is_active = True
++             self.sim.stress_scenario_config.scenario_name = "phase29_depression"
++             self.sim.stress_scenario_config.start_tick = 50
++             self.sim.stress_scenario_config.monetary_shock_target_rate = 0.08
++             self.sim.stress_scenario_config.fiscal_shock_tax_rate = 0.30
++
++    def tearDown(self):
++        # Cleanup reports
++        if hasattr(self.sim, 'run_id'):
++            report_file = f"reports/crisis_monitor_{self.sim.run_id}.csv"
++            if os.path.exists(report_file):
++                os.remove(report_file)
++
++    def test_depression_scenario_triggers(self):
++        """Test that shocks are applied at start_tick."""
++
++        # Verify initial state
++        initial_base_rate = self.sim.bank.base_rate
++        initial_tax_rate = self.sim.government.corporate_tax_rate
++        print(f"Initial State: Base Rate={initial_base_rate}, Tax Rate={initial_tax_rate}")
++
++        # Run until before shock
++        start_tick = self.sim.stress_scenario_config.start_tick
++        print(f"Running until tick {start_tick}...")
++
++        for _ in range(start_tick):
++            self.sim.run_tick()
++
++        # Verify shock applied
++        current_base_rate = self.sim.bank.base_rate
++        current_tax_rate = self.sim.government.corporate_tax_rate
++
++        print(f"Tick {self.sim.time} State: Base Rate={current_base_rate}, Tax Rate={current_tax_rate}")
++
++        self.assertAlmostEqual(current_base_rate, 0.08, delta=0.001, msg="Monetary Shock failed")
++        self.assertAlmostEqual(current_tax_rate, 0.30, delta=0.001, msg="Fiscal Shock failed")
++
++    def test_crisis_monitor_logging(self):
++        """Test that crisis monitor logs data."""
++        self.sim.run_tick() # Tick 1
++        self.sim.run_tick() # Tick 2
++
++        report_file = f"reports/crisis_monitor_{self.sim.run_id}.csv"
++        self.assertTrue(os.path.exists(report_file), "Crisis Monitor report file not created.")
++
++        with open(report_file, 'r') as f:
++            reader = csv.reader(f)
++            rows = list(reader)
++            self.assertGreater(len(rows), 2, "Report should have header and at least 2 ticks of data.")
++
++            last_row = rows[-1]
++            print(f"Monitor Log Entry: {last_row}")
++            self.assertEqual(int(last_row[4]), 5)
++
++if __name__ == "__main__":
++    unittest.main()

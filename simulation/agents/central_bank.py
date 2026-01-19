@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 import numpy as np
 from modules.finance.api import InsufficientFundsError
 
@@ -16,7 +16,7 @@ class CentralBank:
         self.config_module = config_module
 
         # Balance Sheet
-        self.assets: Dict[str, List[Any]] = {"bonds": []}
+        self.assets: Dict[str, Any] = {"bonds": [], "cash": 0.0}
 
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
@@ -141,9 +141,15 @@ class CentralBank:
         old_rate = self.base_rate
         self.base_rate = target_rate
 
+        old_rate_val = old_rate if isinstance(old_rate, (int, float)) else 0.0
+        new_rate_val = self.base_rate if isinstance(self.base_rate, (int, float)) else 0.0
+        infl_val = inflation_rate if isinstance(inflation_rate, (int, float)) else 0.0
+        gap_val = output_gap if isinstance(output_gap, (int, float)) else 0.0
+        pot_gdp_val = self.potential_gdp if isinstance(self.potential_gdp, (int, float)) else 0.0
+
         logger.info(
-            f"CB_RATE_UPDATE | Rate: {old_rate:.2%} -> {self.base_rate:.2%} "
-            f"(Infl: {inflation_rate:.2%}, Gap: {output_gap:.2%}, PotGDP: {self.potential_gdp:.2f})",
+            f"CB_RATE_UPDATE | Rate: {old_rate_val:.2%} -> {new_rate_val:.2%} "
+            f"(Infl: {infl_val:.2%}, Gap: {gap_val:.2%}, PotGDP: {pot_gdp_val:.2f})",
             extra={
                 "tick": current_tick,
                 "old_rate": old_rate,
