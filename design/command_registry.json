@@ -9,10 +9,10 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-081: Bank Interface Segregation",
+    "title": "WO-082: Golden Loader Infrastructure",
     "session_id": "",
-    "instruction": "Refactor Bank interface to separate customer service from financial entity logic. Read design/work_orders/WO-081-Bank-Interface.md for details.",
-    "file": "design/work_orders/WO-081-Bank-Interface.md",
+    "instruction": "Implement Golden Loader utility for test fixtures. Read design/work_orders/WO-082-Golden-Loader-Infra.md for details.",
+    "file": "design/work_orders/WO-082-Golden-Loader-Infra.md",
     "wait": true
   },
   "git_review": {
