@@ -154,7 +154,7 @@ simulation_data.db
 simulation_data.db-journal
 logs/
 *.log
-tests/goldens/
+# Note: tests/goldens/ is NOT ignored - golden fixtures are required for tests
 simulation_results/
 # OPERATIONS_MANUAL.md
 
@@ -165,3 +165,6 @@ simulation_results/
 # design/JULES_DOCUMENTATION_GUIDE.md
 .agent/
 reports/*.csv
+test_out*.txt
+test_error.txt
+
