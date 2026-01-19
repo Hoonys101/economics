@@ -218,6 +218,21 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 delay_factor = getattr(self.config_module, "DELAY_FACTOR", 0.5)
                 target_quantity *= (1.0 - delay_factor)
                 willingness_to_pay *= (1.0 + expected_inflation) # Lower WTP (expecting drop)
+
+            # Phase 28: Stress Scenario - Hoarding
+            stress_config = context.stress_scenario_config
+            if stress_config and stress_config.is_active and stress_config.scenario_name == 'hyperinflation':
+                # Check expected inflation threshold logic is consistent with Phase 8
+                # But here we explicitly amplify BUY orders for basic needs if hoarding factor > 0
+                if item_id in ["basic_food", "consumer_goods"]:
+                     # Amplify quantity
+                     target_quantity *= (1.0 + stress_config.hoarding_propensity_factor)
+                     # Amplify WTP? The spec just says "BUY 주문 수량을 ... 증폭".
+                     # We can also increase WTP to ensure acquisition in scarcity.
+                     willingness_to_pay *= (1.0 + stress_config.hoarding_propensity_factor * 0.5)
+
+                     if random.random() < 0.05:
+                         self.logger.info(f"HOARDING_TRIGGER | Household {household.id} hoarding {item_id} (x{target_quantity:.1f})")
             
             # Budget Constraint Check: Don't spend more than 50% of assets on a single item per tick
             # unless survival is critical.
@@ -338,15 +353,43 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # ---------------------------------------------------------
         # 5. Liquidity Management (Banking & Portfolio)
         # ---------------------------------------------------------
+
+        # Phase 28: Stress Scenario - Debt Aversion
+        stress_config = context.stress_scenario_config
+        is_debt_aversion_mode = False
+        if stress_config and stress_config.is_active and stress_config.scenario_name == 'deflation':
+             if stress_config.debt_aversion_multiplier > 1.0:
+                 is_debt_aversion_mode = True
+
+        # If Debt Aversion is active, we prioritize REPAYMENT over investment/consumption.
+        # We check debt level.
+        debt_data = market_data.get("debt_data", {}).get(household.id, {})
+        principal = debt_data.get("total_principal", 0.0)
+
+        if is_debt_aversion_mode and principal > 0:
+            # Allocate more budget to repayment.
+            # In _manage_portfolio or here?
+            # Let's generate a manual REPAYMENT order if we have cash, overriding optimization.
+
+            repay_amount = household.assets * 0.5 * stress_config.debt_aversion_multiplier
+            # Cap at actual principal + interest (approx)
+            repay_amount = min(repay_amount, principal * 1.1)
+            repay_amount = min(repay_amount, household.assets * 0.9) # Keep 10% liquidity
+
+            if repay_amount > 1.0:
+                 orders.append(Order(household.id, "REPAYMENT", "currency", repay_amount, 1.0, "loan_market"))
+                 self.logger.info(f"DEBT_AVERSION | Household {household.id} prioritizing repayment: {repay_amount:.1f}")
+
         # Phase 16: Portfolio Manager (WO-026)
         # Run monthly rebalancing (every 30 ticks)
-        if current_time % 30 == 0:
-            portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
-            orders.extend(portfolio_orders)
-        else:
-            # Simple liquidity check for emergencies (Withdraw if cash is critical)
-            emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
-            orders.extend(emergency_orders)
+        if not is_debt_aversion_mode: # Skip normal portfolio rebalancing if in panic debt repayment? Or adjust it.
+            if current_time % 30 == 0:
+                portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
+                orders.extend(portfolio_orders)
+            else:
+                # Simple liquidity check for emergencies (Withdraw if cash is critical)
+                emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
+                orders.extend(emergency_orders)
 
         # ---------------------------------------------------------
         # 6. Real Estate Logic (Phase 17-3B)

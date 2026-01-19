@@ -513,6 +513,12 @@ class Household(BaseAgent, ILearningAgent):
         if not goods_market:
             return
 
+        # Phase 28: Stress Scenario - Inflation Expectation Acceleration
+        adaptive_rate = self.adaptation_rate
+        if stress_scenario_config and stress_scenario_config.is_active:
+            if stress_scenario_config.scenario_name == 'hyperinflation':
+                adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
+
         for good in self.goods_info_map.values():
             item_id = good["id"]
             actual_price = goods_market.get(f"{item_id}_avg_traded_price")
@@ -527,7 +533,7 @@ class Household(BaseAgent, ILearningAgent):
                         
                         # Adaptive Expectation: pi_e(t+1) = pi_e(t) + lambda * (pi(t) - pi_e(t))
                         old_expect = self.expected_inflation[item_id]
-                        new_expect = old_expect + self.adaptation_rate * (inflation_t - old_expect)
+                        new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
                         self.expected_inflation[item_id] = new_expect
                         
                         # Log significant expectation changes
@@ -832,6 +838,48 @@ class Household(BaseAgent, ILearningAgent):
                          )
                          orders.append(buy_order)
                          self.logger.info(f"HOUSING_BUY | Household {self.id} decided to buy {target_unit_id} at {best_price}")
+
+        # Phase 28: Deflationary Spiral - Panic Selling (Overrides AI Decision)
+        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
+            if stress_scenario_config.panic_selling_enabled:
+                 # Check asset threshold (e.g. drop below 50% of initial assets or survival threshold)
+                 # Spec says "if household assets < threshold". Let's define threshold.
+                 threshold = getattr(self.config_module, "PANIC_SELLING_ASSET_THRESHOLD", 500.0)
+                 if self.assets < threshold:
+                     self.logger.warning(f"PANIC_SELLING | Household {self.id} panic selling stocks due to low assets ({self.assets:.1f})")
+                     # Sell ALL stocks
+                     for firm_id, quantity in self.portfolio.holdings.items():
+                         if quantity > 0:
+                             # Check if we already have a sell order for this?
+                             # Just append new sell order, engine matches logic.
+                             sell_order = Order(
+                                 agent_id=self.id,
+                                 order_type="SELL",
+                                 item_id=f"stock_{firm_id}", # StockMarket expects firm_id integer, but Order item_id string?
+                                 # Engine logic for stock: item_id="stock_{id}" or just handled in _make_stock_investment_decisions
+                                 # Household.make_decision calls decision_engine.make_decisions which returns orders.
+                                 # Stock orders are usually StockOrder class.
+                                 # Here we are in Household, we need to create StockOrder ideally.
+                                 quantity=quantity, # Sell all
+                                 price=0.0, # Market sell (price 0 usually means best available)
+                                 market_id="stock_market"
+                             )
+                             # Since StockOrder is needed for stock market usually?
+                             # Engine uses: if order.market_id == "stock_market" ...
+                             # We should import StockOrder? It is imported.
+                             stock_order = Order( # Using Order wrapper which Engine might convert or handle?
+                                 # Actually AIDrivenHouseholdDecisionEngine returns StockOrders.
+                                 # But Household expects List[Order]. StockOrder inherits Order.
+                                 # Let's use StockOrder if possible or generic Order with correct fields.
+                                 agent_id=self.id,
+                                 order_type="SELL",
+                                 item_id=f"stock_{firm_id}",
+                                 quantity=quantity,
+                                 price=0.1, # Fire sale price
+                                 market_id="stock_market"
+                             )
+                             orders.append(stock_order)
+
 
         # --- Phase 6: Targeted Order Refinement ---
         # The AI decides "What to buy", the Household Logic decides "From Whom".

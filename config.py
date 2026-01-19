@@ -163,6 +163,8 @@ GOODS = {
 
 RAW_MATERIAL_SECTORS = ["iron"]
 
+HOUSEHOLD_CONSUMABLE_GOODS = ["basic_food", "luxury_food"]
+
 
 # Added for explicit reference
 GOODS_INITIAL_PRICE = {

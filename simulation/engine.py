@@ -62,6 +62,8 @@ from simulation.dtos import (
     GovernmentStateDTO,
     MacroFinancialContext,
 )
+# Phase 28
+from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +131,7 @@ class Simulation:
         self.sensory_system: Optional[SensorySystem] = None
         self.commerce_system: Optional[CommerceSystem] = None
         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
-        self.stress_scenario_config: Optional[Any] = None # Phase 28
+        self.stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
 
         # Attributes with default values
         self.batch_save_interval: int = 50
@@ -275,6 +277,7 @@ class Simulation:
             )
 
         # [DEBUG WO-057]
+        latest_indicators = self.tracker.get_latest_indicators()
         self.logger.info(f"DEBUG_WO057 | Tick {self.time} | Indicators: {list(latest_indicators.keys())}")
         self.logger.info(f"DEBUG_WO057 | AvgPrice: {latest_indicators.get('avg_goods_price', 'MISSING')}")
         self.logger.info(f"DEBUG_WO057 | SensoryDTO: InfSMA={sensory_dto.inflation_sma:.4f}, UnempSMA={sensory_dto.unemployment_sma:.4f}, DebtRat={sensory_dto.current_gdp:.4f}")
@@ -453,6 +456,7 @@ class Simulation:
         }
 
         if self.commerce_system:
+            # Phase 28: Pass stress scenario config
             household_leisure_effects = self.commerce_system.execute_consumption_and_leisure(commerce_context, self.stress_scenario_config)
         else:
             self.logger.error("CommerceSystem not initialized! Skipping consumption cycle.")
@@ -774,6 +778,7 @@ class Simulation:
             "avg_goods_price": avg_goods_price_for_market_data,
             "debt_data": debt_data_map, # Injected Debt Data
             "deposit_data": deposit_data_map, # Injected Deposit Data
+            "inflation": latest_indicators.get("inflation_rate", 0.02) # Phase 28: Inject inflation for AI
         }
 
     def _calculate_total_money(self) -> float:
@@ -881,6 +886,3 @@ class Simulation:
                     f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
                     extra={"tick": self.time, "tags": ["stock_market", "transaction"]}
                 )
-
-
-
