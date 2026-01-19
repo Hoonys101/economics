@@ -111,13 +111,18 @@ class ActionProposalEngine:
                 # 상품 시장에서 상품 구매 주문
                 if agent.assets > 1:  # 최소한의 자산이 있을 때만 구매 시도
                     # Read available goods from config with fallback
+                    # Priority: ConfigManager.get() -> ConfigModule.HOUSEHOLD_CONSUMABLE_GOODS -> Default
                     if hasattr(self.config_module, "get"):
                         available_goods = self.config_module.get(
                             "simulation.household_consumable_goods",
                             ["basic_food", "luxury_food"],
                         )
                     else:
-                        available_goods = ["basic_food", "luxury_food"]
+                        available_goods = getattr(
+                            self.config_module,
+                            "HOUSEHOLD_CONSUMABLE_GOODS",
+                            ["basic_food", "luxury_food"]
+                        )
 
                     good_to_trade = random.choice(available_goods)
 

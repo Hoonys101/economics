@@ -218,6 +218,25 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 delay_factor = getattr(self.config_module, "DELAY_FACTOR", 0.5)
                 target_quantity *= (1.0 - delay_factor)
                 willingness_to_pay *= (1.0 + expected_inflation) # Lower WTP (expecting drop)
+
+            # Phase 28: Stress Scenario - Hoarding
+            stress_config = context.stress_scenario_config
+            if stress_config and stress_config.is_active and stress_config.scenario_name == 'hyperinflation':
+                # Check expected inflation threshold logic is consistent with Phase 8
+                # But here we explicitly amplify BUY orders for basic needs if hoarding factor > 0
+
+                # Check if item is in consumable goods list (from config)
+                consumables = getattr(self.config_module, "HOUSEHOLD_CONSUMABLE_GOODS", ["basic_food", "luxury_food"])
+
+                if item_id in consumables:
+                     # Amplify quantity
+                     target_quantity *= (1.0 + stress_config.hoarding_propensity_factor)
+                     # Amplify WTP? The spec just says "BUY 주문 수량을 ... 증폭".
+                     # We can also increase WTP to ensure acquisition in scarcity.
+                     willingness_to_pay *= (1.0 + stress_config.hoarding_propensity_factor * 0.5)
+
+                     if random.random() < 0.05:
+                         self.logger.info(f"HOARDING_TRIGGER | Household {household.id} hoarding {item_id} (x{target_quantity:.1f})")
             
             # Budget Constraint Check: Don't spend more than 50% of assets on a single item per tick
             # unless survival is critical.
@@ -338,8 +357,45 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # ---------------------------------------------------------
         # 5. Liquidity Management (Banking & Portfolio)
         # ---------------------------------------------------------
+
+        # Phase 28: Stress Scenario - Debt Aversion
+        stress_config = context.stress_scenario_config
+        is_debt_aversion_mode = False
+        if stress_config and stress_config.is_active and stress_config.scenario_name == 'deflation':
+             if stress_config.debt_aversion_multiplier > 1.0:
+                 is_debt_aversion_mode = True
+
+        # If Debt Aversion is active, we prioritize REPAYMENT over investment/consumption.
+        # We check debt level.
+        debt_data = market_data.get("debt_data", {}).get(household.id, {})
+        principal = debt_data.get("total_principal", 0.0)
+
+        if is_debt_aversion_mode and principal > 0:
+            # Allocate more budget to repayment using config constants
+            base_ratio = self.config_module.DEBT_REPAYMENT_RATIO
+            cap_ratio = self.config_module.DEBT_REPAYMENT_CAP
+            liquidity_ratio = self.config_module.DEBT_LIQUIDITY_RATIO
+
+            repay_amount = household.assets * base_ratio * stress_config.debt_aversion_multiplier
+            # Cap at actual principal + interest (approx)
+            repay_amount = min(repay_amount, principal * cap_ratio)
+            repay_amount = min(repay_amount, household.assets * liquidity_ratio) # Keep liquidity buffer
+
+            if repay_amount > 1.0:
+                 orders.append(Order(household.id, "REPAYMENT", "currency", repay_amount, 1.0, "loan_market"))
+                 self.logger.info(f"DEBT_AVERSION | Household {household.id} prioritizing repayment: {repay_amount:.1f}")
+
         # Phase 16: Portfolio Manager (WO-026)
         # Run monthly rebalancing (every 30 ticks)
+        # [Refactor] Run portfolio management even in debt aversion mode, but prioritize debt repayment (already done above)
+        # The portfolio manager will optimize for the remaining assets.
+        # Ideally, we should deduct repay_amount from available liquid assets before optimization,
+        # but for now running it concurrently or letting it balance next tick is acceptable.
+        # However, to avoid double-spending, we should ensure portfolio doesn't try to use the same cash.
+        # Since _manage_portfolio calculates target allocation based on current assets,
+        # generating ORDERS based on the difference, it might conflict if REPAYMENT order is also submitted.
+        # Engine processes orders sequentially. If REPAYMENT drains cash, subsequent DEPOSIT/INVEST might fail or partial fill.
+
         if current_time % 30 == 0:
             # [Fix] Subtract repay_amount (if any) from liquid assets to avoid double-spending
             temp_assets = household.assets

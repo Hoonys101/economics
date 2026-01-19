@@ -1,7 +1,7 @@
 """
 Implements the CommerceSystem which orchestrates consumption, purchases, and leisure.
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import logging
 from simulation.systems.api import ICommerceSystem, CommerceContext
 from simulation.systems.reflux_system import EconomicRefluxSystem

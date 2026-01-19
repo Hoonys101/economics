@@ -513,6 +513,12 @@ class Household(BaseAgent, ILearningAgent):
         if not goods_market:
             return
 
+        # Phase 28: Stress Scenario - Inflation Expectation Acceleration
+        adaptive_rate = self.adaptation_rate
+        if stress_scenario_config and stress_scenario_config.is_active:
+            if stress_scenario_config.scenario_name == 'hyperinflation':
+                adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
+
         for good in self.goods_info_map.values():
             item_id = good["id"]
             actual_price = goods_market.get(f"{item_id}_avg_traded_price")
@@ -527,7 +533,7 @@ class Household(BaseAgent, ILearningAgent):
                         
                         # Adaptive Expectation: pi_e(t+1) = pi_e(t) + lambda * (pi(t) - pi_e(t))
                         old_expect = self.expected_inflation[item_id]
-                        new_expect = old_expect + self.adaptation_rate * (inflation_t - old_expect)
+                        new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
                         self.expected_inflation[item_id] = new_expect
                         
                         # Log significant expectation changes
@@ -832,6 +838,30 @@ class Household(BaseAgent, ILearningAgent):
                          )
                          orders.append(buy_order)
                          self.logger.info(f"HOUSING_BUY | Household {self.id} decided to buy {target_unit_id} at {best_price}")
+
+        # Phase 28: Deflationary Spiral - Panic Selling (Overrides AI Decision)
+        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
+            if stress_scenario_config.panic_selling_enabled:
+                 # Check asset threshold (e.g. drop below 50% of initial assets or survival threshold)
+                 # Spec says "if household assets < threshold".
+                 threshold = self.config_module.PANIC_SELLING_ASSET_THRESHOLD
+                 if self.assets < threshold:
+                     self.logger.warning(f"PANIC_SELLING | Household {self.id} panic selling stocks due to low assets ({self.assets:.1f})")
+                     # Sell ALL stocks
+                     for firm_id, quantity in self.portfolio.holdings.items():
+                         if quantity > 0:
+                             # StockMarket expects string "stock_{id}" in Engine, but integer in StockMarket.
+                             # Engine._process_stock_transactions parses "stock_{id}" back to integer.
+                             stock_order = Order(
+                                 agent_id=self.id,
+                                 order_type="SELL",
+                                 item_id=f"stock_{firm_id}",
+                                 quantity=quantity,
+                                 price=0.0, # Market sell (0.0 means execute at best available price in most logic, or very low price to guarantee execution)
+                                 market_id="stock_market"
+                             )
+                             orders.append(stock_order)
+
 
         # --- Phase 6: Targeted Order Refinement ---
         # The AI decides "What to buy", the Household Logic decides "From Whom".
