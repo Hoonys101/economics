@@ -301,15 +301,30 @@ class Firm(BaseAgent, ILearningAgent):
         self.valuation = net_assets + profit_premium
         return self.valuation
 
+    @property
+    def price(self) -> float:
+        """Helper property to get the price of the specialized good."""
+        return self.last_prices.get(self.specialization, 0.0)
+
+    @price.setter
+    def price(self, value: float) -> None:
+        self.last_prices[self.specialization] = value
+
     def get_inventory_value(self) -> float:
         """Calculate market value of current inventory."""
-        if isinstance(self.inventory, dict):
-             # Some firms use dict inventory (multiple goods)
-             total_val = 0.0
-             for good, qty in self.inventory.items():
-                 total_val += qty * self.price # Simplified: uses same price for all? Or should use market price?
-             return total_val
-        return self.inventory * self.price
+        total_val = 0.0
+        # If inventory is dict (it is initialized as dict in __init__)
+        for good, qty in self.inventory.items():
+             # Get price for this good
+             price = self.last_prices.get(good, 0.0)
+             if price == 0.0:
+                 # Fallback to config initial price if available
+                 if self.config_module and hasattr(self.config_module, 'GOODS'):
+                     price = self.config_module.GOODS.get(good, {}).get('initial_price', 10.0)
+                 else:
+                     price = 10.0 # Ultimate fallback
+             total_val += qty * price
+        return total_val
 
     def get_financial_snapshot(self) -> Dict[str, float]:
         """

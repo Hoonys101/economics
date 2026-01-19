@@ -79,13 +79,14 @@ class EconomicIndicatorTracker:
         record["total_firm_assets"] = total_firm_assets
 
         total_households = len([h for h in households if getattr(h, "is_active", True)])
-        unemployed_households = len(
-            [
-                h
-                for h in households
-                if getattr(h, "is_active", True) and not h.is_employed
-            ]
-        )
+        unemployed_households = 0
+        for h in households:
+            if getattr(h, "is_active", True):
+                if not hasattr(h, 'is_employed'):
+                    self.logger.error(f"TRACKER ERROR: Agent {h.id} in households list is not a Household! Type: {type(h)}")
+                    continue
+                if not h.is_employed:
+                    unemployed_households += 1
         record["unemployment_rate"] = (
             (unemployed_households / total_households) * 100
             if total_households > 0

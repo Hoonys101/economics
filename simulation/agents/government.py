@@ -408,7 +408,7 @@ class Government:
 
              total_stimulus = 0.0
              for h in active_households:
-                 paid = self.provide_subsidy(h, stimulus_amount, current_tick)
+                 paid = self.provide_household_support(h, stimulus_amount, current_tick)
                  total_stimulus += paid
 
              if total_stimulus > 0:

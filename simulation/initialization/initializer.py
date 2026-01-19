@@ -196,7 +196,9 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.inequality_tracker = InequalityTracker(config_module=self.config)
         sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)
-        sim.ai_training_manager = AITrainingManager(sim.households, self.config)
+        # Initialize with a combined list copy to prevent aliasing sim.households
+        # Note: New agents must be explicitly added to this list by lifecycle managers.
+        sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
         sim.ma_manager = MAManager(sim, self.config)
         sim.reflux_system = EconomicRefluxSystem()
         sim.demographic_manager = DemographicManager(config_module=self.config)

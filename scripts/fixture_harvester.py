@@ -156,6 +156,10 @@ class FixtureHarvester:
         # Extract scalar values from config module
         for attr in dir(config_module):
             if attr.isupper():  # Only capture uppercase constants
+                # Filter out sensitive keys
+                if "TOKEN" in attr or "SECRET" in attr or "KEY" in attr or "PASSWORD" in attr:
+                    continue
+
                 value = getattr(config_module, attr)
                 if isinstance(value, (int, float, str, bool, list, dict)):
                     self.config_snapshot[attr] = value

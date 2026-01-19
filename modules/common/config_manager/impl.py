@@ -8,6 +8,8 @@ from modules.common.config_manager.api import ConfigManager
 
 logger = logging.getLogger(__name__)
 
+_SENTINEL = object()
+
 class ConfigManagerImpl(ConfigManager):
     def __init__(self, config_dir: Path, legacy_config: Optional[Any] = None):
         self._config = {}
@@ -48,4 +50,8 @@ class ConfigManagerImpl(ConfigManager):
         node[parts[-1]] = value
 
     def __getattr__(self, name: str) -> Any:
-        return self.get(name)
+        # Raises AttributeError if key not found, allowing getattr(obj, name, default) to work
+        val = self.get(name, _SENTINEL)
+        if val is _SENTINEL:
+             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        return val
