@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional
 import logging
 from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
+from modules.finance.domain import AltmanZScoreCalculator
 # Forward reference for type hinting
 from simulation.firms import Firm
 
@@ -47,7 +48,21 @@ class FinanceSystem(IFinanceSystem):
             return firm.cash_reserve >= required_runway
         else:
             # Altman Z-Score for established firms
-            z_score = firm.finance.calculate_altman_z_score()
+            # Extracted data gathering to decouple from FinanceDepartment logic
+            total_assets = firm.assets + firm.capital_stock + firm.get_inventory_value()
+            working_capital = firm.assets - getattr(firm, 'total_debt', 0.0)
+            retained_earnings = firm.finance.retained_earnings
+
+            # Safe calculation of average profit
+            profit_history = firm.finance.profit_history
+            average_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+
+            z_score = AltmanZScoreCalculator.calculate(
+                total_assets=total_assets,
+                working_capital=working_capital,
+                retained_earnings=retained_earnings,
+                average_profit=average_profit
+            )
             return z_score > z_score_threshold
 
     def issue_treasury_bonds(self, amount: float, current_tick: int) -> List[BondDTO]:

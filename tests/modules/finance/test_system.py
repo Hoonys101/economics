@@ -77,12 +77,25 @@ class StubFirm:
         self.id = 1
         self.age = 100
         self.assets = 10000.0
+        self.capital_stock = 0.0
+        self.total_debt = 0.0
         self.cash_reserve = 5000.0
         self.hr = Mock()
         self.hr.get_total_wage_bill.return_value = 1000.0
         self.finance = MagicMock()
-        self.finance.calculate_altman_z_score.return_value = 2.0
+        # Default healthy values:
+        # Total Assets = 10000
+        # WC = 10000 (X1 = 1.0) -> 1.2
+        # RE = 5000 (X2 = 0.5) -> 0.7
+        # Profit = 1000 (X3 = 0.1) -> 0.33
+        # Z = 1.2 + 0.7 + 0.33 = 2.23 > 1.81 (Threshold)
+        self.finance.retained_earnings = 5000.0
+        self.finance.profit_history = [1000.0, 1000.0]
         self.has_bailout_loan = False
+
+    def get_inventory_value(self):
+        return 0.0
+
     def deposit(self, amount): self.cash_reserve += amount
     def withdraw(self, amount):
         if self.cash_reserve < amount:
@@ -108,7 +121,13 @@ def test_evaluate_solvency_established_pass(finance_system, mock_firm):
     assert finance_system.evaluate_solvency(mock_firm, 100) is True
 
 def test_evaluate_solvency_established_fail(finance_system, mock_firm):
-    mock_firm.finance.calculate_altman_z_score.return_value = 1.5
+    # Set values to produce a low Z-Score
+    # WC = 10000 (X1=1.0) -> 1.2
+    # RE = 0 (X2=0) -> 0
+    # Profit = 0 (X3=0) -> 0
+    # Z = 1.2 < 1.81
+    mock_firm.finance.retained_earnings = 0.0
+    mock_firm.finance.profit_history = []
     assert finance_system.evaluate_solvency(mock_firm, 100) is False
 
 def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank):
