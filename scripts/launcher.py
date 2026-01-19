@@ -62,7 +62,11 @@ def run_jules(args, registry):
     cmd = [sys.executable, str(BASE_DIR / "scripts" / "jules_bridge.py"), command]
 
     if command == "create":
-        cmd.extend([title, instruction])
+        cmd.append(title)
+        if file_path:
+            cmd.extend(["-f", file_path])
+        else:
+            cmd.append(instruction)
     elif command == "send-message":
         if not session_id:
             print("❌ Error: session_id is required for send-message")

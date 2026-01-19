@@ -430,6 +430,16 @@ if __name__ == "__main__":
         title = sys.argv[2]
         prompt = sys.argv[3]
         
+        # Support for file input via --file or -f
+        if (prompt == "--file" or prompt == "-f") and len(sys.argv) >= 5:
+            file_path = Path(sys.argv[4])
+            if file_path.exists():
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    prompt = f.read()
+            else:
+                print(f"❌ Error: File not found: {file_path}")
+                sys.exit(1)
+        
         # Auto-sync Git
         bridge.sync_git(title)
         
