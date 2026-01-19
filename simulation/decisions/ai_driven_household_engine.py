@@ -224,7 +224,11 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             if stress_config and stress_config.is_active and stress_config.scenario_name == 'hyperinflation':
                 # Check expected inflation threshold logic is consistent with Phase 8
                 # But here we explicitly amplify BUY orders for basic needs if hoarding factor > 0
-                if item_id in ["basic_food", "consumer_goods"]:
+
+                # Check if item is in consumable goods list (from config)
+                consumables = getattr(self.config_module, "HOUSEHOLD_CONSUMABLE_GOODS", ["basic_food", "luxury_food"])
+
+                if item_id in consumables:
                      # Amplify quantity
                      target_quantity *= (1.0 + stress_config.hoarding_propensity_factor)
                      # Amplify WTP? The spec just says "BUY 주문 수량을 ... 증폭".

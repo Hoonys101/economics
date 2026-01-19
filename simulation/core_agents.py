@@ -864,13 +864,7 @@ class Household(BaseAgent, ILearningAgent):
                                  price=0.0, # Market sell (price 0 usually means best available)
                                  market_id="stock_market"
                              )
-                             # Since StockOrder is needed for stock market usually?
-                             # Engine uses: if order.market_id == "stock_market" ...
-                             # We should import StockOrder? It is imported.
-                             stock_order = Order( # Using Order wrapper which Engine might convert or handle?
-                                 # Actually AIDrivenHouseholdDecisionEngine returns StockOrders.
-                                 # But Household expects List[Order]. StockOrder inherits Order.
-                                 # Let's use StockOrder if possible or generic Order with correct fields.
+                             stock_order = Order(
                                  agent_id=self.id,
                                  order_type="SELL",
                                  item_id=f"stock_{firm_id}",
