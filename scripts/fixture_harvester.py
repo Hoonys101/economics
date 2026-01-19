@@ -21,10 +21,24 @@ Usage:
 
 import json
 import os
+import sys
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional, Type
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import MagicMock
+
+# Attempt to import the new generic loader
+try:
+    from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
+except ImportError:
+    # If not in path (e.g. running script directly from shell), try adding root
+    sys.path.append(os.getcwd())
+    try:
+        from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
+    except ImportError:
+        # Fallback if tests/utils/golden_loader.py is missing or unreachable
+        GenericGoldenLoader = None
 
 
 @dataclass
@@ -194,8 +208,11 @@ class GoldenLoader:
     @classmethod
     def load(cls, filepath: str) -> "GoldenLoader":
         """Load a golden fixture from file."""
-        with open(filepath, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        if GenericGoldenLoader:
+            data = GenericGoldenLoader.load_json(filepath)
+        else:
+             with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
         return cls(data)
     
     def create_household_mocks(self, mock_class=None):
@@ -204,27 +221,33 @@ class GoldenLoader:
         
         Args:
             mock_class: Optional - The actual Household class to use.
-                       If None, creates SimpleNamespace objects.
+                       If None, creates SimpleNamespace objects (legacy behavior) or MagicMock if generic loader used.
         """
-        from types import SimpleNamespace
-        from unittest.mock import MagicMock
-        
         mocks = []
         for h_data in self.households_data:
-            if mock_class:
-                # Create a MagicMock with spec but set real values
-                mock = MagicMock(spec=mock_class)
+            if GenericGoldenLoader:
+                # Use GenericGoldenLoader to do the basic conversion
+                mock = GenericGoldenLoader.dict_to_mock(h_data, spec=mock_class)
             else:
-                mock = SimpleNamespace()
-            
-            # Set all attributes from golden data
-            for key, value in h_data.items():
-                setattr(mock, key, value)
-            
+                # Fallback to old logic
+                from types import SimpleNamespace
+                if mock_class:
+                    mock = MagicMock(spec=mock_class)
+                else:
+                    mock = SimpleNamespace()
+                for key, value in h_data.items():
+                    setattr(mock, key, value)
+
             # Add standard mock methods
+            # logic methods are never in data, so we can safely set them
             mock.make_decision = MagicMock(return_value=([], MagicMock()))
-            mock.decision_engine = MagicMock()
-            mock.decision_engine.ai_engine = MagicMock()
+
+            # Ensure complex nested mocks exist
+            # (Explicitly setting them ensures they exist even if we use SimpleNamespace in fallback)
+            if not hasattr(mock, 'decision_engine'):
+                mock.decision_engine = MagicMock()
+            if not hasattr(mock.decision_engine, 'ai_engine'):
+                mock.decision_engine.ai_engine = MagicMock()
             
             mocks.append(mock)
         
@@ -236,30 +259,39 @@ class GoldenLoader:
         
         Args:
             mock_class: Optional - The actual Firm class to use.
-                       If None, creates SimpleNamespace objects.
+                       If None, creates SimpleNamespace objects (legacy behavior) or MagicMock if generic loader used.
         """
-        from types import SimpleNamespace
-        from unittest.mock import MagicMock
-        
         mocks = []
         for f_data in self.firms_data:
-            if mock_class:
-                mock = MagicMock(spec=mock_class)
+            if GenericGoldenLoader:
+                mock = GenericGoldenLoader.dict_to_mock(f_data, spec=mock_class)
             else:
-                mock = SimpleNamespace()
-            
-            # Set all attributes from golden data
-            for key, value in f_data.items():
-                setattr(mock, key, value)
+                from types import SimpleNamespace
+                if mock_class:
+                    mock = MagicMock(spec=mock_class)
+                else:
+                    mock = SimpleNamespace()
+                for key, value in f_data.items():
+                    setattr(mock, key, value)
             
             # Add required mock methods
             mock.make_decision = MagicMock(return_value=([], MagicMock()))
-            mock.decision_engine = MagicMock()
-            mock.decision_engine.ai_engine = MagicMock()
-            mock.hr = MagicMock()
-            mock.hr.employees = []  # Empty list since we only store count
+
+            if not hasattr(mock, 'decision_engine'):
+                mock.decision_engine = MagicMock()
+            if not hasattr(mock.decision_engine, 'ai_engine'):
+                mock.decision_engine.ai_engine = MagicMock()
+
+            # HR logic
+            if not hasattr(mock, 'hr'):
+                mock.hr = MagicMock()
+
+            # If employees wasn't in data (it's not in snapshot, only count is), ensure it's empty list
+            # We must force this because MagicMock would return a Mock object for 'employees' otherwise
+            mock.hr.employees = []
             
             # Add get_financial_snapshot based on captured data
+            # Logic method, always mock it
             mock.get_financial_snapshot = MagicMock(return_value={
                 "total_assets": f_data.get("assets", 0) + sum(f_data.get("inventory", {}).values()) * 10,
                 "working_capital": f_data.get("assets", 0),
@@ -274,11 +306,14 @@ class GoldenLoader:
     
     def create_config_mock(self):
         """Create a mock config module from golden data."""
-        from types import SimpleNamespace
-        mock = SimpleNamespace()
-        for key, value in self.config_snapshot.items():
-            setattr(mock, key, value)
-        return mock
+        if GenericGoldenLoader:
+            return GenericGoldenLoader.dict_to_mock(self.config_snapshot)
+        else:
+            from types import SimpleNamespace
+            mock = SimpleNamespace()
+            for key, value in self.config_snapshot.items():
+                setattr(mock, key, value)
+            return mock
 
 
 # Convenience function for quick harvesting during debug
