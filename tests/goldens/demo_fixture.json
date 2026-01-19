@@ -1,0 +1,133 @@
+{
+  "metadata": {
+    "captured_at": "2026-01-19T14:17:23.705220",
+    "tick": 0,
+    "household_count": 5,
+    "firm_count": 3
+  },
+  "households": [
+    {
+      "id": 0,
+      "assets": 1000.0,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 100,
+      "age": 25,
+      "education_level": 1.0,
+      "current_wage": 50.0,
+      "needs": {
+        "survival": 0.5
+      },
+      "inventory": {},
+      "approval_rating": 0.8
+    },
+    {
+      "id": 1,
+      "assets": 1100.0,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 26,
+      "education_level": 1.0,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 0.5
+      },
+      "inventory": {},
+      "approval_rating": 0.8
+    },
+    {
+      "id": 2,
+      "assets": 1200.0,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 100,
+      "age": 27,
+      "education_level": 1.0,
+      "current_wage": 50.0,
+      "needs": {
+        "survival": 0.5
+      },
+      "inventory": {},
+      "approval_rating": 0.8
+    },
+    {
+      "id": 3,
+      "assets": 1300.0,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 28,
+      "education_level": 1.0,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 0.5
+      },
+      "inventory": {},
+      "approval_rating": 0.8
+    },
+    {
+      "id": 4,
+      "assets": 1400.0,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 100,
+      "age": 29,
+      "education_level": 1.0,
+      "current_wage": 50.0,
+      "needs": {
+        "survival": 0.5
+      },
+      "inventory": {},
+      "approval_rating": 0.8
+    }
+  ],
+  "firms": [
+    {
+      "id": 100,
+      "assets": 55000.0,
+      "is_active": true,
+      "specialization": "food",
+      "productivity_factor": 1.0,
+      "employees_count": 3,
+      "inventory": {
+        "food": 10.0
+      },
+      "retained_earnings": 500.0,
+      "total_debt": 0.0,
+      "current_profit": 100.0,
+      "consecutive_loss_turns": 0
+    },
+    {
+      "id": 101,
+      "assets": 55500.0,
+      "is_active": true,
+      "specialization": "electronics",
+      "productivity_factor": 1.0,
+      "employees_count": 3,
+      "inventory": {
+        "electronics": 10.0
+      },
+      "retained_earnings": 500.0,
+      "total_debt": 0.0,
+      "current_profit": 100.0,
+      "consecutive_loss_turns": 0
+    },
+    {
+      "id": 102,
+      "assets": 56000.0,
+      "is_active": true,
+      "specialization": "food",
+      "productivity_factor": 1.0,
+      "employees_count": 3,
+      "inventory": {
+        "food": 10.0
+      },
+      "retained_earnings": 500.0,
+      "total_debt": 0.0,
+      "current_profit": 100.0,
+      "consecutive_loss_turns": 0
+    }
+  ],
+  "config_snapshot": {}
+}
