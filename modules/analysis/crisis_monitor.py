@@ -19,9 +19,27 @@ class CrisisMonitor:
 
     def __init__(self, logger: logging.Logger, run_id: int):
         self.logger = logger
-        self.run_id = run_id
-        self.log_file = f"reports/crisis_monitor_{self.run_id}.csv"
+        self._run_id = run_id
+        self._log_file_initialized = False
+        self._initialize_log_file()
 
+    @property
+    def run_id(self):
+        return self._run_id
+
+    @run_id.setter
+    def run_id(self, value):
+        """Update run_id and reinitialize log file if changed."""
+        if self._run_id != value:
+            self._run_id = value
+            self._initialize_log_file()
+
+    @property
+    def log_file(self):
+        return f"reports/crisis_monitor_{self._run_id}.csv"
+
+    def _initialize_log_file(self):
+        """Initialize or reinitialize the CSV log file."""
         # Ensure reports directory exists
         os.makedirs("reports", exist_ok=True)
 
@@ -29,6 +47,7 @@ class CrisisMonitor:
         with open(self.log_file, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(["tick", "safe_count", "gray_count", "distress_count", "total_active_firms", "survival_rate"])
+        self._log_file_initialized = True
 
     def monitor(self, tick: int, firms: List['Firm']) -> Dict[str, int]:
         """
