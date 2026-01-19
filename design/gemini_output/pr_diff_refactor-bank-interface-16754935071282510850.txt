@@ -1,0 +1,336 @@
+diff --git a/communications/team_assignments.json b/communications/team_assignments.json
+index 58955c9..0181731 100644
+--- a/communications/team_assignments.json
++++ b/communications/team_assignments.json
+@@ -1,12 +1,7 @@
+ {
+   "antigravity": {
+     "project": "economics",
+-    "active_sessions": {
+-      "16754935071282510850": {
+-        "title": "WO-081: Bank Interface Segregation",
+-        "initial_mission": "# WO-081: Bank Interface Segregation & Refactoring\n\n## 🎯 Objective\n`Bank` 클래스의 인터페이스를 리팩토링하여, **고객 서비스(Agent Service)**와 **금융 엔티티(Financial Entity)**로서의 역할을 명확히 분리합니다. 이를 통해 통합 테스트 시 발생하는 `TypeError`와 금융 시스템 연동 오류를 근본적으로 해결합니다.\n\n> **Warning**: Do NOT implement \"data saving\" or \"fixtures\" in this task. Focus ONLY on the code refactoring.\n\n---\n\n## 🔨 Tasks\n\n### 1. Interface Definition\n`Bank` 클래스는 두 가지 역할을 명확히 구분해야 합니다.\n\n1. **`IBankService` (For Core Agents: Household, Firm)**\n   - Methods:\n     - `deposit_from_customer(agent_id: int, amount: float) -> str`\n       - Returns `deposit_id`.\n       - Replaces usage of `deposit(agent_id, amount)`.\n     - `withdraw_for_customer(agent_id: int, amount: float) -> bool`\n       - Returns `success`.\n       - Replaces usage of `withdraw(agent_id, amount)`.\n\n2. **`IFinancialEntity` (For Finance System: CentralBank, Treasury)**\n   - Inherits from `modules.finance.interfaces.IFinancialEntity`.\n   - Methods:\n     - `deposit(amount: float) -> None`\n       - Increases Bank's **Reserve/Equity** (not customer deposits).\n     - `withdraw(amount: float) -> None`\n       - Decreases Bank's **Reserve/Equity**.\n       - Must raise `InsufficientFundsError` if insufficient.\n\n### 2. Bank Class Refactoring (`simulation/bank.py`)\n- Rename current `deposit` methods to `deposit_from_customer`.\n- Rename current `withdraw` methods to `withdraw_for_customer`.\n- Implement strict `IFinancialEntity` methods.\n- **Strictly Avoid**: Do NOT use `*args` or `len(args)` checks. Use explicit method names.\n\n### 3. Usage Update (Global Search & Replace)\nYou must update all call sites that use the old methods.\n\n- **`simulation/loan_market.py`**:\n  - `bank.deposit(..., ...)` -> `bank.deposit_from_customer(..., ...)`\n  - `bank.withdraw(..., ...)` -> `bank.withdraw_for_customer(..., ...)`\n- **`simulation/agents/government.py`** (if applicable):\n  - Check bailouts logic. If it injects capital, it should use `IFinancialEntity.deposit(amount)`.\n- **Tests**:\n  - Update `tests/test_bank.py` and other tests to use new method names.\n\n---\n\n## ✅ Acceptance Criteria\n\n1. [ ] `Bank` class implements `IFinancialEntity` without conflicting with customer methods.\n2. [ ] No usage of `*args` or dynamic dispatch based on argument count in `Bank`.\n3. [ ] All tests passing (especially `test_bank.py` and `test_system.py`).\n4. [ ] Zero-Sum principle requires that `IFinancialEntity.deposit/withdraw` affect `self.assets` directly.\n\n---\n\n## ⚠️ Constraints\n- **Zero-Sum**: When implementing `withdraw_for_customer`, ensure asset transfer logic remains correct (currently handled via `Transaction` in LoanMarket, so Bank just updates internal ledger).\n- **Scope**: Do NOT fix `FixtureHarvester` or create golden files in this session. Focus on the class API.\n"
+-      }
+-    },
++    "active_sessions": {},
+     "completed_sessions": {
+       "17536225839445736015": "Phase-29_The_Great_Depression - COMPLETED 2026-01-19",
+       "5597989927571483094": "TD-043/044/045 God Class Refactoring - MERGED 2026-01-18",
+diff --git a/design/command_registry.json b/design/command_registry.json
+index e758a9f..ecd8a78 100644
+--- a/design/command_registry.json
++++ b/design/command_registry.json
+@@ -9,10 +9,10 @@
+   },
+   "jules": {
+     "command": "create",
+-    "title": "WO-082: Golden Loader Infrastructure",
++    "title": "WO-081: Bank Interface Segregation",
+     "session_id": "",
+-    "instruction": "Implement Golden Loader utility for test fixtures. Read design/work_orders/WO-082-Golden-Loader-Infra.md for details.",
+-    "file": "design/work_orders/WO-082-Golden-Loader-Infra.md",
++    "instruction": "Refactor Bank interface to separate customer service from financial entity logic. Read design/work_orders/WO-081-Bank-Interface.md for details.",
++    "file": "design/work_orders/WO-081-Bank-Interface.md",
+     "wait": true
+   },
+   "git_review": {
+diff --git a/design/work_orders/WO-082-Golden-Loader-Infra.md b/design/work_orders/WO-082-Golden-Loader-Infra.md
+deleted file mode 100644
+index 3710c49..0000000
+--- a/design/work_orders/WO-082-Golden-Loader-Infra.md
++++ /dev/null
+@@ -1,44 +0,0 @@
+-# WO-082: Golden Loader Infrastructure
+-
+-## 🎯 Objective
+-Develop a robust **Golden Loader Utility** that converts simple JSON data into powerful `MagicMock` objects for testing. This infrastructure will be used to load the fixtures generated later.
+-
+-> **Warning**: Do NOT modify `simulation/` code. Work ONLY in `scripts/` or `tests/utils/`. This task must be parallel-safe with `WO-081`.
+-
+----
+-
+-## 🔨 Tasks
+-
+-### 1. Create `tests/utils/golden_loader.py`
+-Implement a `GoldenLoader` class with the following features:
+-
+-- **`load_json(path: str) -> Dict`**: Safely loads JSON files from `tests/goldens/`.
+-- **`dict_to_mock(data: Dict, spec: Type = None) -> MagicMock`**:
+-  - Recursively converts nested dictionaries into nested `MagicMock` objects.
+-  - If `spec` is provided (e.g., `Household` class), ensures the Mock respects the class interface (`spec=class`).
+-  - Handles lists of objects correctly (returns list of Mocks).
+-
+-### 2. Unit Testing for Loader
+-Create `tests/utils/test_golden_loader.py`:
+-- Verify that a sample JSON dict is correctly converted to a Mock.
+-- Verify that accessing `mock.attribute` returns the correct value from JSON.
+-- Verify nested access (e.g., `agent.demographics.age`).
+-
+-### 3. Integration with `fixture_harvester.py`
+-- Refactor `scripts/fixture_harvester.py` to Use this new `GoldenLoader` logic if applicable, OR keep them separate if `fixture_harvester.py` is purely for saving.
+-- Ideally, `fixture_harvester.py` handles **saving** (Capturing), and `GoldenLoader` handles **loading** (Replaying).
+-
+----
+-
+-## ✅ Acceptance Criteria
+-
+-1. [ ] `GoldenLoader` correctly converts nested JSON to nested MagicMocks.
+-2. [ ] `tests/utils/test_golden_loader.py` passes.
+-3. [ ] No dependency on `simulation` logic (except importing classes for `spec` arguments if needed).
+-4. [ ] Zero modifications to `simulation/bank.py` or `simulation/core_agents.py`.
+-
+----
+-
+-## 💡 Technical Note
+-- Use `unittest.mock.MagicMock`.
+-- Focus on Developer Experience: The loader should be easy to use in `conftest.py`.
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 54e7ddf..a25abc2 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -3,7 +3,7 @@ from dataclasses import dataclass
+ from typing import Dict, Any, List, Optional
+ import math
+ from modules.common.config_manager.api import ConfigManager
+-from modules.finance.api import InsufficientFundsError
++from modules.finance.api import InsufficientFundsError, IFinancialEntity
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -39,7 +39,7 @@ class Deposit:
+         return self.annual_interest_rate / TICKS_PER_YEAR
+ 
+ 
+-class Bank:
++class Bank(IFinancialEntity):
+     """
+     Phase 3: Central & Commercial Bank Hybrid System.
+     Manages loans, deposits, and monetary policy interaction.
+@@ -197,10 +197,13 @@ class Bank:
+         )
+         return loan_id
+ 
+-    def deposit(self, depositor_id: int, amount: float) -> Optional[str]:
++    # --- IBankService Implementation (Customer Facing) ---
++
++    def deposit_from_customer(self, depositor_id: int, amount: float) -> Optional[str]:
+         """
+-        Accepts a deposit from an agent.
+-        Does NOT transfer assets directly; returns deposit ID for Transaction creation.
++        Accepts a deposit from an agent (Customer).
++        Does NOT transfer assets directly (handled by Transaction); creates deposit record.
++        Returns deposit ID.
+         """
+         margin = self._get_config("bank_defaults.bank_margin", 0.02)
+         deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
+@@ -225,6 +228,58 @@ class Bank:
+         )
+         return deposit_id
+ 
++    def withdraw_for_customer(self, depositor_id: int, amount: float) -> bool:
++        """
++        Withdraws from depositor's account (Customer).
++        Returns True if successful, False if insufficient balance.
++        """
++        # Find deposit by depositor_id
++        # We need to scan because key is deposit_id
++        target_deposit = None
++        target_dep_id = None
++        for dep_id, deposit in self.deposits.items():
++            if deposit.depositor_id == depositor_id:
++                target_deposit = deposit
++                target_dep_id = dep_id
++                break
++
++        if target_deposit is None or target_deposit.amount < amount:
++            return False
++
++        target_deposit.amount -= amount
++        # self.assets -= amount # Handled by Transaction in LoanMarket
++
++        # If deposit is empty, remove it
++        if target_deposit.amount <= 0:
++            if target_dep_id:
++                del self.deposits[target_dep_id]
++
++        logger.info(
++            f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
++            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
++        )
++        return True
++
++    # --- IFinancialEntity Implementation (System Facing) ---
++
++    def deposit(self, amount: float) -> None:
++        """
++        Deposits a given amount into the bank's own assets (Equity/Reserves).
++        Implementation of IFinancialEntity.deposit.
++        """
++        if amount > 0:
++            self.assets += amount
++
++    def withdraw(self, amount: float) -> None:
++        """
++        Withdraws a given amount from the bank's own assets (Equity/Reserves).
++        Implementation of IFinancialEntity.withdraw.
++        """
++        if amount > 0:
++            if self.assets < amount:
++                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
++            self.assets -= amount
++
+     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+         """Returns debt info for AI state."""
+         total_principal = 0.0
+@@ -362,41 +417,6 @@ class Bank:
+                 extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
+             )
+ 
+-    def withdraw(self, depositor_id: int, amount: float) -> bool:
+-        """
+-        Withdraws from depositor's account.
+-        Returns True if successful, False if insufficient balance.
+-        """
+-        # Find deposit by depositor_id
+-        # We need to scan because key is deposit_id
+-        # Or should we store deposits by depositor_id?
+-        # Current struct: self.deposits: Dict[str, Deposit] (key=dep_id)
+-        # Scan
+-        target_deposit = None
+-        target_dep_id = None
+-        for dep_id, deposit in self.deposits.items():
+-            if deposit.depositor_id == depositor_id:
+-                target_deposit = deposit
+-                target_dep_id = dep_id
+-                break
+-
+-        if target_deposit is None or target_deposit.amount < amount:
+-            return False
+-
+-        target_deposit.amount -= amount
+-        # self.assets -= amount # Handled by Transaction
+-
+-        # If deposit is empty, remove it
+-        if target_deposit.amount <= 0:
+-            if target_dep_id:
+-                del self.deposits[target_dep_id]
+-
+-        logger.info(
+-            f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
+-            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
+-        )
+-        return True
+-
+     def _borrow_from_central_bank(self, amount: float):
+         """
+         Phase 23.5: Lender of Last Resort.
+@@ -458,15 +478,3 @@ class Bank:
+                  skill.value *= (1.0 - xp_penalty)
+ 
+         logger.info(f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP.")
+-
+-    def deposit(self, amount: float) -> None:
+-        """Deposits a given amount into the bank's assets."""
+-        if amount > 0:
+-            self.assets += amount
+-
+-    def withdraw(self, amount: float) -> None:
+-        """Withdraws a given amount from the bank's assets."""
+-        if amount > 0:
+-            if self.assets < amount:
+-                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+-            self.assets -= amount
+diff --git a/simulation/loan_market.py b/simulation/loan_market.py
+index c779a90..67d557a 100644
+--- a/simulation/loan_market.py
++++ b/simulation/loan_market.py
+@@ -215,7 +215,7 @@ class LoanMarket(Market):
+ 
+         elif order.order_type == "DEPOSIT":
+             amount = order.quantity
+-            deposit_id = self.bank.deposit(order.agent_id, amount)
++            deposit_id = self.bank.deposit_from_customer(order.agent_id, amount)
+ 
+             if deposit_id:
+                 # Deposit: Agent gives money to Bank.
+@@ -241,7 +241,7 @@ class LoanMarket(Market):
+ 
+         elif order.order_type == "WITHDRAW":
+             amount = order.quantity
+-            success = self.bank.withdraw(order.agent_id, amount)
++            success = self.bank.withdraw_for_customer(order.agent_id, amount)
+ 
+             if success:
+                 # Withdraw: Bank gives money to Agent.
+diff --git a/tests/test_bank.py b/tests/test_bank.py
+index 334c681..c1acacc 100644
+--- a/tests/test_bank.py
++++ b/tests/test_bank.py
+@@ -1,6 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock, patch
+ from simulation.bank import Bank, Loan
++from modules.finance.api import InsufficientFundsError
+ 
+ @pytest.fixture(autouse=True)
+ def mock_logger():
+@@ -109,3 +110,59 @@ class TestBank:
+         assert len(loans) == 2
+         assert loans[0]["borrower_id"] == 101
+         assert loans[1]["borrower_id"] == 101
++
++    # --- New Tests for Refactored Interfaces ---
++
++    def test_deposit_from_customer(self, bank_instance):
++        depositor_id = 202
++        amount = 500.0
++        initial_assets = bank_instance.assets
++
++        deposit_id = bank_instance.deposit_from_customer(depositor_id, amount)
++
++        assert deposit_id is not None
++        assert deposit_id.startswith("dep_")
++        assert len(bank_instance.deposits) == 1
++        # Check that assets were NOT increased (handled by Transaction)
++        assert bank_instance.assets == initial_assets
++
++        deposit = bank_instance.deposits[deposit_id]
++        assert deposit.depositor_id == depositor_id
++        assert deposit.amount == amount
++
++    def test_withdraw_for_customer_success(self, bank_instance):
++        depositor_id = 202
++        amount = 500.0
++
++        # Setup: Deposit first
++        deposit_id = bank_instance.deposit_from_customer(depositor_id, amount)
++
++        # Act: Withdraw
++        success = bank_instance.withdraw_for_customer(depositor_id, 200.0)
++
++        assert success is True
++        assert bank_instance.deposits[deposit_id].amount == 300.0
++        # Check assets (not changed by this method directly)
++        assert bank_instance.assets == 10000.0
++
++    def test_withdraw_for_customer_insufficient(self, bank_instance):
++        depositor_id = 202
++        amount = 500.0
++        bank_instance.deposit_from_customer(depositor_id, amount)
++
++        success = bank_instance.withdraw_for_customer(depositor_id, 600.0)
++        assert success is False
++
++    def test_financial_entity_deposit(self, bank_instance):
++        initial = bank_instance.assets
++        bank_instance.deposit(500.0)
++        assert bank_instance.assets == initial + 500.0
++
++    def test_financial_entity_withdraw(self, bank_instance):
++        initial = bank_instance.assets
++        bank_instance.withdraw(500.0)
++        assert bank_instance.assets == initial - 500.0
++
++    def test_financial_entity_withdraw_insufficient(self, bank_instance):
++        with pytest.raises(InsufficientFundsError):
++            bank_instance.withdraw(bank_instance.assets + 1000.0)

@@ -1,18 +1,18 @@
 {
   "gemini": {
-    "worker": "spec",
-    "instruction": "",
-    "context": [],
-    "output": "",
+    "worker": "audit",
+    "instruction": "Analyze the test suite for MagicMock usage patterns. For each test file: 1) Count MagicMock instances, 2) Identify which simulation classes are mocked (Household, Firm, Bank, etc.), 3) Rate migration difficulty (EASY/MEDIUM/HARD) based on mock complexity. Output a prioritized migration plan for converting tests to Golden Fixture-based mocks. Flag any tests with Bank dependencies that may need special handling after WO-081 refactor.",
+    "context": ["tests/", "scripts/fixture_harvester.py", "tests/utils/golden_loader.py"],
+    "output": "design/gemini_output/audit_test_mock_analysis.md",
     "audit": "",
     "model": "pro"
   },
   "jules": {
     "command": "create",
-    "title": "WO-082: Golden Loader Infrastructure",
+    "title": "WO-083A: Golden Fixture Generation",
     "session_id": "",
-    "instruction": "Implement Golden Loader utility for test fixtures. Read design/work_orders/WO-082-Golden-Loader-Infra.md for details.",
-    "file": "design/work_orders/WO-082-Golden-Loader-Infra.md",
+    "instruction": "Generate Golden Fixtures by running the simulation. Read design/work_orders/WO-083A-Golden-Generation.md for details.",
+    "file": "design/work_orders/WO-083A-Golden-Generation.md",
     "wait": true
   },
   "git_review": {
@@ -20,6 +20,6 @@
     "instruction": "Analyze this PR. Check behavior logic and test coverage."
   },
   "merge": {
-    "branch": ""
+    "branch": "refactor-bank-interface-16754935071282510850"
   }
 }

@@ -21,7 +21,8 @@
 | TD-059 | 2026-01-19 | Legacy Logic in `FinanceDepartment` | Refactor component to use `AltmanZScoreCalculator` | Logic Duplication / SSOT Violation | **DEFERRED** |
 | TD-060 | 2026-01-19 | Hardcoded Scenario Path in `Initializer` | Implement dynamic lookup in `ConfigManager` | Low Configurability / Brittle Tests | **RESOLVED** (Phase 29) |
 | TD-061 | 2026-01-19 | Mock Fragility in Stress Testing | Collect 'Golden Data' and implement typed mocks | Brittle Tests / High Dev Friction | **IN_PROGRESS** (WO-080) |
-| TD-062 | 2026-01-19 | `Bank` Interface Mismatch | Implement `IFinancialEntity` interface in `Bank` | Test Inconsistency / Type Issues | **DEFERRED** |
+| TD-062 | 2026-01-19 | `Bank` Interface Mismatch | Implement `IFinancialEntity` interface in `Bank` | Test Inconsistency / Type Issues | **RESOLVED** (WO-081) |
+| TD-063 | 2026-01-19 | `sys.path` Manipulation in Scripts | Use `pathlib` for stable project root detection | Unpredictable Import Behavior | **DEFERRED** |
 
 
 
