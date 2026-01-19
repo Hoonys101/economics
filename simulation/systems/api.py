@@ -37,6 +37,9 @@ class EventContext(TypedDict):
     households: List['Household']
     firms: List['Firm']
     markets: Dict[str, 'Market']
+    government: Optional['Government']
+    central_bank: Optional['Any'] # CentralBank
+    bank: Optional['Any'] # Bank
 
 class SensoryContext(TypedDict):
     """감각 시스템 처리에 필요한 데이터입니다."""

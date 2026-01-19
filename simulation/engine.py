@@ -46,6 +46,7 @@ from simulation.systems.sensory_system import SensorySystem
 from simulation.systems.commerce_system import CommerceSystem
 from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
 from simulation.components.agent_lifecycle import AgentLifecycleComponent
+from modules.analysis.crisis_monitor import CrisisMonitor
 
 # Use the repository pattern for data access
 from simulation.db.repository import SimulationRepository
@@ -131,6 +132,7 @@ class Simulation:
         self.sensory_system: Optional[SensorySystem] = None
         self.commerce_system: Optional[CommerceSystem] = None
         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
+        self.crisis_monitor: Optional[CrisisMonitor] = None # Phase 29
         self.stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
 
         # Attributes with default values
@@ -169,7 +171,10 @@ class Simulation:
              context: EventContext = {
                  "households": self.households,
                  "firms": self.firms,
-                 "markets": self.markets
+                 "markets": self.markets,
+                 "government": self.government,
+                 "central_bank": self.central_bank,
+                 "bank": self.bank
              }
              self.event_system.execute_scheduled_events(self.time, context, self.stress_scenario_config)
 
@@ -655,6 +660,10 @@ class Simulation:
         # WO-058: Generational Wealth Audit
         if self.time % 100 == 0:
              self.generational_wealth_audit.run_audit(self.households, self.time)
+
+        # Phase 29: Crisis Monitor Integration
+        if self.crisis_monitor:
+            self.crisis_monitor.monitor(self.time, [f for f in self.firms if f.is_active])
 
         self.logger.info(
             f"--- Ending Tick {self.time} ---",

@@ -4,6 +4,8 @@ from __future__ import annotations
 from typing import List, Dict, Any, TYPE_CHECKING
 import logging
 import hashlib
+import json
+import os
 from collections import deque
 
 if TYPE_CHECKING:
@@ -49,6 +51,9 @@ from simulation.systems.event_system import EventSystem
 from simulation.systems.sensory_system import SensorySystem
 from simulation.systems.commerce_system import CommerceSystem
 from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+
+# Phase 29: Crisis Monitor
+from modules.analysis.crisis_monitor import CrisisMonitor
 
 
 class SimulationInitializer(SimulationInitializerInterface):
@@ -229,9 +234,31 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 
+        # Phase 29: Crisis Monitor
+        sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
+
         # Phase 28: Initialize Stress Scenario Config
         from simulation.dtos.scenario import StressScenarioConfig
         sim.stress_scenario_config = StressScenarioConfig()
+
+        # Load Scenario from JSON if exists
+        scenario_path = "config/scenarios/phase29_depression.json"
+        if os.path.exists(scenario_path):
+             try:
+                 with open(scenario_path, 'r') as f:
+                     scenario_data = json.load(f)
+
+                 sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
+                 sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", "phase29_depression")
+                 sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
+
+                 params = scenario_data.get("parameters", {})
+                 sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
+                 sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
+
+                 self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
+             except Exception as e:
+                 self.logger.error(f"Failed to load scenario file: {e}")
 
         sim.household_time_allocation: Dict[int, float] = {}
         sim.inflation_buffer = deque(maxlen=10)
@@ -251,6 +278,9 @@ class SimulationInitializer(SimulationInitializerInterface):
             description="Economic simulation run with DB storage",
         )
         sim.persistence_manager.run_id = sim.run_id
+        # Update crisis monitor run_id
+        sim.crisis_monitor.run_id = sim.run_id
+
         self.logger.info(
             f"Simulation run started with run_id: {sim.run_id}",
             extra={"run_id": sim.run_id},

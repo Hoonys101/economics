@@ -41,3 +41,10 @@ class StressScenarioConfig:
     # --- Scenario 3: Supply Shock Parameters ---
     # Dictionary mapping firm types or specific goods to a productivity multiplier (e.g., {"Farm": 0.5}).
     exogenous_productivity_shock: Dict[str, float] = field(default_factory=dict)
+
+    # --- Scenario 4: Great Depression (Liquidity Crisis) ---
+    # Target base rate for the Central Bank (e.g., 0.08)
+    monetary_shock_target_rate: Optional[float] = None
+
+    # Target corporate tax rate for the Government (e.g., 0.30)
+    fiscal_shock_tax_rate: Optional[float] = None
