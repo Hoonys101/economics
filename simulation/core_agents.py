@@ -843,33 +843,21 @@ class Household(BaseAgent, ILearningAgent):
         if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
             if stress_scenario_config.panic_selling_enabled:
                  # Check asset threshold (e.g. drop below 50% of initial assets or survival threshold)
-                 # Spec says "if household assets < threshold". Let's define threshold.
-                 threshold = getattr(self.config_module, "PANIC_SELLING_ASSET_THRESHOLD", 500.0)
+                 # Spec says "if household assets < threshold".
+                 threshold = self.config_module.PANIC_SELLING_ASSET_THRESHOLD
                  if self.assets < threshold:
                      self.logger.warning(f"PANIC_SELLING | Household {self.id} panic selling stocks due to low assets ({self.assets:.1f})")
                      # Sell ALL stocks
                      for firm_id, quantity in self.portfolio.holdings.items():
                          if quantity > 0:
-                             # Check if we already have a sell order for this?
-                             # Just append new sell order, engine matches logic.
-                             sell_order = Order(
-                                 agent_id=self.id,
-                                 order_type="SELL",
-                                 item_id=f"stock_{firm_id}", # StockMarket expects firm_id integer, but Order item_id string?
-                                 # Engine logic for stock: item_id="stock_{id}" or just handled in _make_stock_investment_decisions
-                                 # Household.make_decision calls decision_engine.make_decisions which returns orders.
-                                 # Stock orders are usually StockOrder class.
-                                 # Here we are in Household, we need to create StockOrder ideally.
-                                 quantity=quantity, # Sell all
-                                 price=0.0, # Market sell (price 0 usually means best available)
-                                 market_id="stock_market"
-                             )
+                             # StockMarket expects string "stock_{id}" in Engine, but integer in StockMarket.
+                             # Engine._process_stock_transactions parses "stock_{id}" back to integer.
                              stock_order = Order(
                                  agent_id=self.id,
                                  order_type="SELL",
                                  item_id=f"stock_{firm_id}",
                                  quantity=quantity,
-                                 price=0.1, # Fire sale price
+                                 price=0.0, # Market sell (0.0 means execute at best available price in most logic, or very low price to guarantee execution)
                                  market_id="stock_market"
                              )
                              orders.append(stock_order)

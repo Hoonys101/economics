@@ -531,6 +531,13 @@ STOCK_BUY_DISCOUNT_THRESHOLD = 0.10 # 매수 고려 할인율 임계값 (10%)
 STOCK_INVESTMENT_DIVERSIFICATION_COUNT = 3 # Number of stocks to diversify into
 STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD = 10.0 # Threshold for buy/sell decisions based on portfolio optimization
 
+# --- Phase 28: Macro-Stability Stress Testing (Config) ---
+PANIC_SELLING_ASSET_THRESHOLD = 500.0  # 자산이 이 값 미만이면 주식 패닉 셀링 (생존 위협)
+DEBT_REPAYMENT_RATIO = 0.5             # 부채 상환 시 자산 대비 할당 비율 (기본 50%)
+DEBT_REPAYMENT_CAP = 1.1               # 부채 상환 상한선 (원금 * 1.1)
+DEBT_LIQUIDITY_RATIO = 0.9             # 부채 상환 후 최소 유동성 유지 비율 (자산의 90%까지만 상환)
+DEFAULT_INFLATION_RATE = 0.02          # 기본 인플레이션율 (2%)
+
 # --- IPO / SEO ---
 IPO_INITIAL_SHARES = 1000.0
 SEO_TRIGGER_RATIO = 0.5              # Trigger SEO when assets < STARTUP_COST * ratio

@@ -778,7 +778,7 @@ class Simulation:
             "avg_goods_price": avg_goods_price_for_market_data,
             "debt_data": debt_data_map, # Injected Debt Data
             "deposit_data": deposit_data_map, # Injected Deposit Data
-            "inflation": latest_indicators.get("inflation_rate", 0.02) # Phase 28: Inject inflation for AI
+            "inflation": latest_indicators.get("inflation_rate", self.config_module.DEFAULT_INFLATION_RATE) # Phase 28: Inject inflation for AI
         }
 
     def _calculate_total_money(self) -> float:

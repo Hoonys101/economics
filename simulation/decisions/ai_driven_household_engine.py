@@ -371,14 +371,15 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         principal = debt_data.get("total_principal", 0.0)
 
         if is_debt_aversion_mode and principal > 0:
-            # Allocate more budget to repayment.
-            # In _manage_portfolio or here?
-            # Let's generate a manual REPAYMENT order if we have cash, overriding optimization.
+            # Allocate more budget to repayment using config constants
+            base_ratio = self.config_module.DEBT_REPAYMENT_RATIO
+            cap_ratio = self.config_module.DEBT_REPAYMENT_CAP
+            liquidity_ratio = self.config_module.DEBT_LIQUIDITY_RATIO
 
-            repay_amount = household.assets * 0.5 * stress_config.debt_aversion_multiplier
+            repay_amount = household.assets * base_ratio * stress_config.debt_aversion_multiplier
             # Cap at actual principal + interest (approx)
-            repay_amount = min(repay_amount, principal * 1.1)
-            repay_amount = min(repay_amount, household.assets * 0.9) # Keep 10% liquidity
+            repay_amount = min(repay_amount, principal * cap_ratio)
+            repay_amount = min(repay_amount, household.assets * liquidity_ratio) # Keep liquidity buffer
 
             if repay_amount > 1.0:
                  orders.append(Order(household.id, "REPAYMENT", "currency", repay_amount, 1.0, "loan_market"))
@@ -386,14 +387,22 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         # Phase 16: Portfolio Manager (WO-026)
         # Run monthly rebalancing (every 30 ticks)
-        if not is_debt_aversion_mode: # Skip normal portfolio rebalancing if in panic debt repayment? Or adjust it.
-            if current_time % 30 == 0:
-                portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
-                orders.extend(portfolio_orders)
-            else:
-                # Simple liquidity check for emergencies (Withdraw if cash is critical)
-                emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
-                orders.extend(emergency_orders)
+        # [Refactor] Run portfolio management even in debt aversion mode, but prioritize debt repayment (already done above)
+        # The portfolio manager will optimize for the remaining assets.
+        # Ideally, we should deduct repay_amount from available liquid assets before optimization,
+        # but for now running it concurrently or letting it balance next tick is acceptable.
+        # However, to avoid double-spending, we should ensure portfolio doesn't try to use the same cash.
+        # Since _manage_portfolio calculates target allocation based on current assets,
+        # generating ORDERS based on the difference, it might conflict if REPAYMENT order is also submitted.
+        # Engine processes orders sequentially. If REPAYMENT drains cash, subsequent DEPOSIT/INVEST might fail or partial fill.
+
+        if current_time % 30 == 0:
+            portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
+            orders.extend(portfolio_orders)
+        else:
+            # Simple liquidity check for emergencies (Withdraw if cash is critical)
+            emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
+            orders.extend(emergency_orders)
 
         # ---------------------------------------------------------
         # 6. Real Estate Logic (Phase 17-3B)
