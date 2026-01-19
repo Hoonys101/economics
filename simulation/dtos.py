@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional, List, TYPE_CHECKING
 if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.firms import Firm
+    from simulation.dtos.scenario import StressScenarioConfig
 
 @dataclass
 class TransactionData:
@@ -98,6 +99,7 @@ class DecisionContext:
     firm: Optional[Firm] = None
     government: Optional[Any] = None
     reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
+    stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
 
 
 # ------------------------------------------------------------------------------

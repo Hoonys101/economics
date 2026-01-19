@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
     from simulation.ai.firm_system2_planner import FirmSystem2Planner
     from simulation.markets.stock_market import StockMarket
+    from simulation.agents.government import Government
+    from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)
 
@@ -505,7 +507,7 @@ class Firm(BaseAgent, ILearningAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None
+        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         self.logger.debug(
@@ -525,6 +527,7 @@ class Firm(BaseAgent, ILearningAgent):
             current_time=current_time,
             government=government,
             reflux_system=reflux_system,
+            stress_scenario_config=stress_scenario_config,
         )
         decisions, tactic = self.decision_engine.make_decisions(context)
 

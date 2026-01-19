@@ -12,10 +12,11 @@
 |---|---|---|---|---|---|
 | TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **DEFERRED** |
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
-| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **IMPLEMENTING** (WO-079) |
+| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **PENDING_IMPLEMENTATION** (Phase 28) |
 | TD-034 | 2026-01-15 | Hardcoded Debt Parameters | Bond maturity, risk premia must be config-driven | Reduced model configurability | **DEFERRED** |
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
-| TD-046 | 2026-01-16 | Hardcoded Constants in SoC Components | Migrate constants to config system | Reduced configurability | **IN_PROGRESS** (WO-079 통합 진행) |
+| TD-050 | 2026-01-17 | Observer Scanner Path Inclusion | Exclude `scripts/observer` from scan loop | False positives in complexity reports | **DEFERRED** |
+| TD-051 | 2026-01-17 | Documentation Placeholders | Replace `WO-XXX` with actual IDs in manuals | Confusion in developer onboarding | **DEFERRED** |
 
 
 
@@ -40,6 +41,8 @@
 | TD-043 | 2026-01-16 | 2026-01-18 | God Class: `Simulation` | Extracted Systems (Social, Event, Commerce, Sensory) |
 | TD-044 | 2026-01-16 | 2026-01-18 | God Class: `Household` | Extracted Components (AgentLifecycle, Market) |
 | TD-045 | 2026-01-16 | 2026-01-18 | God Class: `Firm` | Implemented ILearningAgent support |
+| TD-046 | 2026-01-16 | 2026-01-18 | Hardcoded Constants in SoC Components | Migrated to config system (WO-079) |
+| TD-049 | 2026-01-18 | 2026-01-18 | Test Flakiness (ConfigManager Mocking) | Fixed via `side_effect` for default values |
 
 
 ---

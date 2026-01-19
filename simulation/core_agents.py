@@ -37,6 +37,7 @@ from simulation.systems.api import LifecycleContext, MarketInteractionContext, L
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
+    from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)
 
@@ -501,7 +502,7 @@ class Household(BaseAgent, ILearningAgent):
         self.psychology.calculate_social_status()
 
     @override
-    def update_perceived_prices(self, market_data: Dict[str, Any]) -> None:
+    def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional["StressScenarioConfig"] = None) -> None:
         """
         시장에서 인지된 상품 가격을 업데이트하고, 인플레이션을 예측하여 사재기(Hoarding) 심리를 형성합니다.
         (Phase 8: Adaptive Expectations)
@@ -740,6 +741,7 @@ class Household(BaseAgent, ILearningAgent):
         current_time: int,
         government: Optional[Any] = None,
         macro_context: Optional[MacroFinancialContext] = None,
+        stress_scenario_config: Optional["StressScenarioConfig"] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
         # Phase 20: System 2 Housing Check
         self.decide_housing(market_data, current_time)
@@ -773,6 +775,7 @@ class Household(BaseAgent, ILearningAgent):
             market_data=market_data,
             current_time=current_time,
             government=government,
+            stress_scenario_config=stress_scenario_config,
         )
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
 

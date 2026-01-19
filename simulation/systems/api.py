@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from simulation.metrics.economic_tracker import EconomicIndicatorTracker
     from simulation.dtos import GovernmentStateDTO, LeisureEffectDTO
     from simulation.markets.market import Market
+    from simulation.dtos.scenario import StressScenarioConfig
 
 
 # ===================================================================
@@ -91,7 +92,7 @@ class IEventSystem(Protocol):
     """예약되거나 트리거된 시뮬레이션 전반의 이벤트를 관리하는 시스템의 인터페이스입니다."""
     def __init__(self, config: Any): ...
 
-    def execute_scheduled_events(self, time: int, context: EventContext) -> None:
+    def execute_scheduled_events(self, time: int, context: EventContext, config: StressScenarioConfig) -> None:
         """현재 틱에 예약된 카오스 이벤트나 다른 시나리오를 실행합니다."""
         ...
 
@@ -121,7 +122,7 @@ class ICommerceSystem(Protocol):
     """틱의 소비 및 여가 부분을 관리하는 시스템의 인터페이스입니다."""
     def __init__(self, config: Any, reflux_system: 'EconomicRefluxSystem'): ...
 
-    def execute_consumption_and_leisure(self, context: CommerceContext) -> Dict[int, float]:
+    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Dict[int, float]:
         """
         가계 소비, 긴급 구매(fast-track purchases), 여가 효과를 조율합니다.
         Returns:

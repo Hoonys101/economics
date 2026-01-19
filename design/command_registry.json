@@ -1,24 +1,22 @@
 {
   "gemini": {
     "worker": "spec",
-    "instruction": "Draft the 'Zero-Question Spec' for Refactoring God Classes (TD-043/044/045). \n\nTASKS:\n1. Define the APIs for the new Systems extracted from `Simulation` (SocialSystem, EventSystem, SensorySystem, CommerceSystem).\n2. Define the APIs for the new Components extracted from `Household` (LifecycleManager, MarketComponent).\n3. Define the `update_learning` contract for `Firm`.\n4. Ensure DTOs are defined for data passing between these systems.\n5. Address risks identified in the Audit Report.",
+    "instruction": "Develop the 'Zero-Question Spec' for Phase 28: Macro-Stability Stress Testing. \n\nTASKS:\n1. Define the `StressScenarioConfig` DTO as per the analysis report.\n2. Map the 3 scenarios (Hyperinflation, Deflation, Supply Shock) to the recently refactored SoC architecture (e.g., HouseholdBiology component for survival logic, FinanceSystem for asset shocks).\n3. Define clear 'Injection Points' in the System/Component code to minimize engine bloat.\n4. Ensure the spec includes a '🚨 Risk & Impact Audit' specifically looking for regression risks in the new Social/Commerce systems.",
     "context": [
-      "implementation_plan.md",
-      "reports/temp/audit_god_classes_20260117.md",
+      "design/gemini_output/analysis_phase28_stress_scenarios.md",
+      "design/specs/refactor_god_classes.md",
       "simulation/engine.py",
       "simulation/core_agents.py",
-      "modules/firms/firms.py"
+      "modules/finance/system.py"
     ],
-    "output": "design/specs/refactor_god_classes.md",
-    "audit": "reports/temp/audit_god_classes_20260117.md",
+    "output": "design/specs/macro_stress_test_spec.md",
+    "audit": "design/gemini_output/analysis_phase28_stress_scenarios.md",
     "model": "pro"
   },
   "jules": {
-    "command": "send-message",
-    "session_id": "5597989927571483094",
-    "title": "TD-044_Household_God_Class_Refactor",
-    "instruction": "Review PR feedback (Critical Logic Gaps):\n1. **Performance**: Fix O(n) lookup in `commerce_system.py` (parenting logic). Use O(1) agents dict.\n2. **Architecture**: Fix cyclical dependency between `CommerceSystem` and `AgentLifecycle` (consumption logic).\n3. **Anti-Pattern**: Remove lazy initialization in `engine.py`. Initialize in `__init__`.\n4. **Interface**: Restore `AgentLifecycleManagerInterface` if needed.\n\nNOTE: `tests/test_engine.py` is FIXED (mock config). Do not regress.",
-    "file": "",
+    "command": "create",
+    "title": "WO-080_Macro_Stability_Stress_Testing",
+    "instruction": "Phase 28: Macro-Stability Stress Testing 구현. 'design/specs/phase28_stress_testing_spec.md' 명세에 따라 가계(Household)의 시나리오별 행동 로직(사재기, 패닉셀링, 부채회피, 기대심리 가속)을 구현하고, simulation/dtos/scenario.py를 활용하여 데이터를 전달하도록 수정하세요.",
     "wait": true
   },
   "git_review": {

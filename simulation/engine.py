@@ -129,6 +129,7 @@ class Simulation:
         self.sensory_system: Optional[SensorySystem] = None
         self.commerce_system: Optional[CommerceSystem] = None
         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
+        self.stress_scenario_config: Optional[Any] = None # Phase 28
 
         # Attributes with default values
         self.batch_save_interval: int = 50
@@ -168,7 +169,7 @@ class Simulation:
                  "firms": self.firms,
                  "markets": self.markets
              }
-             self.event_system.execute_scheduled_events(self.time, context)
+             self.event_system.execute_scheduled_events(self.time, context, self.stress_scenario_config)
 
         # WO-054: Government Public Education Logic (START OF TICK)
         self.government.run_public_education(self.households, self.config_module, self.time, self.reflux_system)
@@ -336,7 +337,7 @@ class Simulation:
                     }
 
                 # Phase 8-B: Pass reflux_system to firm.make_decision for CAPEX capture
-                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time, self.government, self.reflux_system)
+                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time, self.government, self.reflux_system, self.stress_scenario_config)
                 for order in firm_orders:
                     target_market = self.markets.get(order.market_id)
                     if target_market:
@@ -361,7 +362,7 @@ class Simulation:
 
                 # make_decision return (orders, vector)
                 household_orders, action_vector = household.make_decision(
-                    self.markets, self.goods_data, market_data, self.time, self.government, macro_financial_context
+                    self.markets, self.goods_data, market_data, self.time, self.government, macro_financial_context, self.stress_scenario_config
                 )
 
                 # Phase 5: Calculate Time Allocation (Hydraulic Model)
@@ -452,7 +453,7 @@ class Simulation:
         }
 
         if self.commerce_system:
-            household_leisure_effects = self.commerce_system.execute_consumption_and_leisure(commerce_context)
+            household_leisure_effects = self.commerce_system.execute_consumption_and_leisure(commerce_context, self.stress_scenario_config)
         else:
             self.logger.error("CommerceSystem not initialized! Skipping consumption cycle.")
             household_leisure_effects = {}

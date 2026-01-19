@@ -229,6 +229,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 
+        # Phase 28: Initialize Stress Scenario Config
+        from simulation.dtos.scenario import StressScenarioConfig
+        sim.stress_scenario_config = StressScenarioConfig()
+
         sim.household_time_allocation: Dict[int, float] = {}
         sim.inflation_buffer = deque(maxlen=10)
         sim.unemployment_buffer = deque(maxlen=10)

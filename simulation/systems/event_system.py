@@ -15,25 +15,34 @@ class EventSystem(IEventSystem):
     def __init__(self, config: Any):
         self.config = config
 
-    def execute_scheduled_events(self, time: int, context: EventContext) -> None:
+    def execute_scheduled_events(self, time: int, context: EventContext, config: "StressScenarioConfig") -> None:
         """
-        Checks the current time and executes hardcoded events if they match.
+        Executes stress scenario triggers based on the provided configuration.
         """
-        markets = context["markets"]
+        if not config or not config.is_active or time != config.start_tick:
+            return
+
+        logger.warning(f"🔥 STRESS_TEST: Activating '{config.scenario_name}' at Tick {time}!")
         households = context["households"]
+        firms = context["firms"]
 
-        # 1. Inflation Shock at Tick 200
-        if time == 200:
-            logger.warning("🔥 CHAOS: Inflation Shock at Tick 200!")
-            for market in markets.values():
-                if hasattr(market, 'current_price'):
-                    market.current_price *= 1.5
-                if hasattr(market, 'avg_price'):
-                    market.avg_price *= 1.5
+        # Scenario 1: Hyperinflation (Demand-Pull Shock)
+        if config.scenario_name == 'hyperinflation' and config.demand_shock_cash_injection > 0:
+            for h in households:
+                h.assets *= (1 + config.demand_shock_cash_injection)
+            logger.info(f"  -> Injected {config.demand_shock_cash_injection:.0%} cash into all households.")
 
-        # 2. Recession Shock at Tick 600
-        if time == 600:
-            logger.warning("🔥 CHAOS: Recession Shock at Tick 600!")
-            for household in households:
-                household.assets *= 0.5
-                # Note: logic to reduce monthly_income could be added here if needed
+        # Scenario 2: Deflationary Spiral (Asset Shock)
+        if config.scenario_name == 'deflation' and config.asset_shock_reduction > 0:
+            for agent in households + firms:
+                agent.assets *= (1 - config.asset_shock_reduction)
+            logger.info(f"  -> Reduced all agent assets by {config.asset_shock_reduction:.0%}.")
+
+        # Scenario 3: Supply Shock (Productivity Collapse)
+        if config.scenario_name == 'supply_shock' and config.exogenous_productivity_shock:
+            for firm in firms:
+                # Check if firm type is in the shock dictionary
+                if firm.type in config.exogenous_productivity_shock:
+                    shock_multiplier = config.exogenous_productivity_shock[firm.type]
+                    firm.productivity_factor *= shock_multiplier
+                    logger.info(f"  -> Applied productivity shock ({shock_multiplier}) to Firm {firm.id} (Type: {firm.type}).")

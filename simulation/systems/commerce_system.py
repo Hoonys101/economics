@@ -17,10 +17,10 @@ class CommerceSystem(ICommerceSystem):
         self.config = config
         self.reflux_system = reflux_system
 
-    def execute_consumption_and_leisure(self, context: CommerceContext) -> Dict[int, float]:
+    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Dict[int, float]:
         """
         Executes vectorized consumption, applies fast-track purchases,
-        and calculates leisure effects.
+        and calculates leisure effects. Incorporates stress scenario behavioral changes.
 
         Returns:
             Dict[int, float]: Map of Household ID to Utility Gained.
@@ -49,6 +49,14 @@ class CommerceSystem(ICommerceSystem):
             # 2a. Fast Consumption
             if i < len(consume_list):
                 c_amt = consume_list[i]
+
+                # Phase 28: Deflationary Spiral - Consumption Collapse
+                if scenario_config and scenario_config.is_active and scenario_config.scenario_name == 'deflation':
+                    if not household.is_employed and scenario_config.consumption_pessimism_factor > 0:
+                        original_amt = c_amt
+                        c_amt *= (1 - scenario_config.consumption_pessimism_factor)
+                        logger.debug(f"PESSIMISM_IMPACT | Household {household.id} consumption reduced from {original_amt:.2f} to {c_amt:.2f}")
+
                 if c_amt > 0:
                     household.consume("basic_food", c_amt, current_time)
                     consumed_items["basic_food"] = c_amt
