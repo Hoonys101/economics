@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 import math
 from modules.common.config_manager.api import ConfigManager
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, IFinancialEntity
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class Deposit:
         return self.annual_interest_rate / TICKS_PER_YEAR
 
 
-class Bank:
+class Bank(IFinancialEntity):
     """
     Phase 3: Central & Commercial Bank Hybrid System.
     Manages loans, deposits, and monetary policy interaction.
@@ -197,10 +197,13 @@ class Bank:
         )
         return loan_id
 
-    def deposit(self, depositor_id: int, amount: float) -> Optional[str]:
+    # --- IBankService Implementation (Customer Facing) ---
+
+    def deposit_from_customer(self, depositor_id: int, amount: float) -> Optional[str]:
         """
-        Accepts a deposit from an agent.
-        Does NOT transfer assets directly; returns deposit ID for Transaction creation.
+        Accepts a deposit from an agent (Customer).
+        Does NOT transfer assets directly (handled by Transaction); creates deposit record.
+        Returns deposit ID.
         """
         margin = self._get_config("bank_defaults.bank_margin", 0.02)
         deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
@@ -224,6 +227,58 @@ class Bank:
             extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
         )
         return deposit_id
+
+    def withdraw_for_customer(self, depositor_id: int, amount: float) -> bool:
+        """
+        Withdraws from depositor's account (Customer).
+        Returns True if successful, False if insufficient balance.
+        """
+        # Find deposit by depositor_id
+        # We need to scan because key is deposit_id
+        target_deposit = None
+        target_dep_id = None
+        for dep_id, deposit in self.deposits.items():
+            if deposit.depositor_id == depositor_id:
+                target_deposit = deposit
+                target_dep_id = dep_id
+                break
+
+        if target_deposit is None or target_deposit.amount < amount:
+            return False
+
+        target_deposit.amount -= amount
+        # self.assets -= amount # Handled by Transaction in LoanMarket
+
+        # If deposit is empty, remove it
+        if target_deposit.amount <= 0:
+            if target_dep_id:
+                del self.deposits[target_dep_id]
+
+        logger.info(
+            f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
+            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
+        )
+        return True
+
+    # --- IFinancialEntity Implementation (System Facing) ---
+
+    def deposit(self, amount: float) -> None:
+        """
+        Deposits a given amount into the bank's own assets (Equity/Reserves).
+        Implementation of IFinancialEntity.deposit.
+        """
+        if amount > 0:
+            self.assets += amount
+
+    def withdraw(self, amount: float) -> None:
+        """
+        Withdraws a given amount from the bank's own assets (Equity/Reserves).
+        Implementation of IFinancialEntity.withdraw.
+        """
+        if amount > 0:
+            if self.assets < amount:
+                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+            self.assets -= amount
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Returns debt info for AI state."""
@@ -362,41 +417,6 @@ class Bank:
                 extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
             )
 
-    def withdraw(self, depositor_id: int, amount: float) -> bool:
-        """
-        Withdraws from depositor's account.
-        Returns True if successful, False if insufficient balance.
-        """
-        # Find deposit by depositor_id
-        # We need to scan because key is deposit_id
-        # Or should we store deposits by depositor_id?
-        # Current struct: self.deposits: Dict[str, Deposit] (key=dep_id)
-        # Scan
-        target_deposit = None
-        target_dep_id = None
-        for dep_id, deposit in self.deposits.items():
-            if deposit.depositor_id == depositor_id:
-                target_deposit = deposit
-                target_dep_id = dep_id
-                break
-
-        if target_deposit is None or target_deposit.amount < amount:
-            return False
-
-        target_deposit.amount -= amount
-        # self.assets -= amount # Handled by Transaction
-
-        # If deposit is empty, remove it
-        if target_deposit.amount <= 0:
-            if target_dep_id:
-                del self.deposits[target_dep_id]
-
-        logger.info(
-            f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
-            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
-        )
-        return True
-
     def _borrow_from_central_bank(self, amount: float):
         """
         Phase 23.5: Lender of Last Resort.
@@ -458,15 +478,3 @@ class Bank:
                  skill.value *= (1.0 - xp_penalty)
 
         logger.info(f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP.")
-
-    def deposit(self, amount: float) -> None:
-        """Deposits a given amount into the bank's assets."""
-        if amount > 0:
-            self.assets += amount
-
-    def withdraw(self, amount: float) -> None:
-        """Withdraws a given amount from the bank's assets."""
-        if amount > 0:
-            if self.assets < amount:
-                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self.assets -= amount

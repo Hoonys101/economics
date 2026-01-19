@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from simulation.bank import Bank, Loan
+from modules.finance.api import InsufficientFundsError
 
 @pytest.fixture(autouse=True)
 def mock_logger():
@@ -109,3 +110,59 @@ class TestBank:
         assert len(loans) == 2
         assert loans[0]["borrower_id"] == 101
         assert loans[1]["borrower_id"] == 101
+
+    # --- New Tests for Refactored Interfaces ---
+
+    def test_deposit_from_customer(self, bank_instance):
+        depositor_id = 202
+        amount = 500.0
+        initial_assets = bank_instance.assets
+
+        deposit_id = bank_instance.deposit_from_customer(depositor_id, amount)
+
+        assert deposit_id is not None
+        assert deposit_id.startswith("dep_")
+        assert len(bank_instance.deposits) == 1
+        # Check that assets were NOT increased (handled by Transaction)
+        assert bank_instance.assets == initial_assets
+
+        deposit = bank_instance.deposits[deposit_id]
+        assert deposit.depositor_id == depositor_id
+        assert deposit.amount == amount
+
+    def test_withdraw_for_customer_success(self, bank_instance):
+        depositor_id = 202
+        amount = 500.0
+
+        # Setup: Deposit first
+        deposit_id = bank_instance.deposit_from_customer(depositor_id, amount)
+
+        # Act: Withdraw
+        success = bank_instance.withdraw_for_customer(depositor_id, 200.0)
+
+        assert success is True
+        assert bank_instance.deposits[deposit_id].amount == 300.0
+        # Check assets (not changed by this method directly)
+        assert bank_instance.assets == 10000.0
+
+    def test_withdraw_for_customer_insufficient(self, bank_instance):
+        depositor_id = 202
+        amount = 500.0
+        bank_instance.deposit_from_customer(depositor_id, amount)
+
+        success = bank_instance.withdraw_for_customer(depositor_id, 600.0)
+        assert success is False
+
+    def test_financial_entity_deposit(self, bank_instance):
+        initial = bank_instance.assets
+        bank_instance.deposit(500.0)
+        assert bank_instance.assets == initial + 500.0
+
+    def test_financial_entity_withdraw(self, bank_instance):
+        initial = bank_instance.assets
+        bank_instance.withdraw(500.0)
+        assert bank_instance.assets == initial - 500.0
+
+    def test_financial_entity_withdraw_insufficient(self, bank_instance):
+        with pytest.raises(InsufficientFundsError):
+            bank_instance.withdraw(bank_instance.assets + 1000.0)

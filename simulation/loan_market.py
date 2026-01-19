@@ -215,7 +215,7 @@ class LoanMarket(Market):
 
         elif order.order_type == "DEPOSIT":
             amount = order.quantity
-            deposit_id = self.bank.deposit(order.agent_id, amount)
+            deposit_id = self.bank.deposit_from_customer(order.agent_id, amount)
 
             if deposit_id:
                 # Deposit: Agent gives money to Bank.
@@ -241,7 +241,7 @@ class LoanMarket(Market):
 
         elif order.order_type == "WITHDRAW":
             amount = order.quantity
-            success = self.bank.withdraw(order.agent_id, amount)
+            success = self.bank.withdraw_for_customer(order.agent_id, amount)
 
             if success:
                 # Withdraw: Bank gives money to Agent.
