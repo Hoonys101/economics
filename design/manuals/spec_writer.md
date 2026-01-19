@@ -54,7 +54,11 @@
 - **예외 처리**: 발생 가능한 에러와 대응 방안 기술.
 - **인터페이스 명세**: DTO 필드 구조 요약.
 - **검증 계획**: 테스트 케이스와 Golden Sample 정의.
-- **Mocking 가이드**: 타 모듈에서 이 모듈을 Mocking할 때 사용할 고정 데이터(Golden Data) 및 Mock 객체 구현 예시.
+- **Mocking 가이드**: 
+  - **필수**: `tests/conftest.py`의 `golden_households`, `golden_firms` 픽스처를 우선 사용할 것.
+  - **사용법**: `def test_my_feature(golden_firms):` 형태로 픽스처 주입.
+  - **금지**: 새로운 `MagicMock()`으로 에이전트를 수동 생성하지 말 것 (타입 불일치 위험).
+  - **커스텀 필요시**: `scripts/fixture_harvester.py`의 `GoldenLoader`를 사용하여 특정 시나리오 로드.
 - **🚨 Risk & Impact Audit (기술적 위험 분석)**:
     - **순환 참조 위험**: 새 모듈이 기존 모듈과 임포트 루프를 형성할 가능성 분석.
     - **테스트 영향도**: 기존 유닛 테스트의 Mock 객체가 수정된 클래스/필드에 의존하고 있지는 않은가?
