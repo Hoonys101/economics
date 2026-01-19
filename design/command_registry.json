@@ -15,8 +15,9 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-080_Macro_Stability_Stress_Testing",
-    "instruction": "Phase 28: Macro-Stability Stress Testing 구현. 'design/specs/phase28_stress_testing_spec.md' 명세에 따라 가계(Household)의 시나리오별 행동 로직(사재기, 패닉셀링, 부채회피, 기대심리 가속)을 구현하고, simulation/dtos/scenario.py를 활용하여 데이터를 전달하도록 수정하세요.",
+    "title": "TD-008_Advanced_Finance_System",
+    "instruction": "",
+    "file": "design/jules_instruction.txt",
     "wait": true
   },
   "git_review": {

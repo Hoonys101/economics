@@ -30,10 +30,9 @@
    - 모호함은 기술부채의 원천
 
 4. **🚀 The SCR Launcher Protocol (구조적 명령 레지스트리)**
-   - **데이터 중심 제어 (Data-Driven Control)**: 모든 도구의 인자(`worker`, `instruction`, `context`, `session_id` 등)는 `design/command_registry.json`에 저장된다.
-   - **장전의 의무 (Duty to Load)**: Antigravity(팀장)는 현재 상황에 맞는 데이터를 JSON에 작성하여 **명령을 장전**해야 한다.
-   - **실행 엔진**: `launcher.py`가 JSON을 읽어 가장 안정적인 파이썬 호출문으로 변환한다. 배치 파일 구문 오류를 원천 차단한다.
-   - **실행 요청**: 명령 장전 후, 사용자에게 해당 `.bat` 파일 실행을 요청한다. 팀장은 절대 직접 실행하지 않는다.
+   - **데이터 중심 제어**: 모든 도구의 인자는 `design/command_registry.json`에 저장됩니다. (상세 스펙: **`design/manuals/scr_launcher.md`**)
+   - **장전의 의무**: Antigravity는 현재 상황에 맞는 데이터를 JSON에 작성하여 명령을 장전해야 합니다.
+   - **실행 요청**: 명령 장전 후, 사용자에게 해당 `.bat` 파일 실행을 요청합니다.
 
 ---
 
@@ -88,6 +87,7 @@ THEN 필수 절차: W-0.5 Pre-flight Audit
 IF 구현 작업 위임 필요
 THEN 도구: .\jules-go.bat
      기능: 발주 시 전달한 <핵심 미션 텍스트>를 기록 관리
+     원칙: 반드시 '실무자 보고서(Technical Debt Reporting)'를 함께 요구할 것 (scr_launcher.md 참조)
      출력: communications/jules_logs/last_run.md
      기록: design/SESSION_LEDGER.md 에 세션 ID와 미션 전문 기록
      참조: design/work_orders/WO-XXX.md 먼저 작성
@@ -164,6 +164,7 @@ THEN 1. 필수 절차: design/manuals/session_conclusion.md 준수
 | Jules 규칙 | `AGENTS.md` |
 | 명세서들 | `design/specs/*.md` |
 | 작업지시서들 | `design/work_orders/*.md` |
+| SCR 커맨드 레지스트리 | `design/manuals/scr_launcher.md` |
 
 ---
 

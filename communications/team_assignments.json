@@ -5,6 +5,10 @@
       "298579565746718624": {
         "title": "ActionProposal_Config_Refactor",
         "initial_mission": "Refactor ActionProposalEngine config loading. TASKS: 1. Modify `simulation/decisions/action_proposal.py` to inject `ConfigManager` in `__init__` and replace hardcoded goods list with `self.config_manager.get('simulation.consumables')`. 2. Update `simulation/initialization/initializer.py` to pass `config_manager` to `ActionProposalEngine`. 3. Update `config/simulation.yaml` to add `consumables: ['basic_food', 'luxury_food']` (Correcting 'food' to 'basic_food'). 4. Create `tests/simulation/test_action_proposal.py` to verify config loading with a mock ConfigManager. REFERENCE: implementation_plan.md."
+      },
+      "5715966926798076685": {
+        "title": "WO-080_Macro_Stability_Stress_Testing",
+        "initial_mission": "Phase 28: Macro-Stability Stress Testing 구현. 'design/specs/phase28_stress_testing_spec.md' 명세에 따라 가계(Household)의 시나리오별 행동 로직(사재기, 패닉셀링, 부채회피, 기대심리 가속)을 구현하고, simulation/dtos/scenario.py를 활용하여 데이터를 전달하도록 수정하세요."
       }
     },
     "completed_sessions": {

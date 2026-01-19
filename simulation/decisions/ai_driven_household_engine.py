@@ -341,8 +341,17 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # Phase 16: Portfolio Manager (WO-026)
         # Run monthly rebalancing (every 30 ticks)
         if current_time % 30 == 0:
-            portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
-            orders.extend(portfolio_orders)
+            # [Fix] Subtract repay_amount (if any) from liquid assets to avoid double-spending
+            temp_assets = household.assets
+            if is_debt_aversion_mode and 'repay_amount' in locals() and repay_amount > 0:
+                household.assets -= repay_amount
+            
+            try:
+                portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
+                orders.extend(portfolio_orders)
+            finally:
+                # Restore original assets value
+                household.assets = temp_assets
         else:
             # Simple liquidity check for emergencies (Withdraw if cash is critical)
             emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
