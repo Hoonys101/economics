@@ -84,3 +84,74 @@ def government(mock_config, mock_tracker, finance_system):
     gov.finance_system.government = gov
 
     return gov
+
+
+# ============================================================================
+# 🌟 Golden Fixture Support (Auto-Generated Mocks from Real Data)
+# ============================================================================
+# Usage:
+#   1. Run simulation and harvest: python scripts/fixture_harvester.py
+#   2. Use in tests: def test_something(golden_households, golden_firms): ...
+# ============================================================================
+
+import os
+from pathlib import Path
+
+GOLDEN_FIXTURES_DIR = Path(__file__).parent / "goldens"
+
+
+def _get_golden_loader(fixture_name: str = "demo_fixture.json"):
+    """Helper to load a golden fixture file."""
+    from scripts.fixture_harvester import GoldenLoader
+    
+    fixture_path = GOLDEN_FIXTURES_DIR / fixture_name
+    if not fixture_path.exists():
+        return None
+    return GoldenLoader.load(str(fixture_path))
+
+
+@pytest.fixture
+def golden_households():
+    """
+    Provides household mocks loaded from golden fixture data.
+    Falls back to empty list if no fixture exists.
+    
+    Usage:
+        def test_household_behavior(golden_households):
+            assert len(golden_households) > 0
+            assert golden_households[0].assets > 0
+    """
+    loader = _get_golden_loader()
+    if loader is None:
+        return []
+    return loader.create_household_mocks()
+
+
+@pytest.fixture
+def golden_firms():
+    """
+    Provides firm mocks loaded from golden fixture data.
+    Falls back to empty list if no fixture exists.
+    
+    Usage:
+        def test_firm_behavior(golden_firms):
+            firm = golden_firms[0]
+            snapshot = firm.get_financial_snapshot()
+            assert snapshot["total_assets"] > 0
+    """
+    loader = _get_golden_loader()
+    if loader is None:
+        return []
+    return loader.create_firm_mocks()
+
+
+@pytest.fixture
+def golden_config():
+    """
+    Provides config mock loaded from golden fixture data.
+    Falls back to None if no fixture exists.
+    """
+    loader = _get_golden_loader()
+    if loader is None:
+        return None
+    return loader.create_config_mock()
