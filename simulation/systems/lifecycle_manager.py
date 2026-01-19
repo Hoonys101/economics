@@ -50,8 +50,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
     def _process_births(self, sim: Simulation) -> List[Household]:
         """(기존 `run_tick`의 출생 로직)"""
+        from simulation.core_agents import Household
         birth_requests = []
-        active_households = [h for h in sim.households if h.is_active]
+        # Ensure only households are processed
+        active_households = [h for h in sim.households if h.is_active and isinstance(h, Household)]
         if not active_households:
             return []
 
@@ -122,11 +124,20 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
         inactive_households = [h for h in sim.households if not h.is_active]
         for household in inactive_households:
+            # Check if it is really a Household, not Firm (just in case list corruption)
+            if not hasattr(household, "portfolio"):
+                continue
+
             if hasattr(sim, "inheritance_manager"):
                 sim.inheritance_manager.process_death(household, sim.government, sim)
+
             household.inventory.clear()
-            household.shares_owned.clear()
-            household.portfolio.holdings.clear()
+            # Check if shares_owned exists (legacy)
+            if hasattr(household, "shares_owned"):
+                household.shares_owned.clear()
+
+            if hasattr(household, "portfolio") and hasattr(household.portfolio, "holdings"):
+                household.portfolio.holdings.clear()
             if sim.stock_market:
                 for firm_id in list(sim.stock_market.shareholders.keys()):
                      sim.stock_market.update_shareholder(household.id, firm_id, 0)

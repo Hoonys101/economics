@@ -107,6 +107,15 @@ class HousingSystem:
         Applies survival penalties to homeless agents.
         """
         for hh in simulation.households:
+            if not hh.is_active:
+                continue
+
+            # Skip if not a Household (e.g. Firm in list?)
+            # Usually simulation.households is typed List[Household].
+            # But let's check attribute existence to be safe against duck typing.
+            if not hasattr(hh, "residing_property_id"):
+                continue
+
             if hh.is_active:
                 if hh.residing_property_id is None:
                     hh.is_homeless = True

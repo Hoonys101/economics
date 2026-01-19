@@ -77,7 +77,13 @@ class CorporateManager:
         # 2. Capital Channel (CAPEX - Physical Machines)
         # If Automation is prioritized, maybe reduce physical capex?
         capex_agg = action_vector.capital_aggressiveness
-        self._manage_capex(firm, capex_agg, context.reflux_system, context.current_time)
+
+        # Ensure reflux_system supports capture method
+        reflux = context.reflux_system
+        if hasattr(reflux, 'capture'):
+             self._manage_capex(firm, capex_agg, reflux, context.current_time)
+        else:
+             self._manage_capex(firm, capex_agg, None, context.current_time)
 
         # 3. Dividend Channel
         self._manage_dividends(firm, action_vector.dividend_aggressiveness)

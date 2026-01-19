@@ -107,7 +107,9 @@ class FinanceSystem(IFinanceSystem):
             # Sell to the market (commercial bank buys it)
             if self.bank.assets >= amount:
                 # Transfer funds from commercial bank to Government
-                self._transfer(debtor=self.bank, creditor=self.government, amount=amount)
+                # Use manual transfer as Bank does not implement IFinancialEntity interface
+                self.bank.assets -= amount
+                self.government.deposit(amount)
             else:
                 # Bond issuance fails if no one can buy it
                 return []

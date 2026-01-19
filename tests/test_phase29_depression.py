@@ -218,17 +218,44 @@ class TestPhase29Depression(unittest.TestCase):
             if os.path.exists(report_file):
                 os.remove(report_file)
 
+    def test_depression_scenario_with_golden_fixtures(self):
+        """Test depression scenario using golden firms instead of manual mocks."""
+        # This test demonstrates migration to golden fixtures
+        from scripts.fixture_harvester import GoldenLoader
+        loader = GoldenLoader.load("tests/goldens/stable_economy.json")
+        golden_firms = loader.create_firm_mocks()
+
+        # Override self.firms with golden firms
+        self.sim.firms = golden_firms
+        # Also need to update agents dict
+        for f in golden_firms:
+            self.sim.agents[f.id] = f
+
+        # Run crisis monitor check
+        # CrisisMonitor needs real firm objects usually, but our mocks from GoldenLoader
+        # have get_financial_snapshot mocked with real data.
+
+        from modules.analysis.crisis_monitor import CrisisMonitor
+        monitor = CrisisMonitor(logger=self.logger, run_id=self.sim.run_id)
+
+        # Check monitoring
+        result = monitor.monitor(tick=101, firms=golden_firms)
+
+        # Verify result structure
+        self.assertIn("safe", result)
+        self.assertIn("distress", result)
+        self.assertIn("gray", result)
+        self.assertEqual(result["active"], len(golden_firms))
+
     def test_depression_scenario_triggers(self):
         """Test that shocks are applied at start_tick."""
 
         # Verify initial state
         initial_base_rate = self.sim.bank.base_rate
         initial_tax_rate = self.sim.government.corporate_tax_rate
-        print(f"Initial State: Base Rate={initial_base_rate}, Tax Rate={initial_tax_rate}")
 
         # Run until before shock
         start_tick = self.sim.stress_scenario_config.start_tick
-        print(f"Running until tick {start_tick}...")
 
         for _ in range(start_tick):
             self.sim.run_tick()
@@ -236,8 +263,6 @@ class TestPhase29Depression(unittest.TestCase):
         # Verify shock applied
         current_base_rate = self.sim.bank.base_rate
         current_tax_rate = self.sim.government.corporate_tax_rate
-
-        print(f"Tick {self.sim.time} State: Base Rate={current_base_rate}, Tax Rate={current_tax_rate}")
 
         self.assertAlmostEqual(current_base_rate, 0.08, delta=0.005, msg="Monetary Shock failed")
         self.assertAlmostEqual(current_tax_rate, 0.30, delta=0.001, msg="Fiscal Shock failed")
@@ -256,7 +281,6 @@ class TestPhase29Depression(unittest.TestCase):
             self.assertGreater(len(rows), 2, "Report should have header and at least 2 ticks of data.")
 
             last_row = rows[-1]
-            print(f"Monitor Log Entry: {last_row}")
             self.assertEqual(int(last_row[4]), 5)
 
 if __name__ == "__main__":

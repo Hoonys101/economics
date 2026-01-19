@@ -34,6 +34,10 @@ class DemographicsComponent:
     def age(self) -> float:
         return self._age
 
+    @age.setter
+    def age(self, value: float) -> None:
+        self._age = value
+
     @property
     def gender(self) -> str:
         return self._gender
@@ -42,9 +46,17 @@ class DemographicsComponent:
     def generation(self) -> int:
         return self._generation
 
+    @generation.setter
+    def generation(self, value: int) -> None:
+        self._generation = value
+
     @property
     def parent_id(self) -> Optional[int]:
         return self._parent_id
+
+    @parent_id.setter
+    def parent_id(self, value: Optional[int]) -> None:
+        self._parent_id = value
 
     @property
     def spouse_id(self) -> Optional[int]:

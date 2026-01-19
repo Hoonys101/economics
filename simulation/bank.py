@@ -459,14 +459,12 @@ class Bank:
 
         logger.info(f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP.")
 
-    def deposit(self, amount: float) -> None:
-        """Deposits a given amount into the bank's assets."""
-        if amount > 0:
-            self.assets += amount
-
-    def withdraw(self, amount: float) -> None:
-        """Withdraws a given amount from the bank's assets."""
-        if amount > 0:
-            if self.assets < amount:
-                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self.assets -= amount
+    # These methods conflict with the deposit(depositor_id, amount) and withdraw(depositor_id, amount) signatures above.
+    # The duplicate methods at the bottom of the file are causing the TypeError because they overwrite the previous definitions.
+    # I will remove them since `deposit(depositor_id, amount)` and `withdraw(depositor_id, amount)` already exist
+    # and seem to be the intended logic for handling agent deposits.
+    # However, BaseAgent or similar might expect `deposit(amount)` for direct asset manipulation?
+    # Bank inherits from nothing, so no interface constraint.
+    # But `simulation/loan_market.py` calls `self.bank.deposit(order.agent_id, amount)`.
+    # So we need the version with depositor_id.
+    # The duplicate definitions at the bottom are wrong.
