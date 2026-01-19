@@ -62,7 +62,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504850.00, Delta: 150.0000
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 1 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 1 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 1 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 2 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 995110.00
@@ -93,9 +93,9 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504700.03, Delta: 299.9700
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 2 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 2 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 2 ---
-FAILED                                                                   [ 50%]
+PASSED                                                                   [ 50%]
 tests/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers 
 -------------------------------- live log call --------------------------------
 INFO     simulation.bank:bank.py:68 Bank 10 initialized. Assets: 1000000.00, Base Rate: 5.00%
@@ -151,7 +151,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504850.00, Delta: 150.0000
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 1 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 1 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 1 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 2 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 995110.00
@@ -182,7 +182,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504700.03, Delta: 299.9700
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 2 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 2 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 2 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 3 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 990219.97
@@ -213,7 +213,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504550.09, Delta: 449.9100
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 3 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 3 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 3 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 4 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 985329.91
@@ -244,7 +244,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504400.18, Delta: 599.8200
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 4 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 4 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 4 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 5 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 980439.82
@@ -275,7 +275,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504250.30, Delta: 749.7001
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 5 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 5 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 5 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 6 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 975549.70
@@ -306,7 +306,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504100.45, Delta: 899.5501
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 6 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 6 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 6 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 7 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 970659.55
@@ -337,7 +337,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1503950.63, Delta: 1049.3702
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 7 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 7 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 7 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 8 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 965769.37
@@ -368,7 +368,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1503800.84, Delta: 1199.1603
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 8 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 8 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 8 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 9 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 960879.16
@@ -399,7 +399,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1503651.08, Delta: 1348.9205
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 9 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 9 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 9 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 10 ---
 INFO     simulation.ai.ai_training_manager:ai_training_manager.py:22 Running imitation learning cycle at tick 10.
@@ -434,7 +434,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1503501.35, Delta: 1498.6507
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 10 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 10 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 10 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 11 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 951098.65
@@ -465,7 +465,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1503351.65, Delta: 1648.3510
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 11 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 11 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 11 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 12 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 946208.35
@@ -496,7 +496,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1503201.98, Delta: 1798.0213
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 12 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 12 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 12 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 13 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 941318.02
@@ -527,7 +527,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1503052.34, Delta: 1947.6617
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 13 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 13 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 13 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 14 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 936427.66
@@ -558,7 +558,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1502902.73, Delta: 2097.2722
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 14 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 14 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 14 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 15 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 931537.27
@@ -589,7 +589,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1502753.15, Delta: 2246.8527
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 15 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 15 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 15 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 16 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 926646.85
@@ -620,7 +620,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1502603.60, Delta: 2396.4034
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 16 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 16 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 16 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 17 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 921756.40
@@ -651,7 +651,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1502454.08, Delta: 2545.9241
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 17 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 17 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 17 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 18 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 916865.92
@@ -682,7 +682,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1502304.59, Delta: 2695.4149
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 18 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 18 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 18 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 19 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 911975.41
@@ -713,7 +713,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1502155.12, Delta: 2844.8758
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 19 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 19 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 19 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 20 ---
 INFO     simulation.ai.ai_training_manager:ai_training_manager.py:22 Running imitation learning cycle at tick 20.
@@ -748,7 +748,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1502005.69, Delta: 2994.3068
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 20 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 20 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 20 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 21 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 902194.31
@@ -779,7 +779,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1501856.29, Delta: 3143.7080
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 21 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 21 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 21 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 22 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 897303.71
@@ -810,7 +810,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1501706.92, Delta: 3293.0792
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 22 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 22 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 22 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 23 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 892413.08
@@ -841,7 +841,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1501557.58, Delta: 3442.4206
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 23 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 23 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 23 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 24 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 887522.42
@@ -872,7 +872,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1501408.27, Delta: 3591.7321
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 24 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 24 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 24 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 25 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 882631.73
@@ -903,7 +903,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1501258.99, Delta: 3741.0138
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 25 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 25 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 25 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 26 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 877741.01
@@ -934,7 +934,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1501109.73, Delta: 3890.2656
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 26 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 26 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 26 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 27 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 872850.27
@@ -965,7 +965,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1500960.51, Delta: 4039.4875
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 27 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 27 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 27 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 28 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 867959.49
@@ -996,7 +996,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1500811.32, Delta: 4188.6796
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 28 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 28 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 28 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 29 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 863068.68
@@ -1027,7 +1027,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1500662.16, Delta: 4337.8419
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 29 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 29 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 29 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 30 ---
 INFO     simulation.ai.ai_training_manager:ai_training_manager.py:22 Running imitation learning cycle at tick 30.
@@ -1062,7 +1062,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1500513.03, Delta: 4486.9743
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 30 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 30 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 30 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 31 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 853286.97
@@ -1093,7 +1093,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1500363.92, Delta: 4636.0769
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 31 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 31 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 31 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 32 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 848396.08
@@ -1124,7 +1124,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1500214.85, Delta: 4785.1497
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 32 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 32 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 32 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 33 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 843505.15
@@ -1155,7 +1155,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1500065.81, Delta: 4934.1927
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 33 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 33 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 33 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 34 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 838614.19
@@ -1186,7 +1186,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1499916.79, Delta: 5083.2058
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 34 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 34 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 34 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 35 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 833723.21
@@ -1217,7 +1217,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1499767.81, Delta: 5232.1892
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 35 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 35 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 35 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 36 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 828832.19
@@ -1248,7 +1248,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1499618.86, Delta: 5381.1428
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 36 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 36 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 36 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 37 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 823941.14
@@ -1279,7 +1279,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1499469.93, Delta: 5530.0665
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 37 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 37 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 37 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 38 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 819050.07
@@ -1310,7 +1310,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1499321.04, Delta: 5678.9605
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 38 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 38 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 38 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 39 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 814158.96
@@ -1341,7 +1341,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1499172.18, Delta: 5827.8247
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 39 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 39 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 39 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 40 ---
 INFO     simulation.ai.ai_training_manager:ai_training_manager.py:22 Running imitation learning cycle at tick 40.
@@ -1376,7 +1376,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1499023.34, Delta: 5976.6592
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 40 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 40 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 40 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 41 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 804376.66
@@ -1407,7 +1407,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1498874.54, Delta: 6125.4638
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 41 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 41 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 41 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 42 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 799485.46
@@ -1438,7 +1438,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1498725.76, Delta: 6274.2387
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 42 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 42 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 42 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 43 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 794594.24
@@ -1469,7 +1469,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1498577.02, Delta: 6422.9839
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 43 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 43 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 43 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 44 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 789702.98
@@ -1500,7 +1500,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1498428.30, Delta: 6571.6993
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 44 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 44 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 44 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 45 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 784811.70
@@ -1531,7 +1531,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1498279.62, Delta: 6720.3850
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 45 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 45 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 45 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 46 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 779920.38
@@ -1562,7 +1562,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1498130.96, Delta: 6869.0409
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 46 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 46 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 46 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 47 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 775029.04
@@ -1593,7 +1593,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1497982.33, Delta: 7017.6671
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 47 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 47 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 47 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 48 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 770137.67
@@ -1624,7 +1624,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1497833.74, Delta: 7166.2635
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 48 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 48 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 48 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 49 ---
 INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 765246.26
@@ -1655,7 +1655,7 @@ INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED 
 INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
 INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1497685.17, Delta: 7314.8303
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 49 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 49 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 49 ---
 INFO     TestPhase29:engine.py:164 --- Starting Tick 50 ---
 WARNING  simulation.systems.event_system:event_system.py:30 \U0001f525 STRESS_TEST: Activating 'phase29_depression' at Tick 50!\nINFO     simulation.systems.event_system:event_system.py:65   -> Triggering Great Depression Scenario!
@@ -1700,106 +1700,8 @@ INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE 
 INFO     simulation.systems.persistence_manager:persistence_manager.py:135 DB_FLUSH_START | Flushing buffers to DB at tick 50
 INFO     simulation.systems.persistence_manager:persistence_manager.py:156 DB_FLUSH_END | Finished flushing buffers to DB at tick 50
 WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1497486.24, Delta: 7513.7593
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 50 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
+INFO     TestPhase29:crisis_monitor.py:84 CRISIS_MONITOR | Tick: 50 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
 INFO     TestPhase29:engine.py:676 --- Ending Tick 50 ---
 PASSED                                                                   [100%]
 
-================================== FAILURES ===================================
-______________ TestPhase29Depression.test_crisis_monitor_logging ______________
-tests\test_phase29_depression.py:251: in test_crisis_monitor_logging
-    self.assertTrue(os.path.exists(report_file), "Crisis Monitor report file not created.")
-E   AssertionError: False is not true : Crisis Monitor report file not created.
----------------------------- Captured stdout call -----------------------------
-WARNING: Scenario not loaded from file during test setup. Manually enabling.
------------------------------- Captured log call ------------------------------
-INFO     simulation.bank:bank.py:68 Bank 10 initialized. Assets: 1000000.00, Base Rate: 5.00%
-INFO     simulation.agents.government:government.py:108 Government 11 initialized with assets: 0.0
-INFO     simulation.agents.central_bank:central_bank.py:34 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
-INFO     Market_food:order_book_market.py:35 OrderBookMarket food initialized.
-INFO     Market_electronics:order_book_market.py:35 OrderBookMarket electronics initialized.
-INFO     Market_labor:order_book_market.py:35 OrderBookMarket labor initialized.
-INFO     simulation.loan_market:loan_market.py:21 LoanMarket loan_market initialized with bank: 10
-INFO     Market_housing:order_book_market.py:35 OrderBookMarket housing initialized.
-INFO     simulation.ai.ai_training_manager:ai_training_manager.py:18 AITrainingManager initialized.
-INFO     simulation.systems.demographic_manager:demographic_manager.py:29 DemographicManager initialized.
-INFO     simulation.systems.bootstrapper:bootstrapper.py:79 BOOTSTRAPPER | Injected 50.0 units to Firm 100
-INFO     simulation.systems.bootstrapper:bootstrapper.py:79 BOOTSTRAPPER | Injected 50.0 units to Firm 101
-INFO     simulation.systems.bootstrapper:bootstrapper.py:79 BOOTSTRAPPER | Injected 50.0 units to Firm 102
-INFO     simulation.systems.bootstrapper:bootstrapper.py:79 BOOTSTRAPPER | Injected 50.0 units to Firm 103
-INFO     simulation.systems.bootstrapper:bootstrapper.py:79 BOOTSTRAPPER | Injected 50.0 units to Firm 104
-INFO     simulation.systems.bootstrapper:bootstrapper.py:86 BOOTSTRAPPER | Injected resources into 0 firms.
-INFO     simulation.systems.bootstrapper:bootstrapper.py:40 BOOTSTRAPPER | Force-assigned 5 workers to Firm 100
-INFO     simulation.systems.bootstrapper:bootstrapper.py:40 BOOTSTRAPPER | Force-assigned 0 workers to Firm 101
-INFO     simulation.systems.bootstrapper:bootstrapper.py:40 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
-INFO     simulation.systems.bootstrapper:bootstrapper.py:40 BOOTSTRAPPER | Force-assigned 0 workers to Firm 103
-INFO     simulation.systems.bootstrapper:bootstrapper.py:40 BOOTSTRAPPER | Force-assigned 0 workers to Firm 104
-INFO     simulation.systems.bootstrapper:bootstrapper.py:42 BOOTSTRAPPER | Total force-assigned workers: 5
-INFO     TestPhase29:initializer.py:288 Simulation run started with run_id: test_run
-INFO     TestPhase29:initializer.py:293 Simulation fully initialized with run_id: test_run
-INFO     TestPhase29:engine.py:158 MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: 1505000.00
-INFO     TestPhase29:engine.py:164 --- Starting Tick 1 ---
-INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 1000000.00
-INFO     TestPhase29:engine.py:286 DEBUG_WO057 | Tick 1 | Indicators: ['unemployment_rate', 'avg_wage', 'money_supply', 'total_labor_income', 'total_sales_volume', 'total_household_assets', 'total_firm_assets', 'food_avg_price', 'food_trade_volume', 'avg_goods_price', 'total_production', 'total_consumption', 'total_food_consumption', 'total_inventory', 'avg_survival_need', 'labor_share', 'velocity_of_money', 'inventory_turnover', 'avg_education_level', 'brain_waste_count']
-INFO     TestPhase29:engine.py:290 DEBUG_WO057 | AvgPrice: 0.0000
-INFO     TestPhase29:engine.py:296 DEBUG_WO057 | SensoryDTO: InfSMA=-1.0000, UnempSMA=100.0000, DebtRat=0.0000
-INFO     simulation.utils.shadow_logger:shadow_logger.py:36 ShadowLogger initialized at logs/shadow_hand_stage1.csv
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 0
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 1
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 2
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 3
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 4
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 10.00 as wealth_tax from 100
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 10.00 as wealth_tax from 101
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 10.00 as wealth_tax from 102
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 10.00 as wealth_tax from 103
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 10.00 as wealth_tax from 104
-INFO     Market_food:order_book_market.py:93 No items to match in market food at tick 1
-INFO     Market_electronics:order_book_market.py:93 No items to match in market electronics at tick 1
-INFO     Market_labor:order_book_market.py:93 No items to match in market labor at tick 1
-INFO     Market_housing:order_book_market.py:93 No items to match in market housing at tick 1
-INFO     Market_housing:order_book_market.py:93 No items to match in market housing at tick 1
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 100
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 101
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 102
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 103
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 104
-INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED | Level 1 reached. Cost: 5000.0
-INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
-INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
-WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504850.00, Delta: 150.0000
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 1 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
-INFO     TestPhase29:engine.py:676 --- Ending Tick 1 ---
-INFO     TestPhase29:engine.py:164 --- Starting Tick 2 ---
-INFO     simulation.bank:bank.py:336 BANK_TICK_SUMMARY | Collected Loan Int: 0.00, Paid Deposit Int: 0.00, Net Profit: 0.00, Reserves: 995110.00
-INFO     TestPhase29:engine.py:286 DEBUG_WO057 | Tick 2 | Indicators: ['unemployment_rate', 'avg_wage', 'money_supply', 'total_labor_income', 'total_sales_volume', 'total_household_assets', 'total_firm_assets', 'food_avg_price', 'food_trade_volume', 'avg_goods_price', 'total_production', 'total_consumption', 'total_food_consumption', 'total_inventory', 'avg_survival_need', 'labor_share', 'velocity_of_money', 'inventory_turnover', 'avg_education_level', 'brain_waste_count']
-INFO     TestPhase29:engine.py:290 DEBUG_WO057 | AvgPrice: 0.0000
-INFO     TestPhase29:engine.py:296 DEBUG_WO057 | SensoryDTO: InfSMA=-0.5000, UnempSMA=100.0000, DebtRat=0.0000
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 0
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 1
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 2
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 3
-INFO     simulation.agents.government:government.py:291 HOUSEHOLD_SUPPORT | Paid 8.00 to 4
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 9.99 as wealth_tax from 100
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 9.99 as wealth_tax from 101
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 9.99 as wealth_tax from 102
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 9.99 as wealth_tax from 103
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 9.99 as wealth_tax from 104
-INFO     Market_food:order_book_market.py:93 No items to match in market food at tick 2
-INFO     Market_electronics:order_book_market.py:93 No items to match in market electronics at tick 2
-INFO     Market_labor:order_book_market.py:93 No items to match in market labor at tick 2
-INFO     Market_housing:order_book_market.py:93 No items to match in market housing at tick 2
-INFO     Market_housing:order_book_market.py:93 No items to match in market housing at tick 2
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 100
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 101
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 102
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 103
-INFO     simulation.systems.tax_agency:tax_agency.py:63 TAX_COLLECTED | Collected 20.00 as corporate_tax from 104
-INFO     simulation.agents.government:government.py:446 INFRASTRUCTURE_INVESTED | Level 2 reached. Cost: 5000.0
-INFO     TestPhase29:engine.py:522 GLOBAL_TFP_BOOST | All firms productivity increased by 5.0%
-INFO     simulation.systems.reflux_system:reflux_system.py:51 REFLUX_DISTRIBUTE | Distributed 5010.00 to 5 households. (1002.00 each)
-WARNING  TestPhase29:engine.py:664 MONEY_SUPPLY_CHECK | Current: 1505000.00, Expected: 1504700.03, Delta: 299.9700
-INFO     TestPhase29:crisis_monitor.py:65 CRISIS_MONITOR | Tick: 2 | Safe: 0, Gray: 0, Distress: 5 | Active: 5
-INFO     TestPhase29:engine.py:676 --- Ending Tick 2 ---
-=========================== short test summary info ===========================
-FAILED tests/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging
-========================= 1 failed, 1 passed in 2.19s =========================
+============================== 2 passed in 3.57s ==============================

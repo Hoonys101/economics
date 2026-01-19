@@ -8,11 +8,11 @@
     "model": "pro"
   },
   "jules": {
-    "command": "list-sessions",
-    "title": "",
+    "command": "create",
+    "title": "WO-080: Golden Fixture Migration",
     "session_id": "",
-    "instruction": "",
-    "file": "",
+    "instruction": "Migrate tests to use Golden Fixtures. Read design/work_orders/WO-080-Golden-Fixture-Migration.md for details.",
+    "file": "design/work_orders/WO-080-Golden-Fixture-Migration.md",
     "wait": true
   },
   "git_review": {
