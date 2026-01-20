@@ -25,6 +25,10 @@
       "6980280111914954682": {
         "title": "WO-083C-P3: High Risk Test Migration",
         "initial_mission": "Execute WO-083C Phase 3: Migrate 'tests/verification/verify_mitosis.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P3-High-Risk.md'. Verify using complex inheritance scenarios."
+      },
+      "3970950953200710533": {
+        "title": "TD-067-Phase-A: Firm Logic Consolidation",
+        "initial_mission": "Execute TD-067 Phase A: Move financial and HR logic from 'Firm' facade into their respective sub-components in 'simulation/firms.py'. Keep wrapper properties in 'Firm' for now (Facade pattern). Focus on 'calculate_valuation' and 'get_book_value_per_share'. Verify with 'tests/test_firms.py'."
       }
     },
     "completed_sessions": {
