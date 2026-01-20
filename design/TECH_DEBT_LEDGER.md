@@ -20,17 +20,13 @@
 | TD-058 | 2026-01-19 | `FinanceSystem` - `Firm` Tight Coupling | Introduce `FinancialStatementDTO` in `Firm` | Architecture Rigidity / Brittle Tests | **RESOLVED** (Phase 29) |
 | TD-059 | 2026-01-19 | Legacy Logic in `FinanceDepartment` | Refactor component to use `AltmanZScoreCalculator` | Logic Duplication / SSOT Violation | **DEFERRED** |
 | TD-060 | 2026-01-19 | Hardcoded Scenario Path in `Initializer` | Implement dynamic lookup in `ConfigManager` | Low Configurability / Brittle Tests | **RESOLVED** (Phase 29) |
-| TD-061 | 2026-01-19 | Mock Fragility in Stress Testing | Collect 'Golden Data' and implement typed mocks | Brittle Tests / High Dev Friction | **IN_PROGRESS** (WO-080) |
+| TD-061 | 2026-01-19 | Mock Fragility in Stress Testing | Collect 'Golden Data' and implement typed mocks | Brittle Tests / High Dev Friction | **RESOLVED** (WO-083C) |
 | TD-063 | 2026-01-19 | `sys.path` Manipulation in Scripts | Use `pathlib` for stable project root detection | Unpredictable Import Behavior | **DEFERRED** |
 | TD-064 | 2026-01-20 | `Household.age` Setter Missing | Implement setter in `Household` or use `DemographicsComponent` directly | `AttributeError` crashing simulation | **RESOLVED** (WO-083A) |
-
-
-| TD-067 | 2026-01-20 | God Class `Firm` Wrapper Bloat | Remove wrapper properties, use explicit sub-components (`hr`, `finance`) | Code Duplication, Maintenance Burden | **OPEN** |
+| TD-067 | 2026-01-20 | God Class `Firm` Wrapper Bloat | Remove wrapper properties, use explicit sub-components (`hr`, `finance`) | Code Duplication, Maintenance Burden | **PARTIALLY RESOLVED** (Phase A Done) |
 | TD-068 | 2026-01-20 | Observer Scans `design/` Artifacts | Exclude `design/` from `scan_codebase.py` | False Positives in Health Report | **RESOLVED** |
 
 | TD-070 | 2026-01-20 | `test_rd_logic` Coverage Gap | Restore R&D budget assertion in `test_corporate_manager.py` | Test Regression / False Pass | **RESOLVED** |
-
-
 
 
 

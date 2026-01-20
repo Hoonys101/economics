@@ -1,35 +1,31 @@
 {
   "gemini": {
-    "worker": "audit",
-    "instruction": "Analyze 'simulation/firms.py' for 'God Class' symptoms and 'Wrapper Bloat' (TD-067). Evaluate the feasibility of a Separation of Concerns (SoC) refactoring into sub-components (HR, Finance, Ops). Identify integration risks with 'tests/test_firms.py' and 'tests/test_corporate_manager.py'. Generate a Risk Audit and a draft Refactor Spec if risks are manageable.",
+    "command": "analyze",
+    "title": "TD-067 Phase B/C Analysis",
+    "instruction": "Analyze the Firm class for TD-067 Phase B/C refactoring. Generate a comprehensive report with two sections:\n\n1. **Wrapper Properties Inventory**: List all @property getters/setters in simulation/firms.py that simply delegate to internal components (e.g., hr, finance). For each wrapper, identify:\n   - Property name\n   - Target component and attribute\n   - Number of external usages (grep count)\n   - Breaking change risk (LOW/MEDIUM/HIGH)\n\n2. **CorporateManager Coupling Analysis**: Analyze simulation/decisions/corporate_manager.py to identify all direct state manipulations of Firm objects. For each coupling point:\n   - Method name in CorporateManager\n   - Direct attribute access pattern (e.g., 'firm.assets -= budget')\n   - Proposed encapsulation method (e.g., 'firm.invest_in_automation(amount)')\n   - Impact on existing tests\n\nReference TD-065_Household_Refactor_Spec.md as a template for the refactoring approach. Output should be a detailed spec document ready for Jules implementation.",
     "context": [
       "simulation/firms.py",
-      "tests/test_firms.py",
-      "tests/test_corporate_manager.py",
+      "simulation/decisions/corporate_manager.py",
+      "design/specs/TD-065_Household_Refactor_Spec.md",
       "design/TECH_DEBT_LEDGER.md",
-      "design/specs/TD-065_Household_Refactor_Spec.md"
-    ],
-    "output": "design/gemini_output/TD-067_Firm_Refactor_Audit.md",
-    "model": "pro"
+      "design/handovers/HANDOVER_2026-01-20.md"
+    ]
   },
-    "jules": {
-        "command": "create",
-        "title": "TD-067-Phase-A: Firm Logic Consolidation",
-        "instruction": "Execute TD-067 Phase A: Move financial and HR logic from 'Firm' facade into their respective sub-components in 'simulation/firms.py'. Keep wrapper properties in 'Firm' for now (Facade pattern). Focus on 'calculate_valuation' and 'get_book_value_per_share'. Verify with 'tests/test_firms.py'.",
-        "context": [
-            "simulation/firms.py",
-            "tests/test_firms.py",
-            "design/TECH_DEBT_LEDGER.md",
-            "design/gemini_output/TD-067_Firm_Refactor_Audit.md"
-        ],
-        "session_id": null
-    },
-  "git_review": {
-    "branch": "wo-083c-p3-high-risk-migration-9209434692149408533",
-    "instruction": "Verify that 'tests/verification/verify_mitosis.py' correctly uses Golden Fixtures and that complex inheritance logic is preserved without regression."
+  "jules": {
+    "command": "create",
+    "title": "TD-067 Phase B/C: Firm Facade Deconstruction",
+    "instruction": "--file",
+    "context": [
+      "design/drafts/jules_missions/TD-067_Phase_BC_Mission.md"
+    ],
+    "session_id": null
+  },
+  "git": {
+    "command": "review",
+    "branch": "main"
   },
   "merge": {
-    "branch": "wo-083c-p3-high-risk-migration-9209434692149408533"
-  },
-  "harvest": {}
+    "command": "merge",
+    "branch": "main"
+  }
 }
