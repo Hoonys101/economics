@@ -27,6 +27,8 @@ class TestInheritance:
         # Pre-test validation
         # Assert that selected households have sufficient and diverse assets
         assert self.deceased.assets > 0, "Deceased must have assets"
+        assert hasattr(self.deceased, 'shares_owned'), "Deceased must have shares_owned attribute"
+
         # Force real Portfolio objects for testing logic.
         # MagicMocks have attributes by default, so hasattr returns True, but they are Mocks.
         # We need real stateful Portfolio objects for the logic to work (iteration over holdings, etc).
