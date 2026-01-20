@@ -150,6 +150,8 @@ def mock_households(mock_config_module):
     hh1.inventory = {"food": 10, "basic_food": 10}
     hh1.current_consumption = 0.0
     hh1.current_food_consumption = 0.0
+    hh1.labor_income_this_tick = 0.0
+    hh1.capital_income_this_tick = 0.0
     hh1.is_employed = False
     hh1.employer_id = None
     hh1.skills = {}
@@ -170,6 +172,8 @@ def mock_households(mock_config_module):
     hh2.inventory = {"food": 5, "basic_food": 5}
     hh2.current_consumption = 0.0
     hh2.current_food_consumption = 0.0
+    hh2.labor_income_this_tick = 0.0
+    hh2.capital_income_this_tick = 0.0
     hh2.is_employed = False
     hh2.employer_id = None
     hh2.config_module = mock_config_module
