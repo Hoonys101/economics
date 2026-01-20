@@ -14,10 +14,8 @@
   "jules": {
     "command": "create",
     "title": "TD-067 Phase B/C: Firm Facade Deconstruction",
-    "instruction": "--file",
-    "context": [
-      "design/drafts/jules_missions/TD-067_Phase_BC_Mission.md"
-    ],
+    "instruction": "Refactor Firm class to remove 20+ wrapper properties and encapsulate CorporateManager interactions.",
+    "file": "design/drafts/jules_missions/TD-067_Phase_BC_Mission.md",
     "session_id": null
   },
   "git": {

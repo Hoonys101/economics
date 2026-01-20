@@ -1,7 +1,12 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {},
+    "active_sessions": {
+      "5549135717124718802": {
+        "title": "TD-067 Phase B/C: Firm Facade Deconstruction",
+        "initial_mission": "Refactor Firm class to remove 20+ wrapper properties and encapsulate CorporateManager interactions."
+      }
+    },
     "completed_sessions": {
       "9966767717181422022": "TD-067-Phase-A: Firm Logic Consolidation - MERGED 2026-01-20",
       "18090137123816755263": "WO-083C-P3-REWORK: Fix Regression & Migrate Test - MERGED 2026-01-20",
