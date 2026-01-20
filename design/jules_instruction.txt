@@ -1,4 +1,0 @@
-Smart move on disabling reproduction to isolate the test. Our priority is verifying the 'Crisis Monitor' and 'Shock Trigger'.
-
-Proceed with the current logic. Do NOT spend more time on perfect mocking of unrelated systems.
-If the test passes and the monitor logs data, create the PR immediately. We will tune the Z-Score coefficients later based on your report.

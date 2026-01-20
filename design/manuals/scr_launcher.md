@@ -39,9 +39,23 @@
 - **`worker`**: 실행할 워커 유형 (`"spec"`, `"audit"`, `"git-review"`, `"reporter"` 등)
 - **`instruction`**: 워커에게 전달할 핵심 지시사항 (문자열)
 - **`context`**: 참조할 파일 경로 리스트 (Array of strings)
-- **`output`**: 산출물이 저장될 경로 (문자열)
+- **`output`**: 산출물이 저장될 경로. 아래 **[표준 출력 버킷]** 가이드를 반드시 준수하십시오.
 - **`audit`**: (선택) 사전 감사 보고서 경로 (문자열, `-a` 옵션)
 - **`model`**: (선택) 사용할 모델 (`"pro"` 또는 `"flash"`)
+
+---
+
+## 📁 2-1. 표준 출력 버킷 (Standard Output Buckets) [NEW]
+
+모든 도구의 `output` 경로는 성격에 따라 아래 폴더 중 하나를 선택해야 합니다. 루트(Root)나 임의의 폴더에 파일을 생성하지 마십시오.
+
+| 종류 | 저장 위치 (Bucket) | 설명 |
+| :--- | :--- | :--- |
+| **상세 설계 (Spec)** | `design/specs/` | 기능 구현 전 상세 기술 명세서 |
+| **작업명세 (WO)** | `design/work_orders/` | 구현 발주를 위한 Work Order 문서 |
+| **AI 분석 (Audit/Review)** | `design/gemini_output/` | 리스크 분석, 코드 리뷰, 성능 리포트 등 |
+| **임시 산출물 (Draft)** | `design/drafts/` | 확정되지 않은 초안 또는 임시 파일 |
+| **세션 핸드오버** | `design/handovers/` | (신설) 세션 종료 시 작성하는 핸드오버 문서 |
 
 ---
 

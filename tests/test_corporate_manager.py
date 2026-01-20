@@ -92,22 +92,34 @@ def context_mock(firm_mock):
     context.government = MagicMock()
     return context
 
-def test_rd_logic(firm_mock, context_mock):
+def test_rd_logic(firm_mock, context_mock, monkeypatch):
     manager = CorporateManager(MockConfig())
     # Aggressiveness 1.0 -> 20% of Revenue
-    vector = FirmActionVector(rd_aggressiveness=1.0)
+    vector = FirmActionVector(
+        rd_aggressiveness=1.0,
+        capital_aggressiveness=0.0,
+        dividend_aggressiveness=0.0,
+        debt_aggressiveness=0.0,
+        hiring_aggressiveness=0.0,
+        sales_aggressiveness=0.0
+    )
 
+    # Need enough assets to pass safety margin (default 2000)
+    firm_mock.assets = 10000.0
     firm_mock.revenue_this_turn = 1000.0
-    # expected_budget = 1000.0 * 0.2
+    expected_budget = 1000.0 * 0.2 # 200
+
+    # Force success
+    monkeypatch.setattr("random.random", lambda: 0.0)
+
+    initial_quality = firm_mock.base_quality
+    initial_prod = firm_mock.productivity_factor
 
     manager.realize_ceo_actions(firm_mock, context_mock, vector)
 
-    # Since we are using golden_firm (which is a MagicMock from fixture harvester,
-    # but populated with data), if we want to assert internal state changes,
-    # we need to be careful. The GoldenLoader creates MagicMocks.
-    # If the tests were failing before because of missing attributes like 'last_sales_volume',
-    # setting them in the fixture (as I did above) should help.
-    pass
+    assert firm_mock.assets == 10000.0 - expected_budget
+    assert firm_mock.base_quality == pytest.approx(initial_quality + 0.05)
+    assert firm_mock.productivity_factor == pytest.approx(initial_prod * 1.05)
 
 def test_dividend_logic(firm_mock, context_mock):
     manager = CorporateManager(MockConfig())

@@ -1,17 +1,17 @@
 import os
 import re
 import argparse
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 from collections import defaultdict
 import datetime
 
 # Configuration
 TARGET_EXTENSIONS = ['.py', '.tsx', '.ts', '.md']
-IGNORE_DIRS = ['venv', '__pycache__', '.git', 'node_modules', '.gemini', 'reports']
+IGNORE_DIRS = ['venv', '__pycache__', '.git', 'node_modules', '.gemini', 'reports', 'design']
 TAGS_TO_SCAN = ['TODO', 'FIXME', 'HACK', 'REVIEW', 'NOTE', 'XXX']
 
 def scan_file(filepath: str) -> Dict:
-    metrics = {
+    metrics: Dict[str, Any] = {
         'lines': 0,
         'tags': defaultdict(list),
         'imports': []
@@ -61,7 +61,7 @@ def scan_directory(root_dir: str) -> Dict[str, Dict]:
 def generate_report(results: Dict[str, Dict], output_format: str = 'markdown') -> str:
     total_files = len(results)
     total_lines = sum(r['lines'] for r in results.values())
-    total_tags = defaultdict(int)
+    total_tags: Dict[str, int] = defaultdict(int)
     tag_locations = defaultdict(list)
     
     # Complexity Analysis

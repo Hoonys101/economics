@@ -1,25 +1,35 @@
 {
   "gemini": {
     "worker": "spec",
-    "instruction": "Generate a technical specification for TD-065: Household God Class Refactoring. Goal: Decompose the Household class into modular sub-components based on the Bio-Econ-Social model to reduce complexity and improve testability. Required Components: 1) BioComponent (ReproductionComponent): Move mitosis logic and state cloning. 2) EconComponent: Unified ConsumptionStrategy and LaborComponent (wage stickiness, job search). 3) SocialComponent: Political opinion, social status, and rank logic. Strict Requirements: Use DTOs for inter-component communication, decouple DecisionEngine using DecisionDTO, and maintain compatibility with Golden Fixtures. Follow design/manuals/spec_writer.md strictly.",
-    "context": ["simulation/core_agents.py", "design/TECH_DEBT_LEDGER.md", "tests/conftest.py", "tests/verification/verify_mitosis.py"],
-    "output": "design/specs/TD-065_Household_Refactor_Spec.md",
-    "audit": "",
+    "instruction": "Draft a technical specification for TD-066: Simulation God Class Refactoring. Goal: Decompose the 900+ LoC Simulation class (simulation/engine.py) into specialized managers following the SoC (Separation of Concerns) principle. Recommended Components: 1) TickScheduler: Handles the time loop and system update sequencing. 2) WorldState: Manages agent registries and global snapshots. 3) PersistenceManager: Handles DB flushing and serialization. 4) AgentLifecycleManager: Manages agent creation, death, and IPO/SEO triggers. Strict Requirements: Maintain backward compatibility with app.py/main.py entry points, use DTOs for inter-component state passing, and ensure 100% test pass for Phase 29 scenarios. Follow design/manuals/spec_writer.md.",
+    "context": [
+      "simulation/engine.py",
+      "simulation/core_agents.py",
+      "design/TECH_DEBT_LEDGER.md",
+      "design/project_structure.md",
+      "design/specs/TD-065_Household_Refactor_Spec.md"
+    ],
+    "output": "design/specs/TD-066_Simulation_Refactor_Spec.md",
     "model": "pro"
   },
   "jules": {
     "command": "create",
-    "title": "TD-065 Household God Class Refactoring",
-    "session_id": "",
-    "instruction": "Implement the Household God Class refactoring according to TD-065_Household_Refactor_Spec.md. Goal: Decompose Household into Bio/Econ/Social components while maintaining Facade compatibility and introducing DTO-based communication with DecisionEngine. Ensure all existing tests in tests/verification/ passing.",
-    "file": "design/specs/TD-065_Household_Refactor_Spec.md",
-    "wait": true
+    "title": "WO-083C-P1: Low Risk Test Migration",
+    "instruction": "Execute WO-083C Phase 1: Migrate 'tests/simulation/test_stock_market.py' and 'tests/api/test_api_extensions.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P1-Low-Risk.md' for details. DO NOT modify production code.",
+    "context": [
+      "design/work_orders/WO-083C-P1-Low-Risk.md",
+      "tests/simulation/test_stock_market.py",
+      "tests/api/test_api_extensions.py",
+      "tests/conftest.py"
+    ],
+    "session_id": null
   },
   "git_review": {
-    "branch": "main",
+    "branch": "refactor-household-god-class-16457788477972542743",
     "instruction": "Analyze this PR. Check behavior logic and test coverage."
   },
   "merge": {
-    "branch": "refactor-bank-interface-16754935071282510850"
-  }
+    "branch": "refactor-household-god-class-16457788477972542743"
+  },
+  "harvest": {}
 }

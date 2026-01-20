@@ -1,17 +1,17 @@
 {
   "gemini": {
     "worker": "spec",
-    "instruction": "",
+    "instruction": "[지시사항을 입력하세요]",
     "context": [],
-    "output": "",
+    "output": "design/specs/[파일명].md",
     "audit": "",
     "model": "pro"
   },
   "jules": {
-    "command": "list-sessions",
-    "title": "",
+    "command": "create",
+    "title": "[작업 제목]",
     "session_id": "",
-    "instruction": "",
+    "instruction": "[구현 지시사항]",
     "file": "",
     "wait": true
   },
@@ -21,5 +21,6 @@
   },
   "merge": {
     "branch": ""
-  }
+  },
+  "harvest": {}
 }
