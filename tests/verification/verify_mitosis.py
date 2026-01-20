@@ -7,6 +7,7 @@ from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.ai.q_table_manager import QTableManager
+from simulation.decisions.base_decision_engine import BaseDecisionEngine
 
 # Helper to force set primitive config
 def ensure_config(golden_config, key, value):
@@ -37,7 +38,7 @@ def setup_golden_config(golden_config):
     ensure_config(golden_config, 'BASE_LEARNING_RATE', 0.1)
     ensure_config(golden_config, 'MAX_LEARNING_RATE', 0.5)
 
-def create_real_household_from_golden(mock_h, golden_config):
+def create_real_household_from_golden(mock_h, golden_config, use_real_engine=False):
     talent = Talent(base_learning_rate=0.5, max_potential={})
     goods_data = [{"id": "food"}, {"id": "housing"}]
     personality = Personality.MISER
@@ -47,22 +48,38 @@ def create_real_household_from_golden(mock_h, golden_config):
     initial_needs = mock_h.needs if not isinstance(mock_h.needs, MagicMock) else {"survival": 0.5}
     initial_age = mock_h.age if hasattr(mock_h, 'age') and not isinstance(mock_h.age, MagicMock) else 25
 
-    # Pre-configure Mock Engine
-    mock_engine = MagicMock(spec=AIDrivenHouseholdDecisionEngine)
-    mock_ai_engine = MagicMock()
-    mock_engine.ai_engine = mock_ai_engine
-    mock_shared_ai = MagicMock()
-    mock_ai_engine.ai_decision_engine = mock_shared_ai
-    # Default attributes for AI engine to pass clone checks
-    mock_ai_engine.gamma = 0.9
-    mock_ai_engine.base_alpha = 0.1
-    mock_ai_engine.learning_focus = 0.5
-    mock_action_selector = MagicMock()
-    mock_action_selector.epsilon = 0.1
-    mock_ai_engine.action_selector = mock_action_selector
+    if use_real_engine:
+        # Setup Real Engine
+        mock_shared_ai = MagicMock()
+        # Mocking shared AI components to avoid needing full training setup
+        mock_shared_ai.predict.return_value = ([0.0]*4, 0.0)
 
-    # Ensure loan_market exists
-    mock_engine.loan_market = None
+        real_ai = HouseholdAI(
+            agent_id=str(mock_h.id if not isinstance(mock_h.id, MagicMock) else 1),
+            ai_decision_engine=mock_shared_ai,
+            gamma=0.9
+        )
+
+        engine = AIDrivenHouseholdDecisionEngine(real_ai, golden_config)
+        # Ensure loan_market exists (mocked)
+        engine.loan_market = MagicMock()
+
+    else:
+        # Pre-configure Mock Engine
+        engine = MagicMock(spec=AIDrivenHouseholdDecisionEngine)
+        mock_ai_engine = MagicMock()
+        engine.ai_engine = mock_ai_engine
+        mock_shared_ai = MagicMock()
+        mock_ai_engine.ai_decision_engine = mock_shared_ai
+        # Default attributes for AI engine to pass clone checks
+        mock_ai_engine.gamma = 0.9
+        mock_ai_engine.base_alpha = 0.1
+        mock_ai_engine.learning_focus = 0.5
+        mock_action_selector = MagicMock()
+        mock_action_selector.epsilon = 0.1
+        mock_ai_engine.action_selector = mock_action_selector
+        # Ensure loan_market exists
+        engine.loan_market = None
 
     real_household = Household(
         id=mock_h.id if not isinstance(mock_h.id, MagicMock) else 1,
@@ -70,7 +87,7 @@ def create_real_household_from_golden(mock_h, golden_config):
         goods_data=goods_data,
         initial_assets=float(initial_assets),
         initial_needs=dict(initial_needs),
-        decision_engine=mock_engine,
+        decision_engine=engine,
         value_orientation=value_orientation,
         personality=personality,
         config_module=golden_config,
@@ -83,14 +100,53 @@ def create_real_household_from_golden(mock_h, golden_config):
 
     return real_household
 
-def test_mitosis_zero_sum_logic(golden_config, golden_households):
+def test_mitosis_stage1_golden_config(golden_config, golden_households):
     """
-    CRITICAL: Verify Zero-Sum Asset Logic.
-    Ensures that when a child is created with parent's assets, the total assets in the system remain constant.
+    Stage 1: Validate Household.clone() with Golden Config and Mock DecisionEngine.
+    Isolates clone logic from engine instantiation logic.
     """
     setup_golden_config(golden_config)
     mock_h = golden_households[0]
-    parent = create_real_household_from_golden(mock_h, golden_config)
+
+    # Create real household with MOCK engine
+    household = create_real_household_from_golden(mock_h, golden_config, use_real_engine=False)
+
+    # Test clone logic
+    child = household.clone(new_id=999, initial_assets_from_parent=0, current_tick=100)
+
+    assert child is not None
+    assert child.id == 999
+    assert isinstance(child.decision_engine, BaseDecisionEngine) or isinstance(child.decision_engine, MagicMock)
+
+def test_mitosis_stage2_real_engine(golden_config, golden_households):
+    """
+    Stage 2: Validate Household.clone() with Real DecisionEngine.
+    Ensures that the engine can be correctly instantiated and cloned.
+    """
+    setup_golden_config(golden_config)
+    mock_h = golden_households[0]
+
+    # Create real household with REAL engine
+    household = create_real_household_from_golden(mock_h, golden_config, use_real_engine=True)
+
+    # Test clone logic
+    child = household.clone(new_id=999, initial_assets_from_parent=0, current_tick=100)
+
+    assert child is not None
+    assert isinstance(child.decision_engine, AIDrivenHouseholdDecisionEngine)
+    # Verify AI Engine internals were cloned/reset correctly
+    assert child.decision_engine.ai_engine.gamma == household.decision_engine.ai_engine.gamma
+
+def test_mitosis_stage3_zero_sum_logic(golden_config, golden_households):
+    """
+    CRITICAL: Verify Zero-Sum Asset Logic.
+    Ensures that when a child is created with parent's assets, the total assets in the system remain constant.
+    Uses Stage 2 setup (Real Engine).
+    """
+    setup_golden_config(golden_config)
+    mock_h = golden_households[0]
+    parent = create_real_household_from_golden(mock_h, golden_config, use_real_engine=True)
+
     parent.assets = 10000.0
     initial_total_assets = parent.assets
 
@@ -110,15 +166,16 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     assert parent.assets + child.assets == initial_total_assets
     assert child.id == 999
 
-def test_mitosis_stock_inheritance(golden_config, golden_households):
+def test_mitosis_stage4_stock_inheritance(golden_config, golden_households):
     """
     CRITICAL: Verify Stock Inheritance Logic.
     Since `clone` does not automatically copy shares, this test verifies that
     Households CAN support share inheritance if the manager orchestrates it.
+    Uses Stage 2 setup.
     """
     setup_golden_config(golden_config)
     mock_h = golden_households[0]
-    parent = create_real_household_from_golden(mock_h, golden_config)
+    parent = create_real_household_from_golden(mock_h, golden_config, use_real_engine=True)
 
     # Setup Shares
     firm_1_id = 101
@@ -153,34 +210,26 @@ def test_mitosis_stock_inheritance(golden_config, golden_households):
     # Verify Total Shares Conserved
     assert parent.shares_owned[firm_1_id] + child.shares_owned[firm_1_id] == 10
 
-def test_mitosis_brain_inheritance(golden_config, golden_households):
+def test_mitosis_stage5_brain_inheritance(golden_config, golden_households):
     """
     CRITICAL: Verify Q-Table and Brain Inheritance.
     Uses AITrainingManager to perform the brain transfer and validates Q-table content.
+    Uses Stage 2 setup.
     """
     setup_golden_config(golden_config)
     mock_h = golden_households[0]
-    parent = create_real_household_from_golden(mock_h, golden_config)
+    parent = create_real_household_from_golden(mock_h, golden_config, use_real_engine=True)
 
     # Setup Parent AI with specific knowledge
-    mock_shared_ai = MagicMock()
-    parent_ai = HouseholdAI(
-        agent_id=str(parent.id),
-        ai_decision_engine=mock_shared_ai,
-        gamma=0.9
-    )
+    # Note: create_real_household_from_golden creates a FRESH AI engine, so we need to populate it.
+    parent_ai = parent.decision_engine.ai_engine
+
     # Populate Q-Table
     parent_ai.q_consumption["food"] = QTableManager()
     # (State) -> [Action Values] (QTableManager expects Dict)
     test_state = (0, 0, 0, 0)
     test_values = {0: 1.0, 1: 0.5, 2: 0.1}
     parent_ai.q_consumption["food"].q_table = {test_state: test_values}
-
-    parent_decision = AIDrivenHouseholdDecisionEngine(parent_ai, golden_config)
-    # Fix: Ensure loan_market is set on the Real engine
-    parent_decision.loan_market = None
-
-    parent.decision_engine = parent_decision
 
     # Create Child
     child = parent.clone(new_id=999, initial_assets_from_parent=0, current_tick=100)
