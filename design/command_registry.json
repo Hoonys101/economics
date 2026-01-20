@@ -1,21 +1,20 @@
 {
   "gemini": {
     "command": "analyze",
-    "title": "TD-067 Phase B/C Analysis",
-    "instruction": "Analyze the Firm class for TD-067 Phase B/C refactoring. Generate a comprehensive report with two sections:\n\n1. **Wrapper Properties Inventory**: List all @property getters/setters in simulation/firms.py that simply delegate to internal components (e.g., hr, finance). For each wrapper, identify:\n   - Property name\n   - Target component and attribute\n   - Number of external usages (grep count)\n   - Breaking change risk (LOW/MEDIUM/HIGH)\n\n2. **CorporateManager Coupling Analysis**: Analyze simulation/decisions/corporate_manager.py to identify all direct state manipulations of Firm objects. For each coupling point:\n   - Method name in CorporateManager\n   - Direct attribute access pattern (e.g., 'firm.assets -= budget')\n   - Proposed encapsulation method (e.g., 'firm.invest_in_automation(amount)')\n   - Impact on existing tests\n\nReference TD-065_Household_Refactor_Spec.md as a template for the refactoring approach. Output should be a detailed spec document ready for Jules implementation.",
+    "title": "Domain Logic Refactor: TD-059",
+    "instruction": "Analyze simulation/components/finance_department.py and simulation/ai/altman_z_score.py. Identify duplicate valuation/solvency logic in FinanceDepartment that should be replaced by AltmanZScoreCalculator. Generate a mission brief for Jules at 'design/drafts/jules_missions/Domain_Logic_Refactor_Mission.md' that details the refactoring steps, preserving SSOT (Single Source of Truth).",
     "context": [
-      "simulation/firms.py",
-      "simulation/decisions/corporate_manager.py",
-      "design/specs/TD-065_Household_Refactor_Spec.md",
-      "design/TECH_DEBT_LEDGER.md",
-      "design/handovers/HANDOVER_2026-01-20.md"
-    ]
+      "simulation/components/finance_department.py",
+      "simulation/ai/altman_z_score.py",
+      "design/TECH_DEBT_LEDGER.md"
+    ],
+    "output": "design/drafts/jules_missions/Domain_Logic_Refactor_Mission.md"
   },
   "jules": {
     "command": "create",
-    "title": "Finance Config Migration: TD-034, TD-041",
-    "instruction": "Migrate hardcoded debt parameters and bailout ratios to the config system.",
-    "file": "design/drafts/jules_missions/Finance_Config_Migration_Mission.md",
+    "title": "Domain-Logic-Refactor: TD-059 Solvency Delegation",
+    "instruction": "Refactor FinanceDepartment to delegate solvency calculations to AltmanZScoreCalculator.",
+    "file": "design/drafts/jules_missions/Domain_Logic_Refactor_Mission.md",
     "session_id": null
   },
   "git": {
