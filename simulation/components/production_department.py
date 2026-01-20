@@ -15,6 +15,10 @@ class ProductionDepartment:
         self.firm = firm
         self.config_module = config_module
 
+    def set_automation_level(self, level: float) -> None:
+        """Set the automation level of the firm."""
+        self.firm.automation_level = max(0.0, min(1.0, level))
+
     def produce(self, current_time: int, technology_manager: any = None) -> float:
         """
         Cobb-Douglas 생산 함수를 사용한 생산 로직.

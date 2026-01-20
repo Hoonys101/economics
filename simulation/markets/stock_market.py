@@ -84,7 +84,7 @@ class StockMarket(Market):
 
     def _calculate_book_value_per_share(self, firm: "Firm") -> float:
         """기업의 주당 순자산가치를 계산합니다."""
-        return firm.get_book_value_per_share()
+        return firm.finance.get_book_value_per_share()
 
     def get_stock_price(self, firm_id: int) -> Optional[float]:
         """

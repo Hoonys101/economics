@@ -42,6 +42,66 @@ class FinanceDepartment:
         self.last_sales_volume: float = 1.0
         self.sales_volume_this_tick: float = 0.0
 
+        # Policy
+        self.dividend_rate: float = getattr(
+            config_module, "DIVIDEND_RATE", 0.3
+        )  # Moved from Firm (TD-067)
+
+    def invest_in_automation(self, amount: float) -> bool:
+        """
+        Deduct automation investment from assets.
+        Returns True if successful, False if insufficient funds.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            return True
+        return False
+
+    def invest_in_rd(self, amount: float) -> bool:
+        """
+        Deduct R&D budget from assets.
+        Returns True if successful.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            return True
+        return False
+
+    def invest_in_capex(self, amount: float) -> bool:
+        """
+        Deduct CAPEX (Capacity Expansion) from assets.
+        Returns True if successful.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            return True
+        return False
+
+    def set_dividend_rate(self, rate: float) -> None:
+        """Set dividend payout rate."""
+        self.dividend_rate = rate
+
+    @property
+    def assets(self) -> float:
+        """Expose firm assets via FinanceDepartment."""
+        return self.firm.assets
+
+    @assets.setter
+    def assets(self, value: float):
+        self.firm.assets = value
+
+    def pay_severance(self, amount: float) -> bool:
+        """
+        Pay severance package to laid-off employees.
+        Returns True if successful.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            # Severance is an expense
+            self.record_expense(amount)
+            return True
+        return False
+
     def record_revenue(self, amount: float):
         self.revenue_this_turn += amount
         self.revenue_this_tick += amount
@@ -114,7 +174,7 @@ class FinanceDepartment:
                 self.firm.logger.info(f"BAILOUT_PAID_OFF | Firm {self.firm.id} has fully repaid its bailout loan.")
 
         transactions = []
-        distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)
+        distributable_profit = max(0, self.current_profit * self.dividend_rate)
 
         # Reset tracker
         self.dividends_paid_last_tick = 0.0
@@ -151,7 +211,7 @@ class FinanceDepartment:
 
         return transactions
 
-    def distribute_profit_private(self, agents: Dict[int, Any], current_time: int) -> float:
+    def distribute_profit(self, agents: Dict[int, Any], current_time: int) -> float:
         """Phase 14-1: Private Owner Dividend"""
         if self.firm.owner_id is None:
             return 0.0

@@ -40,10 +40,10 @@ class FirmSystem2Planner:
 
         # 1. Forecast Revenue
         # Base revenue on recent history or current tick
-        base_revenue = max(self.firm.revenue_this_turn, self.firm.last_revenue, 10.0)
+        base_revenue = max(self.firm.finance.revenue_this_turn, self.firm.finance.last_revenue, 10.0)
 
         # 2. Forecast Costs (Status Quo)
-        current_wages = sum(self.firm.employee_wages.values())
+        current_wages = sum(self.firm.hr.employee_wages.values())
         current_maintenance = getattr(self.config, "FIRM_MAINTENANCE_FEE", 50.0)
 
         # 3. Scenario Analysis: Automation Investment
@@ -101,7 +101,7 @@ class FirmSystem2Planner:
         # 7. M&A Strategy
         expansion_mode = "ORGANIC"
         if personality == Personality.GROWTH_HACKER or personality == Personality.BALANCED:
-            if self.firm.assets > self.firm.revenue_this_turn * 50:
+            if self.firm.finance.assets > self.firm.finance.revenue_this_turn * 50:
                 expansion_mode = "MA"
 
         guidance = {
