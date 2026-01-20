@@ -18,7 +18,6 @@
 | TD-050 | 2026-01-17 | Observer Scanner Path Inclusion | Exclude `scripts/observer` from scan loop | False positives in complexity reports | **DEFERRED** |
 | TD-051 | 2026-01-17 | Documentation Placeholders | Replace `WO-XXX` with actual IDs in manuals | Confusion in developer onboarding | **DEFERRED** |
 | TD-058 | 2026-01-19 | `FinanceSystem` - `Firm` Tight Coupling | Introduce `FinancialStatementDTO` in `Firm` | Architecture Rigidity / Brittle Tests | **RESOLVED** (Phase 29) |
-| TD-059 | 2026-01-19 | Legacy Logic in `FinanceDepartment` | Refactor component to use `AltmanZScoreCalculator` | Logic Duplication / SSOT Violation | **DEFERRED** |
 | TD-060 | 2026-01-19 | Hardcoded Scenario Path in `Initializer` | Implement dynamic lookup in `ConfigManager` | Low Configurability / Brittle Tests | **RESOLVED** (Phase 29) |
 | TD-061 | 2026-01-19 | Mock Fragility in Stress Testing | Collect 'Golden Data' and implement typed mocks | Brittle Tests / High Dev Friction | **RESOLVED** (WO-083C) |
 | TD-063 | 2026-01-19 | `sys.path` Manipulation in Scripts | Use `pathlib` for stable project root detection | Unpredictable Import Behavior | **DEFERRED** |
@@ -64,6 +63,7 @@
 | TD-049 | 2026-01-18 | 2026-01-18 | Test Flakiness (ConfigManager Mocking) | Fixed via `side_effect` for default values |
 | TD-070 | 2026-01-20 | 2026-01-20 | `test_rd_logic` coverage gap | Restored assertions in `test_corporate_manager.py` |
 | TD-068 | 2026-01-20 | 2026-01-20 | Observer scans `design/` | Added `design` to `IGNORE_DIRS` in `scan_codebase.py` |
+| TD-059 | 2026-01-19 | 2026-01-20 | Legacy Logic in `FinanceDepartment` | Refactored component to use `AltmanZScoreCalculator` |
 
 
 ---
