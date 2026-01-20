@@ -1,5 +1,4 @@
-
-import unittest
+import pytest
 from unittest.mock import MagicMock
 from simulation.core_agents import Household
 from simulation.agents.government import Government
@@ -7,8 +6,10 @@ from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.models import RealEstateUnit
 from simulation.portfolio import Portfolio
 
-class TestInheritance(unittest.TestCase):
-    def setUp(self):
+@pytest.mark.usefixtures("golden_households")
+class TestInheritance:
+    @pytest.fixture(autouse=True)
+    def setup(self, golden_households):
         self.config = MagicMock()
         self.config.INHERITANCE_TAX_RATE = 0.4
         self.config.INHERITANCE_DEDUCTION = 10000
@@ -19,20 +20,32 @@ class TestInheritance(unittest.TestCase):
         self.government.assets = 0.0
         self.simulation.government = self.government
 
-        # Deceased
-        self.deceased = MagicMock(spec=Household)
+        # Use golden households
+        self.deceased = golden_households[0]
+        self.heir = golden_households[1]
+
+        # Pre-test validation
+        # Assert that selected households have sufficient and diverse assets
+        assert self.deceased.assets > 0, "Deceased must have assets"
+        # Force real Portfolio objects for testing logic.
+        # MagicMocks have attributes by default, so hasattr returns True, but they are Mocks.
+        # We need real stateful Portfolio objects for the logic to work (iteration over holdings, etc).
+        self.deceased.portfolio = Portfolio(self.deceased.id)
+        self.heir.portfolio = Portfolio(self.heir.id)
+
+        assert hasattr(self.deceased, 'portfolio'), "Deceased must have portfolio"
+
+        # Setup Deceased State
         self.deceased.id = 1
+        # Override assets for consistency with original test logic
         self.deceased.assets = 50000.0
-        self.deceased.portfolio = Portfolio(1)
         self.deceased.shares_owned = {}
         self.deceased.owned_properties = []
-        self.deceased.children_ids = [2]
+        self.deceased.children_ids = [2] # Heir ID is 2
 
-        # Heir
-        self.heir = MagicMock(spec=Household)
+        # Setup Heir State
         self.heir.id = 2
         self.heir.assets = 0.0
-        self.heir.portfolio = Portfolio(2)
         self.heir.shares_owned = {}
         self.heir.is_active = True
         self.heir.owned_properties = []
@@ -53,7 +66,7 @@ class TestInheritance(unittest.TestCase):
 
         self.government.collect_tax.assert_called()
         # Check heir assets ~ 34k
-        self.assertAlmostEqual(self.heir.assets, 34000.0)
+        assert self.heir.assets == pytest.approx(34000.0)
 
     def test_liquidation_stocks(self):
         """Cash poor, Stock rich. Stocks sold to pay tax."""
@@ -80,8 +93,8 @@ class TestInheritance(unittest.TestCase):
         # Paid 4400.
         # Remaining 6600.
 
-        self.assertAlmostEqual(self.heir.assets, 6600.0)
-        self.assertEqual(len(self.heir.portfolio.holdings), 0) # No stocks inherited (Sold)
+        assert self.heir.assets == pytest.approx(6600.0)
+        assert len(self.heir.portfolio.holdings) == 0 # No stocks inherited (Sold)
 
     def test_portfolio_merge(self):
         """Heir inherits stocks with Cost Basis calculation."""
@@ -101,11 +114,8 @@ class TestInheritance(unittest.TestCase):
         # Cost: (100*100 + 100*50) / 200 = 15000 / 200 = 75.0
 
         share = self.heir.portfolio.holdings[99]
-        self.assertEqual(share.quantity, 200)
-        self.assertEqual(share.acquisition_price, 75.0)
+        assert share.quantity == 200
+        assert share.acquisition_price == 75.0
 
         # Check Legacy Sync
-        self.assertEqual(self.heir.shares_owned[99], 200)
-
-if __name__ == '__main__':
-    unittest.main()
+        assert self.heir.shares_owned[99] == 200

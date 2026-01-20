@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, PropertyMock
 import pytest
-from flask import Flask
 import json
 
 from simulation.engine import Simulation
@@ -20,6 +19,7 @@ from simulation.agents.government import Government
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
 from simulation.markets.stock_market import StockMarket
+from dataclasses import asdict
 
 class TestDashboardAPI:
     def setup_method(self):
@@ -40,35 +40,42 @@ class TestDashboardAPI:
         self.mock_simulation.config_module.MITOSIS_BASE_THRESHOLD = 1000.0
         self.mock_simulation.config_module.MITOSIS_SENSITIVITY = 1.0
         self.mock_simulation.config_module.INFRASTRUCTURE_INVESTMENT_COST = 5000.0
+        self.mock_simulation.config_module.HOURS_PER_TICK = 24.0
+        self.mock_simulation.config_module.SHOPPING_HOURS = 2.0
 
-        # Mock households
-        h1 = MagicMock(spec=Household)
-        h1.is_active = True
-        h1.is_employed = True
-        h1.needs = {"survival": 20.0}
+        # Patch missing attributes for Government mock
+        self.mock_government.tax_history = []
+        self.mock_government.welfare_history = []
+        self.mock_government.education_history = []
+        self.mock_government.current_tick_stats = {
+            "education_spending": 0.0,
+            "welfare_spending": 0.0,
+            "stimulus_spending": 0.0,
+            "total_collected": 0.0
+        }
 
-        h2 = MagicMock(spec=Household)
-        h2.is_active = True
-        h2.is_employed = False
-        h2.needs = {"survival": 60.0} # Struggling
-
-        self.mock_simulation.households = [h1, h2]
-
-        f1 = MagicMock()
-        f1.is_active = True
-        f1.total_shares = 1000.0
-        f2 = MagicMock()
-        f2.is_active = True
-        f2.total_shares = 2000.0
-
-        self.mock_simulation.firms = [f1, f2] # 2 firms
-        self.mock_simulation.markets = {} # Empty markets for now
+        self.mock_simulation.markets = {}
+        self.mock_simulation.household_time_allocation = {}
 
         self.vm = SnapshotViewModel(self.mock_repo)
 
-    def test_get_dashboard_snapshot_structure(self):
+    def test_get_dashboard_snapshot_structure(self, golden_households, golden_firms):
         # Arrange
         current_tick = 100
+
+        # Inject Golden Fixtures
+        # Patch households 'needs' and 'last_leisure_type' as done in generator
+        for h in golden_households:
+            if isinstance(h.needs, MagicMock):
+                h.needs = {"survival": h.needs.survival}
+            h.last_leisure_type = "IDLE"
+
+        # Patch firms 'total_shares'
+        for f in golden_firms:
+            f.total_shares = 1000.0
+
+        self.mock_simulation.households = golden_households
+        self.mock_simulation.firms = golden_firms
 
         # Mock Global Indicators
         self.mock_tracker.get_latest_indicators.return_value = {
@@ -113,31 +120,14 @@ class TestDashboardAPI:
         # Act
         snapshot = self.vm.get_dashboard_snapshot(self.mock_simulation, current_tick)
 
-        # Assert
-        assert isinstance(snapshot, DashboardSnapshotDTO)
-        assert snapshot.tick == 100
+        # Assert against Golden Snapshot
+        # Convert to dict
+        result = asdict(snapshot)
 
-        # Global Indicators
-        assert snapshot.global_indicators.gdp == 50000.0
-        assert snapshot.global_indicators.employment_rate == 95.0
-        assert snapshot.global_indicators.gini == 0.35
+        with open("tests/goldens/dashboard_snapshot.json") as f:
+            expected = json.load(f)
 
-        # Society Tab
-        assert len(snapshot.tabs["society"].generations) == 2
-        assert snapshot.tabs["society"].unemployment_pie["struggling"] == 1
-        assert snapshot.tabs["society"].unemployment_pie["voluntary"] == 0
-
-        # Government Tab
-        assert snapshot.tabs["government"].tax_revenue["income"] == 1000.0
-        assert snapshot.tabs["government"].fiscal_balance["revenue"] == 1500.0
-
-        # Market Tab
-        assert len(snapshot.tabs["market"].cpi) == 2
-        assert len(snapshot.tabs["market"].maslow_fulfillment) == 2
-        assert snapshot.tabs["market"].maslow_fulfillment[0] == 80.0 # 100 - 20
-
-        # Finance Tab
-        assert snapshot.tabs["finance"].volume == 1000.0
+        assert result == expected, "Dashboard structure changed"
 
     def test_dashboard_api_endpoint_mock(self):
         # Verify DTO to Dict conversion (Contract check)
@@ -148,14 +138,16 @@ class TestDashboardAPI:
             tick=100,
             global_indicators=DashboardGlobalIndicatorsDTO(
                 death_rate=0.0, bankruptcy_rate=0.0, employment_rate=100.0,
-                gdp=1000.0, avg_wage=10.0, gini=0.2
+                gdp=1000.0, avg_wage=10.0, gini=0.2, avg_tax_rate=0.0, avg_leisure_hours=0.0, parenting_rate=0.0
             ),
             tabs={
                 "society": SocietyTabDataDTO(
-                    generations=[], mitosis_cost=100.0, unemployment_pie={}
+                    generations=[], mitosis_cost=100.0, unemployment_pie={},
+                    time_allocation={}, avg_leisure_hours=0.0, avg_education_level=0.0, brain_waste_count=0
                 ),
                 "government": GovernmentTabDataDTO(
-                    tax_revenue={}, fiscal_balance={}
+                    tax_revenue={}, fiscal_balance={}, tax_revenue_history=[], welfare_spending=0.0,
+                    current_avg_tax_rate=0.0, welfare_history=[], education_spending=0.0, education_history=[]
                 ),
                 "market": MarketTabDataDTO(
                     commodity_volumes={}, cpi=[], maslow_fulfillment=[]

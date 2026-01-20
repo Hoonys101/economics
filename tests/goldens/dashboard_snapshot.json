@@ -1,0 +1,78 @@
+{
+  "tick": 100,
+  "global_indicators": {
+    "death_rate": 50.0,
+    "bankruptcy_rate": 40.0,
+    "employment_rate": 95.0,
+    "gdp": 50000.0,
+    "avg_wage": 200.0,
+    "gini": 0.35,
+    "avg_tax_rate": 0.0,
+    "avg_leisure_hours": 0.0,
+    "parenting_rate": 0.0
+  },
+  "tabs": {
+    "society": {
+      "generations": [
+        {
+          "gen": 0,
+          "count": 50,
+          "avg_assets": 1000.0
+        },
+        {
+          "gen": 1,
+          "count": 50,
+          "avg_assets": 500.0
+        }
+      ],
+      "mitosis_cost": 50.0,
+      "unemployment_pie": {
+        "struggling": 0,
+        "voluntary": 2
+      },
+      "time_allocation": {
+        "WORK": 110.0,
+        "PARENTING": 0.0,
+        "SELF_DEV": 0.0,
+        "ENTERTAINMENT": 0.0,
+        "IDLE": 0.0
+      },
+      "avg_leisure_hours": 0.0,
+      "avg_education_level": 0.0,
+      "brain_waste_count": 0
+    },
+    "government": {
+      "tax_revenue": {
+        "income": 1000.0,
+        "sales": 500.0
+      },
+      "fiscal_balance": {
+        "revenue": 1500.0,
+        "expense": 5200.0
+      },
+      "tax_revenue_history": [],
+      "welfare_spending": 0.0,
+      "current_avg_tax_rate": 0.0,
+      "welfare_history": [],
+      "education_spending": 0.0,
+      "education_history": []
+    },
+    "market": {
+      "commodity_volumes": {},
+      "cpi": [
+        10.0,
+        11.0
+      ],
+      "maslow_fulfillment": [
+        80.0,
+        79.0
+      ]
+    },
+    "finance": {
+      "market_cap": 30000.0,
+      "volume": 1000.0,
+      "turnover": 33.33333333333333,
+      "dividend_yield": 0.0
+    }
+  }
+}
