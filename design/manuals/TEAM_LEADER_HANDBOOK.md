@@ -90,7 +90,7 @@ THEN 도구: .\jules-go.bat
      원칙: 반드시 '실무자 보고서(Technical Debt Reporting)'를 함께 요구할 것 (scr_launcher.md 참조)
      출력: communications/jules_logs/last_run.md
      기록: design/SESSION_LEDGER.md 에 세션 ID와 미션 전문 기록
-     참조: design/work_orders/WO-XXX.md 먼저 작성
+     참조: `design/work_orders/WO-083C-Spec.md` 와 같은 작업 지시서 먼저 작성
 ```
 
 ### PR 도착 시

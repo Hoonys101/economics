@@ -17,6 +17,10 @@
       "13794252736923687768": {
         "title": "WO-083C-P2: Medium Risk Test Migration",
         "initial_mission": "Execute WO-083C Phase 2: Migrate 'tests/verification/verify_inheritance.py' and 'tests/api/test_dashboard_api.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P2-Medium-Risk.md'. Verify using 'tests/goldens/dashboard_snapshot.json' snapshot testing."
+      },
+      "11016259656214972314": {
+        "title": "WO-083C-P3: High Risk Test Migration",
+        "initial_mission": "Execute WO-083C Phase 3: Migrate 'tests/verification/verify_mitosis.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P3-High-Risk.md'. Verify using complex inheritance scenarios."
       }
     },
     "completed_sessions": {

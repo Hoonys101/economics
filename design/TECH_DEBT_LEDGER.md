@@ -24,12 +24,12 @@
 | TD-063 | 2026-01-19 | `sys.path` Manipulation in Scripts | Use `pathlib` for stable project root detection | Unpredictable Import Behavior | **DEFERRED** |
 | TD-064 | 2026-01-20 | `Household.age` Setter Missing | Implement setter in `Household` or use `DemographicsComponent` directly | `AttributeError` crashing simulation | **RESOLVED** (WO-083A) |
 
-| TD-066 | 2026-01-20 | God Class `Simulation` (900+ LOC) | Decompose into `Runner`, `WorldState`, `TickScheduler` | SRP Violation, Hard to Extend engine | **OPEN** |
+
 | TD-067 | 2026-01-20 | God Class `Firm` Wrapper Bloat | Remove wrapper properties, use explicit sub-components (`hr`, `finance`) | Code Duplication, Maintenance Burden | **OPEN** |
 | TD-068 | 2026-01-20 | Observer Scans `design/` Artifacts | Exclude `design/` from `scan_codebase.py` | False Positives in Health Report | **RESOLVED** |
-| TD-069 | 2026-01-20 | Doc Placeholders (`WO-XXX`) | Replace placeholders with actual Process/IDs in Manuals | Confusing Documentation | **OPEN** |
+
 | TD-070 | 2026-01-20 | `test_rd_logic` Coverage Gap | Restore R&D budget assertion in `test_corporate_manager.py` | Test Regression / False Pass | **RESOLVED** |
-| TD-071 | 2026-01-20 | Magic Number in `verify_inheritance.py` | Use dynamic ID reference `self.heir.id` instead of hardcoded `2` | Code Smell / Maintainability | **OPEN** |
+
 
 
 
@@ -40,6 +40,9 @@
 | ID | Date | Description | Solution | Impact | Status |
 |---|---|---|---|---|---|
 | TD-065 | 2026-01-20 | God Class `Household` Refactoring | Decomposed into `Bio`, `Econ`, `Social` components + Facade | High Coupling | **RESOLVED** (PR Merged) |
+| TD-066 | 2026-01-20 | God Class `Simulation` Refactoring | Decomposed into `WorldState`, `TickScheduler`, `ActionProcessor` | SRP Violation | **RESOLVED** (PR Merged) |
+| TD-069 | 2026-01-20 | Doc Placeholders (`WO-XXX`) | Replaced with concrete examples in Manuals | Confusing Documentation | **RESOLVED** (Direct) |
+| TD-071 | 2026-01-20 | Magic Number in `verify_inheritance.py` | Used `self.heir.id` dynamic reference | Code Smell | **RESOLVED** (Direct) |
 | TD-072 | 2026-01-20 | Test Framework Inconsistency | Migrated `unittest` to `pytest` in `test_government` and `verify_vanity_society` | Maint. Overhead | **RESOLVED** (Direct) |
 
 | ID | 발생일 | 해결일 | 부채 내용 | 해결 방법 |

@@ -43,16 +43,15 @@ class TestInheritance:
         self.deceased.assets = 50000.0
         self.deceased.shares_owned = {}
         self.deceased.owned_properties = []
-        self.deceased.children_ids = [2] # Heir ID is 2
+        self.deceased.children_ids = [self.heir.id] # Use dynamic ID from heir
 
         # Setup Heir State
-        self.heir.id = 2
         self.heir.assets = 0.0
         self.heir.shares_owned = {}
         self.heir.is_active = True
         self.heir.owned_properties = []
 
-        self.simulation.agents = {2: self.heir}
+        self.simulation.agents = {self.heir.id: self.heir}
         self.simulation.stock_market = MagicMock()
         self.simulation.stock_market.get_daily_avg_price.return_value = 100.0
         self.simulation.real_estate_units = []

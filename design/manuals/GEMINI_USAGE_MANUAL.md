@@ -100,4 +100,4 @@ PR이 올라왔을 때 AI에게 보안 및 아키텍처 리뷰를 요청합니�
 
 1.  **Context is King**: Gemini에게 `dtos.py`나 `interfaces/` 파일을 주지 않고 명세를 짜라고 하면 환각(Hallucination)을 봅니다. 계약서(Contract)를 반드시 건네주세요.
 2.  **Audit First**: 복잡한 리팩토링 전에는 반드시 `audit` 모드로 위험 요소를 먼저 파악하십시오.
-3.  **One Shot, One Kill**: Jules에게 너무 긴 지시사항을 한 번에 주면 헷갈려합니다. Work Order 문서를 먼저 만들고, JSON에는 "WO-XXX를 참조하여 구현하라"고 적는 것이 가장 확실합니다.
+3.  **One Shot, One Kill**: Jules에게 너무 긴 지시사항을 한 번에 주면 헷갈려합니다. Work Order 문서를 먼저 만들고, JSON에는 "WO-083C-P1을 참조하여 구현하라"고 적는 것이 가장 확실합니다.

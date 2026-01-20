@@ -1,15 +1,15 @@
 {
   "gemini": {
-    "worker": "spec",
-    "instruction": "Draft a technical specification for TD-066: Simulation God Class Refactoring. Goal: Decompose the 900+ LoC Simulation class (simulation/engine.py) into specialized managers following the SoC (Separation of Concerns) principle. Recommended Components: 1) TickScheduler: Handles the time loop and system update sequencing. 2) WorldState: Manages agent registries and global snapshots. 3) PersistenceManager: Handles DB flushing and serialization. 4) AgentLifecycleManager: Manages agent creation, death, and IPO/SEO triggers. Strict Requirements: Maintain backward compatibility with app.py/main.py entry points, use DTOs for inter-component state passing, and ensure 100% test pass for Phase 29 scenarios. Follow design/manuals/spec_writer.md.",
+    "worker": "risk-audit",
+    "instruction": "Analyze 'simulation/firms.py' for 'God Class' symptoms and 'Wrapper Bloat' (TD-067). Evaluate the feasibility of a Separation of Concerns (SoC) refactoring into sub-components (HR, Finance, Ops). Identify integration risks with 'tests/test_firms.py' and 'tests/test_corporate_manager.py'. Generate a Risk Audit and a draft Refactor Spec if risks are manageable.",
     "context": [
-      "simulation/engine.py",
-      "simulation/core_agents.py",
+      "simulation/firms.py",
+      "tests/test_firms.py",
+      "tests/test_corporate_manager.py",
       "design/TECH_DEBT_LEDGER.md",
-      "design/project_structure.md",
       "design/specs/TD-065_Household_Refactor_Spec.md"
     ],
-    "output": "design/specs/TD-066_Simulation_Refactor_Spec.md",
+    "output": "design/gemini_output/TD-067_Firm_Refactor_Audit.md",
     "model": "pro"
   },
     "jules": {
