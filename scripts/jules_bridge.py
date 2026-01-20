@@ -575,10 +575,50 @@ if __name__ == "__main__":
         archive_session(session_id)
         print(f"Session {session_id} archived")
     
+    elif command == "dashboard":
+        limit = 15
+        sessions = bridge.list_sessions(page_size=limit)
+        
+        # Group sessions by project (source)
+        projects = {}
+        for s in sessions:
+            # Active or recently updated sessions
+            source_raw = s.get("sourceContext", {}).get("source", "Unknown/Unknown")
+            proj_name = source_raw.split('/')[-1]
+            
+            if proj_name not in projects:
+                projects[proj_name] = []
+            projects[proj_name].append(s)
+            
+        print("\n📊 Jules Fleet Project Dashboard")
+        print("=" * 60)
+        
+        if not projects:
+            print("   (No active sessions found)")
+        
+        for proj, sess_list in projects.items():
+            print(f"\n📂 Project: {proj}")
+            for s in sess_list:
+                sid = s.get("id")
+                title = s.get("title", "Untitled Task")
+                state = s.get("state", "UNKNOWN")
+                
+                # Visual markers
+                icon = "   "
+                if state == "COMPLETED": icon = "✅ "
+                elif state == "IN_PROGRESS": icon = "🔄 "
+                elif state == "PLANNING": icon = "📋 "
+                elif state == "FAILED": icon = "❌ "
+                
+                print(f"{icon}{sid:<20} | {title[:50]:<50} [{state}]")
+        
+        print("\n" + "=" * 60)
+
     else:
         print("Usage:")
         print("  python jules_bridge.py list-sources")
         print("  python jules_bridge.py list-sessions --summary")
+        print("  python jules_bridge.py dashboard")
         print("  python jules_bridge.py create <title> <prompt>")
         print("  python jules_bridge.py status <session_id> [--verbose]")
         print("  python jules_bridge.py send-message <session_id> <message> [--wait]")

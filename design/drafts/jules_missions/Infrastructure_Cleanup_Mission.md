@@ -1,7 +1,16 @@
 # Mission: Infrastructure & Script Maintenance (TD-050, TD-063, TD-051)
 
+## ⚠️ CRITICAL: Architecture Preservation
+**DO NOT MODIFY** any files in:
+- `simulation/firms.py`
+- `simulation/decisions/corporate_manager.py`
+- `simulation/components/*.py`
+
+The TD-067 SoC refactoring has been completed. Your job is **ONLY** infrastructure cleanup. Do not add wrapper properties, do not change how CorporateManager calls components.
+
 ## Context
 As the project grows, our utility scripts and documentation need stabilization. You are assigned to clean up import logic, exclude noise from health reports, and finalize documentation IDs.
+
 
 ## Task Details
 

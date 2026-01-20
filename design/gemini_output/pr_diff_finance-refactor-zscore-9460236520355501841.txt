@@ -1,0 +1,1386 @@
+diff --git a/simulation/ai/altman_z_score.py b/simulation/ai/altman_z_score.py
+new file mode 100644
+index 0000000..8f8288f
+--- /dev/null
++++ b/simulation/ai/altman_z_score.py
+@@ -0,0 +1,39 @@
++from simulation.dtos.financial_dtos import FinancialStatementDTO
++
++class AltmanZScoreCalculator:
++    """Calculates the Altman Z-Score based on a standardized financial snapshot."""
++
++    def calculate(self, statement: FinancialStatementDTO) -> float:
++        """
++        Calculates the Z-Score using a modified formula for service companies.
++        Z = 1.2*X1 + 1.4*X2 + 3.3*X3
++
++        Where:
++            X1 (Working Capital / Total Assets): Measures liquid assets in relation
++               to the size of the company. A firm with significant working capital
++               is less likely to face immediate financial distress.
++            X2 (Retained Earnings / Total Assets): Measures cumulative profitability.
++               A higher value indicates a history of reinvesting profits.
++            X3 (Average Profit / Total Assets): Measures recent operational efficiency.
++               Uses a moving average of profit to gauge how effectively the firm
++               is generating earnings from its assets.
++
++        Returns:
++            The calculated Z-Score. A score below 1.81 typically indicates a firm
++            is heading for bankruptcy, while a score above 3.0 suggests a healthy
++            financial position.
++        """
++        if statement["total_assets"] == 0:
++            return 0.0
++
++        # X1: Working Capital / Total Assets
++        x1 = statement["working_capital"] / statement["total_assets"]
++
++        # X2: Retained Earnings / Total Assets
++        x2 = statement["retained_earnings"] / statement["total_assets"]
++
++        # X3: Average Profit / Total Assets
++        x3 = statement["average_profit"] / statement["total_assets"]
++
++        z_score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3
++        return z_score
+diff --git a/simulation/ai/firm_system2_planner.py b/simulation/ai/firm_system2_planner.py
+index 700697e..41658b5 100644
+--- a/simulation/ai/firm_system2_planner.py
++++ b/simulation/ai/firm_system2_planner.py
+@@ -40,10 +40,10 @@ class FirmSystem2Planner:
+ 
+         # 1. Forecast Revenue
+         # Base revenue on recent history or current tick
+-        base_revenue = max(self.firm.finance.revenue_this_turn, self.firm.finance.last_revenue, 10.0)
++        base_revenue = max(self.firm.revenue_this_turn, self.firm.last_revenue, 10.0)
+ 
+         # 2. Forecast Costs (Status Quo)
+-        current_wages = sum(self.firm.hr.employee_wages.values())
++        current_wages = sum(self.firm.employee_wages.values())
+         current_maintenance = getattr(self.config, "FIRM_MAINTENANCE_FEE", 50.0)
+ 
+         # 3. Scenario Analysis: Automation Investment
+@@ -101,7 +101,7 @@ class FirmSystem2Planner:
+         # 7. M&A Strategy
+         expansion_mode = "ORGANIC"
+         if personality == Personality.GROWTH_HACKER or personality == Personality.BALANCED:
+-            if self.firm.assets > self.firm.finance.revenue_this_turn * 50:
++            if self.firm.assets > self.firm.revenue_this_turn * 50:
+                 expansion_mode = "MA"
+ 
+         guidance = {
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index 347fb5c..0f62fcf 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -3,6 +3,8 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING
+ import logging
+ from collections import deque
+ from simulation.models import Transaction
++from simulation.ai.altman_z_score import AltmanZScoreCalculator
++from simulation.dtos.financial_dtos import FinancialStatementDTO
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -41,6 +43,7 @@ class FinanceDepartment:
+         self.last_daily_expenses: float = 10.0
+         self.last_sales_volume: float = 1.0
+         self.sales_volume_this_tick: float = 0.0
++        self.solvency_calculator = AltmanZScoreCalculator()
+ 
+     def record_revenue(self, amount: float):
+         self.revenue_this_turn += amount
+@@ -207,48 +210,25 @@ class FinanceDepartment:
+             self.firm.total_debt = 0.0
+         self.firm.total_debt += amount
+ 
+-    def calculate_altman_z_score(self) -> float:
+-        """Calculates the Altman Z-Score for solvency, simplified for this model.
+-
+-        The formula used is a modified version for non-manufacturing or service companies:
+-        Z = 1.2*X1 + 1.4*X2 + 3.3*X3
+-
+-        Where:
+-            X1 (Working Capital / Total Assets): Measures liquid assets in relation
+-               to the size of the company. A firm with significant working capital
+-               is less likely to face immediate financial distress.
+-               - Working Capital = Firm's cash reserves - total debt.
+-               - Total Assets = Cash + Capital Stock + Inventory Value.
+-            X2 (Retained Earnings / Total Assets): Measures cumulative profitability.
+-               A higher value indicates a history of reinvesting profits,
+-               strengthening the company's financial foundation.
+-            X3 (Average Profit / Total Assets): Measures recent operational efficiency.
+-               Uses a moving average of profit to gauge how effectively the firm
+-               is generating earnings from its assets.
+-
+-        Returns:
+-            The calculated Z-Score. A score below 1.81 typically indicates a firm
+-            is heading for bankruptcy, while a score above 3.0 suggests a healthy
+-            financial position.
++    def get_altman_z_score(self) -> float:
+         """
+-        total_assets = self.firm.assets + self.firm.capital_stock + self.get_inventory_value()
+-        if total_assets == 0:
+-            return 0.0
+-
+-        # X1: Working Capital / Total Assets
+-        # Working Capital = Current Assets - Current Liabilities. Assume liabilities are total_debt for now.
+-        working_capital = self.firm.assets - getattr(self.firm, 'total_debt', 0.0)
+-        x1 = working_capital / total_assets
+-
+-        # X2: Retained Earnings / Total Assets
+-        x2 = self.retained_earnings / total_assets
+-
+-        # X3: Average Profit / Total Assets
+-        avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
+-        x3 = avg_profit / total_assets
++        Calculates the firm's solvency by assembling a financial snapshot
++        and delegating the calculation to the dedicated solvency calculator.
++        """
++        # 1. Get the raw financial data.
++        snapshot_data = self.get_financial_snapshot()
++
++        # 2. Assemble the DTO.
++        financial_statement = FinancialStatementDTO(
++            total_assets=snapshot_data["total_assets"],
++            working_capital=snapshot_data["working_capital"],
++            retained_earnings=snapshot_data["retained_earnings"],
++            average_profit=snapshot_data["average_profit"],
++            total_debt=snapshot_data["total_debt"]
++        )
+ 
+-        z_score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3
+-        return z_score
++        # 3. Delegate calculation and return the result.
++        return self.solvency_calculator.calculate(financial_statement)
+ 
+     def check_bankruptcy(self):
+         if self.current_profit < 0:
+@@ -384,70 +364,3 @@ class FinanceDepartment:
+ 
+         outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
+         return outstanding_shares * stock_price
+-
+-    def get_assets(self) -> float:
+-        """Returns the current assets (cash) of the firm."""
+-        return self.firm.assets
+-
+-    def invest_in_automation(self, amount: float) -> bool:
+-        """
+-        Deduct investment from assets for automation.
+-        Returns success status.
+-        """
+-        if self.firm.assets >= amount:
+-            self.firm.assets -= amount
+-            # Track expense if needed, or just capital outlay?
+-            # Capital outlay is not strictly an expense in P&L usually, but reduces cash.
+-            return True
+-        return False
+-
+-    def invest_in_rd(self, amount: float) -> bool:
+-        """
+-        Deduct R&D budget from assets.
+-        Returns success status.
+-        """
+-        if self.firm.assets >= amount:
+-            self.firm.assets -= amount
+-            # R&D is often treated as expense
+-            self.record_expense(amount)
+-            return True
+-        return False
+-
+-    def invest_in_capex(self, amount: float) -> bool:
+-        """
+-        Deduct CAPEX from assets.
+-        Returns success status.
+-        """
+-        if self.firm.assets >= amount:
+-            self.firm.assets -= amount
+-            # CAPEX is asset conversion (Cash -> Capital), not expense.
+-            return True
+-        return False
+-
+-    def set_dividend_rate(self, rate: float) -> None:
+-        """Set dividend payout rate."""
+-        self.firm.dividend_rate = rate
+-
+-    def pay_severance(self, employee: Household, amount: float) -> bool:
+-        """
+-        Pay severance to an employee.
+-        """
+-        if self.firm.assets >= amount:
+-            self.firm.assets -= amount
+-            employee.assets += amount
+-            # Severance is an expense
+-            self.record_expense(amount)
+-            return True
+-        return False
+-
+-    def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:
+-        """
+-        Pay an ad-hoc tax (like automation tax).
+-        """
+-        if self.firm.assets >= amount:
+-            self.firm.assets -= amount
+-            government.collect_tax(amount, tax_type, self.firm.id, current_time)
+-            # Taxes are expenses
+-            self.record_expense(amount)
+-            return True
+-        return False
+diff --git a/simulation/components/production_department.py b/simulation/components/production_department.py
+index 372105e..9fbce19 100644
+--- a/simulation/components/production_department.py
++++ b/simulation/components/production_department.py
+@@ -105,11 +105,3 @@ class ProductionDepartment:
+             logger.error(f'FIRM_CRASH_PREVENTED | Firm {self.firm.id}: {e}')
+             logger.debug(traceback.format_exc())
+             return 0.0
+-
+-    def add_capital(self, amount: float) -> None:
+-        """Increases the firm's capital stock."""
+-        self.firm.capital_stock += amount
+-
+-    def set_automation_level(self, level: float) -> None:
+-        """Sets the firm's automation level (0.0 to 1.0)."""
+-        self.firm.automation_level = max(0.0, min(1.0, level))
+diff --git a/simulation/components/sales_department.py b/simulation/components/sales_department.py
+index cf032d1..8fe51fe 100644
+--- a/simulation/components/sales_department.py
++++ b/simulation/components/sales_department.py
+@@ -79,7 +79,3 @@ class SalesDepartment:
+         # Update tracking
+         self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
+         self.firm.finance.last_marketing_spend = self.firm.marketing_budget
+-
+-    def set_price(self, item_id: str, price: float) -> None:
+-        """Sets the price for a specific item."""
+-        self.firm.last_prices[item_id] = price
+diff --git a/simulation/decisions/corporate_manager.py b/simulation/decisions/corporate_manager.py
+index 76f73f2..97b317f 100644
+--- a/simulation/decisions/corporate_manager.py
++++ b/simulation/decisions/corporate_manager.py
+@@ -130,8 +130,7 @@ class CorporateManager:
+ 
+         price = stock_market.get_stock_price(firm.id)
+         if price is None or price <= 0:
+-            # SoC Refactor: Use FinanceDepartment
+-            price = firm.finance.get_book_value_per_share()
++            price = firm.get_book_value_per_share()
+ 
+         if price <= 0:
+             return None
+@@ -224,9 +223,8 @@ class CorporateManager:
+         if actual_spend < 100.0:
+             return
+ 
+-        # Execute: SoC Refactor
+-        if not firm.finance.invest_in_automation(actual_spend):
+-             return
++        # Execute
++        firm.assets -= actual_spend
+ 
+         # WO-044-Track-B: Automation Tax
+         # Logic: actual_spend * AUTOMATION_TAX_RATE
+@@ -234,8 +232,10 @@ class CorporateManager:
+         tax_amount = actual_spend * automation_tax_rate
+ 
+         if tax_amount > 0 and government:
+-            success = firm.finance.pay_ad_hoc_tax(tax_amount, "automation_tax", government, current_time)
+-            if success:
++            if firm.assets >= tax_amount:
++                firm.assets -= tax_amount
++                government.collect_tax(tax_amount, "automation_tax", firm.id, current_time)
++
+                 self.logger.info(
+                     f"AUTOMATION_TAX | Firm {firm.id} paid {tax_amount:.2f} tax on {actual_spend:.2f} investment.",
+                     extra={"agent_id": firm.id, "tick": current_time, "tags": ["tax", "automation"]}
+@@ -246,8 +246,7 @@ class CorporateManager:
+         gained_pct = actual_spend / cost_per_pct
+         gained_a = gained_pct / 100.0
+ 
+-        # SoC Refactor
+-        firm.production.set_automation_level(firm.automation_level + gained_a)
++        firm.automation_level = min(1.0, firm.automation_level + gained_a)
+ 
+         self.logger.info(
+             f"AUTOMATION | Firm {firm.id} invested {actual_spend:.1f}, level {current_a:.3f} -> {firm.automation_level:.3f}",
+@@ -261,8 +260,7 @@ class CorporateManager:
+         if aggressiveness <= 0.1:
+             return
+ 
+-        # SoC Refactor: use finance.revenue_this_turn
+-        revenue_base = max(firm.finance.revenue_this_turn, firm.assets * 0.05)
++        revenue_base = max(firm.revenue_this_turn, firm.assets * 0.05)
+         rd_budget_rate = aggressiveness * 0.20
+         budget = revenue_base * rd_budget_rate
+ 
+@@ -276,20 +274,15 @@ class CorporateManager:
+         if budget < 10.0:
+             return
+ 
+-        # SoC Refactor
+-        if not firm.finance.invest_in_rd(budget):
+-            return
+-
++        firm.assets -= budget
+         firm.research_history["total_spent"] += budget
+ 
+-        # SoC Refactor: use finance.revenue_this_turn
+-        denominator = max(firm.finance.revenue_this_turn * 0.2, 100.0)
++        denominator = max(firm.revenue_this_turn * 0.2, 100.0)
+         base_chance = min(1.0, budget / denominator)
+ 
+         avg_skill = 1.0
+-        # SoC Refactor: use hr.employees
+-        if firm.hr.employees:
+-            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.hr.employees) / len(firm.hr.employees)
++        if firm.employees:
++            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.employees) / len(firm.employees)
+ 
+         success_chance = base_chance * avg_skill
+ 
+@@ -325,17 +318,14 @@ class CorporateManager:
+         if budget < 100.0:
+             return
+ 
+-        # SoC Refactor
+-        if not firm.finance.invest_in_capex(budget):
+-            return
++        firm.assets -= budget
+ 
+         if reflux_system:
+              reflux_system.capture(budget, str(firm.id), "capex")
+ 
+         efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
+         added_capital = budget * efficiency
+-        # SoC Refactor
+-        firm.production.add_capital(added_capital)
++        firm.capital_stock += added_capital
+ 
+         self.logger.info(
+             f"CAPEX | Firm {firm.id} invested {budget:.1f}, added {added_capital:.1f} capital.",
+@@ -348,8 +338,7 @@ class CorporateManager:
+         """
+         base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
+         max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
+-        # SoC Refactor
+-        firm.finance.set_dividend_rate(base_rate + (aggressiveness * (max_rate - base_rate)))
++        firm.dividend_rate = base_rate + (aggressiveness * (max_rate - base_rate))
+ 
+     def _manage_debt(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
+         """
+@@ -408,35 +397,20 @@ class CorporateManager:
+         adjustment = (0.5 - aggressiveness) * 0.4
+         target_price = market_price * (1.0 + adjustment)
+ 
+-        # SoC Refactor: use finance.last_sales_volume
+-        sales_vol = getattr(firm.finance, 'last_sales_volume', 1.0)
++        sales_vol = getattr(firm, 'last_sales_volume', 1.0)
+         if sales_vol <= 0: sales_vol = 1.0
+         days_on_hand = current_inventory / sales_vol
+         decay = max(0.5, 1.0 - (days_on_hand * 0.005))
+         target_price *= decay
+ 
+         target_price = max(target_price, 0.1)
+-        # SoC Refactor
+-        firm.sales.set_price(item_id, target_price)
++        firm.last_prices[item_id] = target_price
+ 
+         qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
+ 
+         target_market = markets.get(item_id)
+         if target_market:
+-            # firm.post_ask is a method on Firm, but it delegates to Sales.
+-            # CorporateManager calls firm.post_ask. Spec says "Update Firm Internal Methods... make_decision... access sub-components".
+-            # CorporateManager is calling firm.post_ask. Should it call firm.sales.post_ask?
+-            # Spec says "External modules ... directly manipulate internal state".
+-            # `post_ask` on `Firm` is a method, not a property.
+-            # Spec mainly targets wrapper properties.
+-            # However, for consistency, I can use `firm.sales.post_ask` IF `Firm`'s `post_ask` is just a wrapper.
+-            # Let's check `Firm.post_ask` again.
+-            # Yes: return self.sales.post_ask(item_id, price, quantity, market, current_tick)
+-            # So I should use firm.sales.post_ask directly to be "Pure Orchestrator".
+-            # But the orchestrator (Firm) might want to log or do things?
+-            # Actually, `Firm.post_ask` IS the wrapper.
+-            # So I will use `firm.sales.post_ask`.
+-            firm.sales.post_ask(item_id, target_price, qty, target_market, current_time)
++            firm.post_ask(item_id, target_price, qty, target_market, current_time)
+ 
+         return None
+ 
+@@ -480,8 +454,7 @@ class CorporateManager:
+         # Soft limit removed to allow full employment
+         needed_labor = int(needed_labor_calc) + 1
+ 
+-        # SoC Refactor: use hr.employees
+-        current_employees = len(firm.hr.employees)
++        current_employees = len(firm.employees)
+ 
+         # A. Firing Logic (Layoffs)
+         if current_employees > needed_labor:
+@@ -502,23 +475,24 @@ class CorporateManager:
+                 # Actually we should iterate copy to modify list safely?
+                 # No, we just call employee.quit().
+                 # We need to pick employees.
+-                candidates = firm.hr.employees[:fire_count] # FIFO firing
++                candidates = firm.employees[:fire_count] # FIFO firing
+ 
+                 # WO-044-Track-C: Strategic Firing Severance Check
+                 severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
+ 
+                 for emp in candidates:
+                     # Estimate wage (Strategic firing happens before update_needs, so check current wage)
+-                    # SoC Refactor: use hr.employee_wages
+-                    wage = firm.hr.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
++                    wage = firm.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+                     # Correct for skill
+                     skill = getattr(emp, 'labor_skill', 1.0)
+                     wage *= skill
+ 
+                     severance_pay = wage * severance_weeks
+ 
+-                    # SoC Refactor: use finance.pay_severance
+-                    if firm.finance.pay_severance(emp, severance_pay):
++                    if firm.assets >= severance_pay:
++                        firm.assets -= severance_pay
++                        emp.assets += severance_pay
++
+                         emp.quit()
+                         self.logger.info(
+                             f"LAYOFF | Firm {firm.id} laid off Household {emp.id} with Severance {severance_pay:.2f}. Excess labor.",
+@@ -571,8 +545,7 @@ class CorporateManager:
+         WO-047-B: Competitive Bidding Logic.
+         If firm has vacancies and is solvent, bid up the wage.
+         """
+-        # SoC Refactor
+-        current_employees = len(firm.hr.employees)
++        current_employees = len(firm.employees)
+         vacancies = max(0, needed_labor - current_employees)
+         
+         if vacancies <= 0:
+@@ -589,8 +562,7 @@ class CorporateManager:
+         # 2. Wage Bill Cap Check (Fallback for 0 liabilities)
+         # Check if we have enough cash runway (e.g., 2 ticks)
+         # Using current wage bill as proxy
+-        # SoC Refactor: use hr.employee_wages
+-        wage_bill = sum(firm.hr.employee_wages.values()) if firm.hr.employee_wages else 0.0
++        wage_bill = sum(firm.employee_wages.values()) if firm.employee_wages else 0.0
+         if wage_bill > 0 and firm.assets < wage_bill * 2: 
+              return base_offer_wage
+ 
+diff --git a/simulation/decisions/rule_based_firm_engine.py b/simulation/decisions/rule_based_firm_engine.py
+index 7e69c89..622d02e 100644
+--- a/simulation/decisions/rule_based_firm_engine.py
++++ b/simulation/decisions/rule_based_firm_engine.py
+@@ -109,8 +109,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+         needed_labor = self._calculate_needed_labor(firm)
+         offered_wage = self._calculate_dynamic_wage_offer(firm)
+ 
+-        # SoC Refactor: use hr.employees
+-        if len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
++        if len(firm.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+             order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+             orders.append(order)
+             self.logger.info(
+@@ -122,8 +121,8 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+                 },
+             )
+         elif (
+-            needed_labor > len(firm.hr.employees)
+-            and len(firm.hr.employees) < self.config_module.FIRM_MAX_EMPLOYEES
++            needed_labor > len(firm.employees)
++            and len(firm.employees) < self.config_module.FIRM_MAX_EMPLOYEES
+         ):
+             order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+             orders.append(order)
+@@ -154,11 +153,10 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+ 
+     def _calculate_dynamic_wage_offer(self, firm: Firm) -> float:
+         """기업의 수익성 이력을 바탕으로 동적인 임금 제시액을 계산합니다."""
+-        # SoC Refactor: use finance.profit_history
+-        if not firm.finance.profit_history:
++        if not firm.profit_history:
+             return self.config_module.BASE_WAGE
+ 
+-        avg_profit = sum(firm.finance.profit_history) / len(firm.finance.profit_history)
++        avg_profit = sum(firm.profit_history) / len(firm.profit_history)
+         profit_based_premium = avg_profit / (self.config_module.BASE_WAGE * 10.0)
+         wage_premium = max(
+             0,
+diff --git a/simulation/decisions/standalone_rule_based_firm_engine.py b/simulation/decisions/standalone_rule_based_firm_engine.py
+index b7276af..7513f90 100644
+--- a/simulation/decisions/standalone_rule_based_firm_engine.py
++++ b/simulation/decisions/standalone_rule_based_firm_engine.py
+@@ -78,9 +78,8 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
+         # 현재 생산 목표와 실제 생산량, 고용 인원 등을 고려하여 임금 및 고용 결정 로직 추가
+         if chosen_tactic != Tactic.ADJUST_PRODUCTION: # 이미 생산 조정 결정을 했으면 이번 턴에 임금 조정은 건너뛴다 (간단화를 위해)
+             needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
+-            # SoC Refactor: use hr.employees
+-            if len(firm.hr.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
+-               len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
++            if len(firm.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
++               len(firm.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+                 chosen_tactic = Tactic.ADJUST_WAGES # ADJUST_WAGES 전술에 고용 로직도 포함되어 있음
+                 orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))
+                 self.logger.info(
+@@ -173,8 +172,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
+                 0.1, # Absolute hard floor to prevent zero/negative
+                 min(self.config_module.MAX_SELL_PRICE, adjusted_price),
+             )
+-            # SoC Refactor: use sales.set_price
+-            firm.sales.set_price(item_id, final_price)
++            firm.last_prices[item_id] = final_price
+ 
+             quantity_to_sell = min(
+                 current_inventory, self.config_module.MAX_SELL_QUANTITY
+diff --git a/simulation/dtos/financial_dtos.py b/simulation/dtos/financial_dtos.py
+new file mode 100644
+index 0000000..5042b9c
+--- /dev/null
++++ b/simulation/dtos/financial_dtos.py
+@@ -0,0 +1,12 @@
++from typing import TypedDict
++
++class FinancialStatementDTO(TypedDict):
++    """
++    Standardized Data Transfer Object for passing financial state.
++    Used for solvency calculations and financial reporting.
++    """
++    total_assets: float
++    working_capital: float
++    retained_earnings: float
++    average_profit: float
++    total_debt: float
+diff --git a/simulation/firms.py b/simulation/firms.py
+index ea6d6cf..61ba8ce 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -101,6 +101,10 @@ class Firm(BaseAgent, ILearningAgent):
+             config_module.FIRM_MIN_PRODUCTION_TARGET
+         )  # Initialize production target
+ 
++        # Property redirections for compatibility
++        # self.employees -> self.hr.employees
++        # self.employee_wages -> self.hr.employee_wages
++
+         self.current_production: float = 0.0
+         self.productivity_factor: float = productivity_factor
+         self.total_shares: float = getattr(config_module, "IPO_INITIAL_SHARES", 1000.0)
+@@ -151,6 +155,163 @@ class Firm(BaseAgent, ILearningAgent):
+             extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]}
+         )
+ 
++    # --- Properties to maintain Interface Compatibility ---
++    @property
++    def employees(self) -> List[Household]:
++        return self.hr.employees
++
++    @employees.setter
++    def employees(self, value):
++        self.hr.employees = value
++
++    @property
++    def employee_wages(self) -> Dict[int, float]:
++        return self.hr.employee_wages
++
++    @employee_wages.setter
++    def employee_wages(self, value):
++        self.hr.employee_wages = value
++
++    @property
++    def retained_earnings(self) -> float:
++        return self.finance.retained_earnings
++
++    @retained_earnings.setter
++    def retained_earnings(self, value):
++        self.finance.retained_earnings = value
++
++    @property
++    def dividends_paid_last_tick(self) -> float:
++        return self.finance.dividends_paid_last_tick
++
++    @dividends_paid_last_tick.setter
++    def dividends_paid_last_tick(self, value):
++        self.finance.dividends_paid_last_tick = value
++
++    @property
++    def consecutive_loss_turns(self) -> int:
++        return self.finance.consecutive_loss_turns
++
++    @consecutive_loss_turns.setter
++    def consecutive_loss_turns(self, value):
++        self.finance.consecutive_loss_turns = value
++
++    @property
++    def current_profit(self) -> float:
++        return self.finance.current_profit
++
++    @current_profit.setter
++    def current_profit(self, value):
++        self.finance.current_profit = value
++
++    @property
++    def revenue_this_turn(self) -> float:
++        return self.finance.revenue_this_turn
++
++    @revenue_this_turn.setter
++    def revenue_this_turn(self, value):
++        self.finance.revenue_this_turn = value
++
++    @property
++    def cost_this_turn(self) -> float:
++        return self.finance.cost_this_turn
++
++    @cost_this_turn.setter
++    def cost_this_turn(self, value):
++        self.finance.cost_this_turn = value
++
++    @property
++    def revenue_this_tick(self) -> float:
++        return self.finance.revenue_this_tick
++
++    @revenue_this_tick.setter
++    def revenue_this_tick(self, value):
++        self.finance.revenue_this_tick = value
++
++    @property
++    def expenses_this_tick(self) -> float:
++        return self.finance.expenses_this_tick
++
++    @expenses_this_tick.setter
++    def expenses_this_tick(self, value):
++        self.finance.expenses_this_tick = value
++
++    @property
++    def profit_history(self) -> deque[float]:
++        return self.finance.profit_history
++
++    @profit_history.setter
++    def profit_history(self, value):
++        self.finance.profit_history = value
++
++    @property
++    def last_revenue(self) -> float:
++        return self.finance.last_revenue
++
++    @last_revenue.setter
++    def last_revenue(self, value):
++        self.finance.last_revenue = value
++
++    @property
++    def last_marketing_spend(self) -> float:
++        return self.finance.last_marketing_spend
++
++    @last_marketing_spend.setter
++    def last_marketing_spend(self, value):
++        self.finance.last_marketing_spend = value
++
++    @property
++    def last_daily_expenses(self) -> float:
++        return self.finance.last_daily_expenses
++
++    @last_daily_expenses.setter
++    def last_daily_expenses(self, value):
++        self.finance.last_daily_expenses = value
++
++    @property
++    def last_sales_volume(self) -> float:
++        return self.finance.last_sales_volume
++
++    @last_sales_volume.setter
++    def last_sales_volume(self, value):
++        self.finance.last_sales_volume = value
++
++    @property
++    def sales_volume_this_tick(self) -> float:
++        return self.finance.sales_volume_this_tick
++
++    @sales_volume_this_tick.setter
++    def sales_volume_this_tick(self, value):
++        self.finance.sales_volume_this_tick = value
++
++
++    def calculate_valuation(self) -> float:
++        """
++        Calculate Firm Valuation based on Net Assets + Profit Potential.
++        Formula: Net Assets + (Max(0, Avg_Profit_Last_10) * PER Multiplier)
++        """
++        return self.finance.calculate_valuation()
++
++    @property
++    def price(self) -> float:
++        """Helper property to get the price of the specialized good."""
++        return self.last_prices.get(self.specialization, 0.0)
++
++    @price.setter
++    def price(self, value: float) -> None:
++        self.last_prices[self.specialization] = value
++
++    def get_inventory_value(self) -> float:
++        """Calculate market value of current inventory."""
++        return self.finance.get_inventory_value()
++
++    def get_financial_snapshot(self) -> Dict[str, float]:
++        """
++        Returns a standardized dictionary of financial metrics for monitoring and analysis.
++        This provides a stable interface for CrisisMonitor and FinanceSystem.
++        """
++        return self.finance.get_financial_snapshot()
++
+     def liquidate_assets(self) -> float:
+         """
+         Liquidate assets.
+@@ -210,6 +371,36 @@ class Firm(BaseAgent, ILearningAgent):
+     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
+         self.current_production = self.production.produce(current_time, technology_manager)
+ 
++    def issue_shares(self, quantity: float, price: float) -> float:
++        """
++        신규 주식을 발행합니다 (유상증자).
++        
++        Args:
++            quantity: 발행할 주식 수량
++            price: 주당 발행 가격
++            
++        Returns:
++            조달된 자본금
++        """
++        return self.finance.issue_shares(quantity, price)
++
++    def get_book_value_per_share(self) -> float:
++        """주당 순자산가치(BPS)를 계산합니다. (유통주식수 기준)"""
++        return self.finance.get_book_value_per_share()
++
++    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
++        """
++        시가총액을 계산합니다.
++        
++        Args:
++            stock_price: 주가 (None이면 순자산가치 기반 계산)
++            
++        Returns:
++            시가총액
++        """
++        return self.finance.get_market_cap(stock_price)
++
++
+     @override
+     def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Firm":
+         """
+@@ -242,6 +433,10 @@ class Firm(BaseAgent, ILearningAgent):
+         )
+         return new_firm
+ 
++    def distribute_dividends(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
++        # SoC Refactor
++        return self.finance.process_profit_distribution(households, government, current_time)
++
+     @override
+     def get_agent_data(self) -> Dict[str, Any]:
+         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
+@@ -250,16 +445,14 @@ class Firm(BaseAgent, ILearningAgent):
+             "needs": self.needs.copy(),
+             "inventory": self.inventory.copy(),
+             "input_inventory": self.input_inventory.copy(), # WO-030
+-            # SoC Refactor
+-            "employees": [emp.id for emp in self.hr.employees],  # Only pass employee IDs
++            "employees": [emp.id for emp in self.employees],  # Only pass employee IDs
+             "is_active": self.is_active,
+             "current_production": self.current_production,
+             "productivity_factor": self.productivity_factor,
+             "production_target": self.production_target,
+-            # SoC Refactor
+-            "revenue_this_turn": self.finance.revenue_this_turn,
+-            "expenses_this_tick": self.finance.expenses_this_tick,
+-            "consecutive_loss_turns": self.finance.consecutive_loss_turns,
++            "revenue_this_turn": self.revenue_this_turn,
++            "expenses_this_tick": self.expenses_this_tick,
++            "consecutive_loss_turns": self.consecutive_loss_turns,
+             "total_shares": self.total_shares,
+             "treasury_shares": self.treasury_shares,
+             "dividend_rate": self.dividend_rate,
+@@ -279,13 +472,12 @@ class Firm(BaseAgent, ILearningAgent):
+         self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None
+     ) -> tuple[list[Order], Any]:
+         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
+-        # SoC Refactor
+         self.logger.debug(
+-            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
++            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}",
+             extra={
+                 **log_extra,
+                 "assets_before": self.assets,
+-                "num_employees_before": len(self.hr.employees),
++                "num_employees_before": len(self.employees),
+                 "is_active_before": self.is_active,
+             },
+         )
+@@ -304,13 +496,12 @@ class Firm(BaseAgent, ILearningAgent):
+         # WO-056: Shadow Mode Calculation
+         self._calculate_invisible_hand_price(markets, current_time)
+ 
+-        # SoC Refactor
+         self.logger.debug(
+-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
++            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
+             extra={
+                 **log_extra,
+                 "assets_after": self.assets,
+-                "num_employees_after": len(self.hr.employees),
++                "num_employees_after": len(self.employees),
+                 "is_active_after": self.is_active,
+                 "num_decisions": len(decisions),
+             },
+@@ -369,14 +560,13 @@ class Firm(BaseAgent, ILearningAgent):
+     @override
+     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
+         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
+-        # SoC Refactor
+         self.logger.debug(
+-            f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.hr.employees)}",
++            f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}",
+             extra={
+                 **log_extra,
+                 "needs_before": self.needs,
+                 "assets_before": self.assets,
+-                "num_employees_before": len(self.hr.employees),
++                "num_employees_before": len(self.employees),
+             },
+         )
+ 
+@@ -402,13 +592,12 @@ class Firm(BaseAgent, ILearningAgent):
+         if total_wages > 0:
+             self.finance.record_expense(total_wages)
+             self.logger.info(
+-                f"Paid total wages: {total_wages:.2f} to {len(self.hr.employees)} employees.",
++                f"Paid total wages: {total_wages:.2f} to {len(self.employees)} employees.",
+                 extra={**log_extra, "total_wages": total_wages},
+             )
+ 
+         # 3. Marketing & Brand Update
+         marketing_spend = 0.0
+-        # SoC Refactor
+         if self.assets > 100.0:
+             marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
+         
+@@ -446,26 +635,25 @@ class Firm(BaseAgent, ILearningAgent):
+         self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"] + self.config_module.LIQUIDITY_NEED_INCREASE_RATE)
+         self.finance.check_bankruptcy()
+ 
+-        # SoC Refactor
+-        if self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD or self.finance.consecutive_loss_turns >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD:
++        if self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD or self.consecutive_loss_turns >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD:
+             self.is_active = False
+             self.logger.warning(
+-                f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.finance.consecutive_loss_turns}",
++                f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.consecutive_loss_turns}",
+                 extra={
+                     **log_extra,
+                     "assets": self.assets,
+-                    "consecutive_loss_turns": self.finance.consecutive_loss_turns,
++                    "consecutive_loss_turns": self.consecutive_loss_turns,
+                     "tags": ["firm_closure"],
+                 },
+             )
+ 
+         self.logger.debug(
+-            f"FIRM_NEEDS_UPDATE_END | Firm {self.id} needs after update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
++            f"FIRM_NEEDS_UPDATE_END | Firm {self.id} needs after update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}",
+             extra={
+                 **log_extra,
+                 "needs_after": self.needs,
+                 "assets_after": self.assets,
+-                "num_employees_after": len(self.hr.employees),
++                "num_employees_after": len(self.employees),
+                 "is_active_after": self.is_active,
+                 "brand_awareness": self.brand_manager.brand_awareness,
+                 "perceived_quality": self.brand_manager.perceived_quality
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index ea7438a..eb76be4 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -88,12 +88,11 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
+                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
+             )
+-            # SoC Refactor: use hr.employees
+-            for employee in firm.hr.employees:
++            for employee in firm.employees:
+                 if employee.is_active:
+                     employee.is_employed = False
+                     employee.employer_id = None
+-            firm.hr.employees = []
++            firm.employees = []
+             firm.inventory.clear()
+             firm.capital_stock = 0.0
+             total_cash = firm.assets
+@@ -143,7 +142,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         sim.agents[sim.bank.id] = sim.bank
+ 
+         for firm in sim.firms:
+-            # SoC Refactor: use hr.employees
+-            firm.hr.employees = [
+-                emp for emp in firm.hr.employees if emp.is_active and emp.id in sim.agents
++            firm.employees = [
++                emp for emp in firm.employees if emp.is_active and emp.id in sim.agents
+             ]
+diff --git a/simulation/systems/ma_manager.py b/simulation/systems/ma_manager.py
+index 8764567..45cbe2d 100644
+--- a/simulation/systems/ma_manager.py
++++ b/simulation/systems/ma_manager.py
+@@ -53,8 +53,7 @@ class MAManager:
+                 continue
+             
+             # Standard Distress (Friendly M&A)
+-            # SoC Refactor: use finance.consecutive_loss_turns
+-            if firm.finance.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
++            if firm.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
+                  preys.append(firm)
+             elif firm.assets < avg_assets * 0.2:
+                 preys.append(firm)
+@@ -84,8 +83,7 @@ class MAManager:
+             # Or just be rich.
+             # Phase 21 Spec: Predator Assets > Target Market Cap * 1.5.
+             # Let's filter later. Just identify rich firms.
+-            # SoC Refactor: use finance.current_profit
+-            if firm.assets > avg_assets * 1.5 and firm.finance.current_profit > 0:
++            if firm.assets > avg_assets * 1.5 and firm.current_profit > 0:
+                 predators.append(firm)
+ 
+         # 2. M&A Matching Loop
+@@ -188,8 +186,7 @@ class MAManager:
+              self.simulation.households_dict[prey.founder_id].assets += price
+         
+         # 2. Asset Transfer
+-        # SoC Refactor: use production.add_capital
+-        predator.production.add_capital(prey.capital_stock)
++        predator.capital_stock += prey.capital_stock
+         
+         # Phase 21: Transfer Automation Tech?
+         # If prey has higher automation, predator learns?
+@@ -197,8 +194,7 @@ class MAManager:
+         # Let's say Predator keeps their own logic, maybe slight boost if Prey was advanced.
+         if hasattr(prey, "automation_level") and hasattr(predator, "automation_level"):
+             if prey.automation_level > predator.automation_level:
+-                new_level = (predator.automation_level + prey.automation_level) / 2.0
+-                predator.production.set_automation_level(new_level)
++                predator.automation_level = (predator.automation_level + prey.automation_level) / 2.0
+ 
+         # Inventory
+         for item, qty in prey.inventory.items():
+@@ -211,17 +207,16 @@ class MAManager:
+         # Hostile Takeovers often have deeper cuts
+         retention_rate = 0.3 if is_hostile else 0.5
+ 
+-        # SoC Refactor: use hr.employees and hr.hire
+-        for emp in list(prey.hr.employees):
++        for emp in list(prey.employees):
+             if random.random() > retention_rate:
+                 # Fire
+                 emp.quit()
+                 fired_count += 1
+             else:
+                 # Retain
+-                prey.hr.remove_employee(emp)
+-                wage = prey.hr.employee_wages.get(emp.id, 10.0)
+-                predator.hr.hire(emp, wage)
++                prey.employees.remove(emp)
++                predator.employees.append(emp)
++                predator.employee_wages[emp.id] = prey.employee_wages.get(emp.id, 10.0)
+                 emp.employer_id = predator.id
+                 retained_count += 1
+                 
+@@ -234,8 +229,7 @@ class MAManager:
+         recovered = firm.liquidate_assets()
+         self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
+         
+-        # SoC Refactor: use hr.employees
+-        for emp in list(firm.hr.employees):
++        for emp in list(firm.employees):
+             emp.quit()
+             
+         firm.is_active = False
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index e078897..a4d7830 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -110,9 +110,8 @@ class TransactionProcessor:
+         if isinstance(seller, Household):
+             if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
+                 previous_employer = agents.get(seller.employer_id)
+-                if isinstance(previous_employer, Firm):
+-                    # SoC Refactor: Use HRDepartment
+-                    previous_employer.hr.remove_employee(seller)
++                if isinstance(previous_employer, Firm) and seller in previous_employer.employees:
++                    previous_employer.employees.remove(seller)
+ 
+             seller.is_employed = True
+             seller.employer_id = buyer.id
+@@ -122,13 +121,10 @@ class TransactionProcessor:
+                 seller.labor_income_this_tick += (trade_value - tax_amount)
+ 
+         if isinstance(buyer, Firm):
+-            # SoC Refactor: Use HRDepartment and FinanceDepartment
+-            if seller not in buyer.hr.employees:
+-                buyer.hr.hire(seller, tx.price)
+-            else:
+-                 buyer.hr.employee_wages[seller.id] = tx.price
+-
+-            buyer.finance.record_expense(trade_value)
++            if seller not in buyer.employees:
++                buyer.employees.append(seller)
++            buyer.employee_wages[seller.id] = tx.price
++            buyer.cost_this_turn += trade_value
+ 
+             if tx.transaction_type == "research_labor":
+                 research_skill = seller.skills.get("research", Skill("research")).value
+@@ -158,9 +154,8 @@ class TransactionProcessor:
+                 buyer.inventory[tx.item_id] = total_new_qty
+ 
+         if isinstance(seller, Firm):
+-            # SoC Refactor: Use FinanceDepartment
+-            seller.finance.record_revenue(trade_value)
+-            seller.finance.sales_volume_this_tick += tx.quantity
++            seller.revenue_this_turn += trade_value
++            seller.sales_volume_this_tick += tx.quantity
+         
+         if isinstance(buyer, Household):
+             if not is_service:
+diff --git a/tests/ai/test_altman_z_score.py b/tests/ai/test_altman_z_score.py
+new file mode 100644
+index 0000000..7f26139
+--- /dev/null
++++ b/tests/ai/test_altman_z_score.py
+@@ -0,0 +1,69 @@
++import pytest
++from simulation.ai.altman_z_score import AltmanZScoreCalculator
++from simulation.dtos.financial_dtos import FinancialStatementDTO
++
++class TestAltmanZScoreCalculator:
++
++    @pytest.fixture
++    def calculator(self):
++        return AltmanZScoreCalculator()
++
++    def test_calculate_healthy_firm(self, calculator):
++        """Test calculation for a healthy firm."""
++        # Assets 1000, Working Capital 400, Retained Earnings 200, Avg Profit 100
++        # X1 = 400/1000 = 0.4
++        # X2 = 200/1000 = 0.2
++        # X3 = 100/1000 = 0.1
++        # Z = 1.2*0.4 + 1.4*0.2 + 3.3*0.1 = 0.48 + 0.28 + 0.33 = 1.09
++        statement = FinancialStatementDTO(
++            total_assets=1000.0,
++            working_capital=400.0,
++            retained_earnings=200.0,
++            average_profit=100.0,
++            total_debt=600.0
++        )
++        z_score = calculator.calculate(statement)
++        assert z_score == pytest.approx(1.09, 0.001)
++
++    def test_calculate_distressed_firm(self, calculator):
++        """Test calculation for a distressed firm."""
++        # Assets 1000, Working Capital -100, Retained Earnings -500, Avg Profit -50
++        # X1 = -100/1000 = -0.1
++        # X2 = -500/1000 = -0.5
++        # X3 = -50/1000 = -0.05
++        # Z = 1.2*-0.1 + 1.4*-0.5 + 3.3*-0.05 = -0.12 + -0.7 + -0.165 = -0.985
++        statement = FinancialStatementDTO(
++            total_assets=1000.0,
++            working_capital=-100.0,
++            retained_earnings=-500.0,
++            average_profit=-50.0,
++            total_debt=1100.0
++        )
++        z_score = calculator.calculate(statement)
++        assert z_score == pytest.approx(-0.985, 0.001)
++
++    def test_calculate_zero_assets(self, calculator):
++        """Test calculation with zero total assets (should avoid division by zero)."""
++        statement = FinancialStatementDTO(
++            total_assets=0.0,
++            working_capital=0.0,
++            retained_earnings=0.0,
++            average_profit=0.0,
++            total_debt=0.0
++        )
++        z_score = calculator.calculate(statement)
++        assert z_score == 0.0
++
++    def test_calculate_high_solvency(self, calculator):
++        """Test calculation for a highly solvent firm."""
++        # High liquid assets, high retained earnings, high profit
++        statement = FinancialStatementDTO(
++            total_assets=1000.0,
++            working_capital=800.0, # X1 = 0.8
++            retained_earnings=500.0, # X2 = 0.5
++            average_profit=300.0, # X3 = 0.3
++            total_debt=200.0
++        )
++        # Z = 1.2*0.8 + 1.4*0.5 + 3.3*0.3 = 0.96 + 0.7 + 0.99 = 2.65
++        z_score = calculator.calculate(statement)
++        assert z_score == pytest.approx(2.65, 0.001)
+diff --git a/tests/components/test_finance_department.py b/tests/components/test_finance_department.py
+new file mode 100644
+index 0000000..21759a0
+--- /dev/null
++++ b/tests/components/test_finance_department.py
+@@ -0,0 +1,81 @@
++import pytest
++from unittest.mock import Mock, patch
++from simulation.components.finance_department import FinanceDepartment
++from simulation.firms import Firm
++from simulation.dtos.financial_dtos import FinancialStatementDTO
++
++class TestFinanceDepartment:
++    @pytest.fixture
++    def mock_firm(self):
++        firm = Mock(spec=Firm)
++        firm.id = 1
++        firm.assets = 1000.0
++        firm.capital_stock = 200.0
++        firm.inventory = {}
++        firm.last_prices = {}
++        firm.total_debt = 500.0
++        firm.logger = Mock()
++        return firm
++
++    @pytest.fixture
++    def config_module(self):
++        config = Mock()
++        config.PROFIT_HISTORY_TICKS = 10
++        return config
++
++    @pytest.fixture
++    def finance_dept(self, mock_firm, config_module):
++        return FinanceDepartment(mock_firm, config_module)
++
++    def test_get_altman_z_score_delegation(self, finance_dept):
++        """Test that get_altman_z_score correctly assembles DTO and delegates to calculator."""
++
++        # Setup specific financial state
++        finance_dept.firm.assets = 500.0 # Cash
++        # Inventory value defaults to 0 as inventory is empty
++        finance_dept.firm.total_debt = 200.0
++        finance_dept.retained_earnings = 150.0
++        finance_dept.current_profit = 50.0
++        finance_dept.profit_history.append(50.0)
++
++        # Expected values for DTO
++        # Total Assets = Cash (500) + Inventory (0) = 500
++        # Working Capital = Total Assets (500) - Debt (200) = 300
++        # Retained Earnings = 150
++        # Avg Profit = 50
++        # Total Debt = 200
++
++        expected_dto = FinancialStatementDTO(
++            total_assets=500.0,
++            working_capital=300.0,
++            retained_earnings=150.0,
++            average_profit=50.0,
++            total_debt=200.0
++        )
++
++        # Mock the calculator within finance_dept
++        with patch.object(finance_dept.solvency_calculator, 'calculate', return_value=1.23) as mock_calculate:
++            result = finance_dept.get_altman_z_score()
++
++            assert result == 1.23
++            mock_calculate.assert_called_once()
++            call_arg = mock_calculate.call_args[0][0]
++
++            # Assert DTO content matches
++            assert call_arg == expected_dto
++
++    def test_get_altman_z_score_integration(self, finance_dept):
++        """Test integration with real calculator (using default logic)."""
++        finance_dept.firm.assets = 1000.0
++        finance_dept.firm.total_debt = 400.0 # WC = 600
++        finance_dept.retained_earnings = 200.0
++        finance_dept.current_profit = 100.0
++        finance_dept.profit_history.append(100.0)
++
++        # X1 = 600/1000 = 0.6
++        # X2 = 200/1000 = 0.2
++        # X3 = 100/1000 = 0.1
++        # Z = 1.2*0.6 + 1.4*0.2 + 3.3*0.1 = 0.72 + 0.28 + 0.33 = 1.33
++
++        z_score = finance_dept.get_altman_z_score()
++        assert z_score == pytest.approx(1.33, 0.001)
+diff --git a/tests/test_corporate_manager.py b/tests/test_corporate_manager.py
+index 3fb5018..876dc8c 100644
+--- a/tests/test_corporate_manager.py
++++ b/tests/test_corporate_manager.py
+@@ -15,11 +15,6 @@ class MockConfig:
+     MAX_SELL_QUANTITY = 100
+     LABOR_MARKET_MIN_WAGE = 10.0
+     GOODS = {"food": {"production_cost": 10.0}}
+-    # Added for automation
+-    AUTOMATION_COST_PER_PCT = 1000.0
+-    FIRM_SAFETY_MARGIN = 2000.0
+-    AUTOMATION_TAX_RATE = 0.05
+-    SEVERANCE_PAY_WEEKS = 4
+ 
+ @pytest.fixture
+ def firm_mock(golden_firms):
+@@ -27,57 +22,16 @@ def firm_mock(golden_firms):
+         pytest.skip("Golden firms fixture is empty or failed to load.")
+     firm = golden_firms[0]
+ 
+-    # Initialize BaseAgent fields
+-    firm.assets = 10000.0 # Default assets
+-
+-    # --- SoC Components Mocking ---
+-    firm.finance = MagicMock()
+-    firm.finance.revenue_this_turn = 200.0
+-    firm.finance.last_sales_volume = 1.0
+-    firm.finance.last_revenue = 200.0
+-
+-    # Side effects to simulate real behavior on mock firm assets
+-    def invest_side_effect(amount):
+-        firm.assets -= amount
+-        return True
+-
+-    def pay_tax_side_effect(amount, *args, **kwargs):
+-        firm.assets -= amount
+-        return True
+-
+-    def pay_severance_side_effect(emp, amount):
+-        firm.assets -= amount
+-        # emp is a mock, so emp.assets update is mocked
+-        if hasattr(emp, 'assets'):
+-             emp.assets += amount
+-        return True
+-
+-    def set_dividend_rate_side_effect(rate):
+-        firm.dividend_rate = rate
+-
+-    firm.finance.invest_in_automation.side_effect = invest_side_effect
+-    firm.finance.invest_in_rd.side_effect = invest_side_effect
+-    firm.finance.invest_in_capex.side_effect = invest_side_effect
+-    firm.finance.pay_severance.side_effect = pay_severance_side_effect
+-    firm.finance.pay_ad_hoc_tax.side_effect = pay_tax_side_effect
+-    firm.finance.set_dividend_rate.side_effect = set_dividend_rate_side_effect
+-    firm.finance.get_book_value_per_share.return_value = 10.0 # Default BPS
+-
+-    firm.hr = MagicMock()
+-    firm.hr.employees = []
+-    firm.hr.employee_wages = {}
+-
+-    firm.production = MagicMock()
+-    firm.production.set_automation_level.side_effect = lambda x: setattr(firm, 'automation_level', x)
+-    firm.production.add_capital.side_effect = lambda x: setattr(firm, 'capital_stock', firm.capital_stock + x)
+-
+-    firm.sales = MagicMock()
+-    firm.sales.set_price.side_effect = lambda item, price: firm.last_prices.update({item: price})
+-
+-    # --- Firm Attributes ---
++    # Customize the golden firm for specific tests if needed,
++    # but the goal is to rely on realistic data.
++    # Resetting some values to ensure consistent test state regardless of fixture content
++    # is still reasonable, but we should avoid full mock reconstruction.
++
++    firm.revenue_this_turn = 200.0
+     firm.production_target = 100
+     firm.productivity_factor = 1.0
+     firm.specialization = "food"
++    # Ensure inventory is dictionary as expected by tests
+     if not isinstance(firm.inventory, dict):
+         firm.inventory = {"food": 50}
+     else:
+@@ -90,14 +44,27 @@ def firm_mock(golden_firms):
+     firm.total_shares = 100
+     firm.treasury_shares = 0
+     firm.last_prices = {"food": 10.0}
++    firm.employees = []
++    # firm.personality is likely already set in golden fixture, but ensuring it matches test expectation if crucial
+     firm.personality = Personality.BALANCED
+ 
+-    firm.system2_planner = None
++    # Ensuring attributes that might be missing in older fixtures or dynamic properties
++    firm.system2_planner = None # Force to None to avoid unconfigured mock issues in guidance
++    firm.revenue_this_turn = 200.0 # explicit float
++    firm.last_revenue = 200.0
++    if not hasattr(firm, 'last_revenue'):
++        firm.last_revenue = 200.0
++    firm.expenses_this_tick = 50.0
++    firm.retained_earnings = 1000.0
++    # firm.profit_history = [] # Let's keep history if it exists
++    firm.employee_wages = {}
+     firm.consecutive_loss_ticks_for_bankruptcy_threshold = 5
+     firm.automation_level = 0.0
+-    firm.total_debt = 0.0
+-    firm.bond_obligations = []
++    firm.last_sales_volume = 1.0 # Fix for the TypeError seen in previous run
++    firm.total_debt = 0.0 # Ensure total_debt is float
++    firm.bond_obligations = [] # Add bond obligations
+ 
++    # Ensure decision_engine chain works for _get_total_liabilities
+     if not hasattr(firm, 'decision_engine'):
+         firm.decision_engine = MagicMock()
+ 
+@@ -139,7 +106,7 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
+ 
+     # Need enough assets to pass safety margin (default 2000)
+     firm_mock.assets = 10000.0
+-    firm_mock.finance.revenue_this_turn = 1000.0 # Set on finance
++    firm_mock.revenue_this_turn = 1000.0
+     expected_budget = 1000.0 * 0.2 # 200
+ 
+     # Force success
+@@ -179,6 +146,11 @@ def test_hiring_logic(firm_mock, context_mock):
+ 
+ def test_debt_logic_borrow(firm_mock, context_mock):
+     manager = CorporateManager(MockConfig())
++    # Assets 1000 (from setup), Debt 0 (assumed default in mock). Leverage 0.
++    # Aggressiveness 0.5 -> Target 1.0 Leverage (1000 Debt)
++    # Ensure total_assets and total_debt are set if computed properties are used
++    # But since it is a mock, we might need to set them if logic depends on them.
++    # The original test manually set assets=1000.
+     firm_mock.assets = 1000.0
+     firm_mock.total_debt = 0.0
+ 
+diff --git a/tests/test_firms.py b/tests/test_firms.py
+index 743866f..47eeb69 100644
+--- a/tests/test_firms.py
++++ b/tests/test_firms.py
+@@ -39,7 +39,7 @@ class TestFirmBookValue:
+     def test_book_value_no_liabilities(self, firm):
+         # Assets 1000, Shares 100, Treasury 100
+         firm.treasury_shares = 0
+-        assert firm.finance.get_book_value_per_share() == 10.0
++        assert firm.get_book_value_per_share() == 10.0
+ 
+     def test_book_value_with_liabilities(self, firm, mock_decision_engine):
+         # Setup Liabilities
+@@ -53,12 +53,12 @@ class TestFirmBookValue:
+         mock_bank.get_debt_summary.return_value = {"total_principal": 200.0}
+ 
+         # Net Assets = 1000 - 200 = 800. Shares 100.
+-        assert firm.finance.get_book_value_per_share() == 8.0
++        assert firm.get_book_value_per_share() == 8.0
+ 
+     def test_book_value_with_treasury_shares(self, firm):
+         firm.treasury_shares = 20.0
+         # Assets 1000. Outstanding Shares 80.
+-        assert firm.finance.get_book_value_per_share() == 12.5
++        assert firm.get_book_value_per_share() == 12.5
+ 
+     def test_book_value_negative_net_assets(self, firm, mock_decision_engine):
+          # Setup Huge Liabilities
+@@ -72,12 +72,12 @@ class TestFirmBookValue:
+ 
+         # Net Assets = 1000 - 2000 = -1000.
+         # Should return 0.0
+-        assert firm.finance.get_book_value_per_share() == 0.0
++        assert firm.get_book_value_per_share() == 0.0
+ 
+     def test_book_value_zero_shares(self, firm):
+         firm.total_shares = 0.0
+         firm.treasury_shares = 0.0
+-        assert firm.finance.get_book_value_per_share() == 0.0
++        assert firm.get_book_value_per_share() == 0.0
+ 
+ class TestProductionDepartment:
+     @pytest.fixture

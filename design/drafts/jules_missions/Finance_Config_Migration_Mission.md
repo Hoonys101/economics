@@ -1,5 +1,13 @@
 # Mission: Finance Parameter Migration (TD-034, TD-041)
 
+## ⚠️ CRITICAL: Architecture Preservation
+**DO NOT MODIFY** any files in:
+- `simulation/firms.py` (except reading config values)
+- `simulation/decisions/corporate_manager.py`
+- `simulation/components/*.py` (except adding config reads)
+
+The TD-067 SoC refactoring is complete. CorporateManager already calls `firm.finance.invest_in_*()` methods. **DO NOT** change this to direct `firm.assets -=` manipulation. Your job is ONLY to move hardcoded constants to config files.
+
 ## Context
 We are moving away from hardcoded economic constants to a fully configurable simulation. Your task is to extract hidden financial parameters into the `config/` system.
 

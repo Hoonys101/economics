@@ -6,6 +6,15 @@
 **TRACKING ID:** `WO-084` (Work Order)
 **RELATED DEBT:** `TD-059`, `TD-058`
 
+## ⚠️ CRITICAL: Architecture Preservation
+**DO NOT REGRESS** the TD-067 refactoring:
+- CorporateManager MUST continue calling `firm.finance.invest_in_*()` methods
+- DO NOT change CorporateManager to use `firm.assets -= amount` directly
+- DO NOT add wrapper properties to `Firm` class
+- DO NOT move component methods back to `Firm`
+
+Your task is ONLY to extract Altman Z-Score calculation logic, not to restructure how Firm/CorporateManager interact.
+
 ---
 
 ## 1. Objective

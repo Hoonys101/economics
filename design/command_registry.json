@@ -12,9 +12,9 @@
   },
   "jules": {
     "command": "create",
-    "title": "Domain-Logic-Refactor: TD-059 Solvency Delegation",
-    "instruction": "Refactor FinanceDepartment to delegate solvency calculations to AltmanZScoreCalculator.",
-    "file": "design/drafts/jules_missions/Domain_Logic_Refactor_Mission.md",
+    "title": "Infra-Cleanup-v2: TD-050, TD-063, TD-051 (Post TD-067)",
+    "instruction": "Infrastructure cleanup ONLY. Do NOT touch Firm or CorporateManager architecture.",
+    "file": "design/drafts/jules_missions/Infrastructure_Cleanup_Mission.md",
     "session_id": null
   },
   "git": {
