@@ -1,18 +1,18 @@
 {
   "gemini": {
-    "worker": "audit",
-    "instruction": "Review WO-083C-Spec.md and perform risk analysis. For each of the 5 target tests: 1) Identify God Class interaction risks (does the test rely on Household/Firm/Simulation internal state?), 2) Assess regression potential (likelihood of breaking during migration), 3) Check for circular dependency risks. Output a risk matrix with HIGH/MEDIUM/LOW ratings and mitigation strategies.",
-    "context": ["design/work_orders/WO-083C-Spec.md", "simulation/core_agents.py", "simulation/firms.py", "simulation/engine.py", "tests/conftest.py"],
-    "output": "design/gemini_output/audit_wo083c_risk.md",
+    "worker": "spec",
+    "instruction": "Generate a technical specification for TD-065: Household God Class Refactoring. Goal: Decompose the Household class into modular sub-components based on the Bio-Econ-Social model to reduce complexity and improve testability. Required Components: 1) BioComponent (ReproductionComponent): Move mitosis logic and state cloning. 2) EconComponent: Unified ConsumptionStrategy and LaborComponent (wage stickiness, job search). 3) SocialComponent: Political opinion, social status, and rank logic. Strict Requirements: Use DTOs for inter-component communication, decouple DecisionEngine using DecisionDTO, and maintain compatibility with Golden Fixtures. Follow design/manuals/spec_writer.md strictly.",
+    "context": ["simulation/core_agents.py", "design/TECH_DEBT_LEDGER.md", "tests/conftest.py", "tests/verification/verify_mitosis.py"],
+    "output": "design/specs/TD-065_Household_Refactor_Spec.md",
     "audit": "",
     "model": "pro"
   },
   "jules": {
-    "command": "send-message",
-    "title": "",
-    "session_id": "9067551690220486700",
-    "instruction": "PR Review feedback: REQUEST CHANGES. Critical issues found: 1) Zero-Sum violation risk - missing parent asset decrease verification after clone(), 2) Test coverage regression - stock inheritance test missing, 3) AI state verification weakened - Q-table content check removed. Please fix these issues. Read design/gemini_output/pr_review_verify-mitosis-migration-9067551690220486700.md for details.",
-    "file": "",
+    "command": "create",
+    "title": "TD-065 Household God Class Refactoring",
+    "session_id": "",
+    "instruction": "Implement the Household God Class refactoring according to TD-065_Household_Refactor_Spec.md. Goal: Decompose Household into Bio/Econ/Social components while maintaining Facade compatibility and introducing DTO-based communication with DecisionEngine. Ensure all existing tests in tests/verification/ passing.",
+    "file": "design/specs/TD-065_Household_Refactor_Spec.md",
     "wait": true
   },
   "git_review": {
