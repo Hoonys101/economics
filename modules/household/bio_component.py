@@ -145,8 +145,9 @@ class BioComponent(IBioComponent):
         cloned_household.skills = {k: Skill(v.domain, v.value, v.observability) for k, v in self.owner.skills.items()}
 
         # Inventory (Inheritance? Usually empty for newborn, but maybe mitosis implies split?)
-        # Original code: `cloned_household.inventory = self.inventory.copy()`
-        cloned_household.inventory = self.owner.inventory.copy()
+        # Original code copied inventory, leading to duplication.
+        # Fixed to start empty (Zero-Sum resource logic).
+        cloned_household.inventory = {}
 
         # Labor Skill
         cloned_household.labor_skill = self.owner.labor_skill

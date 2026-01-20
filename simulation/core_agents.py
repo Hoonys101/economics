@@ -154,7 +154,6 @@ class Household(BaseAgent, ILearningAgent):
         )
         self.econ_component = EconComponent(self, config_module)
         self.social_component = SocialComponent(self, config_module, personality, initial_assets)
-        print(f"DEBUG: EconComponent initialized: {hasattr(self, 'econ_component')}")
         
         # --- Legacy & Compatibility Attributes ---
         # Some attributes are kept on Facade if they are deeply intertwined or purely transient
