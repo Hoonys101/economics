@@ -9,8 +9,11 @@ from simulation.models import StockOrder, Transaction
 
 
 @pytest.fixture
-def mock_config():
-    config = Mock()
+def mock_config(golden_config):
+    # Use golden_config if available, otherwise fallback to a fresh Mock
+    config = golden_config if golden_config is not None else Mock()
+
+    # State Override Pattern: Set specific test preconditions
     config.STOCK_MARKET_ENABLED = True
     config.STOCK_PRICE_LIMIT_RATE = 0.15
     config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
@@ -75,8 +78,8 @@ class TestStockMarketInitialization:
         assert stock_market.sell_orders == {}
         assert stock_market.last_prices == {}
 
-    def test_update_reference_prices(self, stock_market):
-        mock_firm = Mock()
+    def test_update_reference_prices(self, stock_market, golden_firms):
+        mock_firm = golden_firms[0]
         mock_firm.id = 100
         mock_firm.is_active = True
         
