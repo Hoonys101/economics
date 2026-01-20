@@ -40,10 +40,14 @@ class FirmSystem2Planner:
 
         # 1. Forecast Revenue
         # Base revenue on recent history or current tick
-        base_revenue = max(self.firm.revenue_this_turn, self.firm.last_revenue, 10.0)
+        # UPDATE: Access via finance component
+        revenue_this_turn = self.firm.finance.revenue_this_turn
+        last_revenue = self.firm.finance.last_revenue
+        base_revenue = max(revenue_this_turn, last_revenue, 10.0)
 
         # 2. Forecast Costs (Status Quo)
-        current_wages = sum(self.firm.employee_wages.values())
+        # UPDATE: Access via hr component
+        current_wages = sum(self.firm.hr.employee_wages.values())
         current_maintenance = getattr(self.config, "FIRM_MAINTENANCE_FEE", 50.0)
 
         # 3. Scenario Analysis: Automation Investment
@@ -57,15 +61,6 @@ class FirmSystem2Planner:
         gap = max(0.0, target_a - current_a)
 
         # Investment Cost Calculation (Aligned with CorporateManager logic?)
-        # CorporateManager uses: Cost = cost_per_pct * (gap * 100.0)
-        # Spec says: "Firm Size (Assets)".
-        # But for test consistency with `test_system2_planner_guidance`, let's check assumptions.
-        # My test assumes Cost = Assets * Gap (approx).
-        # Let's align code with a reasonable assumption.
-        # If Cost = 1000 * (Gap*100), then for Gap=0.8, Cost = 1000 * 80 = 80,000.
-        # If firm assets = 50,000, it can't afford it in one go.
-        # But NPV calculation should account for total cost.
-        # Let's assume cost is spread or total capital cost.
         cost_per_pct = getattr(self.config, "AUTOMATION_COST_PER_PCT", 1000.0)
         investment_cost = cost_per_pct * (gap * 100.0)
 
@@ -101,7 +96,8 @@ class FirmSystem2Planner:
         # 7. M&A Strategy
         expansion_mode = "ORGANIC"
         if personality == Personality.GROWTH_HACKER or personality == Personality.BALANCED:
-            if self.firm.assets > self.firm.revenue_this_turn * 50:
+            # UPDATE: Access via finance component
+            if self.firm.finance.cash > self.firm.finance.revenue_this_turn * 50:
                 expansion_mode = "MA"
 
         guidance = {

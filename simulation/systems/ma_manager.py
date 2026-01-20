@@ -53,7 +53,7 @@ class MAManager:
                 continue
             
             # Standard Distress (Friendly M&A)
-            if firm.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
+            if firm.finance.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
                  preys.append(firm)
             elif firm.assets < avg_assets * 0.2:
                 preys.append(firm)
@@ -68,7 +68,7 @@ class MAManager:
             # But let's assume we use 'stock_price' if available.
             # If firm is public.
 
-            market_cap = firm.get_market_cap()
+            market_cap = firm.finance.get_market_cap()
             # If market cap is low relative to assets...
             # Note: calculate_valuation uses profit premium.
             # Intrinsic Value here roughly equals 'valuation'.
@@ -83,7 +83,7 @@ class MAManager:
             # Or just be rich.
             # Phase 21 Spec: Predator Assets > Target Market Cap * 1.5.
             # Let's filter later. Just identify rich firms.
-            if firm.assets > avg_assets * 1.5 and firm.current_profit > 0:
+            if firm.assets > avg_assets * 1.5 and firm.finance.current_profit > 0:
                 predators.append(firm)
 
         # 2. M&A Matching Loop
@@ -175,7 +175,7 @@ class MAManager:
         self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price:,.2f}.")
         
         # 1. Payment
-        predator.assets -= price
+        predator.finance.pay_expense(price, reason="ma_acquisition")
 
         # Pay Shareholders (Households)
         # Assuming 100% buyout.
@@ -207,16 +207,16 @@ class MAManager:
         # Hostile Takeovers often have deeper cuts
         retention_rate = 0.3 if is_hostile else 0.5
 
-        for emp in list(prey.employees):
+        for emp in list(prey.hr.employees):
             if random.random() > retention_rate:
                 # Fire
                 emp.quit()
                 fired_count += 1
             else:
                 # Retain
-                prey.employees.remove(emp)
-                predator.employees.append(emp)
-                predator.employee_wages[emp.id] = prey.employee_wages.get(emp.id, 10.0)
+                prey.hr.employees.remove(emp)
+                predator.hr.employees.append(emp)
+                predator.hr.employee_wages[emp.id] = prey.hr.employee_wages.get(emp.id, 10.0)
                 emp.employer_id = predator.id
                 retained_count += 1
                 
@@ -229,7 +229,7 @@ class MAManager:
         recovered = firm.liquidate_assets()
         self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
         
-        for emp in list(firm.employees):
+        for emp in list(firm.hr.employees):
             emp.quit()
             
         firm.is_active = False

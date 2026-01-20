@@ -21,6 +21,22 @@ class TestFirmBookValue:
         config.LABOR_ALPHA = 0.7
         config.CAPITAL_DEPRECIATION_RATE = 0.05
         config.GOODS = {"test": {}}
+        config.PROFIT_HISTORY_TICKS = 10
+        config.STARTUP_COST = 30000.0
+        config.SEO_TRIGGER_RATIO = 0.5
+        config.SEO_MAX_SELL_RATIO = 0.10
+        config.MARKETING_BUDGET_RATE_MIN = 0.01
+        config.MARKETING_BUDGET_RATE_MAX = 0.20
+        config.FIRM_MAINTENANCE_FEE = 50.0
+        config.CORPORATE_TAX_RATE = 0.2
+        config.BAILOUT_REPAYMENT_RATIO = 0.5
+        config.DIVIDEND_RATE = 0.3
+        config.VALUATION_PER_MULTIPLIER = 10.0
+        config.INVENTORY_HOLDING_COST_RATE = 0.01
+        config.LIQUIDITY_NEED_INCREASE_RATE = 1.0
+        config.ASSETS_CLOSURE_THRESHOLD = 0.0
+        config.FIRM_CLOSURE_TURNS_THRESHOLD = 10
+        config.INVISIBLE_HAND_SENSITIVITY = 0.1
         return config
 
     @pytest.fixture
@@ -39,7 +55,8 @@ class TestFirmBookValue:
     def test_book_value_no_liabilities(self, firm):
         # Assets 1000, Shares 100, Treasury 100
         firm.treasury_shares = 0
-        assert firm.get_book_value_per_share() == 10.0
+        # Use direct component access
+        assert firm.finance.get_book_value_per_share() == 10.0
 
     def test_book_value_with_liabilities(self, firm, mock_decision_engine):
         # Setup Liabilities
@@ -53,12 +70,12 @@ class TestFirmBookValue:
         mock_bank.get_debt_summary.return_value = {"total_principal": 200.0}
 
         # Net Assets = 1000 - 200 = 800. Shares 100.
-        assert firm.get_book_value_per_share() == 8.0
+        assert firm.finance.get_book_value_per_share() == 8.0
 
     def test_book_value_with_treasury_shares(self, firm):
         firm.treasury_shares = 20.0
         # Assets 1000. Outstanding Shares 80.
-        assert firm.get_book_value_per_share() == 12.5
+        assert firm.finance.get_book_value_per_share() == 12.5
 
     def test_book_value_negative_net_assets(self, firm, mock_decision_engine):
          # Setup Huge Liabilities
@@ -72,12 +89,12 @@ class TestFirmBookValue:
 
         # Net Assets = 1000 - 2000 = -1000.
         # Should return 0.0
-        assert firm.get_book_value_per_share() == 0.0
+        assert firm.finance.get_book_value_per_share() == 0.0
 
     def test_book_value_zero_shares(self, firm):
         firm.total_shares = 0.0
         firm.treasury_shares = 0.0
-        assert firm.get_book_value_per_share() == 0.0
+        assert firm.finance.get_book_value_per_share() == 0.0
 
 class TestProductionDepartment:
     @pytest.fixture

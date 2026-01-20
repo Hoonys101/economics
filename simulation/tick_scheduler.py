@@ -400,10 +400,9 @@ class TickScheduler:
                  firm.update_needs(state.time, state.government, market_data, state.reflux_system)
 
                  # 2a. Corporate Tax
-                 if firm.is_active and firm.current_profit > 0:
-                     tax_amount = state.government.calculate_corporate_tax(firm.current_profit)
-                     firm.assets -= tax_amount
-                     state.government.collect_tax(tax_amount, "corporate_tax", firm.id, state.time)
+                if firm.is_active and firm.finance.current_profit > 0:
+                    tax_amount = state.government.calculate_corporate_tax(firm.finance.current_profit)
+                    firm.finance.pay_adhoc_tax(tax_amount, "corporate_tax", state.government, state.time)
 
         # 2b. Government Infra Investment
         if state.government.invest_infrastructure(state.time, state.reflux_system):
