@@ -337,6 +337,11 @@ class Bank(IFinancialEntity):
                 agent.assets -= payment
                 self.assets += payment
                 total_loan_interest += payment
+
+                # Record Expense for Firms (FinanceDepartment)
+                if hasattr(agent, 'finance') and hasattr(agent.finance, 'record_expense'):
+                    agent.finance.record_expense(payment)
+
             else:
                 # Default / Penalty logic
                 # Phase 4: Call process_default

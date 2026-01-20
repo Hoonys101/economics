@@ -184,8 +184,8 @@ class MAManager:
         # Ideally iterate shareholders.
         # For simplicity, pay founder or distribute generally?
         # Let's stick to paying founder as proxy for 'Shareholders'
-        if prey.founder_id is not None and prey.founder_id in self.simulation.households_dict:
-             self.simulation.households_dict[prey.founder_id].assets += price
+        if prey.founder_id is not None and prey.founder_id in self.simulation.agents:
+             self.simulation.agents[prey.founder_id].assets += price
         
         # 2. Asset Transfer
         # SoC Refactor: use production.add_capital

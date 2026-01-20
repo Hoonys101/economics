@@ -158,6 +158,14 @@ class TestPhase29Depression(unittest.TestCase):
             f.productivity_factor = 1.0
             f.hr = MagicMock()
             f.hr.employees = []
+
+            # Phase 29 Refinement: Mock FinanceDepartment
+            f.finance = MagicMock()
+            f.finance.consecutive_loss_turns = 0
+            f.finance.current_profit = 100.0
+            f.finance.calculate_altman_z_score.return_value = 3.0
+            f.finance.calculate_valuation.return_value = 5000.0
+
             # Phase 29 Refinement: Mock get_financial_snapshot
             f.get_financial_snapshot.return_value = {
                 "total_assets": 5500.0,
