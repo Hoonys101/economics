@@ -74,7 +74,7 @@ class FinanceSystem(IFinanceSystem):
         debt_to_gdp = self.government.get_debt_to_gdp_ratio()
 
         # Config-driven risk premium tiers
-        risk_premium_tiers = getattr(self.config_module, "DEBT_RISK_PREMIUM_TIERS", {
+        risk_premium_tiers = self.config_module.get("economy_params.debt_risk_premium_tiers", {
             1.2: 0.05,
             0.9: 0.02,
             0.6: 0.005,
@@ -88,7 +88,7 @@ class FinanceSystem(IFinanceSystem):
 
         yield_rate = base_rate + risk_premium
 
-        bond_maturity = getattr(self.config_module, "BOND_MATURITY_TICKS", 400)
+        bond_maturity = self.config_module.get("economy_params.bond_maturity_ticks", 400)
         new_bond = BondDTO(
             id=f"BOND_{current_tick}",
             issuer="GOVERNMENT",
@@ -97,7 +97,7 @@ class FinanceSystem(IFinanceSystem):
             maturity_date=current_tick + bond_maturity
         )
 
-        qe_threshold = getattr(self.config_module, "QE_INTERVENTION_YIELD_THRESHOLD", 0.10)
+        qe_threshold = self.config_module.get("economy_params.qe_intervention_yield_threshold", 0.10)
         if yield_rate > qe_threshold:
             # Central Bank intervenes as buyer of last resort (QE)
             self.central_bank.purchase_bonds(new_bond)
@@ -121,12 +121,12 @@ class FinanceSystem(IFinanceSystem):
         Returns the loan DTO on success, or None if the transfer fails.
         """
         base_rate = self.central_bank.get_base_rate()
-        penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
+        penalty_premium = self.config_module.get("economy_params.bailout_penalty_premium", 0.05)
 
         covenants = BailoutCovenant(
             dividends_allowed=False,
             executive_salary_freeze=True,
-            mandatory_repayment=getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+            mandatory_repayment=self.config_module.get("economy_params.bailout_repayment_ratio", 0.5)
         )
         loan = BailoutLoanDTO(
             firm_id=firm.id,
@@ -176,8 +176,8 @@ class FinanceSystem(IFinanceSystem):
         """
         matured_bonds = [b for b in self.outstanding_bonds if b.maturity_date <= current_tick]
 
-        bond_maturity_ticks = getattr(self.config_module, "BOND_MATURITY_TICKS", 400)
-        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 48)
+        bond_maturity_ticks = self.config_module.get("economy_params.bond_maturity_ticks", 400)
+        ticks_per_year = self.config_module.get("TICKS_PER_YEAR", 48)
 
         for bond in matured_bonds:
             # Calculate simple interest accrued over the bond's lifetime

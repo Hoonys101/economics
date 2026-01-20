@@ -9,6 +9,13 @@ class MockConfig:
     BAILOUT_PENALTY_PREMIUM = 0.05
     BAILOUT_REPAYMENT_RATIO = 0.5
 
+    def get(self, key, default=None):
+        if key == "economy_params.bailout_penalty_premium":
+            return self.BAILOUT_PENALTY_PREMIUM
+        if key == "economy_params.bailout_repayment_ratio":
+            return self.BAILOUT_REPAYMENT_RATIO
+        return default
+
 @pytest.fixture
 def finance_test_environment():
     """Sets up a test environment with mocked financial entities."""
