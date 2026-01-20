@@ -224,7 +224,7 @@ class CorporateManager:
             return
 
         # Execute
-        firm.assets -= actual_spend
+        firm.finance.invest_in_automation(actual_spend)
 
         # WO-044-Track-B: Automation Tax
         # Logic: actual_spend * AUTOMATION_TAX_RATE
@@ -233,8 +233,7 @@ class CorporateManager:
 
         if tax_amount > 0 and government:
             if firm.assets >= tax_amount:
-                firm.assets -= tax_amount
-                government.collect_tax(tax_amount, "automation_tax", firm.id, current_time)
+                firm.finance.pay_automation_tax(tax_amount, government, current_time)
 
                 self.logger.info(
                     f"AUTOMATION_TAX | Firm {firm.id} paid {tax_amount:.2f} tax on {actual_spend:.2f} investment.",
@@ -274,7 +273,7 @@ class CorporateManager:
         if budget < 10.0:
             return
 
-        firm.assets -= budget
+        firm.finance.invest_in_rd(budget)
         firm.research_history["total_spent"] += budget
 
         denominator = max(firm.revenue_this_turn * 0.2, 100.0)
@@ -318,7 +317,7 @@ class CorporateManager:
         if budget < 100.0:
             return
 
-        firm.assets -= budget
+        firm.finance.invest_in_capex(budget)
 
         if reflux_system:
              reflux_system.capture(budget, str(firm.id), "capex")
@@ -490,7 +489,7 @@ class CorporateManager:
                     severance_pay = wage * severance_weeks
 
                     if firm.assets >= severance_pay:
-                        firm.assets -= severance_pay
+                        firm.finance.pay_severance(severance_pay)
                         emp.assets += severance_pay
 
                         emp.quit()

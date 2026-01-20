@@ -117,7 +117,9 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
 
     manager.realize_ceo_actions(firm_mock, context_mock, vector)
 
-    assert firm_mock.assets == 10000.0 - expected_budget
+    # Verify delegation to finance
+    firm_mock.finance.invest_in_rd.assert_called_with(expected_budget)
+
     assert firm_mock.base_quality == pytest.approx(initial_quality + 0.05)
     assert firm_mock.productivity_factor == pytest.approx(initial_prod * 1.05)
 

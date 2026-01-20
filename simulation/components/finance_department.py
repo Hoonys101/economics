@@ -89,6 +89,38 @@ class FinanceDepartment:
                     extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
                 )
 
+    def invest_in_rd(self, amount: float) -> None:
+        """Process R&D investment as an expense."""
+        if amount > 0:
+            self.firm.assets -= amount
+            self.record_expense(amount)
+
+    def invest_in_automation(self, amount: float) -> None:
+        """Process Automation investment (Capital Expenditure, not expense)."""
+        if amount > 0:
+            self.firm.assets -= amount
+            # Note: Automation is capitalized, so we don't record it as an expense here.
+            # It should ideally be added to an asset account, but for now we just deduct cash.
+
+    def invest_in_capex(self, amount: float) -> None:
+        """Process Physical Capital investment (Capital Expenditure, not expense)."""
+        if amount > 0:
+            self.firm.assets -= amount
+            # Capital Stock update handles the asset side.
+
+    def pay_automation_tax(self, amount: float, government: Any, current_time: int) -> None:
+        """Pay tax on automation investment."""
+        if amount > 0:
+            self.firm.assets -= amount
+            self.record_expense(amount)
+            government.collect_tax(amount, "automation_tax", self.firm.id, current_time)
+
+    def pay_severance(self, amount: float) -> None:
+        """Pay severance to laid-off employees."""
+        if amount > 0:
+            self.firm.assets -= amount
+            self.record_expense(amount)
+
     def process_profit_distribution(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
         """Public Shareholders Dividend"""
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
