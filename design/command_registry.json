@@ -12,18 +12,18 @@
     "output": "design/specs/TD-066_Simulation_Refactor_Spec.md",
     "model": "pro"
   },
-  "jules": {
-    "command": "create",
-    "title": "WO-083C-P1: Low Risk Test Migration",
-    "instruction": "Execute WO-083C Phase 1: Migrate 'tests/simulation/test_stock_market.py' and 'tests/api/test_api_extensions.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P1-Low-Risk.md' for details. DO NOT modify production code.",
-    "context": [
-      "design/work_orders/WO-083C-P1-Low-Risk.md",
-      "tests/simulation/test_stock_market.py",
-      "tests/api/test_api_extensions.py",
-      "tests/conftest.py"
-    ],
-    "session_id": null
-  },
+    "jules": {
+        "command": "create",
+        "title": "TD-066: Simulation God Class Refactor",
+        "instruction": "Execute TD-066: Decompose 'simulation/engine.py' into 'WorldState', 'TickScheduler', and 'ActionProcessor' as per Spec. Use 'tests/test_engine.py' for verification. Ensure 100% backward compatibility of the 'Simulation' facade.",
+        "context": [
+            "design/specs/TD-066_Simulation_Refactor_Spec.md",
+            "simulation/engine.py",
+            "tests/test_engine.py",
+            "tests/conftest.py"
+        ],
+        "session_id": null
+    },
   "git_review": {
     "branch": "refactor-household-god-class-16457788477972542743",
     "instruction": "Analyze this PR. Check behavior logic and test coverage."

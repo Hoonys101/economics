@@ -168,3 +168,4 @@ reports/*.csv
 test_out*.txt
 test_error.txt
 
+*.pyc

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import uuid
 
 
@@ -66,3 +66,17 @@ class RealEstateUnit:
     estimated_value: float = 10000.0
     rent_price: float = 100.0
     mortgage_id: Optional[int] = None
+
+@dataclass
+class Talent:
+    """가계의 선천적 재능을 나타내는 클래스입니다."""
+    base_learning_rate: float
+    max_potential: Dict[str, float]
+    related_domains: Dict[str, List[str]] = field(default_factory=dict)
+
+@dataclass
+class Skill:
+    """가계의 후천적 역량을 나타내는 클래스입니다."""
+    domain: str
+    value: float = 0.0
+    observability: float = 0.5

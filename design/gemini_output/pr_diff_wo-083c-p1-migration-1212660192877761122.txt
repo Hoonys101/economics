@@ -1,0 +1,74 @@
+diff --git a/tests/test_stock_market.py b/tests/test_stock_market.py
+index 6e27d30..e45949b 100644
+--- a/tests/test_stock_market.py
++++ b/tests/test_stock_market.py
+@@ -291,16 +291,22 @@ def test_ipo_share_count(stock_market, mock_config):
+     assert firm.treasury_shares == 1000.0
+     assert stock_market.shareholders[firm.id][firm.id] == 1000.0
+ 
+-def test_seo_triggers(stock_market, mock_config):
+-    from simulation.firms import Firm
++def test_seo_triggers(stock_market, mock_config, golden_firms):
+     from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+     mock_config.PROFIT_HISTORY_TICKS = 10
+     firm_decision_engine = AIDrivenFirmDecisionEngine(ai_engine=MagicMock(), config_module=mock_config)
+-    firm = Firm(id=1, initial_capital=10000, initial_liquidity_need=100, specialization="food",
+-                productivity_factor=1, decision_engine=firm_decision_engine, value_orientation="v",
+-                config_module=mock_config)
++
++    # Use golden_firms[0] but override state
++    firm = golden_firms[0]
++    firm.id = 1
++    firm.decision_engine = firm_decision_engine
++    firm.config_module = mock_config
++    firm.specialization = "food"
++
++    # State Override
+     firm.assets = mock_config.STARTUP_COST * 0.4  # Below threshold
+     firm.treasury_shares = 500
++    firm.total_shares = 1000.0
+ 
+     context = MagicMock()
+     context.firm = firm
+@@ -316,10 +322,10 @@ def test_seo_triggers(stock_market, mock_config):
+     assert order.order_type == "SELL"
+     assert order.quantity == 50.0 # 10% of 500
+ 
+-def test_household_investment(stock_market, mock_config):
+-    from simulation.core_agents import Household, Talent
++def test_household_investment(stock_market, mock_config, golden_households):
+     from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+     from simulation.ai.api import Personality
++
+     mock_config.PROFIT_HISTORY_TICKS = 10
+     mock_config.CONFORMITY_RANGES = {
+         "STATUS_SEEKER": (0.7, 0.95),
+@@ -331,10 +337,25 @@ def test_household_investment(stock_market, mock_config):
+     mock_config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000.0
+     mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0
+     mock_config.GOODS = {"basic_food": {"initial_price": 5.0}}
++
+     household_decision_engine = AIDrivenHouseholdDecisionEngine(ai_engine=MagicMock(), config_module=mock_config)
+-    talent = Talent(base_learning_rate=0.1, max_potential={"labor": 10})
+-    household = Household(id=1, initial_assets=1000.0, initial_needs={}, decision_engine=household_decision_engine,
+-                          value_orientation="v", config_module=mock_config, talent=talent, goods_data=[], personality=Personality.BALANCED)
++
++    # Use golden_households[0] but override state
++    household = golden_households[0]
++    household.id = 1
++    household.decision_engine = household_decision_engine
++    household.config_module = mock_config
++    household.personality = Personality.BALANCED
++
++    # State Override
++    household.assets = 1000.0
++    household.needs = {}
++    household.value_orientation = "v"
++
++    # Ensure talent is present if needed (mock usually has it as a mock, but explicit override is safer if logic depends on it)
++    # household.talent is likely a Mock, which is fine unless we access specific attrs like max_potential.
++    # The original test set max_potential={"labor": 10}.
++    household.talent.max_potential = {"labor": 10}
+ 
+     stock_market.last_prices = {1: 10.0}
+ 

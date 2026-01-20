@@ -133,10 +133,16 @@ def test_mitosis_stock_inheritance(golden_config, golden_households):
 
     # Simulate Inheritance (Manager Logic)
     # Split shares 50/50
-    for firm_id, quantity in parent.shares_owned.items():
+    # Note: shares_owned property returns a copy in Facade refactoring, so we must set it back.
+    parent_shares = parent.shares_owned
+    child_shares = child.shares_owned
+    for firm_id, quantity in parent_shares.items():
         child_share = quantity // 2
-        parent.shares_owned[firm_id] -= child_share
-        child.shares_owned[firm_id] = child_share
+        parent_shares[firm_id] -= child_share
+        child_shares[firm_id] = child_share
+
+    parent.shares_owned = parent_shares
+    child.shares_owned = child_shares
 
     # Verify Distribution
     assert parent.shares_owned[firm_1_id] == 5
@@ -165,10 +171,10 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
     )
     # Populate Q-Table
     parent_ai.q_consumption["food"] = QTableManager()
-    # (State) -> [Action Values]
+    # (State) -> [Action Values] (QTableManager expects Dict)
     test_state = (0, 0, 0, 0)
-    test_values = [1.0, 0.5, 0.1]
-    parent_ai.q_consumption["food"].q_table = {test_state: list(test_values)}
+    test_values = {0: 1.0, 1: 0.5, 2: 0.1}
+    parent_ai.q_consumption["food"].q_table = {test_state: test_values}
 
     parent_decision = AIDrivenHouseholdDecisionEngine(parent_ai, golden_config)
     # Fix: Ensure loan_market is set on the Real engine
@@ -199,7 +205,10 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
 
     # Check that values are close but potentially mutated
     # Mutation magnitude is 0.05
-    for p_val, c_val in zip(test_values, child_values):
+    # Since keys are same
+    for k in test_values:
+        p_val = test_values[k]
+        c_val = child_values[k]
         assert abs(p_val - c_val) <= 0.1 # Allow small margin for mutation + float error
 
     # Verify Personality (Inheritance or Mutation)
