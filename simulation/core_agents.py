@@ -94,6 +94,29 @@ class Household(BaseAgent, ILearningAgent):
         self.initial_assets_record = initial_assets
         self.credit_frozen_until_tick: int = 0
 
+        # FIX: Track consumption for EconomicTracker
+        self.current_consumption = 0.0
+        self.current_food_consumption = 0.0
+
+        # FIX: Initialize social status
+        self.social_status: float = 0.0
+
+        # FIX: Inventory quality
+        self.inventory_quality: Dict[str, float] = {g["id"]: 1.0 for g in goods_data}
+
+        # FIX: Inflation & Price Perception (Facade attributes)
+        self.expected_inflation: Dict[str, float] = {g["id"]: 0.0 for g in goods_data}
+        self.perceived_avg_prices: Dict[str, float] = {g["id"]: g.get("initial_price", 10.0) for g in goods_data}
+        self.price_history: Dict[str, deque] = {g["id"]: deque(maxlen=10) for g in goods_data}
+
+        # Adaptation rate based on personality
+        if self.personality in [Personality.IMPULSIVE, Personality.STATUS_SEEKER]:
+             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_IMPULSIVE", 0.8)
+        elif self.personality in [Personality.CONSERVATIVE, Personality.MISER]:
+             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
+        else:
+             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_NORMAL", 0.3)
+
         # WO-054: Aptitude (Hidden Trait) - Kept on Facade as it's intrinsic
         raw_aptitude = random.gauss(0.5, 0.15)
         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
@@ -572,6 +595,7 @@ class Household(BaseAgent, ILearningAgent):
             current_wage=self.current_wage,
             wage_modifier=self.wage_modifier,
             residing_property_id=self.residing_property_id,
+            is_homeless=self.is_homeless,
             owned_properties=list(self.owned_properties),
             portfolio_holdings=self.portfolio.holdings, # Direct reference to Share objects (dataclasses)
             risk_aversion=self.risk_aversion,
@@ -639,6 +663,8 @@ class Household(BaseAgent, ILearningAgent):
             self.current_wage = 0.0
 
     def decide_and_consume(self, current_time: int, market_data: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+        self.current_consumption = 0.0
+        self.current_food_consumption = 0.0
         consumed_items = self.econ_component.consumption.decide_and_consume(current_time, market_data)
         self.update_needs(current_time, market_data)
         return consumed_items

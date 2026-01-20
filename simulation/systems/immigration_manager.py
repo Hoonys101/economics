@@ -31,8 +31,9 @@ class ImmigrationManager:
         indicators = engine.tracker.get_latest_indicators()
         unemployment_rate = indicators.get("unemployment_rate", 1.0)
 
-        market_data = engine._prepare_market_data(engine.tracker)
-        job_vacancies = market_data.get("job_vacancies", 0)
+        job_vacancies = 0
+        if "labor" in engine.markets:
+             job_vacancies = engine.markets["labor"].get_total_demand()
 
         total_population = len([h for h in engine.households if h.is_active])
         pop_threshold = getattr(self.config, "POPULATION_IMMIGRATION_THRESHOLD", 80)

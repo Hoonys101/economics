@@ -1,0 +1,8 @@
+bond_maturity_ticks: 400
+debt_risk_premium_tiers:
+  1.2: 0.05
+  0.9: 0.02
+  0.6: 0.005
+qe_intervention_yield_threshold: 0.10
+bailout_penalty_premium: 0.05
+bailout_repayment_ratio: 0.5
