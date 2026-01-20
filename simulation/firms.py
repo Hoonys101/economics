@@ -290,16 +290,7 @@ class Firm(BaseAgent, ILearningAgent):
         Calculate Firm Valuation based on Net Assets + Profit Potential.
         Formula: Net Assets + (Max(0, Avg_Profit_Last_10) * PER Multiplier)
         """
-        net_assets = self.assets + self.get_inventory_value() + self.capital_stock 
-        
-        avg_profit = 0.0
-        if len(self.finance.profit_history) > 0:
-            avg_profit = sum(self.finance.profit_history) / len(self.finance.profit_history)
-        
-        profit_premium = max(0.0, avg_profit) * getattr(self.config_module, "VALUATION_PER_MULTIPLIER", 10.0)
-        
-        self.valuation = net_assets + profit_premium
-        return self.valuation
+        return self.finance.calculate_valuation()
 
     @property
     def price(self) -> float:
@@ -312,53 +303,14 @@ class Firm(BaseAgent, ILearningAgent):
 
     def get_inventory_value(self) -> float:
         """Calculate market value of current inventory."""
-        total_val = 0.0
-        # If inventory is dict (it is initialized as dict in __init__)
-        for good, qty in self.inventory.items():
-             # Get price for this good
-             price = self.last_prices.get(good, 0.0)
-             if price == 0.0:
-                 # Fallback to config initial price if available
-                 if self.config_module and hasattr(self.config_module, 'GOODS'):
-                     price = self.config_module.GOODS.get(good, {}).get('initial_price', 10.0)
-                 else:
-                     price = 10.0 # Ultimate fallback
-             total_val += qty * price
-        return total_val
+        return self.finance.get_inventory_value()
 
     def get_financial_snapshot(self) -> Dict[str, float]:
         """
         Returns a standardized dictionary of financial metrics for monitoring and analysis.
         This provides a stable interface for CrisisMonitor and FinanceSystem.
         """
-        total_assets = self.assets + self.get_inventory_value()
-        
-        # Working Capital = Current Assets - Current Liabilities
-        # Since we don't have long-term assets/liabilities clearly split yet, 
-        # we treat total assets as current and total debt as current liabilities.
-        current_liabilities = getattr(self, "total_debt", 0.0)
-        working_capital = total_assets - current_liabilities
-        
-        # Retained Earnings
-        retained_earnings = 0.0
-        if hasattr(self, "finance"):
-            retained_earnings = getattr(self.finance, "retained_earnings", 0.0)
-        else:
-            retained_earnings = self.retained_earnings
-
-        # Average Profit (last 10 ticks if available)
-        avg_profit = self.current_profit
-        if self.profit_history:
-            recent = list(self.profit_history)[-10:]
-            avg_profit = sum(recent) / len(recent)
-
-        return {
-            "total_assets": total_assets,
-            "working_capital": working_capital,
-            "retained_earnings": retained_earnings,
-            "average_profit": avg_profit,
-            "total_debt": current_liabilities
-        }
+        return self.finance.get_financial_snapshot()
 
     def liquidate_assets(self) -> float:
         """
@@ -367,17 +319,7 @@ class Firm(BaseAgent, ILearningAgent):
         instead of being converted to cash, to prevent money creation from thin air.
         Only existing cash (assets) is returned.
         """
-        # 1. Write off Inventory
-        self.inventory.clear()
-        
-        # 2. Write off Capital Stock
-        self.capital_stock = 0.0
-        
-        # 3. Write off Automation
-        self.automation_level = 0.0
-
-        self.is_bankrupt = True
-        return self.assets
+        return self.finance.liquidate_assets()
 
     def add_inventory(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
@@ -430,45 +372,11 @@ class Firm(BaseAgent, ILearningAgent):
         Returns:
             조달된 자본금
         """
-        if quantity <= 0 or price <= 0:
-            return 0.0
-        
-        self.total_shares += quantity
-        raised_capital = quantity * price
-        self.assets += raised_capital
-        
-        self.logger.info(
-            f"Firm {self.id} issued {quantity:.1f} shares at {price:.2f}, "
-            f"raising {raised_capital:.2f} capital. Total shares: {self.total_shares:.1f}",
-            extra={
-                "agent_id": self.id,
-                "quantity": quantity,
-                "price": price,
-                "raised_capital": raised_capital,
-                "total_shares": self.total_shares,
-                "tags": ["stock", "issue"]
-            }
-        )
-        return raised_capital
+        return self.finance.issue_shares(quantity, price)
 
     def get_book_value_per_share(self) -> float:
         """주당 순자산가치(BPS)를 계산합니다. (유통주식수 기준)"""
-        outstanding_shares = self.total_shares - self.treasury_shares
-        if outstanding_shares <= 0:
-            return 0.0
-
-        # Calculate liabilities from bank loans
-        liabilities = 0.0
-        try:
-            loan_market = getattr(self.decision_engine, 'loan_market', None)
-            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
-                debt_summary = loan_market.bank.get_debt_summary(self.id)
-                liabilities = debt_summary.get('total_principal', 0.0)
-        except Exception:
-            pass  # Graceful fallback
-
-        net_assets = self.assets - liabilities
-        return max(0.0, net_assets) / outstanding_shares
+        return self.finance.get_book_value_per_share()
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
         """
@@ -480,11 +388,7 @@ class Firm(BaseAgent, ILearningAgent):
         Returns:
             시가총액
         """
-        if stock_price is None:
-            stock_price = self.get_book_value_per_share()
-        
-        outstanding_shares = self.total_shares - self.treasury_shares
-        return outstanding_shares * stock_price
+        return self.finance.get_market_cap(stock_price)
 
 
     @override
