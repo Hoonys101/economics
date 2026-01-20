@@ -11,8 +11,8 @@
     "command": "create",
     "title": "WO-083B: Test Migration Phase 1",
     "session_id": "",
-    "instruction": "Migrate EASY complexity tests to Golden Fixtures. Read design/work_orders/WO-083B-Test-Migration-P1.md for details.",
-    "file": "design/work_orders/WO-083B-Test-Migration-P1.md",
+    "instruction": "Great work. Proceed with the submission. Make sure to double-check that no regressions were introduced in the verification scripts.",
+    "file": "",
     "wait": true
   },
   "git_review": {
