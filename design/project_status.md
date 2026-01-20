@@ -25,15 +25,33 @@
     - **Phase 28**: Macro-Stability Stress Testing ✅ (Verified with Scenarios)
     - **Phase 29**: Depression Simulation & Crisis Monitor ✅ (Verified & Handover Ready)
     
-- **현재 단계:** `Phase 30: The Great Depression (Simulation)` 🏗️
-    - **WO-080**: Golden Fixture Test Migration 🏗️ (In Progress)
-    - **TD-062**: Bank Interface Mismatch (Deferred)
+- **현재 단계:** `Phase 31: Golden Fixture & Stability` 🏗️
+    - **WO-080**: Golden Fixture Migration (Refactored to 081-083) ⏭️
+    - **WO-081**: Bank Interface Segregation ✅ (Merged 2026-01-19)
+    - **WO-082**: Golden Loader Infrastructure ✅ (Merged 2026-01-19)
+    - **WO-083A**: Golden Fixture Generation (In Progress 🏗️)
+    - **WO-083B**: Test Migration Phase 1 (Planned)
+    - **TD-064**: Household.age Bug Fix (In Progress within WO-083A)
 
 ---
 
 ## 2. 완료된 작업 요약 (Recent)
 
-### WO-072: Sovereign Debt & Financial Credit 🏗️
+### WO-081: Bank Interface Segregation ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Interface | ✅ | `IBankService` vs `IFinancialEntity` 분리 완료 |
+| Refactoring | ✅ | `deposit_from_customer` 명시적 메서드 적용 |
+| Zero-Sum | ✅ | 시스템 자본금과 고객 예금 분리 확인 |
+
+### WO-082: Golden Loader Infrastructure ✅
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| Loader | ✅ | `GoldenLoader` class implements `load_json` |
+| Mocking | ✅ | Recursive nested dict -> MagicMock conversion |
+| Integration | ✅ | `conftest.py` fixtures integrated |
+
+### WO-072: Sovereign Debt & Financial Credit ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Finance Module | ✅ | `modules/finance/system.py` implemented |

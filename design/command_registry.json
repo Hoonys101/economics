@@ -9,10 +9,10 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-083A: Golden Fixture Generation",
+    "title": "WO-083B: Test Migration Phase 1",
     "session_id": "",
-    "instruction": "Generate Golden Fixtures by running the simulation. Read design/work_orders/WO-083A-Golden-Generation.md for details.",
-    "file": "design/work_orders/WO-083A-Golden-Generation.md",
+    "instruction": "Migrate EASY complexity tests to Golden Fixtures. Read design/work_orders/WO-083B-Test-Migration-P1.md for details.",
+    "file": "design/work_orders/WO-083B-Test-Migration-P1.md",
     "wait": true
   },
   "git_review": {
