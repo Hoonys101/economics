@@ -6,18 +6,33 @@ from modules.finance.api import InsufficientFundsError
 @pytest.fixture
 def mock_config():
     config = Mock()
-    config.STARTUP_GRACE_PERIOD_TICKS = 24
-    config.ALTMAN_Z_SCORE_THRESHOLD = 1.81
-    config.DEBT_RISK_PREMIUM_TIERS = {
-        1.2: 0.05,
-        0.9: 0.02,
-        0.6: 0.005,
-    }
-    config.BOND_MATURITY_TICKS = 400
-    config.QE_INTERVENTION_YIELD_THRESHOLD = 0.10
-    config.BAILOUT_PENALTY_PREMIUM = 0.05
-    config.BAILOUT_REPAYMENT_RATIO = 0.5
+    # Mocking config.get() behavior
+    def get_side_effect(key, default=None):
+        if key == "economy_params.startup_grace_period_ticks":
+            return 24
+        elif key == "economy_params.altman_z_score_threshold":
+            return 1.81
+        elif key == "economy_params.debt_risk_premium_tiers":
+            return {1.2: 0.05, 0.9: 0.02, 0.6: 0.005}
+        elif key == "economy_params.bond_maturity_ticks":
+            return 400
+        elif key == "economy_params.qe_intervention_yield_threshold":
+            return 0.10
+        elif key == "economy_params.bailout_penalty_premium":
+            return 0.05
+        elif key == "economy_params.bailout_repayment_ratio":
+            return 0.5
+        elif key == "TICKS_PER_YEAR": # Some parts might still use legacy attribute access via getattr? No, test stubs don't.
+            return 48
+        return default
+
+    config.get.side_effect = get_side_effect
+
+    # Also support attribute access for legacy tests if needed (e.g. TICKS_PER_YEAR in logic)
+    # But FinanceSystem uses getattr(config_module, "TICKS_PER_YEAR") or config_module.get
+    # The current code uses getattr for TICKS_PER_YEAR in service_debt
     config.TICKS_PER_YEAR = 48
+
     return config
 
 # Define simple stub classes for entity behavior
@@ -181,7 +196,7 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
     loan = finance_system.grant_bailout_loan(mock_firm, amount)
     assert loan.firm_id == mock_firm.id
     assert loan.amount == amount
-    assert loan.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
+    assert loan.covenants.mandatory_repayment == 0.5
     assert mock_government.assets == initial_gov_assets - amount
     assert mock_firm.cash_reserve == initial_firm_cash + amount
     mock_firm.finance.add_liability.assert_called_once_with(amount, loan.interest_rate)
@@ -210,7 +225,7 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
     finance_system.service_debt(maturity_date)
 
     # 3. Assertion: Verify the money was transferred correctly
-    bond_lifetime_years = mock_config.BOND_MATURITY_TICKS / mock_config.TICKS_PER_YEAR
+    bond_lifetime_years = 400 / 48
     interest = amount * bond.yield_rate * bond_lifetime_years
     total_repayment = amount + interest
 
