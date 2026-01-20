@@ -12,9 +12,9 @@
   },
   "jules": {
     "command": "create",
-    "title": "Finance-Config-v3: TD-034, TD-041 (Post Infra Merge)",
-    "instruction": "Migrate hardcoded constants to config ONLY. Do NOT touch scripts/ or design/ folders (Infra works are done).",
-    "file": "design/drafts/jules_missions/Finance_Config_Migration_Mission.md",
+    "title": "Phase 29: Implementation of 'The Great Depression' Scenario",
+    "instruction": "Initiate the economic crisis: Apply 200% interest rate shock and observe FinanceDepartment resilience.",
+    "file": "design/drafts/jules_missions/Phase29_Depression_Mission.md",
     "session_id": null
   },
   "git": {

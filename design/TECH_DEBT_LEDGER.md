@@ -13,8 +13,6 @@
 | TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **DEFERRED** |
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **PENDING_IMPLEMENTATION** (Phase 28) |
-| TD-034 | 2026-01-15 | Hardcoded Debt Parameters | Bond maturity, risk premia must be config-driven | Reduced model configurability | **IN_PROGRESS** (Finance-Config-v2) |
-| TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **IN_PROGRESS** (Finance-Config-v2) |
 
 | TD-068 | 2026-01-20 | Observer Scans `design/` Artifacts | Exclude `design/` from `scan_codebase.py` | False Positives in Health Report | **RESOLVED** |
 
@@ -39,6 +37,8 @@
 | TD-063 | 2026-01-20 | `sys.path` Manipulation in Scripts | Normalized using `pathlib` | Brittle Imports | **RESOLVED** (Infra-Cleanup) |
 | TD-050 | 2026-01-20 | Observer Scanner Path Inclusion | Excluded `observer/` and `design/` | Report Noise | **RESOLVED** (Infra-Cleanup) |
 | TD-051 | 2026-01-20 | Documentation Placeholders | Fixed `WO-XXX` placeholders | Poor Meta-Data | **RESOLVED** (Infra-Cleanup) |
+| TD-034 | 2026-01-20 | Hardcoded Debt Parameters | Moved to `economy_params.yaml` | Configurability Gap | **RESOLVED** (Finance-Config) |
+| TD-041 | 2026-01-20 | Hardcoded Bailout Covenant Ratio | Moved to `economy_params.yaml` | Configurability Gap | **RESOLVED** (Finance-Config) |
 
 | ID | 발생일 | 해결일 | 부채 내용 | 해결 방법 |
 |---|---|---|---|---|
