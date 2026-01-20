@@ -1,6 +1,6 @@
 {
   "gemini": {
-    "worker": "risk-audit",
+    "worker": "audit",
     "instruction": "Analyze 'simulation/firms.py' for 'God Class' symptoms and 'Wrapper Bloat' (TD-067). Evaluate the feasibility of a Separation of Concerns (SoC) refactoring into sub-components (HR, Finance, Ops). Identify integration risks with 'tests/test_firms.py' and 'tests/test_corporate_manager.py'. Generate a Risk Audit and a draft Refactor Spec if risks are manageable.",
     "context": [
       "simulation/firms.py",
@@ -14,21 +14,22 @@
   },
     "jules": {
         "command": "create",
-        "title": "WO-083C-P3: High Risk Test Migration",
-        "instruction": "Execute WO-083C Phase 3: Migrate 'tests/verification/verify_mitosis.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P3-High-Risk.md'. Verify using complex inheritance scenarios.",
+        "title": "TD-067-Phase-A: Firm Logic Consolidation",
+        "instruction": "Execute TD-067 Phase A: Move financial and HR logic from 'Firm' facade into their respective sub-components in 'simulation/firms.py'. Keep wrapper properties in 'Firm' for now (Facade pattern). Focus on 'calculate_valuation' and 'get_book_value_per_share'. Verify with 'tests/test_firms.py'.",
         "context": [
-            "design/work_orders/WO-083C-P3-High-Risk.md",
-            "tests/verification/verify_mitosis.py",
-            "tests/conftest.py"
+            "simulation/firms.py",
+            "tests/test_firms.py",
+            "design/TECH_DEBT_LEDGER.md",
+            "design/gemini_output/TD-067_Firm_Refactor_Audit.md"
         ],
         "session_id": null
     },
   "git_review": {
-    "branch": "refactor-household-god-class-16457788477972542743",
-    "instruction": "Analyze this PR. Check behavior logic and test coverage."
+    "branch": "wo-083c-p3-high-risk-migration-9209434692149408533",
+    "instruction": "Verify that 'tests/verification/verify_mitosis.py' correctly uses Golden Fixtures and that complex inheritance logic is preserved without regression."
   },
   "merge": {
-    "branch": "refactor-household-god-class-16457788477972542743"
+    "branch": "wo-083c-p3-high-risk-migration-9209434692149408533"
   },
   "harvest": {}
 }
