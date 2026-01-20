@@ -9,6 +9,10 @@
       "1212660192877761122": {
         "title": "WO-083C-P1: Low Risk Test Migration",
         "initial_mission": "Execute WO-083C Phase 1: Migrate 'tests/simulation/test_stock_market.py' and 'tests/api/test_api_extensions.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P1-Low-Risk.md' for details. DO NOT modify production code."
+      },
+      "13554214772414011208": {
+        "title": "TD-066: Simulation God Class Refactor",
+        "initial_mission": "Execute TD-066: Decompose 'simulation/engine.py' into 'WorldState', 'TickScheduler', and 'ActionProcessor' as per Spec. Use 'tests/test_engine.py' for verification. Ensure 100% backward compatibility of the 'Simulation' facade."
       }
     },
     "completed_sessions": {
