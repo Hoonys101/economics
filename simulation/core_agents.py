@@ -448,6 +448,30 @@ class Household(BaseAgent, ILearningAgent):
     def shadow_reservation_wage(self, value: float) -> None:
         self.econ_component.shadow_reservation_wage = value
 
+    @property
+    def current_consumption(self) -> float:
+        return self.econ_component.current_consumption
+
+    @current_consumption.setter
+    def current_consumption(self, value: float) -> None:
+        self.econ_component.current_consumption = value
+
+    @property
+    def current_food_consumption(self) -> float:
+        return self.econ_component.current_food_consumption
+
+    @current_food_consumption.setter
+    def current_food_consumption(self, value: float) -> None:
+        self.econ_component.current_food_consumption = value
+
+    @property
+    def social_status(self) -> float:
+        return self.social_component.social_status
+
+    @social_status.setter
+    def social_status(self, value: float) -> None:
+        self.social_component.social_status = value
+
     # --- Property Delegation: SocialComponent ---
     @property
     def approval_rating(self) -> int:

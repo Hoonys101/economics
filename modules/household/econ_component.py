@@ -61,6 +61,8 @@ class EconComponent(IEconComponent):
         # Income Tracking
         self.labor_income_this_tick: float = 0.0
         self.capital_income_this_tick: float = 0.0
+        self.current_consumption: float = 0.0
+        self.current_food_consumption: float = 0.0
 
         # --- Components ---
         self.consumption = ConsumptionBehavior(owner, config_module)
