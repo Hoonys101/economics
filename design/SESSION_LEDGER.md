@@ -16,3 +16,8 @@
 | 2026-01-20 | 11016259656214972314 | WO-083C Phase 3 (High) | [REJECTED] Massive regression found (vandalized architecture). |
 | 2026-01-20 | 18090137123816755263 | WO-083C Phase 3 Rework | [COMPLETED] Merged. Mitosis test migrated with strict constraints. |
 | 2026-01-20 | 9966767717181422022  | TD-067 Firm Refactor (P-A) | [COMPLETED] Merged. FinanceDepartment extracted from Firm. |
+| 2026-01-20 | 5101605085916374615  | Infra-Cleanup-v2 | [COMPLETED] Merged. Pathlib normalization & Doc ID fixes. |
+| 2026-01-20 | 12825610507285085029 | Finance-Config-v2 | [REJECTED] Regressions in path logic. |
+| 2026-01-20 | 10084796152980908088 | Domain-Logic-v2 | [COMPLETED] Merged. Z-Score delegated to AltmanZScoreCalculator. |
+| 2026-01-20 | 10501622868201374933 | Finance-Config-v4 | [COMPLETED] Merged. Moved hardcoded economy params to yaml. |
+| 2026-01-20 | 7372223621436217608  | Phase 29: Depression | [COMPLETED] Merged. Fixed interest bug, added survival logic. |

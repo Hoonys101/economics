@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-01-16
+**최종 업데이트**: 2026-01-20
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -20,10 +20,11 @@
     - **TD-046**: Hardcoded Constants Migration ✅
     - **TD-043/044/045**: God Class Refactoring (Simulation/Household/Firm) ✅ (2026-01-18)
     
-- **현재 단계:** `Phase 29: The Great Depression & Crisis Monitor` 🏗️
+- **현재 단계:** `Phase 29: The Great Depression & Crisis Monitor` ✅
     - **TD-008**: Advanced Finance System (Altman Z-Score) ✅
     - **Phase 28**: Macro-Stability Stress Testing ✅ (Verified with Scenarios)
-    - **Phase 29**: Depression Simulation & Crisis Monitor ✅ (Verified & Handover Ready)
+    - **Phase 29**: Depression Simulation & Crisis Monitor ✅ (Verified & Merged)
+    - **Parallel Debt Triage**: TD-034, TD-041, TD-050, TD-051, TD-058, TD-059, TD-063 ✅
     
 - **현재 단계:** `Phase 31: Golden Fixture & Stability` ✅ (2026-01-20 완료)
     - **WO-083A**: Golden Fixture Generation ✅

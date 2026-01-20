@@ -1,0 +1,482 @@
+diff --git a/config/scenarios/phase29_depression.json b/config/scenarios/phase29_depression.json
+index 01b6ba9..3346d3a 100644
+--- a/config/scenarios/phase29_depression.json
++++ b/config/scenarios/phase29_depression.json
+@@ -1,9 +1,10 @@
+ {
+   "scenario_name": "phase29_depression",
+-  "start_tick": 50,
++  "start_tick": 5,
+   "is_active": true,
+   "parameters": {
+-    "MONETARY_SHOCK_TARGET_RATE": 0.08,
+-    "FISCAL_SHOCK_TAX_RATE": 0.30
++    "base_interest_rate_multiplier": 3.0,
++    "corporate_tax_rate_delta": 0.1,
++    "demand_shock_multiplier": 0.7
+   }
+ }
+diff --git a/modules/household/dtos.py b/modules/household/dtos.py
+index 9b1ee7c..be146f4 100644
+--- a/modules/household/dtos.py
++++ b/modules/household/dtos.py
+@@ -27,6 +27,7 @@ class HouseholdStateDTO:
+     is_employed: bool
+     current_wage: float
+     wage_modifier: float
++    is_homeless: bool
+     residing_property_id: Optional[int]
+     owned_properties: List[int]
+     portfolio_holdings: Dict[int, Share]
+diff --git a/modules/household/econ_component.py b/modules/household/econ_component.py
+index 0e5c0d9..05e917a 100644
+--- a/modules/household/econ_component.py
++++ b/modules/household/econ_component.py
+@@ -33,6 +33,7 @@ class EconComponent(IEconComponent):
+         # --- State ---
+         self._assets: float = 0.0
+         self._inventory: Dict[str, float] = {}
++        self._inventory_quality: Dict[str, float] = {}
+ 
+         # Labor State
+         self.is_employed: bool = False
+@@ -92,6 +93,14 @@ class EconComponent(IEconComponent):
+     def inventory(self) -> Dict[str, float]:
+         return self._inventory
+ 
++    @property
++    def inventory_quality(self) -> Dict[str, float]:
++        return self._inventory_quality
++
++    @inventory_quality.setter
++    def inventory_quality(self, value: Dict[str, float]) -> None:
++        self._inventory_quality = value
++
+     @property
+     def home_quality_score(self) -> float:
+         return self._home_quality_score
+@@ -178,6 +187,20 @@ class EconComponent(IEconComponent):
+ 
+         # 5. Targeted Order Refinement & Internal Commands (QUIT)
+         refined_orders = []
++
++        # Phase 29: Demand Shock (Consumer Spending Reduction)
++        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'phase29_depression':
++             multiplier = stress_scenario_config.demand_shock_multiplier
++             if multiplier is not None:
++                 for order in orders:
++                     if order.order_type == "BUY" and order.item_id not in ["labor", "loan"]:
++                         # Reduce quantity by multiplier (e.g., 0.7 means 70% remains, 30% reduction)
++                         # Only affect Goods (Consumer Spending)
++                         # We assume anything not labor/loan/financial is a good/service.
++                         # Stocks are "stock_X".
++                         if not order.item_id.startswith("stock_"):
++                            order.quantity *= multiplier
++
+         for order in orders:
+             if order.order_type == "QUIT":
+                 self.owner.quit()
+diff --git a/modules/household/social_component.py b/modules/household/social_component.py
+index 5cadf96..21b40bd 100644
+--- a/modules/household/social_component.py
++++ b/modules/household/social_component.py
+@@ -30,6 +30,7 @@ class SocialComponent(ISocialComponent):
+         # State
+         self.approval_rating: int = 1
+         self.discontent: float = 0.0
++        self.social_status: float = 0.0  # Initialize social_status
+         self.last_leisure_type: "LeisureType" = "IDLE"
+ 
+         # Personality Attributes (Randomized)
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 6e516fd..efb58be 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -159,7 +159,23 @@ class Household(BaseAgent, ILearningAgent):
+         # Some attributes are kept on Facade if they are deeply intertwined or purely transient
+         self.initial_assets_record = initial_assets
+         self.credit_frozen_until_tick: int = 0
++
++        # Phase 23: Inflation Expectation & Price Memory
++        self.expected_inflation: Dict[str, float] = defaultdict(float)
++        self.perceived_avg_prices: Dict[str, float] = {}
++        self.price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=10))
++        # Initialize perceived prices from config/goods_data if possible
++        for g in goods_data:
++             self.perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
+         
++        # Adaptation Rate (Personality Based)
++        # Default Normal
++        self.adaptation_rate: float = getattr(config_module, "ADAPTATION_RATE_NORMAL", 0.2)
++        if personality == Personality.IMPULSIVE:
++             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
++        elif personality == Personality.CONSERVATIVE:
++             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
++
+         # WO-054: Aptitude (Hidden Trait) - Kept on Facade as it's intrinsic
+         raw_aptitude = random.gauss(0.5, 0.15)
+         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
+@@ -251,6 +267,14 @@ class Household(BaseAgent, ILearningAgent):
+     def inventory(self, value: Dict[str, float]) -> None:
+         self.econ_component.inventory = value
+ 
++    @property
++    def inventory_quality(self) -> Dict[str, float]:
++        return self.econ_component.inventory_quality
++
++    @inventory_quality.setter
++    def inventory_quality(self, value: Dict[str, float]) -> None:
++        self.econ_component.inventory_quality = value
++
+     @property
+     def is_employed(self) -> bool:
+         return self.econ_component.is_employed
+@@ -595,6 +619,7 @@ class Household(BaseAgent, ILearningAgent):
+             is_employed=self.is_employed,
+             current_wage=self.current_wage,
+             wage_modifier=self.wage_modifier,
++            is_homeless=self.is_homeless,
+             residing_property_id=self.residing_property_id,
+             owned_properties=list(self.owned_properties),
+             portfolio_holdings=self.portfolio.holdings, # Direct reference to Share objects (dataclasses)
+diff --git a/simulation/decisions/corporate_manager.py b/simulation/decisions/corporate_manager.py
+index 76f73f2..38da1a3 100644
+--- a/simulation/decisions/corporate_manager.py
++++ b/simulation/decisions/corporate_manager.py
+@@ -346,6 +346,24 @@ class CorporateManager:
+         """
+         Set Dividend Rate.
+         """
++        # Phase 29: Survival Mode Check
++        # Check Altman Z-Score
++        z_score = firm.finance.calculate_altman_z_score()
++        z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
++
++        # Check Consecutive Losses
++        loss_limit = getattr(self.config_module, "DIVIDEND_SUSPENSION_LOSS_TICKS", 3)
++
++        is_distressed = (z_score < z_score_threshold) or (firm.finance.consecutive_loss_turns >= loss_limit)
++
++        if is_distressed:
++            firm.finance.set_dividend_rate(0.0)
++            self.logger.warning(
++                f"DIVIDEND SUSPENDED | Firm {firm.id} in distress (Z={z_score:.2f}, LossTicks={firm.finance.consecutive_loss_turns}).",
++                extra={"agent_id": firm.id, "tags": ["dividend", "crisis"]}
++            )
++            return
++
+         base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
+         max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
+         # SoC Refactor
+diff --git a/simulation/dtos/scenario.py b/simulation/dtos/scenario.py
+index 283ca7f..9c497c2 100644
+--- a/simulation/dtos/scenario.py
++++ b/simulation/dtos/scenario.py
+@@ -48,3 +48,12 @@ class StressScenarioConfig:
+ 
+     # Target corporate tax rate for the Government (e.g., 0.30)
+     fiscal_shock_tax_rate: Optional[float] = None
++
++    # Multiplier for Base Interest Rate (e.g. 3.0 = 300%)
++    base_interest_rate_multiplier: Optional[float] = None
++
++    # Delta for Corporate Tax Rate (e.g. 0.1 = +10%p)
++    corporate_tax_rate_delta: Optional[float] = None
++
++    # Multiplier for Consumer Spending (e.g. 0.7 = 30% reduction)
++    demand_shock_multiplier: Optional[float] = None
+diff --git a/simulation/firms.py b/simulation/firms.py
+index ea6d6cf..0ab82d8 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -368,6 +368,7 @@ class Firm(BaseAgent, ILearningAgent):
+ 
+     @override
+     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
++        self.age += 1
+         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
+         # SoC Refactor
+         self.logger.debug(
+@@ -493,6 +494,56 @@ class Firm(BaseAgent, ILearningAgent):
+                 raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.cash_reserve:.2f}")
+             self.cash_reserve -= amount
+ 
++    # --- Delegated Methods (Facade Pattern) ---
++
++    def get_book_value_per_share(self) -> float:
++        """Delegates to FinanceDepartment."""
++        return self.finance.get_book_value_per_share()
++
++    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
++        """Delegates to FinanceDepartment."""
++        return self.finance.get_market_cap(stock_price)
++
++    def calculate_valuation(self) -> float:
++        """Delegates to FinanceDepartment."""
++        return self.finance.calculate_valuation()
++
++    def get_financial_snapshot(self) -> Dict[str, float]:
++        """Delegates to FinanceDepartment."""
++        return self.finance.get_financial_snapshot()
++
++    @property
++    def current_profit(self) -> float:
++        return self.finance.current_profit
++
++    @current_profit.setter
++    def current_profit(self, value: float) -> None:
++        self.finance.current_profit = value
++
++    @property
++    def revenue_this_turn(self) -> float:
++        return self.finance.revenue_this_turn
++
++    @revenue_this_turn.setter
++    def revenue_this_turn(self, value: float) -> None:
++        self.finance.revenue_this_turn = value
++
++    @property
++    def expenses_this_tick(self) -> float:
++        return self.finance.expenses_this_tick
++
++    @expenses_this_tick.setter
++    def expenses_this_tick(self, value: float) -> None:
++        self.finance.expenses_this_tick = value
++
++    @property
++    def sales_volume_this_tick(self) -> float:
++        return self.finance.sales_volume_this_tick
++
++    @sales_volume_this_tick.setter
++    def sales_volume_this_tick(self, value: float) -> None:
++        self.finance.sales_volume_this_tick = value
++
+     def update_learning(self, context: LearningUpdateContext) -> None:
+         """
+         ILearningAgent implementation.
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 49eeff2..d759546 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -129,7 +129,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+             government=sim.government,
+             central_bank=sim.central_bank,
+             bank=sim.bank,
+-            config_module=self.config
++            config_module=self.config_manager
+         )
+         sim.government.finance_system = sim.finance_system
+ 
+@@ -259,6 +259,9 @@ class SimulationInitializer(SimulationInitializerInterface):
+                      params = scenario_data.get("parameters", {})
+                      sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
+                      sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
++                     sim.stress_scenario_config.base_interest_rate_multiplier = params.get("base_interest_rate_multiplier")
++                     sim.stress_scenario_config.corporate_tax_rate_delta = params.get("corporate_tax_rate_delta")
++                     sim.stress_scenario_config.demand_shock_multiplier = params.get("demand_shock_multiplier")
+ 
+                      self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
+                  except Exception as e:
+diff --git a/simulation/loan_market.py b/simulation/loan_market.py
+index 67d557a..dc93d73 100644
+--- a/simulation/loan_market.py
++++ b/simulation/loan_market.py
+@@ -292,8 +292,8 @@ class LoanMarket(Market):
+                         item_id="interest_payment",
+                         quantity=interest_amount,
+                         price=1,
+-                        buyer_id=self.bank.id,
+-                        seller_id=loan_details["borrower_id"],
++                        buyer_id=loan_details["borrower_id"],
++                        seller_id=self.bank.id,
+                         transaction_type="loan",
+                         time=current_tick,
+                         market_id=self.id,
+diff --git a/simulation/systems/event_system.py b/simulation/systems/event_system.py
+index dd6fa3e..76d7477 100644
+--- a/simulation/systems/event_system.py
++++ b/simulation/systems/event_system.py
+@@ -106,3 +106,21 @@ class EventSystem(IEventSystem):
+                     government.corporate_tax_rate = config.fiscal_shock_tax_rate
+                     logger.info(f"  -> FISCAL SHOCK: Forced Corporate Tax Rate to {config.fiscal_shock_tax_rate}")
+                 # Also check `tax_rate` for general tax if applicable
++
++            # Phase 29: Dynamic Shock Parameters
++            if config.base_interest_rate_multiplier is not None and central_bank and bank:
++                # Apply Multiplier to existing rate
++                current_rate = central_bank.base_rate if hasattr(central_bank, "base_rate") else bank.base_rate
++                new_rate = current_rate * config.base_interest_rate_multiplier
++
++                if hasattr(central_bank, "base_rate"):
++                    central_bank.base_rate = new_rate
++                bank.update_base_rate(new_rate)
++                logger.info(f"  -> MONETARY SHOCK: Multiplied Base Rate by {config.base_interest_rate_multiplier} to {new_rate:.4f}")
++
++            if config.corporate_tax_rate_delta is not None and government:
++                # Apply Delta to Corporate Tax Rate
++                if hasattr(government, "corporate_tax_rate"):
++                    old_rate = government.corporate_tax_rate
++                    government.corporate_tax_rate += config.corporate_tax_rate_delta
++                    logger.info(f"  -> FISCAL SHOCK: Increased Corporate Tax Rate by {config.corporate_tax_rate_delta} (From {old_rate} to {government.corporate_tax_rate})")
+diff --git a/simulation/systems/immigration_manager.py b/simulation/systems/immigration_manager.py
+index 6b43e79..797c948 100644
+--- a/simulation/systems/immigration_manager.py
++++ b/simulation/systems/immigration_manager.py
+@@ -31,8 +31,10 @@ class ImmigrationManager:
+         indicators = engine.tracker.get_latest_indicators()
+         unemployment_rate = indicators.get("unemployment_rate", 1.0)
+ 
+-        market_data = engine._prepare_market_data(engine.tracker)
+-        job_vacancies = market_data.get("job_vacancies", 0)
++        # Refactor: Use market directly instead of private _prepare_market_data
++        job_vacancies = 0
++        if "labor" in engine.markets:
++            job_vacancies = engine.markets["labor"].get_total_demand()
+ 
+         total_population = len([h for h in engine.households if h.is_active])
+         pop_threshold = getattr(self.config, "POPULATION_IMMIGRATION_THRESHOLD", 80)
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index e078897..dab0b03 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -78,6 +78,13 @@ class TransactionProcessor:
+                     seller.assets += (trade_value - tax_amount)
+                     government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
+             
++            elif tx.item_id == "interest_payment":
++                # Interest Payment: Buyer (Borrower) pays Seller (Bank)
++                buyer.assets -= trade_value
++                seller.assets += trade_value
++                if isinstance(buyer, Firm):
++                    buyer.finance.record_expense(trade_value)
++
+             elif tx.transaction_type == "dividend":
+                 # Firm (Seller) pays Household (Buyer)
+                 seller.assets -= trade_value
+diff --git a/tests/verification/verify_phase29_depression.py b/tests/verification/verify_phase29_depression.py
+new file mode 100644
+index 0000000..437206d
+--- /dev/null
++++ b/tests/verification/verify_phase29_depression.py
+@@ -0,0 +1,121 @@
++import sys
++import os
++from pathlib import Path
++import logging
++
++# Add project root to sys.path
++sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
++
++# Set Env Var for ConfigManager BEFORE importing main or creating simulation
++# ConfigManager typically supports SIMULATION__ACTIVE_SCENARIO -> simulation.active_scenario
++os.environ["SIMULATION__ACTIVE_SCENARIO"] = "phase29_depression"
++
++from main import create_simulation
++import config
++
++# Setup Logging
++logging.basicConfig(level=logging.INFO)
++logger = logging.getLogger("Phase29Verifier")
++
++def verify_phase29():
++    print(">>> Setting up Phase 29 Depression Verification...")
++
++    overrides = {
++        "SIMULATION_TICKS": 25, # Run a bit longer
++        "INITIAL_FIRM_CAPITAL_MEAN": 50000.0, # Ensure enough capital to survive start
++    }
++
++    sim = create_simulation(overrides=overrides)
++
++    # Check if scenario loaded
++    if not sim.stress_scenario_config.is_active:
++        print("❌ Scenario NOT Active! Check ConfigManager.")
++        # Try to force it if env var failed
++        sim.stress_scenario_config.is_active = True
++        sim.stress_scenario_config.scenario_name = "phase29_depression"
++        sim.stress_scenario_config.start_tick = 5
++        sim.stress_scenario_config.base_interest_rate_multiplier = 3.0
++        sim.stress_scenario_config.corporate_tax_rate_delta = 0.1
++        sim.stress_scenario_config.demand_shock_multiplier = 0.7
++        print("⚠️ Forced Scenario Activation manually.")
++    else:
++        print(f"✅ Scenario Loaded: {sim.stress_scenario_config.scenario_name}")
++
++    # Inject Debt to Firms to ensure Interest Expense
++    print(">>> Injecting Loans for Interest Verification...")
++    for firm in sim.firms:
++        # Borrow 20,000
++        if sim.bank:
++            sim.bank.grant_loan(firm.id, 20000.0, 100)
++
++    # 5. Run for 20 ticks
++    print(">>> Running Simulation for 20 ticks...")
++    initial_interest_rate = sim.bank.base_rate
++    print(f"Initial Interest Rate: {initial_interest_rate}")
++
++    scenario_active_tick = sim.stress_scenario_config.start_tick
++
++    # Track metrics
++    interest_rate_increased = False
++    max_rate = initial_interest_rate
++
++    for i in range(1, 21):
++        sim.run_tick()
++        current_tick = sim.time
++
++        # Check Interest Rate Change
++        if sim.bank.base_rate > max_rate:
++             max_rate = sim.bank.base_rate
++             interest_rate_increased = True
++             print(f"Tick {current_tick}: Interest Rate Increased to {max_rate}")
++
++    # 6. Verification
++    print("\n>>> Final Verification Report")
++
++    # 1. Verify Interest Rate
++    if interest_rate_increased and max_rate >= initial_interest_rate * 2.9: # Approx 3.0
++        print(f"✅ Interest Rate Multiplier Applied: {max_rate} (Initial: {initial_interest_rate})")
++    else:
++        print(f"❌ Interest Rate Check Failed: Max {max_rate}, Initial {initial_interest_rate}")
++
++    # 2. Verify Corporate Resilience (Dividend Suspension)
++    # Check if any firm had Z-Score < 1.81 and Dividend Rate became 0.0
++    distressed_firms = 0
++    suspended_dividends = 0
++    total_interest_expense_detected = False
++
++    for firm in sim.firms:
++        # Skip very young firms (Startups often have low Z-Score due to 0 profit history)
++        if firm.age < 5:
++            continue
++
++        z_score = firm.finance.calculate_altman_z_score()
++
++        # Check if interest was recorded (expenses > maintenance)
++        # Maintenance is 50.0. If expenses > 60.0, likely interest.
++        # But expenses reset every tick.
++        # We can't check history easily unless we tracked it.
++        # But we can check `total_debt` and `retained_earnings`.
++
++        if z_score < 1.81 or firm.finance.consecutive_loss_turns >= 3:
++            distressed_firms += 1
++            if firm.dividend_rate == 0.0:
++                suspended_dividends += 1
++            print(f"Distressed Firm {firm.id}: Z={z_score:.2f}, DivRate={firm.dividend_rate}")
++
++    print(f"Distressed Firms (Age >= 5): {distressed_firms}")
++    print(f"Suspended Dividends: {suspended_dividends}")
++
++    if distressed_firms > 0:
++        if suspended_dividends == distressed_firms:
++             print("✅ All distressed firms suspended dividends.")
++        else:
++             print("❌ Not all distressed firms suspended dividends.")
++    else:
++        print("⚠️ No firms became distressed. Logic verification skipped for dividends.")
++
++    sim.finalize_simulation()
++    print(">>> Verification Complete.")
++
++if __name__ == "__main__":
++    verify_phase29()
