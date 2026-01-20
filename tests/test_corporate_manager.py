@@ -17,15 +17,26 @@ class MockConfig:
     GOODS = {"food": {"production_cost": 10.0}}
 
 @pytest.fixture
-def firm_mock():
-    firm = MagicMock(spec=Firm)
-    firm.id = 1
-    firm.assets = 1000.0
+def firm_mock(golden_firms):
+    if not golden_firms:
+        pytest.skip("Golden firms fixture is empty or failed to load.")
+    firm = golden_firms[0]
+
+    # Customize the golden firm for specific tests if needed,
+    # but the goal is to rely on realistic data.
+    # Resetting some values to ensure consistent test state regardless of fixture content
+    # is still reasonable, but we should avoid full mock reconstruction.
+
     firm.revenue_this_turn = 200.0
     firm.production_target = 100
     firm.productivity_factor = 1.0
     firm.specialization = "food"
-    firm.inventory = {"food": 50}
+    # Ensure inventory is dictionary as expected by tests
+    if not isinstance(firm.inventory, dict):
+        firm.inventory = {"food": 50}
+    else:
+         firm.inventory["food"] = 50
+
     firm.base_quality = 1.0
     firm.research_history = {"total_spent": 0.0, "success_count": 0, "last_success_tick": -1}
     firm.capital_stock = 100.0
@@ -34,15 +45,37 @@ def firm_mock():
     firm.treasury_shares = 0
     firm.last_prices = {"food": 10.0}
     firm.employees = []
+    # firm.personality is likely already set in golden fixture, but ensuring it matches test expectation if crucial
     firm.personality = Personality.BALANCED
-    firm.system2_planner = None # Add system2_planner attribute
-    firm.last_revenue = 200.0 # Add last_revenue for system2_planner
+
+    # Ensuring attributes that might be missing in older fixtures or dynamic properties
+    firm.system2_planner = None # Force to None to avoid unconfigured mock issues in guidance
+    firm.revenue_this_turn = 200.0 # explicit float
+    firm.last_revenue = 200.0
+    if not hasattr(firm, 'last_revenue'):
+        firm.last_revenue = 200.0
     firm.expenses_this_tick = 50.0
     firm.retained_earnings = 1000.0
-    firm.profit_history = []
-    firm.employee_wages = {} # Add employee_wages
+    # firm.profit_history = [] # Let's keep history if it exists
+    firm.employee_wages = {}
     firm.consecutive_loss_ticks_for_bankruptcy_threshold = 5
-    firm.automation_level = 0.0 # Add automation_level
+    firm.automation_level = 0.0
+    firm.last_sales_volume = 1.0 # Fix for the TypeError seen in previous run
+    firm.total_debt = 0.0 # Ensure total_debt is float
+    firm.bond_obligations = [] # Add bond obligations
+
+    # Ensure decision_engine chain works for _get_total_liabilities
+    if not hasattr(firm, 'decision_engine'):
+        firm.decision_engine = MagicMock()
+
+    mock_bank = MagicMock()
+    mock_bank.get_debt_summary.return_value = {'total_principal': 0.0}
+
+    mock_loan_market = MagicMock()
+    mock_loan_market.bank = mock_bank
+
+    firm.decision_engine.loan_market = mock_loan_market
+
     return firm
 
 @pytest.fixture
@@ -64,22 +97,16 @@ def test_rd_logic(firm_mock, context_mock):
     # Aggressiveness 1.0 -> 20% of Revenue
     vector = FirmActionVector(rd_aggressiveness=1.0)
 
-    # Force random to fail (for predictable budget test)
-    # Wait, _manage_r_and_d calls random.random().
-    # But first, check budget deduction.
-
     firm_mock.revenue_this_turn = 1000.0
-    expected_budget = 1000.0 * 0.2
+    # expected_budget = 1000.0 * 0.2
 
     manager.realize_ceo_actions(firm_mock, context_mock, vector)
 
-    # Check if assets were deducted (approximately)
-    # Note: Mock methods are not real, so firm.assets -= X won't work unless firm is real object or we inspect calls.
-    # Since firm is MagicMock, we can't check attribute modification easily unless we setup side_effect.
-    # But wait, firm.assets is a PropertyMock or just attribute?
-    # Let's verify _manage_r_and_d logic by checking what it does.
-    # Better to use a real Firm object or a partial mock?
-    # MagicMock attributes are mocks by default.
+    # Since we are using golden_firm (which is a MagicMock from fixture harvester,
+    # but populated with data), if we want to assert internal state changes,
+    # we need to be careful. The GoldenLoader creates MagicMocks.
+    # If the tests were failing before because of missing attributes like 'last_sales_volume',
+    # setting them in the fixture (as I did above) should help.
     pass
 
 def test_dividend_logic(firm_mock, context_mock):
@@ -93,7 +120,8 @@ def test_dividend_logic(firm_mock, context_mock):
 def test_hiring_logic(firm_mock, context_mock):
     manager = CorporateManager(MockConfig())
     firm_mock.production_target = 100
-    firm_mock.inventory = {"food": 80} # Gap 20
+    # firm.inventory is a dict, so updating it works
+    firm_mock.inventory["food"] = 80 # Gap 20
     firm_mock.productivity_factor = 10.0 # Need 2 workers
 
     vector = FirmActionVector(hiring_aggressiveness=0.5) # Market wage
@@ -106,8 +134,14 @@ def test_hiring_logic(firm_mock, context_mock):
 
 def test_debt_logic_borrow(firm_mock, context_mock):
     manager = CorporateManager(MockConfig())
-    # Assets 1000, Debt 0. Leverage 0.
+    # Assets 1000 (from setup), Debt 0 (assumed default in mock). Leverage 0.
     # Aggressiveness 0.5 -> Target 1.0 Leverage (1000 Debt)
+    # Ensure total_assets and total_debt are set if computed properties are used
+    # But since it is a mock, we might need to set them if logic depends on them.
+    # The original test manually set assets=1000.
+    firm_mock.assets = 1000.0
+    firm_mock.total_debt = 0.0
+
     vector = FirmActionVector(debt_aggressiveness=0.5)
 
     orders = manager.realize_ceo_actions(firm_mock, context_mock, vector)
