@@ -14,12 +14,11 @@
   },
     "jules": {
         "command": "create",
-        "title": "WO-083C-P2: Medium Risk Test Migration",
-        "instruction": "Execute WO-083C Phase 2: Migrate 'tests/verification/verify_inheritance.py' and 'tests/api/test_dashboard_api.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P2-Medium-Risk.md'. Verify using 'tests/goldens/dashboard_snapshot.json' snapshot testing.",
+        "title": "WO-083C-P3: High Risk Test Migration",
+        "instruction": "Execute WO-083C Phase 3: Migrate 'tests/verification/verify_mitosis.py' to use Golden Fixtures. Refer to 'design/work_orders/WO-083C-P3-High-Risk.md'. Verify using complex inheritance scenarios.",
         "context": [
-            "design/work_orders/WO-083C-P2-Medium-Risk.md",
-            "tests/verification/verify_inheritance.py",
-            "tests/api/test_dashboard_api.py",
+            "design/work_orders/WO-083C-P3-High-Risk.md",
+            "tests/verification/verify_mitosis.py",
             "tests/conftest.py"
         ],
         "session_id": null
