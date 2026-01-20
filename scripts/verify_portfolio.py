@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 import logging
 import random
 import matplotlib.pyplot as plt
@@ -7,7 +8,7 @@ import pandas as pd
 from typing import Dict, Any
 
 # Ensure project root is in path
-sys.path.append(os.getcwd())
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.engine import Simulation
 from simulation.core_agents import Household

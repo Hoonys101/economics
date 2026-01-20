@@ -3,6 +3,7 @@ Visualization Script for Economy Simulation.
 Generates charts based on simulation data.
 """
 import sys
+from pathlib import Path
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -10,7 +11,7 @@ import pandas as pd
 import logging
 
 # Ensure module path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from modules.analytics.loader import DataLoader
 

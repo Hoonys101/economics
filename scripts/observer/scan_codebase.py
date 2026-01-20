@@ -7,7 +7,7 @@ import datetime
 
 # Configuration
 TARGET_EXTENSIONS = ['.py', '.tsx', '.ts', '.md']
-IGNORE_DIRS = ['venv', '__pycache__', '.git', 'node_modules', '.gemini', 'reports', 'design']
+IGNORE_DIRS = ['venv', '__pycache__', '.git', 'node_modules', '.gemini', 'reports', 'design', 'observer']
 TAGS_TO_SCAN = ['TODO', 'FIXME', 'HACK', 'REVIEW', 'NOTE', 'XXX']
 
 def scan_file(filepath: str) -> Dict:
@@ -45,10 +45,6 @@ def scan_directory(root_dir: str) -> Dict[str, Dict]:
     for root, dirs, files in os.walk(root_dir):
         # Filter directories
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-        
-        # Exclude observer script directory to avoid self-flagging
-        if "scripts\\observer" in root or "scripts/observer" in root:
-            continue
         
         for file in files:
             if any(file.endswith(ext) for ext in TARGET_EXTENSIONS):

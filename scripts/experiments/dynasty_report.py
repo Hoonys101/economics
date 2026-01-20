@@ -3,13 +3,14 @@ Dynasty Report (Phase Alpha Optimizer)
 Goal: Run 1000 ticks simulation with maximized speed and report TPS.
 """
 import sys
+from pathlib import Path
 import os
 import time
 import logging
 import argparse
 
 # Add project root to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 # Log Suppression (Task B)
 logging.getLogger("simulation").setLevel(logging.WARNING)

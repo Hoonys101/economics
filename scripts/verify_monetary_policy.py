@@ -1,7 +1,8 @@
 
 import sys
+from pathlib import Path
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import unittest
 from unittest.mock import MagicMock

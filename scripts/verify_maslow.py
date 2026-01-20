@@ -1,11 +1,12 @@
 
 import sys
+from pathlib import Path
 import os
 import unittest
 from unittest.mock import MagicMock
 
 # Add project root to path
-sys.path.append(os.getcwd())
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import config
 from simulation.ai.household_ai import HouseholdAI

@@ -1,10 +1,11 @@
 
 import logging
 import sys
+from pathlib import Path
 import os
 
 # Add project root to sys.path before importing local modules
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 import numpy as np
 import pandas as pd

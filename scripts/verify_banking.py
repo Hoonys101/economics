@@ -1,12 +1,13 @@
 import logging
 import argparse
 import sys
+from pathlib import Path
 import os
 import matplotlib.pyplot as plt
 from typing import Dict, Any
 
 # Ensure the project root is in the path
-sys.path.append(os.getcwd())
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
 from config import (

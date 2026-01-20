@@ -1,10 +1,11 @@
 import os
 import sys
+from pathlib import Path
 import pandas as pd
 import logging
 
 # Add parent directory to path to import simulation modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.engine import Simulation
 from simulation.core_agents import Household, Talent

@@ -1,11 +1,12 @@
 import logging
 import sys
+from pathlib import Path
 import os
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
 
 # Ensure simulation package is in path
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
 from utils.logging_manager import setup_logging

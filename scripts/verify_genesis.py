@@ -1,9 +1,10 @@
 import os
 import sys
+from pathlib import Path
 import logging
 
 # Add the project root to sys.path
-sys.path.append(os.getcwd())
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
 import config
