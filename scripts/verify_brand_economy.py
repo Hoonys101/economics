@@ -4,7 +4,8 @@ import sys
 import os
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_agents import Household, Talent

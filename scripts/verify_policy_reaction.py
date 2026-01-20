@@ -4,7 +4,8 @@ import os
 import logging
 
 # Ensure the project root is in the path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
 from simulation.dtos import GovernmentStateDTO

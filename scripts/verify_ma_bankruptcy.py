@@ -5,7 +5,8 @@ import logging
 from unittest.mock import MagicMock
 
 # Add project root to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.firms import Firm
 from simulation.systems.ma_manager import MAManager

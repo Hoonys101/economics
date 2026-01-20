@@ -5,7 +5,8 @@ import logging
 from typing import Dict, Any
 
 # Add project root to sys.path
-sys.path.append(os.getcwd())
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import config as global_config # Root config module
 

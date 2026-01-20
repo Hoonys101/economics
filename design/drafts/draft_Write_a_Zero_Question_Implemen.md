@@ -144,7 +144,7 @@ class ConfigManager:
 ### **`design/specs/refactor_config_stress_test_spec.md` 파일 내용:**
 
 ```markdown
-# [Refactor] Work Order: WO-XXX - 설정 중앙화 및 시나리오 로더 구현
+# [Refactor] Work Order: WO-079 - 설정 중앙화 및 시나리오 로더 구현
 
 **Phase:** 26
 **Priority:** HIGH

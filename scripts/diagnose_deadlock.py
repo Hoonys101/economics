@@ -3,7 +3,8 @@ import os
 import logging
 
 # Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.engine import Simulation
 from simulation.core_agents import Household, Talent

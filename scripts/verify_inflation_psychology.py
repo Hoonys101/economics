@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 from collections import deque
 
 # Add parent directory to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.core_agents import Household, Talent
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
