@@ -1,12 +1,13 @@
 
 import logging
 import sys
+from pathlib import Path
 import os
 import random
 from typing import List
 
 # Ensure module path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import run_simulation
 from simulation.db.repository import SimulationRepository

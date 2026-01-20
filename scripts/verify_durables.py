@@ -1,11 +1,12 @@
 
 import sys
+from pathlib import Path
 import os
 import logging
 from typing import List, Dict, Any
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import config
 from main import create_simulation

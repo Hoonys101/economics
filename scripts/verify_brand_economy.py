@@ -1,10 +1,11 @@
 
 import logging
 import sys
+from pathlib import Path
 import os
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_agents import Household, Talent

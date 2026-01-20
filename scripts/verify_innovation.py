@@ -1,13 +1,14 @@
 
 import logging
 import sys
+from pathlib import Path
 import os
 import random
 import matplotlib.pyplot as plt
 from typing import List, Dict
 
 # Ensure simulation module is in path
-sys.path.append(os.getcwd())
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.engine import Simulation as EconomyEngine
 from simulation.ai.enums import Personality

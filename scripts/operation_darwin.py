@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 import os
 import pandas as pd
 import numpy as np
@@ -6,7 +7,7 @@ import logging
 import io
 
 # Setup paths to import project modules
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
 import config
