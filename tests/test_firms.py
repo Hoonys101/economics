@@ -79,6 +79,74 @@ class TestFirmBookValue:
         firm.treasury_shares = 0.0
         assert firm.get_book_value_per_share() == 0.0
 
+class TestFirmValuation:
+    @pytest.fixture
+    def mock_decision_engine(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_config(self):
+        config = Mock()
+        config.FIRM_MIN_PRODUCTION_TARGET = 10.0
+        config.IPO_INITIAL_SHARES = 100.0
+        config.PROFIT_HISTORY_TICKS = 10
+        config.INITIAL_FIRM_LIQUIDITY_NEED = 100.0
+        config.VALUATION_PER_MULTIPLIER = 10.0
+        config.GOODS = {"test": {"initial_price": 10.0}}
+        return config
+
+    @pytest.fixture
+    def firm(self, mock_decision_engine, mock_config):
+        firm = Firm(
+            id=1,
+            initial_capital=1000.0,
+            initial_liquidity_need=100.0,
+            specialization="test",
+            productivity_factor=1.0,
+            decision_engine=mock_decision_engine,
+            value_orientation="PROFIT",
+            config_module=mock_config
+        )
+        return firm
+
+    def test_calculate_valuation_basic(self, firm):
+        # Assets 1000.
+        # Inventory 0.
+        # Capital Stock 100.
+        # Profit 0.
+        # Net Assets = 1000 + 0 + 100 = 1100.
+        assert firm.calculate_valuation() == 1100.0
+
+    def test_calculate_valuation_with_profit(self, firm):
+        firm.finance.profit_history.append(10.0)
+        firm.finance.profit_history.append(20.0)
+        # Avg profit 15.
+        # Premium = 15 * 10 = 150.
+        # Net Assets = 1100.
+        # Valuation = 1250.
+        assert firm.calculate_valuation() == 1250.0
+
+    def test_calculate_valuation_with_inventory(self, firm):
+        firm.inventory["test"] = 10.0
+        firm.last_prices["test"] = 20.0
+        # Inventory Value = 200.
+        # Net Assets = 1000 + 200 + 100 = 1300.
+        assert firm.calculate_valuation() == 1300.0
+
+    def test_get_financial_snapshot(self, firm):
+        firm.inventory["test"] = 5.0
+        firm.last_prices["test"] = 10.0
+        firm.total_debt = 100.0
+
+        snapshot = firm.get_financial_snapshot()
+
+        # Total Assets = 1000 (cash) + 50 (inventory) = 1050
+        assert snapshot["total_assets"] == 1050.0
+        # Working Capital = 1050 - 100 = 950
+        assert snapshot["working_capital"] == 950.0
+        assert snapshot["total_debt"] == 100.0
+
+
 class TestProductionDepartment:
     @pytest.fixture
     def mock_config(self):
