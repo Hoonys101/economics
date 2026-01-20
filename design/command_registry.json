@@ -9,10 +9,10 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-083C-P2: Test Migration (MEDIUM Risk)",
+    "title": "WO-083C-P3: Test Migration (HIGH Risk - Staged)",
     "session_id": "",
-    "instruction": "Migrate MEDIUM risk tests to Golden Fixtures. Read design/work_orders/WO-083C-P2-Medium-Risk.md. Target: verify_inheritance.py, test_dashboard_api.py (2 files).",
-    "file": "design/work_orders/WO-083C-P2-Medium-Risk.md",
+    "instruction": "Migrate HIGH risk test using STAGED approach. Read design/work_orders/WO-083C-P3-High-Risk.md. Target: verify_mitosis.py (1 file, 2-stage migration).",
+    "file": "design/work_orders/WO-083C-P3-High-Risk.md",
     "wait": true
   },
   "git_review": {
