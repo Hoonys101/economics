@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.firms import Firm
     from simulation.dtos.scenario import StressScenarioConfig
+    from modules.household.dtos import HouseholdStateDTO
 
 @dataclass
 class TransactionData:
@@ -96,6 +97,7 @@ class DecisionContext:
     market_data: Dict[str, Any]
     current_time: int
     household: Optional[Household] = None # Avoid circular import if possible, or use TYPE_CHECKING
+    state: Optional[HouseholdStateDTO] = None
     firm: Optional[Firm] = None
     government: Optional[Any] = None
     reflux_system: Optional[Any] = None # Phase 8-B: Reflux System

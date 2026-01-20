@@ -71,6 +71,15 @@ def mock_config():
     config.DEFLATION_WAIT_THRESHOLD = -0.05
     config.DELAY_FACTOR = 0.5
 
+    # Portfolio / Stock
+    config.STOCK_MARKET_ENABLED = False
+    config.EXPECTED_STARTUP_ROI = 0.15
+    config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0
+    config.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0
+    config.DEBT_REPAYMENT_RATIO = 0.5
+    config.DEBT_REPAYMENT_CAP = 1.1
+    config.DEBT_LIQUIDITY_RATIO = 0.9
+
     return config
 
 
@@ -96,6 +105,30 @@ def mock_household():
     hh.preference_asset = 1.0
     hh.preference_social = 1.0
     hh.preference_growth = 1.0
+
+    # DTO Config
+    state_dto = Mock()
+    state_dto.id = 1
+    state_dto.assets = 100.0
+    state_dto.inventory = {}
+    state_dto.needs = {"survival": 0.8, "leisure": 0.5}
+    state_dto.expected_inflation = {}
+    state_dto.preference_asset = 1.0
+    state_dto.preference_social = 1.0
+    state_dto.preference_growth = 1.0
+    state_dto.personality = Personality.BALANCED
+    state_dto.is_employed = False
+    state_dto.current_wage = 0.0
+    state_dto.wage_modifier = 1.0
+    state_dto.risk_aversion = 1.0
+    state_dto.portfolio_holdings = {}
+    state_dto.agent_data = {}
+    state_dto.durable_assets = []
+    state_dto.residing_property_id = None
+    state_dto.owned_properties = []
+
+    hh.create_state_dto.return_value = state_dto
+
     return hh
 
 
@@ -152,9 +185,6 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
         orders, _ = decision_engine.make_decisions(context)
         # V2 Engine generates orders but WTP should be low.
-        # Or checking specific items.
-        # Assert that if orders exist, their price/quantity is minimal or justified.
-        # For now, just ensure it runs without crashing.
         pass
 
     def test_consumption_buy_basic_food_sufficient_assets(
@@ -188,7 +218,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         mock_goods_market.get_best_ask.return_value = 1000.0
         mock_markets = {"goods_market": mock_goods_market}
         
-        mock_household.assets = 100.0
+        mock_household.create_state_dto.return_value.assets = 100.0 # DTO assets
+
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
              consumption_aggressiveness={"luxury_food": 0.9}
         )
@@ -236,21 +267,11 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
         orders, _ = decision_engine.make_decisions(context)
 
-        # In V2, it iterates ALL goods and makes decisions for each independently based on agg.
-        # It doesn't "choose one". It places orders for everything it wants.
-        # So it might generate orders for BOTH if budget allows.
-        # Original test assumed "Tactic.EVALUATE" chose ONE best.
-        # V2 is parallel.
-        # So we should check that it generates orders.
         assert len(orders) >= 1
 
     def test_labor_market_participation_aggressive(
         self, decision_engine, mock_household, mock_ai_engine
     ):
-        # In V2 Phase 21.6, Aggressiveness doesn't affect Price directly anymore.
-        # Price is determined by Adaptive Wage Modifier.
-        # But we still test that an order is generated.
-
         mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
         mock_labor_market.get_all_bids = Mock(
             return_value=[Order(2, "BUY", "labor", 1, 45.0, "labor_market")]
@@ -261,10 +282,11 @@ class TestAIDrivenHouseholdDecisionEngine:
              work_aggressiveness=0.9
         )
 
-        mock_household.get_desired_wage.return_value = 50.0  # Base reservation wage
+        # Set DTO wage
+        mock_household.create_state_dto.return_value.current_wage = 0.0
+        mock_household.create_state_dto.return_value.wage_modifier = 1.0
 
         # Inject market data for avg wage
-        # Offer must be acceptable (>= 50 * 0.98 = 49.0)
         market_data = {
             "goods_market": {
                 "labor": {
@@ -305,9 +327,8 @@ class TestAIDrivenHouseholdDecisionEngine:
              work_aggressiveness=0.1
         )
 
-        mock_household.get_desired_wage.return_value = (
-            50.0  # Base reservation wage (adjusted to 60)
-        )
+        mock_household.create_state_dto.return_value.current_wage = 0.0
+        mock_household.create_state_dto.return_value.wage_modifier = 1.0
 
         # Inject high avg wage so reservation wage calc results in high value
         market_data = {
@@ -333,5 +354,4 @@ class TestAIDrivenHouseholdDecisionEngine:
         assert labor_order is not None
         # Phase 21.6: Wage Modifier 1.0 -> 0.98.
         # Res Wage = 50.0 * 0.98 = 49.0.
-        # Old Expectation: > 55.0. New Expectation: Approx 49.0.
         assert labor_order.price == 49.0
