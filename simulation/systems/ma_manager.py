@@ -175,7 +175,7 @@ class MAManager:
         self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price:,.2f}.")
         
         # 1. Payment
-        predator.assets -= price
+        predator.finance.pay_acquisition(price)
 
         # Pay Shareholders (Households)
         # Assuming 100% buyout.
@@ -214,10 +214,7 @@ class MAManager:
                 fired_count += 1
             else:
                 # Retain
-                prey.employees.remove(emp)
-                predator.employees.append(emp)
-                predator.employee_wages[emp.id] = prey.employee_wages.get(emp.id, 10.0)
-                emp.employer_id = predator.id
+                prey.hr.transfer_employee(emp, predator)
                 retained_count += 1
                 
         self.logger.info(f"{tag}_RESULT | Retained {retained_count}, Fired {fired_count}.")

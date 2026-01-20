@@ -364,3 +364,42 @@ class FinanceDepartment:
 
         outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
         return outstanding_shares * stock_price
+
+    def invest_in_automation(self, amount: float) -> None:
+        """Executes investment in automation, deducting assets."""
+        if amount > 0:
+            self.firm.assets -= amount
+
+    def pay_adhoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> None:
+        """
+        Pays an ad-hoc tax (e.g., Automation Tax) directly from assets.
+        Handles deduction, transfer to government, and logging.
+        """
+        if amount > 0:
+            self.firm.assets -= amount
+            government.collect_tax(amount, tax_type, self.firm.id, current_time)
+
+            self.firm.logger.info(
+                f"TAX_PAYMENT | Firm {self.firm.id} paid {amount:.2f} ({tax_type}).",
+                extra={"agent_id": self.firm.id, "tick": current_time, "tags": ["tax", tax_type]}
+            )
+
+    def invest_in_rd(self, amount: float) -> None:
+        """Executes investment in R&D, deducting assets."""
+        if amount > 0:
+            self.firm.assets -= amount
+
+    def invest_in_capex(self, amount: float) -> None:
+        """Executes investment in Capital Expansion, deducting assets."""
+        if amount > 0:
+            self.firm.assets -= amount
+
+    def pay_severance(self, amount: float) -> None:
+        """Pays severance during layoffs."""
+        if amount > 0:
+            self.firm.assets -= amount
+
+    def pay_acquisition(self, amount: float) -> None:
+        """Pays for M&A acquisition."""
+        if amount > 0:
+            self.firm.assets -= amount

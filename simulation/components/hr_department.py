@@ -134,3 +134,17 @@ class HRDepartment:
         if not self.employees:
             return 0.0
         return self.get_total_labor_skill() / len(self.employees)
+
+    def transfer_employee(self, employee: Household, target_firm: Firm) -> None:
+        """
+        Transfers an employee to another firm (M&A).
+        Updates employee record and both firms' HR records.
+        """
+        if employee in self.employees:
+            # Capture wage before removal
+            current_wage = self.employee_wages.get(employee.id, 10.0)
+
+            self.remove_employee(employee)
+            # Transfer logic
+            target_firm.hr.hire(employee, current_wage)
+            employee.employer_id = target_firm.id
