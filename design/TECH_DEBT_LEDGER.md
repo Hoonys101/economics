@@ -14,9 +14,8 @@
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **PENDING_IMPLEMENTATION** (Phase 28) |
 
-| TD-068 | 2026-01-20 | Observer Scans `design/` Artifacts | Exclude `design/` from `scan_codebase.py` | False Positives in Health Report | **RESOLVED** |
-
-| TD-070 | 2026-01-20 | `test_rd_logic` Coverage Gap | Restore R&D budget assertion in `test_corporate_manager.py` | Test Regression / False Pass | **RESOLVED** |
+| TD-074 | 2026-01-21 | `main.py` & `config.py` corruption | Restore from Git history + Add Merge Guard | Blocked system execution | **RESOLVED** |
+| TD-075 | 2026-01-21 | `Household` Facade Bloat (850+ lines) | Evaluate Data Class for context passing or simpler delegation | Maintenance overhead / Scopes | **DEFERRED** |
 
 
 
@@ -29,7 +28,7 @@
 | TD-066 | 2026-01-20 | God Class `Simulation` Refactoring | Decomposed into `WorldState`, `TickScheduler`, `ActionProcessor` | SRP Violation | **RESOLVED** (PR Merged) |
 | TD-069 | 2026-01-20 | Doc Placeholders (`WO-XXX`) | Replaced with concrete examples in Manuals | Confusing Documentation | **RESOLVED** (Direct) |
 | TD-071 | 2026-01-20 | Magic Number in `verify_inheritance.py` | Used `self.heir.id` dynamic reference | Code Smell | **RESOLVED** (Direct) |
-| TD-067 | 2026-01-20 | God Class `Firm` Wrapper Bloat | Removed wrapper properties, encapsulated CorporateManager interactions | High Coupling | **RESOLVED** (2026-01-20) |
+| TD-067 | 2026-01-20 | God Class `Firm` Wrapper Bloat | Removed wrapper properties, encapsulated CorporateManager interactions | High Coupling | [RESOLVED] |
 | TD-073 | 2026-01-20 | Firm Component State Ownership | Transfer data ownership (assets, employees) from Firm to specialized departments | Architectural purity / Leaky abstractions | **DEFERRED** (Phase D) |
 | TD-072 | 2026-01-20 | Test Framework Inconsistency | Migrated `unittest` to `pytest` in `test_government` and `verify_vanity_society` | Maint. Overhead | **RESOLVED** (Direct) |
 | TD-058 | 2026-01-20 | `FinanceSystem` - `Firm` Tight Coupling | Introduced `FinancialStatementDTO` | High Coupling | **RESOLVED** (Phase 29/WO-084) |

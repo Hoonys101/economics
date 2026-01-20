@@ -23,6 +23,7 @@ from main import create_simulation
 
 # Configure Logging
 # Force configuration after main import might have messed with it
+logging.getLogger().setLevel(logging.ERROR) # Suppress all other logs (e.g. from Matplotlib, Systems)
 logger = logging.getLogger("IRON_TEST")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
