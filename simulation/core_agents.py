@@ -176,6 +176,22 @@ class Household(BaseAgent, ILearningAgent):
         # Skills
         self.skills: Dict[str, Skill] = {}
         
+        # Legacy: Initialize social_status (used by PsychologyComponent)
+        self.social_status: float = 0.0
+
+        # Legacy: Initialize expected_inflation (accessed via self in make_decision/create_state_dto)
+        self.expected_inflation: Dict[str, float] = defaultdict(float)
+        self.perceived_avg_prices: Dict[str, float] = {}
+        self.price_history: Dict[str, deque] = defaultdict(lambda: deque(maxlen=config_module.INFLATION_MEMORY_WINDOW))
+
+        # Inflation Adaptation Rate (Individual Psychology)
+        if personality in [Personality.IMPULSIVE, Personality.STATUS_SEEKER]:
+            self.adaptation_rate = config_module.ADAPTATION_RATE_IMPULSIVE
+        elif personality in [Personality.MISER, Personality.CONSERVATIVE]:
+            self.adaptation_rate = config_module.ADAPTATION_RATE_CONSERVATIVE
+        else:
+            self.adaptation_rate = config_module.ADAPTATION_RATE_NORMAL
+
         # Setup Decision Engine
         self.decision_engine.loan_market = loan_market
         self.decision_engine.logger = self.logger
@@ -250,6 +266,14 @@ class Household(BaseAgent, ILearningAgent):
     @inventory.setter
     def inventory(self, value: Dict[str, float]) -> None:
         self.econ_component.inventory = value
+
+    @property
+    def inventory_quality(self) -> Dict[str, float]:
+        return self.econ_component.inventory_quality
+
+    @inventory_quality.setter
+    def inventory_quality(self, value: Dict[str, float]) -> None:
+        self.econ_component.inventory_quality = value
 
     @property
     def is_employed(self) -> bool:
@@ -359,6 +383,22 @@ class Household(BaseAgent, ILearningAgent):
     @capital_income_this_tick.setter
     def capital_income_this_tick(self, value: float) -> None:
         self.econ_component.capital_income_this_tick = value
+
+    @property
+    def current_consumption(self) -> float:
+        return self.econ_component.current_consumption
+
+    @current_consumption.setter
+    def current_consumption(self, value: float) -> None:
+        self.econ_component.current_consumption = value
+
+    @property
+    def current_food_consumption(self) -> float:
+        return self.econ_component.current_food_consumption
+
+    @current_food_consumption.setter
+    def current_food_consumption(self, value: float) -> None:
+        self.econ_component.current_food_consumption = value
 
     @property
     def durable_assets(self) -> List[Dict[str, Any]]:
@@ -569,6 +609,7 @@ class Household(BaseAgent, ILearningAgent):
             durable_assets=self.durable_assets, # Should we copy?
             expected_inflation=self.expected_inflation.copy(), # From Facade (transient)
             is_employed=self.is_employed,
+            is_homeless=self.is_homeless,
             current_wage=self.current_wage,
             wage_modifier=self.wage_modifier,
             residing_property_id=self.residing_property_id,
