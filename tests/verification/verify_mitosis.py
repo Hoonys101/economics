@@ -2,7 +2,8 @@ import pytest
 import random
 from unittest.mock import MagicMock
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
-from simulation.core_agents import Household, Talent
+from simulation.core_agents import Household
+from simulation.models import Talent
 from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.ai_training_manager import AITrainingManager
@@ -38,11 +39,22 @@ def setup_golden_config(golden_config):
     ensure_config(golden_config, 'MAX_LEARNING_RATE', 0.5)
 
 def create_real_household_from_golden(mock_h, golden_config):
+    # Use Talent from models, default if necessary
     talent = Talent(base_learning_rate=0.5, max_potential={})
-    goods_data = [{"id": "food"}, {"id": "housing"}]
-    personality = Personality.MISER
-    value_orientation = "wealth"
 
+    # Simple goods data
+    goods_data = [{"id": "food"}, {"id": "housing"}]
+
+    # Default personality/orientation if not on mock
+    personality = getattr(mock_h, 'personality', Personality.MISER)
+    if isinstance(personality, MagicMock):
+         personality = Personality.MISER
+
+    value_orientation = getattr(mock_h, 'value_orientation', "wealth")
+    if isinstance(value_orientation, MagicMock):
+        value_orientation = "wealth"
+
+    # Handle numeric/primitive fields safely from MagicMock
     initial_assets = mock_h.assets if not isinstance(mock_h.assets, MagicMock) else 1000.0
     initial_needs = mock_h.needs if not isinstance(mock_h.needs, MagicMock) else {"survival": 0.5}
     initial_age = mock_h.age if hasattr(mock_h, 'age') and not isinstance(mock_h.age, MagicMock) else 25
@@ -53,6 +65,7 @@ def create_real_household_from_golden(mock_h, golden_config):
     mock_engine.ai_engine = mock_ai_engine
     mock_shared_ai = MagicMock()
     mock_ai_engine.ai_decision_engine = mock_shared_ai
+
     # Default attributes for AI engine to pass clone checks
     mock_ai_engine.gamma = 0.9
     mock_ai_engine.base_alpha = 0.1
@@ -61,7 +74,7 @@ def create_real_household_from_golden(mock_h, golden_config):
     mock_action_selector.epsilon = 0.1
     mock_ai_engine.action_selector = mock_action_selector
 
-    # Ensure loan_market exists
+    # Ensure loan_market exists (set to None)
     mock_engine.loan_market = None
 
     real_household = Household(
@@ -69,7 +82,7 @@ def create_real_household_from_golden(mock_h, golden_config):
         talent=talent,
         goods_data=goods_data,
         initial_assets=float(initial_assets),
-        initial_needs=dict(initial_needs),
+        initial_needs=dict(initial_needs) if isinstance(initial_needs, dict) else {"survival": 0.5},
         decision_engine=mock_engine,
         value_orientation=value_orientation,
         personality=personality,
@@ -89,7 +102,9 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     Ensures that when a child is created with parent's assets, the total assets in the system remain constant.
     """
     setup_golden_config(golden_config)
-    mock_h = golden_households[0]
+    # Use first household from golden fixtures, or fallback if empty
+    mock_h = golden_households[0] if golden_households else MagicMock()
+
     parent = create_real_household_from_golden(mock_h, golden_config)
     parent.assets = 10000.0
     initial_total_assets = parent.assets
@@ -117,7 +132,7 @@ def test_mitosis_stock_inheritance(golden_config, golden_households):
     Households CAN support share inheritance if the manager orchestrates it.
     """
     setup_golden_config(golden_config)
-    mock_h = golden_households[0]
+    mock_h = golden_households[0] if golden_households else MagicMock()
     parent = create_real_household_from_golden(mock_h, golden_config)
 
     # Setup Shares
@@ -159,7 +174,7 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
     Uses AITrainingManager to perform the brain transfer and validates Q-table content.
     """
     setup_golden_config(golden_config)
-    mock_h = golden_households[0]
+    mock_h = golden_households[0] if golden_households else MagicMock()
     parent = create_real_household_from_golden(mock_h, golden_config)
 
     # Setup Parent AI with specific knowledge
