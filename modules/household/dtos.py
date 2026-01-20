@@ -25,7 +25,6 @@ class HouseholdStateDTO:
     durable_assets: List[Dict[str, Any]]
     expected_inflation: Dict[str, float]
     is_employed: bool
-    is_homeless: bool
     current_wage: float
     wage_modifier: float
     residing_property_id: Optional[int]

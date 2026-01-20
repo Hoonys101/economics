@@ -57,15 +57,10 @@ class EconComponent(IEconComponent):
         # Misc State
         self.durable_assets: List[Dict[str, Any]] = []
         self.shares_owned: Dict[int, float] = {} # Keeping for legacy compat if needed
-        self.inventory_quality: Dict[str, float] = {} # Initialize inventory quality
 
         # Income Tracking
         self.labor_income_this_tick: float = 0.0
         self.capital_income_this_tick: float = 0.0
-
-        # Consumption Tracking (for EconomicTracker)
-        self.current_consumption: float = 0.0
-        self.current_food_consumption: float = 0.0
 
         # --- Components ---
         self.consumption = ConsumptionBehavior(owner, config_module)

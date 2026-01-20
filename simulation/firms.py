@@ -481,41 +481,6 @@ class Firm(BaseAgent, ILearningAgent):
         """
         return self.finance.distribute_profit_private(agents, current_time)
 
-    def issue_shares(self, quantity: float, price: float) -> float:
-        """
-        신규 주식을 발행합니다 (유상증자).
-        Delegates to FinanceDepartment.
-        """
-        return self.finance.issue_shares(quantity, price)
-
-    def get_book_value_per_share(self) -> float:
-        """
-        주당 순자산가치(BPS)를 계산합니다. (유통주식수 기준)
-        Delegates to FinanceDepartment.
-        """
-        return self.finance.get_book_value_per_share()
-
-    def calculate_valuation(self) -> float:
-        """
-        Calculate Firm Valuation based on Net Assets + Profit Potential.
-        Delegates to FinanceDepartment.
-        """
-        return self.finance.calculate_valuation()
-
-    def get_financial_snapshot(self) -> Dict[str, float]:
-        """
-        Returns a standardized dictionary of financial metrics for monitoring and analysis.
-        Delegates to FinanceDepartment.
-        """
-        return self.finance.get_financial_snapshot()
-
-    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
-        """
-        시가총액을 계산합니다.
-        Delegates to FinanceDepartment.
-        """
-        return self.finance.get_market_cap(stock_price)
-
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the firm's cash reserves."""
         if amount > 0:

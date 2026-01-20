@@ -92,7 +92,7 @@ class FinanceDepartment:
     def process_profit_distribution(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
         """Public Shareholders Dividend"""
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
-            repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+            repayment_ratio = self.config_module.get("economy_params.bailout_repayment_ratio", 0.5)
             repayment = self.current_profit * repayment_ratio
 
             # Ensure total_debt exists before attempting to modify

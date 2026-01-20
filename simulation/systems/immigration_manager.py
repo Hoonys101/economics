@@ -31,18 +31,8 @@ class ImmigrationManager:
         indicators = engine.tracker.get_latest_indicators()
         unemployment_rate = indicators.get("unemployment_rate", 1.0)
 
-        # Access labor market demand using engine.markets["labor"].get_total_demand()
-        # The legacy _prepare_market_data was a helper on Simulation/TickScheduler.
-        # Since 'engine' here might be WorldState (which doesn't have it), we access directly.
-        job_vacancies = 0
-        if "labor" in engine.markets:
-             labor_market = engine.markets["labor"]
-             if hasattr(labor_market, "get_total_demand"):
-                 # get_total_demand usually returns total buy order quantity
-                 job_vacancies = labor_market.get_total_demand()
-             elif hasattr(labor_market, "buy_orders"):
-                 # Fallback for OrderBookMarket
-                 job_vacancies = sum(order.quantity for order in labor_market.buy_orders)
+        market_data = engine._prepare_market_data(engine.tracker)
+        job_vacancies = market_data.get("job_vacancies", 0)
 
         total_population = len([h for h in engine.households if h.is_active])
         pop_threshold = getattr(self.config, "POPULATION_IMMIGRATION_THRESHOLD", 80)
