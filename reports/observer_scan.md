@@ -1,35 +1,31 @@
 # 🕵️ Observer Scan Report
-**Date:** 2026-01-11 22:47:49
-**Total Files:** 387
-**Total Lines:** 50341
+**Date:** 2026-01-20 08:39:58
+**Total Files:** 316
+**Total Lines:** 47811
 
 ## 1. 🏗️ Complexity Watchlist (Top 10 Big Files)
 | File | Lines | Status |
 |---|---|---|
-| `simulation/engine.py` | 1309 | 🔴 Critical |
-| `simulation/core_agents.py` | 1017 | 🔴 Critical |
-| `simulation/firms.py` | 919 | 🔴 Critical |
+| `simulation/core_agents.py` | 806 | 🔴 Critical |
+| `config.py` | 768 | 🟡 Warning |
+| `tests/test_engine.py` | 760 | 🟡 Warning |
 | `simulation/db/repository.py` | 745 | 🟡 Warning |
-| `config.py` | 712 | 🟡 Warning |
-| `tests/test_engine.py` | 702 | 🟡 Warning |
-| `simulation/decisions/ai_driven_household_engine.py` | 657 | 🟡 Warning |
-| `app.py` | 617 | 🟡 Warning |
-| `tests/test_firm_decision_engine_new.py` | 602 | 🟡 Warning |
-| `simulation/decisions/corporate_manager.py` | 540 | 🟡 Warning |
+| `simulation/firms.py` | 699 | 🟡 Warning |
+| `simulation/tick_scheduler.py` | 650 | 🟡 Warning |
+| `simulation/decisions/ai_driven_household_engine.py` | 636 | 🟡 Warning |
+| `tests/test_firm_decision_engine_new.py` | 626 | 🟡 Warning |
+| `scripts/jules_bridge.py` | 587 | 🟡 Warning |
+| `simulation/decisions/corporate_manager.py` | 583 | 🟡 Warning |
 
 ## 2. 🏷️ Tech Debt Tags
 | Tag | Count | Description |
 |---|---|---|
-| **TODO** | 18 | Review Needed |
-| **FIXME** | 1 | Action Required |
-| **HACK** | 15 | Review Needed |
+| **TODO** | 2 | Review Needed |
+| **FIXME** | 0 | Action Required |
+| **HACK** | 11 | Review Needed |
 | **REVIEW** | 0 | Review Needed |
-| **NOTE** | 1 | Review Needed |
-| **XXX** | 4 | Action Required |
+| **NOTE** | 2 | Review Needed |
+| **XXX** | 0 | Action Required |
 
 ### Critical Fixes (FIXME/XXX)
-- [ ] `design/work_orders/WO-052-Maintenance-Observer-Fixes.md:68` - Exclude the `scripts/observer` directory from the scan loop to prevent the scanner from flagging its
-- [ ] `OPERATIONS_MANUAL.md:51` - │   ├── work_orders/           # Jules 업무 지시서 (WO-XXX)
-- [ ] `OPERATIONS_MANUAL.md:98` - # WO-XXX: [제목]
-- [ ] `OPERATIONS_MANUAL.md:116` - Jules, 'design/work_orders/WO-XXX-Name.md'를 읽고 [작업 요약]을 수행하라.
-- [ ] `gemini.md:146` - # Work Order: WO-XXX - [제목]
+No critical tags found. Great job! 🎉

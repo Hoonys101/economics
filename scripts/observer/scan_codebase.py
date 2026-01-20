@@ -44,12 +44,24 @@ def scan_directory(root_dir: str) -> Dict[str, Dict]:
     
     for root, dirs, files in os.walk(root_dir):
         # Filter directories
+        # We modify dirs in-place to prune the walk
+        # Remove ignored directories
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
         
         # Exclude observer script directory to avoid self-flagging
-        if "scripts\\observer" in root or "scripts/observer" in root:
+        if "scripts/observer" in root or "scripts\\observer" in root:
             continue
+
+        # Exclude design directory explicitly if not caught by IGNORE_DIRS (though it is there)
+        # Note: IGNORE_DIRS only prevents descending INTO 'design', but if root_dir is '.', 'design' is in dirs.
+        # But os.walk yields root, dirs, files.
+        # If 'design' is in IGNORE_DIRS, we remove it from dirs, so os.walk won't go into it.
+        # However, if the root itself is 'design', we might still scan it. But here root_dir is usually '.'.
         
+        # Double check if 'design' is in root path string to be safe
+        if "design/" in root or "design\\" in root or root.endswith("design"):
+            continue
+
         for file in files:
             if any(file.endswith(ext) for ext in TARGET_EXTENSIONS):
                 filepath = os.path.join(root, file)

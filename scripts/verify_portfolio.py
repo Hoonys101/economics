@@ -7,7 +7,8 @@ import pandas as pd
 from typing import Dict, Any
 
 # Ensure project root is in path
-sys.path.append(os.getcwd())
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from simulation.engine import Simulation
 from simulation.core_agents import Household

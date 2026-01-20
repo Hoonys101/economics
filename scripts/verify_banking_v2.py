@@ -5,7 +5,8 @@ import unittest
 from unittest.mock import MagicMock
 
 # Add project root to path
-sys.path.append(os.getcwd())
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import config
 from simulation.bank import Bank, Loan, Deposit

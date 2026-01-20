@@ -142,7 +142,7 @@ Jules의 PR을 머지한 후, 코드가 "동작은 하지만 구조적으로 비
 ### 6.3 Work Order 구조
 
 ```markdown
-# Work Order: WO-XXX - [제목]
+# Work Order: WO-[ID] - [제목]
 
 **Phase:** [Phase 번호]
 **Priority:** [HIGH/MEDIUM/LOW]

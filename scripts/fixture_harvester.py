@@ -33,7 +33,8 @@ try:
     from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
 except ImportError:
     # If not in path (e.g. running script directly from shell), try adding root
-    sys.path.append(os.getcwd())
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
     try:
         from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
     except ImportError:

@@ -15,8 +15,8 @@
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **PENDING_IMPLEMENTATION** (Phase 28) |
 | TD-034 | 2026-01-15 | Hardcoded Debt Parameters | Bond maturity, risk premia must be config-driven | Reduced model configurability | **DEFERRED** |
 | TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
-| TD-050 | 2026-01-17 | Observer Scanner Path Inclusion | Exclude `scripts/observer` from scan loop | False positives in complexity reports | **DEFERRED** |
-| TD-051 | 2026-01-17 | Documentation Placeholders | Replace `WO-XXX` with actual IDs in manuals | Confusion in developer onboarding | **DEFERRED** |
+| TD-050 | 2026-01-17 | Observer Scanner Path Inclusion | Exclude `scripts/observer` from scan loop | False positives in complexity reports | **RESOLVED** (Direct) |
+| TD-051 | 2026-01-17 | Documentation Placeholders | Replace `WO-XXX` with actual IDs in manuals | Confusion in developer onboarding | **RESOLVED** (Direct) |
 | TD-058 | 2026-01-19 | `FinanceSystem` - `Firm` Tight Coupling | Introduce `FinancialStatementDTO` in `Firm` | Architecture Rigidity / Brittle Tests | **RESOLVED** (Phase 29) |
 | TD-059 | 2026-01-19 | Legacy Logic in `FinanceDepartment` | Refactor component to use `AltmanZScoreCalculator` | Logic Duplication / SSOT Violation | **DEFERRED** |
 | TD-060 | 2026-01-19 | Hardcoded Scenario Path in `Initializer` | Implement dynamic lookup in `ConfigManager` | Low Configurability / Brittle Tests | **RESOLVED** (Phase 29) |
