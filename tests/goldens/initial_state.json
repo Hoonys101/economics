@@ -1,0 +1,1108 @@
+{
+  "metadata": {
+    "captured_at": "2026-01-19T22:04:59.815564",
+    "tick": 0,
+    "household_count": 20,
+    "firm_count": 4
+  },
+  "households": [
+    {
+      "id": 0,
+      "assets": 4857.461426155902,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 23,
+      "age": 33.833211047334586,
+      "education_level": 1,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 58.10557579012661,
+        "social": 23.47659693004425,
+        "improvement": 10.97220520447883,
+        "asset": 9.951950821429042,
+        "imitation_need": 13.62625733837864,
+        "labor_need": 0.0,
+        "liquidity_need": 56.20502740535838,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 1,
+      "assets": 4529.354880018198,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 37.959709806276095,
+      "education_level": 1,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 65.94208546903467,
+        "social": 23.360768164385682,
+        "improvement": 9.737482238673401,
+        "asset": 10.35032380623192,
+        "imitation_need": 14.424727270356412,
+        "labor_need": 0.0,
+        "liquidity_need": 51.09105595073867,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 2,
+      "assets": 5059.911697000018,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 21,
+      "age": 31.66069292769286,
+      "education_level": 1,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 63.22184720974644,
+        "social": 19.193468836459854,
+        "improvement": 11.302812496705261,
+        "asset": 12.373295357696211,
+        "imitation_need": 16.131247848184213,
+        "labor_need": 0.0,
+        "liquidity_need": 48.07253160504285,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 3,
+      "assets": 5344.745177821133,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 23.60400814256847,
+      "education_level": 2,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 56.73524370778736,
+        "social": 19.99615774170219,
+        "improvement": 11.015268512916078,
+        "asset": 11.819646107715723,
+        "imitation_need": 16.360148116279277,
+        "labor_need": 0.0,
+        "liquidity_need": 41.57721163393286,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 4,
+      "assets": 5962.174400017219,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 22,
+      "age": 21.357926145055288,
+      "education_level": 2,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 58.939646980537525,
+        "social": 21.434688784453026,
+        "improvement": 11.203070802282541,
+        "asset": 11.144177337482397,
+        "imitation_need": 15.387666611114366,
+        "labor_need": 0.0,
+        "liquidity_need": 53.37318831806225,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 5,
+      "assets": 5585.073921593023,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 48.96173750674118,
+      "education_level": 2,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 66.00806879253561,
+        "social": 20.957100149925733,
+        "improvement": 10.79148478590018,
+        "asset": 10.606154381079126,
+        "imitation_need": 14.841303736375767,
+        "labor_need": 0.0,
+        "liquidity_need": 58.79206266462265,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 6,
+      "assets": 5205.0419218213965,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 55.01331252462579,
+      "education_level": 2,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 64.5966448834245,
+        "social": 18.834724768229883,
+        "improvement": 10.455404945164062,
+        "asset": 12.12017184832537,
+        "imitation_need": 15.602110775349427,
+        "labor_need": 0.0,
+        "liquidity_need": 42.68806278598042,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 7,
+      "assets": 5070.554884921487,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 23,
+      "age": 46.91947695659395,
+      "education_level": 1,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 59.15875594530486,
+        "social": 21.132378918653934,
+        "improvement": 10.809116026908805,
+        "asset": 9.98839662043404,
+        "imitation_need": 15.974295255395273,
+        "labor_need": 0.0,
+        "liquidity_need": 50.016704716480895,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 8,
+      "assets": 5222.430841983983,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 44.80737441049051,
+      "education_level": 2,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 65.2542450286441,
+        "social": 21.38668762249562,
+        "improvement": 11.618274176184308,
+        "asset": 11.030594982333323,
+        "imitation_need": 15.136947220193257,
+        "labor_need": 0.0,
+        "liquidity_need": 48.54804761202824,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 9,
+      "assets": 5395.479196949696,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 20,
+      "age": 43.75601615786431,
+      "education_level": 2,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 56.77810624578707,
+        "social": 21.82486872917383,
+        "improvement": 11.01115406783267,
+        "asset": 11.779900334043091,
+        "imitation_need": 15.02961654965544,
+        "labor_need": 0.0,
+        "liquidity_need": 43.66024821462515,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 10,
+      "assets": 5389.775045953143,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 58.073864032279644,
+      "education_level": 2,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 58.369892534395994,
+        "social": 22.03134766587609,
+        "improvement": 11.148842221822905,
+        "asset": 11.778340948088108,
+        "imitation_need": 14.966376319195815,
+        "labor_need": 0.0,
+        "liquidity_need": 57.154376432208345,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 11,
+      "assets": 4607.205426847207,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 47.96771844962264,
+      "education_level": 1,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 60.03320463438905,
+        "social": 20.804374530912757,
+        "improvement": 9.637054238069863,
+        "asset": 9.71137634461685,
+        "imitation_need": 15.158036853699285,
+        "labor_need": 0.0,
+        "liquidity_need": 55.39368462395215,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 12,
+      "assets": 4142.932749205455,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 20.785908038279036,
+      "education_level": 1,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 63.03054710574414,
+        "social": 22.34356534781797,
+        "improvement": 10.808008477158435,
+        "asset": 10.251310869672542,
+        "imitation_need": 15.094049668650868,
+        "labor_need": 0.0,
+        "liquidity_need": 58.53768248980587,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 13,
+      "assets": 4074.1835622060366,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 22.04359176362269,
+      "education_level": 1,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 59.89171773252914,
+        "social": 19.714042529408886,
+        "improvement": 11.419724984376064,
+        "asset": 10.253404826100896,
+        "imitation_need": 15.981539949974037,
+        "labor_need": 0.0,
+        "liquidity_need": 54.22706848432834,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 14,
+      "assets": 5522.451185432833,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 53.414740301275685,
+      "education_level": 2,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 59.411747364312625,
+        "social": 19.61547193017779,
+        "improvement": 10.706907090055472,
+        "asset": 10.711306699771232,
+        "imitation_need": 13.952015908346782,
+        "labor_need": 0.0,
+        "liquidity_need": 52.610751017799,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 15,
+      "assets": 4541.532440270617,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 26.46944413544457,
+      "education_level": 1,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 55.375495561833745,
+        "social": 23.207547773832783,
+        "improvement": 10.646979581977265,
+        "asset": 10.934475090525934,
+        "imitation_need": 14.110288085535569,
+        "labor_need": 0.0,
+        "liquidity_need": 54.89108433037686,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 16,
+      "assets": 5117.423998792505,
+      "is_active": true,
+      "is_employed": false,
+      "employer_id": null,
+      "age": 57.7359730855457,
+      "education_level": 2,
+      "current_wage": 0.0,
+      "needs": {
+        "survival": 66.451343453721,
+        "social": 19.68956258307667,
+        "improvement": 10.810561815791992,
+        "asset": 11.452304411416282,
+        "imitation_need": 14.368444848196122,
+        "labor_need": 0.0,
+        "liquidity_need": 52.547443070643126,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 17,
+      "assets": 4404.030949525296,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 22,
+      "age": 59.11651959718802,
+      "education_level": 1,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 60.29403773593572,
+        "social": 23.066126505730715,
+        "improvement": 9.547066729083449,
+        "asset": 10.47566288872611,
+        "imitation_need": 16.227608383995488,
+        "labor_need": 0.0,
+        "liquidity_need": 49.61179107971739,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 18,
+      "assets": 4809.346608867296,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 20,
+      "age": 26.00585607103763,
+      "education_level": 1,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 56.0687068690422,
+        "social": 23.208627005185935,
+        "improvement": 11.339759512612856,
+        "asset": 11.452115595408134,
+        "imitation_need": 15.640461712677624,
+        "labor_need": 0.0,
+        "liquidity_need": 59.267634027881776,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    },
+    {
+      "id": 19,
+      "assets": 5542.476974760571,
+      "is_active": true,
+      "is_employed": true,
+      "employer_id": 21,
+      "age": 44.78375973669013,
+      "education_level": 2,
+      "current_wage": 10.0,
+      "needs": {
+        "survival": 64.6609082703815,
+        "social": 21.403988856746874,
+        "improvement": 10.863133047315888,
+        "asset": 11.451672437343174,
+        "imitation_need": 13.568211920028126,
+        "labor_need": 0.0,
+        "liquidity_need": 49.930483119160904,
+        "quality": 1.0
+      },
+      "inventory": {
+        "basic_food": 10.0
+      },
+      "approval_rating": 1
+    }
+  ],
+  "firms": [
+    {
+      "id": 20,
+      "assets": 100000.0,
+      "is_active": true,
+      "specialization": "basic_food",
+      "productivity_factor": 20.0,
+      "employees_count": 2,
+      "inventory": {
+        "basic_food": 127.37027140339896,
+        "clothing": 0.0,
+        "luxury_food": 0.0,
+        "education_service": 0.0,
+        "iron": 0.0,
+        "consumer_goods": 0.0,
+        "luxury_bag": 0.0
+      },
+      "retained_earnings": 0.0,
+      "total_debt": 0.0,
+      "current_profit": -35.136851357016994,
+      "consecutive_loss_turns": 1
+    },
+    {
+      "id": 21,
+      "assets": 100000.0,
+      "is_active": true,
+      "specialization": "basic_food",
+      "productivity_factor": 20.0,
+      "employees_count": 2,
+      "inventory": {
+        "basic_food": 127.37027140339896,
+        "clothing": 0.0,
+        "luxury_food": 0.0,
+        "education_service": 0.0,
+        "iron": 0.0,
+        "consumer_goods": 0.0,
+        "luxury_bag": 0.0
+      },
+      "retained_earnings": 0.0,
+      "total_debt": 0.0,
+      "current_profit": -35.136851357016994,
+      "consecutive_loss_turns": 1
+    },
+    {
+      "id": 22,
+      "assets": 100000.0,
+      "is_active": true,
+      "specialization": "basic_food",
+      "productivity_factor": 20.0,
+      "employees_count": 2,
+      "inventory": {
+        "basic_food": 127.37027140339896,
+        "clothing": 0.0,
+        "luxury_food": 0.0,
+        "education_service": 0.0,
+        "iron": 0.0,
+        "consumer_goods": 0.0,
+        "luxury_bag": 0.0
+      },
+      "retained_earnings": 0.0,
+      "total_debt": 0.0,
+      "current_profit": -35.136851357016994,
+      "consecutive_loss_turns": 1
+    },
+    {
+      "id": 23,
+      "assets": 100000.0,
+      "is_active": true,
+      "specialization": "clothing",
+      "productivity_factor": 20.0,
+      "employees_count": 2,
+      "inventory": {
+        "basic_food": 0.0,
+        "clothing": 127.37027140339896,
+        "luxury_food": 0.0,
+        "education_service": 0.0,
+        "iron": 0.0,
+        "consumer_goods": 0.0,
+        "luxury_bag": 0.0
+      },
+      "retained_earnings": 0.0,
+      "total_debt": 0.0,
+      "current_profit": -33.636851357016994,
+      "consecutive_loss_turns": 1
+    }
+  ],
+  "config_snapshot": {
+    "ADAPTATION_RATE_CONSERVATIVE": 0.1,
+    "ADAPTATION_RATE_IMPULSIVE": 0.8,
+    "ADAPTATION_RATE_NORMAL": 0.3,
+    "AI_ASSET_REWARD_WEIGHT": 1.0,
+    "AI_BASE_ALPHA": 0.1,
+    "AI_EPSILON": 0.1,
+    "AI_GAMMA": 0.9,
+    "AI_GROWTH_REWARD_WEIGHT": 7.0,
+    "AI_LEARNING_FOCUS": 0.5,
+    "AI_MIN_PRICE_FLOOR": 0.1,
+    "AI_PRICE_ADJUSTMENT_MEDIUM": 0.1,
+    "AI_PRICE_ADJUSTMENT_SMALL": 0.05,
+    "AI_SKILL_REWARD_WEIGHT": 10.0,
+    "AI_SOCIAL_STATUS_REWARD_WEIGHT": 5.0,
+    "AI_WEALTH_REWARD_WEIGHT": 3.0,
+    "ANNUAL_WEALTH_TAX_RATE": 0.02,
+    "ASSETS_CLOSURE_THRESHOLD": 0.0,
+    "ASSETS_DEATH_THRESHOLD": 0.0,
+    "ASSETS_THRESHOLD_FOR_OTHER_ACTIONS": 200.0,
+    "AUTOMATION_COST_PER_PCT": 10000.0,
+    "AUTOMATION_LABOR_REDUCTION": 0.1,
+    "BAILOUT_REPAYMENT_RATIO": 0.5,
+    "BANKRUPTCY_CONSECUTIVE_LOSS_TICKS": 20,
+    "BANKRUPTCY_XP_PENALTY": 0.2,
+    "BANK_MARGIN": 0.02,
+    "BASE_DESIRE_GROWTH": 1.0,
+    "BASE_LEARNING_RATE": 0.1,
+    "BASE_WAGE": 20.0,
+    "BATCH_SAVE_INTERVAL": 1,
+    "BIOLOGICAL_FERTILITY_RATE": 0.15,
+    "BRAND_AWARENESS_SATURATION": 0.9,
+    "BRAND_LOYALTY_DECAY": 0.95,
+    "BRAND_SENSITIVITY_BETA": 0.5,
+    "BUDGET_ALLOCATION_MAX": 1.0,
+    "BUDGET_ALLOCATION_MIN": 0.1,
+    "BUDGET_LIMIT_NORMAL_RATIO": 0.5,
+    "BUDGET_LIMIT_URGENT_NEED": 80.0,
+    "BUDGET_LIMIT_URGENT_RATIO": 0.9,
+    "BULK_BUY_AGG_THRESHOLD": 0.8,
+    "BULK_BUY_MODERATE_RATIO": 0.6,
+    "BULK_BUY_NEED_THRESHOLD": 70.0,
+    "CB_INFLATION_TARGET": 0.02,
+    "CB_TAYLOR_ALPHA": 1.5,
+    "CB_TAYLOR_BETA": 0.5,
+    "CB_UPDATE_INTERVAL": 10,
+    "CHILDCARE_TIME_REQUIRED": 8.0,
+    "CHILD_EMOTIONAL_VALUE_BASE": 500000.0,
+    "CHILD_MONTHLY_COST": 500.0,
+    "CHILD_REARING_ASSET_THRESHOLD": 1000.0,
+    "CHILD_REARING_NEED_THRESHOLD": 80.0,
+    "CONFORMITY_RANGES": {
+      "STATUS_SEEKER": [
+        0.7,
+        0.95
+      ],
+      "CONSERVATIVE": [
+        0.5,
+        0.7
+      ],
+      "MISER": [
+        0.1,
+        0.3
+      ],
+      "IMPULSIVE": [
+        0.4,
+        0.6
+      ],
+      "null": [
+        0.3,
+        0.7
+      ]
+    },
+    "CORPORATE_TAX_RATE": 0.0,
+    "CREDIT_RECOVERY_TICKS": 100,
+    "CREDIT_SPREAD_BASE": 0.02,
+    "DEBT_CEILING_RATIO": 2.0,
+    "DEBT_LIQUIDITY_RATIO": 0.9,
+    "DEBT_REPAYMENT_CAP": 1.1,
+    "DEBT_REPAYMENT_RATIO": 0.5,
+    "DEFAULT_INFLATION_RATE": 0.02,
+    "DEFAULT_LOAN_DURATION": 10,
+    "DEFICIT_SPENDING_ENABLED": true,
+    "DEFICIT_SPENDING_LIMIT_RATIO": 0.3,
+    "DEFLATION_WAIT_THRESHOLD": -0.05,
+    "DELAY_FACTOR": 0.5,
+    "DIVIDEND_RATE": 0.1,
+    "DIVIDEND_RATE_MAX": 0.5,
+    "DIVIDEND_RATE_MIN": 0.05,
+    "DSR_CRITICAL_THRESHOLD": 0.4,
+    "EDUCATION_COST_MULTIPLIERS": {
+      "0": 1.0,
+      "1": 1.5,
+      "2": 2.2,
+      "3": 3.5,
+      "4": 5.0,
+      "5": 8.0
+    },
+    "EDUCATION_COST_PER_LEVEL": {
+      "1": 500,
+      "2": 2000,
+      "3": 5000,
+      "4": 15000,
+      "5": 50000
+    },
+    "EDUCATION_LEVEL_DISTRIBUTION": [
+      0.4,
+      0.3,
+      0.15,
+      0.1,
+      0.04,
+      0.01
+    ],
+    "EDUCATION_SENSITIVITY": 0.1,
+    "EDUCATION_WEALTH_THRESHOLDS": {
+      "0": 0.0,
+      "1": 2000.0,
+      "2": 5000.0,
+      "3": 10000.0,
+      "4": 20000.0,
+      "5": 50000.0
+    },
+    "EMERGENCY_BUDGET_MULTIPLIER_CAP": 2.0,
+    "ENABLE_VANITY_SYSTEM": true,
+    "ENTREPRENEURSHIP_SPIRIT": 0.05,
+    "FIRM_CLOSURE_TURNS_THRESHOLD": 20,
+    "FIRM_DEFAULT_TOTAL_SHARES": 100.0,
+    "FIRM_LABOR_REQUIREMENT_RATIO": 0.9,
+    "FIRM_MAINTENANCE_FEE": 50.0,
+    "FIRM_MAX_EMPLOYEES": 50,
+    "FIRM_MAX_PRODUCTION_TARGET": 500.0,
+    "FIRM_MIN_EMPLOYEES": 1,
+    "FIRM_MIN_PRODUCTION_TARGET": 10.0,
+    "FIRM_PRODUCTIVITY_FACTOR": 20.0,
+    "FIRM_SPECIALIZATIONS": {
+      "0": "basic_food",
+      "1": "basic_food",
+      "2": "basic_food",
+      "3": "clothing",
+      "4": "clothing"
+    },
+    "FISCAL_MODEL": "MIXED",
+    "FISCAL_SENSITIVITY_ALPHA": 0.5,
+    "FISCAL_STANCE_CONTRACTION_THRESHOLD": -0.025,
+    "FISCAL_STANCE_EXPANSION_THRESHOLD": 0.025,
+    "FOOD_CONSUMPTION_MAX_PER_TICK": 5.0,
+    "FOOD_CONSUMPTION_QUANTITY": 1.0,
+    "FOOD_PURCHASE_MAX_PER_TICK": 5.0,
+    "FOOD_SUPPLY_MODIFIER": 1.5,
+    "FORCED_LABOR_EXPLORATION_PROBABILITY": 0.5,
+    "FORCED_LABOR_WAGE_FACTOR": 0.8,
+    "FORMULA_TECH_LEVEL": 0.0,
+    "GENESIS_PRICE_ADJUSTMENT_MULTIPLIER": 2.0,
+    "GENESIS_WAGE_FLEXIBILITY_FACTOR": 0.5,
+    "GOLD_STANDARD_MODE": true,
+    "GOODS": {
+      "basic_food": {
+        "production_cost": 3,
+        "initial_price": 5.0,
+        "utility_effects": {
+          "survival": 10
+        },
+        "is_luxury": false,
+        "sector": "FOOD"
+      },
+      "clothing": {
+        "production_cost": 5,
+        "initial_price": 15.0,
+        "utility_effects": {
+          "survival": 2,
+          "social": 8
+        },
+        "is_luxury": true,
+        "sector": "GOODS"
+      },
+      "luxury_food": {
+        "production_cost": 10,
+        "initial_price": 30.0,
+        "utility_effects": {
+          "survival": 12,
+          "social": 5
+        },
+        "is_luxury": true,
+        "sector": "FOOD"
+      },
+      "education_service": {
+        "production_cost": 20,
+        "initial_price": 50.0,
+        "utility_effects": {
+          "improvement": 15
+        },
+        "is_service": true,
+        "is_luxury": false,
+        "sector": "SERVICE"
+      },
+      "iron": {
+        "production_cost": 2.0,
+        "initial_price": 8.0,
+        "utility_effects": {},
+        "is_luxury": false,
+        "sector": "MATERIAL"
+      },
+      "consumer_goods": {
+        "production_cost": 5.0,
+        "initial_price": 15.0,
+        "utility_effects": {
+          "quality": 10
+        },
+        "is_luxury": true,
+        "sector": "GOODS",
+        "is_durable": true,
+        "base_lifespan": 50,
+        "quality_sensitivity": 0.5,
+        "inputs": {
+          "iron": 1.0
+        }
+      },
+      "luxury_bag": {
+        "production_cost": 500,
+        "initial_price": 2000.0,
+        "utility_effects": {
+          "social": 50
+        },
+        "is_luxury": true,
+        "is_veblen": true,
+        "sector": "LUXURY"
+      }
+    },
+    "GOODS_INITIAL_PRICE": {
+      "basic_food": 5.0,
+      "stock": 50.0
+    },
+    "GOVERNMENT_POLICY_MODE": "AI_ADAPTIVE",
+    "GOV_ACTION_INTERVAL": 30,
+    "GROWTH_NEED_THRESHOLD": 60.0,
+    "HALO_EFFECT": 0.15,
+    "HOARDING_FACTOR": 0.5,
+    "HOMELESS_PENALTY_PER_TICK": 50.0,
+    "HOMEWORK_QUALITY_COEFF": 0.5,
+    "HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD": 0.7,
+    "HOURS_PER_TICK": 24.0,
+    "HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY": 1.0,
+    "HOUSEHOLD_ASSET_PRICE_MULTIPLIER": 0.1,
+    "HOUSEHOLD_CONSUMABLE_GOODS": [
+      "basic_food",
+      "luxury_food"
+    ],
+    "HOUSEHOLD_DEATH_TURNS_THRESHOLD": 4,
+    "HOUSEHOLD_DEFAULT_WAGE": 10.0,
+    "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK": 2.0,
+    "HOUSEHOLD_FOOD_PRICE_ELASTICITY": 0.5,
+    "HOUSEHOLD_FOOD_STOCKPILE_TARGET_TICKS": 5,
+    "HOUSEHOLD_INVESTMENT_BUDGET_RATIO": 0.2,
+    "HOUSEHOLD_LOAN_THRESHOLD": 500.0,
+    "HOUSEHOLD_LOW_ASSET_THRESHOLD": 100.0,
+    "HOUSEHOLD_LOW_ASSET_WAGE": 8.0,
+    "HOUSEHOLD_MAX_PURCHASE_QUANTITY": 5.0,
+    "HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT": 500.0,
+    "HOUSEHOLD_MIN_FOOD_INVENTORY": 0.0,
+    "HOUSEHOLD_MIN_FOOD_INVENTORY_TICKS": 2,
+    "HOUSEHOLD_MIN_WAGE_DEMAND": 10.0,
+    "HOUSEHOLD_NEED_PRICE_MULTIPLIER": 1.0,
+    "HOUSEHOLD_PRICE_ELASTICITY_FACTOR": 0.5,
+    "HOUSEHOLD_RESERVATION_PRICE_BASE": 5.0,
+    "HOUSEHOLD_STOCKPILING_BONUS_FACTOR": 0.2,
+    "HOUSEWORK_BASE_HOURS": 6.0,
+    "IMITATION_ASSET_THRESHOLD": 500.0,
+    "IMITATION_LEARNING_INTERVAL": 100,
+    "IMITATION_MUTATION_MAGNITUDE": 0.05,
+    "IMITATION_MUTATION_RATE": 0.1,
+    "IMITATION_NEED_THRESHOLD": 70.0,
+    "IMMIGRATION_BATCH_SIZE": 5,
+    "INCOME_TAX_PAYER": "HOUSEHOLD",
+    "INCOME_TAX_RATE": 0.0,
+    "INFLATION_MEMORY_WINDOW": 10,
+    "INFRASTRUCTURE_INVESTMENT_COST": 5000.0,
+    "INFRASTRUCTURE_TFP_BOOST": 0.05,
+    "INHERITANCE_TAX_RATE": 0.0,
+    "INITIAL_BANK_ASSETS": 1000000.0,
+    "INITIAL_BASE_ANNUAL_RATE": 0.05,
+    "INITIAL_CHILD_ASSETS_FACTOR": 0.5,
+    "INITIAL_EMPLOYMENT_RATE": 0.5,
+    "INITIAL_FIRM_CAPITAL_MEAN": 50000.0,
+    "INITIAL_FIRM_CAPITAL_RANGE": 0.2,
+    "INITIAL_FIRM_INVENTORY_MEAN": 0.0,
+    "INITIAL_FIRM_INVENTORY_RANGE": 0.2,
+    "INITIAL_FIRM_LIQUIDITY_NEED_MEAN": 200.0,
+    "INITIAL_FIRM_LIQUIDITY_NEED_RANGE": 0.2,
+    "INITIAL_HOUSEHOLD_ASSETS_MEAN": 5000.0,
+    "INITIAL_HOUSEHOLD_ASSETS_RANGE": 0.2,
+    "INITIAL_HOUSEHOLD_FOOD_INVENTORY": 10.0,
+    "INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN": 50.0,
+    "INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE": 0.2,
+    "INITIAL_HOUSEHOLD_NEEDS_MEAN": {
+      "survival": 60.0,
+      "asset": 10.0,
+      "social": 20.0,
+      "improvement": 10.0,
+      "survival_need": 60.0,
+      "recognition_need": 20.0,
+      "growth_need": 10.0,
+      "wealth_need": 10.0,
+      "imitation_need": 15.0,
+      "labor_need": 0.0,
+      "child_rearing_need": 0.0,
+      "quality": 0.0
+    },
+    "INITIAL_HOUSEHOLD_NEEDS_RANGE": 0.1,
+    "INITIAL_MONEY_SUPPLY": 100000.0,
+    "INITIAL_PROPERTY_VALUE": 10000.0,
+    "INITIAL_RENT_PRICE": 100.0,
+    "INITIAL_WAGE": 10.0,
+    "INTEREST_SENSITIVITY_ANT": 5.0,
+    "INTEREST_SENSITIVITY_GRASSHOPPER": 1.0,
+    "INVENTORY_HOLDING_COST_RATE": 0.005,
+    "IPO_INITIAL_SHARES": 1000.0,
+    "JOB_QUIT_PROB_BASE": 0.1,
+    "JOB_QUIT_PROB_SCALE": 0.9,
+    "JOB_QUIT_THRESHOLD_BASE": 2.0,
+    "LABOR_ELASTICITY_MIN": 0.0,
+    "LABOR_MARKET_MIN_WAGE": 8.0,
+    "LABOR_NEED_THRESHOLD": 50.0,
+    "LACTATION_INTENSITY": 1.0,
+    "LEARNING_EFFICIENCY": 1.0,
+    "LEISURE_COEFFS": {
+      "PARENTING": {
+        "condition_item": "education_service",
+        "utility_per_hour": 2.0,
+        "xp_gain_per_hour": 0.5
+      },
+      "ENTERTAINMENT": {
+        "condition_item": "luxury_food",
+        "utility_per_hour": 5.0,
+        "xp_gain_per_hour": 0.0
+      },
+      "SELF_DEV": {
+        "condition_item": null,
+        "utility_per_hour": 1.0,
+        "productivity_gain": 0.001
+      }
+    },
+    "LEISURE_WEIGHT": 0.3,
+    "LIQUIDATION_DISCOUNT_RATE": 0.5,
+    "LIQUIDITY_NEED_INCREASE_RATE": 0.2,
+    "LIQUIDITY_RATIO_DIVISOR": 100.0,
+    "LIQUIDITY_RATIO_MAX": 0.8,
+    "LIQUIDITY_RATIO_MIN": 0.1,
+    "LOAN_DEFAULT_TERM": 50,
+    "LOAN_DURATION": 20,
+    "LOAN_INTEREST_RATE": 0.05,
+    "MACRO_PORTFOLIO_ADJUSTMENT_ENABLED": true,
+    "MAINTENANCE_RATE_PER_TICK": 0.001,
+    "MARKETING_BUDGET_RATE_MAX": 0.2,
+    "MARKETING_BUDGET_RATE_MIN": 0.01,
+    "MARKETING_DECAY_RATE": 0.8,
+    "MARKETING_EFFICIENCY": 0.01,
+    "MARKETING_EFFICIENCY_HIGH_THRESHOLD": 1.5,
+    "MARKETING_EFFICIENCY_LOW_THRESHOLD": 0.8,
+    "MARKET_PRICE_FALLBACK": 10.0,
+    "MASLOW_SURVIVAL_THRESHOLD": 50.0,
+    "MAX_DESIRE_VALUE": 100.0,
+    "MAX_LEARNING_RATE": 0.5,
+    "MAX_SELL_PRICE": 100.0,
+    "MAX_SELL_QUANTITY": 50.0,
+    "MAX_WAGE_PREMIUM": 1.0,
+    "MAX_WORK_HOURS": 14.0,
+    "MA_ENABLED": true,
+    "MIMICRY_FACTOR": 0.5,
+    "MIN_ACQUISITION_CASH_RATIO": 1.5,
+    "MIN_FIRMS_THRESHOLD": 5,
+    "MIN_PURCHASE_QUANTITY": 0.1,
+    "MIN_SELL_PRICE": 1.0,
+    "MITOSIS_BASE_THRESHOLD": 5000.0,
+    "MITOSIS_MUTATION_PROBABILITY": 0.2,
+    "MITOSIS_Q_TABLE_MUTATION_RATE": 0.05,
+    "MITOSIS_SENSITIVITY": 1.5,
+    "MITOSIS_SURVIVAL_THRESHOLD": 20.0,
+    "NEED_FACTOR_BASE": 0.5,
+    "NEED_FACTOR_SCALE": 100.0,
+    "NEED_HIGH_THRESHOLD": 80.0,
+    "NEED_MEDIUM_THRESHOLD": 50.0,
+    "NETWORK_EFFECT_WEIGHT": 0.5,
+    "NEUTRAL_REAL_RATE": 0.02,
+    "NORMAL_BUDGET_MULTIPLIER_CAP": 1.0,
+    "NUM_FIRMS": 4,
+    "NUM_HOUSEHOLDS": 20,
+    "NUM_HOUSING_UNITS": 100,
+    "OLD_AGE_SUPPORT_RATE": 0.1,
+    "OPPORTUNITY_COST_FACTOR": 0.3,
+    "OVERSTOCK_THRESHOLD": 1.2,
+    "PANIC_BUYING_THRESHOLD": 0.05,
+    "PANIC_SELLING_ASSET_THRESHOLD": 500.0,
+    "PERCEIVED_FAIR_PRICE_THRESHOLD_FACTOR": 0.9,
+    "PERCEIVED_PRICE_UPDATE_FACTOR": 0.1,
+    "PERCEIVED_QUALITY_ALPHA": 0.2,
+    "POPULATION_IMMIGRATION_THRESHOLD": 80,
+    "POTENTIAL_GDP_WINDOW": 50,
+    "PRICE_ADJUSTMENT_EXPONENT": 1.2,
+    "PRICE_ADJUSTMENT_FACTOR": 0.2,
+    "PRODUCTION_ADJUSTMENT_FACTOR": 0.2,
+    "PROFIT_HISTORY_TICKS": 10,
+    "PUBLIC_EDU_BUDGET_RATIO": 0.2,
+    "QUALITY_PREF_MISER_MAX": 0.3,
+    "QUALITY_PREF_SNOB_MIN": 0.7,
+    "QUALITY_SENSITIVITY_MEAN": 0.5,
+    "RAISING_YEARS": 20,
+    "RAW_MATERIAL_SECTORS": [
+      "iron"
+    ],
+    "RD_SUBSIDY_RATE": 0.2,
+    "RECOGNITION_NEED_THRESHOLD": 40.0,
+    "REFERENCE_GROUP_PERCENTILE": 0.2,
+    "REPRODUCTION_AGE_END": 45,
+    "REPRODUCTION_AGE_START": 20,
+    "RESERVATION_WAGE_BASE": 1.5,
+    "RESERVATION_WAGE_FLOOR": 0.3,
+    "RESERVATION_WAGE_FLOOR_RATIO": 0.7,
+    "RESERVATION_WAGE_RANGE": 1.0,
+    "RESERVE_REQ_RATIO": 0.1,
+    "RL_DISCOUNT_FACTOR": 0.95,
+    "RL_LEARNING_RATE": 0.1,
+    "RND_PRODUCTIVITY_MULTIPLIER": 0.01,
+    "RND_WAGE_PREMIUM": 1.5,
+    "ROOT_LOGGER_LEVEL": "INFO",
+    "SALES_TAX_RATE": 0.0,
+    "SCHOLARSHIP_POTENTIAL_THRESHOLD": 0.7,
+    "SCHOLARSHIP_WEALTH_PERCENTILE": 0.2,
+    "SEO_MAX_SELL_RATIO": 0.1,
+    "SEO_TRIGGER_RATIO": 0.5,
+    "SERVICE_SECTORS": [
+      "service.education",
+      "service.medical"
+    ],
+    "SERVICE_WASTE_PENALTY_FACTOR": 0.5,
+    "SEVERANCE_PAY_WEEKS": 4,
+    "SHOPPING_HOURS": 2.0,
+    "SIMULATION_TICKS": 1000,
+    "SOCIAL_CAPILLARITY_COST": 0.5,
+    "SOCIAL_STATUS_ASSET_WEIGHT": 0.3,
+    "SOCIAL_STATUS_LUXURY_WEIGHT": 0.7,
+    "STARTUP_CAPITAL_MULTIPLIER": 1.2,
+    "STARTUP_COST": 30000.0,
+    "STARTUP_INITIAL_SHARES": 100.0,
+    "STARTUP_MIN_CAPITAL": 5000.0,
+    "STARTUP_PROBABILITY": 0.01,
+    "STIMULUS_TRIGGER_GDP_DROP": -0.05,
+    "STOCK_BOOK_VALUE_MULTIPLIER": 1.0,
+    "STOCK_BUY_DISCOUNT_THRESHOLD": 0.1,
+    "STOCK_INVESTMENT_DIVERSIFICATION_COUNT": 3,
+    "STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD": 10.0,
+    "STOCK_MARKET_ENABLED": true,
+    "STOCK_MIN_ORDER_QUANTITY": 1.0,
+    "STOCK_ORDER_EXPIRY_TICKS": 5,
+    "STOCK_PRICE_LIMIT_RATE": 0.15,
+    "STOCK_PRICE_METHOD": "book_value",
+    "STOCK_SELL_PROFIT_THRESHOLD": 0.15,
+    "STOCK_TRANSACTION_FEE_RATE": 0.001,
+    "SUPPORT_YEARS": 20,
+    "SURVIVAL_CRITICAL_TURNS": 5,
+    "SURVIVAL_NEED_CONSUMPTION_THRESHOLD": 50.0,
+    "SURVIVAL_NEED_DEATH_THRESHOLD": 100.0,
+    "SURVIVAL_NEED_THRESHOLD": 20.0,
+    "SURVIVAL_NEED_THRESHOLD_FOR_OTHER_ACTIONS": 30.0,
+    "SURVIVAL_TO_LABOR_NEED_FACTOR": 0.5,
+    "SYSTEM2_DISCOUNT_RATE": 0.98,
+    "SYSTEM2_HORIZON": 100,
+    "SYSTEM2_TICKS_PER_CALC": 10,
+    "TARGET_FOOD_BUFFER_QUANTITY": 5.0,
+    "TARGET_INFLATION_RATE": 0.02,
+    "TARGET_POPULATION": 50,
+    "TARGET_UNEMPLOYMENT_RATE": 0.04,
+    "TAX_BRACKETS": [
+      [
+        0.5,
+        0.0
+      ],
+      [
+        1.0,
+        0.05
+      ],
+      [
+        3.0,
+        0.1
+      ],
+      [
+        Infinity,
+        0.2
+      ]
+    ],
+    "TAX_RATE_BASE": 0.1,
+    "TAX_RATE_MAX": 0.5,
+    "TAX_RATE_MIN": 0.05,
+    "TECH_CONTRACEPTION_ENABLED": true,
+    "THRESHOLD_FORCED_LABOR_EXPLORATION": 1.0,
+    "TICKS_PER_YEAR": 100.0,
+    "TOP_PERFORMING_PERCENTILE": 0.1,
+    "UNDERSTOCK_THRESHOLD": 0.8,
+    "UNDER_PERFORMING_PERCENTILE": 0.5,
+    "UNEMPLOYMENT_BENEFIT_RATIO": 0.0,
+    "UNNAMED_CHILD_MORTALITY_RATE": 0.001,
+    "VALUATION_MODIFIER_BASE": 0.9,
+    "VALUATION_MODIFIER_RANGE": 0.2,
+    "VALUATION_PER_MULTIPLIER": 10.0,
+    "VALUE_ORIENTATION_MAPPING": {
+      "wealth_and_needs": {
+        "preference_asset": 1.3,
+        "preference_social": 0.7,
+        "preference_growth": 1.0
+      },
+      "needs_and_growth": {
+        "preference_asset": 0.8,
+        "preference_social": 0.7,
+        "preference_growth": 1.5
+      },
+      "needs_and_social_status": {
+        "preference_asset": 0.7,
+        "preference_social": 1.5,
+        "preference_growth": 0.8
+      }
+    },
+    "VALUE_ORIENTATION_NEEDS_AND_GROWTH": "needs_and_growth",
+    "VALUE_ORIENTATION_NEEDS_AND_SOCIAL_STATUS": "needs_and_social_status",
+    "VALUE_ORIENTATION_WEALTH_AND_NEEDS": "wealth_and_needs",
+    "VANITY_WEIGHT": 1.5,
+    "WAGE_COMPETITION_PREMIUM": 0.2,
+    "WAGE_DECAY_RATE": 0.02,
+    "WAGE_INFLATION_ADJUSTMENT_FACTOR": 0.1,
+    "WAGE_PROFIT_SENSITIVITY": 0.5,
+    "WAGE_RECOVERY_RATE": 0.01,
+    "WEALTH_NEED_THRESHOLD": 70.0,
+    "WEALTH_TAX_THRESHOLD": 50000.0
+  }
+}

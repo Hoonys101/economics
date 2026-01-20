@@ -74,6 +74,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 for firm_id, qty in agent.shares_owned.items():
                     sim.stock_market.update_shareholder(agent.id, firm_id, qty)
 
+            # Add to AI training manager to ensure they are trained
+            if sim.ai_training_manager:
+                sim.ai_training_manager.agents.append(agent)
+
     def _handle_agent_liquidation(self, sim: Simulation):
         """(기존 `_handle_agent_lifecycle` 로직 전체를 이 곳으로 이동)"""
 

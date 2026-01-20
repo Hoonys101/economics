@@ -471,17 +471,33 @@ class Household(BaseAgent, ILearningAgent):
     def age(self) -> float:
         return self.demographics.age
 
+    @age.setter
+    def age(self, value: float) -> None:
+        self.demographics.age = value
+
     @property
     def gender(self) -> str:
         return self.demographics.gender
+
+    @gender.setter
+    def gender(self, value: str) -> None:
+        self.demographics.gender = value
 
     @property
     def parent_id(self) -> Optional[int]:
         return self.demographics.parent_id
 
+    @parent_id.setter
+    def parent_id(self, value: Optional[int]) -> None:
+        self.demographics.parent_id = value
+
     @property
     def spouse_id(self) -> Optional[int]:
         return self.demographics.spouse_id
+
+    @spouse_id.setter
+    def spouse_id(self, value: Optional[int]) -> None:
+        self.demographics.spouse_id = value
 
     @property
     def children_ids(self) -> List[int]:
@@ -490,6 +506,10 @@ class Household(BaseAgent, ILearningAgent):
     @property
     def generation(self) -> int:
         return self.demographics.generation
+
+    @generation.setter
+    def generation(self, value: int) -> None:
+        self.demographics.generation = value
 
     @property
     def children_count(self) -> int:
