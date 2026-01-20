@@ -56,18 +56,6 @@ class CorporateManager:
         self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time, context.government)
 
         # 1. R&D Channel (Innovation)
-        # System 2 guidance might override action vector?
-        # Or bias it.
-        # For now, let action vector drive execution intensity, but System 2 sets 'strategic priority' or modifies it?
-        # Spec: "Personalities dictate the 'Preferred Strategy' ... focus: innovation"
-        # The System 2 planner returns 'rd_intensity'.
-        # Let's blend them or use System 2 to modify action_vector.
-        # But realize_ceo_actions receives a 'fixed' vector from AI.
-        # The AI (RL Agent) learns to output the vector.
-        # System 2 is 'Cognitive Overhead' or 'Advisor'.
-        # If AI is System 1, System 2 should bias the AI? Or bias the execution?
-        # Let's bias the execution here.
-
         rd_agg = action_vector.rd_aggressiveness
         if guidance.get("rd_intensity", 0.0) > 0.1:
              rd_agg = max(rd_agg, 0.5) # Minimum effort if strategic priority
@@ -224,7 +212,7 @@ class CorporateManager:
             return
 
         # Execute
-        firm.finance.invest_in_automation(actual_spend)
+        firm.invest_in_automation(actual_spend)
 
         # WO-044-Track-B: Automation Tax
         # Logic: actual_spend * AUTOMATION_TAX_RATE
@@ -233,7 +221,7 @@ class CorporateManager:
 
         if tax_amount > 0 and government:
             if firm.assets >= tax_amount:
-                firm.finance.pay_automation_tax(tax_amount, government, current_time)
+                firm.pay_automation_tax(tax_amount, government, current_time)
 
                 self.logger.info(
                     f"AUTOMATION_TAX | Firm {firm.id} paid {tax_amount:.2f} tax on {actual_spend:.2f} investment.",
@@ -273,7 +261,7 @@ class CorporateManager:
         if budget < 10.0:
             return
 
-        firm.finance.invest_in_rd(budget)
+        firm.invest_in_rd(budget)
         firm.research_history["total_spent"] += budget
 
         denominator = max(firm.revenue_this_turn * 0.2, 100.0)
@@ -317,7 +305,7 @@ class CorporateManager:
         if budget < 100.0:
             return
 
-        firm.finance.invest_in_capex(budget)
+        firm.invest_in_capex(budget)
 
         if reflux_system:
              reflux_system.capture(budget, str(firm.id), "capex")
@@ -489,7 +477,7 @@ class CorporateManager:
                     severance_pay = wage * severance_weeks
 
                     if firm.assets >= severance_pay:
-                        firm.finance.pay_severance(severance_pay)
+                        firm.pay_severance(severance_pay)
                         emp.assets += severance_pay
 
                         emp.quit()

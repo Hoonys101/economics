@@ -371,6 +371,27 @@ class Firm(BaseAgent, ILearningAgent):
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         self.current_production = self.production.produce(current_time, technology_manager)
 
+    # --- Financial Operations Facade ---
+    def invest_in_rd(self, amount: float) -> None:
+        """Delegate R&D investment to FinanceDepartment."""
+        self.finance.invest_in_rd(amount)
+
+    def invest_in_automation(self, amount: float) -> None:
+        """Delegate Automation investment to FinanceDepartment."""
+        self.finance.invest_in_automation(amount)
+
+    def invest_in_capex(self, amount: float) -> None:
+        """Delegate Capital Expenditure to FinanceDepartment."""
+        self.finance.invest_in_capex(amount)
+
+    def pay_automation_tax(self, amount: float, government: Any, current_time: int) -> None:
+        """Delegate Automation Tax payment to FinanceDepartment."""
+        self.finance.pay_automation_tax(amount, government, current_time)
+
+    def pay_severance(self, amount: float) -> None:
+        """Delegate Severance payment to FinanceDepartment."""
+        self.finance.pay_severance(amount)
+
     def issue_shares(self, quantity: float, price: float) -> float:
         """
         신규 주식을 발행합니다 (유상증자).
