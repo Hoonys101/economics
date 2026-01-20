@@ -78,8 +78,9 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         # 현재 생산 목표와 실제 생산량, 고용 인원 등을 고려하여 임금 및 고용 결정 로직 추가
         if chosen_tactic != Tactic.ADJUST_PRODUCTION: # 이미 생산 조정 결정을 했으면 이번 턴에 임금 조정은 건너뛴다 (간단화를 위해)
             needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
-            if len(firm.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
-               len(firm.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+            # SoC Refactor: use hr.employees
+            if len(firm.hr.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
+               len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
                 chosen_tactic = Tactic.ADJUST_WAGES # ADJUST_WAGES 전술에 고용 로직도 포함되어 있음
                 orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))
                 self.logger.info(
@@ -172,7 +173,8 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 0.1, # Absolute hard floor to prevent zero/negative
                 min(self.config_module.MAX_SELL_PRICE, adjusted_price),
             )
-            firm.last_prices[item_id] = final_price
+            # SoC Refactor: use sales.set_price
+            firm.sales.set_price(item_id, final_price)
 
             quantity_to_sell = min(
                 current_inventory, self.config_module.MAX_SELL_QUANTITY

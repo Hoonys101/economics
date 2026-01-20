@@ -15,6 +15,11 @@ class MockConfig:
     MAX_SELL_QUANTITY = 100
     LABOR_MARKET_MIN_WAGE = 10.0
     GOODS = {"food": {"production_cost": 10.0}}
+    # Added for automation
+    AUTOMATION_COST_PER_PCT = 1000.0
+    FIRM_SAFETY_MARGIN = 2000.0
+    AUTOMATION_TAX_RATE = 0.05
+    SEVERANCE_PAY_WEEKS = 4
 
 @pytest.fixture
 def firm_mock(golden_firms):
@@ -22,16 +27,57 @@ def firm_mock(golden_firms):
         pytest.skip("Golden firms fixture is empty or failed to load.")
     firm = golden_firms[0]
 
-    # Customize the golden firm for specific tests if needed,
-    # but the goal is to rely on realistic data.
-    # Resetting some values to ensure consistent test state regardless of fixture content
-    # is still reasonable, but we should avoid full mock reconstruction.
+    # Initialize BaseAgent fields
+    firm.assets = 10000.0 # Default assets
 
-    firm.revenue_this_turn = 200.0
+    # --- SoC Components Mocking ---
+    firm.finance = MagicMock()
+    firm.finance.revenue_this_turn = 200.0
+    firm.finance.last_sales_volume = 1.0
+    firm.finance.last_revenue = 200.0
+
+    # Side effects to simulate real behavior on mock firm assets
+    def invest_side_effect(amount):
+        firm.assets -= amount
+        return True
+
+    def pay_tax_side_effect(amount, *args, **kwargs):
+        firm.assets -= amount
+        return True
+
+    def pay_severance_side_effect(emp, amount):
+        firm.assets -= amount
+        # emp is a mock, so emp.assets update is mocked
+        if hasattr(emp, 'assets'):
+             emp.assets += amount
+        return True
+
+    def set_dividend_rate_side_effect(rate):
+        firm.dividend_rate = rate
+
+    firm.finance.invest_in_automation.side_effect = invest_side_effect
+    firm.finance.invest_in_rd.side_effect = invest_side_effect
+    firm.finance.invest_in_capex.side_effect = invest_side_effect
+    firm.finance.pay_severance.side_effect = pay_severance_side_effect
+    firm.finance.pay_ad_hoc_tax.side_effect = pay_tax_side_effect
+    firm.finance.set_dividend_rate.side_effect = set_dividend_rate_side_effect
+    firm.finance.get_book_value_per_share.return_value = 10.0 # Default BPS
+
+    firm.hr = MagicMock()
+    firm.hr.employees = []
+    firm.hr.employee_wages = {}
+
+    firm.production = MagicMock()
+    firm.production.set_automation_level.side_effect = lambda x: setattr(firm, 'automation_level', x)
+    firm.production.add_capital.side_effect = lambda x: setattr(firm, 'capital_stock', firm.capital_stock + x)
+
+    firm.sales = MagicMock()
+    firm.sales.set_price.side_effect = lambda item, price: firm.last_prices.update({item: price})
+
+    # --- Firm Attributes ---
     firm.production_target = 100
     firm.productivity_factor = 1.0
     firm.specialization = "food"
-    # Ensure inventory is dictionary as expected by tests
     if not isinstance(firm.inventory, dict):
         firm.inventory = {"food": 50}
     else:
@@ -44,27 +90,14 @@ def firm_mock(golden_firms):
     firm.total_shares = 100
     firm.treasury_shares = 0
     firm.last_prices = {"food": 10.0}
-    firm.employees = []
-    # firm.personality is likely already set in golden fixture, but ensuring it matches test expectation if crucial
     firm.personality = Personality.BALANCED
 
-    # Ensuring attributes that might be missing in older fixtures or dynamic properties
-    firm.system2_planner = None # Force to None to avoid unconfigured mock issues in guidance
-    firm.revenue_this_turn = 200.0 # explicit float
-    firm.last_revenue = 200.0
-    if not hasattr(firm, 'last_revenue'):
-        firm.last_revenue = 200.0
-    firm.expenses_this_tick = 50.0
-    firm.retained_earnings = 1000.0
-    # firm.profit_history = [] # Let's keep history if it exists
-    firm.employee_wages = {}
+    firm.system2_planner = None
     firm.consecutive_loss_ticks_for_bankruptcy_threshold = 5
     firm.automation_level = 0.0
-    firm.last_sales_volume = 1.0 # Fix for the TypeError seen in previous run
-    firm.total_debt = 0.0 # Ensure total_debt is float
-    firm.bond_obligations = [] # Add bond obligations
+    firm.total_debt = 0.0
+    firm.bond_obligations = []
 
-    # Ensure decision_engine chain works for _get_total_liabilities
     if not hasattr(firm, 'decision_engine'):
         firm.decision_engine = MagicMock()
 
@@ -106,7 +139,7 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
 
     # Need enough assets to pass safety margin (default 2000)
     firm_mock.assets = 10000.0
-    firm_mock.revenue_this_turn = 1000.0
+    firm_mock.finance.revenue_this_turn = 1000.0 # Set on finance
     expected_budget = 1000.0 * 0.2 # 200
 
     # Force success
@@ -146,11 +179,6 @@ def test_hiring_logic(firm_mock, context_mock):
 
 def test_debt_logic_borrow(firm_mock, context_mock):
     manager = CorporateManager(MockConfig())
-    # Assets 1000 (from setup), Debt 0 (assumed default in mock). Leverage 0.
-    # Aggressiveness 0.5 -> Target 1.0 Leverage (1000 Debt)
-    # Ensure total_assets and total_debt are set if computed properties are used
-    # But since it is a mock, we might need to set them if logic depends on them.
-    # The original test manually set assets=1000.
     firm_mock.assets = 1000.0
     firm_mock.total_debt = 0.0
 

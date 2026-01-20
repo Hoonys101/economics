@@ -79,3 +79,7 @@ class SalesDepartment:
         # Update tracking
         self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
         self.firm.finance.last_marketing_spend = self.firm.marketing_budget
+
+    def set_price(self, item_id: str, price: float) -> None:
+        """Sets the price for a specific item."""
+        self.firm.last_prices[item_id] = price

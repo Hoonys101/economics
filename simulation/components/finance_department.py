@@ -384,3 +384,70 @@ class FinanceDepartment:
 
         outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
         return outstanding_shares * stock_price
+
+    def get_assets(self) -> float:
+        """Returns the current assets (cash) of the firm."""
+        return self.firm.assets
+
+    def invest_in_automation(self, amount: float) -> bool:
+        """
+        Deduct investment from assets for automation.
+        Returns success status.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            # Track expense if needed, or just capital outlay?
+            # Capital outlay is not strictly an expense in P&L usually, but reduces cash.
+            return True
+        return False
+
+    def invest_in_rd(self, amount: float) -> bool:
+        """
+        Deduct R&D budget from assets.
+        Returns success status.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            # R&D is often treated as expense
+            self.record_expense(amount)
+            return True
+        return False
+
+    def invest_in_capex(self, amount: float) -> bool:
+        """
+        Deduct CAPEX from assets.
+        Returns success status.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            # CAPEX is asset conversion (Cash -> Capital), not expense.
+            return True
+        return False
+
+    def set_dividend_rate(self, rate: float) -> None:
+        """Set dividend payout rate."""
+        self.firm.dividend_rate = rate
+
+    def pay_severance(self, employee: Household, amount: float) -> bool:
+        """
+        Pay severance to an employee.
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            employee.assets += amount
+            # Severance is an expense
+            self.record_expense(amount)
+            return True
+        return False
+
+    def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:
+        """
+        Pay an ad-hoc tax (like automation tax).
+        """
+        if self.firm.assets >= amount:
+            self.firm.assets -= amount
+            government.collect_tax(amount, tax_type, self.firm.id, current_time)
+            # Taxes are expenses
+            self.record_expense(amount)
+            return True
+        return False

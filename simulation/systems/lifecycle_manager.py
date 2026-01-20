@@ -88,11 +88,12 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
             )
-            for employee in firm.employees:
+            # SoC Refactor: use hr.employees
+            for employee in firm.hr.employees:
                 if employee.is_active:
                     employee.is_employed = False
                     employee.employer_id = None
-            firm.employees = []
+            firm.hr.employees = []
             firm.inventory.clear()
             firm.capital_stock = 0.0
             total_cash = firm.assets
@@ -142,6 +143,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         sim.agents[sim.bank.id] = sim.bank
 
         for firm in sim.firms:
-            firm.employees = [
-                emp for emp in firm.employees if emp.is_active and emp.id in sim.agents
+            # SoC Refactor: use hr.employees
+            firm.hr.employees = [
+                emp for emp in firm.hr.employees if emp.is_active and emp.id in sim.agents
             ]

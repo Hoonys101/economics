@@ -53,7 +53,8 @@ class MAManager:
                 continue
             
             # Standard Distress (Friendly M&A)
-            if firm.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
+            # SoC Refactor: use finance.consecutive_loss_turns
+            if firm.finance.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
                  preys.append(firm)
             elif firm.assets < avg_assets * 0.2:
                 preys.append(firm)
@@ -83,7 +84,8 @@ class MAManager:
             # Or just be rich.
             # Phase 21 Spec: Predator Assets > Target Market Cap * 1.5.
             # Let's filter later. Just identify rich firms.
-            if firm.assets > avg_assets * 1.5 and firm.current_profit > 0:
+            # SoC Refactor: use finance.current_profit
+            if firm.assets > avg_assets * 1.5 and firm.finance.current_profit > 0:
                 predators.append(firm)
 
         # 2. M&A Matching Loop
@@ -186,7 +188,8 @@ class MAManager:
              self.simulation.households_dict[prey.founder_id].assets += price
         
         # 2. Asset Transfer
-        predator.capital_stock += prey.capital_stock
+        # SoC Refactor: use production.add_capital
+        predator.production.add_capital(prey.capital_stock)
         
         # Phase 21: Transfer Automation Tech?
         # If prey has higher automation, predator learns?
@@ -194,7 +197,8 @@ class MAManager:
         # Let's say Predator keeps their own logic, maybe slight boost if Prey was advanced.
         if hasattr(prey, "automation_level") and hasattr(predator, "automation_level"):
             if prey.automation_level > predator.automation_level:
-                predator.automation_level = (predator.automation_level + prey.automation_level) / 2.0
+                new_level = (predator.automation_level + prey.automation_level) / 2.0
+                predator.production.set_automation_level(new_level)
 
         # Inventory
         for item, qty in prey.inventory.items():
@@ -207,16 +211,17 @@ class MAManager:
         # Hostile Takeovers often have deeper cuts
         retention_rate = 0.3 if is_hostile else 0.5
 
-        for emp in list(prey.employees):
+        # SoC Refactor: use hr.employees and hr.hire
+        for emp in list(prey.hr.employees):
             if random.random() > retention_rate:
                 # Fire
                 emp.quit()
                 fired_count += 1
             else:
                 # Retain
-                prey.employees.remove(emp)
-                predator.employees.append(emp)
-                predator.employee_wages[emp.id] = prey.employee_wages.get(emp.id, 10.0)
+                prey.hr.remove_employee(emp)
+                wage = prey.hr.employee_wages.get(emp.id, 10.0)
+                predator.hr.hire(emp, wage)
                 emp.employer_id = predator.id
                 retained_count += 1
                 
@@ -229,7 +234,8 @@ class MAManager:
         recovered = firm.liquidate_assets()
         self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
         
-        for emp in list(firm.employees):
+        # SoC Refactor: use hr.employees
+        for emp in list(firm.hr.employees):
             emp.quit()
             
         firm.is_active = False

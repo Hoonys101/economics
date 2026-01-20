@@ -110,8 +110,9 @@ class TransactionProcessor:
         if isinstance(seller, Household):
             if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
                 previous_employer = agents.get(seller.employer_id)
-                if isinstance(previous_employer, Firm) and seller in previous_employer.employees:
-                    previous_employer.employees.remove(seller)
+                if isinstance(previous_employer, Firm):
+                    # SoC Refactor: Use HRDepartment
+                    previous_employer.hr.remove_employee(seller)
 
             seller.is_employed = True
             seller.employer_id = buyer.id
@@ -121,10 +122,13 @@ class TransactionProcessor:
                 seller.labor_income_this_tick += (trade_value - tax_amount)
 
         if isinstance(buyer, Firm):
-            if seller not in buyer.employees:
-                buyer.employees.append(seller)
-            buyer.employee_wages[seller.id] = tx.price
-            buyer.cost_this_turn += trade_value
+            # SoC Refactor: Use HRDepartment and FinanceDepartment
+            if seller not in buyer.hr.employees:
+                buyer.hr.hire(seller, tx.price)
+            else:
+                 buyer.hr.employee_wages[seller.id] = tx.price
+
+            buyer.finance.record_expense(trade_value)
 
             if tx.transaction_type == "research_labor":
                 research_skill = seller.skills.get("research", Skill("research")).value
@@ -154,8 +158,9 @@ class TransactionProcessor:
                 buyer.inventory[tx.item_id] = total_new_qty
 
         if isinstance(seller, Firm):
-            seller.revenue_this_turn += trade_value
-            seller.sales_volume_this_tick += tx.quantity
+            # SoC Refactor: Use FinanceDepartment
+            seller.finance.record_revenue(trade_value)
+            seller.finance.sales_volume_this_tick += tx.quantity
         
         if isinstance(buyer, Household):
             if not is_service:

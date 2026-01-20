@@ -130,7 +130,8 @@ class CorporateManager:
 
         price = stock_market.get_stock_price(firm.id)
         if price is None or price <= 0:
-            price = firm.get_book_value_per_share()
+            # SoC Refactor: Use FinanceDepartment
+            price = firm.finance.get_book_value_per_share()
 
         if price <= 0:
             return None
@@ -223,8 +224,9 @@ class CorporateManager:
         if actual_spend < 100.0:
             return
 
-        # Execute
-        firm.assets -= actual_spend
+        # Execute: SoC Refactor
+        if not firm.finance.invest_in_automation(actual_spend):
+             return
 
         # WO-044-Track-B: Automation Tax
         # Logic: actual_spend * AUTOMATION_TAX_RATE
@@ -232,10 +234,8 @@ class CorporateManager:
         tax_amount = actual_spend * automation_tax_rate
 
         if tax_amount > 0 and government:
-            if firm.assets >= tax_amount:
-                firm.assets -= tax_amount
-                government.collect_tax(tax_amount, "automation_tax", firm.id, current_time)
-
+            success = firm.finance.pay_ad_hoc_tax(tax_amount, "automation_tax", government, current_time)
+            if success:
                 self.logger.info(
                     f"AUTOMATION_TAX | Firm {firm.id} paid {tax_amount:.2f} tax on {actual_spend:.2f} investment.",
                     extra={"agent_id": firm.id, "tick": current_time, "tags": ["tax", "automation"]}
@@ -246,7 +246,8 @@ class CorporateManager:
         gained_pct = actual_spend / cost_per_pct
         gained_a = gained_pct / 100.0
 
-        firm.automation_level = min(1.0, firm.automation_level + gained_a)
+        # SoC Refactor
+        firm.production.set_automation_level(firm.automation_level + gained_a)
 
         self.logger.info(
             f"AUTOMATION | Firm {firm.id} invested {actual_spend:.1f}, level {current_a:.3f} -> {firm.automation_level:.3f}",
@@ -260,7 +261,8 @@ class CorporateManager:
         if aggressiveness <= 0.1:
             return
 
-        revenue_base = max(firm.revenue_this_turn, firm.assets * 0.05)
+        # SoC Refactor: use finance.revenue_this_turn
+        revenue_base = max(firm.finance.revenue_this_turn, firm.assets * 0.05)
         rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
@@ -274,15 +276,20 @@ class CorporateManager:
         if budget < 10.0:
             return
 
-        firm.assets -= budget
+        # SoC Refactor
+        if not firm.finance.invest_in_rd(budget):
+            return
+
         firm.research_history["total_spent"] += budget
 
-        denominator = max(firm.revenue_this_turn * 0.2, 100.0)
+        # SoC Refactor: use finance.revenue_this_turn
+        denominator = max(firm.finance.revenue_this_turn * 0.2, 100.0)
         base_chance = min(1.0, budget / denominator)
 
         avg_skill = 1.0
-        if firm.employees:
-            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.employees) / len(firm.employees)
+        # SoC Refactor: use hr.employees
+        if firm.hr.employees:
+            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.hr.employees) / len(firm.hr.employees)
 
         success_chance = base_chance * avg_skill
 
@@ -318,14 +325,17 @@ class CorporateManager:
         if budget < 100.0:
             return
 
-        firm.assets -= budget
+        # SoC Refactor
+        if not firm.finance.invest_in_capex(budget):
+            return
 
         if reflux_system:
              reflux_system.capture(budget, str(firm.id), "capex")
 
         efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
         added_capital = budget * efficiency
-        firm.capital_stock += added_capital
+        # SoC Refactor
+        firm.production.add_capital(added_capital)
 
         self.logger.info(
             f"CAPEX | Firm {firm.id} invested {budget:.1f}, added {added_capital:.1f} capital.",
@@ -338,7 +348,8 @@ class CorporateManager:
         """
         base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
         max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
-        firm.dividend_rate = base_rate + (aggressiveness * (max_rate - base_rate))
+        # SoC Refactor
+        firm.finance.set_dividend_rate(base_rate + (aggressiveness * (max_rate - base_rate)))
 
     def _manage_debt(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
         """
@@ -397,20 +408,35 @@ class CorporateManager:
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
 
-        sales_vol = getattr(firm, 'last_sales_volume', 1.0)
+        # SoC Refactor: use finance.last_sales_volume
+        sales_vol = getattr(firm.finance, 'last_sales_volume', 1.0)
         if sales_vol <= 0: sales_vol = 1.0
         days_on_hand = current_inventory / sales_vol
         decay = max(0.5, 1.0 - (days_on_hand * 0.005))
         target_price *= decay
 
         target_price = max(target_price, 0.1)
-        firm.last_prices[item_id] = target_price
+        # SoC Refactor
+        firm.sales.set_price(item_id, target_price)
 
         qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
 
         target_market = markets.get(item_id)
         if target_market:
-            firm.post_ask(item_id, target_price, qty, target_market, current_time)
+            # firm.post_ask is a method on Firm, but it delegates to Sales.
+            # CorporateManager calls firm.post_ask. Spec says "Update Firm Internal Methods... make_decision... access sub-components".
+            # CorporateManager is calling firm.post_ask. Should it call firm.sales.post_ask?
+            # Spec says "External modules ... directly manipulate internal state".
+            # `post_ask` on `Firm` is a method, not a property.
+            # Spec mainly targets wrapper properties.
+            # However, for consistency, I can use `firm.sales.post_ask` IF `Firm`'s `post_ask` is just a wrapper.
+            # Let's check `Firm.post_ask` again.
+            # Yes: return self.sales.post_ask(item_id, price, quantity, market, current_tick)
+            # So I should use firm.sales.post_ask directly to be "Pure Orchestrator".
+            # But the orchestrator (Firm) might want to log or do things?
+            # Actually, `Firm.post_ask` IS the wrapper.
+            # So I will use `firm.sales.post_ask`.
+            firm.sales.post_ask(item_id, target_price, qty, target_market, current_time)
 
         return None
 
@@ -454,7 +480,8 @@ class CorporateManager:
         # Soft limit removed to allow full employment
         needed_labor = int(needed_labor_calc) + 1
 
-        current_employees = len(firm.employees)
+        # SoC Refactor: use hr.employees
+        current_employees = len(firm.hr.employees)
 
         # A. Firing Logic (Layoffs)
         if current_employees > needed_labor:
@@ -475,24 +502,23 @@ class CorporateManager:
                 # Actually we should iterate copy to modify list safely?
                 # No, we just call employee.quit().
                 # We need to pick employees.
-                candidates = firm.employees[:fire_count] # FIFO firing
+                candidates = firm.hr.employees[:fire_count] # FIFO firing
 
                 # WO-044-Track-C: Strategic Firing Severance Check
                 severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
 
                 for emp in candidates:
                     # Estimate wage (Strategic firing happens before update_needs, so check current wage)
-                    wage = firm.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+                    # SoC Refactor: use hr.employee_wages
+                    wage = firm.hr.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
                     # Correct for skill
                     skill = getattr(emp, 'labor_skill', 1.0)
                     wage *= skill
 
                     severance_pay = wage * severance_weeks
 
-                    if firm.assets >= severance_pay:
-                        firm.assets -= severance_pay
-                        emp.assets += severance_pay
-
+                    # SoC Refactor: use finance.pay_severance
+                    if firm.finance.pay_severance(emp, severance_pay):
                         emp.quit()
                         self.logger.info(
                             f"LAYOFF | Firm {firm.id} laid off Household {emp.id} with Severance {severance_pay:.2f}. Excess labor.",
@@ -545,7 +571,8 @@ class CorporateManager:
         WO-047-B: Competitive Bidding Logic.
         If firm has vacancies and is solvent, bid up the wage.
         """
-        current_employees = len(firm.employees)
+        # SoC Refactor
+        current_employees = len(firm.hr.employees)
         vacancies = max(0, needed_labor - current_employees)
         
         if vacancies <= 0:
@@ -562,7 +589,8 @@ class CorporateManager:
         # 2. Wage Bill Cap Check (Fallback for 0 liabilities)
         # Check if we have enough cash runway (e.g., 2 ticks)
         # Using current wage bill as proxy
-        wage_bill = sum(firm.employee_wages.values()) if firm.employee_wages else 0.0
+        # SoC Refactor: use hr.employee_wages
+        wage_bill = sum(firm.hr.employee_wages.values()) if firm.hr.employee_wages else 0.0
         if wage_bill > 0 and firm.assets < wage_bill * 2: 
              return base_offer_wage
 

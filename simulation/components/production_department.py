@@ -105,3 +105,11 @@ class ProductionDepartment:
             logger.error(f'FIRM_CRASH_PREVENTED | Firm {self.firm.id}: {e}')
             logger.debug(traceback.format_exc())
             return 0.0
+
+    def add_capital(self, amount: float) -> None:
+        """Increases the firm's capital stock."""
+        self.firm.capital_stock += amount
+
+    def set_automation_level(self, level: float) -> None:
+        """Sets the firm's automation level (0.0 to 1.0)."""
+        self.firm.automation_level = max(0.0, min(1.0, level))
