@@ -1,7 +1,12 @@
 {
   "antigravity": {
     "project": "economics",
-    "active_sessions": {},
+    "active_sessions": {
+      "8111922141870240162": {
+        "title": "WO-083C-P1: Test Migration (LOW Risk)",
+        "initial_mission": "# WO-083C-P1: Test Migration Phase 2 - LOW Risk Batch\n\n## 🎯 Objective\nMigrate **LOW risk** MEDIUM complexity tests to Golden Fixtures as the first safe batch of WO-083C.\n\n> **Risk Level**: LOW (per `design/gemini_output/audit_wo083c_risk.md`)\n\n---\n\n## 🔨 Target Tests (2 files)\n\n### 1. `tests/simulation/test_stock_market.py`\n**Current Setup:** Mocks `Config` and `Firm`.\n**Migration:**\n- Replace `Config` mock with `golden_config`.\n- Replace `Firm` mock with `golden_firms[0]`.\n- Use **State Override Pattern** to set `firm.cash` or `firm.shares` for test preconditions.\n\n**Risk:** LOW - Isolated market logic test.\n\n### 2. `tests/api/test_api_extensions.py`\n**Current Setup:** Mocks `Repo`, `Household`, `Firm`, `Market`.\n**Migration:**\n- Replace `Household`/`Firm` mocks with `golden_households[0]` and `golden_firms[0]`.\n- Keep `Repo`/`Market` as lightweight mocks (infrastructure).\n- Make ViewModel logic **defensive** to handle potentially `None` attributes from golden fixtures.\n\n**Risk:** LOW - ViewModel logic test, minimal state dependency.\n\n---\n\n## Migration Pattern\n\n```python\n# Before\n@pytest.fixture\ndef mock_firm():\n    firm = MagicMock(spec=Firm)\n    firm.cash = 1000\n    return firm\n\n# After\ndef test_something(golden_firms):\n    firm = golden_firms[0]\n    firm.cash = 1000  # State Override if needed\n    # Test logic...\n```\n\n---\n\n## Constraints\n\n1. **NO production code changes**.\n2. **State Override Pattern**: Override attributes AFTER loading golden data.\n3. **Preserve test logic**: Do not change assertions.\n\n---\n\n## Verification\n\nRun: `pytest tests/simulation/test_stock_market.py tests/api/test_api_extensions.py -v`\n\nAll tests must pass.\n"
+      }
+    },
     "completed_sessions": {
       "6338045545797855725": "WO-083A: Golden Fixture Generation - MERGED 2026-01-20",
       "11560612815746517359": "WO-083A: Golden Fixture Generation - MERGED 2026-01-20",

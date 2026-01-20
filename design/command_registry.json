@@ -9,10 +9,10 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-083C-P1: Test Migration (LOW Risk)",
+    "title": "WO-083C-P2: Test Migration (MEDIUM Risk)",
     "session_id": "",
-    "instruction": "Migrate LOW risk MEDIUM tests to Golden Fixtures. Read design/work_orders/WO-083C-P1-Low-Risk.md for details. Target: test_stock_market.py, test_api_extensions.py (2 files).",
-    "file": "design/work_orders/WO-083C-P1-Low-Risk.md",
+    "instruction": "Migrate MEDIUM risk tests to Golden Fixtures. Read design/work_orders/WO-083C-P2-Medium-Risk.md. Target: verify_inheritance.py, test_dashboard_api.py (2 files).",
+    "file": "design/work_orders/WO-083C-P2-Medium-Risk.md",
     "wait": true
   },
   "git_review": {
