@@ -1,18 +1,18 @@
 {
   "gemini": {
     "worker": "audit",
-    "instruction": "Analyze the test suite for MagicMock usage patterns. For each test file: 1) Count MagicMock instances, 2) Identify which simulation classes are mocked (Household, Firm, Bank, etc.), 3) Rate migration difficulty (EASY/MEDIUM/HARD) based on mock complexity. Output a prioritized migration plan for converting tests to Golden Fixture-based mocks. Flag any tests with Bank dependencies that may need special handling after WO-081 refactor.",
-    "context": ["tests/", "scripts/fixture_harvester.py", "tests/utils/golden_loader.py"],
-    "output": "design/gemini_output/audit_test_mock_analysis.md",
+    "instruction": "Review WO-083C-Spec.md and perform risk analysis. For each of the 5 target tests: 1) Identify God Class interaction risks (does the test rely on Household/Firm/Simulation internal state?), 2) Assess regression potential (likelihood of breaking during migration), 3) Check for circular dependency risks. Output a risk matrix with HIGH/MEDIUM/LOW ratings and mitigation strategies.",
+    "context": ["design/work_orders/WO-083C-Spec.md", "simulation/core_agents.py", "simulation/firms.py", "simulation/engine.py", "tests/conftest.py"],
+    "output": "design/gemini_output/audit_wo083c_risk.md",
     "audit": "",
     "model": "pro"
   },
   "jules": {
     "command": "create",
-    "title": "WO-083B: Test Migration Phase 1",
+    "title": "WO-083C-P1: Test Migration (LOW Risk)",
     "session_id": "",
-    "instruction": "Great work. Proceed with the submission. Make sure to double-check that no regressions were introduced in the verification scripts.",
-    "file": "",
+    "instruction": "Migrate LOW risk MEDIUM tests to Golden Fixtures. Read design/work_orders/WO-083C-P1-Low-Risk.md for details. Target: test_stock_market.py, test_api_extensions.py (2 files).",
+    "file": "design/work_orders/WO-083C-P1-Low-Risk.md",
     "wait": true
   },
   "git_review": {

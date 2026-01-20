@@ -1,0 +1,10 @@
+{
+  "gemini": {
+    "worker": "audit",
+    "instruction": "Review the generated WO-083C-Spec.md and perform a risk analysis. Focus on: 1) Circular dependency risks (does any test modification create import cycles?), 2) Test regression potential (which tests are most likely to break during migration?), 3) God Class interaction risks (tests that heavily rely on Household/Firm/Simulation internal state). Output a risk matrix with HIGH/MEDIUM/LOW ratings for each target test file.",
+    "context": ["design/work_orders/WO-083C-Spec.md", "design/gemini_output/audit_test_mock_analysis.md", "simulation/core_agents.py", "simulation/firms.py", "simulation/engine.py"],
+    "output": "design/gemini_output/audit_wo083c_risk.md",
+    "audit": "",
+    "model": "pro"
+  }
+}

@@ -74,6 +74,14 @@
 - `from core.dtos import ...`와 같은 공통 데이터 구조 임포트를 적극 활용하십시오.
 - 이미 존재하는 `config.py`의 상수들을 활용하여 임계값이나 설정을 정의하십시오.
 
+### **⚠️ CRITICAL: Output Format**
+**당신의 출력은 `gemini_worker.py` 스크립트가 파일로 저장합니다.**
+- **즉시 Spec 본문을 출력**하십시오. 
+- **메타 설명 금지**: "I have written...", "The spec is saved to..." 같은 메시지를 출력하지 마십시오.
+- **Markdown 형식만**: `# Title`, `## Section`, 코드 블록 등 Spec 내용만 출력하십시오.
+- **파일 경로 언급 금지**: 저장 경로는 시스템이 자동으로 처리합니다.
+
+
 ### **Context Awareness (Minimal Mode Support)**
 별도의 Context 파일이 제공되지 않더라도, 기본적으로 다음 문서를 참고하여 의사결정의 맥락을 파악하십시오.
 1. `design/ROADMAP.md`: 현재 Phase의 목표와 일치하는가?

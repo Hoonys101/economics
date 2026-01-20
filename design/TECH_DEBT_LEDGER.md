@@ -28,6 +28,7 @@
 | TD-067 | 2026-01-20 | God Class `Firm` Wrapper Bloat | Remove wrapper properties, use explicit sub-components (`hr`, `finance`) | Code Duplication, Maintenance Burden | **OPEN** |
 | TD-068 | 2026-01-20 | Observer Scans `design/` Artifacts | Exclude `design/` from `scan_codebase.py` | False Positives in Health Report | **OPEN** |
 | TD-069 | 2026-01-20 | Doc Placeholders (`WO-XXX`) | Replace placeholders with actual Process/IDs in Manuals | Confusing Documentation | **OPEN** |
+| TD-070 | 2026-01-20 | `test_rd_logic` Coverage Gap | Restore R&D budget assertion in `test_corporate_manager.py` | Test Regression / False Pass | **OPEN** |
 
 
 
