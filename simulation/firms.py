@@ -368,6 +368,7 @@ class Firm(BaseAgent, ILearningAgent):
 
     @override
     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
+        self.age += 1
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
         # SoC Refactor
         self.logger.debug(
@@ -492,6 +493,56 @@ class Firm(BaseAgent, ILearningAgent):
             if self.cash_reserve < amount:
                 raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.cash_reserve:.2f}")
             self.cash_reserve -= amount
+
+    # --- Delegated Methods (Facade Pattern) ---
+
+    def get_book_value_per_share(self) -> float:
+        """Delegates to FinanceDepartment."""
+        return self.finance.get_book_value_per_share()
+
+    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
+        """Delegates to FinanceDepartment."""
+        return self.finance.get_market_cap(stock_price)
+
+    def calculate_valuation(self) -> float:
+        """Delegates to FinanceDepartment."""
+        return self.finance.calculate_valuation()
+
+    def get_financial_snapshot(self) -> Dict[str, float]:
+        """Delegates to FinanceDepartment."""
+        return self.finance.get_financial_snapshot()
+
+    @property
+    def current_profit(self) -> float:
+        return self.finance.current_profit
+
+    @current_profit.setter
+    def current_profit(self, value: float) -> None:
+        self.finance.current_profit = value
+
+    @property
+    def revenue_this_turn(self) -> float:
+        return self.finance.revenue_this_turn
+
+    @revenue_this_turn.setter
+    def revenue_this_turn(self, value: float) -> None:
+        self.finance.revenue_this_turn = value
+
+    @property
+    def expenses_this_tick(self) -> float:
+        return self.finance.expenses_this_tick
+
+    @expenses_this_tick.setter
+    def expenses_this_tick(self, value: float) -> None:
+        self.finance.expenses_this_tick = value
+
+    @property
+    def sales_volume_this_tick(self) -> float:
+        return self.finance.sales_volume_this_tick
+
+    @sales_volume_this_tick.setter
+    def sales_volume_this_tick(self, value: float) -> None:
+        self.finance.sales_volume_this_tick = value
 
     def update_learning(self, context: LearningUpdateContext) -> None:
         """

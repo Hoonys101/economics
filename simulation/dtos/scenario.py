@@ -48,3 +48,12 @@ class StressScenarioConfig:
 
     # Target corporate tax rate for the Government (e.g., 0.30)
     fiscal_shock_tax_rate: Optional[float] = None
+
+    # Multiplier for Base Interest Rate (e.g. 3.0 = 300%)
+    base_interest_rate_multiplier: Optional[float] = None
+
+    # Delta for Corporate Tax Rate (e.g. 0.1 = +10%p)
+    corporate_tax_rate_delta: Optional[float] = None
+
+    # Multiplier for Consumer Spending (e.g. 0.7 = 30% reduction)
+    demand_shock_multiplier: Optional[float] = None

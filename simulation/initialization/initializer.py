@@ -129,7 +129,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             government=sim.government,
             central_bank=sim.central_bank,
             bank=sim.bank,
-            config_module=self.config
+            config_module=self.config_manager
         )
         sim.government.finance_system = sim.finance_system
 
@@ -259,6 +259,9 @@ class SimulationInitializer(SimulationInitializerInterface):
                      params = scenario_data.get("parameters", {})
                      sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
                      sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
+                     sim.stress_scenario_config.base_interest_rate_multiplier = params.get("base_interest_rate_multiplier")
+                     sim.stress_scenario_config.corporate_tax_rate_delta = params.get("corporate_tax_rate_delta")
+                     sim.stress_scenario_config.demand_shock_multiplier = params.get("demand_shock_multiplier")
 
                      self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
                  except Exception as e:

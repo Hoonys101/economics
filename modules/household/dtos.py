@@ -27,6 +27,7 @@ class HouseholdStateDTO:
     is_employed: bool
     current_wage: float
     wage_modifier: float
+    is_homeless: bool
     residing_property_id: Optional[int]
     owned_properties: List[int]
     portfolio_holdings: Dict[int, Share]

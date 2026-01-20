@@ -78,6 +78,13 @@ class TransactionProcessor:
                     seller.assets += (trade_value - tax_amount)
                     government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
             
+            elif tx.item_id == "interest_payment":
+                # Interest Payment: Buyer (Borrower) pays Seller (Bank)
+                buyer.assets -= trade_value
+                seller.assets += trade_value
+                if isinstance(buyer, Firm):
+                    buyer.finance.record_expense(trade_value)
+
             elif tx.transaction_type == "dividend":
                 # Firm (Seller) pays Household (Buyer)
                 seller.assets -= trade_value

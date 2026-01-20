@@ -346,6 +346,24 @@ class CorporateManager:
         """
         Set Dividend Rate.
         """
+        # Phase 29: Survival Mode Check
+        # Check Altman Z-Score
+        z_score = firm.finance.calculate_altman_z_score()
+        z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
+
+        # Check Consecutive Losses
+        loss_limit = getattr(self.config_module, "DIVIDEND_SUSPENSION_LOSS_TICKS", 3)
+
+        is_distressed = (z_score < z_score_threshold) or (firm.finance.consecutive_loss_turns >= loss_limit)
+
+        if is_distressed:
+            firm.finance.set_dividend_rate(0.0)
+            self.logger.warning(
+                f"DIVIDEND SUSPENDED | Firm {firm.id} in distress (Z={z_score:.2f}, LossTicks={firm.finance.consecutive_loss_turns}).",
+                extra={"agent_id": firm.id, "tags": ["dividend", "crisis"]}
+            )
+            return
+
         base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
         max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
         # SoC Refactor

@@ -159,7 +159,23 @@ class Household(BaseAgent, ILearningAgent):
         # Some attributes are kept on Facade if they are deeply intertwined or purely transient
         self.initial_assets_record = initial_assets
         self.credit_frozen_until_tick: int = 0
+
+        # Phase 23: Inflation Expectation & Price Memory
+        self.expected_inflation: Dict[str, float] = defaultdict(float)
+        self.perceived_avg_prices: Dict[str, float] = {}
+        self.price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=10))
+        # Initialize perceived prices from config/goods_data if possible
+        for g in goods_data:
+             self.perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
         
+        # Adaptation Rate (Personality Based)
+        # Default Normal
+        self.adaptation_rate: float = getattr(config_module, "ADAPTATION_RATE_NORMAL", 0.2)
+        if personality == Personality.IMPULSIVE:
+             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
+        elif personality == Personality.CONSERVATIVE:
+             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
+
         # WO-054: Aptitude (Hidden Trait) - Kept on Facade as it's intrinsic
         raw_aptitude = random.gauss(0.5, 0.15)
         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
@@ -250,6 +266,14 @@ class Household(BaseAgent, ILearningAgent):
     @inventory.setter
     def inventory(self, value: Dict[str, float]) -> None:
         self.econ_component.inventory = value
+
+    @property
+    def inventory_quality(self) -> Dict[str, float]:
+        return self.econ_component.inventory_quality
+
+    @inventory_quality.setter
+    def inventory_quality(self, value: Dict[str, float]) -> None:
+        self.econ_component.inventory_quality = value
 
     @property
     def is_employed(self) -> bool:
@@ -595,6 +619,7 @@ class Household(BaseAgent, ILearningAgent):
             is_employed=self.is_employed,
             current_wage=self.current_wage,
             wage_modifier=self.wage_modifier,
+            is_homeless=self.is_homeless,
             residing_property_id=self.residing_property_id,
             owned_properties=list(self.owned_properties),
             portfolio_holdings=self.portfolio.holdings, # Direct reference to Share objects (dataclasses)

@@ -106,3 +106,21 @@ class EventSystem(IEventSystem):
                     government.corporate_tax_rate = config.fiscal_shock_tax_rate
                     logger.info(f"  -> FISCAL SHOCK: Forced Corporate Tax Rate to {config.fiscal_shock_tax_rate}")
                 # Also check `tax_rate` for general tax if applicable
+
+            # Phase 29: Dynamic Shock Parameters
+            if config.base_interest_rate_multiplier is not None and central_bank and bank:
+                # Apply Multiplier to existing rate
+                current_rate = central_bank.base_rate if hasattr(central_bank, "base_rate") else bank.base_rate
+                new_rate = current_rate * config.base_interest_rate_multiplier
+
+                if hasattr(central_bank, "base_rate"):
+                    central_bank.base_rate = new_rate
+                bank.update_base_rate(new_rate)
+                logger.info(f"  -> MONETARY SHOCK: Multiplied Base Rate by {config.base_interest_rate_multiplier} to {new_rate:.4f}")
+
+            if config.corporate_tax_rate_delta is not None and government:
+                # Apply Delta to Corporate Tax Rate
+                if hasattr(government, "corporate_tax_rate"):
+                    old_rate = government.corporate_tax_rate
+                    government.corporate_tax_rate += config.corporate_tax_rate_delta
+                    logger.info(f"  -> FISCAL SHOCK: Increased Corporate Tax Rate by {config.corporate_tax_rate_delta} (From {old_rate} to {government.corporate_tax_rate})")

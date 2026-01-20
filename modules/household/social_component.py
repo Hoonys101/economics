@@ -30,6 +30,7 @@ class SocialComponent(ISocialComponent):
         # State
         self.approval_rating: int = 1
         self.discontent: float = 0.0
+        self.social_status: float = 0.0  # Initialize social_status
         self.last_leisure_type: "LeisureType" = "IDLE"
 
         # Personality Attributes (Randomized)

@@ -1,9 +1,10 @@
 {
   "scenario_name": "phase29_depression",
-  "start_tick": 50,
+  "start_tick": 5,
   "is_active": true,
   "parameters": {
-    "MONETARY_SHOCK_TARGET_RATE": 0.08,
-    "FISCAL_SHOCK_TAX_RATE": 0.30
+    "base_interest_rate_multiplier": 3.0,
+    "corporate_tax_rate_delta": 0.1,
+    "demand_shock_multiplier": 0.7
   }
 }

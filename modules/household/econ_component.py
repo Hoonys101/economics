@@ -33,6 +33,7 @@ class EconComponent(IEconComponent):
         # --- State ---
         self._assets: float = 0.0
         self._inventory: Dict[str, float] = {}
+        self._inventory_quality: Dict[str, float] = {}
 
         # Labor State
         self.is_employed: bool = False
@@ -91,6 +92,14 @@ class EconComponent(IEconComponent):
     @property
     def inventory(self) -> Dict[str, float]:
         return self._inventory
+
+    @property
+    def inventory_quality(self) -> Dict[str, float]:
+        return self._inventory_quality
+
+    @inventory_quality.setter
+    def inventory_quality(self, value: Dict[str, float]) -> None:
+        self._inventory_quality = value
 
     @property
     def home_quality_score(self) -> float:
@@ -178,6 +187,20 @@ class EconComponent(IEconComponent):
 
         # 5. Targeted Order Refinement & Internal Commands (QUIT)
         refined_orders = []
+
+        # Phase 29: Demand Shock (Consumer Spending Reduction)
+        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'phase29_depression':
+             multiplier = stress_scenario_config.demand_shock_multiplier
+             if multiplier is not None:
+                 for order in orders:
+                     if order.order_type == "BUY" and order.item_id not in ["labor", "loan"]:
+                         # Reduce quantity by multiplier (e.g., 0.7 means 70% remains, 30% reduction)
+                         # Only affect Goods (Consumer Spending)
+                         # We assume anything not labor/loan/financial is a good/service.
+                         # Stocks are "stock_X".
+                         if not order.item_id.startswith("stock_"):
+                            order.quantity *= multiplier
+
         for order in orders:
             if order.order_type == "QUIT":
                 self.owner.quit()
