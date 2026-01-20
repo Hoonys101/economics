@@ -12,9 +12,9 @@
   },
   "jules": {
     "command": "create",
-    "title": "Domain-Logic-v2: TD-059 Altman Z-Score Delegation (Post TD-067)",
-    "instruction": "Extract Z-Score calculation to AltmanZScoreCalculator. Do NOT regress TD-067 architecture.",
-    "file": "design/drafts/jules_missions/Domain_Logic_Refactor_Mission.md",
+    "title": "Finance-Config-v3: TD-034, TD-041 (Post Infra Merge)",
+    "instruction": "Migrate hardcoded constants to config ONLY. Do NOT touch scripts/ or design/ folders (Infra works are done).",
+    "file": "design/drafts/jules_missions/Finance_Config_Migration_Mission.md",
     "session_id": null
   },
   "git": {

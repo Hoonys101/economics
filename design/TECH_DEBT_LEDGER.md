@@ -13,16 +13,8 @@
 | TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **DEFERRED** |
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **PENDING_IMPLEMENTATION** (Phase 28) |
-| TD-034 | 2026-01-15 | Hardcoded Debt Parameters | Bond maturity, risk premia must be config-driven | Reduced model configurability | **DEFERRED** |
-| TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **DEFERRED** |
-| TD-050 | 2026-01-17 | Observer Scanner Path Inclusion | Exclude `scripts/observer` from scan loop | False positives in complexity reports | **DEFERRED** |
-| TD-051 | 2026-01-17 | Documentation Placeholders | Replace `WO-XXX` with actual IDs in manuals | Confusion in developer onboarding | **DEFERRED** |
-| TD-058 | 2026-01-19 | `FinanceSystem` - `Firm` Tight Coupling | Introduce `FinancialStatementDTO` in `Firm` | Architecture Rigidity / Brittle Tests | **RESOLVED** (Phase 29) |
-| TD-059 | 2026-01-19 | Legacy Logic in `FinanceDepartment` | Refactor component to use `AltmanZScoreCalculator` | Logic Duplication / SSOT Violation | **DEFERRED** |
-| TD-060 | 2026-01-19 | Hardcoded Scenario Path in `Initializer` | Implement dynamic lookup in `ConfigManager` | Low Configurability / Brittle Tests | **RESOLVED** (Phase 29) |
-| TD-061 | 2026-01-19 | Mock Fragility in Stress Testing | Collect 'Golden Data' and implement typed mocks | Brittle Tests / High Dev Friction | **RESOLVED** (WO-083C) |
-| TD-063 | 2026-01-19 | `sys.path` Manipulation in Scripts | Use `pathlib` for stable project root detection | Unpredictable Import Behavior | **DEFERRED** |
-| TD-064 | 2026-01-20 | `Household.age` Setter Missing | Implement setter in `Household` or use `DemographicsComponent` directly | `AttributeError` crashing simulation | **RESOLVED** (WO-083A) |
+| TD-034 | 2026-01-15 | Hardcoded Debt Parameters | Bond maturity, risk premia must be config-driven | Reduced model configurability | **IN_PROGRESS** (Finance-Config-v2) |
+| TD-041 | 2026-01-15 | Hardcoded Bailout Covenant Ratio | Repayment ratio of 0.5 is hardcoded | Reduced model configurability | **IN_PROGRESS** (Finance-Config-v2) |
 
 | TD-068 | 2026-01-20 | Observer Scans `design/` Artifacts | Exclude `design/` from `scan_codebase.py` | False Positives in Health Report | **RESOLVED** |
 
@@ -42,6 +34,11 @@
 | TD-067 | 2026-01-20 | God Class `Firm` Wrapper Bloat | Removed wrapper properties, encapsulated CorporateManager interactions | High Coupling | **RESOLVED** (2026-01-20) |
 | TD-073 | 2026-01-20 | Firm Component State Ownership | Transfer data ownership (assets, employees) from Firm to specialized departments | Architectural purity / Leaky abstractions | **DEFERRED** (Phase D) |
 | TD-072 | 2026-01-20 | Test Framework Inconsistency | Migrated `unittest` to `pytest` in `test_government` and `verify_vanity_society` | Maint. Overhead | **RESOLVED** (Direct) |
+| TD-058 | 2026-01-20 | `FinanceSystem` - `Firm` Tight Coupling | Introduced `FinancialStatementDTO` | High Coupling | **RESOLVED** (Phase 29/WO-084) |
+| TD-059 | 2026-01-20 | Legacy Logic in `FinanceDepartment` | Delegated to `AltmanZScoreCalculator` | SRP Violation | **RESOLVED** (WO-084) |
+| TD-063 | 2026-01-20 | `sys.path` Manipulation in Scripts | Normalized using `pathlib` | Brittle Imports | **RESOLVED** (Infra-Cleanup) |
+| TD-050 | 2026-01-20 | Observer Scanner Path Inclusion | Excluded `observer/` and `design/` | Report Noise | **RESOLVED** (Infra-Cleanup) |
+| TD-051 | 2026-01-20 | Documentation Placeholders | Fixed `WO-XXX` placeholders | Poor Meta-Data | **RESOLVED** (Infra-Cleanup) |
 
 | ID | 발생일 | 해결일 | 부채 내용 | 해결 방법 |
 |---|---|---|---|---|
