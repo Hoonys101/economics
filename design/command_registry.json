@@ -14,13 +14,13 @@
   },
     "jules": {
         "command": "create",
-        "title": "WO-083C-P3-REWORK: Fix Regression & Migrate Test",
-        "instruction": "CRITICAL REWORK: Previous PR caused massive architectural regressions. 1) DO NOT DELETE world_state.py, tick_scheduler.py, or action_processor.py. 2) DO NOT revert 'simulation/engine.py' to a God Class (it must stay a Facade). 3) DO NOT revert TD-071 magic number fixes. MISSION: Only migrate 'tests/verification/verify_mitosis.py' to Golden Fixtures, ensuring it works with the existing SoC facade. START BY REBASING ON MAIN.",
+        "title": "TD-067-Phase-A: Firm Logic Consolidation",
+        "instruction": "Execute TD-067 Phase A: Move financial and HR logic from 'Firm' facade into their respective sub-components in 'simulation/firms.py'. Keep wrapper properties in 'Firm' for now (Facade pattern). Focus on 'calculate_valuation' and 'get_book_value_per_share'. Verify with 'tests/test_firms.py'.",
         "context": [
-            "design/work_orders/WO-083C-P3-High-Risk.md",
-            "tests/verification/verify_mitosis.py",
-            "simulation/engine.py",
-            "simulation/world_state.py"
+            "simulation/firms.py",
+            "tests/test_firms.py",
+            "design/TECH_DEBT_LEDGER.md",
+            "design/gemini_output/TD-067_Firm_Refactor_Audit.md"
         ],
         "session_id": null
     },
