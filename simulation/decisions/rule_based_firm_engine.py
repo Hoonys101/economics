@@ -109,7 +109,8 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         needed_labor = self._calculate_needed_labor(firm)
         offered_wage = self._calculate_dynamic_wage_offer(firm)
 
-        if len(firm.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+        # SoC Refactor: use hr.employees
+        if len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
             order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
             orders.append(order)
             self.logger.info(
@@ -121,8 +122,8 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 },
             )
         elif (
-            needed_labor > len(firm.employees)
-            and len(firm.employees) < self.config_module.FIRM_MAX_EMPLOYEES
+            needed_labor > len(firm.hr.employees)
+            and len(firm.hr.employees) < self.config_module.FIRM_MAX_EMPLOYEES
         ):
             order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
             orders.append(order)
@@ -153,10 +154,11 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
     def _calculate_dynamic_wage_offer(self, firm: Firm) -> float:
         """기업의 수익성 이력을 바탕으로 동적인 임금 제시액을 계산합니다."""
-        if not firm.profit_history:
+        # SoC Refactor: use finance.profit_history
+        if not firm.finance.profit_history:
             return self.config_module.BASE_WAGE
 
-        avg_profit = sum(firm.profit_history) / len(firm.profit_history)
+        avg_profit = sum(firm.finance.profit_history) / len(firm.finance.profit_history)
         profit_based_premium = avg_profit / (self.config_module.BASE_WAGE * 10.0)
         wage_premium = max(
             0,
