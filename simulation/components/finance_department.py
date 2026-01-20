@@ -3,6 +3,8 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 from collections import deque
 from simulation.models import Transaction
+from simulation.dtos.financial_dtos import FinancialStatementDTO
+from simulation.ai.altman_z_score import AltmanZScoreCalculator
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -41,6 +43,9 @@ class FinanceDepartment:
         self.last_daily_expenses: float = 10.0
         self.last_sales_volume: float = 1.0
         self.sales_volume_this_tick: float = 0.0
+
+        # Specialized Calculators
+        self.solvency_calculator = AltmanZScoreCalculator()
 
     def record_revenue(self, amount: float):
         self.revenue_this_turn += amount
@@ -207,48 +212,25 @@ class FinanceDepartment:
             self.firm.total_debt = 0.0
         self.firm.total_debt += amount
 
-    def calculate_altman_z_score(self) -> float:
-        """Calculates the Altman Z-Score for solvency, simplified for this model.
-
-        The formula used is a modified version for non-manufacturing or service companies:
-        Z = 1.2*X1 + 1.4*X2 + 3.3*X3
-
-        Where:
-            X1 (Working Capital / Total Assets): Measures liquid assets in relation
-               to the size of the company. A firm with significant working capital
-               is less likely to face immediate financial distress.
-               - Working Capital = Firm's cash reserves - total debt.
-               - Total Assets = Cash + Capital Stock + Inventory Value.
-            X2 (Retained Earnings / Total Assets): Measures cumulative profitability.
-               A higher value indicates a history of reinvesting profits,
-               strengthening the company's financial foundation.
-            X3 (Average Profit / Total Assets): Measures recent operational efficiency.
-               Uses a moving average of profit to gauge how effectively the firm
-               is generating earnings from its assets.
-
-        Returns:
-            The calculated Z-Score. A score below 1.81 typically indicates a firm
-            is heading for bankruptcy, while a score above 3.0 suggests a healthy
-            financial position.
+    def get_altman_z_score(self) -> float:
         """
-        total_assets = self.firm.assets + self.firm.capital_stock + self.get_inventory_value()
-        if total_assets == 0:
-            return 0.0
+        Calculates the firm's solvency by assembling a financial snapshot
+        and delegating the calculation to the dedicated solvency calculator.
+        """
+        # 1. Get the raw financial data.
+        snapshot_data = self.get_financial_snapshot()
 
-        # X1: Working Capital / Total Assets
-        # Working Capital = Current Assets - Current Liabilities. Assume liabilities are total_debt for now.
-        working_capital = self.firm.assets - getattr(self.firm, 'total_debt', 0.0)
-        x1 = working_capital / total_assets
+        # 2. Assemble the DTO.
+        financial_statement = FinancialStatementDTO(
+            total_assets=snapshot_data["total_assets"],
+            working_capital=snapshot_data["working_capital"],
+            retained_earnings=snapshot_data["retained_earnings"],
+            average_profit=snapshot_data["average_profit"],
+            total_debt=snapshot_data["total_debt"]
+        )
 
-        # X2: Retained Earnings / Total Assets
-        x2 = self.retained_earnings / total_assets
-
-        # X3: Average Profit / Total Assets
-        avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
-        x3 = avg_profit / total_assets
-
-        z_score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3
-        return z_score
+        # 3. Delegate calculation and return the result.
+        return self.solvency_calculator.calculate(financial_statement)
 
     def check_bankruptcy(self):
         if self.current_profit < 0:
@@ -293,13 +275,15 @@ class FinanceDepartment:
         Returns a standardized dictionary of financial metrics for monitoring and analysis.
         This provides a stable interface for CrisisMonitor and FinanceSystem.
         """
-        total_assets = self.firm.assets + self.get_inventory_value()
+        # Update Total Assets to include Capital Stock (Fixed Assets)
+        inventory_value = self.get_inventory_value()
+        total_assets = self.firm.assets + inventory_value + self.firm.capital_stock
 
         # Working Capital = Current Assets - Current Liabilities
-        # Since we don't have long-term assets/liabilities clearly split yet,
-        # we treat total assets as current and total debt as current liabilities.
+        # Current Assets = Cash + Inventory
+        current_assets = self.firm.assets + inventory_value
         current_liabilities = getattr(self.firm, "total_debt", 0.0)
-        working_capital = total_assets - current_liabilities
+        working_capital = current_assets - current_liabilities
 
         # Retained Earnings
         retained_earnings = self.retained_earnings
