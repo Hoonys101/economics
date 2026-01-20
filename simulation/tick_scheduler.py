@@ -86,7 +86,7 @@ class TickScheduler:
 
         # Phase 14-1: Firm Profit Distribution (Operation Reflux)
         for firm in state.firms:
-             firm.distribute_profit(state.agents, state.time)
+             firm.finance.distribute_profit(state.agents, state.time)
 
         for firm in state.firms:
             firm.hires_last_tick = 0

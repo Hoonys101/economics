@@ -55,7 +55,7 @@ class StockMarketTracker:
         
         # 주가 정보
         stock_price = stock_market.get_stock_price(firm_id) or 0.0
-        bps = firm.get_book_value_per_share()
+        bps = firm.finance.get_book_value_per_share()
         pbr = stock_price / bps if bps > 0 else 0.0
         
         # 거래량 및 주문 정보
@@ -65,10 +65,10 @@ class StockMarketTracker:
         sell_order_count = summary.get("sell_order_count", 0)
         
         # 기업 실적
-        firm_assets = firm.assets
-        firm_profit = getattr(firm, "current_profit", 0.0)
-        dividend_paid = getattr(firm, "last_dividend_paid", 0.0)
-        market_cap = firm.get_market_cap(stock_price)
+        firm_assets = firm.finance.assets
+        firm_profit = getattr(firm.finance, "current_profit", 0.0)
+        dividend_paid = getattr(firm.finance, "dividends_paid_last_tick", 0.0)
+        market_cap = firm.finance.get_market_cap(stock_price)
         
         return {
             "firm_id": firm_id,
@@ -125,7 +125,7 @@ class StockMarketTracker:
         
         for firm in active_firms:
             price = stock_market.get_stock_price(firm.id) or 0.0
-            market_cap = firm.get_market_cap(price)
+            market_cap = firm.finance.get_market_cap(price)
             volume = stock_market.daily_volumes.get(firm.id, 0.0)
             
             total_market_cap += market_cap

@@ -50,19 +50,50 @@ def firm_mock(golden_firms):
 
     # Ensuring attributes that might be missing in older fixtures or dynamic properties
     firm.system2_planner = None # Force to None to avoid unconfigured mock issues in guidance
-    firm.revenue_this_turn = 200.0 # explicit float
-    firm.last_revenue = 200.0
-    if not hasattr(firm, 'last_revenue'):
-        firm.last_revenue = 200.0
-    firm.expenses_this_tick = 50.0
-    firm.retained_earnings = 1000.0
-    # firm.profit_history = [] # Let's keep history if it exists
-    firm.employee_wages = {}
     firm.consecutive_loss_ticks_for_bankruptcy_threshold = 5
     firm.automation_level = 0.0
-    firm.last_sales_volume = 1.0 # Fix for the TypeError seen in previous run
     firm.total_debt = 0.0 # Ensure total_debt is float
     firm.bond_obligations = [] # Add bond obligations
+
+    # SoC mocks
+    if not hasattr(firm, 'finance') or isinstance(firm.finance, MagicMock):
+        # We need a robust mock if it's not real
+        firm.finance = MagicMock()
+        firm.finance.revenue_this_turn = 200.0
+        firm.finance.last_revenue = 200.0
+        firm.finance.expenses_this_tick = 50.0
+        firm.finance.retained_earnings = 1000.0
+        firm.finance.dividend_rate = 0.1
+        firm.finance.last_sales_volume = 1.0
+        # Mock methods to simulate success/state change if needed
+        # For state verification, we might need side effects or just check calls.
+        firm.finance.invest_in_automation.return_value = True
+        firm.finance.invest_in_rd.return_value = True
+        firm.finance.invest_in_capex.return_value = True
+        firm.finance.pay_severance.return_value = True
+
+        # Capture dividend rate setting
+        def set_div(x): firm.finance.dividend_rate = x
+        firm.finance.set_dividend_rate.side_effect = set_div
+
+    # Update Finance State directly
+    firm.finance.revenue_this_turn = 200.0
+    firm.finance.dividend_rate = 0.1
+    firm.finance.last_sales_volume = 1.0
+    firm.finance.assets = 10000.0
+
+    if not hasattr(firm, 'hr') or isinstance(firm.hr, MagicMock):
+        firm.hr = MagicMock()
+        firm.hr.employees = []
+        firm.hr.employee_wages = {}
+    firm.hr.employees = []
+    firm.hr.employee_wages = {}
+
+    if not hasattr(firm, 'production') or isinstance(firm.production, MagicMock):
+        firm.production = MagicMock()
+
+        def set_auto(x): firm.automation_level = x
+        firm.production.set_automation_level.side_effect = set_auto
 
     # Ensure decision_engine chain works for _get_total_liabilities
     if not hasattr(firm, 'decision_engine'):
@@ -106,7 +137,8 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
 
     # Need enough assets to pass safety margin (default 2000)
     firm_mock.assets = 10000.0
-    firm_mock.revenue_this_turn = 1000.0
+    firm_mock.finance.assets = 10000.0
+    firm_mock.finance.revenue_this_turn = 1000.0
     expected_budget = 1000.0 * 0.2 # 200
 
     # Force success
@@ -117,7 +149,20 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
 
     manager.realize_ceo_actions(firm_mock, context_mock, vector)
 
-    assert firm_mock.assets == 10000.0 - expected_budget
+    # Check if invest_in_rd was called with expected budget
+    # Note: Logic might reduce budget if cash is low, but here assets=10000 > safety margin.
+    # Investable cash = 8000. Budget = 200.
+    firm_mock.finance.invest_in_rd.assert_called()
+    # Or check side effect if we implemented it in mock?
+    # We asserted firm.assets reduced. But mock logic above was incomplete for side effect on assets.
+    # Let's assert the method call.
+    # The logic in Manager calls invest_in_rd(budget).
+    # If mock.invest_in_rd returns True (set in fixture), then logic proceeds to update research history.
+
+    # We can check args.
+    args, _ = firm_mock.finance.invest_in_rd.call_args
+    assert args[0] == pytest.approx(expected_budget)
+
     assert firm_mock.base_quality == pytest.approx(initial_quality + 0.05)
     assert firm_mock.productivity_factor == pytest.approx(initial_prod * 1.05)
 
@@ -127,7 +172,7 @@ def test_dividend_logic(firm_mock, context_mock):
 
     manager.realize_ceo_actions(firm_mock, context_mock, vector)
 
-    assert firm_mock.dividend_rate == 0.5
+    assert firm_mock.finance.dividend_rate == 0.5
 
 def test_hiring_logic(firm_mock, context_mock):
     manager = CorporateManager(MockConfig())

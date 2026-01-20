@@ -1,5 +1,4 @@
 from __future__ import annotations
-from collections import deque
 from typing import List, Dict, Any, Optional, override, TYPE_CHECKING
 import logging
 import copy
@@ -126,9 +125,6 @@ class Firm(BaseAgent, ILearningAgent):
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
         self.is_publicly_traded: bool = True   # 상장 여부
-        self.dividend_rate: float = getattr(
-            config_module, "DIVIDEND_RATE", 0.3
-        )  # 기업별 배당률 (기본값: config)
         self.treasury_shares: float = self.total_shares  # 자사주 보유량
         self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
 
@@ -155,142 +151,6 @@ class Firm(BaseAgent, ILearningAgent):
             extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]}
         )
 
-    # --- Properties to maintain Interface Compatibility ---
-    @property
-    def employees(self) -> List[Household]:
-        return self.hr.employees
-
-    @employees.setter
-    def employees(self, value):
-        self.hr.employees = value
-
-    @property
-    def employee_wages(self) -> Dict[int, float]:
-        return self.hr.employee_wages
-
-    @employee_wages.setter
-    def employee_wages(self, value):
-        self.hr.employee_wages = value
-
-    @property
-    def retained_earnings(self) -> float:
-        return self.finance.retained_earnings
-
-    @retained_earnings.setter
-    def retained_earnings(self, value):
-        self.finance.retained_earnings = value
-
-    @property
-    def dividends_paid_last_tick(self) -> float:
-        return self.finance.dividends_paid_last_tick
-
-    @dividends_paid_last_tick.setter
-    def dividends_paid_last_tick(self, value):
-        self.finance.dividends_paid_last_tick = value
-
-    @property
-    def consecutive_loss_turns(self) -> int:
-        return self.finance.consecutive_loss_turns
-
-    @consecutive_loss_turns.setter
-    def consecutive_loss_turns(self, value):
-        self.finance.consecutive_loss_turns = value
-
-    @property
-    def current_profit(self) -> float:
-        return self.finance.current_profit
-
-    @current_profit.setter
-    def current_profit(self, value):
-        self.finance.current_profit = value
-
-    @property
-    def revenue_this_turn(self) -> float:
-        return self.finance.revenue_this_turn
-
-    @revenue_this_turn.setter
-    def revenue_this_turn(self, value):
-        self.finance.revenue_this_turn = value
-
-    @property
-    def cost_this_turn(self) -> float:
-        return self.finance.cost_this_turn
-
-    @cost_this_turn.setter
-    def cost_this_turn(self, value):
-        self.finance.cost_this_turn = value
-
-    @property
-    def revenue_this_tick(self) -> float:
-        return self.finance.revenue_this_tick
-
-    @revenue_this_tick.setter
-    def revenue_this_tick(self, value):
-        self.finance.revenue_this_tick = value
-
-    @property
-    def expenses_this_tick(self) -> float:
-        return self.finance.expenses_this_tick
-
-    @expenses_this_tick.setter
-    def expenses_this_tick(self, value):
-        self.finance.expenses_this_tick = value
-
-    @property
-    def profit_history(self) -> deque[float]:
-        return self.finance.profit_history
-
-    @profit_history.setter
-    def profit_history(self, value):
-        self.finance.profit_history = value
-
-    @property
-    def last_revenue(self) -> float:
-        return self.finance.last_revenue
-
-    @last_revenue.setter
-    def last_revenue(self, value):
-        self.finance.last_revenue = value
-
-    @property
-    def last_marketing_spend(self) -> float:
-        return self.finance.last_marketing_spend
-
-    @last_marketing_spend.setter
-    def last_marketing_spend(self, value):
-        self.finance.last_marketing_spend = value
-
-    @property
-    def last_daily_expenses(self) -> float:
-        return self.finance.last_daily_expenses
-
-    @last_daily_expenses.setter
-    def last_daily_expenses(self, value):
-        self.finance.last_daily_expenses = value
-
-    @property
-    def last_sales_volume(self) -> float:
-        return self.finance.last_sales_volume
-
-    @last_sales_volume.setter
-    def last_sales_volume(self, value):
-        self.finance.last_sales_volume = value
-
-    @property
-    def sales_volume_this_tick(self) -> float:
-        return self.finance.sales_volume_this_tick
-
-    @sales_volume_this_tick.setter
-    def sales_volume_this_tick(self, value):
-        self.finance.sales_volume_this_tick = value
-
-
-    def calculate_valuation(self) -> float:
-        """
-        Calculate Firm Valuation based on Net Assets + Profit Potential.
-        Formula: Net Assets + (Max(0, Avg_Profit_Last_10) * PER Multiplier)
-        """
-        return self.finance.calculate_valuation()
 
     @property
     def price(self) -> float:
@@ -301,16 +161,6 @@ class Firm(BaseAgent, ILearningAgent):
     def price(self, value: float) -> None:
         self.last_prices[self.specialization] = value
 
-    def get_inventory_value(self) -> float:
-        """Calculate market value of current inventory."""
-        return self.finance.get_inventory_value()
-
-    def get_financial_snapshot(self) -> Dict[str, float]:
-        """
-        Returns a standardized dictionary of financial metrics for monitoring and analysis.
-        This provides a stable interface for CrisisMonitor and FinanceSystem.
-        """
-        return self.finance.get_financial_snapshot()
 
     def liquidate_assets(self) -> float:
         """
@@ -371,34 +221,6 @@ class Firm(BaseAgent, ILearningAgent):
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         self.current_production = self.production.produce(current_time, technology_manager)
 
-    def issue_shares(self, quantity: float, price: float) -> float:
-        """
-        신규 주식을 발행합니다 (유상증자).
-        
-        Args:
-            quantity: 발행할 주식 수량
-            price: 주당 발행 가격
-            
-        Returns:
-            조달된 자본금
-        """
-        return self.finance.issue_shares(quantity, price)
-
-    def get_book_value_per_share(self) -> float:
-        """주당 순자산가치(BPS)를 계산합니다. (유통주식수 기준)"""
-        return self.finance.get_book_value_per_share()
-
-    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
-        """
-        시가총액을 계산합니다.
-        
-        Args:
-            stock_price: 주가 (None이면 순자산가치 기반 계산)
-            
-        Returns:
-            시가총액
-        """
-        return self.finance.get_market_cap(stock_price)
 
 
     @override
@@ -433,10 +255,6 @@ class Firm(BaseAgent, ILearningAgent):
         )
         return new_firm
 
-    def distribute_dividends(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
-        # SoC Refactor
-        return self.finance.process_profit_distribution(households, government, current_time)
-
     @override
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
@@ -445,17 +263,17 @@ class Firm(BaseAgent, ILearningAgent):
             "needs": self.needs.copy(),
             "inventory": self.inventory.copy(),
             "input_inventory": self.input_inventory.copy(), # WO-030
-            "employees": [emp.id for emp in self.employees],  # Only pass employee IDs
+            "employees": [emp.id for emp in self.hr.employees],  # Only pass employee IDs
             "is_active": self.is_active,
             "current_production": self.current_production,
             "productivity_factor": self.productivity_factor,
             "production_target": self.production_target,
-            "revenue_this_turn": self.revenue_this_turn,
-            "expenses_this_tick": self.expenses_this_tick,
-            "consecutive_loss_turns": self.consecutive_loss_turns,
+            "revenue_this_turn": self.finance.revenue_this_turn,
+            "expenses_this_tick": self.finance.expenses_this_tick,
+            "consecutive_loss_turns": self.finance.consecutive_loss_turns,
             "total_shares": self.total_shares,
             "treasury_shares": self.treasury_shares,
-            "dividend_rate": self.dividend_rate,
+            "dividend_rate": self.finance.dividend_rate,
             "capital_stock": self.capital_stock,
             "base_quality": self.base_quality, # AI needs to know this
             "inventory_quality": self.inventory_quality.copy(),
@@ -473,11 +291,11 @@ class Firm(BaseAgent, ILearningAgent):
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         self.logger.debug(
-            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}",
+            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
             extra={
                 **log_extra,
                 "assets_before": self.assets,
-                "num_employees_before": len(self.employees),
+                "num_employees_before": len(self.hr.employees),
                 "is_active_before": self.is_active,
             },
         )
@@ -497,11 +315,11 @@ class Firm(BaseAgent, ILearningAgent):
         self._calculate_invisible_hand_price(markets, current_time)
 
         self.logger.debug(
-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
+            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
             extra={
                 **log_extra,
                 "assets_after": self.assets,
-                "num_employees_after": len(self.employees),
+                "num_employees_after": len(self.hr.employees),
                 "is_active_after": self.is_active,
                 "num_decisions": len(decisions),
             },
@@ -561,12 +379,12 @@ class Firm(BaseAgent, ILearningAgent):
     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
         self.logger.debug(
-            f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}",
+            f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
             extra={
                 **log_extra,
                 "needs_before": self.needs,
                 "assets_before": self.assets,
-                "num_employees_before": len(self.employees),
+                "num_employees_before": len(self.hr.employees),
             },
         )
 
@@ -592,7 +410,7 @@ class Firm(BaseAgent, ILearningAgent):
         if total_wages > 0:
             self.finance.record_expense(total_wages)
             self.logger.info(
-                f"Paid total wages: {total_wages:.2f} to {len(self.employees)} employees.",
+                f"Paid total wages: {total_wages:.2f} to {len(self.hr.employees)} employees.",
                 extra={**log_extra, "total_wages": total_wages},
             )
 
@@ -635,39 +453,30 @@ class Firm(BaseAgent, ILearningAgent):
         self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"] + self.config_module.LIQUIDITY_NEED_INCREASE_RATE)
         self.finance.check_bankruptcy()
 
-        if self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD or self.consecutive_loss_turns >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD:
+        if self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD or self.finance.consecutive_loss_turns >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD:
             self.is_active = False
             self.logger.warning(
-                f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.consecutive_loss_turns}",
+                f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.finance.consecutive_loss_turns}",
                 extra={
                     **log_extra,
                     "assets": self.assets,
-                    "consecutive_loss_turns": self.consecutive_loss_turns,
+                    "consecutive_loss_turns": self.finance.consecutive_loss_turns,
                     "tags": ["firm_closure"],
                 },
             )
 
         self.logger.debug(
-            f"FIRM_NEEDS_UPDATE_END | Firm {self.id} needs after update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}, is_active={self.is_active}",
+            f"FIRM_NEEDS_UPDATE_END | Firm {self.id} needs after update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
             extra={
                 **log_extra,
                 "needs_after": self.needs,
                 "assets_after": self.assets,
-                "num_employees_after": len(self.employees),
+                "num_employees_after": len(self.hr.employees),
                 "is_active_after": self.is_active,
                 "brand_awareness": self.brand_manager.brand_awareness,
                 "perceived_quality": self.brand_manager.perceived_quality
             },
         )
-
-    # Legacy: _pay_maintenance and _pay_taxes removed as they are now in FinanceDepartment
-
-    def distribute_profit(self, agents: Dict[int, Any], current_time: int) -> float:
-        """
-        Phase 14-1: Mandatory Dividend Rule.
-        Distribute surplus cash to owner if reserves are met.
-        """
-        return self.finance.distribute_profit_private(agents, current_time)
 
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the firm's cash reserves."""

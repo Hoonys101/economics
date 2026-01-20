@@ -224,7 +224,8 @@ class CorporateManager:
             return
 
         # Execute
-        firm.assets -= actual_spend
+        if not firm.finance.invest_in_automation(actual_spend):
+             return
 
         # WO-044-Track-B: Automation Tax
         # Logic: actual_spend * AUTOMATION_TAX_RATE
@@ -232,8 +233,8 @@ class CorporateManager:
         tax_amount = actual_spend * automation_tax_rate
 
         if tax_amount > 0 and government:
-            if firm.assets >= tax_amount:
-                firm.assets -= tax_amount
+            if firm.finance.assets >= tax_amount:
+                firm.finance.assets -= tax_amount
                 government.collect_tax(tax_amount, "automation_tax", firm.id, current_time)
 
                 self.logger.info(
@@ -246,7 +247,7 @@ class CorporateManager:
         gained_pct = actual_spend / cost_per_pct
         gained_a = gained_pct / 100.0
 
-        firm.automation_level = min(1.0, firm.automation_level + gained_a)
+        firm.production.set_automation_level(firm.automation_level + gained_a)
 
         self.logger.info(
             f"AUTOMATION | Firm {firm.id} invested {actual_spend:.1f}, level {current_a:.3f} -> {firm.automation_level:.3f}",
@@ -260,7 +261,7 @@ class CorporateManager:
         if aggressiveness <= 0.1:
             return
 
-        revenue_base = max(firm.revenue_this_turn, firm.assets * 0.05)
+        revenue_base = max(firm.finance.revenue_this_turn, firm.assets * 0.05)
         rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
@@ -274,15 +275,16 @@ class CorporateManager:
         if budget < 10.0:
             return
 
-        firm.assets -= budget
+        if not firm.finance.invest_in_rd(budget):
+            return
         firm.research_history["total_spent"] += budget
 
-        denominator = max(firm.revenue_this_turn * 0.2, 100.0)
+        denominator = max(firm.finance.revenue_this_turn * 0.2, 100.0)
         base_chance = min(1.0, budget / denominator)
 
         avg_skill = 1.0
-        if firm.employees:
-            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.employees) / len(firm.employees)
+        if firm.hr.employees:
+            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.hr.employees) / len(firm.hr.employees)
 
         success_chance = base_chance * avg_skill
 
@@ -318,7 +320,8 @@ class CorporateManager:
         if budget < 100.0:
             return
 
-        firm.assets -= budget
+        if not firm.finance.invest_in_capex(budget):
+            return
 
         if reflux_system:
              reflux_system.capture(budget, str(firm.id), "capex")
@@ -338,7 +341,8 @@ class CorporateManager:
         """
         base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
         max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
-        firm.dividend_rate = base_rate + (aggressiveness * (max_rate - base_rate))
+        new_rate = base_rate + (aggressiveness * (max_rate - base_rate))
+        firm.finance.set_dividend_rate(new_rate)
 
     def _manage_debt(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
         """
@@ -397,7 +401,7 @@ class CorporateManager:
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
 
-        sales_vol = getattr(firm, 'last_sales_volume', 1.0)
+        sales_vol = getattr(firm.finance, 'last_sales_volume', 1.0)
         if sales_vol <= 0: sales_vol = 1.0
         days_on_hand = current_inventory / sales_vol
         decay = max(0.5, 1.0 - (days_on_hand * 0.005))
@@ -454,7 +458,7 @@ class CorporateManager:
         # Soft limit removed to allow full employment
         needed_labor = int(needed_labor_calc) + 1
 
-        current_employees = len(firm.employees)
+        current_employees = len(firm.hr.employees)
 
         # A. Firing Logic (Layoffs)
         if current_employees > needed_labor:
@@ -475,22 +479,21 @@ class CorporateManager:
                 # Actually we should iterate copy to modify list safely?
                 # No, we just call employee.quit().
                 # We need to pick employees.
-                candidates = firm.employees[:fire_count] # FIFO firing
+                candidates = firm.hr.employees[:fire_count] # FIFO firing
 
                 # WO-044-Track-C: Strategic Firing Severance Check
                 severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
 
                 for emp in candidates:
                     # Estimate wage (Strategic firing happens before update_needs, so check current wage)
-                    wage = firm.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
+                    wage = firm.hr.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
                     # Correct for skill
                     skill = getattr(emp, 'labor_skill', 1.0)
                     wage *= skill
 
                     severance_pay = wage * severance_weeks
 
-                    if firm.assets >= severance_pay:
-                        firm.assets -= severance_pay
+                    if firm.finance.pay_severance(severance_pay):
                         emp.assets += severance_pay
 
                         emp.quit()
@@ -545,7 +548,7 @@ class CorporateManager:
         WO-047-B: Competitive Bidding Logic.
         If firm has vacancies and is solvent, bid up the wage.
         """
-        current_employees = len(firm.employees)
+        current_employees = len(firm.hr.employees)
         vacancies = max(0, needed_labor - current_employees)
         
         if vacancies <= 0:
@@ -554,7 +557,7 @@ class CorporateManager:
         # 1. 1.5x Solvency Check (Guardrail)
         total_liabilities = self._get_total_liabilities(firm)
         if total_liabilities > 0:
-            solvency_ratio = firm.assets / total_liabilities
+            solvency_ratio = firm.finance.assets / total_liabilities
             if solvency_ratio < 1.5:
                 # Insolvent or risky: Cannot afford bidding war
                 return base_offer_wage
@@ -562,8 +565,8 @@ class CorporateManager:
         # 2. Wage Bill Cap Check (Fallback for 0 liabilities)
         # Check if we have enough cash runway (e.g., 2 ticks)
         # Using current wage bill as proxy
-        wage_bill = sum(firm.employee_wages.values()) if firm.employee_wages else 0.0
-        if wage_bill > 0 and firm.assets < wage_bill * 2: 
+        wage_bill = sum(firm.hr.employee_wages.values()) if firm.hr.employee_wages else 0.0
+        if wage_bill > 0 and firm.finance.assets < wage_bill * 2:
              return base_offer_wage
 
         # 3. Calculate Increase
@@ -575,7 +578,7 @@ class CorporateManager:
         # Ensures firm doesn't commit to a wage causing immediate insolvency next tick
         # Logic: Assets should cover (Current Employees + New Hires + 1) * New Wage
         # This is a bit conservative but safe.
-        max_affordable = firm.assets / (current_employees + vacancies + 1)
+        max_affordable = firm.finance.assets / (current_employees + vacancies + 1)
         if new_wage > max_affordable:
             new_wage = max(base_offer_wage, max_affordable)
 
