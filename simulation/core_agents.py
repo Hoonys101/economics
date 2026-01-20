@@ -337,6 +337,14 @@ class Household(BaseAgent, ILearningAgent):
         return self.econ_component.labor_manager.get_income()
 
     @property
+    def labor_manager(self) -> Any:
+        return self.econ_component.labor_manager
+
+    @property
+    def economy_manager(self) -> Any:
+        return self.econ_component.economy_manager
+
+    @property
     def labor_income_this_tick(self) -> float:
         return self.econ_component.labor_income_this_tick
 
