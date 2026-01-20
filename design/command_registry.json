@@ -8,11 +8,11 @@
     "model": "pro"
   },
   "jules": {
-    "command": "create",
-    "title": "WO-083C-P3: Test Migration (HIGH Risk - Staged)",
-    "session_id": "",
-    "instruction": "Migrate HIGH risk test using STAGED approach. Read design/work_orders/WO-083C-P3-High-Risk.md. Target: verify_mitosis.py (1 file, 2-stage migration).",
-    "file": "design/work_orders/WO-083C-P3-High-Risk.md",
+    "command": "send-message",
+    "title": "",
+    "session_id": "9067551690220486700",
+    "instruction": "PR Review feedback: REQUEST CHANGES. Critical issues found: 1) Zero-Sum violation risk - missing parent asset decrease verification after clone(), 2) Test coverage regression - stock inheritance test missing, 3) AI state verification weakened - Q-table content check removed. Please fix these issues. Read design/gemini_output/pr_review_verify-mitosis-migration-9067551690220486700.md for details.",
+    "file": "",
     "wait": true
   },
   "git_review": {

@@ -29,6 +29,8 @@
 | TD-068 | 2026-01-20 | Observer Scans `design/` Artifacts | Exclude `design/` from `scan_codebase.py` | False Positives in Health Report | **OPEN** |
 | TD-069 | 2026-01-20 | Doc Placeholders (`WO-XXX`) | Replace placeholders with actual Process/IDs in Manuals | Confusing Documentation | **OPEN** |
 | TD-070 | 2026-01-20 | `test_rd_logic` Coverage Gap | Restore R&D budget assertion in `test_corporate_manager.py` | Test Regression / False Pass | **OPEN** |
+| TD-071 | 2026-01-20 | Magic Number in `verify_inheritance.py` | Use dynamic ID reference `self.heir.id` instead of hardcoded `2` | Code Smell / Maintainability | **OPEN** |
+| TD-072 | 2026-01-20 | Test Framework Inconsistency | Mix of `pytest` and `unittest` across migrated tests | Maintenance Overhead / Confusion | **OPEN** |
 
 
 
