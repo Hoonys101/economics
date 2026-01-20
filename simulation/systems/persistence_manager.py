@@ -75,7 +75,7 @@ class PersistenceManager:
                 agent_dto.agent_type = "firm"
                 agent_dto.inventory_food = agent.inventory.get("food", 0)
                 agent_dto.current_production = agent.current_production
-                agent_dto.num_employees = len(agent.employees)
+                agent_dto.num_employees = len(agent.hr.employees)
             else:
                 continue
 

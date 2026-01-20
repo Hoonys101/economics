@@ -129,7 +129,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             government=sim.government,
             central_bank=sim.central_bank,
             bank=sim.bank,
-            config_module=self.config
+            config_module=self.config_manager
         )
         sim.government.finance_system = sim.finance_system
 

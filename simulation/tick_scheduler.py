@@ -400,8 +400,8 @@ class TickScheduler:
                  firm.update_needs(state.time, state.government, market_data, state.reflux_system)
 
                  # 2a. Corporate Tax
-                 if firm.is_active and firm.current_profit > 0:
-                     tax_amount = state.government.calculate_corporate_tax(firm.current_profit)
+                 if firm.is_active and firm.finance.current_profit > 0:
+                     tax_amount = state.government.calculate_corporate_tax(firm.finance.current_profit)
                      firm.assets -= tax_amount
                      state.government.collect_tax(tax_amount, "corporate_tax", firm.id, state.time)
 
@@ -516,11 +516,12 @@ class TickScheduler:
                 h.capital_income_this_tick = 0.0
 
         for f in state.firms:
-            f.last_daily_expenses = f.expenses_this_tick
-            f.last_sales_volume = f.sales_volume_this_tick
-            f.sales_volume_this_tick = 0.0
-            f.expenses_this_tick = 0.0
-            f.revenue_this_tick = 0.0
+            # Simple daily expenses tracking for solvency logic
+            f.finance.last_daily_expenses = f.finance.expenses_this_tick
+            f.finance.last_sales_volume = f.finance.sales_volume_this_tick
+            f.finance.sales_volume_this_tick = 0.0
+            f.finance.expenses_this_tick = 0.0
+            f.finance.revenue_this_tick = 0.0
 
         # --- Gold Standard / Money Supply Verification ---
         if state.time >= 1:
