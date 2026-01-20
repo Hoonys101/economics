@@ -36,6 +36,10 @@ def setup_golden_config(golden_config):
     ensure_config(golden_config, 'EDUCATION_SENSITIVITY', 0.1)
     ensure_config(golden_config, 'BASE_LEARNING_RATE', 0.1)
     ensure_config(golden_config, 'MAX_LEARNING_RATE', 0.5)
+    # Ensure attributes required by Household Facade are present
+    ensure_config(golden_config, 'HOUSEHOLD_LOW_ASSET_THRESHOLD', 500.0)
+    ensure_config(golden_config, 'HOUSEHOLD_LOW_ASSET_WAGE', 8.0)
+    ensure_config(golden_config, 'HOUSEHOLD_DEFAULT_WAGE', 12.0)
 
 def create_real_household_from_golden(mock_h, golden_config):
     talent = Talent(base_learning_rate=0.5, max_potential={})
@@ -83,9 +87,31 @@ def create_real_household_from_golden(mock_h, golden_config):
 
     return real_household
 
-def test_mitosis_zero_sum_logic(golden_config, golden_households):
+# --- Stage 1: Golden Config + Mock Engine ---
+
+def test_mitosis_stage1_basic_cloning(golden_config, golden_households):
     """
-    CRITICAL: Verify Zero-Sum Asset Logic.
+    Stage 1: Basic Cloning Verification.
+    Uses Golden Config and Real Household (hydrated from golden mock), but keeps Decision Engine as Mock.
+    Validates that Household.clone() returns a valid object and basic properties are copied.
+    """
+    setup_golden_config(golden_config)
+    mock_h = golden_households[0]
+    parent = create_real_household_from_golden(mock_h, golden_config)
+
+    # Basic Clone
+    child = parent.clone(new_id=999, initial_assets_from_parent=0, current_tick=100)
+
+    assert child is not None
+    assert child.id == 999
+    assert child.parent_id == parent.id
+    assert child.generation == parent.generation + 1
+    # Verify child has a decision engine (mocked or new)
+    assert child.decision_engine is not None
+
+def test_mitosis_stage1_complex_zero_sum(golden_config, golden_households):
+    """
+    Stage 1 Complex: Verify Zero-Sum Asset Logic.
     Ensures that when a child is created with parent's assets, the total assets in the system remain constant.
     """
     setup_golden_config(golden_config)
@@ -110,9 +136,9 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     assert parent.assets + child.assets == initial_total_assets
     assert child.id == 999
 
-def test_mitosis_stock_inheritance(golden_config, golden_households):
+def test_mitosis_stage1_complex_stock_inheritance(golden_config, golden_households):
     """
-    CRITICAL: Verify Stock Inheritance Logic.
+    Stage 1 Complex: Verify Stock Inheritance Logic.
     Since `clone` does not automatically copy shares, this test verifies that
     Households CAN support share inheritance if the manager orchestrates it.
     """
@@ -153,9 +179,40 @@ def test_mitosis_stock_inheritance(golden_config, golden_households):
     # Verify Total Shares Conserved
     assert parent.shares_owned[firm_1_id] + child.shares_owned[firm_1_id] == 10
 
-def test_mitosis_brain_inheritance(golden_config, golden_households):
+# --- Stage 2: Real Decision Engine ---
+
+def test_mitosis_stage2_real_engine_cloning(golden_config, golden_households):
     """
-    CRITICAL: Verify Q-Table and Brain Inheritance.
+    Stage 2: Real Decision Engine Cloning.
+    Introduces the real AIDrivenHouseholdDecisionEngine.
+    Verifies that the engine is correctly initialized in the child.
+    """
+    setup_golden_config(golden_config)
+    mock_h = golden_households[0]
+    parent = create_real_household_from_golden(mock_h, golden_config)
+
+    # Setup Parent with REAL Engine
+    mock_shared_ai = MagicMock()
+    parent_ai = HouseholdAI(
+        agent_id=str(parent.id),
+        ai_decision_engine=mock_shared_ai,
+        gamma=0.9
+    )
+    parent_decision = AIDrivenHouseholdDecisionEngine(parent_ai, golden_config)
+    parent_decision.loan_market = None
+    parent.decision_engine = parent_decision
+
+    # Clone
+    child = parent.clone(new_id=999, initial_assets_from_parent=0, current_tick=100)
+
+    # Assert Child has Real Engine
+    assert isinstance(child.decision_engine, AIDrivenHouseholdDecisionEngine)
+    assert child.decision_engine is not parent.decision_engine # Must be new instance
+    assert child.decision_engine.ai_engine is not parent.decision_engine.ai_engine
+
+def test_mitosis_stage2_complex_brain_inheritance(golden_config, golden_households):
+    """
+    Stage 2 Complex: Verify Q-Table and Brain Inheritance.
     Uses AITrainingManager to perform the brain transfer and validates Q-table content.
     """
     setup_golden_config(golden_config)
@@ -177,7 +234,6 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
     parent_ai.q_consumption["food"].q_table = {test_state: test_values}
 
     parent_decision = AIDrivenHouseholdDecisionEngine(parent_ai, golden_config)
-    # Fix: Ensure loan_market is set on the Real engine
     parent_decision.loan_market = None
 
     parent.decision_engine = parent_decision
