@@ -111,7 +111,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         # SoC Refactor: use hr.employees
         if len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
-            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
             orders.append(order)
             self.logger.info(
                 f"Hiring to meet minimum employee count. Offering dynamic wage: {offered_wage:.2f}",
@@ -125,7 +125,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             needed_labor > len(firm.hr.employees)
             and len(firm.hr.employees) < self.config_module.FIRM_MAX_EMPLOYEES
         ):
-            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
             orders.append(order)
             self.logger.info(
                 f"Planning to BUY labor for dynamic wage {offered_wage:.2f}",

@@ -145,12 +145,21 @@ def verify_harvest_clean():
 
     sim = initializer.build_simulation()
 
-    # Disable AI Training to avoid RuleBased/AI mix issues in this specific test
-    # But wait, Mitigation/Mitosis needs inherit_brain from AI Training Manager.
-    # We must keep it but ensure it doesn't crash on RuleBased agents.
-    # The fix in ai_training_manager.py (checking for hasattr ai_engine) should handle this.
-    # So we DO NOT set it to None.
-    # sim.ai_training_manager = None
+    # --- MONKEY PATCH: Force RuleBased Children ---
+    # We need rational actors for verification, not untrained AI
+    original_process_births = sim.demographic_manager.process_births
+
+    def process_births_rule_based(simulation, birth_requests):
+        new_children = original_process_births(simulation, birth_requests)
+        for child in new_children:
+            # Swap to RuleBased engine
+            child.decision_engine = RuleBasedHouseholdDecisionEngine(Config, logger)
+            child.decision_engine.logger = child.logger
+            child.decision_engine.loan_market = simulation.markets.get("loan_market")
+        return new_children
+
+    sim.demographic_manager.process_births = process_births_rule_based
+    # ----------------------------------------------
 
     # Trackers
     data = {
@@ -217,20 +226,23 @@ def verify_harvest_clean():
     initial_pop_val = data["population"][0]
     final_pop_val = data["population"][-1]
     pop_growth = final_pop_val / initial_pop_val
-    pass_pop = pop_growth >= 2.0
+    pass_pop = final_pop_val > 300  # WO-097: > 300
 
     final_engel = data["engel_coeff"][-1]
-    pass_engel = final_engel < 0.5
+    pass_engel = final_engel < 0.15 # WO-097: < 15%
 
-    verdict = "ESCAPE VELOCITY ACHIEVED" if (pass_price and pass_pop and pass_engel) else "FAILED"
+    final_tech = data["tech_adopted"][-1]
+    pass_tech = final_tech >= 3 # WO-097: >= 3 firms
+
+    verdict = "ESCAPE VELOCITY ACHIEVED" if (pass_price and pass_pop and pass_engel and pass_tech) else "FAILED"
     logger.info(f"VERDICT: {verdict}")
 
     # --- Generate Report ---
-    report_path = "design/gemini_output/report_phase23_great_harvest.md"
+    report_path = "reports/WO-097_HARVEST_REPORT.md"
     os.makedirs(os.path.dirname(report_path), exist_ok=True)
 
     with open(report_path, "w") as f:
-        f.write("# WO-094: Phase 23 The Great Harvest Verification Report\n\n")
+        f.write("# WO-097: Phase 23 The Great Harvest Verification Report\n\n")
         f.write(f"**Date**: 2026-01-21\n")
         f.write(f"**Verdict**: {verdict}\n\n")
 
@@ -238,8 +250,9 @@ def verify_harvest_clean():
         f.write("| Metric | Initial | Final | Result | Pass Criteria | Pass |\n")
         f.write("|---|---|---|---|---|---|\n")
         f.write(f"| Food Price | {initial_price:.2f} | {final_price:.2f} | {price_drop*100:.1f}% Drop | >= 50% Drop | {pass_price} |\n")
-        f.write(f"| Population | {initial_pop_val} | {final_pop_val} | {pop_growth:.2f}x Growth | >= 2.0x Growth | {pass_pop} |\n")
-        f.write(f"| Engel Coeff | {data['engel_coeff'][0]:.2f} | {final_engel:.2f} | {final_engel:.2f} | < 0.50 | {pass_engel} |\n\n")
+        f.write(f"| Population | {initial_pop_val} | {final_pop_val} | {final_pop_val} Households | > 300 | {pass_pop} |\n")
+        f.write(f"| Engel Coeff | {data['engel_coeff'][0]:.2f} | {final_engel:.2f} | {final_engel:.2f} | < 0.15 | {pass_engel} |\n")
+        f.write(f"| Tech Adoption | {data['tech_adopted'][0]} | {final_tech} | {final_tech} Firms | >= 3 Firms | {pass_tech} |\n\n")
 
         f.write("## Detailed Metrics (Sample)\n")
         f.write("| Tick | Food Price | Population | Engel | Tech Adopted |\n")
