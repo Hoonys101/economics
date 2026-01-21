@@ -25,6 +25,10 @@
       "5679283121683061814": {
         "title": "--title",
         "initial_mission": "WO-098-DIAG-A: Labor Deadlock"
+      },
+      "9742488965400277782": {
+        "title": "--title",
+        "initial_mission": "WO-098-DIAG-B: Market ID Mismatch"
       }
     },
     "completed_sessions": {
