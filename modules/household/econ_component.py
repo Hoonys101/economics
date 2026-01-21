@@ -71,6 +71,7 @@ class EconComponent(IEconComponent):
         self._perceived_avg_prices: Dict[str, float] = {}
 
         # WO-095: Robust config access to handle Mocks in tests
+        # Security Fix: Verified type safety for PRICE_MEMORY_LENGTH
         raw_price_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
         price_memory_len = int(raw_price_len) if isinstance(raw_price_len, (int, float)) else 10
 

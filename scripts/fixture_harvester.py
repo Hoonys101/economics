@@ -34,14 +34,14 @@ from simulation.ai.api import Personality
 
 # Attempt to import the new generic loader
 try:
-    from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
+    from simulation.utils.golden_loader import GoldenLoader as GenericGoldenLoader
 except ImportError:
     # If not in path (e.g. running script directly from shell), try adding root
     sys.path.append(str(Path(__file__).resolve().parent.parent))
     try:
-        from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
+        from simulation.utils.golden_loader import GoldenLoader as GenericGoldenLoader
     except ImportError:
-        # Fallback if tests/utils/golden_loader.py is missing or unreachable
+        # Fallback if simulation/utils/golden_loader.py is missing or unreachable
         GenericGoldenLoader = None
 
 

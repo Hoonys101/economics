@@ -16,8 +16,9 @@
 
 | TD-074 | 2026-01-21 | `main.py` & `config.py` corruption | Restore from Git history + Add Merge Guard | Blocked system execution | **RESOLVED** |
 | TD-075 | 2026-01-21 | `Household` Facade Bloat (850+ lines) | Refactored via EconComponent delegation (WO-092) | Maintenance overhead | **RESOLVED** |
-| TD-076 | 2026-01-21 | `ProductionDepartment.produce` Redundancy | Refactor TFP calculation to avoid double multiplier check | Code readability | **PENDING** |
-| TD-077 | 2026-01-21 | `EconComponent` Hardcoded Price History Maxlen | Move `maxlen=10` to global configuration | Configuration Gap | **PENDING** |
+| TD-076 | 2026-01-21 | `ProductionDepartment.produce` Redundancy | Refactor TFP calculation to avoid double multiplier check | Code readability | **RESOLVED** |
+| TD-077 | 2026-01-21 | `EconComponent` Hardcoded Price History Maxlen | Move `maxlen=10` to global configuration | Configuration Gap | **RESOLVED** |
+| TD-104 | 2026-01-22 | Fixture Harvester SoC Violation | Move GoldenLoader to `simulation/utils` | High Coupling | **RESOLVED** |
 
 
 
