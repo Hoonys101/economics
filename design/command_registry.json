@@ -15,8 +15,8 @@
   "jules": {
     "command": "create",
     "session_id": null,
-    "title": "WO-105-FINAL-LIQUIDATION",
-    "instruction": "다음 구체적인 경로와 리포트를 참조하여 기술 부채를 '완전' 상환하라. | 1. [리서치] design/gemini_output/pr_review_wo-105-tech-debt-liquidation-11254215247527775727.md 를 읽고 SoC 위반 사항을 파악하라. | 2. [파일 이동] tests/utils/golden_loader.py 를 simulation/utils/ 로 이동(mv)하라. | 3. [코드 수정] fixture_harvester.py 와 모든 관련 테스트파일의 import 문을 신규 경로로 업데이트하라. | 4. [보안 수정] modules/household/econ_component.py 에서 int() 캐스팅을 복구하여 타입 안전성을 확보하라. | 5. [장부] design/TECH_DEBT_LEDGER.md 의 TD-076, TD-077, TD-104 상태를 RESOLVED로 변경하라. | 6. 모든 테스트가 통과함을 증명하라.",
+    "title": "AUDIT-STRUCTURAL-V2",
+    "instruction": "너는 시니어 시스템 아키텍트이다. design/specs/AUDIT_SPEC_STRUCTURAL.md 명세를 정독하고, 그 안에 기술된 '용어 정의'와 '논리 전개'에 따라 전체 코드베이스를 정밀 감사하라. 특히 WO-103 이후 도입된 DTO 패턴이 에이전트와 엔진 사이의 모든 접점에서 'Purity Gate' 역할을 수행하고 있는지, 그리고 컴포넌트 간 SoC 위반이 없는지 파일별로 전수 조사하라. God Class 재발 항목과 순환 참조 리스크를 식별하여 design/gemini_output/audit_structural_v2.md로 보고하라.",
     "wait": true
   },
   "git": {
