@@ -3,22 +3,27 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 from collections import deque
 from simulation.models import Transaction
+from modules.finance.api import InsufficientFundsError
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.core_agents import Household
     from simulation.systems.reflux_system import EconomicRefluxSystem
+    from simulation.agents.government import Government
 
 logger = logging.getLogger(__name__)
 
 class FinanceDepartment:
     """
-    Manages maintenance fees, corporate taxes, dividend distribution, and tracks financial metrics.
-    Extracted from Firm class (SoC Refactor).
+    Manages assets, maintenance fees, corporate taxes, dividend distribution, and tracks financial metrics.
+    Centralized Asset Management (WO-103 Phase 1).
     """
-    def __init__(self, firm: Firm, config_module: Any):
+    def __init__(self, firm: Firm, config_module: Any, initial_capital: float = 0.0):
         self.firm = firm
         self.config_module = config_module
+
+        # Centralized Assets (WO-103 Phase 1)
+        self._cash: float = initial_capital
 
         # Financial State
         self.retained_earnings: float = 0.0
@@ -42,23 +47,52 @@ class FinanceDepartment:
         self.last_sales_volume: float = 1.0
         self.sales_volume_this_tick: float = 0.0
 
+    @property
+    def balance(self) -> float:
+        return self._cash
+
+    def credit(self, amount: float, description: str = "") -> None:
+        """Adds funds to the firm's cash reserves."""
+        # Unchecked credit. In some scenarios (correction) negative credit might be theoretically possible
+        # but generally discouraged. We accept it to handle external 'assets' property setters robustly.
+        self._cash += amount
+
+    def debit(self, amount: float, description: str = "") -> None:
+        """
+        Deducts funds from the firm's cash reserves.
+        Allows negative balance (insolvency) to be tracked rather than crashing,
+        but caller should generally check funds first.
+        """
+        self._cash -= amount
+
+    def calculate_and_debit_holding_costs(self) -> float:
+        """Calculates and pays inventory holding costs."""
+        inventory_value = self.get_inventory_value()
+        holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
+
+        if holding_cost > 0:
+            self.debit(holding_cost, "Inventory Holding Cost")
+            self.record_expense(holding_cost)
+
+        return holding_cost
+
     def record_revenue(self, amount: float):
         self.revenue_this_turn += amount
         self.revenue_this_tick += amount
-        self.current_profit += amount # Basic cash flow add
+        self.current_profit += amount
 
     def record_expense(self, amount: float):
         self.cost_this_turn += amount
         self.expenses_this_tick += amount
         self.current_profit -= amount
 
-    def pay_maintenance(self, government: Any, reflux_system: Optional[EconomicRefluxSystem], current_time: int):
+    def pay_maintenance(self, government: Government, reflux_system: Optional[EconomicRefluxSystem], current_time: int):
         """Pay fixed maintenance fee."""
         fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
-        payment = min(self.firm.assets, fee)
+        payment = min(self._cash, fee) # Cap at available cash
 
         if payment > 0:
-            self.firm.assets -= payment
+            self.debit(payment, "Maintenance Fee")
             self.record_expense(payment)
             government.collect_tax(payment, "firm_maintenance", self.firm.id, current_time)
 
@@ -67,7 +101,7 @@ class FinanceDepartment:
                 extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "maintenance"]}
             )
 
-    def pay_taxes(self, government: Any, current_time: int):
+    def pay_taxes(self, government: Government, current_time: int):
         """Pay corporate tax on profit."""
         net_profit = self.revenue_this_turn - self.cost_this_turn
 
@@ -75,10 +109,10 @@ class FinanceDepartment:
             tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
             tax_amount = net_profit * tax_rate
 
-            payment = min(self.firm.assets, tax_amount)
+            payment = min(self._cash, tax_amount) # Cap at available cash
 
             if payment > 0:
-                self.firm.assets -= payment
+                self.debit(payment, "Corporate Tax")
                 government.collect_tax(payment, "corporate_tax", self.firm.id, current_time)
 
                 after_tax_profit = net_profit - payment
@@ -89,19 +123,19 @@ class FinanceDepartment:
                     extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
                 )
 
-    def process_profit_distribution(self, households: List[Household], government: "Government", current_time: int) -> List[Transaction]:
+    def process_profit_distribution(self, households: List[Household], government: Government, current_time: int) -> List[Transaction]:
         """Public Shareholders Dividend"""
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
             repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
             repayment = self.current_profit * repayment_ratio
 
-            # Ensure total_debt exists before attempting to modify
+            # Ensure total_debt exists
             if not hasattr(self.firm, 'total_debt'):
                 self.firm.total_debt = 0.0
 
-            # Money Leak Fix: Transfer repayment to the government
-            self.firm.assets -= repayment
-            government.assets += repayment
+            # Bailout repayment
+            self.debit(repayment, "Bailout Repayment")
+            government.assets += repayment # Direct transfer to government
 
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
@@ -124,6 +158,9 @@ class FinanceDepartment:
                 shares = household.shares_owned.get(self.firm.id, 0.0)
                 if shares > 0:
                     dividend_amount = distributable_profit * (shares / self.firm.total_shares)
+                    # NOTE: Dividends are paid via TransactionProcessor normally.
+                    # TransactionProcessor sees "dividend" and does: seller.assets -= trade_value.
+                    # Since seller.assets will delegate to finance.debit, this works.
                     transactions.append(
                         Transaction(
                             buyer_id=household.id,
@@ -160,7 +197,6 @@ class FinanceDepartment:
         if owner is None:
             return 0.0
 
-        # Required Reserves Logic
         maintenance_fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 0.0)
 
         # Query HR for wage data
@@ -173,11 +209,11 @@ class FinanceDepartment:
         weekly_burn_rate = maintenance_fee + (avg_wage * len(employees))
         required_reserves = weekly_burn_rate * reserve_period
 
-        distributable_cash = self.firm.assets - required_reserves
+        distributable_cash = self._cash - required_reserves
 
         if distributable_cash > 0:
             dividend_amount = distributable_cash
-            self.firm.assets -= dividend_amount
+            self.debit(dividend_amount, "Private Dividend")
             owner.assets += dividend_amount
 
             if hasattr(owner, 'income_capital_cumulative'):
@@ -199,51 +235,19 @@ class FinanceDepartment:
 
     def add_liability(self, amount: float, interest_rate: float):
         """Adds a liability (like a loan) to the firm's balance sheet."""
-        # This is a simplified implementation. A real one would track multiple loans.
-        self.firm.assets += amount  # The loan increases cash assets
-        # In a more complex model, this would be a separate liability account
-        # For now, we'll just track the total debt.
+        self.credit(amount, "Liability Addition")
         if not hasattr(self.firm, 'total_debt'):
             self.firm.total_debt = 0.0
         self.firm.total_debt += amount
 
     def calculate_altman_z_score(self) -> float:
-        """Calculates the Altman Z-Score for solvency, simplified for this model.
-
-        The formula used is a modified version for non-manufacturing or service companies:
-        Z = 1.2*X1 + 1.4*X2 + 3.3*X3
-
-        Where:
-            X1 (Working Capital / Total Assets): Measures liquid assets in relation
-               to the size of the company. A firm with significant working capital
-               is less likely to face immediate financial distress.
-               - Working Capital = Firm's cash reserves - total debt.
-               - Total Assets = Cash + Capital Stock + Inventory Value.
-            X2 (Retained Earnings / Total Assets): Measures cumulative profitability.
-               A higher value indicates a history of reinvesting profits,
-               strengthening the company's financial foundation.
-            X3 (Average Profit / Total Assets): Measures recent operational efficiency.
-               Uses a moving average of profit to gauge how effectively the firm
-               is generating earnings from its assets.
-
-        Returns:
-            The calculated Z-Score. A score below 1.81 typically indicates a firm
-            is heading for bankruptcy, while a score above 3.0 suggests a healthy
-            financial position.
-        """
-        total_assets = self.firm.assets + self.firm.capital_stock + self.get_inventory_value()
+        total_assets = self._cash + self.firm.capital_stock + self.get_inventory_value()
         if total_assets == 0:
             return 0.0
 
-        # X1: Working Capital / Total Assets
-        # Working Capital = Current Assets - Current Liabilities. Assume liabilities are total_debt for now.
-        working_capital = self.firm.assets - getattr(self.firm, 'total_debt', 0.0)
+        working_capital = self._cash - getattr(self.firm, 'total_debt', 0.0)
         x1 = working_capital / total_assets
-
-        # X2: Retained Earnings / Total Assets
         x2 = self.retained_earnings / total_assets
-
-        # X3: Average Profit / Total Assets
         avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
         x3 = avg_profit / total_assets
 
@@ -261,7 +265,7 @@ class FinanceDepartment:
         Calculate Firm Valuation based on Net Assets + Profit Potential.
         Formula: Net Assets + (Max(0, Avg_Profit_Last_10) * PER Multiplier)
         """
-        net_assets = self.firm.assets + self.get_inventory_value() + self.firm.capital_stock
+        net_assets = self._cash + self.get_inventory_value() + self.firm.capital_stock
 
         avg_profit = 0.0
         if len(self.profit_history) > 0:
@@ -275,36 +279,24 @@ class FinanceDepartment:
     def get_inventory_value(self) -> float:
         """Calculate market value of current inventory."""
         total_val = 0.0
-        # If inventory is dict (it is initialized as dict in __init__)
         for good, qty in self.firm.inventory.items():
-             # Get price for this good
              price = self.firm.last_prices.get(good, 0.0)
              if price == 0.0:
-                 # Fallback to config initial price if available
                  if self.config_module and hasattr(self.config_module, 'GOODS'):
                      price = self.config_module.GOODS.get(good, {}).get('initial_price', 10.0)
                  else:
-                     price = 10.0 # Ultimate fallback
+                     price = 10.0
              total_val += qty * price
         return total_val
 
     def get_financial_snapshot(self) -> Dict[str, float]:
-        """
-        Returns a standardized dictionary of financial metrics for monitoring and analysis.
-        This provides a stable interface for CrisisMonitor and FinanceSystem.
-        """
-        total_assets = self.firm.assets + self.get_inventory_value()
+        total_assets = self._cash + self.get_inventory_value()
 
-        # Working Capital = Current Assets - Current Liabilities
-        # Since we don't have long-term assets/liabilities clearly split yet,
-        # we treat total assets as current and total debt as current liabilities.
         current_liabilities = getattr(self.firm, "total_debt", 0.0)
         working_capital = total_assets - current_liabilities
 
-        # Retained Earnings
         retained_earnings = self.retained_earnings
 
-        # Average Profit (last 10 ticks if available)
         avg_profit = self.current_profit
         if self.profit_history:
             recent = list(self.profit_history)[-10:]
@@ -319,22 +311,12 @@ class FinanceDepartment:
         }
 
     def issue_shares(self, quantity: float, price: float) -> float:
-        """
-        신규 주식을 발행합니다 (유상증자).
-
-        Args:
-            quantity: 발행할 주식 수량
-            price: 주당 발행 가격
-
-        Returns:
-            조달된 자본금
-        """
         if quantity <= 0 or price <= 0:
             return 0.0
 
         self.firm.total_shares += quantity
         raised_capital = quantity * price
-        self.firm.assets += raised_capital
+        self.credit(raised_capital, "Share Issue")
 
         self.firm.logger.info(
             f"Firm {self.firm.id} issued {quantity:.1f} shares at {price:.2f}, "
@@ -351,12 +333,11 @@ class FinanceDepartment:
         return raised_capital
 
     def get_book_value_per_share(self) -> float:
-        """주당 순자산가치(BPS)를 계산합니다. (유통주식수 기준)"""
+        """주당 순자산가치(BPS)를 계산합니다."""
         outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
         if outstanding_shares <= 0:
             return 0.0
 
-        # Calculate liabilities from bank loans
         liabilities = 0.0
         try:
             loan_market = getattr(self.firm.decision_engine, 'loan_market', None)
@@ -364,21 +345,12 @@ class FinanceDepartment:
                 debt_summary = loan_market.bank.get_debt_summary(self.firm.id)
                 liabilities = debt_summary.get('total_principal', 0.0)
         except Exception:
-            pass  # Graceful fallback
+            pass
 
-        net_assets = self.firm.assets - liabilities
+        net_assets = self._cash - liabilities
         return max(0.0, net_assets) / outstanding_shares
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
-        """
-        시가총액을 계산합니다.
-
-        Args:
-            stock_price: 주가 (None이면 순자산가치 기반 계산)
-
-        Returns:
-            시가총액
-        """
         if stock_price is None:
             stock_price = self.get_book_value_per_share()
 
@@ -387,67 +359,42 @@ class FinanceDepartment:
 
     def get_assets(self) -> float:
         """Returns the current assets (cash) of the firm."""
-        return self.firm.assets
+        return self._cash
 
     def invest_in_automation(self, amount: float) -> bool:
-        """
-        Deduct investment from assets for automation.
-        Returns success status.
-        """
-        if self.firm.assets >= amount:
-            self.firm.assets -= amount
-            # Track expense if needed, or just capital outlay?
-            # Capital outlay is not strictly an expense in P&L usually, but reduces cash.
+        if self._cash >= amount:
+            self.debit(amount, "Automation Investment")
             return True
         return False
 
     def invest_in_rd(self, amount: float) -> bool:
-        """
-        Deduct R&D budget from assets.
-        Returns success status.
-        """
-        if self.firm.assets >= amount:
-            self.firm.assets -= amount
-            # R&D is often treated as expense
+        if self._cash >= amount:
+            self.debit(amount, "R&D Investment")
             self.record_expense(amount)
             return True
         return False
 
     def invest_in_capex(self, amount: float) -> bool:
-        """
-        Deduct CAPEX from assets.
-        Returns success status.
-        """
-        if self.firm.assets >= amount:
-            self.firm.assets -= amount
-            # CAPEX is asset conversion (Cash -> Capital), not expense.
+        if self._cash >= amount:
+            self.debit(amount, "CAPEX")
             return True
         return False
 
     def set_dividend_rate(self, rate: float) -> None:
-        """Set dividend payout rate."""
         self.firm.dividend_rate = rate
 
     def pay_severance(self, employee: Household, amount: float) -> bool:
-        """
-        Pay severance to an employee.
-        """
-        if self.firm.assets >= amount:
-            self.firm.assets -= amount
+        if self._cash >= amount:
+            self.debit(amount, "Severance Pay")
             employee.assets += amount
-            # Severance is an expense
             self.record_expense(amount)
             return True
         return False
 
-    def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:
-        """
-        Pay an ad-hoc tax (like automation tax).
-        """
-        if self.firm.assets >= amount:
-            self.firm.assets -= amount
+    def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Government, current_time: int) -> bool:
+        if self._cash >= amount:
+            self.debit(amount, f"Ad Hoc Tax: {tax_type}")
             government.collect_tax(amount, tax_type, self.firm.id, current_time)
-            # Taxes are expenses
             self.record_expense(amount)
             return True
         return False

@@ -54,6 +54,9 @@ class Firm(BaseAgent, ILearningAgent):
         # Phase 16-B: Personality
         personality: Optional[Personality] = None,
     ) -> None:
+        # WO-103 Phase 1: Initialize buffer for assets property
+        self._assets_buffer: float = 0.0
+
         super().__init__(
             id,
             initial_capital,
@@ -86,7 +89,9 @@ class Firm(BaseAgent, ILearningAgent):
 
         # SoC Refactor: HR and Finance Components
         self.hr = HRDepartment(self)
-        self.finance = FinanceDepartment(self, config_module)
+        # WO-103 Phase 1: Initialize Finance with buffered assets
+        self.finance = FinanceDepartment(self, config_module, initial_capital=self._assets_buffer)
+
         self.production = ProductionDepartment(self, config_module)
         self.sales = SalesDepartment(self, config_module)
 
@@ -138,9 +143,30 @@ class Firm(BaseAgent, ILearningAgent):
         self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
 
         self.age = 0
-        self.cash_reserve = initial_capital
+        # WO-103 Phase 1: Removed self.cash_reserve redundancy. Using FinanceDepartment.
         self.has_bailout_loan = False
         self.decision_engine.loan_market = loan_market
+
+    # WO-103 Phase 1: Assets Property to delegate to FinanceDepartment
+    @property
+    def assets(self) -> float:
+        if hasattr(self, 'finance'):
+            return self.finance.balance
+        return self._assets_buffer
+
+    @assets.setter
+    def assets(self, value: float) -> None:
+        if hasattr(self, 'finance'):
+             # Calculate diff to update finance.
+             # This supports external direct modifications (like +=, -=) by delegating to credit/debit.
+             current = self.finance.balance
+             diff = value - current
+             if diff > 0:
+                 self.finance.credit(diff, "External Update (Setter)")
+             elif diff < 0:
+                 self.finance.debit(abs(diff), "External Update (Setter)")
+        else:
+             self._assets_buffer = value
 
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""
@@ -386,10 +412,8 @@ class Firm(BaseAgent, ILearningAgent):
         self.produce(current_time, technology_manager)
 
         # 2. Pay Wages & Holding Costs
-        inventory_value = sum(self.inventory.values())
-        holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
-        self.assets -= holding_cost
-        self.finance.record_expense(holding_cost)
+        # WO-103 Phase 1: Delegated Holding Cost Calculation
+        holding_cost = self.finance.calculate_and_debit_holding_costs()
 
         if holding_cost > 0:
             if reflux_system:
@@ -417,7 +441,8 @@ class Firm(BaseAgent, ILearningAgent):
              marketing_spend = 0.0
 
         if marketing_spend > 0:
-             self.assets -= marketing_spend
+             # WO-103 Phase 1: Transactional method
+             self.finance.debit(marketing_spend, "Marketing")
              self.finance.record_expense(marketing_spend)
              if reflux_system:
                  reflux_system.capture(marketing_spend, str(self.id), "marketing")
@@ -485,14 +510,14 @@ class Firm(BaseAgent, ILearningAgent):
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the firm's cash reserves."""
         if amount > 0:
-            self.cash_reserve += amount
+            self.finance.credit(amount, "Deposit")
 
     def withdraw(self, amount: float) -> None:
         """Withdraws a given amount from the firm's cash reserves."""
         if amount > 0:
-            if self.cash_reserve < amount:
-                raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.cash_reserve:.2f}")
-            self.cash_reserve -= amount
+            if self.finance.balance < amount:
+                raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.finance.balance:.2f}")
+            self.finance.debit(amount, "Withdrawal")
 
     # --- Delegated Methods (Facade Pattern) ---
 
