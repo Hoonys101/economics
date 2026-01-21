@@ -107,8 +107,10 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
         # 2. 노동 시장 참여 (실업 상태일 경우)
         if not household.is_employed and household.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
             # 생존 욕구가 높거나 자산이 부족하면 노동 시장에 참여
-            if chosen_tactic == Tactic.NO_ACTION: # 음식 구매가 이미 결정되었으면 이번 턴에는 노동 시장 참여 안함 (간단화를 위해)
-                chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
+            # if chosen_tactic == Tactic.NO_ACTION: # Deadlock fix: Allow labor participation even if food was bought
+            if True:
+                if chosen_tactic == Tactic.NO_ACTION:
+                    chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
                 chosen_aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 공격성 중립으로 설정
 
                 # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
