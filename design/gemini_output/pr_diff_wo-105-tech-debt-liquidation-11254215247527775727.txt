@@ -1,0 +1,168 @@
+diff --git a/modules/household/econ_component.py b/modules/household/econ_component.py
+index f5243c1..1d64a09 100644
+--- a/modules/household/econ_component.py
++++ b/modules/household/econ_component.py
+@@ -70,10 +70,8 @@ class EconComponent(IEconComponent):
+         self._expected_inflation: Dict[str, float] = defaultdict(float)
+         self._perceived_avg_prices: Dict[str, float] = {}
+ 
+-        # WO-095: Robust config access to handle Mocks in tests
+-        raw_price_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
+-        price_memory_len = int(raw_price_len) if isinstance(raw_price_len, (int, float)) else 10
+-
++        # WO-105: Simplified config access
++        price_memory_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
+         self._price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=price_memory_len))
+ 
+         # Initialize perceived prices from config/goods_data if possible
+@@ -100,14 +98,10 @@ class EconComponent(IEconComponent):
+         self.housing_planner = HouseholdSystem2Planner(owner, config_module)
+ 
+         # --- History ---
+-        # WO-095: Robust config access
+-        raw_ticks = getattr(config_module, "TICKS_PER_YEAR", 100)
+-        ticks_per_year = int(raw_ticks) if isinstance(raw_ticks, (int, float)) else 100
++        ticks_per_year = getattr(config_module, "TICKS_PER_YEAR", 100)
+         self.housing_price_history: deque = deque(maxlen=ticks_per_year)
+ 
+-        raw_wage_len = getattr(self.config_module, "WAGE_MEMORY_LENGTH", 30)
+-        wage_memory_len = int(raw_wage_len) if isinstance(raw_wage_len, (int, float)) else 30
+-
++        wage_memory_len = getattr(self.config_module, "WAGE_MEMORY_LENGTH", 30)
+         self.market_wage_history: deque[float] = deque(maxlen=wage_memory_len)
+         self.shadow_reservation_wage: float = 0.0
+ 
+diff --git a/scripts/fixture_harvester.py b/scripts/fixture_harvester.py
+index 71e56bf..d9d2bc5 100644
+--- a/scripts/fixture_harvester.py
++++ b/scripts/fixture_harvester.py
+@@ -32,17 +32,13 @@ from modules.household.dtos import HouseholdStateDTO
+ from simulation.dtos.firm_state_dto import FirmStateDTO
+ from simulation.ai.api import Personality
+ 
+-# Attempt to import the new generic loader
++# WO-105: Enforce GoldenLoader from tests
+ try:
+     from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
+ except ImportError:
+     # If not in path (e.g. running script directly from shell), try adding root
+     sys.path.append(str(Path(__file__).resolve().parent.parent))
+-    try:
+-        from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
+-    except ImportError:
+-        # Fallback if tests/utils/golden_loader.py is missing or unreachable
+-        GenericGoldenLoader = None
++    from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
+ 
+ 
+ @dataclass
+@@ -216,11 +212,7 @@ class GoldenLoader:
+     @classmethod
+     def load(cls, filepath: str) -> "GoldenLoader":
+         """Load a golden fixture from file."""
+-        if GenericGoldenLoader:
+-            data = GenericGoldenLoader.load_json(filepath)
+-        else:
+-             with open(filepath, 'r', encoding='utf-8') as f:
+-                data = json.load(f)
++        data = GenericGoldenLoader.load_json(filepath)
+         return cls(data)
+     
+     def create_household_mocks(self, mock_class=None):
+@@ -229,14 +221,13 @@ class GoldenLoader:
+         """
+         mocks = []
+         for h_data in self.households_data:
+-            # Fallback to old logic or Generic
+-            from types import SimpleNamespace
++            # WO-105: Use MagicMock via GoldenLoader logic or direct instantiation
+             if mock_class:
+                 mock = MagicMock(spec=mock_class)
++                for key, value in h_data.items():
++                    setattr(mock, key, value)
+             else:
+-                mock = SimpleNamespace()
+-            for key, value in h_data.items():
+-                setattr(mock, key, value)
++                mock = GenericGoldenLoader.dict_to_mock(h_data)
+ 
+             mock.make_decision = MagicMock(return_value=([], MagicMock()))
+             if not hasattr(mock, 'decision_engine'):
+@@ -282,13 +273,12 @@ class GoldenLoader:
+         """Create mock firms from golden data."""
+         mocks = []
+         for f_data in self.firms_data:
+-            from types import SimpleNamespace
+             if mock_class:
+                 mock = MagicMock(spec=mock_class)
++                for key, value in f_data.items():
++                    setattr(mock, key, value)
+             else:
+-                mock = SimpleNamespace()
+-            for key, value in f_data.items():
+-                setattr(mock, key, value)
++                mock = GenericGoldenLoader.dict_to_mock(f_data)
+             
+             mock.make_decision = MagicMock(return_value=([], MagicMock()))
+             if not hasattr(mock, 'decision_engine'):
+@@ -297,7 +287,11 @@ class GoldenLoader:
+                 mock.decision_engine.ai_engine = MagicMock()
+             if not hasattr(mock, 'hr'):
+                 mock.hr = MagicMock()
+-            mock.hr.employees = []
++
++            # Ensure complex objects are handled if they weren't in the dict
++            if not hasattr(mock.hr, 'employees'):
++                mock.hr.employees = []
++
+             mock.get_financial_snapshot = MagicMock(return_value={
+                 "total_assets": f_data.get("assets", 0),
+                 "working_capital": f_data.get("assets", 0),
+@@ -350,14 +344,7 @@ class GoldenLoader:
+     
+     def create_config_mock(self):
+         """Create a mock config module from golden data."""
+-        if GenericGoldenLoader:
+-            return GenericGoldenLoader.dict_to_mock(self.config_snapshot)
+-        else:
+-            from types import SimpleNamespace
+-            mock = SimpleNamespace()
+-            for key, value in self.config_snapshot.items():
+-                setattr(mock, key, value)
+-            return mock
++        return GenericGoldenLoader.dict_to_mock(self.config_snapshot)
+ 
+ 
+ # Convenience function for quick harvesting during debug
+diff --git a/simulation/components/production_department.py b/simulation/components/production_department.py
+index a3b49c5..9e8d122 100644
+--- a/simulation/components/production_department.py
++++ b/simulation/components/production_department.py
+@@ -53,11 +53,9 @@ class ProductionDepartment:
+             # Effective Labor & Capital
+             capital = max(self.firm.capital_stock, 0.01)
+ 
+-            # Technology Multiplier (WO-053)
+-            tfp = self.firm.productivity_factor  # Total Factor Productivity
+-
+-            if technology_manager:
+-                tfp *= technology_manager.get_productivity_multiplier(self.firm.id)
++            # Technology Multiplier (WO-053) & WO-105 cleanup
++            tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id) if technology_manager else 1.0
++            tfp = self.firm.productivity_factor * tech_multiplier
+ 
+             # Phase 15: Quality Calculation
+             avg_skill = self.firm.hr.get_avg_skill()
+diff --git a/tests/test_wo058_production.py b/tests/test_wo058_production.py
+index d554d40..a9e6e9d 100644
+--- a/tests/test_wo058_production.py
++++ b/tests/test_wo058_production.py
+@@ -67,6 +67,8 @@ def mock_config():
+     config.AUTOMATION_LABOR_REDUCTION = 0.5
+     config.LABOR_ALPHA = 0.7
+     config.LABOR_ELASTICITY_MIN = 0.1
++    config.PRICE_MEMORY_LENGTH = 10
++    config.WAGE_MEMORY_LENGTH = 30
+     return config
+ 
+ @pytest.fixture
