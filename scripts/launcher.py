@@ -76,7 +76,7 @@ def run_jules(args, registry):
             cmd.extend(["-f", file_path])
         else:
             cmd.append(instruction)
-    elif command in ["complete", "get-session"]:
+    elif command in ["complete", "get-session", "status", "activities"]:
         if not session_id:
             print(f"❌ Error: session_id is required for {command}")
             return
