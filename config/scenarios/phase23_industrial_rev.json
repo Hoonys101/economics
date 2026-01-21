@@ -1,0 +1,10 @@
+{
+  "scenario_name": "phase23_industrial_rev",
+  "start_tick": 5,
+  "is_active": true,
+  "parameters": {
+    "food_tfp_multiplier": 3.0,
+    "base_interest_rate_multiplier": 0.5,
+    "innovation_weight": 2.0
+  }
+}

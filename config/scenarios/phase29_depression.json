@@ -1,7 +1,7 @@
 {
   "scenario_name": "phase29_depression",
   "start_tick": 5,
-  "is_active": true,
+  "is_active": false,
   "parameters": {
     "base_interest_rate_multiplier": 3.0,
     "corporate_tax_rate_delta": 0.1,
