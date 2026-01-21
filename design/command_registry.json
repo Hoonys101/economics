@@ -16,7 +16,7 @@
     "command": "create",
     "session_id": null,
     "title": "WO-098-FIX-No-Op-Trap",
-    "instruction": "Phase 2 수술 중 발생한 치명적 버그를 수정하라. | 현상: TransactionProcessor.execute의 if/elif 체인으로 인해 stock/goods의 메타 처리 로직이 실행되지 않음. | 해결: 1. 자산 이동 블록과 메타 처리 블록을 독립적인 if 블록으로 분리할 것. 2. 주식 거래에는 판매세(sales_tax)가 적용되지 않도록 로직을 복구할 것. 3. pytest tests/test_engine.py로 검증하라.",
+    "instruction": "WO-103 '대수술'의 마지막 단계인 Phase 3를 집도하라. | 목표: DecisionContext를 완전히 DTO 기반으로 전환하고, 가계 엔진의 '가격 지각' 우회 버그를 수정하라. | 지침: 1. FirmStateDTO를 core_agents/firms 데이터를 기반으로 구현할 것. 2. DecisionContext에서 legacy household/firm 참조를 제거하고 DTO로 대체할 것. 3. RuleBasedHouseholdDecisionEngine이 시장가를 직접 보지 않고 EconComponent의 지각된 가격을 사용하도록 교정할 것. 4. 모든 테스트를 DTO 기반으로 현대화하라.",
     "wait": true
   },
   "git": {

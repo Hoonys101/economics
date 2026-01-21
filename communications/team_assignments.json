@@ -49,6 +49,10 @@
       "5430223683756935913": {
         "title": "WO-098-FIX-No-Op-Trap",
         "initial_mission": "대수술 명세서 [WO-103-Architectural-Surgery.md]의 'Phase 2'를 집도하라. | 목표: TickScheduler.run_tick을 리팩토링하여 '성스러운 순서(Sacred Sequence)'를 강제하라. | 지침: 1. Decisions -> 2. Matching -> 3. Transaction (+Taxes/Wages) -> 4. Lifecycle 순서로 재배치하고, SimulationState DTO를 도입하여 시스템 간 결합도를 낮출 것."
+      },
+      "9557359890068428973": {
+        "title": "WO-098-FIX-No-Op-Trap",
+        "initial_mission": "Phase 2 수술 중 발생한 치명적 버그를 수정하라. | 현상: TransactionProcessor.execute의 if/elif 체인으로 인해 stock/goods의 메타 처리 로직이 실행되지 않음. | 해결: 1. 자산 이동 블록과 메타 처리 블록을 독립적인 if 블록으로 분리할 것. 2. 주식 거래에는 판매세(sales_tax)가 적용되지 않도록 로직을 복구할 것. 3. pytest tests/test_engine.py로 검증하라."
       }
     },
     "completed_sessions": {
