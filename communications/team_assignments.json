@@ -21,6 +21,10 @@
       "5760309667164312477": {
         "title": "WO-098-Economic-Diagnostics",
         "initial_mission": "명세서 [WO-098-Labor-Deadlock-Resolution.md]를 수행하라. | **절대 바로 수정하지 말 것.** | 1. 왜 대풍년이 실패하는지 '가설(Hypothesis)'을 세우고 코드를 통해 검증할 것. | 2. 검증된 원인을 바탕으로 최소한의 파라미터 조정을 적용할 것. | 3. Great Harvest 검증 성공(Population > 300)을 달성할 것."
+      },
+      "5679283121683061814": {
+        "title": "--title",
+        "initial_mission": "WO-098-DIAG-A: Labor Deadlock"
       }
     },
     "completed_sessions": {
