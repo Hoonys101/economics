@@ -756,6 +756,10 @@ EDUCATION_COST_PER_LEVEL = {
 SCHOLARSHIP_WEALTH_PERCENTILE = 0.20  # 하위 20%
 SCHOLARSHIP_POTENTIAL_THRESHOLD = 0.7  # 잠재력 상위 30%
 
+# --- WO-098-DIAG-C: Tech Adoption Barriers (Hotfix) ---
+TECH_FERTILIZER_UNLOCK_TICK = 30  # Unlock earlier (Default 50 -> 30)
+TECH_DIFFUSION_RATE = 0.10        # 2x faster adoption (Default 0.05 -> 0.10)
+
 # --- Phase 24: Adaptive Evolution (WO-057) ---
 GOVERNMENT_POLICY_MODE = "AI_ADAPTIVE"  # "TAYLOR_RULE" (WO-056) or "AI_ADAPTIVE" (WO-057)
 TARGET_INFLATION_RATE = 0.02      # 2%
