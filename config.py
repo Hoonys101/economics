@@ -650,6 +650,8 @@ STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 
 # Phase 8: Inflation Psychology (Adaptive Expectations)
 # ==============================================================================
 INFLATION_MEMORY_WINDOW = 10     # Ticks to remember price history
+PRICE_MEMORY_LENGTH = 10         # Length of price history deque (WO-095)
+WAGE_MEMORY_LENGTH = 30          # Length of wage history deque (WO-095)
 ADAPTATION_RATE_IMPULSIVE = 0.8  # Lambda for impulsive agents
 ADAPTATION_RATE_NORMAL = 0.3     # Lambda for normal agents
 ADAPTATION_RATE_CONSERVATIVE = 0.1 # Lambda for conservative agents
