@@ -1,0 +1,43 @@
+diff --git a/simulation/decisions/ai_driven_household_engine.py b/simulation/decisions/ai_driven_household_engine.py
+index 5758e12..a0f1d3d 100644
+--- a/simulation/decisions/ai_driven_household_engine.py
++++ b/simulation/decisions/ai_driven_household_engine.py
+@@ -409,7 +409,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+ 
+                      if should_buy:
+                          buy_order = Order(
+-                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "real_estate"
++                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
+                          )
+                          orders.append(buy_order)
+ 
+diff --git a/tests/verify_real_estate_sales.py b/tests/verify_real_estate_sales.py
+index 25824b9..602b893 100644
+--- a/tests/verify_real_estate_sales.py
++++ b/tests/verify_real_estate_sales.py
+@@ -8,6 +8,7 @@ from simulation.bank import Bank, Loan
+ from simulation.markets import OrderBookMarket
+ from simulation.models import Order
+ from simulation.models import RealEstateUnit
++from simulation.ai.api import Personality
+ import config
+ 
+ class MockConfig:
+@@ -51,7 +52,7 @@ class TestRealEstateSales(unittest.TestCase):
+             initial_needs={},
+             decision_engine=mock_decision_engine,
+             value_orientation="WEALTH",
+-            personality=None
++            personality=Personality.STATUS_SEEKER
+         )
+         self.housing_manager = HousingManager(self.agent, self.config)
+ 
+@@ -115,7 +116,7 @@ class TestRealEstateSales(unittest.TestCase):
+         mock_talent = MagicMock()
+         mock_talent.base_learning_rate = 0.5
+         mock_talent.max_potential = {}
+-        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=None)
++        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=Personality.STATUS_SEEKER)
+         
+         # Need at least one household
+         households = [hh1]
