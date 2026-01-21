@@ -2,17 +2,21 @@
   "gemini": {
     "command": "spec",
     "title": "Re-Authorized",
-    "instruction": "보고서 [verification_failure_log.txt]를 정밀 분석하라. | 목표: 왜 인구 폭발(Great Harvest)이 실패했는지, 경제 데이터를 기반으로 '가설 3가지'를 수립하라. | 결과물:design/work_orders/WO-099-Harvest-Analysis.md",
+    "instruction": "5개의 감사 보고서(audit_report_01~05.md)를 종합 분석하라. | 목표: 기업의 연쇄 파산을 막고 Phase 23 '탈출 속도'를 확보하기 위한 3단계 대대적 아키텍처 수술 명세서(WO-103-Architectural-Surgery.md)를 작성하라. | 지침: 1단계는 재무 무결성, 2단계는 실행 시퀀스, 3단계는 DTO 디커플링에 집중할 것.",
     "context": [
-      "reports/verification_failure_log.txt"
+      "design/gemini_output/audit_report_01_core.md",
+      "design/gemini_output/audit_report_02_money_trail.md",
+      "design/gemini_output/audit_report_03_firm_soc.md",
+      "design/gemini_output/audit_report_04_household_logic.md",
+      "design/gemini_output/audit_report_05_macro_systems.md"
     ],
-    "output": "design/work_orders/WO-099-Harvest-Analysis.md"
+    "output": "design/work_orders/WO-103-Architectural-Surgery.md"
   },
   "jules": {
     "command": "create",
     "session_id": null,
     "title": "WO-098-FIX-No-Op-Trap",
-    "instruction": "명세서 [WO-100-Fix-Market-ID-Mismatch.md]를 수행하라. | 목표: 가계와 기업의 거래 ID를 'basic_food'로 통일하여 거래량 0 문제를 해결하라.",
+    "instruction": "대수술 명세서 [WO-103-Architectural-Surgery.md]의 'Phase 1'을 집도하라. | 목표: 기업의 assets 관리를 FinanceDepartment로 격리하고 보관비 로직을 정상화할 것. | 지침: firms.py에서 assets 직접 수정을 금지하고 transactional method를 도입하라.",
     "wait": true
   },
   "git": {
