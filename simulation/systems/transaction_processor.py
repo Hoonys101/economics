@@ -45,13 +45,16 @@ class TransactionProcessor(SystemInterface):
 
             trade_value = tx.quantity * tx.price
             sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
+            tax_amount = 0.0 # Initialize for scope
             
-            # --- 1. 기본 자산 이동 및 세금 처리 ---
-            if tx.transaction_type in ["goods", "stock"]:
-                # 거래세(부가가치세) 적용: 매수자가 추가로 지불
+            # ==================================================================
+            # 1. Financial Settlement (Asset Transfer & Taxes)
+            # ==================================================================
+            if tx.transaction_type == "goods":
+                # Goods: Apply Sales Tax
                 tax_amount = trade_value * sales_tax_rate
                 
-                # Phase 23.5: Solvency Check (If bank/agent can borrow)
+                # Solvency Check
                 if hasattr(buyer, 'check_solvency'):
                     if buyer.assets < (trade_value + tax_amount):
                         buyer.check_solvency(government)
@@ -59,12 +62,17 @@ class TransactionProcessor(SystemInterface):
                 buyer.assets -= (trade_value + tax_amount)
                 seller.assets += trade_value
                 government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
+
+            elif tx.transaction_type == "stock":
+                # Stock: NO Sales Tax (Capital Gains Tax is handled elsewhere/later)
+                buyer.assets -= trade_value
+                seller.assets += trade_value
             
             elif tx.transaction_type in ["labor", "research_labor"]:
-                # 소득세 적용 (INCOME_TAX_PAYER 설정에 따름)
+                # Labor: Apply Income Tax
                 tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
 
-                # Progressive Tax Bracket survival cost
+                # Progressive Tax Bracket survival cost check
                 if "basic_food_current_sell_price" in goods_market_data:
                     avg_food_price = goods_market_data["basic_food_current_sell_price"]
                 else:
@@ -92,17 +100,19 @@ class TransactionProcessor(SystemInterface):
                     buyer.finance.record_expense(trade_value)
 
             elif tx.transaction_type == "dividend":
-                # Firm (Seller) pays Household (Buyer)
+                # Dividend: Firm (Seller) pays Household (Buyer)
                 seller.assets -= trade_value
                 buyer.assets += trade_value
                 if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
                     buyer.capital_income_this_tick += trade_value
             else:
-                # 기타 거래 (대출 등)
+                # Default / Other (Loan principals, etc.)
                 buyer.assets -= trade_value
                 seller.assets += trade_value
 
-            # --- 2. 유형별 특수 로직 ---
+            # ==================================================================
+            # 2. Meta Logic (Inventory, Employment, Share Registry)
+            # ==================================================================
             if tx.transaction_type in ["labor", "research_labor"]:
                 self._handle_labor_transaction(tx, buyer, seller, trade_value, tax_amount, agents)
 
