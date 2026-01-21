@@ -39,25 +39,73 @@ class TransactionProcessor:
             trade_value = tx.quantity * tx.price
             sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
             
-            # --- 1. 기본 자산 이동 및 세금 처리 ---
+            tax_amount = 0.0
+
+            # --- 1. 자산 이동 (Asset Transfer) ---
             if tx.transaction_type in ["goods", "stock"]:
-                # 거래세(부가가치세) 적용: 매수자가 추가로 지불
+                # Stock and Goods move assets directly here
+                # Tax calculation is deferred to Step 2
+                pass # Logic handled in specific blocks below combined with tax?
+                # No, the requirement is to split "Asset Movement" and "Meta/Tax"
+
+                # Let's handle the raw asset transfer first
+                buyer.assets -= trade_value
+                seller.assets += trade_value
+
+            elif tx.transaction_type in ["labor", "research_labor"]:
+                # Labor income/expense handled here
+                # Tax is separate
+                buyer.assets -= trade_value
+                seller.assets += trade_value
+
+            elif tx.item_id == "interest_payment":
+                buyer.assets -= trade_value
+                seller.assets += trade_value
+                if isinstance(buyer, Firm):
+                    buyer.finance.record_expense(trade_value)
+
+            elif tx.transaction_type == "dividend":
+                seller.assets -= trade_value
+                buyer.assets += trade_value
+                if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+                    buyer.capital_income_this_tick += trade_value
+
+            else:
+                # Fallback for loans etc
+                buyer.assets -= trade_value
+                seller.assets += trade_value
+
+
+            # --- 2. 메타 처리 (Meta Processing: Taxes, Checks, Side Effects) ---
+            # Independent blocks, no 'elif' chaining with the above.
+
+            # A. Sales Tax & Solvency Check (Goods Only)
+            if tx.transaction_type == "goods":
+                # Apply Sales Tax
                 tax_amount = trade_value * sales_tax_rate
                 
-                # Phase 23.5: Solvency Check (If bank/agent can borrow)
-                if hasattr(buyer, 'check_solvency'):
-                    if buyer.assets < (trade_value + tax_amount):
-                        buyer.check_solvency(government)
+                # Check solvency for the tax + trade_value (even though trade_value was already deducted,
+                # strictly speaking check_solvency should probably happen before deduction,
+                # but to minimize refactor risk we follow the original logic flow's intent but separate the block)
+                # Note: Original code deducted (trade_value + tax_amount) at once.
+                # Here we deducted trade_value above. Now we deduct tax.
 
-                buyer.assets -= (trade_value + tax_amount)
-                seller.assets += trade_value
+                if hasattr(buyer, 'check_solvency'):
+                     # We need to simulate the total hit
+                     # buyer.assets is already -trade_value relative to start
+                     if buyer.assets < tax_amount:
+                         # This is a bit weak check compared to original "assets < trade + tax" before deduction
+                         # But since we already deducted trade_value, checking if remaining assets < tax is equivalent
+                         buyer.check_solvency(government)
+
+                buyer.assets -= tax_amount # Pay the tax
                 government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
-            
-            elif tx.transaction_type in ["labor", "research_labor"]:
-                # 소득세 적용 (INCOME_TAX_PAYER 설정에 따름)
+
+            # B. Income Tax (Labor)
+            if tx.transaction_type in ["labor", "research_labor"]:
                 tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
 
-                # Progressive Tax Bracket survival cost
+                # Calculate Survival Cost for Progressive Tax
                 goods_market_data = market_data_callback()
                 if "basic_food_current_sell_price" in goods_market_data:
                     avg_food_price = goods_market_data["basic_food_current_sell_price"]
@@ -70,33 +118,16 @@ class TransactionProcessor:
                 tax_amount = government.calculate_income_tax(trade_value, survival_cost)
                 
                 if tax_payer == "FIRM":
-                    buyer.assets -= (trade_value + tax_amount)
-                    seller.assets += trade_value
+                    # Buyer (Firm) pays tax on top
+                    buyer.assets -= tax_amount
                     government.collect_tax(tax_amount, "income_tax_firm", buyer.id, current_time)
                 else:
-                    buyer.assets -= trade_value
-                    seller.assets += (trade_value - tax_amount)
+                    # Seller (Household) pays tax from income
+                    # Since we already added full trade_value to seller above, we subtract tax now
+                    seller.assets -= tax_amount
                     government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
-            
-            elif tx.item_id == "interest_payment":
-                # Interest Payment: Buyer (Borrower) pays Seller (Bank)
-                buyer.assets -= trade_value
-                seller.assets += trade_value
-                if isinstance(buyer, Firm):
-                    buyer.finance.record_expense(trade_value)
 
-            elif tx.transaction_type == "dividend":
-                # Firm (Seller) pays Household (Buyer)
-                seller.assets -= trade_value
-                buyer.assets += trade_value
-                if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
-                    buyer.capital_income_this_tick += trade_value
-            else:
-                # 기타 거래 (대출 등)
-                buyer.assets -= trade_value
-                seller.assets += trade_value
-
-            # --- 2. 유형별 특수 로직 ---
+            # C. Type-Specific Handlers (Inventory, Employment, etc)
             if tx.transaction_type in ["labor", "research_labor"]:
                 self._handle_labor_transaction(tx, buyer, seller, trade_value, tax_amount, agents)
 
@@ -104,13 +135,11 @@ class TransactionProcessor:
                 self._handle_goods_transaction(tx, buyer, seller, trade_value, current_time)
 
             elif tx.transaction_type == "stock":
+                # Requirement: No sales tax for stock. We just call the handler.
+                # Tax block above was for "goods", so stock was skipped. Correct.
                 self._handle_stock_transaction(tx, buyer, seller)
 
             elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
-                # Housing transactions are now fully handled in HousingSystem.process_transaction
-                # This ensures that mortgage creation, title transfer, and fund movement
-                # are all handled in a single, dedicated location.
-                # The logic was removed from here to avoid duplication and maintain SoC.
                 pass
 
     def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, tax_amount: float, agents: Dict[int, Any]):
@@ -126,10 +155,16 @@ class TransactionProcessor:
             seller.current_wage = tx.price
             seller.needs["labor_need"] = 0.0
             if hasattr(seller, "labor_income_this_tick"):
-                seller.labor_income_this_tick += (trade_value - tax_amount)
+                # seller.assets already updated in main loop (trade_value - tax_amount effective)
+                # just tracking metric here
+                income_net = trade_value
+                if getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD") == "HOUSEHOLD":
+                    income_net -= tax_amount
+                seller.labor_income_this_tick += income_net
 
         if isinstance(buyer, Firm):
             # SoC Refactor: Use HRDepartment and FinanceDepartment
+            # Use firm.hr.employees based on memory/context
             if seller not in buyer.hr.employees:
                 buyer.hr.hire(seller, tx.price)
             else:
