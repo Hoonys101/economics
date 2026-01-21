@@ -15,7 +15,9 @@
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **PENDING_IMPLEMENTATION** (Phase 28) |
 
 | TD-074 | 2026-01-21 | `main.py` & `config.py` corruption | Restore from Git history + Add Merge Guard | Blocked system execution | **RESOLVED** |
-| TD-075 | 2026-01-21 | `Household` Facade Bloat (850+ lines) | Evaluate Data Class for context passing or simpler delegation | Maintenance overhead / Scopes | **DEFERRED** |
+| TD-075 | 2026-01-21 | `Household` Facade Bloat (850+ lines) | Refactored via EconComponent delegation (WO-092) | Maintenance overhead | **RESOLVED** |
+| TD-076 | 2026-01-21 | `ProductionDepartment.produce` Redundancy | Refactor TFP calculation to avoid double multiplier check | Code readability | **PENDING** |
+| TD-077 | 2026-01-21 | `EconComponent` Hardcoded Price History Maxlen | Move `maxlen=10` to global configuration | Configuration Gap | **PENDING** |
 
 
 

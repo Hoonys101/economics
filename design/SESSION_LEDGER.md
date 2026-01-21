@@ -21,3 +21,5 @@
 | 2026-01-20 | 10084796152980908088 | Domain-Logic-v2 | [COMPLETED] Merged. Z-Score delegated to AltmanZScoreCalculator. |
 | 2026-01-20 | 10501622868201374933 | Finance-Config-v4 | [COMPLETED] Merged. Moved hardcoded economy params to yaml. |
 | 2026-01-20 | 7372223621436217608  | Phase 29: Depression | [COMPLETED] Merged. Fixed interest bug, added survival logic. |
+| 2026-01-21 | 14531274622967209947 | WO-053: Industrial Revolution | [COMPLETED] Merged. TechnologyManager integrated via DTOs/ProductionDepartment. |
+| 2026-01-21 | 5237484117606800056  | WO-092: Household Facade Refactor | [COMPLETED] Merged. Economic logic delegated to EconComponent (TD-075). |

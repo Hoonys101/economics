@@ -1,0 +1,421 @@
+diff --git a/communications/insights/insight_WO-092_interface_implementation.md b/communications/insights/insight_WO-092_interface_implementation.md
+new file mode 100644
+index 0000000..aed507c
+--- /dev/null
++++ b/communications/insights/insight_WO-092_interface_implementation.md
+@@ -0,0 +1,17 @@
++# Insight: WO-092 Interface Implementation for Properties
++
++## Context
++Refactoring `Household` facade to move economic state to `EconComponent`.
++`IEconComponent` interface uses `@property` and `@abstractmethod` to define state requirements.
++
++## Finding
++When implementing `IEconComponent` in `EconComponent`, simply assigning instance attributes in `__init__` does not satisfy `abc.ABC`'s check for abstract properties if they are declared as properties in the interface.
++While Python allows instance attributes to satisfy read-only properties in practice (duck typing), strict `ABC` instantiation checks require concrete implementations that match the descriptor protocol or are explicitly handled.
++
++To cleanly satisfy the interface and provide encapsulation, I implemented the moved attributes (`expected_inflation`, etc.) as private attributes (`_expected_inflation`) with public `@property` getters and setters in `EconComponent`.
++
++## Recommendation
++For future refactoring involving state delegation:
++1.  Define interfaces clearly using properties if encapsulation is desired.
++2.  Concrete components should implement these properties, delegating to internal storage.
++3.  This facilitates validation and cleaner access patterns compared to direct public attribute access.
+diff --git a/modules/household/api.py b/modules/household/api.py
+index d82bab2..014357d 100644
+--- a/modules/household/api.py
++++ b/modules/household/api.py
+@@ -1,10 +1,10 @@
+ from __future__ import annotations
+ from abc import ABC, abstractmethod
+-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
++from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Deque
+ 
+ if TYPE_CHECKING:
+     from simulation.core_agents import Household
+-    from simulation.dtos import LeisureEffectDTO
++    from simulation.dtos import LeisureEffectDTO, StressScenarioConfig
+     from modules.household.dtos import CloningRequestDTO, EconContextDTO, SocialContextDTO, HouseholdStateDTO
+ 
+ class IBioComponent(ABC):
+@@ -38,7 +38,36 @@ class IEconComponent(ABC):
+     def consume(self, item_id: str, quantity: float, current_time: int) -> Any: ...
+ 
+     @abstractmethod
+-    def orchestrate_economic_decisions(self, context: EconContextDTO, orders: List[Any]): ...
++    def orchestrate_economic_decisions(self, context: EconContextDTO, orders: List[Any], stress_scenario_config: Optional[StressScenarioConfig] = None): ...
++
++    # --- Phase 23: Inflation Expectation & Price Memory ---
++    @property
++    @abstractmethod
++    def expected_inflation(self) -> Dict[str, float]: ...
++
++    @property
++    @abstractmethod
++    def perceived_avg_prices(self) -> Dict[str, float]: ...
++
++    @property
++    @abstractmethod
++    def price_history(self) -> Dict[str, Deque[float]]: ...
++
++    @property
++    @abstractmethod
++    def adaptation_rate(self) -> float: ...
++
++    @abstractmethod
++    def update_perceived_prices(
++        self,
++        market_data: Dict[str, Any],
++        stress_scenario_config: Optional[StressScenarioConfig] = None
++    ) -> None:
++        """
++        Calculates and updates the agent's inflation expectation and
++        perceived average prices based on market data.
++        """
++        ...
+ 
+ class ISocialComponent(ABC):
+     """Interface for Social Component."""
+diff --git a/modules/household/econ_component.py b/modules/household/econ_component.py
+index 05e917a..51790ea 100644
+--- a/modules/household/econ_component.py
++++ b/modules/household/econ_component.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+-from collections import deque
++from collections import deque, defaultdict
+ import logging
+ import math
+ 
+@@ -13,6 +13,7 @@ from simulation.components.market_component import MarketComponent
+ from simulation.portfolio import Portfolio
+ from simulation.ai.system2_planner import System2Planner
+ from simulation.ai.household_system2 import HouseholdSystem2Planner, HousingDecisionInputs
++from simulation.ai.api import Personality
+ from simulation.models import Order, Skill
+ from simulation.utils.shadow_logger import log_shadow
+ 
+@@ -65,6 +66,24 @@ class EconComponent(IEconComponent):
+         self.current_consumption: float = 0.0
+         self.current_food_consumption: float = 0.0
+ 
++        # Phase 23: Inflation Expectation & Price Memory
++        self._expected_inflation: Dict[str, float] = defaultdict(float)
++        self._perceived_avg_prices: Dict[str, float] = {}
++        self._price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=10))
++
++        # Initialize perceived prices from config/goods_data if possible
++        if hasattr(self.owner, "goods_info_map"):
++            for g in self.owner.goods_info_map.values():
++                 self._perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
++
++        # Adaptation Rate (Personality Based)
++        self._adaptation_rate: float = getattr(self.config_module, "ADAPTATION_RATE_NORMAL", 0.2)
++        if hasattr(self.owner, "personality"):
++            if self.owner.personality == Personality.IMPULSIVE:
++                 self._adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
++            elif self.owner.personality == Personality.CONSERVATIVE:
++                 self._adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
++
+         # --- Components ---
+         self.consumption = ConsumptionBehavior(owner, config_module)
+         self.economy_manager = EconomyManager(owner, config_module)
+@@ -81,6 +100,38 @@ class EconComponent(IEconComponent):
+         self.market_wage_history: deque[float] = deque(maxlen=30)
+         self.shadow_reservation_wage: float = 0.0
+ 
++    @property
++    def expected_inflation(self) -> Dict[str, float]:
++        return self._expected_inflation
++
++    @expected_inflation.setter
++    def expected_inflation(self, value: Dict[str, float]) -> None:
++        self._expected_inflation = value
++
++    @property
++    def perceived_avg_prices(self) -> Dict[str, float]:
++        return self._perceived_avg_prices
++
++    @perceived_avg_prices.setter
++    def perceived_avg_prices(self, value: Dict[str, float]) -> None:
++        self._perceived_avg_prices = value
++
++    @property
++    def price_history(self) -> defaultdict[str, deque]:
++        return self._price_history
++
++    @price_history.setter
++    def price_history(self, value: defaultdict[str, deque]) -> None:
++        self._price_history = value
++
++    @property
++    def adaptation_rate(self) -> float:
++        return self._adaptation_rate
++
++    @adaptation_rate.setter
++    def adaptation_rate(self, value: float) -> None:
++        self._adaptation_rate = value
++
+     @property
+     def assets(self) -> float:
+         return self._assets
+@@ -119,6 +170,55 @@ class EconComponent(IEconComponent):
+     def consume(self, item_id: str, quantity: float, current_time: int) -> Any:
+         return self.economy_manager.consume(item_id, quantity, current_time)
+ 
++    def update_perceived_prices(
++        self,
++        market_data: Dict[str, Any],
++        stress_scenario_config: Optional["StressScenarioConfig"] = None
++    ) -> None:
++        """
++        Calculates and updates the agent's inflation expectation and
++        perceived average prices based on market data.
++        """
++        goods_market = market_data.get("goods_market")
++        if not goods_market:
++            return
++
++        adaptive_rate = self.adaptation_rate
++        if stress_scenario_config and stress_scenario_config.is_active:
++            if stress_scenario_config.scenario_name == 'hyperinflation':
++                if hasattr(stress_scenario_config, "inflation_expectation_multiplier"):
++                     adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
++
++        if hasattr(self.owner, "goods_info_map"):
++            for good in self.owner.goods_info_map.values():
++                item_id = good["id"]
++                actual_price = goods_market.get(f"{item_id}_avg_traded_price")
++
++                if actual_price is not None and actual_price > 0:
++                    history = self.price_history[item_id]
++                    if history:
++                        last_price = history[-1]
++                        if last_price > 0:
++                            inflation_t = (actual_price - last_price) / last_price
++
++                            old_expect = self.expected_inflation[item_id]
++                            new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
++                            self.expected_inflation[item_id] = new_expect
++
++                    history.append(actual_price)
++
++                    old_perceived_price = self.perceived_avg_prices.get(
++                        item_id, actual_price
++                    )
++                    update_factor = getattr(self.config_module, "PERCEIVED_PRICE_UPDATE_FACTOR", 0.1)
++                    new_perceived_price = (
++                        update_factor * actual_price
++                    ) + (
++                        (1 - update_factor)
++                        * old_perceived_price
++                    )
++                    self.perceived_avg_prices[item_id] = new_perceived_price
++
+     def get_state(self) -> HouseholdStateDTO:
+         pass # Partially implemented if needed, but Household calls components
+ 
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index efb58be..aaa7b2b 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -161,20 +161,7 @@ class Household(BaseAgent, ILearningAgent):
+         self.credit_frozen_until_tick: int = 0
+ 
+         # Phase 23: Inflation Expectation & Price Memory
+-        self.expected_inflation: Dict[str, float] = defaultdict(float)
+-        self.perceived_avg_prices: Dict[str, float] = {}
+-        self.price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=10))
+-        # Initialize perceived prices from config/goods_data if possible
+-        for g in goods_data:
+-             self.perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
+-        
+-        # Adaptation Rate (Personality Based)
+-        # Default Normal
+-        self.adaptation_rate: float = getattr(config_module, "ADAPTATION_RATE_NORMAL", 0.2)
+-        if personality == Personality.IMPULSIVE:
+-             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
+-        elif personality == Personality.CONSERVATIVE:
+-             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
++        # Moved to EconComponent (WO-092)
+ 
+         # WO-054: Aptitude (Hidden Trait) - Kept on Facade as it's intrinsic
+         raw_aptitude = random.gauss(0.5, 0.15)
+@@ -488,6 +475,38 @@ class Household(BaseAgent, ILearningAgent):
+     def current_food_consumption(self, value: float) -> None:
+         self.econ_component.current_food_consumption = value
+ 
++    @property
++    def expected_inflation(self) -> Dict[str, float]:
++        return self.econ_component.expected_inflation
++
++    @expected_inflation.setter
++    def expected_inflation(self, value: Dict[str, float]) -> None:
++        self.econ_component.expected_inflation = value
++
++    @property
++    def perceived_avg_prices(self) -> Dict[str, float]:
++        return self.econ_component.perceived_avg_prices
++
++    @perceived_avg_prices.setter
++    def perceived_avg_prices(self, value: Dict[str, float]) -> None:
++        self.econ_component.perceived_avg_prices = value
++
++    @property
++    def price_history(self) -> defaultdict[str, deque]:
++        return self.econ_component.price_history
++
++    @price_history.setter
++    def price_history(self, value: defaultdict[str, deque]) -> None:
++        self.econ_component.price_history = value
++
++    @property
++    def adaptation_rate(self) -> float:
++        return self.econ_component.adaptation_rate
++
++    @adaptation_rate.setter
++    def adaptation_rate(self, value: float) -> None:
++        self.econ_component.adaptation_rate = value
++
+     @property
+     def social_status(self) -> float:
+         return self.social_component.social_status
+@@ -717,44 +736,7 @@ class Household(BaseAgent, ILearningAgent):
+     # --- Inflation & Price Logic (Transient/Facade specific) ---
+     @override
+     def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional["StressScenarioConfig"] = None) -> None:
+-        # Kept in Facade for now as it modifies Facade-owned 'perceived_avg_prices' and 'expected_inflation'
+-        # Could move to EconComponent if strict.
+-        goods_market = market_data.get("goods_market")
+-        if not goods_market:
+-            return
+-
+-        adaptive_rate = self.adaptation_rate # Facade attribute
+-        if stress_scenario_config and stress_scenario_config.is_active:
+-            if stress_scenario_config.scenario_name == 'hyperinflation':
+-                adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
+-
+-        for good in self.goods_info_map.values():
+-            item_id = good["id"]
+-            actual_price = goods_market.get(f"{item_id}_avg_traded_price")
+-
+-            if actual_price is not None and actual_price > 0:
+-                history = self.price_history[item_id]
+-                if history:
+-                    last_price = history[-1]
+-                    if last_price > 0:
+-                        inflation_t = (actual_price - last_price) / last_price
+-
+-                        old_expect = self.expected_inflation[item_id]
+-                        new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
+-                        self.expected_inflation[item_id] = new_expect
+-
+-                history.append(actual_price)
+-
+-                old_perceived_price = self.perceived_avg_prices.get(
+-                    item_id, actual_price
+-                )
+-                new_perceived_price = (
+-                    self.config_module.PERCEIVED_PRICE_UPDATE_FACTOR * actual_price
+-                ) + (
+-                    (1 - self.config_module.PERCEIVED_PRICE_UPDATE_FACTOR)
+-                    * old_perceived_price
+-                )
+-                self.perceived_avg_prices[item_id] = new_perceived_price
++        self.econ_component.update_perceived_prices(market_data, stress_scenario_config)
+ 
+     # --- Learning & Cloning ---
+     @override
+diff --git a/tests/modules/household/test_econ_component.py b/tests/modules/household/test_econ_component.py
+new file mode 100644
+index 0000000..7c70d54
+--- /dev/null
++++ b/tests/modules/household/test_econ_component.py
+@@ -0,0 +1,86 @@
++import pytest
++from unittest.mock import MagicMock
++from collections import deque
++from modules.household.econ_component import EconComponent
++from simulation.ai.api import Personality
++
++class TestEconComponent:
++    @pytest.fixture
++    def mock_owner(self):
++        owner = MagicMock()
++        owner.goods_info_map = {
++            "food": {"id": "food", "initial_price": 10.0},
++            "water": {"id": "water", "initial_price": 5.0}
++        }
++        owner.personality = Personality.CONSERVATIVE
++        owner.logger = MagicMock()
++        return owner
++
++    @pytest.fixture
++    def mock_config(self):
++        config = MagicMock()
++        config.ADAPTATION_RATE_NORMAL = 0.2
++        config.ADAPTATION_RATE_IMPULSIVE = 0.5
++        config.ADAPTATION_RATE_CONSERVATIVE = 0.1
++        config.PERCEIVED_PRICE_UPDATE_FACTOR = 0.1
++        return config
++
++    def test_update_perceived_prices_basic(self, mock_owner, mock_config):
++        econ = EconComponent(mock_owner, mock_config)
++
++        # Setup initial state
++        econ.price_history["food"].append(10.0)
++        econ.expected_inflation["food"] = 0.0
++        econ.perceived_avg_prices["food"] = 10.0
++
++        market_data = {
++            "goods_market": {
++                "food_avg_traded_price": 11.0
++            }
++        }
++
++        econ.update_perceived_prices(market_data)
++
++        # Verify Price History
++        assert len(econ.price_history["food"]) == 2
++        assert econ.price_history["food"][-1] == 11.0
++
++        # Verify Expected Inflation
++        # Inflation = (11 - 10) / 10 = 0.1
++        # New Expectation = 0.0 + 0.1 * (0.1 - 0.0) = 0.01 (Conservative adaptation rate 0.1)
++        assert econ.expected_inflation["food"] == pytest.approx(0.01)
++
++        # Verify Perceived Price
++        # New Perceived = 0.1 * 11 + 0.9 * 10 = 1.1 + 9.0 = 10.1
++        assert econ.perceived_avg_prices["food"] == pytest.approx(10.1)
++
++    def test_update_perceived_prices_hyperinflation(self, mock_owner, mock_config):
++        econ = EconComponent(mock_owner, mock_config)
++        econ.adaptation_rate = 0.2 # Force a rate override just to be sure, or rely on init
++
++        # Override adaptation rate logic for test isolation or rely on mock_owner having CONSERVATIVE (0.1)
++        # But here let's assume we want to test the multiplier logic.
++        # Econ initialized with CONSERVATIVE -> 0.1
++        # To match the calculation in comment (0.2), I should set adaptation_rate to 0.2
++        econ.adaptation_rate = 0.2
++
++        econ.price_history["food"].append(100.0)
++        econ.expected_inflation["food"] = 0.05
++
++        market_data = {
++            "goods_market": {
++                "food_avg_traded_price": 120.0
++            }
++        }
++
++        stress_config = MagicMock()
++        stress_config.is_active = True
++        stress_config.scenario_name = 'hyperinflation'
++        stress_config.inflation_expectation_multiplier = 2.0
++
++        econ.update_perceived_prices(market_data, stress_scenario_config=stress_config)
++
++        # Inflation = (120 - 100) / 100 = 0.2
++        # Adaptive Rate = 0.2 * 2.0 = 0.4
++        # New Expectation = 0.05 + 0.4 * (0.2 - 0.05) = 0.05 + 0.4 * 0.15 = 0.05 + 0.06 = 0.11
++        assert econ.expected_inflation["food"] == pytest.approx(0.11)

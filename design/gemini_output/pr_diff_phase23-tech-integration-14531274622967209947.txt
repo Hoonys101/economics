@@ -1,0 +1,490 @@
+diff --git a/communications/team_assignments.json b/communications/team_assignments.json
+index 5a0b956..fdc75e7 100644
+--- a/communications/team_assignments.json
++++ b/communications/team_assignments.json
+@@ -9,10 +9,6 @@
+       "5461526276502002602": {
+         "title": "Phase 29: Implementation of 'The Great Depression' Scenario",
+         "initial_mission": "# Mission: Invoke the Crisis (Phase 29 - The Great Depression)\n\n## Context\nArchitect Prime has declared the \"Component Era\" officially open. We must now stress-test our newly refactored `FinanceDepartment` and `CorporateManager` under extreme economic pressure.\n\n## Task Details\n\n### 1. Scenario Configuration\n- **File**: `config/scenarios/phase29_depression.json`\n- **Actions**:\n    - Set `base_interest_rate_multiplier`: `3.0` (200% Increase).\n    - Set `corporate_tax_rate_delta`: `0.1` (10%p Increase).\n    - Set `demand_shock_multiplier`: `0.7` (30% reduction in consumer spending).\n\n### 2. Implementation of Stress Observations\n- Update the simulation runner or a dedicated validation test to:\n    - **Verify Interest Expense**: Ensure `FinanceDepartment` correctly calculates the surging interest costs on existing debt.\n    - **Observe Altman Z-Score**: Monitor firms as they approach the \"Danger\" zone (Z < 1.1).\n    - **Verify Corporate Resilience**: Confirm that `CorporateManager` detects the liquidity crisis and automatically triggers `pay_dividend_payout(0.0)` for distressed firms.\n\n### 3. Verification & Reporting\n- Run the simulation for 20 ticks using the Phase 29 scenario.\n- Generate a summary report:\n    - Number of firms entering the Z-Score danger zone.\n    - Total dividend payout reduction across the sector.\n    - Confirmation that no `CalculationError` or `StateInconsistency` occurred during the shock.\n\n## Success Criteria\n- ✅ Phase 29 scenario file created and functional.\n- ✅ Successful observation of \"Dividend Suspension\" in crisis firms.\n- ✅ FinanceDepartment survives the shock with accurate net profit accounting.\n"
+-      },
+-      "14531274622967209947": {
+-        "title": "WO-053: Industrial Revolution Implementation",
+-        "initial_mission": "# Work Order: WO-053 - Industrial Revolution Core Integration\n\n**Phase:** 23\n**Priority:** HIGH\n**Prerequisite:** None\n\n## 1. Problem Statement\nThe current simulation lacks a mechanism for technological breakthroughs to impact economic output directly. The `TechnologyManager` exists but is not integrated into the core production logic, making its impact zero. This prevents the simulation of key economic events like the Industrial Revolution.\n\n## 2. Objective\nIntegrate the `TechnologyManager` with the `ProductionDepartment` to enable technology-driven productivity growth. The \"Chemical Fertilizer\" technology will act as the first implementation, tripling the productivity of firms in the FOOD sector upon adoption.\n\n## 3. Target Metrics\n| Metric | Current | Target |\n|---|---|---|\n| Food Production (Post-Tech) | `tfp * labor^a * capital^b` | `(tfp * 3.0) * labor^a * capital^b` |\n| Tech Adoption by Visionaries | 0 | 100% (immediate) |\n| Tech Diffusion to others | 0% | > 0% (gradual, based on diffusion rate) |\n\n---\n\n# `industrial_revolution_spec.md`\n\n## 1. System Architecture & SoC Refactoring\nTo adhere to strict SoC and resolve the risks identified in the pre-flight audit, the integration will be orchestrated by the main simulation loop (`main.py`). This avoids creating \"God Object\" dependencies.\n\n  \n*(Diagram Placeholder: A simple diagram showing `main.py` calling `StatsService` -> passing results to `TechnologyManager` -> passing `TechnologyManager` to `Firm`)*\n\n- **`main.py` (Orchestrator):**\n    1.  Calculates aggregate statistics (`human_capital_index`).\n    2.  Calls `TechnologyManager.update()` with the necessary data.\n    3.  Injects the `TechnologyManager` instance into the `firm.produce()` call.\n- **`TechnologyManager` (System):**\n    1.  Receives data, does not fetch it.\n    2.  Manages the state of technology (unlocks, adoption).\n- **`ProductionDepartment` (Component):**\n    1.  Receives the `TechnologyManager` and uses it to get a multiplier.\n\n## 2. Interface Specification (`api.py`)\nThe following interfaces define the contract for the technology system. DTOs are used to ensure loose coupling.\n\n```python\n#\n# File: simulation/systems/tech/api.py\n#\nfrom __future__ import annotations\nfrom typing import List, Protocol, TypedDict, Set\n\n# --- Data Transfer Objects (DTOs) ---\n\nclass FirmTechInfoDTO(TypedDict):\n    \"\"\"Minimal firm data required for technology diffusion.\"\"\"\n    id: int\n    sector: str\n    is_visionary: bool\n    \nclass HouseholdEducationDTO(TypedDict):\n    \"\"\"Minimal household data required for human capital calculation.\"\"\"\n    is_active: bool\n    education_level: float\n\n# --- System Interface ---\n\nclass TechnologySystemAPI(Protocol):\n    \"\"\"\n    Defines the public contract for the TechnologyManager.\n    It operates on DTOs and primitive types, not full agent objects.\n    \"\"\"\n\n    def update(\n        self, \n        current_tick: int, \n        firms: List[FirmTechInfoDTO], \n        human_capital_index: float\n    ) -> None:\n        \"\"\"\n        Updates the state of technology diffusion.\n        - Checks for new tech unlocks.\n        - Processes the S-curve adoption for all active technologies.\n        \"\"\"\n        ...\n\n    def get_productivity_multiplier(self, firm_id: int) -> float:\n        \"\"\"\n        Returns the total productivity multiplier for a given firm\n        based on its adopted technologies.\n        \"\"\"\n        ...\n\n    def has_adopted(self, firm_id: int, tech_id: str) -> bool:\n        \"\"\"Checks if a firm has adopted a specific technology.\"\"\"\n        ...\n```\n\n## 3. Logic Steps (Pseudo-code)\n\n### 3.1. `main.py` (Simulation Loop)\n```python\n# main.py\ndef run_simulation():\n    # ... initialization of simulation, firms, households, technology_manager ...\n\n    for tick in range(SIMULATION_TICKS):\n        # 1. [ORCHESTRATION] Calculate aggregate stats\n        active_households_dto = [\n            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))\n            for h in simulation.households\n        ]\n        \n        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])\n        active_count = sum(1 for h in active_households_dto if h['is_active'])\n        human_capital_index = total_edu / active_count if active_count > 0 else 1.0\n\n        # 2. [ORCHESTRATION] Update technology system state\n        active_firms_dto = [\n            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))\n            for f in simulation.firms if f.is_active\n        ]\n        technology_manager.update(tick, active_firms_dto, human_capital_index)\n\n        # 3. [AGENT ACTIONS]\n        for firm in simulation.firms:\n            if not firm.is_active:\n                continue\n            \n            # ... other firm logic ...\n\n            # [INJECTION] Inject the tech manager into the production call\n            firm.production_department.produce(tick, technology_manager)\n```\n\n### 3.2. `TechnologyManager` Refactoring\n```python\n# simulation/systems/technology_manager.py\n\n# REMOVE _update_human_capital_index method.\n\n# MODIFY update signature\n# def update(self, current_tick: int, simulation: Any) -> None: # OLD\ndef update(self, current_tick: int, firms: List[FirmTechInfoDTO], human_capital_index: float) -> None: # NEW\n    # self._update_human_capital_index(simulation.households) # REMOVE\n    self.human_capital_index = human_capital_index # SET from parameter\n\n    # ... Unlock Check logic remains the same ...\n\n    # MODIFY to use the injected 'firms' DTO list\n    # for firm in simulation.firms: # OLD\n    for firm_dto in firms: # NEW\n        # ... logic uses firm_dto['id'], firm_dto['sector'], etc. ...\n\n# MODIFY _unlock_tech to accept the DTO list\n# def _unlock_tech(self, tech: TechNode, simulation: Any): # OLD\ndef _unlock_tech(self, tech: TechNode, firms: List[FirmTechInfoDTO]): # NEW\n    # ... logic iterates over 'firms' DTO list ...\n```\n\n### 3.3. `ProductionDepartment` Integration\n```python\n# simulation/components/production_department.py\n# No major change needed, just ensure the `if technology_manager:` block is correctly implemented.\n\ndef produce(self, current_time: int, technology_manager: TechnologySystemAPI | None = None) -> float:\n    # ... existing logic ...\n    \n    # Technology Multiplier (WO-053)\n    tech_multiplier = 1.0\n    if technology_manager:\n        # The call to get_productivity_multiplier already exists.\n        # This confirms the integration point.\n        tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id)\n\n    tfp = self.firm.productivity_factor * tech_multiplier \n    \n    # ... rest of the production logic ...\n```\n\n## 4. Verification Plan\n\n1.  **Unit Test (`test_technology_manager.py`):**\n    -   `test_effective_diffusion_rate`: Assert that `_get_effective_diffusion_rate` returns `base_rate * (1 + 0.5 * (HCI - 1.0))` for various `human_capital_index` inputs.\n    -   `test_unlock_and_visionary_adoption`: Call `update()` on the tick where \"TECH_AGRI_CHEM_01\" unlocks. Assert that all firms with `is_visionary=True` and `sector='FOOD'` have adopted the tech via `has_adopted()`.\n    -   `test_diffusion_over_time`: After the unlock tick, run `update()` for 20 more ticks. Assert that some non-visionary firms in the 'FOOD' sector have adopted the tech.\n\n2.  **Integration Test (`tests/integration/test_phase23_production.py`):**\n    -   `test_production_boost_from_fertilizer_tech`:\n        1.  Create two identical firms (`firm_A`, `firm_B`) in the 'FOOD' sector.\n        2.  Create a `TechnologyManager` and unlock \"TECH_AGRI_CHEM_01\".\n        3.  Manually have `firm_A` adopt the tech using `_adopt()`.\n        4.  Run `firm_A.produce(tech_manager)` and `firm_B.produce(tech_manager)`.\n        5.  Assert `production_A` is approximately `3.0 * production_B`.\n\n## 5. Mocking Guide\n-   For integration tests, use `pytest` fixtures. Create a `technology_manager_fixture` that yields a configured `TechnologyManager`.\n-   **DO NOT** use `MagicMock` for the `TechnologyManager` in `test_production_boost_from_fertilizer_tech`. Instantiate a real `TechnologyManager` to ensure the internal logic of `get_productivity_multiplier` is also tested.\n-   Use `golden_firms` and `golden_households` fixtures from `conftest.py` to create realistic agent populations for testing the `update` method.\n\n## 6. 🚨 Risk & Impact Audit (Resolution Plan)\n\n-   **High Coupling via \"God Object\"**: **RESOLVED**. The design mandates that `TechnologyManager.update` receives only DTOs and primitive types (`firms: List[FirmTechInfoDTO]`, `human_capital_index: float`), not the `simulation` object. The main loop is responsible for data preparation and injection.\n-   **SRP Violation**: **RESOLVED**. The responsibility of calculating `human_capital_index` has been removed from `TechnologyManager` and moved to the orchestrator (`main.py`). The manager now receives this value as a parameter, adhering to SRP.\n-   **Test Coverage Gap**: **ADDRESSED**. The \"Verification Plan\" explicitly requires a new integration test (`test_production_boost_from_fertilizer_tech`) to validate that the `tech_multiplier` correctly impacts the output of the `ProductionDepartment.produce` method.\n-   **Technical Debt Contradiction**: **ALIGNED**. The proposed design strictly follows the established precedent of decomposing dependencies (TD-065, TD-066), preventing the re-introduction of architectural debt.\n\n---\n\n### **[Routine] Mandatory Reporting**\n*Jules, during implementation, you are required to log any unforeseen complexities, suggested improvements, or potential technical debt. Create a new markdown file in `communications/insights/` named `YYYY-MM-DD_WO-053_insights.md` to document your findings.*\n"
+       }
+     },
+     "completed_sessions": {
+diff --git a/design/command_registry.json b/design/command_registry.json
+index edefc78..a287a78 100644
+--- a/design/command_registry.json
++++ b/design/command_registry.json
+@@ -1,16 +1,19 @@
+ {
+   "gemini": {
+     "command": "spec",
+-    "title": "Completed",
+-    "instruction": "Both Phase 23 and TD-075 specs have been generated.",
+-    "context": [],
+-    "output": "design/specs/archive.md"
++    "title": "TD-075: Household Facade Refactor",
++    "instruction": "Generate a Zero-Question Spec to refactor the Household facade in simulation/core_agents.py (850+ lines). (1) Extract logic into specialized sub-components (HouseholdBio, HouseholdEcon, HouseholdSocial). (2) Implement the Facade pattern where Household delegates all calls. (3) Standardize context passing via DTOs to avoid prop-drilling or large argument lists.",
++    "context": [
++      "simulation/core_agents.py",
++      "design/TECH_DEBT_LEDGER.md"
++    ],
++    "output": "design/specs/TD-075-Household-SoC-Refactor.md"
+   },
+   "jules": {
+     "command": "create",
+-    "title": "WO-092: Household Facade Refactor (TD-075)",
+-    "instruction": "Refactor Household facade to delegate economic logic as per the spec. Maintain public API compatibility and ensure all tests pass.",
+-    "file": "design/specs/TD-075-Household-SoC-Refactor.md",
++    "title": "WO-053: Industrial Revolution Implementation",
++    "instruction": "Implement Phase 23 productivity boom and tech diffusion as per the spec. Ensure no regression in existing production logic.",
++    "file": "design/specs/WO-053-Phase23-Industrial-Rev.md",
+     "session_id": null,
+     "wait": true
+   },
+diff --git a/simulation/components/production_department.py b/simulation/components/production_department.py
+index 372105e..1867acc 100644
+--- a/simulation/components/production_department.py
++++ b/simulation/components/production_department.py
+@@ -59,7 +59,7 @@ class ProductionDepartment:
+             tfp = self.firm.productivity_factor * tech_multiplier  # Total Factor Productivity
+ 
+             if technology_manager:
+-                tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id, self.firm.sector)
++                tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id)
+                 tfp *= tech_multiplier
+ 
+             # Phase 15: Quality Calculation
+diff --git a/simulation/systems/tech/api.py b/simulation/systems/tech/api.py
+new file mode 100644
+index 0000000..a9c8087
+--- /dev/null
++++ b/simulation/systems/tech/api.py
+@@ -0,0 +1,50 @@
++#
++# File: simulation/systems/tech/api.py
++#
++from __future__ import annotations
++from typing import List, Protocol, TypedDict, Set
++
++# --- Data Transfer Objects (DTOs) ---
++
++class FirmTechInfoDTO(TypedDict):
++    """Minimal firm data required for technology diffusion."""
++    id: int
++    sector: str
++    is_visionary: bool
++
++class HouseholdEducationDTO(TypedDict):
++    """Minimal household data required for human capital calculation."""
++    is_active: bool
++    education_level: float
++
++# --- System Interface ---
++
++class TechnologySystemAPI(Protocol):
++    """
++    Defines the public contract for the TechnologyManager.
++    It operates on DTOs and primitive types, not full agent objects.
++    """
++
++    def update(
++        self,
++        current_tick: int,
++        firms: List[FirmTechInfoDTO],
++        human_capital_index: float
++    ) -> None:
++        """
++        Updates the state of technology diffusion.
++        - Checks for new tech unlocks.
++        - Processes the S-curve adoption for all active technologies.
++        """
++        ...
++
++    def get_productivity_multiplier(self, firm_id: int) -> float:
++        """
++        Returns the total productivity multiplier for a given firm
++        based on its adopted technologies.
++        """
++        ...
++
++    def has_adopted(self, firm_id: int, tech_id: str) -> bool:
++        """Checks if a firm has adopted a specific technology."""
++        ...
+diff --git a/simulation/systems/technology_manager.py b/simulation/systems/technology_manager.py
+index b131f93..73deeef 100644
+--- a/simulation/systems/technology_manager.py
++++ b/simulation/systems/technology_manager.py
+@@ -4,6 +4,8 @@ import random
+ from dataclasses import dataclass, field
+ from typing import Dict, List, Any, Optional, Set
+ 
++from simulation.systems.tech.api import FirmTechInfoDTO
++
+ logger = logging.getLogger(__name__)
+ 
+ @dataclass
+@@ -50,58 +52,44 @@ class TechnologyManager:
+         )
+         self.tech_tree[fertilizer.id] = fertilizer
+ 
+-    def update(self, current_tick: int, simulation: Any) -> None:
++    def update(self, current_tick: int, firms: List[FirmTechInfoDTO], human_capital_index: float) -> None:
+         """
+         Called every tick.
+         1. Check Unlocks.
+         2. Process Diffusion (Spread).
+         """
+-        # WO-054: Update Human Capital Index based on average education
+-        self._update_human_capital_index(simulation.households)
++        # WO-054: Update Human Capital Index from parameter
++        self.human_capital_index = human_capital_index
+ 
+         # 1. Unlock Check
+         for tech in self.tech_tree.values():
+             if not tech.is_unlocked and current_tick >= tech.unlock_tick:
+-                self._unlock_tech(tech, simulation)
++                self._unlock_tech(tech, firms, current_tick)
+ 
+         # 2. Diffusion Process (S-Curve)
+-        self._process_diffusion(simulation)
+-
+-    def _update_human_capital_index(self, households: List[Any]):
+-        """WO-054: Calculate average education level."""
+-        total_edu = 0
+-        count = 0
+-        for h in households:
+-            if h.is_active:
+-                total_edu += getattr(h, "education_level", 0)
+-                count += 1
+-
+-        if count > 0:
+-            self.human_capital_index = total_edu / count
+-        else:
+-            self.human_capital_index = 1.0 # Default baseline
+-
+-    def _unlock_tech(self, tech: TechNode, simulation: Any):
++        self._process_diffusion(firms, current_tick)
++
++    def _unlock_tech(self, tech: TechNode, firms: List[FirmTechInfoDTO], current_tick: int):
+         """Unlock technology and assign to Early Adopters (Visionaries)."""
+         tech.is_unlocked = True
+         self.active_techs.append(tech.id)
+         
+         # Immediate Adoption by Visionaries
+         early_adopters_count = 0
+-        for firm in simulation.firms:
+-            if not firm.is_active: continue
+-            
+-            # Visionary Firms or Top 10% Wealth (if needed)
+-            # Using is_visionary attribute if available, else random top slice?
+-            # Firm has is_visionary since Phase 14-2.
+-            if getattr(firm, "is_visionary", False):
+-                self._adopt(firm, tech)
++        for firm_dto in firms:
++            # Check sector match even for visionaries
++            if firm_dto["sector"] != tech.sector and tech.sector != "ALL":
++                continue
++
++            # Visionary Firms
++            if firm_dto["is_visionary"]:
++                self._adopt(firm_dto["id"], tech)
+                 early_adopters_count += 1
+         
+         self.logger.info(
+             f"TECH_UNLOCK | Unlocked {tech.name} (ID: {tech.id}). "
+             f"Early Adopters: {early_adopters_count} firms.",
+-            extra={"tick": simulation.time, "tech_id": tech.id}
++            extra={"tick": current_tick, "tech_id": tech.id}
+         )
+ 
+     def _get_effective_diffusion_rate(self, base_rate: float) -> float:
+@@ -117,7 +105,7 @@ class TechnologyManager:
+         boost = min(1.5, 0.5 * max(0.0, self.human_capital_index - 1.0))
+         return base_rate * (1.0 + boost)
+ 
+-    def _process_diffusion(self, simulation: Any):
++    def _process_diffusion(self, firms: List[FirmTechInfoDTO], current_tick: int):
+         """
+         Simulate the spread of technology to non-adopters.
+         """
+@@ -128,42 +116,35 @@ class TechnologyManager:
+             effective_rate = self._get_effective_diffusion_rate(tech.diffusion_rate)
+ 
+             # Potential Adopters: Firms in relevant sector who haven't adopted yet
+-            for firm in simulation.firms:
+-                if not firm.is_active: continue
++            for firm_dto in firms:
+                 # Sector match check (if tech is sector-specific)
+-                # If tech.sector is "ALL", everyone can adopt.
+-                # If "FOOD", only firms with specialization in FOOD sector.
+-                # Firm has 'specialization' (item_id) and 'sector' (e.g. FOOD).
+-                
+-                # Check sector compatibility
+-                # config.GOODS[firm.specialization]['sector'] == tech.sector
+-                if firm.sector != tech.sector and tech.sector != "ALL":
++                if firm_dto["sector"] != tech.sector and tech.sector != "ALL":
+                     continue
+ 
+                 # Check if already adopted
+-                if self.has_adopted(firm.id, tech_id):
++                if self.has_adopted(firm_dto["id"], tech_id):
+                     continue
+                 
+                 # Diffusion Chance
+                 if random.random() < effective_rate:
+-                    self._adopt(firm, tech)
++                    self._adopt(firm_dto["id"], tech)
+                     self.logger.info(
+-                        f"TECH_DIFFUSION | Firm {firm.id} adopted {tech.name}. Rate: {effective_rate:.4f} (Base: {tech.diffusion_rate})",
+-                        extra={"tick": simulation.time, "agent_id": firm.id, "tech_id": tech.id}
++                        f"TECH_DIFFUSION | Firm {firm_dto['id']} adopted {tech.name}. Rate: {effective_rate:.4f} (Base: {tech.diffusion_rate})",
++                        extra={"tick": current_tick, "agent_id": firm_dto['id'], "tech_id": tech.id}
+                     )
+ 
+-    def _adopt(self, firm: Any, tech: TechNode):
++    def _adopt(self, firm_id: int, tech: TechNode):
+         """Register adoption."""
+-        if firm.id not in self.adoption_registry:
+-            self.adoption_registry[firm.id] = set()
+-        self.adoption_registry[firm.id].add(tech.id)
++        if firm_id not in self.adoption_registry:
++            self.adoption_registry[firm_id] = set()
++        self.adoption_registry[firm_id].add(tech.id)
+ 
+     def has_adopted(self, firm_id: int, tech_id: str) -> bool:
+         if firm_id not in self.adoption_registry:
+             return False
+         return tech_id in self.adoption_registry[firm_id]
+ 
+-    def get_productivity_multiplier(self, firm_id: int, firm_sector: str) -> float:
++    def get_productivity_multiplier(self, firm_id: int) -> float:
+         """
+         Calculate total TFP multiplier for a firm based on adopted techs.
+         """
+diff --git a/simulation/tick_scheduler.py b/simulation/tick_scheduler.py
+index 627225a..6fce70e 100644
+--- a/simulation/tick_scheduler.py
++++ b/simulation/tick_scheduler.py
+@@ -4,6 +4,7 @@ import logging
+ 
+ from simulation.models import Transaction, Order, StockOrder, RealEstateUnit
+ from simulation.core_agents import Household
++from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
+ from simulation.firms import Firm
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.agents.government import Government
+@@ -343,7 +344,23 @@ class TickScheduler:
+             household_leisure_effects = {}
+ 
+         # --- Phase 23: Technology Manager Update ---
+-        state.technology_manager.update(state.time, state) # Passing state as simulation facade substitute
++        # WO-053: Orchestrate Technology Update with DTOs
++        # 1. Calculate Human Capital Index
++        active_households_dto = [
++            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
++            for h in state.households
++        ]
++        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])
++        active_count = sum(1 for h in active_households_dto if h['is_active'])
++        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
++
++        # 2. Prepare Firm DTOs
++        active_firms_dto = [
++            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
++            for f in state.firms if f.is_active
++        ]
++
++        state.technology_manager.update(state.time, active_firms_dto, human_capital_index)
+ 
+         # Phase 17-3B: Process Housing
+         state.housing_system.process_housing(state)
+diff --git a/tests/integration/test_phase23_production.py b/tests/integration/test_phase23_production.py
+new file mode 100644
+index 0000000..0e0860f
+--- /dev/null
++++ b/tests/integration/test_phase23_production.py
+@@ -0,0 +1,77 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.components.production_department import ProductionDepartment
++from simulation.systems.technology_manager import TechnologyManager
++from simulation.firms import Firm
++
++class TestPhase23Production:
++    @pytest.fixture
++    def config(self):
++        mock_config = MagicMock()
++        mock_config.LABOR_ALPHA = 0.5
++        mock_config.LABOR_ELASTICITY_MIN = 0.1
++        mock_config.AUTOMATION_LABOR_REDUCTION = 0.0
++        mock_config.CAPITAL_DEPRECIATION_RATE = 0.0
++        # Mock GOODS structure
++        mock_config.GOODS = {"food": {"sector": "FOOD"}}
++        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 0
++        mock_config.TECH_DIFFUSION_RATE = 0.0
++        return mock_config
++
++    @pytest.fixture
++    def firm_setup(self, config):
++        def _create_firm(firm_id):
++            firm = MagicMock(spec=Firm)
++            firm.id = firm_id
++            firm.sector = "FOOD"
++            firm.specialization = "food"
++            firm.is_visionary = False
++            firm.productivity_factor = 1.0
++            firm.capital_stock = 100.0
++            firm.automation_level = 0.0
++            firm.base_quality = 1.0
++            firm.inventory = {}
++            firm.input_inventory = {}
++            firm.hr = MagicMock()
++            firm.hr.employees = [MagicMock()] # At least one employee
++            firm.hr.get_total_labor_skill.return_value = 100.0
++            firm.hr.get_avg_skill.return_value = 1.0
++
++            # Create real ProductionDepartment for the mock firm
++            firm.production_department = ProductionDepartment(firm, config)
++            # Inject production department back into firm.production if needed by other components,
++            # but here we test production_department directly or via produce
++
++            # Add inventory method
++            firm.add_inventory = MagicMock()
++
++            return firm, firm.production_department
++        return _create_firm
++
++    def test_production_boost_from_fertilizer_tech(self, config, firm_setup):
++        # 1. Create two identical firms
++        firm_A, prod_A = firm_setup(1)
++        firm_B, prod_B = firm_setup(2)
++
++        # 2. Create TechnologyManager and unlock Tech
++        tech_manager = TechnologyManager(config, MagicMock())
++        tech_node = tech_manager.tech_tree["TECH_AGRI_CHEM_01"]
++        tech_node.is_unlocked = True
++        tech_manager.active_techs.append(tech_node.id)
++
++        # 3. Manually have firm_A adopt the tech
++        tech_manager._adopt(firm_A.id, tech_node)
++
++        # 4. Run produce
++        # Note: ProductionDepartment.produce returns quantity
++
++        qty_A = prod_A.produce(10, tech_manager)
++        qty_B = prod_B.produce(10, tech_manager)
++
++        # 5. Assert production_A is approx 3.0 * production_B
++        assert qty_B > 0
++        ratio = qty_A / qty_B
++        print(f"Production A: {qty_A}, Production B: {qty_B}, Ratio: {ratio}")
++
++        # Tech multiplier is 3.0.
++        assert abs(ratio - 3.0) < 0.01
+diff --git a/tests/systems/test_technology_manager.py b/tests/systems/test_technology_manager.py
+new file mode 100644
+index 0000000..afe5248
+--- /dev/null
++++ b/tests/systems/test_technology_manager.py
+@@ -0,0 +1,98 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.systems.technology_manager import TechnologyManager, TechNode
++from simulation.systems.tech.api import FirmTechInfoDTO
++
++class TestTechnologyManager:
++    @pytest.fixture
++    def config(self):
++        mock_config = MagicMock()
++        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 10
++        mock_config.TECH_DIFFUSION_RATE = 0.05
++        return mock_config
++
++    @pytest.fixture
++    def manager(self, config):
++        return TechnologyManager(config, MagicMock())
++
++    def test_effective_diffusion_rate(self, manager):
++        # Base rate = 0.05
++        # HCI = 1.0 -> Boost = 0 -> Rate = 0.05
++        manager.human_capital_index = 1.0
++        assert manager._get_effective_diffusion_rate(0.05) == 0.05
++
++        # HCI = 3.0 -> 0.5 * 2.0 = 1.0 -> Boost = 1.0 -> Rate = 0.05 * 2.0 = 0.1
++        manager.human_capital_index = 3.0
++        assert manager._get_effective_diffusion_rate(0.05) == 0.10
++
++        # HCI = 5.0 -> 0.5 * 4.0 = 2.0 -> Boost = min(1.5, 2.0) = 1.5 -> Rate = 0.05 * 2.5 = 0.125
++        manager.human_capital_index = 5.0
++        assert manager._get_effective_diffusion_rate(0.05) == 0.125
++
++    def test_unlock_and_visionary_adoption(self, manager):
++        # Setup Tech
++        tech_id = "TECH_AGRI_CHEM_01"
++        tech = manager.tech_tree[tech_id]
++        tech.unlock_tick = 10
++        tech.sector = "FOOD"
++
++        # Setup Firms DTO
++        firms = [
++            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=True),
++            FirmTechInfoDTO(id=2, sector="FOOD", is_visionary=False),
++            FirmTechInfoDTO(id=3, sector="MANUFACTURING", is_visionary=True),
++        ]
++
++        # Tick 9: No unlock
++        manager.update(9, firms, 1.0)
++        assert not tech.is_unlocked
++        assert not manager.has_adopted(1, tech_id)
++
++        # Tick 10: Unlock
++        manager.update(10, firms, 1.0)
++        assert tech.is_unlocked
++
++        # Visionary Check
++        # Firm 1 (Food, Visionary) should adopt
++        assert manager.has_adopted(1, tech_id)
++        # Firm 2 (Food, Not Visionary) should NOT adopt immediately
++        assert not manager.has_adopted(2, tech_id)
++        # Firm 3 (Mfg, Visionary) should NOT adopt due to sector mismatch
++        assert not manager.has_adopted(3, tech_id)
++
++    def test_diffusion_over_time(self, manager):
++        # Setup Tech
++        tech_id = "TECH_AGRI_CHEM_01"
++        tech = manager.tech_tree[tech_id]
++        tech.unlock_tick = 10
++        tech.diffusion_rate = 0.0 # No diffusion initially
++
++        firms = [
++            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=False),
++        ]
++
++        # Unlock it first (needs unlock call)
++        # Note: _unlock_tech also iterates firms, but firm 1 is not visionary, so it won't adopt there.
++        manager.update(10, firms, 1.0)
++        assert not manager.has_adopted(1, tech_id) # Not visionary, and diffusion 0%
++
++        # Now enable diffusion
++        tech.diffusion_rate = 1.0
++        manager.update(11, firms, 1.0)
++
++        assert manager.has_adopted(1, tech_id)
++
++    def test_productivity_multiplier(self, manager):
++         # Setup Tech
++        tech_id = "TECH_AGRI_CHEM_01"
++        tech = manager.tech_tree[tech_id]
++        tech.multiplier = 3.0
++
++        # Before adoption
++        assert manager.get_productivity_multiplier(1) == 1.0
++
++        # Adopt
++        manager._adopt(1, tech)
++
++        # After adoption
++        assert manager.get_productivity_multiplier(1) == 3.0

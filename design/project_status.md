@@ -27,7 +27,8 @@
     - **Parallel Debt Triage**: TD-034, TD-041, TD-050, TD-051, TD-058, TD-059, TD-063 ✅
 
 - **현재 단계:** `Phase 23: The Great Expansion (Industrial Revolution)` 🚀
-    - **WO-053**: Industrial Revolution (TechnologyManager) 🏗️
+    - **WO-053**: Industrial Revolution (TechnologyManager) ✅ (Implementation Complete)
+    - **WO-092**: Household Facade Refactor (TD-075) ✅ (Refactor Complete)
     - **Goal**: Break Malthusian Trap via "Chemical Fertilizer" (Food TFP x3.0)
     
 - **완료된 마일스톤:** `Phase 31: Golden Fixture & Stability` ✅ (2026-01-20)
