@@ -3,6 +3,7 @@ import os
 import logging
 import json
 import statistics
+import csv
 from pathlib import Path
 
 # Setup paths
@@ -158,7 +159,12 @@ def verify_harvest_clean():
         "food_price": [],
         "population": [],
         "engel_coeff": [],
-        "tech_adopted": []
+        "tech_adopted": [],
+        "total_production": [],
+        "total_inventory": [],
+        "total_sales": [],
+        "active_food_firms": [],
+        "avg_firm_cash": []
     }
 
     logger.info("Running Simulation Loop (200 Ticks)...")
@@ -199,12 +205,26 @@ def verify_harvest_clean():
         # 4. Tech Adoption
         adopted = sum(1 for f in sim.firms if sim.technology_manager.has_adopted(f.id, "TECH_AGRI_CHEM_01"))
 
+        # 5. Production Metrics (Food Sector)
+        food_firms = [f for f in sim.firms if f.sector == "FOOD" and f.is_active]
+        total_production = sum(f.current_production for f in food_firms)
+        total_inventory = sum(f.inventory.get("basic_food", 0) for f in food_firms)
+        # Assuming finance.sales_volume_this_tick is reset each tick
+        total_sales = sum(f.finance.sales_volume_this_tick for f in food_firms)
+        active_firms_count = len(food_firms)
+        avg_cash = statistics.mean([f.assets for f in food_firms]) if food_firms else 0.0
+
         # Store
         data["tick"].append(tick)
         data["food_price"].append(avg_price)
         data["population"].append(pop_count)
         data["engel_coeff"].append(engel)
         data["tech_adopted"].append(adopted)
+        data["total_production"].append(total_production)
+        data["total_inventory"].append(total_inventory)
+        data["total_sales"].append(total_sales)
+        data["active_food_firms"].append(active_firms_count)
+        data["avg_firm_cash"].append(avg_cash)
 
     # --- Verification ---
     logger.info("--- Verification Results ---")
@@ -225,6 +245,17 @@ def verify_harvest_clean():
     verdict = "ESCAPE VELOCITY ACHIEVED" if (pass_price and pass_pop and pass_engel) else "FAILED"
     logger.info(f"VERDICT: {verdict}")
 
+    # --- CSV Export ---
+    csv_path = "harvest_data.csv"
+    logger.info(f"Exporting data to {csv_path}...")
+    with open(csv_path, "w", newline='') as csvfile:
+        fieldnames = ["tick", "food_price", "population", "engel_coeff", "tech_adopted", "total_production", "total_inventory", "total_sales", "active_food_firms", "avg_firm_cash"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for i in range(len(data["tick"])):
+            row = {k: data[k][i] for k in fieldnames}
+            writer.writerow(row)
+
     # --- Generate Report ---
     report_path = "design/gemini_output/report_phase23_great_harvest.md"
     os.makedirs(os.path.dirname(report_path), exist_ok=True)
@@ -242,12 +273,12 @@ def verify_harvest_clean():
         f.write(f"| Engel Coeff | {data['engel_coeff'][0]:.2f} | {final_engel:.2f} | {final_engel:.2f} | < 0.50 | {pass_engel} |\n\n")
 
         f.write("## Detailed Metrics (Sample)\n")
-        f.write("| Tick | Food Price | Population | Engel | Tech Adopted |\n")
-        f.write("|---|---|---|---|---|\n")
+        f.write("| Tick | Food Price | Population | Engel | Tech Adopted | Production | Inventory | Active Firms |\n")
+        f.write("|---|---|---|---|---|---|---|---|\n")
         # Sample every 20 ticks
         for i in range(0, len(data["tick"]), 20):
-            f.write(f"| {data['tick'][i]} | {data['food_price'][i]:.2f} | {data['population'][i]} | {data['engel_coeff'][i]:.2f} | {data['tech_adopted'][i]} |\n")
-        f.write(f"| {data['tick'][-1]} | {data['food_price'][-1]:.2f} | {data['population'][-1]} | {data['engel_coeff'][-1]:.2f} | {data['tech_adopted'][-1]} |\n\n")
+            f.write(f"| {data['tick'][i]} | {data['food_price'][i]:.2f} | {data['population'][i]} | {data['engel_coeff'][i]:.2f} | {data['tech_adopted'][i]} | {data['total_production'][i]} | {data['total_inventory'][i]} | {data['active_food_firms'][i]} |\n")
+        f.write(f"| {data['tick'][-1]} | {data['food_price'][-1]:.2f} | {data['population'][-1]} | {data['engel_coeff'][-1]:.2f} | {data['tech_adopted'][-1]} | {data['total_production'][-1]} | {data['total_inventory'][-1]} | {data['active_food_firms'][-1]} |\n\n")
 
         f.write("## Technical Debt & Issues Resolved\n")
         f.write("- **Engine Fixes**: Patched core files (`RuleBasedHouseholdDecisionEngine`, `EconomyManager`, etc.) to fix API mismatches and logic bugs.\n")
