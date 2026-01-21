@@ -1,19 +1,16 @@
 {
   "gemini": {
     "command": "spec",
-    "title": "TD-075: Household Facade Refactor",
-    "instruction": "Generate a Zero-Question Spec to refactor the Household facade in simulation/core_agents.py (850+ lines). (1) Extract logic into specialized sub-components (HouseholdBio, HouseholdEcon, HouseholdSocial). (2) Implement the Facade pattern where Household delegates all calls. (3) Standardize context passing via DTOs to avoid prop-drilling or large argument lists.",
-    "context": [
-      "simulation/core_agents.py",
-      "design/TECH_DEBT_LEDGER.md"
-    ],
-    "output": "design/specs/TD-075-Household-SoC-Refactor.md"
+    "title": "Completed",
+    "instruction": "Both Phase 23 and TD-075 specs have been generated.",
+    "context": [],
+    "output": "design/specs/archive.md"
   },
   "jules": {
     "command": "create",
-    "title": "WO-053: Industrial Revolution Implementation",
-    "instruction": "Implement Phase 23 productivity boom and tech diffusion as per the spec. Ensure no regression in existing production logic.",
-    "file": "design/specs/WO-053-Phase23-Industrial-Rev.md",
+    "title": "WO-092: Household Facade Refactor (TD-075)",
+    "instruction": "Refactor Household facade to delegate economic logic as per the spec. Maintain public API compatibility and ensure all tests pass.",
+    "file": "design/specs/TD-075-Household-SoC-Refactor.md",
     "session_id": null,
     "wait": true
   },
