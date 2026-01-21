@@ -161,20 +161,7 @@ class Household(BaseAgent, ILearningAgent):
         self.credit_frozen_until_tick: int = 0
 
         # Phase 23: Inflation Expectation & Price Memory
-        self.expected_inflation: Dict[str, float] = defaultdict(float)
-        self.perceived_avg_prices: Dict[str, float] = {}
-        self.price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=10))
-        # Initialize perceived prices from config/goods_data if possible
-        for g in goods_data:
-             self.perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
-        
-        # Adaptation Rate (Personality Based)
-        # Default Normal
-        self.adaptation_rate: float = getattr(config_module, "ADAPTATION_RATE_NORMAL", 0.2)
-        if personality == Personality.IMPULSIVE:
-             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
-        elif personality == Personality.CONSERVATIVE:
-             self.adaptation_rate = getattr(config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
+        # Moved to EconComponent (WO-092)
 
         # WO-054: Aptitude (Hidden Trait) - Kept on Facade as it's intrinsic
         raw_aptitude = random.gauss(0.5, 0.15)
@@ -489,6 +476,38 @@ class Household(BaseAgent, ILearningAgent):
         self.econ_component.current_food_consumption = value
 
     @property
+    def expected_inflation(self) -> Dict[str, float]:
+        return self.econ_component.expected_inflation
+
+    @expected_inflation.setter
+    def expected_inflation(self, value: Dict[str, float]) -> None:
+        self.econ_component.expected_inflation = value
+
+    @property
+    def perceived_avg_prices(self) -> Dict[str, float]:
+        return self.econ_component.perceived_avg_prices
+
+    @perceived_avg_prices.setter
+    def perceived_avg_prices(self, value: Dict[str, float]) -> None:
+        self.econ_component.perceived_avg_prices = value
+
+    @property
+    def price_history(self) -> defaultdict[str, deque]:
+        return self.econ_component.price_history
+
+    @price_history.setter
+    def price_history(self, value: defaultdict[str, deque]) -> None:
+        self.econ_component.price_history = value
+
+    @property
+    def adaptation_rate(self) -> float:
+        return self.econ_component.adaptation_rate
+
+    @adaptation_rate.setter
+    def adaptation_rate(self, value: float) -> None:
+        self.econ_component.adaptation_rate = value
+
+    @property
     def social_status(self) -> float:
         return self.social_component.social_status
 
@@ -717,44 +736,7 @@ class Household(BaseAgent, ILearningAgent):
     # --- Inflation & Price Logic (Transient/Facade specific) ---
     @override
     def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional["StressScenarioConfig"] = None) -> None:
-        # Kept in Facade for now as it modifies Facade-owned 'perceived_avg_prices' and 'expected_inflation'
-        # Could move to EconComponent if strict.
-        goods_market = market_data.get("goods_market")
-        if not goods_market:
-            return
-
-        adaptive_rate = self.adaptation_rate # Facade attribute
-        if stress_scenario_config and stress_scenario_config.is_active:
-            if stress_scenario_config.scenario_name == 'hyperinflation':
-                adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
-
-        for good in self.goods_info_map.values():
-            item_id = good["id"]
-            actual_price = goods_market.get(f"{item_id}_avg_traded_price")
-
-            if actual_price is not None and actual_price > 0:
-                history = self.price_history[item_id]
-                if history:
-                    last_price = history[-1]
-                    if last_price > 0:
-                        inflation_t = (actual_price - last_price) / last_price
-
-                        old_expect = self.expected_inflation[item_id]
-                        new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
-                        self.expected_inflation[item_id] = new_expect
-
-                history.append(actual_price)
-
-                old_perceived_price = self.perceived_avg_prices.get(
-                    item_id, actual_price
-                )
-                new_perceived_price = (
-                    self.config_module.PERCEIVED_PRICE_UPDATE_FACTOR * actual_price
-                ) + (
-                    (1 - self.config_module.PERCEIVED_PRICE_UPDATE_FACTOR)
-                    * old_perceived_price
-                )
-                self.perceived_avg_prices[item_id] = new_perceived_price
+        self.econ_component.update_perceived_prices(market_data, stress_scenario_config)
 
     # --- Learning & Cloning ---
     @override

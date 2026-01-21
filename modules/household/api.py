@@ -1,10 +1,10 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Deque
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
-    from simulation.dtos import LeisureEffectDTO
+    from simulation.dtos import LeisureEffectDTO, StressScenarioConfig
     from modules.household.dtos import CloningRequestDTO, EconContextDTO, SocialContextDTO, HouseholdStateDTO
 
 class IBioComponent(ABC):
@@ -38,7 +38,36 @@ class IEconComponent(ABC):
     def consume(self, item_id: str, quantity: float, current_time: int) -> Any: ...
 
     @abstractmethod
-    def orchestrate_economic_decisions(self, context: EconContextDTO, orders: List[Any]): ...
+    def orchestrate_economic_decisions(self, context: EconContextDTO, orders: List[Any], stress_scenario_config: Optional[StressScenarioConfig] = None): ...
+
+    # --- Phase 23: Inflation Expectation & Price Memory ---
+    @property
+    @abstractmethod
+    def expected_inflation(self) -> Dict[str, float]: ...
+
+    @property
+    @abstractmethod
+    def perceived_avg_prices(self) -> Dict[str, float]: ...
+
+    @property
+    @abstractmethod
+    def price_history(self) -> Dict[str, Deque[float]]: ...
+
+    @property
+    @abstractmethod
+    def adaptation_rate(self) -> float: ...
+
+    @abstractmethod
+    def update_perceived_prices(
+        self,
+        market_data: Dict[str, Any],
+        stress_scenario_config: Optional[StressScenarioConfig] = None
+    ) -> None:
+        """
+        Calculates and updates the agent's inflation expectation and
+        perceived average prices based on market data.
+        """
+        ...
 
 class ISocialComponent(ABC):
     """Interface for Social Component."""
