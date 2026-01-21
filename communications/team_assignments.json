@@ -41,6 +41,10 @@
       "3358958019672114868": {
         "title": "WO-098-FIX-No-Op-Trap",
         "initial_mission": "명세서 [WO-100-Fix-Market-ID-Mismatch.md]를 수행하라. | 목표: 가계와 기업의 거래 ID를 'basic_food'로 통일하여 거래량 0 문제를 해결하라."
+      },
+      "17832652710235786983": {
+        "title": "WO-098-FIX-No-Op-Trap",
+        "initial_mission": "대수술 명세서 [WO-103-Architectural-Surgery.md]의 'Phase 1'을 집도하라. | 목표: 기업의 assets 관리를 FinanceDepartment로 격리하고 보관비 로직을 정상화할 것. | 지침: firms.py에서 assets 직접 수정을 금지하고 transactional method를 도입하라."
       }
     },
     "completed_sessions": {
