@@ -2,7 +2,7 @@ import unittest
 import os
 import json
 from unittest.mock import MagicMock
-from tests.utils.golden_loader import GoldenLoader
+from simulation.utils.golden_loader import GoldenLoader
 
 class TestGoldenLoader(unittest.TestCase):
     def setUp(self):

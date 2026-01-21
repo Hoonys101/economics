@@ -72,7 +72,10 @@ class EconComponent(IEconComponent):
 
         # WO-095: Robust config access to handle Mocks in tests
         raw_price_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
-        price_memory_len = int(raw_price_len) if isinstance(raw_price_len, (int, float)) else 10
+        try:
+            price_memory_len = int(raw_price_len)
+        except (ValueError, TypeError):
+            price_memory_len = 10
 
         self._price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=price_memory_len))
 
@@ -102,11 +105,17 @@ class EconComponent(IEconComponent):
         # --- History ---
         # WO-095: Robust config access
         raw_ticks = getattr(config_module, "TICKS_PER_YEAR", 100)
-        ticks_per_year = int(raw_ticks) if isinstance(raw_ticks, (int, float)) else 100
+        try:
+            ticks_per_year = int(raw_ticks)
+        except (ValueError, TypeError):
+            ticks_per_year = 100
         self.housing_price_history: deque = deque(maxlen=ticks_per_year)
 
         raw_wage_len = getattr(self.config_module, "WAGE_MEMORY_LENGTH", 30)
-        wage_memory_len = int(raw_wage_len) if isinstance(raw_wage_len, (int, float)) else 30
+        try:
+            wage_memory_len = int(raw_wage_len)
+        except (ValueError, TypeError):
+            wage_memory_len = 30
 
         self.market_wage_history: deque[float] = deque(maxlen=wage_memory_len)
         self.shadow_reservation_wage: float = 0.0

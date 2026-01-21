@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 root_dir = Path(__file__).resolve().parent
 sys.path.append(str(root_dir))
 
-from tests.utils.golden_loader import GoldenLoader
+from simulation.utils.golden_loader import GoldenLoader
 
 def verify_golden_load():
     print("🧪 Verifying Golden Fixture Loading...")
