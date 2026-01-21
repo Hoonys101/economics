@@ -675,12 +675,9 @@ class Household(BaseAgent, ILearningAgent):
             market_data=market_data,
             current_time=current_time,
             government=government,
-            stress_scenario_config=stress_scenario_config
+            stress_scenario_config=stress_scenario_config,
+            state=state_dto
         )
-        # Hack: DecisionContext currently expects 'household' but we want to use 'state' in new engine.
-        # We need to modify DecisionContext to accept 'state' or monkey-patch it here if we can't change DTO yet.
-        # But per plan, we ARE changing DTO. So we will set `context.state = state_dto`.
-        context.state = state_dto # Dynamically attach DTO
 
         # 2. Call Decision Engine
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
