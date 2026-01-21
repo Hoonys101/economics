@@ -149,7 +149,7 @@ THEN 1. 필수 절차: design/manuals/session_conclusion.md 준수
 | `jules-go.bat` | 요원 통신 | SCR Registry (jules 섹션) 참조 |
 | `git-go.bat` | PR 분석 | SCR Registry (git_review 섹션) 참조 |
 | `merge-go.bat` | 안전 병합 | SCR Registry (merge 섹션) 참조 |
-| `harvest-go.bat` | 보고서 수집 | `report_harvester.py` 실행 |
+
 
 ---
 

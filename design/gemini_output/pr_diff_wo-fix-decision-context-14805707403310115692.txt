@@ -19,10 +19,10 @@ index e69de29..16cbbbd 100644
 +✅ Name: sessions/5760309667164312477
 +✅ Registered to team_assignments.json with initial mission
 diff --git a/communications/team_assignments.json b/communications/team_assignments.json
-index 2529b13..5cddb78 100644
+index c76e4ff..5cddb78 100644
 --- a/communications/team_assignments.json
 +++ b/communications/team_assignments.json
-@@ -22,9 +22,13 @@
+@@ -22,13 +22,13 @@
          "title": "WO-098-Economic-Diagnostics",
          "initial_mission": "명세서 [WO-098-Labor-Deadlock-Resolution.md]를 수행하라. | **절대 바로 수정하지 말 것.** | 1. 왜 대풍년이 실패하는지 '가설(Hypothesis)'을 세우고 코드를 통해 검증할 것. | 2. 검증된 원인을 바탕으로 최소한의 파라미터 조정을 적용할 것. | 3. Great Harvest 검증 성공(Population > 300)을 달성할 것."
        },
@@ -32,7 +32,10 @@ index 2529b13..5cddb78 100644
 +      "5679283121683061814": {
 +        "title": "--title",
 +        "initial_mission": "WO-098-DIAG-A: Labor Deadlock"
-+      },
+       },
+-      "15838436664993932603": {
+-        "title": "WO-098-Economic-Diagnostics",
+-        "initial_mission": "가설 4 검증을 위해 [WO-098-DIAG-D-No-Op-Trap.md]를 수행하라. | 1. 룰 기반 엔진의 No-Op 여부를 로그로 증명할 것. | 2. 증명될 경우, 이 것이 인구 정체의 직접적 원인인지 분석할 것. | **코드 수정은 분석 보고 후 진행할 것.**"
 +      "9742488965400277782": {
 +        "title": "--title",
 +        "initial_mission": "WO-098-DIAG-B: Market ID Mismatch"
@@ -40,10 +43,19 @@ index 2529b13..5cddb78 100644
      },
      "completed_sessions": {
 diff --git a/config.py b/config.py
-index 74f137e..cc9a52c 100644
+index 74f137e..cdea445 100644
 --- a/config.py
 +++ b/config.py
-@@ -756,10 +756,6 @@ EDUCATION_COST_PER_LEVEL = {
+@@ -318,6 +318,8 @@ SOCIAL_STATUS_ASSET_WEIGHT = 0.3
+ SOCIAL_STATUS_LUXURY_WEIGHT = 0.7
+ INITIAL_CHILD_ASSETS_FACTOR = 0.5
+ RND_PRODUCTIVITY_MULTIPLIER = 0.01
++TECH_DIFFUSION_RATE = 0.05
++TECH_FERTILIZER_UNLOCK_TICK = 50
+ AI_SKILL_REWARD_WEIGHT = 10.0
+ AI_ASSET_REWARD_WEIGHT = 1.0
+ AI_SOCIAL_STATUS_REWARD_WEIGHT = 5.0
+@@ -756,10 +758,6 @@ EDUCATION_COST_PER_LEVEL = {
  SCHOLARSHIP_WEALTH_PERCENTILE = 0.20  # 하위 20%
  SCHOLARSHIP_POTENTIAL_THRESHOLD = 0.7  # 잠재력 상위 30%
  
@@ -55,14 +67,16 @@ index 74f137e..cc9a52c 100644
  GOVERNMENT_POLICY_MODE = "AI_ADAPTIVE"  # "TAYLOR_RULE" (WO-056) or "AI_ADAPTIVE" (WO-057)
  TARGET_INFLATION_RATE = 0.02      # 2%
 diff --git a/design/command_registry.json b/design/command_registry.json
-index 5a32b91..84e246b 100644
+index 5935041..84e246b 100644
 --- a/design/command_registry.json
 +++ b/design/command_registry.json
-@@ -10,7 +10,7 @@
+@@ -9,8 +9,8 @@
+   "jules": {
      "command": "create",
      "session_id": null,
-     "title": "WO-098-Economic-Diagnostics",
--    "instruction": "가설 4 검증을 위해 [WO-098-DIAG-D-No-Op-Trap.md]를 수행하라. | 1. 룰 기반 엔진의 No-Op 여부를 로그로 증명할 것. | 2. 증명될 경우, 이 것이 인구 정체의 직접적 원인인지 분석할 것. | **코드 수정은 분석 보고 후 진행할 것.**",
+-    "title": "WO-098-FIX-No-Op-Trap",
+-    "instruction": "명세서 [WO-098-FIX-No-Op-Trap.md]를 수행하라. | 목표: simulation/core_agents.py를 수정하여 가계가 주문(Order)을 생성하지 않는 'No-Op Trap'을 해결할 것.",
++    "title": "WO-098-Economic-Diagnostics",
 +    "instruction": "명세서 [WO-098-Labor-Deadlock-Resolution.md]를 수행하라. | **절대 바로 수정하지 말 것.** | 1. 왜 대풍년이 실패하는지 '가설(Hypothesis)'을 세우고 코드를 통해 검증할 것. | 2. 검증된 원인을 바탕으로 최소한의 파라미터 조정을 적용할 것. | 3. Great Harvest 검증 성공(Population > 300)을 달성할 것.",
      "wait": true
    },
@@ -455,6 +469,1130 @@ index 37b2f2a..0000000
 - 
 -         assert manager.has_adopted(1, tech_id)
 - 
+diff --git a/design/gemini_output/pr_diff_wo-fix-decision-context-14805707403310115692.txt b/design/gemini_output/pr_diff_wo-fix-decision-context-14805707403310115692.txt
+deleted file mode 100644
+index f3eda25..0000000
+--- a/design/gemini_output/pr_diff_wo-fix-decision-context-14805707403310115692.txt
++++ /dev/null
+@@ -1,1118 +0,0 @@
+-diff --git a/communications/jules_logs/last_run.md b/communications/jules_logs/last_run.md
+-index e69de29..16cbbbd 100644
+---- a/communications/jules_logs/last_run.md
+-+++ b/communications/jules_logs/last_run.md
+-@@ -0,0 +1,15 @@
+-+warning: in the working copy of 'design/gemini_output/pr_diff_WO-097-economic-rebalance-1932089623817274888.txt', LF will be replaced by CRLF the next time Git touches it
+-+[main 3965160] chore: Pre-Jules dispatch for WO-098-Economic-Diagnostics
+-+ 8 files changed, 359 insertions(+), 24 deletions(-)
+-+ create mode 100644 design/gemini_output/pr_diff_WO-097-economic-rebalance-1932089623817274888.txt
+-+ create mode 100644 design/gemini_output/pr_review_WO-097-economic-rebalance-1932089623817274888.md
+-+ create mode 100644 design/gemini_output/review_backup_20260121_131732_Analyze_this_PR.md
+-+ create mode 100644 design/work_orders/WO-098-Labor-Deadlock-Resolution.md
+-+INFO:JulesBridge:Creating Jules session: WO-098-Economic-Diagnostics
+-+INFO:JulesBridge:Session registered: 5760309667164312477 - WO-098-Economic-Diagnostics
+-+[GIT] Syncing Git changes for task: WO-098-Economic-Diagnostics...
+-+   [x] Changes committed
+-+   [x] Pushed to remote
+-+✅ Session created: 5760309667164312477
+-+✅ Name: sessions/5760309667164312477
+-+✅ Registered to team_assignments.json with initial mission
+-diff --git a/communications/team_assignments.json b/communications/team_assignments.json
+-index 2529b13..5cddb78 100644
+---- a/communications/team_assignments.json
+-+++ b/communications/team_assignments.json
+-@@ -22,9 +22,13 @@
+-         "title": "WO-098-Economic-Diagnostics",
+-         "initial_mission": "명세서 [WO-098-Labor-Deadlock-Resolution.md]를 수행하라. | **절대 바로 수정하지 말 것.** | 1. 왜 대풍년이 실패하는지 '가설(Hypothesis)'을 세우고 코드를 통해 검증할 것. | 2. 검증된 원인을 바탕으로 최소한의 파라미터 조정을 적용할 것. | 3. Great Harvest 검증 성공(Population > 300)을 달성할 것."
+-       },
+--      "12064575295125265180": {
+--        "title": "WO-098-Economic-Diagnostics",
+--        "initial_mission": "명세서 [WO-098-Labor-Deadlock-Resolution.md]를 수행하라. | **절대 바로 수정하지 말 것.** | 1. 왜 대풍년이 실패하는지 '가설(Hypothesis)'을 세우고 코드를 통해 검증할 것. | 2. 검증된 원인을 바탕으로 최소한의 파라미터 조정을 적용할 것. | 3. Great Harvest 검증 성공(Population > 300)을 달성할 것."
+-+      "5679283121683061814": {
+-+        "title": "--title",
+-+        "initial_mission": "WO-098-DIAG-A: Labor Deadlock"
+-+      },
+-+      "9742488965400277782": {
+-+        "title": "--title",
+-+        "initial_mission": "WO-098-DIAG-B: Market ID Mismatch"
+-       }
+-     },
+-     "completed_sessions": {
+-diff --git a/config.py b/config.py
+-index 74f137e..cc9a52c 100644
+---- a/config.py
+-+++ b/config.py
+-@@ -756,10 +756,6 @@ EDUCATION_COST_PER_LEVEL = {
+- SCHOLARSHIP_WEALTH_PERCENTILE = 0.20  # 하위 20%
+- SCHOLARSHIP_POTENTIAL_THRESHOLD = 0.7  # 잠재력 상위 30%
+- 
+--# --- WO-098-DIAG-C: Tech Adoption Barriers (Hotfix) ---
+--TECH_FERTILIZER_UNLOCK_TICK = 30  # Unlock earlier (Default 50 -> 30)
+--TECH_DIFFUSION_RATE = 0.10        # 2x faster adoption (Default 0.05 -> 0.10)
+--
+- # --- Phase 24: Adaptive Evolution (WO-057) ---
+- GOVERNMENT_POLICY_MODE = "AI_ADAPTIVE"  # "TAYLOR_RULE" (WO-056) or "AI_ADAPTIVE" (WO-057)
+- TARGET_INFLATION_RATE = 0.02      # 2%
+-diff --git a/design/command_registry.json b/design/command_registry.json
+-index 5a32b91..84e246b 100644
+---- a/design/command_registry.json
+-+++ b/design/command_registry.json
+-@@ -10,7 +10,7 @@
+-     "command": "create",
+-     "session_id": null,
+-     "title": "WO-098-Economic-Diagnostics",
+--    "instruction": "가설 4 검증을 위해 [WO-098-DIAG-D-No-Op-Trap.md]를 수행하라. | 1. 룰 기반 엔진의 No-Op 여부를 로그로 증명할 것. | 2. 증명될 경우, 이 것이 인구 정체의 직접적 원인인지 분석할 것. | **코드 수정은 분석 보고 후 진행할 것.**",
+-+    "instruction": "명세서 [WO-098-Labor-Deadlock-Resolution.md]를 수행하라. | **절대 바로 수정하지 말 것.** | 1. 왜 대풍년이 실패하는지 '가설(Hypothesis)'을 세우고 코드를 통해 검증할 것. | 2. 검증된 원인을 바탕으로 최소한의 파라미터 조정을 적용할 것. | 3. Great Harvest 검증 성공(Population > 300)을 달성할 것.",
+-     "wait": true
+-   },
+-   "git": {
+-diff --git a/design/gemini_output/pr_diff_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.txt b/design/gemini_output/pr_diff_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.txt
+-deleted file mode 100644
+-index 4ad3637..0000000
+---- a/design/gemini_output/pr_diff_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.txt
+-+++ /dev/null
+-@@ -1,222 +0,0 @@
+--diff --git a/communications/team_assignments.json b/communications/team_assignments.json
+--index 5cddb78..e229737 100644
+----- a/communications/team_assignments.json
+--+++ b/communications/team_assignments.json
+--@@ -25,10 +25,6 @@
+--       "5679283121683061814": {
+--         "title": "--title",
+--         "initial_mission": "WO-098-DIAG-A: Labor Deadlock"
+---      },
+---      "9742488965400277782": {
+---        "title": "--title",
+---        "initial_mission": "WO-098-DIAG-B: Market ID Mismatch"
+--       }
+--     },
+--     "completed_sessions": {
+--diff --git a/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md b/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
+--index 0c55dc3..1c5280a 100644
+----- a/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
+--+++ b/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
+--@@ -6,8 +6,28 @@
+-- In `RuleBasedHouseholdDecisionEngine.py`, if a household decides to `BUY_BASIC_FOOD` (even if they have no money), the logic skips the `PARTICIPATE_LABOR_MARKET` step because `chosen_tactic` is no longer `NO_ACTION`.
+-- 
+-- **Tasks**:
+---1. **Analysis**: Inspect `simulation/decisions/rule_based_household_engine.py` line 110.
+---2. **Experiment**: Create a script `scripts/diag_labor_deadlock.py`. 
+--+1. [x] **Analysis**: Inspect `simulation/decisions/rule_based_household_engine.py` line 110.
+--+   - **Finding**: The code sets `chosen_tactic = Tactic.BUY_BASIC_FOOD` *before* checking if the household can actually afford any food.
+--+   - Later, the labor market logic checks `if chosen_tactic == Tactic.NO_ACTION`. Since the tactic is already set to `BUY_BASIC_FOOD`, the labor logic is skipped.
+--+   - If the household has 0 assets, `quantity_to_buy` is 0, so no `BUY` order is created.
+--+   - Result: No Food Bought, No Labor Sold. Infinite Loop of Poverty.
+--+
+--+2. [x] **Experiment**: Create a script `scripts/diag_labor_deadlock.py`.
+--    - Mock a household with 0 Assets, 0 Food, and 80 Survival Need.
+--    - Run `make_decisions` and log if a `SELL labor` order is generated.
+---3. **Report**: Document if the deadlock exists.
+--+   - **Result**:
+--+     ```
+--+     Running Labor Deadlock Experiment...
+--+     Chosen Tactic: Tactic.BUY_BASIC_FOOD
+--+     Orders generated: 0
+--+     DEADLOCK CONFIRMED: Household tried to buy food (failed due to 0 assets) and skipped labor market.
+--+     ```
+--+
+--+3. [x] **Report**: Document if the deadlock exists.
+--+   - **Status**: **CONFIRMED**.
+--+   - **Root Cause**: Premature assignment of `chosen_tactic` in `RuleBasedHouseholdDecisionEngine` and strict mutual exclusivity between buying food and selling labor.
+--+   - **Proposed Fix**:
+--+     - Allow Labor Participation even if `chosen_tactic` is `BUY_BASIC_FOOD` (if `is_employed` is False).
+--+     - Or, only set `chosen_tactic` if an order is actually generated.
+--+     - Better yet: Allow multiple tactics (e.g., Buy Food AND Sell Labor). For rule-based, we can just remove the `if chosen_tactic == Tactic.NO_ACTION` check for the labor block, or modify it to allow labor if the previous tactic failed to produce results, or just allow both.
+--+     - **Selected Fix Strategy**: Remove the `if chosen_tactic == Tactic.NO_ACTION` restriction for Labor Participation. A household should *always* try to work if unemployed and poor, regardless of whether they are also buying food. Buying food consumes assets; selling labor generates assets. They are complementary, not mutually exclusive.
+--diff --git a/simulation/decisions/rule_based_firm_engine.py b/simulation/decisions/rule_based_firm_engine.py
+--index 7e69c89..262bbd5 100644
+----- a/simulation/decisions/rule_based_firm_engine.py
+--+++ b/simulation/decisions/rule_based_firm_engine.py
+--@@ -111,7 +111,8 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+-- 
+--         # SoC Refactor: use hr.employees
+--         if len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+---            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+--+            # WO-098 Fix: Use correct market ID "labor"
+--+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
+--             orders.append(order)
+--             self.logger.info(
+--                 f"Hiring to meet minimum employee count. Offering dynamic wage: {offered_wage:.2f}",
+--@@ -125,7 +126,8 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+--             needed_labor > len(firm.hr.employees)
+--             and len(firm.hr.employees) < self.config_module.FIRM_MAX_EMPLOYEES
+--         ):
+---            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+--+            # WO-098 Fix: Use correct market ID "labor"
+--+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
+--             orders.append(order)
+--             self.logger.info(
+--                 f"Planning to BUY labor for dynamic wage {offered_wage:.2f}",
+--diff --git a/simulation/decisions/rule_based_household_engine.py b/simulation/decisions/rule_based_household_engine.py
+--index 9eef46b..1903e80 100644
+----- a/simulation/decisions/rule_based_household_engine.py
+--+++ b/simulation/decisions/rule_based_household_engine.py
+--@@ -106,77 +106,81 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+-- 
+--         # 2. 노동 시장 참여 (실업 상태일 경우)
+--         if not household.is_employed and household.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
+--+            # WO-098 Fix: Allow labor participation even if food was bought (remove mutual exclusivity)
+--             # 생존 욕구가 높거나 자산이 부족하면 노동 시장에 참여
+---            if chosen_tactic == Tactic.NO_ACTION: # 음식 구매가 이미 결정되었으면 이번 턴에는 노동 시장 참여 안함 (간단화를 위해)
+--+
+--+            # If we are already doing something else (like buying food), we add labor participation as well.
+--+            if chosen_tactic == Tactic.NO_ACTION:
+--                 chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
+---                chosen_aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 공격성 중립으로 설정
+--+                chosen_aggressiveness = Aggressiveness.NEUTRAL
+-- 
+---                # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
+--+            # Continue with labor logic regardless of previous tactic
+--+            # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
+-- 
+---                # 1. Update Wage Modifier (Adaptive)
+---                decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
+---                floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
+---                household.wage_modifier *= (1.0 - decay_rate)
+---                household.wage_modifier = max(floor_mod, household.wage_modifier)
+---                
+---                # 2. Survival Trigger (Panic Mode)
+---                food_inventory = household.inventory.get("basic_food", 0.0)
+---                food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+---                if food_price <= 0: food_price = 10.0
+--+            # 1. Update Wage Modifier (Adaptive)
+--+            decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
+--+            floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
+--+            household.wage_modifier *= (1.0 - decay_rate)
+--+            household.wage_modifier = max(floor_mod, household.wage_modifier)
+-- 
+---                survival_days = food_inventory + (household.assets / food_price)
+---                critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
+--+            # 2. Survival Trigger (Panic Mode)
+--+            food_inventory = household.inventory.get("basic_food", 0.0)
+--+            food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+--+            if food_price <= 0: food_price = 10.0
+-- 
+---                is_panic = False
+---                desired_wage = 0.0
+--+            survival_days = food_inventory + (household.assets / food_price)
+--+            critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
+-- 
+---                if survival_days < critical_turns:
+---                    is_panic = True
+---                    desired_wage = 0.0
+---                    self.logger.info(
+---                        f"PANIC_MODE | Household {household.id} desperate (RuleBased). Survival Days: {survival_days:.1f}. Wage: 0.0",
+---                        extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_panic"]}
+---                    )
+---                else:
+---                    # Normal Adaptive Wage
+---                    labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+---                    market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+---                    desired_wage = market_avg_wage * household.wage_modifier
+---
+---                # 3. Generate Order
+---                # Retrieve Market Data
+--+            is_panic = False
+--+            desired_wage = 0.0
+--+
+--+            if survival_days < critical_turns:
+--+                is_panic = True
+--+                desired_wage = 0.0
+--+                self.logger.info(
+--+                    f"PANIC_MODE | Household {household.id} desperate (RuleBased). Survival Days: {survival_days:.1f}. Wage: 0.0",
+--+                    extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_panic"]}
+--+                )
+--+            else:
+--+                # Normal Adaptive Wage
+--                 labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+--                 market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+---                best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
+---
+---                # Refuse labor supply if market offer is too low (only if NOT panic)
+---                effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
+---                # [Fix] Use dynamic reservation_wage as floor, not fixed 0.7 ratio
+---                # wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+---                wage_floor = desired_wage
+---
+---                if not is_panic and effective_offer < wage_floor:
+---                    self.logger.info(
+---                        f"RESERVATION_WAGE | Household {household.id} refused labor (RuleBased). "
+---                        f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f}, Mod: {household.wage_modifier:.2f})",
+---                        extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
+---                    )
+---                    # Skip order generation
+---                else:
+---                    orders.append(
+---                        Order(
+---                            household.id,
+---                            "SELL",
+---                            "labor",
+---                            1.0,  # 1 unit of labor
+---                            desired_wage,
+---                            "labor", # FIX: Use correct market ID "labor"
+---                        )
+---                    )
+---                    self.logger.info(
+---                        f"Household {household.id} offers labor at wage {desired_wage:.2f}",
+---                        extra={"tick": current_time, "agent_id": household.id, "tactic": chosen_tactic.name}
+--+                desired_wage = market_avg_wage * household.wage_modifier
+--+
+--+            # 3. Generate Order
+--+            # Retrieve Market Data
+--+            labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+--+            market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+--+            best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
+--+
+--+            # Refuse labor supply if market offer is too low (only if NOT panic)
+--+            effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
+--+            # [Fix] Use dynamic reservation_wage as floor, not fixed 0.7 ratio
+--+            # wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+--+            wage_floor = desired_wage
+--+
+--+            if not is_panic and effective_offer < wage_floor:
+--+                self.logger.info(
+--+                    f"RESERVATION_WAGE | Household {household.id} refused labor (RuleBased). "
+--+                    f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f}, Mod: {household.wage_modifier:.2f})",
+--+                    extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
+--+                )
+--+                # Skip order generation
+--+            else:
+--+                orders.append(
+--+                    Order(
+--+                        household.id,
+--+                        "SELL",
+--+                        "labor",
+--+                        1.0,  # 1 unit of labor
+--+                        desired_wage,
+--+                        "labor", # FIX: Use correct market ID "labor"
+--                     )
+--+                )
+--+                self.logger.info(
+--+                    f"Household {household.id} offers labor at wage {desired_wage:.2f}",
+--+                    extra={"tick": current_time, "agent_id": household.id, "tactic": chosen_tactic.name}
+--+                )
+-- 
+--         # TODO: 다른 규칙 기반 로직 (예: 저축, 투자, 사치품 구매 등) 추가
+--         
+-diff --git a/design/gemini_output/pr_diff_wo-098-market-id-fix-9742488965400277782.txt b/design/gemini_output/pr_diff_wo-098-market-id-fix-9742488965400277782.txt
+-deleted file mode 100644
+-index a0b9d1d..0000000
+---- a/design/gemini_output/pr_diff_wo-098-market-id-fix-9742488965400277782.txt
+-+++ /dev/null
+-@@ -1,43 +0,0 @@
+--diff --git a/simulation/decisions/ai_driven_household_engine.py b/simulation/decisions/ai_driven_household_engine.py
+--index 5758e12..a0f1d3d 100644
+----- a/simulation/decisions/ai_driven_household_engine.py
+--+++ b/simulation/decisions/ai_driven_household_engine.py
+--@@ -409,7 +409,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-- 
+--                      if should_buy:
+--                          buy_order = Order(
+---                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "real_estate"
+--+                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
+--                          )
+--                          orders.append(buy_order)
+-- 
+--diff --git a/tests/verify_real_estate_sales.py b/tests/verify_real_estate_sales.py
+--index 25824b9..602b893 100644
+----- a/tests/verify_real_estate_sales.py
+--+++ b/tests/verify_real_estate_sales.py
+--@@ -8,6 +8,7 @@ from simulation.bank import Bank, Loan
+-- from simulation.markets import OrderBookMarket
+-- from simulation.models import Order
+-- from simulation.models import RealEstateUnit
+--+from simulation.ai.api import Personality
+-- import config
+-- 
+-- class MockConfig:
+--@@ -51,7 +52,7 @@ class TestRealEstateSales(unittest.TestCase):
+--             initial_needs={},
+--             decision_engine=mock_decision_engine,
+--             value_orientation="WEALTH",
+---            personality=None
+--+            personality=Personality.STATUS_SEEKER
+--         )
+--         self.housing_manager = HousingManager(self.agent, self.config)
+-- 
+--@@ -115,7 +116,7 @@ class TestRealEstateSales(unittest.TestCase):
+--         mock_talent = MagicMock()
+--         mock_talent.base_learning_rate = 0.5
+--         mock_talent.max_potential = {}
+---        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=None)
+--+        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=Personality.STATUS_SEEKER)
+--         
+--         # Need at least one household
+--         households = [hh1]
+-diff --git a/design/gemini_output/pr_diff_wo-098-tech-barriers-9481411700157535978.txt b/design/gemini_output/pr_diff_wo-098-tech-barriers-9481411700157535978.txt
+-deleted file mode 100644
+-index 37b2f2a..0000000
+---- a/design/gemini_output/pr_diff_wo-098-tech-barriers-9481411700157535978.txt
+-+++ /dev/null
+-@@ -1,105 +0,0 @@
+--diff --git a/config.py b/config.py
+--index cc9a52c..74f137e 100644
+----- a/config.py
+--+++ b/config.py
+--@@ -756,6 +756,10 @@ EDUCATION_COST_PER_LEVEL = {
+-- SCHOLARSHIP_WEALTH_PERCENTILE = 0.20  # 하위 20%
+-- SCHOLARSHIP_POTENTIAL_THRESHOLD = 0.7  # 잠재력 상위 30%
+-- 
+--+# --- WO-098-DIAG-C: Tech Adoption Barriers (Hotfix) ---
+--+TECH_FERTILIZER_UNLOCK_TICK = 30  # Unlock earlier (Default 50 -> 30)
+--+TECH_DIFFUSION_RATE = 0.10        # 2x faster adoption (Default 0.05 -> 0.10)
+--+
+-- # --- Phase 24: Adaptive Evolution (WO-057) ---
+-- GOVERNMENT_POLICY_MODE = "AI_ADAPTIVE"  # "TAYLOR_RULE" (WO-056) or "AI_ADAPTIVE" (WO-057)
+-- TARGET_INFLATION_RATE = 0.02      # 2%
+--diff --git a/tests/systems/test_technology_manager.py b/tests/systems/test_technology_manager.py
+--index afe5248..385524d 100644
+----- a/tests/systems/test_technology_manager.py
+--+++ b/tests/systems/test_technology_manager.py
+--@@ -7,8 +7,8 @@ class TestTechnologyManager:
+--     @pytest.fixture
+--     def config(self):
+--         mock_config = MagicMock()
+---        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 10
+---        mock_config.TECH_DIFFUSION_RATE = 0.05
+--+        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 30 # Updated default
+--+        mock_config.TECH_DIFFUSION_RATE = 0.10       # Updated default
+--         return mock_config
+-- 
+--     @pytest.fixture
+--@@ -16,24 +16,24 @@ class TestTechnologyManager:
+--         return TechnologyManager(config, MagicMock())
+-- 
+--     def test_effective_diffusion_rate(self, manager):
+---        # Base rate = 0.05
+---        # HCI = 1.0 -> Boost = 0 -> Rate = 0.05
+--+        # Base rate = 0.10 (Updated from 0.05)
+--+        # HCI = 1.0 -> Boost = 0 -> Rate = 0.10
+--         manager.human_capital_index = 1.0
+---        assert manager._get_effective_diffusion_rate(0.05) == 0.05
+--+        assert manager._get_effective_diffusion_rate(0.10) == 0.10
+-- 
+---        # HCI = 3.0 -> 0.5 * 2.0 = 1.0 -> Boost = 1.0 -> Rate = 0.05 * 2.0 = 0.1
+--+        # HCI = 3.0 -> 0.5 * 2.0 = 1.0 -> Boost = 1.0 -> Rate = 0.10 * 2.0 = 0.20
+--         manager.human_capital_index = 3.0
+---        assert manager._get_effective_diffusion_rate(0.05) == 0.10
+--+        assert manager._get_effective_diffusion_rate(0.10) == 0.20
+-- 
+---        # HCI = 5.0 -> 0.5 * 4.0 = 2.0 -> Boost = min(1.5, 2.0) = 1.5 -> Rate = 0.05 * 2.5 = 0.125
+--+        # HCI = 5.0 -> 0.5 * 4.0 = 2.0 -> Boost = min(1.5, 2.0) = 1.5 -> Rate = 0.10 * 2.5 = 0.25
+--         manager.human_capital_index = 5.0
+---        assert manager._get_effective_diffusion_rate(0.05) == 0.125
+--+        assert manager._get_effective_diffusion_rate(0.10) == 0.25
+-- 
+--     def test_unlock_and_visionary_adoption(self, manager):
+--         # Setup Tech
+--         tech_id = "TECH_AGRI_CHEM_01"
+--         tech = manager.tech_tree[tech_id]
+---        tech.unlock_tick = 10
+--+        tech.unlock_tick = 30 # Updated check
+--         tech.sector = "FOOD"
+-- 
+--         # Setup Firms DTO
+--@@ -43,13 +43,13 @@ class TestTechnologyManager:
+--             FirmTechInfoDTO(id=3, sector="MANUFACTURING", is_visionary=True),
+--         ]
+-- 
+---        # Tick 9: No unlock
+---        manager.update(9, firms, 1.0)
+--+        # Tick 29: No unlock
+--+        manager.update(29, firms, 1.0)
+--         assert not tech.is_unlocked
+--         assert not manager.has_adopted(1, tech_id)
+-- 
+---        # Tick 10: Unlock
+---        manager.update(10, firms, 1.0)
+--+        # Tick 30: Unlock
+--+        manager.update(30, firms, 1.0)
+--         assert tech.is_unlocked
+-- 
+--         # Visionary Check
+--@@ -64,7 +64,7 @@ class TestTechnologyManager:
+--         # Setup Tech
+--         tech_id = "TECH_AGRI_CHEM_01"
+--         tech = manager.tech_tree[tech_id]
+---        tech.unlock_tick = 10
+--+        tech.unlock_tick = 30
+--         tech.diffusion_rate = 0.0 # No diffusion initially
+-- 
+--         firms = [
+--@@ -73,12 +73,12 @@ class TestTechnologyManager:
+-- 
+--         # Unlock it first (needs unlock call)
+--         # Note: _unlock_tech also iterates firms, but firm 1 is not visionary, so it won't adopt there.
+---        manager.update(10, firms, 1.0)
+--+        manager.update(30, firms, 1.0)
+--         assert not manager.has_adopted(1, tech_id) # Not visionary, and diffusion 0%
+-- 
+--         # Now enable diffusion
+--         tech.diffusion_rate = 1.0
+---        manager.update(11, firms, 1.0)
+--+        manager.update(31, firms, 1.0)
+-- 
+--         assert manager.has_adopted(1, tech_id)
+-- 
+-diff --git a/design/gemini_output/pr_review_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.md b/design/gemini_output/pr_review_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.md
+-deleted file mode 100644
+-index 6c25a03..0000000
+---- a/design/gemini_output/pr_review_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.md
+-+++ /dev/null
+-@@ -1,45 +0,0 @@
+--🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
+--📖 Attached context: C:\coding\economics\design\gemini_output\pr_diff_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.txt
+--🚀 [GeminiWorker] Running task with manual: git_reviewer.md
+--
+--📝 [Review Report]
+--============================================================
+--# 🔍 Git Diff Review: WO-098-DIAG-A Labor Deadlock
+--
+-----
+--
+--### 1. 🔍 Summary
+--이 변경 사항은 가난한 가구(household)가 자산이 없을 때 식량을 구매하려다 노동 시장 참여를 건너뛰어 발생하는 치명적인 교착 상태(deadlock)를 해결합니다. 또한, 기업(firm)과 가구 양측에서 잘못 하드코딩되었던 노동 시장 ID를 수정하여 시장 참여 로직의 정합성을 보강했습니다.
+--
+--### 2. 🚨 Critical Issues
+--- **(FIXED) Hardcoded Market ID**: `simulation/decisions/rule_based_firm_engine.py`와 `simulation/decisions/rule_based_household_engine.py` 파일에서 노동 시장의 ID가 `"labor_market"`로 잘못 하드코딩되어 있던 문제가 발견되었으며, 올바른 ID인 `"labor"`로 수정되었습니다. 이는 잠재적인 시장 매칭 실패를 방지하는 중요한 수정입니다.
+--
+--다른 보안 위반, 민감 정보 하드코딩, 또는 시스템 절대 경로 사용은 발견되지 않았습니다.
+--
+--### 3. ⚠️ Logic & Spec Gaps
+--- **Work Order 준수**: `design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md`에 기술된 분석 내용과 해결 전략이 코드에 정확히 반영되었습니다.
+--- **Deadlock 해결**: `rule_based_household_engine.py`에서 `chosen_tactic == Tactic.NO_ACTION` 조건을 제거함으로써, 실업 상태의 가구가 식량 구매 시도와 무관하게 항상 노동 시장에 참여할 수 있도록 로직이 변경되었습니다. 이는 "가진 돈이 없어 굶주리면서도 일을 하지 않는" 교착 상태를 성공적으로 해결합니다.
+--
+--### 4. 💡 Suggestions
+--- **(Minor) Code Clarity**: `rule_based_household_engine.py`의 `L111-114` 주변 로직이 약간 우회적으로 보입니다. 주석은 "다른 행동을 하더라도 노동 참여를 추가한다"고 설명하지만, 코드는 `chosen_tactic == Tactic.NO_ACTION`일 때만 tactic을 설정합니다. 현재 로직은 의도대로 동작하지만, 아래와 같이 코드를 단순화하여 가독성을 높일 수 있습니다.
+--
+--  ```python
+--  # 제안 (Suggestion)
+--  # 기존 코드 블록 전체를 아래로 대체
+--  if not household.is_employed and household.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
+--      # WO-098 Fix: 항상 노동 시장 참여를 시도 (기존 행동과 무관)
+--      if chosen_tactic == Tactic.NO_ACTION:
+--          chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
+--          # aggressiveness 설정 등은 필요 시 여기에...
+--
+--      # --- 이후 노동 주문 생성 로직은 동일하게 진행 ---
+--      # (Wage Modifier 업데이트, Panic Mode 체크, Order 생성 등)
+--  ```
+--  이는 현재 구현과 기능적으로 동일하지만, 의도를 더 명확하게 드러냅니다.
+--
+--### 5. ✅ Verdict
+--**APPROVE**
+--
+--**Reasoning**: 제안된 변경 사항은 문서화된 치명적 버그를 성공적으로 해결하고, 추가적으로 발견된 하드코딩 오류까지 수정했습니다. 코드의 안정성과 논리적 정합성을 크게 향상시키는 커밋입니다.
+--
+--============================================================
+-diff --git a/design/gemini_output/pr_review_wo-098-market-id-fix-9742488965400277782.md b/design/gemini_output/pr_review_wo-098-market-id-fix-9742488965400277782.md
+-deleted file mode 100644
+-index 931b115..0000000
+---- a/design/gemini_output/pr_review_wo-098-market-id-fix-9742488965400277782.md
+-+++ /dev/null
+-@@ -1,24 +0,0 @@
+--🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
+--📖 Attached context: C:\coding\economics\design\gemini_output\pr_diff_wo-098-market-id-fix-9742488965400277782.txt
+--🚀 [GeminiWorker] Running task with manual: git_reviewer.md
+--
+--📝 [Review Report]
+--============================================================
+--# 🔍 Git Diff Review: WO-098 Market ID Fix
+--
+--## 🔍 Summary
+--`AIDrivenHouseholdDecisionEngine`에서 부동산 구매 주문 시 사용되는 시장 ID를 `"real_estate"`에서 `"housing"`으로 수정했습니다. 또한, 관련 테스트 코드에서 `Household` 생성 시 `personality` 인자를 `Personality.STATUS_SEEKER`로 명시하도록 업데이트했습니다.
+--
+--## 🚨 Critical Issues
+--- 발견되지 않았습니다.
+--
+--## ⚠️ Logic & Spec Gaps
+--- 이번 변경은 주문이 올바른 시장으로 라우팅되도록 하는 버그 수정으로 보이며, Spec과의 정합성을 높이는 긍정적인 수정입니다.
+--
+--## 💡 Suggestions
+--- 특이사항 없습니다. 깔끔한 수정입니다.
+--
+--## ✅ Verdict
+--**APPROVE**
+--
+--============================================================
+-diff --git a/design/gemini_output/pr_review_wo-098-tech-barriers-9481411700157535978.md b/design/gemini_output/pr_review_wo-098-tech-barriers-9481411700157535978.md
+-deleted file mode 100644
+-index 990cb56..0000000
+---- a/design/gemini_output/pr_review_wo-098-tech-barriers-9481411700157535978.md
+-+++ /dev/null
+-@@ -1,24 +0,0 @@
+--🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
+--📖 Attached context: C:\coding\economics\design\gemini_output\pr_diff_wo-098-tech-barriers-9481411700157535978.txt
+--🚀 [GeminiWorker] Running task with manual: git_reviewer.md
+--
+--📝 [Review Report]
+--============================================================
+--# 🔍 Git Diff Review: WO-098-tech-barriers
+--
+--## 🔍 Summary
+--`config.py`의 기술 채택 관련 파라미터를 수정한 Hotfix입니다. `TECH_FERTILIZER_UNLOCK_TICK`을 30으로, `TECH_DIFFUSION_RATE`를 0.10으로 변경하여 기술 잠금 해제 시점을 앞당기고 확산 속도를 2배로 높였습니다. 관련 시스템 테스트(`test_technology_manager.py`)도 새 기본값에 맞춰 성공적으로 업데이트되었습니다.
+--
+--## 🚨 Critical Issues
+--- 발견되지 않음. (보안 위반, 하드코딩, 제로섬 위반 없음)
+--
+--## ⚠️ Logic & Spec Gaps
+--- 발견되지 않음. 변경된 설정값(`config.py`)과 이를 검증하는 테스트 코드의 기대값(expected values)이 정확히 일치하며, 커밋 의도(Hotfix)와 구현이 부합합니다.
+--
+--## 💡 Suggestions
+--- `test_effective_diffusion_rate` 테스트 내의 계산 과정 주석이 변경된 기본값을 잘 반영하여 명료하게 수정되었습니다. 이는 유지보수 관점에서 매우 훌륭한 사례입니다.
+--
+--## ✅ Verdict
+--**APPROVE**
+--
+--============================================================
+-diff --git a/design/gemini_output/report_phase23_great_harvest.md b/design/gemini_output/report_phase23_great_harvest.md
+-index afbdb8b..0ffa8fa 100644
+---- a/design/gemini_output/report_phase23_great_harvest.md
+-+++ b/design/gemini_output/report_phase23_great_harvest.md
+-@@ -7,38 +7,38 @@
+- | Metric | Initial | Final | Result | Pass Criteria | Pass |
+- |---|---|---|---|---|---|
+- | Food Price | 5.00 | 5.00 | 0.0% Drop | >= 50% Drop | False |
+--| Population | 56 | 25 | 0.45x Growth | >= 2.0x Growth | False |
+-+| Population | 57 | 22 | 0.39x Growth | >= 2.0x Growth | False |
+- | Engel Coeff | 1.00 | 1.00 | 1.00 | < 0.50 | False |
+- 
+- ## Detailed Metrics (Sample)
+- | Tick | Food Price | Population | Engel | Tech Adopted |
+- |---|---|---|---|---|
+--| 0 | 5.00 | 56 | 1.00 | 0 |
+-+| 0 | 5.00 | 57 | 1.00 | 0 |
+- | 20 | 5.00 | 22 | 1.00 | 0 |
+--| 40 | 5.00 | 20 | 1.00 | 0 |
+--| 60 | 5.00 | 15 | 1.00 | 0 |
+--| 80 | 5.00 | 15 | 1.00 | 0 |
+--| 100 | 5.00 | 23 | 1.00 | 0 |
+--| 120 | 5.00 | 23 | 1.00 | 0 |
+--| 140 | 5.00 | 23 | 1.00 | 0 |
+--| 160 | 5.00 | 22 | 1.00 | 0 |
+--| 180 | 5.00 | 18 | 1.00 | 0 |
+-+| 40 | 5.00 | 22 | 1.00 | 0 |
+-+| 60 | 5.00 | 17 | 1.00 | 0 |
+-+| 80 | 5.00 | 16 | 1.00 | 0 |
+-+| 100 | 5.00 | 22 | 1.00 | 0 |
+-+| 120 | 5.00 | 19 | 1.00 | 0 |
+-+| 140 | 5.00 | 22 | 1.00 | 0 |
+-+| 160 | 5.00 | 20 | 1.00 | 0 |
+-+| 180 | 5.00 | 25 | 1.00 | 0 |
+- | 200 | 5.00 | 21 | 1.00 | 0 |
+--| 220 | 5.00 | 22 | 1.00 | 0 |
+--| 240 | 5.00 | 17 | 1.00 | 0 |
+--| 260 | 5.00 | 15 | 1.00 | 0 |
+--| 280 | 5.00 | 17 | 1.00 | 0 |
+--| 300 | 5.00 | 18 | 1.00 | 0 |
+--| 320 | 5.00 | 22 | 1.00 | 0 |
+--| 340 | 5.00 | 24 | 1.00 | 0 |
+-+| 220 | 5.00 | 18 | 1.00 | 0 |
+-+| 240 | 5.00 | 20 | 1.00 | 0 |
+-+| 260 | 5.00 | 22 | 1.00 | 0 |
+-+| 280 | 5.00 | 21 | 1.00 | 0 |
+-+| 300 | 5.00 | 22 | 1.00 | 0 |
+-+| 320 | 5.00 | 21 | 1.00 | 0 |
+-+| 340 | 5.00 | 25 | 1.00 | 0 |
+- | 360 | 5.00 | 24 | 1.00 | 0 |
+--| 380 | 5.00 | 23 | 1.00 | 0 |
+--| 400 | 5.00 | 21 | 1.00 | 0 |
+--| 420 | 5.00 | 23 | 1.00 | 0 |
+--| 440 | 5.00 | 23 | 1.00 | 0 |
+--| 460 | 5.00 | 20 | 1.00 | 0 |
+--| 480 | 5.00 | 19 | 1.00 | 0 |
+--| 499 | 5.00 | 25 | 1.00 | 0 |
+-+| 380 | 5.00 | 22 | 1.00 | 0 |
+-+| 400 | 5.00 | 17 | 1.00 | 0 |
+-+| 420 | 5.00 | 20 | 1.00 | 0 |
+-+| 440 | 5.00 | 18 | 1.00 | 0 |
+-+| 460 | 5.00 | 23 | 1.00 | 0 |
+-+| 480 | 5.00 | 14 | 1.00 | 0 |
+-+| 499 | 5.00 | 22 | 1.00 | 0 |
+- 
+- ## Technical Debt & Issues Resolved
+- - **Engine Fixes**: Patched core files (`RuleBasedHouseholdDecisionEngine`, `EconomyManager`, etc.) to fix API mismatches and logic bugs.
+-diff --git a/design/gemini_output/review_backup_20260121_142655_Analyze_this_PR.md b/design/gemini_output/review_backup_20260121_142655_Analyze_this_PR.md
+-deleted file mode 100644
+-index 5bacf5d..0000000
+---- a/design/gemini_output/review_backup_20260121_142655_Analyze_this_PR.md
+-+++ /dev/null
+-@@ -1,37 +0,0 @@
+--# 🔍 Git Diff Review: WO-098-DIAG-A Labor Deadlock
+--
+-----
+--
+--### 1. 🔍 Summary
+--이 변경 사항은 가난한 가구(household)가 자산이 없을 때 식량을 구매하려다 노동 시장 참여를 건너뛰어 발생하는 치명적인 교착 상태(deadlock)를 해결합니다. 또한, 기업(firm)과 가구 양측에서 잘못 하드코딩되었던 노동 시장 ID를 수정하여 시장 참여 로직의 정합성을 보강했습니다.
+--
+--### 2. 🚨 Critical Issues
+--- **(FIXED) Hardcoded Market ID**: `simulation/decisions/rule_based_firm_engine.py`와 `simulation/decisions/rule_based_household_engine.py` 파일에서 노동 시장의 ID가 `"labor_market"`로 잘못 하드코딩되어 있던 문제가 발견되었으며, 올바른 ID인 `"labor"`로 수정되었습니다. 이는 잠재적인 시장 매칭 실패를 방지하는 중요한 수정입니다.
+--
+--다른 보안 위반, 민감 정보 하드코딩, 또는 시스템 절대 경로 사용은 발견되지 않았습니다.
+--
+--### 3. ⚠️ Logic & Spec Gaps
+--- **Work Order 준수**: `design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md`에 기술된 분석 내용과 해결 전략이 코드에 정확히 반영되었습니다.
+--- **Deadlock 해결**: `rule_based_household_engine.py`에서 `chosen_tactic == Tactic.NO_ACTION` 조건을 제거함으로써, 실업 상태의 가구가 식량 구매 시도와 무관하게 항상 노동 시장에 참여할 수 있도록 로직이 변경되었습니다. 이는 "가진 돈이 없어 굶주리면서도 일을 하지 않는" 교착 상태를 성공적으로 해결합니다.
+--
+--### 4. 💡 Suggestions
+--- **(Minor) Code Clarity**: `rule_based_household_engine.py`의 `L111-114` 주변 로직이 약간 우회적으로 보입니다. 주석은 "다른 행동을 하더라도 노동 참여를 추가한다"고 설명하지만, 코드는 `chosen_tactic == Tactic.NO_ACTION`일 때만 tactic을 설정합니다. 현재 로직은 의도대로 동작하지만, 아래와 같이 코드를 단순화하여 가독성을 높일 수 있습니다.
+--
+--  ```python
+--  # 제안 (Suggestion)
+--  # 기존 코드 블록 전체를 아래로 대체
+--  if not household.is_employed and household.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
+--      # WO-098 Fix: 항상 노동 시장 참여를 시도 (기존 행동과 무관)
+--      if chosen_tactic == Tactic.NO_ACTION:
+--          chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
+--          # aggressiveness 설정 등은 필요 시 여기에...
+--
+--      # --- 이후 노동 주문 생성 로직은 동일하게 진행 ---
+--      # (Wage Modifier 업데이트, Panic Mode 체크, Order 생성 등)
+--  ```
+--  이는 현재 구현과 기능적으로 동일하지만, 의도를 더 명확하게 드러냅니다.
+--
+--### 5. ✅ Verdict
+--**APPROVE**
+--
+--**Reasoning**: 제안된 변경 사항은 문서화된 치명적 버그를 성공적으로 해결하고, 추가적으로 발견된 하드코딩 오류까지 수정했습니다. 코드의 안정성과 논리적 정합성을 크게 향상시키는 커밋입니다.
+-diff --git a/design/gemini_output/review_backup_20260121_143336_Analyze_this_PR.md b/design/gemini_output/review_backup_20260121_143336_Analyze_this_PR.md
+-deleted file mode 100644
+-index 6e0df0a..0000000
+---- a/design/gemini_output/review_backup_20260121_143336_Analyze_this_PR.md
+-+++ /dev/null
+-@@ -1,16 +0,0 @@
+--# 🔍 Git Diff Review: WO-098 Market ID Fix
+--
+--## 🔍 Summary
+--`AIDrivenHouseholdDecisionEngine`에서 부동산 구매 주문 시 사용되는 시장 ID를 `"real_estate"`에서 `"housing"`으로 수정했습니다. 또한, 관련 테스트 코드에서 `Household` 생성 시 `personality` 인자를 `Personality.STATUS_SEEKER`로 명시하도록 업데이트했습니다.
+--
+--## 🚨 Critical Issues
+--- 발견되지 않았습니다.
+--
+--## ⚠️ Logic & Spec Gaps
+--- 이번 변경은 주문이 올바른 시장으로 라우팅되도록 하는 버그 수정으로 보이며, Spec과의 정합성을 높이는 긍정적인 수정입니다.
+--
+--## 💡 Suggestions
+--- 특이사항 없습니다. 깔끔한 수정입니다.
+--
+--## ✅ Verdict
+--**APPROVE**
+-diff --git a/design/gemini_output/review_backup_20260121_143512_Analyze_this_PR.md b/design/gemini_output/review_backup_20260121_143512_Analyze_this_PR.md
+-deleted file mode 100644
+-index b9b20c8..0000000
+---- a/design/gemini_output/review_backup_20260121_143512_Analyze_this_PR.md
+-+++ /dev/null
+-@@ -1,16 +0,0 @@
+--# 🔍 Git Diff Review: WO-098-tech-barriers
+--
+--## 🔍 Summary
+--`config.py`의 기술 채택 관련 파라미터를 수정한 Hotfix입니다. `TECH_FERTILIZER_UNLOCK_TICK`을 30으로, `TECH_DIFFUSION_RATE`를 0.10으로 변경하여 기술 잠금 해제 시점을 앞당기고 확산 속도를 2배로 높였습니다. 관련 시스템 테스트(`test_technology_manager.py`)도 새 기본값에 맞춰 성공적으로 업데이트되었습니다.
+--
+--## 🚨 Critical Issues
+--- 발견되지 않음. (보안 위반, 하드코딩, 제로섬 위반 없음)
+--
+--## ⚠️ Logic & Spec Gaps
+--- 발견되지 않음. 변경된 설정값(`config.py`)과 이를 검증하는 테스트 코드의 기대값(expected values)이 정확히 일치하며, 커밋 의도(Hotfix)와 구현이 부합합니다.
+--
+--## 💡 Suggestions
+--- `test_effective_diffusion_rate` 테스트 내의 계산 과정 주석이 변경된 기본값을 잘 반영하여 명료하게 수정되었습니다. 이는 유지보수 관점에서 매우 훌륭한 사례입니다.
+--
+--## ✅ Verdict
+--**APPROVE**
+-diff --git a/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md b/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
+-index 1c5280a..0c55dc3 100644
+---- a/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
+-+++ b/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
+-@@ -6,28 +6,8 @@
+- In `RuleBasedHouseholdDecisionEngine.py`, if a household decides to `BUY_BASIC_FOOD` (even if they have no money), the logic skips the `PARTICIPATE_LABOR_MARKET` step because `chosen_tactic` is no longer `NO_ACTION`.
+- 
+- **Tasks**:
+--1. [x] **Analysis**: Inspect `simulation/decisions/rule_based_household_engine.py` line 110.
+--   - **Finding**: The code sets `chosen_tactic = Tactic.BUY_BASIC_FOOD` *before* checking if the household can actually afford any food.
+--   - Later, the labor market logic checks `if chosen_tactic == Tactic.NO_ACTION`. Since the tactic is already set to `BUY_BASIC_FOOD`, the labor logic is skipped.
+--   - If the household has 0 assets, `quantity_to_buy` is 0, so no `BUY` order is created.
+--   - Result: No Food Bought, No Labor Sold. Infinite Loop of Poverty.
+--
+--2. [x] **Experiment**: Create a script `scripts/diag_labor_deadlock.py`.
+-+1. **Analysis**: Inspect `simulation/decisions/rule_based_household_engine.py` line 110.
+-+2. **Experiment**: Create a script `scripts/diag_labor_deadlock.py`. 
+-    - Mock a household with 0 Assets, 0 Food, and 80 Survival Need.
+-    - Run `make_decisions` and log if a `SELL labor` order is generated.
+--   - **Result**:
+--     ```
+--     Running Labor Deadlock Experiment...
+--     Chosen Tactic: Tactic.BUY_BASIC_FOOD
+--     Orders generated: 0
+--     DEADLOCK CONFIRMED: Household tried to buy food (failed due to 0 assets) and skipped labor market.
+--     ```
+--
+--3. [x] **Report**: Document if the deadlock exists.
+--   - **Status**: **CONFIRMED**.
+--   - **Root Cause**: Premature assignment of `chosen_tactic` in `RuleBasedHouseholdDecisionEngine` and strict mutual exclusivity between buying food and selling labor.
+--   - **Proposed Fix**:
+--     - Allow Labor Participation even if `chosen_tactic` is `BUY_BASIC_FOOD` (if `is_employed` is False).
+--     - Or, only set `chosen_tactic` if an order is actually generated.
+--     - Better yet: Allow multiple tactics (e.g., Buy Food AND Sell Labor). For rule-based, we can just remove the `if chosen_tactic == Tactic.NO_ACTION` check for the labor block, or modify it to allow labor if the previous tactic failed to produce results, or just allow both.
+--     - **Selected Fix Strategy**: Remove the `if chosen_tactic == Tactic.NO_ACTION` restriction for Labor Participation. A household should *always* try to work if unemployed and poor, regardless of whether they are also buying food. Buying food consumes assets; selling labor generates assets. They are complementary, not mutually exclusive.
+-+3. **Report**: Document if the deadlock exists.
+-diff --git a/design/work_orders/WO-098-DIAG-D-No-Op-Trap.md b/design/work_orders/WO-098-DIAG-D-No-Op-Trap.md
+-deleted file mode 100644
+-index 056f0f6..0000000
+---- a/design/work_orders/WO-098-DIAG-D-No-Op-Trap.md
+-+++ /dev/null
+-@@ -1,22 +0,0 @@
+--# Diagnostic Work Order: WO-098-DIAG-D (The No-Op Trap)
+--
+--## 1. Hypothesis
+--Rule-based households are generating ZERO orders because `DecisionContext.household` is passed as `None` from `core_agents.py`, causing an early return (no-op) in the engine. This makes the "Great Harvest" impossible as households neither work nor eat.
+--
+--## 2. Verification Steps (FOR JULES)
+--1. **Insert Diagnostic Log**:
+--   - Open `simulation/decisions/rule_based_household_engine.py`.
+--   - At the beginning of `make_decisions(self, context, macro_context)`, add:
+--     ```python
+--     if context.household is None:
+--         self.logger.warning(f"[DIAG-D] No-Op Triggered! Household is None for agent.")
+--         return [], (None, None)
+--     ```
+--2. **Run Mini-Simulation**:
+--   - Run `python scripts/verify_phase23_harvest.py --ticks 10`.
+--3. **Analyze Logs**:
+--   - Check `simulation.log` or console output for the `[DIAG-D]` prefix.
+--   - Count how many times this occurs per tick.
+--
+--## 3. Reporting
+--If the log appears frequently, the hypothesis is **PROVEN**. Do not fix yet; report the result first.
+-diff --git a/simulation/__pycache__/core_agents.cpython-313.pyc b/simulation/__pycache__/core_agents.cpython-313.pyc
+-index 8ef2216..213a8a6 100644
+-Binary files a/simulation/__pycache__/core_agents.cpython-313.pyc and b/simulation/__pycache__/core_agents.cpython-313.pyc differ
+-diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+-index aaa7b2b..e52fc30 100644
+---- a/simulation/core_agents.py
+-+++ b/simulation/core_agents.py
+-@@ -669,7 +669,8 @@ class Household(BaseAgent, ILearningAgent):
+- 
+-         # Context for Decision Engine (Pure Logic)
+-         context = DecisionContext(
+--            household=None, # Deprecated/Removed dependency
+-+            household=self,
+-+            state=state_dto,
+-             markets=markets,
+-             goods_data=goods_data,
+-             market_data=market_data,
+-@@ -677,10 +678,6 @@ class Household(BaseAgent, ILearningAgent):
+-             government=government,
+-             stress_scenario_config=stress_scenario_config
+-         )
+--        # Hack: DecisionContext currently expects 'household' but we want to use 'state' in new engine.
+--        # We need to modify DecisionContext to accept 'state' or monkey-patch it here if we can't change DTO yet.
+--        # But per plan, we ARE changing DTO. So we will set `context.state = state_dto`.
+--        context.state = state_dto # Dynamically attach DTO
+- 
+-         # 2. Call Decision Engine
+-         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
+-diff --git a/simulation/decisions/ai_driven_household_engine.py b/simulation/decisions/ai_driven_household_engine.py
+-index a0f1d3d..5758e12 100644
+---- a/simulation/decisions/ai_driven_household_engine.py
+-+++ b/simulation/decisions/ai_driven_household_engine.py
+-@@ -409,7 +409,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+- 
+-                      if should_buy:
+-                          buy_order = Order(
+--                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
+-+                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "real_estate"
+-                          )
+-                          orders.append(buy_order)
+- 
+-diff --git a/simulation/decisions/rule_based_firm_engine.py b/simulation/decisions/rule_based_firm_engine.py
+-index 262bbd5..7e69c89 100644
+---- a/simulation/decisions/rule_based_firm_engine.py
+-+++ b/simulation/decisions/rule_based_firm_engine.py
+-@@ -111,8 +111,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+- 
+-         # SoC Refactor: use hr.employees
+-         if len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+--            # WO-098 Fix: Use correct market ID "labor"
+--            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
+-+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+-             orders.append(order)
+-             self.logger.info(
+-                 f"Hiring to meet minimum employee count. Offering dynamic wage: {offered_wage:.2f}",
+-@@ -126,8 +125,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+-             needed_labor > len(firm.hr.employees)
+-             and len(firm.hr.employees) < self.config_module.FIRM_MAX_EMPLOYEES
+-         ):
+--            # WO-098 Fix: Use correct market ID "labor"
+--            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
+-+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+-             orders.append(order)
+-             self.logger.info(
+-                 f"Planning to BUY labor for dynamic wage {offered_wage:.2f}",
+-diff --git a/simulation/decisions/rule_based_household_engine.py b/simulation/decisions/rule_based_household_engine.py
+-index 1903e80..9eef46b 100644
+---- a/simulation/decisions/rule_based_household_engine.py
+-+++ b/simulation/decisions/rule_based_household_engine.py
+-@@ -106,81 +106,77 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+- 
+-         # 2. 노동 시장 참여 (실업 상태일 경우)
+-         if not household.is_employed and household.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
+--            # WO-098 Fix: Allow labor participation even if food was bought (remove mutual exclusivity)
+-             # 생존 욕구가 높거나 자산이 부족하면 노동 시장에 참여
+--
+--            # If we are already doing something else (like buying food), we add labor participation as well.
+--            if chosen_tactic == Tactic.NO_ACTION:
+-+            if chosen_tactic == Tactic.NO_ACTION: # 음식 구매가 이미 결정되었으면 이번 턴에는 노동 시장 참여 안함 (간단화를 위해)
+-                 chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
+--                chosen_aggressiveness = Aggressiveness.NEUTRAL
+--
+--            # Continue with labor logic regardless of previous tactic
+--            # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
+-+                chosen_aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 공격성 중립으로 설정
+- 
+--            # 1. Update Wage Modifier (Adaptive)
+--            decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
+--            floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
+--            household.wage_modifier *= (1.0 - decay_rate)
+--            household.wage_modifier = max(floor_mod, household.wage_modifier)
+-+                # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
+- 
+--            # 2. Survival Trigger (Panic Mode)
+--            food_inventory = household.inventory.get("basic_food", 0.0)
+--            food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+--            if food_price <= 0: food_price = 10.0
+-+                # 1. Update Wage Modifier (Adaptive)
+-+                decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
+-+                floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
+-+                household.wage_modifier *= (1.0 - decay_rate)
+-+                household.wage_modifier = max(floor_mod, household.wage_modifier)
+-+                
+-+                # 2. Survival Trigger (Panic Mode)
+-+                food_inventory = household.inventory.get("basic_food", 0.0)
+-+                food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+-+                if food_price <= 0: food_price = 10.0
+- 
+--            survival_days = food_inventory + (household.assets / food_price)
+--            critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
+-+                survival_days = food_inventory + (household.assets / food_price)
+-+                critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
+- 
+--            is_panic = False
+--            desired_wage = 0.0
+--
+--            if survival_days < critical_turns:
+--                is_panic = True
+-+                is_panic = False
+-                 desired_wage = 0.0
+--                self.logger.info(
+--                    f"PANIC_MODE | Household {household.id} desperate (RuleBased). Survival Days: {survival_days:.1f}. Wage: 0.0",
+--                    extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_panic"]}
+--                )
+--            else:
+--                # Normal Adaptive Wage
+-+
+-+                if survival_days < critical_turns:
+-+                    is_panic = True
+-+                    desired_wage = 0.0
+-+                    self.logger.info(
+-+                        f"PANIC_MODE | Household {household.id} desperate (RuleBased). Survival Days: {survival_days:.1f}. Wage: 0.0",
+-+                        extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_panic"]}
+-+                    )
+-+                else:
+-+                    # Normal Adaptive Wage
+-+                    labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+-+                    market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+-+                    desired_wage = market_avg_wage * household.wage_modifier
+-+
+-+                # 3. Generate Order
+-+                # Retrieve Market Data
+-                 labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+-                 market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+--                desired_wage = market_avg_wage * household.wage_modifier
+--
+--            # 3. Generate Order
+--            # Retrieve Market Data
+--            labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+--            market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+--            best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
+--
+--            # Refuse labor supply if market offer is too low (only if NOT panic)
+--            effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
+--            # [Fix] Use dynamic reservation_wage as floor, not fixed 0.7 ratio
+--            # wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+--            wage_floor = desired_wage
+--
+--            if not is_panic and effective_offer < wage_floor:
+--                self.logger.info(
+--                    f"RESERVATION_WAGE | Household {household.id} refused labor (RuleBased). "
+--                    f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f}, Mod: {household.wage_modifier:.2f})",
+--                    extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
+--                )
+--                # Skip order generation
+--            else:
+--                orders.append(
+--                    Order(
+--                        household.id,
+--                        "SELL",
+--                        "labor",
+--                        1.0,  # 1 unit of labor
+--                        desired_wage,
+--                        "labor", # FIX: Use correct market ID "labor"
+-+                best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
+-+
+-+                # Refuse labor supply if market offer is too low (only if NOT panic)
+-+                effective_offer = best_market_offer if best_market_offer > 0 else market_avg_wage
+-+                # [Fix] Use dynamic reservation_wage as floor, not fixed 0.7 ratio
+-+                # wage_floor = market_avg_wage * getattr(self.config_module, "RESERVATION_WAGE_FLOOR_RATIO", 0.7)
+-+                wage_floor = desired_wage
+-+
+-+                if not is_panic and effective_offer < wage_floor:
+-+                    self.logger.info(
+-+                        f"RESERVATION_WAGE | Household {household.id} refused labor (RuleBased). "
+-+                        f"Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f} (Avg: {market_avg_wage:.2f}, Mod: {household.wage_modifier:.2f})",
+-+                        extra={"tick": current_time, "agent_id": household.id, "tags": ["labor_refusal"]}
+-+                    )
+-+                    # Skip order generation
+-+                else:
+-+                    orders.append(
+-+                        Order(
+-+                            household.id,
+-+                            "SELL",
+-+                            "labor",
+-+                            1.0,  # 1 unit of labor
+-+                            desired_wage,
+-+                            "labor", # FIX: Use correct market ID "labor"
+-+                        )
+-+                    )
+-+                    self.logger.info(
+-+                        f"Household {household.id} offers labor at wage {desired_wage:.2f}",
+-+                        extra={"tick": current_time, "agent_id": household.id, "tactic": chosen_tactic.name}
+-                     )
+--                )
+--                self.logger.info(
+--                    f"Household {household.id} offers labor at wage {desired_wage:.2f}",
+--                    extra={"tick": current_time, "agent_id": household.id, "tactic": chosen_tactic.name}
+--                )
+- 
+-         # TODO: 다른 규칙 기반 로직 (예: 저축, 투자, 사치품 구매 등) 추가
+-         
+-diff --git a/tests/systems/test_technology_manager.py b/tests/systems/test_technology_manager.py
+-index 385524d..afe5248 100644
+---- a/tests/systems/test_technology_manager.py
+-+++ b/tests/systems/test_technology_manager.py
+-@@ -7,8 +7,8 @@ class TestTechnologyManager:
+-     @pytest.fixture
+-     def config(self):
+-         mock_config = MagicMock()
+--        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 30 # Updated default
+--        mock_config.TECH_DIFFUSION_RATE = 0.10       # Updated default
+-+        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 10
+-+        mock_config.TECH_DIFFUSION_RATE = 0.05
+-         return mock_config
+- 
+-     @pytest.fixture
+-@@ -16,24 +16,24 @@ class TestTechnologyManager:
+-         return TechnologyManager(config, MagicMock())
+- 
+-     def test_effective_diffusion_rate(self, manager):
+--        # Base rate = 0.10 (Updated from 0.05)
+--        # HCI = 1.0 -> Boost = 0 -> Rate = 0.10
+-+        # Base rate = 0.05
+-+        # HCI = 1.0 -> Boost = 0 -> Rate = 0.05
+-         manager.human_capital_index = 1.0
+--        assert manager._get_effective_diffusion_rate(0.10) == 0.10
+-+        assert manager._get_effective_diffusion_rate(0.05) == 0.05
+- 
+--        # HCI = 3.0 -> 0.5 * 2.0 = 1.0 -> Boost = 1.0 -> Rate = 0.10 * 2.0 = 0.20
+-+        # HCI = 3.0 -> 0.5 * 2.0 = 1.0 -> Boost = 1.0 -> Rate = 0.05 * 2.0 = 0.1
+-         manager.human_capital_index = 3.0
+--        assert manager._get_effective_diffusion_rate(0.10) == 0.20
+-+        assert manager._get_effective_diffusion_rate(0.05) == 0.10
+- 
+--        # HCI = 5.0 -> 0.5 * 4.0 = 2.0 -> Boost = min(1.5, 2.0) = 1.5 -> Rate = 0.10 * 2.5 = 0.25
+-+        # HCI = 5.0 -> 0.5 * 4.0 = 2.0 -> Boost = min(1.5, 2.0) = 1.5 -> Rate = 0.05 * 2.5 = 0.125
+-         manager.human_capital_index = 5.0
+--        assert manager._get_effective_diffusion_rate(0.10) == 0.25
+-+        assert manager._get_effective_diffusion_rate(0.05) == 0.125
+- 
+-     def test_unlock_and_visionary_adoption(self, manager):
+-         # Setup Tech
+-         tech_id = "TECH_AGRI_CHEM_01"
+-         tech = manager.tech_tree[tech_id]
+--        tech.unlock_tick = 30 # Updated check
+-+        tech.unlock_tick = 10
+-         tech.sector = "FOOD"
+- 
+-         # Setup Firms DTO
+-@@ -43,13 +43,13 @@ class TestTechnologyManager:
+-             FirmTechInfoDTO(id=3, sector="MANUFACTURING", is_visionary=True),
+-         ]
+- 
+--        # Tick 29: No unlock
+--        manager.update(29, firms, 1.0)
+-+        # Tick 9: No unlock
+-+        manager.update(9, firms, 1.0)
+-         assert not tech.is_unlocked
+-         assert not manager.has_adopted(1, tech_id)
+- 
+--        # Tick 30: Unlock
+--        manager.update(30, firms, 1.0)
+-+        # Tick 10: Unlock
+-+        manager.update(10, firms, 1.0)
+-         assert tech.is_unlocked
+- 
+-         # Visionary Check
+-@@ -64,7 +64,7 @@ class TestTechnologyManager:
+-         # Setup Tech
+-         tech_id = "TECH_AGRI_CHEM_01"
+-         tech = manager.tech_tree[tech_id]
+--        tech.unlock_tick = 30
+-+        tech.unlock_tick = 10
+-         tech.diffusion_rate = 0.0 # No diffusion initially
+- 
+-         firms = [
+-@@ -73,12 +73,12 @@ class TestTechnologyManager:
+- 
+-         # Unlock it first (needs unlock call)
+-         # Note: _unlock_tech also iterates firms, but firm 1 is not visionary, so it won't adopt there.
+--        manager.update(30, firms, 1.0)
+-+        manager.update(10, firms, 1.0)
+-         assert not manager.has_adopted(1, tech_id) # Not visionary, and diffusion 0%
+- 
+-         # Now enable diffusion
+-         tech.diffusion_rate = 1.0
+--        manager.update(31, firms, 1.0)
+-+        manager.update(11, firms, 1.0)
+- 
+-         assert manager.has_adopted(1, tech_id)
+- 
+-diff --git a/tests/verify_real_estate_sales.py b/tests/verify_real_estate_sales.py
+-index 602b893..25824b9 100644
+---- a/tests/verify_real_estate_sales.py
+-+++ b/tests/verify_real_estate_sales.py
+-@@ -8,7 +8,6 @@ from simulation.bank import Bank, Loan
+- from simulation.markets import OrderBookMarket
+- from simulation.models import Order
+- from simulation.models import RealEstateUnit
+--from simulation.ai.api import Personality
+- import config
+- 
+- class MockConfig:
+-@@ -52,7 +51,7 @@ class TestRealEstateSales(unittest.TestCase):
+-             initial_needs={},
+-             decision_engine=mock_decision_engine,
+-             value_orientation="WEALTH",
+--            personality=Personality.STATUS_SEEKER
+-+            personality=None
+-         )
+-         self.housing_manager = HousingManager(self.agent, self.config)
+- 
+-@@ -116,7 +115,7 @@ class TestRealEstateSales(unittest.TestCase):
+-         mock_talent = MagicMock()
+-         mock_talent.base_learning_rate = 0.5
+-         mock_talent.max_potential = {}
+--        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=Personality.STATUS_SEEKER)
+-+        hh1 = Household(id=100, config_module=self.config, talent=mock_talent, goods_data={}, initial_assets=10000.0, initial_needs={"survival": 50.0, "asset": 50.0, "social": 50.0, "growth": 50.0, "leisure": 50.0, "self_actualization": 50.0, "improvement": 50.0}, decision_engine=MagicMock(), value_orientation="WEALTH", personality=None)
+-         
+-         # Need at least one household
+-         households = [hh1]
 diff --git a/design/gemini_output/pr_review_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.md b/design/gemini_output/pr_review_WO-098-DIAG-A-Labor-Deadlock-5679283121683061814.md
 deleted file mode 100644
 index 6c25a03..0000000
@@ -564,6 +1702,60 @@ index 990cb56..0000000
 -
 -## ✅ Verdict
 -**APPROVE**
+-
+-============================================================
+diff --git a/design/gemini_output/pr_review_wo-fix-decision-context-14805707403310115692.md b/design/gemini_output/pr_review_wo-fix-decision-context-14805707403310115692.md
+deleted file mode 100644
+index 79456fd..0000000
+--- a/design/gemini_output/pr_review_wo-fix-decision-context-14805707403310115692.md
++++ /dev/null
+@@ -1,48 +0,0 @@
+-🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
+-📖 Attached context: C:\coding\economics\design\gemini_output\pr_diff_wo-fix-decision-context-14805707403310115692.txt
+-🚀 [GeminiWorker] Running task with manual: git_reviewer.md
+-
+-📝 [Review Report]
+-============================================================
+-# 🔍 Git Diff Review: WO-FIX-DECISION-CONTEXT
+-
+----
+-
+-### 1. 🔍 Summary
+-이 변경 사항은 의사결정 엔진에 `household` 객체 대신 `None`이 전달되어 에이전트가 아무 행동도 하지 않던 치명적인 "No-Op" 버그를 해결합니다. 이 수정은 시뮬레이션의 핵심 로직을 정상화하는 매우 중요한 변경입니다.
+-
+-**하지만, 이 과정에서 이전에 해결되었던 여러 중요한 버그 수정들이 의도치 않게 되돌려지는(revert) 심각한 회귀(regression)가 발생했습니다.**
+-
+-### 2. 🚨 Critical Issues
+-이 PR은 하나의 중요한 버그를 수정하는 동시에, 이전에 해결된 여러 버그를 다시 도입합니다.
+-
+-- **[회귀] 치명적인 노동 시장 교착 상태 (Labor Deadlock) 재도입**
+-  - **File**: `simulation/decisions/rule_based_household_engine.py`
+-  - **Issue**: 가난한 가구가 식량 구매를 시도하면 노동 시장 참여를 건너뛰게 만드는 `if chosen_tactic == Tactic.NO_ACTION:` 로직이 다시 복원되었습니다. 이는 "가진 돈이 없어 굶주리면서도 일을 하지 않는" 치명적인 교착 상태를 다시 유발합니다. 이 버그는 이전에 `WO-098-DIAG-A`에서 수정되었습니다.
+-
+-- **[회귀] 잘못된 시장 ID 하드코딩 재도입**
+-  - **File**: `simulation/decisions/rule_based_firm_engine.py`
+-  - **Issue**: 기업이 노동자를 고용할 때 사용하는 시장 ID가 올바른 `"labor"`에서 이전의 버그 값인 `"labor_market"`로 되돌아갔습니다.
+-  - **File**: `simulation/decisions/ai_driven_household_engine.py`
+-  - **Issue**: 가구가 부동산을 구매할 때 사용하는 시장 ID가 올바른 `"housing"`에서 이전의 버그 값인 `"real_estate"`로 되돌아갔습니다.
+-
+-- **[회귀] 기술 채택 파라미터 핫픽스(Hotfix) 롤백**
+-  - **File**: `config.py`
+-  - **Issue**: 기술 확산 속도를 높이기 위해 적용되었던 `TECH_FERTILIZER_UNLOCK_TICK` 및 `TECH_DIFFUSION_RATE` 변경 사항이 제거되었습니다.
+-
+-### 3. ⚠️ Logic & Spec Gaps
+-- **(GOOD) "No-Op" 버그 해결**: `simulation/core_agents.py`에서 `DecisionContext`를 생성할 때 `household=self`로 명시적으로 전달하도록 수정한 것은 훌륭합니다. 이는 `WO-098-DIAG-D`에서 제기된 가설을 정확히 해결하며, 시뮬레이션이 멈추는 근본 원인을 제거한 핵심적인 수정입니다.
+-- **(BAD) 의도치 않은 롤백**: 이 PR의 가장 큰 문제는 Git 브랜치 병합 또는 재구성(rebase) 과정에서 발생한 오류로 보입니다. 최신 버전의 코드가 아닌, 이전 버전의 코드에 `DecisionContext` 수정 사항을 적용한 후 PR을 생성하여 이전에 해결된 다른 버그들이 모두 되살아났습니다.
+-
+-### 4. 💡 Suggestions
+-1.  **브랜치 재설정**: 현재 브랜치의 변경 사항을 폐기하고, 프로젝트의 최신 `main` (또는 `develop`) 브랜치로부터 새로운 작업 브랜치를 생성하십시오.
+-2.  **핵심 수정만 재적용**: `simulation/core_agents.py`에서 `DecisionContext`를 수정하는 부분만 새로운 브랜치에 신중하게 다시 적용하십시오. (다른 파일의 변경 사항은 모두 버려야 합니다.)
+-3.  **검증**: 새로운 브랜치에서 단위 테스트와 핵심 시나리오(`verify_phase23_harvest.py`)를 실행하여 `DecisionContext` 수정이 올바르게 적용되었는지, 그리고 다른 버그가 재발하지 않는지 확인하십시오.
+-4.  **PR 재제출**: 오직 `core_agents.py`의 수정 사항만을 포함하는 새로운 PR을 제출하십시오.
+-
+-### 5. ✅ Verdict
+-**REJECT**
+-
+-**Reasoning**: 이 PR은 프로젝트의 근본적인 버그를 해결하는 매우 중요한 코드를 포함하고 있습니다. 하지만, 동시에 이전에 해결된 다수의 치명적인 버그들을 다시 도입하는 심각한 회귀 문제를 가지고 있습니다. 이 상태로 병합하는 것은 절대 불가하며, 제안된 대로 핵심 수정 사항만 깨끗한 브랜치에 재적용하여 다시 제출해야 합니다.
 -
 -============================================================
 diff --git a/design/gemini_output/report_phase23_great_harvest.md b/design/gemini_output/report_phase23_great_harvest.md
@@ -720,6 +1912,52 @@ index b9b20c8..0000000
 -
 -## ✅ Verdict
 -**APPROVE**
+diff --git a/design/gemini_output/review_backup_20260121_151222_Analyze_this_PR.md b/design/gemini_output/review_backup_20260121_151222_Analyze_this_PR.md
+deleted file mode 100644
+index b482e48..0000000
+--- a/design/gemini_output/review_backup_20260121_151222_Analyze_this_PR.md
++++ /dev/null
+@@ -1,40 +0,0 @@
+-# 🔍 Git Diff Review: WO-FIX-DECISION-CONTEXT
+-
+----
+-
+-### 1. 🔍 Summary
+-이 변경 사항은 의사결정 엔진에 `household` 객체 대신 `None`이 전달되어 에이전트가 아무 행동도 하지 않던 치명적인 "No-Op" 버그를 해결합니다. 이 수정은 시뮬레이션의 핵심 로직을 정상화하는 매우 중요한 변경입니다.
+-
+-**하지만, 이 과정에서 이전에 해결되었던 여러 중요한 버그 수정들이 의도치 않게 되돌려지는(revert) 심각한 회귀(regression)가 발생했습니다.**
+-
+-### 2. 🚨 Critical Issues
+-이 PR은 하나의 중요한 버그를 수정하는 동시에, 이전에 해결된 여러 버그를 다시 도입합니다.
+-
+-- **[회귀] 치명적인 노동 시장 교착 상태 (Labor Deadlock) 재도입**
+-  - **File**: `simulation/decisions/rule_based_household_engine.py`
+-  - **Issue**: 가난한 가구가 식량 구매를 시도하면 노동 시장 참여를 건너뛰게 만드는 `if chosen_tactic == Tactic.NO_ACTION:` 로직이 다시 복원되었습니다. 이는 "가진 돈이 없어 굶주리면서도 일을 하지 않는" 치명적인 교착 상태를 다시 유발합니다. 이 버그는 이전에 `WO-098-DIAG-A`에서 수정되었습니다.
+-
+-- **[회귀] 잘못된 시장 ID 하드코딩 재도입**
+-  - **File**: `simulation/decisions/rule_based_firm_engine.py`
+-  - **Issue**: 기업이 노동자를 고용할 때 사용하는 시장 ID가 올바른 `"labor"`에서 이전의 버그 값인 `"labor_market"`로 되돌아갔습니다.
+-  - **File**: `simulation/decisions/ai_driven_household_engine.py`
+-  - **Issue**: 가구가 부동산을 구매할 때 사용하는 시장 ID가 올바른 `"housing"`에서 이전의 버그 값인 `"real_estate"`로 되돌아갔습니다.
+-
+-- **[회귀] 기술 채택 파라미터 핫픽스(Hotfix) 롤백**
+-  - **File**: `config.py`
+-  - **Issue**: 기술 확산 속도를 높이기 위해 적용되었던 `TECH_FERTILIZER_UNLOCK_TICK` 및 `TECH_DIFFUSION_RATE` 변경 사항이 제거되었습니다.
+-
+-### 3. ⚠️ Logic & Spec Gaps
+-- **(GOOD) "No-Op" 버그 해결**: `simulation/core_agents.py`에서 `DecisionContext`를 생성할 때 `household=self`로 명시적으로 전달하도록 수정한 것은 훌륭합니다. 이는 `WO-098-DIAG-D`에서 제기된 가설을 정확히 해결하며, 시뮬레이션이 멈추는 근본 원인을 제거한 핵심적인 수정입니다.
+-- **(BAD) 의도치 않은 롤백**: 이 PR의 가장 큰 문제는 Git 브랜치 병합 또는 재구성(rebase) 과정에서 발생한 오류로 보입니다. 최신 버전의 코드가 아닌, 이전 버전의 코드에 `DecisionContext` 수정 사항을 적용한 후 PR을 생성하여 이전에 해결된 다른 버그들이 모두 되살아났습니다.
+-
+-### 4. 💡 Suggestions
+-1.  **브랜치 재설정**: 현재 브랜치의 변경 사항을 폐기하고, 프로젝트의 최신 `main` (또는 `develop`) 브랜치로부터 새로운 작업 브랜치를 생성하십시오.
+-2.  **핵심 수정만 재적용**: `simulation/core_agents.py`에서 `DecisionContext`를 수정하는 부분만 새로운 브랜치에 신중하게 다시 적용하십시오. (다른 파일의 변경 사항은 모두 버려야 합니다.)
+-3.  **검증**: 새로운 브랜치에서 단위 테스트와 핵심 시나리오(`verify_phase23_harvest.py`)를 실행하여 `DecisionContext` 수정이 올바르게 적용되었는지, 그리고 다른 버그가 재발하지 않는지 확인하십시오.
+-4.  **PR 재제출**: 오직 `core_agents.py`의 수정 사항만을 포함하는 새로운 PR을 제출하십시오.
+-
+-### 5. ✅ Verdict
+-**REJECT**
+-
+-**Reasoning**: 이 PR은 프로젝트의 근본적인 버그를 해결하는 매우 중요한 코드를 포함하고 있습니다. 하지만, 동시에 이전에 해결된 다수의 치명적인 버그들을 다시 도입하는 심각한 회귀 문제를 가지고 있습니다. 이 상태로 병합하는 것은 절대 불가하며, 제안된 대로 핵심 수정 사항만 깨끗한 브랜치에 재적용하여 다시 제출해야 합니다.
 diff --git a/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md b/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
 index 1c5280a..0c55dc3 100644
 --- a/design/work_orders/WO-098-DIAG-A-Labor-Deadlock.md
@@ -784,6 +2022,52 @@ index 056f0f6..0000000
 -
 -## 3. Reporting
 -If the log appears frequently, the hypothesis is **PROVEN**. Do not fix yet; report the result first.
+diff --git a/design/work_orders/WO-098-FIX-No-Op-Trap.md b/design/work_orders/WO-098-FIX-No-Op-Trap.md
+deleted file mode 100644
+index fefe28e..0000000
+--- a/design/work_orders/WO-098-FIX-No-Op-Trap.md
++++ /dev/null
+@@ -1,40 +0,0 @@
+-# Work Order: WO-098-FIX-No-Op-Trap
+-
+-## 1. Objective
+-Restore functionality to the `RuleBasedHouseholdDecisionEngine` by ensuring `DecisionContext` receives the `household` instance. This resolves the "No-Op Trap" where households were neither working nor eating.
+-
+-## 2. Implementation Instructions
+-**Target File**: `simulation/core_agents.py`
+-
+-**Change**:
+-- Locate the `make_decision` method in the `Household` class.
+-- Find where `DecisionContext` is instantiated.
+-- Change `household=None` to `household=self`.
+-- Keep `context.state = state_dto` as it is useful for future migration, but ensure `household=self` restores immediate functionality.
+-
+-**Diff Spec**:
+-```python
+-# Before
+-context = DecisionContext(
+-    household=None, # Deprecated/Removed dependency
+-    markets=markets,
+-    ...
+-)
+-
+-# After
+-context = DecisionContext(
+-    household=self, # COMPATIBILITY RESTORED: Required for RuleBasedHouseholdDecisionEngine
+-    markets=markets,
+-    ...
+-)
+-```
+-
+-## 3. Verification
+-1. Run `python scripts/verify_phase23_harvest.py --ticks 50`.
+-2. Ensure log NO LONGER shows `[DIAG-D] No-Op Triggered!`.
+-3. Verify that `Order` objects are being generated (check logs for `Household ... offers labor` or `BUY`).
+-4. **Remove the diagnostic log** added in WO-098-DIAG-D from `rule_based_household_engine.py` before committing.
+-
+-## 4. Success Criteria
+-- [ ] Households generate BUY/SELL orders.
+-- [ ] Simulation runs without "No-Op" warnings.
 diff --git a/simulation/__pycache__/core_agents.cpython-313.pyc b/simulation/__pycache__/core_agents.cpython-313.pyc
 index 8ef2216..213a8a6 100644
 Binary files a/simulation/__pycache__/core_agents.cpython-313.pyc and b/simulation/__pycache__/core_agents.cpython-313.pyc differ
@@ -826,34 +2110,30 @@ index a0f1d3d..5758e12 100644
                           orders.append(buy_order)
  
 diff --git a/simulation/decisions/rule_based_firm_engine.py b/simulation/decisions/rule_based_firm_engine.py
-index 262bbd5..7e69c89 100644
+index 262bbd5..b95568a 100644
 --- a/simulation/decisions/rule_based_firm_engine.py
 +++ b/simulation/decisions/rule_based_firm_engine.py
-@@ -111,8 +111,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+@@ -111,7 +111,6 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
  
          # SoC Refactor: use hr.employees
          if len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
 -            # WO-098 Fix: Use correct market ID "labor"
--            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
-+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+             order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
              orders.append(order)
              self.logger.info(
-                 f"Hiring to meet minimum employee count. Offering dynamic wage: {offered_wage:.2f}",
-@@ -126,8 +125,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+@@ -126,7 +125,6 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
              needed_labor > len(firm.hr.employees)
              and len(firm.hr.employees) < self.config_module.FIRM_MAX_EMPLOYEES
          ):
 -            # WO-098 Fix: Use correct market ID "labor"
--            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
-+            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor_market")
+             order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
              orders.append(order)
              self.logger.info(
-                 f"Planning to BUY labor for dynamic wage {offered_wage:.2f}",
 diff --git a/simulation/decisions/rule_based_household_engine.py b/simulation/decisions/rule_based_household_engine.py
-index 1903e80..9eef46b 100644
+index 1903e80..8fac87d 100644
 --- a/simulation/decisions/rule_based_household_engine.py
 +++ b/simulation/decisions/rule_based_household_engine.py
-@@ -106,81 +106,77 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+@@ -106,81 +106,79 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
  
          # 2. 노동 시장 참여 (실업 상태일 경우)
          if not household.is_employed and household.assets < self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS:
@@ -862,25 +2142,39 @@ index 1903e80..9eef46b 100644
 -
 -            # If we are already doing something else (like buying food), we add labor participation as well.
 -            if chosen_tactic == Tactic.NO_ACTION:
-+            if chosen_tactic == Tactic.NO_ACTION: # 음식 구매가 이미 결정되었으면 이번 턴에는 노동 시장 참여 안함 (간단화를 위해)
-                 chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
+-                chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
 -                chosen_aggressiveness = Aggressiveness.NEUTRAL
 -
 -            # Continue with labor logic regardless of previous tactic
 -            # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
-+                chosen_aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 공격성 중립으로 설정
- 
+-
 -            # 1. Update Wage Modifier (Adaptive)
 -            decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
 -            floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
 -            household.wage_modifier *= (1.0 - decay_rate)
 -            household.wage_modifier = max(floor_mod, household.wage_modifier)
-+                # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
- 
+-
 -            # 2. Survival Trigger (Panic Mode)
 -            food_inventory = household.inventory.get("basic_food", 0.0)
 -            food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
 -            if food_price <= 0: food_price = 10.0
+-
+-            survival_days = food_inventory + (household.assets / food_price)
+-            critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
+-
+-            is_panic = False
+-            desired_wage = 0.0
+-
+-            if survival_days < critical_turns:
+-                is_panic = True
++            # if chosen_tactic == Tactic.NO_ACTION: # Deadlock fix: Allow labor participation even if food was bought
++            if True:
++                if chosen_tactic == Tactic.NO_ACTION:
++                    chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
++                chosen_aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 공격성 중립으로 설정
++
++                # --- Phase 21.6: Adaptive Wage Logic & Survival Override ---
++
 +                # 1. Update Wage Modifier (Adaptive)
 +                decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
 +                floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
@@ -891,17 +2185,10 @@ index 1903e80..9eef46b 100644
 +                food_inventory = household.inventory.get("basic_food", 0.0)
 +                food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
 +                if food_price <= 0: food_price = 10.0
- 
--            survival_days = food_inventory + (household.assets / food_price)
--            critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
++
 +                survival_days = food_inventory + (household.assets / food_price)
 +                critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
- 
--            is_panic = False
--            desired_wage = 0.0
--
--            if survival_days < critical_turns:
--                is_panic = True
++
 +                is_panic = False
                  desired_wage = 0.0
 -                self.logger.info(

@@ -29,6 +29,10 @@
       "15838436664993932603": {
         "title": "WO-098-Economic-Diagnostics",
         "initial_mission": "가설 4 검증을 위해 [WO-098-DIAG-D-No-Op-Trap.md]를 수행하라. | 1. 룰 기반 엔진의 No-Op 여부를 로그로 증명할 것. | 2. 증명될 경우, 이 것이 인구 정체의 직접적 원인인지 분석할 것. | **코드 수정은 분석 보고 후 진행할 것.**"
+      },
+      "12182356083655514360": {
+        "title": "WO-098-FIX-No-Op-Trap",
+        "initial_mission": "명세서 [WO-098-FIX-No-Op-Trap.md]를 수행하라. | 목표: simulation/core_agents.py를 수정하여 가계가 주문(Order)을 생성하지 않는 'No-Op Trap'을 해결할 것."
       }
     },
     "completed_sessions": {

@@ -2,15 +2,17 @@
   "gemini": {
     "command": "spec",
     "title": "Re-Authorized",
-    "instruction": "Phase 23 Attempt 2 Mission: J-Curve Verification.",
-    "context": [],
-    "output": "design/specs/archive.md"
+    "instruction": "보고서 [verification_failure_log.txt]를 정밀 분석하라. | 목표: 왜 인구 폭발(Great Harvest)이 실패했는지, 경제 데이터를 기반으로 '가설 3가지'를 수립하라. | 결과물:design/work_orders/WO-099-Harvest-Analysis.md",
+    "context": [
+      "reports/verification_failure_log.txt"
+    ],
+    "output": "design/work_orders/WO-099-Harvest-Analysis.md"
   },
   "jules": {
     "command": "create",
     "session_id": null,
     "title": "WO-098-FIX-No-Op-Trap",
-    "instruction": "명세서 [WO-098-FIX-No-Op-Trap.md]를 수행하라. | 목표: simulation/core_agents.py를 수정하여 가계가 주문(Order)을 생성하지 않는 'No-Op Trap'을 해결할 것.",
+    "instruction": "명세서 [WO-099-Harvest-Analysis-Refinement.md]를 수행하라. | 1. 검증 스크립트를 수정하여 CSV 데이터를 확보하라. | 2. 데이터를 분석하여 대풍년 실패 원인 가설을 보고하라.",
     "wait": true
   },
   "git": {
