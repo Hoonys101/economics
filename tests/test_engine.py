@@ -455,7 +455,7 @@ class TestSimulation:
         assert seller_hh.is_employed is True
         assert seller_hh.employer_id == buyer_firm.id
         assert seller_hh.needs["labor_need"] == 0.0
-        assert seller_hh in buyer_firm.employees
+        assert seller_hh in buyer_firm.hr.employees
 
         # NOTE: Using a rough approximation for cost_this_turn because `Simulation._process_transactions`
         # updates it, but the Firm object in the test might have other side effects or initialization values.
@@ -495,7 +495,7 @@ class TestSimulation:
         # 10.25 marketing spend matches logic `max(10.0, revenue * rate)`. Revenue 0. So 10.0.
         # Plus brand manager update efficiency cost?
         # Let's just assert it is >= trade_value.
-        assert buyer_firm.cost_this_turn >= (tx.quantity * tx.price)
+        assert buyer_firm.finance.cost_this_turn >= (tx.quantity * tx.price)
 
     def test_process_transactions_research_labor_trade(
         self, simulation_instance, mock_households, mock_firms
@@ -517,7 +517,7 @@ class TestSimulation:
         simulation_instance._process_transactions([tx])
 
         assert seller_hh.is_employed is True
-        assert seller_hh in buyer_firm.employees
+        assert seller_hh in buyer_firm.hr.employees
         assert buyer_firm.productivity_factor == initial_productivity_factor + (
             seller_hh.skills["research"].value
             * simulation_instance.config_module.RND_PRODUCTIVITY_MULTIPLIER
@@ -656,7 +656,7 @@ def setup_simulation_for_lifecycle(
     firm_active.is_active = True
     firm_active.total_shares = 1000.0
     firm_active.treasury_shares = 0.0
-    firm_active.employees.append(household_active)
+    firm_active.hr.employees.append(household_active)
 
     firm_inactive = Firm(
         id=102,
@@ -671,7 +671,7 @@ def setup_simulation_for_lifecycle(
     firm_inactive.is_active = False
     firm_inactive.total_shares = 1000.0
     firm_inactive.treasury_shares = 0.0
-    firm_inactive.employees.append(household_employed_by_inactive_firm)
+    firm_inactive.hr.employees.append(household_employed_by_inactive_firm)
 
     households = [
         household_active,
@@ -733,8 +733,8 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     assert firm_inactive in sim.firms
     assert household_employed_by_inactive_firm.is_employed
     assert household_employed_by_inactive_firm.employer_id == firm_inactive.id
-    assert household_active in firm_active.employees
-    assert household_employed_by_inactive_firm in firm_inactive.employees
+    assert household_active in firm_active.hr.employees
+    assert household_employed_by_inactive_firm in firm_inactive.hr.employees
 
     sim.lifecycle_manager._handle_agent_liquidation(sim)
 
@@ -754,7 +754,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     assert not household_employed_by_inactive_firm.is_employed
     assert household_employed_by_inactive_firm.employer_id is None
 
-    assert len(firm_active.employees) == 1
-    assert household_active in firm_active.employees
+    assert len(firm_active.hr.employees) == 1
+    assert household_active in firm_active.hr.employees
 
-    assert len(firm_inactive.employees) == 0
+    assert len(firm_inactive.hr.employees) == 0
