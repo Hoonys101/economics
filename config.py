@@ -61,7 +61,7 @@ INITIAL_MONEY_SUPPLY = 100_000.0  # 초기 화폐 총량 (검증용 기준값)
 NUM_HOUSEHOLDS = 20
 NUM_FIRMS = 4
 SIMULATION_TICKS = 1000
-HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0 # Operation Empty Warehouse: No initial safety net
+HOUSEHOLD_MIN_FOOD_INVENTORY = 5.0 # Operation Empty Warehouse: No initial safety net (WO-097: 0.0 -> 5.0)
 TARGET_FOOD_BUFFER_QUANTITY = 5.0 # WO-023: Maslow Constraint Threshold
 
 class EngineType(Enum):
@@ -103,8 +103,8 @@ FIRM_PRODUCTIVITY_FACTOR = 20.0 # Laissez-Faire: Double Output
 # --- Goods Configuration ---
 GOODS = {
     "basic_food": {
-        "production_cost": 3,
-        "initial_price": 5.0,
+        "production_cost": 1,
+        "initial_price": 2.0,
         "utility_effects": {"survival": 10},
         "is_luxury": False,
         "sector": "FOOD",
@@ -565,7 +565,7 @@ STARTUP_PROBABILITY = 0.01          # 틱당 창업 시도 확률 (자격 충족
 
 # --- Mitosis Configuration ---
 TARGET_POPULATION = 50
-MITOSIS_BASE_THRESHOLD = 2500.0  # 기본 분열 자산 요건 (5000.0 -> 2500.0 for Take 2)
+MITOSIS_BASE_THRESHOLD = 1500.0  # 기본 분열 자산 요건 (WO-097: Correction for Survival)
 MITOSIS_SENSITIVITY = 1.5       # 인구 압박 민감도
 MITOSIS_SURVIVAL_THRESHOLD = 20.0  # 배고픔 한계
 MITOSIS_MUTATION_PROBABILITY = 0.2  # 성격 돌연변이 확률
@@ -721,6 +721,7 @@ EDUCATION_LEVEL_DISTRIBUTION = [0.4, 0.3, 0.15, 0.1, 0.04, 0.01] # 0~5단계 분
 
 # --- Phase 20: Socio-Tech & System 2 ---
 # ==============================================================================
+TECH_ADOPTION_SENSITIVITY = 0.2 # WO-097: Sensitivity for Tech Adoption
 SYSTEM2_TICKS_PER_CALC = 10
 SYSTEM2_HORIZON = 100
 SYSTEM2_DISCOUNT_RATE = 0.98
@@ -735,8 +736,8 @@ TECH_CONTRACEPTION_ENABLED = True   # True: System 2 (NPV), False: System 1 (Ran
 BIOLOGICAL_FERTILITY_RATE = 0.15    # 피임 없을 때의 월간 임신 확률
 
 # Cost Factors
-CHILD_MONTHLY_COST = 500.0          # 직접 양육비 (식비+교육비)
-OPPORTUNITY_COST_FACTOR = 0.2       # 육아로 인한 임금 감소율 (0.3 -> 0.2 for Take 2)
+CHILD_MONTHLY_COST = 1.0            # 직접 양육비 (WO-097: 1.0 for Survival)
+OPPORTUNITY_COST_FACTOR = 0.1       # 육아로 인한 임금 감소율 (WO-097: 0.1)
 RAISING_YEARS = 20                  # 양육 기간 (성인까지)
 
 # Benefit Factors

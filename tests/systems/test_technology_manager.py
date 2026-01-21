@@ -9,6 +9,7 @@ class TestTechnologyManager:
         mock_config = MagicMock()
         mock_config.TECH_FERTILIZER_UNLOCK_TICK = 10
         mock_config.TECH_DIFFUSION_RATE = 0.05
+        mock_config.TECH_ADOPTION_SENSITIVITY = 0.2
         return mock_config
 
     @pytest.fixture

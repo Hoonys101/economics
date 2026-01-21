@@ -48,7 +48,7 @@ class TechnologyManager:
             sector="FOOD",
             multiplier=3.0, # 300% TFP
             unlock_tick=getattr(self.config, "TECH_FERTILIZER_UNLOCK_TICK", 50), # Early unlock for test
-            diffusion_rate=getattr(self.config, "TECH_DIFFUSION_RATE", 0.05)
+            diffusion_rate=getattr(self.config, "TECH_ADOPTION_SENSITIVITY", getattr(self.config, "TECH_DIFFUSION_RATE", 0.05))
         )
         self.tech_tree[fertilizer.id] = fertilizer
 
