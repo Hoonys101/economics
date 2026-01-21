@@ -8,9 +8,9 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-092: Household Facade Refactor (TD-075)",
-    "instruction": "Refactor Household facade to delegate economic logic as per the spec. Maintain public API compatibility and ensure all tests pass.",
-    "file": "design/specs/TD-075-Household-SoC-Refactor.md",
+    "title": "WO-094: Phase 23 The Great Harvest - Simulation Verification",
+    "instruction": "## Mission: Verify the Escape Velocity\n\n화학 비료 도입 후, 경제가 맬서스 트랩을 탈출하여 폭발적 성장 궤도에 진입하는지 검증하십시오.\n\n### Task 1: 시뮬레이션 스크립트 작성\n\n`scripts/verify_phase23_harvest.py` 스크립트를 생성:\n1. 시나리오 설정: `food_tfp_multiplier = 3.0`, 최소 200 Ticks 구동\n2. 핵심 메트릭 수집: Food Price, Population Count, Engel Coefficient, Discretionary Spending\n3. 검증 기준 (The Trinity of Growth):\n   - 📉 Food Price Crash: 식량 가격 50% 이상 하락\n   - 📈 Population Boom: 인구 초기 대비 2배 이상 증가\n   - 💰 Disposable Income: 엥겔 계수 50% 미만으로 하락\n\n### Task 2: 분석 보고서 작성\n\n`design/gemini_output/report_phase23_great_harvest.md` 생성:\n1. Executive Summary: 각 지표별 PASS/FAIL 및 종합 VERDICT\n2. Detailed Metrics: 틱별 데이터 테이블\n3. Technical Debt Report: 발견/유발한 기술부채 및 상환 권고\n\n### 참조 파일\n- Work Order: design/work_orders/WO-094-Phase23-Simulation-Verification.md\n- 기존 검증 스크립트: tests/verify_industrial_revolution.py\n- 테스트: tests/integration/test_phase23_production.py\n- 시나리오: config/scenarios/phase23_industrial_rev.json\n\n### 완료 조건\n1. 스크립트 실행 성공 (200틱 완주)\n2. The Trinity of Growth 검증 결과 출력\n3. 분석 보고서 생성 완료\n4. 기술부채 보고서 섹션 포함\n\n\"풍요의 시대가 열렸습니다. 그들이 배불리 먹고 번성하는지 지켜봅시다.\" - Architect Prime",
+    "file": "design/work_orders/WO-094-Phase23-Simulation-Verification.md",
     "session_id": null,
     "wait": true
   },
