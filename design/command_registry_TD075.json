@@ -11,11 +11,10 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-053: Industrial Revolution Implementation",
-    "instruction": "Implement Phase 23 productivity boom and tech diffusion as per the spec. Ensure no regression in existing production logic.",
-    "file": "design/specs/WO-053-Phase23-Industrial-Rev.md",
-    "session_id": null,
-    "wait": true
+    "title": "TD-075: Household God Class Refactor",
+    "instruction": "Refactor Household facade to improve maintainability (TD-075). Focus on delegation and SRP. Ensure existing tests pass.",
+    "file": "design/specs/TD-075-Household-SoC-Refactor.md",
+    "session_id": null
   },
   "git": {
     "command": "review",
