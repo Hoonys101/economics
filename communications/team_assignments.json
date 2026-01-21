@@ -33,6 +33,10 @@
       "12182356083655514360": {
         "title": "WO-098-FIX-No-Op-Trap",
         "initial_mission": "명세서 [WO-098-FIX-No-Op-Trap.md]를 수행하라. | 목표: simulation/core_agents.py를 수정하여 가계가 주문(Order)을 생성하지 않는 'No-Op Trap'을 해결할 것."
+      },
+      "8214903317628553576": {
+        "title": "WO-098-FIX-No-Op-Trap",
+        "initial_mission": "명세서 [WO-099-Harvest-Analysis-Refinement.md]를 수행하라. | 1. 검증 스크립트를 수정하여 CSV 데이터를 확보하라. | 2. 데이터를 분석하여 대풍년 실패 원인 가설을 보고하라."
       }
     },
     "completed_sessions": {

@@ -12,7 +12,7 @@
     "command": "create",
     "session_id": null,
     "title": "WO-098-FIX-No-Op-Trap",
-    "instruction": "명세서 [WO-099-Harvest-Analysis-Refinement.md]를 수행하라. | 1. 검증 스크립트를 수정하여 CSV 데이터를 확보하라. | 2. 데이터를 분석하여 대풍년 실패 원인 가설을 보고하라.",
+    "instruction": "명세서 [WO-100-Fix-Market-ID-Mismatch.md]를 수행하라. | 목표: 가계와 기업의 거래 ID를 'basic_food'로 통일하여 거래량 0 문제를 해결하라.",
     "wait": true
   },
   "git": {
