@@ -669,7 +669,7 @@ class Household(BaseAgent, ILearningAgent):
 
         # Context for Decision Engine (Pure Logic)
         context = DecisionContext(
-            household=None, # Deprecated/Removed dependency
+            household=self, # COMPATIBILITY RESTORED: Required for RuleBasedHouseholdDecisionEngine
             markets=markets,
             goods_data=goods_data,
             market_data=market_data,
