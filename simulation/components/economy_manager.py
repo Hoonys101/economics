@@ -80,10 +80,15 @@ class EconomyManager:
                 xp_gain = quantity * self._config.LEARNING_EFFICIENCY
                 self._household.add_education_xp(xp_gain)
 
-            self._household.current_consumption += quantity
+            # FIX: Calculate consumption value based on price
+            price = self._household.perceived_avg_prices.get(item_id, 5.0) # Fallback 5.0
+            consumption_value = quantity * price
 
-            if item_id == "food":
-                self._household.current_food_consumption += quantity
+            self._household.current_consumption += consumption_value
+
+            # FIX: Track food consumption for Engel Coefficient
+            if item_id in ["food", "basic_food", "luxury_food"]:
+                self._household.current_food_consumption += consumption_value
 
             utility_map = good_info.get("utility_effects") or good_info.get(
                 "utility_per_need"

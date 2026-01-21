@@ -24,3 +24,4 @@
 | 2026-01-21 | 14531274622967209947 | WO-053: Industrial Revolution | [COMPLETED] Merged. TechnologyManager integrated via DTOs/ProductionDepartment. |
 | 2026-01-21 | 5237484117606800056  | WO-092: Household Facade Refactor | [COMPLETED] Merged. Economic logic delegated to EconComponent (TD-075). |
 | 2026-01-21 | TBD                  | WO-094: Phase 23 The Great Harvest | [DISPATCHING] Simulation verification: Food Price Crash, Population Boom, Engel Coefficient. |
+| 2026-01-21 | TBD                  | WO-095: Tech Debt Cleanup | [DISPATCHING] TD-076 (TFP Redundancy) & TD-077 (Config Hardcoding) fixes. |

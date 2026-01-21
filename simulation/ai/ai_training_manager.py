@@ -84,13 +84,15 @@ class AITrainingManager:
 
         xp_bonus = math.log1p(education_xp) * sensitivity
         
-        child_ai = child_agent.decision_engine.ai_engine
-        child_ai.base_alpha = min(max_rate, base_rate + xp_bonus)
-        
-        logger.info(
-            f"EDUCATION_INHERITANCE | Child {child_agent.id} base_alpha: {child_ai.base_alpha:.4f} (Bonus: {xp_bonus:.4f})",
-            extra={"agent_id": child_agent.id, "tags": ["mitosis", "education"]}
-        )
+        # Check if child decision engine has AI engine (RuleBased agents might not)
+        if hasattr(child_agent.decision_engine, "ai_engine"):
+            child_ai = child_agent.decision_engine.ai_engine
+            child_ai.base_alpha = min(max_rate, base_rate + xp_bonus)
+
+            logger.info(
+                f"EDUCATION_INHERITANCE | Child {child_agent.id} base_alpha: {child_ai.base_alpha:.4f} (Bonus: {xp_bonus:.4f})",
+                extra={"agent_id": child_agent.id, "tags": ["mitosis", "education"]}
+            )
 
 
     def _get_top_performing_agents(self, percentile: float | None = None) -> List[Household]:
@@ -122,6 +124,10 @@ class AITrainingManager:
         if not hasattr(source_agent, "decision_engine") or not hasattr(
             target_agent, "decision_engine"
         ):
+            return
+
+        # FIX: Check if decision engines have 'ai_engine' attribute (skip RuleBased engines)
+        if not hasattr(source_agent.decision_engine, "ai_engine") or not hasattr(target_agent.decision_engine, "ai_engine"):
             return
 
         source_ai = source_agent.decision_engine.ai_engine
