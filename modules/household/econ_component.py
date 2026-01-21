@@ -70,10 +70,8 @@ class EconComponent(IEconComponent):
         self._expected_inflation: Dict[str, float] = defaultdict(float)
         self._perceived_avg_prices: Dict[str, float] = {}
 
-        # WO-095: Robust config access to handle Mocks in tests
-        raw_price_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
-        price_memory_len = int(raw_price_len) if isinstance(raw_price_len, (int, float)) else 10
-
+        # WO-105: Simplified config access
+        price_memory_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
         self._price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=price_memory_len))
 
         # Initialize perceived prices from config/goods_data if possible
@@ -100,14 +98,10 @@ class EconComponent(IEconComponent):
         self.housing_planner = HouseholdSystem2Planner(owner, config_module)
 
         # --- History ---
-        # WO-095: Robust config access
-        raw_ticks = getattr(config_module, "TICKS_PER_YEAR", 100)
-        ticks_per_year = int(raw_ticks) if isinstance(raw_ticks, (int, float)) else 100
+        ticks_per_year = getattr(config_module, "TICKS_PER_YEAR", 100)
         self.housing_price_history: deque = deque(maxlen=ticks_per_year)
 
-        raw_wage_len = getattr(self.config_module, "WAGE_MEMORY_LENGTH", 30)
-        wage_memory_len = int(raw_wage_len) if isinstance(raw_wage_len, (int, float)) else 30
-
+        wage_memory_len = getattr(self.config_module, "WAGE_MEMORY_LENGTH", 30)
         self.market_wage_history: deque[float] = deque(maxlen=wage_memory_len)
         self.shadow_reservation_wage: float = 0.0
 

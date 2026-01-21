@@ -53,11 +53,9 @@ class ProductionDepartment:
             # Effective Labor & Capital
             capital = max(self.firm.capital_stock, 0.01)
 
-            # Technology Multiplier (WO-053)
-            tfp = self.firm.productivity_factor  # Total Factor Productivity
-
-            if technology_manager:
-                tfp *= technology_manager.get_productivity_multiplier(self.firm.id)
+            # Technology Multiplier (WO-053) & WO-105 cleanup
+            tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id) if technology_manager else 1.0
+            tfp = self.firm.productivity_factor * tech_multiplier
 
             # Phase 15: Quality Calculation
             avg_skill = self.firm.hr.get_avg_skill()

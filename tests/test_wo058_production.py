@@ -67,6 +67,8 @@ def mock_config():
     config.AUTOMATION_LABOR_REDUCTION = 0.5
     config.LABOR_ALPHA = 0.7
     config.LABOR_ELASTICITY_MIN = 0.1
+    config.PRICE_MEMORY_LENGTH = 10
+    config.WAGE_MEMORY_LENGTH = 30
     return config
 
 @pytest.fixture
