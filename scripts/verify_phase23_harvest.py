@@ -70,7 +70,7 @@ def verify_harvest_clean():
     params = scenario_data.get("parameters", {})
 
     # Apply Config Overrides based on Scenario
-    Config.SIMULATION_TICKS = 200
+    Config.SIMULATION_TICKS = 500
     Config.TECH_FERTILIZER_UNLOCK_TICK = 5 # As per scenario requirements (overriding default for test)
     # Config.food_tfp_multiplier = params.get("food_tfp_multiplier", 3.0) # Not a direct config attribute, used in TechManager
 

@@ -565,7 +565,7 @@ STARTUP_PROBABILITY = 0.01          # 틱당 창업 시도 확률 (자격 충족
 
 # --- Mitosis Configuration ---
 TARGET_POPULATION = 50
-MITOSIS_BASE_THRESHOLD = 5000.0  # 기본 분열 자산 요건
+MITOSIS_BASE_THRESHOLD = 2500.0  # 기본 분열 자산 요건 (5000.0 -> 2500.0 for Take 2)
 MITOSIS_SENSITIVITY = 1.5       # 인구 압박 민감도
 MITOSIS_SURVIVAL_THRESHOLD = 20.0  # 배고픔 한계
 MITOSIS_MUTATION_PROBABILITY = 0.2  # 성격 돌연변이 확률
@@ -736,7 +736,7 @@ BIOLOGICAL_FERTILITY_RATE = 0.15    # 피임 없을 때의 월간 임신 확률
 
 # Cost Factors
 CHILD_MONTHLY_COST = 500.0          # 직접 양육비 (식비+교육비)
-OPPORTUNITY_COST_FACTOR = 0.3       # 육아로 인한 임금 감소율 (30%로 하향 조정 - Middle Income Trap 완화)
+OPPORTUNITY_COST_FACTOR = 0.2       # 육아로 인한 임금 감소율 (0.3 -> 0.2 for Take 2)
 RAISING_YEARS = 20                  # 양육 기간 (성인까지)
 
 # Benefit Factors
