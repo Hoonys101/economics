@@ -1,10 +1,10 @@
 {
-  "scenario_name": "phase29_depression",
-  "start_tick": 5,
-  "is_active": false,
-  "parameters": {
-    "base_interest_rate_multiplier": 3.0,
-    "corporate_tax_rate_delta": 0.1,
-    "demand_shock_multiplier": 0.7
-  }
+    "is_active": true,
+    "scenario_name": "Phase 29 - The Great Depression",
+    "start_tick": 0,
+    "parameters": {
+        "base_interest_rate_multiplier": 3.0,
+        "corporate_tax_rate_delta": 0.1,
+        "demand_shock_multiplier": 0.7
+    }
 }
