@@ -59,7 +59,7 @@ class ProductionDepartment:
             tfp = self.firm.productivity_factor * tech_multiplier  # Total Factor Productivity
 
             if technology_manager:
-                tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id, self.firm.sector)
+                tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id)
                 tfp *= tech_multiplier
 
             # Phase 15: Quality Calculation

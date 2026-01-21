@@ -4,6 +4,7 @@ import logging
 
 from simulation.models import Transaction, Order, StockOrder, RealEstateUnit
 from simulation.core_agents import Household
+from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.agents.government import Government
@@ -343,7 +344,23 @@ class TickScheduler:
             household_leisure_effects = {}
 
         # --- Phase 23: Technology Manager Update ---
-        state.technology_manager.update(state.time, state) # Passing state as simulation facade substitute
+        # WO-053: Orchestrate Technology Update with DTOs
+        # 1. Calculate Human Capital Index
+        active_households_dto = [
+            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
+            for h in state.households
+        ]
+        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])
+        active_count = sum(1 for h in active_households_dto if h['is_active'])
+        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
+
+        # 2. Prepare Firm DTOs
+        active_firms_dto = [
+            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
+            for f in state.firms if f.is_active
+        ]
+
+        state.technology_manager.update(state.time, active_firms_dto, human_capital_index)
 
         # Phase 17-3B: Process Housing
         state.housing_system.process_housing(state)
