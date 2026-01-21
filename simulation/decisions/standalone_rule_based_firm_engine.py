@@ -186,7 +186,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                     item_id,
                     quantity_to_sell,
                     final_price,
-                    "goods_market",
+                    item_id, # FIX: Use item_id as market_id (assumes market_id matches item_id)
                 )
                 orders.append(order)
                 self.logger.info(

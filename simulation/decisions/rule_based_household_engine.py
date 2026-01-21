@@ -9,6 +9,7 @@ from simulation.dtos import DecisionContext
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
+    from simulation.dtos import MacroFinancialContext
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
     def make_decisions(
         self,
         context: DecisionContext,
+        macro_context: Optional[MacroFinancialContext] = None,
     ) -> Tuple[List[Order], Tuple[Tactic, Aggressiveness]]:
         """
         규칙 기반 로직을 사용하여 가계의 의사결정을 수행한다.
@@ -61,33 +63,44 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
             household.needs["survival"]
             >= self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD
         ):
-            food_in_inventory = household.inventory.get("food", 0.0)
+            # FIX: Use "basic_food" instead of hardcoded "food"
+            food_item_id = "basic_food"
+            food_in_inventory = household.inventory.get(food_item_id, 0.0)
+
             if food_in_inventory < self.config_module.HOUSEHOLD_MIN_FOOD_INVENTORY:
                 chosen_tactic = Tactic.BUY_BASIC_FOOD
                 chosen_aggressiveness = Aggressiveness.AGGRESSIVE # 생존 관련이므로 적극적으로 구매
 
                 # 구매할 음식 수량 결정: 최소 재고를 채우거나, 소비 임계치까지 필요한 양
                 needed_quantity = self.config_module.HOUSEHOLD_MIN_FOOD_INVENTORY - food_in_inventory
-                market = markets.get("goods_market")
 
-                best_ask = market.get_best_ask(item_id="food") if market else None
-                if best_ask and best_ask > 0:
+                # FIX: Access specific market if available, or goods_market if combined
+                market_id = food_item_id # OrderBookMarket usually keyed by item_id
+                market = markets.get(market_id)
+
+                best_ask = market.get_best_ask(item_id=food_item_id) if market else None
+
+                # Fallback if None
+                if best_ask is None or best_ask == 0:
+                    best_ask = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
+
+                if best_ask > 0:
                     affordable_quantity = household.assets / best_ask
                     quantity_to_buy = min(needed_quantity, affordable_quantity, self.config_module.FOOD_PURCHASE_MAX_PER_TICK)
                     
-                    if quantity_to_buy > 0:
+                    if quantity_to_buy > 0.1:
                         orders.append(
                             Order(
                                 household.id,
                                 "BUY",
-                                "food",
+                                food_item_id,
                                 quantity_to_buy,
                                 best_ask,
-                                "goods_market",
+                                market_id,
                             )
                         )
                         self.logger.info(
-                            f"Household {household.id} buying {quantity_to_buy:.2f} food for survival at {best_ask:.2f}",
+                            f"Household {household.id} buying {quantity_to_buy:.2f} {food_item_id} for survival at {best_ask:.2f}",
                             extra={"tick": current_time, "agent_id": household.id, "tactic": chosen_tactic.name}
                         )
 
@@ -157,7 +170,7 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                             "labor",
                             1.0,  # 1 unit of labor
                             desired_wage,
-                            "labor_market",
+                            "labor", # FIX: Use correct market ID "labor"
                         )
                     )
                     self.logger.info(

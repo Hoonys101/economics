@@ -445,6 +445,7 @@ HOUSEHOLD_DEFAULT_WAGE = 10.0          # 기본 희망 임금
 
 # 시장 가격 폴백 (시장 데이터 없을 때 사용)
 MARKET_PRICE_FALLBACK = 10.0
+DEFAULT_FALLBACK_PRICE = 5.0
 
 # ------------------------------------------------------------------------------
 # 🏢 FIRM DECISION LOGIC (기업 의사결정 로직)
