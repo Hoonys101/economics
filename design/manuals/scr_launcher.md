@@ -97,7 +97,18 @@
 
 ---
 
-## 💡 6. 실무자 피드백 요구 (Technical Debt Reporting) [CRITICAL]
+## ⌨️ 6. 입력을 위한 문자열 규칙 (String Rules for Input) [NEW]
+
+터미널 환경에서 줄바꿈 문자(`\n`)가 포함된 인자를 전달할 때 발생하는 잘림 현상을 방지하기 위해, 런처는 다음 규칙을 적용합니다.
+
+- **줄바꿈 자동 치환 (`\n` -> `|`)**: 
+  - JSON 파일(`command_registry.json`)의 `instruction` 필드에 작성된 줄바꿈(`\n`)은 실행 시점에 파이프(`|`) 문자로 자동 변환되어 Jules에게 전달됩니다.
+  - Jules AI는 전달받은 `|` 문자를 문맥상의 문장 구분자로 인식하여 작업을 수행합니다.
+  - 따라서, JSON 작성 시에는 가독성을 위해 자유롭게 줄바꿈을 사용하셔도 됩니다.
+
+---
+
+## 💡 7. 실무자 피드백 요구 (Technical Debt Reporting) [CRITICAL]
 
 Jules에게 미션을 발주(`create`)하거나 보완 지시(`send-message`)를 내릴 때, 팀장(Antigravity)은 반드시 아래 내용을 **보고서(Audit) 형태**로 요구해야 합니다. 이는 기술부채 대장 업데이트의 핵심 근거가 됩니다.
 

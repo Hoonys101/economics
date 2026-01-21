@@ -107,6 +107,10 @@ class JulesBridge:
             logger.warning(f"Target source '{source}' differs from default '{DEFAULT_SOURCE}'.")
             # For strict mode, we could raise an error here.
             # raise ValueError(f"Project Safety Guard: Cannot assign to external source '{source}'")
+
+        # Auto-inject pipe instruction for AI context
+        if "|" in prompt:
+            prompt = "[SYSTEM: Treat '|' as a newline character.] " + prompt
             
         payload = {
             "prompt": prompt,
@@ -186,6 +190,11 @@ class JulesBridge:
 
     def send_message(self, session_id: str, message: str) -> bool:
         """Send a follow-up message to an active session."""
+        
+        # Auto-inject pipe instruction for AI context
+        if "|" in message:
+            message = "[SYSTEM: Treat '|' as a newline character.] " + message
+
         payload = {"prompt": message}
         response = requests.post(
             f"{JULES_API_BASE}/sessions/{session_id}:sendMessage",

@@ -1,16 +1,16 @@
 {
   "gemini": {
     "command": "spec",
-    "title": "Completed",
-    "instruction": "Both Phase 23 and TD-075 specs have been generated.",
+    "title": "Re-Authorized",
+    "instruction": "Phase 23 Attempt 2 Mission: J-Curve Verification.",
     "context": [],
     "output": "design/specs/archive.md"
   },
   "jules": {
     "command": "create",
-    "title": "WO-095: Technical Debt Cleanup (TD-076/TD-077)",
-    "instruction": "Phase 23 통합 잔여 부채 청산 (Pure Refactoring):\n\n1. [TD-077] Config 하드코딩 제거:\n   - config.py에 PRICE_MEMORY_LENGTH=10, WAGE_MEMORY_LENGTH=30 추가\n   - EconComponent에서 이를 참조하도록 수정\n\n2. [TD-076] TFP 계산 중복 제거:\n   - ProductionDepartment.produce() 메서드의 tech_multiplier 변수 중복 정의 및 재사용 로직 단순화\n\n지침서: design/work_orders/WO-095-Tech-Debt-Cleanup.md\n참조: simulation/components/production_department.py, modules/household/econ_component.py\n\n주의: 로직 변경 없이 구조만 개선할 것. 기존 테스트 통과 필수.",
-    "file": "design/work_orders/WO-095-Tech-Debt-Cleanup.md",
+    "title": "WO-096: The Great Expansion (Attempt 2)",
+    "instruction": "[MISSION: TAKE 2]|기계는 고쳐졌고 혈전은 제거되었습니다.|이제 물리 법칙이 작동함을 증명하십시오.||핵심 미션:|1. scripts/verify_phase23_harvest.py를 500틱 이상 가동.|2. Food Price $1.0 미만 하락 확인.|3. 지수 함수적(Exponential) 인구 증가 그래프 데이터 수집.|4. 공산품(Consumer Goods) 인벤토리 증가 관측.||결과물:|design/gemini_output/report_take2_success.md 보고서에 위 3개 지표의 스냅샷 데이터를 포함하세요. (반드시 성공할 때까지 파라미터를 미세조정해도 좋습니다.)",
+    "file": "",
     "session_id": null,
     "wait": true
   },

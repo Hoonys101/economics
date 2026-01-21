@@ -31,7 +31,7 @@ def run_command(cmd_list, capture_output=False):
 def run_gemini(args, registry):
     data = registry.get("gemini", {})
     worker = data.get("worker", "spec")
-    instruction = data.get("instruction", "")
+    instruction = data.get("instruction", "").replace("\n", "|")
     context = data.get("context", [])
     output = data.get("output", "")
     output = data.get("output", "")
@@ -55,7 +55,7 @@ def run_jules(args, registry):
     command = data.get("command", "list-sessions")
     session_id = data.get("session_id", "")
     title = data.get("title", "")
-    instruction = data.get("instruction", "")
+    instruction = data.get("instruction", "").replace("\n", "|")
     file_path = data.get("file", "")
     wait = data.get("wait", False)
 
@@ -104,7 +104,7 @@ def run_jules(args, registry):
 def run_git_review(args, registry):
     data = registry.get("git_review", {})
     branch = args[0] if args else data.get("branch", "main")
-    instruction = args[1] if len(args) > 1 else data.get("instruction", "Analyze this PR.")
+    instruction = args[1] if len(args) > 1 else data.get("instruction", "Analyze this PR.").replace("\n", "|")
 
     print(f"🔍 [Git-Review] Syncing and analyzing branch: {branch}")
     

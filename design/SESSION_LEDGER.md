@@ -23,5 +23,5 @@
 | 2026-01-20 | 7372223621436217608  | Phase 29: Depression | [COMPLETED] Merged. Fixed interest bug, added survival logic. |
 | 2026-01-21 | 14531274622967209947 | WO-053: Industrial Revolution | [COMPLETED] Merged. TechnologyManager integrated via DTOs/ProductionDepartment. |
 | 2026-01-21 | 5237484117606800056  | WO-092: Household Facade Refactor | [COMPLETED] Merged. Economic logic delegated to EconComponent (TD-075). |
-| 2026-01-21 | TBD                  | WO-094: Phase 23 The Great Harvest | [DISPATCHING] Simulation verification: Food Price Crash, Population Boom, Engel Coefficient. |
-| 2026-01-21 | TBD                  | WO-095: Tech Debt Cleanup | [DISPATCHING] TD-076 (TFP Redundancy) & TD-077 (Config Hardcoding) fixes. |
+| 2026-01-21 | 6273696462266515263 | WO-094: Phase 23 The Great Harvest | [COMPLETED] Merged. Verified Core Fixes (Routing, EconValue) and simulation script. |
+| 2026-01-21 | 8573422802782587267 | WO-095: Tech Debt Cleanup | [COMPLETED] Merged. TD-076/TD-077 resolved (Config hardcoding removed). |
