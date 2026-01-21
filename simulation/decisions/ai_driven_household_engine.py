@@ -48,7 +48,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         # Legacy fallback if state is not provided but household object is
         if household is None and context.household:
-             household = context.household.create_state_dto()
+             # Check if context.household is actually a DTO already
+             if hasattr(context.household, "create_state_dto"):
+                 household = context.household.create_state_dto()
+             else:
+                 # It's already a DTO, use it directly
+                 household = context.household
 
         if household is None:
             # Fallback action vector for returning if agent is None

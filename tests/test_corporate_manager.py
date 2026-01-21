@@ -62,6 +62,8 @@ def firm_mock(golden_firms):
     firm.finance.pay_ad_hoc_tax.side_effect = pay_tax_side_effect
     firm.finance.set_dividend_rate.side_effect = set_dividend_rate_side_effect
     firm.finance.get_book_value_per_share.return_value = 10.0 # Default BPS
+    firm.finance.calculate_altman_z_score.return_value = 3.0 # Default safe Z-score
+    firm.finance.consecutive_loss_turns = 0
 
     firm.hr = MagicMock()
     firm.hr.employees = []

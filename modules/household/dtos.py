@@ -33,6 +33,7 @@ class HouseholdStateDTO:
     portfolio_holdings: Dict[int, Share]
     risk_aversion: float
     agent_data: Dict[str, Any]
+    perceived_prices: Dict[str, float] = field(default_factory=dict)
 
     # Additional fields needed by DecisionEngine
     conformity: float = 0.5

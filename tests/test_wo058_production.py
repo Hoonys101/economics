@@ -7,6 +7,7 @@ from simulation.firms import Firm
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from simulation.ai.api import Personality
+from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 
 @pytest.fixture
 def mock_config():
@@ -90,7 +91,15 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
     ]
 
     # The bootstrapper is called during the Simulation initialization
-    sim = Simulation(households=households, firms=firms, ai_trainer=mock_ai_trainer, repository=mock_repo, config_module=mock_config, goods_data=[])
+    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    sim.world_state.households = households
+    sim.world_state.firms = firms
+    sim.world_state.ai_trainer = mock_ai_trainer
+    sim.world_state.goods_data = []
+    sim.world_state.tracker = EconomicIndicatorTracker(config_module=mock_config)
+
+    Bootstrapper.inject_initial_liquidity(sim.firms, mock_config)
+    Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
     # Assert Assets >= 2000
     for firm in sim.firms:
@@ -111,7 +120,15 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer):
     ]
 
     # This is a simplified simulation setup; a real test would need more comprehensive mocks
-    sim = Simulation(households=households, firms=firms, ai_trainer=mock_ai_trainer, repository=mock_repo, config_module=mock_config, goods_data=[])
+    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    sim.world_state.households = households
+    sim.world_state.firms = firms
+    sim.world_state.ai_trainer = mock_ai_trainer
+    sim.world_state.goods_data = []
+    sim.world_state.tracker = EconomicIndicatorTracker(config_module=mock_config)
+
+    Bootstrapper.inject_initial_liquidity(sim.firms, mock_config)
+    Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
     # We will manually trigger production to verify the bootstrapper's effect.
     firm = sim.firms[0]
