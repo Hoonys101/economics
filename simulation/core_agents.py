@@ -669,7 +669,8 @@ class Household(BaseAgent, ILearningAgent):
 
         # Context for Decision Engine (Pure Logic)
         context = DecisionContext(
-            household=None, # Deprecated/Removed dependency
+            household=self,
+            state=state_dto,
             markets=markets,
             goods_data=goods_data,
             market_data=market_data,
@@ -677,10 +678,6 @@ class Household(BaseAgent, ILearningAgent):
             government=government,
             stress_scenario_config=stress_scenario_config
         )
-        # Hack: DecisionContext currently expects 'household' but we want to use 'state' in new engine.
-        # We need to modify DecisionContext to accept 'state' or monkey-patch it here if we can't change DTO yet.
-        # But per plan, we ARE changing DTO. So we will set `context.state = state_dto`.
-        context.state = state_dto # Dynamically attach DTO
 
         # 2. Call Decision Engine
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
