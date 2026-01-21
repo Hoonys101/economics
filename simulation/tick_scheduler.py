@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, TYPE_CHECKING, Tuple
 import logging
 
 from simulation.models import Transaction, Order, StockOrder, RealEstateUnit
@@ -20,6 +20,7 @@ from simulation.systems.api import (
     CommerceContext,
     LearningUpdateContext
 )
+from simulation.dtos.api import SimulationState
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -33,6 +34,7 @@ class TickScheduler:
     """
     Manages the schedule and execution of a single simulation tick.
     Decomposed from Simulation engine.
+    WO-103: Refactored to enforce the Sacred Sequence.
     """
 
     def __init__(self, world_state: WorldState, action_processor: ActionProcessor):
@@ -165,18 +167,8 @@ class TickScheduler:
 
         # [DEBUG WO-057]
         latest_indicators = state.tracker.get_latest_indicators()
-        state.logger.info(f"DEBUG_WO057 | Tick {state.time} | Indicators: {list(latest_indicators.keys())}")
-
         avg_price = latest_indicators.get('avg_goods_price', 'MISSING')
-        avg_price_val = avg_price if isinstance(avg_price, (int, float)) else 0.0
-        state.logger.info(f"DEBUG_WO057 | AvgPrice: {avg_price_val:.4f}")
-
         inf_sma = sensory_dto.inflation_sma if isinstance(sensory_dto.inflation_sma, (int, float)) else 0.0
-        unemp_sma = sensory_dto.unemployment_sma if isinstance(sensory_dto.unemployment_sma, (int, float)) else 0.0
-        debt_rat = sensory_dto.current_gdp if isinstance(sensory_dto.current_gdp, (int, float)) else 0.0
-
-        state.logger.info(f"DEBUG_WO057 | SensoryDTO: InfSMA={inf_sma:.4f}, UnempSMA={unemp_sma:.4f}, DebtRat={debt_rat:.4f}")
-        # -----------------------------------------
 
         # 3. Government Makes Policy Decision
         latest_gdp = state.tracker.get_latest_indicators().get("total_production", 0.0)
@@ -208,110 +200,54 @@ class TickScheduler:
         for h in state.households:
             if h.is_active: h.pre_state_snapshot = h.get_agent_data()
 
-        all_transactions: List[Transaction] = []
+        # ==================================================================================
+        # THE SACRED SEQUENCE (WO-103)
+        # ==================================================================================
 
-        firm_pre_states = {}
-        for firm in state.firms:
-            if firm.is_active:
-                if hasattr(firm.decision_engine, 'ai_engine') and firm.decision_engine.ai_engine:
-                    pre_strategic_state = (
-                        firm.decision_engine.ai_engine._get_strategic_state(
-                            firm.get_agent_data(), market_data
-                        )
-                    )
-                    pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(
-                        firm.decision_engine.ai_engine.chosen_intention,
-                        firm.get_agent_data(),
-                        market_data,
-                    )
-                    firm_pre_states[firm.id] = {
-                        "pre_strategic_state": pre_strategic_state,
-                        "pre_tactical_state": pre_tactical_state,
-                        "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
-                        "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
-                    }
+        # 0. Construct Simulation State DTO
+        sim_state = SimulationState(
+            time=state.time,
+            households=state.households,
+            firms=state.firms,
+            agents=state.agents,
+            markets=state.markets,
+            government=state.government,
+            bank=state.bank,
+            central_bank=state.central_bank,
+            stock_market=state.stock_market,
+            goods_data=state.goods_data,
+            market_data=market_data,
+            config_module=state.config_module,
+            tracker=state.tracker,
+            logger=state.logger,
+            reflux_system=state.reflux_system,
+            ai_training_manager=getattr(state, "ai_training_manager", None),
+            ai_trainer=getattr(state, "ai_trainer", None),
+            next_agent_id=state.next_agent_id,
+            real_estate_units=state.real_estate_units
+        )
 
-                firm_orders, action_vector = firm.make_decision(state.markets, state.goods_data, market_data, state.time, state.government, state.reflux_system, state.stress_scenario_config)
-                for order in firm_orders:
-                    target_market = state.markets.get(order.market_id)
-                    if target_market:
-                        target_market.place_order(order, state.time)
+        # 1. Decisions
+        firm_pre_states, household_pre_states, household_time_allocation = self._phase_decisions(
+            sim_state, market_data, macro_financial_context
+        )
+        state.household_time_allocation = household_time_allocation # Update state
 
-                state.logger.debug(f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets.")
+        # 2. Matching
+        self._phase_matching(sim_state)
 
-        household_pre_states = {}
-        household_time_allocation = {}
-        for household in state.households:
-            if household.is_active:
-                if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
-                    pre_strategic_state = (
-                        household.decision_engine.ai_engine._get_strategic_state(
-                            household.get_agent_data(), market_data
-                        )
-                    )
-                    household_pre_states[household.id] = {
-                        "pre_strategic_state": pre_strategic_state,
-                    }
+        # 3. Transactions
+        self._phase_transactions(sim_state)
 
-                household_orders, action_vector = household.make_decision(
-                    state.markets, state.goods_data, market_data, state.time, state.government, macro_financial_context, state.stress_scenario_config
-                )
+        # 4. Lifecycle
+        self._phase_lifecycle(sim_state)
 
-                if hasattr(action_vector, 'work_aggressiveness'):
-                    work_aggressiveness = action_vector.work_aggressiveness
-                else:
-                    work_aggressiveness = 0.5
-                max_work_hours = state.config_module.MAX_WORK_HOURS
-                shopping_hours = getattr(state.config_module, "SHOPPING_HOURS", 2.0)
-                hours_per_tick = getattr(state.config_module, "HOURS_PER_TICK", 24.0)
+        # Sync back scalars
+        state.next_agent_id = sim_state.next_agent_id
 
-                work_hours = work_aggressiveness * max_work_hours
-                leisure_hours = max(0.0, hours_per_tick - work_hours - shopping_hours)
-
-                household_time_allocation[household.id] = leisure_hours
-                state.household_time_allocation[household.id] = leisure_hours
-
-                for order in household_orders:
-                    if order.order_type == "INVEST" and order.market_id == "admin":
-                        state.logger.info(f"FOUND_INVEST_ORDER | Agent {household.id} attempting startup via admin market.")
-                        state.firm_system.spawn_firm(state, household) # Note: spawn_firm still expects simulation instance (state)
-                        continue
-
-                    target_market_id = order.market_id
-
-                    if order.order_type in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
-                        target_market_id = "loan_market"
-                    elif order.item_id in ["deposit", "currency"]:
-                        target_market_id = "loan_market"
-
-                    household_target_market = state.markets.get(target_market_id)
-
-                    if household_target_market:
-                        household_target_market.place_order(order, state.time)
-                    else:
-                        state.logger.warning(
-                            f"Market '{order.market_id}' not found for order from agent {household.id}",
-                            extra={"tick": state.time},
-                        )
-
-                state.logger.debug(f"TRACE_ENGINE | Household {household.id} submitted {len(household_orders)} orders back to engine.")
-
-        for market in state.markets.values():
-            if isinstance(market, OrderBookMarket):
-                all_transactions.extend(market.match_orders(state.time))
-
-        # ---------------------------------------------------------
-        # Stock Market Matching
-        # ---------------------------------------------------------
-        if state.stock_market is not None:
-            stock_transactions = state.stock_market.match_orders(state.time)
-            self.action_processor.process_stock_transactions(stock_transactions)
-            all_transactions.extend(stock_transactions)
-            state.stock_market.clear_expired_orders(state.time)
-
-        # Process transactions
-        market_data_cb = lambda: self.prepare_market_data(state.tracker).get("goods_market", {})
-        self.action_processor.process_transactions(all_transactions, market_data_cb)
+        # ==================================================================================
+        # Post-Tick Logic
+        # ==================================================================================
 
         # ---------------------------------------------------------
         # Activate Consumption Logic & Leisure Effects (via CommerceSystem)
@@ -362,51 +298,11 @@ class TickScheduler:
 
         state.technology_manager.update(state.time, active_firms_dto, human_capital_index)
 
-        # Phase 17-3B: Process Housing
-        state.housing_system.process_housing(state)
+        # Phase 17-3B: Process Housing (Logic that didn't fit in matching/lifecycle)
+        # Housing matching happened in _phase_matching.
+        # But apply_homeless_penalty needs to run.
+        state.housing_system.process_housing(state) # Update rent/maintenance
         state.housing_system.apply_homeless_penalty(state)
-
-        # Phase 17-3B: Housing Market Matching
-        if "housing" in state.markets:
-             housing_transactions = state.markets["housing"].match_orders(state.time)
-             all_transactions.extend(housing_transactions)
-             # Note: Housing transactions are processed inside housing system logic usually?
-             # Wait, engine.py appended them to all_transactions but did not call process_transactions again explicitly for them.
-             # Ah, _process_transactions is called ONCE in engine.py with all_transactions BEFORE housing_transactions extension.
-             # Wait, looking at engine.py:
-             # all_transactions.extend(stock_transactions)
-             # self._process_transactions(all_transactions)
-             # ...
-             # all_transactions.extend(housing_transactions)
-             # But _process_transactions was NOT called again.
-             # This implies housing transactions generated HERE (late match) were NOT processed by _process_transactions in the same tick
-             # UNLESS they are saved to DB by persistence manager buffer.
-             # But their effects (assets transfer) might be missed?
-             # Let's check engine.py again.
-             # Yes, _process_transactions is called BEFORE housing logic.
-             # housing_transactions are extended to all_transactions ONLY for buffering to DB?
-             # HousingSystem.process_housing likely handles rent payments directly?
-             # markets["housing"].match_orders returns transactions.
-             # If they are not processed, money doesn't move.
-             # BUT HousingSystem handles its own logic mostly.
-             # If housing market matching produces sales, assets should move.
-             # In engine.py:
-             # self._process_transactions(all_transactions)
-             # ...
-             # housing_transactions = self.markets["housing"].match_orders(self.time)
-             # all_transactions.extend(housing_transactions)
-
-             # It seems housing transactions matched here are INDEED NOT processed by _process_transactions in engine.py!
-             # This might be a bug or intended (handled elsewhere?).
-             # Or maybe they are processed in NEXT tick? No, transactions are not carried over.
-             # I will maintain this behavior for backward compatibility.
-             # (They are added to all_transactions for persistence).
-
-        # --- Phase 19: Population Dynamics ---
-        if state.lifecycle_manager:
-            state.lifecycle_manager.process_lifecycle_events(state)
-        else:
-            state.logger.error("LifecycleManager is not initialized!")
 
         # ---------------------------------------------------------
         # Activate Farm Logic (Production & Needs/Wages)
@@ -506,9 +402,6 @@ class TickScheduler:
         if len(state.firms) < active_firms_count_before:
             state.logger.info(f"CLEANUP | Removed {active_firms_count_before - len(state.firms)} inactive firms from execution list.")
 
-        # Entrepreneurship Check
-        state.firm_system.check_entrepreneurship(state)
-
         # Phase 5: Finalize Government Stats
         state.government.finalize_tick(state.time)
 
@@ -516,7 +409,10 @@ class TickScheduler:
         state.reflux_system.distribute(state.households)
 
         # Save all state
-        state.persistence_manager.buffer_tick_state(state, all_transactions)
+        # Persistence manager needs ALL transactions?
+        # state.persistence_manager.buffer_tick_state(state, all_transactions)
+        # sim_state.transactions contains all processed transactions.
+        state.persistence_manager.buffer_tick_state(state, sim_state.transactions)
 
         if state.time % state.batch_save_interval == 0:
             state.persistence_manager.flush_buffers(state.time)
@@ -576,6 +472,144 @@ class TickScheduler:
 
         if state.stock_market is not None:
             state.stock_tracker.track_all_firms([f for f in state.firms if f.is_active], state.stock_market)
+
+    def _phase_decisions(self, state: SimulationState, market_data: Dict[str, Any], macro_context: Optional[MacroFinancialContext]) -> Tuple[Dict, Dict, Dict]:
+        """Phase 1: Agents make decisions and place orders."""
+        firm_pre_states = {}
+        household_pre_states = {}
+        household_time_allocation = {}
+
+        # 1. Firms
+        for firm in state.firms:
+            if firm.is_active:
+                if hasattr(firm.decision_engine, 'ai_engine') and firm.decision_engine.ai_engine:
+                    pre_strategic_state = (
+                        firm.decision_engine.ai_engine._get_strategic_state(
+                            firm.get_agent_data(), market_data
+                        )
+                    )
+                    pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(
+                        firm.decision_engine.ai_engine.chosen_intention,
+                        firm.get_agent_data(),
+                        market_data,
+                    )
+                    firm_pre_states[firm.id] = {
+                        "pre_strategic_state": pre_strategic_state,
+                        "pre_tactical_state": pre_tactical_state,
+                        "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
+                        "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
+                    }
+
+                stress_config = self.world_state.stress_scenario_config
+
+                firm_orders, action_vector = firm.make_decision(
+                    state.markets, state.goods_data, market_data, state.time,
+                    state.government, state.reflux_system, stress_config
+                )
+
+                for order in firm_orders:
+                    target_market = state.markets.get(order.market_id)
+                    if target_market:
+                        target_market.place_order(order, state.time)
+
+                state.logger.debug(f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets.")
+
+        # 2. Households
+        for household in state.households:
+            if household.is_active:
+                if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
+                    pre_strategic_state = (
+                        household.decision_engine.ai_engine._get_strategic_state(
+                            household.get_agent_data(), market_data
+                        )
+                    )
+                    household_pre_states[household.id] = {
+                        "pre_strategic_state": pre_strategic_state,
+                    }
+
+                stress_config = self.world_state.stress_scenario_config
+                household_orders, action_vector = household.make_decision(
+                    state.markets, state.goods_data, market_data, state.time, state.government, macro_context, stress_config
+                )
+
+                if hasattr(action_vector, 'work_aggressiveness'):
+                    work_aggressiveness = action_vector.work_aggressiveness
+                else:
+                    work_aggressiveness = 0.5
+                max_work_hours = state.config_module.MAX_WORK_HOURS
+                shopping_hours = getattr(state.config_module, "SHOPPING_HOURS", 2.0)
+                hours_per_tick = getattr(state.config_module, "HOURS_PER_TICK", 24.0)
+
+                work_hours = work_aggressiveness * max_work_hours
+                leisure_hours = max(0.0, hours_per_tick - work_hours - shopping_hours)
+
+                household_time_allocation[household.id] = leisure_hours
+
+                for order in household_orders:
+                    if order.order_type == "INVEST" and order.market_id == "admin":
+                        state.logger.info(f"FOUND_INVEST_ORDER | Agent {household.id} attempting startup via admin market.")
+                        self.world_state.firm_system.spawn_firm(state, household)
+                        continue
+
+                    target_market_id = order.market_id
+
+                    if order.order_type in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
+                        target_market_id = "loan_market"
+                    elif order.item_id in ["deposit", "currency"]:
+                        target_market_id = "loan_market"
+
+                    household_target_market = state.markets.get(target_market_id)
+
+                    if household_target_market:
+                        household_target_market.place_order(order, state.time)
+                    else:
+                        state.logger.warning(
+                            f"Market '{order.market_id}' not found for order from agent {household.id}",
+                            extra={"tick": state.time},
+                        )
+
+                state.logger.debug(f"TRACE_ENGINE | Household {household.id} submitted {len(household_orders)} orders back to engine.")
+
+        return firm_pre_states, household_pre_states, household_time_allocation
+
+    def _phase_matching(self, state: SimulationState) -> None:
+        """Phase 2: Match orders in all markets."""
+        all_transactions = []
+
+        # 1. Goods & Labor Markets
+        for market in state.markets.values():
+            if isinstance(market, OrderBookMarket):
+                all_transactions.extend(market.match_orders(state.time))
+
+        # 2. Stock Market
+        if state.stock_market is not None:
+            stock_transactions = state.stock_market.match_orders(state.time)
+            # Legacy Note: action_processor.process_stock_transactions was here.
+            # Now handled in TransactionProcessor.execute.
+            all_transactions.extend(stock_transactions)
+            state.stock_market.clear_expired_orders(state.time)
+
+        # 3. Housing Market
+        if "housing" in state.markets:
+             housing_transactions = state.markets["housing"].match_orders(state.time)
+             all_transactions.extend(housing_transactions)
+
+        state.transactions = all_transactions
+
+    def _phase_transactions(self, state: SimulationState) -> None:
+        """Phase 3: Execute transactions."""
+        # Use the system service directly via WorldState (or passed if added to DTO)
+        if self.world_state.transaction_processor:
+            self.world_state.transaction_processor.execute(state)
+        else:
+            state.logger.error("TransactionProcessor not initialized.")
+
+    def _phase_lifecycle(self, state: SimulationState) -> None:
+        """Phase 4: Agent Lifecycle."""
+        if self.world_state.lifecycle_manager:
+            self.world_state.lifecycle_manager.execute(state)
+        else:
+            state.logger.error("LifecycleManager not initialized.")
 
     def prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""

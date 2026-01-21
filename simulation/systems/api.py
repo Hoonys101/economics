@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from simulation.dtos import GovernmentStateDTO, LeisureEffectDTO
     from simulation.markets.market import Market
     from simulation.dtos.scenario import StressScenarioConfig
+    from simulation.dtos.api import SimulationState
 
 
 # ===================================================================
@@ -77,6 +78,13 @@ class LearningUpdateContext(TypedDict):
 # ===================================================================
 # 2. 시스템 레벨 인터페이스 (Simulation 클래스에서 추출)
 # ===================================================================
+
+class SystemInterface(Protocol):
+    """
+    WO-103: Common interface for system services to enforce the sacred sequence.
+    """
+    def execute(self, state: SimulationState) -> None:
+        ...
 
 class ISocialSystem(Protocol):
     """사회적 순위 및 지위와 같은 동적 요소를 관리하는 시스템의 인터페이스입니다."""
@@ -199,9 +207,8 @@ class ILearningAgent(Protocol):
         """
         ...
 
-class AgentLifecycleManagerInterface(Protocol):
+class AgentLifecycleManagerInterface(SystemInterface, Protocol):
     """
     Interface for AgentLifecycleManager to ensure contract compliance.
     """
-    def process_lifecycle_events(self, sim: Any) -> None:
-        ...
+    pass

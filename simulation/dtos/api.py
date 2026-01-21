@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -102,6 +102,39 @@ class DecisionContext:
     government: Optional[Any] = None
     reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+
+
+@dataclass
+class SimulationState:
+    """
+    WO-103: Simulation State DTO to reduce coupling.
+    Passes all necessary data from the Simulation object to system services.
+    """
+    time: int
+    households: List[Household]
+    firms: List[Firm]
+    agents: Dict[int, Any]
+    markets: Dict[str, Any]
+    government: Any  # Government
+    bank: Any        # Bank
+    central_bank: Any # CentralBank
+    stock_market: Optional[Any] # StockMarket
+    goods_data: Dict[str, Any]
+    market_data: Dict[str, Any] # Added for WO-103
+    config_module: Any
+    tracker: Any
+    logger: Any # logging.Logger
+    reflux_system: Any
+    ai_training_manager: Optional[Any]
+    ai_trainer: Optional[Any] # Added for WO-103
+    next_agent_id: int = 0 # Added for WO-103
+    real_estate_units: List[Any] = field(default_factory=list) # Added for WO-103
+    # Mutable state for the tick
+    transactions: List[Any] = None # List[Transaction]
+
+    def __post_init__(self):
+        if self.transactions is None:
+            self.transactions = []
 
 
 # ------------------------------------------------------------------------------

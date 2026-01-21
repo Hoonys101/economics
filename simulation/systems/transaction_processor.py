@@ -5,30 +5,37 @@ import logging
 from simulation.models import Transaction
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
+from simulation.systems.api import SystemInterface
 
 if TYPE_CHECKING:
     from simulation.agents.government import Government
+    from simulation.dtos.api import SimulationState
 
 logger = logging.getLogger(__name__)
 
-class TransactionProcessor:
+class TransactionProcessor(SystemInterface):
     """
     Simulation 엔진의 거대한 거래 처리 로직을 담당하는 전용 클래스.
     관심사의 분리(SoC)를 위해 Simulation 클래스에서 추출됨.
+    WO-103: Implements SystemInterface to enforce Sacred Sequence.
     """
 
     def __init__(self, config_module: Any):
         self.config_module = config_module
 
-    def process(
-        self, 
-        transactions: List[Transaction], 
-        agents: Dict[int, Any], 
-        government: Any, 
-        current_time: int,
-        market_data_callback: Any # To get goods_market_data for survival cost
-    ) -> None:
-        """발생한 거래들을 처리하여 에이전트의 자산, 재고, 고용 상태 등을 업데이트합니다."""
+    def execute(self, state: SimulationState) -> None:
+        """
+        발생한 거래들을 처리하여 에이전트의 자산, 재고, 고용 상태 등을 업데이트합니다.
+        Uses SimulationState DTO.
+        """
+        transactions = state.transactions
+        agents = state.agents
+        government = state.government
+        current_time = state.time
+
+        # market_data is now in state
+        goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
+
         for tx in transactions:
             buyer = agents.get(tx.buyer_id)
             seller = agents.get(tx.seller_id)
@@ -58,7 +65,6 @@ class TransactionProcessor:
                 tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
 
                 # Progressive Tax Bracket survival cost
-                goods_market_data = market_data_callback()
                 if "basic_food_current_sell_price" in goods_market_data:
                     avg_food_price = goods_market_data["basic_food_current_sell_price"]
                 else:
@@ -104,13 +110,9 @@ class TransactionProcessor:
                 self._handle_goods_transaction(tx, buyer, seller, trade_value, current_time)
 
             elif tx.transaction_type == "stock":
-                self._handle_stock_transaction(tx, buyer, seller)
+                self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
 
             elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
-                # Housing transactions are now fully handled in HousingSystem.process_transaction
-                # This ensures that mortgage creation, title transfer, and fund movement
-                # are all handled in a single, dedicated location.
-                # The logic was removed from here to avoid duplication and maintain SoC.
                 pass
 
     def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, tax_amount: float, agents: Dict[int, Any]):
@@ -175,9 +177,10 @@ class TransactionProcessor:
                 if tx.item_id == "basic_food":
                     buyer.current_food_consumption += tx.quantity
 
-    def _handle_stock_transaction(self, tx: Transaction, buyer: Any, seller: Any):
+    def _handle_stock_transaction(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, logger: Any, current_time: int):
         firm_id = int(tx.item_id.split("_")[1])
         
+        # 1. Update Holdings
         if isinstance(seller, Household):
             current_shares = seller.shares_owned.get(firm_id, 0)
             seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
@@ -187,11 +190,34 @@ class TransactionProcessor:
                 seller.portfolio.remove(firm_id, tx.quantity)
         elif isinstance(seller, Firm) and seller.id == firm_id:
             seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
+        elif hasattr(seller, "portfolio"):
+            # Secondary market trade for Firms/Institutions if they have portfolio
+            seller.portfolio.remove(firm_id, tx.quantity)
         
         if isinstance(buyer, Household):
             buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
             if hasattr(buyer, "portfolio"):
                 buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+                # Sync legacy dict
+                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
         elif isinstance(buyer, Firm) and buyer.id == firm_id:
             buyer.treasury_shares += tx.quantity
             buyer.total_shares -= tx.quantity
+
+        # 2. Sync Market Shareholder Registry (CRITICAL for Dividends)
+        if stock_market:
+            # Sync Buyer
+            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
+                 stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
+
+            # Sync Seller
+            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+                stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
+            else:
+                stock_market.update_shareholder(seller.id, firm_id, 0.0)
+
+        if logger:
+            logger.info(
+                f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
+                extra={"tick": current_time, "tags": ["stock_market", "transaction"]}
+            )

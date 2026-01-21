@@ -13,6 +13,7 @@ from simulation.decisions.ai_driven_household_engine import (
 )
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 import config
+from simulation.dtos.api import SimulationState
 
 # Mock Logger to prevent actual file writes during tests
 @pytest.fixture(autouse=True)
@@ -241,7 +242,7 @@ def mock_ai_trainer():
     }  # Default mock return
     trainer.collect_experience = Mock()
     trainer.end_episode = Mock()
-    return trainer
+    return mock_ai_trainer
 
 
 @pytest.fixture
@@ -433,7 +434,7 @@ class TestSimulation:
         initial_seller_assets = seller_hh.assets
 
         seller_hh.is_employed = False
-        buyer_firm.employees = []
+        buyer_firm.hr.employees = []
 
         tx = Mock(spec=Transaction)
         tx.buyer_id = buyer_firm.id
@@ -455,47 +456,10 @@ class TestSimulation:
         assert seller_hh.is_employed is True
         assert seller_hh.employer_id == buyer_firm.id
         assert seller_hh.needs["labor_need"] == 0.0
-        assert seller_hh in buyer_firm.employees
+        assert seller_hh in buyer_firm.hr.employees
 
-        # NOTE: Using a rough approximation for cost_this_turn because `Simulation._process_transactions`
-        # updates it, but the Firm object in the test might have other side effects or initialization values.
-        # However, in this isolated unit test, it should be exact unless other logic interferes.
-        # The failure was 30.25 vs 20.0.
-        # 30.25 suggests some other cost was added.
-        # Wait, 30.25 - 20.0 = 10.25.
-        # Firm.update_needs adds liquidity need? No.
-        # Firm.update_needs calls brand_manager.update?
-        # The Firm fixture initializes with some values.
-        # Let's check if `cost_this_turn` is reset or accumulates.
-        # The test failure showed `assert 30.25 == (1.0 * 20.0)`.
-        # This implies `cost_this_turn` was already 10.25 or something else happened.
-        # Or maybe it's including marketing spend?
-        # Simulation._process_transactions calls firm methods? No, it just updates attributes directly usually.
-        # Ah, looking at `simulation/engine.py`:
-        # `buyer.cost_this_turn += trade_value`
-        # If `buyer_firm` (mocked real object) runs other logic?
-        # The `Firm` object in the fixture is a real `Firm` object with a mock decision engine.
-        # `simulation_instance` is initialized with these firms.
-        # If `simulation_instance._process_transactions` is called, it iterates.
-        # Maybe `cost_this_turn` wasn't 0 to start with?
-        # Let's relax the assertion to check delta if needed, or ensure reset.
-        # But actually, checking the previous failure logs:
-        # `E       AssertionError: assert 30.25 == (1.0 * 20.0)`
-        # This is strange. 20.0 is the trade value.
-        # 30.25 = 20 + 10.25.
-        # Did the firm buy something else? No, `_process_transactions` was called with 1 tx.
-        # Did `Firm` initialization set `cost_this_turn`?
-        # `Firm` class: `self.cost_this_turn = 0.0` in init.
-        # Wait, `simulation_instance` might have run something in `__init__`?
-        # `Simulation.__init__` calls `agent.update_needs(0)`.
-        # `Firm.update_needs` calculates marketing spend and adds to `cost_this_turn`!
-        # `marketing_spend = max(10.0, ...)` if assets > 100.
-        # Firm assets 1000. So it spends marketing.
-        # 30.25 = 20 (Labor) + 10.25 (Marketing)?
-        # 10.25 marketing spend matches logic `max(10.0, revenue * rate)`. Revenue 0. So 10.0.
-        # Plus brand manager update efficiency cost?
-        # Let's just assert it is >= trade_value.
-        assert buyer_firm.cost_this_turn >= (tx.quantity * tx.price)
+        # Checking cost >= trade_value to account for potential marketing/other costs
+        assert buyer_firm.finance.expenses_this_tick >= (tx.quantity * tx.price)
 
     def test_process_transactions_research_labor_trade(
         self, simulation_instance, mock_households, mock_firms
@@ -517,7 +481,7 @@ class TestSimulation:
         simulation_instance._process_transactions([tx])
 
         assert seller_hh.is_employed is True
-        assert seller_hh in buyer_firm.employees
+        assert seller_hh in buyer_firm.hr.employees
         assert buyer_firm.productivity_factor == initial_productivity_factor + (
             seller_hh.skills["research"].value
             * simulation_instance.config_module.RND_PRODUCTIVITY_MULTIPLIER
@@ -656,7 +620,7 @@ def setup_simulation_for_lifecycle(
     firm_active.is_active = True
     firm_active.total_shares = 1000.0
     firm_active.treasury_shares = 0.0
-    firm_active.employees.append(household_active)
+    firm_active.hr.employees.append(household_active)
 
     firm_inactive = Firm(
         id=102,
@@ -671,7 +635,7 @@ def setup_simulation_for_lifecycle(
     firm_inactive.is_active = False
     firm_inactive.total_shares = 1000.0
     firm_inactive.treasury_shares = 0.0
-    firm_inactive.employees.append(household_employed_by_inactive_firm)
+    firm_inactive.hr.employees.append(household_employed_by_inactive_firm)
 
     households = [
         household_active,
@@ -733,10 +697,32 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     assert firm_inactive in sim.firms
     assert household_employed_by_inactive_firm.is_employed
     assert household_employed_by_inactive_firm.employer_id == firm_inactive.id
-    assert household_active in firm_active.employees
-    assert household_employed_by_inactive_firm in firm_inactive.employees
+    assert household_active in firm_active.hr.employees
+    assert household_employed_by_inactive_firm in firm_inactive.hr.employees
 
-    sim.lifecycle_manager._handle_agent_liquidation(sim)
+    state = SimulationState(
+        time=sim.time,
+        households=sim.households,
+        firms=sim.firms,
+        agents=sim.agents,
+        markets=sim.markets,
+        government=sim.government,
+        bank=sim.bank,
+        central_bank=sim.central_bank if hasattr(sim, 'central_bank') else None,
+        stock_market=sim.stock_market if hasattr(sim, 'stock_market') else None,
+        goods_data=sim.goods_data,
+        market_data={},
+        config_module=sim.config_module,
+        tracker=sim.tracker,
+        logger=sim.logger,
+        reflux_system=getattr(sim, 'reflux_system', None),
+        ai_training_manager=getattr(sim, 'ai_training_manager', None),
+        ai_trainer=getattr(sim, 'ai_trainer', None),
+        next_agent_id=getattr(sim, 'next_agent_id', 0),
+        real_estate_units=getattr(sim, 'real_estate_units', [])
+    )
+
+    sim.lifecycle_manager._handle_agent_liquidation(state)
 
     assert len(sim.households) == 2
     assert household_active in sim.households
@@ -754,7 +740,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     assert not household_employed_by_inactive_firm.is_employed
     assert household_employed_by_inactive_firm.employer_id is None
 
-    assert len(firm_active.employees) == 1
-    assert household_active in firm_active.employees
+    assert len(firm_active.hr.employees) == 1
+    assert household_active in firm_active.hr.employees
 
-    assert len(firm_inactive.employees) == 0
+    assert len(firm_inactive.hr.employees) == 0
