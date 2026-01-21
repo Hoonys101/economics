@@ -544,6 +544,14 @@ class Firm(BaseAgent, ILearningAgent):
     def sales_volume_this_tick(self, value: float) -> None:
         self.finance.sales_volume_this_tick = value
 
+    @property
+    def last_sales_volume(self) -> float:
+        return self.finance.last_sales_volume
+
+    @last_sales_volume.setter
+    def last_sales_volume(self, value: float) -> None:
+        self.finance.last_sales_volume = value
+
     def update_learning(self, context: LearningUpdateContext) -> None:
         """
         ILearningAgent implementation.

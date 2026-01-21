@@ -67,12 +67,15 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
             food_item_id = "basic_food"
             food_in_inventory = household.inventory.get(food_item_id, 0.0)
 
-            if food_in_inventory < self.config_module.HOUSEHOLD_MIN_FOOD_INVENTORY:
+            # Fix for WO-100: Use TARGET_FOOD_BUFFER_QUANTITY instead of MIN_INVENTORY (which is 0.0)
+            target_buffer = getattr(self.config_module, "TARGET_FOOD_BUFFER_QUANTITY", 5.0)
+
+            if food_in_inventory < target_buffer:
                 chosen_tactic = Tactic.BUY_BASIC_FOOD
                 chosen_aggressiveness = Aggressiveness.AGGRESSIVE # 생존 관련이므로 적극적으로 구매
 
-                # 구매할 음식 수량 결정: 최소 재고를 채우거나, 소비 임계치까지 필요한 양
-                needed_quantity = self.config_module.HOUSEHOLD_MIN_FOOD_INVENTORY - food_in_inventory
+                # 구매할 음식 수량 결정: 목표 재고까지 필요한 양
+                needed_quantity = target_buffer - food_in_inventory
 
                 # FIX: Access specific market if available, or goods_market if combined
                 market_id = food_item_id # OrderBookMarket usually keyed by item_id

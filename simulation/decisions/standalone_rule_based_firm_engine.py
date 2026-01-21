@@ -90,21 +90,25 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         # 3. 가격 조정 및 판매 (재고가 있을 경우)
         if current_inventory > 0:
-            if chosen_tactic not in [Tactic.ADJUST_PRODUCTION, Tactic.ADJUST_WAGES]: # 다른 전술 결정이 없었으면 가격 조정
+            # FIX: Always allow selling if inventory exists, even if other tactics (Production/Wages) were chosen.
+            # Previously, choosing ADJUST_PRODUCTION prevented selling, causing inventory buildup and 0 sales.
+
+            # Decide on price tactic primarily if no other tactic was chosen, but execute selling regardless.
+            if chosen_tactic == Tactic.NO_ACTION:
                 # 간단한 규칙: 재고가 많으면 가격을 낮추고, 적으면 가격 유지 또는 높임
                 if current_inventory > firm.production_target * self.config_module.OVERSTOCK_THRESHOLD:
                     chosen_tactic = Tactic.PRICE_DECREASE_SMALL # 가격 인하
                 else:
                     chosen_tactic = Tactic.PRICE_HOLD # 가격 유지 (또는 AI처럼 동적 조정)
 
-                # RuleBasedFirmDecisionEngine에는 가격 조정 메서드가 없으므로, 여기에 간단히 구현하거나
-                # _adjust_price_with_ai와 유사한 메서드를 RuleBasedFirmDecisionEngine에 추가하는 것을 고려해야 한다.
-                # 현재는 AIDrivenFirmDecisionEngine의 _adjust_price를 참조하여 유사하게 구현 (재고 기반 가격 조정)
-                orders.extend(self._adjust_price_based_on_inventory(firm, current_time))
-                self.logger.info(
-                    f"Firm {firm.id} RuleBased: Adjusting price and selling.",
-                    extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
-                )
+            # RuleBasedFirmDecisionEngine에는 가격 조정 메서드가 없으므로, 여기에 간단히 구현하거나
+            # _adjust_price_with_ai와 유사한 메서드를 RuleBasedFirmDecisionEngine에 추가하는 것을 고려해야 한다.
+            # 현재는 AIDrivenFirmDecisionEngine의 _adjust_price를 참조하여 유사하게 구현 (재고 기반 가격 조정)
+            orders.extend(self._adjust_price_based_on_inventory(firm, current_time))
+            self.logger.info(
+                f"Firm {firm.id} RuleBased: Adjusting price and selling.",
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
+            )
 
         # 기본 전술 반환 (만약 아무것도 선택되지 않았다면 NO_ACTION)
         if chosen_tactic == Tactic.NO_ACTION:
@@ -170,7 +174,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 # ------------------------------------------------------------
 
             final_price = max(
-                0.1, # Absolute hard floor to prevent zero/negative
+                getattr(self.config_module, "MIN_SELL_PRICE", 0.1), # Use config floor
                 min(self.config_module.MAX_SELL_PRICE, adjusted_price),
             )
             # SoC Refactor: use sales.set_price

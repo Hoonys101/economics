@@ -73,6 +73,7 @@ def verify_harvest_clean():
     # Apply Config Overrides based on Scenario
     Config.SIMULATION_TICKS = 500
     Config.TECH_FERTILIZER_UNLOCK_TICK = 5 # As per scenario requirements (overriding default for test)
+    Config.MIN_SELL_PRICE = 3.5 # Prevent suicide pricing (Cost 3.0)
     # Config.food_tfp_multiplier = params.get("food_tfp_multiplier", 3.0) # Not a direct config attribute, used in TechManager
 
     # Enable Mitosis/Breeding for Population Boom
@@ -102,7 +103,7 @@ def verify_harvest_clean():
         initial_needs = {"survival": 50, "social": 10, "growth": 10, "quality": 10}
         hh = Household(
             id=i,
-            initial_assets=10000 + (i * 100), # Sufficient runway
+            initial_assets=100 + (i * 10), # Reduced assets to force labor participation (Economy Restart)
             decision_engine=RuleBasedHouseholdDecisionEngine(Config, logger),
             config_module=Config,
             talent=Talent(1.0, {}),
@@ -209,8 +210,8 @@ def verify_harvest_clean():
         food_firms = [f for f in sim.firms if f.sector == "FOOD" and f.is_active]
         total_production = sum(f.current_production for f in food_firms)
         total_inventory = sum(f.inventory.get("basic_food", 0) for f in food_firms)
-        # Assuming finance.sales_volume_this_tick is reset each tick
-        total_sales = sum(f.finance.sales_volume_this_tick for f in food_firms)
+        # Use last_sales_volume because sales_volume_this_tick is reset at end of run_tick
+        total_sales = sum(f.last_sales_volume for f in food_firms)
         active_firms_count = len(food_firms)
         avg_cash = statistics.mean([f.assets for f in food_firms]) if food_firms else 0.0
 
