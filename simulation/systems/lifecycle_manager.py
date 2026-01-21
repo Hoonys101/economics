@@ -5,8 +5,8 @@ from typing import List, TYPE_CHECKING, Any
 import logging
 
 if TYPE_CHECKING:
-    from simulation.engine import Simulation
     from simulation.core_agents import Household
+    from simulation.dtos.api import SimulationState
 
 from simulation.systems.api import AgentLifecycleManagerInterface
 from simulation.systems.demographic_manager import DemographicManager
@@ -16,7 +16,9 @@ from simulation.systems.firm_management import FirmSystem
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
-    """에이전트의 생성, 노화, 사망, 청산을 처리합니다."""
+    """에이전트의 생성, 노화, 사망, 청산을 처리합니다.
+       WO-103: Implements SystemInterface.
+    """
 
     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
                  inheritance_manager: InheritanceManager, firm_system: FirmSystem, logger: logging.Logger):
@@ -28,30 +30,31 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
         self.logger = logger
 
-    def process_lifecycle_events(self, sim: Simulation):
+    def execute(self, state: SimulationState) -> None:
         """한 틱 동안 발생하는 모든 생명주기 관련 이벤트를 처리합니다."""
 
         # 1. Aging
-        self.demographic_manager.process_aging(sim.households, sim.time)
+        self.demographic_manager.process_aging(state.households, state.time)
 
         # 2. Births (출생)
-        new_children = self._process_births(sim)
-        self._register_new_agents(sim, new_children)
+        new_children = self._process_births(state)
+        self._register_new_agents(state, new_children)
 
         # 3. Immigration (이민)
-        new_immigrants = self.immigration_manager.process_immigration(sim)
-        self._register_new_agents(sim, new_immigrants)
+        # Duck typing: state serves as 'sim' for ImmigrationManager if it matches interface
+        new_immigrants = self.immigration_manager.process_immigration(state)
+        self._register_new_agents(state, new_immigrants)
 
         # 4. Entrepreneurship (창업) - FirmSystem과 협력
-        self.firm_system.check_entrepreneurship(sim)
+        self.firm_system.check_entrepreneurship(state)
 
         # 5. Death & Liquidation (사망 및 청산)
-        self._handle_agent_liquidation(sim)
+        self._handle_agent_liquidation(state)
 
-    def _process_births(self, sim: Simulation) -> List[Household]:
+    def _process_births(self, state: SimulationState) -> List[Household]:
         """(기존 `run_tick`의 출생 로직)"""
         birth_requests = []
-        active_households = [h for h in sim.households if h.is_active]
+        active_households = [h for h in state.households if h.is_active]
         if not active_households:
             return []
 
@@ -60,28 +63,28 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             if decision:
                 birth_requests.append(h)
 
-        return self.demographic_manager.process_births(sim, birth_requests)
+        return self.demographic_manager.process_births(state, birth_requests)
 
-    def _register_new_agents(self, sim: Simulation, new_agents: List[Household]):
+    def _register_new_agents(self, state: SimulationState, new_agents: List[Household]):
         """(기존 `run_tick`의 신규 에이전트 등록 로직)"""
         for agent in new_agents:
-            sim.households.append(agent)
-            sim.agents[agent.id] = agent
-            agent.decision_engine.markets = sim.markets
-            agent.decision_engine.goods_data = sim.goods_data
+            state.households.append(agent)
+            state.agents[agent.id] = agent
+            agent.decision_engine.markets = state.markets
+            agent.decision_engine.goods_data = state.goods_data
 
-            if sim.stock_market:
+            if state.stock_market:
                 for firm_id, qty in agent.shares_owned.items():
-                    sim.stock_market.update_shareholder(agent.id, firm_id, qty)
+                    state.stock_market.update_shareholder(agent.id, firm_id, qty)
 
             # Add to AI training manager to ensure they are trained
-            if sim.ai_training_manager:
-                sim.ai_training_manager.agents.append(agent)
+            if state.ai_training_manager:
+                state.ai_training_manager.agents.append(agent)
 
-    def _handle_agent_liquidation(self, sim: Simulation):
+    def _handle_agent_liquidation(self, state: SimulationState):
         """(기존 `_handle_agent_lifecycle` 로직 전체를 이 곳으로 이동)"""
 
-        inactive_firms = [f for f in sim.firms if not f.is_active]
+        inactive_firms = [f for f in state.firms if not f.is_active]
         for firm in inactive_firms:
             self.logger.info(
                 f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}. "
@@ -100,7 +103,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             if total_cash > 0:
                 outstanding_shares = firm.total_shares - firm.treasury_shares
                 if outstanding_shares > 0:
-                    for household in sim.households:
+                    for household in state.households:
                         if household.is_active and firm.id in household.shares_owned:
                             share_ratio = household.shares_owned[firm.id] / outstanding_shares
                             distribution = total_cash * share_ratio
@@ -112,38 +115,44 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                             )
                 else:
                     from simulation.agents.government import Government
-                    if isinstance(sim.government, Government):
-                        sim.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, sim.time)
-            for household in sim.households:
+                    if isinstance(state.government, Government):
+                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
+            for household in state.households:
                 if firm.id in household.shares_owned:
                     del household.shares_owned[firm.id]
-                    if sim.stock_market:
-                        sim.stock_market.update_shareholder(household.id, firm.id, 0)
+                    if state.stock_market:
+                        state.stock_market.update_shareholder(household.id, firm.id, 0)
             firm.assets = 0.0
             self.logger.info(
                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
             )
 
-        inactive_households = [h for h in sim.households if not h.is_active]
+        inactive_households = [h for h in state.households if not h.is_active]
         for household in inactive_households:
-            if hasattr(sim, "inheritance_manager"):
-                sim.inheritance_manager.process_death(household, sim.government, sim)
+            # Use self.inheritance_manager since it is injected in __init__
+            self.inheritance_manager.process_death(household, state.government, state)
+
             household.inventory.clear()
             household.shares_owned.clear()
-            household.portfolio.holdings.clear()
-            if sim.stock_market:
-                for firm_id in list(sim.stock_market.shareholders.keys()):
-                     sim.stock_market.update_shareholder(household.id, firm_id, 0)
+            if hasattr(household, "portfolio"):
+                 household.portfolio.holdings.clear()
+            if state.stock_market:
+                for firm_id in list(state.stock_market.shareholders.keys()):
+                     state.stock_market.update_shareholder(household.id, firm_id, 0)
 
-        sim.households = [h for h in sim.households if h.is_active]
-        sim.firms = [f for f in sim.firms if f.is_active]
+        # In-place modification to ensure references in WorldState are updated
+        state.households[:] = [h for h in state.households if h.is_active]
+        state.firms[:] = [f for f in state.firms if f.is_active]
 
-        sim.agents = {agent.id: agent for agent in sim.households + sim.firms}
-        sim.agents[sim.bank.id] = sim.bank
+        # Rebuild agents dict
+        state.agents.clear()
+        state.agents.update({agent.id: agent for agent in state.households + state.firms})
+        if state.bank:
+             state.agents[state.bank.id] = state.bank
 
-        for firm in sim.firms:
+        for firm in state.firms:
             # SoC Refactor: use hr.employees
             firm.hr.employees = [
-                emp for emp in firm.hr.employees if emp.is_active and emp.id in sim.agents
+                emp for emp in firm.hr.employees if emp.is_active and emp.id in state.agents
             ]
