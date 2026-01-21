@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
-from collections import deque
+from collections import deque, defaultdict
 import logging
 import math
 
@@ -13,6 +13,7 @@ from simulation.components.market_component import MarketComponent
 from simulation.portfolio import Portfolio
 from simulation.ai.system2_planner import System2Planner
 from simulation.ai.household_system2 import HouseholdSystem2Planner, HousingDecisionInputs
+from simulation.ai.api import Personality
 from simulation.models import Order, Skill
 from simulation.utils.shadow_logger import log_shadow
 
@@ -65,6 +66,24 @@ class EconComponent(IEconComponent):
         self.current_consumption: float = 0.0
         self.current_food_consumption: float = 0.0
 
+        # Phase 23: Inflation Expectation & Price Memory
+        self._expected_inflation: Dict[str, float] = defaultdict(float)
+        self._perceived_avg_prices: Dict[str, float] = {}
+        self._price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=10))
+
+        # Initialize perceived prices from config/goods_data if possible
+        if hasattr(self.owner, "goods_info_map"):
+            for g in self.owner.goods_info_map.values():
+                 self._perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
+
+        # Adaptation Rate (Personality Based)
+        self._adaptation_rate: float = getattr(self.config_module, "ADAPTATION_RATE_NORMAL", 0.2)
+        if hasattr(self.owner, "personality"):
+            if self.owner.personality == Personality.IMPULSIVE:
+                 self._adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
+            elif self.owner.personality == Personality.CONSERVATIVE:
+                 self._adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
+
         # --- Components ---
         self.consumption = ConsumptionBehavior(owner, config_module)
         self.economy_manager = EconomyManager(owner, config_module)
@@ -80,6 +99,38 @@ class EconComponent(IEconComponent):
         self.housing_price_history: deque = deque(maxlen=ticks_per_year)
         self.market_wage_history: deque[float] = deque(maxlen=30)
         self.shadow_reservation_wage: float = 0.0
+
+    @property
+    def expected_inflation(self) -> Dict[str, float]:
+        return self._expected_inflation
+
+    @expected_inflation.setter
+    def expected_inflation(self, value: Dict[str, float]) -> None:
+        self._expected_inflation = value
+
+    @property
+    def perceived_avg_prices(self) -> Dict[str, float]:
+        return self._perceived_avg_prices
+
+    @perceived_avg_prices.setter
+    def perceived_avg_prices(self, value: Dict[str, float]) -> None:
+        self._perceived_avg_prices = value
+
+    @property
+    def price_history(self) -> defaultdict[str, deque]:
+        return self._price_history
+
+    @price_history.setter
+    def price_history(self, value: defaultdict[str, deque]) -> None:
+        self._price_history = value
+
+    @property
+    def adaptation_rate(self) -> float:
+        return self._adaptation_rate
+
+    @adaptation_rate.setter
+    def adaptation_rate(self, value: float) -> None:
+        self._adaptation_rate = value
 
     @property
     def assets(self) -> float:
@@ -118,6 +169,55 @@ class EconComponent(IEconComponent):
 
     def consume(self, item_id: str, quantity: float, current_time: int) -> Any:
         return self.economy_manager.consume(item_id, quantity, current_time)
+
+    def update_perceived_prices(
+        self,
+        market_data: Dict[str, Any],
+        stress_scenario_config: Optional["StressScenarioConfig"] = None
+    ) -> None:
+        """
+        Calculates and updates the agent's inflation expectation and
+        perceived average prices based on market data.
+        """
+        goods_market = market_data.get("goods_market")
+        if not goods_market:
+            return
+
+        adaptive_rate = self.adaptation_rate
+        if stress_scenario_config and stress_scenario_config.is_active:
+            if stress_scenario_config.scenario_name == 'hyperinflation':
+                if hasattr(stress_scenario_config, "inflation_expectation_multiplier"):
+                     adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
+
+        if hasattr(self.owner, "goods_info_map"):
+            for good in self.owner.goods_info_map.values():
+                item_id = good["id"]
+                actual_price = goods_market.get(f"{item_id}_avg_traded_price")
+
+                if actual_price is not None and actual_price > 0:
+                    history = self.price_history[item_id]
+                    if history:
+                        last_price = history[-1]
+                        if last_price > 0:
+                            inflation_t = (actual_price - last_price) / last_price
+
+                            old_expect = self.expected_inflation[item_id]
+                            new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
+                            self.expected_inflation[item_id] = new_expect
+
+                    history.append(actual_price)
+
+                    old_perceived_price = self.perceived_avg_prices.get(
+                        item_id, actual_price
+                    )
+                    update_factor = getattr(self.config_module, "PERCEIVED_PRICE_UPDATE_FACTOR", 0.1)
+                    new_perceived_price = (
+                        update_factor * actual_price
+                    ) + (
+                        (1 - update_factor)
+                        * old_perceived_price
+                    )
+                    self.perceived_avg_prices[item_id] = new_perceived_price
 
     def get_state(self) -> HouseholdStateDTO:
         pass # Partially implemented if needed, but Household calls components
