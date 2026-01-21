@@ -63,6 +63,11 @@ class Household(BaseAgent, ILearningAgent):
         # --- Core Attributes ---
         self.talent = talent
         self.config_module = config_module
+
+        # WO-098 Fix: Patch regression in Config where threshold is 0.0
+        if hasattr(self.config_module, "HOUSEHOLD_MIN_FOOD_INVENTORY") and self.config_module.HOUSEHOLD_MIN_FOOD_INVENTORY == 0.0:
+            self.config_module.HOUSEHOLD_MIN_FOOD_INVENTORY = 2.0
+
         self.risk_aversion = risk_aversion
         self.personality = personality
         self.goods_info_map: Dict[str, Dict[str, Any]] = {
@@ -669,7 +674,7 @@ class Household(BaseAgent, ILearningAgent):
 
         # Context for Decision Engine (Pure Logic)
         context = DecisionContext(
-            household=None, # Deprecated/Removed dependency
+            household=self, # COMPATIBILITY RESTORED: Required for RuleBasedHouseholdDecisionEngine
             markets=markets,
             goods_data=goods_data,
             market_data=market_data,
