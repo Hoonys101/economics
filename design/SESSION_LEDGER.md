@@ -26,3 +26,5 @@
 | 2026-01-21 | 5237484117606800056  | WO-092: Household Facade Refactor | [COMPLETED] Merged. Economic logic delegated to EconComponent (TD-075). |
 | 2026-01-21 | 6273696462266515263 | WO-094: Phase 23 The Great Harvest | [COMPLETED] Merged. Verified Core Fixes (Routing, EconValue) and simulation script. |
 | 2026-01-21 | 8573422802782587267 | WO-095: Tech Debt Cleanup | [COMPLETED] Merged. TD-076/TD-077 resolved (Config hardcoding removed). |
+| 2026-01-21 | 5430223683756935913 | WO-103 Phase 2: Sacred Sequence | [COMPLETED] Merged. Enforced execution order (Decisions→Matching→Transactions→Lifecycle). Fixed stock transaction bug. |
+| 2026-01-21 | 2863466737400943142 | WO-103 Phase 3: DTO Conversion | [COMPLETED] Merged. Completed DTO migration (HouseholdStateDTO/FirmStateDTO), removed legacy agent references from DecisionContext. |
