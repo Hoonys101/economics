@@ -10,7 +10,7 @@
     "command": "create",
     "session_id": null,
     "title": "WO-098-Economic-Diagnostics",
-    "instruction": "명세서 [WO-098-Labor-Deadlock-Resolution.md]를 수행하라. | **절대 바로 수정하지 말 것.** | 1. 왜 대풍년이 실패하는지 '가설(Hypothesis)'을 세우고 코드를 통해 검증할 것. | 2. 검증된 원인을 바탕으로 최소한의 파라미터 조정을 적용할 것. | 3. Great Harvest 검증 성공(Population > 300)을 달성할 것.",
+    "instruction": "가설 4 검증을 위해 [WO-098-DIAG-D-No-Op-Trap.md]를 수행하라. | 1. 룰 기반 엔진의 No-Op 여부를 로그로 증명할 것. | 2. 증명될 경우, 이 것이 인구 정체의 직접적 원인인지 분석할 것. | **코드 수정은 분석 보고 후 진행할 것.**",
     "wait": true
   },
   "git": {

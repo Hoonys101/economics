@@ -1,9 +1,3 @@
-🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
-📖 Attached context: C:\coding\economics\design\gemini_output\pr_diff_wo-098-tech-barriers-9481411700157535978.txt
-🚀 [GeminiWorker] Running task with manual: git_reviewer.md
-
-📝 [Review Report]
-============================================================
 # 🔍 Git Diff Review: WO-098-tech-barriers
 
 ## 🔍 Summary
@@ -20,5 +14,3 @@
 
 ## ✅ Verdict
 **APPROVE**
-
-============================================================
