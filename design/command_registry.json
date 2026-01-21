@@ -15,8 +15,8 @@
   "jules": {
     "command": "create",
     "session_id": null,
-    "title": "AUDIT-PARITY-V2",
-    "instruction": "너는 제품 정합성 전문 감사관이다. design/specs/AUDIT_SPEC_PARITY.md 명세서를 바탕으로 design/의 설계 비전과 simulation/의 구현 실태 사이의 괴리를 찾아내라. '메인 구조와 모듈 현황', '입출력 데이터 규격', '훈련/검증 유틸리티(util) 현황'이 문서와 일치하는지 집중적으로 점검하라. project_status.md에 완료로 표시되었으나 실제로는 미구현된 'Ghost Implementation'을 적발하고, 정합성 점수(%)를 포함한 상세 리포트를 design/gemini_output/audit_parity_v2.md에 작성하라.",
+    "title": "AUDIT-ECONOMIC-V2",
+    "instruction": "너는 경제 수사관(Forensic Auditor)이다. design/specs/AUDIT_SPEC_ECONOMIC.md 명세서의 '복식부기' 및 '원자성' 원칙에 따라 시뮬레이션 내 자산 이동 경로를 추적하라. 특히 1) FinanceDepartment 외부에서 자산을 직접 조작하는 로직, 2) 에이전트 소멸 시 자산 회수(RefluxSystem)의 누락 지점을 샅샅이 뒤져라. 입출력 데이터 샘플링을 통해 시스템 전역의 Zero-Sum 위반 여부를 판별하고, 경제적 안전 등급을 포함한 보고서를 design/gemini_output/audit_economic_v2.md로 제출하라.",
     "wait": true
   },
   "git": {

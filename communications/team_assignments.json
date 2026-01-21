@@ -61,6 +61,10 @@
       "5892606066303987563": {
         "title": "AUDIT-STRUCTURAL-V2",
         "initial_mission": "너는 시니어 시스템 아키텍트이다. design/specs/AUDIT_SPEC_STRUCTURAL.md 명세를 정독하고, 그 안에 기술된 '용어 정의'와 '논리 전개'에 따라 전체 코드베이스를 정밀 감사하라. 특히 WO-103 이후 도입된 DTO 패턴이 에이전트와 엔진 사이의 모든 접점에서 'Purity Gate' 역할을 수행하고 있는지, 그리고 컴포넌트 간 SoC 위반이 없는지 파일별로 전수 조사하라. God Class 재발 항목과 순환 참조 리스크를 식별하여 design/gemini_output/audit_structural_v2.md로 보고하라."
+      },
+      "6092483360933497510": {
+        "title": "AUDIT-PARITY-V2",
+        "initial_mission": "너는 제품 정합성 전문 감사관이다. design/specs/AUDIT_SPEC_PARITY.md 명세서를 바탕으로 design/의 설계 비전과 simulation/의 구현 실태 사이의 괴리를 찾아내라. '메인 구조와 모듈 현황', '입출력 데이터 규격', '훈련/검증 유틸리티(util) 현황'이 문서와 일치하는지 집중적으로 점검하라. project_status.md에 완료로 표시되었으나 실제로는 미구현된 'Ghost Implementation'을 적발하고, 정합성 점수(%)를 포함한 상세 리포트를 design/gemini_output/audit_parity_v2.md에 작성하라."
       }
     },
     "completed_sessions": {
