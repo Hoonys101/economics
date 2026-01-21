@@ -192,5 +192,6 @@ if __name__ == "__main__":
     overrides["DIVIDEND_RATE_MIN"] = 0.0 # Prevent capital drain (Public)
     overrides["DIVIDEND_RATE_MAX"] = 0.0 # Prevent capital drain (Public)
     overrides["FIRM_SAFETY_MARGIN"] = 190000.0 # Protect 95% of Capital
+    overrides["CAPITAL_DEPRECIATION_RATE"] = 0.0 # Disable depreciation to prevent Zombie Economy (AI requires training to invest)
 
     run_simulation(ticks, overrides)
