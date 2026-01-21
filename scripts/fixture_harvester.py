@@ -32,17 +32,13 @@ from modules.household.dtos import HouseholdStateDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.api import Personality
 
-# Attempt to import the new generic loader
+# WO-105: Enforce GoldenLoader from tests
 try:
     from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
 except ImportError:
     # If not in path (e.g. running script directly from shell), try adding root
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    try:
-        from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
-    except ImportError:
-        # Fallback if tests/utils/golden_loader.py is missing or unreachable
-        GenericGoldenLoader = None
+    from tests.utils.golden_loader import GoldenLoader as GenericGoldenLoader
 
 
 @dataclass
@@ -216,11 +212,7 @@ class GoldenLoader:
     @classmethod
     def load(cls, filepath: str) -> "GoldenLoader":
         """Load a golden fixture from file."""
-        if GenericGoldenLoader:
-            data = GenericGoldenLoader.load_json(filepath)
-        else:
-             with open(filepath, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+        data = GenericGoldenLoader.load_json(filepath)
         return cls(data)
     
     def create_household_mocks(self, mock_class=None):
@@ -229,14 +221,13 @@ class GoldenLoader:
         """
         mocks = []
         for h_data in self.households_data:
-            # Fallback to old logic or Generic
-            from types import SimpleNamespace
+            # WO-105: Use MagicMock via GoldenLoader logic or direct instantiation
             if mock_class:
                 mock = MagicMock(spec=mock_class)
+                for key, value in h_data.items():
+                    setattr(mock, key, value)
             else:
-                mock = SimpleNamespace()
-            for key, value in h_data.items():
-                setattr(mock, key, value)
+                mock = GenericGoldenLoader.dict_to_mock(h_data)
 
             mock.make_decision = MagicMock(return_value=([], MagicMock()))
             if not hasattr(mock, 'decision_engine'):
@@ -282,13 +273,12 @@ class GoldenLoader:
         """Create mock firms from golden data."""
         mocks = []
         for f_data in self.firms_data:
-            from types import SimpleNamespace
             if mock_class:
                 mock = MagicMock(spec=mock_class)
+                for key, value in f_data.items():
+                    setattr(mock, key, value)
             else:
-                mock = SimpleNamespace()
-            for key, value in f_data.items():
-                setattr(mock, key, value)
+                mock = GenericGoldenLoader.dict_to_mock(f_data)
             
             mock.make_decision = MagicMock(return_value=([], MagicMock()))
             if not hasattr(mock, 'decision_engine'):
@@ -297,7 +287,11 @@ class GoldenLoader:
                 mock.decision_engine.ai_engine = MagicMock()
             if not hasattr(mock, 'hr'):
                 mock.hr = MagicMock()
-            mock.hr.employees = []
+
+            # Ensure complex objects are handled if they weren't in the dict
+            if not hasattr(mock.hr, 'employees'):
+                mock.hr.employees = []
+
             mock.get_financial_snapshot = MagicMock(return_value={
                 "total_assets": f_data.get("assets", 0),
                 "working_capital": f_data.get("assets", 0),
@@ -350,14 +344,7 @@ class GoldenLoader:
     
     def create_config_mock(self):
         """Create a mock config module from golden data."""
-        if GenericGoldenLoader:
-            return GenericGoldenLoader.dict_to_mock(self.config_snapshot)
-        else:
-            from types import SimpleNamespace
-            mock = SimpleNamespace()
-            for key, value in self.config_snapshot.items():
-                setattr(mock, key, value)
-            return mock
+        return GenericGoldenLoader.dict_to_mock(self.config_snapshot)
 
 
 # Convenience function for quick harvesting during debug
