@@ -82,7 +82,7 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
 
                 # Fallback if None
                 if best_ask is None or best_ask == 0:
-                    best_ask = 5.0 # Reasonable default fallback
+                    best_ask = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
 
                 if best_ask > 0:
                     affordable_quantity = household.assets / best_ask

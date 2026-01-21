@@ -81,7 +81,8 @@ class EconomyManager:
                 self._household.add_education_xp(xp_gain)
 
             # FIX: Calculate consumption value based on price
-            price = self._household.perceived_avg_prices.get(item_id, 5.0) # Fallback 5.0
+            fallback_price = getattr(self._config, "DEFAULT_FALLBACK_PRICE", 5.0)
+            price = self._household.perceived_avg_prices.get(item_id, fallback_price)
             consumption_value = quantity * price
 
             self._household.current_consumption += consumption_value
