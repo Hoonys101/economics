@@ -171,3 +171,65 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         )
 
         return self.config_module.BASE_WAGE * (1 + wage_premium)
+
+    def _fire_excess_labor(self, firm: Firm, needed_labor: float) -> None:
+        """
+        WO-110: Firing logic for Rule-Based Firms.
+        Fires excess employees if current workforce exceeds needed labor (with tolerance).
+        Returns None as actions are direct state modifications via Finance/HR.
+        """
+        current_employees = len(firm.hr.employees)
+
+        # Guard: Check if we actually have employees
+        if current_employees == 0:
+            return
+
+        # Allow slight overstaffing (buffer) to prevent hire/fire churn
+        if current_employees <= needed_labor:
+            return
+
+        excess = current_employees - int(needed_labor)
+        # Keep at least 1 employee (skeleton crew) unless specified otherwise (e.g. bankruptcy handled elsewhere)
+        excess = min(excess, max(0, current_employees - 1))
+
+        if excess <= 0:
+            return
+
+        # Fire from the list (FIFO: First in, First Fired - mimicking simplistic approach)
+        # Actually usually LIFO (Last In First Out) is better to keep experienced, but here experience is not tracked per se?
+        # HRDepartment stores list. employees[0] is oldest?
+        # Let's fire the most recently hired (end of list) or just pick.
+        # CorporateManager fires candidates = firm.hr.employees[:fire_count] (Oldest?).
+        # Let's mimic CorporateManager for consistency.
+        candidates = firm.hr.employees[:excess]
+
+        severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
+        min_wage = getattr(self.config_module, "LABOR_MARKET_MIN_WAGE", 5.0) # Fallback
+
+        for emp in list(candidates): # Copy list to iterate safely
+            # Calculate severance
+            # Need current wage.
+            wage = firm.hr.employee_wages.get(emp.id, min_wage)
+            # Correct for skill
+            skill = getattr(emp, 'labor_skill', 1.0)
+            wage *= skill
+
+            severance_pay = wage * severance_weeks
+
+            # Pay and Quit
+            if firm.finance.pay_severance(emp, severance_pay):
+                emp.quit()
+                firm.hr.remove_employee(emp)
+
+                self.logger.info(
+                    f"RuleBased Firing: Firm {firm.id} fired Agent {emp.id}. Severance: {severance_pay:.2f}",
+                    extra={"tick": 0, "agent_id": firm.id, "tags": ["firing"]}
+                )
+            else:
+                # Can't afford severance.
+                # In CorporateManager, we abort.
+                # Here, we also abort to avoid illegal firing.
+                self.logger.warning(
+                    f"RuleBased Firing Aborted: Firm {firm.id} cannot afford severance {severance_pay:.2f} for Agent {emp.id}.",
+                    extra={"tick": 0, "agent_id": firm.id, "tags": ["firing_aborted"]}
+                )

@@ -58,41 +58,71 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         current_inventory = firm.inventory.get(item_id, 0)
         target_quantity = firm.production_target
 
-        # 1. 생산 조정 결정
+        # 1. 생산 조정 결정 (Planning)
         if current_inventory > target_quantity * self.config_module.OVERSTOCK_THRESHOLD:
             chosen_tactic = Tactic.ADJUST_PRODUCTION
             orders.extend(self.rule_based_executor._adjust_production(firm, current_time))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Overstocked, adjusting production.",
-                extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_PRODUCTION.name}
             )
         elif current_inventory < target_quantity * self.config_module.UNDERSTOCK_THRESHOLD:
             chosen_tactic = Tactic.ADJUST_PRODUCTION
             orders.extend(self.rule_based_executor._adjust_production(firm, current_time))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Understocked, adjusting production.",
-                extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_PRODUCTION.name}
             )
 
-        # 2. 임금 조정 및 고용 결정 (생산 조정 이후 필요에 따라)
-        # 현재 생산 목표와 실제 생산량, 고용 인원 등을 고려하여 임금 및 고용 결정 로직 추가
-        if chosen_tactic != Tactic.ADJUST_PRODUCTION: # 이미 생산 조정 결정을 했으면 이번 턴에 임금 조정은 건너뛴다 (간단화를 위해)
-            needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
-            # SoC Refactor: use hr.employees
-            if len(firm.hr.employees) < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
-               len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
-                chosen_tactic = Tactic.ADJUST_WAGES # ADJUST_WAGES 전술에 고용 로직도 포함되어 있음
-                orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))
-                self.logger.info(
-                    f"Firm {firm.id} RuleBased: Need more labor, adjusting wages/hiring.",
-                    extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
+        # 2. 임금 조정 및 고용 결정 (Operation)
+        # WO-110: Sequential execution - Check labor needs even if production was adjusted
+        needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
+        current_employees = len(firm.hr.employees)
+
+        # SoC Refactor: use hr.employees
+        # Hiring Logic
+        if current_employees < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
+           current_employees < self.config_module.FIRM_MIN_EMPLOYEES:
+
+            if chosen_tactic == Tactic.NO_ACTION:
+                chosen_tactic = Tactic.ADJUST_WAGES
+
+            orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))
+            self.logger.info(
+                f"Firm {firm.id} RuleBased: Need more labor, adjusting wages/hiring.",
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_WAGES.name}
+            )
+
+        # Firing Logic (WO-110)
+        # If overstocked (production target reduced), we may have excess labor.
+        firing_buffer_ratio = getattr(self.config_module, "LABOR_FIRING_BUFFER_RATIO", 1.05)
+        if current_employees > needed_labor_for_production * firing_buffer_ratio:
+             # WO-110 Fix: Labor Hoarding to prevent Demand Collapse.
+             # Only fire if we are actually losing money for a sustained period or running low on cash.
+             # If we are profitable or have huge reserves, keep employees to sustain the economy (Demand side).
+             loss_threshold = getattr(self.config_module, "LABOR_HOARDING_LOSS_THRESHOLD", 5)
+             is_bleeding = firm.finance.consecutive_loss_turns > loss_threshold
+
+             startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
+             asset_ratio_threshold = getattr(self.config_module, "LABOR_HOARDING_ASSET_RATIO", 0.5)
+             is_poor = firm.assets < startup_cost * asset_ratio_threshold
+
+             if is_bleeding or is_poor:
+                 # Fire excess
+                 self.rule_based_executor._fire_excess_labor(firm, needed_labor_for_production)
+                 # _fire_excess_labor returns [] orders but performs action.
+                 self.logger.info(
+                    f"Firm {firm.id} RuleBased: Excess labor ({current_employees} > {needed_labor_for_production:.1f}), firing due to financial pressure (LossTicks={firm.finance.consecutive_loss_turns}).",
+                    extra={"tick": current_time, "agent_id": firm.id, "tactic": "FIRING"}
+                )
+             else:
+                 self.logger.info(
+                    f"Firm {firm.id} RuleBased: Excess labor ({current_employees} > {needed_labor_for_production:.1f}), but hoarding labor (LossTicks={firm.finance.consecutive_loss_turns}).",
+                    extra={"tick": current_time, "agent_id": firm.id, "tactic": "HOARDING"}
                 )
 
-        # 3. 가격 조정 및 판매 (재고가 있을 경우)
+        # 3. 가격 조정 및 판매 (Commerce)
         if current_inventory > 0:
-            # FIX: Always allow selling if inventory exists, even if other tactics (Production/Wages) were chosen.
-            # Previously, choosing ADJUST_PRODUCTION prevented selling, causing inventory buildup and 0 sales.
-
             # Decide on price tactic primarily if no other tactic was chosen, but execute selling regardless.
             if chosen_tactic == Tactic.NO_ACTION:
                 # 간단한 규칙: 재고가 많으면 가격을 낮추고, 적으면 가격 유지 또는 높임
@@ -101,25 +131,11 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 else:
                     chosen_tactic = Tactic.PRICE_HOLD # 가격 유지 (또는 AI처럼 동적 조정)
 
-            # RuleBasedFirmDecisionEngine에는 가격 조정 메서드가 없으므로, 여기에 간단히 구현하거나
-            # _adjust_price_with_ai와 유사한 메서드를 RuleBasedFirmDecisionEngine에 추가하는 것을 고려해야 한다.
-            # 현재는 AIDrivenFirmDecisionEngine의 _adjust_price를 참조하여 유사하게 구현 (재고 기반 가격 조정)
             orders.extend(self._adjust_price_based_on_inventory(firm, current_time))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Adjusting price and selling.",
-                extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_PRICE.name}
             )
-
-        # 기본 전술 반환 (만약 아무것도 선택되지 않았다면 NO_ACTION)
-        if chosen_tactic == Tactic.NO_ACTION:
-            # Fallback for pricing, always attempt to sell if inventory exists.
-            if current_inventory > 0:
-                orders.extend(self._adjust_price_based_on_inventory(firm, current_time))
-                chosen_tactic = Tactic.PRICE_HOLD # Placeholder, as some action was taken
-                self.logger.info(
-                    f"Firm {firm.id} RuleBased: Defaulting to price adjustment/selling.",
-                    extra={"tick": current_time, "agent_id": firm.id, "tactic": chosen_tactic.name}
-                )
 
         return orders, (chosen_tactic, chosen_aggressiveness)
     
