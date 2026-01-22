@@ -72,8 +72,12 @@ class EconomicIndicatorTracker:
         total_household_assets = sum(
             h.assets for h in households if getattr(h, "is_active", True)
         )
+        # WO-106: Initial Sink Fix
+        # Use get_financial_snapshot to include Capital Stock and Inventory in Total Assets
         total_firm_assets = sum(
-            f.assets for f in firms if getattr(f, "is_active", False)
+            f.get_financial_snapshot().get("total_assets", f.assets)
+            if hasattr(f, "get_financial_snapshot") else f.assets
+            for f in firms if getattr(f, "is_active", False)
         )
         record["total_household_assets"] = total_household_assets
         record["total_firm_assets"] = total_firm_assets

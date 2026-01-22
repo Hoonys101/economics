@@ -81,6 +81,21 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             if state.ai_training_manager:
                 state.ai_training_manager.agents.append(agent)
 
+    def _calculate_inventory_value(self, inventory: dict, markets: dict) -> float:
+        total_value = 0.0
+        for item_id, qty in inventory.items():
+            price = 10.0 # Default fallback
+            if item_id in markets:
+                m = markets[item_id]
+                # Try various price attributes
+                if hasattr(m, "avg_price") and m.avg_price > 0:
+                    price = m.avg_price
+                elif hasattr(m, "current_price") and m.current_price > 0:
+                    price = m.current_price
+
+            total_value += qty * price
+        return total_value
+
     def _handle_agent_liquidation(self, state: SimulationState):
         """(기존 `_handle_agent_lifecycle` 로직 전체를 이 곳으로 이동)"""
 
@@ -91,6 +106,18 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
             )
+
+            # WO-106: Reflux Capture (Inventory & Capital)
+            if state.reflux_system:
+                # 1. Inventory Value
+                inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
+                if inv_value > 0:
+                    state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
+
+                # 2. Capital Stock (Scrap Value)
+                if firm.capital_stock > 0:
+                    state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
+
             # SoC Refactor: use hr.employees
             for employee in firm.hr.employees:
                 if employee.is_active:
@@ -132,6 +159,12 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         for household in inactive_households:
             # Use self.inheritance_manager since it is injected in __init__
             self.inheritance_manager.process_death(household, state.government, state)
+
+            # WO-106: Reflux Capture (Household Inventory)
+            if state.reflux_system:
+                inv_value = self._calculate_inventory_value(household.inventory, state.markets)
+                if inv_value > 0:
+                    state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
 
             household.inventory.clear()
             household.shares_owned.clear()

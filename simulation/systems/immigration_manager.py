@@ -75,6 +75,21 @@ class ImmigrationManager:
 
             # Random Attributes
             initial_assets = random.uniform(3000.0, 5000.0)
+
+            # WO-106: Immigration Funding from Government
+            # Explicitly source immigrant funds from the Government budget.
+            if hasattr(engine, "government") and engine.government:
+                try:
+                    # Use withdraw to ensure funds exist (raises InsufficientFundsError if not)
+                    engine.government.withdraw(initial_assets)
+                except Exception:
+                    # If government funds are insufficient, immigration is restricted.
+                    logger.warning(
+                        f"IMMIGRATION_RESTRICTED | Government lacks funds for immigrant grant {initial_assets:.2f}",
+                        extra={"tick": engine.time, "tags": ["immigration", "funding_fail"]}
+                    )
+                    break # Stop creating immigrants in this batch
+
             personality = random.choice(list(Personality))
             value_orientation = random.choice(all_value_orientations)
             risk_aversion = random.uniform(0.1, 10.0)

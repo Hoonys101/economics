@@ -166,9 +166,12 @@ class CentralBank:
             self.assets['cash'] = self.assets.get('cash', 0) + amount
 
     def withdraw(self, amount: float) -> None:
-        """Withdraws a given amount from the central bank's cash reserves."""
+        """
+        Withdraws a given amount from the central bank's cash reserves.
+        As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
+        """
         if amount > 0:
             current_cash = self.assets.get('cash', 0)
-            if current_cash < amount:
-                raise InsufficientFundsError(f"Central Bank has insufficient cash for withdrawal of {amount:.2f}. Available: {current_cash:.2f}")
+            # Central Bank can withdraw (create money) even if it results in negative cash
+            # This represents expansion of the monetary base.
             self.assets['cash'] = current_cash - amount
