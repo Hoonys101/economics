@@ -72,8 +72,10 @@ class VectorizedHouseholdPlanner:
         # Solvency Check: 소득 < 월 양육비 * 2.5 이면 포기
         is_solvent = monthly_incomes > (self.child_monthly_cost * 2.5)
 
-        # Fertility Check: 20 <= age <= 45
-        is_fertile = (ages >= 20) & (ages <= 45)
+        # Fertility Check: Configurable
+        start_age = getattr(self.config, "REPRODUCTION_AGE_START", 20)
+        end_age = getattr(self.config, "REPRODUCTION_AGE_END", 45)
+        is_fertile = (ages >= start_age) & (ages <= end_age)
 
         # 3. Final Decision Mask (Boolean Array)
         # 모든 조건이 True여야 함

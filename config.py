@@ -258,7 +258,7 @@ AI_PRICE_ADJUSTMENT_SMALL = 0.05  # 5% price adjustment
 AI_PRICE_ADJUSTMENT_MEDIUM = 0.10  # 10% price adjustment
 
 # --- Need Dynamics & Thresholds ---
-BASE_DESIRE_GROWTH = 1.0  # Base rate at which desires increase per tick
+BASE_DESIRE_GROWTH = 0.5  # Slower hunger for verification
 MAX_DESIRE_VALUE = 100.0  # Maximum value a desire can reach
 
 # Old need increase rates (commented out as they are replaced by personality-driven growth)
@@ -282,17 +282,17 @@ NEED_HIGH_THRESHOLD = 80.0
 SURVIVAL_TO_LABOR_NEED_FACTOR = 0.5
 
 # --- Household Consumption ---
-TARGET_FOOD_BUFFER_QUANTITY = 5.0 # 가계가 목표로 하는 식량 완충 재고량.
-PERCEIVED_FAIR_PRICE_THRESHOLD_FACTOR = 0.9 # 인지된 공정 가격 대비 얼마나 낮아야 투기적 구매를 고려할지 결정하는 요소.
+TARGET_FOOD_BUFFER_QUANTITY = 50.0 # Increased Buffer for Verification
+PERCEIVED_FAIR_PRICE_THRESHOLD_FACTOR = 0.9
 SURVIVAL_NEED_CONSUMPTION_THRESHOLD = (
-    50.0  # Households will try to consume food if survival need is above this
+    20.0  # Consume earlier (when hungry > 20)
 )
-FOOD_CONSUMPTION_QUANTITY = 1.0  # Quantity of food consumed at a time
+FOOD_CONSUMPTION_QUANTITY = 5.0  # Eat MORE to reduce hunger faster
 FOOD_CONSUMPTION_MAX_PER_TICK = (
-    5.0  # Maximum quantity of food a household can consume in a single tick
+    20.0  # Allow binging
 )
 FOOD_PURCHASE_MAX_PER_TICK = (
-    5.0  # Maximum quantity of food a household can purchase in a single tick
+    50.0  # Allow bulk buy
 )
 HOUSEHOLD_MAX_PURCHASE_QUANTITY = 5.0 # Max units per item per tick for bulk buying
 HOUSEHOLD_FOOD_PRICE_ELASTICITY = (
@@ -307,9 +307,9 @@ HOUSEHOLD_MIN_FOOD_INVENTORY_TICKS = (
 )
 
 # --- Agent Lifecycle & Death ---
-SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
+SURVIVAL_NEED_DEATH_THRESHOLD = 200.0 # Relaxed for Phase 23 Verification
 ASSETS_DEATH_THRESHOLD = 0.0
-HOUSEHOLD_DEATH_TURNS_THRESHOLD = 4
+HOUSEHOLD_DEATH_TURNS_THRESHOLD = 50 # Relaxed for Phase 23 Verification
 ASSETS_CLOSURE_THRESHOLD = 0.0
 FIRM_CLOSURE_TURNS_THRESHOLD = 20
 

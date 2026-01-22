@@ -361,36 +361,38 @@ class TickScheduler:
         # Households
         for household in state.households:
             if household.is_active and household.id in household_pre_states:
-                post_state_data = household.get_agent_data()
-                agent_data = household.get_agent_data()
+                # Hybrid check: Only update learning if agent has AI engine
+                if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
+                    post_state_data = household.get_agent_data()
+                    agent_data = household.get_agent_data()
 
-                leisure_utility = household_leisure_effects.get(household.id, 0.0)
-                agent_data["leisure_utility"] = leisure_utility
+                    leisure_utility = household_leisure_effects.get(household.id, 0.0)
+                    agent_data["leisure_utility"] = leisure_utility
 
-                reward = household.decision_engine.ai_engine._calculate_reward(
-                    household.get_pre_state_data(),
-                    post_state_data,
-                    agent_data,
-                    market_data_for_learning,
-                )
+                    reward = household.decision_engine.ai_engine._calculate_reward(
+                        household.get_pre_state_data(),
+                        post_state_data,
+                        agent_data,
+                        market_data_for_learning,
+                    )
 
-                context: LearningUpdateContext = {
-                    "reward": reward,
-                    "next_agent_data": agent_data,
-                    "next_market_data": market_data_for_learning
-                }
-                household.update_learning(context)
+                    context: LearningUpdateContext = {
+                        "reward": reward,
+                        "next_agent_data": agent_data,
+                        "next_market_data": market_data_for_learning
+                    }
+                    household.update_learning(context)
 
-                decision_data = AIDecisionData(
-                    run_id=state.run_id,
-                    tick=state.time,
-                    agent_id=household.id,
-                    decision_type="VECTOR_V2",
-                    decision_details={"reward": reward},
-                    predicted_reward=None,
-                    actual_reward=reward,
-                )
-                state.repository.save_ai_decision(decision_data)
+                    decision_data = AIDecisionData(
+                        run_id=state.run_id,
+                        tick=state.time,
+                        agent_id=household.id,
+                        decision_type="VECTOR_V2",
+                        decision_details={"reward": reward},
+                        predicted_reward=None,
+                        actual_reward=reward,
+                    )
+                    state.repository.save_ai_decision(decision_data)
 
         # 8. M&A
         state.ma_manager.process_market_exits_and_entries(state.time)

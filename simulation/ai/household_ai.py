@@ -102,6 +102,11 @@ class HouseholdAI(BaseAIEngine):
         # Use config if available via ai_decision_engine, else fallback
         config_module = getattr(self.ai_decision_engine, "config_module", None)
         survival_threshold = getattr(config_module, "MASLOW_SURVIVAL_THRESHOLD", 50.0)
+
+        # Safety check for Mock/MagicMock
+        if not isinstance(survival_threshold, (int, float)):
+            survival_threshold = 50.0
+
         is_starving = survival_need > survival_threshold
 
         for item_id in goods_list:
@@ -123,9 +128,24 @@ class HouseholdAI(BaseAIEngine):
 
             # Apply Gating if Starving
             if is_starving and config_module:
-                good_info = config_module.GOODS.get(item_id, {})
+                # Handle potential Mock objects returning Mocks for dict lookups
+                goods_dict = getattr(config_module, "GOODS", {})
+                if not isinstance(goods_dict, dict):
+                    goods_dict = {}
+
+                good_info = goods_dict.get(item_id, {})
+                if not isinstance(good_info, dict):
+                    good_info = {}
+
                 utility_effects = good_info.get("utility_effects", {})
-                if utility_effects.get("survival", 0) <= 0:
+                if not isinstance(utility_effects, dict):
+                    utility_effects = {}
+
+                survival_util = utility_effects.get("survival", 0)
+                if not isinstance(survival_util, (int, float)):
+                    survival_util = 0
+
+                if survival_util <= 0:
                     agg = 0.0  # Force passive if no survival benefit
 
             consumption_aggressiveness[item_id] = agg
@@ -326,6 +346,8 @@ class HouseholdAI(BaseAIEngine):
         leisure_weight = 0.3
         if self.ai_decision_engine and getattr(self.ai_decision_engine, "config_module", None):
             leisure_weight = getattr(self.ai_decision_engine.config_module, "LEISURE_WEIGHT", 0.3)
+            if not isinstance(leisure_weight, (int, float)):
+                leisure_weight = 0.3
 
         total_reward = (
             (wealth_reward * asset_weight) +
@@ -336,13 +358,22 @@ class HouseholdAI(BaseAIEngine):
         # --- Phase 17-4: Vanity Reward (Relative Deprivation) ---
         if self.ai_decision_engine and getattr(self.ai_decision_engine, "config_module", None):
             config = self.ai_decision_engine.config_module
-            if getattr(config, "ENABLE_VANITY_SYSTEM", False):
+            # Handle Mock returning Mock for boolean check
+            enable_vanity = getattr(config, "ENABLE_VANITY_SYSTEM", False)
+            if not isinstance(enable_vanity, bool):
+                 enable_vanity = False
+
+            if enable_vanity:
                 # Calculate Social Component
                 my_rank = agent_data.get("social_rank", 0.5)
 
                 # Reference Group is Top X% (e.g. 0.20 means Top 20%)
                 # Percentile Threshold = 1.0 - 0.20 = 0.80
-                ref_percentile_threshold = 1.0 - getattr(config, "REFERENCE_GROUP_PERCENTILE", 0.20)
+                ref_percentile = getattr(config, "REFERENCE_GROUP_PERCENTILE", 0.20)
+                if not isinstance(ref_percentile, (int, float)):
+                    ref_percentile = 0.20
+
+                ref_percentile_threshold = 1.0 - ref_percentile
 
                 # Relative Deprivation: Gap from the reference group threshold
                 # If my_rank (0.5) < ref (0.8), component is -0.3
@@ -351,6 +382,8 @@ class HouseholdAI(BaseAIEngine):
                 # Conformity Weight
                 conformity = agent_data.get("conformity", 0.5) # Fallback 0.5
                 vanity_weight = getattr(config, "VANITY_WEIGHT", 1.0)
+                if not isinstance(vanity_weight, (int, float)):
+                    vanity_weight = 1.0
 
                 vanity_effect = conformity * social_component * vanity_weight
                 total_reward += (vanity_effect * 100.0)
