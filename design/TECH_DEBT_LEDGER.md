@@ -21,6 +21,7 @@
 | TD-078 | 2026-01-22 | `DecisionContext` Leaky Abstraction | Mandatory DTO-only snapshots for all engines | Integrity Risk | **PENDING** |
 | TD-079 | 2026-01-22 | `TickScheduler` God Class Bloat | Decompose into `Orchestrator` and `Activator` | Maintainability | **PENDING** |
 | TD-084 | 2026-01-22 | DTO Schema Gap vs Specs | Expand DTO fields to include all macro indicators | Data Inconsistency | **PENDING** |
+| TD-086 | 2026-01-22 | AI Agent Infant Survival Failure | Migrate from Monkey Patch to Configurable Engine Selection Strategy in DemographicManager | Verification requires Hack | **TEMPORARY_FIX** |
 
 
 ---
@@ -71,4 +72,4 @@
 ## 📝 가이드라인
 1. 팀장이 Jules의 보고를 바탕으로 전략적으로 수용한 모든 기술부채를 여기에 등록합니다.
 2. 상환 조건은 구체적이어야 합니다 (예: "다음 Phase 시작 시", "특정 기능 구현 시").
-3. 정기적인 아키텍처 감사 시 이 부기표를 기준으로 상환 계획을 수립합니다.
+3. 정기적인 아키텍처 감사 시 이 부기표를 기준으로 상환 계획을 상환합니다.

@@ -258,7 +258,7 @@ AI_PRICE_ADJUSTMENT_SMALL = 0.05  # 5% price adjustment
 AI_PRICE_ADJUSTMENT_MEDIUM = 0.10  # 10% price adjustment
 
 # --- Need Dynamics & Thresholds ---
-BASE_DESIRE_GROWTH = 0.5  # Slower hunger for verification
+BASE_DESIRE_GROWTH = 1.0
 MAX_DESIRE_VALUE = 100.0  # Maximum value a desire can reach
 
 # Old need increase rates (commented out as they are replaced by personality-driven growth)
@@ -282,7 +282,7 @@ NEED_HIGH_THRESHOLD = 80.0
 SURVIVAL_TO_LABOR_NEED_FACTOR = 0.5
 
 # --- Household Consumption ---
-TARGET_FOOD_BUFFER_QUANTITY = 50.0 # Increased Buffer for Verification
+# TARGET_FOOD_BUFFER_QUANTITY is already defined above
 PERCEIVED_FAIR_PRICE_THRESHOLD_FACTOR = 0.9
 SURVIVAL_NEED_CONSUMPTION_THRESHOLD = (
     20.0  # Consume earlier (when hungry > 20)
@@ -307,9 +307,9 @@ HOUSEHOLD_MIN_FOOD_INVENTORY_TICKS = (
 )
 
 # --- Agent Lifecycle & Death ---
-SURVIVAL_NEED_DEATH_THRESHOLD = 200.0 # Relaxed for Phase 23 Verification
+SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
 ASSETS_DEATH_THRESHOLD = 0.0
-HOUSEHOLD_DEATH_TURNS_THRESHOLD = 50 # Relaxed for Phase 23 Verification
+HOUSEHOLD_DEATH_TURNS_THRESHOLD = 5
 ASSETS_CLOSURE_THRESHOLD = 0.0
 FIRM_CLOSURE_TURNS_THRESHOLD = 20
 

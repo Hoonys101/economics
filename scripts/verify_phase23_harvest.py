@@ -112,13 +112,21 @@ class Phase23Verifier:
         Config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0 # Standard consumption
         Config.SURVIVAL_CRITICAL_TURNS = 10 # Give them more time before panic
 
-        # Relax Death Conditions for Verification
-        Config.HOUSEHOLD_DEATH_TURNS_THRESHOLD = 100 # Stop Trigger Happy Death
+        # --- DYNAMIC OVERRIDES (Moved from config.py) ---
+        # Relax Death Conditions
+        Config.SURVIVAL_NEED_DEATH_THRESHOLD = 200.0
+        Config.HOUSEHOLD_DEATH_TURNS_THRESHOLD = 50
         Config.BASE_DESIRE_GROWTH = 0.5 # Slower Hunger
+        Config.FOOD_CONSUMPTION_QUANTITY = 5.0
 
-        # Ensure Survival Need direction is correct (Higher = Worse)
-        # We start at 50.0. Death at 100.0.
-        # Food reduces it.
+        # Boost Reproduction (Simulating 'Cheap Food' effect)
+        Config.CHILD_MONTHLY_COST = 50.0
+        Config.OPPORTUNITY_COST_FACTOR = 0.05
+        Config.CHILD_EMOTIONAL_VALUE_BASE = 1000000.0
+        Config.REPRODUCTION_AGE_END = 60
+
+        # Force Labor Participation (Solve 'Idle Rich' problem)
+        Config.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS = 1000000.0
 
         # Helper to construct goods_data list
         goods_data_list = []
