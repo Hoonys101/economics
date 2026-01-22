@@ -64,14 +64,14 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
             orders.extend(self.rule_based_executor._adjust_production(firm, current_time))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Overstocked, adjusting production.",
-                extra={"tick": current_time, "agent_id": firm.id, "tactic": "ADJUST_PRODUCTION"}
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_PRODUCTION.name}
             )
         elif current_inventory < target_quantity * self.config_module.UNDERSTOCK_THRESHOLD:
             chosen_tactic = Tactic.ADJUST_PRODUCTION
             orders.extend(self.rule_based_executor._adjust_production(firm, current_time))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Understocked, adjusting production.",
-                extra={"tick": current_time, "agent_id": firm.id, "tactic": "ADJUST_PRODUCTION"}
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_PRODUCTION.name}
             )
 
         # 2. 임금 조정 및 고용 결정 (Operation)
@@ -90,17 +90,22 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
             orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Need more labor, adjusting wages/hiring.",
-                extra={"tick": current_time, "agent_id": firm.id, "tactic": "ADJUST_WAGES"}
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_WAGES.name}
             )
 
         # Firing Logic (WO-110)
         # If overstocked (production target reduced), we may have excess labor.
-        elif current_employees > needed_labor_for_production * 1.05: # 5% buffer
+        firing_buffer_ratio = getattr(self.config_module, "LABOR_FIRING_BUFFER_RATIO", 1.05)
+        if current_employees > needed_labor_for_production * firing_buffer_ratio:
              # WO-110 Fix: Labor Hoarding to prevent Demand Collapse.
              # Only fire if we are actually losing money for a sustained period or running low on cash.
              # If we are profitable or have huge reserves, keep employees to sustain the economy (Demand side).
-             is_bleeding = firm.finance.consecutive_loss_turns > 5
-             is_poor = firm.assets < getattr(self.config_module, "STARTUP_COST", 30000.0) * 0.5
+             loss_threshold = getattr(self.config_module, "LABOR_HOARDING_LOSS_THRESHOLD", 5)
+             is_bleeding = firm.finance.consecutive_loss_turns > loss_threshold
+
+             startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
+             asset_ratio_threshold = getattr(self.config_module, "LABOR_HOARDING_ASSET_RATIO", 0.5)
+             is_poor = firm.assets < startup_cost * asset_ratio_threshold
 
              if is_bleeding or is_poor:
                  # Fire excess
@@ -129,7 +134,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
             orders.extend(self._adjust_price_based_on_inventory(firm, current_time))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Adjusting price and selling.",
-                extra={"tick": current_time, "agent_id": firm.id, "tactic": "SELL"}
+                extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_PRICE.name}
             )
 
         return orders, (chosen_tactic, chosen_aggressiveness)

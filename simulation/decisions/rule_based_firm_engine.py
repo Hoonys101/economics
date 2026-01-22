@@ -172,28 +172,28 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         return self.config_module.BASE_WAGE * (1 + wage_premium)
 
-    def _fire_excess_labor(self, firm: Firm, needed_labor: float) -> List[Order]:
+    def _fire_excess_labor(self, firm: Firm, needed_labor: float) -> None:
         """
         WO-110: Firing logic for Rule-Based Firms.
         Fires excess employees if current workforce exceeds needed labor (with tolerance).
+        Returns None as actions are direct state modifications via Finance/HR.
         """
-        orders = []
         current_employees = len(firm.hr.employees)
 
         # Guard: Check if we actually have employees
         if current_employees == 0:
-            return orders
+            return
 
         # Allow slight overstaffing (buffer) to prevent hire/fire churn
         if current_employees <= needed_labor:
-            return orders
+            return
 
         excess = current_employees - int(needed_labor)
         # Keep at least 1 employee (skeleton crew) unless specified otherwise (e.g. bankruptcy handled elsewhere)
         excess = min(excess, max(0, current_employees - 1))
 
         if excess <= 0:
-            return orders
+            return
 
         # Fire from the list (FIFO: First in, First Fired - mimicking simplistic approach)
         # Actually usually LIFO (Last In First Out) is better to keep experienced, but here experience is not tracked per se?
@@ -233,5 +233,3 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
                     f"RuleBased Firing Aborted: Firm {firm.id} cannot afford severance {severance_pay:.2f} for Agent {emp.id}.",
                     extra={"tick": 0, "agent_id": firm.id, "tags": ["firing_aborted"]}
                 )
-
-        return orders
