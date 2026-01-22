@@ -15,8 +15,8 @@
   "jules": {
     "command": "create",
     "session_id": null,
-    "title": "WO-107-Structural-Decoupling",
-    "instruction": "디자인 폴더의 WO-107-Structural-Decoupling.md 명세서에 따라 아키텍처 결합도를 낮추는 수술을 진행하라. | 1. DecisionContext에서 에이전트 인스턴스 참조를 완전히 제거하고 DTO 스냅샷만 사용하도록 강제할 것. 2. TickScheduler의 실행 로직 일부를 시스템 관리자로 이관하여 단일 책임 원칙(SRP)을 강화할 것. 수술 후 모든 의사결정 로직이 정상 작동하는지 확인하라.",
+    "title": "WO-108-DTO-Parity",
+    "instruction": "디자인 폴더의 WO-108-DTO-Parity-Alignment.md 명세서에 따라 데이터 정합성을 맞추라. | 1. HouseholdStateDTO 및 FirmStateDTO에 명세서상 누락된 필드(perceived_price, automation_level 등)를 모두 추가할 것. 2. 에이전트의 get_state_dto() 메서드가 확장된 필드들을 정확히 반환하도록 수정할 것. 3. 감사 리포트(audit_parity_v2.md)의 모든 불일치 항목을 해소하여 정합성 점수를 극대화하라.",
     "wait": true
   },
   "git": {
