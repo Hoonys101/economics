@@ -101,6 +101,10 @@
       "18239772502099065850": {
         "title": "AUDIT-Full-Sync-Check",
         "initial_mission": "최신 main 브랜치의 경제적/구조적 무결성을 종합 검사하라. WO-106~108 머지 후 발생했을 수 있는 사이드 이펙트를 점검하고, 특히 자산 증발(Zero-Sum)이 여전히 0.1% 이하로 유지되는지 scripts/audit_zero_sum.py로 최종 확인하라."
+      },
+      "7991854182599200102": {
+        "title": "WO-111-Great-Harvest-Final-Validation",
+        "initial_mission": "수리된 엔진으로 Phase 23 대풍년 시나리오를 최종 검증하라. | 1. scripts/verify_phase23_harvest.py를 300틱 이상 가동하여 인구 2배 증가 목표를 달성하는지 확인하라. | 2. 로그를 통해 '생산 신호 수정'과 '신규 고용'이 한 틱에 동시에 일어나는지, 기업의 재고가 식량 가격 하락을 이끌어내는지 분석하라. | 3. 결과 데이터를 바탕으로 design/gemini_output/report_final_harvest_success.md를 작성하라. (드디어 맬서스 트랩을 탈출했다면 승리 선언을 포함하라!)"
       }
     },
     "completed_sessions": {

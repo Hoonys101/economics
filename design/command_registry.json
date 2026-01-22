@@ -1,8 +1,8 @@
 {
-  "jules_final_verify": {
-    "command": "create",
-    "title": "WO-111-Great-Harvest-Final-Validation",
-    "instruction": "수리된 엔진으로 Phase 23 대풍년 시나리오를 최종 검증하라. | 1. scripts/verify_phase23_harvest.py를 300틱 이상 가동하여 인구 2배 증가 목표를 달성하는지 확인하라. | 2. 로그를 통해 '생산 신호 수정'과 '신규 고용'이 한 틱에 동시에 일어나는지, 기업의 재고가 식량 가격 하락을 이끌어내는지 분석하라. | 3. 결과 데이터를 바탕으로 design/gemini_output/report_final_harvest_success.md를 작성하라. (드디어 맬서스 트랩을 탈출했다면 승리 선언을 포함하라!)",
+  "jules_harvest_cleanup": {
+    "command": "send-message",
+    "session_id": "7991854182599200102",
+    "instruction": "대풍년 실증 성공을 축하한다. 하지만 PR 리뷰의 지적대로 다음 사항을 수정하라. | 1. config.py에 하드코딩한 테스트용 설정(SURVIVAL_NEED_DEATH_THRESHOLD 등)을 모두 원상 복구하라. | 2. 대신 해당 설정값들을 'verify_phase23_harvest.py' 스크립트 실행 시 동적으로 오버라이드하도록 수정하라. | 3. 'AI 에이전트의 영아기 생존 실패 문제'를 TECH_DEBT_LEDGER.md에 TD-086으로 공식 등록하고, 현재의 몽키패치는 임시 조치임을 명시하라. | 4. 수정 후 다시 git_sync_checker를 통해 리뷰를 요청하라.",
     "wait": true
   }
 }
