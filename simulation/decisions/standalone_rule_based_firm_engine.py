@@ -84,9 +84,13 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         if current_employees < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
            current_employees < self.config_module.FIRM_MIN_EMPLOYEES:
 
+            # Even if we adjusted production, we might still need to hire.
+            # If we were idling (NO_ACTION), we mark this as our main tactic.
+            # If we already adjusted production, we keep that as the primary tactic but still execute hiring.
             if chosen_tactic == Tactic.NO_ACTION:
                 chosen_tactic = Tactic.ADJUST_WAGES
 
+            # Fix mutual exclusivity bug: Always append orders regardless of chosen_tactic state
             orders.extend(self.rule_based_executor._adjust_wages(firm, current_time, market_data))
             self.logger.info(
                 f"Firm {firm.id} RuleBased: Need more labor, adjusting wages/hiring.",

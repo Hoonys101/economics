@@ -285,9 +285,9 @@ SURVIVAL_TO_LABOR_NEED_FACTOR = 0.5
 # TARGET_FOOD_BUFFER_QUANTITY is already defined above
 PERCEIVED_FAIR_PRICE_THRESHOLD_FACTOR = 0.9
 SURVIVAL_NEED_CONSUMPTION_THRESHOLD = (
-    20.0  # Consume earlier (when hungry > 20)
+    50.0  # Consume earlier (when hungry > 50)
 )
-FOOD_CONSUMPTION_QUANTITY = 5.0  # Eat MORE to reduce hunger faster
+FOOD_CONSUMPTION_QUANTITY = 1.0  # Eat MORE to reduce hunger faster
 FOOD_CONSUMPTION_MAX_PER_TICK = (
     20.0  # Allow binging
 )

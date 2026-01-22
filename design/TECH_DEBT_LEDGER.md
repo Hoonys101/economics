@@ -4,7 +4,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-085 | 2026-01-22 | Decision Mutual Exclusivity Bug (StandaloneRuleBasedFirmDecisionEngine) | Firms fail to hire labor when expanding production | **OPEN** |
+| TD-085 | 2026-01-22 | Decision Mutual Exclusivity Bug (StandaloneRuleBasedFirmDecisionEngine) | Firms fail to hire labor when expanding production | **RESOLVED** (WO-110) |
 
 ## 🟡 DEFERRED (Phase 27+ 상환 예정)
 
