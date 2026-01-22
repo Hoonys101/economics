@@ -69,6 +69,10 @@
       "8987112685343582376": {
         "title": "AUDIT-ECONOMIC-V2",
         "initial_mission": "너는 경제 수사관(Forensic Auditor)이다. design/specs/AUDIT_SPEC_ECONOMIC.md 명세서의 '복식부기' 및 '원자성' 원칙에 따라 시뮬레이션 내 자산 이동 경로를 추적하라. 특히 1) FinanceDepartment 외부에서 자산을 직접 조작하는 로직, 2) 에이전트 소멸 시 자산 회수(RefluxSystem)의 누락 지점을 샅샅이 뒤져라. 입출력 데이터 샘플링을 통해 시스템 전역의 Zero-Sum 위반 여부를 판별하고, 경제적 안전 등급을 포함한 보고서를 design/gemini_output/audit_economic_v2.md로 제출하라."
+      },
+      "13719265400177585538": {
+        "title": "WO-106-Economic-Fixes",
+        "initial_mission": "디자인 폴더의 WO-106-Economic-Integrity-Fixes.md 명세서에 따라 치명적인 경제적 결함들을 수정하라. | 1. 중앙은행의 Fiat 발행 권한 복구(QE 에러 해결). 2. 이민자 자금 출처를 정부 예산으로 명시. 3. 자산 삭제(clear) 로직을 Reflux 시스템으로 교체. 4. 초기 자산 증발(Initial Sink) 원인 파악 및 수정. 모든 수정 후 경제 무결성 테스트를 통과하라."
       }
     },
     "completed_sessions": {
