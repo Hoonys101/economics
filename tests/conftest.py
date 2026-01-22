@@ -102,7 +102,7 @@ GOLDEN_FIXTURES_DIR = Path(__file__).parent / "goldens"
 
 def _get_golden_loader(fixture_name: str = "demo_fixture.json"):
     """Helper to load a golden fixture file."""
-    from scripts.fixture_harvester import GoldenLoader
+    from simulation.utils.golden_loader import GoldenLoader
     
     fixture_path = GOLDEN_FIXTURES_DIR / fixture_name
     if not fixture_path.exists():

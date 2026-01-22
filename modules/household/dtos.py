@@ -39,6 +39,8 @@ class HouseholdStateDTO:
     conformity: float = 0.5
     social_rank: float = 0.5
     approval_rating: int = 1
+    sentiment_index: float = 0.5
+    perceived_fair_price: float = 0.0
 
 @dataclass
 class CloningRequestDTO:
