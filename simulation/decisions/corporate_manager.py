@@ -44,6 +44,9 @@ class CorporateManager:
 
         guidance = firm.system2_planner.project_future(context.current_time, context.market_data)
 
+        # 0. Production Target Adjustment (Restored Logic)
+        self._manage_production_target(firm)
+
         # 0. Procurement Channel (Raw Materials) - WO-030
         procurement_orders = self._manage_procurement(firm, context.market_data, context.markets)
         orders.extend(procurement_orders)
@@ -627,3 +630,30 @@ class CorporateManager:
 
         # Ensure we don't accidentally lower it below base
         return max(base_offer_wage, new_wage)
+
+    def _manage_production_target(self, firm: Firm) -> None:
+        """
+        Adjust Production Target based on Inventory Levels.
+        Uses Rule-Based Logic (Legacy behavior restored).
+        """
+        item = firm.specialization
+        current_inventory = firm.inventory.get(item, 0.0)
+        target = firm.production_target
+
+        # Parameters
+        overstock_threshold = getattr(self.config_module, "OVERSTOCK_THRESHOLD", 1.2)
+        understock_threshold = getattr(self.config_module, "UNDERSTOCK_THRESHOLD", 0.8)
+        adj_factor = getattr(self.config_module, "PRODUCTION_ADJUSTMENT_FACTOR", 0.1)
+        min_target = getattr(self.config_module, "FIRM_MIN_PRODUCTION_TARGET", 10.0)
+        max_target = getattr(self.config_module, "FIRM_MAX_PRODUCTION_TARGET", 500.0)
+
+        # Logic
+        if current_inventory > target * overstock_threshold:
+            # Reduce Target
+            new_target = target * (1.0 - adj_factor)
+            firm.production_target = max(min_target, new_target)
+
+        elif current_inventory < target * understock_threshold:
+            # Increase Target
+            new_target = target * (1.0 + adj_factor)
+            firm.production_target = min(max_target, new_target)

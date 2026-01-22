@@ -63,6 +63,15 @@ class MockConfig:
     BAILOUT_PENALTY_PREMIUM = 0.05
     BAILOUT_REPAYMENT_RATIO = 0.5
 
+    def get(self, key, default=None):
+        if key == "economy_params.BAILOUT_PENALTY_PREMIUM":
+            return self.BAILOUT_PENALTY_PREMIUM
+        if key == "economy_params.DEBT_RISK_PREMIUM_TIERS":
+            return self.DEBT_RISK_PREMIUM_TIERS
+        if key == "economy_params.QE_INTERVENTION_YIELD_THRESHOLD":
+            return self.QE_INTERVENTION_YIELD_THRESHOLD
+        return default
+
 
 class TestDoubleEntry(unittest.TestCase):
 
