@@ -97,6 +97,10 @@
       "9165637540700259809": {
         "title": "DOC-Update-Ledger",
         "initial_mission": "오늘 발견된 '의사결정 상호 배타성 버그'를 TD-085로 TECH_DEBT_LEDGER.md에 등록하라. 또한 오늘 머지된 WO-106, 107, 108 항목을 RESOLVED로 업데이트하고, 전체 프로젝트 상태(project_status.md)를 '엔진 수리 단계'로 갱신하라."
+      },
+      "18239772502099065850": {
+        "title": "AUDIT-Full-Sync-Check",
+        "initial_mission": "최신 main 브랜치의 경제적/구조적 무결성을 종합 검사하라. WO-106~108 머지 후 발생했을 수 있는 사이드 이펙트를 점검하고, 특히 자산 증발(Zero-Sum)이 여전히 0.1% 이하로 유지되는지 scripts/audit_zero_sum.py로 최종 확인하라."
       }
     },
     "completed_sessions": {
