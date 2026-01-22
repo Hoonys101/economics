@@ -13,13 +13,14 @@
 | TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Implementation of dynamic "Interview" system | Marginal Product of Labor 이론 위배 | **DEFERRED** |
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Dynamic Education Market implementation | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | Natural Equilibrium Config Tuning | 비현실적 경제 상태 (무한 수요) | **PENDING_IMPLEMENTATION** (Phase 28) |
-
 | TD-074 | 2026-01-21 | `main.py` & `config.py` corruption | Restore from Git history + Add Merge Guard | Blocked system execution | **RESOLVED** |
 | TD-075 | 2026-01-21 | `Household` Facade Bloat (850+ lines) | Refactored via EconComponent delegation (WO-092) | Maintenance overhead | **RESOLVED** |
-| TD-076 | 2026-01-21 | `ProductionDepartment.produce` Redundancy | Refactor TFP calculation to avoid double multiplier check | Code readability | **RESOLVED** |
-| TD-077 | 2026-01-21 | `EconComponent` Hardcoded Price History Maxlen | Move `maxlen=10` to global configuration | Configuration Gap | **RESOLVED** |
-| TD-104 | 2026-01-22 | Fixture Harvester SoC Violation | Move GoldenLoader to `simulation/utils` | High Coupling | **RESOLVED** |
-
+| TD-076 | 2026-01-21 | `ProductionDepartment.produce` Redundancy | Refactor TFP calculation to avoid double multiplier check | Code readability | **RESOLVED** (WO-105) |
+| TD-077 | 2026-01-21 | `EconComponent` Hardcoded Price History Maxlen | Move `maxlen=10` to global configuration | Configuration Gap | **RESOLVED** (WO-105) |
+| TD-104 | 2026-01-21 | Legacy `SimpleNamespace` in `fixture_harvester.py` | Enforce `GoldenLoader` and move to `simulation/utils/` | SoC Violation | **RESOLVED** (WO-105) |
+| TD-078 | 2026-01-22 | `DecisionContext` Leaky Abstraction | Mandatory DTO-only snapshots for all engines | Integrity Risk | **PENDING** |
+| TD-079 | 2026-01-22 | `TickScheduler` God Class Bloat | Decompose into `Orchestrator` and `Activator` | Maintainability | **PENDING** |
+| TD-084 | 2026-01-22 | DTO Schema Gap vs Specs | Expand DTO fields to include all macro indicators | Data Inconsistency | **PENDING** |
 
 
 ---
