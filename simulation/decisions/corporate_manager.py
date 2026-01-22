@@ -7,11 +7,11 @@ import math
 from simulation.models import Order, StockOrder
 from simulation.schemas import FirmActionVector
 from simulation.dtos import DecisionContext
-from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from simulation.markets.stock_market import StockMarket
+from simulation.dtos.firm_state_dto import FirmStateDTO
 
 if TYPE_CHECKING:
-    from simulation.firms import Firm
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ class CorporateManager:
     CEO Module (WO-027).
     Translates the 6-channel Aggressiveness Vector (Strategy) into concrete Actions (Tactics).
     Owned by AIDrivenFirmDecisionEngine.
+    Refactored for WO-107 (Stateless DTO).
     """
 
     def __init__(self, config_module: Any, logger: Optional[logging.Logger] = None):
@@ -28,94 +29,64 @@ class CorporateManager:
 
     def realize_ceo_actions(
         self,
-        firm: Firm,
+        firm_state: FirmStateDTO,
         context: DecisionContext,
-        action_vector: FirmActionVector
+        action_vector: FirmActionVector,
+        guidance: Dict[str, Any]
     ) -> List[Order]:
         """
         Main entry point. Orchestrates all channel executions.
         """
         orders: List[Order] = []
 
-        # Phase 21: System 2 Strategic Guidance
-        # Instantiate planner if not present (Lazy Init)
-        if firm.system2_planner is None:
-             firm.system2_planner = FirmSystem2Planner(firm, self.config_module)
-
-        guidance = firm.system2_planner.project_future(context.current_time, context.market_data)
-
         # 0. Procurement Channel (Raw Materials) - WO-030
-        procurement_orders = self._manage_procurement(firm, context.market_data, context.markets)
+        procurement_orders = self._manage_procurement(firm_state, context.market_data)
         orders.extend(procurement_orders)
 
         # Phase 21: Automation Channel (New)
         # Uses Capital Aggressiveness + System 2 Target
-        # But wait, Capital Channel is _manage_capex. Automation is different form of capital.
-        # Let's add specific method.
-        # We can use 'capital_aggressiveness' to split between CAPEX (Machines) and Automation.
-        self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time, context.government)
+        self._manage_automation(firm_state, action_vector.capital_aggressiveness, guidance, context.current_time, orders)
 
         # 1. R&D Channel (Innovation)
-        # System 2 guidance might override action vector?
-        # Or bias it.
-        # For now, let action vector drive execution intensity, but System 2 sets 'strategic priority' or modifies it?
-        # Spec: "Personalities dictate the 'Preferred Strategy' ... focus: innovation"
-        # The System 2 planner returns 'rd_intensity'.
-        # Let's blend them or use System 2 to modify action_vector.
-        # But realize_ceo_actions receives a 'fixed' vector from AI.
-        # The AI (RL Agent) learns to output the vector.
-        # System 2 is 'Cognitive Overhead' or 'Advisor'.
-        # If AI is System 1, System 2 should bias the AI? Or bias the execution?
-        # Let's bias the execution here.
-
         rd_agg = action_vector.rd_aggressiveness
         if guidance.get("rd_intensity", 0.0) > 0.1:
              rd_agg = max(rd_agg, 0.5) # Minimum effort if strategic priority
 
-        self._manage_r_and_d(firm, rd_agg, context.current_time)
+        self._manage_r_and_d(firm_state, rd_agg, context.current_time, orders)
 
         # 2. Capital Channel (CAPEX - Physical Machines)
-        # If Automation is prioritized, maybe reduce physical capex?
         capex_agg = action_vector.capital_aggressiveness
-        self._manage_capex(firm, capex_agg, context.reflux_system, context.current_time)
+        self._manage_capex(firm_state, capex_agg, context.reflux_system, context.current_time, orders)
 
         # 3. Dividend Channel
-        self._manage_dividends(firm, action_vector.dividend_aggressiveness)
+        self._manage_dividends(firm_state, action_vector.dividend_aggressiveness, orders)
 
         # 4. Debt Channel (Leverage)
-        debt_orders = self._manage_debt(firm, action_vector.debt_aggressiveness, context.market_data)
+        debt_orders = self._manage_debt(firm_state, action_vector.debt_aggressiveness, context.market_data)
         orders.extend(debt_orders)
 
         # 5. Pricing Channel (Sales)
-        sales_order = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.markets, context.current_time)
+        self._manage_pricing(firm_state, action_vector.sales_aggressiveness, context.market_data, context.markets, context.current_time, orders)
 
         # 6. Hiring Channel (Employment)
-        # If automation is high, maybe hire less?
-        # _manage_hiring logic calculates needed_labor based on productivity.
-        # productivity_factor is TFP.
-        # Automation changes Alpha.
-        # The 'needed_labor' calculation in _manage_hiring is simplistic: inventory_gap / productivity.
-        # It assumes L * TFP = Output.
-        # But Cobb-Douglas is Y = TFP * L^a * K^b.
-        # We need to update hiring logic to inverse the production function properly!
-        hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data)
+        hiring_orders = self._manage_hiring(firm_state, action_vector.hiring_aggressiveness, context.market_data, orders)
         orders.extend(hiring_orders)
 
         # 7. Secondary Offering (SEO)
-        seo_order = self._attempt_secondary_offering(firm, context)
+        seo_order = self._attempt_secondary_offering(firm_state, context)
         if seo_order:
             orders.append(seo_order)
 
         return orders
 
-    def _attempt_secondary_offering(self, firm: Firm, context: DecisionContext) -> Optional[StockOrder]:
+    def _attempt_secondary_offering(self, firm_state: FirmStateDTO, context: DecisionContext) -> Optional[StockOrder]:
         """Sell treasury shares to raise capital when cash is low."""
         startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
         trigger_ratio = getattr(self.config_module, "SEO_TRIGGER_RATIO", 0.5)
 
-        if firm.assets >= startup_cost * trigger_ratio:
+        if firm_state.assets >= startup_cost * trigger_ratio:
             return None
-        if firm.treasury_shares <= 0:
+        if firm_state.treasury_shares <= 0:
             return None
 
         stock_market = context.markets.get("stock_market")
@@ -123,44 +94,55 @@ class CorporateManager:
             return None
 
         max_sell_ratio = getattr(self.config_module, "SEO_MAX_SELL_RATIO", 0.10)
-        sell_qty = min(firm.treasury_shares * max_sell_ratio, firm.treasury_shares)
+        sell_qty = min(firm_state.treasury_shares * max_sell_ratio, firm_state.treasury_shares)
 
         if sell_qty < 1.0:
             return None
 
-        price = stock_market.get_stock_price(firm.id)
+        price = stock_market.get_stock_price(firm_state.id)
         if price is None or price <= 0:
-            # SoC Refactor: Use FinanceDepartment
-            price = firm.finance.get_book_value_per_share()
+            # Calculate BPS from DTO
+            outstanding_shares = firm_state.total_shares - firm_state.treasury_shares
+            net_assets = firm_state.assets - firm_state.total_debt # Simplified BPS (Cash - Debt) / Shares. Real BPS includes inventory/capital.
+            # Real BPS: (Assets + InventoryVal + Capital) - Debt.
+            # Inventory Value estimation:
+            inv_val = 0.0
+            for item, qty in firm_state.inventory.items():
+                p = firm_state.last_prices.get(item, 10.0)
+                inv_val += qty * p
+
+            total_assets = firm_state.assets + inv_val + firm_state.capital_stock
+            bps = max(0.0, total_assets - firm_state.total_debt) / outstanding_shares if outstanding_shares > 0 else 0.0
+            price = bps
 
         if price <= 0:
             return None
 
         order = StockOrder(
-            agent_id=firm.id,
-            firm_id=firm.id,
+            agent_id=firm_state.id,
+            firm_id=firm_state.id,
             order_type="SELL",
             quantity=sell_qty,
             price=price
         )
-        self.logger.info(f"SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}")
+        self.logger.info(f"SEO | Firm {firm_state.id} offering {sell_qty:.1f} shares at {price:.2f}")
         return order
 
-    def _manage_procurement(self, firm: Firm, market_data: Dict[str, Any], markets: Dict[str, Any]) -> List[Order]:
+    def _manage_procurement(self, firm_state: FirmStateDTO, market_data: Dict[str, Any]) -> List[Order]:
         """
         WO-030: Manage Raw Material Procurement.
         """
         orders = []
-        input_config = self.config_module.GOODS.get(firm.specialization, {}).get("inputs", {})
+        input_config = self.config_module.GOODS.get(firm_state.specialization, {}).get("inputs", {})
 
         if not input_config:
             return orders
 
-        target_production = firm.production_target
+        target_production = firm_state.production_target
 
         for mat, req_per_unit in input_config.items():
             needed = target_production * req_per_unit
-            current = firm.input_inventory.get(mat, 0.0)
+            current = firm_state.input_inventory.get(mat, 0.0)
             deficit = needed - current
 
             if deficit > 0:
@@ -175,100 +157,58 @@ class CorporateManager:
                      last_price = self.config_module.GOODS.get(mat, {}).get("initial_price", 10.0)
 
                 bid_price = last_price * 1.05
-                orders.append(Order(firm.id, "BUY", mat, deficit, bid_price, mat))
+                orders.append(Order(firm_state.id, "BUY", mat, deficit, bid_price, mat))
 
         return orders
 
-    def _manage_automation(self, firm: Firm, aggressiveness: float, guidance: Dict[str, Any], current_time: int, government: Optional[Any] = None) -> None:
+    def _manage_automation(self, firm_state: FirmStateDTO, aggressiveness: float, guidance: Dict[str, Any], current_time: int, orders: List[Order]) -> None:
         """
         Phase 21: Automation Investment.
+        Emits INVEST_AUTOMATION internal order.
         """
-        target_a = guidance.get("target_automation", firm.automation_level)
-        current_a = firm.automation_level
+        target_a = guidance.get("target_automation", firm_state.automation_level)
+        current_a = firm_state.automation_level
 
         if current_a >= target_a:
-            return # No investment needed (except maintenance, which is handled implicitly? Or should be explicit?)
-            # Firm logic decays automation. So we need to top up.
+            return
 
         gap = target_a - current_a
-
-        # Cost Logic: Base Cost * Asset Scale * Gap
         cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
-        # Let's treat 'Firm Size' as roughly constant 10000 or Assets.
-        # Spec: "Firm Size (Assets)".
-        # If Assets are huge, cost is huge.
-        # Let's clamp 'Firm Size' factor to avoid runaway costs for rich firms.
-        # Or use Log(Assets)?
-        # For simplicity and testability: Cost = 1000 * Gap.
-        # Wait, if Gap is 0.1 (10%), Cost = 100. Cheap.
-        # Spec says: AUTOMATION_COST_PER_PCT = 1000.0 (Base cost scaling).
-        # Maybe Cost = 1000 * (Gap * 100)?
-        # Let's say to increase 1% (0.01) costs 1000 * scale.
-        # Assuming scale = 1.0 for standard firm.
-        # Let's just use: Cost = AUTOMATION_COST_PER_PCT * (Gap * 100)
-        # So 10% increase = 1000 * 10 = 10,000.
-
         cost = cost_per_pct * (gap * 100.0)
 
-        # Budget Check (using aggressiveness)
-        # If aggressiveness is low, we invest slowly.
-
-        # [Fix] Solvency Check: Reserve buffer for wages (approx 2000.0)
         safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
-        investable_cash = max(0.0, firm.assets - safety_margin)
+        investable_cash = max(0.0, firm_state.assets - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
-
         actual_spend = min(cost, budget)
 
         if actual_spend < 100.0:
             return
 
-        # Execute: SoC Refactor
-        if not firm.finance.invest_in_automation(actual_spend):
-             return
+        # Emit Internal Order
+        orders.append(Order(
+            agent_id=firm_state.id,
+            order_type="INVEST_AUTOMATION",
+            item_id="automation",
+            quantity=actual_spend,
+            price=0.0,
+            market_id="internal"
+        ))
 
-        # WO-044-Track-B: Automation Tax
-        # Logic: actual_spend * AUTOMATION_TAX_RATE
-        automation_tax_rate = getattr(self.config_module, "AUTOMATION_TAX_RATE", 0.05)
-        tax_amount = actual_spend * automation_tax_rate
-
-        if tax_amount > 0 and government:
-            success = firm.finance.pay_ad_hoc_tax(tax_amount, "automation_tax", government, current_time)
-            if success:
-                self.logger.info(
-                    f"AUTOMATION_TAX | Firm {firm.id} paid {tax_amount:.2f} tax on {actual_spend:.2f} investment.",
-                    extra={"agent_id": firm.id, "tick": current_time, "tags": ["tax", "automation"]}
-                )
-
-        # Calculate gained automation
-        # gained = (spend / cost_per_pct) / 100.0
-        gained_pct = actual_spend / cost_per_pct
-        gained_a = gained_pct / 100.0
-
-        # SoC Refactor
-        firm.production.set_automation_level(firm.automation_level + gained_a)
-
-        self.logger.info(
-            f"AUTOMATION | Firm {firm.id} invested {actual_spend:.1f}, level {current_a:.3f} -> {firm.automation_level:.3f}",
-            extra={"agent_id": firm.id, "tick": current_time, "tags": ["automation"]}
-        )
-
-    def _manage_r_and_d(self, firm: Firm, aggressiveness: float, current_time: int) -> None:
+    def _manage_r_and_d(self, firm_state: FirmStateDTO, aggressiveness: float, current_time: int, orders: List[Order]) -> None:
         """
         Innovation Physics.
+        Emits INVEST_RD internal order.
         """
         if aggressiveness <= 0.1:
             return
 
-        # SoC Refactor: use finance.revenue_this_turn
-        revenue_base = max(firm.finance.revenue_this_turn, firm.assets * 0.05)
+        revenue_base = max(firm_state.revenue_this_turn, firm_state.assets * 0.05)
         rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
-        # [Fix] Solvency Check
         safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
-        investable_cash = max(0.0, firm.assets - safety_margin)
+        investable_cash = max(0.0, firm_state.assets - safety_margin)
 
         if investable_cash < budget:
             budget = investable_cash * 0.5
@@ -276,112 +216,84 @@ class CorporateManager:
         if budget < 10.0:
             return
 
-        # SoC Refactor
-        if not firm.finance.invest_in_rd(budget):
-            return
+        orders.append(Order(
+            agent_id=firm_state.id,
+            order_type="INVEST_RD",
+            item_id="rd",
+            quantity=budget,
+            price=0.0,
+            market_id="internal"
+        ))
 
-        firm.research_history["total_spent"] += budget
-
-        # SoC Refactor: use finance.revenue_this_turn
-        denominator = max(firm.finance.revenue_this_turn * 0.2, 100.0)
-        base_chance = min(1.0, budget / denominator)
-
-        avg_skill = 1.0
-        # SoC Refactor: use hr.employees
-        if firm.hr.employees:
-            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in firm.hr.employees) / len(firm.hr.employees)
-
-        success_chance = base_chance * avg_skill
-
-        if random.random() < success_chance:
-            firm.research_history["success_count"] += 1
-            firm.research_history["last_success_tick"] = current_time
-            firm.base_quality += 0.05
-            firm.productivity_factor *= 1.05
-
-            self.logger.info(
-                f"R&D SUCCESS | Firm {firm.id} spent {budget:.1f}. Quality {firm.base_quality:.2f}, Prod {firm.productivity_factor:.2f}",
-                extra={"agent_id": firm.id, "tick": current_time, "tags": ["innovation", "success"]}
-            )
-        else:
-             self.logger.info(
-                f"R&D FAIL | Firm {firm.id} spent {budget:.1f}. Chance {success_chance:.1%}",
-                extra={"agent_id": firm.id, "tick": current_time, "tags": ["innovation", "fail"]}
-            )
-
-    def _manage_capex(self, firm: Firm, aggressiveness: float, reflux_system: Any, current_time: int) -> None:
+    def _manage_capex(self, firm_state: FirmStateDTO, aggressiveness: float, reflux_system: Any, current_time: int, orders: List[Order]) -> None:
         """
         Capacity Expansion.
+        Emits INVEST_CAPEX internal order.
         """
         if aggressiveness <= 0.2:
             return
 
-        # [Fix] Solvency Check
         safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
-        investable_cash = max(0.0, firm.assets - safety_margin)
+        investable_cash = max(0.0, firm_state.assets - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
 
         if budget < 100.0:
             return
 
-        # SoC Refactor
-        if not firm.finance.invest_in_capex(budget):
-            return
+        orders.append(Order(
+            agent_id=firm_state.id,
+            order_type="INVEST_CAPEX",
+            item_id="capex",
+            quantity=budget,
+            price=0.0,
+            market_id="internal"
+        ))
 
-        if reflux_system:
-             reflux_system.capture(budget, str(firm.id), "capex")
-
-        efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
-        added_capital = budget * efficiency
-        # SoC Refactor
-        firm.production.add_capital(added_capital)
-
-        self.logger.info(
-            f"CAPEX | Firm {firm.id} invested {budget:.1f}, added {added_capital:.1f} capital.",
-            extra={"agent_id": firm.id, "tick": current_time, "tags": ["capex"]}
-        )
-
-    def _manage_dividends(self, firm: Firm, aggressiveness: float) -> None:
+    def _manage_dividends(self, firm_state: FirmStateDTO, aggressiveness: float, orders: List[Order]) -> None:
         """
         Set Dividend Rate.
+        Emits SET_DIVIDEND_RATE internal order.
         """
-        # Phase 29: Survival Mode Check
-        # Check Altman Z-Score
-        z_score = firm.finance.calculate_altman_z_score()
-        z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
-
-        # Check Consecutive Losses
+        # Calculate Z-Score roughly (simplified or moved to Firm?)
+        # For simplicity, check consecutive losses which we have.
+        # Ideally Firm should manage distress logic, but CorporateManager sets policy.
+        # We can implement a simplified check or trust Firm to override/reject?
+        # Let's check consecutive losses.
         loss_limit = getattr(self.config_module, "DIVIDEND_SUSPENSION_LOSS_TICKS", 3)
 
-        is_distressed = (z_score < z_score_threshold) or (firm.finance.consecutive_loss_turns >= loss_limit)
+        # Simplified Z-Score check logic using DTO fields if possible
+        # working_capital = firm_state.assets - firm_state.total_debt
+        # total_assets = firm_state.assets + firm_state.capital_stock + inventory_val
+        # ...
+        # For now, rely on consecutive losses and a simple solvency check.
 
-        if is_distressed:
-            firm.finance.set_dividend_rate(0.0)
-            self.logger.warning(
-                f"DIVIDEND SUSPENDED | Firm {firm.id} in distress (Z={z_score:.2f}, LossTicks={firm.finance.consecutive_loss_turns}).",
-                extra={"agent_id": firm.id, "tags": ["dividend", "crisis"]}
-            )
-            return
+        is_distressed = (firm_state.consecutive_loss_turns >= loss_limit)
 
-        base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
-        max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
-        # SoC Refactor
-        firm.finance.set_dividend_rate(base_rate + (aggressiveness * (max_rate - base_rate)))
+        rate = 0.0
+        if not is_distressed:
+            base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
+            max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
+            rate = base_rate + (aggressiveness * (max_rate - base_rate))
 
-    def _manage_debt(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
+        orders.append(Order(
+            agent_id=firm_state.id,
+            order_type="SET_DIVIDEND_RATE",
+            item_id="dividend_rate",
+            quantity=0.0,
+            price=rate, # Pass rate as price
+            market_id="internal"
+        ))
+
+    def _manage_debt(self, firm_state: FirmStateDTO, aggressiveness: float, market_data: Dict) -> List[Order]:
         """
         Leverage Management.
         """
         orders = []
         target_leverage = aggressiveness * 2.0
 
-        current_debt = 0.0
-        debt_info = market_data.get("debt_data", {}).get(firm.id)
-        if debt_info:
-            current_debt = debt_info.get("total_principal", 0.0)
-
-        current_assets = max(firm.assets, 1.0)
+        current_debt = firm_state.total_debt
+        current_assets = max(firm_state.assets, 1.0)
         current_leverage = current_debt / current_assets
 
         if current_leverage < target_leverage:
@@ -391,164 +303,150 @@ class CorporateManager:
 
             if borrow_amount > 100.0:
                 orders.append(
-                    Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, 0.10, "loan")
+                    Order(firm_state.id, "LOAN_REQUEST", "loan", borrow_amount, 0.10, "loan")
                 )
 
         elif current_leverage > target_leverage:
             excess_debt = current_debt - (current_assets * target_leverage)
-            repay_amount = min(excess_debt, firm.assets * 0.5)
+            repay_amount = min(excess_debt, firm_state.assets * 0.5)
 
             if repay_amount > 10.0 and current_debt > 0:
                  orders.append(
-                    Order(firm.id, "REPAYMENT", "loan", repay_amount, 1.0, "loan")
+                    Order(firm_state.id, "REPAYMENT", "loan", repay_amount, 1.0, "loan")
                 )
 
         return orders
 
-    def _manage_pricing(self, firm: Firm, aggressiveness: float, market_data: Dict, markets: Dict, current_time: int) -> Optional[Order]:
+    def _manage_pricing(self, firm_state: FirmStateDTO, aggressiveness: float, market_data: Dict, markets: Dict, current_time: int, orders: List[Order]) -> None:
         """
         Sales Channel.
+        Emits SET_PRICE and SELL orders.
         """
-        item_id = firm.specialization
-        current_inventory = firm.inventory.get(item_id, 0)
+        item_id = firm_state.specialization
+        current_inventory = firm_state.inventory.get(item_id, 0)
 
         if current_inventory <= 0:
-            return None
+            return
 
         market_price = 0.0
         if item_id in market_data:
              market_price = market_data[item_id].get('avg_price', 0)
         if market_price <= 0:
-             market_price = firm.last_prices.get(item_id, 0)
+             market_price = firm_state.last_prices.get(item_id, 0)
         if market_price <= 0:
              market_price = self.config_module.GOODS.get(item_id, {}).get("production_cost", 10.0)
 
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
 
-        # SoC Refactor: use finance.last_sales_volume
-        sales_vol = getattr(firm.finance, 'last_sales_volume', 1.0)
+        sales_vol = firm_state.last_sales_volume
         if sales_vol <= 0: sales_vol = 1.0
         days_on_hand = current_inventory / sales_vol
         decay = max(0.5, 1.0 - (days_on_hand * 0.005))
         target_price *= decay
 
         target_price = max(target_price, 0.1)
-        # SoC Refactor
-        firm.sales.set_price(item_id, target_price)
 
+        # Emit SET_PRICE
+        orders.append(Order(
+            agent_id=firm_state.id,
+            order_type="SET_PRICE",
+            item_id=item_id,
+            quantity=0.0,
+            price=target_price,
+            market_id="internal"
+        ))
+
+        # Emit SELL order
         qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
 
+        # Check if market exists to be safe, although we can't check market obj here easily if markets dict is just names?
+        # context.markets contains Market objects.
         target_market = markets.get(item_id)
         if target_market:
-            # firm.post_ask is a method on Firm, but it delegates to Sales.
-            # CorporateManager calls firm.post_ask. Spec says "Update Firm Internal Methods... make_decision... access sub-components".
-            # CorporateManager is calling firm.post_ask. Should it call firm.sales.post_ask?
-            # Spec says "External modules ... directly manipulate internal state".
-            # `post_ask` on `Firm` is a method, not a property.
-            # Spec mainly targets wrapper properties.
-            # However, for consistency, I can use `firm.sales.post_ask` IF `Firm`'s `post_ask` is just a wrapper.
-            # Let's check `Firm.post_ask` again.
-            # Yes: return self.sales.post_ask(item_id, price, quantity, market, current_tick)
-            # So I should use firm.sales.post_ask directly to be "Pure Orchestrator".
-            # But the orchestrator (Firm) might want to log or do things?
-            # Actually, `Firm.post_ask` IS the wrapper.
-            # So I will use `firm.sales.post_ask`.
-            firm.sales.post_ask(item_id, target_price, qty, target_market, current_time)
+            orders.append(Order(
+                agent_id=firm_state.id,
+                order_type="SELL",
+                item_id=item_id,
+                quantity=qty,
+                price=target_price,
+                market_id=item_id # Usually keyed by item_id
+            ))
 
-        return None
-
-    def _manage_hiring(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
+    def _manage_hiring(self, firm_state: FirmStateDTO, aggressiveness: float, market_data: Dict, orders: List[Order]) -> List[Order]:
         """
         Hiring Channel.
-        Phase 21: Updated to account for Automation in labor demand.
         """
-        orders = []
-        target_inventory = firm.production_target
-        current_inventory = firm.inventory.get(firm.specialization, 0)
+        new_orders = [] # Local list to return hiring orders (BUY labor)
+
+        target_inventory = firm_state.production_target
+        current_inventory = firm_state.inventory.get(firm_state.specialization, 0)
         inventory_gap = target_inventory - current_inventory
 
         if inventory_gap <= 0:
             return []
 
-        # Calculate needed labor with Cobb-Douglas inversion?
-        # Y = TFP * L^alpha * K^beta
-        # L^alpha = Y / (TFP * K^beta)
-        # L = (Y / (TFP * K^beta)) ^ (1/alpha)
-
         base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
         automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
-        alpha_adjusted = base_alpha * (1.0 - (firm.automation_level * automation_reduction))
+        alpha_adjusted = base_alpha * (1.0 - (firm_state.automation_level * automation_reduction))
         beta_adjusted = 1.0 - alpha_adjusted
 
-        capital = max(firm.capital_stock, 1.0)
-        tfp = firm.productivity_factor
-
-        # Avoid division by zero
+        capital = max(firm_state.capital_stock, 1.0)
+        tfp = firm_state.productivity_factor
         if tfp <= 0: tfp = 1.0
 
         needed_labor_calc = 0.0
         try:
-             # term = Y / (TFP * K^beta)
              term = inventory_gap / (tfp * (capital ** beta_adjusted))
              needed_labor_calc = term ** (1.0 / alpha_adjusted)
         except Exception:
-             needed_labor_calc = 1.0 # Fallback
+             needed_labor_calc = 1.0
 
-        # Soft limit removed to allow full employment
         needed_labor = int(needed_labor_calc) + 1
-
-        # SoC Refactor: use hr.employees
-        current_employees = len(firm.hr.employees)
+        current_employees = firm_state.employee_count
 
         # A. Firing Logic (Layoffs)
         if current_employees > needed_labor:
             excess = current_employees - needed_labor
-            # Don't fire everyone if inventory is just slightly full?
-            # Cobb-Douglas needs labor. If we fire all, prod=0.
-            # But needed_labor calculated above might be 0 if inventory gap <= 0.
-            # If inventory gap <= 0, we have enough stock. We don't need to produce.
-            # So firing is rational to save wages.
-            # However, firing everyone destroys organization capital.
-            # Let's keep at least 1 employee (skeleton crew) if possible, unless bankrupt.
-
-            # Allow firing down to 1
             fire_count = min(excess, max(0, current_employees - 1))
 
             if fire_count > 0:
-                # Fire the most expensive or random? Random for now.
-                # Actually we should iterate copy to modify list safely?
-                # No, we just call employee.quit().
-                # We need to pick employees.
-                candidates = firm.hr.employees[:fire_count] # FIFO firing
+                # We need to pick employees to fire.
+                # DTO has `employees` (List[int]).
+                candidates = firm_state.employees[:fire_count]
 
-                # WO-044-Track-C: Strategic Firing Severance Check
                 severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
 
-                for emp in candidates:
-                    # Estimate wage (Strategic firing happens before update_needs, so check current wage)
-                    # SoC Refactor: use hr.employee_wages
-                    wage = firm.hr.employee_wages.get(emp.id, self.config_module.LABOR_MARKET_MIN_WAGE)
-                    # Correct for skill
-                    skill = getattr(emp, 'labor_skill', 1.0)
-                    wage *= skill
+                for emp_id in candidates:
+                    wage = firm_state.employee_wages.get(emp_id, self.config_module.LABOR_MARKET_MIN_WAGE)
+                    # Skill is not in DTO map? `employee_wages` is actual wage, which typically includes skill premium?
+                    # `Firm.hr.employee_wages` stores contract wage.
+                    # Base logic used `emp.labor_skill`. DTO doesn't have per-employee skill.
+                    # Simplified: Use contract wage * 1.0 (assuming average skill or contract accounts for it).
+                    # Or assume severance based on contract wage is sufficient estimate.
 
                     severance_pay = wage * severance_weeks
 
-                    # SoC Refactor: use finance.pay_severance
-                    if firm.finance.pay_severance(emp, severance_pay):
-                        emp.quit()
-                        self.logger.info(
-                            f"LAYOFF | Firm {firm.id} laid off Household {emp.id} with Severance {severance_pay:.2f}. Excess labor.",
-                            extra={"tick": 0, "tags": ["hiring", "layoff", "severance"]}
-                        )
-                    else:
-                        self.logger.warning(
-                            f"LAYOFF ABORTED | Firm {firm.id} cannot afford Severance {severance_pay:.2f} for Household {emp.id}. Firing cancelled.",
-                             extra={"tick": 0, "tags": ["hiring", "layoff_aborted"]}
-                        )
+                    # Emit FIRE order
+                    # We pass severance amount as price? Or quantity?
+                    # Use price for monetary amount.
+                    orders.append(Order(
+                        agent_id=firm_state.id,
+                        order_type="FIRE",
+                        item_id="labor",
+                        quantity=0.0,
+                        price=severance_pay, # Severance amount
+                        market_id="internal",
+                        # We need target_agent_id... Order class doesn't have it.
+                        # We can overload item_id? "FIRE_{emp_id}"?
+                        # Or rely on a separate mechanism?
+                        # Order class allows us to define item_id.
+                        # Let's use item_id = f"employee_{emp_id}"?
+                        # Or just handle it in Firm.make_decision by parsing item_id.
+                    ))
+                    # Hack: Store emp_id in item_id for FIRE command
+                    orders[-1].item_id = str(emp_id)
 
-                # Firing done. No hiring.
                 return []
 
         # B. Hiring Logic
@@ -560,70 +458,42 @@ class CorporateManager:
         offer_wage = market_wage * (1.0 + adjustment)
         offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
 
-        # WO-047-B: Competitive Bidding Adjustment
-        offer_wage = self._adjust_wage_for_vacancies(firm, offer_wage, needed_labor)
+        offer_wage = self._adjust_wage_for_vacancies(firm_state, offer_wage, needed_labor)
 
-        # Calculate how many to hire
         to_hire = needed_labor - current_employees
         if to_hire > 0:
             for _ in range(to_hire):
-                 orders.append(
-                     Order(firm.id, "BUY", "labor", 1, offer_wage, "labor")
+                 new_orders.append(
+                     Order(firm_state.id, "BUY", "labor", 1, offer_wage, "labor")
                  )
 
-        return orders
+        return new_orders
 
-    def _get_total_liabilities(self, firm: Firm) -> float:
-        """Helper to get total liabilities from Bank logic (WO-047-B)."""
-        try:
-            loan_market = getattr(firm.decision_engine, 'loan_market', None)
-            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
-                debt_summary = loan_market.bank.get_debt_summary(firm.id)
-                return debt_summary.get('total_principal', 0.0)
-        except Exception:
-            pass
-        return 0.0
-
-    def _adjust_wage_for_vacancies(self, firm: Firm, base_offer_wage: float, needed_labor: int) -> float:
+    def _adjust_wage_for_vacancies(self, firm_state: FirmStateDTO, base_offer_wage: float, needed_labor: int) -> float:
         """
         WO-047-B: Competitive Bidding Logic.
-        If firm has vacancies and is solvent, bid up the wage.
         """
-        # SoC Refactor
-        current_employees = len(firm.hr.employees)
+        current_employees = firm_state.employee_count
         vacancies = max(0, needed_labor - current_employees)
         
         if vacancies <= 0:
             return base_offer_wage
 
-        # 1. 1.5x Solvency Check (Guardrail)
-        total_liabilities = self._get_total_liabilities(firm)
+        total_liabilities = firm_state.total_debt
         if total_liabilities > 0:
-            solvency_ratio = firm.assets / total_liabilities
+            solvency_ratio = firm_state.assets / total_liabilities
             if solvency_ratio < 1.5:
-                # Insolvent or risky: Cannot afford bidding war
                 return base_offer_wage
         
-        # 2. Wage Bill Cap Check (Fallback for 0 liabilities)
-        # Check if we have enough cash runway (e.g., 2 ticks)
-        # Using current wage bill as proxy
-        # SoC Refactor: use hr.employee_wages
-        wage_bill = sum(firm.hr.employee_wages.values()) if firm.hr.employee_wages else 0.0
-        if wage_bill > 0 and firm.assets < wage_bill * 2: 
+        wage_bill = sum(firm_state.employee_wages.values())
+        if wage_bill > 0 and firm_state.assets < wage_bill * 2:
              return base_offer_wage
 
-        # 3. Calculate Increase
-        # Increase by 1% per vacancy, max 5%
         increase_rate = min(0.05, 0.01 * vacancies)
         new_wage = base_offer_wage * (1.0 + increase_rate)
 
-        # 4. Absolute Ceiling Check (Safety Net)
-        # Ensures firm doesn't commit to a wage causing immediate insolvency next tick
-        # Logic: Assets should cover (Current Employees + New Hires + 1) * New Wage
-        # This is a bit conservative but safe.
-        max_affordable = firm.assets / (current_employees + vacancies + 1)
+        max_affordable = firm_state.assets / (current_employees + vacancies + 1)
         if new_wage > max_affordable:
             new_wage = max(base_offer_wage, max_affordable)
 
-        # Ensure we don't accidentally lower it below base
         return max(base_offer_wage, new_wage)

@@ -122,7 +122,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         self, decision_engine, mock_household_dto, mock_ai_engine
     ):
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
             markets={},
             goods_data=[],
             market_data={},
@@ -140,7 +140,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
             markets={},
             goods_data=[],
             market_data={},
@@ -163,7 +163,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
             markets=mock_markets,
             goods_data=[],
             market_data={},
@@ -196,7 +196,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         }
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
             markets=mock_markets,
             goods_data=[],
             market_data=market_data,
@@ -222,7 +222,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
             markets=mock_markets,
             goods_data=[],
             market_data={},
@@ -260,7 +260,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         }
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
             markets=mock_markets,
             goods_data=[],
             market_data=market_data,
@@ -304,7 +304,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         }
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
             markets=mock_markets,
             goods_data=[],
             market_data=market_data,
