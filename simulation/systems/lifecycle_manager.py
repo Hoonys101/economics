@@ -83,8 +83,11 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
     def _calculate_inventory_value(self, inventory: dict, markets: dict) -> float:
         total_value = 0.0
+        # PR Review: Use configured default price instead of hardcoded 10.0
+        default_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+
         for item_id, qty in inventory.items():
-            price = 10.0 # Default fallback
+            price = default_price
             if item_id in markets:
                 m = markets[item_id]
                 # Try various price attributes
