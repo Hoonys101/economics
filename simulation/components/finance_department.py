@@ -290,7 +290,8 @@ class FinanceDepartment:
         return total_val
 
     def get_financial_snapshot(self) -> Dict[str, float]:
-        total_assets = self._cash + self.get_inventory_value()
+        # WO-106: Include Capital Stock in Total Assets for correct accounting
+        total_assets = self._cash + self.get_inventory_value() + getattr(self.firm, 'capital_stock', 0.0)
 
         current_liabilities = getattr(self.firm, "total_debt", 0.0)
         working_capital = total_assets - current_liabilities
