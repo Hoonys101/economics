@@ -69,6 +69,7 @@ class EngineType(Enum):
     AI_DRIVEN = "AIDriven"
 
 DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
+NEWBORN_ENGINE_TYPE = "AIDriven"  # Default engine for newborns: "AIDriven" or "RuleBased"
 
 # --- Initial Agent Configuration ---
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2

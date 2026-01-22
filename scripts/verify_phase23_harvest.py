@@ -30,7 +30,7 @@ from simulation.components.psychology_component import PsychologyComponent
 
 # --- Monkey Patching ---
 
-# 0. Forensics Patch for Death
+# 0. Forensics Patch for Death (Kept for Debugging visibility)
 original_log_death = PsychologyComponent._log_death
 
 def patched_log_death(self, current_tick, market_data):
@@ -43,31 +43,6 @@ def patched_log_death(self, current_tick, market_data):
     original_log_death(self, current_tick, market_data)
 
 PsychologyComponent._log_death = patched_log_death
-
-# 1. Force RuleBased Engine for all new births
-original_process_births = DemographicManager.process_births
-
-def patched_process_births(self, state: SimulationState, birth_requests=None):
-    result = None
-    if birth_requests is not None:
-        result = original_process_births(self, state, birth_requests)
-    else:
-        try:
-            result = original_process_births(self, state, birth_requests)
-        except TypeError:
-             result = original_process_births(self, state)
-
-    # Force replace engine for new agents (IDs > 100 assumed new)
-    for agent_id, agent in state.agents.items():
-        if isinstance(agent, Household) and agent_id > 100:
-            if not getattr(agent, '_patched_engine', False):
-                # Re-create engine with agent
-                agent.decision_engine = RuleBasedHouseholdDecisionEngine(config_module=Config, logger=logger)
-                agent._patched_engine = True
-                logger.info(f"BIRTH (PATCHED) | Child {agent.id}. Assets: {agent.assets:.2f}. Engine: RuleBased")
-    return result
-
-DemographicManager.process_births = patched_process_births
 
 class Phase23Verifier:
     def __init__(self):
@@ -113,6 +88,9 @@ class Phase23Verifier:
         Config.SURVIVAL_CRITICAL_TURNS = 10 # Give them more time before panic
 
         # --- DYNAMIC OVERRIDES (Moved from config.py) ---
+        # WO-110: Use RuleBased Engine for newborns to ensure survival
+        Config.NEWBORN_ENGINE_TYPE = "RuleBased"
+
         # Relax Death Conditions
         Config.SURVIVAL_NEED_DEATH_THRESHOLD = 200.0
         Config.HOUSEHOLD_DEATH_TURNS_THRESHOLD = 50

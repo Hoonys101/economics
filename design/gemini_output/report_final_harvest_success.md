@@ -6,8 +6,8 @@
 ## Executive Summary
 | Metric | Initial | Final | Result |
 |---|---|---|---|
-| Food Price | 0.00 | 0.61 | Deflationary Stability |
-| Population | 50 | 3980 | 79.60x Growth |
+| Food Price | 0.00 | 0.60 | Deflationary Stability |
+| Population | 50 | 4686 | 93.72x Growth |
 
 ## 🏆 VICTORY DECLARATION 🏆
 **We have broken the Malthusian Trap!**

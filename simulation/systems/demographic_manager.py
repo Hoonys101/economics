@@ -130,12 +130,22 @@ class DemographicManager:
             )
 
             # Create Decision Engine
-            new_decision_engine = AIDrivenHouseholdDecisionEngine(
-                ai_engine=new_ai,
-                config_module=self.config_module,
-                logger=simulation.logger
-            )
-            new_decision_engine.loan_market = simulation.markets.get("loan_market")
+            # WO-110: Allow selecting engine type for newborns (AIDriven vs RuleBased)
+            newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
+
+            if newborn_engine_type == "RuleBased":
+                from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+                new_decision_engine = RuleBasedHouseholdDecisionEngine(
+                    config_module=self.config_module,
+                    logger=simulation.logger
+                )
+            else:
+                new_decision_engine = AIDrivenHouseholdDecisionEngine(
+                    ai_engine=new_ai,
+                    config_module=self.config_module,
+                    logger=simulation.logger
+                )
+                new_decision_engine.loan_market = simulation.markets.get("loan_market")
 
             child = Household(
                 id=child_id,
