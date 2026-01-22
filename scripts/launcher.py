@@ -29,7 +29,13 @@ def run_command(cmd_list, capture_output=False):
         return None
 
 def run_gemini(args, registry):
-    data = registry.get("gemini", {})
+    # HITL 2.0: Use the first arg as key if provided, e.g., 'gemini_v2'
+    key = args[0] if args else "gemini"
+    data = registry.get(key, {})
+    if not data:
+        print(f"❌ Error: Key '{key}' not found in registry.")
+        return
+    
     worker = data.get("worker", "spec")
     instruction = data.get("instruction", "").replace("\n", "|")
     context = data.get("context", [])
@@ -51,7 +57,13 @@ def run_gemini(args, registry):
     run_command(cmd)
 
 def run_jules(args, registry):
-    data = registry.get("jules", {})
+    # HITL 2.0: Use the first arg as key if provided, e.g., 'jules_economic'
+    key = args[0] if args else "jules"
+    data = registry.get(key, {})
+    if not data:
+        print(f"❌ Error: Key '{key}' not found in registry.")
+        return
+
     command = data.get("command", "list-sessions")
     session_id = data.get("session_id", "")
     title = data.get("title", "")
