@@ -6,9 +6,7 @@ from simulation.models import Order
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.ai.enums import Tactic
 from simulation.dtos import DecisionContext
-
-if TYPE_CHECKING:
-    from simulation.firms import Firm
+from simulation.dtos.firm_state_dto import FirmStateDTO
 
 
 class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
@@ -36,30 +34,31 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         )
 
     def _execute_tactic(
-        self, tactic: Tactic, firm: Firm, current_tick: int, market_data: Dict[str, Any]
+        self, tactic: Tactic, firm_state: FirmStateDTO, current_tick: int, market_data: Dict[str, Any]
     ) -> List[Order]:
         """
         선택된 전술에 따라 실제 행동(주문 생성)을 수행한다.
         """
         self.logger.info(
-            f"Firm {firm.id} chose Tactic: {tactic.name}",
-            extra={"tick": current_tick, "agent_id": firm.id, "tactic": tactic.name},
+            f"Firm {firm_state.id} chose Tactic: {tactic.name}",
+            extra={"tick": current_tick, "agent_id": firm_state.id, "tactic": tactic.name},
         )
 
         if tactic == Tactic.ADJUST_PRODUCTION:
-            return self._adjust_production(firm, current_tick)
+            return self._adjust_production(firm_state, current_tick)
         elif tactic == Tactic.ADJUST_WAGES:
-            return self._adjust_wages(firm, current_tick, market_data)
+            return self._adjust_wages(firm_state, current_tick, market_data)
 
         return []
 
-    def _adjust_production(self, firm: Firm, current_tick: int) -> List[Order]:
+    def _adjust_production(self, firm_state: FirmStateDTO, current_tick: int) -> List[Order]:
         """
         재고 수준에 따라 생산 목표를 조정한다.
         """
-        item_id = firm.specialization
-        current_inventory = firm.inventory.get(item_id, 0)
-        target_quantity = firm.production_target
+        orders = []
+        item_id = firm_state.specialization
+        current_inventory = firm_state.inventory.get(item_id, 0)
+        target_quantity = firm_state.production_target
 
         is_overstocked = (
             current_inventory > target_quantity * self.config_module.OVERSTOCK_THRESHOLD
@@ -69,98 +68,106 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             < target_quantity * self.config_module.UNDERSTOCK_THRESHOLD
         )
 
+        new_target = target_quantity
+
         if is_overstocked:
-            firm.production_target = max(
+            new_target = max(
                 self.config_module.FIRM_MIN_PRODUCTION_TARGET,
                 target_quantity * (1 - self.config_module.PRODUCTION_ADJUSTMENT_FACTOR),
             )
             self.logger.info(
-                f"Overstock of {item_id}. Reducing production target to {firm.production_target:.1f}",
+                f"Overstock of {item_id}. Reducing production target to {new_target:.1f}",
                 extra={
                     "tick": current_tick,
-                    "agent_id": firm.id,
+                    "agent_id": firm_state.id,
                     "tags": ["production_target"],
                 },
             )
         elif is_understocked:
-            firm.production_target = min(
+            new_target = min(
                 self.config_module.FIRM_MAX_PRODUCTION_TARGET,
                 target_quantity * (1 + self.config_module.PRODUCTION_ADJUSTMENT_FACTOR),
             )
             self.logger.info(
-                f"Understock of {item_id}. Increasing production target to {firm.production_target:.1f}",
+                f"Understock of {item_id}. Increasing production target to {new_target:.1f}",
                 extra={
                     "tick": current_tick,
-                    "agent_id": firm.id,
+                    "agent_id": firm_state.id,
                     "tags": ["production_target"],
                 },
             )
 
-        return []  # 생산 목표 조정은 직접적인 주문을 생성하지 않음
+        # WO-107: Return internal order instead of modifying state
+        if abs(new_target - target_quantity) > 1e-6:
+             orders.append(
+                 Order(firm_state.id, "SET_PRODUCTION_TARGET", "production_target", new_target, 0.0, "internal")
+             )
+
+        return orders
 
     def _adjust_wages(
-        self, firm: Firm, current_tick: int, market_data: Dict[str, Any]
+        self, firm_state: FirmStateDTO, current_tick: int, market_data: Dict[str, Any]
     ) -> List[Order]:
         """
         필요 노동력과 현재 고용 상태에 따라 임금을 조정하고 고용 주문을 생성한다.
         """
         orders = []
 
-        needed_labor = self._calculate_needed_labor(firm)
-        offered_wage = self._calculate_dynamic_wage_offer(firm)
+        needed_labor = self._calculate_needed_labor(firm_state)
+        offered_wage = self._calculate_dynamic_wage_offer(firm_state)
 
-        # SoC Refactor: use hr.employees
-        if len(firm.hr.employees) < self.config_module.FIRM_MIN_EMPLOYEES:
+        # SoC Refactor: use firm_state.employee_count
+        if firm_state.employee_count < self.config_module.FIRM_MIN_EMPLOYEES:
             # WO-098 Fix: Use correct market ID "labor"
-            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
+            order = Order(firm_state.id, "BUY", "labor", 1.0, offered_wage, "labor")
             orders.append(order)
             self.logger.info(
                 f"Hiring to meet minimum employee count. Offering dynamic wage: {offered_wage:.2f}",
                 extra={
                     "tick": current_tick,
-                    "agent_id": firm.id,
+                    "agent_id": firm_state.id,
                     "tags": ["hiring", "dynamic_wage"],
                 },
             )
         elif (
-            needed_labor > len(firm.hr.employees)
-            and len(firm.hr.employees) < self.config_module.FIRM_MAX_EMPLOYEES
+            needed_labor > firm_state.employee_count
+            and firm_state.employee_count < self.config_module.FIRM_MAX_EMPLOYEES
         ):
             # WO-098 Fix: Use correct market ID "labor"
-            order = Order(firm.id, "BUY", "labor", 1.0, offered_wage, "labor")
+            order = Order(firm_state.id, "BUY", "labor", 1.0, offered_wage, "labor")
             orders.append(order)
             self.logger.info(
                 f"Planning to BUY labor for dynamic wage {offered_wage:.2f}",
                 extra={
                     "tick": current_tick,
-                    "agent_id": firm.id,
+                    "agent_id": firm_state.id,
                     "tags": ["hiring", "dynamic_wage"],
                 },
             )
 
         return orders
 
-    def _calculate_needed_labor(self, firm: Firm) -> float:
+    def _calculate_needed_labor(self, firm_state: FirmStateDTO) -> float:
         """
         생산 목표 달성에 필요한 총 노동력을 계산한다.
         """
-        item_id = firm.specialization
-        target_quantity = firm.production_target
-        current_inventory = firm.inventory.get(item_id, 0)
+        item_id = firm_state.specialization
+        target_quantity = firm_state.production_target
+        current_inventory = firm_state.inventory.get(item_id, 0)
         needed_production = max(0, target_quantity - current_inventory)
-        if firm.productivity_factor <= 0:
+        if firm_state.productivity_factor <= 0:
             return 999999.0 # Impossible to produce without productivity
 
-        needed_labor = needed_production / firm.productivity_factor
+        needed_labor = needed_production / firm_state.productivity_factor
         return needed_labor
 
-    def _calculate_dynamic_wage_offer(self, firm: Firm) -> float:
+    def _calculate_dynamic_wage_offer(self, firm_state: FirmStateDTO) -> float:
         """기업의 수익성 이력을 바탕으로 동적인 임금 제시액을 계산합니다."""
-        # SoC Refactor: use finance.profit_history
-        if not firm.finance.profit_history:
+        # SoC Refactor: use firm_state.profit_history
+        if not firm_state.profit_history:
             return self.config_module.BASE_WAGE
 
-        avg_profit = sum(firm.finance.profit_history) / len(firm.finance.profit_history)
+        avg_profit = sum(firm_state.profit_history) / len(firm_state.profit_history)
         profit_based_premium = avg_profit / (self.config_module.BASE_WAGE * 10.0)
         wage_premium = max(
             0,

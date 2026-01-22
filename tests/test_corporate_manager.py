@@ -1,9 +1,9 @@
 
 import pytest
 from unittest.mock import MagicMock
-from simulation.firms import Firm
 from simulation.decisions.corporate_manager import CorporateManager
 from simulation.dtos import DecisionContext
+from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.schemas import FirmActionVector
 from simulation.models import Order
 from simulation.ai.enums import Personality
@@ -14,120 +14,73 @@ class MockConfig:
     DIVIDEND_RATE_MAX = 0.5
     MAX_SELL_QUANTITY = 100
     LABOR_MARKET_MIN_WAGE = 10.0
-    GOODS = {"food": {"production_cost": 10.0}}
+    GOODS = {"food": {"production_cost": 10.0, "inputs": {}}}
     # Added for automation
     AUTOMATION_COST_PER_PCT = 1000.0
     FIRM_SAFETY_MARGIN = 2000.0
     AUTOMATION_TAX_RATE = 0.05
     SEVERANCE_PAY_WEEKS = 4
+    # SEO
+    STARTUP_COST = 30000.0
+    SEO_TRIGGER_RATIO = 0.5
+    SEO_MAX_SELL_RATIO = 0.10
+    LABOR_ALPHA = 0.7
+    AUTOMATION_LABOR_REDUCTION = 0.5
+    DIVIDEND_SUSPENSION_LOSS_TICKS = 3
 
 @pytest.fixture
-def firm_mock(golden_firms):
-    if not golden_firms:
-        pytest.skip("Golden firms fixture is empty or failed to load.")
-    firm = golden_firms[0]
-
-    # Initialize BaseAgent fields
-    firm.assets = 10000.0 # Default assets
-
-    # --- SoC Components Mocking ---
-    firm.finance = MagicMock()
-    firm.finance.revenue_this_turn = 200.0
-    firm.finance.last_sales_volume = 1.0
-    firm.finance.last_revenue = 200.0
-
-    # Side effects to simulate real behavior on mock firm assets
-    def invest_side_effect(amount):
-        firm.assets -= amount
-        return True
-
-    def pay_tax_side_effect(amount, *args, **kwargs):
-        firm.assets -= amount
-        return True
-
-    def pay_severance_side_effect(emp, amount):
-        firm.assets -= amount
-        # emp is a mock, so emp.assets update is mocked
-        if hasattr(emp, 'assets'):
-             emp.assets += amount
-        return True
-
-    def set_dividend_rate_side_effect(rate):
-        firm.dividend_rate = rate
-
-    firm.finance.invest_in_automation.side_effect = invest_side_effect
-    firm.finance.invest_in_rd.side_effect = invest_side_effect
-    firm.finance.invest_in_capex.side_effect = invest_side_effect
-    firm.finance.pay_severance.side_effect = pay_severance_side_effect
-    firm.finance.pay_ad_hoc_tax.side_effect = pay_tax_side_effect
-    firm.finance.set_dividend_rate.side_effect = set_dividend_rate_side_effect
-    firm.finance.get_book_value_per_share.return_value = 10.0 # Default BPS
-    firm.finance.calculate_altman_z_score.return_value = 3.0 # Default safe Z-score
-    firm.finance.consecutive_loss_turns = 0
-
-    firm.hr = MagicMock()
-    firm.hr.employees = []
-    firm.hr.employee_wages = {}
-
-    firm.production = MagicMock()
-    firm.production.set_automation_level.side_effect = lambda x: setattr(firm, 'automation_level', x)
-    firm.production.add_capital.side_effect = lambda x: setattr(firm, 'capital_stock', firm.capital_stock + x)
-
-    firm.sales = MagicMock()
-    firm.sales.set_price.side_effect = lambda item, price: firm.last_prices.update({item: price})
-
-    # --- Firm Attributes ---
-    firm.production_target = 100
-    firm.productivity_factor = 1.0
-    firm.specialization = "food"
-    if not isinstance(firm.inventory, dict):
-        firm.inventory = {"food": 50}
-    else:
-         firm.inventory["food"] = 50
-
-    firm.base_quality = 1.0
-    firm.research_history = {"total_spent": 0.0, "success_count": 0, "last_success_tick": -1}
-    firm.capital_stock = 100.0
-    firm.dividend_rate = 0.1
-    firm.total_shares = 100
-    firm.treasury_shares = 0
-    firm.last_prices = {"food": 10.0}
-    firm.personality = Personality.BALANCED
-
-    firm.system2_planner = None
-    firm.consecutive_loss_ticks_for_bankruptcy_threshold = 5
-    firm.automation_level = 0.0
-    firm.total_debt = 0.0
-    firm.bond_obligations = []
-
-    if not hasattr(firm, 'decision_engine'):
-        firm.decision_engine = MagicMock()
-
-    mock_bank = MagicMock()
-    mock_bank.get_debt_summary.return_value = {'total_principal': 0.0}
-
-    mock_loan_market = MagicMock()
-    mock_loan_market.bank = mock_bank
-
-    firm.decision_engine.loan_market = mock_loan_market
-
-    return firm
+def firm_state_mock():
+    # Construct a DTO directly
+    return FirmStateDTO(
+        id=100,
+        assets=10000.0,
+        is_active=True,
+        specialization="food",
+        inventory={"food": 50},
+        needs={},
+        current_production=0.0,
+        production_target=100.0,
+        productivity_factor=1.0,
+        employee_count=3,
+        employees=[1, 2, 3],
+        employee_wages={1: 10.0, 2: 10.0, 3: 10.0},
+        profit_history=[10.0, 10.0],
+        last_prices={"food": 10.0},
+        inventory_quality={"food": 1.0},
+        input_inventory={},
+        last_revenue=200.0,
+        last_sales_volume=1.0,
+        revenue_this_turn=200.0,
+        expenses_this_tick=100.0,
+        consecutive_loss_turns=0,
+        total_shares=100.0,
+        treasury_shares=0.0,
+        dividend_rate=0.1,
+        capital_stock=100.0,
+        total_debt=0.0,
+        personality=Personality.BALANCED,
+        base_quality=1.0,
+        brand_awareness=0.0,
+        perceived_quality=0.0,
+        automation_level=0.0
+    )
 
 @pytest.fixture
-def context_mock(firm_mock):
+def context_mock(firm_state_mock):
     context = MagicMock(spec=DecisionContext)
-    context.firm = firm_mock
+    context.firm_state = firm_state_mock
     context.current_time = 1
     context.market_data = {}
     context.markets = {
         "food": MagicMock(),
-        "labor": MagicMock()
+        "labor": MagicMock(),
+        "stock_market": MagicMock() # For SEO
     }
     context.reflux_system = MagicMock()
     context.government = MagicMock()
     return context
 
-def test_rd_logic(firm_mock, context_mock, monkeypatch):
+def test_rd_logic(firm_state_mock, context_mock):
     manager = CorporateManager(MockConfig())
     # Aggressiveness 1.0 -> 20% of Revenue
     vector = FirmActionVector(
@@ -139,54 +92,65 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
         sales_aggressiveness=0.0
     )
 
-    # Need enough assets to pass safety margin (default 2000)
-    firm_mock.assets = 10000.0
-    firm_mock.finance.revenue_this_turn = 1000.0 # Set on finance
+    # Revenue 1000 needed to trigger
+    firm_state_mock.revenue_this_turn = 1000.0
     expected_budget = 1000.0 * 0.2 # 200
 
-    # Force success
-    monkeypatch.setattr("random.random", lambda: 0.0)
+    guidance = {}
+    orders = manager.realize_ceo_actions(firm_state_mock, context_mock, vector, guidance)
 
-    initial_quality = firm_mock.base_quality
-    initial_prod = firm_mock.productivity_factor
+    rd_orders = [o for o in orders if o.order_type == "INVEST_RD"]
+    assert len(rd_orders) > 0
+    assert rd_orders[0].quantity == pytest.approx(expected_budget)
 
-    manager.realize_ceo_actions(firm_mock, context_mock, vector)
-
-    assert firm_mock.assets == 10000.0 - expected_budget
-    assert firm_mock.base_quality == pytest.approx(initial_quality + 0.05)
-    assert firm_mock.productivity_factor == pytest.approx(initial_prod * 1.05)
-
-def test_dividend_logic(firm_mock, context_mock):
+def test_dividend_logic(firm_state_mock, context_mock):
     manager = CorporateManager(MockConfig())
     vector = FirmActionVector(dividend_aggressiveness=1.0) # Max rate 0.5
 
-    manager.realize_ceo_actions(firm_mock, context_mock, vector)
+    guidance = {}
+    orders = manager.realize_ceo_actions(firm_state_mock, context_mock, vector, guidance)
 
-    assert firm_mock.dividend_rate == 0.5
+    div_orders = [o for o in orders if o.order_type == "SET_DIVIDEND_RATE"]
+    assert len(div_orders) > 0
+    assert div_orders[0].price == 0.5
 
-def test_hiring_logic(firm_mock, context_mock):
+def test_hiring_logic(firm_state_mock, context_mock):
     manager = CorporateManager(MockConfig())
-    firm_mock.production_target = 100
-    # firm.inventory is a dict, so updating it works
-    firm_mock.inventory["food"] = 80 # Gap 20
-    firm_mock.productivity_factor = 10.0 # Need 2 workers
+    firm_state_mock.production_target = 100
+    firm_state_mock.inventory = {"food": 80} # Gap 20
+    firm_state_mock.productivity_factor = 10.0 # Need 2 workers
+    # Currently 3 employees. 3 > 2. Should Fire 1.
+
+    # Wait, original test expected hiring.
+    # Original test setup: firm_mock.productivity_factor = 10.0.
+    # Gap 20. Need = 20 / 10 = 2.
+    # Employees = 3.
+    # So Excess = 1. Firing!
+
+    # Let's adjust mock to force hiring.
+    firm_state_mock.employee_count = 1
+    firm_state_mock.employees = [1]
+    # Reduce capital to avoid Cobb-Douglas suppression of labor demand
+    firm_state_mock.capital_stock = 1.0
 
     vector = FirmActionVector(hiring_aggressiveness=0.5) # Market wage
 
-    orders = manager.realize_ceo_actions(firm_mock, context_mock, vector)
+    guidance = {}
+    orders = manager.realize_ceo_actions(firm_state_mock, context_mock, vector, guidance)
 
     hiring_orders = [o for o in orders if o.order_type == "BUY" and o.item_id == "labor"]
     assert len(hiring_orders) > 0
     assert hiring_orders[0].price >= 10.0
 
-def test_debt_logic_borrow(firm_mock, context_mock):
+def test_debt_logic_borrow(firm_state_mock, context_mock):
     manager = CorporateManager(MockConfig())
-    firm_mock.assets = 1000.0
-    firm_mock.total_debt = 0.0
+    firm_state_mock.assets = 1000.0
+    firm_state_mock.total_debt = 0.0
 
     vector = FirmActionVector(debt_aggressiveness=0.5)
 
-    orders = manager.realize_ceo_actions(firm_mock, context_mock, vector)
+    guidance = {}
+    orders = manager.realize_ceo_actions(firm_state_mock, context_mock, vector, guidance)
 
     loan_reqs = [o for o in orders if o.order_type == "LOAN_REQUEST"]
     assert len(loan_reqs) > 0

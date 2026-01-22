@@ -396,11 +396,33 @@ class TickScheduler:
         state.ma_manager.process_market_exits_and_entries(state.time)
 
         # 9. Cleanup Inactive Firms
-        active_firms_count_before = len(state.firms)
-        state.firms = [f for f in state.firms if f.is_active]
-
-        if len(state.firms) < active_firms_count_before:
-            state.logger.info(f"CLEANUP | Removed {active_firms_count_before - len(state.firms)} inactive firms from execution list.")
+        # WO-107: Delegated to LifecycleManager
+        if state.lifecycle_manager:
+            # We need to wrap state in SimulationState or pass compatible object?
+            # LifecycleManager.prune_inactive_agents expects SimulationState.
+            # We can reuse sim_state but it was created earlier and might be stale?
+            # sim_state.firms is reference to state.firms.
+            # But earlier phases might have appended to state.firms? (e.g. entrepreneurship)
+            # Yes, spawning adds to state.firms.
+            # Does sim_state.firms update automatically? No, lists are mutable, but if state.firms was REPLACED, then no.
+            # But AgentLifecycleManager executes in-place modification `state.firms[:]`.
+            # However, Step 9 in TickScheduler accessed `state.firms`.
+            # Let's create a temporary DTO wrapper or just pass state if we duck type?
+            # LifecycleManager types state as SimulationState. WorldState has compatible fields?
+            # WorldState has `firms`. SimulationState has `firms`.
+            # But type hint says `SimulationState`.
+            # Let's just create a light wrapper or cast.
+            # Actually, `sim_state` variable from earlier is still in scope?
+            # Yes. But is it valid?
+            # sim_state was created before _phase_decisions.
+            # Since then, firms list object content changed, but the object itself?
+            # If `state.firms` was replaced (e.g. `state.firms = ...`), `sim_state.firms` points to old list.
+            # `state.firms` was modified in-place by `_phase_lifecycle` (which calls `lifecycle_manager.execute`).
+            # So `sim_state.firms` should be valid.
+            state.lifecycle_manager.prune_inactive_agents(sim_state)
+        else:
+            # Fallback
+            state.firms = [f for f in state.firms if f.is_active]
 
         # Phase 5: Finalize Government Stats
         state.government.finalize_tick(state.time)

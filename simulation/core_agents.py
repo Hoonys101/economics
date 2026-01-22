@@ -669,7 +669,7 @@ class Household(BaseAgent, ILearningAgent):
 
         # Context for Decision Engine (Pure Logic)
         context = DecisionContext(
-            household=self, # COMPATIBILITY RESTORED: Required for RuleBasedHouseholdDecisionEngine
+            state=state_dto,
             markets=markets,
             goods_data=goods_data,
             market_data=market_data,
@@ -677,17 +677,28 @@ class Household(BaseAgent, ILearningAgent):
             government=government,
             stress_scenario_config=stress_scenario_config
         )
-        # Hack: DecisionContext currently expects 'household' but we want to use 'state' in new engine.
-        # We need to modify DecisionContext to accept 'state' or monkey-patch it here if we can't change DTO yet.
-        # But per plan, we ARE changing DTO. So we will set `context.state = state_dto`.
-        context.state = state_dto # Dynamically attach DTO
 
         # 2. Call Decision Engine
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
 
+        # 2.5 Filter Internal Orders
+        external_orders = []
+        internal_orders = []
+        for order in orders:
+            if order.market_id == "internal":
+                internal_orders.append(order)
+            else:
+                external_orders.append(order)
+
+        # Handle internal orders
+        for order in internal_orders:
+            if order.order_type == "UPDATE_CONFIG":
+                if order.item_id == "wage_modifier":
+                    self.wage_modifier = order.price
+
         # 3. Orchestrate/Refine Orders via EconComponent
         econ_context = EconContextDTO(markets, market_data, current_time)
-        refined_orders = self.econ_component.orchestrate_economic_decisions(econ_context, orders, stress_scenario_config)
+        refined_orders = self.econ_component.orchestrate_economic_decisions(econ_context, external_orders, stress_scenario_config)
 
         return refined_orders, chosen_tactic_tuple
 

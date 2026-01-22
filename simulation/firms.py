@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional, override, TYPE_CHECKING
 import logging
 import copy
 import math
+import random
 
 from simulation.models import Order, Transaction
 from simulation.brands.brand_manager import BrandManager
@@ -12,6 +13,7 @@ from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
+from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 
 # SoC Refactor
@@ -299,6 +301,40 @@ class Firm(BaseAgent, ILearningAgent):
         """AI 학습을 위한 이전 상태 데이터를 반환합니다."""
         return getattr(self, "pre_state_snapshot", self.get_agent_data())
 
+    def create_state_dto(self) -> FirmStateDTO:
+        return FirmStateDTO(
+            id=self.id,
+            assets=self.assets,
+            is_active=self.is_active,
+            specialization=self.specialization,
+            inventory=self.inventory.copy(),
+            needs=self.needs.copy(),
+            current_production=self.current_production,
+            production_target=self.production_target,
+            productivity_factor=self.productivity_factor,
+            employee_count=len(self.hr.employees),
+            employees=[emp.id for emp in self.hr.employees],
+            employee_wages=self.hr.employee_wages.copy(),
+            profit_history=list(self.finance.profit_history),
+            last_prices=self.last_prices.copy(),
+            inventory_quality=self.inventory_quality.copy(),
+            input_inventory=self.input_inventory.copy(),
+            last_revenue=self.finance.last_revenue,
+            last_sales_volume=self.finance.last_sales_volume,
+            revenue_this_turn=self.revenue_this_turn,
+            expenses_this_tick=self.expenses_this_tick,
+            consecutive_loss_turns=self.finance.consecutive_loss_turns,
+            total_shares=self.total_shares,
+            treasury_shares=self.treasury_shares,
+            dividend_rate=self.dividend_rate,
+            capital_stock=self.capital_stock,
+            total_debt=getattr(self, "total_debt", 0.0),
+            personality=self.personality,
+            base_quality=self.base_quality,
+            brand_awareness=self.brand_manager.brand_awareness,
+            perceived_quality=self.brand_manager.perceived_quality,
+            automation_level=self.automation_level
+        )
 
     @override
     def make_decision(
@@ -315,8 +351,12 @@ class Firm(BaseAgent, ILearningAgent):
                 "is_active_before": self.is_active,
             },
         )
+
+        # WO-107: Create DTO
+        firm_state_dto = self.create_state_dto()
+
         context = DecisionContext(
-            firm=self,
+            firm_state=firm_state_dto,
             markets=markets,
             goods_data=goods_data,
             market_data=market_data,
@@ -325,23 +365,102 @@ class Firm(BaseAgent, ILearningAgent):
             reflux_system=reflux_system,
             stress_scenario_config=stress_scenario_config,
         )
-        decisions, tactic = self.decision_engine.make_decisions(context)
+
+        all_orders, tactic = self.decision_engine.make_decisions(context)
+
+        external_orders = []
+        internal_orders = []
+
+        for order in all_orders:
+            if order.market_id == "internal":
+                internal_orders.append(order)
+            else:
+                external_orders.append(order)
+
+        # Process Internal Orders
+        self._process_internal_orders(internal_orders, current_time, government)
 
         # WO-056: Shadow Mode Calculation
         self._calculate_invisible_hand_price(markets, current_time)
 
         # SoC Refactor
         self.logger.debug(
-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
+            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
             extra={
                 **log_extra,
                 "assets_after": self.assets,
                 "num_employees_after": len(self.hr.employees),
                 "is_active_after": self.is_active,
-                "num_decisions": len(decisions),
+                "num_decisions": len(external_orders),
             },
         )
-        return decisions, tactic
+        return external_orders, tactic
+
+    def _process_internal_orders(self, orders: List[Order], current_time: int, government: Optional[Any] = None) -> None:
+        """Handles state modification orders from the stateless decision engine."""
+        for order in orders:
+            if order.order_type == "SET_PRODUCTION_TARGET":
+                self.production_target = order.quantity
+            elif order.order_type == "SET_PRICE":
+                self.sales.set_price(order.item_id, order.price)
+            elif order.order_type == "SET_DIVIDEND_RATE":
+                self.finance.set_dividend_rate(order.price)
+            elif order.order_type == "INVEST_AUTOMATION":
+                amount = order.quantity
+                if self.finance.invest_in_automation(amount):
+                    # Logic from CorporateManager
+                    cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
+                    gained_pct = amount / cost_per_pct
+                    gained_a = gained_pct / 100.0
+                    self.production.set_automation_level(self.automation_level + gained_a)
+
+                    # Tax Logic
+                    automation_tax_rate = getattr(self.config_module, "AUTOMATION_TAX_RATE", 0.05)
+                    tax_amount = amount * automation_tax_rate
+                    if tax_amount > 0 and government:
+                        self.finance.pay_ad_hoc_tax(tax_amount, "automation_tax", government, current_time)
+
+            elif order.order_type == "INVEST_RD":
+                amount = order.quantity
+                if self.finance.invest_in_rd(amount):
+                    # Logic from CorporateManager
+                    self.research_history["total_spent"] += amount
+                    denominator = max(self.finance.revenue_this_turn * 0.2, 100.0)
+                    base_chance = min(1.0, amount / denominator)
+
+                    avg_skill = 1.0
+                    if self.hr.employees:
+                        avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in self.hr.employees) / len(self.hr.employees)
+
+                    success_chance = base_chance * avg_skill
+                    if random.random() < success_chance:
+                        self.research_history["success_count"] += 1
+                        self.research_history["last_success_tick"] = current_time
+                        self.base_quality += 0.05
+                        self.productivity_factor *= 1.05
+                        self.logger.info(f"R&D SUCCESS | Quality {self.base_quality:.2f}, Prod {self.productivity_factor:.2f}")
+                    else:
+                        self.logger.info(f"R&D FAIL | Chance {success_chance:.1%}")
+
+            elif order.order_type == "INVEST_CAPEX":
+                amount = order.quantity
+                if self.finance.invest_in_capex(amount):
+                    efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
+                    added_capital = amount * efficiency
+                    self.production.add_capital(added_capital)
+
+            elif order.order_type == "FIRE":
+                # item_id stores emp_id as string
+                try:
+                    emp_id = int(order.item_id)
+                    severance = order.price
+                    # Find employee
+                    emp = next((e for e in self.hr.employees if e.id == emp_id), None)
+                    if emp:
+                        if self.finance.pay_severance(emp, severance):
+                            emp.quit()
+                except ValueError:
+                    self.logger.error(f"Invalid employee ID for FIRE order: {order.item_id}")
 
     def _calculate_invisible_hand_price(self, markets: Dict[str, Any], current_tick: int) -> None:
         """

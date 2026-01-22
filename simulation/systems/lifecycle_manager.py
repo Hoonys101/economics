@@ -156,3 +156,18 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             firm.hr.employees = [
                 emp for emp in firm.hr.employees if emp.is_active and emp.id in state.agents
             ]
+
+    def prune_inactive_agents(self, state: SimulationState) -> int:
+        """
+        Removes inactive agents from the main execution lists.
+        Returns the number of firms removed.
+        """
+        initial_firms = len(state.firms)
+        # In-place modification to propagate to WorldState
+        state.firms[:] = [f for f in state.firms if f.is_active]
+        removed = initial_firms - len(state.firms)
+
+        if removed > 0:
+            self.logger.info(f"CLEANUP | Removed {removed} inactive firms from execution list.")
+
+        return removed
