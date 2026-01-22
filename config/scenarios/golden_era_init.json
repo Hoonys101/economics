@@ -1,0 +1,15 @@
+{
+  "scenario_name": "golden_era_init",
+  "description": "Baseline state after Phase 23 success. Malthusian Trap broken, high productivity, stable growth.",
+  "start_tick": 0,
+  "is_active": true,
+  "parameters": {
+    "food_tfp_multiplier": 3.0,
+    "base_interest_rate": 0.02,
+    "tax_rate_corporate": 0.15,
+    "tax_rate_income": 0.10,
+    "innovation_weight": 1.5,
+    "newborn_engine_type": "RULE_BASED",
+    "firm_decision_mode": "SEQUENTIAL"
+  }
+}

@@ -1,10 +1,5 @@
 # Technical Debt Ledger (기술부채 관리대장)
 
-## 🔴 BLOCKER (진행 불가 - 즉시 해결 필요)
-
-| ID | Date | Description | Impact | Status |
-|---|---|---|---|---|
-| TD-085 | 2026-01-22 | Decision Mutual Exclusivity Bug (StandaloneRuleBasedFirmDecisionEngine) | Firms fail to hire labor when expanding production | **RESOLVED** (WO-110) |
 
 ## 🟡 DEFERRED (Phase 27+ 상환 예정)
 
@@ -21,7 +16,6 @@
 | TD-078 | 2026-01-22 | `DecisionContext` Leaky Abstraction | Mandatory DTO-only snapshots for all engines | Integrity Risk | **PENDING** |
 | TD-079 | 2026-01-22 | `TickScheduler` God Class Bloat | Decompose into `Orchestrator` and `Activator` | Maintainability | **PENDING** |
 | TD-084 | 2026-01-22 | DTO Schema Gap vs Specs | Expand DTO fields to include all macro indicators | Data Inconsistency | **PENDING** |
-| TD-086 | 2026-01-22 | AI Agent Infant Survival & Autonomy Failure | Migrate from Rule-Based fallback to Pre-trained model & Child-Independence logic | Age-based decision gap | **TEMPORARY_FIX** |
 
 
 ---
@@ -29,6 +23,8 @@
 ## ✅ Resolved Debts (해결된 부채)
 | ID | Date | Description | Solution | Impact | Status |
 |---|---|---|---|---|---|
+| TD-085 | 2026-01-22 | Firm Decision Mutual Exclusivity | Sequential processing in Firm Engine | GDP Ceiling | **RESOLVED** |
+| TD-086 | 2026-01-22 | AI Agent Infant Survival | Configurable Engine Selection (Mainstreamed) | Demographic Arch | **RESOLVED** |
 | TD-065 | 2026-01-20 | God Class `Household` Refactoring | Decomposed into `Bio`, `Econ`, `Social` components + Facade | High Coupling | **RESOLVED** (PR Merged) |
 | TD-066 | 2026-01-20 | God Class `Simulation` Refactoring | Decomposed into `WorldState`, `TickScheduler`, `ActionProcessor` | SRP Violation | **RESOLVED** (PR Merged) |
 | TD-069 | 2026-01-20 | Doc Placeholders (`WO-XXX`) | Replaced with concrete examples in Manuals | Confusing Documentation | **RESOLVED** (Direct) |
