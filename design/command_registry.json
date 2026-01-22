@@ -1,8 +1,20 @@
 {
-  "jules_phase23_verify": {
+  "jules_fix_engine": {
     "command": "create",
-    "title": "WO-109-Phase23-Verification",
-    "instruction": "design/work_orders/WO-109-Phase23-Verification.md 명세를 엄격히 준수하여 작업하라. | 1. scripts/verify_phase23_harvest.py를 실행하여 3대 지표(식량 가격, 인구, 엥겔 계수)를 측정하라. | 2. 실패 시 원인 분석을 수행하라: 버그인지, 창발적 현상인지, 파라미터 문제인지 가설을 세우고 증거를 수집하라. | 3. design/gemini_output/report_phase23_verification.md 보고서를 작성하여 판정 결과와 원인 분석을 상세히 기록하라.",
+    "title": "WO-110-Firm-Logic-Fix",
+    "instruction": "design/work_orders/WO-110-Firm-Logic-Sequential.md 명세에 따라 기업 환경의 의사결정 로직을 순차 실행 방식으로 리팩토링하라. 기업이 생산 계획을 세우는 동시에 고용도 할 수 있게 만들어야 경제 정체가 풀린다.",
+    "wait": true
+  },
+  "jules_update_ledger": {
+    "command": "create",
+    "title": "DOC-Update-Ledger",
+    "instruction": "오늘 발견된 '의사결정 상호 배타성 버그'를 TD-085로 TECH_DEBT_LEDGER.md에 등록하라. 또한 오늘 머지된 WO-106, 107, 108 항목을 RESOLVED로 업데이트하고, 전체 프로젝트 상태(project_status.md)를 '엔진 수리 단계'로 갱신하라.",
+    "wait": true
+  },
+  "jules_health_check": {
+    "command": "create",
+    "title": "AUDIT-Full-Sync-Check",
+    "instruction": "최신 main 브랜치의 경제적/구조적 무결성을 종합 검사하라. WO-106~108 머지 후 발생했을 수 있는 사이드 이펙트를 점검하고, 특히 자산 증발(Zero-Sum)이 여전히 0.1% 이하로 유지되는지 scripts/audit_zero_sum.py로 최종 확인하라.",
     "wait": true
   }
 }
