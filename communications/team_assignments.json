@@ -81,6 +81,10 @@
       "12689451847182208697": {
         "title": "WO-108-DTO-Parity",
         "initial_mission": "디자인 폴더의 WO-108-DTO-Parity-Alignment.md 명세서에 따라 데이터 정합성을 맞추라. | 1. HouseholdStateDTO 및 FirmStateDTO에 명세서상 누락된 필드(perceived_price, automation_level 등)를 모두 추가할 것. 2. 에이전트의 get_state_dto() 메서드가 확장된 필드들을 정확히 반환하도록 수정할 것. 3. 감사 리포트(audit_parity_v2.md)의 모든 불일치 항목을 해소하여 정합성 점수를 극대화하라."
+      },
+      "11930535231530019039": {
+        "title": "WO-108-DTO-Alignment-v3",
+        "initial_mission": "최신 'main' 브랜치에서 시작하여 'design/work_orders/WO-108-DTO-Parity-Alignment.md' 사양만 정확히 구현하라. | [절대 엄수 지침] 1. 경제 무결성 로직(CentralBank, ImmigrationManager, LifecycleManager)은 절대 건드리지 마라. 2. 오직 DTO 클래스 필드 추가와 에이전트의 get_state_dto() 메서드 확장만 수행하라. 3. 이전 작업에서 훼손된 'design/project_structure.md'가 있다면 메인 브랜치 내용으로 온전히 유지하라. 4. 작업 후 'scripts/audit_zero_sum.py'를 실행하여 경제 무결성이 파괴되지 않았음을 증명하라."
       }
     },
     "completed_sessions": {
