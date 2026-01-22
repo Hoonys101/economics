@@ -21,7 +21,7 @@
 | TD-078 | 2026-01-22 | `DecisionContext` Leaky Abstraction | Mandatory DTO-only snapshots for all engines | Integrity Risk | **PENDING** |
 | TD-079 | 2026-01-22 | `TickScheduler` God Class Bloat | Decompose into `Orchestrator` and `Activator` | Maintainability | **PENDING** |
 | TD-084 | 2026-01-22 | DTO Schema Gap vs Specs | Expand DTO fields to include all macro indicators | Data Inconsistency | **PENDING** |
-| TD-086 | 2026-01-22 | AI Agent Infant Survival Failure | Migrate from Monkey Patch to Configurable Engine Selection Strategy in DemographicManager | Verification requires Hack | **TEMPORARY_FIX** |
+| TD-086 | 2026-01-22 | AI Agent Infant Survival & Autonomy Failure | Migrate from Rule-Based fallback to Pre-trained model & Child-Independence logic | Age-based decision gap | **TEMPORARY_FIX** |
 
 
 ---
