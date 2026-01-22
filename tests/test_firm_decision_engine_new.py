@@ -98,6 +98,9 @@ def mock_firm(mock_config):
     firm.research_history = {"total_spent": 0.0, "success_count": 0, "last_success_tick": 0}
     firm.base_quality = 1.0
     firm.sales = Mock()
+    firm.production = Mock() # Add production mock
+    firm.production.set_automation_level = Mock()
+    firm.production.add_capital = Mock()
     firm.automation_level = 0.0
     firm.capital_stock = 100.0
     firm.system2_planner = Mock()
@@ -149,7 +152,7 @@ class TestFirmDecisionEngine:
 
         context = DecisionContext(
             firm=mock_firm,
-            markets={},
+            markets={"food": Mock()},
             goods_data=[],
             market_data={},
             current_time=1,
@@ -171,7 +174,7 @@ class TestFirmDecisionEngine:
 
         context = DecisionContext(
             firm=mock_firm,
-            markets={},
+            markets={"food": Mock()},
             goods_data=[],
             market_data={},
             current_time=1,
@@ -193,7 +196,7 @@ class TestFirmDecisionEngine:
 
         context = DecisionContext(
             firm=mock_firm,
-            markets={},
+            markets={"food": Mock()},
             goods_data=[],
             market_data={},
             current_time=1,
@@ -211,7 +214,7 @@ class TestFirmDecisionEngine:
         mock_firm.production_target = mock_config.FIRM_MIN_PRODUCTION_TARGET * 0.5
         context = DecisionContext(
             firm=mock_firm,
-            markets={},
+            markets={"food": Mock()},
             goods_data=[],
             market_data={},
             current_time=1,
@@ -300,23 +303,6 @@ class TestFirmDecisionEngine:
         )
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
-        # CorporateManager calls firm.sales.post_ask, which presumably generates an Order?
-        # NO. realize_ceo_actions returns orders?
-        # Check CorporateManager.realize_ceo_actions:
-        # returns orders.
-        # _manage_pricing returns None (it calls post_ask).
-        # Wait, if _manage_pricing returns None, where is the order?
-        # Firm.sales.post_ask should register the order in the market?
-        # OR it should return an order?
-
-        # If CorporateManager uses side-effects for sales (post_ask), then `orders` list might be empty for sales?
-        # Let's check CorporateManager again.
-        # sales_order = self._manage_pricing(...)
-        # return None.
-
-        # So orders list does NOT contain sell orders if they are handled via `post_ask`.
-        # This test should verifying side effect on mock_firm.sales.post_ask.
-
         mock_firm.sales.post_ask.assert_called()
         args, _ = mock_firm.sales.post_ask.call_args
         item_id, price, qty, market, tick = args
@@ -324,3 +310,217 @@ class TestFirmDecisionEngine:
         assert qty == 90.0
         assert market is not None
 
+    def test_make_decisions_hires_labor(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        """Verify BUY orders for labor when understaffed."""
+        # 1. Setup Understaffed Firm
+        # Target = 100. Gap = 100.
+        # Production Fxn: L^alpha * K^beta.
+        # Assume high gap to force hiring.
+        mock_firm.production_target = 100.0
+        mock_firm.inventory["food"] = 0.0
+        mock_firm.hr.employees = [] # 0 Employees
+
+        # 2. Aggressiveness for Hiring = 0.8 (High)
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+            hiring_aggressiveness=0.8,
+            sales_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"labor": {"avg_wage": 10.0}},
+            current_time=1,
+            government=None,
+        )
+
+        # 3. Execution
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
+
+        # 4. Verification
+        labor_orders = [o for o in orders if o.item_id == "labor" and o.order_type == "BUY"]
+        assert len(labor_orders) > 0
+        assert labor_orders[0].price > 10.0 # High aggressiveness bids up wage
+        assert labor_orders[0].quantity > 0
+
+    def test_make_decisions_does_not_hire_when_full(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        """Verify no labor orders when employees >= needed."""
+        # 1. Setup Full Firm
+        mock_firm.production_target = 10.0
+        mock_firm.inventory["food"] = 0.0
+        # Assume 10 employees is enough for target 10
+        mock_firm.hr.employees = [Mock(id=i, labor_skill=1.0) for i in range(100)]
+
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+            hiring_aggressiveness=0.5,
+            sales_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"labor": {"avg_wage": 10.0}},
+            current_time=1,
+            government=None,
+        )
+
+        orders, _ = firm_decision_engine_instance.make_decisions(context)
+
+        labor_orders = [o for o in orders if o.item_id == "labor" and o.order_type == "BUY"]
+        assert len(labor_orders) == 0
+
+    def test_make_decisions_fires_excess_labor(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        """Verify emp.quit() is called via finance.pay_severance when overstaffed."""
+        # 1. Setup Overstaffed Firm
+        mock_firm.production_target = 0.0 # No production needed
+        mock_firm.inventory["food"] = 100.0 # Full inventory
+        # 2 Employees, 1 Needed (Skeleton Crew)
+        employee1 = Mock(id=1, labor_skill=1.0)
+        employee1.quit = Mock()
+        employee2 = Mock(id=2, labor_skill=1.0)
+        employee2.quit = Mock()
+
+        mock_firm.hr.employees = [employee1, employee2]
+        mock_firm.hr.employee_wages = {1: 10.0, 2: 10.0}
+
+        # Mock Finance to allow severance
+        mock_firm.finance.pay_severance.return_value = True
+
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+            hiring_aggressiveness=0.5,
+            sales_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={"labor": {"avg_wage": 10.0}},
+            current_time=1,
+            government=None,
+        )
+
+        firm_decision_engine_instance.make_decisions(context)
+
+        # 2. Verify Firing
+        # FIFO firing: employee1 should be fired
+        employee1.quit.assert_called_once()
+        mock_firm.finance.pay_severance.assert_called_once()
+
+    def test_sales_aggressiveness_impact_on_price(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        """Verify that sales aggressiveness inversely affects price."""
+        mock_firm.inventory["food"] = 100.0
+        mock_firm.last_prices["food"] = 10.0
+        # No decay (100 vs 100) if target matched.
+        # But we need markets.
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={"food": Mock()},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+            government=None,
+        )
+
+        # 1. Low Aggressiveness (0.1) -> High Margin -> Higher Price
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(sales_aggressiveness=0.1, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5)
+        firm_decision_engine_instance.make_decisions(context)
+        args_low_agg, _ = mock_firm.sales.post_ask.call_args
+        price_low_agg = args_low_agg[1]
+
+        # 2. High Aggressiveness (0.9) -> High Volume -> Lower Price
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(sales_aggressiveness=0.9, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5)
+        firm_decision_engine_instance.make_decisions(context)
+        args_high_agg, _ = mock_firm.sales.post_ask.call_args
+        price_high_agg = args_high_agg[1]
+
+        assert price_low_agg > price_high_agg
+
+    def test_rd_investment(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        """Verify R&D investment when aggressiveness is high."""
+        # Setup High Cash
+        mock_firm.assets = 100000.0
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+            rd_aggressiveness=0.9,
+            sales_aggressiveness=0.5, hiring_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+            government=None,
+        )
+
+        firm_decision_engine_instance.make_decisions(context)
+
+        mock_firm.finance.invest_in_rd.assert_called()
+
+    def test_capex_investment(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        """Verify Capex investment when aggressiveness is high."""
+        # Setup High Cash
+        mock_firm.assets = 100000.0
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+            capital_aggressiveness=0.9,
+            sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+            government=None,
+            reflux_system=Mock() # Reflux system needed for capex
+        )
+
+        firm_decision_engine_instance.make_decisions(context)
+
+        mock_firm.finance.invest_in_capex.assert_called()
+
+    def test_dividend_setting(
+        self, firm_decision_engine_instance, mock_firm, mock_config
+    ):
+        """Verify dividend rate setting based on aggressiveness."""
+        # Setup Healthy Firm
+        mock_firm.finance.calculate_altman_z_score.return_value = 5.0 # Healthy
+        mock_firm.finance.consecutive_loss_turns = 0
+
+        firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+            dividend_aggressiveness=0.9, # High Payout
+            sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, debt_aggressiveness=0.5
+        )
+
+        context = DecisionContext(
+            firm=mock_firm,
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=1,
+            government=None,
+        )
+
+        firm_decision_engine_instance.make_decisions(context)
+
+        mock_firm.finance.set_dividend_rate.assert_called()
+        # Verify rate is high
+        args, _ = mock_firm.finance.set_dividend_rate.call_args
+        rate = args[0]
+        assert rate > 0.1 # Should be significantly higher than min

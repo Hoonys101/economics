@@ -471,8 +471,8 @@ class CorporateManager:
         current_inventory = firm.inventory.get(firm.specialization, 0)
         inventory_gap = target_inventory - current_inventory
 
-        if inventory_gap <= 0:
-            return []
+        # if inventory_gap <= 0:
+        #    return []
 
         # Calculate needed labor with Cobb-Douglas inversion?
         # Y = TFP * L^alpha * K^beta
@@ -491,12 +491,15 @@ class CorporateManager:
         if tfp <= 0: tfp = 1.0
 
         needed_labor_calc = 0.0
-        try:
-             # term = Y / (TFP * K^beta)
-             term = inventory_gap / (tfp * (capital ** beta_adjusted))
-             needed_labor_calc = term ** (1.0 / alpha_adjusted)
-        except Exception:
-             needed_labor_calc = 1.0 # Fallback
+        if inventory_gap > 0:
+            try:
+                 # term = Y / (TFP * K^beta)
+                 term = inventory_gap / (tfp * (capital ** beta_adjusted))
+                 needed_labor_calc = term ** (1.0 / alpha_adjusted)
+            except Exception:
+                 needed_labor_calc = 1.0 # Fallback
+        else:
+            needed_labor_calc = 0.0
 
         # Soft limit removed to allow full employment
         needed_labor = int(needed_labor_calc) + 1
