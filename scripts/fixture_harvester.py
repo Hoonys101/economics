@@ -14,7 +14,7 @@ Usage:
     harvester.save_all()
 
     # In a test (conftest.py or test file)
-    from scripts.fixture_harvester import GoldenLoader
+    from simulation.utils.golden_loader import GoldenLoader
     fixtures = GoldenLoader.load("tests/goldens/agents_tick_100.json")
     households = fixtures.create_household_mocks()  # Type-safe mocks!
 """
@@ -23,27 +23,12 @@ import json
 import os
 import sys
 from dataclasses import dataclass, asdict
-from typing import List, Dict, Any, Optional, Type
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock
 
-from modules.household.dtos import HouseholdStateDTO
-from simulation.dtos.firm_state_dto import FirmStateDTO
-from simulation.ai.api import Personality
-
-# Attempt to import the new generic loader
-try:
-    from simulation.utils.golden_loader import GoldenLoader as GenericGoldenLoader
-except ImportError:
-    # If not in path (e.g. running script directly from shell), try adding root
-    sys.path.append(str(Path(__file__).resolve().parent.parent))
-    try:
-        from simulation.utils.golden_loader import GoldenLoader as GenericGoldenLoader
-    except ImportError:
-        # Fallback if simulation/utils/golden_loader.py is missing or unreachable
-        GenericGoldenLoader = None
-
+# Use the centralized GoldenLoader
+from simulation.utils.golden_loader import GoldenLoader
 
 @dataclass
 class HouseholdSnapshot:
@@ -89,12 +74,6 @@ class GoldenFixture:
 class FixtureHarvester:
     """
     Captures real agent states during simulation runs for test fixtures.
-    
-    Example:
-        harvester = FixtureHarvester(output_dir="tests/goldens")
-        harvester.capture_agents(sim.households, sim.firms, tick=100)
-        harvester.capture_config(sim.config_module)
-        harvester.save_all()
     """
     
     def __init__(self, output_dir: str = "tests/goldens"):
@@ -197,177 +176,10 @@ class FixtureHarvester:
         return filepath
 
 
-class GoldenLoader:
-    """
-    Loads golden fixtures and creates type-safe mock objects.
-    
-    Example:
-        fixtures = GoldenLoader.load("tests/goldens/agents_tick_100.json")
-        households = fixtures.create_household_mocks()
-        firms = fixtures.create_firm_mocks()
-    """
-    
-    def __init__(self, data: Dict[str, Any]):
-        self.metadata = data.get("metadata", {})
-        self.households_data = data.get("households", [])
-        self.firms_data = data.get("firms", [])
-        self.config_snapshot = data.get("config_snapshot", {})
-    
-    @classmethod
-    def load(cls, filepath: str) -> "GoldenLoader":
-        """Load a golden fixture from file."""
-        if GenericGoldenLoader:
-            data = GenericGoldenLoader.load_json(filepath)
-        else:
-             with open(filepath, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        return cls(data)
-    
-    def create_household_mocks(self, mock_class=None):
-        """
-        Create mock households from golden data.
-        """
-        mocks = []
-        for h_data in self.households_data:
-            # Fallback to old logic or Generic
-            from types import SimpleNamespace
-            if mock_class:
-                mock = MagicMock(spec=mock_class)
-            else:
-                mock = SimpleNamespace()
-            for key, value in h_data.items():
-                setattr(mock, key, value)
-
-            mock.make_decision = MagicMock(return_value=([], MagicMock()))
-            if not hasattr(mock, 'decision_engine'):
-                mock.decision_engine = MagicMock()
-            if not hasattr(mock.decision_engine, 'ai_engine'):
-                mock.decision_engine.ai_engine = MagicMock()
-            mocks.append(mock)
-        return mocks
-
-    def create_household_dto_list(self) -> List[HouseholdStateDTO]:
-        """Creates actual HouseholdStateDTO objects from golden data."""
-        dtos = []
-        for h_data in self.households_data:
-            dto = HouseholdStateDTO(
-                id=h_data.get("id", 0),
-                assets=h_data.get("assets", 0.0),
-                inventory=h_data.get("inventory", {}),
-                needs=h_data.get("needs", {}),
-                preference_asset=1.0,
-                preference_social=1.0,
-                preference_growth=1.0,
-                personality=Personality.BALANCED,
-                durable_assets=[],
-                expected_inflation={},
-                is_employed=h_data.get("is_employed", False),
-                current_wage=h_data.get("current_wage", 0.0),
-                wage_modifier=1.0,
-                is_homeless=False,
-                residing_property_id=None,
-                owned_properties=[],
-                portfolio_holdings={},
-                risk_aversion=1.0,
-                agent_data=h_data, # Use raw dict as agent_data
-                perceived_prices={},
-                conformity=0.5,
-                social_rank=0.5,
-                approval_rating=float(h_data.get("approval_rating", 1.0))
-            )
-            dtos.append(dto)
-        return dtos
-    
-    def create_firm_mocks(self, mock_class=None):
-        """Create mock firms from golden data."""
-        mocks = []
-        for f_data in self.firms_data:
-            from types import SimpleNamespace
-            if mock_class:
-                mock = MagicMock(spec=mock_class)
-            else:
-                mock = SimpleNamespace()
-            for key, value in f_data.items():
-                setattr(mock, key, value)
-            
-            mock.make_decision = MagicMock(return_value=([], MagicMock()))
-            if not hasattr(mock, 'decision_engine'):
-                mock.decision_engine = MagicMock()
-            if not hasattr(mock.decision_engine, 'ai_engine'):
-                mock.decision_engine.ai_engine = MagicMock()
-            if not hasattr(mock, 'hr'):
-                mock.hr = MagicMock()
-            mock.hr.employees = []
-            mock.get_financial_snapshot = MagicMock(return_value={
-                "total_assets": f_data.get("assets", 0),
-                "working_capital": f_data.get("assets", 0),
-                "retained_earnings": f_data.get("retained_earnings", 0),
-                "average_profit": f_data.get("current_profit", 0),
-                "total_debt": f_data.get("total_debt", 0)
-            })
-            mocks.append(mock)
-        return mocks
-
-    def create_firm_dto_list(self) -> List[FirmStateDTO]:
-        """Creates actual FirmStateDTO objects from golden data."""
-        dtos = []
-        for f_data in self.firms_data:
-            dto = FirmStateDTO(
-                id=f_data.get("id", 0),
-                assets=f_data.get("assets", 0.0),
-                is_active=f_data.get("is_active", True),
-                inventory=f_data.get("inventory", {}),
-                inventory_quality={},
-                input_inventory={},
-                current_production=0.0,
-                productivity_factor=f_data.get("productivity_factor", 1.0),
-                production_target=100.0,
-                capital_stock=100.0,
-                base_quality=1.0,
-                automation_level=0.0,
-                specialization=f_data.get("specialization", "food"),
-                total_shares=100.0,
-                treasury_shares=0.0,
-                dividend_rate=0.1,
-                is_publicly_traded=True,
-                valuation=1000.0,
-                revenue_this_turn=0.0,
-                expenses_this_tick=0.0,
-                consecutive_loss_turns=f_data.get("consecutive_loss_turns", 0),
-                altman_z_score=3.0,
-                price_history={},
-                profit_history=[f_data.get("current_profit", 0.0)],
-                brand_awareness=0.0,
-                perceived_quality=1.0,
-                marketing_budget=0.0,
-                employees=[],
-                employees_data={},
-                agent_data=f_data,
-                system2_guidance={}
-            )
-            dtos.append(dto)
-        return dtos
-    
-    def create_config_mock(self):
-        """Create a mock config module from golden data."""
-        if GenericGoldenLoader:
-            return GenericGoldenLoader.dict_to_mock(self.config_snapshot)
-        else:
-            from types import SimpleNamespace
-            mock = SimpleNamespace()
-            for key, value in self.config_snapshot.items():
-                setattr(mock, key, value)
-            return mock
-
-
 # Convenience function for quick harvesting during debug
 def quick_harvest(sim, tick: int, output_dir: str = "tests/goldens"):
     """
     Quick one-liner to harvest fixtures from a running simulation.
-    
-    Usage (in debug script or notebook):
-        from scripts.fixture_harvester import quick_harvest
-        quick_harvest(sim, tick=100)
     """
     harvester = FixtureHarvester(output_dir=output_dir)
     harvester.capture_agents(sim.households, sim.firms, tick)

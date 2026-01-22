@@ -646,7 +646,9 @@ class Household(BaseAgent, ILearningAgent):
             agent_data=self.get_agent_data(),
             conformity=self.conformity,
             social_rank=self.social_rank,
-            approval_rating=self.approval_rating
+            approval_rating=self.approval_rating,
+            sentiment_index=self.optimism,
+            perceived_fair_price=sum(self.perceived_avg_prices.values()) / len(self.perceived_avg_prices) if self.perceived_avg_prices else 0.0
         )
 
     @override
