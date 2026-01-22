@@ -24,6 +24,15 @@ class GoldenLoader:
     def load_json(path: str) -> Dict[str, Any]:
         """
         Safely loads JSON files from the filesystem.
+
+        Args:
+            path: Path to the JSON file.
+
+        Returns:
+            Dict containing the loaded JSON data.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"Golden fixture not found at: {path}")
@@ -35,6 +44,16 @@ class GoldenLoader:
     def dict_to_mock(data: Any, spec: Type = None) -> Any:
         """
         Recursively converts nested dictionaries into nested MagicMock objects.
+
+        Args:
+            data: The dictionary or list to convert.
+            spec: Optional class to use as the spec for the created Mock (only for the top-level dict).
+                  Nested dictionaries will be converted to generic MagicMocks.
+
+        Returns:
+            MagicMock object if input is a dict.
+            List of objects/Mocks if input is a list.
+            Original value if input is a primitive.
         """
         if isinstance(data, dict):
             mock = MagicMock(spec=spec)
@@ -145,43 +164,56 @@ class GoldenLoader:
         return mocks
 
     def create_firm_dto_list(self) -> List[FirmStateDTO]:
-        """Creates actual FirmStateDTO objects from golden data."""
+        """
+        Creates actual FirmStateDTO objects from golden data.
+        Uses FirmStateDTO.from_firm(mock) to unify logic.
+        """
         dtos = []
         for f_data in self.firms_data:
-            dto = FirmStateDTO(
-                id=f_data.get("id", 0),
-                assets=f_data.get("assets", 0.0),
-                is_active=f_data.get("is_active", True),
-                inventory=f_data.get("inventory", {}),
-                inventory_quality={},
-                input_inventory={},
-                current_production=0.0,
-                productivity_factor=f_data.get("productivity_factor", 1.0),
-                production_target=100.0,
-                capital_stock=100.0,
-                base_quality=1.0,
-                automation_level=0.0,
-                specialization=f_data.get("specialization", "food"),
-                total_shares=100.0,
-                treasury_shares=0.0,
-                dividend_rate=0.1,
-                is_publicly_traded=True,
-                valuation=1000.0,
-                revenue_this_turn=0.0,
-                expenses_this_tick=0.0,
-                consecutive_loss_turns=f_data.get("consecutive_loss_turns", 0),
-                altman_z_score=3.0,
-                price_history={},
-                profit_history=[f_data.get("current_profit", 0.0)],
-                brand_awareness=0.0,
-                perceived_quality=1.0,
-                marketing_budget=0.0,
-                employees=[],
-                employees_data={},
-                agent_data=f_data,
-                system2_guidance={}
-            )
-            dtos.append(dto)
+            # Create a mock that looks like a firm
+            from types import SimpleNamespace
+            mock = SimpleNamespace()
+
+            # Map top-level attributes
+            for key, value in f_data.items():
+                setattr(mock, key, value)
+
+            # Ensure complex attributes exist for from_firm
+            if not hasattr(mock, "inventory_quality"): mock.inventory_quality = {}
+            if not hasattr(mock, "input_inventory"): mock.input_inventory = {}
+            if not hasattr(mock, "current_production"): mock.current_production = 0.0
+            if not hasattr(mock, "production_target"): mock.production_target = 0.0
+            if not hasattr(mock, "capital_stock"): mock.capital_stock = 0.0
+            if not hasattr(mock, "base_quality"): mock.base_quality = 1.0
+            if not hasattr(mock, "automation_level"): mock.automation_level = 0.0
+            if not hasattr(mock, "total_shares"): mock.total_shares = 1000.0
+            if not hasattr(mock, "treasury_shares"): mock.treasury_shares = 0.0
+            if not hasattr(mock, "dividend_rate"): mock.dividend_rate = 0.0
+            if not hasattr(mock, "is_publicly_traded"): mock.is_publicly_traded = True
+            if not hasattr(mock, "valuation"): mock.valuation = 0.0
+            if not hasattr(mock, "revenue_this_turn"): mock.revenue_this_turn = 0.0
+            if not hasattr(mock, "expenses_this_tick"): mock.expenses_this_tick = 0.0
+            if not hasattr(mock, "last_prices"): mock.last_prices = {}
+            if not hasattr(mock, "marketing_budget"): mock.marketing_budget = 0.0
+
+            # Mock Components
+            mock.finance = SimpleNamespace()
+            mock.finance.consecutive_loss_turns = f_data.get("consecutive_loss_turns", 0)
+            mock.finance.profit_history = [f_data.get("current_profit", 0.0)]
+            mock.finance.calculate_altman_z_score = lambda: 3.0 # Default safe score
+
+            mock.hr = SimpleNamespace()
+            mock.hr.employees = [] # No employee data in snapshots currently
+
+            mock.brand_manager = SimpleNamespace()
+            mock.brand_manager.brand_awareness = 0.0
+            mock.brand_manager.perceived_quality = 1.0
+
+            # Mock get_agent_data
+            mock.get_agent_data = lambda: f_data
+
+            dtos.append(FirmStateDTO.from_firm(mock))
+
         return dtos
 
     def create_config_mock(self):

@@ -271,39 +271,7 @@ class Firm(BaseAgent, ILearningAgent):
 
     def get_state_dto(self) -> FirmStateDTO:
         """Creates a read-only DTO of the firm's state."""
-        return FirmStateDTO(
-            id=self.id,
-            assets=self.assets,
-            is_active=self.is_active,
-            inventory=self.inventory.copy(),
-            inventory_quality=self.inventory_quality.copy(),
-            input_inventory=self.input_inventory.copy(),
-            current_production=self.current_production,
-            productivity_factor=self.productivity_factor,
-            production_target=self.production_target,
-            capital_stock=self.capital_stock,
-            base_quality=self.base_quality,
-            automation_level=self.automation_level,
-            specialization=self.specialization,
-            total_shares=self.total_shares,
-            treasury_shares=self.treasury_shares,
-            dividend_rate=self.dividend_rate,
-            is_publicly_traded=self.is_publicly_traded,
-            valuation=self.valuation,
-            revenue_this_turn=self.revenue_this_turn,
-            expenses_this_tick=self.expenses_this_tick,
-            consecutive_loss_turns=self.finance.consecutive_loss_turns,
-            altman_z_score=self.finance.calculate_altman_z_score(),
-            price_history=self.last_prices.copy(),
-            profit_history=getattr(self.finance, "profit_history", []),
-            brand_awareness=self.brand_manager.brand_awareness,
-            perceived_quality=self.brand_manager.perceived_quality,
-            marketing_budget=self.marketing_budget,
-            employees=[emp.id for emp in self.hr.employees],
-            employees_data={},
-            agent_data=self.get_agent_data(),
-            system2_guidance={}
-        )
+        return FirmStateDTO.from_firm(self)
 
     @override
     def get_agent_data(self) -> Dict[str, Any]:
