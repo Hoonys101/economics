@@ -48,3 +48,72 @@ class FirmStateDTO:
     # AI/Agent Data
     agent_data: Dict[str, Any]
     system2_guidance: Dict[str, Any]
+
+    # WO-108: Parity Fields
+    sentiment_index: float = 0.5
+
+    @classmethod
+    def from_firm(cls, firm: Any) -> "FirmStateDTO":
+        """
+        Creates a FirmStateDTO from a Firm-like object (Firm instance or Mock).
+        """
+        # Extract employee IDs safely
+        employee_ids = []
+        employees_data = {}
+        if hasattr(firm, 'hr') and hasattr(firm.hr, 'employees'):
+            employee_ids = [e.id for e in firm.hr.employees]
+            # Ideally we would populate employees_data, but for now we keep it minimal if not exposed
+
+        # Extract financial data safely (using properties or direct access)
+        finance = getattr(firm, 'finance', None)
+        revenue = firm.revenue_this_turn if finance else 0.0
+        expenses = firm.expenses_this_tick if finance else 0.0
+        consecutive_loss_turns = firm.consecutive_loss_turns if hasattr(firm, 'consecutive_loss_turns') else 0
+        if finance and hasattr(finance, 'consecutive_loss_turns'):
+             consecutive_loss_turns = finance.consecutive_loss_turns
+
+        altman_z = 0.0
+        if finance and hasattr(finance, 'get_altman_z_score'):
+            altman_z = finance.get_altman_z_score()
+        elif hasattr(firm, 'altman_z_score'):
+            altman_z = firm.altman_z_score
+
+        # Determine sentiment_index
+        # Logic: 1.0 if profitable/active, 0.0 if failing.
+        # Refined: (1.0 / (1 + consecutive_loss_turns))
+        sentiment = 1.0 / (1.0 + consecutive_loss_turns)
+
+        return cls(
+            id=firm.id,
+            assets=firm.assets,
+            is_active=firm.is_active,
+            inventory=firm.inventory.copy(),
+            inventory_quality=firm.inventory_quality.copy(),
+            input_inventory=firm.input_inventory.copy() if hasattr(firm, 'input_inventory') else {},
+            current_production=firm.current_production,
+            productivity_factor=firm.productivity_factor,
+            production_target=firm.production_target,
+            capital_stock=firm.capital_stock,
+            base_quality=firm.base_quality,
+            automation_level=firm.automation_level,
+            specialization=firm.specialization,
+            total_shares=firm.total_shares,
+            treasury_shares=firm.treasury_shares,
+            dividend_rate=firm.dividend_rate,
+            is_publicly_traded=firm.is_publicly_traded,
+            valuation=firm.valuation,
+            revenue_this_turn=revenue,
+            expenses_this_tick=expenses,
+            consecutive_loss_turns=consecutive_loss_turns,
+            altman_z_score=altman_z,
+            price_history=firm.last_prices.copy(),
+            profit_history=[], # firm doesn't store full history in attributes easily, leaving empty for now or need to fetch from tracker
+            brand_awareness=firm.brand_manager.brand_awareness,
+            perceived_quality=firm.brand_manager.perceived_quality,
+            marketing_budget=firm.marketing_budget,
+            employees=employee_ids,
+            employees_data=employees_data,
+            agent_data=firm.get_agent_data(),
+            system2_guidance={}, # Placeholder
+            sentiment_index=sentiment
+        )

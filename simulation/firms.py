@@ -12,6 +12,7 @@ from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
+from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 
 # SoC Refactor
@@ -294,6 +295,13 @@ class Firm(BaseAgent, ILearningAgent):
             "inventory_quality": self.inventory_quality.copy(),
             "automation_level": self.automation_level, # Phase 21
         }
+
+    def get_state_dto(self) -> FirmStateDTO:
+        """
+        Creates a FirmStateDTO representing the current state of the firm.
+        WO-108: Added for parity and DTO compliance.
+        """
+        return FirmStateDTO.from_firm(self)
 
     def get_pre_state_data(self) -> Dict[str, Any]:
         """AI 학습을 위한 이전 상태 데이터를 반환합니다."""

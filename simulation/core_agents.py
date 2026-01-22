@@ -646,7 +646,10 @@ class Household(BaseAgent, ILearningAgent):
             agent_data=self.get_agent_data(),
             conformity=self.conformity,
             social_rank=self.social_rank,
-            approval_rating=self.approval_rating
+            approval_rating=self.approval_rating,
+            # WO-108: Parity Fields
+            perceived_fair_price=self.perceived_avg_prices.copy(),
+            sentiment_index=self.optimism
         )
 
     @override

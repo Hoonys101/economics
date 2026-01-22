@@ -40,6 +40,10 @@ class HouseholdStateDTO:
     social_rank: float = 0.5
     approval_rating: int = 1
 
+    # WO-108: Parity Fields
+    perceived_fair_price: Dict[str, float] = field(default_factory=dict)
+    sentiment_index: float = 0.5
+
 @dataclass
 class CloningRequestDTO:
     """Data required to clone a household."""
