@@ -29,7 +29,7 @@
   "jules": {
     "command": "create",
     "title": "WO-116_Leak_Hunter",
-    "instruction": "Initiate Second Hunt (2차 사냥) for money leaks! Read 'design/specs/WO116_SECOND_HUNT_SPEC.md'. 1. Verify Deficit Trap & Debt Shadow hypotheses. 2. Audit LifecycleManager liquidation. 3. Find and plug any remaining leaks. Report on verified/rejected/new hypotheses.",
+    "instruction": "Final Boss Hunt (3차 사냥)! Read 'design/specs/WO116_THIRD_HUNT_SPEC.md'. Fix the 700k leak starting from Tick 1. Investigate Central Bank negative assets & Bond issuance atomicity. Identify the '700k Culprit' and ensure ZERO leak in diagnose_money_leak.py.",
     "wait": false
   },
   "git_review": {

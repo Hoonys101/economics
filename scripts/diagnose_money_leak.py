@@ -29,9 +29,12 @@ def diagnose():
         gov = sim.government.assets
         bank = sim.bank.assets
         reflux = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
+        # New Buckets from Jules hunt
+        write_offs = sim.bank.total_write_offs if hasattr(sim.bank, 'total_write_offs') else 0.0
+        cb_cash = sim.central_bank.assets.get('cash', 0.0) if hasattr(sim, 'central_bank') and hasattr(sim.central_bank, 'assets') else 0.0
         
         # M2 통계
-        total = h_sum + f_sum + gov + bank + reflux + h_inactive + f_inactive
+        total = h_sum + f_sum + gov + bank + reflux + h_inactive + f_inactive + write_offs + cb_cash
         return {
             "total": total,
             "h_active": h_sum,
@@ -41,6 +44,8 @@ def diagnose():
             "gov": gov,
             "bank": bank,
             "reflux": reflux,
+            "write_offs": write_offs,
+            "cb_cash": cb_cash,
             "issued": getattr(sim.government, "total_money_issued", 0.0),
             "destroyed": getattr(sim.government, "total_money_destroyed", 0.0)
         }

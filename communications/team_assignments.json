@@ -69,6 +69,10 @@
       "15885642735639860418": {
         "title": "WO-116_Leak_Hunter",
         "initial_mission": "Fix the -750k M2 leak! Read 'design/specs/WO116_HOTFIX_LEAK_PLUGGING.md'. Fix obvious reversals, then summarize: 1. Rejected Hypotheses (what was NOT leaking), 2. New Hypotheses (deeper issues found), 3. Solved Problems. Priority: Integrity Analysis & Reporting."
+      },
+      "3932954180050094638": {
+        "title": "WO-116_Leak_Hunter",
+        "initial_mission": "Initiate Second Hunt (2차 사냥) for money leaks! Read 'design/specs/WO116_SECOND_HUNT_SPEC.md'. 1. Verify Deficit Trap & Debt Shadow hypotheses. 2. Audit LifecycleManager liquidation. 3. Find and plug any remaining leaks. Report on verified/rejected/new hypotheses."
       }
     },
     "completed_sessions": {

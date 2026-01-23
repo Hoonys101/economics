@@ -1,0 +1,280 @@
+diff --git a/reports/GREAT_RESET_REPORT.md b/reports/GREAT_RESET_REPORT.md
+index 40c50cc..d55ee8b 100644
+--- a/reports/GREAT_RESET_REPORT.md
++++ b/reports/GREAT_RESET_REPORT.md
+@@ -1,10 +1,10 @@
+ # Great Reset Stability Report
+ **Final Status**: FAILED
+ 
+-- **Start M2**: 1,498,343.83
+-- **End M2**: 748,353.79
+-- **Total Drift**: -749990.0414
+-- **Max Drift**: -749990.0414
++- **Start M2**: 1,504,444.57
++- **End M2**: 821,271.58
++- **Total Drift**: -683172.9931
++- **Max Drift**: -695156.0463
+ 
+ ## Atomicity Integrity
+ **PASSED**: No atomicity failures.
+\ No newline at end of file
+diff --git a/scripts/reproduce_leaks.py b/scripts/reproduce_leaks.py
+new file mode 100644
+index 0000000..49f14a8
+--- /dev/null
++++ b/scripts/reproduce_leaks.py
+@@ -0,0 +1,123 @@
++
++import sys
++import os
++import logging
++from pathlib import Path
++
++# Add project root to sys.path
++sys.path.append(str(Path(__file__).resolve().parent.parent))
++
++from main import create_simulation
++from simulation.models import Transaction, Order
++from simulation.bank import Loan
++
++def reproduce_leaks():
++    logging.basicConfig(level=logging.INFO)
++    logger = logging.getLogger("REPRO")
++
++    sim = create_simulation()
++
++    # --- Helper to calculate M2 ---
++    def get_m2():
++        h_assets = sum(h.assets for h in sim.households if h.is_active)
++        f_assets = sum(f.assets for f in sim.firms if f.is_active)
++        gov_assets = sim.government.assets
++        bank_assets = sim.bank.assets
++        reflux_bal = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
++        return h_assets + f_assets + gov_assets + bank_assets + reflux_bal
++
++    logger.info("--- Starting Reproduction ---")
++    initial_m2 = get_m2()
++    logger.info(f"Initial M2: {initial_m2}")
++
++    # --- Test 1: Bank Loan Default (Hypothesis B) ---
++    logger.info("\n--- Test 1: Bank Loan Default ---")
++
++    # 1. Grant Loan
++    borrower = sim.firms[0]
++    loan_amount = 1000.0
++
++    # Simulate Loan Granting (Manual bypass of LoanMarket to isolate Bank logic)
++    # Bank creates credit? Or uses reserves?
++    # Bank.grant_loan just updates ledger. We need to handle the money.
++
++    # Let's use Bank.grant_loan
++    loan_id = sim.bank.grant_loan(borrower.id, loan_amount)
++
++    # Manually simulate the Transfer (Credit Creation)
++    # If Bank has enough reserves, it lends them.
++    # sim.bank._sub_assets(loan_amount) # Reserve Drawdown
++    # borrower._add_assets(loan_amount) # Borrower receives
++
++    # Wait, if we use Transaction, TransactionProcessor handles it.
++    # But here we want to test Bank.process_default.
++
++    # Let's just inject the state of "Loan Exists" and "Money Exists"
++    # Assume Loan was granted earlier and money is in the system.
++    # We don't change M2 here (Money just moved).
++
++    # Now simulate Default
++    loan = sim.bank.loans[loan_id]
++
++    m2_before_default = get_m2()
++    logger.info(f"M2 Before Default: {m2_before_default}")
++
++    # Trigger Default
++    sim.bank.process_default(borrower, loan, sim.time)
++
++    m2_after_default = get_m2()
++    logger.info(f"M2 After Default: {m2_after_default}")
++
++    drift_b = m2_after_default - m2_before_default
++    logger.info(f"Drift B: {drift_b}")
++
++    if drift_b == 0:
++        logger.info("RESULT: M2 Unchanged. If money was created/lent, this means M2 is permanently expanded (Leak/Drift).")
++        # If the loan principal was lost, Bank Equity should drop.
++        # If Bank Assets (Reserves) didn't drop, then M2 didn't drop.
++        # So the money lent out is still in circulation, but the matching Asset is gone.
++        # This confirms Debt Shadow.
++
++    # --- Test 2: Firm Liquidation & Reflux (Hypothesis C) ---
++    logger.info("\n--- Test 2: Firm Liquidation Reflux ---")
++
++    target_firm = sim.firms[1]
++    target_firm.is_active = False # Mark for liquidation
++
++    # Add some inventory
++    target_firm.inventory['widget'] = 10.0
++    # Add some capital
++    target_firm.capital_stock = 500.0
++
++    m2_before_liq = get_m2()
++    logger.info(f"M2 Before Liquidation: {m2_before_liq}")
++
++    # Run Lifecycle Manager
++    sim.lifecycle_manager._handle_agent_liquidation(sim.world_state)
++
++    m2_after_liq = get_m2()
++    logger.info(f"M2 After Liquidation: {m2_after_liq}")
++
++    drift_c = m2_after_liq - m2_before_liq
++    logger.info(f"Drift C: {drift_c}")
++
++    if drift_c > 0:
++        logger.info(f"RESULT: M2 Increased by {drift_c}. Reflux Capture created money from inventory!")
++
++    # --- Test 3: Tax Collection Reporting (Hypothesis A/Phantom) ---
++    logger.info("\n--- Test 3: Liquidation Tax Reporting ---")
++    # Check if Government stats updated
++    # In Test 2, we liquidated a firm. If it had assets, tax should be collected/recorded.
++
++    # Firm 1 had assets?
++    # We didn't set assets explicitly, it had initial assets.
++    # Let's check logs or just assume it had some.
++
++    gov_revenue = sim.government.total_collected_tax
++    logger.info(f"Government Total Tax Collected: {gov_revenue}")
++
++    # If using correct `record_revenue`, this should be > 0 (if firm had assets)
++    # If using broken `collect_tax`, this might be 0 (or low).
++
++if __name__ == "__main__":
++    reproduce_leaks()
+diff --git a/scripts/verify_great_reset_stability.py b/scripts/verify_great_reset_stability.py
+index 5b8f139..a27ef18 100644
+--- a/scripts/verify_great_reset_stability.py
++++ b/scripts/verify_great_reset_stability.py
+@@ -52,8 +52,13 @@ def verify_great_reset_stability():
+         bank_assets = sim.bank.assets
+         # Reflux balance (Sunk costs)
+         reflux_bal = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
++        # Write-offs (Destroyed Money)
++        write_offs = sim.bank.total_write_offs if hasattr(sim.bank, 'total_write_offs') else 0.0
+         
+-        return h_assets + f_assets + gov_assets + bank_assets + reflux_bal
++        # Central Bank Cash (Net position, usually negative if money printed)
++        cb_cash = sim.central_bank.assets.get('cash', 0.0) if hasattr(sim, 'central_bank') and hasattr(sim.central_bank, 'assets') else 0.0
++
++        return h_assets + f_assets + gov_assets + bank_assets + reflux_bal + write_offs + cb_cash
+ 
+     m2_start = get_total_m2()
+     logger.info(f"Initial M2: {m2_start:,.2f}")
+diff --git a/simulation/bank.py b/simulation/bank.py
+index c9c606b..ecaa599 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -65,6 +65,7 @@ class Bank(IFinancialEntity):
+         # Counters
+         self.next_loan_id = 0
+         self.next_deposit_id = 0
++        self.total_write_offs = 0.0
+ 
+         # Dummy attrs for compatibility
+         self.value_orientation = "N/A"
+@@ -500,7 +501,10 @@ class Bank(IFinancialEntity):
+             logger.info(f"LIQUIDATION | Agent {agent.id} shares confiscated.")
+ 
+         # 2. Forgiveness (Write-off)
+-        loan.remaining_balance = 0.0 # Effectively forgiven
++        write_off_amount = loan.remaining_balance
++        self._sub_assets(write_off_amount)  # Write off against reserves (Equity)
++        self.total_write_offs += write_off_amount
++        loan.remaining_balance = 0.0  # Effectively forgiven
+ 
+         # 3. Penalty
+         # Credit Jail
+diff --git a/simulation/systems/housing_system.py b/simulation/systems/housing_system.py
+index 17c1d94..c7a9271 100644
+--- a/simulation/systems/housing_system.py
++++ b/simulation/systems/housing_system.py
+@@ -171,7 +171,7 @@ class HousingSystem:
+                 # The original code called 'record_asset_sale', which doesn't exist on Government.
+                 # The intent seems to be to track government income. We'll use the existing
+                 # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
+-                seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
++                seller.record_revenue(trade_value, "asset_sale", buyer.id, simulation.time)
+                 # Note: collect_tax no longer adds assets! We must add it manually or use SettlementSystem.
+                 # Since we are inside HousingSystem legacy logic, we add it here.
+                 seller._add_assets(trade_value)
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 2007946..73caf4e 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -110,17 +110,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
+             )
+ 
+-            # WO-106: Reflux Capture (Inventory & Capital)
+-            if state.reflux_system:
+-                # 1. Inventory Value
+-                inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
+-                if inv_value > 0:
+-                    state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
+-
+-                # 2. Capital Stock (Scrap Value)
+-                if firm.capital_stock > 0:
+-                    state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
+-
+             # SoC Refactor: use hr.employees
+             for employee in firm.hr.employees:
+                 if employee.is_active:
+@@ -148,7 +137,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                     if isinstance(state.government, Government):
+                         # Note: collect_tax no longer adds assets. We must transfer/add manually.
+                         state.government._add_assets(total_cash)
+-                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
++                        state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
+             for household in state.households:
+                 if firm.id in household.shares_owned:
+                     del household.shares_owned[firm.id]
+@@ -165,12 +154,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             # Use self.inheritance_manager since it is injected in __init__
+             self.inheritance_manager.process_death(household, state.government, state)
+ 
+-            # WO-106: Reflux Capture (Household Inventory)
+-            if state.reflux_system:
+-                inv_value = self._calculate_inventory_value(household.inventory, state.markets)
+-                if inv_value > 0:
+-                    state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
+-
+             household.inventory.clear()
+             household.shares_owned.clear()
+             if hasattr(household, "portfolio"):
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index 8c9610c..727214f 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -70,7 +70,7 @@ class TransactionProcessor(SystemInterface):
+                     seller.deposit(trade_value)
+                     government.deposit(tax_amount)
+ 
+-                government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
++                government.record_revenue(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
+ 
+             elif tx.transaction_type == "stock":
+                 # Stock: NO Sales Tax
+@@ -104,7 +104,7 @@ class TransactionProcessor(SystemInterface):
+                         seller.deposit(trade_value)
+                         government.deposit(tax_amount)
+ 
+-                    government.collect_tax(tax_amount, "income_tax_firm", buyer.id, current_time)
++                    government.record_revenue(tax_amount, "income_tax_firm", buyer.id, current_time)
+                 else:
+                     # Household pays tax (Withholding model)
+                     net_wage = trade_value - tax_amount
+@@ -117,7 +117,7 @@ class TransactionProcessor(SystemInterface):
+                         seller.deposit(net_wage)
+                         government.deposit(tax_amount)
+ 
+-                    government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
++                    government.record_revenue(tax_amount, "income_tax_household", seller.id, current_time)
+             
+             elif tx.item_id == "interest_payment":
+                 if settlement:
