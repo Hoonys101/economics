@@ -191,7 +191,10 @@ class InheritanceManager:
                 deceased.withdraw(actual_tax_paid)
                 government.deposit(actual_tax_paid)
 
-            simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased, simulation.time)
+            # WO-116: Use record_revenue to avoid Double-Charge via FinanceSystem
+            simulation.government.record_revenue(
+                actual_tax_paid, "inheritance_tax", deceased.id, simulation.time
+            )
 
         # 5. Distribution (Transfer)
         # ------------------------------------------------------------------
@@ -212,7 +215,7 @@ class InheritanceManager:
                     deceased.withdraw(surplus)
                     government.deposit(surplus)
 
-                simulation.government.collect_tax(surplus, "escheatment", deceased, simulation.time)
+                simulation.government.record_revenue(surplus, "escheatment", deceased.id, simulation.time)
                 self.logger.info(
                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
                     extra={"agent_id": deceased.id}
@@ -280,7 +283,7 @@ class InheritanceManager:
                  deceased.withdraw(remainder)
                  government.deposit(remainder)
 
-             simulation.government.collect_tax(remainder, "inheritance_residual", deceased, simulation.time)
+             simulation.government.record_revenue(remainder, "inheritance_residual", deceased.id, simulation.time)
              self.logger.info(f"RESIDUAL_CAPTURED | Transferred {remainder:.4f} residual dust to Government.")
 
         # deceased.assets should be 0.0 now.

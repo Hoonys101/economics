@@ -169,6 +169,12 @@ class Government:
         # Legacy method support if any direct calls remain, though TickScheduler uses transactions now.
         return self.tax_agency.collect_tax(self, amount, tax_type, payer, current_tick)
 
+    def record_revenue(
+        self, amount: float, tax_type: str, payer_id: Any, current_tick: int
+    ):
+        """Records revenue without collection (manual transfer case)."""
+        self.tax_agency.record_revenue(self, amount, tax_type, payer_id, current_tick)
+
     def update_public_opinion(self, households: List[Any]):
         """
         Aggregates approval ratings from households and updates the opinion queue (Lag).

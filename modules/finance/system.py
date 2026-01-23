@@ -173,7 +173,9 @@ class FinanceSystem(IFinanceSystem):
         )
 
         # Optimistic State Update
-        firm.finance.add_liability(amount, loan.interest_rate)
+        if not hasattr(firm, 'total_debt'):
+            firm.total_debt = 0.0
+        firm.total_debt += amount
         firm.has_bailout_loan = True
 
         return loan, [tx]

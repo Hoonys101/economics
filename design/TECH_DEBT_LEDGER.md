@@ -16,10 +16,14 @@
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
-| **TD-106** | 2026-01-23 | **God Class Bloat (core_agents.py, etc.)** | Split `Household` and `Repository` into specialized files | Maintenance Overhead / Critical Blob | **CRITICAL** |
+| **TD-106** | 2026-01-23 | **God Class Bloat (core_agents.py, repository.py, tick_scheduler.py)** | Split Household/Firm/Repository into specialized files | Maintenance Overhead | **CRITICAL** |
 | **TD-107** | 2026-01-23 | **Leaky Abstraction (HR Back-ref & Demeter)** | Remove back-references from components to DecisionContext | High Coupling | **STRUCTURAL_RISK** |
-| **TD-108** | 2026-01-23 | **Stateful Engine Violation (Market Injection)** | Inject markets only via `DecisionContext` | Purity Gate Violation | **STRUCTURAL_RISK** |
+| **TD-108** | 2026-01-23 | **Stateful Engine Violation (Market & Govt Injection)** | Inject markets and GovernmentStateDTO via DecisionContext | Purity Gate Violation | **STRUCTURAL_RISK** |
 | **TD-109** | 2026-01-23 | **Sacred Sequence Violation (Tick Scheduler)** | Move asset transfers (taxes, profit) to Transaction Phase | Atomicity / Integration Risk | **CRITICAL** |
+| **TD-110** | 2026-01-24 | **Phantom Tax Revenue (Stats Failure)** | Decouple tax recording from transfer; fix `TaxAgency` logic | Budget analytics failure | **ECONOMIC_RISK** |
+| **TD-111** | 2026-01-24 | **Reflux Alchemy (M2 Inflation)** | Exclude `RefluxSystem` balance from M2 calculation | Monetary Integrity | **ECONOMIC_RISK** |
+| **TD-112** | 2026-01-24 | **Inheritance Rounding Crash** | Implement penny-based integer distribution | System Crash / Asset Drift | **CRITICAL** |
+| **TD-113** | 2026-01-24 | **Non-atomic Transfer Fallbacks** | Remove legacy `withdraw/deposit` fallbacks in `TransactionProcessor` | Asset destruction risk | **STRUCTURAL_RISK** |
 
 ---
 

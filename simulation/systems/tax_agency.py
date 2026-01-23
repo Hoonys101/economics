@@ -44,9 +44,44 @@ class TaxAgency:
 
         return raw_tax
 
-    def calculate_corporate_tax(self, profit: float, current_corporate_tax_rate: float) -> float:
+    def calculate_corporate_tax(
+        self, profit: float, current_corporate_tax_rate: float
+    ) -> float:
         """Calculates corporate tax based on the current rate provided by the Government."""
         return profit * current_corporate_tax_rate if profit > 0 else 0.0
+
+    def record_revenue(
+        self, government, amount: float, tax_type: str, payer_id: Any, current_tick: int
+    ):
+        """
+        Records revenue statistics WITHOUT attempting collection.
+        Used when funds are transferred via SettlementSystem manually.
+        """
+        if amount <= 0:
+            return
+
+        government.total_collected_tax += amount
+        government.revenue_this_tick += amount
+        government.total_money_destroyed += amount
+        government.tax_revenue[tax_type] = (
+            government.tax_revenue.get(tax_type, 0.0) + amount
+        )
+        government.current_tick_stats["tax_revenue"][tax_type] = (
+            government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
+        )
+        government.current_tick_stats["total_collected"] += amount
+
+        logger.info(
+            f"TAX_RECORDED | Recorded {amount:.2f} as {tax_type} from {payer_id}",
+            extra={
+                "tick": current_tick,
+                "agent_id": government.id,
+                "amount": amount,
+                "tax_type": tax_type,
+                "source_id": payer_id,
+                "tags": ["tax", "revenue", "recorded"],
+            },
+        )
 
     def collect_tax(self, government, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
         """

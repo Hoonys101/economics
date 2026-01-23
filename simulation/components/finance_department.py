@@ -217,8 +217,8 @@ class FinanceDepartment:
                     dividend_amount = distributable_profit * (shares / self.firm.total_shares)
                     transactions.append(
                         Transaction(
-                            seller_id=self.firm.id,
-                            buyer_id=household.id,
+                            buyer_id=self.firm.id,
+                            seller_id=household.id,
                             item_id="dividend",
                             quantity=1.0, # 1 unit of dividend event
                             price=dividend_amount, # Cash amount
