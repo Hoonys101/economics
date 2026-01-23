@@ -74,9 +74,8 @@ class FinanceDepartment:
             if settlement_system and reflux_system:
                 settlement_system.transfer(self.firm, reflux_system, holding_cost, "fixed_cost")
             else:
-                self.debit(holding_cost, "Inventory Holding Cost")
-                if reflux_system:
-                    reflux_system.capture(holding_cost, str(self.firm.id), "fixed_cost")
+                # Strict Mode: Log Critical
+                logger.critical("FINANCE_STRICT_MODE_VIOLATION | Missing settlement or reflux system for holding costs.")
 
             self.record_expense(holding_cost)
 
@@ -151,8 +150,7 @@ class FinanceDepartment:
             if settlement_system:
                 settlement_system.transfer(self.firm, government, repayment, "bailout_repayment")
             else:
-                self.debit(repayment, "Bailout Repayment")
-                government._add_assets(repayment)
+                logger.critical("FINANCE_STRICT_MODE_VIOLATION | Missing settlement system for bailout repayment.")
 
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
@@ -244,8 +242,7 @@ class FinanceDepartment:
             if settlement_system:
                 settlement_system.transfer(self.firm, owner, dividend_amount, "private_dividend")
             else:
-                self.debit(dividend_amount, "Private Dividend")
-                owner._add_assets(dividend_amount)
+                logger.critical("FINANCE_STRICT_MODE_VIOLATION | Missing settlement system for private dividend.")
 
             if hasattr(owner, 'income_capital_cumulative'):
                 owner.income_capital_cumulative += dividend_amount
@@ -395,14 +392,11 @@ class FinanceDepartment:
 
     def invest_in_automation(self, amount: float, settlement_system: Any = None, reflux_system: Any = None) -> bool:
         if self._cash >= amount:
-            # Sunk cost or Reflux? Automation likely purchase from machine sector (abstract).
-            # If Reflux is available, transfer there.
             if settlement_system and reflux_system:
                 settlement_system.transfer(self.firm, reflux_system, amount, "automation_investment")
             else:
-                self.debit(amount, "Automation Investment")
-                if reflux_system:
-                    reflux_system.capture(amount, str(self.firm.id), "capex")
+                logger.critical("FINANCE_STRICT_MODE_VIOLATION | Missing settlement/reflux for automation inv.")
+                return False
             return True
         return False
 
@@ -411,9 +405,8 @@ class FinanceDepartment:
             if settlement_system and reflux_system:
                 settlement_system.transfer(self.firm, reflux_system, amount, "rd_investment")
             else:
-                self.debit(amount, "R&D Investment")
-                if reflux_system:
-                     reflux_system.capture(amount, str(self.firm.id), "capex")
+                logger.critical("FINANCE_STRICT_MODE_VIOLATION | Missing settlement/reflux for RD inv.")
+                return False
 
             self.record_expense(amount)
             return True
@@ -424,9 +417,8 @@ class FinanceDepartment:
             if settlement_system and reflux_system:
                 settlement_system.transfer(self.firm, reflux_system, amount, "capex")
             else:
-                self.debit(amount, "CAPEX")
-                if reflux_system:
-                     reflux_system.capture(amount, str(self.firm.id), "capex")
+                logger.critical("FINANCE_STRICT_MODE_VIOLATION | Missing settlement/reflux for CAPEX inv.")
+                return False
             return True
         return False
 
@@ -438,8 +430,8 @@ class FinanceDepartment:
             if settlement_system:
                 settlement_system.transfer(self.firm, employee, amount, "severance")
             else:
-                self.debit(amount, "Severance Pay")
-                employee._add_assets(amount)
+                logger.critical("FINANCE_STRICT_MODE_VIOLATION | Missing settlement for severance.")
+                return False
 
             self.record_expense(amount)
             return True

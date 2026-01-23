@@ -158,9 +158,67 @@ class Government:
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
 
+    def record_revenue(self, amount: float, tax_type: str, payer_id: Any = None):
+        """
+        Updates internal statistics and logs revenue.
+        DOES NOT perform asset transfer. This method must be called after settlement.
+        """
+        self.total_collected_tax += amount
+        self.revenue_this_tick += amount
+        self.total_money_destroyed += amount
+
+        current_val = self.tax_revenue.get(tax_type, 0.0)
+        self.tax_revenue[tax_type] = current_val + amount
+
+        current_tick_val = self.current_tick_stats["tax_revenue"].get(tax_type, 0.0)
+        self.current_tick_stats["tax_revenue"][tax_type] = current_tick_val + amount
+        self.current_tick_stats["total_collected"] += amount
+
+        # Logging (Optional: Log level depends on frequency)
+        # logger.debug(f"REVENUE_RECORDED | Type: {tax_type}, Amount: {amount:.2f}, Payer: {payer_id}")
+
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int):
-        """세금을 징수합니다."""
-        return self.tax_agency.collect_tax(self, amount, tax_type, payer, current_tick)
+        """
+        Executes tax collection via FinanceSystem and records statistics.
+        Strict Mode: Requires finance_system.
+        """
+        if amount <= 0:
+            return 0.0
+
+        if not self.finance_system:
+            logger.critical("TAX_COLLECTION_FAILED | FinanceSystem missing in Government.")
+            return 0.0
+
+        payer_id = payer.id if hasattr(payer, 'id') else payer
+
+        # 1. Execute Atomic Transfer
+        success = self.finance_system.collect_corporate_tax(payer, amount)
+        if not success:
+            logger.warning(f"TAX_COLLECTION_FAILED | Failed to collect {amount} from {payer_id}")
+            return 0.0
+
+        # 2. Record Revenue (Only if transfer succeeded)
+        self.record_revenue(amount, tax_type, payer_id)
+
+        # Legacy logging maintained by TaxAgency/Government interaction if needed,
+        # but here we log explicitly or rely on Settlement logs.
+        # TaxAgency.collect_tax was the old entry point. Now Government handles it directly via FinanceSystem?
+        # Wait, TaxAgency.collect_tax called finance_system.collect_corporate_tax.
+        # But here we are redefining Government.collect_tax.
+        # To avoid confusion, we should use this implementation as the source of truth.
+
+        logger.info(
+            f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {payer_id}",
+            extra={
+                "tick": current_tick,
+                "agent_id": self.id,
+                "amount": amount,
+                "tax_type": tax_type,
+                "source_id": payer_id,
+                "tags": ["tax", "revenue"]
+            }
+        )
+        return amount
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -295,17 +353,18 @@ class Government:
                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
                     return 0.0
             else:
-                 logger.warning("BOND_ISSUANCE_SKIPPED | No FinanceSystem.")
+                 logger.critical("BOND_ISSUANCE_FAILED | No FinanceSystem available.")
                  return 0.0
 
+        # Strict Mode: Use FinanceSystem Settlement
         if self.finance_system and self.finance_system.settlement_system:
-            self.finance_system.settlement_system.transfer(self, household, effective_amount, "household_support")
+            success = self.finance_system.settlement_system.transfer(self, household, effective_amount, "household_support")
+            if not success:
+                logger.error(f"WELFARE_FAILED | Settlement transfer failed to {household.id}")
+                return 0.0
         else:
-            self._sub_assets(effective_amount)
-            if hasattr(household, '_add_assets'):
-                household._add_assets(effective_amount)
-            else:
-                household.assets += effective_amount
+            logger.critical("WELFARE_FAILED | FinanceSystem or SettlementSystem missing.")
+            return 0.0
 
         self.total_spent_subsidies += effective_amount
         self.expenditure_this_tick += effective_amount
@@ -457,15 +516,18 @@ class Government:
                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
                     return False
             else:
-                 logger.warning("BOND_ISSUANCE_SKIPPED | No FinanceSystem.")
+                 logger.critical("BOND_ISSUANCE_FAILED | No FinanceSystem.")
                  return False
 
+        # Strict Mode: Use Settlement
         if self.finance_system and self.finance_system.settlement_system and reflux_system:
-             self.finance_system.settlement_system.transfer(self, reflux_system, effective_cost, "infrastructure_investment")
+             success = self.finance_system.settlement_system.transfer(self, reflux_system, effective_cost, "infrastructure_investment")
+             if not success:
+                 logger.error("INFRASTRUCTURE_FAILED | Settlement transfer failed.")
+                 return False
         else:
-             self._sub_assets(effective_cost)
-             if reflux_system:
-                 reflux_system.capture(effective_cost, str(self.id), "infrastructure")
+             logger.critical("INFRASTRUCTURE_FAILED | System components missing.")
+             return False
 
         self.expenditure_this_tick += effective_cost
         self.infrastructure_level += 1

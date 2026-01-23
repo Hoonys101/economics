@@ -184,37 +184,11 @@ class HousingSystem:
                 seller._add_assets(trade_value)
 
             if isinstance(seller, Government):
-                # Record as revenue
-                seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
-                # Note: collect_tax handles transfer ONLY if configured with FinanceSystem.
-                # But here we ALREADY transferred via settlement (or manually above).
-                # If we transferred to 'seller' (Government), assets are updated.
-                # collect_tax usually transfers too!
-                # If we transferred manually above, calling collect_tax might double-transfer if government has finance_system.
-                # However, collect_tax expects to PULL from payer.
-                # Here we PUSHED to seller.
-                # So we should NOT call collect_tax logic that transfers.
-                # We just want to record stats.
-                # Government.collect_tax calls finance_system...
-                # This is tricky.
-                # If we used settlement.transfer(buyer, seller), seller (Govt) has funds.
-                # If we call collect_tax, it will try to pull from 'buyer' again.
-                # DOUBLE CHARGE!
-                # Solution: Do NOT call collect_tax for transfer if we already transferred.
-                # Just update stats manually on Government?
-                # Or trust collect_tax to do the transfer, and NOT do it manually above?
-
-                # If seller is Government:
-                # If we rely on collect_tax, it pulls from buyer.
-                # But we have logic `settlement.transfer(buyer, seller, ...)` above which is generic.
-                # The cleanest way:
-                # If seller is Government, call collect_tax INSTEAD of generic transfer?
-                # OR: Use generic transfer, and implement a `record_revenue` method on Government that doesn't transfer.
-                # Government has `revenue_this_tick` and `tax_revenue`.
-                # I'll manually update stats here to avoid double transfer.
-                seller.revenue_this_tick += trade_value
-                seller.current_tick_stats["total_collected"] += trade_value
-                # seller.tax_revenue["asset_sale"] += trade_value # Optional
+                # Use record_revenue to avoid double charge (Settlement done above)
+                if hasattr(seller, 'record_revenue'):
+                    seller.record_revenue(trade_value, "asset_sale", buyer.id)
+                else:
+                    logger.critical("GOVERNMENT_API_MISMATCH | record_revenue missing in Government.")
 
             # 3. Transfer Title
             unit.owner_id = buyer.id

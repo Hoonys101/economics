@@ -74,8 +74,12 @@ class HRDepartment:
                 if settlement_system:
                     settlement_system.transfer(self.firm, employee, net_wage, "wage_net")
                 else:
-                    self.firm._sub_assets(net_wage)
-                    employee._add_assets(net_wage)
+                    logger.critical("HR_STRICT_MODE_VIOLATION | Missing settlement system for payroll.")
+                    # Fail gracefully or crash?
+                    # Since this is critical strict mode, let's stop payment flow here?
+                    # Or continue loop?
+                    # Let's stop payment for this employee.
+                    continue
 
                 # Track Labor Income
                 if hasattr(employee, "labor_income_this_tick"):
