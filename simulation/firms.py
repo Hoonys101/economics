@@ -349,7 +349,7 @@ class Firm(BaseAgent, ILearningAgent):
         external_orders = []
         for order in decisions:
             if order.market_id == "internal":
-                self._execute_internal_order(order, government, current_time)
+                self._execute_internal_order(order, government, current_time, reflux_system)
             else:
                 external_orders.append(order)
 
@@ -369,7 +369,7 @@ class Firm(BaseAgent, ILearningAgent):
         )
         return external_orders, tactic
 
-    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int) -> None:
+    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int, reflux_system: Optional[Any] = None) -> None:
         """Executes internal orders (state modifications) received from the Decision Engine."""
         if order.order_type == "SET_TARGET":
             self.production_target = order.quantity
@@ -377,7 +377,7 @@ class Firm(BaseAgent, ILearningAgent):
 
         elif order.order_type == "INVEST_AUTOMATION":
             spend = order.quantity
-            if self.finance.invest_in_automation(spend):
+            if self.finance.invest_in_automation(spend, reflux_system):
                 cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
                 if cost_per_pct > 0:
                     gained_a = (spend / cost_per_pct) / 100.0
@@ -392,12 +392,12 @@ class Firm(BaseAgent, ILearningAgent):
 
         elif order.order_type == "INVEST_RD":
             budget = order.quantity
-            if self.finance.invest_in_rd(budget):
+            if self.finance.invest_in_rd(budget, reflux_system):
                 self._execute_rd_outcome(budget, current_time)
 
         elif order.order_type == "INVEST_CAPEX":
             budget = order.quantity
-            if self.finance.invest_in_capex(budget):
+            if self.finance.invest_in_capex(budget, reflux_system):
                 efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
                 added_capital = budget * efficiency
                 self.production.add_capital(added_capital)
