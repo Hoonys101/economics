@@ -289,20 +289,26 @@ class Government:
 
         if self.assets < effective_amount:
             needed = effective_amount - self.assets
-            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
-            if not issued_bonds:
-                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
-                return 0.0
+            if self.finance_system:
+                issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
+                if not issued_bonds:
+                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
+                    return 0.0
+            else:
+                 logger.warning("BOND_ISSUANCE_SKIPPED | No FinanceSystem.")
+                 return 0.0
 
-        self._sub_assets(effective_amount)
+        if self.finance_system and self.finance_system.settlement_system:
+            self.finance_system.settlement_system.transfer(self, household, effective_amount, "household_support")
+        else:
+            self._sub_assets(effective_amount)
+            if hasattr(household, '_add_assets'):
+                household._add_assets(effective_amount)
+            else:
+                household.assets += effective_amount
+
         self.total_spent_subsidies += effective_amount
         self.expenditure_this_tick += effective_amount
-
-        if hasattr(household, '_add_assets'):
-            household._add_assets(effective_amount)
-        else:
-            household.assets += effective_amount
-
         self.current_tick_stats["welfare_spending"] += effective_amount
 
         logger.info(
@@ -445,16 +451,23 @@ class Government:
 
         if self.assets < effective_cost:
             needed = effective_cost - self.assets
-            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
-            if not issued_bonds:
-                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
-                return False
+            if self.finance_system:
+                issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
+                if not issued_bonds:
+                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                    return False
+            else:
+                 logger.warning("BOND_ISSUANCE_SKIPPED | No FinanceSystem.")
+                 return False
 
-        self._sub_assets(effective_cost)
+        if self.finance_system and self.finance_system.settlement_system and reflux_system:
+             self.finance_system.settlement_system.transfer(self, reflux_system, effective_cost, "infrastructure_investment")
+        else:
+             self._sub_assets(effective_cost)
+             if reflux_system:
+                 reflux_system.capture(effective_cost, str(self.id), "infrastructure")
+
         self.expenditure_this_tick += effective_cost
-        if reflux_system:
-            reflux_system.capture(effective_cost, str(self.id), "infrastructure")
-
         self.infrastructure_level += 1
 
         logger.info(
@@ -532,12 +545,12 @@ class Government:
         return debt / self.sensory_data.current_gdp
 
     # WO-054: Public Education System
-    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:
+    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None, settlement_system: Any = None) -> None:
         """
         Delegates public education logic to the Ministry of Education.
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
-        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
+        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system, settlement_system)
 
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the government's assets."""

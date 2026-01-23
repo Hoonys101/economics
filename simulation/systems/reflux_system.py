@@ -1,5 +1,6 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 import logging
+from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
@@ -9,6 +10,24 @@ class EconomicRefluxSystem:
         # Optional: Transaction log for debugging
         # self.transaction_log: list = []
 
+    @property
+    def id(self) -> int:
+        return -100
+
+    @property
+    def assets(self) -> float:
+        return self.balance
+
+    def deposit(self, amount: float) -> None:
+        if amount > 0:
+            self.balance += amount
+
+    def withdraw(self, amount: float) -> None:
+        if amount > 0:
+            if self.balance < amount:
+                raise InsufficientFundsError(f"RefluxSystem has insufficient funds: {self.balance} < {amount}")
+            self.balance -= amount
+
     def capture(self, amount: float, source: str, category: str):
         """
         Captures money that would otherwise vanish.
@@ -17,10 +36,10 @@ class EconomicRefluxSystem:
         :param category: 'marketing', 'capex', 'fixed_cost', 'net_profit'
         """
         if amount > 0:
-            self.balance += amount
+            self.deposit(amount)
             logger.debug(f"REFLUX_CAPTURE | Captured {amount:.2f} from {source} ({category})")
 
-    def distribute(self, households: list):
+    def distribute(self, households: list, settlement_system: Any = None):
         """
         Distributes the total balance equally to all active households.
         Simulates dividends and service sector wages.
@@ -38,7 +57,10 @@ class EconomicRefluxSystem:
         amount_per_household = total_amount / len(active_households)
 
         for agent in active_households:
-            agent._add_assets(amount_per_household)
+            if settlement_system:
+                settlement_system.transfer(self, agent, amount_per_household, "reflux_distribution")
+            else:
+                agent._add_assets(amount_per_household)
 
             # Record as additional labor income (Service Sector)
             if hasattr(agent, "labor_income_this_tick"):
@@ -53,4 +75,5 @@ class EconomicRefluxSystem:
             extra={"tags": ["reflux", "distribution"], "total_amount": total_amount}
         )
 
-        self.balance = 0.0 # Reset
+        if not settlement_system:
+             self.balance = 0.0 # Reset only if manual transfer

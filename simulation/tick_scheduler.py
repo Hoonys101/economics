@@ -71,7 +71,7 @@ class TickScheduler:
              state.event_system.execute_scheduled_events(state.time, context, state.stress_scenario_config)
 
         # WO-054: Government Public Education Logic (START OF TICK)
-        state.government.run_public_education(state.households, state.config_module, state.time, state.reflux_system)
+        state.government.run_public_education(state.households, state.config_module, state.time, state.reflux_system, state.settlement_system)
 
         if (
             state.time > 0
@@ -310,7 +310,7 @@ class TickScheduler:
         for firm in state.firms:
              if firm.is_active:
                  firm.produce(state.time, technology_manager=state.technology_manager)
-                 firm.update_needs(state.time, state.government, market_data, state.reflux_system)
+                 firm.update_needs(state.time, state.government, market_data, state.reflux_system, settlement_system=state.settlement_system)
 
                  # 2a. Corporate Tax
                  if firm.is_active and firm.current_profit > 0:

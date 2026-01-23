@@ -65,13 +65,19 @@ class FinanceDepartment:
         """
         self._cash -= amount
 
-    def calculate_and_debit_holding_costs(self) -> float:
+    def calculate_and_debit_holding_costs(self, reflux_system: Optional[EconomicRefluxSystem] = None, settlement_system: Any = None) -> float:
         """Calculates and pays inventory holding costs."""
         inventory_value = self.get_inventory_value()
         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
 
         if holding_cost > 0:
-            self.debit(holding_cost, "Inventory Holding Cost")
+            if settlement_system and reflux_system:
+                settlement_system.transfer(self.firm, reflux_system, holding_cost, "fixed_cost")
+            else:
+                self.debit(holding_cost, "Inventory Holding Cost")
+                if reflux_system:
+                    reflux_system.capture(holding_cost, str(self.firm.id), "fixed_cost")
+
             self.record_expense(holding_cost)
 
         return holding_cost
@@ -86,13 +92,21 @@ class FinanceDepartment:
         self.expenses_this_tick += amount
         self.current_profit -= amount
 
-    def pay_maintenance(self, government: Government, reflux_system: Optional[EconomicRefluxSystem], current_time: int):
+    def pay_maintenance(self, government: Government, reflux_system: Optional[EconomicRefluxSystem], current_time: int, settlement_system: Any = None):
         """Pay fixed maintenance fee."""
         fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
         payment = min(self._cash, fee) # Cap at available cash
 
         if payment > 0:
             # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
+            # But wait, collect_tax handles transfer IF finance_system is set on government.
+            # If not, we fallback to debit?
+            # WO strictness: We rely on government.collect_tax to do the transfer.
+            # government.collect_tax calls self.finance_system.collect_corporate_tax.
+            # Which calls settlement_system.transfer.
+            # So we don't need to manually transfer here IF government handles it.
+            # BUT, if government doesn't have finance_system set up (legacy), collect_tax might fail or just log.
+            # We should assume Government is compliant (Step 3).
             government.collect_tax(payment, "firm_maintenance", self.firm, current_time)
             self.record_expense(payment)
 
@@ -101,7 +115,7 @@ class FinanceDepartment:
                 extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "maintenance"]}
             )
 
-    def pay_taxes(self, government: Government, current_time: int):
+    def pay_taxes(self, government: Government, current_time: int, settlement_system: Any = None):
         """Pay corporate tax on profit."""
         net_profit = self.revenue_this_turn - self.cost_this_turn
 
@@ -117,23 +131,13 @@ class FinanceDepartment:
 
                 after_tax_profit = net_profit - payment
                 self.retained_earnings += after_tax_profit
-                # Note: We do NOT record_expense here because tax is usually considered separate from operating expenses in this model logic,
-                # OR it was already implicitly deducted from 'retained_earnings' calc.
-                # Wait, original code:
-                # self.debit(...)
-                # government.collect_tax(...)
-                # after_tax_profit = net_profit - payment
-                # retained_earnings += after_tax_profit
-
-                # It did NOT call record_expense().
-                # So we are fine.
 
                 self.firm.logger.info(
                     f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}. Retained Earnings increased by {after_tax_profit:.2f}",
                     extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
                 )
 
-    def process_profit_distribution(self, households: List[Household], government: Government, current_time: int) -> List[Transaction]:
+    def process_profit_distribution(self, households: List[Household], government: Government, current_time: int, settlement_system: Any = None) -> List[Transaction]:
         """Public Shareholders Dividend"""
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
             repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
@@ -144,8 +148,11 @@ class FinanceDepartment:
                 self.firm.total_debt = 0.0
 
             # Bailout repayment
-            self.debit(repayment, "Bailout Repayment")
-            government._add_assets(repayment) # Direct transfer to government
+            if settlement_system:
+                settlement_system.transfer(self.firm, government, repayment, "bailout_repayment")
+            else:
+                self.debit(repayment, "Bailout Repayment")
+                government._add_assets(repayment)
 
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
@@ -168,9 +175,19 @@ class FinanceDepartment:
                 shares = household.shares_owned.get(self.firm.id, 0.0)
                 if shares > 0:
                     dividend_amount = distributable_profit * (shares / self.firm.total_shares)
-                    # NOTE: Dividends are paid via TransactionProcessor normally.
-                    # TransactionProcessor sees "dividend" and does: seller.assets -= trade_value.
-                    # Since seller.assets will delegate to finance.debit, this works.
+
+                    # TransactionProcessor handles "dividend" type transactions by transferring assets.
+                    # It calls settlement_system.transfer if available.
+                    # So we just emit the transaction, we do NOT manually debit here.
+                    # Wait, the previous code did NOT debit here either!
+                    # It just appended Transaction.
+                    # BUT `process_profit_distribution` calls `process_profit_distribution`... wait.
+                    # The previous code logic:
+                    # transactions.append(...)
+                    # self.dividends_paid_last_tick += dividend_amount
+                    # It relies on TransactionProcessor to execute the dividend transfer.
+                    # And TransactionProcessor calls `seller.assets -= trade_value` (or settlement transfer).
+
                     transactions.append(
                         Transaction(
                             buyer_id=household.id,
@@ -198,7 +215,7 @@ class FinanceDepartment:
 
         return transactions
 
-    def distribute_profit_private(self, agents: Dict[int, Any], current_time: int) -> float:
+    def distribute_profit_private(self, agents: Dict[int, Any], current_time: int, settlement_system: Any = None) -> float:
         """Phase 14-1: Private Owner Dividend"""
         if self.firm.owner_id is None:
             return 0.0
@@ -223,8 +240,12 @@ class FinanceDepartment:
 
         if distributable_cash > 0:
             dividend_amount = distributable_cash
-            self.debit(dividend_amount, "Private Dividend")
-            owner._add_assets(dividend_amount)
+
+            if settlement_system:
+                settlement_system.transfer(self.firm, owner, dividend_amount, "private_dividend")
+            else:
+                self.debit(dividend_amount, "Private Dividend")
+                owner._add_assets(dividend_amount)
 
             if hasattr(owner, 'income_capital_cumulative'):
                 owner.income_capital_cumulative += dividend_amount
@@ -372,32 +393,54 @@ class FinanceDepartment:
         """Returns the current assets (cash) of the firm."""
         return self._cash
 
-    def invest_in_automation(self, amount: float) -> bool:
+    def invest_in_automation(self, amount: float, settlement_system: Any = None, reflux_system: Any = None) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "Automation Investment")
+            # Sunk cost or Reflux? Automation likely purchase from machine sector (abstract).
+            # If Reflux is available, transfer there.
+            if settlement_system and reflux_system:
+                settlement_system.transfer(self.firm, reflux_system, amount, "automation_investment")
+            else:
+                self.debit(amount, "Automation Investment")
+                if reflux_system:
+                    reflux_system.capture(amount, str(self.firm.id), "capex")
             return True
         return False
 
-    def invest_in_rd(self, amount: float) -> bool:
+    def invest_in_rd(self, amount: float, settlement_system: Any = None, reflux_system: Any = None) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "R&D Investment")
+            if settlement_system and reflux_system:
+                settlement_system.transfer(self.firm, reflux_system, amount, "rd_investment")
+            else:
+                self.debit(amount, "R&D Investment")
+                if reflux_system:
+                     reflux_system.capture(amount, str(self.firm.id), "capex")
+
             self.record_expense(amount)
             return True
         return False
 
-    def invest_in_capex(self, amount: float) -> bool:
+    def invest_in_capex(self, amount: float, settlement_system: Any = None, reflux_system: Any = None) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "CAPEX")
+            if settlement_system and reflux_system:
+                settlement_system.transfer(self.firm, reflux_system, amount, "capex")
+            else:
+                self.debit(amount, "CAPEX")
+                if reflux_system:
+                     reflux_system.capture(amount, str(self.firm.id), "capex")
             return True
         return False
 
     def set_dividend_rate(self, rate: float) -> None:
         self.firm.dividend_rate = rate
 
-    def pay_severance(self, employee: Household, amount: float) -> bool:
+    def pay_severance(self, employee: Household, amount: float, settlement_system: Any = None) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "Severance Pay")
-            employee._add_assets(amount)
+            if settlement_system:
+                settlement_system.transfer(self.firm, employee, amount, "severance")
+            else:
+                self.debit(amount, "Severance Pay")
+                employee._add_assets(amount)
+
             self.record_expense(amount)
             return True
         return False

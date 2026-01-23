@@ -8,6 +8,13 @@ from modules.finance.system import FinanceSystem
 class MockConfig:
     BAILOUT_PENALTY_PREMIUM = 0.05
     BAILOUT_REPAYMENT_RATIO = 0.5
+    BAILOUT_COVENANT_RATIO = 0.5
+
+    def get(self, key, default=None):
+        # Handle "economy_params.KEY" by taking just "KEY"
+        if "." in key:
+            key = key.split(".")[-1]
+        return getattr(self, key, default)
 
 @pytest.fixture
 def finance_test_environment():
@@ -17,7 +24,7 @@ def finance_test_environment():
 
     # We need to mock the withdraw/deposit methods to simulate transactions
     def withdraw(amount):
-        if mock_government.assets >= amount:
+        if mock_government._assets >= amount:
             mock_government._assets -= amount
         else:
             raise InsufficientFundsError("Not enough assets.")
@@ -72,8 +79,8 @@ def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
     and the returned DTO has the correct covenant type.
     """
     finance_system, mock_government, mock_firm = finance_test_environment
-    initial_govt_assets = mock_government.assets
-    initial_firm_assets = mock_firm.assets
+    initial_govt_assets = mock_government._assets
+    initial_firm_assets = mock_firm._assets
     initial_firm_debt = mock_firm.total_debt
     loan_amount = 50_000
 
@@ -89,17 +96,17 @@ def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
 
     # Assert - Money Flow Verification
     # 1. Government assets should decrease
-    assert mock_government.assets == initial_govt_assets - loan_amount
+    assert mock_government._assets == initial_govt_assets - loan_amount
     # 2. Firm should have received the funds and taken on the liability
     mock_firm.finance.add_liability.assert_called_once()
     # 3. Verify firm's final state
-    assert mock_firm.assets == initial_firm_assets + loan_amount
+    assert mock_firm._assets == initial_firm_assets + loan_amount
     assert mock_firm.total_debt == initial_firm_debt + loan_amount
     # 4. Firm should be marked as having a bailout loan
     assert mock_firm.has_bailout_loan is True
 
     # Assert - Regression check for money creation/destruction
-    final_total_assets = mock_government.assets + mock_firm.assets
+    final_total_assets = mock_government._assets + mock_firm._assets
     initial_total_assets = initial_govt_assets + initial_firm_assets
     assert final_total_assets == initial_total_assets
 
@@ -114,13 +121,13 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
     loan_amount = 2_000_000
     mock_government._assets = 1_000_000 # Government has 1M, loan is 2M
 
-    initial_govt_assets = mock_government.assets
-    initial_firm_assets = mock_firm.assets
+    initial_govt_assets = mock_government._assets
+    initial_firm_assets = mock_firm._assets
     initial_firm_debt = mock_firm.total_debt
 
     # Redefine the side effect for this specific test case to raise the error
     def limited_withdraw(amount):
-        if mock_government.assets < amount:
+        if mock_government._assets < amount:
             raise InsufficientFundsError("Test: Not enough funds")
         mock_government._assets -= amount
     mock_government.withdraw.side_effect = limited_withdraw
@@ -132,8 +139,8 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
     # 1. No loan DTO should be returned
     assert loan_dto is None
     # 2. No money should have moved
-    assert mock_government.assets == initial_govt_assets
-    assert mock_firm.assets == initial_firm_assets
+    assert mock_government._assets == initial_govt_assets
+    assert mock_firm._assets == initial_firm_assets
     assert mock_firm.total_debt == initial_firm_debt
     # 3. Firm should not be marked as having a loan
     assert mock_firm.has_bailout_loan is False

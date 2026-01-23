@@ -103,6 +103,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.time: int = 0
         sim.batch_save_interval = 50
 
+        # Initialize Settlement System Early (WO-116)
+        sim.settlement_system = SettlementSystem(logger=self.logger)
+
         sim.bank = Bank(
             id=sim.next_agent_id,
             initial_assets=self.config.INITIAL_BANK_ASSETS,
@@ -215,7 +218,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.firm_system = FirmSystem(config_module=self.config)
         sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger)
 
-        Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
+        Bootstrapper.inject_initial_liquidity(sim.firms, self.config, sim.settlement_system, sim.central_bank)
         Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
@@ -235,7 +238,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.social_system = SocialSystem(self.config)
         sim.event_system = EventSystem(self.config)
         sim.sensory_system = SensorySystem(self.config)
-        sim.settlement_system = SettlementSystem(logger=self.logger)
+        # sim.settlement_system initialized earlier
         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 

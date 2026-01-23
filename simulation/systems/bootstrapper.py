@@ -43,13 +43,15 @@ class Bootstrapper:
         return assigned_count
 
     @staticmethod
-    def inject_initial_liquidity(firms: List['Firm'], config: Any) -> None:
+    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: Any = None, source_agent: Any = None) -> None:
         """
         Injects a 30-tick buffer of raw materials and minimum capital.
 
         Args:
             firms: List of Firm agents.
             config: Configuration module (contains GOODS definition).
+            settlement_system: Settlement System for atomic transfer.
+            source_agent: Source of funds (e.g. Central Bank).
         """
         BUFFER_DAYS = 30.0
 
@@ -82,6 +84,9 @@ class Bootstrapper:
             # 2. Capital Injection (Demand Side)
             if firm.assets < Bootstrapper.MIN_CAPITAL:
                 diff = Bootstrapper.MIN_CAPITAL - firm.assets
-                firm._add_assets(diff)
+                if settlement_system and source_agent:
+                    settlement_system.transfer(source_agent, firm, diff, "bootstrap_capital_injection")
+                else:
+                    firm._add_assets(diff)
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

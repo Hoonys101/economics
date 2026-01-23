@@ -90,7 +90,6 @@ class DemographicManager:
             # Let's assume standard INITIAL_ASSETS or small portion from parent.
             # "Initial 자산은 부모 자산의 일부 이전"
             initial_gift = parent.assets * 0.1
-            parent._sub_assets(initial_gift)
 
             # Create Instance
             # We need to clone parent's structure but reset state
@@ -151,7 +150,7 @@ class DemographicManager:
                 id=child_id,
                 talent=child_talent,
                 goods_data=simulation.goods_data,
-                initial_assets=initial_gift,
+                initial_assets=0.0, # WO-116: Start with 0, then transfer
                 initial_needs={}, # Default reset
                 decision_engine=new_decision_engine,
                 value_orientation=value_orientation,
@@ -180,6 +179,14 @@ class DemographicManager:
                 self.logger.warning("AITrainingManager not found for brain inheritance.")
 
             new_children.append(child)
+
+            # WO-116: Atomic Transfer
+            settlement = getattr(simulation, 'settlement_system', None)
+            if settlement:
+                settlement.transfer(parent, child, initial_gift, "birth_gift")
+            else:
+                parent._sub_assets(initial_gift)
+                child._add_assets(initial_gift)
 
             self.logger.info(
                 f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
@@ -223,45 +230,3 @@ class DemographicManager:
         mult = multipliers.get(education_level, 1.0)
         return base_wage * mult
 
-    def handle_inheritance(self, deceased_agent: Household, simulation: Any):
-        """
-        Distribute assets to children.
-        """
-        if not deceased_agent.children_ids:
-            # No heirs -> State (Tax)
-            return # Already handled by existing liquidation logic (Government collection)
-
-        # Find living heirs
-        heirs = [simulation.agents[cid] for cid in deceased_agent.children_ids if cid in simulation.agents and simulation.agents[cid].is_active]
-
-        if not heirs:
-            return # No living heirs
-
-        # Distribute Assets
-        # Existing logic in engine._handle_agent_lifecycle wipes assets via tax?
-        # We need to intercept or modify engine to call this BEFORE wiping.
-        # But per instructions: "HouseholdAI handles decision, DemographicManager handles execution".
-        # Inheritance logic might need to run before standard liquidation.
-
-        amount = deceased_agent.assets
-        if amount <= 0: return
-
-        # Tax
-        tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.0)
-        tax = amount * tax_rate
-        net_amount = amount - tax
-
-        # Send Tax
-        simulation.government.collect_tax(tax, "inheritance_tax", deceased_agent.id, simulation.time)
-
-        # Distribute
-        share = net_amount / len(heirs)
-        for heir in heirs:
-            heir._add_assets(share)
-            self.logger.info(
-                f"INHERITANCE | Heir {heir.id} received {share:.2f} from {deceased_agent.id}.",
-                extra={"heir_id": heir.id, "deceased_id": deceased_agent.id}
-            )
-
-        # Clear deceased assets so engine doesn't double count or tax again
-        deceased_agent._sub_assets(deceased_agent.assets)
