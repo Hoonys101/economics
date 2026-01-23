@@ -53,28 +53,13 @@ class FinanceDepartment:
 
     def credit(self, amount: float, description: str = "") -> None:
         """Adds funds to the firm's cash reserves."""
-        # Unchecked credit. In some scenarios (correction) negative credit might be theoretically possible
-        # but generally discouraged. We accept it to handle external 'assets' property setters robustly.
         self._cash += amount
 
     def debit(self, amount: float, description: str = "") -> None:
         """
         Deducts funds from the firm's cash reserves.
-        Allows negative balance (insolvency) to be tracked rather than crashing,
-        but caller should generally check funds first.
         """
         self._cash -= amount
-
-    def calculate_and_debit_holding_costs(self) -> float:
-        """Calculates and pays inventory holding costs."""
-        inventory_value = self.get_inventory_value()
-        holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
-
-        if holding_cost > 0:
-            self.debit(holding_cost, "Inventory Holding Cost")
-            self.record_expense(holding_cost)
-
-        return holding_cost
 
     def record_revenue(self, amount: float):
         self.revenue_this_turn += amount
@@ -86,84 +71,143 @@ class FinanceDepartment:
         self.expenses_this_tick += amount
         self.current_profit -= amount
 
-    def pay_maintenance(self, government: Government, reflux_system: Optional[EconomicRefluxSystem], current_time: int):
-        """Pay fixed maintenance fee."""
+    def generate_holding_cost_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
+        """Generates inventory holding cost transaction."""
+        inventory_value = self.get_inventory_value()
+        holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
+
+        if holding_cost > 0:
+            # We record expense so Profit calc later in tick is correct
+            self.record_expense(holding_cost)
+
+            return Transaction(
+                buyer_id=self.firm.id,
+                seller_id=government.id, # Capture to Gov/Reflux
+                item_id="holding_cost",
+                quantity=1.0,
+                price=holding_cost,
+                market_id="system",
+                transaction_type="holding_cost",
+                time=current_time
+            )
+        return None
+
+    def generate_maintenance_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
+        """Generates maintenance fee transaction."""
         fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
-        payment = min(self._cash, fee) # Cap at available cash
+
+        # Optimistic check
+        payment = min(self._cash, fee)
 
         if payment > 0:
-            # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
-            government.collect_tax(payment, "firm_maintenance", self.firm, current_time)
             self.record_expense(payment)
-
             self.firm.logger.info(
-                f"Paid maintenance fee: {payment:.2f}",
+                f"Generated maintenance fee tx: {payment:.2f}",
                 extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "maintenance"]}
             )
+            return Transaction(
+                buyer_id=self.firm.id,
+                seller_id=government.id,
+                item_id="firm_maintenance",
+                quantity=1.0,
+                price=payment,
+                market_id="system",
+                transaction_type="tax",
+                time=current_time
+            )
+        return None
 
-    def pay_taxes(self, government: Government, current_time: int):
-        """Pay corporate tax on profit."""
+    def generate_tax_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
+        """Generates corporate tax transaction."""
         net_profit = self.revenue_this_turn - self.cost_this_turn
 
         if net_profit > 0:
             tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
             tax_amount = net_profit * tax_rate
 
-            payment = min(self._cash, tax_amount) # Cap at available cash
+            # Optimistic check
+            payment = min(self._cash, tax_amount)
 
             if payment > 0:
-                # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
-                government.collect_tax(payment, "corporate_tax", self.firm, current_time)
-
                 after_tax_profit = net_profit - payment
                 self.retained_earnings += after_tax_profit
-                # Note: We do NOT record_expense here because tax is usually considered separate from operating expenses in this model logic,
-                # OR it was already implicitly deducted from 'retained_earnings' calc.
-                # Wait, original code:
-                # self.debit(...)
-                # government.collect_tax(...)
-                # after_tax_profit = net_profit - payment
-                # retained_earnings += after_tax_profit
-
-                # It did NOT call record_expense().
-                # So we are fine.
 
                 self.firm.logger.info(
-                    f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}. Retained Earnings increased by {after_tax_profit:.2f}",
+                    f"Generated corporate tax tx: {payment:.2f} on profit {net_profit:.2f}.",
                     extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
                 )
 
+                return Transaction(
+                    buyer_id=self.firm.id,
+                    seller_id=government.id,
+                    item_id="corporate_tax",
+                    quantity=1.0,
+                    price=payment,
+                    market_id="system",
+                    transaction_type="tax",
+                    time=current_time
+                )
+        return None
+
+    def generate_marketing_transaction(self, government: Government, current_time: int, amount: float) -> Optional[Transaction]:
+        """Generates marketing spend transaction."""
+        if amount > 0:
+            self.record_expense(amount)
+            return Transaction(
+                buyer_id=self.firm.id,
+                seller_id=government.id, # Reflux/Gov capture
+                item_id="marketing",
+                quantity=1.0,
+                price=amount,
+                market_id="system",
+                transaction_type="marketing",
+                time=current_time
+            )
+        return None
+
     def process_profit_distribution(self, households: List[Household], government: Government, current_time: int) -> List[Transaction]:
-        """Public Shareholders Dividend"""
+        """
+        Public Shareholders Dividend & Bailout Repayment.
+        Returns List of Transactions.
+        """
+        transactions = []
+
+        # 1. Bailout Repayment
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
             repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
             repayment = self.current_profit * repayment_ratio
+
+            # Optimistic update of debt state (assuming tx succeeds)
+            # If it fails, we might drift. But TransactionProcessor should be reliable if funds exist.
+            # We assume funds exist if current_profit > 0 (implies we made money).
 
             # Ensure total_debt exists
             if not hasattr(self.firm, 'total_debt'):
                 self.firm.total_debt = 0.0
 
-            # Bailout repayment
-            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
-                self.firm.settlement_system.transfer(self.firm, government, repayment, "Bailout Repayment")
-            else:
-                self.debit(repayment, "Bailout Repayment")
-                government.deposit(repayment)
+            transactions.append(
+                Transaction(
+                    buyer_id=self.firm.id,
+                    seller_id=government.id,
+                    item_id="bailout_repayment",
+                    quantity=1.0,
+                    price=repayment,
+                    market_id="system",
+                    transaction_type="repayment",
+                    time=current_time
+                )
+            )
 
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
-            self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan to the government.")
+            self.firm.logger.info(f"BAILOUT_REPAYMENT | Generated repayment tx {repayment:.2f}.")
 
-            # Check if the loan is fully repaid
             if self.firm.total_debt <= 0:
                 self.firm.total_debt = 0.0
                 self.firm.has_bailout_loan = False
-                self.firm.logger.info(f"BAILOUT_PAID_OFF | Firm {self.firm.id} has fully repaid its bailout loan.")
 
-        transactions = []
+        # 2. Dividends
         distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)
-
-        # Reset tracker
         self.dividends_paid_last_tick = 0.0
 
         if distributable_profit > 0:
@@ -171,26 +215,19 @@ class FinanceDepartment:
                 shares = household.shares_owned.get(self.firm.id, 0.0)
                 if shares > 0:
                     dividend_amount = distributable_profit * (shares / self.firm.total_shares)
-                    # NOTE: Dividends are paid via TransactionProcessor normally.
-                    # TransactionProcessor sees "dividend" and does: seller.assets -= trade_value.
-                    # Since seller.assets will delegate to finance.debit, this works.
                     transactions.append(
                         Transaction(
-                            buyer_id=household.id,
-                            seller_id=self.firm.id,
+                            buyer_id=self.firm.id, # Firm pays Household
+                            seller_id=household.id,
                             item_id="dividend",
-                            quantity=dividend_amount,
-                            price=1.0,
+                            quantity=1.0, # 1 unit of dividend event
+                            price=dividend_amount, # Cash amount
                             market_id="financial",
                             transaction_type="dividend",
                             time=current_time,
                         )
                     )
                     self.dividends_paid_last_tick += dividend_amount
-                    self.firm.logger.info(
-                        f"Firm {self.firm.id} distributed {dividend_amount:.2f} dividend to Household {household.id}.",
-                        extra={"tick": current_time, "agent_id": self.firm.id, "household_id": household.id, "amount": dividend_amount, "tags": ["dividend"]},
-                    )
 
         # Reset period counters
         self.current_profit = 0.0
@@ -201,14 +238,14 @@ class FinanceDepartment:
 
         return transactions
 
-    def distribute_profit_private(self, agents: Dict[int, Any], current_time: int) -> float:
-        """Phase 14-1: Private Owner Dividend"""
+    def distribute_profit_private(self, agents: Dict[int, Any], government: Government, current_time: int) -> List[Transaction]:
+        """Phase 14-1: Private Owner Dividend Transaction Generation"""
         if self.firm.owner_id is None:
-            return 0.0
+            return []
 
         owner = agents.get(self.firm.owner_id)
         if owner is None:
-            return 0.0
+            return []
 
         maintenance_fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 0.0)
 
@@ -224,33 +261,58 @@ class FinanceDepartment:
 
         distributable_cash = self._cash - required_reserves
 
+        transactions = []
         if distributable_cash > 0:
             dividend_amount = distributable_cash
-            success = False
-            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
-                success = self.firm.settlement_system.transfer(self.firm, owner, dividend_amount, "Private Dividend")
-            else:
-                self.debit(dividend_amount, "Private Dividend")
-                owner.deposit(dividend_amount)
-                success = True
 
-            if success:
-                if hasattr(owner, 'income_capital_cumulative'):
-                    owner.income_capital_cumulative += dividend_amount
-                if hasattr(owner, 'capital_income_this_tick'):
-                    owner.capital_income_this_tick += dividend_amount
+            transactions.append(
+                Transaction(
+                    buyer_id=self.firm.id,
+                    seller_id=owner.id,
+                    item_id="private_dividend",
+                    quantity=1.0,
+                    price=dividend_amount,
+                    market_id="financial",
+                    transaction_type="dividend",
+                    time=current_time
+                )
+            )
 
-                self.retained_earnings -= dividend_amount
-                self.dividends_paid_last_tick += dividend_amount
+            # Optimistic state update
+            if hasattr(owner, 'income_capital_cumulative'):
+                owner.income_capital_cumulative += dividend_amount
+            if hasattr(owner, 'capital_income_this_tick'):
+                owner.capital_income_this_tick += dividend_amount
 
-                if self.firm.logger:
-                    self.firm.logger.info(
-                        f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
-                        extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
-                    )
-                return dividend_amount
+            self.retained_earnings -= dividend_amount
+            self.dividends_paid_last_tick += dividend_amount
 
-        return 0.0
+        return transactions
+
+    def generate_financial_transactions(self, government: Government, households: List[Household], current_time: int) -> List[Transaction]:
+        """Consolidates all financial outflow generation logic."""
+        transactions = []
+
+        # 1. Holding Costs
+        tx_holding = self.generate_holding_cost_transaction(government, current_time)
+        if tx_holding:
+            transactions.append(tx_holding)
+
+        # 2. Maintenance
+        tx_maint = self.generate_maintenance_transaction(government, current_time)
+        if tx_maint:
+            transactions.append(tx_maint)
+
+        # 3. Corporate Tax
+        tx_tax = self.generate_tax_transaction(government, current_time)
+        if tx_tax:
+            transactions.append(tx_tax)
+
+        # 4. Profit Distribution (Public)
+        txs_public = self.process_profit_distribution(households, government, current_time)
+        transactions.extend(txs_public)
+
+        return transactions
 
     def add_liability(self, amount: float, interest_rate: float):
         """Adds a liability (like a loan) to the firm's balance sheet."""

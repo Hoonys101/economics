@@ -79,18 +79,58 @@ class TickScheduler:
         ):
             state.ai_training_manager.run_imitation_learning_cycle(state.time)
 
-        # Update Bank Tick (Interest Processing)
-        if hasattr(state.bank, "run_tick") and "reflux_system" in state.bank.run_tick.__code__.co_varnames:
-             state.bank.run_tick(state.agents, state.time, reflux_system=state.reflux_system)
-        elif hasattr(state.bank, "run_tick") and "current_tick" in state.bank.run_tick.__code__.co_varnames:
-             state.bank.run_tick(state.agents, state.time)
-        else:
-             state.bank.run_tick(state.agents)
+        # ==================================================================================
+        # WO-116 Phase B: Transaction Generation Phase (System Transactions)
+        # ==================================================================================
+        system_transactions: List[Transaction] = []
 
-        # Phase 14-1: Firm Profit Distribution (Operation Reflux)
+        # 0. Firm Production (State Update: Inventory)
         for firm in state.firms:
-             firm.distribute_profit(state.agents, state.time)
+             if firm.is_active:
+                 firm.produce(state.time, technology_manager=state.technology_manager)
 
+        # 1. Bank Tick (Interest)
+        if hasattr(state.bank, "run_tick"):
+             bank_txs = state.bank.run_tick(state.agents, state.time, reflux_system=state.reflux_system)
+             system_transactions.extend(bank_txs)
+
+        # 2. Firm Financials (Wages, Taxes, Dividends) - Requires Market Data (T-1)
+        market_data_prev = self.prepare_market_data(state.tracker)
+        for firm in state.firms:
+             if firm.is_active:
+                 firm_txs = firm.generate_transactions(
+                     government=state.government,
+                     market_data=market_data_prev,
+                     all_households=state.households,
+                     current_time=state.time
+                 )
+                 system_transactions.extend(firm_txs)
+
+        # 3. Debt Service
+        debt_txs = state.finance_system.service_debt(state.time)
+        system_transactions.extend(debt_txs)
+
+        # 4. Welfare & Taxes (Wealth)
+        welfare_txs = state.government.run_welfare_check(list(state.agents.values()), market_data_prev, state.time)
+        system_transactions.extend(welfare_txs)
+
+        # 5. Infrastructure
+        infra_success, infra_txs = state.government.invest_infrastructure(state.time, state.reflux_system)
+        if infra_txs:
+            system_transactions.extend(infra_txs)
+
+        if infra_success:
+            tfp_boost = getattr(state.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
+            for firm in state.firms:
+                firm.productivity_factor *= (1.0 + tfp_boost)
+            state.logger.info(
+                f"GLOBAL_TFP_BOOST | All firms productivity increased by {tfp_boost*100:.1f}%",
+                extra={"tick": state.time, "tags": ["government", "infrastructure"]}
+            )
+
+        # ----------------------------------------------------------------------------------
+
+        # Cleanup Orders (Reset for new tick)
         for firm in state.firms:
             firm.hires_last_tick = 0
 
@@ -167,10 +207,8 @@ class TickScheduler:
 
         # [DEBUG WO-057]
         latest_indicators = state.tracker.get_latest_indicators()
-        avg_price = latest_indicators.get('avg_goods_price', 'MISSING')
-        inf_sma = sensory_dto.inflation_sma if isinstance(sensory_dto.inflation_sma, (int, float)) else 0.0
 
-        # 3. Government Makes Policy Decision
+        # 3. Government Makes Policy Decision (Act)
         latest_gdp = state.tracker.get_latest_indicators().get("total_production", 0.0)
         market_data["total_production"] = latest_gdp
 
@@ -184,15 +222,17 @@ class TickScheduler:
         # 4. Election Check
         state.government.check_election(state.time)
 
-        # Age firms
-        for firm in state.firms:
-            firm.age += 1
+        # Age firms (moved to Lifecycle/UpdateNeeds but kept partly here?)
+        # We handle 'age += 1' in firm.update_needs called in Lifecycle.
+        # So we can remove this loop.
+        # for firm in state.firms:
+        #    firm.age += 1
 
-        # Service national debt
-        state.finance_system.service_debt(state.time)
+        # Service national debt -> Moved to Transaction Gen
+        # state.finance_system.service_debt(state.time)
 
-        # Phase 4: Welfare Check
-        state.government.run_welfare_check(list(state.agents.values()), market_data, state.time)
+        # Phase 4: Welfare Check -> Moved to Transaction Gen
+        # state.government.run_welfare_check(list(state.agents.values()), market_data, state.time)
 
         # Snapshot agents for learning (Pre-state)
         for f in state.firms:
@@ -237,7 +277,7 @@ class TickScheduler:
         self._phase_matching(sim_state)
 
         # 3. Transactions
-        self._phase_transactions(sim_state)
+        self._phase_transactions(sim_state, system_transactions)
 
         # 4. Lifecycle
         self._phase_lifecycle(sim_state)
@@ -309,29 +349,13 @@ class TickScheduler:
         # ---------------------------------------------------------
         for firm in state.firms:
              if firm.is_active:
-                 firm.produce(state.time, technology_manager=state.technology_manager)
+                 # firm.produce -> Moved to Pre-Decision
+                 # firm.update_needs -> Refactored to only do Lifecycle state updates (not financial)
                  firm.update_needs(state.time, state.government, market_data, state.reflux_system)
 
-                 # 2a. Corporate Tax
-                 if firm.is_active and firm.current_profit > 0:
-                     tax_amount = state.government.calculate_corporate_tax(firm.current_profit)
-                     if state.settlement_system:
-                         state.settlement_system.transfer(firm, state.government, tax_amount, "corporate_tax")
-                     else:
-                         # Fallback
-                         firm._sub_assets(tax_amount)
-                         state.government._add_assets(tax_amount)
-                     state.government.collect_tax(tax_amount, "corporate_tax", firm.id, state.time)
+                 # Corporate Tax -> Removed (Handled in Transaction Generation)
 
-        # 2b. Government Infra Investment
-        if state.government.invest_infrastructure(state.time, state.reflux_system):
-            tfp_boost = getattr(state.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
-            for firm in state.firms:
-                firm.productivity_factor *= (1.0 + tfp_boost)
-            state.logger.info(
-                f"GLOBAL_TFP_BOOST | All firms productivity increased by {tfp_boost*100:.1f}%",
-                extra={"tick": state.time, "tags": ["government", "infrastructure"]}
-            )
+                 # Gov Infra -> Removed (Handled in Pre-Decision)
 
         # --- AI Learning Update (Unified) ---
         market_data_for_learning = self.prepare_market_data(state.tracker)
@@ -603,8 +627,12 @@ class TickScheduler:
 
         state.transactions = all_transactions
 
-    def _phase_transactions(self, state: SimulationState) -> None:
+    def _phase_transactions(self, state: SimulationState, system_transactions: List[Transaction] = []) -> None:
         """Phase 3: Execute transactions."""
+        # Merge system transactions
+        if system_transactions:
+            state.transactions.extend(system_transactions)
+
         # Use the system service directly via WorldState (or passed if added to DTO)
         if self.world_state.transaction_processor:
             self.world_state.transaction_processor.execute(state)

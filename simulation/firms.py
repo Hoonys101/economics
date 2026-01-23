@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from simulation.ai.firm_system2_planner import FirmSystem2Planner
     from simulation.markets.stock_market import StockMarket
     from simulation.agents.government import Government
+    from simulation.systems.reflux_system import EconomicRefluxSystem
     from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)
@@ -492,81 +493,51 @@ class Firm(BaseAgent, ILearningAgent):
             details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
         )
 
-    @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
-        self.age += 1
-        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
-        # SoC Refactor
-        self.logger.debug(
-            f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.hr.employees)}",
-            extra={
-                **log_extra,
-                "needs_before": self.needs,
-                "assets_before": self.assets,
-                "num_employees_before": len(self.hr.employees),
-            },
-        )
+    def generate_transactions(self, government: Optional[Government], market_data: Dict[str, Any], all_households: List[Household], current_time: int) -> List[Transaction]:
+        """
+        Generates all financial transactions for the tick (Wages, Taxes, Dividends, etc.).
+        Phase 3 Architecture.
+        """
+        transactions = []
 
-        # --- Core Operations (SoC Refactor) ---
-        # 1. Produce
-        self.produce(current_time, technology_manager)
+        # 1. Wages & Income Tax (HR)
+        tx_payroll = self.hr.process_payroll(current_time, government, market_data)
+        transactions.extend(tx_payroll)
 
-        # 2. Pay Wages & Holding Costs
-        # WO-103 Phase 1: Delegated Holding Cost Calculation
-        holding_cost = self.finance.calculate_and_debit_holding_costs()
+        # 2. Finance Transactions (Holding, Maint, Corp Tax, Dividends, Bailout Repayment)
+        tx_finance = self.finance.generate_financial_transactions(government, all_households, current_time)
+        transactions.extend(tx_finance)
 
-        if holding_cost > 0:
-            if reflux_system:
-                reflux_system.capture(holding_cost, str(self.id), "fixed_cost")
-            self.logger.info(
-                f"Paid inventory holding cost: {holding_cost:.2f}",
-                extra={**log_extra, "holding_cost": holding_cost},
-            )
-
-        total_wages = self.hr.process_payroll(current_time, government, market_data)
-        if total_wages > 0:
-            self.finance.record_expense(total_wages)
-            self.logger.info(
-                f"Paid total wages: {total_wages:.2f} to {len(self.hr.employees)} employees.",
-                extra={**log_extra, "total_wages": total_wages},
-            )
-
-        # 3. Marketing & Brand Update
-        marketing_spend = 0.0
-        # SoC Refactor
+        # 3. Marketing (Direct Calculation here as per old update_needs)
         if self.assets > 100.0:
             marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
-        
+        else:
+            marketing_spend = 0.0
+
         if self.assets < marketing_spend:
              marketing_spend = 0.0
 
         if marketing_spend > 0:
-             # WO-103 Phase 1: Transactional method
-             self.finance.debit(marketing_spend, "Marketing")
-             self.finance.record_expense(marketing_spend)
-             if reflux_system:
-                 reflux_system.capture(marketing_spend, str(self.id), "marketing")
+            tx_marketing = self.finance.generate_marketing_transaction(government, current_time, marketing_spend)
+            if tx_marketing:
+                transactions.append(tx_marketing)
 
+        # State Update: Set budget for next decisions
         self.marketing_budget = marketing_spend
+        # Brand Update: Needs to happen (optimistic about spend success)
         self.brand_manager.update(marketing_spend, self.productivity_factor / 10.0)
-        self.sales.adjust_marketing_budget() # Note: Renamed from _adjust_marketing_budget
+        self.sales.adjust_marketing_budget()
 
-        # 4. Pay Taxes (after all other expenses)
-        if government:
-            self.finance.pay_maintenance(government, reflux_system, current_time)
-            self.finance.pay_taxes(government, current_time)
+        return transactions
 
-        brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
-        self.logger.info(
-            f"FIRM_BRAND_METRICS | Firm {self.id}: Awareness={self.brand_manager.brand_awareness:.4f}, "
-            f"Quality={self.brand_manager.perceived_quality:.4f}, Premium={brand_premium:.2f}",
-            extra={
-                **log_extra,
-                "brand_awareness": self.brand_manager.brand_awareness,
-                "perceived_quality": self.brand_manager.perceived_quality,
-                "brand_premium": brand_premium
-            }
-        )
+    @override
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
+        """
+        Lifecycle updates (Age, Bankruptcy Check).
+        Financial transactions are now in generate_transactions.
+        Production is in produce.
+        """
+        self.age += 1
 
         # --- Final State Updates & Checks ---
         self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"] + self.config_module.LIQUIDITY_NEED_INCREASE_RATE)
@@ -578,34 +549,26 @@ class Firm(BaseAgent, ILearningAgent):
             self.logger.warning(
                 f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.finance.consecutive_loss_turns}",
                 extra={
-                    **log_extra,
+                    "tick": current_time,
+                    "agent_id": self.id,
                     "assets": self.assets,
                     "consecutive_loss_turns": self.finance.consecutive_loss_turns,
                     "tags": ["firm_closure"],
                 },
             )
 
-        self.logger.debug(
-            f"FIRM_NEEDS_UPDATE_END | Firm {self.id} needs after update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
-            extra={
-                **log_extra,
-                "needs_after": self.needs,
-                "assets_after": self.assets,
-                "num_employees_after": len(self.hr.employees),
-                "is_active_after": self.is_active,
-                "brand_awareness": self.brand_manager.brand_awareness,
-                "perceived_quality": self.brand_manager.perceived_quality
-            },
-        )
-
     # Legacy: _pay_maintenance and _pay_taxes removed as they are now in FinanceDepartment
 
     def distribute_profit(self, agents: Dict[int, Any], current_time: int) -> float:
         """
-        Phase 14-1: Mandatory Dividend Rule.
-        Distribute surplus cash to owner if reserves are met.
+        Legacy method kept for compatibility but should use generate_transactions.
+        Calls distribute_profit_private which returns List[Transaction] now, but signature says float?
+        FinanceDepartment.distribute_profit_private returns List[Transaction].
+        So we cannot return float if we use it.
+        We will return 0.0 dummy or fix caller.
+        TickScheduler uses this method in old code. New code will use generate_transactions.
         """
-        return self.finance.distribute_profit_private(agents, current_time)
+        return 0.0
 
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the firm's cash reserves."""

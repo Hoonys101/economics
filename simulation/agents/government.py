@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any, Deque
+from typing import Dict, List, Any, Deque, Tuple
 from collections import deque
 from simulation.ai.enums import PoliticalParty
 from simulation.interfaces.policy_interface import IGovernmentPolicy
@@ -8,9 +8,11 @@ from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 from simulation.dtos import GovernmentStateDTO
 from typing import Optional, TYPE_CHECKING
 from simulation.utils.shadow_logger import log_shadow
+from simulation.models import Transaction
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
+    from modules.finance.api import BailoutLoanDTO
 from simulation.systems.tax_agency import TaxAgency
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from modules.finance.api import InsufficientFundsError
@@ -164,6 +166,7 @@ class Government:
 
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int):
         """세금을 징수합니다."""
+        # Legacy method support if any direct calls remain, though TickScheduler uses transactions now.
         return self.tax_agency.collect_tax(self, amount, tax_type, payer, current_tick)
 
     def update_public_opinion(self, households: List[Any]):
@@ -182,13 +185,10 @@ class Government:
         avg_approval = total_approval / count if count > 0 else 0.5
         self.public_opinion_queue.append(avg_approval)
 
-        # Update Perceived Opinion (Lagged)
-        # We take the oldest value in the queue (FIFO)
-        # If queue is full (len 4), index 0 is 4 ticks ago.
         if len(self.public_opinion_queue) > 0:
             self.perceived_public_opinion = self.public_opinion_queue[0]
 
-        self.approval_rating = avg_approval # Real-time value (for omniscient logging)
+        self.approval_rating = avg_approval
 
     def check_election(self, current_tick: int):
         """
@@ -198,8 +198,6 @@ class Government:
         if current_tick > 0 and current_tick % election_cycle == 0:
             self.last_election_tick = current_tick
 
-            # Retrospective Voting
-            # If Perceived Opinion < 0.5 (Tolerance), Incumbent loses.
             if self.perceived_public_opinion < 0.5:
                 # Flip Party
                 old_party = self.ruling_party
@@ -221,23 +219,19 @@ class Government:
         (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
-        # WO-057-B FIX: Pass the smoothed sensory data, not the raw market_data
         decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)
         
-        # 2. 결과 로깅 (엔진 내부에서 상세 로깅 수행)
         if decision.get("status") == "EXECUTED":
              logger.debug(
                 f"POLICY_EXECUTED | Tick: {current_tick} | Action: {decision.get('action_taken')}",
                 extra={"tick": current_tick, "agent_id": self.id}
             )
 
-
         gdp_gap = 0.0
         if self.potential_gdp > 0:
             current_gdp = market_data.get("total_production", 0.0)
             gdp_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
 
-            # Simple EMA update for Potential GDP
             alpha = 0.01
             self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
 
@@ -257,17 +251,10 @@ class Government:
             if past_gdp > 0:
                 real_gdp_growth = (current_gdp - past_gdp) / past_gdp
 
-        # 5. Taylor Rule 2.0
-        # Target_Rate = Real_GDP_Growth + Inflation + 0.5*(Inf - Target_Inf) + 0.5*(GDP_Gap)
         target_inflation = getattr(self.config_module, "CB_INFLATION_TARGET", 0.02)
-
-        # Neutral Rate assumption: Real Growth
-        neutral_rate = max(0.01, real_gdp_growth) # Floor at 1%?
-
+        neutral_rate = max(0.01, real_gdp_growth)
         target_rate = neutral_rate + inflation + 0.5 * (inflation - target_inflation) + 0.5 * gdp_gap
 
-        # 6. Log
-        # Get current base rate from market_data["loan_market"] or similar
         current_base_rate = 0.05
         if "loan_market" in market_data:
             current_base_rate = market_data["loan_market"].get("interest_rate", 0.05)
@@ -284,49 +271,60 @@ class Government:
             details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
         )
 
-    def provide_household_support(self, household: Any, amount: float, current_tick: int):
-        """Provides subsidies to households (e.g., unemployment, stimulus)."""
+    def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
+        """Provides subsidies to households (e.g., unemployment, stimulus). Returns transactions."""
+        transactions = []
         effective_amount = amount * self.welfare_budget_multiplier
 
         if effective_amount <= 0:
-            return 0.0
+            return []
+
+        # Check budget, issue bonds if needed (Optimistic check)
 
         if self.assets < effective_amount:
             needed = effective_amount - self.assets
-            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
-            if not issued_bonds:
+            # FinanceSystem now returns (bonds, transactions)
+            bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
+            if not bonds:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
-                return 0.0
+                return []
+            transactions.extend(txs)
 
-        success = False
-        if self.settlement_system:
-            success = self.settlement_system.transfer(self, household, effective_amount, "Household Support")
-        else:
-            self.withdraw(effective_amount)
-            household.deposit(effective_amount)
-            success = True
+        # Generate Welfare Transaction
+        tx = Transaction(
+            buyer_id=self.id,
+            seller_id=household.id,
+            item_id="welfare_support",
+            quantity=1.0,
+            price=effective_amount,
+            market_id="system",
+            transaction_type="welfare",
+            time=current_tick
+        )
+        transactions.append(tx)
 
-        if success:
-            self.total_spent_subsidies += effective_amount
-            self.expenditure_this_tick += effective_amount
-            self.current_tick_stats["welfare_spending"] += effective_amount
+        self.total_spent_subsidies += effective_amount
+        self.expenditure_this_tick += effective_amount
+        self.current_tick_stats["welfare_spending"] += effective_amount
 
         logger.info(
-            f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
+            f"HOUSEHOLD_SUPPORT | Generated support tx of {effective_amount:.2f} to {household.id}",
             extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
         )
-        return effective_amount
+        return transactions
 
-    def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int):
-        """Provides a bailout loan to a firm if it's eligible."""
+    def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
+        """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
         if self.finance_system.evaluate_solvency(firm, current_tick):
             logger.info(f"BAILOUT_APPROVED | Firm {firm.id} is eligible for a bailout.")
-            loan = self.finance_system.grant_bailout_loan(firm, amount)
-            self.expenditure_this_tick += amount
-            return loan
+            # FinanceSystem now returns (loan, transactions)
+            loan, txs = self.finance_system.grant_bailout_loan(firm, amount, current_tick)
+            if loan:
+                self.expenditure_this_tick += amount
+            return loan, txs
         else:
             logger.warning(f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout.")
-            return None
+            return None, []
 
     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
         """ Calculates current survival cost based on food prices. """
@@ -340,33 +338,13 @@ class Government:
         daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
         return max(avg_food_price * daily_food_need, 10.0)
 
-    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int):
+    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
         """
         Government Main Loop Step.
-        1. Reset Tick Flow.
-        2. Make AI Policy Decisions (Act).
-        3. Check Election (Judge).
-        4. Execute Welfare/Stimulus (using updated policy).
+        Returns List of Transactions.
         """
-        # Ensure tick flow is reset at the start of government processing
+        transactions = []
         self.reset_tick_flow()
-
-        # --- Phase 17-5: Leviathan Logic ---
-        # 1. Update Opinion & Make Decision
-        # Note: Opinion is updated by Engine calling update_public_opinion BEFORE this method?
-        # Yes, Plan says engine.py loop will call update_public_opinion -> make_decision -> check_election.
-        # But here in run_welfare_check, we can group them if engine calls this.
-        # Current engine.py calls run_welfare_check.
-        # So I will move the AI calls HERE or keep them in Engine.
-        # The prompt plan says "Update Simulation Engine... Call household.update_political_opinion... government.update_public_opinion... make_policy_decision".
-        # If I put them in Engine, run_welfare_check becomes just "Execute Welfare".
-        # Let's keep run_welfare_check focused on Welfare execution, and let Engine handle the high level "Government Thinking".
-
-        # However, run_welfare_check also did "adjust_fiscal_policy".
-        # I should REMOVE the old `adjust_fiscal_policy` call here as AI replaces it.
-        # I removed it below.
-
-        # ---------------------------------------
 
         # 1. Calculate Survival Cost (Dynamic)
         survival_cost = self.get_survival_cost(market_data)
@@ -390,23 +368,32 @@ class Government:
             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
                 # A. Wealth Tax
                 net_worth = agent.assets
-                # Stock Value logic skipped for brevity/speed as per original
-
                 if net_worth > wealth_threshold:
                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
-                    # Check available assets
                     tax_amount = min(tax_amount, agent.assets)
 
                     if tax_amount > 0:
-                        self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
+                        # Generate Tax Transaction
+                        tx = Transaction(
+                            buyer_id=agent.id,
+                            seller_id=self.id,
+                            item_id="wealth_tax",
+                            quantity=1.0,
+                            price=tax_amount,
+                            market_id="system",
+                            transaction_type="tax",
+                            time=current_tick
+                        )
+                        transactions.append(tx)
                         total_wealth_tax += tax_amount
 
                 # B. Unemployment Benefit
                 if not agent.is_employed:
-                    self.provide_household_support(agent, benefit_amount, current_tick)
+                    txs = self.provide_household_support(agent, benefit_amount, current_tick)
+                    transactions.extend(txs)
                     total_welfare_paid += benefit_amount
 
-        # 3. Stimulus Check (Legacy Logic, now influenced by AI multiplier)
+        # 3. Stimulus Check
         current_gdp = market_data.get("total_production", 0.0)
         self.gdp_history.append(current_gdp)
         if len(self.gdp_history) > self.gdp_history_window:
@@ -428,37 +415,49 @@ class Government:
 
              total_stimulus = 0.0
              for h in active_households:
-                 paid = self.provide_household_support(h, stimulus_amount, current_tick)
-                 total_stimulus += paid
+                 txs = self.provide_household_support(h, stimulus_amount, current_tick)
+                 transactions.extend(txs)
+
+                 # Calculate total from txs for logging?
+                 # Assuming 1 welfare tx per support call
+                 for tx in txs:
+                     if tx.transaction_type == 'welfare':
+                         total_stimulus += tx.price
 
              if total_stimulus > 0:
                  logger.warning(
-                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Paid {total_stimulus:.2f}.",
+                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Generated stimulus txs total {total_stimulus:.2f}.",
                      extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
                  )
 
-    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> bool:
-        """인프라에 투자하여 전체 생산성을 향상시킵니다."""
+        return transactions
+
+    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> Tuple[bool, List[Transaction]]:
+        """인프라에 투자하여 전체 생산성을 향상시킵니다. Returns (Success, Transactions)."""
+        transactions = []
         cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
         
-        # Apply AI Multiplier? Maybe firm subsidy multiplier applies here too?
-        # Let's say BLUE party loves infrastructure.
-        effective_cost = cost # Cost is fixed, but decision to buy depends on funds
+        effective_cost = cost
 
-        # If multiplier < 1.0 (Austerity), maybe we skip investment?
         if self.firm_subsidy_budget_multiplier < 0.8:
-            return False
+            return False, []
 
         if self.assets < effective_cost:
             needed = effective_cost - self.assets
-            issued_bonds = self.finance_system.issue_treasury_bonds(needed, current_tick)
-            if not issued_bonds:
+            bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
+            if not bonds:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
-                return False
+                return False, []
+            transactions.extend(txs)
 
-        # Note: Ideally this would be a transfer to a contractor/firm, but for now it's a sink or abstract investment.
-        # We use withdraw().
-        self.withdraw(effective_cost)
+        # Legacy Side Effect: Direct Withdrawal (acknowledged technical debt)
+        try:
+            self.withdraw(effective_cost)
+        except InsufficientFundsError:
+            # If withdraw failed despite bond checks, we fail.
+            # But we return bond transactions if they were generated (optimistic issuance).
+            return False, transactions
+
         self.expenditure_this_tick += effective_cost
         if reflux_system:
             reflux_system.capture(effective_cost, str(self.id), "infrastructure")
@@ -474,7 +473,7 @@ class Government:
                 "tags": ["investment", "infrastructure"]
             }
         )
-        return True
+        return True, transactions
 
     def finalize_tick(self, current_tick: int):
         """
@@ -558,15 +557,3 @@ class Government:
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
         self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
-
-    def deposit(self, amount: float) -> None:
-        """Deposits a given amount into the government's assets."""
-        if amount > 0:
-            self._assets += amount
-
-    def withdraw(self, amount: float) -> None:
-        """Withdraws a given amount from the government's assets."""
-        if amount > 0:
-            if self.assets < amount:
-                raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self._assets -= amount

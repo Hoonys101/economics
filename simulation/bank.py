@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import math
 from modules.common.config_manager.api import ConfigManager
 from modules.finance.api import InsufficientFundsError, IFinancialEntity
+from simulation.models import Transaction
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -144,23 +145,6 @@ class Bank(IFinancialEntity):
         # 2. Liquidity Check
         # 1a. Credit Jail Check (Phase 4)
         if self._get_config("credit_recovery_ticks", None) is not None:
-            # We assume borrower_id maps to an agent object passed somewhere, but here we only have ID.
-            # We need to access the agent to check 'credit_frozen_until_tick'.
-            # Bank doesn't have direct access to agent list in grant_loan signature.
-            # But grant_loan is usually called by LoanMarket which has access or the Agent itself calls it via Market.
-            # Wait, LoanMarket.process_loan_request calls this.
-            # Ideally, LoanMarket should check this before calling grant_loan.
-            # BUT, to enforce it at the Bank level, we'd need the agent object or a way to look it up.
-            # Since we don't have it here easily without changing signature, let's assume LoanMarket checks it OR
-            # we rely on the fact that if an agent is in credit jail, their 'credit_rating' (conceptually) is 0.
-            # Let's enforce it in LoanMarket instead?
-            # The spec says "Modify Bank to handle defaults ... prevents Moral Hazard".
-            # It also says "Bankrupt agents remain active but are economically crippled (Credit Jail)."
-            # Let's add an optional 'borrower_agent' arg or rely on LoanMarket.
-            # I'll update LoanMarket in the next steps or if I can modify Bank signature.
-            # Actually, Bank.run_tick has access to 'agents_dict'.
-            # Let's trust LoanMarket for now, OR change signature.
-            # I will assume LoanMarket handles the denial based on the flag I added to Household.
             pass
 
         # 3. Gold Standard (Full Reserve) Check vs. Fractional Reserve (WO-064)
@@ -326,16 +310,16 @@ class Bank(IFinancialEntity):
                 total_deposit += deposit.amount
         return total_deposit
 
-    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None):
+    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None) -> List[Transaction]:
         """
         Process interest payments and distributions.
-        Must be called every tick.
+        Returns a list of transactions to be executed by TransactionProcessor.
         """
+        generated_transactions: List[Transaction] = []
         ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
 
         # 1. Collect Interest from Loans
         total_loan_interest = 0.0
-        loans_to_remove = []
 
         for loan_id, loan in self.loans.items():
             agent = agents_dict.get(loan.borrower_id)
@@ -345,52 +329,45 @@ class Bank(IFinancialEntity):
 
             # Calculate Interest Payment
             interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
-
-            # Principal Repayment (Amortized or Bullet? Assuming Bullet for now or minimal amortization)
-            # Let's simple amortization: Principal / Remaining Term
-            # Wait, design spec says "Man-gi or Bun-hal". Let's do simple interest only + Principal at end?
-            # Or constant payment?
-            # Spec: "tick_payment = (balance * annual_rate) / TICKS_PER_YEAR" -> This is Interest Only.
-
             payment = interest_payment
 
-            # Try to collect
+            # Optimistic check (actual verification happens in TransactionProcessor)
+            # However, if we want to trigger default logic, we MUST check here or defer default logic.
+            # If we generate a transaction and it fails later, how do we trigger Default?
+            # The TransactionProcessor doesn't trigger callbacks on failure yet.
+            # So, we must check 'assets' here to decide whether to issue 'Interest Payment' or 'Default Protocol'.
+            # This relies on 'agent.assets' being accurate at this point.
+
             if agent.assets >= payment:
-                success = False
-                if self.settlement_system:
-                    success = self.settlement_system.transfer(agent, self, payment, f"Loan Interest {loan_id}")
-                else:
-                    agent.withdraw(payment)
-                    self.deposit(payment)
-                    success = True
-
-                if success:
-                    total_loan_interest += payment
-
-                    # Record Expense for Firms (FinanceDepartment)
-                    if hasattr(agent, 'finance') and hasattr(agent.finance, 'record_expense'):
-                        agent.finance.record_expense(payment)
+                tx = Transaction(
+                    buyer_id=agent.id, # Payer
+                    seller_id=self.id, # Payee
+                    item_id=loan_id,
+                    quantity=1.0,
+                    price=payment,
+                    market_id="financial",
+                    transaction_type="loan_interest",
+                    time=current_tick
+                )
+                generated_transactions.append(tx)
+                total_loan_interest += payment
 
             else:
-                # Default / Penalty logic
-                # Phase 4: Call process_default
                 self.process_default(agent, loan, current_tick)
-
-                # Take whatever is left (process_default might have seized assets already)
                 partial = agent.assets
                 if partial > 0:
-                     success = False
-                     if self.settlement_system:
-                         success = self.settlement_system.transfer(agent, self, partial, f"Loan Default Recovery {loan_id}")
-                     else:
-                         # Force withdrawal of remaining balance
-                         # Assuming partial = agent.assets
-                         agent.withdraw(partial)
-                         self.deposit(partial)
-                         success = True
-
-                     if success:
-                        total_loan_interest += partial
+                    tx = Transaction(
+                        buyer_id=agent.id,
+                        seller_id=self.id,
+                        item_id=loan_id,
+                        quantity=1.0,
+                        price=partial,
+                        market_id="financial",
+                        transaction_type="loan_default_recovery",
+                        time=current_tick
+                    )
+                    generated_transactions.append(tx)
+                    total_loan_interest += partial
 
         # 2. Pay Interest to Depositors
         total_deposit_interest = 0.0
@@ -401,45 +378,58 @@ class Bank(IFinancialEntity):
 
             interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
 
+            # Optimistic check
             if self.assets >= interest_payout:
-                success = False
-                if self.settlement_system:
-                    success = self.settlement_system.transfer(self, agent, interest_payout, f"Deposit Interest {dep_id}")
-                else:
-                    self.withdraw(interest_payout)
-                    agent.deposit(interest_payout)
-                    success = True
+                 tx = Transaction(
+                    buyer_id=self.id, # Bank pays
+                    seller_id=agent.id, # Depositor receives
+                    item_id=dep_id,
+                    quantity=1.0,
+                    price=interest_payout,
+                    market_id="financial",
+                    transaction_type="deposit_interest",
+                    time=current_tick
+                 )
+                 generated_transactions.append(tx)
+                 total_deposit_interest += interest_payout
 
-                # Track Capital Income (Interest)
-                from simulation.core_agents import Household
-                if isinstance(agent, Household) and hasattr(agent, "capital_income_this_tick"):
+                 # Side effect: Track capital income
+                 from simulation.core_agents import Household
+                 if isinstance(agent, Household) and hasattr(agent, "capital_income_this_tick"):
                     agent.capital_income_this_tick += interest_payout
-
-                total_deposit_interest += interest_payout
-                # Compounding? Usually deposits compound.
-                # If we pay to agent.assets, it's "Payout".
-                # If we add to deposit.amount, it's "Compound".
-                # Spec says: "bank.reserves 차감, agent.assets 증가 (유동성 공급)" -> Payout.
             else:
-                # Bank run scenario?
-                logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
+                 logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
 
-        # Phase 8-B: Capture Net Profit (Reflux)
-        # Net Profit = Interest Income - Interest Expense
+        # 3. Bank Profit Capture (Reflux)
         net_profit = total_loan_interest - total_deposit_interest
-        if net_profit > 0 and reflux_system:
-            # Transfer profit to reflux system (Distribution as dividend/service fee)
-            # This ensures Bank doesn't accumulate infinite money.
-            # Bank assets were already updated above (+loan_int, -dep_int).
-            # So we subtract net_profit from assets.
-            self._assets -= net_profit
-            reflux_system.capture(net_profit, "Bank", "net_profit")
-            logger.info(f"BANK_PROFIT_CAPTURE | Transferred {net_profit:.2f} to Reflux System.")
+
+        # Find Government for profit transfer
+        gov_agent = None
+        for a in agents_dict.values():
+             if a.__class__.__name__ == 'Government':
+                 gov_agent = a
+                 break
+
+        if net_profit > 0 and gov_agent:
+             tx = Transaction(
+                 buyer_id=gov_agent.id, # Government receives
+                 seller_id=self.id, # Bank pays
+                 item_id="bank_profit",
+                 quantity=1.0,
+                 price=net_profit,
+                 market_id="financial",
+                 transaction_type="reflux_capture",
+                 time=current_tick
+             )
+             generated_transactions.append(tx)
+             logger.info(f"BANK_PROFIT_CAPTURE | Generated transaction of {net_profit:.2f} to Government.")
 
         logger.info(
-            f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Net Profit: {net_profit:.2f}, Reserves: {self.assets:.2f}",
+            f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Net Profit: {net_profit:.2f}, Generated Txs: {len(generated_transactions)}",
             extra={"agent_id": self.id, "tags": ["bank", "tick"]}
         )
+
+        return generated_transactions
 
     # Legacy method support for compatibility if needed, but we are rewriting
     def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
@@ -475,10 +465,6 @@ class Bank(IFinancialEntity):
              # If we have a reference to government via simulation later, but here we take config
              pass
         
-        # We need a way to increment gov.total_money_issued. 
-        # Since Bank doesn't have gov reference directly, we'll return the amount
-        # or rely on the engine to track it if we flag it.
-        # Better: Pass government to Bank.run_tick or check_solvency.
         logger.warning(f"BANK_BORROWING | Central Bank injected {amount:.2f} into Bank {self.id} reserves.")
 
     def check_solvency(self, government: Any):

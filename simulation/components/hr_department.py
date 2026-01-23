@@ -5,6 +5,7 @@ import logging
 if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.firms import Firm
+    from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +33,14 @@ class HRDepartment:
 
         return base_wage * actual_skill * halo_modifier
 
-    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]]) -> float:
+    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]]) -> List[Transaction]:
         """
         Pays wages to employees. Handles insolvency firing if assets are insufficient.
-        Returns total wages paid.
+        Returns list of Transactions.
         """
-        total_wages = 0.0
-        total_tax_withheld = 0.0
+        from simulation.models import Transaction
+
+        generated_transactions: List[Transaction] = []
 
         # Calculate survival cost for tax logic
         survival_cost = 10.0 # Default fallback
@@ -61,7 +63,7 @@ class HRDepartment:
             base_wage = self.employee_wages.get(employee.id, self.firm.config_module.LABOR_MARKET_MIN_WAGE)
             wage = self.calculate_wage(employee, base_wage)
 
-            # Affordability Check
+            # Affordability Check (Optimistic)
             if self.firm.assets >= wage:
                 # Calculate Tax
                 income_tax = 0.0
@@ -70,41 +72,70 @@ class HRDepartment:
 
                 net_wage = wage - income_tax
 
-                # Transactions
-                self.firm._sub_assets(wage)
-                employee._add_assets(net_wage)
+                # Transaction 1: Net Wage (Firm -> Employee)
+                tx_wage = Transaction(
+                    buyer_id=self.firm.id, # Payer
+                    seller_id=employee.id, # Payee
+                    item_id="labor_wage",
+                    quantity=1.0,
+                    price=net_wage,
+                    market_id="labor",
+                    transaction_type="wage",
+                    time=current_time
+                )
+                generated_transactions.append(tx_wage)
 
-                # Track Labor Income
+                # Transaction 2: Income Tax (Firm -> Government) [Withholding]
+                if income_tax > 0 and government:
+                    tx_tax = Transaction(
+                        buyer_id=self.firm.id, # Payer
+                        seller_id=government.id, # Payee
+                        item_id="income_tax",
+                        quantity=1.0,
+                        price=income_tax,
+                        market_id="system",
+                        transaction_type="tax",
+                        time=current_time
+                    )
+                    generated_transactions.append(tx_tax)
+
+                # Track Labor Income (Side Effect)
                 if hasattr(employee, "labor_income_this_tick"):
                     employee.labor_income_this_tick += net_wage
 
-                if income_tax > 0 and government:
-                    government.collect_tax(income_tax, "income_tax", employee.id, current_time)
-                    total_tax_withheld += income_tax
-
-                total_wages += wage
             else:
                 # Insolvency Handling
-                self._handle_insolvency(employee, wage)
+                self._handle_insolvency_transactions(employee, wage, current_time, generated_transactions)
 
-        return total_wages
+        return generated_transactions
 
-    def _handle_insolvency(self, employee: Household, wage: float):
+    def _handle_insolvency_transactions(self, employee: Household, wage: float, current_time: int, tx_list: List[Transaction]):
         """
         Handles case where firm cannot afford wage.
         Attempts severance pay; if fails, zombie state (unpaid retention).
         """
+        from simulation.models import Transaction
+
         severance_weeks = getattr(self.firm.config_module, "SEVERANCE_PAY_WEEKS", 4)
         severance_pay = wage * severance_weeks
 
         if self.firm.assets >= severance_pay:
-            # Fire with severance
-            self.firm._sub_assets(severance_pay)
-            employee._add_assets(severance_pay)
+            # Fire with severance (Transaction)
+            tx = Transaction(
+                buyer_id=self.firm.id,
+                seller_id=employee.id,
+                item_id="severance_pay",
+                quantity=1.0,
+                price=severance_pay,
+                market_id="labor",
+                transaction_type="severance",
+                time=current_time
+            )
+            tx_list.append(tx)
 
             self.firm.logger.info(
                 f"SEVERANCE | Firm {self.firm.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
-                extra={"tick": self.firm.decision_engine.context.current_time if hasattr(self.firm.decision_engine, 'context') else 0, "agent_id": self.firm.id, "severance_pay": severance_pay}
+                extra={"tick": current_time, "agent_id": self.firm.id, "severance_pay": severance_pay}
             )
 
             employee.quit()

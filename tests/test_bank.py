@@ -166,3 +166,38 @@ class TestBank:
     def test_financial_entity_withdraw_insufficient(self, bank_instance):
         with pytest.raises(InsufficientFundsError):
             bank_instance.withdraw(bank_instance.assets + 1000.0)
+
+    def test_run_tick_returns_transactions(self, bank_instance):
+        # Setup: Loan and Deposit
+        borrower_id = 101
+        depositor_id = 202
+
+        bank_instance.grant_loan(borrower_id, 1000.0)
+        bank_instance.deposit_from_customer(depositor_id, 500.0)
+
+        # Mock Agents
+        mock_borrower = MagicMock()
+        mock_borrower.id = borrower_id
+        mock_borrower.assets = 100.0 # Enough to pay interest
+        mock_borrower.is_active = True
+
+        mock_depositor = MagicMock()
+        mock_depositor.id = depositor_id
+        mock_depositor.is_active = True
+
+        agents = {borrower_id: mock_borrower, depositor_id: mock_depositor}
+
+        # Act
+        transactions = bank_instance.run_tick(agents, current_tick=1)
+
+        # Assert
+        assert len(transactions) >= 2 # Interest Payment (Loan) + Interest Payment (Deposit)
+
+        # Check types
+        tx_types = [tx.transaction_type for tx in transactions]
+        assert "loan_interest" in tx_types
+        assert "deposit_interest" in tx_types
+
+        # Check assets NOT modified
+        # (Assuming initial assets = 10000.0)
+        assert bank_instance.assets == 10000.0

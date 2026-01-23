@@ -1,10 +1,11 @@
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 import logging
 from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
 # Forward reference for type hinting
 from simulation.firms import Firm
+from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +49,13 @@ class FinanceSystem(IFinanceSystem):
             )
             return z_score > z_score_threshold
 
-    def issue_treasury_bonds(self, amount: float, current_tick: int) -> List[BondDTO]:
+    def issue_treasury_bonds(self, amount: float, current_tick: int) -> Tuple[List[BondDTO], List[Transaction]]:
         """
         Issues new treasury bonds to the market, allowing for crowding out.
-        The Central Bank only intervenes if yields exceed a critical threshold.
+        Returns newly issued bonds AND transactions for bond purchase.
         """
         base_rate = self.central_bank.get_base_rate()
+        generated_transactions = []
 
         # Use FiscalMonitor for risk assessment
         world_dto = getattr(self.government, 'sensory_data', None)
@@ -67,7 +69,6 @@ class FinanceSystem(IFinanceSystem):
         })
 
         risk_premium = 0.0
-        # Convert keys to floats just in case they are strings in the dictionary
         sorted_tiers = sorted(
             [(float(k), v) for k, v in risk_premium_tiers.items()],
             key=lambda x: x[0],
@@ -96,53 +97,53 @@ class FinanceSystem(IFinanceSystem):
         if yield_rate > qe_threshold:
             # Central Bank intervenes as buyer of last resort (QE)
             buyer = self.central_bank
-            # Note: Central Bank purchasing logic (add to portfolio) should be handled
         else:
             # Commercial bank buys it
+            # Optimistic check for Phase B
             if self.bank.assets >= amount:
                 buyer = self.bank
             else:
-                # Bond issuance fails if no one can buy it
                 logger.warning("BOND_ISSUANCE_FAILED | No buyer found (Bank insufficient funds).")
-                return []
+                return [], []
 
-        # Execute Transfer via SettlementSystem
-        memo = f"Govt Bond Sale {new_bond.id}, Yield: {yield_rate:.2%}"
-        if self._transfer(debtor=buyer, creditor=self.government, amount=amount, memo=memo):
-            self.outstanding_bonds.append(new_bond)
+        # Generate Transaction: Buyer -> Government
+        tx = Transaction(
+            buyer_id=buyer.id,
+            seller_id=self.government.id,
+            item_id=new_bond.id,
+            quantity=1.0,
+            price=amount,
+            market_id="financial",
+            transaction_type="bond_purchase",
+            time=current_tick
+        )
+        generated_transactions.append(tx)
 
-            # Update Buyer Portfolio
-            if hasattr(buyer, 'add_bond_to_portfolio'):
-                buyer.add_bond_to_portfolio(new_bond)
-            elif buyer == self.central_bank:
-                # Central Bank logic (if add_bond_to_portfolio missing)
-                if not hasattr(buyer.assets, 'get'): # If assets is not dict
-                     # Assuming CentralBank implementation, but for now specific hack
-                     pass
-                if isinstance(buyer.assets, dict):
-                     if "bonds" not in buyer.assets:
-                         buyer.assets["bonds"] = []
-                     buyer.assets["bonds"].append(new_bond)
+        # Optimistic State Update
+        self.outstanding_bonds.append(new_bond)
+        if hasattr(buyer, 'add_bond_to_portfolio'):
+            buyer.add_bond_to_portfolio(new_bond)
+        elif buyer == self.central_bank:
+            if isinstance(buyer.assets, dict):
+                 if "bonds" not in buyer.assets:
+                     buyer.assets["bonds"] = []
+                 buyer.assets["bonds"].append(new_bond)
 
-            return [new_bond]
-        else:
-             logger.error("BOND_ISSUANCE_FAILED | Settlement failed.")
-             return []
+        return [new_bond], generated_transactions
 
     def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: float) -> bool:
-        """Collects corporate tax using atomic settlement."""
-        memo = f"Corporate Tax, Firm ID: {firm.id}"
-        return self._transfer(
-            debtor=firm,
-            creditor=self.government,
-            amount=tax_amount,
-            memo=memo
-        )
+        """
+        Legacy method.
+        Tax collection should now be handled via Transaction Generation.
+        Kept for interface compatibility but warns usage.
+        """
+        logger.warning("FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.")
+        return False
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[BailoutLoanDTO]:
+    def grant_bailout_loan(self, firm: 'Firm', amount: float, current_tick: int) -> Tuple[Optional[BailoutLoanDTO], List[Transaction]]:
         """
         Converts a bailout from a grant to an interest-bearing senior loan.
-        Returns the loan DTO on success, or None if the transfer fails.
+        Returns the loan DTO and Transaction.
         """
         base_rate = self.central_bank.get_base_rate()
         penalty_premium = self.config_module.get("economy_params.BAILOUT_PENALTY_PREMIUM", 0.05)
@@ -159,41 +160,43 @@ class FinanceSystem(IFinanceSystem):
             covenants=covenants
         )
 
-        # Transfer funds from Government to the firm
-        if self._transfer(debtor=self.government, creditor=firm, amount=amount, memo=f"Bailout Loan {firm.id}"):
-            # The government provides the funds, which become a liability for the firm
-            firm.finance.add_liability(amount, loan.interest_rate)
-            firm.has_bailout_loan = True
-            return loan
-        else:
-            logger.error(f"BAILOUT_FAILED | Could not transfer {amount:.2f} to Firm {firm.id} for bailout.")
-            return None
+        # Generate Transaction: Government -> Firm
+        tx = Transaction(
+            buyer_id=self.government.id,
+            seller_id=firm.id,
+            item_id=f"bailout_loan_{firm.id}",
+            quantity=1.0,
+            price=amount,
+            market_id="financial",
+            transaction_type="bailout_loan",
+            time=current_tick
+        )
 
+        # Optimistic State Update
+        firm.finance.add_liability(amount, loan.interest_rate)
+        firm.has_bailout_loan = True
+
+        return loan, [tx]
 
     def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float, memo: str = "FinanceSystem Transfer") -> bool:
         """
-        Atomically handles the movement of funds using SettlementSystem.
+        Legacy method.
+        Should not be used in Phase 3 Normalized Sequence.
         """
         if amount <= 0:
             return True
 
         if self.settlement_system:
             return self.settlement_system.transfer(debtor, creditor, amount, memo)
-        else:
-            # Fallback legacy logic
-            try:
-                debtor.withdraw(amount)
-                creditor.deposit(amount)
-                return True
-            except InsufficientFundsError as e:
-                logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
-                return False
+        return False
 
-    def service_debt(self, current_tick: int) -> None:
+    def service_debt(self, current_tick: int) -> List[Transaction]:
         """
         Manages the servicing of outstanding government debt.
         When bonds mature, both principal and accrued simple interest are paid.
+        Returns List of Transactions.
         """
+        transactions = []
         matured_bonds = [b for b in self.outstanding_bonds if b.maturity_date <= current_tick]
 
         bond_maturity_ticks = self.config_module.get("economy_params.BOND_MATURITY_TICKS", 400)
@@ -212,16 +215,23 @@ class FinanceSystem(IFinanceSystem):
                  if bond in self.central_bank.assets.get("bonds", []):
                       bond_holder = self.central_bank
 
-            # Execute Repayment via SettlementSystem
-            memo = f"Bond Repayment {bond.id}"
-            if self._transfer(debtor=self.government, creditor=bond_holder, amount=total_repayment, memo=memo):
-                 # Post-settlement cleanup
-                 if bond_holder == self.central_bank:
-                      self.central_bank.assets["bonds"].remove(bond)
-                 # Note: If Commercial Bank, we assume it just takes cash.
-                 # If it had a specific list of bonds, we should remove it there too.
+            # Generate Transaction: Government -> Holder
+            tx = Transaction(
+                buyer_id=self.government.id,
+                seller_id=bond_holder.id,
+                item_id=bond.id,
+                quantity=1.0,
+                price=total_repayment,
+                market_id="financial",
+                transaction_type="bond_repayment",
+                time=current_tick
+            )
+            transactions.append(tx)
 
-                 self.outstanding_bonds.remove(bond)
-            else:
-                 logger.critical(f"SOVEREIGN_DEFAULT | Government failed to repay bond {bond.id} (Amt: {total_repayment:.2f})")
-                 # Future: Trigger Default Protocol
+            # Optimistic Cleanup
+            if bond_holder == self.central_bank:
+                 self.central_bank.assets["bonds"].remove(bond)
+
+            self.outstanding_bonds.remove(bond)
+
+        return transactions
