@@ -62,5 +62,9 @@ def test_infrastructure_investment():
     assert success is True
     assert isinstance(txs, list)
 
-    assert gov.assets == initial_assets - 5000.0
+    # In Normalized Tick Phase B, Invest Infrastructure returns Transactions.
+    # It NO LONGER executes self.withdraw() immediately (side effect removed).
+    # So gov.assets should REMAIN UNCHANGED at this step.
+    # The transaction will reduce assets when processed.
+    assert gov.assets == initial_assets
     assert gov.infrastructure_level == initial_level + 1

@@ -442,6 +442,12 @@ class Government:
         if self.firm_subsidy_budget_multiplier < 0.8:
             return False, []
 
+        # Optimistic Check: Do we have enough + potential bond revenue?
+        # Note: Since bond transactions are returned and executed later, self.assets isn't updated yet.
+        # But we also delay infrastructure spending via Transaction.
+        # So we check: Current Assets + (Bond Revenue) >= Cost
+
+        potential_revenue = 0.0
         if self.assets < effective_cost:
             needed = effective_cost - self.assets
             bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
@@ -449,23 +455,35 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
                 return False, []
             transactions.extend(txs)
+            potential_revenue = needed # Assume success
 
-        # Legacy Side Effect: Direct Withdrawal (acknowledged technical debt)
-        try:
-            self.withdraw(effective_cost)
-        except InsufficientFundsError:
-            # If withdraw failed despite bond checks, we fail.
-            # But we return bond transactions if they were generated (optimistic issuance).
-            return False, transactions
+        # Generate Investment Transaction (Gov -> Reflux)
+        # Using RefluxSystem ID (999999) as Receiver
+        reflux_id = 999999
+        if reflux_system and hasattr(reflux_system, 'id'):
+            reflux_id = reflux_system.id
+
+        tx = Transaction(
+            buyer_id=reflux_id, # Reflux Receives
+            seller_id=self.id, # Government Pays
+            item_id="infrastructure_investment",
+            quantity=1.0,
+            price=effective_cost,
+            market_id="system",
+            transaction_type="infrastructure",
+            time=current_tick
+        )
+        transactions.append(tx)
 
         self.expenditure_this_tick += effective_cost
-        if reflux_system:
-            reflux_system.capture(effective_cost, str(self.id), "infrastructure")
+
+        # We do NOT call reflux_system.capture here because the Transaction will deposit to Reflux.
+        # RefluxSystem.deposit calls capture.
 
         self.infrastructure_level += 1
 
         logger.info(
-            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Cost: {effective_cost}",
+            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Generated tx for {effective_cost}",
             extra={
                 "tick": current_tick,
                 "agent_id": self.id,

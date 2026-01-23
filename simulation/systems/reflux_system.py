@@ -1,13 +1,34 @@
 from typing import List, Optional
 import logging
+from modules.finance.api import IFinancialEntity, InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
-class EconomicRefluxSystem:
+class EconomicRefluxSystem(IFinancialEntity):
     def __init__(self):
+        self._id = 999999 # Special ID for Reflux
         self.balance: float = 0.0
         # Optional: Transaction log for debugging
         # self.transaction_log: list = []
+
+    @property
+    def id(self) -> int:
+        return self._id
+
+    @property
+    def assets(self) -> float:
+        return self.balance
+
+    def deposit(self, amount: float) -> None:
+        """IFinancialEntity implementation."""
+        if amount > 0:
+            self.capture(amount, "System", "Deposit")
+
+    def withdraw(self, amount: float) -> None:
+        """IFinancialEntity implementation."""
+        if self.balance < amount:
+            raise InsufficientFundsError(f"RefluxSystem has insufficient funds.")
+        self.balance -= amount
 
     def capture(self, amount: float, source: str, category: str):
         """
@@ -38,6 +59,12 @@ class EconomicRefluxSystem:
         amount_per_household = total_amount / len(active_households)
 
         for agent in active_households:
+            # We use _add_assets for now as this is a distribution phase separate from transactions?
+            # Or should we generate transactions?
+            # Reflux distribute happens in Phase 4 (Lifecycle/Post-Processing) in TickScheduler.
+            # So direct modification is acceptable here as it's outside the Transaction Phase strictness?
+            # Ideally yes, or we move it to Transaction Phase.
+            # For now, leaving as direct modification (Legacy).
             agent._add_assets(amount_per_household)
 
             # Record as additional labor income (Service Sector)
