@@ -3,7 +3,8 @@ from unittest.mock import Mock, MagicMock
 from simulation.firms import Firm
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from simulation.ai.enums import Personality
-import config # Import from root
+import config  # Import from root
+
 
 @pytest.fixture
 def firm_mock():
@@ -20,19 +21,21 @@ def firm_mock():
         productivity_factor=10.0,
         decision_engine=decision_engine,
         value_orientation="growth",
-        config_module=config
+        config_module=config,
     )
     return firm
+
 
 def test_firm_automation_init(firm_mock):
     """Test if automation_level initializes correctly."""
     assert firm_mock.automation_level == 0.0
     assert firm_mock.system2_planner is None
 
+
 def test_production_function_with_automation(firm_mock):
     """Test modified Cobb-Douglas production function."""
     # Setup
-    firm_mock.employees = [Mock(labor_skill=1.0)] # 1 Employee
+    firm_mock.employees = [Mock(labor_skill=1.0)]  # 1 Employee
     firm_mock.capital_stock = 100.0
     firm_mock.productivity_factor = 10.0
     firm_mock.config_module.LABOR_ALPHA = 0.5
@@ -58,20 +61,21 @@ def test_production_function_with_automation(firm_mock):
     firm_mock.produce(current_time=2)
     prod_full = firm_mock.current_production
 
-    assert prod_full > prod_zero # Automation helps when Capital is abundant
+    assert prod_full > prod_zero  # Automation helps when Capital is abundant
     assert prod_full > 310.0
+
 
 def test_system2_planner_guidance(firm_mock):
     """Test System 2 Planner logic."""
     # Override config for this test to make automation cheaper
-    firm_mock.config_module.AUTOMATION_COST_PER_PCT = 100.0 # Was 1000.0
+    firm_mock.config_module.AUTOMATION_COST_PER_PCT = 100.0  # Was 1000.0
 
     firm_mock.system2_planner = FirmSystem2Planner(firm_mock, firm_mock.config_module)
 
     # Mock Data
     market_data = {}
     firm_mock.revenue_this_turn = 5000.0
-    firm_mock._assets = 300000.0 # Rich firm (Needs to be > 50 * Revenue = 250k)
+    firm_mock._assets = 300000.0  # Rich firm (Needs to be > 50 * Revenue = 250k)
 
     # High wages to justify automation
     firm_mock.employee_wages = {1: 1000.0, 2: 1000.0}

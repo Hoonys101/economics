@@ -3,6 +3,7 @@ from typing import Dict, Type, Any, Union, List
 import json
 import os
 
+
 class GoldenLoader:
     """
     Utility to load JSON fixtures and convert them to MagicMock objects.
@@ -25,7 +26,7 @@ class GoldenLoader:
         if not os.path.exists(path):
             raise FileNotFoundError(f"Golden fixture not found at: {path}")
 
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
     @staticmethod

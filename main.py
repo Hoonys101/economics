@@ -28,7 +28,7 @@ main_logger = logging.getLogger(__name__)
 
 # --- Setup Logging ---
 setup_logging()  # Call the setup function
-logging.getLogger().setLevel(logging.DEBUG) # Force DEBUG level for all loggers
+logging.getLogger().setLevel(logging.DEBUG)  # Force DEBUG level for all loggers
 
 # Get the SamplingFilter instance and set sampling rates
 sampling_filter: SamplingFilter | None = None
@@ -69,7 +69,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
     # Seed for reproducibility
     if hasattr(config, "RANDOM_SEED"):
-         random.seed(config.RANDOM_SEED)
+        random.seed(config.RANDOM_SEED)
 
     # Initialize the SimulationRepository for this simulation run
     repository = SimulationRepository()
@@ -166,7 +166,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
         # Instantiate HouseholdAI
         ai_decision_engine_instance = ai_trainer.get_engine(value_orientation)
-        household_ai_instance = HouseholdAI(agent_id=i, ai_decision_engine=ai_decision_engine_instance)
+        household_ai_instance = HouseholdAI(
+            agent_id=i, ai_decision_engine=ai_decision_engine_instance
+        )
 
         # Instantiate HouseholdDecisionEngine with the HouseholdAI instance and config_module
         household_decision_engine = AIDrivenHouseholdDecisionEngine(
@@ -181,7 +183,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
         household = Household(
             id=i,
-            talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
+            talent=Talent(
+                max(0.5, random.gauss(1.0, 0.2)), {}
+            ),  # WO-023-B: The Lottery of Birth
             goods_data=goods_data,
             initial_assets=initial_assets,
             initial_needs=initial_needs,
@@ -270,19 +274,19 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         founder_household = households[firm.id % num_households]
         firm.owner_id = founder_household.id
         firm.founder_id = founder_household.id
-        
+
         # Add to portfolio
         if hasattr(founder_household, "portfolio"):
             # Portfolio is now a Portfolio object, not a list.
             # Initially, all shares are treasury shares, so we don't add them to the founder's portfolio yet.
             # They are registered as owner/founder in the firm object itself.
             pass
-            
+
         firm_founders[firm.id] = founder_household.id
 
         # Removed legacy share distribution. Firms hold 100% treasury shares initially.
         # Registration in StockMarket is handled by Simulation.init_ipo.
-            
+
     num_to_employ = int(num_households * config.INITIAL_EMPLOYMENT_RATE)
     unemployed_households = list(households)
     random.shuffle(unemployed_households)
@@ -340,7 +344,7 @@ def run_simulation(
 
     original_initial_firm_inventory_mean = None
     if initial_firm_inventory_mean is not None:
-         original_initial_firm_inventory_mean = config.INITIAL_FIRM_INVENTORY_MEAN
+        original_initial_firm_inventory_mean = config.INITIAL_FIRM_INVENTORY_MEAN
 
     sim = create_simulation(overrides=overrides)
 

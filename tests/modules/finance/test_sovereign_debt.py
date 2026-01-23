@@ -6,6 +6,7 @@ from simulation.agents.government import Government
 from simulation.firms import Firm
 from modules.analysis.fiscal_monitor import FiscalMonitor
 
+
 class TestSovereignDebt:
     @pytest.fixture
     def setup_system(self):
@@ -19,11 +20,13 @@ class TestSovereignDebt:
         self.bank.withdraw = MagicMock()
 
         self.config = MagicMock()
+
         # Mock config.get properly
         def config_get(key, default=None):
             if "RISK_PREMIUM" in key:
-                 return {1.2: 0.05, 0.9: 0.02}
+                return {1.2: 0.05, 0.9: 0.02}
             return default
+
         self.config.get.side_effect = config_get
 
         self.settlement_system = MagicMock()
@@ -34,10 +37,12 @@ class TestSovereignDebt:
             central_bank=self.central_bank,
             bank=self.bank,
             config_module=self.config,
-            settlement_system=self.settlement_system
+            settlement_system=self.settlement_system,
         )
         self.finance_system.fiscal_monitor = MagicMock(spec=FiscalMonitor)
-        self.finance_system.fiscal_monitor.get_debt_to_gdp_ratio.return_value = 0.5 # Safe
+        self.finance_system.fiscal_monitor.get_debt_to_gdp_ratio.return_value = (
+            0.5  # Safe
+        )
 
         return self.finance_system
 
@@ -54,9 +59,9 @@ class TestSovereignDebt:
         # Should transfer from Bank to Govt
         fs.settlement_system.transfer.assert_called_once()
         args = fs.settlement_system.transfer.call_args
-        assert args[0][0] == fs.bank # Debtor
-        assert args[0][1] == fs.government # Creditor
-        assert args[0][2] == 100.0 # Amount
+        assert args[0][0] == fs.bank  # Debtor
+        assert args[0][1] == fs.government  # Creditor
+        assert args[0][2] == 100.0  # Amount
 
     def test_collect_corporate_tax_calls_settlement_system(self, setup_system):
         fs = setup_system
@@ -68,8 +73,8 @@ class TestSovereignDebt:
         assert success is True
         fs.settlement_system.transfer.assert_called_once()
         args = fs.settlement_system.transfer.call_args
-        assert args[0][0] == firm # Debtor
-        assert args[0][1] == fs.government # Creditor
+        assert args[0][0] == firm  # Debtor
+        assert args[0][1] == fs.government  # Creditor
         assert args[0][2] == 50.0
 
     def test_risk_premium_calculation(self, setup_system):
@@ -86,7 +91,7 @@ class TestSovereignDebt:
     def test_insufficient_funds_fails_issuance(self, setup_system):
         fs = setup_system
         fs.central_bank.get_base_rate.return_value = 0.05
-        fs.bank.assets = 0.0 # Bank has no money
+        fs.bank.assets = 0.0  # Bank has no money
 
         bonds = fs.issue_treasury_bonds(100.0, 1)
 

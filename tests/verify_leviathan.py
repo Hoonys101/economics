@@ -8,6 +8,7 @@ from simulation.core_agents import Household
 
 # Convert to pytest to use golden fixtures
 
+
 @pytest.fixture
 def government(golden_config):
     if golden_config:
@@ -32,6 +33,7 @@ def government(golden_config):
 
     return gov
 
+
 @pytest.fixture
 def mock_households(golden_households):
     # Use golden fixture if available
@@ -41,12 +43,12 @@ def mock_households(golden_households):
     if golden_households:
         base_h = golden_households[0]
         for i in range(10):
-             h = MagicMock(spec=Household)
-             h.id = i
-             h.is_active = True
-             h.approval_rating = 1 # Start happy
-             h.needs = {"survival": 20.0}
-             households.append(h)
+            h = MagicMock(spec=Household)
+            h.id = i
+            h.is_active = True
+            h.approval_rating = 1  # Start happy
+            h.needs = {"survival": 20.0}
+            households.append(h)
     else:
         # Fallback
         for i in range(10):
@@ -58,6 +60,7 @@ def mock_households(golden_households):
             households.append(h)
 
     return households
+
 
 def test_opinion_aggregation(government, mock_households):
     """Test if Government aggregates household approval correctly."""
@@ -73,33 +76,37 @@ def test_opinion_aggregation(government, mock_households):
     assert len(government.public_opinion_queue) == 1
     assert government.perceived_public_opinion == 0.5
 
+
 def test_opinion_lag(government, mock_households):
     """Test if Perceived Public Opinion lags by 4 ticks (or queue size)."""
     # Tick 1: 1.0
-    for h in mock_households: h.approval_rating = 1
-    government.update_public_opinion(mock_households) # Q: [1.0]
+    for h in mock_households:
+        h.approval_rating = 1
+    government.update_public_opinion(mock_households)  # Q: [1.0]
     assert government.perceived_public_opinion == 1.0
 
     # Tick 2: 0.0
-    for h in mock_households: h.approval_rating = 0
-    government.update_public_opinion(mock_households) # Q: [1.0, 0.0]
-    assert government.perceived_public_opinion == 1.0 # Still sees old
+    for h in mock_households:
+        h.approval_rating = 0
+    government.update_public_opinion(mock_households)  # Q: [1.0, 0.0]
+    assert government.perceived_public_opinion == 1.0  # Still sees old
 
     # Tick 3: 0.0
-    government.update_public_opinion(mock_households) # Q: [1.0, 0.0, 0.0]
+    government.update_public_opinion(mock_households)  # Q: [1.0, 0.0, 0.0]
     assert government.perceived_public_opinion == 1.0
 
     # Tick 4: 0.0
-    government.update_public_opinion(mock_households) # Q: [1.0, 0.0, 0.0, 0.0]
+    government.update_public_opinion(mock_households)  # Q: [1.0, 0.0, 0.0, 0.0]
     assert government.perceived_public_opinion == 1.0
 
     # Tick 5: 0.0 -> Queue pops
-    government.update_public_opinion(mock_households) # Q: [0.0, 0.0, 0.0, 0.0]
-    assert government.perceived_public_opinion == 0.0 # Finally sees drop
+    government.update_public_opinion(mock_households)  # Q: [0.0, 0.0, 0.0, 0.0]
+    assert government.perceived_public_opinion == 0.0  # Finally sees drop
+
 
 def test_election_flip(government):
     """Test if Government flips party on low approval at election tick."""
-    government.perceived_public_opinion = 0.4 # Below 0.5
+    government.perceived_public_opinion = 0.4  # Below 0.5
     government.ruling_party = PoliticalParty.BLUE
 
     government.check_election(100)
@@ -110,6 +117,7 @@ def test_election_flip(government):
     # Next election, if opinion still low, flip back
     government.check_election(200)
     assert government.ruling_party == PoliticalParty.BLUE
+
 
 def test_ai_policy_execution(government):
     """Test if AI actions translate to policy changes based on Party."""
@@ -123,14 +131,17 @@ def test_ai_policy_execution(government):
 
     # Force AI to choose EXPAND (Action 0)
     mock_central_bank = MagicMock()
-    mock_central_bank.base_rate = 0.05 # Ensure base_rate is float for comparison
+    mock_central_bank.base_rate = 0.05  # Ensure base_rate is float for comparison
 
     # Try explicitly setting policy engine to AI if it's not.
     from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
-    if not isinstance(government.policy_engine, SmartLeviathanPolicy):
-        government.policy_engine = SmartLeviathanPolicy(government, government.config_module)
 
-    with patch.object(government.ai, 'decide_policy', return_value=0) as mock_decide:
+    if not isinstance(government.policy_engine, SmartLeviathanPolicy):
+        government.policy_engine = SmartLeviathanPolicy(
+            government, government.config_module
+        )
+
+    with patch.object(government.ai, "decide_policy", return_value=0) as mock_decide:
         government.make_policy_decision(market_data, 30, mock_central_bank)
 
     # Expect Corp Tax Cut, Subsidy Increase
@@ -197,7 +208,7 @@ def test_ai_policy_execution(government):
     # Let's set `GOVERNMENT_POLICY_MODE` to "AI_ADAPTIVE".
 
     government.config_module.GOVERNMENT_POLICY_MODE = "AI_ADAPTIVE"
-    government.config_module.GOV_ACTION_INTERVAL = 30 # Ensure this is int, not Mock
+    government.config_module.GOV_ACTION_INTERVAL = 30  # Ensure this is int, not Mock
 
     # Ensure other config values are floats to prevent TypeErrors in min/max comparisons
     government.config_module.BUDGET_ALLOCATION_MIN = 0.1
@@ -205,10 +216,13 @@ def test_ai_policy_execution(government):
 
     # Re-init policy engine to pick up new config
     from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
-    government.policy_engine = SmartLeviathanPolicy(government, government.config_module)
+
+    government.policy_engine = SmartLeviathanPolicy(
+        government, government.config_module
+    )
     government.ai = government.policy_engine.ai
 
-    with patch.object(government.ai, 'decide_policy', return_value=0) as mock_decide:
+    with patch.object(government.ai, "decide_policy", return_value=0) as mock_decide:
         government.make_policy_decision(market_data, 30, mock_central_bank)
 
     # Expect Corp Tax Cut, Subsidy Increase
@@ -261,7 +275,9 @@ def test_ai_policy_execution(government):
 
     action_fiscal_ease = getattr(government.ai, "ACTION_FISCAL_EASE", 3)
 
-    with patch.object(government.ai, 'decide_policy', return_value=action_fiscal_ease) as mock_decide:
+    with patch.object(
+        government.ai, "decide_policy", return_value=action_fiscal_ease
+    ) as mock_decide:
         government.make_policy_decision(market_data, 30, mock_central_bank)
 
     assert government.corporate_tax_rate < 0.2
@@ -272,7 +288,7 @@ def test_ai_policy_execution(government):
     government.income_tax_rate = 0.1
     government.welfare_budget_multiplier = 0.9
 
-    with patch.object(government.ai, 'decide_policy', return_value=action_fiscal_ease):
+    with patch.object(government.ai, "decide_policy", return_value=action_fiscal_ease):
         government.make_policy_decision(market_data, 30, mock_central_bank)
 
     # Expect Income Tax Cut, Welfare Increase

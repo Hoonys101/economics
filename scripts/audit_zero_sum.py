@@ -10,8 +10,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from main import create_simulation
 from simulation.firms import Firm
 
+
 def audit_integrity():
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     logger = logging.getLogger("AUDIT")
 
     logger.info("Initializing Simulation via main.create_simulation...")
@@ -21,7 +22,7 @@ def audit_integrity():
         "NUM_HOUSEHOLDS": 50,
         "NUM_FIRMS": 10,
         "INITIAL_GOVERNMENT_ASSETS": 10000.0,
-        "INITIAL_BANK_ASSETS": 50000.0
+        "INITIAL_BANK_ASSETS": 50000.0,
     }
     sim = create_simulation(overrides)
 
@@ -30,40 +31,53 @@ def audit_integrity():
 
     def get_total_wealth(sim):
         h_assets = sum(h.assets for h in sim.households)
-        f_assets = sum(f.get_financial_snapshot().get("total_assets", f.assets)
-                       if hasattr(f, "get_financial_snapshot") else f.assets
-                       for f in sim.firms)
+        f_assets = sum(
+            f.get_financial_snapshot().get("total_assets", f.assets)
+            if hasattr(f, "get_financial_snapshot")
+            else f.assets
+            for f in sim.firms
+        )
         gov_assets = sim.government.assets
 
         # WO-106: Include Reflux Balance as it holds captured value before distribution
-        reflux_balance = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
+        reflux_balance = (
+            sim.reflux_system.balance if hasattr(sim, "reflux_system") else 0.0
+        )
 
         return h_assets + f_assets + gov_assets + reflux_balance
 
     # Snapshot T0 state for detailed accounting
     # Use config default price if dynamic price is missing
-    default_price = getattr(sim.config_module, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+    default_price = getattr(sim.config_module, "GOODS_INITIAL_PRICE", {}).get(
+        "default", 10.0
+    )
 
     def get_inventory_value_map(agents):
         val = 0.0
         for a in agents:
-             # Firm inventory
-             if hasattr(a, 'inventory'):
-                 for item, qty in a.inventory.items():
-                     price = a.last_prices.get(item, default_price) if hasattr(a, 'last_prices') else default_price
-                     val += qty * price
-             # Firm input inventory
-             if hasattr(a, 'input_inventory'):
-                 for item, qty in a.input_inventory.items():
-                     # Inputs usually have same price as goods
-                     val += qty * default_price
+            # Firm inventory
+            if hasattr(a, "inventory"):
+                for item, qty in a.inventory.items():
+                    price = (
+                        a.last_prices.get(item, default_price)
+                        if hasattr(a, "last_prices")
+                        else default_price
+                    )
+                    val += qty * price
+            # Firm input inventory
+            if hasattr(a, "input_inventory"):
+                for item, qty in a.input_inventory.items():
+                    # Inputs usually have same price as goods
+                    val += qty * default_price
         return val
 
     def get_capital_stock(firms):
         return sum(f.capital_stock for f in firms)
 
     wealth_t0 = get_total_wealth(sim)
-    inv_val_t0 = get_inventory_value_map(sim.firms) # Track input inventory specifically
+    inv_val_t0 = get_inventory_value_map(
+        sim.firms
+    )  # Track input inventory specifically
     cap_stock_t0 = get_capital_stock(sim.firms)
 
     logger.info(f"Tick 0 Wealth: {wealth_t0:.2f} (Cap: {cap_stock_t0:.2f})")
@@ -112,16 +126,20 @@ def audit_integrity():
     # If Input Consumption is not tracked, we might fail.
     # Let's see if Gross Production - HH Consumption - Depreciation aligns.
 
-    predicted_diff = gross_production_value - household_consumption_value - depreciation_loss
+    predicted_diff = (
+        gross_production_value - household_consumption_value - depreciation_loss
+    )
     unexplained_diff = diff - predicted_diff
 
-    logger.info(f"Analysis: GrossProd={gross_production_value:.2f}, HH_Cons={household_consumption_value:.2f}, Depr={depreciation_loss:.2f}")
+    logger.info(
+        f"Analysis: GrossProd={gross_production_value:.2f}, HH_Cons={household_consumption_value:.2f}, Depr={depreciation_loss:.2f}"
+    )
     logger.info(f"Predicted Delta (Prod - Cons - Depr): {predicted_diff:.2f}")
     logger.info(f"Actual Delta: {diff:.2f}")
     logger.info(f"Unexplained Variance (Inputs?): {unexplained_diff:.2f}")
 
     # PR Review: Tolerance tightened to 0.1%
-    tolerance = 0.001 # 0.1%
+    tolerance = 0.001  # 0.1%
 
     # We accept Variance if it likely Input Consumption (Negative Unexplained).
     # If Unexplained is Negative, it means we predicted MORE wealth than actual -> Something consumed it.
@@ -134,30 +152,36 @@ def audit_integrity():
     # I should assume "Net Change" should be explained.
 
     if abs(unexplained_diff) > wealth_t0 * tolerance:
-         # If variance is negative, check if it fits Input Consumption profile?
-         # For now, log error but provide context.
-         logger.error(f"FAILED: Initial Sink detected! (>0.1% unexplained variance). Unexplained: {unexplained_diff:.2f}")
+        # If variance is negative, check if it fits Input Consumption profile?
+        # For now, log error but provide context.
+        logger.error(
+            f"FAILED: Initial Sink detected! (>0.1% unexplained variance). Unexplained: {unexplained_diff:.2f}"
+        )
     else:
-         logger.info("PASSED: Initial Sink check (Unexplained variance < 0.1%).")
+        logger.info("PASSED: Initial Sink check (Unexplained variance < 0.1%).")
 
     # PR Review: Tolerance tightened to 0.1%
-    tolerance = 0.001 # 0.1%
+    tolerance = 0.001  # 0.1%
 
     # We check if unexplained variance is within tolerance
     if abs(unexplained_diff) > wealth_t0 * tolerance:
-         logger.error(f"FAILED: Initial Sink detected! (>0.1% unexplained variance). Unexplained: {unexplained_diff:.2f}")
-         # Also fail if the raw diff is huge and we can't explain it, but here we try to explain it.
+        logger.error(
+            f"FAILED: Initial Sink detected! (>0.1% unexplained variance). Unexplained: {unexplained_diff:.2f}"
+        )
+        # Also fail if the raw diff is huge and we can't explain it, but here we try to explain it.
     else:
-         logger.info("PASSED: Initial Sink check (Unexplained variance < 0.1%).")
+        logger.info("PASSED: Initial Sink check (Unexplained variance < 0.1%).")
 
     # 2. Check Central Bank Fiat (QE)
     # ------------------------------------------------------------------
     logger.info("Checking Central Bank Fiat Authority...")
     cb = sim.central_bank
-    cb.assets['cash'] = 0.0
+    cb.assets["cash"] = 0.0
     try:
         cb.withdraw(1000.0)
-        logger.info(f"PASSED: CB Withdraw (Fiat) successful. Balance: {cb.assets['cash']}")
+        logger.info(
+            f"PASSED: CB Withdraw (Fiat) successful. Balance: {cb.assets['cash']}"
+        )
     except Exception as e:
         logger.error(f"FAILED: CB Withdraw raised {e}")
 
@@ -177,7 +201,7 @@ def audit_integrity():
         paid_amount = initial_gov - gov.assets
         logger.info(f"Gov Assets After: {gov.assets} (Paid: {paid_amount})")
 
-        if paid_amount > 2000.0: # Expecting 3000-5000
+        if paid_amount > 2000.0:  # Expecting 3000-5000
             logger.info(f"PASSED: Immigration funded by Govt.")
         else:
             logger.error(f"FAILED: Government did not pay enough. Paid: {paid_amount}")
@@ -189,19 +213,21 @@ def audit_integrity():
     logger.info("Checking Reflux System Capture...")
     # Create a dummy firm to kill or use existing
     victim = sim.firms[0]
-    victim.inventory['basic_food'] = 10.0
+    victim.inventory["basic_food"] = 10.0
     victim.capital_stock = 500.0
     diff = 100.0 - victim.assets
-    if hasattr(victim, '_add_assets'):
+    if hasattr(victim, "_add_assets"):
         victim._add_assets(diff)
     else:
         victim.assets = 100.0
 
     # Ensure market exists for basic_food for pricing
-    if 'basic_food' not in sim.markets:
-         sim.markets['basic_food'] = type('MockMarket', (), {'avg_price': 10.0, 'current_price': 10.0})()
+    if "basic_food" not in sim.markets:
+        sim.markets["basic_food"] = type(
+            "MockMarket", (), {"avg_price": 10.0, "current_price": 10.0}
+        )()
 
-    victim.is_active = False # Mark for death
+    victim.is_active = False  # Mark for death
 
     initial_reflux = sim.reflux_system.balance
     logger.info(f"Reflux Balance Before: {initial_reflux}")
@@ -217,6 +243,7 @@ def audit_integrity():
         logger.info(f"PASSED: Reflux System captured liquidation value.")
     else:
         logger.error("FAILED: Reflux System captured nothing.")
+
 
 if __name__ == "__main__":
     audit_integrity()

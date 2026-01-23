@@ -101,8 +101,7 @@ class EconomyManager:
                         total_utility += satisfaction_gain
                         self._household.needs[need_type] = max(
                             0,
-                            self._household.needs.get(need_type, 0)
-                            - satisfaction_gain,
+                            self._household.needs.get(need_type, 0) - satisfaction_gain,
                         )
             return ConsumptionResult(
                 items_consumed={item_id: quantity}, satisfaction=total_utility

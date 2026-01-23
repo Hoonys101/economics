@@ -6,6 +6,7 @@ from simulation.ai.system2_planner import System2Planner
 from simulation.ai.api import Personality
 import config
 
+
 class TestPhase20Scaffolding(unittest.TestCase):
     def setUp(self):
         self.logger = logging.getLogger("test")
@@ -27,7 +28,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
             "personality": Personality.CONSERVATIVE,
             "config_module": config,
             "loan_market": self.mock_loan_market,
-            "logger": self.logger
+            "logger": self.logger,
         }
 
     def test_household_attributes_initialization(self):
@@ -75,15 +76,15 @@ class TestPhase20Scaffolding(unittest.TestCase):
         mock_agent.spouse_id = None
         mock_agent.decision_engine = MagicMock()
         mock_agent.decision_engine.ai_engine = None
-        mock_agent.get_agent_data.return_value = {"assets": 1000.0, "gender": "M", "children_count": 0}
+        mock_agent.get_agent_data.return_value = {
+            "assets": 1000.0,
+            "gender": "M",
+            "children_count": 0,
+        }
 
         planner = System2Planner(mock_agent, config)
 
-        market_data = {
-            "goods_market": {
-                "basic_food_current_sell_price": 5.0
-            }
-        }
+        market_data = {"goods_market": {"basic_food_current_sell_price": 5.0}}
 
         # Config check
         # HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0 (from config)
@@ -96,27 +97,29 @@ class TestPhase20Scaffolding(unittest.TestCase):
         bankruptcy_tick = result["bankruptcy_tick"]
 
         self.assertIsNone(bankruptcy_tick, "Should not go bankrupt with positive flow")
-        self.assertGreater(npv, 1000.0, "NPV should be greater than initial assets with positive flow")
+        self.assertGreater(
+            npv, 1000.0, "NPV should be greater than initial assets with positive flow"
+        )
 
     def test_system2_planner_projection_bankruptcy(self):
         """Verify System2Planner bankruptcy detection."""
         # Create a mock agent for the planner
         mock_agent = MagicMock()
         mock_agent._assets = 100.0
-        mock_agent.expected_wage = 0.0 # No income
+        mock_agent.expected_wage = 0.0  # No income
         mock_agent.children_ids = []
         mock_agent.spouse_id = None
         mock_agent.decision_engine = MagicMock()
         mock_agent.decision_engine.ai_engine = None
-        mock_agent.get_agent_data.return_value = {"assets": 100.0, "gender": "M", "children_count": 0}
+        mock_agent.get_agent_data.return_value = {
+            "assets": 100.0,
+            "gender": "M",
+            "children_count": 0,
+        }
 
         planner = System2Planner(mock_agent, config)
 
-        market_data = {
-            "goods_market": {
-                "basic_food_current_sell_price": 10.0
-            }
-        }
+        market_data = {"goods_market": {"basic_food_current_sell_price": 10.0}}
 
         # Expense = 10.0 * 2.0 = 20.0 per tick
         # Assets = 100.0
@@ -133,5 +136,6 @@ class TestPhase20Scaffolding(unittest.TestCase):
 
         self.assertEqual(bankruptcy_tick, 6)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

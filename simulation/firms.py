@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class Firm(BaseAgent, ILearningAgent):
     """기업 주체. 생산과 고용의 주체."""
 
@@ -52,7 +53,7 @@ class Firm(BaseAgent, ILearningAgent):
         loan_market: Optional[LoanMarket] = None,
         logger: Optional[logging.Logger] = None,
         # Phase 14-2: Innovation
-        sector: str = "FOOD", 
+        sector: str = "FOOD",
         is_visionary: bool = False,
         # Phase 16-B: Personality
         personality: Optional[Personality] = None,
@@ -74,38 +75,44 @@ class Firm(BaseAgent, ILearningAgent):
         if initial_inventory is not None:
             self.inventory.update(initial_inventory)
         self.specialization = specialization
-        self.inventory_quality: Dict[str, float] = {}  # Phase 15: Weighted Average Quality
-        self.input_inventory: Dict[str, float] = {} # WO-030: Raw Materials
-        
+        self.inventory_quality: Dict[
+            str, float
+        ] = {}  # Phase 15: Weighted Average Quality
+        self.input_inventory: Dict[str, float] = {}  # WO-030: Raw Materials
+
         # Phase 14-2 attributes
         self.sector = sector
         self.is_visionary = is_visionary
-        self.owner_id: Optional[int] = None # Phase 14-1: Shareholder System
-        
+        self.owner_id: Optional[int] = None  # Phase 14-1: Shareholder System
+
         # Phase 16-B: Personality & Innovation Attributes
         self.personality = personality or Personality.BALANCED
         self.base_quality: float = 1.0
         self.research_history: Dict[str, Any] = {
             "total_spent": 0.0,
             "success_count": 0,
-            "last_success_tick": -1
+            "last_success_tick": -1,
         }
 
         # SoC Refactor: HR and Finance Components
         self.hr = HRDepartment(self)
         # WO-103 Phase 1: Initialize Finance with buffered assets
         # Fix: Use initial_capital passed to constructor, or self._assets from BaseAgent
-        self.finance = FinanceDepartment(self, config_module, initial_capital=initial_capital)
+        self.finance = FinanceDepartment(
+            self, config_module, initial_capital=initial_capital
+        )
 
         self.production = ProductionDepartment(self, config_module)
         self.sales = SalesDepartment(self, config_module)
 
         # Set bankruptcy threshold based on visionary status
-        base_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5)
+        base_threshold = getattr(
+            config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5
+        )
         if self.is_visionary:
             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold * 2
         else:
-             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
+            self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
 
         self.production_target: float = (
             config_module.FIRM_MIN_PRODUCTION_TARGET
@@ -115,28 +122,30 @@ class Firm(BaseAgent, ILearningAgent):
         self.productivity_factor: float = productivity_factor
         self.total_shares: float = getattr(config_module, "IPO_INITIAL_SHARES", 1000.0)
         self.last_prices: Dict[str, float] = {}
-        self.hires_last_tick: int = 0 # Handled in HR but maybe exposed here?
-        
+        self.hires_last_tick: int = 0  # Handled in HR but maybe exposed here?
+
         # --- Phase 9: M&A Attributes ---
         self.is_bankrupt: bool = False
         self.valuation: float = 0.0
-        self.consecutive_loss_ticks_for_bankruptcy: int = 0 # Track separately strictly for rule
-        
+        self.consecutive_loss_ticks_for_bankruptcy: int = (
+            0  # Track separately strictly for rule
+        )
+
         # --- Phase 6: Brand Engine ---
         self.brand_manager = BrandManager(self.id, config_module, logger)
-        self.marketing_budget: float = 0.0 # Decision variable
+        self.marketing_budget: float = 0.0  # Decision variable
         self.prev_awareness: float = 0.0  # For AI Reward Calculation
         # ROI Optimization
         self.marketing_budget_rate: float = 0.05  # Initial 5%
 
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
-        self.is_publicly_traded: bool = True   # 상장 여부
+        self.is_publicly_traded: bool = True  # 상장 여부
         self.dividend_rate: float = getattr(
             config_module, "DIVIDEND_RATE", 0.3
         )  # 기업별 배당률 (기본값: config)
         self.treasury_shares: float = self.total_shares  # 자사주 보유량
-        self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
+        self.capital_stock: float = 100.0  # 실물 자본재 (초기값: 100)
 
         # Phase 16-B: Rewards Tracking (Delta storage)
         self.prev_market_share: float = 0.0
@@ -144,8 +153,8 @@ class Firm(BaseAgent, ILearningAgent):
         self.prev_avg_quality: float = 1.0
 
         # Phase 21: Automation
-        self.automation_level: float = 0.0 # 0.0 to 1.0
-        self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
+        self.automation_level: float = 0.0  # 0.0 to 1.0
+        self.system2_planner: Optional[FirmSystem2Planner] = None  # Initialized later
 
         self.age = 0
         # WO-103 Phase 1: Removed self.cash_reserve redundancy. Using FinanceDepartment.
@@ -155,20 +164,20 @@ class Firm(BaseAgent, ILearningAgent):
     # WO-103 Phase 1: Assets Property to delegate to FinanceDepartment
     @property
     def assets(self) -> float:
-        if hasattr(self, 'finance'):
+        if hasattr(self, "finance"):
             return self.finance.balance
         return self._assets_buffer
 
     def _add_assets(self, amount: float) -> None:
         """[PROTECTED] Delegate to FinanceDepartment."""
-        if hasattr(self, 'finance'):
+        if hasattr(self, "finance"):
             self.finance.credit(amount, "Settlement Transfer")
         else:
             self._assets_buffer += amount
 
     def _sub_assets(self, amount: float) -> None:
         """[PROTECTED] Delegate to FinanceDepartment."""
-        if hasattr(self, 'finance'):
+        if hasattr(self, "finance"):
             self.finance.debit(amount, "Settlement Transfer")
         else:
             self._assets_buffer -= amount
@@ -179,7 +188,7 @@ class Firm(BaseAgent, ILearningAgent):
         stock_market.update_shareholder(self.id, self.id, self.treasury_shares)
         self.logger.info(
             f"IPO | Firm {self.id} initialized IPO with {self.total_shares} shares. Par value: {par_value:.2f}",
-            extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]}
+            extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]},
         )
 
     def liquidate_assets(self) -> float:
@@ -191,10 +200,10 @@ class Firm(BaseAgent, ILearningAgent):
         """
         # 1. Write off Inventory
         self.inventory.clear()
-        
+
         # 2. Write off Capital Stock
         self.capital_stock = 0.0
-        
+
         # 3. Write off Automation
         self.automation_level = 0.0
 
@@ -208,12 +217,21 @@ class Firm(BaseAgent, ILearningAgent):
 
         total_qty = current_inventory + quantity
         if total_qty > 0:
-            new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
+            new_avg_quality = (
+                (current_inventory * current_quality) + (quantity * quality)
+            ) / total_qty
             self.inventory_quality[item_id] = new_avg_quality
 
         self.inventory[item_id] = total_qty
 
-    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+    def post_ask(
+        self,
+        item_id: str,
+        price: float,
+        quantity: float,
+        market: OrderBookMarket,
+        current_tick: int,
+    ) -> Order:
         return self.sales.post_ask(item_id, price, quantity, market, current_tick)
 
     def calculate_brand_premium(self, market_data: Dict[str, Any]) -> float:
@@ -238,11 +256,17 @@ class Firm(BaseAgent, ILearningAgent):
     def _adjust_marketing_budget(self) -> None:
         self.sales.adjust_marketing_budget()
 
-    def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
-        self.current_production = self.production.produce(current_time, technology_manager)
+    def produce(
+        self, current_time: int, technology_manager: Optional[Any] = None
+    ) -> None:
+        self.current_production = self.production.produce(
+            current_time, technology_manager
+        )
 
     @override
-    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Firm":
+    def clone(
+        self, new_id: int, initial_assets_from_parent: float, current_tick: int
+    ) -> "Firm":
         """
         현재 기업 인스턴스를 복제하여 새로운 기업을 생성합니다.
         AI 모델(decision_engine)을 포함하여 깊은 복사를 수행합니다.
@@ -261,7 +285,7 @@ class Firm(BaseAgent, ILearningAgent):
             initial_inventory=copy.deepcopy(self.inventory),
             loan_market=self.decision_engine.loan_market,  # loan_market은 공유
             logger=self.logger,
-            personality=self.personality # Propagate personality
+            personality=self.personality,  # Propagate personality
         )
         new_firm.logger.info(
             f"Firm {self.id} was cloned to new Firm {new_id}",
@@ -280,9 +304,11 @@ class Firm(BaseAgent, ILearningAgent):
             "assets": self.assets,
             "needs": self.needs.copy(),
             "inventory": self.inventory.copy(),
-            "input_inventory": self.input_inventory.copy(), # WO-030
+            "input_inventory": self.input_inventory.copy(),  # WO-030
             # SoC Refactor
-            "employees": [emp.id for emp in self.hr.employees],  # Only pass employee IDs
+            "employees": [
+                emp.id for emp in self.hr.employees
+            ],  # Only pass employee IDs
             "is_active": self.is_active,
             "current_production": self.current_production,
             "productivity_factor": self.productivity_factor,
@@ -295,9 +321,9 @@ class Firm(BaseAgent, ILearningAgent):
             "treasury_shares": self.treasury_shares,
             "dividend_rate": self.dividend_rate,
             "capital_stock": self.capital_stock,
-            "base_quality": self.base_quality, # AI needs to know this
+            "base_quality": self.base_quality,  # AI needs to know this
             "inventory_quality": self.inventory_quality.copy(),
-            "automation_level": self.automation_level, # Phase 21
+            "automation_level": self.automation_level,  # Phase 21
         }
 
     def get_state_dto(self) -> FirmStateDTO:
@@ -311,10 +337,16 @@ class Firm(BaseAgent, ILearningAgent):
         """AI 학습을 위한 이전 상태 데이터를 반환합니다."""
         return getattr(self, "pre_state_snapshot", self.get_agent_data())
 
-
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None
+        self,
+        markets: Dict[str, Any],
+        goods_data: list[Dict[str, Any]],
+        market_data: Dict[str, Any],
+        current_time: int,
+        government: Optional[Any] = None,
+        reflux_system: Optional[Any] = None,
+        stress_scenario_config: Optional["StressScenarioConfig"] = None,
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
@@ -369,20 +401,30 @@ class Firm(BaseAgent, ILearningAgent):
         )
         return external_orders, tactic
 
-    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int) -> None:
+    def _execute_internal_order(
+        self, order: Order, government: Optional[Any], current_time: int
+    ) -> None:
         """Executes internal orders (state modifications) received from the Decision Engine."""
         if order.order_type == "SET_TARGET":
             self.production_target = order.quantity
-            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} set production target to {self.production_target:.1f}")
+            self.logger.info(
+                f"INTERNAL_EXEC | Firm {self.id} set production target to {self.production_target:.1f}"
+            )
 
         elif order.order_type == "INVEST_AUTOMATION":
             spend = order.quantity
             if self.finance.invest_in_automation(spend):
-                cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
+                cost_per_pct = getattr(
+                    self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0
+                )
                 if cost_per_pct > 0:
                     gained_a = (spend / cost_per_pct) / 100.0
-                    self.production.set_automation_level(self.automation_level + gained_a)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {spend:.1f} in automation.")
+                    self.production.set_automation_level(
+                        self.automation_level + gained_a
+                    )
+                    self.logger.info(
+                        f"INTERNAL_EXEC | Firm {self.id} invested {spend:.1f} in automation."
+                    )
 
         elif order.order_type == "PAY_TAX":
             amount = order.quantity
@@ -398,10 +440,14 @@ class Firm(BaseAgent, ILearningAgent):
         elif order.order_type == "INVEST_CAPEX":
             budget = order.quantity
             if self.finance.invest_in_capex(budget):
-                efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
+                efficiency = 1.0 / getattr(
+                    self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0
+                )
                 added_capital = budget * efficiency
                 self.production.add_capital(added_capital)
-                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {budget:.1f} in CAPEX.")
+                self.logger.info(
+                    f"INTERNAL_EXEC | Firm {self.id} invested {budget:.1f} in CAPEX."
+                )
 
         elif order.order_type == "SET_DIVIDEND":
             self.finance.set_dividend_rate(order.quantity)
@@ -419,9 +465,13 @@ class Firm(BaseAgent, ILearningAgent):
                 if self.finance.pay_severance(employee, severance_pay):
                     employee.quit()
                     self.hr.remove_employee(employee)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {emp_id}.")
+                    self.logger.info(
+                        f"INTERNAL_EXEC | Firm {self.id} fired employee {emp_id}."
+                    )
                 else:
-                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {emp_id} (insufficient funds).")
+                    self.logger.warning(
+                        f"INTERNAL_EXEC | Firm {self.id} failed to fire {emp_id} (insufficient funds)."
+                    )
 
     def _execute_rd_outcome(self, budget: float, current_time: int) -> None:
         """Executes the probabilistic outcome of R&D investment."""
@@ -432,26 +482,33 @@ class Firm(BaseAgent, ILearningAgent):
 
         avg_skill = 1.0
         if self.hr.employees:
-            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in self.hr.employees) / len(self.hr.employees)
+            avg_skill = sum(
+                getattr(e, "labor_skill", 1.0) for e in self.hr.employees
+            ) / len(self.hr.employees)
 
         success_chance = base_chance * avg_skill
 
         import random
+
         if random.random() < success_chance:
             self.research_history["success_count"] += 1
             self.research_history["last_success_tick"] = current_time
             self.base_quality += 0.05
             self.productivity_factor *= 1.05
-            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {budget:.1f})")
+            self.logger.info(
+                f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {budget:.1f})"
+            )
 
-    def _calculate_invisible_hand_price(self, markets: Dict[str, Any], current_tick: int) -> None:
+    def _calculate_invisible_hand_price(
+        self, markets: Dict[str, Any], current_tick: int
+    ) -> None:
         """
         WO-056: Stage 1 Shadow Mode (Price Discovery 2.0).
         Calculates and logs the shadow price based on Excess Demand.
         """
         market = markets.get(self.specialization)
         # Check if market supports order book inspection
-        if not market or not hasattr(market, 'get_all_bids'):
+        if not market or not hasattr(market, "get_all_bids"):
             return
 
         # 1. Get Demand and Supply (Market-wide for this good)
@@ -490,10 +547,16 @@ class Firm(BaseAgent, ILearningAgent):
             metric="shadow_price",
             current_value=current_price,
             shadow_value=shadow_price,
-            details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
+            details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}",
         )
 
-    def generate_transactions(self, government: Optional[Government], market_data: Dict[str, Any], all_households: List[Household], current_time: int) -> List[Transaction]:
+    def generate_transactions(
+        self,
+        government: Optional[Government],
+        market_data: Dict[str, Any],
+        all_households: List[Household],
+        current_time: int,
+    ) -> List[Transaction]:
         """
         Generates all financial transactions for the tick (Wages, Taxes, Dividends, etc.).
         Phase 3 Architecture.
@@ -505,20 +568,26 @@ class Firm(BaseAgent, ILearningAgent):
         transactions.extend(tx_payroll)
 
         # 2. Finance Transactions (Holding, Maint, Corp Tax, Dividends, Bailout Repayment)
-        tx_finance = self.finance.generate_financial_transactions(government, all_households, current_time)
+        tx_finance = self.finance.generate_financial_transactions(
+            government, all_households, current_time
+        )
         transactions.extend(tx_finance)
 
         # 3. Marketing (Direct Calculation here as per old update_needs)
         if self.assets > 100.0:
-            marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
+            marketing_spend = max(
+                10.0, self.finance.revenue_this_turn * self.marketing_budget_rate
+            )
         else:
             marketing_spend = 0.0
 
         if self.assets < marketing_spend:
-             marketing_spend = 0.0
+            marketing_spend = 0.0
 
         if marketing_spend > 0:
-            tx_marketing = self.finance.generate_marketing_transaction(government, current_time, marketing_spend)
+            tx_marketing = self.finance.generate_marketing_transaction(
+                government, current_time, marketing_spend
+            )
             if tx_marketing:
                 transactions.append(tx_marketing)
 
@@ -531,7 +600,14 @@ class Firm(BaseAgent, ILearningAgent):
         return transactions
 
     @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
+    def update_needs(
+        self,
+        current_time: int,
+        government: Optional[Any] = None,
+        market_data: Optional[Dict[str, Any]] = None,
+        reflux_system: Optional[Any] = None,
+        technology_manager: Optional[Any] = None,
+    ) -> None:
         """
         Lifecycle updates (Age, Bankruptcy Check).
         Financial transactions are now in generate_transactions.
@@ -540,11 +616,19 @@ class Firm(BaseAgent, ILearningAgent):
         self.age += 1
 
         # --- Final State Updates & Checks ---
-        self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"] + self.config_module.LIQUIDITY_NEED_INCREASE_RATE)
+        self.needs["liquidity_need"] = min(
+            100.0,
+            self.needs["liquidity_need"]
+            + self.config_module.LIQUIDITY_NEED_INCREASE_RATE,
+        )
         self.finance.check_bankruptcy()
 
         # SoC Refactor
-        if self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD or self.finance.consecutive_loss_turns >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD:
+        if (
+            self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD
+            or self.finance.consecutive_loss_turns
+            >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD
+        ):
             self.is_active = False
             self.logger.warning(
                 f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.finance.consecutive_loss_turns}",
@@ -579,7 +663,9 @@ class Firm(BaseAgent, ILearningAgent):
         """Withdraws a given amount from the firm's cash reserves."""
         if amount > 0:
             if self.finance.balance < amount:
-                raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.finance.balance:.2f}")
+                raise InsufficientFundsError(
+                    f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.finance.balance:.2f}"
+                )
             self.finance.debit(amount, "Withdrawal")
 
     # --- Delegated Methods (Facade Pattern) ---
@@ -650,7 +736,7 @@ class Firm(BaseAgent, ILearningAgent):
         next_market_data = context["next_market_data"]
 
         # 엔진은 더 이상 firm.decision_engine.ai_engine에 직접 접근하지 않고 이 메서드를 통해 요청합니다.
-        if hasattr(self.decision_engine, 'ai_engine'):
+        if hasattr(self.decision_engine, "ai_engine"):
             self.decision_engine.ai_engine.update_learning_v2(
                 reward=reward,
                 next_agent_data=next_agent_data,

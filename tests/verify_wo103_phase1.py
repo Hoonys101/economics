@@ -10,6 +10,7 @@ from simulation.firms import Firm
 from simulation.components.finance_department import FinanceDepartment
 from simulation.components.hr_department import HRDepartment
 
+
 class TestWO103Phase1(unittest.TestCase):
     def setUp(self):
         self.mock_config = MagicMock()
@@ -24,8 +25,8 @@ class TestWO103Phase1(unittest.TestCase):
         self.mock_config.FIRM_CLOSURE_TURNS_THRESHOLD = 10
         self.mock_config.PROFIT_HISTORY_TICKS = 10
         self.mock_config.GOODS = {"food": {"initial_price": 10.0}}
-        self.mock_config.FIRM_MAINTENANCE_FEE = 0.0 # Simplify
-        self.mock_config.CORPORATE_TAX_RATE = 0.0 # Simplify
+        self.mock_config.FIRM_MAINTENANCE_FEE = 0.0  # Simplify
+        self.mock_config.CORPORATE_TAX_RATE = 0.0  # Simplify
         self.mock_config.RAW_MATERIAL_SECTORS = []
         # Add BrandManager specific configs just in case, though we mock it
         self.mock_config.BRAND_DECAY = 0.95
@@ -42,7 +43,7 @@ class TestWO103Phase1(unittest.TestCase):
             productivity_factor=1.0,
             decision_engine=self.mock_decision_engine,
             value_orientation="PROFIT",
-            config_module=self.mock_config
+            config_module=self.mock_config,
         )
 
         # Mock HR process_payroll returns 0.0
@@ -88,7 +89,7 @@ class TestWO103Phase1(unittest.TestCase):
 
         # Setup inventory
         self.firm.inventory = {"food": 10.0}
-        self.firm.last_prices = {"food": 10.0} # Value = 100.0
+        self.firm.last_prices = {"food": 10.0}  # Value = 100.0
         # Cost rate 0.1 -> Cost = 10.0
 
         # Marketing Logic:
@@ -100,12 +101,15 @@ class TestWO103Phase1(unittest.TestCase):
 
         self.firm.update_needs(current_time=1)
 
-        expected_deduction = 10.0 + 10.0 # Holding + Marketing
-        self.assertAlmostEqual(self.firm.assets, initial_assets - expected_deduction, delta=0.1)
+        expected_deduction = 10.0 + 10.0  # Holding + Marketing
+        self.assertAlmostEqual(
+            self.firm.assets, initial_assets - expected_deduction, delta=0.1
+        )
 
         # Verify finance recorded expenses
         self.assertGreater(self.firm.finance.expenses_this_tick, 0)
         print("Holding Costs Passed.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

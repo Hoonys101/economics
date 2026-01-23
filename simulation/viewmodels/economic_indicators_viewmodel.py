@@ -16,15 +16,22 @@ class EconomicIndicatorsViewModel:
         self.repository = repository if repository else SimulationRepository()
 
     def get_economic_indicators(
-        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None, run_id: Optional[int] = None
+        self,
+        start_tick: Optional[int] = None,
+        end_tick: Optional[int] = None,
+        run_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Retrieves and returns economic indicator data.
         """
-        indicators = self.repository.get_economic_indicators(start_tick, end_tick, run_id=run_id)
+        indicators = self.repository.get_economic_indicators(
+            start_tick, end_tick, run_id=run_id
+        )
         return indicators
 
-    def get_wealth_distribution(self, households: List[Any], firms: List[Any]) -> Dict[str, Any]:
+    def get_wealth_distribution(
+        self, households: List[Any], firms: List[Any]
+    ) -> Dict[str, Any]:
         """
         Calculates the wealth distribution (histogram buckets).
         """
@@ -38,7 +45,7 @@ class EconomicIndicatorsViewModel:
         # Determine appropriate bucket size
         num_buckets = 10
         if max_asset == min_asset:
-             return {"labels": [f"{min_asset:.0f}"], "data": [len(all_assets)]}
+            return {"labels": [f"{min_asset:.0f}"], "data": [len(all_assets)]}
 
         bucket_size = (max_asset - min_asset) / num_buckets
 
@@ -56,12 +63,11 @@ class EconomicIndicatorsViewModel:
                 index = num_buckets - 1
             buckets[index] += 1
 
-        return {
-            "labels": labels,
-            "data": buckets
-        }
+        return {"labels": labels, "data": buckets}
 
-    def get_needs_distribution(self, households: List[Any], firms: List[Any]) -> Dict[str, Any]:
+    def get_needs_distribution(
+        self, households: List[Any], firms: List[Any]
+    ) -> Dict[str, Any]:
         """
         Calculates average needs for households and firms.
         """
@@ -87,13 +93,10 @@ class EconomicIndicatorsViewModel:
         firm_count = len(firms)
         if firm_count > 0:
             # Firm needs are stored in 'needs' dict just like households in BaseAgent
-            total_liquidity_need = sum(f.needs.get('liquidity_need', 0) for f in firms)
-            firm_needs['liquidity_need'] = total_liquidity_need / firm_count
+            total_liquidity_need = sum(f.needs.get("liquidity_need", 0) for f in firms)
+            firm_needs["liquidity_need"] = total_liquidity_need / firm_count
 
-        return {
-            "household": household_needs,
-            "firm": firm_needs
-        }
+        return {"household": household_needs, "firm": firm_needs}
 
     def get_sales_by_good(self, transactions: List[Dict[str, Any]]) -> Dict[str, float]:
         """
@@ -101,8 +104,8 @@ class EconomicIndicatorsViewModel:
         """
         sales: Dict[str, float] = {}
         for tx in transactions:
-            item = tx.get('item_id', 'unknown')
-            qty = tx.get('quantity', 0)
+            item = tx.get("item_id", "unknown")
+            qty = tx.get("quantity", 0)
             sales[item] = sales.get(item, 0) + qty
         return sales
 
@@ -119,26 +122,30 @@ class EconomicIndicatorsViewModel:
                 # Bids
                 for item_id, orders in market.buy_orders.items():
                     for order in orders:
-                        order_book.append({
-                            "type": "BID",
-                            "market_id": market_id,
-                            "item_id": item_id,
-                            "agent_id": order.agent_id,
-                            "price": order.price,
-                            "quantity": order.quantity
-                        })
+                        order_book.append(
+                            {
+                                "type": "BID",
+                                "market_id": market_id,
+                                "item_id": item_id,
+                                "agent_id": order.agent_id,
+                                "price": order.price,
+                                "quantity": order.quantity,
+                            }
+                        )
 
                 # Asks
                 for item_id, orders in market.sell_orders.items():
                     for order in orders:
-                        order_book.append({
-                            "type": "ASK",
-                            "market_id": market_id,
-                            "item_id": item_id,
-                            "agent_id": order.agent_id,
-                            "price": order.price,
-                            "quantity": order.quantity
-                        })
+                        order_book.append(
+                            {
+                                "type": "ASK",
+                                "market_id": market_id,
+                                "item_id": item_id,
+                                "agent_id": order.agent_id,
+                                "price": order.price,
+                                "quantity": order.quantity,
+                            }
+                        )
 
         # Sort by price descending for display? Or just return list.
         # Let's return list, frontend can sort.

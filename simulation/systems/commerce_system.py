@@ -1,12 +1,14 @@
 """
 Implements the CommerceSystem which orchestrates consumption, purchases, and leisure.
 """
+
 from typing import Any, Dict, List, Optional
 import logging
 from simulation.systems.api import ICommerceSystem, CommerceContext
 from simulation.systems.reflux_system import EconomicRefluxSystem
 
 logger = logging.getLogger(__name__)
+
 
 class CommerceSystem(ICommerceSystem):
     """
@@ -17,7 +19,11 @@ class CommerceSystem(ICommerceSystem):
         self.config = config
         self.reflux_system = reflux_system
 
-    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Dict[int, float]:
+    def execute_consumption_and_leisure(
+        self,
+        context: CommerceContext,
+        scenario_config: Optional["StressScenarioConfig"] = None,
+    ) -> Dict[int, float]:
         """
         Executes vectorized consumption, applies fast-track purchases,
         and calculates leisure effects. Incorporates stress scenario behavioral changes.
@@ -34,11 +40,13 @@ class CommerceSystem(ICommerceSystem):
         household_leisure_effects: Dict[int, float] = {}
 
         # 1. Vectorized Decision Making
-        batch_decisions = breeding_planner.decide_consumption_batch(households, market_data)
+        batch_decisions = breeding_planner.decide_consumption_batch(
+            households, market_data
+        )
 
-        consume_list = batch_decisions.get('consume', [0] * len(households))
-        buy_list = batch_decisions.get('buy', [0] * len(households))
-        food_price = batch_decisions.get('price', 5.0)
+        consume_list = batch_decisions.get("consume", [0] * len(households))
+        buy_list = batch_decisions.get("buy", [0] * len(households))
+        food_price = batch_decisions.get("price", 5.0)
 
         for i, household in enumerate(households):
             if not household.is_active:
@@ -51,11 +59,20 @@ class CommerceSystem(ICommerceSystem):
                 c_amt = consume_list[i]
 
                 # Phase 28: Deflationary Spiral - Consumption Collapse
-                if scenario_config and scenario_config.is_active and scenario_config.scenario_name == 'deflation':
-                    if not household.is_employed and scenario_config.consumption_pessimism_factor > 0:
+                if (
+                    scenario_config
+                    and scenario_config.is_active
+                    and scenario_config.scenario_name == "deflation"
+                ):
+                    if (
+                        not household.is_employed
+                        and scenario_config.consumption_pessimism_factor > 0
+                    ):
                         original_amt = c_amt
-                        c_amt *= (1 - scenario_config.consumption_pessimism_factor)
-                        logger.debug(f"PESSIMISM_IMPACT | Household {household.id} consumption reduced from {original_amt:.2f} to {c_amt:.2f}")
+                        c_amt *= 1 - scenario_config.consumption_pessimism_factor
+                        logger.debug(
+                            f"PESSIMISM_IMPACT | Household {household.id} consumption reduced from {original_amt:.2f} to {c_amt:.2f}"
+                        )
 
                 if c_amt > 0:
                     household.consume("basic_food", c_amt, current_time)
@@ -68,19 +85,31 @@ class CommerceSystem(ICommerceSystem):
                     cost = b_amt * food_price
                     if household.assets >= cost:
                         household.withdraw(cost)
-                        household.inventory["basic_food"] = household.inventory.get("basic_food", 0) + b_amt
+                        household.inventory["basic_food"] = (
+                            household.inventory.get("basic_food", 0) + b_amt
+                        )
 
                         # Capture money sink
-                        self.reflux_system.capture(cost, source=f"Household_{household.id}", category="emergency_food")
+                        self.reflux_system.capture(
+                            cost,
+                            source=f"Household_{household.id}",
+                            category="emergency_food",
+                        )
 
                         logger.debug(
                             f"VECTOR_BUY | Household {household.id} bought {b_amt:.1f} food (Fast Track)",
-                            extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
+                            extra={
+                                "agent_id": household.id,
+                                "tags": ["consumption", "vector_buy"],
+                            },
                         )
 
                         # Immediate consumption if needed
                         if c_amt == 0:
-                            consume_now = min(b_amt, getattr(self.config, "FOOD_CONSUMPTION_QUANTITY", 1.0))
+                            consume_now = min(
+                                b_amt,
+                                getattr(self.config, "FOOD_CONSUMPTION_QUANTITY", 1.0),
+                            )
                             household.consume("basic_food", consume_now, current_time)
                             consumed_items["basic_food"] = consume_now
 

@@ -1,4 +1,3 @@
-
 import pytest
 from unittest.mock import MagicMock
 import logging
@@ -7,11 +6,12 @@ from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
-from simulation.ai.api import Personality # Import Personality enum
+from simulation.ai.api import Personality  # Import Personality enum
 import config
 
 # Disable logging for cleaner test output
 logging.getLogger().setLevel(logging.CRITICAL)
+
 
 @pytest.fixture
 def mock_config_module():
@@ -22,21 +22,23 @@ def mock_config_module():
             setattr(mock_config, key, getattr(config, key))
     return mock_config
 
+
 @pytest.fixture
 def simple_household(mock_config_module):
     mock_engine = MagicMock(spec=BaseDecisionEngine)
     household = Household(
         id=1,
         talent=Talent(1.0, {}),
-        goods_data=[], # Simplification
+        goods_data=[],  # Simplification
         initial_assets=100.0,
         initial_needs={"survival": 50.0},
         decision_engine=mock_engine,
-        value_orientation="wealth_and_needs", # Default
-        personality=Personality.MISER, # Default
-        config_module=mock_config_module
+        value_orientation="wealth_and_needs",  # Default
+        personality=Personality.MISER,  # Default
+        config_module=mock_config_module,
     )
     return household
+
 
 @pytest.fixture
 def simple_firm(mock_config_module):
@@ -48,10 +50,11 @@ def simple_firm(mock_config_module):
         specialization="basic_food",
         productivity_factor=1.0,
         decision_engine=mock_engine,
-        value_orientation="wealth_and_needs", # Default
-        config_module=mock_config_module
+        value_orientation="wealth_and_needs",  # Default
+        config_module=mock_config_module,
     )
     return firm
+
 
 @pytest.fixture
 def simple_market():

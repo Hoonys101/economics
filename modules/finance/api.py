@@ -1,36 +1,47 @@
 from typing import Protocol, Dict, List, Any, Optional
 from dataclasses import dataclass
 
+
 # Forward reference for type hinting
-class Firm: pass
+class Firm:
+    pass
+
 
 @dataclass
 class BondDTO:
     """Data Transfer Object for government bonds."""
+
     id: str
     issuer: str
     face_value: float
     yield_rate: float
     maturity_date: int
 
+
 @dataclass
 class BailoutCovenant:
     """Defines the restrictive conditions attached to a bailout loan."""
+
     dividends_allowed: bool
     executive_salary_freeze: bool
-    mandatory_repayment: float # Ratio of profit to be repaid
+    mandatory_repayment: float  # Ratio of profit to be repaid
+
 
 @dataclass
 class BailoutLoanDTO:
     """Data Transfer Object for corporate bailout loans."""
+
     firm_id: int
     amount: float
     interest_rate: float
     covenants: BailoutCovenant
 
+
 class InsufficientFundsError(Exception):
     """Raised when a withdrawal is attempted with insufficient funds."""
+
     pass
+
 
 class IFinancialEntity(Protocol):
     """Protocol for any entity that can hold and transfer funds."""
@@ -54,18 +65,23 @@ class IFinancialEntity(Protocol):
         """
         ...
 
+
 class IBankService(IFinancialEntity, Protocol):
     """Interface for commercial and central banks."""
+
     def add_bond_to_portfolio(self, bond: BondDTO) -> None: ...
+
 
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""
+
     def get_debt_to_gdp_ratio(self, government_dto: Any, world_dto: Any) -> float: ...
+
 
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""
 
-    def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+    def evaluate_solvency(self, firm: "Firm", current_tick: int) -> bool:
         """Evaluates a firm's solvency to determine bailout eligibility."""
         ...
 
@@ -77,7 +93,9 @@ class IFinanceSystem(Protocol):
         """Collects corporate tax using atomic settlement."""
         ...
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[BailoutLoanDTO]:
+    def grant_bailout_loan(
+        self, firm: "Firm", amount: float
+    ) -> Optional[BailoutLoanDTO]:
         """Converts a bailout from a grant to an interest-bearing senior loan."""
         ...
 

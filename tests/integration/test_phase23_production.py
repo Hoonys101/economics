@@ -4,6 +4,7 @@ from simulation.components.production_department import ProductionDepartment
 from simulation.systems.technology_manager import TechnologyManager
 from simulation.firms import Firm
 
+
 class TestPhase23Production:
     @pytest.fixture
     def config(self):
@@ -33,7 +34,7 @@ class TestPhase23Production:
             firm.inventory = {}
             firm.input_inventory = {}
             firm.hr = MagicMock()
-            firm.hr.employees = [MagicMock()] # At least one employee
+            firm.hr.employees = [MagicMock()]  # At least one employee
             firm.hr.get_total_labor_skill.return_value = 100.0
             firm.hr.get_avg_skill.return_value = 1.0
 
@@ -46,6 +47,7 @@ class TestPhase23Production:
             firm.add_inventory = MagicMock()
 
             return firm, firm.production_department
+
         return _create_firm
 
     def test_production_boost_from_fertilizer_tech(self, config, firm_setup):

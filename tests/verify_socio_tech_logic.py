@@ -3,10 +3,12 @@ from unittest.mock import MagicMock
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.api import BaseAIEngine
 
+
 # Mock Config
 class MockConfig:
     HOUSEWORK_BASE_HOURS = 6.0
     FORMULA_TECH_LEVEL = 0.0
+
 
 class TestHouseholdAI_TimeAllocation(unittest.TestCase):
     def setUp(self):
@@ -17,7 +19,9 @@ class TestHouseholdAI_TimeAllocation(unittest.TestCase):
 
     def test_single_male_no_infant(self):
         agent_data = {"gender": "M", "home_quality_score": 1.0}
-        allocation = self.ai.decide_time_allocation(agent_data, config_module=MockConfig())
+        allocation = self.ai.decide_time_allocation(
+            agent_data, config_module=MockConfig()
+        )
 
         # Expect full housework (6.0), no childcare
         self.assertEqual(allocation["housework"], 6.0)
@@ -27,7 +31,7 @@ class TestHouseholdAI_TimeAllocation(unittest.TestCase):
         MockConfig.FORMULA_TECH_LEVEL = 0.0
         agent_data = {"gender": "F", "home_quality_score": 1.0}
         spouse_data = {"id": "spouse"}
-        children_data = [{"age": 1}] # Infant
+        children_data = [{"age": 1}]  # Infant
 
         allocation = self.ai.decide_time_allocation(
             agent_data, spouse_data, children_data, config_module=MockConfig()
@@ -66,12 +70,18 @@ class TestHouseholdAI_TimeAllocation(unittest.TestCase):
         self.assertEqual(allocation["childcare"], 4.0)
 
     def test_appliance_benefit(self):
-        agent_data = {"gender": "F", "home_quality_score": 1.5} # High Quality -> Appliances
+        agent_data = {
+            "gender": "F",
+            "home_quality_score": 1.5,
+        }  # High Quality -> Appliances
 
-        allocation = self.ai.decide_time_allocation(agent_data, config_module=MockConfig())
+        allocation = self.ai.decide_time_allocation(
+            agent_data, config_module=MockConfig()
+        )
 
         # Base 6.0 * 0.5 = 3.0
         self.assertEqual(allocation["housework"], 3.0)
+
 
 if __name__ == "__main__":
     unittest.main()

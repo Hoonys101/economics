@@ -1,12 +1,13 @@
-
 import sys
 from pathlib import Path
 import os
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import unittest
 from unittest.mock import MagicMock
 from simulation.agents.central_bank import CentralBank
+
 
 class MockTracker:
     def __init__(self):
@@ -14,9 +15,14 @@ class MockTracker:
 
     def get_latest_indicators(self):
         return {
-            "avg_goods_price": self.metrics["avg_goods_price"][-1] if self.metrics["avg_goods_price"] else 0,
-            "total_production": self.metrics["total_production"][-1] if self.metrics["total_production"] else 0
+            "avg_goods_price": self.metrics["avg_goods_price"][-1]
+            if self.metrics["avg_goods_price"]
+            else 0,
+            "total_production": self.metrics["total_production"][-1]
+            if self.metrics["total_production"]
+            else 0,
         }
+
 
 class MockConfig:
     INITIAL_BASE_ANNUAL_RATE = 0.05
@@ -25,6 +31,7 @@ class MockConfig:
     CB_TAYLOR_ALPHA = 1.5
     CB_TAYLOR_BETA = 0.5
     TICKS_PER_YEAR = 100
+
 
 class TestCentralBank(unittest.TestCase):
     def setUp(self):
@@ -70,7 +77,7 @@ class TestCentralBank(unittest.TestCase):
         self.tracker.metrics["avg_goods_price"].append(100.2)
 
         self.tracker.metrics["total_production"] = [100.0] * 6
-        self.cb.potential_gdp = 100.0 # No output gap
+        self.cb.potential_gdp = 100.0  # No output gap
 
         # Expected Taylor Rate:
         # i = 0.02 (neutral) + 0.04 (infl) + 1.5 * (0.04 - 0.02) + 0.5 * 0
@@ -136,5 +143,6 @@ class TestCentralBank(unittest.TestCase):
 
         self.assertEqual(self.cb.base_rate, 0.0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

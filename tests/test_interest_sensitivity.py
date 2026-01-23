@@ -1,4 +1,5 @@
 """Unit test for Interest Sensitivity logic in AIDrivenHouseholdDecisionEngine."""
+
 import pytest
 from unittest.mock import MagicMock, patch
 

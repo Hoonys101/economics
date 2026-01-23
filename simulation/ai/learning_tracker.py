@@ -97,7 +97,9 @@ class LearningTracker:
         overall_reward = 0.0
         total_records = 0
 
-        per_agent_stats = defaultdict(lambda: {"total_q_change": 0.0, "total_reward": 0.0, "record_count": 0})
+        per_agent_stats = defaultdict(
+            lambda: {"total_q_change": 0.0, "total_reward": 0.0, "record_count": 0}
+        )
 
         for tick, tick_data in self.history.items():
             for agent_id, records in tick_data.items():
@@ -123,7 +125,9 @@ class LearningTracker:
         # Finalize per-agent stats with averages
         for agent_id, stats in per_agent_stats.items():
             count = stats["record_count"]
-            stats["avg_q_change"] = stats["total_q_change"] / count if count > 0 else 0.0
+            stats["avg_q_change"] = (
+                stats["total_q_change"] / count if count > 0 else 0.0
+            )
             stats["avg_reward"] = stats["total_reward"] / count if count > 0 else 0.0
 
         summary = {

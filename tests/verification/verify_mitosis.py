@@ -1,7 +1,9 @@
 import pytest
 import random
 from unittest.mock import MagicMock
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
 from simulation.core_agents import Household
 from simulation.models import Talent
 from simulation.ai.api import Personality
@@ -9,34 +11,41 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.ai.q_table_manager import QTableManager
 
+
 # Helper to force set primitive config
 def ensure_config(golden_config, key, value):
-    if not hasattr(golden_config, key) or isinstance(getattr(golden_config, key), MagicMock):
+    if not hasattr(golden_config, key) or isinstance(
+        getattr(golden_config, key), MagicMock
+    ):
         setattr(golden_config, key, value)
 
+
 def setup_golden_config(golden_config):
-    ensure_config(golden_config, 'INFLATION_MEMORY_WINDOW', 10)
-    ensure_config(golden_config, 'TICKS_PER_YEAR', 100)
-    ensure_config(golden_config, 'VALUE_ORIENTATION_MAPPING', {})
-    ensure_config(golden_config, 'ADAPTATION_RATE_IMPULSIVE', 0.5)
-    ensure_config(golden_config, 'ADAPTATION_RATE_CONSERVATIVE', 0.1)
-    ensure_config(golden_config, 'ADAPTATION_RATE_NORMAL', 0.2)
-    ensure_config(golden_config, 'PERCEIVED_PRICE_UPDATE_FACTOR', 0.1)
-    ensure_config(golden_config, 'INITIAL_HOUSEHOLD_ASSETS_MEAN', 1000.0)
-    ensure_config(golden_config, 'CONFORMITY_RANGES', {})
-    ensure_config(golden_config, 'EDUCATION_WEALTH_THRESHOLDS', {0: 0, 1: 1000, 2: 5000})
-    ensure_config(golden_config, 'EDUCATION_COST_MULTIPLIERS', {0: 1.0, 1: 1.2, 2: 1.5})
-    ensure_config(golden_config, 'INITIAL_WAGE', 10.0)
-    ensure_config(golden_config, 'QUALITY_PREF_SNOB_MIN', 0.7)
-    ensure_config(golden_config, 'QUALITY_PREF_MISER_MAX', 0.3)
-    ensure_config(golden_config, 'HOUSEHOLD_MIN_WAGE_DEMAND', 6.0)
-    ensure_config(golden_config, 'MITOSIS_Q_TABLE_MUTATION_RATE', 0.05)
-    ensure_config(golden_config, 'IMITATION_MUTATION_RATE', 0.1)
-    ensure_config(golden_config, 'IMITATION_MUTATION_MAGNITUDE', 0.05)
-    ensure_config(golden_config, 'MITOSIS_MUTATION_PROBABILITY', 0.2)
-    ensure_config(golden_config, 'EDUCATION_SENSITIVITY', 0.1)
-    ensure_config(golden_config, 'BASE_LEARNING_RATE', 0.1)
-    ensure_config(golden_config, 'MAX_LEARNING_RATE', 0.5)
+    ensure_config(golden_config, "INFLATION_MEMORY_WINDOW", 10)
+    ensure_config(golden_config, "TICKS_PER_YEAR", 100)
+    ensure_config(golden_config, "VALUE_ORIENTATION_MAPPING", {})
+    ensure_config(golden_config, "ADAPTATION_RATE_IMPULSIVE", 0.5)
+    ensure_config(golden_config, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
+    ensure_config(golden_config, "ADAPTATION_RATE_NORMAL", 0.2)
+    ensure_config(golden_config, "PERCEIVED_PRICE_UPDATE_FACTOR", 0.1)
+    ensure_config(golden_config, "INITIAL_HOUSEHOLD_ASSETS_MEAN", 1000.0)
+    ensure_config(golden_config, "CONFORMITY_RANGES", {})
+    ensure_config(
+        golden_config, "EDUCATION_WEALTH_THRESHOLDS", {0: 0, 1: 1000, 2: 5000}
+    )
+    ensure_config(golden_config, "EDUCATION_COST_MULTIPLIERS", {0: 1.0, 1: 1.2, 2: 1.5})
+    ensure_config(golden_config, "INITIAL_WAGE", 10.0)
+    ensure_config(golden_config, "QUALITY_PREF_SNOB_MIN", 0.7)
+    ensure_config(golden_config, "QUALITY_PREF_MISER_MAX", 0.3)
+    ensure_config(golden_config, "HOUSEHOLD_MIN_WAGE_DEMAND", 6.0)
+    ensure_config(golden_config, "MITOSIS_Q_TABLE_MUTATION_RATE", 0.05)
+    ensure_config(golden_config, "IMITATION_MUTATION_RATE", 0.1)
+    ensure_config(golden_config, "IMITATION_MUTATION_MAGNITUDE", 0.05)
+    ensure_config(golden_config, "MITOSIS_MUTATION_PROBABILITY", 0.2)
+    ensure_config(golden_config, "EDUCATION_SENSITIVITY", 0.1)
+    ensure_config(golden_config, "BASE_LEARNING_RATE", 0.1)
+    ensure_config(golden_config, "MAX_LEARNING_RATE", 0.5)
+
 
 def create_real_household_from_golden(mock_h, golden_config):
     # Use Talent from models, default if necessary
@@ -46,18 +55,26 @@ def create_real_household_from_golden(mock_h, golden_config):
     goods_data = [{"id": "food"}, {"id": "housing"}]
 
     # Default personality/orientation if not on mock
-    personality = getattr(mock_h, 'personality', Personality.MISER)
+    personality = getattr(mock_h, "personality", Personality.MISER)
     if isinstance(personality, MagicMock):
-         personality = Personality.MISER
+        personality = Personality.MISER
 
-    value_orientation = getattr(mock_h, 'value_orientation', "wealth")
+    value_orientation = getattr(mock_h, "value_orientation", "wealth")
     if isinstance(value_orientation, MagicMock):
         value_orientation = "wealth"
 
     # Handle numeric/primitive fields safely from MagicMock
-    initial_assets = mock_h.assets if not isinstance(mock_h.assets, MagicMock) else 1000.0
-    initial_needs = mock_h.needs if not isinstance(mock_h.needs, MagicMock) else {"survival": 0.5}
-    initial_age = mock_h.age if hasattr(mock_h, 'age') and not isinstance(mock_h.age, MagicMock) else 25
+    initial_assets = (
+        mock_h.assets if not isinstance(mock_h.assets, MagicMock) else 1000.0
+    )
+    initial_needs = (
+        mock_h.needs if not isinstance(mock_h.needs, MagicMock) else {"survival": 0.5}
+    )
+    initial_age = (
+        mock_h.age
+        if hasattr(mock_h, "age") and not isinstance(mock_h.age, MagicMock)
+        else 25
+    )
 
     # Pre-configure Mock Engine
     mock_engine = MagicMock(spec=AIDrivenHouseholdDecisionEngine)
@@ -82,7 +99,9 @@ def create_real_household_from_golden(mock_h, golden_config):
         talent=talent,
         goods_data=goods_data,
         initial_assets=float(initial_assets),
-        initial_needs=dict(initial_needs) if isinstance(initial_needs, dict) else {"survival": 0.5},
+        initial_needs=dict(initial_needs)
+        if isinstance(initial_needs, dict)
+        else {"survival": 0.5},
         decision_engine=mock_engine,
         value_orientation=value_orientation,
         personality=personality,
@@ -91,10 +110,11 @@ def create_real_household_from_golden(mock_h, golden_config):
         gender="M",
     )
 
-    if hasattr(mock_h, 'inventory') and not isinstance(mock_h.inventory, MagicMock):
+    if hasattr(mock_h, "inventory") and not isinstance(mock_h.inventory, MagicMock):
         real_household.inventory = dict(mock_h.inventory)
 
     return real_household
+
 
 def test_mitosis_zero_sum_logic(golden_config, golden_households):
     """
@@ -117,13 +137,16 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     parent._assets -= split_amount
 
     # 3. Create child with deducted amount
-    child = parent.clone(new_id=999, initial_assets_from_parent=split_amount, current_tick=100)
+    child = parent.clone(
+        new_id=999, initial_assets_from_parent=split_amount, current_tick=100
+    )
 
     # Assertions
     assert child.assets == split_amount
     assert parent.assets == initial_total_assets - split_amount
     assert parent.assets + child.assets == initial_total_assets
     assert child.id == 999
+
 
 def test_mitosis_stock_inheritance(golden_config, golden_households):
     """
@@ -168,6 +191,7 @@ def test_mitosis_stock_inheritance(golden_config, golden_households):
     # Verify Total Shares Conserved
     assert parent.shares_owned[firm_1_id] + child.shares_owned[firm_1_id] == 10
 
+
 def test_mitosis_brain_inheritance(golden_config, golden_households):
     """
     CRITICAL: Verify Q-Table and Brain Inheritance.
@@ -180,9 +204,7 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
     # Setup Parent AI with specific knowledge
     mock_shared_ai = MagicMock()
     parent_ai = HouseholdAI(
-        agent_id=str(parent.id),
-        ai_decision_engine=mock_shared_ai,
-        gamma=0.9
+        agent_id=str(parent.id), ai_decision_engine=mock_shared_ai, gamma=0.9
     )
     # Populate Q-Table
     parent_ai.q_consumption["food"] = QTableManager()
@@ -204,7 +226,9 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
     # Clone logic calls _create_new_decision_engine which creates a fresh AI.
     # We rely on AITrainingManager to transfer knowledge.
 
-    training_manager = AITrainingManager(agents=[parent, child], config_module=golden_config)
+    training_manager = AITrainingManager(
+        agents=[parent, child], config_module=golden_config
+    )
     training_manager.inherit_brain(parent, child)
 
     child_ai = child.decision_engine.ai_engine
@@ -224,7 +248,9 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
     for k in test_values:
         p_val = test_values[k]
         c_val = child_values[k]
-        assert abs(p_val - c_val) <= 0.1 # Allow small margin for mutation + float error
+        assert (
+            abs(p_val - c_val) <= 0.1
+        )  # Allow small margin for mutation + float error
 
     # Verify Personality (Inheritance or Mutation)
     assert isinstance(child.personality, Personality)

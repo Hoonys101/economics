@@ -4,10 +4,13 @@ from simulation.engine import Simulation
 from simulation.systems.bootstrapper import Bootstrapper
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from simulation.ai.api import Personality
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+
 
 @pytest.fixture
 def mock_config():
@@ -40,10 +43,7 @@ def mock_config():
     config.EDUCATION_LEVEL_DISTRIBUTION = [1.0]
     config.INITIAL_WAGE = 10.0
     config.EDUCATION_COST_MULTIPLIERS = {}
-    config.CONFORMITY_RANGES = {
-        "MISER": (0.1, 0.3),
-        None: (0.3, 0.7)
-    }
+    config.CONFORMITY_RANGES = {"MISER": (0.1, 0.3), None: (0.3, 0.7)}
     config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0
     config.QUALITY_PREF_MISER_MAX = 0.3
     config.PROFIT_HISTORY_TICKS = 10
@@ -69,6 +69,7 @@ def mock_config():
     config.LABOR_ELASTICITY_MIN = 0.1
     return config
 
+
 @pytest.fixture
 def mock_repo():
     """Provides a mock repository object."""
@@ -76,22 +77,60 @@ def mock_repo():
     repo.save_simulation_run.return_value = 1
     return repo
 
+
 @pytest.fixture
 def mock_ai_trainer():
     """Provides a mock AI trainer."""
     return Mock()
 
+
 def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
     """Tests that the bootstrapper correctly injects capital and inputs."""
     talent = Talent(base_learning_rate=0.1, max_potential={})
-    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", personality=Personality.MISER, config_module=mock_config) for i in range(1)]
+    households = [
+        Household(
+            id=i,
+            talent=talent,
+            goods_data=[],
+            initial_assets=1000,
+            initial_needs={"survival": 0},
+            decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine),
+            value_orientation="test",
+            personality=Personality.MISER,
+            config_module=mock_config,
+        )
+        for i in range(1)
+    ]
     firms = [
-        Firm(id=100, initial_capital=500, specialization="tools", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_module=mock_config, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1),
-        Firm(id=101, initial_capital=2500, specialization="food", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_module=mock_config, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1)
+        Firm(
+            id=100,
+            initial_capital=500,
+            specialization="tools",
+            decision_engine=Mock(spec=AIDrivenFirmDecisionEngine),
+            config_module=mock_config,
+            value_orientation="Profit",
+            initial_liquidity_need=100,
+            productivity_factor=1,
+        ),
+        Firm(
+            id=101,
+            initial_capital=2500,
+            specialization="food",
+            decision_engine=Mock(spec=AIDrivenFirmDecisionEngine),
+            config_module=mock_config,
+            value_orientation="Profit",
+            initial_liquidity_need=100,
+            productivity_factor=1,
+        ),
     ]
 
     # The bootstrapper is called during the Simulation initialization
-    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    sim = Simulation(
+        config_manager=Mock(),
+        config_module=mock_config,
+        logger=Mock(),
+        repository=mock_repo,
+    )
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
@@ -109,18 +148,48 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
         if "inputs" in mock_config.GOODS[firm.specialization]:
             inputs = mock_config.GOODS[firm.specialization]["inputs"]
             for mat in inputs:
-                assert firm.input_inventory.get(mat, 0) > 0, f"Firm {firm.id} missing input {mat}"
+                assert firm.input_inventory.get(mat, 0) > 0, (
+                    f"Firm {firm.id} missing input {mat}"
+                )
+
 
 def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer):
     """Tests that the economy starts and production is non-zero after bootstrapping."""
     talent = Talent(base_learning_rate=0.1, max_potential={})
-    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", personality=Personality.MISER, config_module=mock_config) for i in range(1)]
+    households = [
+        Household(
+            id=i,
+            talent=talent,
+            goods_data=[],
+            initial_assets=1000,
+            initial_needs={"survival": 0},
+            decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine),
+            value_orientation="test",
+            personality=Personality.MISER,
+            config_module=mock_config,
+        )
+        for i in range(1)
+    ]
     firms = [
-        Firm(id=100, initial_capital=3000, specialization="tools", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_module=mock_config, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1),
+        Firm(
+            id=100,
+            initial_capital=3000,
+            specialization="tools",
+            decision_engine=Mock(spec=AIDrivenFirmDecisionEngine),
+            config_module=mock_config,
+            value_orientation="Profit",
+            initial_liquidity_need=100,
+            productivity_factor=1,
+        ),
     ]
 
     # This is a simplified simulation setup; a real test would need more comprehensive mocks
-    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    sim = Simulation(
+        config_manager=Mock(),
+        config_module=mock_config,
+        logger=Mock(),
+        repository=mock_repo,
+    )
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
@@ -136,13 +205,13 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer):
     mock_employee = households[0]
     firm.employees = [mock_employee]
     firm.hr.employees = [mock_employee]
-    firm.input_inventory['wood'] = 100.0
+    firm.input_inventory["wood"] = 100.0
     firm.productivity_factor = 1.0
 
-    firm.produce(0) # Tick 0
+    firm.produce(0)  # Tick 0
 
     sim.tracker.track(1, sim.households, sim.firms, sim.markets, 0)
 
     # Assert Total Production > 0
     metrics = sim.tracker.get_latest_indicators()
-    assert metrics['total_production'] > 0, "Economy is deadlocked!"
+    assert metrics["total_production"] > 0, "Economy is deadlocked!"

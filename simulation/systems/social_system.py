@@ -1,9 +1,11 @@
 """
 Implements the SocialSystem which handles social rank updates and reference standard calculation.
 """
+
 from typing import Dict, Any, List
 from simulation.systems.api import ISocialSystem, SocialMobilityContext
 from simulation.decisions.housing_manager import HousingManager
+
 
 class SocialSystem(ISocialSystem):
     """
@@ -41,10 +43,11 @@ class SocialSystem(ISocialSystem):
 
         hm = context.get("housing_manager")
         if not hm:
-             hm = HousingManager(None, self.config)
+            hm = HousingManager(None, self.config)
 
         for h in households:
-            if not h.is_active: continue
+            if not h.is_active:
+                continue
 
             # Calculate Score
             consumption_score = h.current_consumption * 10.0
@@ -59,7 +62,8 @@ class SocialSystem(ISocialSystem):
         scores.sort(key=lambda x: x[1], reverse=True)
 
         n = len(scores)
-        if n == 0: return
+        if n == 0:
+            return
 
         for rank_idx, (agent, _) in enumerate(scores):
             # Rank 0 (Top) -> Percentile 1.0
@@ -67,7 +71,9 @@ class SocialSystem(ISocialSystem):
             percentile = 1.0 - (rank_idx / n)
             agent.social_rank = percentile
 
-    def calculate_reference_standard(self, context: SocialMobilityContext) -> Dict[str, float]:
+    def calculate_reference_standard(
+        self, context: SocialMobilityContext
+    ) -> Dict[str, float]:
         """
         Calculates the average consumption and housing tier of the top 20% households.
         """
@@ -78,19 +84,20 @@ class SocialSystem(ISocialSystem):
             return {"avg_consumption": 0.0, "avg_housing_tier": 0.0}
 
         # Sort by social rank
-        sorted_hh = sorted(active_households, key=lambda h: getattr(h, "social_rank", 0.0), reverse=True)
+        sorted_hh = sorted(
+            active_households,
+            key=lambda h: getattr(h, "social_rank", 0.0),
+            reverse=True,
+        )
 
         top_20_count = max(1, int(len(active_households) * 0.20))
         top_20 = sorted_hh[:top_20_count]
 
         hm = context.get("housing_manager")
         if not hm:
-             hm = HousingManager(None, self.config)
+            hm = HousingManager(None, self.config)
 
         avg_cons = sum(h.current_consumption for h in top_20) / len(top_20)
         avg_tier = sum(hm.get_housing_tier(h) for h in top_20) / len(top_20)
 
-        return {
-            "avg_consumption": avg_cons,
-            "avg_housing_tier": avg_tier
-        }
+        return {"avg_consumption": avg_cons, "avg_housing_tier": avg_tier}

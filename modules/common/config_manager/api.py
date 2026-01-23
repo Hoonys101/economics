@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Optional
 from pathlib import Path
 
+
 class ConfigManager:
     """
     Manages loading configuration from YAML files and provides a unified access interface.

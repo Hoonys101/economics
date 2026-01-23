@@ -7,7 +7,6 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.preprocessing import StandardScaler
 
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -73,7 +73,8 @@ def test_firm_production_decision_with_employees(sample_firm, sample_market_data
     employee2 = MockHousehold(id=102, labor_skill=0.8)
     sample_firm.employees = [employee1, employee2]
     sample_firm.decision_engine.ai_engine.decide_action_vector.return_value = (
-        Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        Tactic.ADJUST_WAGES,
+        Aggressiveness.NORMAL,
     )
 
     # Call make_decisions
@@ -115,7 +116,8 @@ def test_firm_no_production_if_target_met(sample_firm, sample_market_data):
     sample_firm.inventory[sample_firm.specialization] = 150.0  # Above target of 100
     sample_firm.employees = []  # Ensure no employees are present to focus on inventory decision
     sample_firm.decision_engine.ai_engine.decide_action_vector.return_value = (
-        Tactic.ADJUST_PRICE, Aggressiveness.NORMAL
+        Tactic.ADJUST_PRICE,
+        Aggressiveness.NORMAL,
     )
 
     context = DecisionContext(
@@ -156,7 +158,8 @@ def test_firm_hiring_decision_no_inventory(sample_firm, sample_market_data):
     sample_firm.inventory[sample_firm.specialization] = 0.0
     sample_firm.employees = []  # No employees
     sample_firm.decision_engine.ai_engine.decide_action_vector.return_value = (
-        Tactic.ADJUST_WAGES, Aggressiveness.NORMAL
+        Tactic.ADJUST_WAGES,
+        Aggressiveness.NORMAL,
     )
 
     context = DecisionContext(

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from simulation.components.market_component import MarketComponent
 from simulation.systems.api import MarketInteractionContext
 
+
 @pytest.fixture
 def market_component():
     owner = MagicMock()
@@ -13,6 +14,7 @@ def market_component():
     config = MagicMock()
     config.BRAND_SENSITIVITY_BETA = 0.5
     return MarketComponent(owner, config)
+
 
 def test_choose_best_seller_utility(market_component):
     # Setup
@@ -32,9 +34,7 @@ def test_choose_best_seller_utility(market_component):
     market = MagicMock()
     market.get_all_asks.return_value = [ask1, ask2]
 
-    context: MarketInteractionContext = {
-        "markets": {"good_x": market}
-    }
+    context: MarketInteractionContext = {"markets": {"good_x": market}}
 
     # Execute
     best_seller, best_price = market_component.choose_best_seller("good_x", context)
@@ -46,6 +46,7 @@ def test_choose_best_seller_utility(market_component):
     # U2 > U1
     assert best_seller == 2
     assert best_price == 12.0
+
 
 def test_choose_best_seller_no_market(market_component):
     context = {"markets": {}}

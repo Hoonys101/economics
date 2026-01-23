@@ -76,8 +76,10 @@ class EconomicIndicatorTracker:
         # Use get_financial_snapshot to include Capital Stock and Inventory in Total Assets
         total_firm_assets = sum(
             f.get_financial_snapshot().get("total_assets", f.assets)
-            if hasattr(f, "get_financial_snapshot") else f.assets
-            for f in firms if getattr(f, "is_active", False)
+            if hasattr(f, "get_financial_snapshot")
+            else f.assets
+            for f in firms
+            if getattr(f, "is_active", False)
         )
         record["total_household_assets"] = total_household_assets
         record["total_firm_assets"] = total_firm_assets
@@ -86,8 +88,10 @@ class EconomicIndicatorTracker:
         unemployed_households = 0
         for h in households:
             if getattr(h, "is_active", True):
-                if not hasattr(h, 'is_employed'):
-                    self.logger.error(f"TRACKER ERROR: Agent {h.id} in households list is not a Household! Type: {type(h)}")
+                if not hasattr(h, "is_employed"):
+                    self.logger.error(
+                        f"TRACKER ERROR: Agent {h.id} in households list is not a Household! Type: {type(h)}"
+                    )
                     continue
                 if not h.is_employed:
                     unemployed_households += 1
@@ -110,7 +114,11 @@ class EconomicIndicatorTracker:
         primary_food_key = "basic_food"
 
         for market_id, market in markets.items():
-            if market_id == "labor" or market_id == "loan_market" or market_id == "stock_market":
+            if (
+                market_id == "labor"
+                or market_id == "loan_market"
+                or market_id == "stock_market"
+            ):
                 continue
 
             if hasattr(market, "get_daily_avg_price"):
@@ -124,12 +132,12 @@ class EconomicIndicatorTracker:
                 # Check if this is a food item
                 if "food" in market_id:
                     if volume > 0:
-                         food_price_sum += avg_price * volume
-                         food_volume_sum += volume
+                        food_price_sum += avg_price * volume
+                        food_volume_sum += volume
                     elif avg_price > 0:
-                         # If no volume but has price (e.g. from asks), just track price?
-                         # For weighted avg, we need volume. If 0 volume, we can't weight it.
-                         pass
+                        # If no volume but has price (e.g. from asks), just track price?
+                        # For weighted avg, we need volume. If 0 volume, we can't weight it.
+                        pass
 
         if food_volume_sum > 0:
             record["food_avg_price"] = food_price_sum / food_volume_sum
@@ -138,9 +146,9 @@ class EconomicIndicatorTracker:
             # For simplicity, just use 0.0 or try to get from specific market
             f_market = markets.get(primary_food_key)
             if f_market and hasattr(f_market, "get_daily_avg_price"):
-                 record["food_avg_price"] = f_market.get_daily_avg_price() or 0.0
+                record["food_avg_price"] = f_market.get_daily_avg_price() or 0.0
             else:
-                 record["food_avg_price"] = 0.0
+                record["food_avg_price"] = 0.0
 
         record["food_trade_volume"] = food_volume_sum
 
@@ -156,7 +164,7 @@ class EconomicIndicatorTracker:
                 price = getattr(market, "current_price", None)
                 if price is None or price <= 0:
                     price = getattr(market, "avg_price", 0.0)
-                
+
                 if price > 0:
                     fallback_prices.append(price)
 
@@ -167,9 +175,7 @@ class EconomicIndicatorTracker:
 
         # ... other metric calculations ...
         total_production = sum(
-            f.current_production
-            for f in firms
-            if getattr(f, "is_active", False)
+            f.current_production for f in firms if getattr(f, "is_active", False)
         )
         record["total_production"] = total_production
 
@@ -200,7 +206,8 @@ class EconomicIndicatorTracker:
 
         record["avg_survival_need"] = (
             total_survival_need / active_households_count
-            if active_households_count > 0 else 0.0
+            if active_households_count > 0
+            else 0.0
         )
 
         # --- WO-043: Comprehensive Metrics ---
@@ -244,23 +251,29 @@ class EconomicIndicatorTracker:
 
         # --- Phase 23: Opportunity Index & Education Metrics ---
         # 1. Average Education Level
-        total_edu = sum(getattr(h, "education_level", 0.0) for h in households if getattr(h, "is_active", True))
-        record["avg_education_level"] = total_edu / total_households if total_households > 0 else 0.0
+        total_edu = sum(
+            getattr(h, "education_level", 0.0)
+            for h in households
+            if getattr(h, "is_active", True)
+        )
+        record["avg_education_level"] = (
+            total_edu / total_households if total_households > 0 else 0.0
+        )
 
         # 2. Brain Waste Count (Aptitude >= 0.8 but Education < Level 2)
         brain_waste = [
-            h for h in households 
-            if getattr(h, "is_active", True) 
-            and getattr(h, "aptitude", 0.0) >= 0.8 
+            h
+            for h in households
+            if getattr(h, "is_active", True)
+            and getattr(h, "aptitude", 0.0) >= 0.8
             and getattr(h, "education_level", 0.0) < 2.0
         ]
         record["brain_waste_count"] = len(brain_waste)
 
         # 3. Government Education Spending (from direct state)
         # Note: This relies on Simulation passing the spent amount or Government state being visible.
-        # However, track() doesn't receive Government instance directly. 
+        # However, track() doesn't receive Government instance directly.
         # But we can assume it will be added to record via engine integration or by passing govt.
-
 
         for field in self.all_fieldnames:
             record.setdefault(field, 0.0)

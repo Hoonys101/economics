@@ -1,4 +1,3 @@
-
 import unittest
 import os
 import shutil
@@ -12,6 +11,7 @@ from simulation.db.repository import SimulationRepository
 from simulation.ai_model import AIEngineRegistry
 import logging
 
+
 class TestPhase29Depression(unittest.TestCase):
     def setUp(self):
         # Setup Logger
@@ -20,6 +20,7 @@ class TestPhase29Depression(unittest.TestCase):
 
         # Setup ConfigManager with Mock Config
         self.config_manager = MagicMock(spec=ConfigManager)
+
         # Mocking get method to return appropriate values
         def config_get_side_effect(key, default=None):
             if key == "bank_defaults.initial_base_annual_rate":
@@ -27,6 +28,7 @@ class TestPhase29Depression(unittest.TestCase):
             if key == "simulation.household_consumable_goods":
                 return ["food", "electronics"]
             return default
+
         self.config_manager.get.side_effect = config_get_side_effect
 
         self.config_module = MagicMock()
@@ -88,7 +90,7 @@ class TestPhase29Depression(unittest.TestCase):
             BIOLOGICAL_FERTILITY_RATE=0.15,
             POPULATION_IMMIGRATION_THRESHOLD=80,
             INFRASTRUCTURE_INVESTMENT_COST=5000.0,
-            REPRODUCTION_AGE_START=200, # Prevent births
+            REPRODUCTION_AGE_START=200,  # Prevent births
             REPRODUCTION_AGE_END=45,
             BANKRUPTCY_LOSS_THRESHOLD=10,
             MA_ENABLED=True,
@@ -100,7 +102,7 @@ class TestPhase29Depression(unittest.TestCase):
             INITIAL_HOUSEHOLD_ASSETS_MEAN=1000.0,
             EDUCATION_COST_PER_LEVEL={1: 500},
             SCHOLARSHIP_WEALTH_PERCENTILE=0.20,
-            SCHOLARSHIP_POTENTIAL_THRESHOLD=0.7
+            SCHOLARSHIP_POTENTIAL_THRESHOLD=0.7,
         )
 
         # Create dummy agents
@@ -172,7 +174,7 @@ class TestPhase29Depression(unittest.TestCase):
                 "working_capital": 5500.0,
                 "retained_earnings": 1000.0,
                 "average_profit": 100.0,
-                "total_debt": 0.0
+                "total_debt": 0.0,
             }
 
         self.repository = MagicMock(spec=SimulationRepository)
@@ -183,12 +185,15 @@ class TestPhase29Depression(unittest.TestCase):
         self.initializer = SimulationInitializer(
             config_manager=self.config_manager,
             config_module=self.config_module,
-            goods_data=[{"id": "food", "name": "food"}, {"id": "electronics", "name": "electronics"}],
+            goods_data=[
+                {"id": "food", "name": "food"},
+                {"id": "electronics", "name": "electronics"},
+            ],
             repository=self.repository,
             logger=self.logger,
             households=self.households,
             firms=self.firms,
-            ai_trainer=self.ai_trainer
+            ai_trainer=self.ai_trainer,
         )
 
         # Build Simulation
@@ -212,16 +217,18 @@ class TestPhase29Depression(unittest.TestCase):
 
         # Ensure Phase 29 Scenario is Active and Configured
         if not self.sim.stress_scenario_config.is_active:
-             print("WARNING: Scenario not loaded from file during test setup. Manually enabling.")
-             self.sim.stress_scenario_config.is_active = True
-             self.sim.stress_scenario_config.scenario_name = "phase29_depression"
-             self.sim.stress_scenario_config.start_tick = 50
-             self.sim.stress_scenario_config.monetary_shock_target_rate = 0.08
-             self.sim.stress_scenario_config.fiscal_shock_tax_rate = 0.30
+            print(
+                "WARNING: Scenario not loaded from file during test setup. Manually enabling."
+            )
+            self.sim.stress_scenario_config.is_active = True
+            self.sim.stress_scenario_config.scenario_name = "phase29_depression"
+            self.sim.stress_scenario_config.start_tick = 50
+            self.sim.stress_scenario_config.monetary_shock_target_rate = 0.08
+            self.sim.stress_scenario_config.fiscal_shock_tax_rate = 0.30
 
     def tearDown(self):
         # Cleanup reports
-        if hasattr(self.sim, 'run_id'):
+        if hasattr(self.sim, "run_id"):
             report_file = f"reports/crisis_monitor_{self.sim.run_id}.csv"
             if os.path.exists(report_file):
                 os.remove(report_file)
@@ -232,7 +239,9 @@ class TestPhase29Depression(unittest.TestCase):
         # Verify initial state
         initial_base_rate = self.sim.bank.base_rate
         initial_tax_rate = self.sim.government.corporate_tax_rate
-        print(f"Initial State: Base Rate={initial_base_rate}, Tax Rate={initial_tax_rate}")
+        print(
+            f"Initial State: Base Rate={initial_base_rate}, Tax Rate={initial_tax_rate}"
+        )
 
         # Run until before shock
         start_tick = self.sim.stress_scenario_config.start_tick
@@ -245,27 +254,38 @@ class TestPhase29Depression(unittest.TestCase):
         current_base_rate = self.sim.bank.base_rate
         current_tax_rate = self.sim.government.corporate_tax_rate
 
-        print(f"Tick {self.sim.time} State: Base Rate={current_base_rate}, Tax Rate={current_tax_rate}")
+        print(
+            f"Tick {self.sim.time} State: Base Rate={current_base_rate}, Tax Rate={current_tax_rate}"
+        )
 
-        self.assertAlmostEqual(current_base_rate, 0.08, delta=0.005, msg="Monetary Shock failed")
-        self.assertAlmostEqual(current_tax_rate, 0.30, delta=0.001, msg="Fiscal Shock failed")
+        self.assertAlmostEqual(
+            current_base_rate, 0.08, delta=0.005, msg="Monetary Shock failed"
+        )
+        self.assertAlmostEqual(
+            current_tax_rate, 0.30, delta=0.001, msg="Fiscal Shock failed"
+        )
 
     def test_crisis_monitor_logging(self):
         """Test that crisis monitor logs data."""
-        self.sim.run_tick() # Tick 1
-        self.sim.run_tick() # Tick 2
+        self.sim.run_tick()  # Tick 1
+        self.sim.run_tick()  # Tick 2
 
         report_file = f"reports/crisis_monitor_{self.sim.run_id}.csv"
-        self.assertTrue(os.path.exists(report_file), "Crisis Monitor report file not created.")
+        self.assertTrue(
+            os.path.exists(report_file), "Crisis Monitor report file not created."
+        )
 
-        with open(report_file, 'r') as f:
+        with open(report_file, "r") as f:
             reader = csv.reader(f)
             rows = list(reader)
-            self.assertGreater(len(rows), 2, "Report should have header and at least 2 ticks of data.")
+            self.assertGreater(
+                len(rows), 2, "Report should have header and at least 2 ticks of data."
+            )
 
             last_row = rows[-1]
             print(f"Monitor Log Entry: {last_row}")
             self.assertEqual(int(last_row[4]), 5)
+
 
 if __name__ == "__main__":
     unittest.main()

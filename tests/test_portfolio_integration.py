@@ -4,6 +4,7 @@ from simulation.decisions.portfolio_manager import PortfolioManager
 from simulation.core_agents import Household
 from simulation.bank import Bank
 
+
 class TestPortfolioIntegration(unittest.TestCase):
     def test_portfolio_manager_logic(self):
         # Case 1: Normal
@@ -25,7 +26,7 @@ class TestPortfolioIntegration(unittest.TestCase):
             risk_free_rate=0.05,
             equity_return_proxy=0.15,
             survival_cost=1000.0,
-            inflation_expectation=0.0
+            inflation_expectation=0.0,
         )
 
         self.assertEqual(cash, 1000.0)
@@ -44,11 +45,11 @@ class TestPortfolioIntegration(unittest.TestCase):
             risk_free_rate=0.05,
             equity_return_proxy=0.15,
             survival_cost=1000.0,
-            inflation_expectation=0.0
+            inflation_expectation=0.0,
         )
 
         self.assertEqual(cash, 1000.0)
-        self.assertEqual(deposit, 9000.0) # All surplus to deposit
+        self.assertEqual(deposit, 9000.0)  # All surplus to deposit
         self.assertEqual(equity, 0.0)
 
     def test_bank_deposit_balance(self):
@@ -56,7 +57,7 @@ class TestPortfolioIntegration(unittest.TestCase):
         bank.deposits = {
             "d1": MagicMock(depositor_id=1, amount=100.0),
             "d2": MagicMock(depositor_id=2, amount=200.0),
-            "d3": MagicMock(depositor_id=1, amount=50.0)
+            "d3": MagicMock(depositor_id=1, amount=50.0),
         }
 
         balance = bank.get_deposit_balance(1)
@@ -68,5 +69,6 @@ class TestPortfolioIntegration(unittest.TestCase):
         balance_3 = bank.get_deposit_balance(3)
         self.assertEqual(balance_3, 0.0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

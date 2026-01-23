@@ -9,6 +9,7 @@ sys.path.append(str(root_dir))
 
 from simulation.utils.golden_loader import GoldenLoader
 
+
 def verify_golden_load():
     print("🧪 Verifying Golden Fixture Loading...")
 
@@ -37,28 +38,30 @@ def verify_golden_load():
 
         print(f"✅ First household type: {type(first_household)}")
         if not isinstance(first_household, MagicMock):
-             print(f"⚠️ Warning: Expected MagicMock, got {type(first_household)}.")
+            print(f"⚠️ Warning: Expected MagicMock, got {type(first_household)}.")
 
         # Verify attributes
-        if hasattr(first_household, 'id'):
-             print(f"✅ household.id: {first_household.id}")
+        if hasattr(first_household, "id"):
+            print(f"✅ household.id: {first_household.id}")
         else:
-             print("❌ household.id missing")
+            print("❌ household.id missing")
 
-        val_age = getattr(first_household, 'age', None)
+        val_age = getattr(first_household, "age", None)
         print(f"✅ household.age (direct): {val_age}")
 
         if val_age is None:
-             print("❌ household.age is missing!")
-             sys.exit(1)
+            print("❌ household.age is missing!")
+            sys.exit(1)
 
         print("✅ Verification Successful")
 
     except Exception as e:
         print(f"❌ Verification Failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     verify_golden_load()

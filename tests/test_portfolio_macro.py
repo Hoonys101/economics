@@ -1,6 +1,6 @@
-
 from simulation.dtos import MacroFinancialContext
 from simulation.decisions.portfolio_manager import PortfolioManager
+
 
 def test_portfolio_optimization_under_stagflation():
     """
@@ -20,17 +20,19 @@ def test_portfolio_optimization_under_stagflation():
         inflation_rate=0.02,
         gdp_growth_rate=0.03,
         market_volatility=0.1,
-        interest_rate_trend=0.0
+        interest_rate_trend=0.0,
     )
 
-    target_cash_normal, target_deposit_normal, target_equity_normal = PortfolioManager.optimize_portfolio(
-        total_liquid_assets=total_assets,
-        risk_aversion=risk_aversion,
-        risk_free_rate=risk_free_rate,
-        equity_return_proxy=equity_return_proxy,
-        survival_cost=survival_cost,
-        inflation_expectation=inflation_expectation,
-        macro_context=normal_context
+    target_cash_normal, target_deposit_normal, target_equity_normal = (
+        PortfolioManager.optimize_portfolio(
+            total_liquid_assets=total_assets,
+            risk_aversion=risk_aversion,
+            risk_free_rate=risk_free_rate,
+            equity_return_proxy=equity_return_proxy,
+            survival_cost=survival_cost,
+            inflation_expectation=inflation_expectation,
+            macro_context=normal_context,
+        )
     )
 
     # 3. Optimize under stagflation conditions
@@ -38,17 +40,19 @@ def test_portfolio_optimization_under_stagflation():
         inflation_rate=0.10,
         gdp_growth_rate=-0.02,
         market_volatility=0.3,
-        interest_rate_trend=0.01
+        interest_rate_trend=0.01,
     )
 
-    target_cash_stag, target_deposit_stag, target_equity_stag = PortfolioManager.optimize_portfolio(
-        total_liquid_assets=total_assets,
-        risk_aversion=risk_aversion,
-        risk_free_rate=risk_free_rate,
-        equity_return_proxy=equity_return_proxy,
-        survival_cost=survival_cost,
-        inflation_expectation=inflation_expectation,
-        macro_context=stagflation_context
+    target_cash_stag, target_deposit_stag, target_equity_stag = (
+        PortfolioManager.optimize_portfolio(
+            total_liquid_assets=total_assets,
+            risk_aversion=risk_aversion,
+            risk_free_rate=risk_free_rate,
+            equity_return_proxy=equity_return_proxy,
+            survival_cost=survival_cost,
+            inflation_expectation=inflation_expectation,
+            macro_context=stagflation_context,
+        )
     )
 
     # 4. Assert that equity allocation is lower under stagflation

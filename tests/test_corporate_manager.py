@@ -1,4 +1,3 @@
-
 import pytest
 from unittest.mock import MagicMock
 from simulation.decisions.corporate_manager import CorporateManager
@@ -6,6 +5,7 @@ from simulation.dtos import DecisionContext, FirmStateDTO
 from simulation.schemas import FirmActionVector
 from simulation.models import Order
 from simulation.ai.enums import Personality
+
 
 class MockConfig:
     CAPITAL_TO_OUTPUT_RATIO = 2.0
@@ -26,6 +26,7 @@ class MockConfig:
     SEO_TRIGGER_RATIO = 0.5
     SEO_MAX_SELL_RATIO = 0.1
     STARTUP_COST = 30000.0
+
 
 @pytest.fixture
 def firm_dto():
@@ -61,29 +62,31 @@ def firm_dto():
         employees_data={},
         agent_data={"personality": "BALANCED"},
         system2_guidance={},
-        sentiment_index=1.0
+        sentiment_index=1.0,
     )
+
 
 @pytest.fixture
 def context_mock(firm_dto):
     context = MagicMock(spec=DecisionContext)
-    context.state = firm_dto # Use state
+    context.state = firm_dto  # Use state
     context.current_time = 1
     context.market_data = {
         "goods_market": {
             "food_avg_traded_price": 10.0,
-            "food_current_sell_price": 10.0
+            "food_current_sell_price": 10.0,
         },
-        "debt_data": {1: {"total_principal": 0.0}}
+        "debt_data": {1: {"total_principal": 0.0}},
     }
     context.markets = {
         "food": MagicMock(),
         "labor": MagicMock(),
-        "stock_market": MagicMock()
+        "stock_market": MagicMock(),
     }
     context.reflux_system = MagicMock()
     context.government = MagicMock()
     return context
+
 
 def test_rd_logic(firm_dto, context_mock):
     manager = CorporateManager(MockConfig())
@@ -94,12 +97,12 @@ def test_rd_logic(firm_dto, context_mock):
         dividend_aggressiveness=0.0,
         debt_aggressiveness=0.0,
         hiring_aggressiveness=0.0,
-        sales_aggressiveness=0.0
+        sales_aggressiveness=0.0,
     )
 
     firm_dto.assets = 10000.0
     firm_dto.revenue_this_turn = 1000.0
-    expected_budget = 1000.0 * 0.2 # 200
+    expected_budget = 1000.0 * 0.2  # 200
 
     orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
 
@@ -108,9 +111,10 @@ def test_rd_logic(firm_dto, context_mock):
     assert rd_orders[0].quantity == expected_budget
     assert rd_orders[0].market_id == "internal"
 
+
 def test_dividend_logic(firm_dto, context_mock):
     manager = CorporateManager(MockConfig())
-    vector = FirmActionVector(dividend_aggressiveness=1.0) # Max rate 0.5
+    vector = FirmActionVector(dividend_aggressiveness=1.0)  # Max rate 0.5
 
     orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
 
@@ -118,11 +122,12 @@ def test_dividend_logic(firm_dto, context_mock):
     assert len(div_orders) == 1
     assert div_orders[0].quantity == 0.5
 
+
 def test_hiring_logic(firm_dto, context_mock):
     manager = CorporateManager(MockConfig())
     firm_dto.production_target = 100
-    firm_dto.inventory["food"] = 80 # Gap 20
-    firm_dto.productivity_factor = 10.0 # Need 2 workers (approx)
+    firm_dto.inventory["food"] = 80  # Gap 20
+    firm_dto.productivity_factor = 10.0  # Need 2 workers (approx)
 
     # Adjust mock to return empty list of employees so we hire
     firm_dto.employees = []
@@ -131,9 +136,12 @@ def test_hiring_logic(firm_dto, context_mock):
 
     orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
 
-    hiring_orders = [o for o in orders if o.order_type == "BUY" and o.item_id == "labor"]
+    hiring_orders = [
+        o for o in orders if o.order_type == "BUY" and o.item_id == "labor"
+    ]
     assert len(hiring_orders) > 0
     assert hiring_orders[0].price >= 10.0
+
 
 def test_debt_logic_borrow(firm_dto, context_mock):
     manager = CorporateManager(MockConfig())
@@ -150,9 +158,10 @@ def test_debt_logic_borrow(firm_dto, context_mock):
     assert len(loan_reqs) > 0
     assert loan_reqs[0].quantity > 0
 
+
 def test_automation_investment(firm_dto, context_mock):
     config = MockConfig()
-    config.AUTOMATION_COST_PER_PCT = 10.0 # Make it cheap
+    config.AUTOMATION_COST_PER_PCT = 10.0  # Make it cheap
     manager = CorporateManager(config)
     # Ensure automation is profitable so System 2 recommends it
     # High wages so automation saves money
@@ -161,7 +170,7 @@ def test_automation_investment(firm_dto, context_mock):
     }
     firm_dto.revenue_this_turn = 5000.0
 
-    firm_dto.assets = 50000.0 # Plenty of cash
+    firm_dto.assets = 50000.0  # Plenty of cash
 
     vector = FirmActionVector(capital_aggressiveness=1.0)
 

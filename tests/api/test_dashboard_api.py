@@ -12,7 +12,7 @@ from simulation.dtos import (
     SocietyTabDataDTO,
     GovernmentTabDataDTO,
     MarketTabDataDTO,
-    FinanceTabDataDTO
+    FinanceTabDataDTO,
 )
 from simulation.core_agents import Household
 from simulation.agents.government import Government
@@ -20,6 +20,7 @@ from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
 from simulation.markets.stock_market import StockMarket
 from dataclasses import asdict
+
 
 class TestDashboardAPI:
     def setup_method(self):
@@ -51,7 +52,7 @@ class TestDashboardAPI:
             "education_spending": 0.0,
             "welfare_spending": 0.0,
             "stimulus_spending": 0.0,
-            "total_collected": 0.0
+            "total_collected": 0.0,
         }
 
         self.mock_simulation.markets = {}
@@ -81,7 +82,7 @@ class TestDashboardAPI:
         self.mock_tracker.get_latest_indicators.return_value = {
             "total_consumption": 50000.0,
             "avg_wage": 200.0,
-            "unemployment_rate": 5.0
+            "unemployment_rate": 5.0,
         }
 
         # Mock Inequality
@@ -92,13 +93,13 @@ class TestDashboardAPI:
         # Mock Attrition
         self.mock_repo.get_attrition_counts.return_value = {
             "bankruptcy_count": 2,
-            "death_count": 5
+            "death_count": 5,
         }
 
         # Mock Generation Stats
         self.mock_repo.get_generation_stats.return_value = [
             {"gen": 0, "count": 50, "avg_assets": 1000.0},
-            {"gen": 1, "count": 50, "avg_assets": 500.0}
+            {"gen": 1, "count": 50, "avg_assets": 500.0},
         ]
 
         # Mock Government
@@ -110,7 +111,7 @@ class TestDashboardAPI:
         # Mock Market History
         self.mock_repo.get_economic_indicators.return_value = [
             {"avg_goods_price": 10.0, "avg_survival_need": 20.0},
-            {"avg_goods_price": 11.0, "avg_survival_need": 21.0}
+            {"avg_goods_price": 11.0, "avg_survival_need": 21.0},
         ]
 
         # Mock Stock Market
@@ -137,25 +138,43 @@ class TestDashboardAPI:
         dto = DashboardSnapshotDTO(
             tick=100,
             global_indicators=DashboardGlobalIndicatorsDTO(
-                death_rate=0.0, bankruptcy_rate=0.0, employment_rate=100.0,
-                gdp=1000.0, avg_wage=10.0, gini=0.2, avg_tax_rate=0.0, avg_leisure_hours=0.0, parenting_rate=0.0
+                death_rate=0.0,
+                bankruptcy_rate=0.0,
+                employment_rate=100.0,
+                gdp=1000.0,
+                avg_wage=10.0,
+                gini=0.2,
+                avg_tax_rate=0.0,
+                avg_leisure_hours=0.0,
+                parenting_rate=0.0,
             ),
             tabs={
                 "society": SocietyTabDataDTO(
-                    generations=[], mitosis_cost=100.0, unemployment_pie={},
-                    time_allocation={}, avg_leisure_hours=0.0, avg_education_level=0.0, brain_waste_count=0
+                    generations=[],
+                    mitosis_cost=100.0,
+                    unemployment_pie={},
+                    time_allocation={},
+                    avg_leisure_hours=0.0,
+                    avg_education_level=0.0,
+                    brain_waste_count=0,
                 ),
                 "government": GovernmentTabDataDTO(
-                    tax_revenue={}, fiscal_balance={}, tax_revenue_history=[], welfare_spending=0.0,
-                    current_avg_tax_rate=0.0, welfare_history=[], education_spending=0.0, education_history=[]
+                    tax_revenue={},
+                    fiscal_balance={},
+                    tax_revenue_history=[],
+                    welfare_spending=0.0,
+                    current_avg_tax_rate=0.0,
+                    welfare_history=[],
+                    education_spending=0.0,
+                    education_history=[],
                 ),
                 "market": MarketTabDataDTO(
                     commodity_volumes={}, cpi=[], maslow_fulfillment=[]
                 ),
                 "finance": FinanceTabDataDTO(
                     market_cap=1000.0, volume=100.0, turnover=0.1, dividend_yield=0.0
-                )
-            }
+                ),
+            },
         )
 
         # Verify it can be converted to dict (simulating what happens before jsonify)
@@ -166,6 +185,7 @@ class TestDashboardAPI:
         assert result["global_indicators"]["gdp"] == 1000.0
         assert "tabs" in result
         assert "society" in result["tabs"]
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

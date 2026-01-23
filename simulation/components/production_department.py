@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class ProductionDepartment:
     """Handles the production logic for a firm."""
 
@@ -25,15 +26,22 @@ class ProductionDepartment:
             if len(self.firm.hr.employees) == 0:
                 return 0.0
 
-            log_extra = {"tick": current_time, "agent_id": self.firm.id, "tags": ["production"]}
+            log_extra = {
+                "tick": current_time,
+                "agent_id": self.firm.id,
+                "tags": ["production"],
+            }
 
             # 1. 감가상각 처리
-            depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
-            self.firm.capital_stock *= (1.0 - depreciation_rate)
+            depreciation_rate = getattr(
+                self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05
+            )
+            self.firm.capital_stock *= 1.0 - depreciation_rate
 
             # Phase 21: Automation Decay
-            self.firm.automation_level *= 0.995 # Slow decay (0.5% per tick)
-            if self.firm.automation_level < 0.001: self.firm.automation_level = 0.0
+            self.firm.automation_level *= 0.995  # Slow decay (0.5% per tick)
+            if self.firm.automation_level < 0.001:
+                self.firm.automation_level = 0.0
 
             # 2. 노동 및 자본 투입량 계산
             # SoC Refactor: Get total labor skill from HR
@@ -41,13 +49,19 @@ class ProductionDepartment:
 
             # 3. Cobb-Douglas Parameters
             base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
-            automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+            automation_reduction = getattr(
+                self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5
+            )
 
             # Phase 21: Adjusted Alpha
             # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
             # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
-            alpha_raw = base_alpha * (1.0 - (self.firm.automation_level * automation_reduction))
-            alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
+            alpha_raw = base_alpha * (
+                1.0 - (self.firm.automation_level * automation_reduction)
+            )
+            alpha_adjusted = max(
+                getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw
+            )
             beta_adjusted = 1.0 - alpha_adjusted
 
             # Effective Labor & Capital
@@ -64,19 +78,25 @@ class ProductionDepartment:
 
             item_config = self.config_module.GOODS.get(self.firm.specialization, {})
             quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-            actual_quality = self.firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+            actual_quality = self.firm.base_quality + (
+                math.log1p(avg_skill) * quality_sensitivity
+            )
 
             produced_quantity = 0.0
             if total_labor_skill > 0 and capital > 0:
-                produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
+                produced_quantity = (
+                    tfp * (total_labor_skill**alpha_adjusted) * (capital**beta_adjusted)
+                )
 
             actual_produced = 0.0
             if produced_quantity > 0:
                 # WO-030: Input Constraints Logic
-                input_config = self.config_module.GOODS.get(self.firm.specialization, {}).get("inputs", {})
+                input_config = self.config_module.GOODS.get(
+                    self.firm.specialization, {}
+                ).get("inputs", {})
 
                 if input_config:
-                    max_by_inputs = float('inf')
+                    max_by_inputs = float("inf")
                     for mat, req_per_unit in input_config.items():
                         available = self.firm.input_inventory.get(mat, 0.0)
                         if req_per_unit > 0:
@@ -88,18 +108,24 @@ class ProductionDepartment:
                     # Deduct used inputs
                     for mat, req_per_unit in input_config.items():
                         amount_to_deduct = actual_produced * req_per_unit
-                        self.firm.input_inventory[mat] = max(0.0, self.firm.input_inventory.get(mat, 0.0) - amount_to_deduct)
+                        self.firm.input_inventory[mat] = max(
+                            0.0,
+                            self.firm.input_inventory.get(mat, 0.0) - amount_to_deduct,
+                        )
                 else:
                     actual_produced = produced_quantity
 
                 if actual_produced > 0:
-                    self.firm.add_inventory(self.firm.specialization, actual_produced, actual_quality)
+                    self.firm.add_inventory(
+                        self.firm.specialization, actual_produced, actual_quality
+                    )
 
             return actual_produced
 
         except Exception as e:
             import traceback
-            logger.error(f'FIRM_CRASH_PREVENTED | Firm {self.firm.id}: {e}')
+
+            logger.error(f"FIRM_CRASH_PREVENTED | Firm {self.firm.id}: {e}")
             logger.debug(traceback.format_exc())
             return 0.0
 

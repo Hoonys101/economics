@@ -1,8 +1,8 @@
 import pytest
 from modules.finance.domain.corporate_finance import AltmanZScoreCalculator
 
-class TestAltmanZScoreCalculator:
 
+class TestAltmanZScoreCalculator:
     def test_calculate_safe_zone(self):
         """Test a scenario where the firm is clearly safe (Z > 3.0)."""
         # Example:
@@ -16,7 +16,7 @@ class TestAltmanZScoreCalculator:
             total_assets=1000.0,
             working_capital=400.0,
             retained_earnings=500.0,
-            average_profit=600.0
+            average_profit=600.0,
         )
         assert z == pytest.approx(3.16, abs=0.01)
 
@@ -33,7 +33,7 @@ class TestAltmanZScoreCalculator:
             total_assets=1000.0,
             working_capital=100.0,
             retained_earnings=0.0,
-            average_profit=100.0
+            average_profit=100.0,
         )
         assert z == pytest.approx(0.45, abs=0.01)
 
@@ -43,7 +43,7 @@ class TestAltmanZScoreCalculator:
             total_assets=0.0,
             working_capital=0.0,
             retained_earnings=0.0,
-            average_profit=0.0
+            average_profit=0.0,
         )
         assert z == 0.0
 
@@ -59,6 +59,6 @@ class TestAltmanZScoreCalculator:
             total_assets=1000.0,
             working_capital=-100.0,
             retained_earnings=-200.0,
-            average_profit=-100.0
+            average_profit=-100.0,
         )
         assert z == pytest.approx(-0.73, abs=0.01)

@@ -24,7 +24,9 @@ class Market(ABC):
         self.buy_orders: Dict[str, List[Order]] = {}
         self.sell_orders: Dict[str, List[Order]] = {}
         self.matched_transactions: List[Transaction] = []
-        self.logger = logger if logger is not None else logging.getLogger(f"Market_{market_id}")
+        self.logger = (
+            logger if logger is not None else logging.getLogger(f"Market_{market_id}")
+        )
 
     @abstractmethod
     def place_order(self, order: Order, current_time: int) -> List[Transaction]:

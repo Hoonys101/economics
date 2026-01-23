@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class ActionProcessor:
     """
     Processes actions and transactions in the simulation.
@@ -22,9 +23,7 @@ class ActionProcessor:
         self.world_state = world_state
 
     def process_transactions(
-        self,
-        transactions: List[Transaction],
-        market_data_callback: Callable[[], Any]
+        self, transactions: List[Transaction], market_data_callback: Callable[[], Any]
     ) -> None:
         """
         Delegates transaction processing to the TransactionProcessor system using SimulationState.
@@ -39,6 +38,7 @@ class ActionProcessor:
             market_data = {"goods_market": goods_market_data}
 
             from simulation.dtos.api import SimulationState
+
             state = SimulationState(
                 time=self.world_state.time,
                 households=self.world_state.households,
@@ -55,11 +55,13 @@ class ActionProcessor:
                 tracker=self.world_state.tracker,
                 logger=self.world_state.logger,
                 reflux_system=self.world_state.reflux_system,
-                ai_training_manager=getattr(self.world_state, "ai_training_manager", None),
+                ai_training_manager=getattr(
+                    self.world_state, "ai_training_manager", None
+                ),
                 ai_trainer=getattr(self.world_state, "ai_trainer", None),
                 next_agent_id=self.world_state.next_agent_id,
                 real_estate_units=self.world_state.real_estate_units,
-                transactions=transactions
+                transactions=transactions,
             )
             self.world_state.transaction_processor.execute(state)
         else:

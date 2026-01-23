@@ -6,6 +6,7 @@ from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.ai.household_ai import HouseholdAI
 import config
 
+
 class TestSystem2Integration(unittest.TestCase):
     def setUp(self):
         # Mock Engine & AI
@@ -13,7 +14,7 @@ class TestSystem2Integration(unittest.TestCase):
         self.mock_ai = HouseholdAI("test_agent", self.mock_decision_engine)
         self.mock_decision_engine.ai_engine = self.mock_ai
         self.mock_decision_engine.config_module = config
-        self.mock_ai.ai_decision_engine = self.mock_decision_engine # Circular ref
+        self.mock_ai.ai_decision_engine = self.mock_decision_engine  # Circular ref
 
         self.agent = Household(
             id=1,
@@ -24,9 +25,9 @@ class TestSystem2Integration(unittest.TestCase):
             decision_engine=self.mock_decision_engine,
             value_orientation="wealth_and_needs",
             personality=Personality.CONSERVATIVE,
-            config_module=config
+            config_module=config,
         )
-        self.agent.expected_wage = 10.0 # $10/hr
+        self.agent.expected_wage = 10.0  # $10/hr
 
         # Override config constants for deterministic testing
         config.HOUSEWORK_BASE_HOURS = 4.0
@@ -39,7 +40,7 @@ class TestSystem2Integration(unittest.TestCase):
         under 'Dark Ages' conditions (No Tech).
         """
         # Common setup: 1 child, Spouse exists
-        self.agent.children_ids = [100] # 1 child
+        self.agent.children_ids = [100]  # 1 child
         self.agent.spouse_id = 99
         market_data = {"goods_market": {"basic_food_current_sell_price": 5.0}}
 
@@ -68,7 +69,11 @@ class TestSystem2Integration(unittest.TestCase):
         # Female: Housework(2.0 shared) + Childcare(8.0) = 10.0 Obligation
         #         Work Cap = 14 - 10 = 4h. Half Income.
 
-        self.assertGreater(npv_m, npv_f * 1.5, "Male NPV should be significantly higher due to Lactation Lock")
+        self.assertGreater(
+            npv_m,
+            npv_f * 1.5,
+            "Male NPV should be significantly higher due to Lactation Lock",
+        )
 
     def test_tech_liberation(self):
         """
@@ -96,7 +101,12 @@ class TestSystem2Integration(unittest.TestCase):
         print(f"NPV Dark Ages: {res_dark['npv_wealth']:.2f}")
         print(f"NPV Revolution: {res_light['npv_wealth']:.2f}")
 
-        self.assertGreater(res_light['npv_wealth'], res_dark['npv_wealth'], "Tech should improve Female NPV")
+        self.assertGreater(
+            res_light["npv_wealth"],
+            res_dark["npv_wealth"],
+            "Tech should improve Female NPV",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,8 +1,10 @@
 """
 Implements the AgentLifecycleComponent which manages the daily routine of a Household agent.
 """
+
 from typing import Any, Dict, Protocol
 from simulation.systems.api import IAgentLifecycleComponent, LifecycleContext
+
 
 class AgentLifecycleComponent(IAgentLifecycleComponent):
     """
@@ -10,7 +12,7 @@ class AgentLifecycleComponent(IAgentLifecycleComponent):
     """
 
     def __init__(self, owner: Any, config: Any):
-        self.owner = owner # Household
+        self.owner = owner  # Household
         self.config = config
 
     def run_tick(self, context: LifecycleContext) -> None:

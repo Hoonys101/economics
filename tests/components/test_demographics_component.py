@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 from simulation.components.demographics_component import DemographicsComponent
 
-class TestDemographicsComponent(unittest.TestCase):
 
+class TestDemographicsComponent(unittest.TestCase):
     def setUp(self):
         """Set up a mock owner and config for the component tests."""
         self.mock_owner = MagicMock()
@@ -22,7 +22,7 @@ class TestDemographicsComponent(unittest.TestCase):
             owner=self.mock_owner,
             initial_age=30.0,
             gender="F",
-            config_module=self.mock_config
+            config_module=self.mock_config,
         )
 
     def test_initialization(self):
@@ -43,7 +43,7 @@ class TestDemographicsComponent(unittest.TestCase):
 
     def test_handle_death_under_threshold(self):
         """Test that the agent does not die if below the age threshold."""
-        self.component._age = 50 # Below the first threshold of 60
+        self.component._age = 50  # Below the first threshold of 60
         self.assertFalse(self.component.handle_death(current_tick=1))
         self.assertTrue(self.mock_owner.is_active)
 
@@ -54,13 +54,13 @@ class TestDemographicsComponent(unittest.TestCase):
         # Since death is probabilistic, we can't guarantee it.
         # Instead, we check if the logic runs without error and returns a boolean.
         # To make it deterministic for a test, we could mock random.random
-        with unittest.mock.patch('random.random', return_value=0.0): # Force death
+        with unittest.mock.patch("random.random", return_value=0.0):  # Force death
             self.assertTrue(self.component.handle_death(current_tick=1))
             self.assertFalse(self.mock_owner.is_active)
 
         # Reset and test the case where it doesn't die
         self.mock_owner.is_active = True
-        with unittest.mock.patch('random.random', return_value=0.99): # Prevent death
+        with unittest.mock.patch("random.random", return_value=0.99):  # Prevent death
             self.assertFalse(self.component.handle_death(current_tick=1))
             self.assertTrue(self.mock_owner.is_active)
 
@@ -82,16 +82,19 @@ class TestDemographicsComponent(unittest.TestCase):
     def test_get_generational_similarity(self):
         """Test the calculation of generational similarity."""
         similarity = self.component.get_generational_similarity(0.5, 0.6)
-        self.assertAlmostEqual(similarity, 0.9) # 1.0 - abs(0.5 - 0.6)
+        self.assertAlmostEqual(similarity, 0.9)  # 1.0 - abs(0.5 - 0.6)
 
     def test_create_offspring_demographics(self):
         """Test the creation of demographic data for an offspring."""
-        offspring_data = self.component.create_offspring_demographics(new_id=10, current_tick=100)
+        offspring_data = self.component.create_offspring_demographics(
+            new_id=10, current_tick=100
+        )
 
         self.assertEqual(offspring_data["generation"], 1)
         self.assertEqual(offspring_data["parent_id"], self.mock_owner.id)
         self.assertEqual(offspring_data["initial_age"], 0.0)
         self.assertIn(offspring_data["gender"], ["M", "F"])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

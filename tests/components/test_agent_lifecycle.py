@@ -3,11 +3,13 @@ from unittest.mock import MagicMock
 from simulation.components.agent_lifecycle import AgentLifecycleComponent
 from simulation.systems.api import LifecycleContext
 
+
 @pytest.fixture
 def lifecycle_component():
     owner = MagicMock()
     config = MagicMock()
     return AgentLifecycleComponent(owner, config)
+
 
 def test_run_tick_execution_order(lifecycle_component):
     # Setup
@@ -18,11 +20,7 @@ def test_run_tick_execution_order(lifecycle_component):
     household.economy_manager = MagicMock()
     household.psychology = MagicMock()
 
-    context: LifecycleContext = {
-        "household": household,
-        "market_data": {},
-        "time": 1
-    }
+    context: LifecycleContext = {"household": household, "market_data": {}, "time": 1}
 
     # Execute
     lifecycle_component.run_tick(context)
@@ -32,6 +30,7 @@ def test_run_tick_execution_order(lifecycle_component):
     household.economy_manager.pay_taxes.assert_called_once()
     household.psychology.update_needs.assert_called_with(1, {})
 
+
 def test_run_tick_unemployed(lifecycle_component):
     household = lifecycle_component.owner
     household.is_employed = False
@@ -39,11 +38,7 @@ def test_run_tick_unemployed(lifecycle_component):
     household.economy_manager = MagicMock()
     household.psychology = MagicMock()
 
-    context: LifecycleContext = {
-        "household": household,
-        "market_data": {},
-        "time": 1
-    }
+    context: LifecycleContext = {"household": household, "market_data": {}, "time": 1}
 
     lifecycle_component.run_tick(context)
 

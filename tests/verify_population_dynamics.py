@@ -1,14 +1,16 @@
-
 import unittest
 from unittest.mock import MagicMock
 import logging
 from simulation.core_agents import Household
 from simulation.ai.household_ai import HouseholdAI
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
 from simulation.dtos import DecisionContext
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+
 
 class TestPopulationDynamics(unittest.TestCase):
     def setUp(self):
@@ -19,10 +21,15 @@ class TestPopulationDynamics(unittest.TestCase):
         self.config_module.CHILDCARE_TIME_REQUIRED = 8.0
         self.config_module.HOUSEWORK_BASE_HOURS = 2.0
         self.config_module.EDUCATION_COST_MULTIPLIERS = {
-            0: 1.0, 1: 1.5, 2: 2.2, 3: 3.5, 4: 5.0, 5: 8.0
+            0: 1.0,
+            1: 1.5,
+            2: 2.2,
+            3: 3.5,
+            4: 5.0,
+            5: 8.0,
         }
         self.config_module.MASLOW_SURVIVAL_THRESHOLD = 50.0
-        self.config_module.GOODS = {} # Minimal goods
+        self.config_module.GOODS = {}  # Minimal goods
 
         # Setup AI Decision Engine Mock
         self.ai_decision_engine = MagicMock()
@@ -30,8 +37,7 @@ class TestPopulationDynamics(unittest.TestCase):
 
         # Setup AI Engine
         self.ai_engine = HouseholdAI(
-            agent_id="test_hh",
-            ai_decision_engine=self.ai_decision_engine
+            agent_id="test_hh", ai_decision_engine=self.ai_decision_engine
         )
 
     def test_time_constraint(self):
@@ -59,6 +65,7 @@ class TestPopulationDynamics(unittest.TestCase):
 
         # Force random to 0 for deterministic acceptance if probability > 0
         import random
+
         random.seed(42)
 
         # However, logic uses estimated work hours = 8.0 if employed.
@@ -84,7 +91,7 @@ class TestPopulationDynamics(unittest.TestCase):
         """
         Test that high education agent with low income rejects reproduction.
         """
-        self.config_module.CHILDCARE_TIME_REQUIRED = 8.0 # Reset
+        self.config_module.CHILDCARE_TIME_REQUIRED = 8.0  # Reset
 
         # Case: High Education (Level 5 -> Mult 8.0 -> Exp Wage 80.0)
         # Current Wage: 10.0 (Low)
@@ -98,16 +105,18 @@ class TestPopulationDynamics(unittest.TestCase):
             "is_employed": True,
             "current_wage": 10.0,
             "assets": 1000.0,
-            "education_level": 5, # High Expectation
-            "expected_wage": 80.0, # 10 * 8
+            "education_level": 5,  # High Expectation
+            "expected_wage": 80.0,  # 10 * 8
             "children_count": 0,
-            "social_rank": 0.8, # High Rank
+            "social_rank": 0.8,  # High Rank
             "needs": {"survival": 0.0},
         }
 
         # Mock random to ensure we capture the logic branch
         decision = self.ai_engine.decide_reproduction(agent_data, {}, 0)
-        self.assertFalse(decision, "Should reject due to expectation mismatch (High Edu, Low Wage)")
+        self.assertFalse(
+            decision, "Should reject due to expectation mismatch (High Edu, Low Wage)"
+        )
 
         # Contrast: Low Education (Level 0 -> Mult 1.0 -> Exp Wage 10.0)
         # Current Wage: 10.0
@@ -134,5 +143,6 @@ class TestPopulationDynamics(unittest.TestCase):
                 break
         self.assertTrue(success, "Should eventually reproduce if satisfied")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

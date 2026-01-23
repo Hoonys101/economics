@@ -10,11 +10,13 @@ if TYPE_CHECKING:
 # 1. Data Transfer Objects (DTOs)
 # ===================================================================================
 
+
 @dataclass
 class DemographicsDTO:
     """
     A data transfer object for the demographic information of a household.
     """
+
     age: float
     gender: str
     generation: int
@@ -38,6 +40,7 @@ class DemographicsDTO:
 # ===================================================================================
 # 2. Component Interfaces (Protocols)
 # ===================================================================================
+
 
 class IDemographicsComponent(Protocol):
     """
@@ -111,14 +114,18 @@ class IDemographicsComponent(Protocol):
         """Adds a child."""
         ...
 
-    def get_generational_similarity(self, talent_learning_rate_1: float, talent_learning_rate_2: float) -> float:
+    def get_generational_similarity(
+        self, talent_learning_rate_1: float, talent_learning_rate_2: float
+    ) -> float:
         """
         Calculates the generational/genetic similarity based on talent learning rates.
         Mainly used for spouse selection.
         """
         ...
 
-    def create_offspring_demographics(self, new_id: int, current_tick: int) -> Dict[str, Any]:
+    def create_offspring_demographics(
+        self, new_id: int, current_tick: int
+    ) -> Dict[str, Any]:
         """
         Creates and returns the initial demographic data for an offspring.
         (Used for creating the offspring Household object)

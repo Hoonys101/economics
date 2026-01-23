@@ -1,16 +1,20 @@
-
 import pytest
 from unittest.mock import MagicMock
 from simulation.dtos import DecisionContext, FirmStateDTO
 from modules.household.dtos import HouseholdStateDTO
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
-from simulation.decisions.standalone_rule_based_firm_engine import StandaloneRuleBasedFirmDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
+from simulation.decisions.standalone_rule_based_firm_engine import (
+    StandaloneRuleBasedFirmDecisionEngine,
+)
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+
 
 def test_decision_context_purity():
     """Verify DecisionContext does not expose raw agents."""
-    assert not hasattr(DecisionContext, 'household')
-    assert not hasattr(DecisionContext, 'firm')
+    assert not hasattr(DecisionContext, "household")
+    assert not hasattr(DecisionContext, "firm")
 
     # Try to instantiate with deprecated fields (should fail type check or init if slots used,
     # but since it's a dataclass, it might accept kwargs if we are not careful,
@@ -18,13 +22,18 @@ def test_decision_context_purity():
 
     try:
         DecisionContext(
-            markets={}, goods_data=[], market_data={}, current_time=0,
-            state=MagicMock(), config=MagicMock(),
-            household=MagicMock() # Should fail
+            markets={},
+            goods_data=[],
+            market_data={},
+            current_time=0,
+            state=MagicMock(),
+            config=MagicMock(),
+            household=MagicMock(),  # Should fail
         )
         pytest.fail("DecisionContext accepted 'household' argument.")
     except TypeError:
         pass
+
 
 def test_standalone_firm_engine_uses_dto():
     """Verify StandaloneRuleBasedFirmDecisionEngine accepts FirmStateDTO."""
@@ -41,7 +50,7 @@ def test_standalone_firm_engine_uses_dto():
     config_mock.MIN_SELL_PRICE = 1.0
     config_mock.MAX_SELL_PRICE = 100.0
     config_mock.MAX_SELL_QUANTITY = 100.0
-    config_mock.BASE_WAGE = 10.0 # Float, not Mock
+    config_mock.BASE_WAGE = 10.0  # Float, not Mock
     # Fix getattr(mock) returning Mock instead of default
     config_mock.GENESIS_PRICE_ADJUSTMENT_MULTIPLIER = 1.0
     config_mock.PRICE_ADJUSTMENT_EXPONENT = 1.0
@@ -50,12 +59,38 @@ def test_standalone_firm_engine_uses_dto():
     engine = StandaloneRuleBasedFirmDecisionEngine(config_mock)
 
     firm_dto = FirmStateDTO(
-        id=1, assets=1000.0, is_active=True, inventory={"wood": 50.0}, inventory_quality={}, input_inventory={},
-        current_production=0.0, productivity_factor=1.0, production_target=50.0, capital_stock=10.0, base_quality=1.0,
-        automation_level=0.0, specialization="wood", total_shares=100, treasury_shares=0, dividend_rate=0.0,
-        is_publicly_traded=False, valuation=0.0, revenue_this_turn=0.0, expenses_this_tick=0.0, consecutive_loss_turns=0,
-        altman_z_score=0.0, price_history={"wood": 10.0}, profit_history=[], brand_awareness=0.0, perceived_quality=0.0,
-        marketing_budget=0.0, employees=[], employees_data={}, agent_data={}, system2_guidance={}, sentiment_index=0.5
+        id=1,
+        assets=1000.0,
+        is_active=True,
+        inventory={"wood": 50.0},
+        inventory_quality={},
+        input_inventory={},
+        current_production=0.0,
+        productivity_factor=1.0,
+        production_target=50.0,
+        capital_stock=10.0,
+        base_quality=1.0,
+        automation_level=0.0,
+        specialization="wood",
+        total_shares=100,
+        treasury_shares=0,
+        dividend_rate=0.0,
+        is_publicly_traded=False,
+        valuation=0.0,
+        revenue_this_turn=0.0,
+        expenses_this_tick=0.0,
+        consecutive_loss_turns=0,
+        altman_z_score=0.0,
+        price_history={"wood": 10.0},
+        profit_history=[],
+        brand_awareness=0.0,
+        perceived_quality=0.0,
+        marketing_budget=0.0,
+        employees=[],
+        employees_data={},
+        agent_data={},
+        system2_guidance={},
+        sentiment_index=0.5,
     )
 
     context = MagicMock(spec=DecisionContext)
@@ -70,19 +105,19 @@ def test_standalone_firm_engine_uses_dto():
     assert isinstance(orders, list)
     # Check that it didn't crash
 
+
 def test_household_engine_uses_dto():
     """Verify AIDrivenHouseholdDecisionEngine accepts HouseholdStateDTO."""
     ai_engine_mock = MagicMock()
     ai_engine_mock.decide_action_vector.return_value = MagicMock(
-        consumption_aggressiveness={},
-        job_mobility_aggressiveness=0.0
+        consumption_aggressiveness={}, job_mobility_aggressiveness=0.0
     )
 
     config_mock = MagicMock()
     config_mock.GOODS = {"food": {}}
     config_mock.HOUSEHOLD_MAX_PURCHASE_QUANTITY = 10
     config_mock.DSR_CRITICAL_THRESHOLD = 0.5
-    config_mock.MARKET_PRICE_FALLBACK = 10.0 # Float
+    config_mock.MARKET_PRICE_FALLBACK = 10.0  # Float
     config_mock.BULK_BUY_NEED_THRESHOLD = 100.0
     config_mock.BULK_BUY_AGG_THRESHOLD = 0.8
     config_mock.PANIC_BUYING_THRESHOLD = 0.05
@@ -95,7 +130,9 @@ def test_household_engine_uses_dto():
 
     engine = AIDrivenHouseholdDecisionEngine(ai_engine_mock, config_mock)
 
-    household_dto = MagicMock(spec=HouseholdStateDTO) # Using Mock of DTO for simplicity
+    household_dto = MagicMock(
+        spec=HouseholdStateDTO
+    )  # Using Mock of DTO for simplicity
     household_dto.id = 1
     household_dto.agent_data = {}
     household_dto.inventory = {"basic_food": 10.0}
@@ -103,7 +140,7 @@ def test_household_engine_uses_dto():
     household_dto.assets = 1000.0
     household_dto.current_wage = 10.0
     household_dto.expected_inflation = {}
-    household_dto.personality = "BALANCED" # Enum mock
+    household_dto.personality = "BALANCED"  # Enum mock
     household_dto.preference_asset = 1.0
     household_dto.preference_social = 1.0
     household_dto.preference_growth = 1.0

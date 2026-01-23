@@ -14,12 +14,25 @@ from simulation.ai.api import (
     Aggressiveness,
 )
 from simulation.core_markets import Market
-from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, HouseholdConfigDTO
+from simulation.dtos import (
+    DecisionContext,
+    LeisureEffectDTO,
+    LeisureType,
+    MacroFinancialContext,
+    HouseholdConfigDTO,
+)
 from simulation.portfolio import Portfolio
 
 from simulation.ai.household_ai import HouseholdAI
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
-from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
+from simulation.systems.api import (
+    LifecycleContext,
+    MarketInteractionContext,
+    LearningUpdateContext,
+    ILearningAgent,
+)
 
 # New Components
 from modules.household.bio_component import BioComponent
@@ -32,6 +45,7 @@ if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)
+
 
 class Household(BaseAgent, ILearningAgent):
     """
@@ -59,7 +73,7 @@ class Household(BaseAgent, ILearningAgent):
         parent_id: Optional[int] = None,
         generation: Optional[int] = None,
     ) -> None:
-        self.id = id # Initialize ID early for components
+        self.id = id  # Initialize ID early for components
         # --- Core Attributes ---
         self.talent = talent
         self.config_module = config_module
@@ -73,7 +87,11 @@ class Household(BaseAgent, ILearningAgent):
         mapping = getattr(config_module, "VALUE_ORIENTATION_MAPPING", {})
         prefs = mapping.get(
             value_orientation,
-            {"preference_asset": 1.0, "preference_social": 1.0, "preference_growth": 1.0}
+            {
+                "preference_asset": 1.0,
+                "preference_social": 1.0,
+                "preference_growth": 1.0,
+            },
         )
         self.preference_asset = prefs["preference_asset"]
         self.preference_social = prefs["preference_social"]
@@ -87,7 +105,9 @@ class Household(BaseAgent, ILearningAgent):
             self, config_module, initial_age, gender, parent_id, generation
         )
         self.econ_component = EconComponent(self, config_module)
-        self.social_component = SocialComponent(self, config_module, personality, initial_assets)
+        self.social_component = SocialComponent(
+            self, config_module, personality, initial_assets
+        )
 
         # --- Legacy & Compatibility Attributes ---
         # Some attributes are kept on Facade if they are deeply intertwined or purely transient
@@ -116,7 +136,7 @@ class Household(BaseAgent, ILearningAgent):
 
         self.logger.debug(
             f"HOUSEHOLD_INIT | Household {self.id} initialized (Refactored).",
-            extra={"tags": ["household_init"]}
+            extra={"tags": ["household_init"]},
         )
 
         super().__init__(
@@ -142,7 +162,11 @@ class Household(BaseAgent, ILearningAgent):
         mapping = getattr(config_module, "VALUE_ORIENTATION_MAPPING", {})
         prefs = mapping.get(
             value_orientation,
-            {"preference_asset": 1.0, "preference_social": 1.0, "preference_growth": 1.0}
+            {
+                "preference_asset": 1.0,
+                "preference_social": 1.0,
+                "preference_growth": 1.0,
+            },
         )
         self.preference_asset = prefs["preference_asset"]
         self.preference_social = prefs["preference_social"]
@@ -153,8 +177,10 @@ class Household(BaseAgent, ILearningAgent):
             self, config_module, initial_age, gender, parent_id, generation
         )
         self.econ_component = EconComponent(self, config_module)
-        self.social_component = SocialComponent(self, config_module, personality, initial_assets)
-        
+        self.social_component = SocialComponent(
+            self, config_module, personality, initial_assets
+        )
+
         # --- Legacy & Compatibility Attributes ---
         # Some attributes are kept on Facade if they are deeply intertwined or purely transient
         self.initial_assets_record = initial_assets
@@ -166,7 +192,7 @@ class Household(BaseAgent, ILearningAgent):
         # WO-054: Aptitude (Hidden Trait) - Kept on Facade as it's intrinsic
         raw_aptitude = random.gauss(0.5, 0.15)
         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
-        
+
         # Initialize Econ Component Initial State
         self.econ_component._assets = initial_assets
         # Skills & Inventory are managed by Econ Component primarily, but accessed via Facade
@@ -175,17 +201,17 @@ class Household(BaseAgent, ILearningAgent):
         # We will use EconComponent's inventory as the source of truth,
         # but BaseAgent.inventory might be accessed by legacy code.
         # Strategy: Override inventory property on Household to delegate to EconComponent.
-        
+
         # Skills
         self.skills: Dict[str, Skill] = {}
-        
+
         # Setup Decision Engine
         self.decision_engine.loan_market = loan_market
         self.decision_engine.logger = self.logger
 
         self.logger.debug(
             f"HOUSEHOLD_INIT | Household {self.id} initialized (Refactored).",
-            extra={"tags": ["household_init"]}
+            extra={"tags": ["household_init"]},
         )
 
     # --- Property Delegation: BioComponent ---
@@ -637,15 +663,15 @@ class Household(BaseAgent, ILearningAgent):
             preference_social=self.preference_social,
             preference_growth=self.preference_growth,
             personality=self.personality,
-            durable_assets=self.durable_assets, # Should we copy?
-            expected_inflation=self.expected_inflation.copy(), # From Facade (transient)
+            durable_assets=self.durable_assets,  # Should we copy?
+            expected_inflation=self.expected_inflation.copy(),  # From Facade (transient)
             is_employed=self.is_employed,
             current_wage=self.current_wage,
             wage_modifier=self.wage_modifier,
             is_homeless=self.is_homeless,
             residing_property_id=self.residing_property_id,
             owned_properties=list(self.owned_properties),
-            portfolio_holdings=self.portfolio.holdings, # Direct reference to Share objects (dataclasses)
+            portfolio_holdings=self.portfolio.holdings,  # Direct reference to Share objects (dataclasses)
             risk_aversion=self.risk_aversion,
             agent_data=self.get_agent_data(),
             conformity=self.conformity,
@@ -655,7 +681,7 @@ class Household(BaseAgent, ILearningAgent):
             ambition=self.ambition,
             # WO-108: Parity Fields
             perceived_fair_price=self.perceived_avg_prices.copy(),
-            sentiment_index=self.optimism
+            sentiment_index=self.optimism,
         )
 
     @override
@@ -669,7 +695,6 @@ class Household(BaseAgent, ILearningAgent):
         macro_context: Optional[MacroFinancialContext] = None,
         stress_scenario_config: Optional["StressScenarioConfig"] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
-
         # 0. Update Social Status (Before Decision)
         self.social_component.calculate_social_status()
 
@@ -684,21 +709,26 @@ class Household(BaseAgent, ILearningAgent):
 
         # 1. Prepare DTOs
         state_dto = self.create_state_dto()
-        
+
         # WO-103: Purity Guard - Prepare Config DTO
         config_dto = HouseholdConfigDTO(
             survival_need_consumption_threshold=self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD,
-            target_food_buffer_quantity=getattr(self.config_module, "TARGET_FOOD_BUFFER_QUANTITY", 5.0),
+            target_food_buffer_quantity=getattr(
+                self.config_module, "TARGET_FOOD_BUFFER_QUANTITY", 5.0
+            ),
             food_purchase_max_per_tick=self.config_module.FOOD_PURCHASE_MAX_PER_TICK,
             assets_threshold_for_other_actions=self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS,
             wage_decay_rate=getattr(self.config_module, "WAGE_DECAY_RATE", 0.02),
-            reservation_wage_floor=getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3),
-            survival_critical_turns=getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5),
+            reservation_wage_floor=getattr(
+                self.config_module, "RESERVATION_WAGE_FLOOR", 0.3
+            ),
+            survival_critical_turns=getattr(
+                self.config_module, "SURVIVAL_CRITICAL_TURNS", 5
+            ),
             labor_market_min_wage=self.config_module.LABOR_MARKET_MIN_WAGE,
             household_low_asset_threshold=self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD,
             household_low_asset_wage=self.config_module.HOUSEHOLD_LOW_ASSET_WAGE,
             household_default_wage=self.config_module.HOUSEHOLD_DEFAULT_WAGE,
-            
             # AI Engine requirements
             market_price_fallback=self.config_module.MARKET_PRICE_FALLBACK,
             need_factor_base=self.config_module.NEED_FACTOR_BASE,
@@ -709,9 +739,13 @@ class Household(BaseAgent, ILearningAgent):
             bulk_buy_need_threshold=self.config_module.BULK_BUY_NEED_THRESHOLD,
             bulk_buy_agg_threshold=self.config_module.BULK_BUY_AGG_THRESHOLD,
             bulk_buy_moderate_ratio=self.config_module.BULK_BUY_MODERATE_RATIO,
-            panic_buying_threshold=getattr(self.config_module, "PANIC_BUYING_THRESHOLD", 0.05),
+            panic_buying_threshold=getattr(
+                self.config_module, "PANIC_BUYING_THRESHOLD", 0.05
+            ),
             hoarding_factor=getattr(self.config_module, "HOARDING_FACTOR", 0.5),
-            deflation_wait_threshold=getattr(self.config_module, "DEFLATION_WAIT_THRESHOLD", -0.05),
+            deflation_wait_threshold=getattr(
+                self.config_module, "DEFLATION_WAIT_THRESHOLD", -0.05
+            ),
             delay_factor=getattr(self.config_module, "DELAY_FACTOR", 0.5),
             dsr_critical_threshold=self.config_module.DSR_CRITICAL_THRESHOLD,
             budget_limit_normal_ratio=self.config_module.BUDGET_LIMIT_NORMAL_RATIO,
@@ -721,16 +755,20 @@ class Household(BaseAgent, ILearningAgent):
             job_quit_threshold_base=self.config_module.JOB_QUIT_THRESHOLD_BASE,
             job_quit_prob_base=self.config_module.JOB_QUIT_PROB_BASE,
             job_quit_prob_scale=self.config_module.JOB_QUIT_PROB_SCALE,
-            stock_market_enabled=getattr(self.config_module, "STOCK_MARKET_ENABLED", False),
+            stock_market_enabled=getattr(
+                self.config_module, "STOCK_MARKET_ENABLED", False
+            ),
             household_min_assets_for_investment=self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT,
             stock_investment_equity_delta_threshold=self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD,
             stock_investment_diversification_count=self.config_module.STOCK_INVESTMENT_DIVERSIFICATION_COUNT,
-            expected_startup_roi=getattr(self.config_module, "EXPECTED_STARTUP_ROI", 0.15),
+            expected_startup_roi=getattr(
+                self.config_module, "EXPECTED_STARTUP_ROI", 0.15
+            ),
             startup_cost=getattr(self.config_module, "STARTUP_COST", 30000.0),
             debt_repayment_ratio=self.config_module.DEBT_REPAYMENT_RATIO,
             debt_repayment_cap=self.config_module.DEBT_REPAYMENT_CAP,
             debt_liquidity_ratio=self.config_module.DEBT_LIQUIDITY_RATIO,
-            initial_rent_price=self.config_module.INITIAL_RENT_PRICE
+            initial_rent_price=self.config_module.INITIAL_RENT_PRICE,
         )
 
         # Context for Decision Engine (Pure Logic)
@@ -742,15 +780,19 @@ class Household(BaseAgent, ILearningAgent):
             market_data=market_data,
             current_time=current_time,
             government=government,
-            stress_scenario_config=stress_scenario_config
+            stress_scenario_config=stress_scenario_config,
         )
 
         # 2. Call Decision Engine
-        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
+        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(
+            context, macro_context
+        )
 
         # 3. Orchestrate/Refine Orders via EconComponent
         econ_context = EconContextDTO(markets, market_data, current_time)
-        refined_orders = self.econ_component.orchestrate_economic_decisions(econ_context, orders, stress_scenario_config)
+        refined_orders = self.econ_component.orchestrate_economic_decisions(
+            econ_context, orders, stress_scenario_config
+        )
 
         return refined_orders, chosen_tactic_tuple
 
@@ -764,26 +806,36 @@ class Household(BaseAgent, ILearningAgent):
 
     def quit(self) -> None:
         if self.is_employed:
-            self.logger.info(f"Household {self.id} is quitting from Firm {self.employer_id}")
+            self.logger.info(
+                f"Household {self.id} is quitting from Firm {self.employer_id}"
+            )
             self.is_employed = False
             self.employer_id = None
             self.current_wage = 0.0
 
-    def decide_and_consume(self, current_time: int, market_data: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
-        consumed_items = self.econ_component.consumption.decide_and_consume(current_time, market_data)
+    def decide_and_consume(
+        self, current_time: int, market_data: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, float]:
+        consumed_items = self.econ_component.consumption.decide_and_consume(
+            current_time, market_data
+        )
         self.update_needs(current_time, market_data)
         return consumed_items
 
-    def consume(self, item_id: str, quantity: float, current_time: int) -> "ConsumptionResult":
+    def consume(
+        self, item_id: str, quantity: float, current_time: int
+    ) -> "ConsumptionResult":
         return self.econ_component.consume(item_id, quantity, current_time)
 
     @override
-    def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
+    def update_needs(
+        self, current_tick: int, market_data: Optional[Dict[str, Any]] = None
+    ):
         """Delegates lifecycle updates to BioComponent."""
         context: LifecycleContext = {
-            "household": self, # Some lifecycle logic might still need 'self' to access properties
+            "household": self,  # Some lifecycle logic might still need 'self' to access properties
             "market_data": market_data if market_data else {},
-            "time": current_tick
+            "time": current_tick,
         }
         self.bio_component.run_lifecycle(context)
 
@@ -793,21 +845,31 @@ class Household(BaseAgent, ILearningAgent):
     def update_political_opinion(self):
         self.social_component.update_political_opinion()
 
-    def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffectDTO:
+    def apply_leisure_effect(
+        self, leisure_hours: float, consumed_items: Dict[str, float]
+    ) -> LeisureEffectDTO:
         return self.social_component.apply_leisure_effect(leisure_hours, consumed_items)
 
     # --- Inflation & Price Logic (Transient/Facade specific) ---
     @override
-    def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional["StressScenarioConfig"] = None) -> None:
+    def update_perceived_prices(
+        self,
+        market_data: Dict[str, Any],
+        stress_scenario_config: Optional["StressScenarioConfig"] = None,
+    ) -> None:
         self.econ_component.update_perceived_prices(market_data, stress_scenario_config)
 
     # --- Learning & Cloning ---
     @override
-    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Household":
+    def clone(
+        self, new_id: int, initial_assets_from_parent: float, current_tick: int
+    ) -> "Household":
         request = CloningRequestDTO(new_id, initial_assets_from_parent, current_tick)
         return self.bio_component.clone(request)
 
-    def _create_new_decision_engine(self, new_id: int) -> AIDrivenHouseholdDecisionEngine:
+    def _create_new_decision_engine(
+        self, new_id: int
+    ) -> AIDrivenHouseholdDecisionEngine:
         # Helper for BioComponent.clone
         shared_ai_engine = self.decision_engine.ai_engine.ai_decision_engine
         new_ai_engine = HouseholdAI(
@@ -816,12 +878,12 @@ class Household(BaseAgent, ILearningAgent):
             gamma=self.decision_engine.ai_engine.gamma,
             epsilon=self.decision_engine.ai_engine.action_selector.epsilon,
             base_alpha=self.decision_engine.ai_engine.base_alpha,
-            learning_focus=self.decision_engine.ai_engine.learning_focus
+            learning_focus=self.decision_engine.ai_engine.learning_focus,
         )
         return AIDrivenHouseholdDecisionEngine(
             ai_engine=new_ai_engine,
             config_module=self.config_module,
-            logger=self.logger
+            logger=self.logger,
         )
 
     def get_generational_similarity(self, other: "Household") -> float:
@@ -883,7 +945,7 @@ class Household(BaseAgent, ILearningAgent):
             child.skills[domain] = Skill(
                 domain=domain,
                 value=skill.value * 0.2,
-                observability=skill.observability
+                observability=skill.observability,
             )
         # Wage inheritance
         child.education_level = min(self.education_level, 1)

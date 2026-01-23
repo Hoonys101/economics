@@ -4,9 +4,10 @@ from modules.finance.api import IFinancialEntity, InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
+
 class EconomicRefluxSystem(IFinancialEntity):
     def __init__(self):
-        self._id = 999999 # Special ID for Reflux
+        self._id = 999999  # Special ID for Reflux
         self.balance: float = 0.0
         # Optional: Transaction log for debugging
         # self.transaction_log: list = []
@@ -39,7 +40,9 @@ class EconomicRefluxSystem(IFinancialEntity):
         """
         if amount > 0:
             self.balance += amount
-            logger.debug(f"REFLUX_CAPTURE | Captured {amount:.2f} from {source} ({category})")
+            logger.debug(
+                f"REFLUX_CAPTURE | Captured {amount:.2f} from {source} ({category})"
+            )
 
     def distribute(self, households: list):
         """
@@ -72,12 +75,16 @@ class EconomicRefluxSystem(IFinancialEntity):
                 agent.labor_income_this_tick += amount_per_household
 
             # Legacy support if needed
-            if hasattr(agent, 'income_history') and isinstance(agent.income_history, dict):
-                 agent.income_history['service'] = agent.income_history.get('service', 0.0) + amount_per_household
+            if hasattr(agent, "income_history") and isinstance(
+                agent.income_history, dict
+            ):
+                agent.income_history["service"] = (
+                    agent.income_history.get("service", 0.0) + amount_per_household
+                )
 
         logger.info(
             f"REFLUX_DISTRIBUTE | Distributed {total_amount:.2f} to {len(active_households)} households. ({amount_per_household:.2f} each)",
-            extra={"tags": ["reflux", "distribution"], "total_amount": total_amount}
+            extra={"tags": ["reflux", "distribution"], "total_amount": total_amount},
         )
 
-        self.balance = 0.0 # Reset
+        self.balance = 0.0  # Reset

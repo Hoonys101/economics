@@ -3,6 +3,7 @@ from unittest.mock import Mock, MagicMock
 import config
 from simulation.firms import Firm
 
+
 class TestMarketingROI(unittest.TestCase):
     def setUp(self):
         # Setup common mocks
@@ -22,7 +23,7 @@ class TestMarketingROI(unittest.TestCase):
             decision_engine=self.mock_decision_engine,
             value_orientation="profit_maximizer",
             config_module=self.config_module,
-            logger=self.mock_logger
+            logger=self.mock_logger,
         )
 
         # Reset initial tracking variables for predictable testing
@@ -66,7 +67,7 @@ class TestMarketingROI(unittest.TestCase):
         # Step 2: Current tick - Low Revenue Increase
         # Target Efficiency: delta_revenue / last_spend < 0.8
         # 0.5 = (Current_Rev - 1000) / 100 => Current_Rev = 1050
-        self.firm.revenue_this_turn = 1050.0 # Delta = 50, Eff = 0.5
+        self.firm.revenue_this_turn = 1050.0  # Delta = 50, Eff = 0.5
 
         # Run adjustment
         self.firm._adjust_marketing_budget()
@@ -83,14 +84,14 @@ class TestMarketingROI(unittest.TestCase):
         self.firm.last_revenue = 1000.0
 
         # High Efficiency scenario, but saturated
-        self.firm.revenue_this_turn = 1500.0 # Delta = 500, Eff = 5.0 (Very High)
-        self.firm.brand_manager.brand_awareness = 0.95 # Saturated (> 0.9)
+        self.firm.revenue_this_turn = 1500.0  # Delta = 500, Eff = 5.0 (Very High)
+        self.firm.brand_manager.brand_awareness = 0.95  # Saturated (> 0.9)
 
         # Run adjustment
         self.firm._adjust_marketing_budget()
 
         # Verify
-        self.assertEqual(self.firm.marketing_budget_rate, 0.05) # Unchanged
+        self.assertEqual(self.firm.marketing_budget_rate, 0.05)  # Unchanged
 
     def test_first_tick_skip(self):
         """Test that adjustment is skipped on first tick (no previous spend)."""
@@ -105,5 +106,6 @@ class TestMarketingROI(unittest.TestCase):
         self.assertEqual(self.firm.last_marketing_spend, 50.0)
         self.assertEqual(self.firm.last_revenue, 100.0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

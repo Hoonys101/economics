@@ -2,12 +2,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Dict
 
+
 @dataclass
 class StressScenarioConfig:
     """
     Data Transfer Object for configuring and passing stress scenario parameters through the simulation.
     This centralized DTO prevents pollution of the global config module and ensures explicit data flow.
     """
+
     # General Scenario Flags
     is_active: bool = False
     scenario_name: Optional[str] = None
@@ -23,7 +25,6 @@ class StressScenarioConfig:
     # One-time cash injection as a percentage of current assets (e.g., 0.5 = 50% increase).
     demand_shock_cash_injection: float = 0.0
 
-
     # --- Scenario 2: Deflationary Spiral Parameters ---
     # Enables asset fire-sales by agents if their financial situation is dire.
     panic_selling_enabled: bool = False
@@ -36,7 +37,6 @@ class StressScenarioConfig:
 
     # One-time asset reduction as a percentage (e.g., 0.5 = 50% reduction).
     asset_shock_reduction: float = 0.0
-
 
     # --- Scenario 3: Supply Shock Parameters ---
     # Dictionary mapping firm types or specific goods to a productivity multiplier (e.g., {"Farm": 0.5}).

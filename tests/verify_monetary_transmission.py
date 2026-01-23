@@ -1,4 +1,3 @@
-
 import sys
 import os
 import random
@@ -20,18 +19,19 @@ CONSUMPTION_RECORD = {
     "ant": 0.0,
     "grasshopper": 0.0,
     "ant_count": 0,
-    "grasshopper_count": 0
+    "grasshopper_count": 0,
 }
 
 # Original consume method
 original_consume = Household.consume
+
 
 def patched_consume(self, item_id: str, quantity: float, current_time: int) -> None:
     # Call original
     original_consume(self, item_id, quantity, current_time)
 
     # Record
-    is_ant = (self.value_orientation == config.VALUE_ORIENTATION_WEALTH_AND_NEEDS)
+    is_ant = self.value_orientation == config.VALUE_ORIENTATION_WEALTH_AND_NEEDS
     if is_ant:
         CONSUMPTION_RECORD["ant"] += quantity
         CONSUMPTION_RECORD["ant_count"] += 1
@@ -39,8 +39,10 @@ def patched_consume(self, item_id: str, quantity: float, current_time: int) -> N
         CONSUMPTION_RECORD["grasshopper"] += quantity
         CONSUMPTION_RECORD["grasshopper_count"] += 1
 
+
 # Apply Patch
 Household.consume = patched_consume
+
 
 def run_scenario(interest_rate_override: float, label: str):
     print(f"\n--- Running Scenario: {label} (Rate: {interest_rate_override:.1%}) ---")
@@ -59,7 +61,7 @@ def run_scenario(interest_rate_override: float, label: str):
     overrides = {
         "INITIAL_BASE_ANNUAL_RATE": interest_rate_override,
         "TICKS_PER_YEAR": 100,
-        "BATCH_SAVE_INTERVAL": 1000, # Disable frequent DB saves for speed
+        "BATCH_SAVE_INTERVAL": 1000,  # Disable frequent DB saves for speed
         "STOCK_MARKET_ENABLED": False,
         "NUM_HOUSEHOLDS": 20,
         "NEUTRAL_REAL_RATE": 0.02,
@@ -79,7 +81,9 @@ def run_scenario(interest_rate_override: float, label: str):
     for h in sim.households:
         h.expected_inflation = {k: 0.0 for k in h.expected_inflation}
         h._assets = 10000.0
-        h.needs["survival"] = 20.0  # Force low survival need to enable interest sensitivity
+        h.needs["survival"] = (
+            20.0  # Force low survival need to enable interest sensitivity
+        )
 
     # Run for 50 ticks
     # We ignore the first few ticks to let market stabilize (production start)
@@ -91,7 +95,13 @@ def run_scenario(interest_rate_override: float, label: str):
     # We want Avg Consumption Per Agent Per Tick.
 
     # Count agents
-    ant_agents = len([h for h in sim.households if h.value_orientation == config.VALUE_ORIENTATION_WEALTH_AND_NEEDS])
+    ant_agents = len(
+        [
+            h
+            for h in sim.households
+            if h.value_orientation == config.VALUE_ORIENTATION_WEALTH_AND_NEEDS
+        ]
+    )
     gh_agents = len(sim.households) - ant_agents
 
     total_ant_consumption = CONSUMPTION_RECORD["ant"]
@@ -100,10 +110,13 @@ def run_scenario(interest_rate_override: float, label: str):
     avg_ant = (total_ant_consumption / ant_agents) / 50 if ant_agents > 0 else 0
     avg_gh = (total_gh_consumption / gh_agents) / 50 if gh_agents > 0 else 0
 
-    print(f"[{label}] Total Cons - Ant: {total_ant_consumption:.1f}, GH: {total_gh_consumption:.1f}")
+    print(
+        f"[{label}] Total Cons - Ant: {total_ant_consumption:.1f}, GH: {total_gh_consumption:.1f}"
+    )
     print(f"[{label}] Avg/Tick - Ant: {avg_ant:.4f}, GH: {avg_gh:.4f}")
 
     return avg_ant, avg_gh
+
 
 def main():
     # 1. Baseline: 2% (Neutral)
@@ -139,7 +152,9 @@ def main():
     print(f"GH Reduction: {gh_reduction:.1%}")
 
     if ant_reduction > gh_reduction:
-        print("PASS: Ants (Wealth-Oriented) reduced consumption more than Grasshoppers.")
+        print(
+            "PASS: Ants (Wealth-Oriented) reduced consumption more than Grasshoppers."
+        )
     else:
         print("WARNING: Ants did not reduce more. Check if GH hit Debt Penalty?")
 
@@ -150,6 +165,7 @@ def main():
     else:
         print("FAILURE: Verification criteria not met.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

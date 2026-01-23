@@ -9,13 +9,16 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class ServiceFirmAI(FirmAI):
     """
     서비스 기업용 AI 엔진 (Phase 17-1).
     재고 기반 상태 대신 가동률(Utilization Rate) 기반 상태를 사용.
     """
 
-    def _get_common_state(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Tuple:
+    def _get_common_state(
+        self, agent_data: Dict[str, Any], market_data: Dict[str, Any]
+    ) -> Tuple:
         """
         Override standard state with Utilization-based metric.
         """
@@ -33,7 +36,7 @@ class ServiceFirmAI(FirmAI):
 
         # Let's rely on the passed agent_data. I must update ServiceFirm.get_agent_data override.
 
-        capacity = agent_data.get("capacity_this_tick", 1.0) # Avoid div by 0
+        capacity = agent_data.get("capacity_this_tick", 1.0)  # Avoid div by 0
         sales = agent_data.get("sales_volume_this_tick", 0.0)
 
         utilization = sales / capacity if capacity > 0 else 0.0
@@ -55,7 +58,9 @@ class ServiceFirmAI(FirmAI):
         cash_idx = self._discretize(cash, [100, 500, 1000, 5000, 10000])
 
         # 3. Debt Ratio (Same as FirmAI)
-        debt_info = market_data.get("debt_data", {}).get(self.agent_id, {"total_principal": 0.0, "daily_interest_burden": 0.0})
+        debt_info = market_data.get("debt_data", {}).get(
+            self.agent_id, {"total_principal": 0.0, "daily_interest_burden": 0.0}
+        )
         total_debt = debt_info.get("total_principal", 0.0)
         interest_burden = debt_info.get("daily_interest_burden", 0.0)
         debt_ratio = total_debt / cash if cash > 0 else 0.0
@@ -67,7 +72,9 @@ class ServiceFirmAI(FirmAI):
 
         return (util_idx, cash_idx, debt_idx, burden_idx)
 
-    def calculate_reward(self, firm_agent: "Firm", prev_state: Dict, current_state: Dict) -> float:
+    def calculate_reward(
+        self, firm_agent: "Firm", prev_state: Dict, current_state: Dict
+    ) -> float:
         """
         Add Waste Penalty to standard reward.
         """
@@ -79,13 +86,17 @@ class ServiceFirmAI(FirmAI):
         # These should be accessible from firm_agent if it's passed.
         # Yes, firm_agent is passed.
 
-        if hasattr(firm_agent, "waste_this_tick") and hasattr(firm_agent, "capacity_this_tick"):
+        if hasattr(firm_agent, "waste_this_tick") and hasattr(
+            firm_agent, "capacity_this_tick"
+        ):
             waste = firm_agent.waste_this_tick
             capacity = firm_agent.capacity_this_tick
-            expenses = firm_agent.expenses_this_tick # Tracked in Firm
+            expenses = firm_agent.expenses_this_tick  # Tracked in Firm
 
             unit_cost = expenses / capacity if capacity > 0 else 0.0
-            penalty_factor = getattr(firm_agent.config_module, "SERVICE_WASTE_PENALTY_FACTOR", 0.5)
+            penalty_factor = getattr(
+                firm_agent.config_module, "SERVICE_WASTE_PENALTY_FACTOR", 0.5
+            )
 
             penalty = waste * unit_cost * penalty_factor
 
@@ -93,7 +104,7 @@ class ServiceFirmAI(FirmAI):
 
             logger.debug(
                 f"SERVICE_REWARD | Firm {firm_agent.id} | Base: {base_reward:.2f}, Penalty: {penalty:.2f} (Waste: {waste:.1f})",
-                extra={"agent_id": firm_agent.id, "tags": ["ai_reward", "service"]}
+                extra={"agent_id": firm_agent.id, "tags": ["ai_reward", "service"]},
             )
             return total_reward
 

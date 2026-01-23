@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class FirmSystem:
     """
     Phase 22.5: Firm Management System
@@ -19,7 +20,9 @@ class FirmSystem:
     def __init__(self, config_module: Any):
         self.config = config_module
 
-    def spawn_firm(self, simulation: "Simulation", founder_household: "Household") -> Optional["Firm"]:
+    def spawn_firm(
+        self, simulation: "Simulation", founder_household: "Household"
+    ) -> Optional["Firm"]:
         """
         Wealthy households found new firms.
         """
@@ -37,57 +40,71 @@ class FirmSystem:
         # 3. Choose Specialization (Blue Ocean Strategy)
         specializations = list(self.config.GOODS.keys())
         is_visionary = False
-        
+
         mutation_rate = getattr(self.config, "VISIONARY_MUTATION_RATE", 0.05)
         if random.random() < mutation_rate:
             is_visionary = True
-            
+
         if is_visionary:
             active_specs = {f.specialization for f in simulation.firms if f.is_active}
-            potential_blue_oceans = [s for s in specializations if s not in active_specs]
-            
+            potential_blue_oceans = [
+                s for s in specializations if s not in active_specs
+            ]
+
             if potential_blue_oceans:
                 specialization = random.choice(potential_blue_oceans)
             else:
                 specialization = random.choice(specializations)
         else:
             specialization = random.choice(specializations)
-            
+
         goods_config = self.config.GOODS.get(specialization, {})
         sector = goods_config.get("sector", "OTHER")
 
         has_inputs = bool(goods_config.get("inputs"))
         if has_inputs:
-             startup_cost *= 1.5
+            startup_cost *= 1.5
 
         # 4. AI Setup
         from simulation.ai.firm_ai import FirmAI
         from simulation.ai.service_firm_ai import ServiceFirmAI
-        from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+        from simulation.decisions.ai_driven_firm_engine import (
+            AIDrivenFirmDecisionEngine,
+        )
         from simulation.firms import Firm
         from simulation.service_firms import ServiceFirm
 
-        value_orientation = random.choice([
-            self.config.VALUE_ORIENTATION_WEALTH_AND_NEEDS,
-            self.config.VALUE_ORIENTATION_NEEDS_AND_GROWTH,
-        ])
+        value_orientation = random.choice(
+            [
+                self.config.VALUE_ORIENTATION_WEALTH_AND_NEEDS,
+                self.config.VALUE_ORIENTATION_NEEDS_AND_GROWTH,
+            ]
+        )
         ai_decision_engine = simulation.ai_trainer.get_engine(value_orientation)
 
         is_service = specialization in getattr(self.config, "SERVICE_SECTORS", [])
 
         if is_service:
-            firm_ai = ServiceFirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+            firm_ai = ServiceFirmAI(
+                agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine
+            )
         else:
-            firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
+            firm_ai = FirmAI(
+                agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine
+            )
 
-        firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config, simulation.logger)
+        firm_decision_engine = AIDrivenFirmDecisionEngine(
+            firm_ai, self.config, simulation.logger
+        )
 
         # 5. Create Firm
         instance_class = ServiceFirm if is_service else Firm
         new_firm = instance_class(
             id=new_firm_id,
             initial_capital=startup_cost,
-            initial_liquidity_need=getattr(self.config, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
+            initial_liquidity_need=getattr(
+                self.config, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0
+            ),
             specialization=specialization,
             productivity_factor=random.uniform(8.0, 12.0),
             decision_engine=firm_decision_engine,
@@ -97,7 +114,7 @@ class FirmSystem:
             sector=sector,
             is_visionary=is_visionary,
         )
-        
+
         new_firm.founder_id = founder_household.id
         if "loan_market" in simulation.markets:
             new_firm.decision_engine.loan_market = simulation.markets["loan_market"]
@@ -129,7 +146,7 @@ class FirmSystem:
         max_firms = max(5, int(len(simulation.households) / 15))
 
         if active_firms_count >= max_firms:
-            return # Prevent over-creation of firms (Labor Dilution)
+            return  # Prevent over-creation of firms (Labor Dilution)
 
         if active_firms_count < min_firms:
             trigger_probability = 0.5
@@ -137,7 +154,8 @@ class FirmSystem:
             trigger_probability = spirit
 
         wealthy_households = [
-            h for h in simulation.households
+            h
+            for h in simulation.households
             if h.is_active and h.assets > startup_cost * capital_multiplier
         ]
 

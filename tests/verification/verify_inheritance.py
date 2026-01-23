@@ -6,6 +6,7 @@ from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.models import RealEstateUnit
 from simulation.portfolio import Portfolio
 
+
 @pytest.mark.usefixtures("golden_households")
 class TestInheritance:
     @pytest.fixture(autouse=True)
@@ -27,7 +28,9 @@ class TestInheritance:
         # Pre-test validation
         # Assert that selected households have sufficient and diverse assets
         assert self.deceased.assets > 0, "Deceased must have assets"
-        assert hasattr(self.deceased, 'shares_owned'), "Deceased must have shares_owned attribute"
+        assert hasattr(self.deceased, "shares_owned"), (
+            "Deceased must have shares_owned attribute"
+        )
 
         # Force real Portfolio objects for testing logic.
         # MagicMocks have attributes by default, so hasattr returns True, but they are Mocks.
@@ -35,7 +38,7 @@ class TestInheritance:
         self.deceased.portfolio = Portfolio(self.deceased.id)
         self.heir.portfolio = Portfolio(self.heir.id)
 
-        assert hasattr(self.deceased, 'portfolio'), "Deceased must have portfolio"
+        assert hasattr(self.deceased, "portfolio"), "Deceased must have portfolio"
 
         # Setup Deceased State
         self.deceased.id = 1
@@ -43,7 +46,7 @@ class TestInheritance:
         self.deceased._assets = 50000.0
         self.deceased.shares_owned = {}
         self.deceased.owned_properties = []
-        self.deceased.children_ids = [self.heir.id] # Use dynamic ID from heir
+        self.deceased.children_ids = [self.heir.id]  # Use dynamic ID from heir
 
         # Setup Heir State
         self.heir._assets = 0.0
@@ -71,8 +74,8 @@ class TestInheritance:
 
     def test_liquidation_stocks(self):
         """Cash poor, Stock rich. Stocks sold to pay tax."""
-        self.deceased._assets = 1000.0 # Low cash
-        self.deceased.portfolio.add(99, 100, 100.0) # 100 shares of Firm 99 @ 100.0
+        self.deceased._assets = 1000.0  # Low cash
+        self.deceased.portfolio.add(99, 100, 100.0)  # 100 shares of Firm 99 @ 100.0
         # Value = 10000.0
         # Total Wealth = 11000.0
         # Taxable = 11000 - 10000 = 1000
@@ -95,11 +98,11 @@ class TestInheritance:
         # Remaining 6600.
 
         assert self.heir.assets == pytest.approx(6600.0)
-        assert len(self.heir.portfolio.holdings) == 0 # No stocks inherited (Sold)
+        assert len(self.heir.portfolio.holdings) == 0  # No stocks inherited (Sold)
 
     def test_portfolio_merge(self):
         """Heir inherits stocks with Cost Basis calculation."""
-        self.config.INHERITANCE_TAX_RATE = 0.0 # No tax for simplicity
+        self.config.INHERITANCE_TAX_RATE = 0.0  # No tax for simplicity
 
         # Deceased: 100 shares @ 100.0
         self.deceased.portfolio.add(99, 100, 100.0)

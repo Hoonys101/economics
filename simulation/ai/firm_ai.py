@@ -35,15 +35,15 @@ class FirmAI(BaseAIEngine):
         super().__init__(agent_id, gamma, epsilon, base_alpha, learning_focus)
         self.ai_decision_engine: AIDecisionEngine | None = None
         self.set_ai_decision_engine(ai_decision_engine)
-        
+
         # 6-Channel Q-Tables (WO-027)
         self.q_sales = QTableManager()
         self.q_hiring = QTableManager()
-        self.q_rd = QTableManager()     # Innovation
-        self.q_capital = QTableManager() # CAPEX
+        self.q_rd = QTableManager()  # Innovation
+        self.q_capital = QTableManager()  # CAPEX
         self.q_dividend = QTableManager()
-        self.q_debt = QTableManager()    # Leverage
-        
+        self.q_debt = QTableManager()  # Leverage
+
         # State Tracking
         self.last_state: Optional[Tuple] = None
         self.last_actions_idx: Dict[str, int] = {}
@@ -51,14 +51,18 @@ class FirmAI(BaseAIEngine):
     def set_ai_decision_engine(self, engine: "AIDecisionEngine"):
         self.ai_decision_engine = engine
 
-    def _get_common_state(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Tuple:
+    def _get_common_state(
+        self, agent_data: Dict[str, Any], market_data: Dict[str, Any]
+    ) -> Tuple:
         """
         Common state features shared across channels.
         Includes: Profitability, Inventory Level, Cash Level, Debt Metrics
         """
         # 1. Inventory Level (0=Empty, 1=Target, 2=Over)
         target = agent_data.get("production_target", 100)
-        curr = agent_data.get("inventory", {}).get(agent_data.get("specialization", "food"), 0)
+        curr = agent_data.get("inventory", {}).get(
+            agent_data.get("specialization", "food"), 0
+        )
         inv_ratio = curr / target if target > 0 else 0
         inv_idx = self._discretize(inv_ratio, [0.2, 0.5, 0.8, 1.0, 1.2, 1.5])
 
@@ -68,7 +72,9 @@ class FirmAI(BaseAIEngine):
         cash_idx = self._discretize(cash, [100, 500, 1000, 5000, 10000])
 
         # 3. Debt Ratio
-        debt_info = market_data.get("debt_data", {}).get(self.agent_id, {"total_principal": 0.0, "daily_interest_burden": 0.0})
+        debt_info = market_data.get("debt_data", {}).get(
+            self.agent_id, {"total_principal": 0.0, "daily_interest_burden": 0.0}
+        )
         total_debt = debt_info.get("total_principal", 0.0)
         interest_burden = debt_info.get("daily_interest_burden", 0.0)
 
@@ -96,27 +102,27 @@ class FirmAI(BaseAIEngine):
 
         # 1. Sales Channel (Pricing)
         sales_idx = self.action_selector.choose_action(self.q_sales, state, actions)
-        self.last_actions_idx['sales'] = sales_idx
+        self.last_actions_idx["sales"] = sales_idx
 
         # 2. Hiring Channel (Employment)
         hiring_idx = self.action_selector.choose_action(self.q_hiring, state, actions)
-        self.last_actions_idx['hiring'] = hiring_idx
+        self.last_actions_idx["hiring"] = hiring_idx
 
         # 3. R&D Channel (Innovation)
         rd_idx = self.action_selector.choose_action(self.q_rd, state, actions)
-        self.last_actions_idx['rd'] = rd_idx
+        self.last_actions_idx["rd"] = rd_idx
 
         # 4. Capital Channel (CAPEX)
         cap_idx = self.action_selector.choose_action(self.q_capital, state, actions)
-        self.last_actions_idx['capital'] = cap_idx
+        self.last_actions_idx["capital"] = cap_idx
 
         # 5. Dividend Channel
         div_idx = self.action_selector.choose_action(self.q_dividend, state, actions)
-        self.last_actions_idx['dividend'] = div_idx
+        self.last_actions_idx["dividend"] = div_idx
 
         # 6. Debt Channel (Leverage)
         debt_idx = self.action_selector.choose_action(self.q_debt, state, actions)
-        self.last_actions_idx['debt'] = debt_idx
+        self.last_actions_idx["debt"] = debt_idx
 
         vector = FirmActionVector(
             sales_aggressiveness=self.AGGRESSIVENESS_LEVELS[sales_idx],
@@ -124,12 +130,12 @@ class FirmAI(BaseAIEngine):
             rd_aggressiveness=self.AGGRESSIVENESS_LEVELS[rd_idx],
             capital_aggressiveness=self.AGGRESSIVENESS_LEVELS[cap_idx],
             dividend_aggressiveness=self.AGGRESSIVENESS_LEVELS[div_idx],
-            debt_aggressiveness=self.AGGRESSIVENESS_LEVELS[debt_idx]
+            debt_aggressiveness=self.AGGRESSIVENESS_LEVELS[debt_idx],
         )
 
         logger.debug(
             f"FIRM_AI_V2 | Firm {self.agent_id} | Vector: {vector}",
-            extra={"tags": ["ai_v2"]}
+            extra={"tags": ["ai_v2"]},
         )
 
         return vector
@@ -148,15 +154,15 @@ class FirmAI(BaseAIEngine):
 
         next_state = self._get_common_state(next_agent_data, next_market_data)
         all_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
-        
+
         # Update All Channels
         managers = [
-            (self.q_sales, 'sales'),
-            (self.q_hiring, 'hiring'),
-            (self.q_rd, 'rd'),
-            (self.q_capital, 'capital'),
-            (self.q_dividend, 'dividend'),
-            (self.q_debt, 'debt'),
+            (self.q_sales, "sales"),
+            (self.q_hiring, "hiring"),
+            (self.q_rd, "rd"),
+            (self.q_capital, "capital"),
+            (self.q_dividend, "dividend"),
+            (self.q_debt, "debt"),
         ]
 
         for q_mgr, key in managers:
@@ -169,10 +175,12 @@ class FirmAI(BaseAIEngine):
                     next_state,
                     all_actions,
                     self.base_alpha,
-                    self.gamma
+                    self.gamma,
                 )
 
-    def calculate_reward(self, firm_agent: "Firm", prev_state: Dict, current_state: Dict) -> float:
+    def calculate_reward(
+        self, firm_agent: "Firm", prev_state: Dict, current_state: Dict
+    ) -> float:
         """
         Calculate reward based on Firm Personality (WO-027).
         """
@@ -190,7 +198,7 @@ class FirmAI(BaseAIEngine):
         current_awareness = firm_agent.brand_manager.brand_awareness
         prev_awareness = firm_agent.prev_awareness
         delta_awareness = current_awareness - prev_awareness
-        firm_agent.prev_awareness = current_awareness # Update state
+        firm_agent.prev_awareness = current_awareness  # Update state
 
         reward = 0.0
 
@@ -208,7 +216,9 @@ class FirmAI(BaseAIEngine):
 
             # Using Revenue Growth as proxy for Market Share Delta
             current_revenue = current_state.get("revenue_this_turn", 0.0)
-            prev_revenue = firm_agent.last_revenue # This might be from 2 ticks ago if not careful
+            prev_revenue = (
+                firm_agent.last_revenue
+            )  # This might be from 2 ticks ago if not careful
             # Better: firm_agent.prev_market_share tracked in Firm class?
             # Let's use simple proxy: Delta Revenue * 0.5
 
@@ -218,13 +228,17 @@ class FirmAI(BaseAIEngine):
             delta_quality = current_quality - prev_quality
             firm_agent.prev_avg_quality = current_quality
 
-            reward = (delta_assets * 0.1) + (delta_quality * 200.0) + (net_profit * 0.01) # Profit matters less
+            reward = (
+                (delta_assets * 0.1) + (delta_quality * 200.0) + (net_profit * 0.01)
+            )  # Profit matters less
 
         elif personality == Personality.CASH_COW:
             # Reward = (Dividends_Paid * 2.0) + (Net_Profit * 1.0) + (Free_Cash_Flow * 0.5)
             # Dividends Paid is needed. It's not in agent_data directly unless we track it.
             # We can track it on the firm agent during the tick.
-            dividends_paid = getattr(firm_agent, 'dividends_paid_last_tick', 0.0) # Need to add this tracking
+            dividends_paid = getattr(
+                firm_agent, "dividends_paid_last_tick", 0.0
+            )  # Need to add this tracking
 
             reward = (dividends_paid * 2.0) + (net_profit * 1.0)
 
@@ -234,15 +248,22 @@ class FirmAI(BaseAIEngine):
 
         logger.debug(
             f"FIRM_REWARD | Firm {firm_agent.id} ({personality.name}) | Reward={reward:.2f}",
-            extra={"agent_id": firm_agent.id}
+            extra={"agent_id": firm_agent.id},
         )
         return reward
 
     # Legacy Methods (Required by BaseAIEngine ABC but unused/deprecated)
-    def _get_strategic_state(self, a, m): pass
-    def _get_tactical_state(self, i, a, m): pass
-    def _get_strategic_actions(self): pass
-    def _get_tactical_actions(self, i): pass
+    def _get_strategic_state(self, a, m):
+        pass
+
+    def _get_tactical_state(self, i, a, m):
+        pass
+
+    def _get_strategic_actions(self):
+        pass
+
+    def _get_tactical_actions(self, i):
+        pass
 
     def _calculate_reward(self, *args):
-        return 0.0 # Deprecated
+        return 0.0  # Deprecated

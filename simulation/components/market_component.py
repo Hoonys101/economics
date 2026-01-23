@@ -1,8 +1,10 @@
 """
 Implements the MarketComponent which handles utility-based seller selection.
 """
+
 from typing import Any, Dict, Optional, Tuple
 from simulation.systems.api import IMarketComponent, MarketInteractionContext
+
 
 class MarketComponent(IMarketComponent):
     """
@@ -10,10 +12,12 @@ class MarketComponent(IMarketComponent):
     """
 
     def __init__(self, owner: Any, config: Any):
-        self.owner = owner # Household
+        self.owner = owner  # Household
         self.config = config
 
-    def choose_best_seller(self, item_id: str, context: MarketInteractionContext) -> Tuple[Optional[int], float]:
+    def choose_best_seller(
+        self, item_id: str, context: MarketInteractionContext
+    ) -> Tuple[Optional[int], float]:
         """
         Selects the best seller based on Utility = (Quality^alpha * (1+Awareness)^beta * Loyalty) / Price.
         """
@@ -23,14 +27,14 @@ class MarketComponent(IMarketComponent):
             return None, 0.0
 
         # Assumes market has get_all_asks method returning list of orders
-        if not hasattr(market, 'get_all_asks'):
+        if not hasattr(market, "get_all_asks"):
             return None, 0.0
 
         asks = market.get_all_asks(item_id)
         if not asks:
             return None, 0.0
 
-        best_u = -float('inf')
+        best_u = -float("inf")
         best_seller = None
         best_price = 0.0
 
@@ -41,15 +45,15 @@ class MarketComponent(IMarketComponent):
             seller_id = ask.agent_id
 
             # Metadata
-            brand_data = getattr(ask, 'brand_info', {}) or {}
+            brand_data = getattr(ask, "brand_info", {}) or {}
             quality = brand_data.get("perceived_quality", 1.0)
             awareness = brand_data.get("brand_awareness", 0.0)
 
             loyalty = self.owner.brand_loyalty.get(seller_id, 1.0)
-            quality_pref = getattr(self.owner, 'quality_preference', 0.5)
+            quality_pref = getattr(self.owner, "quality_preference", 0.5)
 
             # Utility Calculation
-            numerator = (quality ** quality_pref) * ((1.0 + awareness) ** beta)
+            numerator = (quality**quality_pref) * ((1.0 + awareness) ** beta)
             utility = (numerator * loyalty) / max(0.01, price)
 
             if utility > best_u:

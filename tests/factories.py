@@ -1,8 +1,8 @@
-
 from typing import Dict, Any, Optional
 from simulation.ai.enums import Personality
 from modules.household.dtos import HouseholdStateDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
+
 
 def create_household_dto(
     id: int = 1,
@@ -16,7 +16,7 @@ def create_household_dto(
     perceived_prices: Optional[Dict[str, float]] = None,
     agent_data: Optional[Dict[str, Any]] = None,
     personality: Personality = Personality.BALANCED,
-    **kwargs
+    **kwargs,
 ) -> HouseholdStateDTO:
     """Factory for HouseholdStateDTO with sensible defaults."""
     return HouseholdStateDTO(
@@ -42,8 +42,9 @@ def create_household_dto(
         perceived_prices=perceived_prices or {},
         conformity=kwargs.get("conformity", 0.5),
         social_rank=kwargs.get("social_rank", 0.5),
-        approval_rating=kwargs.get("approval_rating", 1)
+        approval_rating=kwargs.get("approval_rating", 1),
     )
+
 
 def create_firm_dto(
     id: int = 100,
@@ -56,7 +57,7 @@ def create_firm_dto(
     capital_stock: float = 100.0,
     employees: Optional[list] = None,
     price_history: Optional[Dict[str, float]] = None,
-    **kwargs
+    **kwargs,
 ) -> FirmStateDTO:
     """Factory for FirmStateDTO with sensible defaults."""
     return FirmStateDTO(
@@ -90,5 +91,5 @@ def create_firm_dto(
         employees=employees or [],
         employees_data=kwargs.get("employees_data", {}),
         agent_data=kwargs.get("agent_data", {}),
-        system2_guidance=kwargs.get("system2_guidance", {})
+        system2_guidance=kwargs.get("system2_guidance", {}),
     )

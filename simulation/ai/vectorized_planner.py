@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 
+
 class VectorizedHouseholdPlanner:
     def __init__(self, config):
         self.config = config
@@ -14,7 +15,9 @@ class VectorizedHouseholdPlanner:
         self.fertility_rate = getattr(config, "BIOLOGICAL_FERTILITY_RATE", 0.15)
 
         # Consumption Constants
-        self.survival_threshold = getattr(config, "SURVIVAL_NEED_CONSUMPTION_THRESHOLD", 50.0)
+        self.survival_threshold = getattr(
+            config, "SURVIVAL_NEED_CONSUMPTION_THRESHOLD", 50.0
+        )
         self.food_consumption_qty = getattr(config, "FOOD_CONSUMPTION_QUANTITY", 1.0)
         self.max_purchase_qty = getattr(config, "FOOD_PURCHASE_MAX_PER_TICK", 5.0)
 
@@ -26,7 +29,8 @@ class VectorizedHouseholdPlanner:
         """
         # 1. Extract Data (병목 지점이나 Python Loop보다 빠름)
         count = len(agents)
-        if count == 0: return []
+        if count == 0:
+            return []
 
         # Step 1: Pre-Modern Check (Biological)
         if not self.tech_enabled:
@@ -34,7 +38,7 @@ class VectorizedHouseholdPlanner:
             # P(reproduction) = fertility_rate
             vals = np.random.random(count)
             decisions = vals < self.fertility_rate
-            return decisions.tolist() # Return list of booleans
+            return decisions.tolist()  # Return list of booleans
 
         # Step 2: Modern Check (NPV)
         # 속성 추출 (List Comprehension -> NumPy Array)
@@ -45,10 +49,14 @@ class VectorizedHouseholdPlanner:
         # If agent has 'monthly_income' attribute use it, else calc from wage
         # Assumption: agents are Household objects.
         # Let's extract 'current_wage' and map to monthly.
-        wages = np.array([getattr(a, "current_wage", 0.0) for a in agents], dtype=np.float32)
+        wages = np.array(
+            [getattr(a, "current_wage", 0.0) for a in agents], dtype=np.float32
+        )
         monthly_incomes = wages * 8.0 * 20.0
 
-        children_counts = np.array([len(a.children_ids) for a in agents], dtype=np.float32)
+        children_counts = np.array(
+            [len(a.children_ids) for a in agents], dtype=np.float32
+        )
 
         # 2. Vectorized Computation (핵심 최적화 구간)
 
@@ -90,19 +98,24 @@ class VectorizedHouseholdPlanner:
         """
         count = len(agents)
         if count == 0:
-            return {'consume': [], 'buy': []}
+            return {"consume": [], "buy": []}
 
         # 1. Extract State
         # Inventory: "basic_food"
-        inventories = np.array([a.inventory.get("basic_food", 0.0) for a in agents], dtype=np.float32)
+        inventories = np.array(
+            [a.inventory.get("basic_food", 0.0) for a in agents], dtype=np.float32
+        )
         assets = np.array([a.assets for a in agents], dtype=np.float32)
-        survival_needs = np.array([a.needs.get("survival", 0.0) for a in agents], dtype=np.float32)
+        survival_needs = np.array(
+            [a.needs.get("survival", 0.0) for a in agents], dtype=np.float32
+        )
 
         # 2. Market Data
         # Get "basic_food" price
         goods_market = market_data.get("goods_market", {})
         food_price = goods_market.get("basic_food_current_sell_price", 5.0)
-        if food_price <= 0: food_price = 5.0 # Fallback
+        if food_price <= 0:
+            food_price = 5.0  # Fallback
 
         # 3. Vectorized Logic
 
@@ -117,7 +130,11 @@ class VectorizedHouseholdPlanner:
         # B. Purchase Decision (Survival Logic)
         # Need > Threshold AND Inventory < 3.0 (Buffer for safety)
         # AND Assets > Price
-        should_buy = (survival_needs > self.survival_threshold) & (inventories < 3.0) & (assets >= food_price)
+        should_buy = (
+            (survival_needs > self.survival_threshold)
+            & (inventories < 3.0)
+            & (assets >= food_price)
+        )
 
         # Buy Amount: Max Purchase Qty (5.0) or afford limit
         # Simple Logic: Buy 5.0 to restock buffer
@@ -131,7 +148,7 @@ class VectorizedHouseholdPlanner:
         # Let's keep it float.
 
         return {
-            'consume': consume_amounts.tolist(),
-            'buy': buy_amounts.tolist(),
-            'price': float(food_price)
+            "consume": consume_amounts.tolist(),
+            "buy": buy_amounts.tolist(),
+            "price": float(food_price),
         }

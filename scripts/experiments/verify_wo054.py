@@ -1,4 +1,3 @@
-
 import logging
 import sys
 from pathlib import Path
@@ -18,6 +17,7 @@ import logging.config
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("verify_wo054")
 
+
 def run_experiment():
     """
     Runs the WO-054 Verification Experiment.
@@ -29,27 +29,24 @@ def run_experiment():
     # Override config to enable WO-054 mechanics
     overrides = {
         "HALO_EFFECT": 0.15,
-        "SIMULATION_TICKS": 500, # 500 ticks as requested
-
+        "SIMULATION_TICKS": 500,  # 500 ticks as requested
         # WO-054 Configs
         "PUBLIC_EDU_BUDGET_RATIO": 0.20,
         "SCHOLARSHIP_WEALTH_PERCENTILE": 0.20,
         "SCHOLARSHIP_POTENTIAL_THRESHOLD": 0.7,
-
         # Enable Tech Feedback
         "TECH_DIFFUSION_RATE": 0.05,
-        "TECH_FERTILIZER_UNLOCK_TICK": 50, # Early unlock to see diffusion
-
+        "TECH_FERTILIZER_UNLOCK_TICK": 50,  # Early unlock to see diffusion
         # Reset parameters to somewhat normal but stressed enough to show gap
         "INITIAL_HOUSEHOLD_ASSETS_MEAN": 5000.0,
         "INITIAL_FIRM_CAPITAL_MEAN": 50000.0,
         "GOVERNMENT_STIMULUS_ENABLED": True,
-
         # RuleBased for consistency in short run
         "DEFAULT_ENGINE_TYPE": "RuleBased",
     }
 
     from main import create_simulation
+
     sim = create_simulation(overrides)
 
     # 2. Run Simulation
@@ -65,6 +62,7 @@ def run_experiment():
         except Exception as e:
             logger.error(f"Simulation crashed at tick {tick}: {e}")
             import traceback
+
             traceback.print_exc()
             break
 
@@ -76,7 +74,7 @@ def run_experiment():
                         "agent_id": agent.id,
                         "education_level": getattr(agent, "education_level", 0),
                         "initial_assets": getattr(agent, "initial_assets_record", 0.0),
-                        "tick": tick
+                        "tick": tick,
                     }
                     history_data.append(data)
 
@@ -105,7 +103,9 @@ def run_experiment():
     # WO-054 Target: Drop from 0.96 to < 0.7
     corr_wealth_edu = final_df["initial_assets"].corr(final_df["education_level"])
 
-    logger.info(f"Final Correlation (Initial Assets vs Education): {corr_wealth_edu:.4f}")
+    logger.info(
+        f"Final Correlation (Initial Assets vs Education): {corr_wealth_edu:.4f}"
+    )
 
     # 6. Verification
     pass_criteria = True
@@ -113,13 +113,17 @@ def run_experiment():
 
     if corr_wealth_edu >= 0.7:
         pass_criteria = False
-        status_msg += f"FAIL: IGE (Wealth-Edu Corr) {corr_wealth_edu:.4f} >= 0.7. (Target < 0.7)"
+        status_msg += (
+            f"FAIL: IGE (Wealth-Edu Corr) {corr_wealth_edu:.4f} >= 0.7. (Target < 0.7)"
+        )
     else:
         status_msg += f"PASS: IGE (Wealth-Edu Corr) {corr_wealth_edu:.4f} < 0.7."
 
     # Tech Diffusion Check
     # We can check adoption count
-    adopted_count = sum(len(v) for v in sim.technology_manager.adoption_registry.values())
+    adopted_count = sum(
+        len(v) for v in sim.technology_manager.adoption_registry.values()
+    )
     logger.info(f"Total Tech Adoptions: {adopted_count}")
 
     avg_edu_final = sim.technology_manager.human_capital_index
@@ -134,6 +138,7 @@ def run_experiment():
     print(f"Avg Education Level: {avg_edu_final:.2f}")
     print(f"Tech Adoptions: {adopted_count}")
     print(f"Message: {status_msg}")
+
 
 if __name__ == "__main__":
     run_experiment()

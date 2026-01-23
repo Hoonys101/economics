@@ -26,7 +26,10 @@ from simulation.markets.order_book_market import OrderBookMarket
 from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
-from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
+from simulation.metrics.stock_tracker import (
+    StockMarketTracker,
+    PersonalityStatisticsTracker,
+)
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
@@ -60,15 +63,17 @@ from modules.analysis.crisis_monitor import CrisisMonitor
 class SimulationInitializer(SimulationInitializerInterface):
     """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
 
-    def __init__(self,
-                 config_manager: ConfigManager,
-                 config_module: Any,
-                 goods_data: List[Dict[str, Any]],
-                 repository: SimulationRepository,
-                 logger: logging.Logger,
-                 households: List[Household],
-                 firms: List[Firm],
-                 ai_trainer: AIEngineRegistry):
+    def __init__(
+        self,
+        config_manager: ConfigManager,
+        config_module: Any,
+        goods_data: List[Dict[str, Any]],
+        repository: SimulationRepository,
+        logger: logging.Logger,
+        households: List[Household],
+        firms: List[Firm],
+        ai_trainer: AIEngineRegistry,
+    ):
         self.config_manager = config_manager
         self.config = config_module
         self.goods_data = goods_data
@@ -88,7 +93,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             config_manager=self.config_manager,
             config_module=self.config,
             logger=self.logger,
-            repository=self.repository
+            repository=self.repository,
         )
 
         # 2. Populate the shell with all its components
@@ -113,16 +118,14 @@ class SimulationInitializer(SimulationInitializerInterface):
             id=sim.next_agent_id,
             initial_assets=self.config.INITIAL_BANK_ASSETS,
             config_manager=self.config_manager,
-            settlement_system=sim.settlement_system
+            settlement_system=sim.settlement_system,
         )
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
         sim.next_agent_id += 1
 
         sim.government = Government(
-            id=sim.next_agent_id,
-            initial_assets=0.0,
-            config_module=self.config
+            id=sim.next_agent_id, initial_assets=0.0, config_module=self.config
         )
         sim.government.settlement_system = sim.settlement_system
         sim.agents[sim.government.id] = sim.government
@@ -130,28 +133,30 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 
-        sim.central_bank = CentralBank(
-            tracker=sim.tracker,
-            config_module=self.config
-        )
+        sim.central_bank = CentralBank(tracker=sim.tracker, config_module=self.config)
 
         sim.finance_system = FinanceSystem(
             government=sim.government,
             central_bank=sim.central_bank,
             bank=sim.bank,
             config_module=self.config_manager,
-            settlement_system=sim.settlement_system
+            settlement_system=sim.settlement_system,
         )
         sim.government.finance_system = sim.finance_system
 
         sim.real_estate_units: List[RealEstateUnit] = [
-            RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE,
-                           rent_price=self.config.INITIAL_RENT_PRICE)
+            RealEstateUnit(
+                id=i,
+                estimated_value=self.config.INITIAL_PROPERTY_VALUE,
+                rent_price=self.config.INITIAL_RENT_PRICE,
+            )
             for i in range(self.config.NUM_HOUSING_UNITS)
         ]
 
         top_20_count = len(sim.households) // 5
-        top_households = sorted(sim.households, key=lambda h: h.assets, reverse=True)[:top_20_count]
+        top_households = sorted(sim.households, key=lambda h: h.assets, reverse=True)[
+            :top_20_count
+        ]
 
         for i, hh in enumerate(top_households):
             if i < len(sim.real_estate_units):
@@ -173,7 +178,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.markets["loan_market"].agents_ref = sim.agents
 
         if getattr(self.config, "STOCK_MARKET_ENABLED", False):
-            sim.stock_market = StockMarket(config_module=self.config, logger=self.logger)
+            sim.stock_market = StockMarket(
+                config_module=self.config, logger=self.logger
+            )
             sim.stock_tracker = StockMarketTracker(config_module=self.config)
             sim.markets["stock_market"] = sim.stock_market
             for firm in sim.firms:
@@ -193,7 +200,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                     price=unit.estimated_value,
                     quantity=1.0,
                     market_id="housing",
-                    order_type="SELL"
+                    order_type="SELL",
                 )
                 if "housing" in sim.markets:
                     sim.markets["housing"].place_order(sell_order, sim.time)
@@ -206,10 +213,14 @@ class SimulationInitializer(SimulationInitializerInterface):
                 agent.config_module = self.config
 
         sim.inequality_tracker = InequalityTracker(config_module=self.config)
-        sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)
+        sim.personality_tracker = PersonalityStatisticsTracker(
+            config_module=self.config
+        )
         # Initialize with a combined list copy to prevent aliasing sim.households
         # Note: New agents must be explicitly added to this list by lifecycle managers.
-        sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
+        sim.ai_training_manager = AITrainingManager(
+            sim.households + sim.firms, self.config
+        )
         sim.ma_manager = MAManager(sim, self.config)
         sim.reflux_system = EconomicRefluxSystem()
         sim.demographic_manager = DemographicManager(config_module=self.config)
@@ -217,17 +228,19 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
         sim.housing_system = HousingSystem(config_module=self.config)
         sim.persistence_manager = PersistenceManager(
-            run_id=0,
-            config_module=self.config,
-            repository=self.repository
+            run_id=0, config_module=self.config, repository=self.repository
         )
         sim.firm_system = FirmSystem(config_module=self.config)
-        sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger)
+        sim.technology_manager = TechnologyManager(
+            config_module=self.config, logger=self.logger
+        )
 
         Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
         Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
-        sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
+        sim.generational_wealth_audit = GenerationalWealthAudit(
+            config_module=self.config
+        )
         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)
         sim.transaction_processor = TransactionProcessor(self.config)
 
@@ -237,7 +250,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             demographic_manager=sim.demographic_manager,
             inheritance_manager=sim.inheritance_manager,
             firm_system=sim.firm_system,
-            logger=self.logger
+            logger=self.logger,
         )
 
         # Initialize New Systems (Social, Event, Sensory, Commerce, Labor)
@@ -253,6 +266,7 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # Phase 28: Initialize Stress Scenario Config
         from simulation.dtos.scenario import StressScenarioConfig
+
         sim.stress_scenario_config = StressScenarioConfig()
 
         # Load Scenario from JSON if directed by config
@@ -260,26 +274,48 @@ class SimulationInitializer(SimulationInitializerInterface):
         if active_scenario_name:
             scenario_path = f"config/scenarios/{active_scenario_name}.json"
             if os.path.exists(scenario_path):
-                 try:
-                     with open(scenario_path, 'r') as f:
-                         scenario_data = json.load(f)
+                try:
+                    with open(scenario_path, "r") as f:
+                        scenario_data = json.load(f)
 
-                     sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
-                     sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", active_scenario_name)
-                     sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
+                    sim.stress_scenario_config.is_active = scenario_data.get(
+                        "is_active", False
+                    )
+                    sim.stress_scenario_config.scenario_name = scenario_data.get(
+                        "scenario_name", active_scenario_name
+                    )
+                    sim.stress_scenario_config.start_tick = scenario_data.get(
+                        "start_tick", 50
+                    )
 
-                     params = scenario_data.get("parameters", {})
-                     sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
-                     sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
-                     sim.stress_scenario_config.base_interest_rate_multiplier = params.get("base_interest_rate_multiplier")
-                     sim.stress_scenario_config.corporate_tax_rate_delta = params.get("corporate_tax_rate_delta")
-                     sim.stress_scenario_config.demand_shock_multiplier = params.get("demand_shock_multiplier")
+                    params = scenario_data.get("parameters", {})
+                    sim.stress_scenario_config.monetary_shock_target_rate = params.get(
+                        "MONETARY_SHOCK_TARGET_RATE"
+                    )
+                    sim.stress_scenario_config.fiscal_shock_tax_rate = params.get(
+                        "FISCAL_SHOCK_TAX_RATE"
+                    )
+                    sim.stress_scenario_config.base_interest_rate_multiplier = (
+                        params.get("base_interest_rate_multiplier")
+                    )
+                    sim.stress_scenario_config.corporate_tax_rate_delta = params.get(
+                        "corporate_tax_rate_delta"
+                    )
+                    sim.stress_scenario_config.demand_shock_multiplier = params.get(
+                        "demand_shock_multiplier"
+                    )
 
-                     self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
-                 except Exception as e:
-                     self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
+                    self.logger.info(
+                        f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})"
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to load scenario file '{scenario_path}': {e}"
+                    )
             else:
-                self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
+                self.logger.warning(
+                    f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found."
+                )
 
         sim.household_time_allocation: Dict[int, float] = {}
         sim.inflation_buffer = deque(maxlen=10)

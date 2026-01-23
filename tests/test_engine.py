@@ -15,6 +15,7 @@ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngin
 import config
 from simulation.dtos.api import SimulationState
 
+
 # Mock Logger to prevent actual file writes during tests
 @pytest.fixture(autouse=True)
 def mock_logger():
@@ -22,6 +23,7 @@ def mock_logger():
         mock_logger_instance = MagicMock()
         mock_get_logger.return_value = mock_logger_instance
         yield mock_logger_instance
+
 
 # Mock Config Module with full attributes from actual config.py
 @pytest.fixture
@@ -68,7 +70,7 @@ def mock_config_module():
     mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0
     mock_config.SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
     mock_config.TAX_RATE_BASE = 0.1
-    mock_config.TAX_MODE = "FLAT" # Simplified for test
+    mock_config.TAX_MODE = "FLAT"  # Simplified for test
     mock_config.ASSETS_DEATH_THRESHOLD = 0.0
     mock_config.HOUSEHOLD_DEATH_TURNS_THRESHOLD = 4
 
@@ -98,10 +100,10 @@ def mock_config_module():
     }
 
     mock_config.TAX_BRACKETS = [
-        (0.5, 0.0),   # Tax Free
+        (0.5, 0.0),  # Tax Free
         (1.0, 0.05),  # Working Class: 5%
         (3.0, 0.10),  # Middle Class: 10%
-        (float('inf'), 0.20) # Wealthy: 20%
+        (float("inf"), 0.20),  # Wealthy: 20%
     ]
 
     # Value Orientation Mapping (Crucial for Household.__init__)
@@ -117,10 +119,10 @@ def mock_config_module():
             "preference_growth": 1.5,
         },
         "test": {
-             "preference_asset": 1.0,
-             "preference_social": 1.0,
-             "preference_growth": 1.0,
-        }
+            "preference_asset": 1.0,
+            "preference_social": 1.0,
+            "preference_growth": 1.0,
+        },
     }
 
     mock_config.EDUCATION_WEALTH_THRESHOLDS = {0: 0, 1: 1000}
@@ -130,15 +132,17 @@ def mock_config_module():
 
     return mock_config
 
+
 # Fixtures for common dependencies
 @pytest.fixture
 def mock_households(mock_config_module):
     # Setup initial needs with 'survival' and other keys to avoid KeyError in update_needs
     initial_needs = {
-        "survival": 50.0, "survival_need": 50.0,
+        "survival": 50.0,
+        "survival_need": 50.0,
         "asset": 10.0,
         "social": 10.0,
-        "improvement": 10.0
+        "improvement": 10.0,
     }
 
     hh1 = Mock(spec=Household)
@@ -156,7 +160,7 @@ def mock_households(mock_config_module):
     hh1.is_employed = False
     hh1.employer_id = None
     hh1.skills = {}
-    hh1.config_module = mock_config_module # Attach config
+    hh1.config_module = mock_config_module  # Attach config
     # Mock update_needs to avoid key error if called during simulation init
     hh1.update_needs = Mock()
     hh1.talent = Mock(spec=Talent)
@@ -201,7 +205,7 @@ def mock_firms(mock_config_module):
     f1.is_active = True
     f1.total_shares = 1000.0
     f1.treasury_shares = 0.0
-    f1.age = 25 # Set age for testing
+    f1.age = 25  # Set age for testing
 
     f2 = Firm(
         id=102,
@@ -217,7 +221,7 @@ def mock_firms(mock_config_module):
     f2.is_active = False  # Inactive firm
     f2.total_shares = 1000.0
     f2.treasury_shares = 0.0
-    f2.age = 25 # Set age for testing
+    f2.age = 25  # Set age for testing
     return [f1, f2]
 
 
@@ -254,6 +258,7 @@ def mock_repository():
     repo.save_transactions = MagicMock()
     repo.get_latest_economic_indicator = MagicMock(return_value=None)
     return repo
+
 
 @pytest.fixture
 def mock_tracker(mock_repository):
@@ -387,7 +392,6 @@ class TestSimulation:
         assert market_data["goods_market"]["basic_food_current_sell_price"] == 12.0
         assert market_data["avg_goods_price"] == pytest.approx((10.0 + 30.0 + 12.0) / 3)
 
-
     def test_process_transactions_goods_trade(
         self, simulation_instance, mock_households, mock_firms
     ):
@@ -404,7 +408,7 @@ class TestSimulation:
         tx.item_id = "basic_food"
         tx.quantity = 5.0
         tx.price = 10.0
-        tx.quality = 1.0 # Ensure quality is a float
+        tx.quality = 1.0  # Ensure quality is a float
         tx.transaction_type = "goods"
 
         simulation_instance._process_transactions([tx])
@@ -452,7 +456,9 @@ class TestSimulation:
         tax = trade_value * simulation_instance.config_module.INCOME_TAX_RATE
 
         assert buyer_firm.assets == initial_buyer_assets - trade_value
-        assert seller_hh.assets == pytest.approx(initial_seller_assets + (trade_value - tax))
+        assert seller_hh.assets == pytest.approx(
+            initial_seller_assets + (trade_value - tax)
+        )
         assert seller_hh.is_employed is True
         assert seller_hh.employer_id == buyer_firm.id
         assert seller_hh.needs["labor_need"] == 0.0
@@ -551,10 +557,11 @@ def setup_simulation_for_lifecycle(
 ):
     # Prepare initial needs with 'survival' and other keys to avoid KeyError in update_needs
     initial_needs = {
-        "survival": 50.0, "survival_need": 50.0,
+        "survival": 50.0,
+        "survival_need": 50.0,
         "asset": 10.0,
         "social": 10.0,
-        "improvement": 10.0
+        "improvement": 10.0,
     }
 
     household_active = Household(
@@ -708,18 +715,18 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         markets=sim.markets,
         government=sim.government,
         bank=sim.bank,
-        central_bank=sim.central_bank if hasattr(sim, 'central_bank') else None,
-        stock_market=sim.stock_market if hasattr(sim, 'stock_market') else None,
+        central_bank=sim.central_bank if hasattr(sim, "central_bank") else None,
+        stock_market=sim.stock_market if hasattr(sim, "stock_market") else None,
         goods_data=sim.goods_data,
         market_data={},
         config_module=sim.config_module,
         tracker=sim.tracker,
         logger=sim.logger,
-        reflux_system=getattr(sim, 'reflux_system', None),
-        ai_training_manager=getattr(sim, 'ai_training_manager', None),
-        ai_trainer=getattr(sim, 'ai_trainer', None),
-        next_agent_id=getattr(sim, 'next_agent_id', 0),
-        real_estate_units=getattr(sim, 'real_estate_units', [])
+        reflux_system=getattr(sim, "reflux_system", None),
+        ai_training_manager=getattr(sim, "ai_training_manager", None),
+        ai_trainer=getattr(sim, "ai_trainer", None),
+        next_agent_id=getattr(sim, "next_agent_id", 0),
+        real_estate_units=getattr(sim, "real_estate_units", []),
     )
 
     sim.lifecycle_manager._handle_agent_liquidation(state)

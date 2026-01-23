@@ -2,8 +2,8 @@ import unittest
 from unittest.mock import Mock, MagicMock
 from simulation.systems.ministry_of_education import MinistryOfEducation
 
-class TestMinistryOfEducation(unittest.TestCase):
 
+class TestMinistryOfEducation(unittest.TestCase):
     def setUp(self):
         self.mock_config = Mock()
         self.mock_config.PUBLIC_EDU_BUDGET_RATIO = 0.10
@@ -15,7 +15,9 @@ class TestMinistryOfEducation(unittest.TestCase):
 
         self.mock_government = MagicMock()
         self.mock_government._assets = 10000
-        self.mock_government.revenue_this_tick = 10000  # Simulate 10k revenue for budget calcs
+        self.mock_government.revenue_this_tick = (
+            10000  # Simulate 10k revenue for budget calcs
+        )
         self.mock_government.id = 1
         self.mock_government.expenditure_this_tick = 0
         self.mock_government.total_money_issued = 0
@@ -33,34 +35,40 @@ class TestMinistryOfEducation(unittest.TestCase):
 
     def test_run_public_education_basic_grant(self):
         households = [
-            self._create_household(101, 500, 0, 0.5), # Eligible for basic
-            self._create_household(102, 1000, 1, 0.6) # Already has basic
+            self._create_household(101, 500, 0, 0.5),  # Eligible for basic
+            self._create_household(102, 1000, 1, 0.6),  # Already has basic
         ]
 
         initial_gov_assets = self.mock_government.assets
-        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[1] # 100
+        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[1]  # 100
 
         self.ministry.run_public_education(households, self.mock_government, 1)
 
         self.assertEqual(households[0].education_level, 1)
-        self.assertEqual(households[1].education_level, 1) # Unchanged
+        self.assertEqual(households[1].education_level, 1)  # Unchanged
         self.assertEqual(self.mock_government.assets, initial_gov_assets - cost)
         self.assertEqual(self.mock_government.expenditure_this_tick, cost)
-        self.assertEqual(self.mock_government.current_tick_stats["education_spending"], cost)
+        self.assertEqual(
+            self.mock_government.current_tick_stats["education_spending"], cost
+        )
 
     def test_run_public_education_scholarship(self):
         # With 5 active households, the bottom 20% is the single poorest one.
         households = [
-            self._create_household(101, 150, 1, 0.9),   # Poorest, high potential -> Eligible
-            self._create_household(102, 200, 1, 0.7),   # 2nd poorest
-            self._create_household(103, 300, 1, 0.6),   # Middle class
-            self._create_household(104, 400, 1, 0.5),   # Middle class
-            self._create_household(105, 10000, 1, 0.9), # Rich, high potential
-            self._create_household(106, 80, 1, 0.85, is_active=False), # Inactive -> Ignored
+            self._create_household(
+                101, 150, 1, 0.9
+            ),  # Poorest, high potential -> Eligible
+            self._create_household(102, 200, 1, 0.7),  # 2nd poorest
+            self._create_household(103, 300, 1, 0.6),  # Middle class
+            self._create_household(104, 400, 1, 0.5),  # Middle class
+            self._create_household(105, 10000, 1, 0.9),  # Rich, high potential
+            self._create_household(
+                106, 80, 1, 0.85, is_active=False
+            ),  # Inactive -> Ignored
         ]
 
         initial_gov_assets = self.mock_government.assets
-        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[2] # 500
+        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[2]  # 500
         subsidy = cost * 0.8
         student_share = cost * 0.2
 
@@ -79,7 +87,6 @@ class TestMinistryOfEducation(unittest.TestCase):
         self.assertEqual(households[1].education_level, 1)
         self.assertEqual(households[4].education_level, 1)
 
-
     def test_budget_constraints(self):
         # Government has 10k assets, budget is 10% = 1k
         # Basic edu costs 100 each. 11 households want it. Only 10 should get it.
@@ -91,5 +98,6 @@ class TestMinistryOfEducation(unittest.TestCase):
         self.assertEqual(promoted_count, 10)
         self.assertEqual(self.mock_government.assets, 10000 - (10 * 100))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -2,6 +2,7 @@ from typing import Tuple, Dict
 import math
 from simulation.dtos import MacroFinancialContext
 
+
 class PortfolioManager:
     """
     Implements the Rational Investor brain (WO-026).
@@ -16,27 +17,43 @@ class PortfolioManager:
     TOTAL_STRESS_MULTIPLIER_CAP = 3.0
 
     @staticmethod
-    def calculate_effective_risk_aversion(base_lambda: float, context: MacroFinancialContext) -> float:
+    def calculate_effective_risk_aversion(
+        base_lambda: float, context: MacroFinancialContext
+    ) -> float:
         """
         Calculates an adjusted risk aversion based on the provided macroeconomic context.
         This logic is central to the WO-062 feature and now fully visible for review.
         """
         # 1. Inflation Stress (Fear increases when inflation exceeds the 2% target)
-        inflation_excess = max(0.0, context.inflation_rate - PortfolioManager.CONST_INFLATION_TARGET)
-        stress_inflation = inflation_excess * PortfolioManager.INFLATION_STRESS_MULTIPLIER
+        inflation_excess = max(
+            0.0, context.inflation_rate - PortfolioManager.CONST_INFLATION_TARGET
+        )
+        stress_inflation = (
+            inflation_excess * PortfolioManager.INFLATION_STRESS_MULTIPLIER
+        )
 
         # 2. Recession Stress (Fear increases sharply during negative growth)
         stress_recession = 0.0
         if context.gdp_growth_rate < 0.0:
-            stress_recession = abs(context.gdp_growth_rate) * PortfolioManager.RECESSION_STRESS_MULTIPLIER
+            stress_recession = (
+                abs(context.gdp_growth_rate)
+                * PortfolioManager.RECESSION_STRESS_MULTIPLIER
+            )
 
         # 3. Interest Rate Volatility (Optional)
-        stress_rate = max(0.0, context.interest_rate_trend) * PortfolioManager.INTEREST_RATE_STRESS_MULTIPLIER
+        stress_rate = (
+            max(0.0, context.interest_rate_trend)
+            * PortfolioManager.INTEREST_RATE_STRESS_MULTIPLIER
+        )
 
-        total_stress_multiplier = 1.0 + stress_inflation + stress_recession + stress_rate
+        total_stress_multiplier = (
+            1.0 + stress_inflation + stress_recession + stress_rate
+        )
 
         # Apply a cap to prevent overly extreme aversion
-        total_stress_multiplier = min(PortfolioManager.TOTAL_STRESS_MULTIPLIER_CAP, total_stress_multiplier)
+        total_stress_multiplier = min(
+            PortfolioManager.TOTAL_STRESS_MULTIPLIER_CAP, total_stress_multiplier
+        )
 
         return base_lambda * total_stress_multiplier
 
@@ -48,7 +65,7 @@ class PortfolioManager:
         equity_return_proxy: float,
         survival_cost: float,
         inflation_expectation: float,
-        macro_context: MacroFinancialContext = None
+        macro_context: MacroFinancialContext = None,
     ) -> Tuple[float, float, float]:
         """
         Calculates optimal allocation between Consumption(Cash), Risk-Free(Deposit), and Risky(Equity/Startup).
@@ -67,7 +84,11 @@ class PortfolioManager:
         """
         effective_risk_aversion = risk_aversion
         if macro_context:
-            effective_risk_aversion = PortfolioManager.calculate_effective_risk_aversion(risk_aversion, macro_context)
+            effective_risk_aversion = (
+                PortfolioManager.calculate_effective_risk_aversion(
+                    risk_aversion, macro_context
+                )
+            )
 
         # 1. Safety Margin Logic (Cash/Risk-Free)
         # "Safety Margin: 3 months of survival cost... MUST be kept in Cash/Risk-Free Deposit"
@@ -110,10 +131,10 @@ class PortfolioManager:
         # We need Assumptions for Risk (Variance):
         # Sigma_Deposit ~= 0.0 (Risk Free)
         # Sigma_Equity ~= 0.2 (20% Volatility - assumption)
-        sigma_equity_sq = 0.2 ** 2  # 0.04
+        sigma_equity_sq = 0.2**2  # 0.04
 
         # Expected Utility of Deposit
-        u_deposit = risk_free_rate # Variance is 0
+        u_deposit = risk_free_rate  # Variance is 0
 
         # Expected Utility of Equity
         # U_e = R_e - lambda * sigma^2

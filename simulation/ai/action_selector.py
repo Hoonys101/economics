@@ -32,7 +32,7 @@ class ActionSelector:
         state: Tuple,
         actions: List[Any],
         personality: Optional[Personality] = None,
-        current_tick: Optional[int] = None
+        current_tick: Optional[int] = None,
     ) -> Any:
         """
         현재 상태에서 Q-테이블을 보고 최적의 행동을 선택하거나, 탐험을 위해 무작위 행동을 선택한다.

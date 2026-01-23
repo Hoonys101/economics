@@ -4,13 +4,14 @@ import sys
 import os
 
 # Adjust path to include the root directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from simulation.core_agents import Household
 from simulation.ai.enums import Personality
 from simulation.decisions.housing_manager import HousingManager
 from simulation.ai.household_ai import HouseholdAI
 import config
+
 
 @pytest.fixture
 def vanity_config():
@@ -19,13 +20,8 @@ def vanity_config():
     config_module.ENABLE_VANITY_SYSTEM = True
     config_module.VANITY_WEIGHT = 1.0
     config_module.REFERENCE_GROUP_PERCENTILE = 0.2
-    config_module.CONFORMITY_RANGES = {
-        "STATUS_SEEKER": (0.8, 0.9),
-        "MISER": (0.1, 0.2)
-    }
-    config_module.GOODS = {
-        "luxury_bag": {"is_veblen": True}
-    }
+    config_module.CONFORMITY_RANGES = {"STATUS_SEEKER": (0.8, 0.9), "MISER": (0.1, 0.2)}
+    config_module.GOODS = {"luxury_bag": {"is_veblen": True}}
     config_module.MIMICRY_FACTOR = 0.5
     config_module.INITIAL_RENT_PRICE = 100.0
     config_module.MAINTENANCE_RATE_PER_TICK = 0.001
@@ -67,6 +63,7 @@ def vanity_config():
 
     return config_module
 
+
 def test_social_rank_calculation(vanity_config):
     """Verify sorting and percentile assignment"""
     households = []
@@ -74,13 +71,13 @@ def test_social_rank_calculation(vanity_config):
         h = Mock(spec=Household)
         h.id = i
         h.is_active = True
-        h.current_consumption = float(i * 10) # 0, 10, 20, 30, 40
+        h.current_consumption = float(i * 10)  # 0, 10, 20, 30, 40
         h.residing_property_id = None
-        h.is_homeless = True # Tier 0
+        h.is_homeless = True  # Tier 0
         households.append(h)
 
     # Give top agent a house
-    households[4].is_homeless = False # Tier 1
+    households[4].is_homeless = False  # Tier 1
 
     # Inject the logic here to test correctness
     scores = []
@@ -99,13 +96,16 @@ def test_social_rank_calculation(vanity_config):
         percentile = 1.0 - (rank_idx / n)
         ranks[hid] = percentile
 
-    assert ranks[4] == 1.0 # Top
-    assert ranks[0] == 1.0 - (4/5) # 0.2 (Bottom)
+    assert ranks[4] == 1.0  # Top
+    assert ranks[0] == 1.0 - (4 / 5)  # 0.2 (Bottom)
     assert ranks[3] > ranks[2]
+
 
 def test_veblen_demand(vanity_config):
     """Verify higher price -> higher WTP logic"""
-    from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+    from simulation.decisions.ai_driven_household_engine import (
+        AIDrivenHouseholdDecisionEngine,
+    )
     from simulation.dtos import DecisionContext
 
     household = Mock(spec=Household)
@@ -113,21 +113,26 @@ def test_veblen_demand(vanity_config):
     household.is_employed = True
     household.current_wage = 100.0
     household.shares_owned = {}
-    household.conformity = 1.0 # Max conformity
+    household.conformity = 1.0  # Max conformity
     household.inventory = {}
     household.needs = {"social": 10.0}
     household._assets = 10000.0
-    household.expected_inflation = {} # Fix attribute error
-    household.personality = Personality.STATUS_SEEKER # Fix attribute error
+    household.expected_inflation = {}  # Fix attribute error
+    household.personality = Personality.STATUS_SEEKER  # Fix attribute error
     household.preference_asset = 1.0
     household.preference_social = 1.0
     household.preference_growth = 1.0
-    household.wage_modifier = 1.0 # Added to fix AttributeError
-    household.get_agent_data.return_value = {"assets": 10000.0, "needs": {"social": 10.0}, "inventory": {}}
+    household.wage_modifier = 1.0  # Added to fix AttributeError
+    household.get_agent_data.return_value = {
+        "assets": 10000.0,
+        "needs": {"social": 10.0},
+        "inventory": {},
+    }
 
     ai_engine = Mock()
     # Mock action vector
     from simulation.schemas import HouseholdActionVector
+
     ai_engine.decide_action_vector.return_value = HouseholdActionVector(
         consumption_aggressiveness={"luxury_bag": 0.5}
     )
@@ -141,7 +146,7 @@ def test_veblen_demand(vanity_config):
         goods_data=[],
         market_data=market_data_low,
         current_time=0,
-        household=household
+        household=household,
     )
     orders_low, _ = engine.make_decisions(context)
     wtp_low = orders_low[0].price if orders_low else 0
@@ -153,7 +158,7 @@ def test_veblen_demand(vanity_config):
         goods_data=[],
         market_data=market_data_high,
         current_time=0,
-        household=household
+        household=household,
     )
     orders_high, _ = engine.make_decisions(context)
     wtp_high = orders_high[0].price if orders_high else 0
@@ -162,11 +167,12 @@ def test_veblen_demand(vanity_config):
     assert len(orders_high) > 0
     assert wtp_high > wtp_low
 
+
 def test_mimicry_trigger(vanity_config):
     """Verify panic buy trigger"""
     agent = Mock(spec=Household)
     agent.conformity = 1.0
-    agent.is_homeless = True # Tier 0
+    agent.is_homeless = True  # Tier 0
     agent.residing_property_id = None
 
     config = vanity_config
@@ -189,18 +195,19 @@ def test_mimicry_trigger(vanity_config):
     assert intent.priority == "URGENT"
     assert intent.max_ltv == 0.95
 
+
 def test_vanity_switch_ab(vanity_config):
     """Integration: test_vanity_switch_ab (VANITY_WEIGHT=0 vs 1.5 비교)"""
     # Setup common agent data
     agent_data = {
         "assets": 5000.0,
-        "social_rank": 0.5, # Below reference (0.8)
+        "social_rank": 0.5,  # Below reference (0.8)
         "conformity": 1.0,
         "needs": {"survival": 0.0},
-        "inventory": {}
+        "inventory": {},
     }
     pre_state = agent_data.copy()
-    post_state = agent_data.copy() # No change in assets/needs for isolation
+    post_state = agent_data.copy()  # No change in assets/needs for isolation
     market_data = {}
 
     # Scenario A: Vanity Disabled (WEIGHT = 0.0 or ENABLE = False)

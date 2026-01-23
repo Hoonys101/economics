@@ -1,26 +1,38 @@
 from typing import List, Dict
 from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO
+
 # Forward reference for type hinting
 from simulation.firms import Firm
+
 
 class FinanceSystem(IFinanceSystem):
     """Manages sovereign debt, corporate bailouts, and solvency checks."""
 
-    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: any):
+    def __init__(
+        self,
+        government: "Government",
+        central_bank: "CentralBank",
+        bank: "Bank",
+        config_module: any,
+    ):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
         self.config_module = config_module
         self.outstanding_bonds: List[BondDTO] = []
 
-    def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+    def evaluate_solvency(self, firm: "Firm", current_tick: int) -> bool:
         """
         Evaluates a firm's solvency to determine bailout eligibility.
         - Startups (< 24 ticks old) are checked for a 3-month wage runway.
         - Established firms are evaluated using the Altman Z-Score.
         """
-        startup_grace_period = getattr(self.config_module, "STARTUP_GRACE_PERIOD_TICKS", 24)
-        z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
+        startup_grace_period = getattr(
+            self.config_module, "STARTUP_GRACE_PERIOD_TICKS", 24
+        )
+        z_score_threshold = getattr(
+            self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81
+        )
 
         if firm.age < startup_grace_period:
             # Runway Check for startups
@@ -41,11 +53,15 @@ class FinanceSystem(IFinanceSystem):
         debt_to_gdp = self.government.get_debt_to_gdp_ratio()
 
         # Config-driven risk premium tiers
-        risk_premium_tiers = getattr(self.config_module, "DEBT_RISK_PREMIUM_TIERS", {
-            1.2: 0.05,
-            0.9: 0.02,
-            0.6: 0.005,
-        })
+        risk_premium_tiers = getattr(
+            self.config_module,
+            "DEBT_RISK_PREMIUM_TIERS",
+            {
+                1.2: 0.05,
+                0.9: 0.02,
+                0.6: 0.005,
+            },
+        )
 
         risk_premium = 0.0
         for threshold, premium in sorted(risk_premium_tiers.items(), reverse=True):
@@ -61,10 +77,12 @@ class FinanceSystem(IFinanceSystem):
             issuer="GOVERNMENT",
             face_value=amount,
             yield_rate=yield_rate,
-            maturity_date=current_tick + bond_maturity
+            maturity_date=current_tick + bond_maturity,
         )
 
-        qe_threshold = getattr(self.config_module, "QE_INTERVENTION_YIELD_THRESHOLD", 0.10)
+        qe_threshold = getattr(
+            self.config_module, "QE_INTERVENTION_YIELD_THRESHOLD", 0.10
+        )
         if yield_rate > qe_threshold:
             # Central Bank intervenes as buyer of last resort
             self.central_bank.purchase_bonds(new_bond)
@@ -82,7 +100,7 @@ class FinanceSystem(IFinanceSystem):
 
         return [new_bond]
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> BailoutLoanDTO:
+    def grant_bailout_loan(self, firm: "Firm", amount: float) -> BailoutLoanDTO:
         """Converts a bailout from a grant to an interest-bearing senior loan."""
         base_rate = self.central_bank.get_interest_rate()
         penalty_premium = getattr(self.config_module, "BAILOUT_PENALTY_PREMIUM", 0.05)
@@ -94,8 +112,8 @@ class FinanceSystem(IFinanceSystem):
             covenants={
                 "dividends_allowed": False,
                 "executive_salary_freeze": True,
-                "mandatory_repayment": 0.5
-            }
+                "mandatory_repayment": 0.5,
+            },
         )
 
         # The government provides the funds, which become a liability for the firm
@@ -104,12 +122,13 @@ class FinanceSystem(IFinanceSystem):
 
         return loan
 
-
     def service_debt(self, current_tick: int) -> None:
         """Manages the servicing of outstanding government debt."""
         # This is a simplified version. A real implementation would handle interest payments
         # and bond maturation.
-        matured_bonds = [b for b in self.outstanding_bonds if b.maturity_date <= current_tick]
+        matured_bonds = [
+            b for b in self.outstanding_bonds if b.maturity_date <= current_tick
+        ]
         for bond in matured_bonds:
             self.government.assets -= bond.face_value
             self.outstanding_bonds.remove(bond)

@@ -8,6 +8,7 @@ from modules.finance.domain.corporate_finance import AltmanZScoreCalculator
 if TYPE_CHECKING:
     from simulation.firms import Firm
 
+
 class CrisisMonitor:
     """
     Monitors the financial health of firms and tracks the progression of a crisis.
@@ -44,12 +45,21 @@ class CrisisMonitor:
         os.makedirs("reports", exist_ok=True)
 
         # Initialize CSV
-        with open(self.log_file, 'w', newline='') as f:
+        with open(self.log_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["tick", "safe_count", "gray_count", "distress_count", "total_active_firms", "survival_rate"])
+            writer.writerow(
+                [
+                    "tick",
+                    "safe_count",
+                    "gray_count",
+                    "distress_count",
+                    "total_active_firms",
+                    "survival_rate",
+                ]
+            )
         self._log_file_initialized = True
 
-    def monitor(self, tick: int, firms: List['Firm']) -> Dict[str, int]:
+    def monitor(self, tick: int, firms: List["Firm"]) -> Dict[str, int]:
         """
         Iterates through active firms, calculates Z-Score, and logs distribution.
         """
@@ -76,9 +86,18 @@ class CrisisMonitor:
         survival_rate = (active_firms_count / total_firms) if total_firms > 0 else 0.0
 
         # Log to CSV
-        with open(self.log_file, 'a', newline='') as f:
+        with open(self.log_file, "a", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([tick, safe_count, gray_count, distress_count, active_firms_count, survival_rate])
+            writer.writerow(
+                [
+                    tick,
+                    safe_count,
+                    gray_count,
+                    distress_count,
+                    active_firms_count,
+                    survival_rate,
+                ]
+            )
 
         # Log to console
         self.logger.info(
@@ -88,18 +107,18 @@ class CrisisMonitor:
                 "safe_count": safe_count,
                 "gray_count": gray_count,
                 "distress_count": distress_count,
-                "tags": ["crisis_monitor"]
-            }
+                "tags": ["crisis_monitor"],
+            },
         )
 
         return {
             "safe": safe_count,
             "gray": gray_count,
             "distress": distress_count,
-            "active": active_firms_count
+            "active": active_firms_count,
         }
 
-    def _calculate_z_score_for_firm(self, firm: 'Firm') -> float:
+    def _calculate_z_score_for_firm(self, firm: "Firm") -> float:
         """
         Helper to calculate Z-Score for a firm instance using the domain calculator.
         Uses the standardized financial snapshot from the Firm object.
@@ -110,5 +129,5 @@ class CrisisMonitor:
             total_assets=snapshot["total_assets"],
             working_capital=snapshot["working_capital"],
             retained_earnings=snapshot["retained_earnings"],
-            average_profit=snapshot["average_profit"]
+            average_profit=snapshot["average_profit"],
         )

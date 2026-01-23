@@ -12,7 +12,10 @@ from simulation.components.labor_manager import LaborManager
 from simulation.components.market_component import MarketComponent
 from simulation.portfolio import Portfolio
 from simulation.ai.system2_planner import System2Planner
-from simulation.ai.household_system2 import HouseholdSystem2Planner, HousingDecisionInputs
+from simulation.ai.household_system2 import (
+    HouseholdSystem2Planner,
+    HousingDecisionInputs,
+)
 from simulation.ai.api import Personality
 from simulation.models import Order, Skill
 from simulation.utils.shadow_logger import log_shadow
@@ -21,11 +24,13 @@ if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.dtos.scenario import StressScenarioConfig
 
+
 class EconComponent(IEconComponent):
     """
     Manages economic state and behavior of the Household.
     Owns ConsumptionBehavior, LaborManager, EconomyManager, MarketComponent, Portfolio.
     """
+
     def __init__(self, owner: "Household", config_module: Any):
         self.owner = owner
         self.config_module = config_module
@@ -58,7 +63,7 @@ class EconComponent(IEconComponent):
 
         # Misc State
         self.durable_assets: List[Dict[str, Any]] = []
-        self.shares_owned: Dict[int, float] = {} # Keeping for legacy compat if needed
+        self.shares_owned: Dict[int, float] = {}  # Keeping for legacy compat if needed
 
         # Income Tracking
         self.labor_income_this_tick: float = 0.0
@@ -73,22 +78,32 @@ class EconComponent(IEconComponent):
         # WO-095: Robust config access to handle Mocks in tests
         # Security Fix: Verified type safety for PRICE_MEMORY_LENGTH
         raw_price_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
-        price_memory_len = int(raw_price_len) if isinstance(raw_price_len, (int, float)) else 10
+        price_memory_len = (
+            int(raw_price_len) if isinstance(raw_price_len, (int, float)) else 10
+        )
 
-        self._price_history: defaultdict[str, deque] = defaultdict(lambda: deque(maxlen=price_memory_len))
+        self._price_history: defaultdict[str, deque] = defaultdict(
+            lambda: deque(maxlen=price_memory_len)
+        )
 
         # Initialize perceived prices from config/goods_data if possible
         if hasattr(self.owner, "goods_info_map"):
             for g in self.owner.goods_info_map.values():
-                 self._perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
+                self._perceived_avg_prices[g["id"]] = g.get("initial_price", 10.0)
 
         # Adaptation Rate (Personality Based)
-        self._adaptation_rate: float = getattr(self.config_module, "ADAPTATION_RATE_NORMAL", 0.2)
+        self._adaptation_rate: float = getattr(
+            self.config_module, "ADAPTATION_RATE_NORMAL", 0.2
+        )
         if hasattr(self.owner, "personality"):
             if self.owner.personality == Personality.IMPULSIVE:
-                 self._adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
+                self._adaptation_rate = getattr(
+                    self.config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5
+                )
             elif self.owner.personality == Personality.CONSERVATIVE:
-                 self._adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
+                self._adaptation_rate = getattr(
+                    self.config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1
+                )
 
         # --- Components ---
         self.consumption = ConsumptionBehavior(owner, config_module)
@@ -107,7 +122,9 @@ class EconComponent(IEconComponent):
         self.housing_price_history: deque = deque(maxlen=ticks_per_year)
 
         raw_wage_len = getattr(self.config_module, "WAGE_MEMORY_LENGTH", 30)
-        wage_memory_len = int(raw_wage_len) if isinstance(raw_wage_len, (int, float)) else 30
+        wage_memory_len = (
+            int(raw_wage_len) if isinstance(raw_wage_len, (int, float)) else 30
+        )
 
         self.market_wage_history: deque[float] = deque(maxlen=wage_memory_len)
         self.shadow_reservation_wage: float = 0.0
@@ -189,7 +206,7 @@ class EconComponent(IEconComponent):
     def update_perceived_prices(
         self,
         market_data: Dict[str, Any],
-        stress_scenario_config: Optional["StressScenarioConfig"] = None
+        stress_scenario_config: Optional["StressScenarioConfig"] = None,
     ) -> None:
         """
         Calculates and updates the agent's inflation expectation and
@@ -201,9 +218,11 @@ class EconComponent(IEconComponent):
 
         adaptive_rate = self.adaptation_rate
         if stress_scenario_config and stress_scenario_config.is_active:
-            if stress_scenario_config.scenario_name == 'hyperinflation':
+            if stress_scenario_config.scenario_name == "hyperinflation":
                 if hasattr(stress_scenario_config, "inflation_expectation_multiplier"):
-                     adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
+                    adaptive_rate *= (
+                        stress_scenario_config.inflation_expectation_multiplier
+                    )
 
         if hasattr(self.owner, "goods_info_map"):
             for good in self.owner.goods_info_map.values():
@@ -218,7 +237,9 @@ class EconComponent(IEconComponent):
                             inflation_t = (actual_price - last_price) / last_price
 
                             old_expect = self.expected_inflation[item_id]
-                            new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
+                            new_expect = old_expect + adaptive_rate * (
+                                inflation_t - old_expect
+                            )
                             self.expected_inflation[item_id] = new_expect
 
                     history.append(actual_price)
@@ -226,19 +247,23 @@ class EconComponent(IEconComponent):
                     old_perceived_price = self.perceived_avg_prices.get(
                         item_id, actual_price
                     )
-                    update_factor = getattr(self.config_module, "PERCEIVED_PRICE_UPDATE_FACTOR", 0.1)
-                    new_perceived_price = (
-                        update_factor * actual_price
-                    ) + (
-                        (1 - update_factor)
-                        * old_perceived_price
+                    update_factor = getattr(
+                        self.config_module, "PERCEIVED_PRICE_UPDATE_FACTOR", 0.1
+                    )
+                    new_perceived_price = (update_factor * actual_price) + (
+                        (1 - update_factor) * old_perceived_price
                     )
                     self.perceived_avg_prices[item_id] = new_perceived_price
 
     def get_state(self) -> HouseholdStateDTO:
-        pass # Partially implemented if needed, but Household calls components
+        pass  # Partially implemented if needed, but Household calls components
 
-    def orchestrate_economic_decisions(self, context: EconContextDTO, orders: List[Order], stress_scenario_config: Optional["StressScenarioConfig"] = None) -> List[Order]:
+    def orchestrate_economic_decisions(
+        self,
+        context: EconContextDTO,
+        orders: List[Order],
+        stress_scenario_config: Optional["StressScenarioConfig"] = None,
+    ) -> List[Order]:
         """
         Refines and adds to the orders based on System 2 logic, panic rules, and other economic constraints.
         """
@@ -257,7 +282,7 @@ class EconComponent(IEconComponent):
             housing_market = markets.get("housing")
             if housing_market:
                 target_unit_id = None
-                best_price = float('inf')
+                best_price = float("inf")
 
                 # Check for available units
                 if hasattr(housing_market, "sell_orders"):
@@ -269,62 +294,79 @@ class EconComponent(IEconComponent):
                                 target_unit_id = item_id
 
                 if target_unit_id:
-                     # Check affordability (20% down payment)
-                     down_payment = best_price * 0.2
-                     if self.assets >= down_payment:
-                         buy_order = Order(
-                             agent_id=self.owner.id,
-                             item_id=target_unit_id,
-                             price=best_price,
-                             quantity=1.0,
-                             market_id="housing",
-                             order_type="BUY"
-                         )
-                         orders.append(buy_order)
-                         self.logger.info(f"HOUSING_BUY | Household {self.owner.id} decided to buy {target_unit_id} at {best_price}")
+                    # Check affordability (20% down payment)
+                    down_payment = best_price * 0.2
+                    if self.assets >= down_payment:
+                        buy_order = Order(
+                            agent_id=self.owner.id,
+                            item_id=target_unit_id,
+                            price=best_price,
+                            quantity=1.0,
+                            market_id="housing",
+                            order_type="BUY",
+                        )
+                        orders.append(buy_order)
+                        self.logger.info(
+                            f"HOUSING_BUY | Household {self.owner.id} decided to buy {target_unit_id} at {best_price}"
+                        )
 
         # 4. Panic Selling (Deflation)
-        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
-             threshold = self.config_module.PANIC_SELLING_ASSET_THRESHOLD
-             if self.assets < threshold:
-                 self.logger.warning(f"PANIC_SELLING | Household {self.owner.id} panic selling stocks due to low assets ({self.assets:.1f})")
-                 # Sell ALL stocks
-                 for firm_id, share in self.portfolio.holdings.items():
-                     if share.quantity > 0:
-                         stock_order = Order(
-                             agent_id=self.owner.id,
-                             order_type="SELL",
-                             item_id=f"stock_{firm_id}",
-                             quantity=share.quantity,
-                             price=0.0,
-                             market_id="stock_market"
-                         )
-                         orders.append(stock_order)
+        if (
+            stress_scenario_config
+            and stress_scenario_config.is_active
+            and stress_scenario_config.scenario_name == "deflation"
+        ):
+            threshold = self.config_module.PANIC_SELLING_ASSET_THRESHOLD
+            if self.assets < threshold:
+                self.logger.warning(
+                    f"PANIC_SELLING | Household {self.owner.id} panic selling stocks due to low assets ({self.assets:.1f})"
+                )
+                # Sell ALL stocks
+                for firm_id, share in self.portfolio.holdings.items():
+                    if share.quantity > 0:
+                        stock_order = Order(
+                            agent_id=self.owner.id,
+                            order_type="SELL",
+                            item_id=f"stock_{firm_id}",
+                            quantity=share.quantity,
+                            price=0.0,
+                            market_id="stock_market",
+                        )
+                        orders.append(stock_order)
 
         # 5. Targeted Order Refinement & Internal Commands (QUIT)
         refined_orders = []
 
         # Phase 29: Demand Shock (Consumer Spending Reduction)
-        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'phase29_depression':
-             multiplier = stress_scenario_config.demand_shock_multiplier
-             if multiplier is not None:
-                 for order in orders:
-                     if order.order_type == "BUY" and order.item_id not in ["labor", "loan"]:
-                         # Reduce quantity by multiplier (e.g., 0.7 means 70% remains, 30% reduction)
-                         # Only affect Goods (Consumer Spending)
-                         # We assume anything not labor/loan/financial is a good/service.
-                         # Stocks are "stock_X".
-                         if not order.item_id.startswith("stock_"):
+        if (
+            stress_scenario_config
+            and stress_scenario_config.is_active
+            and stress_scenario_config.scenario_name == "phase29_depression"
+        ):
+            multiplier = stress_scenario_config.demand_shock_multiplier
+            if multiplier is not None:
+                for order in orders:
+                    if order.order_type == "BUY" and order.item_id not in [
+                        "labor",
+                        "loan",
+                    ]:
+                        # Reduce quantity by multiplier (e.g., 0.7 means 70% remains, 30% reduction)
+                        # Only affect Goods (Consumer Spending)
+                        # We assume anything not labor/loan/financial is a good/service.
+                        # Stocks are "stock_X".
+                        if not order.item_id.startswith("stock_"):
                             order.quantity *= multiplier
 
         for order in orders:
             if order.order_type == "QUIT":
                 self.owner.quit()
-                continue # Do not forward QUIT order to markets
+                continue  # Do not forward QUIT order to markets
 
             if order.order_type == "BUY" and order.target_agent_id is None:
                 # Select best seller
-                best_seller_id, best_price = self.market_component.choose_best_seller(order.item_id, {"markets": markets})
+                best_seller_id, best_price = self.market_component.choose_best_seller(
+                    order.item_id, {"markets": markets}
+                )
                 if best_seller_id:
                     order.target_agent_id = best_seller_id
             refined_orders.append(order)
@@ -332,7 +374,9 @@ class EconComponent(IEconComponent):
 
         # 6. Forensics
         for order in orders:
-             if order.order_type == "SELL" and (order.item_id == "labor" or order.market_id == "labor"):
+            if order.order_type == "SELL" and (
+                order.item_id == "labor" or order.market_id == "labor"
+            ):
                 self.last_labor_offer_tick = current_time
 
         return orders
@@ -350,7 +394,7 @@ class EconComponent(IEconComponent):
         market_rent = housing_market.get("avg_rent_price", 100.0)
         market_price = housing_market.get("avg_sale_price")
         if not market_price:
-             market_price = market_rent * 12 * 20.0
+            market_price = market_rent * 12 * 20.0
 
         self.housing_price_history.append(market_price)
         risk_free_rate = loan_market.get("interest_rate", 0.05)
@@ -363,7 +407,11 @@ class EconComponent(IEconComponent):
                 price_growth = (end_price - start_price) / start_price
 
         ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
-        income = self.current_wage * ticks_per_year if self.is_employed else self.expected_wage * ticks_per_year
+        income = (
+            self.current_wage * ticks_per_year
+            if self.is_employed
+            else self.expected_wage * ticks_per_year
+        )
 
         inputs = HousingDecisionInputs(
             current_wealth=self.assets,
@@ -371,7 +419,7 @@ class EconComponent(IEconComponent):
             market_rent_monthly=market_rent,
             market_price=market_price,
             risk_free_rate=risk_free_rate,
-            price_growth_expectation=price_growth
+            price_growth_expectation=price_growth,
         )
 
         decision = self.housing_planner.decide(inputs)
@@ -379,17 +427,19 @@ class EconComponent(IEconComponent):
         if decision != self.housing_target_mode:
             self.logger.info(
                 f"HOUSING_DECISION_CHANGE | Household {self.owner.id} switched housing mode: {self.housing_target_mode} -> {decision}",
-                extra={"tick": current_time, "agent_id": self.owner.id}
+                extra={"tick": current_time, "agent_id": self.owner.id},
             )
             self.housing_target_mode = decision
 
-    def _calculate_shadow_reservation_wage(self, market_data: Dict[str, Any], current_tick: int) -> None:
+    def _calculate_shadow_reservation_wage(
+        self, market_data: Dict[str, Any], current_tick: int
+    ) -> None:
         """
         WO-056: Stage 1 Shadow Mode (Labor Market Mechanism).
         """
         avg_market_wage = 0.0
         if market_data and "labor" in market_data:
-             avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
+            avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
 
         if avg_market_wage > 0:
             self.market_wage_history.append(avg_market_wage)
@@ -400,13 +450,17 @@ class EconComponent(IEconComponent):
             startup_cost_index = avg_wage_30 * 6.0
 
         if self.shadow_reservation_wage <= 0.0:
-            self.shadow_reservation_wage = self.current_wage if self.is_employed else self.expected_wage
+            self.shadow_reservation_wage = (
+                self.current_wage if self.is_employed else self.expected_wage
+            )
 
         if self.is_employed:
             target = max(self.current_wage, self.shadow_reservation_wage)
-            self.shadow_reservation_wage = (self.shadow_reservation_wage * 0.95) + (target * 0.05)
+            self.shadow_reservation_wage = (self.shadow_reservation_wage * 0.95) + (
+                target * 0.05
+            )
         else:
-            self.shadow_reservation_wage *= (1.0 - 0.02)
+            self.shadow_reservation_wage *= 1.0 - 0.02
             min_wage = getattr(self.config_module, "HOUSEHOLD_MIN_WAGE_DEMAND", 6.0)
             if self.shadow_reservation_wage < min_wage:
                 self.shadow_reservation_wage = min_wage
@@ -418,5 +472,5 @@ class EconComponent(IEconComponent):
             metric="shadow_wage",
             current_value=self.current_wage if self.is_employed else self.expected_wage,
             shadow_value=self.shadow_reservation_wage,
-            details=f"Employed={self.is_employed}, StartupIdx={startup_cost_index:.2f}"
+            details=f"Employed={self.is_employed}, StartupIdx={startup_cost_index:.2f}",
         )

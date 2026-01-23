@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class PsychologyComponent:
     """
     Phase 22.5: Household Psychology Component
@@ -15,15 +16,17 @@ class PsychologyComponent:
     and political sentiment.
     """
 
-    def __init__(self, owner: "Household", personality: "Personality", config_module: Any):
+    def __init__(
+        self, owner: "Household", personality: "Personality", config_module: Any
+    ):
         self.owner = owner
         self.config = config_module
         self.personality = personality
-        
+
         # Desire weights based on personality
         self.desire_weights: Dict[str, float] = {}
         self._initialize_desire_weights(personality)
-        
+
         # State
         self.survival_need_high_turns = 0
 
@@ -32,24 +35,32 @@ class PsychologyComponent:
         Initializes desire growth weights based on legacy Personality Enum.
         """
         from simulation.ai.enums import Personality
-        
+
         # Default
         self.desire_weights = {
             "survival": 1.0,
             "asset": 1.0,
             "social": 1.0,
             "improvement": 1.0,
-            "quality": 1.0
+            "quality": 1.0,
         }
-        
-        if personality in [Personality.MISER, Personality.CONSERVATIVE]:
-            self.desire_weights.update({"asset": 1.5, "social": 0.5, "improvement": 0.5})
-        elif personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
-            self.desire_weights.update({"asset": 0.5, "social": 1.5, "improvement": 0.5})
-        elif personality == Personality.GROWTH_ORIENTED:
-            self.desire_weights.update({"asset": 0.5, "social": 0.5, "improvement": 1.5})
 
-    def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
+        if personality in [Personality.MISER, Personality.CONSERVATIVE]:
+            self.desire_weights.update(
+                {"asset": 1.5, "social": 0.5, "improvement": 0.5}
+            )
+        elif personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+            self.desire_weights.update(
+                {"asset": 0.5, "social": 1.5, "improvement": 0.5}
+            )
+        elif personality == Personality.GROWTH_ORIENTED:
+            self.desire_weights.update(
+                {"asset": 0.5, "social": 0.5, "improvement": 1.5}
+            )
+
+    def update_needs(
+        self, current_tick: int, market_data: Optional[Dict[str, Any]] = None
+    ):
         """
         Updates needs based on personality growth, durable utility, and death conditions.
         """
@@ -68,13 +79,17 @@ class PsychologyComponent:
             for need_type, base_utility in utility_effects.items():
                 effective_utility = base_utility * asset["quality"]
                 if need_type in self.owner.needs:
-                    self.owner.needs[need_type] = max(0.0, self.owner.needs[need_type] - effective_utility)
+                    self.owner.needs[need_type] = max(
+                        0.0, self.owner.needs[need_type] - effective_utility
+                    )
 
         # 2. Natural Growth based on Personality
         base_growth = self.config.BASE_DESIRE_GROWTH
         # Ensure 'survival' key exists
-        self.owner.needs["survival"] = self.owner.needs.get("survival", 0.0) + base_growth
-        
+        self.owner.needs["survival"] = (
+            self.owner.needs.get("survival", 0.0) + base_growth
+        )
+
         for k in ["asset", "social", "improvement", "quality"]:
             weight = 1.0
             if self.desire_weights:
@@ -92,8 +107,11 @@ class PsychologyComponent:
             self.survival_need_high_turns = 0
 
         # Assets Death Check
-        if (self.owner.assets <= self.config.ASSETS_DEATH_THRESHOLD or 
-            self.survival_need_high_turns >= self.config.HOUSEHOLD_DEATH_TURNS_THRESHOLD):
+        if (
+            self.owner.assets <= self.config.ASSETS_DEATH_THRESHOLD
+            or self.survival_need_high_turns
+            >= self.config.HOUSEHOLD_DEATH_TURNS_THRESHOLD
+        ):
             self.owner.is_active = False
             self._log_death(current_tick, market_data)
 
@@ -126,9 +144,9 @@ class PsychologyComponent:
         market_food_price = None
         job_vacancies = 0
         if market_data:
-             goods_market = market_data.get("goods_market", {})
-             market_food_price = goods_market.get("basic_food_current_sell_price")
-             job_vacancies = market_data.get("job_vacancies", 0)
+            goods_market = market_data.get("goods_market", {})
+            market_food_price = goods_market.get("basic_food_current_sell_price")
+            job_vacancies = market_data.get("job_vacancies", 0)
 
         logger.warning(
             f"AGENT_DEATH | ID: {self.owner.id} (Cause: starvation/insolvency)",
@@ -139,6 +157,6 @@ class PsychologyComponent:
                 "assets": self.owner.assets,
                 "market_food_price": market_food_price,
                 "job_vacancies": job_vacancies,
-                "tags": ["death", "autopsy"]
-            }
+                "tags": ["death", "autopsy"],
+            },
         )

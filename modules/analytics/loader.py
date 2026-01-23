@@ -2,6 +2,7 @@
 Analytics Loader for Simulation Data.
 Handles data loading from SQLite and auxiliary JSON files.
 """
+
 import sqlite3
 import pandas as pd
 import json
@@ -10,6 +11,7 @@ import logging
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
+
 
 class DataLoader:
     def __init__(self, db_path: str = "simulation_data.db"):
@@ -58,7 +60,9 @@ class DataLoader:
         # Note: agent_states can be large, we don't set index by default as time is not unique
         return df
 
-    def load_market_history(self, run_id: Optional[int] = None, market_id: str = "goods_market") -> pd.DataFrame:
+    def load_market_history(
+        self, run_id: Optional[int] = None, market_id: str = "goods_market"
+    ) -> pd.DataFrame:
         """Loads market history for a specific market."""
         # Note: market_history table does not always have run_id in legacy schema,
         # but SimulationRepository.save_market_history inserts it?
@@ -80,9 +84,9 @@ class DataLoader:
 
         query = f"SELECT * FROM market_history WHERE market_id = '{market_id}'"
         if has_run_id and run_id:
-             if run_id == "latest":
-                 run_id = self._get_latest_run_id()
-             query += f" AND run_id = {run_id}"
+            if run_id == "latest":
+                run_id = self._get_latest_run_id()
+            query += f" AND run_id = {run_id}"
 
         query += " ORDER BY time ASC"
 
@@ -93,7 +97,9 @@ class DataLoader:
             df.set_index("time", inplace=True)
         return df
 
-    def load_fiscal_history(self, filepath: str = "reports/fiscal_history.json") -> Dict[str, pd.DataFrame]:
+    def load_fiscal_history(
+        self, filepath: str = "reports/fiscal_history.json"
+    ) -> Dict[str, pd.DataFrame]:
         """Loads fiscal history from JSON artifact."""
         if not os.path.exists(filepath):
             logger.warning(f"Fiscal history file not found at {filepath}")

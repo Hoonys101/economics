@@ -6,6 +6,7 @@ import config
 
 logger = logging.getLogger("dashboard_connector")
 
+
 def get_engine_instance() -> Simulation:
     """
     Factory function to create and initialize the Simulation object
@@ -17,6 +18,7 @@ def get_engine_instance() -> Simulation:
     simulation = simulation_main.create_simulation()
     return simulation
 
+
 def run_tick(simulation: Simulation) -> int:
     """
     Advances the simulation by one tick.
@@ -24,6 +26,7 @@ def run_tick(simulation: Simulation) -> int:
     """
     simulation.run_tick()
     return simulation.time
+
 
 def get_metrics(simulation: Simulation) -> Dict[str, Any]:
     """
@@ -90,8 +93,9 @@ def get_metrics(simulation: Simulation) -> Dict[str, Any]:
         "total_labor_income": total_labor_income,
         "labor_share": labor_share,
         "velocity_of_money": velocity_of_money,
-        "inventory_turnover": inventory_turnover
+        "inventory_turnover": inventory_turnover,
     }
+
 
 def update_params(simulation: Simulation, new_params: Dict[str, Any]) -> None:
     """
@@ -104,6 +108,7 @@ def update_params(simulation: Simulation, new_params: Dict[str, Any]) -> None:
         else:
             logger.warning(f"[Dashboard] Unknown config key: {key}")
 
+
 def get_agent_details(simulation: Simulation, agent_id: int) -> Dict[str, Any]:
     """
     Returns detailed info for a specific agent.
@@ -115,7 +120,7 @@ def get_agent_details(simulation: Simulation, agent_id: int) -> Dict[str, Any]:
 
     # Extract System 2 projection if available
     # System2Planner is usually initialized on Household
-    system2 = getattr(agent, 'system2_planner', None)
+    system2 = getattr(agent, "system2_planner", None)
     projection = system2.cached_projection if system2 else {}
 
     details = {

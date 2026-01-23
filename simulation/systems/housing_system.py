@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class HousingSystem:
     """
     Phase 22.5: Housing Market System
@@ -35,20 +36,22 @@ class HousingSystem:
                         old_owner_id = unit.owner_id
                         unit.owner_id = -1  # -1 is Bank/Govt
                         unit.mortgage_id = None
-                        
+
                         # Evict Occupant (if owner was occupying)
                         if unit.occupant_id == old_owner_id:
                             unit.occupant_id = None
                             old_owner_agent = simulation.agents.get(old_owner_id)
-                            if old_owner_agent and hasattr(old_owner_agent, "owned_properties"):
+                            if old_owner_agent and hasattr(
+                                old_owner_agent, "owned_properties"
+                            ):
                                 if unit.id in old_owner_agent.owned_properties:
                                     old_owner_agent.owned_properties.remove(unit.id)
                                 if hasattr(old_owner_agent, "residing_property_id"):
                                     old_owner_agent.residing_property_id = None
                                     old_owner_agent.is_homeless = True
-                                    
+
                         simulation.bank.terminate_loan(loan.id)
-                        
+
                         fire_sale_price = unit.estimated_value * 0.8
                         sell_order = Order(
                             agent_id=-1,
@@ -56,10 +59,12 @@ class HousingSystem:
                             price=fire_sale_price,
                             quantity=1.0,
                             market_id="housing",
-                            order_type="SELL"
+                            order_type="SELL",
                         )
                         if "housing" in simulation.markets:
-                            simulation.markets["housing"].place_order(sell_order, simulation.time)
+                            simulation.markets["housing"].place_order(
+                                sell_order, simulation.time
+                            )
 
         # 2. Rent & Maintenance
         for unit in simulation.real_estate_units:
@@ -71,12 +76,16 @@ class HousingSystem:
                     if owner.assets >= cost:
                         owner._sub_assets(cost)
                         if simulation.reflux_system:
-                            simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
+                            simulation.reflux_system.capture(
+                                cost, f"{owner.id}", "housing_maintenance"
+                            )
                     else:
                         taken = owner.assets
                         owner._sub_assets(taken)
                         if simulation.reflux_system:
-                            simulation.reflux_system.capture(taken, f"{owner.id}", "housing_maintenance")
+                            simulation.reflux_system.capture(
+                                taken, f"{owner.id}", "housing_maintenance"
+                            )
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:
@@ -95,7 +104,7 @@ class HousingSystem:
                         # Eviction due to rent non-payment
                         logger.info(
                             f"EVICTION | Household {tenant.id} evicted from Unit {unit.id} due to non-payment.",
-                            extra={"agent_id": tenant.id, "unit_id": unit.id}
+                            extra={"agent_id": tenant.id, "unit_id": unit.id},
                         )
                         unit.occupant_id = None
                         if hasattr(tenant, "residing_property_id"):
@@ -117,7 +126,7 @@ class HousingSystem:
                     hh.needs["survival"] += self.config.HOMELESS_PENALTY_PER_TICK
                     logger.debug(
                         f"HOMELESS_PENALTY | Household {hh.id} survival need increased.",
-                        extra={"agent_id": hh.id}
+                        extra={"agent_id": hh.id},
                     )
 
     def process_transaction(self, tx: Transaction, simulation: "Simulation"):
@@ -127,8 +136,10 @@ class HousingSystem:
         """
         try:
             unit_id = int(tx.item_id.split("_")[1])
-            unit = next((u for u in simulation.real_estate_units if u.id == unit_id), None)
-            
+            unit = next(
+                (u for u in simulation.real_estate_units if u.id == unit_id), None
+            )
+
             if not unit:
                 logger.warning(f"HOUSING | Unit {tx.item_id} not found.")
                 return
@@ -143,18 +154,18 @@ class HousingSystem:
             ltv_ratio = getattr(self.config, "MORTGAGE_LTV_RATIO", 0.8)
             mortgage_term = getattr(self.config, "MORTGAGE_TERM_TICKS", 300)
             mortgage_rate = getattr(self.config, "MORTGAGE_INTEREST_RATE", 0.05)
-            
+
             trade_value = tx.price * tx.quantity
 
-            if hasattr(buyer, "owned_properties"): # Household check
+            if hasattr(buyer, "owned_properties"):  # Household check
                 loan_amount = trade_value * ltv_ratio
                 loan_id = simulation.bank.grant_loan(
                     buyer.id,
                     loan_amount,
                     term_ticks=mortgage_term,
-                    interest_rate=mortgage_rate
+                    interest_rate=mortgage_rate,
                 )
-                
+
                 if loan_id:
                     simulation.bank._sub_assets(loan_amount)
                     buyer._add_assets(loan_amount)
@@ -163,7 +174,7 @@ class HousingSystem:
                     unit.mortgage_id = None
             else:
                 unit.mortgage_id = None
-                
+
             # 2. Process Funds Transfer
             buyer._sub_assets(trade_value)
 
@@ -180,12 +191,12 @@ class HousingSystem:
 
             # 3. Transfer Title
             unit.owner_id = buyer.id
-            
+
             # 4. Update Agent Property Lists
             if hasattr(seller, "owned_properties"):
                 if unit.id in seller.owned_properties:
                     seller.owned_properties.remove(unit.id)
-            
+
             if hasattr(buyer, "owned_properties"):
                 if unit.id not in buyer.owned_properties:
                     buyer.owned_properties.append(unit.id)
@@ -193,10 +204,10 @@ class HousingSystem:
                     unit.occupant_id = buyer.id
                     buyer.residing_property_id = unit.id
                     buyer.is_homeless = False
-            
+
             logger.info(
                 f"REAL_ESTATE | Sold Unit {unit.id} to {buyer.id}. Price: {trade_value:.2f}",
-                extra={"tick": simulation.time, "tags": ["real_estate"]}
+                extra={"tick": simulation.time, "tags": ["real_estate"]},
             )
 
         except Exception as e:

@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 from simulation.models import Order
 
+
 class SalesDepartment:
     """Handles the sales and marketing logic for a firm."""
 
@@ -14,7 +15,14 @@ class SalesDepartment:
         self.firm = firm
         self.config_module = config_module
 
-    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+    def post_ask(
+        self,
+        item_id: str,
+        price: float,
+        quantity: float,
+        market: OrderBookMarket,
+        current_tick: int,
+    ) -> Order:
         """
         판매 주문을 생성하고 시장에 제출합니다.
         Brand Metadata를 자동으로 주입합니다.
@@ -23,7 +31,9 @@ class SalesDepartment:
         brand_snapshot = {
             "brand_awareness": self.firm.brand_manager.brand_awareness,
             "perceived_quality": self.firm.brand_manager.perceived_quality,
-            "quality": self.firm.inventory_quality.get(item_id, 1.0), # Phase 15: Physical Quality
+            "quality": self.firm.inventory_quality.get(
+                item_id, 1.0
+            ),  # Phase 15: Physical Quality
         }
 
         # 2. 주문 생성 (brand_info 자동 주입)
@@ -34,7 +44,7 @@ class SalesDepartment:
             quantity=quantity,
             price=price,
             market_id=market.id,
-            brand_info=brand_snapshot  # <-- Critical Injection
+            brand_info=brand_snapshot,  # <-- Critical Injection
         )
 
         # 3. 시장에 제출
@@ -42,7 +52,11 @@ class SalesDepartment:
 
         self.firm.logger.debug(
             f"FIRM_POST_ASK | Firm {self.firm.id} posted SELL order for {quantity:.1f} {item_id} @ {price:.2f} with brand_info",
-            extra={"agent_id": self.firm.id, "tick": current_tick, "brand_awareness": brand_snapshot["brand_awareness"]}
+            extra={
+                "agent_id": self.firm.id,
+                "tick": current_tick,
+                "brand_awareness": brand_snapshot["brand_awareness"],
+            },
         )
 
         return order
@@ -59,22 +73,34 @@ class SalesDepartment:
             self.firm.finance.last_marketing_spend = self.firm.marketing_budget
             return
 
-        delta_revenue = self.firm.finance.revenue_this_turn - self.firm.finance.last_revenue
+        delta_revenue = (
+            self.firm.finance.revenue_this_turn - self.firm.finance.last_revenue
+        )
         efficiency = delta_revenue / self.firm.finance.last_marketing_spend
 
         # Decision Rules
-        saturation_level = getattr(self.config_module, "BRAND_AWARENESS_SATURATION", 0.9)
-        high_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5)
-        low_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8)
+        saturation_level = getattr(
+            self.config_module, "BRAND_AWARENESS_SATURATION", 0.9
+        )
+        high_eff_threshold = getattr(
+            self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5
+        )
+        low_eff_threshold = getattr(
+            self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8
+        )
         min_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MIN", 0.01)
         max_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MAX", 0.20)
 
         if self.firm.brand_manager.brand_awareness >= saturation_level:
             pass  # Maintain (Saturation)
         elif efficiency > high_eff_threshold:
-            self.firm.marketing_budget_rate = min(max_rate, self.firm.marketing_budget_rate * 1.1)
+            self.firm.marketing_budget_rate = min(
+                max_rate, self.firm.marketing_budget_rate * 1.1
+            )
         elif efficiency < low_eff_threshold:
-            self.firm.marketing_budget_rate = max(min_rate, self.firm.marketing_budget_rate * 0.9)
+            self.firm.marketing_budget_rate = max(
+                min_rate, self.firm.marketing_budget_rate * 0.9
+            )
 
         # Update tracking
         self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn

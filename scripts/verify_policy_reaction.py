@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 import os
@@ -11,8 +10,11 @@ from main import create_simulation
 from simulation.dtos import GovernmentStateDTO
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("verify_policy_reaction")
+
 
 def verify_policy_reaction(num_ticks: int = 122):
     """
@@ -41,27 +43,34 @@ def verify_policy_reaction(num_ticks: int = 122):
         # Let's burn in for 120 ticks and inject the shock then.
         if tick == 120:
             rate_before_shock = simulation.central_bank.get_base_rate()
-            logger.info(f"Base rate before shock application at tick {tick}: {rate_before_shock:.4f}")
+            logger.info(
+                f"Base rate before shock application at tick {tick}: {rate_before_shock:.4f}"
+            )
             logger.warning(f"INJECTING INFLATION SHOCK at tick {tick}")
 
             # Create a modified DTO with a high inflation rate
             shock_dto = GovernmentStateDTO(
                 tick=tick,
                 inflation_sma=0.15,  # 15% inflation shock
-                unemployment_sma=simulation.tracker.get_latest_indicators().get("unemployment_rate", 0.05),
-                gdp_growth_sma=0, # Assume neutral growth for isolation
-                wage_sma=simulation.tracker.get_latest_indicators().get("avg_wage", 1000),
-                approval_sma=0.5, # Assume neutral approval
-                current_gdp=simulation.tracker.get_latest_indicators().get("total_production", 10000),
+                unemployment_sma=simulation.tracker.get_latest_indicators().get(
+                    "unemployment_rate", 0.05
+                ),
+                gdp_growth_sma=0,  # Assume neutral growth for isolation
+                wage_sma=simulation.tracker.get_latest_indicators().get(
+                    "avg_wage", 1000
+                ),
+                approval_sma=0.5,  # Assume neutral approval
+                current_gdp=simulation.tracker.get_latest_indicators().get(
+                    "total_production", 10000
+                ),
             )
 
         # Pass the shock DTO to run_tick, it will only be used if the tick matches
         simulation.run_tick(injectable_sensory_dto=shock_dto)
 
         if tick >= 119:
-             current_rate = simulation.central_bank.get_base_rate()
-             logger.info(f"Tick {tick}: Central Bank Base Rate: {current_rate:.4f}")
-
+            current_rate = simulation.central_bank.get_base_rate()
+            logger.info(f"Tick {tick}: Central Bank Base Rate: {current_rate:.4f}")
 
     # --- Verification Checks ---
     logger.info("--- Verification Results ---")
@@ -72,10 +81,14 @@ def verify_policy_reaction(num_ticks: int = 122):
 
     if final_base_rate > rate_before_shock:
         print("PASS: Interest Rate Increased")
-        logger.info("✅ SUCCESS: Central Bank reacted to inflation by increasing the interest rate.")
+        logger.info(
+            "✅ SUCCESS: Central Bank reacted to inflation by increasing the interest rate."
+        )
     else:
         print("FAIL: Interest Rate Did Not Increase")
-        logger.error("❌ FAILURE: Central Bank did not increase the interest rate in response to the inflation shock.")
+        logger.error(
+            "❌ FAILURE: Central Bank did not increase the interest rate in response to the inflation shock."
+        )
 
 
 if __name__ == "__main__":
