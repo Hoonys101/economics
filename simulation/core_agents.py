@@ -14,7 +14,7 @@ from simulation.ai.api import (
     Aggressiveness,
 )
 from simulation.core_markets import Market
-from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext
+from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, HouseholdConfigDTO
 from simulation.portfolio import Portfolio
 
 from simulation.ai.household_ai import HouseholdAI
@@ -671,12 +671,71 @@ class Household(BaseAgent, ILearningAgent):
         # 0. Update Social Status (Before Decision)
         self.social_component.calculate_social_status()
 
+        # WO-103: Purity Guard - State evolution (moved from RuleBased Engine)
+        if self.is_employed:
+            recovery_rate = getattr(self.config_module, "WAGE_RECOVERY_RATE", 0.01)
+            self.wage_modifier = min(1.0, self.wage_modifier * (1.0 + recovery_rate))
+        else:
+            decay_rate = getattr(self.config_module, "WAGE_DECAY_RATE", 0.02)
+            floor_mod = getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3)
+            self.wage_modifier = max(floor_mod, self.wage_modifier * (1.0 - decay_rate))
+
         # 1. Prepare DTOs
         state_dto = self.create_state_dto()
+        
+        # WO-103: Purity Guard - Prepare Config DTO
+        config_dto = HouseholdConfigDTO(
+            survival_need_consumption_threshold=self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD,
+            target_food_buffer_quantity=getattr(self.config_module, "TARGET_FOOD_BUFFER_QUANTITY", 5.0),
+            food_purchase_max_per_tick=self.config_module.FOOD_PURCHASE_MAX_PER_TICK,
+            assets_threshold_for_other_actions=self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS,
+            wage_decay_rate=getattr(self.config_module, "WAGE_DECAY_RATE", 0.02),
+            reservation_wage_floor=getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3),
+            survival_critical_turns=getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5),
+            labor_market_min_wage=self.config_module.LABOR_MARKET_MIN_WAGE,
+            household_low_asset_threshold=self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD,
+            household_low_asset_wage=self.config_module.HOUSEHOLD_LOW_ASSET_WAGE,
+            household_default_wage=self.config_module.HOUSEHOLD_DEFAULT_WAGE,
+            
+            # AI Engine requirements
+            market_price_fallback=self.config_module.MARKET_PRICE_FALLBACK,
+            need_factor_base=self.config_module.NEED_FACTOR_BASE,
+            need_factor_scale=self.config_module.NEED_FACTOR_SCALE,
+            valuation_modifier_base=self.config_module.VALUATION_MODIFIER_BASE,
+            valuation_modifier_range=self.config_module.VALUATION_MODIFIER_RANGE,
+            household_max_purchase_quantity=self.config_module.HOUSEHOLD_MAX_PURCHASE_QUANTITY,
+            bulk_buy_need_threshold=self.config_module.BULK_BUY_NEED_THRESHOLD,
+            bulk_buy_agg_threshold=self.config_module.BULK_BUY_AGG_THRESHOLD,
+            bulk_buy_moderate_ratio=self.config_module.BULK_BUY_MODERATE_RATIO,
+            panic_buying_threshold=getattr(self.config_module, "PANIC_BUYING_THRESHOLD", 0.05),
+            hoarding_factor=getattr(self.config_module, "HOARDING_FACTOR", 0.5),
+            deflation_wait_threshold=getattr(self.config_module, "DEFLATION_WAIT_THRESHOLD", -0.05),
+            delay_factor=getattr(self.config_module, "DELAY_FACTOR", 0.5),
+            dsr_critical_threshold=self.config_module.DSR_CRITICAL_THRESHOLD,
+            budget_limit_normal_ratio=self.config_module.BUDGET_LIMIT_NORMAL_RATIO,
+            budget_limit_urgent_need=self.config_module.BUDGET_LIMIT_URGENT_NEED,
+            budget_limit_urgent_ratio=self.config_module.BUDGET_LIMIT_URGENT_RATIO,
+            min_purchase_quantity=self.config_module.MIN_PURCHASE_QUANTITY,
+            job_quit_threshold_base=self.config_module.JOB_QUIT_THRESHOLD_BASE,
+            job_quit_prob_base=self.config_module.JOB_QUIT_PROB_BASE,
+            job_quit_prob_scale=self.config_module.JOB_QUIT_PROB_SCALE,
+            stock_market_enabled=getattr(self.config_module, "STOCK_MARKET_ENABLED", False),
+            household_min_assets_for_investment=self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT,
+            stock_investment_equity_delta_threshold=self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD,
+            stock_investment_diversification_count=self.config_module.STOCK_INVESTMENT_DIVERSIFICATION_COUNT,
+            expected_startup_roi=getattr(self.config_module, "EXPECTED_STARTUP_ROI", 0.15),
+            startup_cost=getattr(self.config_module, "STARTUP_COST", 30000.0),
+            debt_repayment_ratio=self.config_module.DEBT_REPAYMENT_RATIO,
+            debt_repayment_cap=self.config_module.DEBT_REPAYMENT_CAP,
+            debt_liquidity_ratio=self.config_module.DEBT_LIQUIDITY_RATIO,
+            initial_rent_price=self.config_module.INITIAL_RENT_PRICE
+        )
 
         # Context for Decision Engine (Pure Logic)
         context = DecisionContext(
-            household=self, # COMPATIBILITY RESTORED: Required for RuleBasedHouseholdDecisionEngine
+            household=self, # DEPRECATED: Required for pending legacy engines
+            state=state_dto,
+            config=config_dto,
             markets=markets,
             goods_data=goods_data,
             market_data=market_data,
@@ -684,10 +743,6 @@ class Household(BaseAgent, ILearningAgent):
             government=government,
             stress_scenario_config=stress_scenario_config
         )
-        # Hack: DecisionContext currently expects 'household' but we want to use 'state' in new engine.
-        # We need to modify DecisionContext to accept 'state' or monkey-patch it here if we can't change DTO yet.
-        # But per plan, we ARE changing DTO. So we will set `context.state = state_dto`.
-        context.state = state_dto # Dynamically attach DTO
 
         # 2. Call Decision Engine
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)

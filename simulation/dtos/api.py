@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
+from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union
+from simulation.dtos.firm_state_dto import FirmStateDTO
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -90,18 +91,85 @@ class AIDecisionData:
     actual_reward: Optional[float] = None
 
 @dataclass
-class DecisionContext:
+class HouseholdConfigDTO:
+    """Static configuration values relevant to household decisions."""
+    survival_need_consumption_threshold: float
+    target_food_buffer_quantity: float
+    food_purchase_max_per_tick: float
+    assets_threshold_for_other_actions: float
+    wage_decay_rate: float
+    reservation_wage_floor: float
+    survival_critical_turns: float
+    labor_market_min_wage: float
+    # New from Household.make_decision refactoring
+    household_low_asset_threshold: float
+    household_low_asset_wage: float
+    household_default_wage: float
+    
+    # AI Engine requirements
+    market_price_fallback: float
+    need_factor_base: float
+    need_factor_scale: float
+    valuation_modifier_base: float
+    valuation_modifier_range: float
+    household_max_purchase_quantity: float
+    bulk_buy_need_threshold: float
+    bulk_buy_agg_threshold: float
+    bulk_buy_moderate_ratio: float
+    panic_buying_threshold: float
+    hoarding_factor: float
+    deflation_wait_threshold: float
+    delay_factor: float
+    dsr_critical_threshold: float
+    budget_limit_normal_ratio: float
+    budget_limit_urgent_need: float
+    budget_limit_urgent_ratio: float
+    min_purchase_quantity: float
+    job_quit_threshold_base: float
+    job_quit_prob_base: float
+    job_quit_prob_scale: float
+    stock_market_enabled: bool
+    household_min_assets_for_investment: float
+    stock_investment_equity_delta_threshold: float
+    stock_investment_diversification_count: int
+    expected_startup_roi: float
+    startup_cost: float
+    debt_repayment_ratio: float
+    debt_repayment_cap: float
+    debt_liquidity_ratio: float
+    # Added for parity
+    initial_rent_price: float
 
+@dataclass
+class FirmConfigDTO:
+    """Static configuration values relevant to firm decisions."""
+    firm_min_production_target: float
+    # Add other firm config values as needed for engines
+
+@dataclass
+class DecisionContext:
+    """
+    A pure data container for decision-making.
+    Direct agent instance access is strictly forbidden (Enforced by Purity Gate).
+    """
     markets: Dict[str, Any]
     goods_data: List[Dict[str, Any]]
     market_data: Dict[str, Any]
     current_time: int
-    household: Optional[Household] = None # Avoid circular import if possible, or use TYPE_CHECKING
-    state: Optional[HouseholdStateDTO] = None
-    firm: Optional[Firm] = None
+    
+    # State DTO representing the agent's current condition
+    state: Union[HouseholdStateDTO, FirmStateDTO]
+    
+    # Static configuration values relevant to the agent type
+    config: Union[HouseholdConfigDTO, FirmConfigDTO]
+
     government: Optional[Any] = None
     reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+
+    # --- DEPRECATED FIELDS (To be removed after full migration) ---
+    household: Optional[Household] = None 
+    firm: Optional[Firm] = None
 
 
 @dataclass

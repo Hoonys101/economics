@@ -11,7 +11,7 @@ from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext
+from simulation.dtos import DecisionContext, FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 
@@ -324,8 +324,15 @@ class Firm(BaseAgent, ILearningAgent):
                 "is_active_before": self.is_active,
             },
         )
+        config_dto = FirmConfigDTO(
+            firm_min_production_target=self.config_module.FIRM_MIN_PRODUCTION_TARGET
+        )
+        state_dto = self.get_state_dto()
+
         context = DecisionContext(
-            firm=self,
+            firm=self, # DEPRECATED
+            state=state_dto,
+            config=config_dto,
             markets=markets,
             goods_data=goods_data,
             market_data=market_data,

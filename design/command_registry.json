@@ -1,23 +1,27 @@
 {
-  "spec_dto_purity": {
+  "gemini": {
     "worker": "spec",
-    "instruction": "기술부채 TD-103 (Leaky AI Abstraction) 해결을 위한 'DTO Purity Gate' 명세를 작성하라. | 1. `DecisionContext` 및 모든 AI 의사결정 엔진에서 에이전트 인스턴스(`self`) 전달을 완전히 제거하고 DTO로만 통신하도록 설계하라. | 2. `RuleBasedHouseholdDecisionEngine` 등 레거시 엔진들이 DTO를 사용하도록 리팩토링하는 가이드를 포함하라. | 3. 에이전트의 내부 상태가 AI 엔진에 의해 직접 수정되는 것을 방지하는 'Purity Gate' 검증 로직을 제안하라. | 4. `simulation/dtos/api.py`에 필요한 DTO 필드 누락 여부를 점검하고 확장 계획을 세워라.",
+    "instruction": "DTO Purity Gate 리팩토링 현황을 점검하고 나머지 작업(레거시 기업 엔진 리팩토링)에 대한 상세 구현 가이드를 작성하라.",
     "context": [
-      "simulation/core_agents.py",
       "simulation/dtos/api.py",
-      "simulation/decisions/decision_context.py"
+      "simulation/decisions/rule_based_firm_engine.py",
+      "simulation/decisions/standalone_rule_based_firm_engine.py"
     ],
-    "output": "design/specs/DTO_PURITY_GATE_SPEC.md",
-    "audit": "design/gemini_output/audit_structural_v2.md",
+    "output": "design/drafts/DTO_PURITY_REFACTOR_GUIDE.md",
     "model": "pro"
   },
-  "audit_dll_dependencies": {
-    "worker": "audit",
-    "instruction": "C++ Native 에이전트의 DLL 로딩 실패 원인을 정밀 분석하라. | 1. 현재 `agent.cpp` (또는 관련 브릿지 코드)의 외부 라이브러리 의존성을 파악하라. | 2. Windows 환경에서 흔히 발생하는 Bitness (32bit vs 64bit) 불일치 및 VC++ Redistributable 누락 가능성을 점검하라. | 3. `os.add_dll_directory`를 통한 런타임 경로 해결 방안을 명세화하라.",
-    "context": [
-      "design/manuals/TROUBLESHOOTING.md"
-    ],
-    "output": "design/gemini_output/audit_dll_loading.md",
-    "model": "pro"
-  }
+  "jules": {
+    "command": "create",
+    "title": "WO-114_DTO_Purity_Gate_Completion",
+    "instruction": "Work Order WO-114-DTO-Purity-Gate-Completion.md에 따라 DTO Purity Gate 리팩토링을 완료하라. | 1. 모든 의사결정 엔진이 context.state와 context.config만 사용하도록 전환. | 2. 에이전트 인스턴스 직접 참조 제거. | 3. 단위 테스트 수정 및 Purity Gate 검증 테스트 추가. | 작업 완료 후 실무자 보고서를 제출하라.",
+    "wait": true
+  },
+  "git_review": {
+    "branch": "main",
+    "instruction": "DTO Purity Gate 초기 구현분 검토"
+  },
+  "merge": {
+    "branch": ""
+  },
+  "harvest": {}
 }

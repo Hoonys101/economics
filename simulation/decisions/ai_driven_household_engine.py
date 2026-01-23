@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.ai.household_ai import HouseholdAI
     from modules.household.dtos import HouseholdStateDTO
+    from simulation.dtos import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             extra={"tick": 0, "tags": ["init"]},
         )
 
-    def make_decisions(
+    def _make_decisions_internal(
         self,
         context: DecisionContext,
         macro_context: Optional[MacroFinancialContext] = None,
@@ -44,16 +45,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         Architecture V2: Continuous Aggressiveness
         """
         # [Refactoring] Use state DTO
-        household = context.state
-
-        # Legacy fallback if state is not provided but household object is
-        if household is None and context.household:
-             # Check if context.household is actually a DTO already
-             if hasattr(context.household, "create_state_dto"):
-                 household = context.household.create_state_dto()
-             else:
-                 # It's already a DTO, use it directly
-                 household = context.household
+        household: HouseholdStateDTO = context.state
+        config: HouseholdConfigDTO = context.config
 
         if household is None:
             # Fallback action vector for returning if agent is None
@@ -66,7 +59,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         agent_data = household.agent_data
 
-        goods_list = list(self.config_module.GOODS.keys())
+        goods_list = list(config.GOODS.keys()) # Error here, DTO doesn't have GOODS.
         
         action_vector = self.ai_engine.decide_action_vector(
             agent_data, market_data, goods_list
@@ -117,11 +110,11 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             agg_buy = action_vector.consumption_aggressiveness.get(item_id, 0.5)
             
             # --- Organic Substitution Effect: Saving vs Consumption ROI ---
-            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", self.config_module.MARKET_PRICE_FALLBACK)
+            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", config.market_price_fallback)
             if not avg_price or avg_price <= 0:
-                avg_price = self.config_module.MARKET_PRICE_FALLBACK
+                avg_price = config.market_price_fallback
             
-            good_info = self.config_module.GOODS.get(item_id, {})
+            good_info = self.config_module.GOODS.get(item_id, {}) # GOODS not in config DTO yet
             is_luxury = good_info.get("is_luxury", False)
 
             # Need Value (UC)

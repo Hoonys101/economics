@@ -1,30 +1,40 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Tuple, TYPE_CHECKING
+from typing import List, Dict, Any, Tuple, TYPE_CHECKING, Optional
 from simulation.models import Order
 
 from simulation.dtos import DecisionContext
 
 if TYPE_CHECKING:
     from simulation.core_markets import Market
+    from simulation.dtos import MacroFinancialContext
 
 
 class BaseDecisionEngine:
     def make_decisions(
         self,
         context: DecisionContext,
+        macro_context: Optional[MacroFinancialContext] = None,
     ) -> Tuple[List[Order], Any]:
         """
-        에이전트의 현재 상태와 시장 정보를 바탕으로 의사결정을 내리고,
-        그 결과로 생성된 주문 목록과 선택된 전술을 반환합니다.
+        에이전트의 현재 상태와 시장 정보를 바탕으로 의사결정을 내립니다.
+        🚨 DTO PURITY GATE 🚨: 직접적인 에이전트 인스턴스 접근을 차단합니다.
+        """
+        # 🚨 DTO PURITY GATE 🚨
+        assert hasattr(context, 'state') and context.state is not None, "Purity Error: context.state DTO is missing."
+        assert hasattr(context, 'config') and context.config is not None, "Purity Error: context.config DTO is missing."
+        
+        # We allow .household and .firm for now but they should be ignored by new engines.
+        # Once migration is complete, we will explicitly forbid them.
+        
+        return self._make_decisions_internal(context, macro_context)
 
-        Args:
-            agent: 의사결정을 내리는 주체 에이전트.
-            markets: 접근 가능한 시장 객체 딕셔너리.
-            goods_data: 시뮬레이션의 모든 재화 정보.
-            market_data: 현재 틱의 요약된 시장 데이터.
-            current_time: 현재 시뮬레이션 틱.
-
-        Returns:
-            (생성된 주문 목록, 선택된 전술) 튜플.
+    def _make_decisions_internal(
+        self,
+        context: DecisionContext,
+        macro_context: Optional[MacroFinancialContext] = None,
+    ) -> Tuple[List[Order], Any]:
+        """
+        실제 의사결정 로직을 구현하는 내부 메서드.
+        하위 클래스에서 반드시 구현해야 합니다.
         """
         raise NotImplementedError
