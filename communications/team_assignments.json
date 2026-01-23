@@ -29,6 +29,10 @@
       "16428660261459271791": {
         "title": "WO-115_Great_Reset_Stability_Verification",
         "initial_mission": "Work Order WO-115-Great-Reset-Stress-Test.md에 따라 시스템 안정성을 검증하라. | 1. 1,000틱 롱런 시뮬레이션 스크립트 작성 및 실행. | 2. M2 통화량 무결성(Zero-Sum) 및 부채 대 GDP 비율 모니터링. | 3. 발견된 '수치적 누출'이나 불안정성 보고."
+      },
+      "2810292832470995059": {
+        "title": "WO-116_Asset_Mutation_Cleanup",
+        "initial_mission": "Work Order WO-116-Asset-Mutation-Cleanup.md에 따라 자산 수정 로직을 전수 조사하고 청소하라. | 1. `_assets +=`, `_add_assets` 등 직접 수정 코드 검색 및 정산 시스템 호출로 교체. | 2. `InheritanceManager`, `LifecycleManager` 등 핵심 시스템의 원자성 보장 확인. | 3. 발견된 '그림자 로직' 보고."
       }
     },
     "completed_sessions": {
