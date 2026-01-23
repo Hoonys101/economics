@@ -1,31 +1,51 @@
 {
   "gemini": {
     "worker": "audit",
-    "instruction": "Analyze the feasibility of WO-116 (Strict Settlement Refactor). Review `InheritanceManager`, `MAManager`, `FinanceDepartment`, `TickScheduler`, and `Government` to see if strictly enforcing `SettlementSystem` usage is structurally sound. Identify any circular dependencies (e.g. Bank vs Govt vs Settlement), logic gaps, or 'God Class' entanglements that make this refactor overly risky or impossible. Output a feasibility report.",
+    "instruction": "Analyze the readiness for WO-116 Phase B (Tick Sequence Normalization). 1. Review `simulation/tick_scheduler.py` to identify all asset transfers (Tax, Profit, Welfare, Debt) currently running outside the 'Transactions' phase. 2. Evaluate if moving these to the Transactions phase causes data dependencies or circular logic. 3. Verify if the merged Phase A changes are sufficient to support this sequence shift. 4. Propose a safe implementation path for Jules to ensure 100% zero-sum integrity.",
     "context": [
-      "design/work_orders/WO-116-Asset-Mutation-Cleanup.md",
+      "simulation/tick_scheduler.py",
       "simulation/systems/inheritance_manager.py",
       "simulation/systems/ma_manager.py",
       "simulation/components/finance_department.py",
-      "simulation/tick_scheduler.py",
       "simulation/agents/government.py",
-      "modules/finance/system.py"
+      "modules/finance/system.py",
+      "simulation/bank.py"
     ],
-    "output": "design/audits/AUDIT_WO116_FEASIBILITY.md",
+    "output": "design/audits/AUDIT_WO116_PHASE_B_READINESS.md",
+    "model": "pro"
+  },
+  "gemini_spec": {
+    "worker": "spec",
+    "instruction": "Based on the findings in `design/audits/AUDIT_WO116_PHASE_B_READINESS.md`, create a detailed implementation specification for WO-116 Phase B (Tick Sequence Normalization). 1. Define the exact line-by-line changes in `TickScheduler.py`. 2. Specify how to register 'floating' transactions (Tax/Profit) into the Transaction Phase. 3. Ensure the `SettlementSystem` can handle these batch settlements atomically. 4. Define the verification criteria for zero-sum success.",
+    "context": [
+      "design/audits/AUDIT_WO116_PHASE_B_READINESS.md",
+      "simulation/tick_scheduler.py",
+      "modules/finance/system.py",
+      "simulation/bank.py"
+    ],
+    "output": "design/specs/WO116_PHASE_B_SPEC.md",
     "model": "pro"
   },
   "jules": {
     "command": "create",
-    "title": "WO-116_PhaseA_Component_Purity",
-    "instruction": "Execute WO-116 Phase A ONLY. 1. Refactor `InheritanceManager`, `MAManager`, `FinanceDepartment`, and `Bank.check_solvency` to use `SettlementSystem.transfer` instead of direct mutations. 2. DO NOT modify `TickScheduler`. 3. Verification: Ensure simulation runs without crashing (Smoke Test). Strict Zero-Sum check is deferred to Phase B.",
+    "title": "WO-116_PhaseB_Normalization",
+    "instruction": "Execute WO-116 Phase B followed by the spec in `design/specs/WO116_PHASE_B_SPEC.md`. Focus on Tick Sequence Normalization.",
     "wait": false
   },
   "git_review": {
     "branch": "main",
     "instruction": "DTO Purity Gate 초기 구현분 검토"
   },
-  "merge": {
-    "branch": ""
+  "storage_audit": {
+    "worker": "audit",
+    "instruction": "Analyze the directories `design/gemini_output`, `design/specs`, and `design/work_orders` to identify redundant or obsolete files that can be safely deleted to free up space.",
+    "context": [
+      "design/gemini_output",
+      "design/specs",
+      "design/work_orders"
+    ],
+    "output": "design/audits/STORAGE_CLEANUP_REPORT.md",
+    "model": "pro"
   },
   "harvest": {}
 }
