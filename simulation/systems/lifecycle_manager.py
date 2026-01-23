@@ -141,7 +141,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                             if state.settlement_system:
                                 state.settlement_system.transfer(firm, household, distribution, "liquidation_dividend")
                             else:
-                                household._add_assets(distribution)
+                                self.logger.critical("LIFECYCLE_STRICT_MODE | Missing settlement for liquidation dividend.")
 
                             self.logger.info(
                                 f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
@@ -151,13 +151,12 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 else:
                     from simulation.agents.government import Government
                     if isinstance(state.government, Government):
-                        # Note: collect_tax no longer adds assets. We must transfer/add manually.
                         if state.settlement_system:
                             state.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment")
                         else:
-                            state.government._add_assets(total_cash)
+                            self.logger.critical("LIFECYCLE_STRICT_MODE | Missing settlement for escheatment.")
 
-                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
+                        state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id)
             for household in state.households:
                 if firm.id in household.shares_owned:
                     del household.shares_owned[firm.id]
@@ -169,7 +168,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 if state.settlement_system:
                     state.settlement_system.transfer(firm, state.government, firm.assets, "liquidation_dust")
                 else:
-                    firm._sub_assets(firm.assets)
+                    self.logger.critical("LIFECYCLE_STRICT_MODE | Missing settlement for liquidation dust.")
 
             self.logger.info(
                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
