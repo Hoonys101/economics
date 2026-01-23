@@ -1,0 +1,10 @@
+=== God Classes (> 800 lines) ===
+simulation/core_agents.py: 900
+
+=== Deep Inheritance (>= 4) ===
+
+=== Leaky Abstraction: make_decision(self) ===
+
+=== Leaky Abstraction: DecisionContext(raw_agent) ===
+simulation/firms.py:335 - DecisionContext with ['government=government']
+simulation/core_agents.py:737 - DecisionContext with ['government=government']
