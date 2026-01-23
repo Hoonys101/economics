@@ -32,61 +32,44 @@ class FirmSystem2Planner:
         """
         Projects future cash flows to determine strategic direction.
         Returns guidance dictionary.
-        Uses firm_state (FirmStateDTO) if provided, otherwise falls back to self.firm (Deprecated).
+        Uses firm_state (FirmStateDTO).
         """
         if current_tick - self.last_calc_tick < self.calc_interval and self.cached_guidance:
             return self.cached_guidance
 
         self.last_calc_tick = current_tick
 
-        # Abstraction layer to access data from DTO or Object
-        if firm_state:
-            revenue = firm_state.revenue_this_turn
-            last_revenue = revenue # DTO might not have last_revenue, approximate
+        if firm_state is None:
+            # Purity Gate: Strict requirement for DTO
+            raise ValueError("FirmSystem2Planner requires firm_state (FirmStateDTO).")
 
-            # Sum wages from employees_data
-            current_wages = 0.0
-            if firm_state.employees_data:
-                current_wages = sum(e['wage'] for e in firm_state.employees_data.values())
+        # Abstraction layer to access data from DTO
+        revenue = firm_state.revenue_this_turn
+        last_revenue = revenue # DTO might not have last_revenue, approximate
 
-            automation_level = firm_state.automation_level
+        # Sum wages from employees_data
+        current_wages = 0.0
+        if firm_state.employees_data:
+            current_wages = sum(e['wage'] for e in firm_state.employees_data.values())
 
-            # Personality is not directly in DTO root, it's in agent_data?
-            # DTO has agent_data dict. Let's check agent_data or if DTO needs personality.
-            # FirmStateDTO doesn't have personality field explicitly in the definition I read,
-            # but firm.get_agent_data() might not have it either.
-            # Actually, firm.get_agent_data() in simulation/firms.py does NOT include personality.
-            # I should add personality to FirmStateDTO.
-            # For now, I'll try to fetch from agent_data or default.
-            # Wait, Firm has self.personality. FirmStateDTO.from_firm doesn't map it.
-            # I'll default to Personality.BALANCED for now.
-            personality_name = firm_state.agent_data.get("personality", "BALANCED")
-            # Map string to Enum if needed? Or simply check string.
-            # Personality Enum comparison might fail if string.
-            # Map string to Enum
-            personality_data = firm_state.agent_data.get("personality", "BALANCED")
-            if isinstance(personality_data, Personality):
-                personality = personality_data
-            else:
-                try:
-                    # Handle "Personality.BALANCED" string format if present
-                    if "Personality." in str(personality_data):
-                        clean_name = str(personality_data).split(".")[-1]
-                        personality = Personality[clean_name]
-                    else:
-                        personality = Personality[str(personality_data).upper()]
-                except (KeyError, AttributeError):
-                    personality = Personality.BALANCED
+        automation_level = firm_state.automation_level
 
-            assets = firm_state.assets
+        # Map string to Enum
+        personality_data = firm_state.agent_data.get("personality", "BALANCED")
+        if isinstance(personality_data, Personality):
+            personality = personality_data
         else:
-            # Fallback to direct object access
-            revenue = self.firm.finance.revenue_this_turn
-            last_revenue = self.firm.finance.last_revenue
-            current_wages = sum(self.firm.hr.employee_wages.values())
-            automation_level = self.firm.automation_level
-            personality = self.firm.personality
-            assets = self.firm.assets
+            try:
+                # Handle "Personality.BALANCED" string format if present
+                if "Personality." in str(personality_data):
+                    clean_name = str(personality_data).split(".")[-1]
+                    personality = Personality[clean_name]
+                else:
+                    personality = Personality[str(personality_data).upper()]
+            except (KeyError, AttributeError):
+                personality = Personality.BALANCED
+
+        assets = firm_state.assets
 
         # 1. Forecast Revenue
         base_revenue = max(revenue, last_revenue, 10.0)
