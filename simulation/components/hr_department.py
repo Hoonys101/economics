@@ -68,21 +68,36 @@ class HRDepartment:
                 if government:
                     income_tax = government.calculate_income_tax(wage, survival_cost)
 
-                net_wage = wage - income_tax
+                # Use SettlementSystem
+                settlement_system = getattr(self.firm.finance, 'settlement_system', None)
+                if not settlement_system:
+                    # Try direct from firm if not in finance
+                    settlement_system = getattr(self.firm, 'settlement_system', None)
 
-                # Transactions
-                self.firm._sub_assets(wage)
-                employee._add_assets(net_wage)
+                success = False
+                if settlement_system:
+                     # Transfer Gross Wage to Employee
+                     if settlement_system.transfer(self.firm, employee, wage, "Gross Wage"):
+                         success = True
+                         # Now Collect Tax from Employee
+                         if income_tax > 0 and government:
+                             # Use employee object as payer, not ID
+                             government.collect_tax(income_tax, "income_tax", employee, current_time)
+                             total_tax_withheld += income_tax
+                else:
+                    logger.critical(f"STRICT_MODE_ERROR | Cannot process payroll. SettlementSystem missing for Firm {self.firm.id}")
 
-                # Track Labor Income
-                if hasattr(employee, "labor_income_this_tick"):
-                    employee.labor_income_this_tick += net_wage
+                if success:
+                    # Track Labor Income
+                    if hasattr(employee, "labor_income_this_tick"):
+                        # Employee received wage, tax is separate transaction
+                        employee.labor_income_this_tick += (wage - income_tax)
 
-                if income_tax > 0 and government:
-                    government.collect_tax(income_tax, "income_tax", employee.id, current_time)
-                    total_tax_withheld += income_tax
+                    total_wages += wage
+                else:
+                     # Transfer failed (e.g. atomicity check in SS although we checked assets above)
+                     self._handle_insolvency(employee, wage)
 
-                total_wages += wage
             else:
                 # Insolvency Handling
                 self._handle_insolvency(employee, wage)
@@ -97,11 +112,8 @@ class HRDepartment:
         severance_weeks = getattr(self.firm.config_module, "SEVERANCE_PAY_WEEKS", 4)
         severance_pay = wage * severance_weeks
 
-        if self.firm.assets >= severance_pay:
-            # Fire with severance
-            self.firm._sub_assets(severance_pay)
-            employee._add_assets(severance_pay)
-
+        # Use finance department's pay_severance which uses SettlementSystem
+        if self.firm.finance.pay_severance(employee, severance_pay):
             self.firm.logger.info(
                 f"SEVERANCE | Firm {self.firm.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
                 extra={"tick": self.firm.decision_engine.context.current_time if hasattr(self.firm.decision_engine, 'context') else 0, "agent_id": self.firm.id, "severance_pay": severance_pay}

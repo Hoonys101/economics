@@ -1,9 +1,11 @@
-from typing import List, Any, TYPE_CHECKING, Dict
+from typing import List, Any, TYPE_CHECKING, Dict, Optional
 import logging
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.households import Household
+    from simulation.systems.settlement_system import SettlementSystem
+    from simulation.agents.central_bank import CentralBank
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +45,15 @@ class Bootstrapper:
         return assigned_count
 
     @staticmethod
-    def inject_initial_liquidity(firms: List['Firm'], config: Any) -> None:
+    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: Optional['SettlementSystem'], central_bank: Optional['CentralBank']) -> None:
         """
         Injects a 30-tick buffer of raw materials and minimum capital.
 
         Args:
             firms: List of Firm agents.
             config: Configuration module (contains GOODS definition).
+            settlement_system: The settlement system to execute transfers.
+            central_bank: The source of funds (Central Bank).
         """
         BUFFER_DAYS = 30.0
 
@@ -82,6 +86,10 @@ class Bootstrapper:
             # 2. Capital Injection (Demand Side)
             if firm.assets < Bootstrapper.MIN_CAPITAL:
                 diff = Bootstrapper.MIN_CAPITAL - firm.assets
-                firm._add_assets(diff)
+
+                if settlement_system and central_bank:
+                     settlement_system.transfer(central_bank, firm, diff, "Initial Liquidity Injection")
+                else:
+                     logger.critical(f"STRICT_MODE_ERROR | Bootstrapper cannot inject liquidity. SettlementSystem or CentralBank missing. Firm {firm.id}.")
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")
