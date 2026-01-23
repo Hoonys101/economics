@@ -37,6 +37,10 @@
       "16199040358203801629": {
         "title": "WO-116_Strict_Mode_Refactor",
         "initial_mission": "PR 리뷰 결과에 따라 자산 수정 리팩토링을 보완하라. | 1. 모든 시스템에 SettlementSystem 'Strict Mode'를 적용하고, 정산 시스템 호출 없이 자산을 수정하거나 transfer 실패 시 수동으로 복구하는 등의 레거시 폴백(Fallback) 로직을 전수 제거하라."
+      },
+      "17585728839844634482": {
+        "title": "WO-116_Strict_Mode_Refactor",
+        "initial_mission": "PR 리뷰 결과에 따라 자산 수정 리팩토링을 보완하라. | 1. 모든 시스템에 SettlementSystem 'Strict Mode'를 적용하고, 정산 시스템 호출 없이 자산을 수정하거나 transfer 실패 시 수동으로 복구하는 등의 레거시 폴백(Fallback) 로직을 전수 제거하라."
       }
     },
     "completed_sessions": {

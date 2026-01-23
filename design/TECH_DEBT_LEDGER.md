@@ -16,6 +16,10 @@
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
+| **TD-106** | 2026-01-23 | **God Class Bloat (core_agents.py, etc.)** | Split `Household` and `Repository` into specialized files | Maintenance Overhead / Critical Blob | **CRITICAL** |
+| **TD-107** | 2026-01-23 | **Leaky Abstraction (HR Back-ref & Demeter)** | Remove back-references from components to DecisionContext | High Coupling | **STRUCTURAL_RISK** |
+| **TD-108** | 2026-01-23 | **Stateful Engine Violation (Market Injection)** | Inject markets only via `DecisionContext` | Purity Gate Violation | **STRUCTURAL_RISK** |
+| **TD-109** | 2026-01-23 | **Sacred Sequence Violation (Tick Scheduler)** | Move asset transfers (taxes, profit) to Transaction Phase | Atomicity / Integration Risk | **CRITICAL** |
 
 ---
 
@@ -49,3 +53,4 @@
 | **Step 1: Purity Guard** | TD-101, TD-102 | Create `SettlementSystem` to centralize all asset movements. | ✅ **DONE** (WO-112) |
 | **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | `gemini:verify` |
 | **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
+| **Step 4: Structural Reset** | TD-106, TD-109 | Normalize Tick Sequence and Split God Classes. | **PLANNED** (Phase 26) |

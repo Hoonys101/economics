@@ -12,8 +12,8 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-116_Strict_Mode_Refactor",
-    "instruction": "PR 리뷰 결과에 따라 자산 수정 리팩토링을 보완하라. | 1. 모든 시스템에 SettlementSystem 'Strict Mode'를 적용하고, 정산 시스템 호출 없이 자산을 수정하거나 transfer 실패 시 수동으로 복구하는 등의 레거시 폴백(Fallback) 로직을 전수 제거하라.",
+    "title": "WO-116_Stop_Money_Leaks",
+    "instruction": "Fix critical money leaks by enforcing SettlementSystem strictly. Follow WO-116-Asset-Mutation-Cleanup.md. 1. Refactor InheritanceManager, MAManager, and FinanceDepartment to use SettlementSystem.transfer (No fallbacks allowed). 2. Normalize TickScheduler sequence to move Profit/Tax/Welfare transfers into the transaction-safe phase. 3. Fix Bank.check_solvency direct mutation. 4. Verify results with verify_great_reset_stability.py. Zero-sum integrity is the TOP PRIORITY.",
     "wait": false
   },
   "git_review": {

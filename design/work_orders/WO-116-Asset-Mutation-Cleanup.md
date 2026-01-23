@@ -1,19 +1,34 @@
-# Work Order: WO-116 - Asset Mutation Cleanup
+# Work Order: WO-116 - Plugging Money Leaks (Settlement Purity)
 
 ## 1. Context
-- **Objective**: Ensure 100% compliance with the `SettlementSystem` for all asset movements.
-- **Reference**: `design/manuals/RELIABILITY_LEDGER.md` (Atomicity section)
+- **Objective**: STOP the "Money Escape" by ensuring 100% compliance with the `SettlementSystem`.
+- **Primary Issue**: Managed systems (Inheritance, M&A, FinanceDept) are bypassing the accounting system via direct `_assets` mutations, causing zero-sum violations.
 
-## 2. Tasks for Jules
-1. **Source Code Audit**:
-    - Perform a regex search for `_assets +=`, `_assets -=`, `_add_assets`, `_sub_assets`, `self.assets =`, and `agent.assets =`.
-2. **Refactoring**:
-    - Any direct mutation of `_assets` (except inside `SettlementSystem` or official delegation like `Household._add_assets` which calls `EconComponent`) must be reviewed.
-    - If a component or system is directly changing balance, it must be refactored to use the central `SettlementSystem` to ensure the double-entry integrity.
-3. **Verification**:
-    - Ensure all tests pass.
-    - Specifically check that `InheritanceManager`, `LifecycleManager`, and `TransactionProcessor` are using the atomic protocols.
+## 2. Tasks for Jules (STRICT PRIORITY: LEAK PREVENTION)
 
-## 3. Reporting Requirement
-- List all files refactored.
-- Report any "Shadow Logic" found that was bypassing the accounting system.
+### A. Managed System Refactor (Stop the Leak)
+1. **InheritanceManager (`simulation/systems/inheritance_manager.py`)**: 
+   - Refactor `process_death` to use `SettlementSystem.transfer` for EVERYTHING.
+   - Remove ALL legacy `_add_assets` / `_sub_assets` fallbacks.
+2. **MAManager (`simulation/systems/ma_manager.py`)**: 
+   - Refactor merger payments and bankruptcy liquidations to use `SettlementSystem.transfer`.
+3. **FinanceDepartment (`simulation/components/finance_department.py`)**: 
+   - Replace direct mutations in `process_profit_distribution`, `distribute_profit_private`, and `pay_severance` with `SettlementSystem.transfer`.
+
+### B. Tick Sequence Normalization (Ensure Accountability)
+1. **TickScheduler (`simulation/tick_scheduler.py`)**:
+   - The audit shows that **Profit/Tax/Welfare** transfers happen outside the transaction phase, causing statistical leakage.
+   - Fix the sequence so ANY asset movement uses `SettlementSystem` and is captured during or registered for the Transactions phase.
+2. **Bank (`simulation/bank.py`)**:
+   - Fix `check_solvency` to use the government's `FinanceSystem` (which uses Settlement) instead of direct `_assets` increment.
+
+### C. Decision Engine Purity
+1. **AIDrivenHouseholdDecisionEngine**: Review and remove any direct asset modifications during decision making.
+
+## 3. Verification (CRITICAL)
+- **Zero-Sum Check**: Run `verify_great_reset_stability.py`. The `MONEY_SUPPLY_CHECK` delta MUST be near zero.
+- **Fail Policy**: If `SettlementSystem` is missing, log a CRITICAL error and halt. DO NOT use fallbacks.
+
+## 4. Reporting Requirement
+- List every file where "Shadow Logic" (direct mutation) was removed.
+- Confirm total money supply delta after fixes.
