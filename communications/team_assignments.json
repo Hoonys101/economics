@@ -45,6 +45,10 @@
       "3577359281312705663": {
         "title": "WO-116_Stop_Money_Leaks",
         "initial_mission": "Fix critical money leaks by enforcing SettlementSystem strictly. Follow WO-116-Asset-Mutation-Cleanup.md. 1. Refactor InheritanceManager, MAManager, and FinanceDepartment to use SettlementSystem.transfer (No fallbacks allowed). 2. Normalize TickScheduler sequence to move Profit/Tax/Welfare transfers into the transaction-safe phase. 3. Fix Bank.check_solvency direct mutation. 4. Verify results with verify_great_reset_stability.py. Zero-sum integrity is the TOP PRIORITY."
+      },
+      "842822366014658805": {
+        "title": "WO-116_Stop_Money_Leaks_V2",
+        "initial_mission": "Plug critical money leaks by replacing direct mutations with SettlementSystem.transfer. Reference WO-116-Asset-Mutation-Cleanup.md. 1. Inheritence/M&A: Replace `deceased._sub_assets()` or `predator.assets -=` with `settlement.transfer()`. 2. FinanceDept: Use settlement for dividends/severance. 3. Normalize TickScheduler: ensure all asset movements happen in Transaction Phase. 4. Verify Zero-Sum with verify_great_reset_stability.py. (God Class Splitting is a separate Phase 2 TODO)."
       }
     },
     "completed_sessions": {
