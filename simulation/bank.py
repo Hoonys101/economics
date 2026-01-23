@@ -45,10 +45,11 @@ class Bank(IFinancialEntity):
     Manages loans, deposits, and monetary policy interaction.
     """
 
-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager):
-        self.id = id
+    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Any = None):
+        self._id = id
         self._assets = initial_assets # Reserves
         self.config_manager = config_manager
+        self.settlement_system = settlement_system
 
         # Data Stores
         self.loans: Dict[str, Loan] = {}
@@ -69,6 +70,14 @@ class Bank(IFinancialEntity):
             f"Bank {self.id} initialized. Assets: {self.assets:.2f}, Base Rate: {self.base_rate:.2%}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
         )
+
+    @property
+    def id(self) -> int:
+        return self._id
+
+    @id.setter
+    def id(self, value: int):
+        self._id = value
 
     @property
     def assets(self) -> float:
@@ -344,16 +353,20 @@ class Bank(IFinancialEntity):
 
             # Try to collect
             if agent.assets >= payment:
-                if hasattr(agent, '_sub_assets'):
-                    agent._sub_assets(payment)
+                success = False
+                if self.settlement_system:
+                    success = self.settlement_system.transfer(agent, self, payment, f"Loan Interest {loan_id}")
                 else:
-                    agent.assets -= payment
-                self._assets += payment
-                total_loan_interest += payment
+                    agent.withdraw(payment)
+                    self.deposit(payment)
+                    success = True
 
-                # Record Expense for Firms (FinanceDepartment)
-                if hasattr(agent, 'finance') and hasattr(agent.finance, 'record_expense'):
-                    agent.finance.record_expense(payment)
+                if success:
+                    total_loan_interest += payment
+
+                    # Record Expense for Firms (FinanceDepartment)
+                    if hasattr(agent, 'finance') and hasattr(agent.finance, 'record_expense'):
+                        agent.finance.record_expense(payment)
 
             else:
                 # Default / Penalty logic
@@ -363,12 +376,18 @@ class Bank(IFinancialEntity):
                 # Take whatever is left (process_default might have seized assets already)
                 partial = agent.assets
                 if partial > 0:
-                     if hasattr(agent, '_sub_assets'):
-                        agent._sub_assets(partial)
+                     success = False
+                     if self.settlement_system:
+                         success = self.settlement_system.transfer(agent, self, partial, f"Loan Default Recovery {loan_id}")
                      else:
-                        agent.assets = 0
-                     self._assets += partial
-                     total_loan_interest += partial
+                         # Force withdrawal of remaining balance
+                         # Assuming partial = agent.assets
+                         agent.withdraw(partial)
+                         self.deposit(partial)
+                         success = True
+
+                     if success:
+                        total_loan_interest += partial
 
         # 2. Pay Interest to Depositors
         total_deposit_interest = 0.0
@@ -380,11 +399,13 @@ class Bank(IFinancialEntity):
             interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
 
             if self.assets >= interest_payout:
-                self._assets -= interest_payout
-                if hasattr(agent, '_add_assets'):
-                    agent._add_assets(interest_payout)
+                success = False
+                if self.settlement_system:
+                    success = self.settlement_system.transfer(self, agent, interest_payout, f"Deposit Interest {dep_id}")
                 else:
-                    agent.assets += interest_payout
+                    self.withdraw(interest_payout)
+                    agent.deposit(interest_payout)
+                    success = True
 
                 # Track Capital Income (Interest)
                 from simulation.core_agents import Household
@@ -463,8 +484,14 @@ class Bank(IFinancialEntity):
         """
         if self.assets < 0:
             borrow_amount = abs(self.assets) + 1000.0 # Maintain buffer
-            self._assets += borrow_amount
-            government.total_money_issued += borrow_amount
+
+            if self.settlement_system:
+                self.settlement_system.transfer(government, self, borrow_amount, "Lender of Last Resort")
+                government.total_money_issued += borrow_amount
+            else:
+                self._assets += borrow_amount
+                government.total_money_issued += borrow_amount
+
             logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government.")
 
     def process_default(self, agent: Any, loan: Loan, current_tick: int):

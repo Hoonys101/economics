@@ -23,6 +23,7 @@ class Government:
         self.id = id
         self._assets = initial_assets
         self.config_module = config_module
+        self.settlement_system = None
         
         self.tax_agency = TaxAgency(config_module)
         self.ministry_of_education = MinistryOfEducation(config_module)
@@ -294,16 +295,21 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
                 return 0.0
 
-        self._sub_assets(effective_amount)
-        self.total_spent_subsidies += effective_amount
-        self.expenditure_this_tick += effective_amount
-
-        if hasattr(household, '_add_assets'):
-            household._add_assets(effective_amount)
+        success = False
+        if self.settlement_system:
+            success = self.settlement_system.transfer(self, household, effective_amount, "Household Support")
         else:
-            household.assets += effective_amount
+            self._sub_assets(effective_amount)
+            if hasattr(household, '_add_assets'):
+                household._add_assets(effective_amount)
+            else:
+                household.assets += effective_amount
+            success = True
 
-        self.current_tick_stats["welfare_spending"] += effective_amount
+        if success:
+            self.total_spent_subsidies += effective_amount
+            self.expenditure_this_tick += effective_amount
+            self.current_tick_stats["welfare_spending"] += effective_amount
 
         logger.info(
             f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",

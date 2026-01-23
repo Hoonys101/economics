@@ -144,8 +144,11 @@ class FinanceDepartment:
                 self.firm.total_debt = 0.0
 
             # Bailout repayment
-            self.debit(repayment, "Bailout Repayment")
-            government._add_assets(repayment) # Direct transfer to government
+            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
+                self.firm.settlement_system.transfer(self.firm, government, repayment, "Bailout Repayment")
+            else:
+                self.debit(repayment, "Bailout Repayment")
+                government._add_assets(repayment)
 
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
@@ -223,23 +226,29 @@ class FinanceDepartment:
 
         if distributable_cash > 0:
             dividend_amount = distributable_cash
-            self.debit(dividend_amount, "Private Dividend")
-            owner._add_assets(dividend_amount)
+            success = False
+            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
+                success = self.firm.settlement_system.transfer(self.firm, owner, dividend_amount, "Private Dividend")
+            else:
+                self.debit(dividend_amount, "Private Dividend")
+                owner._add_assets(dividend_amount)
+                success = True
 
-            if hasattr(owner, 'income_capital_cumulative'):
-                owner.income_capital_cumulative += dividend_amount
-            if hasattr(owner, 'capital_income_this_tick'):
-                owner.capital_income_this_tick += dividend_amount
+            if success:
+                if hasattr(owner, 'income_capital_cumulative'):
+                    owner.income_capital_cumulative += dividend_amount
+                if hasattr(owner, 'capital_income_this_tick'):
+                    owner.capital_income_this_tick += dividend_amount
 
-            self.retained_earnings -= dividend_amount
-            self.dividends_paid_last_tick += dividend_amount
+                self.retained_earnings -= dividend_amount
+                self.dividends_paid_last_tick += dividend_amount
 
-            if self.firm.logger:
-                self.firm.logger.info(
-                    f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
-                    extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
-                )
-            return dividend_amount
+                if self.firm.logger:
+                    self.firm.logger.info(
+                        f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
+                        extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
+                    )
+                return dividend_amount
 
         return 0.0
 
@@ -396,10 +405,16 @@ class FinanceDepartment:
 
     def pay_severance(self, employee: Household, amount: float) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "Severance Pay")
-            employee._add_assets(amount)
-            self.record_expense(amount)
-            return True
+            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
+                if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance Pay"):
+                    self.record_expense(amount)
+                    return True
+                return False
+            else:
+                self.debit(amount, "Severance Pay")
+                employee._add_assets(amount)
+                self.record_expense(amount)
+                return True
         return False
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Government, current_time: int) -> bool:

@@ -49,17 +49,15 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         1. AI decides Strategy (Vector).
         2. CorporateManager executes Strategy (Orders/Actions).
         """
-        firm = context.firm
-        if firm is None:
-             raise ValueError("Firm must be provided in context for FirmDecisionEngine")
+        firm_state = context.state
 
         # 1. AI Strategy Decision (Vector Output)
-        agent_data = firm.get_agent_data()
+        agent_data = firm_state.agent_data
         action_vector = self.ai_engine.decide_action_vector(
             agent_data, context.market_data
         )
 
         # 2. Corporate Manager Execution
-        orders = self.corporate_manager.realize_ceo_actions(firm, context, action_vector)
+        orders = self.corporate_manager.realize_ceo_actions(firm_state, context, action_vector)
 
         return orders, action_vector

@@ -26,7 +26,9 @@ class InheritanceManager:
             government: The entity collecting tax.
             simulation: Access to markets/registry for liquidation and transfer.
         """
-        settlement = getattr(simulation.state, 'settlement_system', None)
+        settlement = getattr(simulation, 'settlement_system', None)
+        if not settlement and hasattr(simulation, 'world_state'):
+             settlement = getattr(simulation.world_state, 'settlement_system', None)
 
         self.logger.info(
             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",
@@ -181,12 +183,10 @@ class InheritanceManager:
             if settlement:
                 settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
             else:
-                if hasattr(deceased, '_sub_assets'): deceased._sub_assets(actual_tax_paid)
-                else: deceased.assets -= actual_tax_paid
-                if hasattr(government, '_add_assets'): government._add_assets(actual_tax_paid)
-                else: government.assets += actual_tax_paid
+                deceased.withdraw(actual_tax_paid)
+                government.deposit(actual_tax_paid)
 
-            simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased.id, simulation.time)
+            simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased, simulation.time)
 
         # 5. Distribution (Transfer)
         # ------------------------------------------------------------------
@@ -204,10 +204,10 @@ class InheritanceManager:
                 if settlement:
                     settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
                 else:
-                    deceased._sub_assets(surplus)
-                    government._add_assets(surplus)
+                    deceased.withdraw(surplus)
+                    government.deposit(surplus)
 
-                simulation.government.collect_tax(surplus, "escheatment", deceased.id, simulation.time)
+                simulation.government.collect_tax(surplus, "escheatment", deceased, simulation.time)
                 self.logger.info(
                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
                     extra={"agent_id": deceased.id}
@@ -272,10 +272,10 @@ class InheritanceManager:
              if settlement:
                  settlement.transfer(deceased, government, remainder, "inheritance_residual")
              else:
-                 deceased._sub_assets(remainder)
-                 government._add_assets(remainder)
+                 deceased.withdraw(remainder)
+                 government.deposit(remainder)
 
-             simulation.government.collect_tax(remainder, "inheritance_residual", deceased.id, simulation.time)
+             simulation.government.collect_tax(remainder, "inheritance_residual", deceased, simulation.time)
              self.logger.info(f"RESIDUAL_CAPTURED | Transferred {remainder:.4f} residual dust to Government.")
 
         # deceased.assets should be 0.0 now.

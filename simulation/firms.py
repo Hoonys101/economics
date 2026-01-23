@@ -67,6 +67,7 @@ class Firm(BaseAgent, ILearningAgent):
             name=f"Firm_{id}",
             logger=logger,
         )
+        self.settlement_system: Optional[Any] = None
         self.config_module = config_module  # Store config_module
         if initial_inventory is not None:
             self.inventory.update(initial_inventory)

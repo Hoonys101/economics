@@ -92,12 +92,18 @@ class SimulationInitializer(SimulationInitializerInterface):
         )
 
         # 2. Populate the shell with all its components
+        sim.settlement_system = SettlementSystem(logger=self.logger)
+
         sim.households = self.households
         sim.firms = self.firms
         sim.goods_data = self.goods_data
         sim.agents: Dict[int, Any] = {h.id: h for h in self.households}
         sim.agents.update({f.id: f for f in self.firms})
         sim.next_agent_id = len(self.households) + len(self.firms)
+
+        # Inject SettlementSystem into all agents
+        for agent in sim.agents.values():
+            agent.settlement_system = sim.settlement_system
 
         sim.ai_trainer = self.ai_trainer
         sim.time: int = 0
@@ -106,8 +112,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.bank = Bank(
             id=sim.next_agent_id,
             initial_assets=self.config.INITIAL_BANK_ASSETS,
-            config_manager=self.config_manager
+            config_manager=self.config_manager,
+            settlement_system=sim.settlement_system
         )
+        sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
         sim.next_agent_id += 1
 
@@ -116,6 +124,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             initial_assets=0.0,
             config_module=self.config
         )
+        sim.government.settlement_system = sim.settlement_system
         sim.agents[sim.government.id] = sim.government
         sim.next_agent_id += 1
 
@@ -235,7 +244,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.social_system = SocialSystem(self.config)
         sim.event_system = EventSystem(self.config)
         sim.sensory_system = SensorySystem(self.config)
-        sim.settlement_system = SettlementSystem(logger=self.logger)
+        # sim.settlement_system initialized early
         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 

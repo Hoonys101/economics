@@ -177,7 +177,7 @@ class MAManager:
         self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price:,.2f}.")
         
         # 1. Payment
-        predator.assets -= price
+        # predator.assets -= price
 
         # Pay Shareholders (Households)
         # Assuming 100% buyout.
@@ -185,7 +185,18 @@ class MAManager:
         # For simplicity, pay founder or distribute generally?
         # Let's stick to paying founder as proxy for 'Shareholders'
         if prey.founder_id is not None and prey.founder_id in self.simulation.agents:
-             self.simulation.agents[prey.founder_id].assets += price
+             target_agent = self.simulation.agents[prey.founder_id]
+             if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
+                 self.simulation.settlement_system.transfer(predator, target_agent, price, f"M&A Acquisition {prey.id}")
+             else:
+                 predator.assets -= price
+                 target_agent.assets += price
+        else:
+             # If no owner found, transfer to government (state capture)
+             if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
+                 self.simulation.settlement_system.transfer(predator, self.simulation.government, price, f"M&A Acquisition {prey.id} (State)")
+             else:
+                 predator.assets -= price
         
         # 2. Asset Transfer
         # SoC Refactor: use production.add_capital
