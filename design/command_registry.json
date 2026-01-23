@@ -1,8 +1,23 @@
 {
-  "jules_phase26_debt": {
-    "command": "create",
-    "title": "WO-113-Sovereign-Debt",
-    "instruction": "Phase 26.5: Sovereign Debt & Corporate Finance 시스템을 구현하라. | 1. `design/specs/Phase26-Sovereign-Debt-Spec.md`와 `design/work_orders/WO-113-Sovereign-Debt.md`를 필독하라. | 2. `FiscalMonitor`를 구현하여 정부의 재정 건전성을 모니터링하라. | 3. `FinanceSystem`에 국채 발행(`issue_treasury_bonds`)과 법인세 징수(`collect_corporate_tax`) 로직을 구현하되, 반드시 `SettlementSystem`을 사용해 원자적으로 처리하라. | 4. `Government` 에이전트에서 직접적인 자산 수정을 모두 제거하고 `FinanceSystem`에 위임하라. | 5. '실무자 보고서'에 구현 중 발견한 특이사항을 기록하라.",
-    "wait": true
+  "spec_dto_purity": {
+    "worker": "spec",
+    "instruction": "기술부채 TD-103 (Leaky AI Abstraction) 해결을 위한 'DTO Purity Gate' 명세를 작성하라. | 1. `DecisionContext` 및 모든 AI 의사결정 엔진에서 에이전트 인스턴스(`self`) 전달을 완전히 제거하고 DTO로만 통신하도록 설계하라. | 2. `RuleBasedHouseholdDecisionEngine` 등 레거시 엔진들이 DTO를 사용하도록 리팩토링하는 가이드를 포함하라. | 3. 에이전트의 내부 상태가 AI 엔진에 의해 직접 수정되는 것을 방지하는 'Purity Gate' 검증 로직을 제안하라. | 4. `simulation/dtos/api.py`에 필요한 DTO 필드 누락 여부를 점검하고 확장 계획을 세워라.",
+    "context": [
+      "simulation/core_agents.py",
+      "simulation/dtos/api.py",
+      "simulation/decisions/decision_context.py"
+    ],
+    "output": "design/specs/DTO_PURITY_GATE_SPEC.md",
+    "audit": "design/gemini_output/audit_structural_v2.md",
+    "model": "pro"
+  },
+  "audit_dll_dependencies": {
+    "worker": "audit",
+    "instruction": "C++ Native 에이전트의 DLL 로딩 실패 원인을 정밀 분석하라. | 1. 현재 `agent.cpp` (또는 관련 브릿지 코드)의 외부 라이브러리 의존성을 파악하라. | 2. Windows 환경에서 흔히 발생하는 Bitness (32bit vs 64bit) 불일치 및 VC++ Redistributable 누락 가능성을 점검하라. | 3. `os.add_dll_directory`를 통한 런타임 경로 해결 방안을 명세화하라.",
+    "context": [
+      "design/manuals/TROUBLESHOOTING.md"
+    ],
+    "output": "design/gemini_output/audit_dll_loading.md",
+    "model": "pro"
   }
 }

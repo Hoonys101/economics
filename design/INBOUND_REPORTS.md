@@ -16,3 +16,8 @@
 - **audit_economic_v2.md** (from `audit/economic-integrity-v2-8987112685343582376`) -> `audit_economic-integrity-v2-8987112685343582376_audit_economic_v2.md`
 - **daily_action_plan_20260118.md** (from `observer/daily-plan-20260118-1701822753497062536`) -> `observer_daily-plan-20260118-1701822753497062536_daily_action_plan_20260118.md`
 - **observer_scan.md** (from `observer/daily-plan-20260118-1701822753497062536`) -> `observer_daily-plan-20260118-1701822753497062536_observer_scan.md`
+
+## Harvested on 2026-01-23 12:55:00
+- **audit_structural_v2.md** (from `audit-structural-v2-536275271873576648`) -> `structural-v2-536275271873576648_audit_structural_v2.md`
+- **audit_parity_v2.md** (from `audit-parity-v2-5165098539568103978`) -> `parity-v2-5165098539568103978_audit_parity_v2.md`
+- **audit_economic_v2.md** (from `audit-economic-v2-939740966705037931`) -> `economic-v2-939740966705037931_audit_economic_v2.md`
