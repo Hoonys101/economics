@@ -9,6 +9,10 @@
       "5165098539568103978": {
         "title": "AUDIT-PARITY-V2",
         "initial_mission": "너는 제품 정합성 전문 감사관이다. 'design/specs/AUDIT_SPEC_PARITY.md'를 로드하고, 'project_status.md'의 완료 항목들과 'simulation/' 내 실제 코드를 대조하라. | 1. 'Chemical Fertilizer (TFP x3.0)', 'TD-085 (Mutual Exclusivity)', 'TD-086 (Newborn Engine)'이 명세대로 구현되었는지 검증하라. | 2. 완료로 표시되었으나 로직이 미비한 'Ghost Implementation'을 식별하라. | 3. 수치화된 Parity Score를 포함하여 'design/gemini_output/audit_parity_v2.md'로 제출하라. | 발견된 괴리는 실무자 보고서에 기록하라."
+      },
+      "536275271873576648": {
+        "title": "AUDIT-STRUCTURAL-V2",
+        "initial_mission": "너는 시니어 시스템 아키텍트이다. 'design/specs/AUDIT_SPEC_STRUCTURAL.md'를 기반으로 SoC 원칙 준수 여부를 감사하라. | 1. 800라인 이상의 God Class 후보를 식별하라. | 2. `make_decision` 호출부에서 DTO가 아닌 에이전트 인스턴스(self)를 직접 전달하는 'Leaky Abstraction' 지점을 검색하라. | 3. `tick_scheduler.py`가 Sacred Sequence를 준수하는지 검증하라. | 4. 결과를 'design/gemini_output/audit_structural_v2.md'에 보고하라. | 구조적 결함은 실무자 보고서에 상세히 기술하라."
       }
     },
     "completed_sessions": {

@@ -61,6 +61,29 @@
 | TD-049 | 2026-01-18 | 2026-01-18 | Test Flakiness (ConfigManager Mocking) | Fixed via `side_effect` for default values |
 | TD-070 | 2026-01-20 | 2026-01-20 | `test_rd_logic` coverage gap | Restored assertions in `test_corporate_manager.py` |
 | TD-068 | 2026-01-20 | 2026-01-20 | Observer scans `design/` | Added `design` to `IGNORE_DIRS` in `scan_codebase.py` |
+| TD-085 | 2026-01-22 | 2026-01-23 | Audit v2 Expansion: Sequential Pipeline | Verified implementation in 3 agents |
+| TD-086 | 2026-01-22 | 2026-01-23 | Audit v2 Expansion: Newborn Engine | Verified implementation in DemographicManager |
+
+---
+
+## 🔴 ACTIVE (즉시 상환 필요 - Phase 26.5 연동)
+
+| ID | Date | Description | Remediation Plan | Impact | Status |
+|---|---|---|---|---|---|
+| **TD-101** | 2026-01-23 | **Shadow Economy (Direct Mutation)** | Implement `FinanceSystem.atomic_transfer` and ban `assets +=` | Zero-sum violation / Audit blindness | **HIGH_PRIORITY** |
+| **TD-102** | 2026-01-23 | **Residual Evaporation (Inheritance Leak)** | Implement Remainder Tracking in `InheritanceManager` | Systemic Deflation / Float Leak | **ACTUAL_LEAK** |
+| **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
+| **TD-104** | 2026-01-23 | **Bank Interface Ghosting** | Formalize `IBankService` Protocol in `modules/finance/api.py` | Implementation/Design Gap | **PARITY_ERROR** |
+
+---
+
+## 📅 REPAYMENT PLAN: "THE GREAT RESET" (Phase 24-26)
+
+| Milestone | Target Debts | Objective | Tooling |
+| :--- | :--- | :--- | :--- |
+| **Step 1: Purity Guard** | TD-101, TD-102 | Create `SettlementSystem` to centralize all asset movements. Fix float residuals. | `gemini:spec` -> `jules:create` |
+| **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. Remove `self` sharing. | `gemini:verify` |
+| **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | `jules:create` |
 
 
 ---
