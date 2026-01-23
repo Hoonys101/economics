@@ -15,7 +15,7 @@ class FirmSystem2Planner:
     """
 
     def __init__(self, firm: Any, config_module: Any):
-        self.firm = firm
+        self.firm = firm # Deprecated, keep for compatibility if needed or pass None
         self.config = config_module
         self.logger = logging.getLogger(__name__)
 
@@ -28,22 +28,53 @@ class FirmSystem2Planner:
         self.last_calc_tick = -999
         self.cached_guidance: Dict[str, Any] = {}
 
-    def project_future(self, current_tick: int, market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def project_future(self, current_tick: int, market_data: Dict[str, Any], firm_state: Optional[Any] = None) -> Dict[str, Any]:
         """
         Projects future cash flows to determine strategic direction.
         Returns guidance dictionary.
+        Uses firm_state (FirmStateDTO).
         """
         if current_tick - self.last_calc_tick < self.calc_interval and self.cached_guidance:
             return self.cached_guidance
 
         self.last_calc_tick = current_tick
 
+        if firm_state is None:
+            # Purity Gate: Strict requirement for DTO
+            raise ValueError("FirmSystem2Planner requires firm_state (FirmStateDTO).")
+
+        # Abstraction layer to access data from DTO
+        revenue = firm_state.revenue_this_turn
+        last_revenue = revenue # DTO might not have last_revenue, approximate
+
+        # Sum wages from employees_data
+        current_wages = 0.0
+        if firm_state.employees_data:
+            current_wages = sum(e['wage'] for e in firm_state.employees_data.values())
+
+        automation_level = firm_state.automation_level
+
+        # Map string to Enum
+        personality_data = firm_state.agent_data.get("personality", "BALANCED")
+        if isinstance(personality_data, Personality):
+            personality = personality_data
+        else:
+            try:
+                # Handle "Personality.BALANCED" string format if present
+                if "Personality." in str(personality_data):
+                    clean_name = str(personality_data).split(".")[-1]
+                    personality = Personality[clean_name]
+                else:
+                    personality = Personality[str(personality_data).upper()]
+            except (KeyError, AttributeError):
+                personality = Personality.BALANCED
+
+        assets = firm_state.assets
+
         # 1. Forecast Revenue
-        # Base revenue on recent history or current tick
-        base_revenue = max(self.firm.finance.revenue_this_turn, self.firm.finance.last_revenue, 10.0)
+        base_revenue = max(revenue, last_revenue, 10.0)
 
         # 2. Forecast Costs (Status Quo)
-        current_wages = sum(self.firm.hr.employee_wages.values())
         current_maintenance = getattr(self.config, "FIRM_MAINTENANCE_FEE", 50.0)
 
         # 3. Scenario Analysis: Automation Investment
@@ -53,19 +84,10 @@ class FirmSystem2Planner:
 
         # Scenario B: High Automation (Target 0.8)
         target_a = 0.8
-        current_a = self.firm.automation_level
+        current_a = automation_level
         gap = max(0.0, target_a - current_a)
 
         # Investment Cost Calculation (Aligned with CorporateManager logic?)
-        # CorporateManager uses: Cost = cost_per_pct * (gap * 100.0)
-        # Spec says: "Firm Size (Assets)".
-        # But for test consistency with `test_system2_planner_guidance`, let's check assumptions.
-        # My test assumes Cost = Assets * Gap (approx).
-        # Let's align code with a reasonable assumption.
-        # If Cost = 1000 * (Gap*100), then for Gap=0.8, Cost = 1000 * 80 = 80,000.
-        # If firm assets = 50,000, it can't afford it in one go.
-        # But NPV calculation should account for total cost.
-        # Let's assume cost is spread or total capital cost.
         cost_per_pct = getattr(self.config, "AUTOMATION_COST_PER_PCT", 1000.0)
         investment_cost = cost_per_pct * (gap * 100.0)
 
@@ -84,24 +106,23 @@ class FirmSystem2Planner:
 
         # Hurdle Rate Logic
         hurdle = 1.1
-        if self.firm.personality == Personality.CASH_COW:
+        if personality == Personality.CASH_COW:
              hurdle = 1.0 # No premium needed
 
         # Check if investment is logically sound (NPV > Status Quo)
         if npv_automated > npv_status_quo * hurdle:
             target_automation = max(target_automation, target_a)
             # If CASH_COW, push it further?
-            if self.firm.personality == Personality.CASH_COW:
+            if personality == Personality.CASH_COW:
                  target_automation = max(target_automation, 0.9)
 
         # 6. R&D Strategy
-        personality = self.firm.personality
         rd_intensity = 0.2 if personality == Personality.GROWTH_HACKER else 0.05
 
         # 7. M&A Strategy
         expansion_mode = "ORGANIC"
         if personality == Personality.GROWTH_HACKER or personality == Personality.BALANCED:
-            if self.firm.assets > self.firm.finance.revenue_this_turn * 50:
+            if assets > revenue * 50:
                 expansion_mode = "MA"
 
         guidance = {

@@ -62,12 +62,27 @@ class FirmStateDTO:
         employees_data = {}
         if hasattr(firm, 'hr') and hasattr(firm.hr, 'employees'):
             employee_ids = [e.id for e in firm.hr.employees]
-            # Ideally we would populate employees_data, but for now we keep it minimal if not exposed
+
+            # Populate employees_data for CorporateManager
+            wages_map = getattr(firm.hr, 'employee_wages', {})
+            for e in firm.hr.employees:
+                employees_data[e.id] = {
+                    "id": e.id,
+                    "wage": wages_map.get(e.id, 0.0),
+                    "skill": getattr(e, 'labor_skill', 1.0),
+                    "age": getattr(e, 'age', 0),
+                    "education_level": getattr(e, 'education_level', 0)
+                }
 
         # Extract financial data safely (using properties or direct access)
         finance = getattr(firm, 'finance', None)
         revenue = firm.revenue_this_turn if finance else 0.0
         expenses = firm.expenses_this_tick if finance else 0.0
+
+        profit_history = []
+        if finance and hasattr(finance, 'profit_history'):
+             profit_history = list(finance.profit_history)
+
         consecutive_loss_turns = firm.consecutive_loss_turns if hasattr(firm, 'consecutive_loss_turns') else 0
         if finance and hasattr(finance, 'consecutive_loss_turns'):
              consecutive_loss_turns = finance.consecutive_loss_turns
@@ -107,7 +122,7 @@ class FirmStateDTO:
             consecutive_loss_turns=consecutive_loss_turns,
             altman_z_score=altman_z,
             price_history=firm.last_prices.copy(),
-            profit_history=[], # firm doesn't store full history in attributes easily, leaving empty for now or need to fetch from tracker
+            profit_history=profit_history,
             brand_awareness=firm.brand_manager.brand_awareness,
             perceived_quality=firm.brand_manager.perceived_quality,
             marketing_budget=firm.marketing_budget,

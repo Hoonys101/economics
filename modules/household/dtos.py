@@ -39,6 +39,8 @@ class HouseholdStateDTO:
     conformity: float = 0.5
     social_rank: float = 0.5
     approval_rating: int = 1
+    optimism: float = 0.5
+    ambition: float = 0.5
 
     # WO-108: Parity Fields
     perceived_fair_price: Dict[str, float] = field(default_factory=dict)

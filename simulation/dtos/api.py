@@ -167,10 +167,6 @@ class DecisionContext:
     reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
 
-    # --- DEPRECATED FIELDS (To be removed after full migration) ---
-    household: Optional[Household] = None 
-    firm: Optional[Firm] = None
-
 
 @dataclass
 class SimulationState:
