@@ -443,23 +443,39 @@ class FinanceDepartment:
         """Returns the current assets (cash) of the firm."""
         return self._cash
 
-    def invest_in_automation(self, amount: float) -> bool:
+    def invest_in_automation(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "Automation Investment")
-            return True
+            if reflux_system and hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
+                if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "Automation Investment"):
+                    return True
+                return False
+            else:
+                self.debit(amount, "Automation Investment")
+                return True
         return False
 
-    def invest_in_rd(self, amount: float) -> bool:
+    def invest_in_rd(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "R&D Investment")
-            self.record_expense(amount)
-            return True
+            if reflux_system and hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
+                if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "R&D Investment"):
+                    self.record_expense(amount)
+                    return True
+                return False
+            else:
+                self.debit(amount, "R&D Investment")
+                self.record_expense(amount)
+                return True
         return False
 
-    def invest_in_capex(self, amount: float) -> bool:
+    def invest_in_capex(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
         if self._cash >= amount:
-            self.debit(amount, "CAPEX")
-            return True
+            if reflux_system and hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
+                if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "CAPEX"):
+                    return True
+                return False
+            else:
+                self.debit(amount, "CAPEX")
+                return True
         return False
 
     def set_dividend_rate(self, rate: float) -> None:
