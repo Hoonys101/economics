@@ -167,7 +167,7 @@ class LoanMarket(Market):
                     Transaction(
                         item_id="loan_granted",
                         quantity=loan_amount,
-                        price=interest_rate,
+                        price=1.0,
                         buyer_id=self.bank.id,
                         seller_id=order.agent_id,
                         transaction_type="loan",

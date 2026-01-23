@@ -60,6 +60,7 @@ class Bank(IFinancialEntity):
         # Counters
         self.next_loan_id = 0
         self.next_deposit_id = 0
+        self.total_write_offs = 0.0
 
         # Dummy attrs for compatibility
         self.value_orientation = "N/A"
@@ -472,6 +473,8 @@ class Bank(IFinancialEntity):
             logger.info(f"LIQUIDATION | Agent {agent.id} shares confiscated.")
 
         # 2. Forgiveness (Write-off)
+        write_off_amount = loan.remaining_balance
+        self.total_write_offs += write_off_amount
         loan.remaining_balance = 0.0 # Effectively forgiven
 
         # 3. Penalty
