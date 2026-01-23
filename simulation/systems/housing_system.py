@@ -171,7 +171,7 @@ class HousingSystem:
                 # The original code called 'record_asset_sale', which doesn't exist on Government.
                 # The intent seems to be to track government income. We'll use the existing
                 # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
-                seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
+                seller.record_revenue(trade_value, "asset_sale", buyer.id, simulation.time)
                 # Note: collect_tax no longer adds assets! We must add it manually or use SettlementSystem.
                 # Since we are inside HousingSystem legacy logic, we add it here.
                 seller._add_assets(trade_value)
