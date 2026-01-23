@@ -330,7 +330,6 @@ class Firm(BaseAgent, ILearningAgent):
         state_dto = self.get_state_dto()
 
         context = DecisionContext(
-            firm=self, # DEPRECATED
             state=state_dto,
             config=config_dto,
             markets=markets,
@@ -343,21 +342,104 @@ class Firm(BaseAgent, ILearningAgent):
         )
         decisions, tactic = self.decision_engine.make_decisions(context)
 
+        # WO-114: Internal Order Interceptor (Purity Gate execution)
+        external_orders = []
+        for order in decisions:
+            if order.market_id == "internal":
+                self._execute_internal_order(order, government, current_time)
+            else:
+                external_orders.append(order)
+
         # WO-056: Shadow Mode Calculation
         self._calculate_invisible_hand_price(markets, current_time)
 
         # SoC Refactor
         self.logger.debug(
-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(decisions)}",
+            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
             extra={
                 **log_extra,
                 "assets_after": self.assets,
                 "num_employees_after": len(self.hr.employees),
                 "is_active_after": self.is_active,
-                "num_decisions": len(decisions),
+                "num_decisions": len(external_orders),
             },
         )
-        return decisions, tactic
+        return external_orders, tactic
+
+    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int) -> None:
+        """Executes internal orders (state modifications) received from the Decision Engine."""
+        if order.order_type == "SET_TARGET":
+            self.production_target = order.quantity
+            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} set production target to {self.production_target:.1f}")
+
+        elif order.order_type == "INVEST_AUTOMATION":
+            spend = order.quantity
+            if self.finance.invest_in_automation(spend):
+                cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
+                if cost_per_pct > 0:
+                    gained_a = (spend / cost_per_pct) / 100.0
+                    self.production.set_automation_level(self.automation_level + gained_a)
+                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {spend:.1f} in automation.")
+
+        elif order.order_type == "PAY_TAX":
+            amount = order.quantity
+            reason = order.item_id
+            if government:
+                self.finance.pay_ad_hoc_tax(amount, reason, government, current_time)
+
+        elif order.order_type == "INVEST_RD":
+            budget = order.quantity
+            if self.finance.invest_in_rd(budget):
+                self._execute_rd_outcome(budget, current_time)
+
+        elif order.order_type == "INVEST_CAPEX":
+            budget = order.quantity
+            if self.finance.invest_in_capex(budget):
+                efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
+                added_capital = budget * efficiency
+                self.production.add_capital(added_capital)
+                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {budget:.1f} in CAPEX.")
+
+        elif order.order_type == "SET_DIVIDEND":
+            self.finance.set_dividend_rate(order.quantity)
+
+        elif order.order_type == "SET_PRICE":
+            # Using quantity field for price as per CorporateManager implementation
+            self.sales.set_price(order.item_id, order.quantity)
+
+        elif order.order_type == "FIRE":
+            emp_id = order.target_agent_id
+            severance_pay = order.price
+
+            employee = next((e for e in self.hr.employees if e.id == emp_id), None)
+            if employee:
+                if self.finance.pay_severance(employee, severance_pay):
+                    employee.quit()
+                    self.hr.remove_employee(employee)
+                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {emp_id}.")
+                else:
+                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {emp_id} (insufficient funds).")
+
+    def _execute_rd_outcome(self, budget: float, current_time: int) -> None:
+        """Executes the probabilistic outcome of R&D investment."""
+        self.research_history["total_spent"] += budget
+
+        denominator = max(self.finance.revenue_this_turn * 0.2, 100.0)
+        base_chance = min(1.0, budget / denominator)
+
+        avg_skill = 1.0
+        if self.hr.employees:
+            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in self.hr.employees) / len(self.hr.employees)
+
+        success_chance = base_chance * avg_skill
+
+        import random
+        if random.random() < success_chance:
+            self.research_history["success_count"] += 1
+            self.research_history["last_success_tick"] = current_time
+            self.base_quality += 0.05
+            self.productivity_factor *= 1.05
+            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {budget:.1f})")
 
     def _calculate_invisible_hand_price(self, markets: Dict[str, Any], current_tick: int) -> None:
         """

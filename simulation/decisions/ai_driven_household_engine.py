@@ -10,7 +10,6 @@ from simulation.dtos import DecisionContext, MacroFinancialContext
 from simulation.decisions.portfolio_manager import PortfolioManager
 
 if TYPE_CHECKING:
-    from simulation.core_agents import Household
     from simulation.ai.household_ai import HouseholdAI
     from modules.household.dtos import HouseholdStateDTO
     from simulation.dtos import HouseholdConfigDTO
@@ -43,13 +42,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         """
         AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
         Architecture V2: Continuous Aggressiveness
+        Refactored for DTO Purity Gate.
         """
-        # [Refactoring] Use state DTO
         household: HouseholdStateDTO = context.state
         config: HouseholdConfigDTO = context.config
 
         if household is None:
-            # Fallback action vector for returning if agent is None
             from simulation.schemas import HouseholdActionVector
             return [], HouseholdActionVector()
 
@@ -59,7 +57,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         agent_data = household.agent_data
 
-        goods_list = list(config.GOODS.keys()) # Error here, DTO doesn't have GOODS.
+        goods_list = list(self.config_module.GOODS.keys())
         
         action_vector = self.ai_engine.decide_action_vector(
             agent_data, market_data, goods_list
@@ -114,7 +112,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             if not avg_price or avg_price <= 0:
                 avg_price = config.market_price_fallback
             
-            good_info = self.config_module.GOODS.get(item_id, {}) # GOODS not in config DTO yet
+            good_info = self.config_module.GOODS.get(item_id, {})
             is_luxury = good_info.get("is_luxury", False)
 
             # Need Value (UC)
@@ -153,7 +151,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                     f"SavROI: {savings_roi:.4f} vs ConsROI: {consumption_roi:.4f} -> Agg: {agg_buy:.2f}"
                 )
             
-            good_info = self.config_module.GOODS.get(item_id, {})
             utility_effects = good_info.get("utility_effects", {})
             
             avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", self.config_module.MARKET_PRICE_FALLBACK)
@@ -246,15 +243,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         # Scenario B: Unemployed
         if not household.is_employed:
-            # Panic check logic duplicated from EconComponent?
-            # Ideally EconComponent should handle reservation wage calculation and panic check.
-            # But Engine decides TO SELL or NOT.
-            # We use 'wage_modifier' from state which is updated by EconComponent (via run_tick/lifecycle?).
-            # Actually, EconComponent._calculate_shadow_reservation_wage is called AFTER decisions in original code.
-            # So here we use current state.
-
-            # Survival Trigger (Panic Mode) - Logic moved here or duplicated?
-            # Original code had panic logic here.
             food_inventory = household.inventory.get("basic_food", 0.0)
             food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
             if food_price <= 0: food_price = 10.0
@@ -341,37 +329,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
             orders.extend(emergency_orders)
 
-        # 6. Real Estate Logic (Moved to EconComponent mostly, but Engine has Mimicry check)
-        # We keep Mimicry check here if it's AI driven?
-        # The logic was "Check Mimicry Trigger".
-        # If the housing logic is deterministic (based on mimicry factor), it belongs in EconComponent or here?
-        # Previous code had it here.
-        # But `Household.make_decision` called `decide_housing` (System 2) which sets `housing_target_mode`.
-        # Engine's logic below seems independent? "If housing in markets...".
-        # It generates BUY order if mimicry or rational.
-        # This seems to overlap with `EconComponent` logic?
-        # `EconComponent` checks `housing_target_mode == "BUY"`.
-        # Engine checks mimicry/rational and ADDS order.
-        # So we might have double orders if we are not careful?
-        # `EconComponent` adds order if `housing_target_mode` is BUY.
-        # `housing_target_mode` is set by `decide_housing` (System 2).
-        # Engine (here) uses `HousingManager` (System 2? No, `simulation.decisions.housing_manager`).
-        # This seems to be a conflict in original code or parallel systems.
-        # I will preserve this logic as is, assuming it's distinct.
-        # It modifies `orders` list.
-
+        # 6. Real Estate Logic
         if "housing" in markets:
              housing_market = markets["housing"]
              from simulation.decisions.housing_manager import HousingManager
-             # HousingManager needs Household object?
-             # HousingManager constructor: `__init__(self, household, config_module)`.
-             # Does it accept DTO?
-             # Probably not. It likely accesses `household.assets`, etc.
-             # If `HousingManager` is used, we need to check if it supports DTO.
-             # If not, we might need to update `HousingManager` or pass a compatible object.
-             # DTO has most fields. Duck typing might work.
 
-             housing_manager = HousingManager(household, self.config_module) # duck typing
+             housing_manager = HousingManager(household, self.config_module) # Now passes DTO
 
              reference_standard = market_data.get("reference_standard", {})
              mimicry_intent = housing_manager.decide_mimicry_purchase(reference_standard)
@@ -622,10 +585,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         """
         Calls AI engine to decide reproduction.
         """
-        household = context.state # Use state
-        if household is None and context.household: # Fallback
-             household = context.household.create_state_dto()
-
+        household = context.state
         if not household: return False
 
         agent_data = household.agent_data

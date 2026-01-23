@@ -651,6 +651,8 @@ class Household(BaseAgent, ILearningAgent):
             conformity=self.conformity,
             social_rank=self.social_rank,
             approval_rating=self.approval_rating,
+            optimism=self.optimism,
+            ambition=self.ambition,
             # WO-108: Parity Fields
             perceived_fair_price=self.perceived_avg_prices.copy(),
             sentiment_index=self.optimism
@@ -733,7 +735,6 @@ class Household(BaseAgent, ILearningAgent):
 
         # Context for Decision Engine (Pure Logic)
         context = DecisionContext(
-            household=self, # DEPRECATED: Required for pending legacy engines
             state=state_dto,
             config=config_dto,
             markets=markets,
