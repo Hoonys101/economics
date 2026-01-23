@@ -25,6 +25,10 @@
       "2513104936953701906": {
         "title": "WO-114_DTO_Purity_Gate_Completion",
         "initial_mission": "Work Order WO-114-DTO-Purity-Gate-Completion.md에 따라 DTO Purity Gate 리팩토링을 완료하라. | 1. 모든 의사결정 엔진이 context.state와 context.config만 사용하도록 전환. | 2. 에이전트 인스턴스 직접 참조 제거. | 3. 단위 테스트 수정 및 Purity Gate 검증 테스트 추가. | 작업 완료 후 실무자 보고서를 제출하라."
+      },
+      "16428660261459271791": {
+        "title": "WO-115_Great_Reset_Stability_Verification",
+        "initial_mission": "Work Order WO-115-Great-Reset-Stress-Test.md에 따라 시스템 안정성을 검증하라. | 1. 1,000틱 롱런 시뮬레이션 스크립트 작성 및 실행. | 2. M2 통화량 무결성(Zero-Sum) 및 부채 대 GDP 비율 모니터링. | 3. 발견된 '수치적 누출'이나 불안정성 보고."
       }
     },
     "completed_sessions": {
