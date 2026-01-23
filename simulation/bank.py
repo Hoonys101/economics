@@ -488,14 +488,13 @@ class Bank(IFinancialEntity):
         if self.assets < 0:
             borrow_amount = abs(self.assets) + 1000.0 # Maintain buffer
 
-            if self.settlement_system:
-                self.settlement_system.transfer(government, self, borrow_amount, "Lender of Last Resort")
-                government.total_money_issued += borrow_amount
-            else:
-                self._assets += borrow_amount
-                government.total_money_issued += borrow_amount
+            # Lender of Last Resort is MONEY CREATION (Minting), not a transfer.
+            # Government creates money and injects it into the Bank.
+            # We bypass SettlementSystem.transfer because we do not want to debit Government assets (which would imply debt/spending).
+            self.deposit(borrow_amount)
+            government.total_money_issued += borrow_amount
 
-            logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government.")
+            logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government (Money Creation).")
 
     def process_default(self, agent: Any, loan: Loan, current_tick: int):
         """
