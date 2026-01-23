@@ -52,8 +52,13 @@ def verify_great_reset_stability():
         bank_assets = sim.bank.assets
         # Reflux balance (Sunk costs)
         reflux_bal = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
+        # Write-offs (Destroyed Money)
+        write_offs = sim.bank.total_write_offs if hasattr(sim.bank, 'total_write_offs') else 0.0
         
-        return h_assets + f_assets + gov_assets + bank_assets + reflux_bal
+        # Central Bank Cash (Net position, usually negative if money printed)
+        cb_cash = sim.central_bank.assets.get('cash', 0.0) if hasattr(sim, 'central_bank') and hasattr(sim.central_bank, 'assets') else 0.0
+
+        return h_assets + f_assets + gov_assets + bank_assets + reflux_bal + write_offs + cb_cash
 
     m2_start = get_total_m2()
     logger.info(f"Initial M2: {m2_start:,.2f}")

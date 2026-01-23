@@ -110,17 +110,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
             )
 
-            # WO-106: Reflux Capture (Inventory & Capital)
-            if state.reflux_system:
-                # 1. Inventory Value
-                inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
-                if inv_value > 0:
-                    state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
-
-                # 2. Capital Stock (Scrap Value)
-                if firm.capital_stock > 0:
-                    state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
-
             # SoC Refactor: use hr.employees
             for employee in firm.hr.employees:
                 if employee.is_active:
@@ -148,7 +137,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     if isinstance(state.government, Government):
                         # Note: collect_tax no longer adds assets. We must transfer/add manually.
                         state.government._add_assets(total_cash)
-                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
+                        state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
             for household in state.households:
                 if firm.id in household.shares_owned:
                     del household.shares_owned[firm.id]
@@ -164,12 +153,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         for household in inactive_households:
             # Use self.inheritance_manager since it is injected in __init__
             self.inheritance_manager.process_death(household, state.government, state)
-
-            # WO-106: Reflux Capture (Household Inventory)
-            if state.reflux_system:
-                inv_value = self._calculate_inventory_value(household.inventory, state.markets)
-                if inv_value > 0:
-                    state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
 
             household.inventory.clear()
             household.shares_owned.clear()
