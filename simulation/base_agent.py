@@ -25,13 +25,13 @@ class BaseAgent(ABC):
         self.is_active: bool = True
         self.logger = logger if logger is not None else logging.getLogger(self.name)
         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
-        self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
+        self.pre_state_snapshot: Dict[str, Any] = {}  # Mypy fix: Snapshot for learning
         try:
             self.generation: int = 0
         except AttributeError:
             # If generation is a property (e.g. in Household), it cannot be set here.
             pass
-        
+
         # [Cleanup] Standardized Memory Structure
         self.memory: Dict[str, Any] = {}
 
@@ -62,7 +62,9 @@ class BaseAgent(ABC):
         """
         if amount > 0:
             if self.assets < amount:
-                raise InsufficientFundsError(f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+                raise InsufficientFundsError(
+                    f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}"
+                )
             self._sub_assets(amount)
 
     def get_agent_data(self) -> Dict[str, Any]:
@@ -83,11 +85,19 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
-    def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
+    def make_decision(
+        self,
+        markets: Dict[str, Any],
+        goods_data: list[Dict[str, Any]],
+        market_data: Dict[str, Any],
+        current_time: int,
+    ) -> tuple[list[Any], Any]:
         pass
 
     @abstractmethod
-    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
+    def clone(
+        self, new_id: int, initial_assets_from_parent: float, current_tick: int
+    ) -> "BaseAgent":
         """
         현재 에이전트 인스턴스를 복제하여 새로운 에이전트를 생성합니다.
         AI 모델(decision_engine)을 포함하여 깊은 복사를 수행합니다.

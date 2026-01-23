@@ -1,9 +1,11 @@
 """
 Implements the LaborMarketAnalyzer which tracks market-wide wage history.
 """
+
 from collections import deque
 from typing import Any, Dict, Deque
 from simulation.systems.api import ILaborMarketAnalyzer
+
 
 class LaborMarketAnalyzer(ILaborMarketAnalyzer):
     """
@@ -20,12 +22,14 @@ class LaborMarketAnalyzer(ILaborMarketAnalyzer):
         """
         avg_market_wage = 0.0
         if market_data and "labor" in market_data:
-             avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
+            avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
 
         if avg_market_wage > 0:
             self.market_wage_history.append(avg_market_wage)
 
-    def calculate_shadow_reservation_wage(self, agent: Any, market_data: Dict[str, Any]) -> float:
+    def calculate_shadow_reservation_wage(
+        self, agent: Any, market_data: Dict[str, Any]
+    ) -> float:
         """
         Calculates the shadow reservation wage for an agent based on their status and market history.
         """
@@ -42,7 +46,9 @@ class LaborMarketAnalyzer(ILaborMarketAnalyzer):
 
         # Initialize if zero
         if current_shadow <= 0.0:
-            current_shadow = agent.current_wage if agent.is_employed else agent.expected_wage
+            current_shadow = (
+                agent.current_wage if agent.is_employed else agent.expected_wage
+            )
 
         if agent.is_employed:
             target = max(agent.current_wage, current_shadow)

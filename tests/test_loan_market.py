@@ -53,7 +53,7 @@ class TestLoanMarket:
         )
         transactions = loan_market_instance.place_order(order, 1)
 
-    # Update expectation to match new API (keyword args, no interest_rate passed)
+        # Update expectation to match new API (keyword args, no interest_rate passed)
         mock_bank.grant_loan.assert_called_once_with(
             borrower_id=1, amount=100, term_ticks=config.DEFAULT_LOAN_DURATION
         )

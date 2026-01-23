@@ -36,7 +36,9 @@ class Tactic(Enum):
     # --- 가계용 Tactics ---
     # 소비 결정
     EVALUATE_CONSUMPTION_OPTIONS = auto()  # 모든 소비재 구매를 이 하나의 전술로 통합
-    BUY_FOR_BUFFER = auto() # 가격이 유리할 때 필수품(예: food)의 인벤토리 완충재를 채우기 위한 구매 행동.
+    BUY_FOR_BUFFER = (
+        auto()
+    )  # 가격이 유리할 때 필수품(예: food)의 인벤토리 완충재를 채우기 위한 구매 행동.
     BUY_BASIC_FOOD = auto()
     BUY_LUXURY_FOOD = auto()
     DO_NOTHING_CONSUMPTION = auto()
@@ -83,13 +85,13 @@ class Personality(Enum):
     MISER = auto()  # 수전노형 (Asset-Focused)
     STATUS_SEEKER = auto()  # 지위추구형 (Status-Seeking)
     GROWTH_ORIENTED = auto()  # 학습형 (Growth-Oriented)
-    IMPULSIVE = auto()     # 충동구매형 (High Adaptation, High Hoarding)
+    IMPULSIVE = auto()  # 충동구매형 (High Adaptation, High Hoarding)
     CONSERVATIVE = auto()  # 보수적형 (Low Adaptation)
 
     # --- Firm Personalities (Phase 16-B) ---
-    BALANCED = auto()        # 균형형 (Profit + Brand)
-    GROWTH_HACKER = auto()   # 성장형 (Market Share + Quality)
-    CASH_COW = auto()        # 수익형 (Dividends + Cash Flow)
+    BALANCED = auto()  # 균형형 (Profit + Brand)
+    GROWTH_HACKER = auto()  # 성장형 (Market Share + Quality)
+    CASH_COW = auto()  # 수익형 (Dividends + Cash Flow)
 
 
 class Aggressiveness(Enum):
@@ -102,10 +104,12 @@ class Aggressiveness(Enum):
     NEUTRAL = auto()
     AGGRESSIVE = auto()
 
+
 class PoliticalParty(Enum):
     """
     Phase 17-5: Leviathan
     Political Parties with distinct policy biases.
     """
-    BLUE = auto() # Pro-Corporate (Low Corp Tax, Subsidies)
+
+    BLUE = auto()  # Pro-Corporate (Low Corp Tax, Subsidies)
     RED = auto()  # Pro-Household (Low Income Tax, Welfare)

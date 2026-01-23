@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from simulation.models import Transaction
 from simulation.agents.government import Government
 
+
 def test_tax_collection_and_bailouts(government):
     """
     Tests that the government can collect taxes and provide bailouts,
@@ -42,7 +43,7 @@ def test_infrastructure_investment():
     """
     config_mock = Mock()
     config_mock.INFRASTRUCTURE_INVESTMENT_COST = 5000.0
-    config_mock.TICKS_PER_YEAR = 100 # Required for TaylorRulePolicy init
+    config_mock.TICKS_PER_YEAR = 100  # Required for TaylorRulePolicy init
 
     gov = Government(id=1, initial_assets=6000.0, config_module=config_mock)
 

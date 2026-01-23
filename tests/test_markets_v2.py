@@ -337,28 +337,30 @@ class TestMarketAPI:
 
     def test_get_last_traded_price(self, market: OrderBookMarket):
         """거래 발생 후 get_last_traded_price가 올바른 가격을 반환하는지 테스트합니다."""
-        market.place_order(Order(1, 'SELL', 'food', 10, 100, 'test'), 1)
-        market.place_order(Order(2, 'BUY', 'food', 10, 105, 'test'), 2)
+        market.place_order(Order(1, "SELL", "food", 10, 100, "test"), 1)
+        market.place_order(Order(2, "BUY", "food", 10, 105, "test"), 2)
         market.match_orders(2)
-        assert market.get_last_traded_price('food') == 102.5
+        assert market.get_last_traded_price("food") == 102.5
 
     def test_get_spread(self, market: OrderBookMarket):
         """스프레드 계산이 올바른지 테스트합니다."""
-        market.place_order(Order(1, 'BUY', 'food', 10, 100, 'test'), 1)
-        market.place_order(Order(2, 'SELL', 'food', 10, 105, 'test'), 2)
-        assert market.get_spread('food') == 5
+        market.place_order(Order(1, "BUY", "food", 10, 100, "test"), 1)
+        market.place_order(Order(2, "SELL", "food", 10, 105, "test"), 2)
+        assert market.get_spread("food") == 5
 
     def test_get_spread_no_bid_or_ask(self, market: OrderBookMarket):
         """매수/매도 호가가 없을 때 get_spread가 None을 반환하는지 테스트합니다."""
-        market.place_order(Order(1, 'BUY', 'food', 10, 100, 'test'), 1)
-        assert market.get_spread('food') is None
-        market = OrderBookMarket(market_id="test_goods_market", logger=Logger()) # Reset market
-        market.place_order(Order(2, 'SELL', 'food', 10, 105, 'test'), 2)
-        assert market.get_spread('food') is None
+        market.place_order(Order(1, "BUY", "food", 10, 100, "test"), 1)
+        assert market.get_spread("food") is None
+        market = OrderBookMarket(
+            market_id="test_goods_market", logger=Logger()
+        )  # Reset market
+        market.place_order(Order(2, "SELL", "food", 10, 105, "test"), 2)
+        assert market.get_spread("food") is None
 
     def test_get_market_depth(self, market: OrderBookMarket):
         """시장 깊이(주문 수) 계산이 올바른지 테스트합니다."""
-        market.place_order(Order(1, 'BUY', 'food', 10, 100, 'test'), 1)
-        market.place_order(Order(2, 'BUY', 'food', 5, 90, 'test'), 2)
-        market.place_order(Order(3, 'SELL', 'food', 10, 105, 'test'), 3)
-        assert market.get_market_depth('food') == {'buy_orders': 2, 'sell_orders': 1}
+        market.place_order(Order(1, "BUY", "food", 10, 100, "test"), 1)
+        market.place_order(Order(2, "BUY", "food", 5, 90, "test"), 2)
+        market.place_order(Order(3, "SELL", "food", 10, 105, "test"), 3)
+        assert market.get_market_depth("food") == {"buy_orders": 2, "sell_orders": 1}

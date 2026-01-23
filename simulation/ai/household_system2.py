@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class HousingDecisionInputs(NamedTuple):
     current_wealth: float
     annual_income: float
@@ -11,6 +12,7 @@ class HousingDecisionInputs(NamedTuple):
     market_price: float
     risk_free_rate: float
     price_growth_expectation: float
+
 
 class HouseholdSystem2Planner:
     """
@@ -42,10 +44,13 @@ class HouseholdSystem2Planner:
         # Buying Components
         P_initial = inputs.market_price
         U_shelter = inputs.market_rent_monthly
-        Cost_own = (P_initial * 0.01) / 12.0 # 1% annual maintenance
+        Cost_own = (P_initial * 0.01) / 12.0  # 1% annual maintenance
 
         # Price Growth Expectation (Capped at 5%)
-        g_annual = min(inputs.price_growth_expectation, getattr(self.config, "HOUSING_EXPECTATION_CAP", 0.05))
+        g_annual = min(
+            inputs.price_growth_expectation,
+            getattr(self.config, "HOUSING_EXPECTATION_CAP", 0.05),
+        )
         P_future = P_initial * ((1.0 + g_annual) ** T_years)
 
         # Renting Components
@@ -92,8 +97,8 @@ class HouseholdSystem2Planner:
                 "P_future": P_future,
                 "monthly_cost_own": Cost_own,
                 "monthly_cost_rent": Cost_rent,
-                "monthly_income_invest": Income_invest
-            }
+                "monthly_income_invest": Income_invest,
+            },
         }
 
     def decide(self, inputs: HousingDecisionInputs) -> str:
@@ -111,7 +116,9 @@ class HouseholdSystem2Planner:
         dti_threshold = inputs.annual_income * 0.4
 
         if annual_mortgage_cost > dti_threshold:
-            logger.debug(f"SYSTEM2_HOUSING | Force RENT due to DTI. Cost: {annual_mortgage_cost:.2f} > Limit: {dti_threshold:.2f}")
+            logger.debug(
+                f"SYSTEM2_HOUSING | Force RENT due to DTI. Cost: {annual_mortgage_cost:.2f} > Limit: {dti_threshold:.2f}"
+            )
             return "RENT"
 
         # 2. Rational Choice

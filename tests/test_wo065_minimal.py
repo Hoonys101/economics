@@ -1,7 +1,8 @@
 import math
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from simulation.agents.government import Government
 import config
 from unittest.mock import Mock
@@ -11,4 +12,4 @@ gov.finance_system = Mock()
 gov.sensory_data = Mock()
 gov.total_money_destroyed += 1000.0
 assert math.isclose(gov.total_money_destroyed, 1000.0)
-print('PASS')
+print("PASS")

@@ -13,6 +13,7 @@ from utils.logging_manager import setup_logging
 import config
 from config import EngineType
 
+
 def run_malthusian_experiment():
     # 1. Setup Logging
     setup_logging()
@@ -26,9 +27,9 @@ def run_malthusian_experiment():
         "BIOLOGICAL_FERTILITY_RATE": 0.2,
         "UNEMPLOYMENT_BENEFIT_RATIO": 0.0,
         "GOVERNMENT_STIMULUS_ENABLED": False,
-        "NUM_HOUSEHOLDS": 20, # Start small to allow growth
+        "NUM_HOUSEHOLDS": 20,  # Start small to allow growth
         "SIMULATION_TICKS": 1000,
-        "DEFAULT_ENGINE_TYPE": EngineType.AI_DRIVEN
+        "DEFAULT_ENGINE_TYPE": EngineType.AI_DRIVEN,
     }
 
     print("Initializing Malthusian Trap Experiment...")
@@ -46,7 +47,7 @@ def run_malthusian_experiment():
             # Force System 1 Reproduction (Instinctual)
             for agent in sim.households:
                 if hasattr(agent, "decision_engine"):
-                     agent.decision_engine.reproduction_mode = 'SYSTEM1'
+                    agent.decision_engine.reproduction_mode = "SYSTEM1"
 
             sim.run_tick()
 
@@ -55,7 +56,11 @@ def run_malthusian_experiment():
 
             # Calculate Mean Wage
             employed_agents = [h for h in sim.households if h.is_employed]
-            mean_wage = sum(h.current_wage for h in employed_agents) / len(employed_agents) if employed_agents else 0.0
+            mean_wage = (
+                sum(h.current_wage for h in employed_agents) / len(employed_agents)
+                if employed_agents
+                else 0.0
+            )
 
             # Calculate Survival Cost (Average cost of 1 unit of food * monthly need, approx)
             # Or use the agent's tracked survival cost if available.
@@ -64,9 +69,9 @@ def run_malthusian_experiment():
             food_market = sim.markets.get("basic_food")
             food_price = 5.0
             if food_market and hasattr(food_market, "get_daily_avg_price"):
-                 avg = food_market.get_daily_avg_price()
-                 if avg > 0:
-                     food_price = avg
+                avg = food_market.get_daily_avg_price()
+                if avg > 0:
+                    food_price = avg
 
             survival_cost = food_price * config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK
 
@@ -82,17 +87,21 @@ def run_malthusian_experiment():
             attrition = sim.repository.get_attrition_counts(tick, tick, sim.run_id)
             starvation_deaths = attrition.get("death_count", 0)
 
-            history.append({
-                "tick": tick,
-                "population": pop_count,
-                "mean_wage": mean_wage,
-                "survival_cost": survival_cost,
-                "starvation_deaths": starvation_deaths,
-                "food_price": food_price
-            })
+            history.append(
+                {
+                    "tick": tick,
+                    "population": pop_count,
+                    "mean_wage": mean_wage,
+                    "survival_cost": survival_cost,
+                    "starvation_deaths": starvation_deaths,
+                    "food_price": food_price,
+                }
+            )
 
             if tick % 50 == 0:
-                print(f"Tick {tick}: Pop={pop_count}, Wage={mean_wage:.2f}, Cost={survival_cost:.2f}, Deaths={starvation_deaths}")
+                print(
+                    f"Tick {tick}: Pop={pop_count}, Wage={mean_wage:.2f}, Cost={survival_cost:.2f}, Deaths={starvation_deaths}"
+                )
 
     except Exception as e:
         logger.error(f"Simulation crashed at tick {sim.time}: {e}", exc_info=True)
@@ -127,11 +136,18 @@ def run_malthusian_experiment():
         print(f"Population Peak: {iron_ceiling_pop}")
         print(f"Wage at Peak: {iron_ceiling_wage:.2f}")
     else:
-        print("\n[NO IRON CEILING DETECTED] Wages remained above survival cost or population kept growing.")
+        print(
+            "\n[NO IRON CEILING DETECTED] Wages remained above survival cost or population kept growing."
+        )
 
     # Calculate Metric: Population Doubling vs Real Wage Drop
     # Real Wage = Mean Wage / Survival Cost
-    df["real_wage"] = df.apply(lambda row: row["mean_wage"] / row["survival_cost"] if row["survival_cost"] > 0 else 0, axis=1)
+    df["real_wage"] = df.apply(
+        lambda row: row["mean_wage"] / row["survival_cost"]
+        if row["survival_cost"] > 0
+        else 0,
+        axis=1,
+    )
 
     # Find start and end points for doubling (e.g., Start Pop -> 2 * Start Pop)
     start_pop = df.iloc[0]["population"]
@@ -175,13 +191,16 @@ def run_malthusian_experiment():
     # Add sample rows (every 100 ticks)
     for i in range(0, len(df), 100):
         row = df.iloc[i]
-        report_content.append(f"| {row['tick']} | {row['population']} | {row['mean_wage']:.2f} | {row['survival_cost']:.2f} | {row['starvation_deaths']} | {row['real_wage']:.2f} |")
+        report_content.append(
+            f"| {row['tick']} | {row['population']} | {row['mean_wage']:.2f} | {row['survival_cost']:.2f} | {row['starvation_deaths']} | {row['real_wage']:.2f} |"
+        )
 
     os.makedirs("reports", exist_ok=True)
     with open("reports/malthusian_trap_report.md", "w") as f:
         f.write("\n".join(report_content))
 
     print("Report generated: reports/malthusian_trap_report.md")
+
 
 if __name__ == "__main__":
     run_malthusian_experiment()

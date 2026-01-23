@@ -3,12 +3,13 @@ from unittest.mock import MagicMock
 from simulation.systems.technology_manager import TechnologyManager, TechNode
 from simulation.systems.tech.api import FirmTechInfoDTO
 
+
 class TestTechnologyManager:
     @pytest.fixture
     def config(self):
         mock_config = MagicMock()
-        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 30 # Updated default
-        mock_config.TECH_DIFFUSION_RATE = 0.10       # Updated default
+        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 30  # Updated default
+        mock_config.TECH_DIFFUSION_RATE = 0.10  # Updated default
         return mock_config
 
     @pytest.fixture
@@ -33,7 +34,7 @@ class TestTechnologyManager:
         # Setup Tech
         tech_id = "TECH_AGRI_CHEM_01"
         tech = manager.tech_tree[tech_id]
-        tech.unlock_tick = 30 # Updated check
+        tech.unlock_tick = 30  # Updated check
         tech.sector = "FOOD"
 
         # Setup Firms DTO
@@ -65,7 +66,7 @@ class TestTechnologyManager:
         tech_id = "TECH_AGRI_CHEM_01"
         tech = manager.tech_tree[tech_id]
         tech.unlock_tick = 30
-        tech.diffusion_rate = 0.0 # No diffusion initially
+        tech.diffusion_rate = 0.0  # No diffusion initially
 
         firms = [
             FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=False),
@@ -74,7 +75,7 @@ class TestTechnologyManager:
         # Unlock it first (needs unlock call)
         # Note: _unlock_tech also iterates firms, but firm 1 is not visionary, so it won't adopt there.
         manager.update(30, firms, 1.0)
-        assert not manager.has_adopted(1, tech_id) # Not visionary, and diffusion 0%
+        assert not manager.has_adopted(1, tech_id)  # Not visionary, and diffusion 0%
 
         # Now enable diffusion
         tech.diffusion_rate = 1.0
@@ -83,7 +84,7 @@ class TestTechnologyManager:
         assert manager.has_adopted(1, tech_id)
 
     def test_productivity_multiplier(self, manager):
-         # Setup Tech
+        # Setup Tech
         tech_id = "TECH_AGRI_CHEM_01"
         tech = manager.tech_tree[tech_id]
         tech.multiplier = 3.0

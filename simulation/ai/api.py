@@ -106,35 +106,43 @@ class BaseAIEngine(ABC):
         """
         pass
 
-    def _calculate_wealth(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> float:
+    def _calculate_wealth(
+        self, agent_data: Dict[str, Any], market_data: Dict[str, Any]
+    ) -> float:
         """
         에이전트의 순자산(Total Wealth)을 계산한다.
         Wealth = Cash (Assets) + Sum(Inventory * MarketPrice)
         """
         cash = agent_data.get("assets", 0.0)
         inventory = agent_data.get("inventory", {})
-        
+
         # 시장 가격 데이터를 활용하여 재고 가치 평가
         # market_data["goods_market"] 에는 {item_id_current_sell_price: price} 형태의 데이터가 있음
         goods_prices = market_data.get("goods_market", {})
         inventory_value = 0.0
-        
+
         for item_id, qty in inventory.items():
-            if item_id == "labor": # 노동력은 재고 자산으로 치지 않음 (또는 이미 Cash로 전환됨)
+            if (
+                item_id == "labor"
+            ):  # 노동력은 재고 자산으로 치지 않음 (또는 이미 Cash로 전환됨)
                 continue
-            
+
             # 1. 시장 가격 조회
             price_key = f"{item_id}_current_sell_price"
-            market_price = goods_prices.get(price_key, market_data.get("avg_goods_price", 0.0))
-            
+            market_price = goods_prices.get(
+                price_key, market_data.get("avg_goods_price", 0.0)
+            )
+
             # [Patch] 2. 최소 가치 보장 (생산 원가 vs 시장가 중 높은 것 선택)
             # AI가 "고용=손해"로 오판하는 것을 방지하기 위해, 시장가가 없어도 생산 원가만큼은 가치로 인정
-            production_cost = 10.0 # 임시 하드코딩 (Config나 Goods Data에서 가져오는 것이 이상적임)
-            
+            production_cost = (
+                10.0  # 임시 하드코딩 (Config나 Goods Data에서 가져오는 것이 이상적임)
+            )
+
             valuation_price = max(market_price, production_cost)
-            
+
             inventory_value += qty * valuation_price
-            
+
         return cash + inventory_value
 
     def _calculate_reward(
@@ -150,7 +158,7 @@ class BaseAIEngine(ABC):
         """
         pre_wealth = self._calculate_wealth(pre_state_data, market_data)
         post_wealth = self._calculate_wealth(post_state_data, market_data)
-        
+
         return post_wealth - pre_wealth
 
     def decide_and_learn(

@@ -5,6 +5,7 @@ from simulation.ai.api import Personality
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 import config
 
+
 class TestStep1Foundation(unittest.TestCase):
     def setUp(self):
         self.mock_decision_engine = MagicMock(spec=BaseDecisionEngine)
@@ -20,7 +21,7 @@ class TestStep1Foundation(unittest.TestCase):
             decision_engine=self.mock_decision_engine,
             value_orientation="wealth_and_needs",
             personality=Personality.CONSERVATIVE,
-            config_module=config
+            config_module=config,
         )
 
     def test_household_attributes(self):
@@ -29,7 +30,7 @@ class TestStep1Foundation(unittest.TestCase):
         self.assertIn(self.agent.gender, ["M", "F"])
 
         print(f"Spouse ID: {self.agent.spouse_id}")
-        self.assertIsNone(self.agent.spouse_id) # Should be None initially
+        self.assertIsNone(self.agent.spouse_id)  # Should be None initially
 
         print(f"Home Quality Score: {self.agent.home_quality_score}")
         self.assertEqual(self.agent.home_quality_score, 1.0)
@@ -39,11 +40,7 @@ class TestStep1Foundation(unittest.TestCase):
 
     def test_system2_planner_execution(self):
         print("Testing System2 Planner Execution...")
-        market_data = {
-            "goods_market": {
-                "basic_food_current_sell_price": 5.0
-            }
-        }
+        market_data = {"goods_market": {"basic_food_current_sell_price": 5.0}}
         # Run projection
         result = self.agent.system2_planner.project_future(100, market_data)
 
@@ -56,6 +53,7 @@ class TestStep1Foundation(unittest.TestCase):
         # If wealth=1000, daily_income=80, daily_cost=10, net=70.
         # NPV should be > 1000.
         self.assertGreater(result["npv_wealth"], 1000.0)
+
 
 if __name__ == "__main__":
     unittest.main()

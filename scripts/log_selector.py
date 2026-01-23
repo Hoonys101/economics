@@ -24,7 +24,9 @@ def select_logs(
         if method_name is not None:
             filtered_df = filtered_df[filtered_df["method_name"] == method_name]
         if message_contains is not None:
-            filtered_df = filtered_df[filtered_df["message"].str.contains(message_contains, na=False)]
+            filtered_df = filtered_df[
+                filtered_df["message"].str.contains(message_contains, na=False)
+            ]
         if item_id is not None:
             filtered_df = filtered_df[filtered_df["item_id"] == item_id]
 

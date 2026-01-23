@@ -4,21 +4,19 @@ import json
 from unittest.mock import MagicMock
 from simulation.utils.golden_loader import GoldenLoader
 
+
 class TestGoldenLoader(unittest.TestCase):
     def setUp(self):
         self.test_file = "test_fixture.json"
         self.data = {
             "name": "Test Agent",
-            "attributes": {
-                "age": 30,
-                "skills": ["coding", "testing"]
-            },
+            "attributes": {"age": 30, "skills": ["coding", "testing"]},
             "history": [
                 {"year": 2020, "event": "hired"},
-                {"year": 2021, "event": "promoted"}
-            ]
+                {"year": 2021, "event": "promoted"},
+            ],
         }
-        with open(self.test_file, 'w') as f:
+        with open(self.test_file, "w") as f:
             json.dump(self.data, f)
 
     def tearDown(self):

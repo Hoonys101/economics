@@ -17,8 +17,9 @@ import config
 from main import create_simulation
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("verify_portfolio")
+
 
 def run_verification(output_file: str = "reports/verify_portfolio.png"):
     """
@@ -36,9 +37,9 @@ def run_verification(output_file: str = "reports/verify_portfolio.png"):
     overrides = {
         "SIMULATION_TICKS": 100,
         "INITIAL_BASE_ANNUAL_RATE": 0.05,
-        "CB_UPDATE_INTERVAL": 1000, # Disable auto-update to control manually
+        "CB_UPDATE_INTERVAL": 1000,  # Disable auto-update to control manually
         "STARTUP_COST": 10000.0,
-        "EXPECTED_STARTUP_ROI": 0.15, # Fixed expectation
+        "EXPECTED_STARTUP_ROI": 0.15,  # Fixed expectation
     }
 
     sim = create_simulation(overrides=overrides)
@@ -61,14 +62,17 @@ def run_verification(output_file: str = "reports/verify_portfolio.png"):
     logger.info("Running High Rate Phase (Rate 20%)...")
     for t in range(50):
         sim.run_tick()
-        record_metrics(sim, 50+t, "HighRate")
+        record_metrics(sim, 50 + t, "HighRate")
 
     # 5. Analysis
     df = pd.DataFrame(sim.history_data)
     analyze_results(df, output_file)
 
+
 def record_metrics(sim: Simulation, tick: int, phase: str):
-    total_deposits = sum(sim.bank.deposits.get(d_id).amount for d_id in sim.bank.deposits)
+    total_deposits = sum(
+        sim.bank.deposits.get(d_id).amount for d_id in sim.bank.deposits
+    )
     total_cash = sum(h.assets for h in sim.households)
 
     # Calculate Flow (Change in deposits)
@@ -83,7 +87,7 @@ def record_metrics(sim: Simulation, tick: int, phase: str):
         "base_rate": sim.bank.base_rate,
         "total_deposits": total_deposits,
         "total_cash": total_cash,
-        "deposit_ratio": total_deposits / (total_deposits + total_cash + 1e-9)
+        "deposit_ratio": total_deposits / (total_deposits + total_cash + 1e-9),
     }
 
     # Append to external list (closure)
@@ -92,6 +96,7 @@ def record_metrics(sim: Simulation, tick: int, phase: str):
     if not hasattr(sim, "history_data"):
         sim.history_data = []
     sim.history_data.append(history_entry)
+
 
 def analyze_results(df: pd.DataFrame, output_file: str):
     logger.info("\n--- Verification Results ---")
@@ -102,11 +107,11 @@ def analyze_results(df: pd.DataFrame, output_file: str):
     # Shock at T=50.
     # Next rebalance at T=60.
 
-    before_shock = df[df['tick'] < 50]
-    after_shock = df[df['tick'] >= 60] # Look after next rebalance
+    before_shock = df[df["tick"] < 50]
+    after_shock = df[df["tick"] >= 60]  # Look after next rebalance
 
-    avg_dep_pre = before_shock['total_deposits'].mean()
-    avg_dep_post = after_shock['total_deposits'].mean()
+    avg_dep_pre = before_shock["total_deposits"].mean()
+    avg_dep_post = after_shock["total_deposits"].mean()
 
     logger.info(f"Avg Deposits (Pre-Shock): {avg_dep_pre:.2f}")
     logger.info(f"Avg Deposits (Post-Shock): {avg_dep_post:.2f}")
@@ -118,12 +123,12 @@ def analyze_results(df: pd.DataFrame, output_file: str):
 
     # Visualization
     plt.figure(figsize=(10, 6))
-    plt.plot(df['tick'], df['total_deposits'], label='Total Deposits', color='blue')
-    plt.axvline(x=50, color='red', linestyle='--', label='Rate Hike (5%->20%)')
+    plt.plot(df["tick"], df["total_deposits"], label="Total Deposits", color="blue")
+    plt.axvline(x=50, color="red", linestyle="--", label="Rate Hike (5%->20%)")
 
     # Mark rebalancing points
     for x in range(0, 100, 30):
-        plt.axvline(x=x, color='gray', linestyle=':', alpha=0.5)
+        plt.axvline(x=x, color="gray", linestyle=":", alpha=0.5)
 
     plt.title("Friedman Effect Verification: Deposits vs Interest Rate")
     plt.xlabel("Tick")
@@ -134,6 +139,7 @@ def analyze_results(df: pd.DataFrame, output_file: str):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     plt.savefig(output_file)
     logger.info(f"Chart saved to {output_file}")
+
 
 if __name__ == "__main__":
     # Monkey patch record_metrics to store data in sim object

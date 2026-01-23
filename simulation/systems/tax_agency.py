@@ -3,11 +3,18 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 class TaxAgency:
     def __init__(self, config_module):
         self.config_module = config_module
 
-    def calculate_income_tax(self, income: float, survival_cost: float, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> float:
+    def calculate_income_tax(
+        self,
+        income: float,
+        survival_cost: float,
+        current_income_tax_rate: float,
+        tax_mode: str = "PROGRESSIVE",
+    ) -> float:
         """
         Calculates income tax based on the current rate provided by the Government.
         """
@@ -44,11 +51,48 @@ class TaxAgency:
 
         return raw_tax
 
-    def calculate_corporate_tax(self, profit: float, current_corporate_tax_rate: float) -> float:
+    def calculate_corporate_tax(
+        self, profit: float, current_corporate_tax_rate: float
+    ) -> float:
         """Calculates corporate tax based on the current rate provided by the Government."""
         return profit * current_corporate_tax_rate if profit > 0 else 0.0
 
-    def collect_tax(self, government, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
+    def record_revenue(
+        self, government, amount: float, tax_type: str, payer_id: Any, current_tick: int
+    ):
+        """
+        Records revenue statistics WITHOUT attempting collection.
+        Used when funds are transferred via SettlementSystem manually.
+        """
+        if amount <= 0:
+            return
+
+        government.total_collected_tax += amount
+        government.revenue_this_tick += amount
+        government.total_money_destroyed += amount
+        government.tax_revenue[tax_type] = (
+            government.tax_revenue.get(tax_type, 0.0) + amount
+        )
+        government.current_tick_stats["tax_revenue"][tax_type] = (
+            government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
+        )
+        government.current_tick_stats["total_collected"] += amount
+
+        logger.info(
+            f"TAX_RECORDED | Recorded {amount:.2f} as {tax_type} from {payer_id}",
+            extra={
+                "tick": current_tick,
+                "agent_id": government.id,
+                "amount": amount,
+                "tax_type": tax_type,
+                "source_id": payer_id,
+                "tags": ["tax", "revenue", "recorded"],
+            },
+        )
+
+    def collect_tax(
+        self, government, amount: float, tax_type: str, payer: Any, current_tick: int
+    ) -> float:
         """
         Executes tax collection via FinanceSystem and records statistics.
         payer: IFinancialEntity (Firm, Household, etc.)
@@ -56,27 +100,37 @@ class TaxAgency:
         if amount <= 0:
             return 0.0
 
-        payer_id = payer.id if hasattr(payer, 'id') else payer
+        payer_id = payer.id if hasattr(payer, "id") else payer
 
         # Delegate to FinanceSystem for atomic transfer
-        if hasattr(government, 'finance_system') and government.finance_system:
-            if hasattr(payer, 'id'):
-                 success = government.finance_system.collect_corporate_tax(payer, amount)
-                 if not success:
-                      logger.warning(f"TAX_COLLECTION_FAILED | Failed to collect {amount} from {payer_id}")
-                      return 0.0
+        if hasattr(government, "finance_system") and government.finance_system:
+            if hasattr(payer, "id"):
+                success = government.finance_system.collect_corporate_tax(payer, amount)
+                if not success:
+                    logger.warning(
+                        f"TAX_COLLECTION_FAILED | Failed to collect {amount} from {payer_id}"
+                    )
+                    return 0.0
             else:
-                 logger.error(f"TAX_COLLECTION_ERROR | Payer {payer} is not an object. Cannot use FinanceSystem.")
-                 return 0.0
+                logger.error(
+                    f"TAX_COLLECTION_ERROR | Payer {payer} is not an object. Cannot use FinanceSystem."
+                )
+                return 0.0
         else:
-            logger.error("TAX_COLLECTION_ERROR | No FinanceSystem linked to Government.")
+            logger.error(
+                "TAX_COLLECTION_ERROR | No FinanceSystem linked to Government."
+            )
             return 0.0
 
         government.total_collected_tax += amount
         government.revenue_this_tick += amount
         government.total_money_destroyed += amount
-        government.tax_revenue[tax_type] = government.tax_revenue.get(tax_type, 0.0) + amount
-        government.current_tick_stats["tax_revenue"][tax_type] = government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
+        government.tax_revenue[tax_type] = (
+            government.tax_revenue.get(tax_type, 0.0) + amount
+        )
+        government.current_tick_stats["tax_revenue"][tax_type] = (
+            government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
+        )
         government.current_tick_stats["total_collected"] += amount
 
         logger.info(
@@ -87,7 +141,7 @@ class TaxAgency:
                 "amount": amount,
                 "tax_type": tax_type,
                 "source_id": payer_id,
-                "tags": ["tax", "revenue"]
-            }
+                "tags": ["tax", "revenue"],
+            },
         )
         return amount

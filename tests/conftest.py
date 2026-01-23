@@ -5,6 +5,7 @@ from modules.finance.system import FinanceSystem
 from simulation.agents.central_bank import CentralBank
 from simulation.bank import Bank
 
+
 @pytest.fixture
 def mock_config():
     """Provides a mock config object for testing."""
@@ -34,11 +35,13 @@ def mock_config():
 
     return config
 
+
 @pytest.fixture
 def mock_tracker():
     """Provides a mock economic tracker."""
     tracker = Mock()
     return tracker
+
 
 @pytest.fixture
 def mock_central_bank(mock_tracker, mock_config):
@@ -49,12 +52,14 @@ def mock_central_bank(mock_tracker, mock_config):
     cb.get_base_rate.return_value = 0.02
     return cb
 
+
 @pytest.fixture
 def mock_bank():
     """Provides a mock commercial Bank."""
     bank = Mock(spec=Bank)
     bank._assets = 5000000.0
     return bank
+
 
 @pytest.fixture
 def finance_system(mock_central_bank, mock_bank, mock_config):
@@ -67,6 +72,7 @@ def finance_system(mock_central_bank, mock_bank, mock_config):
     system.grant_bailout_loan = MagicMock(wraps=system.grant_bailout_loan)
     system.evaluate_solvency = MagicMock(wraps=system.evaluate_solvency)
     return system
+
 
 @pytest.fixture
 def government(mock_config, mock_tracker, finance_system):
@@ -103,7 +109,7 @@ GOLDEN_FIXTURES_DIR = Path(__file__).parent / "goldens"
 def _get_golden_loader(fixture_name: str = "demo_fixture.json"):
     """Helper to load a golden fixture file."""
     from scripts.fixture_harvester import GoldenLoader
-    
+
     fixture_path = GOLDEN_FIXTURES_DIR / fixture_name
     if not fixture_path.exists():
         return None
@@ -115,7 +121,7 @@ def golden_households():
     """
     Provides household mocks loaded from golden fixture data.
     Falls back to empty list if no fixture exists.
-    
+
     Usage:
         def test_household_behavior(golden_households):
             assert len(golden_households) > 0
@@ -132,7 +138,7 @@ def golden_firms():
     """
     Provides firm mocks loaded from golden fixture data.
     Falls back to empty list if no fixture exists.
-    
+
     Usage:
         def test_firm_behavior(golden_firms):
             firm = golden_firms[0]

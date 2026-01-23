@@ -9,6 +9,7 @@ from simulation.markets.order_book_market import OrderBookMarket
 
 logger = logging.getLogger(__name__)
 
+
 class ServiceFirm(Firm):
     """
     서비스 기업 클래스 (Phase 17-1).
@@ -59,14 +60,24 @@ class ServiceFirm(Firm):
         2. 이전 틱의 잔여 재고를 폐기(Void).
         3. 새 용량을 재고로 설정.
         """
-        log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production", "service"]}
+        log_extra = {
+            "tick": current_time,
+            "agent_id": self.id,
+            "tags": ["production", "service"],
+        }
 
         # 1. 감가상각 (Goods와 동일)
-        depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
-        self.capital_stock *= (1.0 - depreciation_rate)
+        depreciation_rate = getattr(
+            self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05
+        )
+        self.capital_stock *= 1.0 - depreciation_rate
 
         # 2. 생산 용량 계산 (Cobb-Douglas)
-        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+        total_labor_skill = sum(
+            getattr(emp, "labor_skill", 1.0)
+            for emp in self.employees
+            if hasattr(emp, "labor_skill")
+        )
         if not self.employees:
             total_labor_skill = 1.0
         capital = max(self.capital_stock, 0.01)
@@ -75,19 +86,25 @@ class ServiceFirm(Firm):
         tfp = self.productivity_factor
 
         if total_labor_skill > 0 and capital > 0:
-            capacity = tfp * (total_labor_skill ** alpha) * (capital ** (1 - alpha))
+            capacity = tfp * (total_labor_skill**alpha) * (capital ** (1 - alpha))
         else:
             capacity = 0.0
 
         # Phase 15: Quality Calculation (Same as Goods)
         avg_skill = 0.0
         if self.employees:
-            total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
+            total_skill = sum(
+                getattr(emp, "labor_skill", 1.0)
+                for emp in self.employees
+                if hasattr(emp, "labor_skill")
+            )
             avg_skill = total_skill / len(self.employees)
 
         item_config = self.config_module.GOODS.get(self.specialization, {})
         quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-        actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+        actual_quality = self.base_quality + (
+            math.log1p(avg_skill) * quality_sensitivity
+        )
 
         # 3. Void Logic (Unsold Inventory from previous tick is WASTE)
         item_id = self.specialization
@@ -97,24 +114,30 @@ class ServiceFirm(Firm):
         if unsold_inventory > 0:
             self.logger.debug(
                 f"SERVICE_VOID | Firm {self.id} voided {unsold_inventory:.2f} unsold capacity.",
-                extra={**log_extra, "waste": unsold_inventory}
+                extra={**log_extra, "waste": unsold_inventory},
             )
 
         # 4. Refill Logic (Set Inventory to New Capacity)
         # Service inventory doesn't accumulate; it resets.
         self.inventory[item_id] = capacity
         self.capacity_this_tick = capacity
-        self.current_production = capacity # For compatibility
+        self.current_production = capacity  # For compatibility
 
         # Update Quality (Weighted Avg doesn't apply to reset, just set new quality)
         self.inventory_quality[item_id] = actual_quality
 
         self.logger.debug(
             f"SERVICE_PRODUCE | Firm {self.id} produced capacity {capacity:.2f} (Quality: {actual_quality:.2f})",
-            extra={**log_extra, "capacity": capacity}
+            extra={**log_extra, "capacity": capacity},
         )
 
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
+    def update_needs(
+        self,
+        current_time: int,
+        government: Optional[Any] = None,
+        market_data: Optional[Dict[str, Any]] = None,
+        reflux_system: Optional[Any] = None,
+    ) -> None:
         """
         서비스 기업 비용 처리.
         Holding Cost(보관비)는 0으로 처리 (서비스는 재고가 없으므로).

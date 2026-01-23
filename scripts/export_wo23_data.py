@@ -1,4 +1,3 @@
-
 import sqlite3
 import pandas as pd
 import os
@@ -13,9 +12,9 @@ if not os.path.exists(db_path):
 conn = sqlite3.connect(db_path)
 
 # Logic to extract Production/Consumption per Sector
-# Transactions Table: 
+# Transactions Table:
 # prod_food (Actually production is not in transactions, it's firm internal state)
-# However, we can approximate 'prod' by 'sales' transaction volume? 
+# However, we can approximate 'prod' by 'sales' transaction volume?
 # Or check market_history (supply)?
 # Let's use `market_history` table if populated.
 
@@ -73,12 +72,12 @@ ORDER BY time
 df_gdp = pd.read_sql_query(query_gdp, conn)
 
 # Merge
-df_merged = pd.merge(df_market, df_gdp, on='tick', how='outer').fillna(0)
+df_merged = pd.merge(df_market, df_gdp, on="tick", how="outer").fillna(0)
 
 # Rename columns to match verify_innovation.py expectation
 # 'cons_food', 'cons_goods' -> we can just duplicate prod columns if we assume equilibrium or use same proxy
-df_merged['cons_food'] = df_merged['prod_food']
-df_merged['cons_goods'] = df_merged['prod_goods']
+df_merged["cons_food"] = df_merged["prod_food"]
+df_merged["cons_goods"] = df_merged["prod_goods"]
 
 # Save
 output_file = "wo23_test_results.csv"

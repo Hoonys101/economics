@@ -12,12 +12,20 @@ from simulation.dtos import LeisureEffectDTO
 if TYPE_CHECKING:
     from simulation.core_agents import Household
 
+
 class SocialComponent(ISocialComponent):
     """
     Manages social and psychological aspects of the Household.
     Owns PsychologyComponent and LeisureManager.
     """
-    def __init__(self, owner: "Household", config_module: Any, personality: Personality, initial_assets: float = 0.0):
+
+    def __init__(
+        self,
+        owner: "Household",
+        config_module: Any,
+        personality: Personality,
+        initial_assets: float = 0.0,
+    ):
         self.owner = owner
         self.config_module = config_module
         self.logger = owner.logger
@@ -40,14 +48,18 @@ class SocialComponent(ISocialComponent):
 
         # Vanity - Conformity
         conformity_ranges = getattr(config_module, "CONFORMITY_RANGES", {})
-        c_min, c_max = conformity_ranges.get(personality.name, conformity_ranges.get(None, (0.3, 0.7)))
+        c_min, c_max = conformity_ranges.get(
+            personality.name, conformity_ranges.get(None, (0.3, 0.7))
+        )
         self.conformity: float = random.uniform(c_min, c_max)
         self.social_rank: float = 0.5
 
         # Brand Economy Traits
         # Initialize quality_preference based on Personality and Wealth
         # Note: We use initial_assets here because owner.assets might not be set yet
-        mean_assets = getattr(config_module, "INITIAL_HOUSEHOLD_ASSETS_MEAN", 1000.0) # Fallback
+        mean_assets = getattr(
+            config_module, "INITIAL_HOUSEHOLD_ASSETS_MEAN", 1000.0
+        )  # Fallback
         is_wealthy = initial_assets > mean_assets * 1.5
         is_poor = initial_assets < mean_assets * 0.5
 
@@ -87,5 +99,7 @@ class SocialComponent(ISocialComponent):
         else:
             self.approval_rating = 0
 
-    def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffectDTO:
+    def apply_leisure_effect(
+        self, leisure_hours: float, consumed_items: Dict[str, float]
+    ) -> LeisureEffectDTO:
         return self.leisure.apply_leisure_effect(leisure_hours, consumed_items)

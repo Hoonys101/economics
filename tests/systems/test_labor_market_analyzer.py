@@ -2,18 +2,19 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
 
+
 @pytest.fixture
 def analyzer():
     config = MagicMock()
     config.HOUSEHOLD_MIN_WAGE_DEMAND = 6.0
     return LaborMarketAnalyzer(config)
 
+
 def test_update_market_history(analyzer):
-    market_data = {
-        "labor": {"avg_wage": 15.0}
-    }
+    market_data = {"labor": {"avg_wage": 15.0}}
     analyzer.update_market_history(market_data)
     assert analyzer.market_wage_history[-1] == 15.0
+
 
 def test_calculate_shadow_reservation_wage_increase(analyzer):
     # Employed agent, Wage < Shadow? No, usually Wage > Shadow pulls it up.
@@ -31,6 +32,7 @@ def test_calculate_shadow_reservation_wage_increase(analyzer):
     new_wage = analyzer.calculate_shadow_reservation_wage(agent, {})
     assert abs(new_wage - 10.5) < 0.001
 
+
 def test_calculate_shadow_reservation_wage_decay(analyzer):
     # Unemployed agent
     # Logic: new = old * 0.98
@@ -43,6 +45,7 @@ def test_calculate_shadow_reservation_wage_decay(analyzer):
 
     # 10 * 0.98 = 9.8
     assert abs(new_wage - 9.8) < 0.001
+
 
 def test_calculate_shadow_reservation_wage_floor(analyzer):
     agent = MagicMock()

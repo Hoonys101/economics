@@ -1,19 +1,21 @@
-
 import unittest
 from unittest.mock import MagicMock, patch
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
 from simulation.core_agents import Household, Talent
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.enums import Tactic, Aggressiveness, Personality
 from simulation.ai_model import AIDecisionEngine
 from simulation.models import Order
 
+
 class MockConfig:
     GOODS = {
         "food": {
             "id": "food",
-            "utility_effects": {"survival": 10.0}, # Base Utility = 10
-            "production_cost": 5.0
+            "utility_effects": {"survival": 10.0},  # Base Utility = 10
+            "production_cost": 5.0,
         }
     }
     TARGET_FOOD_BUFFER_QUANTITY = 10
@@ -46,11 +48,11 @@ class MockConfig:
 class TestHouseholdMarginalUtility(unittest.TestCase):
     def setUp(self):
         self.config = MockConfig()
-        
+
         # Mock AI components
         self.mock_ai_decision_engine = MagicMock(spec=AIDecisionEngine)
         self.ai_engine = HouseholdAI("agent_1", self.mock_ai_decision_engine)
-        
+
         # Create Household
         talent = Talent(base_learning_rate=0.1, max_potential={})
         self.household = Household(
@@ -59,15 +61,17 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
             goods_data=[self.config.GOODS["food"]],
             initial_assets=1000.0,
             initial_needs={"survival": 1.0},
-            decision_engine=AIDrivenHouseholdDecisionEngine(self.ai_engine, self.config),
+            decision_engine=AIDrivenHouseholdDecisionEngine(
+                self.ai_engine, self.config
+            ),
             value_orientation="N/A",
             personality=Personality.GROWTH_ORIENTED,
-            config_module=self.config
+            config_module=self.config,
         )
         # Give infinite money
         self.household._assets = 1_000_000_000
         self.household.inventory = {"food": 0}
-        self.household.needs = {"survival": 1.0} # Needs > 0 to have utility
+        self.household.needs = {"survival": 1.0}  # Needs > 0 to have utility
 
         self.engine = AIDrivenHouseholdDecisionEngine(self.ai_engine, self.config)
 
@@ -76,7 +80,7 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
         Test that purchasing stops when Marginal Utility < Price.
         Base Utility = 10 * 1 = 10.
         MU = 10 / (1 + Inventory)
-        
+
         Scenario 1: Price = 2.0
         MU > 2.0 when Inventory < 4. (10/1=10, 10/2=5, 10/3=3.3, 10/4=2.5, 10/5=2.0)
         So it should buy exactly 4 or 5 units depending on <= or < logic.
@@ -88,29 +92,23 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
         10/5 > 2 ? No (2 > 2 is False).
         So expected quantity = 4.
         """
-        
-        market_data = {
-            "goods_market": MagicMock()
-        }
-        market_data["goods_market"].get_best_ask.return_value = 2.0 # Price = 2.0
-        
-        tactic = Tactic.BUY_BASIC_FOOD # Logic is shared in _handle_specific_purchase
-        aggressiveness = Aggressiveness.NORMAL # Factor = 1.0
+
+        market_data = {"goods_market": MagicMock()}
+        market_data["goods_market"].get_best_ask.return_value = 2.0  # Price = 2.0
+
+        tactic = Tactic.BUY_BASIC_FOOD  # Logic is shared in _handle_specific_purchase
+        aggressiveness = Aggressiveness.NORMAL  # Factor = 1.0
 
         # We need to call _handle_specific_purchase directly or simulate _execute_tactic
         # Let's call _handle_specific_purchase directly for unit testing logic
-        
+
         orders = self.engine._handle_specific_purchase(
-            self.household,
-            "food",
-            aggressiveness,
-            current_tick=1,
-            markets=market_data
+            self.household, "food", aggressiveness, current_tick=1, markets=market_data
         )
-        
+
         self.assertTrue(len(orders) > 0)
         self.assertEqual(orders[0].quantity, 4)
-        
+
     def test_high_price_prevents_buying(self):
         """
         Scenario 2: Price = 11.0
@@ -119,20 +117,19 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
         10 > 11 ? No.
         Should buy 0 units.
         """
-        market_data = {
-            "goods_market": MagicMock()
-        }
-        market_data["goods_market"].get_best_ask.return_value = 11.0 # Price = 11.0
-        
+        market_data = {"goods_market": MagicMock()}
+        market_data["goods_market"].get_best_ask.return_value = 11.0  # Price = 11.0
+
         orders = self.engine._handle_specific_purchase(
             self.household,
             "food",
             Aggressiveness.NORMAL,
             current_tick=1,
-            markets=market_data
+            markets=market_data,
         )
-        
+
         self.assertEqual(len(orders), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

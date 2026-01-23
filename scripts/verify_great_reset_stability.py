@@ -11,6 +11,7 @@ from main import create_simulation
 from utils.logging_manager import setup_logging
 import config
 
+
 # --- Verification Log Handler ---
 class VerificationLogHandler(logging.Handler):
     def __init__(self):
@@ -22,6 +23,7 @@ class VerificationLogHandler(logging.Handler):
         if "DEPOSIT_FAILURE" in msg or "ROLLBACK_FAILED" in msg:
             self.atomicity_failures.append(msg)
 
+
 def verify_great_reset_stability():
     """
     WO-115: Great Reset Stability Verification
@@ -32,7 +34,7 @@ def verify_great_reset_stability():
     setup_logging()
     verification_handler = VerificationLogHandler()
     logging.getLogger().addHandler(verification_handler)
-    
+
     logger = logging.getLogger("VERIFY")
     logger.info("Starting Great Reset Stability Verification (WO-115)...")
 
@@ -40,9 +42,9 @@ def verify_great_reset_stability():
     # Ensure stable parameters for stress test
     config.TICKS_PER_YEAR = 100
     config.GOVERNMENT_STIMULUS_ENABLED = True
-    
+
     sim = create_simulation()
-    
+
     # Baseline M2 (Zero-Sum start)
     # M2 Definition: Sum of all agent assets + bank reserves
     def get_total_m2():
@@ -51,8 +53,8 @@ def verify_great_reset_stability():
         gov_assets = sim.government.assets
         bank_assets = sim.bank.assets
         # Reflux balance (Sunk costs)
-        reflux_bal = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
-        
+        reflux_bal = sim.reflux_system.balance if hasattr(sim, "reflux_system") else 0.0
+
         return h_assets + f_assets + gov_assets + bank_assets + reflux_bal
 
     m2_start = get_total_m2()
@@ -68,25 +70,29 @@ def verify_great_reset_stability():
         except Exception as e:
             logger.critical(f"Simulation CRASHED at tick {tick}: {e}")
             break
-            
+
         # Monitor Drift
         current_m2 = get_total_m2()
         drift = current_m2 - m2_start
         drift_history.append(drift)
-        
+
         if tick % 100 == 0:
             debt_to_gdp = sim.government.get_debt_to_gdp_ratio()
-            logger.info(f"Tick {tick:4} | M2: {current_m2:,.2f} | Drift: {drift:+.4f} | Debt/GDP: {debt_to_gdp:.2%}")
+            logger.info(
+                f"Tick {tick:4} | M2: {current_m2:,.2f} | Drift: {drift:+.4f} | Debt/GDP: {debt_to_gdp:.2%}"
+            )
 
     # 4. Final Analysis
     logger.info("Simulation Complete. Finalizing Report.")
-    
+
     m2_end = get_total_m2()
     total_drift = m2_end - m2_start
-    
+
     report = []
     report.append("# Great Reset Stability Report")
-    report.append(f"**Final Status**: {'PASSED' if abs(total_drift) < 1.0 else 'FAILED'}")
+    report.append(
+        f"**Final Status**: {'PASSED' if abs(total_drift) < 1.0 else 'FAILED'}"
+    )
     report.append("")
     report.append(f"- **Start M2**: {m2_start:,.2f}")
     report.append(f"- **End M2**: {m2_end:,.2f}")
@@ -95,7 +101,9 @@ def verify_great_reset_stability():
     report.append("")
     report.append("## Atomicity Integrity")
     if verification_handler.atomicity_failures:
-        report.append(f"**FAILED**: {len(verification_handler.atomicity_failures)} failures detected.")
+        report.append(
+            f"**FAILED**: {len(verification_handler.atomicity_failures)} failures detected."
+        )
         for f in verification_handler.atomicity_failures[:5]:
             report.append(f"- {f}")
     else:
@@ -106,12 +114,15 @@ def verify_great_reset_stability():
         f.write("\n".join(report))
 
     logger.info("Report saved to reports/GREAT_RESET_REPORT.md")
-    
+
     if abs(total_drift) >= 1.0:
-        logger.error(f"CRITICAL: M2 Money Supply Drift detected! Total Leak: {total_drift:.4f}")
+        logger.error(
+            f"CRITICAL: M2 Money Supply Drift detected! Total Leak: {total_drift:.4f}"
+        )
         sys.exit(1)
-    
+
     sys.exit(0)
+
 
 if __name__ == "__main__":
     verify_great_reset_stability()

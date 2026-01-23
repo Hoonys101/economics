@@ -1,4 +1,3 @@
-
 import logging
 import sys
 import os
@@ -18,16 +17,17 @@ from app import create_simulation, simulation_instance, get_or_create_simulation
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("EconomyCheck")
 
+
 class TestEconomicConservation(unittest.TestCase):
     def setUp(self):
         self.original_config = {}
-        
+
     def test_conservation_of_money(self):
         print("\n>>> Initializing Simulation for Conservation Check...")
-        
+
         create_simulation()
         from app import simulation_instance as sim
-        
+
         if not sim:
             self.fail("Failed to create simulation.")
 
@@ -41,10 +41,10 @@ class TestEconomicConservation(unittest.TestCase):
 
         initial_money = calculate_total_money(sim)
         print(f"Initial Money Supply: {initial_money:,.2f}")
-        
+
         ticks_to_run = 100
         prev_money = initial_money
-        
+
         print(f"{'Tick':<5} | {'Total Money':<15} | {'Diff':<10}")
         print("-" * 35)
 
@@ -53,7 +53,7 @@ class TestEconomicConservation(unittest.TestCase):
 
             current_money = calculate_total_money(sim)
             diff = current_money - prev_money
-            
+
             # Print periodically or on error
             if i % 10 == 0 or diff < -0.01:
                 print(f"{i:<5} | {current_money:<15,.2f} | {diff:<10.4f}")
@@ -62,13 +62,14 @@ class TestEconomicConservation(unittest.TestCase):
             # Fail only if money decreases significantly (Leak)
             # Increases are allowed (Central Bank injection, Deficit Spending)
             if diff < -1.0:
-                 self.fail(f"Money Leakage Detected at Tick {i}. Diff: {diff}")
+                self.fail(f"Money Leakage Detected at Tick {i}. Diff: {diff}")
 
             prev_money = current_money
 
         print("\n>>> Conservation Test Passed.")
         print(f"Final Money: {prev_money:,.2f}")
         print(f"Net Change: {prev_money - initial_money:,.2f}")
+
 
 if __name__ == "__main__":
     unittest.main()

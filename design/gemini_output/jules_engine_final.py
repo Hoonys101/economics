@@ -18,23 +18,30 @@ from simulation.loan_market import LoanMarket
 from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
-from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
+from simulation.metrics.stock_tracker import (
+    StockMarketTracker,
+    PersonalityStatisticsTracker,
+)
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
 from simulation.systems.reflux_system import EconomicRefluxSystem
-from simulation.systems.demographic_manager import DemographicManager # Phase 19
-from simulation.systems.immigration_manager import ImmigrationManager # Phase 20-3
-from simulation.systems.inheritance_manager import InheritanceManager # Phase 22 (WO-049)
-from simulation.systems.housing_system import HousingSystem # Phase 22.5
-from simulation.systems.persistence_manager import PersistenceManager # Phase 22.5
-from simulation.systems.firm_management import FirmSystem # Phase 22.5
-from simulation.systems.technology_manager import TechnologyManager # Phase 23 (WO-053)
-from simulation.systems.bootstrapper import Bootstrapper # WO-058
+from simulation.systems.demographic_manager import DemographicManager  # Phase 19
+from simulation.systems.immigration_manager import ImmigrationManager  # Phase 20-3
+from simulation.systems.inheritance_manager import (
+    InheritanceManager,
+)  # Phase 22 (WO-049)
+from simulation.systems.housing_system import HousingSystem  # Phase 22.5
+from simulation.systems.persistence_manager import PersistenceManager  # Phase 22.5
+from simulation.systems.firm_management import FirmSystem  # Phase 22.5
+from simulation.systems.technology_manager import TechnologyManager  # Phase 23 (WO-053)
+from simulation.systems.bootstrapper import Bootstrapper  # WO-058
 from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
-from simulation.decisions.housing_manager import HousingManager # For rank/tier helper
+from simulation.decisions.housing_manager import HousingManager  # For rank/tier helper
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
-from simulation.systems.transaction_processor import TransactionProcessor # SoC Refactor
+from simulation.systems.transaction_processor import (
+    TransactionProcessor,
+)  # SoC Refactor
 from modules.finance.system import FinanceSystem
 
 # Use the repository pattern for data access
@@ -82,21 +89,19 @@ class Simulation:
         self.config_module = config_module
         self.time: int = 0
 
-        self.batch_save_interval = 50 # WO-051: Hardcoded I/O Optimization
+        self.batch_save_interval = 50  # WO-051: Hardcoded I/O Optimization
 
         self.bank = Bank(
             id=self.next_agent_id,
             initial_assets=self.config_module.INITIAL_BANK_ASSETS,
-            config_module=self.config_module
+            config_module=self.config_module,
         )
         self.agents[self.bank.id] = self.bank
         self.next_agent_id += 1
 
         # 정부 에이전트 초기화
         self.government = Government(
-            id=self.next_agent_id, 
-            initial_assets=0.0, 
-            config_module=self.config_module
+            id=self.next_agent_id, initial_assets=0.0, config_module=self.config_module
         )
         self.agents[self.government.id] = self.government
         self.next_agent_id += 1
@@ -108,8 +113,7 @@ class Simulation:
 
         # Central Bank Initialization (Phase 10)
         self.central_bank = CentralBank(
-            tracker=self.tracker,
-            config_module=self.config_module
+            tracker=self.tracker, config_module=self.config_module
         )
         # Central Bank is not in self.agents dict as it's a special system agent
         # similar to how markets are handled, or we can add it if needed.
@@ -120,20 +124,25 @@ class Simulation:
             government=self.government,
             central_bank=self.central_bank,
             bank=self.bank,
-            config_module=self.config_module
+            config_module=self.config_module,
         )
-        self.government.finance_system = self.finance_system # Inject into government
+        self.government.finance_system = self.finance_system  # Inject into government
 
         # Phase 17-3A: Initialize Real Estate Units
         self.real_estate_units: List[RealEstateUnit] = [
-            RealEstateUnit(id=i, estimated_value=self.config_module.INITIAL_PROPERTY_VALUE,
-                           rent_price=self.config_module.INITIAL_RENT_PRICE)
+            RealEstateUnit(
+                id=i,
+                estimated_value=self.config_module.INITIAL_PROPERTY_VALUE,
+                rent_price=self.config_module.INITIAL_RENT_PRICE,
+            )
             for i in range(self.config_module.NUM_HOUSING_UNITS)
         ]
 
         # Distribute to top 20% households
         top_20_count = len(self.households) // 5
-        top_households = sorted(self.households, key=lambda h: h.assets, reverse=True)[:top_20_count]
+        top_households = sorted(self.households, key=lambda h: h.assets, reverse=True)[
+            :top_20_count
+        ]
 
         for i, hh in enumerate(top_households):
             if i < len(self.real_estate_units):
@@ -155,12 +164,14 @@ class Simulation:
         )
         # Pass agents reference to LoanMarket for credit check
         self.markets["loan_market"].agents_ref = self.agents
-        
+
         if getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
-            self.stock_market = StockMarket(config_module=self.config_module, logger=self.logger)
+            self.stock_market = StockMarket(
+                config_module=self.config_module, logger=self.logger
+            )
             self.stock_tracker = StockMarketTracker(config_module=self.config_module)
             self.markets["stock_market"] = self.stock_market
-            
+
             # Phase 25/WO-060: Automatic IPO for existing firms
             for firm in self.firms:
                 if hasattr(firm, "init_ipo"):
@@ -171,18 +182,18 @@ class Simulation:
 
         # Phase 17-3B: Housing Market & Initial Sales
         self.markets["housing"] = OrderBookMarket(market_id="housing")
-        
+
         # Government places SELL orders for unowned properties (80 units)
         for unit in self.real_estate_units:
             if unit.owner_id is None:
                 # Sell Order: item_id="unit_{id}", price=estimated_value, qty=1
                 sell_order = Order(
-                    agent_id=self.government.id, # Government ID
+                    agent_id=self.government.id,  # Government ID
                     item_id=f"unit_{unit.id}",
                     price=unit.estimated_value,
                     quantity=1.0,
                     market_id="housing",
-                    order_type="SELL"
+                    order_type="SELL",
                 )
                 if "housing" in self.markets:
                     self.markets["housing"].place_order(sell_order, self.time)
@@ -190,7 +201,7 @@ class Simulation:
         # 2. 에이전트 욕구 업데이트 (Update Needs)
         for agent in self.households + self.firms:
             agent.update_needs(self.time)
-            
+
         # 3. 에이전트 의사결정 및 행동 (Decisions & Actions)
         for agent in self.households + self.firms:
             agent.decision_engine.markets = self.markets
@@ -200,15 +211,17 @@ class Simulation:
 
         self.repository = repository
         # self.tracker = EconomicIndicatorTracker(config_module=config_module) # Moved up
-        
+
         # 추가 지표 Tracker 초기화
         self.inequality_tracker = InequalityTracker(config_module=config_module)
-        self.personality_tracker = PersonalityStatisticsTracker(config_module=config_module)
-        
+        self.personality_tracker = PersonalityStatisticsTracker(
+            config_module=config_module
+        )
+
         self.ai_training_manager = AITrainingManager(
             self.households, self.config_module
         )
-        
+
         # M&A Manager System
         self.ma_manager = MAManager(self, self.config_module)
 
@@ -229,16 +242,18 @@ class Simulation:
 
         # Phase 22.5: Persistence Manager (Refactored)
         self.persistence_manager = PersistenceManager(
-            run_id=0, # Placeholder, will be set after run_id is generated below
+            run_id=0,  # Placeholder, will be set after run_id is generated below
             config_module=self.config_module,
-            repository=self.repository
+            repository=self.repository,
         )
 
         # Phase 22.5: Firm System (Refactored)
         self.firm_system = FirmSystem(config_module=self.config_module)
 
         # Phase 23: Technology Manager
-        self.technology_manager = TechnologyManager(config_module=self.config_module, logger=self.logger)
+        self.technology_manager = TechnologyManager(
+            config_module=self.config_module, logger=self.logger
+        )
 
         # [WO-058] Bootstrapper Injection (Economic CPR)
         # Ensure firms have resources to start production
@@ -246,7 +261,9 @@ class Simulation:
         Bootstrapper.force_assign_workers(self.firms, self.households)
 
         # WO-058: Generational Wealth Audit
-        self.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config_module)
+        self.generational_wealth_audit = GenerationalWealthAudit(
+            config_module=self.config_module
+        )
 
         # WO-051: Vectorized Planner Initialization
         self.breeding_planner = VectorizedHouseholdPlanner(self.config_module)
@@ -288,8 +305,6 @@ class Simulation:
         self.repository.close()
         self.logger.info("Simulation finalized and Repository connection closed.")
 
-
-
     def _update_social_ranks(self):
         """Phase 17-4: Update Social Rank (Percentile)"""
         # 1. Calculate Scores
@@ -298,11 +313,12 @@ class Simulation:
         hm = HousingManager(None, self.config_module)
 
         for h in self.households:
-            if not h.is_active: continue
+            if not h.is_active:
+                continue
 
-            consumption_score = h.current_consumption * 10.0 # Weight consumption
+            consumption_score = h.current_consumption * 10.0  # Weight consumption
             housing_tier = hm.get_housing_tier(h)
-            housing_score = housing_tier * 1000.0 # Tier 1=1000, Tier 3=3000
+            housing_score = housing_tier * 1000.0  # Tier 1=1000, Tier 3=3000
 
             total_score = consumption_score + housing_score
             scores.append((h.id, total_score))
@@ -310,7 +326,8 @@ class Simulation:
         # 2. Sort and Assign Rank
         sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
         n = len(sorted_scores)
-        if n == 0: return
+        if n == 0:
+            return
 
         for rank_idx, (hid, _) in enumerate(sorted_scores):
             # Rank 0 (Top) -> Percentile 1.0
@@ -327,7 +344,11 @@ class Simulation:
             return {"avg_consumption": 0.0, "avg_housing_tier": 0.0}
 
         top_20_count = max(1, int(len(active_households) * 0.20))
-        sorted_hh = sorted(active_households, key=lambda h: getattr(h, "social_rank", 0.0), reverse=True)
+        sorted_hh = sorted(
+            active_households,
+            key=lambda h: getattr(h, "social_rank", 0.0),
+            reverse=True,
+        )
         top_20 = sorted_hh[:top_20_count]
 
         # Temp helper
@@ -336,18 +357,17 @@ class Simulation:
         avg_cons = sum(h.current_consumption for h in top_20) / len(top_20)
         avg_tier = sum(hm.get_housing_tier(h) for h in top_20) / len(top_20)
 
-        return {
-            "avg_consumption": avg_cons,
-            "avg_housing_tier": avg_tier
-        }
+        return {"avg_consumption": avg_cons, "avg_housing_tier": avg_tier}
 
-    def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
+    def run_tick(
+        self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None
+    ) -> None:
         # --- Gold Standard / Money Supply Verification (WO-016) ---
         if self.time == 0:
             self.baseline_money_supply = self._calculate_total_money()
             self.logger.info(
                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {self.baseline_money_supply:.2f}",
-                extra={"tick": self.time, "money_supply": self.baseline_money_supply}
+                extra={"tick": self.time, "money_supply": self.baseline_money_supply},
             )
 
         self.time += 1
@@ -360,9 +380,9 @@ class Simulation:
         if self.time == 200:
             self.logger.warning("🔥 CHAOS: Inflation Shock at Tick 200!")
             for market_name, market in self.markets.items():
-                if hasattr(market, 'current_price'):
+                if hasattr(market, "current_price"):
                     market.current_price *= 1.5
-                if hasattr(market, 'avg_price'):
+                if hasattr(market, "avg_price"):
                     market.avg_price *= 1.5
 
         if self.time == 600:
@@ -373,7 +393,9 @@ class Simulation:
                 # If further impact is needed, household.monthly_income could also be reduced by 50%.
 
         # WO-054: Government Public Education Logic (START OF TICK)
-        self.government.run_public_education(self.households, self.config_module, self.time, self.reflux_system)
+        self.government.run_public_education(
+            self.households, self.config_module, self.time, self.reflux_system
+        )
 
         if (
             self.time > 0
@@ -384,19 +406,24 @@ class Simulation:
         # Update Bank Tick (Interest Processing)
         # Phase 4: Pass current_tick to bank for credit jail logic
         # Phase 8-B: Pass reflux_system to capture bank profits
-        if hasattr(self.bank, "run_tick") and "reflux_system" in self.bank.run_tick.__code__.co_varnames:
-             self.bank.run_tick(self.agents, self.time, reflux_system=self.reflux_system)
-        elif hasattr(self.bank, "run_tick") and "current_tick" in self.bank.run_tick.__code__.co_varnames:
-             self.bank.run_tick(self.agents, self.time)
+        if (
+            hasattr(self.bank, "run_tick")
+            and "reflux_system" in self.bank.run_tick.__code__.co_varnames
+        ):
+            self.bank.run_tick(self.agents, self.time, reflux_system=self.reflux_system)
+        elif (
+            hasattr(self.bank, "run_tick")
+            and "current_tick" in self.bank.run_tick.__code__.co_varnames
+        ):
+            self.bank.run_tick(self.agents, self.time)
         else:
-             self.bank.run_tick(self.agents)
-
+            self.bank.run_tick(self.agents)
 
         # Legacy call removed: self.government.update_monetary_policy(...)
 
         # Phase 14-1: Firm Profit Distribution (Operation Reflux)
         for firm in self.firms:
-             firm.distribute_profit(self.agents, self.time)
+            firm.distribute_profit(self.agents, self.time)
 
         for firm in self.firms:
             firm.hires_last_tick = 0
@@ -407,7 +434,13 @@ class Simulation:
 
         # WO-057-Fix: Update tracker with the latest data before government decisions
         money_supply = self._calculate_total_money()
-        self.tracker.track(self.time, self.households, self.firms, self.markets, money_supply=money_supply)
+        self.tracker.track(
+            self.time,
+            self.households,
+            self.firms,
+            self.markets,
+            money_supply=money_supply,
+        )
 
         # [WO-060] Update stock market reference prices at the start of the tick
         if self.stock_market is not None:
@@ -419,7 +452,7 @@ class Simulation:
             self._update_social_ranks()
 
         market_data = self._prepare_market_data(self.tracker)
-        
+
         # Inject Reference Standard
         if getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False):
             ref_std = self._calculate_reference_standard()
@@ -441,7 +474,9 @@ class Simulation:
         # Inflation (Price Change)
         current_price = latest_indicators.get("avg_goods_price", 10.0)
         last_price = self.last_avg_price_for_sma
-        inflation_rate = (current_price - last_price) / last_price if last_price > 0 else 0.0
+        inflation_rate = (
+            (current_price - last_price) / last_price if last_price > 0 else 0.0
+        )
         self.last_avg_price_for_sma = current_price
 
         # Unemployment
@@ -477,7 +512,7 @@ class Simulation:
             gdp_growth_sma=calculate_sma(self.gdp_growth_buffer),
             wage_sma=calculate_sma(self.wage_buffer),
             approval_sma=calculate_sma(self.approval_buffer),
-            current_gdp=current_gdp
+            current_gdp=current_gdp,
         )
 
         # Supply to Government
@@ -486,7 +521,7 @@ class Simulation:
             self.government.update_sensory_data(injectable_sensory_dto)
             self.logger.warning(
                 f"INJECTED_SENSORY_DATA | Overrode sensory data for tick {self.time} with custom DTO.",
-                extra={"tick": self.time, "tags": ["test_injection"]}
+                extra={"tick": self.time, "tags": ["test_injection"]},
             )
         else:
             self.government.update_sensory_data(sensory_dto)
@@ -497,19 +532,29 @@ class Simulation:
             interest_rate_trend = self.bank.base_rate - self.last_interest_rate
             self.last_interest_rate = self.bank.base_rate
 
-            market_volatility = self.stock_tracker.get_market_volatility() if self.stock_tracker else 0.0
+            market_volatility = (
+                self.stock_tracker.get_market_volatility()
+                if self.stock_tracker
+                else 0.0
+            )
 
             macro_financial_context = MacroFinancialContext(
                 inflation_rate=sensory_dto.inflation_sma,
                 gdp_growth_rate=sensory_dto.gdp_growth_sma,
                 market_volatility=market_volatility,
-                interest_rate_trend=interest_rate_trend
+                interest_rate_trend=interest_rate_trend,
             )
 
         # [DEBUG WO-057]
-        self.logger.info(f"DEBUG_WO057 | Tick {self.time} | Indicators: {list(latest_indicators.keys())}")
-        self.logger.info(f"DEBUG_WO057 | AvgPrice: {latest_indicators.get('avg_goods_price', 'MISSING')}")
-        self.logger.info(f"DEBUG_WO057 | SensoryDTO: InfSMA={sensory_dto.inflation_sma:.4f}, UnempSMA={sensory_dto.unemployment_sma:.4f}, DebtRat={sensory_dto.current_gdp:.4f}")
+        self.logger.info(
+            f"DEBUG_WO057 | Tick {self.time} | Indicators: {list(latest_indicators.keys())}"
+        )
+        self.logger.info(
+            f"DEBUG_WO057 | AvgPrice: {latest_indicators.get('avg_goods_price', 'MISSING')}"
+        )
+        self.logger.info(
+            f"DEBUG_WO057 | SensoryDTO: InfSMA={sensory_dto.inflation_sma:.4f}, UnempSMA={sensory_dto.unemployment_sma:.4f}, DebtRat={sensory_dto.current_gdp:.4f}"
+        )
         # -----------------------------------------
 
         # 3. Government Makes Policy Decision
@@ -536,13 +581,17 @@ class Simulation:
         self.finance_system.service_debt(self.time)
 
         # Phase 4: Welfare Check (Executes Subsidies based on Policy)
-        self.government.run_welfare_check(list(self.agents.values()), market_data, self.time)
+        self.government.run_welfare_check(
+            list(self.agents.values()), market_data, self.time
+        )
 
         # Snapshot agents for learning (Pre-state)
         for f in self.firms:
-            if f.is_active: f.pre_state_snapshot = f.get_agent_data()
+            if f.is_active:
+                f.pre_state_snapshot = f.get_agent_data()
         for h in self.households:
-            if h.is_active: h.pre_state_snapshot = h.get_agent_data()
+            if h.is_active:
+                h.pre_state_snapshot = h.get_agent_data()
 
         all_transactions: List[Transaction] = []
 
@@ -550,16 +599,21 @@ class Simulation:
         for firm in self.firms:
             if firm.is_active:
                 # Guard for AI-driven engines (RuleBased engines don't have ai_engine)
-                if hasattr(firm.decision_engine, 'ai_engine') and firm.decision_engine.ai_engine:
+                if (
+                    hasattr(firm.decision_engine, "ai_engine")
+                    and firm.decision_engine.ai_engine
+                ):
                     pre_strategic_state = (
                         firm.decision_engine.ai_engine._get_strategic_state(
                             firm.get_agent_data(), market_data
                         )
                     )
-                    pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(
-                        firm.decision_engine.ai_engine.chosen_intention,
-                        firm.get_agent_data(),
-                        market_data,
+                    pre_tactical_state = (
+                        firm.decision_engine.ai_engine._get_tactical_state(
+                            firm.decision_engine.ai_engine.chosen_intention,
+                            firm.get_agent_data(),
+                            market_data,
+                        )
                     )
                     firm_pre_states[firm.id] = {
                         "pre_strategic_state": pre_strategic_state,
@@ -569,42 +623,59 @@ class Simulation:
                     }
 
                 # Phase 8-B: Pass reflux_system to firm.make_decision for CAPEX capture
-                firm_orders, action_vector = firm.make_decision(self.markets, self.goods_data, market_data, self.time, self.government, self.reflux_system)
+                firm_orders, action_vector = firm.make_decision(
+                    self.markets,
+                    self.goods_data,
+                    market_data,
+                    self.time,
+                    self.government,
+                    self.reflux_system,
+                )
                 for order in firm_orders:
                     target_market = self.markets.get(order.market_id)
                     if target_market:
                         target_market.place_order(order, self.time)
-                
-                self.logger.debug(f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets.")
+
+                self.logger.debug(
+                    f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets."
+                )
 
         household_pre_states = {}
         household_time_allocation = {}  # Store time allocation for later use
         for household in self.households:
             if household.is_active:
                 # Guard for AI-driven engines (RuleBased engines don't have ai_engine)
-                if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
+                if (
+                    hasattr(household.decision_engine, "ai_engine")
+                    and household.decision_engine.ai_engine
+                ):
                     pre_strategic_state = (
                         household.decision_engine.ai_engine._get_strategic_state(
                             household.get_agent_data(), market_data
                         )
                     )
                     household_pre_states[household.id] = {
-                        "pre_strategic_state": pre_strategic_state, # Legacy support
+                        "pre_strategic_state": pre_strategic_state,  # Legacy support
                     }
 
                 # make_decision return (orders, vector)
                 household_orders, action_vector = household.make_decision(
-                    self.markets, self.goods_data, market_data, self.time, self.government, macro_financial_context
+                    self.markets,
+                    self.goods_data,
+                    market_data,
+                    self.time,
+                    self.government,
+                    macro_financial_context,
                 )
 
                 # Phase 5: Calculate Time Allocation (Hydraulic Model)
                 # work_hours = work_agg * MAX_WORK_HOURS
                 # leisure_hours = 24 - work_hours - SHOPPING_HOURS
                 # Guard: RuleBased engines return tuple, not ActionVector DTO
-                if hasattr(action_vector, 'work_aggressiveness'):
+                if hasattr(action_vector, "work_aggressiveness"):
                     work_aggressiveness = action_vector.work_aggressiveness
                 else:
-                    work_aggressiveness = 0.5 # Default for RuleBased
+                    work_aggressiveness = 0.5  # Default for RuleBased
                 max_work_hours = self.config_module.MAX_WORK_HOURS
                 shopping_hours = getattr(self.config_module, "SHOPPING_HOURS", 2.0)
                 hours_per_tick = getattr(self.config_module, "HOURS_PER_TICK", 24.0)
@@ -618,7 +689,9 @@ class Simulation:
                 for order in household_orders:
                     # [Phase 23.5 Fix] Handle INVEST orders for startup creation (Active Entrepreneurship)
                     if order.order_type == "INVEST" and order.market_id == "admin":
-                        self.logger.info(f"FOUND_INVEST_ORDER | Agent {household.id} attempting startup via admin market.")
+                        self.logger.info(
+                            f"FOUND_INVEST_ORDER | Agent {household.id} attempting startup via admin market."
+                        )
                         self.firm_system.spawn_firm(self, household)
                         continue
 
@@ -626,9 +699,14 @@ class Simulation:
                     target_market_id = order.market_id
 
                     # Routing Logic for Deposit/Withdraw/Loan
-                    if order.order_type in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
+                    if order.order_type in [
+                        "DEPOSIT",
+                        "WITHDRAW",
+                        "LOAN_REQUEST",
+                        "REPAYMENT",
+                    ]:
                         target_market_id = "loan_market"
-                    elif order.item_id in ["deposit", "currency"]: # Fallback
+                    elif order.item_id in ["deposit", "currency"]:  # Fallback
                         target_market_id = "loan_market"
 
                     household_target_market = self.markets.get(target_market_id)
@@ -641,7 +719,9 @@ class Simulation:
                             extra={"tick": self.time},
                         )
 
-                self.logger.debug(f"TRACE_ENGINE | Household {household.id} submitted {len(household_orders)} orders back to engine.")
+                self.logger.debug(
+                    f"TRACE_ENGINE | Household {household.id} submitted {len(household_orders)} orders back to engine."
+                )
 
         for market in self.markets.values():
             if isinstance(market, OrderBookMarket):
@@ -664,15 +744,15 @@ class Simulation:
         # ---------------------------------------------------------
         # After transactions, households have goods in inventory.
         # Now they must consume them to satisfy needs.
-        household_leisure_effects = {} # Store utility for AI reward injection
+        household_leisure_effects = {}  # Store utility for AI reward injection
 
         # Recalculate vacancy count for correct death classification
         current_vacancies = 0
         labor_market = self.markets.get("labor")
         if labor_market and isinstance(labor_market, OrderBookMarket):
-             for item_orders in labor_market.buy_orders.values():
-                 for order in item_orders:
-                     current_vacancies += order.quantity
+            for item_orders in labor_market.buy_orders.values():
+                for order in item_orders:
+                    current_vacancies += order.quantity
 
         # Create a consumption-specific market data context
         consumption_market_data = market_data.copy()
@@ -680,71 +760,93 @@ class Simulation:
 
         # WO-051: Vectorized Consumption Logic
         # Pre-calculate consumption/purchase decisions for all households
-        batch_decisions = self.breeding_planner.decide_consumption_batch(self.households, consumption_market_data)
-        consume_list = batch_decisions.get('consume', [0] * len(self.households))
-        buy_list = batch_decisions.get('buy', [0] * len(self.households))
-        food_price = batch_decisions.get('price', 5.0)  # Default food price
+        batch_decisions = self.breeding_planner.decide_consumption_batch(
+            self.households, consumption_market_data
+        )
+        consume_list = batch_decisions.get("consume", [0] * len(self.households))
+        buy_list = batch_decisions.get("buy", [0] * len(self.households))
+        food_price = batch_decisions.get("price", 5.0)  # Default food price
 
         for i, household in enumerate(self.households):
-             if household.is_active:
+            if household.is_active:
+                # 1. Consumption (Vectorized Optimization)
+                # Replace decide_and_consume with vectorized result application
+                consumed_items = {}
 
-                 # 1. Consumption (Vectorized Optimization)
-                 # Replace decide_and_consume with vectorized result application
-                 consumed_items = {}
+                # 1a. Fast Consumption (Basic Food)
+                if i < len(consume_list):
+                    c_amt = consume_list[i]
+                    if c_amt > 0:
+                        household.consume("basic_food", c_amt, self.time)
+                        consumed_items["basic_food"] = c_amt
 
-                 # 1a. Fast Consumption (Basic Food)
-                 if i < len(consume_list):
-                     c_amt = consume_list[i]
-                     if c_amt > 0:
-                         household.consume("basic_food", c_amt, self.time)
-                         consumed_items["basic_food"] = c_amt
+                # 1b. Fast Purchase (Survival Rescue - Logic Map Item 3)
+                if i < len(buy_list):
+                    b_amt = buy_list[i]
+                    if b_amt > 0:
+                        cost = b_amt * food_price
+                        if household.assets >= cost:
+                            household.assets -= cost
+                            household.inventory["basic_food"] = (
+                                household.inventory.get("basic_food", 0) + b_amt
+                            )
+                            # To prevent money destruction, we route this to Reflux System (Sink)
+                            self.reflux_system.capture(
+                                cost,
+                                source=f"Household_{household.id}",
+                                category="emergency_food",
+                            )
+                            self.logger.debug(
+                                f"VECTOR_BUY | Household {household.id} bought {b_amt:.1f} food (Fast Track)",
+                                extra={
+                                    "agent_id": household.id,
+                                    "tags": ["consumption", "vector_buy"],
+                                },
+                            )
+                            # Consume immediately if they were starving and bought it?
+                            # The planner separates buy/consume. If they bought, they might consume next tick
+                            # or we can force consume now if consumption was 0?
+                            # Vector planner logic for consumption relies on Inventory > 0.
+                            # If inventory was 0, c_amt is 0.
+                            # If we buy now, we should probably allow immediate consumption.
+                            if c_amt == 0:
+                                consume_now = min(
+                                    b_amt,
+                                    getattr(
+                                        self.config_module,
+                                        "FOOD_CONSUMPTION_QUANTITY",
+                                        1.0,
+                                    ),
+                                )
+                                household.consume("basic_food", consume_now, self.time)
+                                consumed_items["basic_food"] = consume_now
 
-                 # 1b. Fast Purchase (Survival Rescue - Logic Map Item 3)
-                 if i < len(buy_list):
-                     b_amt = buy_list[i]
-                     if b_amt > 0:
-                         cost = b_amt * food_price
-                         if household.assets >= cost:
-                             household.assets -= cost
-                             household.inventory["basic_food"] = household.inventory.get("basic_food", 0) + b_amt
-                             # To prevent money destruction, we route this to Reflux System (Sink)
-                             self.reflux_system.capture(cost, source=f"Household_{household.id}", category="emergency_food")
-                             self.logger.debug(
-                                 f"VECTOR_BUY | Household {household.id} bought {b_amt:.1f} food (Fast Track)",
-                                 extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
-                             )
-                             # Consume immediately if they were starving and bought it?
-                             # The planner separates buy/consume. If they bought, they might consume next tick
-                             # or we can force consume now if consumption was 0?
-                             # Vector planner logic for consumption relies on Inventory > 0.
-                             # If inventory was 0, c_amt is 0.
-                             # If we buy now, we should probably allow immediate consumption.
-                             if c_amt == 0:
-                                 consume_now = min(b_amt, getattr(self.config_module, "FOOD_CONSUMPTION_QUANTITY", 1.0))
-                                 household.consume("basic_food", consume_now, self.time)
-                                 consumed_items["basic_food"] = consume_now
+                # 2. Phase 5: Leisure Effect Application
+                leisure_hours = household_time_allocation.get(household.id, 0.0)
+                effect_dto = household.apply_leisure_effect(
+                    leisure_hours, consumed_items
+                )
 
-                 # 2. Phase 5: Leisure Effect Application
-                 leisure_hours = household_time_allocation.get(household.id, 0.0)
-                 effect_dto = household.apply_leisure_effect(leisure_hours, consumed_items)
-                 
-                 # 3. Lifecycle Update [BUGFIX: WO-Diag-003]
-                 household.update_needs(self.time, consumption_market_data)
+                # 3. Lifecycle Update [BUGFIX: WO-Diag-003]
+                household.update_needs(self.time, consumption_market_data)
 
-                 # Store utility for reward injection
-                 household_leisure_effects[household.id] = effect_dto.utility_gained
+                # Store utility for reward injection
+                household_leisure_effects[household.id] = effect_dto.utility_gained
 
-                 # Apply XP to Children (if Parenting)
-                 if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:
-                     for child_id in household.children_ids:
-                         # Children might be in self.agents
-                         child = self.agents.get(child_id)
-                         if child and isinstance(child, Household) and child.is_active:
-                             child.education_xp += effect_dto.xp_gained
-                             self.logger.debug(
-                                 f"PARENTING_XP_TRANSFER | Parent {household.id} -> Child {child_id}. XP: {effect_dto.xp_gained:.4f}",
-                                 extra={"agent_id": household.id, "tags": ["LEISURE_EFFECT", "parenting"]}
-                             )
+                # Apply XP to Children (if Parenting)
+                if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:
+                    for child_id in household.children_ids:
+                        # Children might be in self.agents
+                        child = self.agents.get(child_id)
+                        if child and isinstance(child, Household) and child.is_active:
+                            child.education_xp += effect_dto.xp_gained
+                            self.logger.debug(
+                                f"PARENTING_XP_TRANSFER | Parent {household.id} -> Child {child_id}. XP: {effect_dto.xp_gained:.4f}",
+                                extra={
+                                    "agent_id": household.id,
+                                    "tags": ["LEISURE_EFFECT", "parenting"],
+                                },
+                            )
 
         # --- Phase 23: Technology Manager Update ---
         self.technology_manager.update(self.time, self)
@@ -755,8 +857,8 @@ class Simulation:
 
         # Phase 17-3B: Housing Market Matching
         if "housing" in self.markets:
-             housing_transactions = self.markets["housing"].match_orders(self.time)
-             all_transactions.extend(housing_transactions)
+            housing_transactions = self.markets["housing"].match_orders(self.time)
+            all_transactions.extend(housing_transactions)
 
         # --- Phase 19: Population Dynamics ---
         # 1. Aging
@@ -812,19 +914,25 @@ class Simulation:
         # Activate Farm Logic (Production & Needs/Wages)
         # ---------------------------------------------------------
         for firm in self.firms:
-             if firm.is_active:
-                 # Phase 23: Pass Technology Manager for Productivity
-                 firm.produce(self.time, technology_manager=self.technology_manager)
-                 # Phase 4: Pass government and market_data for income tax withholding
-                 # Phase 8-B: Pass reflux_system for expense capture
-                 firm.update_needs(self.time, self.government, market_data, self.reflux_system)
-                 
-                 # 2a. 법인세(Corporate Tax) 징수 (이익이 발생한 경우)
-                 # [LEVIATHAN UPDATE] use government.calculate_corporate_tax
-                 if firm.is_active and firm.current_profit > 0:
-                     tax_amount = self.government.calculate_corporate_tax(firm.current_profit)
-                     firm.assets -= tax_amount
-                     self.government.collect_tax(tax_amount, "corporate_tax", firm.id, self.time)
+            if firm.is_active:
+                # Phase 23: Pass Technology Manager for Productivity
+                firm.produce(self.time, technology_manager=self.technology_manager)
+                # Phase 4: Pass government and market_data for income tax withholding
+                # Phase 8-B: Pass reflux_system for expense capture
+                firm.update_needs(
+                    self.time, self.government, market_data, self.reflux_system
+                )
+
+                # 2a. 법인세(Corporate Tax) 징수 (이익이 발생한 경우)
+                # [LEVIATHAN UPDATE] use government.calculate_corporate_tax
+                if firm.is_active and firm.current_profit > 0:
+                    tax_amount = self.government.calculate_corporate_tax(
+                        firm.current_profit
+                    )
+                    firm.assets -= tax_amount
+                    self.government.collect_tax(
+                        tax_amount, "corporate_tax", firm.id, self.time
+                    )
 
         # 2b. 정부 인프라 투자 (예산 충족 시)
         # Phase 8-B: Pass reflux_system to capture infrastructure spending
@@ -832,39 +940,36 @@ class Simulation:
             # 인프라 투자 성공 시 모든 기업의 TFP 상향 조정
             tfp_boost = getattr(self.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
             for firm in self.firms:
-                firm.productivity_factor *= (1.0 + tfp_boost)
+                firm.productivity_factor *= 1.0 + tfp_boost
             self.logger.info(
-                f"GLOBAL_TFP_BOOST | All firms productivity increased by {tfp_boost*100:.1f}%",
-                extra={"tick": self.time, "tags": ["government", "infrastructure"]}
+                f"GLOBAL_TFP_BOOST | All firms productivity increased by {tfp_boost * 100:.1f}%",
+                extra={"tick": self.time, "tags": ["government", "infrastructure"]},
             )
-
 
         for firm in self.firms:
             if firm.is_active and firm.id in firm_pre_states:
                 post_state_data = firm.get_agent_data()
                 agent_data = firm.get_agent_data()
                 market_data = self._prepare_market_data(self.tracker)
-                
+
                 # Calculate Reward using new method for Firms (Brand Valuation)
                 reward = firm.decision_engine.ai_engine.calculate_reward(
                     firm, firm.get_pre_state_data(), agent_data
                 )
-                
+
                 # Update Learning V2
                 firm.decision_engine.ai_engine.update_learning_v2(
                     reward=reward,
                     next_agent_data=agent_data,
                     next_market_data=market_data,
                 )
-                
+
                 decision_data = AIDecisionData(
                     run_id=self.run_id,
                     tick=self.time,
                     agent_id=firm.id,
                     decision_type="VECTOR_V2",
-                    decision_details={
-                       "reward": reward
-                    },
+                    decision_details={"reward": reward},
                     predicted_reward=None,
                     actual_reward=reward,
                 )
@@ -885,7 +990,7 @@ class Simulation:
                 post_state_data = household.get_agent_data()
                 agent_data = household.get_agent_data()
                 market_data = self._prepare_market_data(self.tracker)
-                
+
                 # Inject Phase 5 Leisure Utility into agent_data for Reward Calculation
                 leisure_utility = household_leisure_effects.get(household.id, 0.0)
                 agent_data["leisure_utility"] = leisure_utility
@@ -897,7 +1002,7 @@ class Simulation:
                     agent_data,
                     market_data,
                 )
-                
+
                 # Update Learning V2
                 household.decision_engine.ai_engine.update_learning_v2(
                     reward=reward,
@@ -910,9 +1015,7 @@ class Simulation:
                     tick=self.time,
                     agent_id=household.id,
                     decision_type="VECTOR_V2",
-                    decision_details={
-                        "reward": reward
-                    },
+                    decision_details={"reward": reward},
                     predicted_reward=None,
                     actual_reward=reward,
                 )
@@ -935,9 +1038,11 @@ class Simulation:
         # They remain in self.agents for ID reference, but won't act in future ticks
         active_firms_count_before = len(self.firms)
         self.firms = [f for f in self.firms if f.is_active]
-        
+
         if len(self.firms) < active_firms_count_before:
-            self.logger.info(f"CLEANUP | Removed {active_firms_count_before - len(self.firms)} inactive firms from execution list.")
+            self.logger.info(
+                f"CLEANUP | Removed {active_firms_count_before - len(self.firms)} inactive firms from execution list."
+            )
 
         # --- Handle Agent Lifecycle (Death, Liquidation) ---
         # Added as per requirement (previously missing in run_tick)
@@ -980,8 +1085,8 @@ class Simulation:
             f.last_sales_volume = f.sales_volume_this_tick
             # Reset current counters
             f.sales_volume_this_tick = 0.0
-            f.expenses_this_tick = 0.0 # Reset expenses as well
-            f.revenue_this_tick = 0.0 # Reset revenue
+            f.expenses_this_tick = 0.0  # Reset expenses as well
+            f.revenue_this_tick = 0.0  # Reset revenue
 
         # --- Gold Standard / Money Supply Verification (WO-016) ---
         if self.time >= 1:
@@ -997,16 +1102,22 @@ class Simulation:
 
             # Log Level: Info normally, Warning if delta is significant (> 1.0)
             msg = f"MONEY_SUPPLY_CHECK | Current: {current_money:.2f}, Expected: {expected_money:.2f}, Delta: {delta:.4f}"
-            extra_data = {"tick": self.time, "current": current_money, "expected": expected_money, "delta": delta, "tags": ["money_supply"]}
+            extra_data = {
+                "tick": self.time,
+                "current": current_money,
+                "expected": expected_money,
+                "delta": delta,
+                "tags": ["money_supply"],
+            }
 
             if abs(delta) > 1.0:
-                 self.logger.warning(msg, extra=extra_data)
+                self.logger.warning(msg, extra=extra_data)
             else:
-                 self.logger.info(msg, extra=extra_data)
+                self.logger.info(msg, extra=extra_data)
 
         # WO-058: Generational Wealth Audit
         if self.time % 100 == 0:
-             self.generational_wealth_audit.run_audit(self.households, self.time)
+            self.generational_wealth_audit.run_audit(self.households, self.time)
 
         self.logger.info(
             f"--- Ending Tick {self.time} ---",
@@ -1019,8 +1130,9 @@ class Simulation:
 
         # Track stock market
         if self.stock_market is not None:
-            self.stock_tracker.track_all_firms([f for f in self.firms if f.is_active], self.stock_market)
-
+            self.stock_tracker.track_all_firms(
+                [f for f in self.firms if f.is_active], self.stock_market
+            )
 
     def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
@@ -1032,7 +1144,9 @@ class Simulation:
         debt_data_map = {}
         deposit_data_map = {}
         for agent_id in self.agents:
-            if isinstance(self.agents[agent_id], Household) or isinstance(self.agents[agent_id], Firm):
+            if isinstance(self.agents[agent_id], Household) or isinstance(
+                self.agents[agent_id], Firm
+            ):
                 debt_data_map[agent_id] = self.bank.get_debt_summary(agent_id)
                 deposit_data_map[agent_id] = self.bank.get_deposit_balance(agent_id)
 
@@ -1041,27 +1155,31 @@ class Simulation:
             if market and isinstance(market, OrderBookMarket):
                 # 1. 이번 틱의 평균 체결가 (거래가 있었다면 가장 정확)
                 avg_price = market.get_daily_avg_price()
-                
+
                 # 2. 거래가 없었다면 호가창의 최저 매도가(Best Ask)
                 if avg_price <= 0:
                     avg_price = market.get_best_ask(good_name) or 0
-                
+
                 # 3. 호가도 없다면 이전 틱의 기록된 가격 (Tracker)
                 if avg_price <= 0:
                     latest = tracker.get_latest_indicators()
                     # Tracker 필드명은 {item_id}_avg_price 형식을 따름 (EconomicIndicatorTracker 참고)
                     avg_price = latest.get(f"{good_name}_avg_price", 0)
-                
+
                 # 4. 모두 없다면 설정 파일의 초기 가격
                 if avg_price <= 0:
-                    avg_price = self.config_module.GOODS[good_name].get("initial_price", 10.0)
-                
+                    avg_price = self.config_module.GOODS[good_name].get(
+                        "initial_price", 10.0
+                    )
+
                 goods_market_data[f"{good_name}_current_sell_price"] = avg_price
 
         # Include Labor Market Data (Use historical data as the order book is cleared)
         latest_indicators = tracker.get_latest_indicators()
-        avg_wage = latest_indicators.get("labor_avg_price", self.config_module.LABOR_MARKET_MIN_WAGE)
-        
+        avg_wage = latest_indicators.get(
+            "labor_avg_price", self.config_module.LABOR_MARKET_MIN_WAGE
+        )
+
         labor_market = self.markets.get("labor")
         best_wage_offer = 0.0
         if labor_market and isinstance(labor_market, OrderBookMarket):
@@ -1075,15 +1193,15 @@ class Simulation:
         # Sum of quantities of all buy orders in the labor market
         job_vacancies = 0
         if labor_market and isinstance(labor_market, OrderBookMarket):
-             # buy_orders is Dict[item_id, List[Order]]
-             # In labor market, item_id is usually "labor" or "research_labor"
-             for item_orders in labor_market.buy_orders.values():
-                 for order in item_orders:
-                     job_vacancies += order.quantity
+            # buy_orders is Dict[item_id, List[Order]]
+            # In labor market, item_id is usually "labor" or "research_labor"
+            for item_orders in labor_market.buy_orders.values():
+                for order in item_orders:
+                    job_vacancies += order.quantity
 
         goods_market_data["labor"] = {
             "avg_wage": avg_wage,
-            "best_wage_offer": best_wage_offer
+            "best_wage_offer": best_wage_offer,
         }
         goods_market_data["job_vacancies"] = job_vacancies
 
@@ -1108,28 +1226,36 @@ class Simulation:
                     price = self.stock_market.get_best_ask(firm.id) or 0
                 if price <= 0:
                     # 장기 기록이나 장부가를 fallback으로 사용 가능
-                    price = firm.assets / firm.total_shares if firm.total_shares > 0 else 10.0
+                    price = (
+                        firm.assets / firm.total_shares
+                        if firm.total_shares > 0
+                        else 10.0
+                    )
                 stock_market_data[firm_item_id] = {"avg_price": price}
 
         # Calculate Avg Rent Price (Phase 20-3)
-        rent_prices = [u.rent_price for u in self.real_estate_units if u.owner_id is not None]
-        avg_rent = sum(rent_prices) / len(rent_prices) if rent_prices else self.config_module.INITIAL_RENT_PRICE
+        rent_prices = [
+            u.rent_price for u in self.real_estate_units if u.owner_id is not None
+        ]
+        avg_rent = (
+            sum(rent_prices) / len(rent_prices)
+            if rent_prices
+            else self.config_module.INITIAL_RENT_PRICE
+        )
 
         # Inject Housing Market Data
-        housing_market_data = {
-            "avg_rent_price": avg_rent
-        }
+        housing_market_data = {"avg_rent_price": avg_rent}
 
         return {
             "time": self.time,
             "goods_market": goods_market_data,
-            "housing_market": housing_market_data, # Phase 20-3
-            "loan_market": {"interest_rate": self.bank.base_rate}, # Use bank base rate
+            "housing_market": housing_market_data,  # Phase 20-3
+            "loan_market": {"interest_rate": self.bank.base_rate},  # Use bank base rate
             "stock_market": stock_market_data,
             "all_households": self.households,
             "avg_goods_price": avg_goods_price_for_market_data,
-            "debt_data": debt_data_map, # Injected Debt Data
-            "deposit_data": deposit_data_map, # Injected Deposit Data
+            "debt_data": debt_data_map,  # Injected Debt Data
+            "deposit_data": deposit_data_map,  # Injected Deposit Data
         }
 
     def _calculate_total_money(self) -> float:
@@ -1159,7 +1285,6 @@ class Simulation:
 
         return total
 
-
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
         all_agents = []
@@ -1175,13 +1300,15 @@ class Simulation:
     def _process_transactions(self, transactions: List[Transaction]) -> None:
         """발생한 거래들을 처리하여 에측된 가계/기업 상태 등을 업데이트합니다."""
         # SoC Refactor: Logic moved to TransactionProcessor
-        market_data_cb = lambda: self._prepare_market_data(self.tracker).get("goods_market", {})
+        market_data_cb = lambda: self._prepare_market_data(self.tracker).get(
+            "goods_market", {}
+        )
         self.transaction_processor.process(
             transactions=transactions,
             agents=self.agents,
             government=self.government,
             current_time=self.time,
-            market_data_callback=market_data_cb
+            market_data_callback=market_data_cb,
         )
 
     def _process_stock_transactions(self, transactions: List[Transaction]) -> None:
@@ -1215,60 +1342,69 @@ class Simulation:
                 elif hasattr(seller, "portfolio"):
                     # Secondary market trade
                     seller.portfolio.remove(firm_id, tx.quantity)
-                
+
                 # Sync Legacy Dictionaries for Seller
                 if hasattr(seller, "shares_owned"):
                     if firm_id in seller.portfolio.holdings:
-                        seller.shares_owned[firm_id] = seller.portfolio.holdings[firm_id].quantity
+                        seller.shares_owned[firm_id] = seller.portfolio.holdings[
+                            firm_id
+                        ].quantity
                     elif firm_id in seller.shares_owned:
                         del seller.shares_owned[firm_id]
 
                 # Synchronize Market Shareholder Registry (CRITICAL for Dividends)
                 if self.stock_market:
                     # Sync Buyer
-                    self.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
+                    self.stock_market.update_shareholder(
+                        buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity
+                    )
                     # Sync Seller
-                    if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
-                        self.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
+                    if (
+                        hasattr(seller, "portfolio")
+                        and firm_id in seller.portfolio.holdings
+                    ):
+                        self.stock_market.update_shareholder(
+                            seller.id,
+                            firm_id,
+                            seller.portfolio.holdings[firm_id].quantity,
+                        )
                     else:
                         self.stock_market.update_shareholder(seller.id, firm_id, 0.0)
 
                 self.logger.info(
                     f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
-                    extra={"tick": self.time, "tags": ["stock_market", "transaction"]}
+                    extra={"tick": self.time, "tags": ["stock_market", "transaction"]},
                 )
-
-
 
     def _handle_agent_lifecycle(self) -> None:
         """비활성화된 에이전트를 청산하고 시뮬레이션에서 제거합니다."""
-        
+
         # 1. 파산 기업 청산 (Firm Liquidation)
         inactive_firms = [f for f in self.firms if not f.is_active]
         for firm in inactive_firms:
             self.logger.info(
                 f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}. "
                 f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
+                extra={"agent_id": firm.id, "tags": ["liquidation"]},
             )
-            
+
             # 1a. 직원 해고
             for employee in firm.employees:
                 if employee.is_active:
                     employee.is_employed = False
                     employee.employer_id = None
             firm.employees = []
-            
+
             # 1b. 재고 소멸 (시장에 매도하는 대신 간단히 소멸)
             total_inventory_value = sum(
-                qty * firm.last_prices.get(item_id, 10.0) 
+                qty * firm.last_prices.get(item_id, 10.0)
                 for item_id, qty in firm.inventory.items()
             )
             firm.inventory.clear()
-            
+
             # 1c. 자본재 소멸
             firm.capital_stock = 0.0
-            
+
             # 1d. 현금을 주주(가계)에게 분배
             total_cash = firm.assets
             if total_cash > 0:
@@ -1276,20 +1412,28 @@ class Simulation:
                 if outstanding_shares > 0:
                     for household in self.households:
                         if household.is_active and firm.id in household.shares_owned:
-                            share_ratio = household.shares_owned[firm.id] / outstanding_shares
+                            share_ratio = (
+                                household.shares_owned[firm.id] / outstanding_shares
+                            )
                             distribution = total_cash * share_ratio
                             household.assets += distribution
                             self.logger.info(
                                 f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
                                 f"{distribution:.2f} from Firm {firm.id} liquidation",
-                                extra={"agent_id": household.id, "tags": ["liquidation"]}
+                                extra={
+                                    "agent_id": household.id,
+                                    "tags": ["liquidation"],
+                                },
                             )
                 else:
                     # No active shareholders: Escheat to Government (Money Destruction)
                     from simulation.agents.government import Government
+
                     if isinstance(self.government, Government):
-                        self.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, self.time)
-            
+                        self.government.collect_tax(
+                            total_cash, "liquidation_escheatment", firm.id, self.time
+                        )
+
             # 1e. 주주들의 해당 기업 주식 보유량 삭제
             for household in self.households:
                 if firm.id in household.shares_owned:
@@ -1297,11 +1441,11 @@ class Simulation:
                     # [Mitosis] Update registry
                     if self.stock_market:
                         self.stock_market.update_shareholder(household.id, firm.id, 0)
-            
+
             firm.assets = 0.0
             self.logger.info(
                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
+                extra={"agent_id": firm.id, "tags": ["liquidation"]},
             )
 
         # 2. 사망 가계 청산 (Household Liquidation)
@@ -1311,7 +1455,7 @@ class Simulation:
             # Replaces Phase 19 DemographicManager logic and standard liquidation
             if hasattr(self, "inheritance_manager"):
                 self.inheritance_manager.process_death(household, self.government, self)
-            
+
             # Remaining cleanup (Inventory/Metadata)
             household.inventory.clear()
             # Shares should be cleared by InheritanceManager, but double check
@@ -1321,7 +1465,7 @@ class Simulation:
             # [Mitosis] Clear shareholder registry for this household
             if self.stock_market:
                 for firm_id in list(self.stock_market.shareholders.keys()):
-                     self.stock_market.update_shareholder(household.id, firm_id, 0)
+                    self.stock_market.update_shareholder(household.id, firm_id, 0)
 
         # 3. 시뮬레이션에서 비활성 에이전트 제거
         self.households = [h for h in self.households if h.is_active]

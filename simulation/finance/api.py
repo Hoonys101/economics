@@ -1,6 +1,7 @@
 from typing import Protocol, runtime_checkable, Optional, Dict, Any
 from abc import ABC, abstractmethod
 
+
 @runtime_checkable
 class IFinancialEntity(Protocol):
     """
@@ -8,6 +9,7 @@ class IFinancialEntity(Protocol):
     Assets are read-only to the public; state changes must occur via the SettlementSystem
     calling the protected _add_assets / _sub_assets methods (or equivalent internal logic).
     """
+
     id: int
 
     @property
@@ -44,7 +46,7 @@ class ISettlementSystem(ABC):
         amount: float,
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
-        credit_context: Optional[Dict[str, Any]] = None
+        credit_context: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Executes an atomic transfer from debit_agent to credit_agent.

@@ -17,9 +17,12 @@ from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.ai.state_builder import StateBuilder
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.enums import Tactic
+
 
 @pytest.fixture
 def setup_test_environment():
@@ -36,24 +39,48 @@ def setup_test_environment():
         "labor_market": OrderBookMarket("labor_market"),
         "loan_market": Mock(spec=Market),
     }
-    
+
     # Pre-populate goods market with some offers for testing
     goods_market = markets["goods_market"]
-    goods_market.place_order(Order(agent_id=99, order_type="SELL", item_id="basic_food", quantity=100, price=10.0, market_id="goods_market"), 0)
-    goods_market.place_order(Order(agent_id=98, order_type="SELL", item_id="luxury_food", quantity=50, price=50.0, market_id="goods_market"), 0)
-    
+    goods_market.place_order(
+        Order(
+            agent_id=99,
+            order_type="SELL",
+            item_id="basic_food",
+            quantity=100,
+            price=10.0,
+            market_id="goods_market",
+        ),
+        0,
+    )
+    goods_market.place_order(
+        Order(
+            agent_id=98,
+            order_type="SELL",
+            item_id="luxury_food",
+            quantity=50,
+            price=50.0,
+            market_id="goods_market",
+        ),
+        0,
+    )
+
     return goods_data, markets
+
 
 @pytest.fixture
 def ai_engine_setup():
     """Fixture for setting up AI engine components."""
     value_orientation = config.VALUE_ORIENTATION_WEALTH_AND_NEEDS
-    action_proposal_engine = ActionProposalEngine(config_module=config, n_action_samples=10)
+    action_proposal_engine = ActionProposalEngine(
+        config_module=config, n_action_samples=10
+    )
     state_builder = StateBuilder()
     ai_engine_registry = AIEngineRegistry(
         action_proposal_engine=action_proposal_engine, state_builder=state_builder
     )
     return ai_engine_registry, value_orientation
+
 
 def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
     """AI가 생존 욕구가 높을 때 'food' 구매 주문을 생성하는지 테스트합니다."""
@@ -61,7 +88,9 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
     ai_engine_registry, value_orientation = ai_engine_setup
 
     ai_decision_engine_instance = ai_engine_registry.get_engine(value_orientation)
-    household_ai_instance = HouseholdAI(agent_id=str(2), ai_decision_engine=ai_decision_engine_instance)
+    household_ai_instance = HouseholdAI(
+        agent_id=str(2), ai_decision_engine=ai_decision_engine_instance
+    )
     household_ai_instance.set_ai_decision_engine(ai_decision_engine_instance)
     household_decision_engine = AIDrivenHouseholdDecisionEngine(
         ai_engine=household_ai_instance, config_module=config
@@ -73,7 +102,12 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         talent=talent,
         goods_data=goods_data,
         initial_assets=100.0,
-        initial_needs={"survival": 80.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
+        initial_needs={
+            "survival": 80.0,
+            "social": 20.0,
+            "improvement": 10.0,
+            "asset": 10.0,
+        },
         value_orientation=value_orientation,
         decision_engine=household_decision_engine,
         personality=Personality.MISER,
@@ -84,24 +118,25 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         "time": 1,
         "goods_data": goods_data,
         "goods_market": {
-             "food_current_sell_price": 10.0,
-             "basic_food_current_sell_price": 10.0,
-             "luxury_food_current_sell_price": 50.0,
-        }
+            "food_current_sell_price": 10.0,
+            "basic_food_current_sell_price": 10.0,
+            "luxury_food_current_sell_price": 50.0,
+        },
     }
     orders, _ = household.make_decision(markets, goods_data, market_data, 1)
 
     assert orders is not None
     assert len(orders) == 1
-    
+
     purchase_order = orders[0]
     assert purchase_order.order_type == "BUY"
     # The logic might choose EVALUATE_CONSUMPTION_OPTIONS which then chooses a food.
     # We should check if the item is a food item.
     assert "food" in purchase_order.item_id
     assert purchase_order.quantity > 0
-    
+
     print("OK: AI successfully generated a purchase order for food.")
+
 
 def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setup):
     """
@@ -112,9 +147,11 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
     ai_engine_registry, base_value_orientation = ai_engine_setup
 
     value_orientation = config.VALUE_ORIENTATION_NEEDS_AND_SOCIAL_STATUS
-    
+
     ai_decision_engine_instance = ai_engine_registry.get_engine(value_orientation)
-    household_ai_instance = HouseholdAI(agent_id=str(3), ai_decision_engine=ai_decision_engine_instance)
+    household_ai_instance = HouseholdAI(
+        agent_id=str(3), ai_decision_engine=ai_decision_engine_instance
+    )
     household_ai_instance.set_ai_decision_engine(ai_decision_engine_instance)
     household_decision_engine = AIDrivenHouseholdDecisionEngine(
         ai_engine=household_ai_instance, config_module=config
@@ -126,7 +163,12 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         talent=talent,
         goods_data=goods_data,
         initial_assets=1000.0,
-        initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
+        initial_needs={
+            "survival": 10.0,
+            "social": 80.0,
+            "improvement": 10.0,
+            "asset": 10.0,
+        },
         value_orientation=value_orientation,
         decision_engine=household_decision_engine,
         personality=Personality.STATUS_SEEKER,
@@ -137,22 +179,26 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         "time": 1,
         "goods_data": goods_data,
         "goods_market": {
-             "luxury_food_current_sell_price": 50.0,
-             "basic_food_current_sell_price": 10.0,
-             "food_current_sell_price": 10.0,
-        }
+            "luxury_food_current_sell_price": 50.0,
+            "basic_food_current_sell_price": 10.0,
+            "food_current_sell_price": 10.0,
+        },
     }
-    orders, chosen_tactic_tuple = household.make_decision(markets, goods_data, market_data, 1)
+    orders, chosen_tactic_tuple = household.make_decision(
+        markets, goods_data, market_data, 1
+    )
     chosen_tactic, _ = chosen_tactic_tuple
 
     assert orders is not None
     assert len(orders) > 0
-    
-    assert chosen_tactic == Tactic.EVALUATE_CONSUMPTION_OPTIONS, f"Expected Tactic EVALUATE_CONSUMPTION_OPTIONS, got {chosen_tactic.name}"
+
+    assert chosen_tactic == Tactic.EVALUATE_CONSUMPTION_OPTIONS, (
+        f"Expected Tactic EVALUATE_CONSUMPTION_OPTIONS, got {chosen_tactic.name}"
+    )
 
     purchase_order = orders[0]
     assert purchase_order.order_type == "BUY"
     assert purchase_order.item_id == "luxury_food"
     assert purchase_order.quantity > 0
-    
+
     print("OK: AI successfully evaluated consumption options and chose 'luxury_food'.")

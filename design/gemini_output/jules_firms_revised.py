@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class Firm(BaseAgent):
     """기업 주체. 생산과 고용의 주체."""
 
@@ -43,7 +44,7 @@ class Firm(BaseAgent):
         loan_market: Optional[LoanMarket] = None,
         logger: Optional[logging.Logger] = None,
         # Phase 14-2: Innovation
-        sector: str = "FOOD", 
+        sector: str = "FOOD",
         is_visionary: bool = False,
         # Phase 16-B: Personality
         personality: Optional[Personality] = None,
@@ -61,21 +62,23 @@ class Firm(BaseAgent):
         if initial_inventory is not None:
             self.inventory.update(initial_inventory)
         self.specialization = specialization
-        self.inventory_quality: Dict[str, float] = {}  # Phase 15: Weighted Average Quality
-        self.input_inventory: Dict[str, float] = {} # WO-030: Raw Materials
-        
+        self.inventory_quality: Dict[
+            str, float
+        ] = {}  # Phase 15: Weighted Average Quality
+        self.input_inventory: Dict[str, float] = {}  # WO-030: Raw Materials
+
         # Phase 14-2 attributes
         self.sector = sector
         self.is_visionary = is_visionary
-        self.owner_id: Optional[int] = None # Phase 14-1: Shareholder System
-        
+        self.owner_id: Optional[int] = None  # Phase 14-1: Shareholder System
+
         # Phase 16-B: Personality & Innovation Attributes
         self.personality = personality or Personality.BALANCED
         self.base_quality: float = 1.0
         self.research_history: Dict[str, Any] = {
             "total_spent": 0.0,
             "success_count": 0,
-            "last_success_tick": -1
+            "last_success_tick": -1,
         }
 
         # SoC Refactor: HR and Finance Components
@@ -83,11 +86,13 @@ class Firm(BaseAgent):
         self.finance = FinanceDepartment(self, config_module)
 
         # Set bankruptcy threshold based on visionary status
-        base_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5)
+        base_threshold = getattr(
+            config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5
+        )
         if self.is_visionary:
             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold * 2
         else:
-             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
+            self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
 
         self.production_target: float = (
             config_module.FIRM_MIN_PRODUCTION_TARGET
@@ -101,28 +106,30 @@ class Firm(BaseAgent):
         self.productivity_factor: float = productivity_factor
         self.total_shares: float = getattr(config_module, "IPO_INITIAL_SHARES", 1000.0)
         self.last_prices: Dict[str, float] = {}
-        self.hires_last_tick: int = 0 # Handled in HR but maybe exposed here?
-        
+        self.hires_last_tick: int = 0  # Handled in HR but maybe exposed here?
+
         # --- Phase 9: M&A Attributes ---
         self.is_bankrupt: bool = False
         self.valuation: float = 0.0
-        self.consecutive_loss_ticks_for_bankruptcy: int = 0 # Track separately strictly for rule
-        
+        self.consecutive_loss_ticks_for_bankruptcy: int = (
+            0  # Track separately strictly for rule
+        )
+
         # --- Phase 6: Brand Engine ---
         self.brand_manager = BrandManager(self.id, config_module, logger)
-        self.marketing_budget: float = 0.0 # Decision variable
+        self.marketing_budget: float = 0.0  # Decision variable
         self.prev_awareness: float = 0.0  # For AI Reward Calculation
         # ROI Optimization
         self.marketing_budget_rate: float = 0.05  # Initial 5%
 
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
-        self.is_publicly_traded: bool = True   # 상장 여부
+        self.is_publicly_traded: bool = True  # 상장 여부
         self.dividend_rate: float = getattr(
             config_module, "DIVIDEND_RATE", 0.3
         )  # 기업별 배당률 (기본값: config)
         self.treasury_shares: float = self.total_shares  # 자사주 보유량
-        self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
+        self.capital_stock: float = 100.0  # 실물 자본재 (초기값: 100)
 
         # Phase 16-B: Rewards Tracking (Delta storage)
         self.prev_market_share: float = 0.0
@@ -130,8 +137,8 @@ class Firm(BaseAgent):
         self.prev_avg_quality: float = 1.0
 
         # Phase 21: Automation
-        self.automation_level: float = 0.0 # 0.0 to 1.0
-        self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
+        self.automation_level: float = 0.0  # 0.0 to 1.0
+        self.system2_planner: Optional[FirmSystem2Planner] = None  # Initialized later
 
         self.age = 0
         self.cash_reserve = initial_capital
@@ -143,7 +150,7 @@ class Firm(BaseAgent):
         stock_market.update_shareholder(self.id, self.id, self.treasury_shares)
         self.logger.info(
             f"IPO | Firm {self.id} initialized IPO with {self.total_shares} shares. Par value: {par_value:.2f}",
-            extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]}
+            extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]},
         )
 
     # --- Properties to maintain Interface Compatibility ---
@@ -275,20 +282,23 @@ class Firm(BaseAgent):
     def sales_volume_this_tick(self, value):
         self.finance.sales_volume_this_tick = value
 
-
     def calculate_valuation(self) -> float:
         """
         Calculate Firm Valuation based on Net Assets + Profit Potential.
         Formula: Net Assets + (Max(0, Avg_Profit_Last_10) * PER Multiplier)
         """
-        net_assets = self.assets + self.get_inventory_value() + self.capital_stock 
-        
+        net_assets = self.assets + self.get_inventory_value() + self.capital_stock
+
         avg_profit = 0.0
         if len(self.finance.profit_history) > 0:
-            avg_profit = sum(self.finance.profit_history) / len(self.finance.profit_history)
-        
-        profit_premium = max(0.0, avg_profit) * getattr(self.config_module, "VALUATION_PER_MULTIPLIER", 10.0)
-        
+            avg_profit = sum(self.finance.profit_history) / len(
+                self.finance.profit_history
+            )
+
+        profit_premium = max(0.0, avg_profit) * getattr(
+            self.config_module, "VALUATION_PER_MULTIPLIER", 10.0
+        )
+
         self.valuation = net_assets + profit_premium
         return self.valuation
 
@@ -298,7 +308,7 @@ class Firm(BaseAgent):
         for item_id, qty in self.inventory.items():
             # Use last known market price or book value? Market price is better.
             # But Firm stores last_prices?
-            price = self.last_prices.get(item_id, 0.0) # Or fetch from market?
+            price = self.last_prices.get(item_id, 0.0)  # Or fetch from market?
             # If no price known, assume 0 or cost? Use valid price if possible.
             total_value += qty * price
         return total_value
@@ -312,17 +322,24 @@ class Firm(BaseAgent):
         """
         # 1. Write off Inventory
         self.inventory.clear()
-        
+
         # 2. Write off Capital Stock
         self.capital_stock = 0.0
-        
+
         # 3. Write off Automation
         self.automation_level = 0.0
 
         self.is_bankrupt = True
         return self.assets
 
-    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+    def post_ask(
+        self,
+        item_id: str,
+        price: float,
+        quantity: float,
+        market: OrderBookMarket,
+        current_tick: int,
+    ) -> Order:
         """
         판매 주문을 생성하고 시장에 제출합니다.
         Brand Metadata를 자동으로 주입합니다.
@@ -331,7 +348,9 @@ class Firm(BaseAgent):
         brand_snapshot = {
             "brand_awareness": self.brand_manager.brand_awareness,
             "perceived_quality": self.brand_manager.perceived_quality,
-            "quality": self.inventory_quality.get(item_id, 1.0), # Phase 15: Physical Quality
+            "quality": self.inventory_quality.get(
+                item_id, 1.0
+            ),  # Phase 15: Physical Quality
         }
 
         # 2. 주문 생성 (brand_info 자동 주입)
@@ -342,7 +361,7 @@ class Firm(BaseAgent):
             quantity=quantity,
             price=price,
             market_id=market.id,
-            brand_info=brand_snapshot  # <-- Critical Injection
+            brand_info=brand_snapshot,  # <-- Critical Injection
         )
 
         # 3. 시장에 제출
@@ -350,7 +369,11 @@ class Firm(BaseAgent):
 
         self.logger.debug(
             f"FIRM_POST_ASK | Firm {self.id} posted SELL order for {quantity:.1f} {item_id} @ {price:.2f} with brand_info",
-            extra={"agent_id": self.id, "tick": current_tick, "brand_awareness": brand_snapshot["brand_awareness"]}
+            extra={
+                "agent_id": self.id,
+                "tick": current_tick,
+                "brand_awareness": brand_snapshot["brand_awareness"],
+            },
         )
 
         return order
@@ -390,9 +413,15 @@ class Firm(BaseAgent):
         efficiency = delta_revenue / self.finance.last_marketing_spend
 
         # Decision Rules
-        saturation_level = getattr(self.config_module, "BRAND_AWARENESS_SATURATION", 0.9)
-        high_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5)
-        low_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8)
+        saturation_level = getattr(
+            self.config_module, "BRAND_AWARENESS_SATURATION", 0.9
+        )
+        high_eff_threshold = getattr(
+            self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5
+        )
+        low_eff_threshold = getattr(
+            self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8
+        )
         min_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MIN", 0.01)
         max_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MAX", 0.20)
 
@@ -407,7 +436,9 @@ class Firm(BaseAgent):
         self.finance.last_revenue = self.finance.revenue_this_turn
         self.finance.last_marketing_spend = self.marketing_budget
 
-    def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
+    def produce(
+        self, current_time: int, technology_manager: Optional[Any] = None
+    ) -> None:
         """
         Cobb-Douglas 생산 함수를 사용한 생산 로직.
         Phase 21: Modified Cobb-Douglas with Automation.
@@ -418,15 +449,22 @@ class Firm(BaseAgent):
                 self.current_production = 0.0
                 return
 
-            log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production"]}
+            log_extra = {
+                "tick": current_time,
+                "agent_id": self.id,
+                "tags": ["production"],
+            }
 
             # 1. 감가상각 처리
-            depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
-            self.capital_stock *= (1.0 - depreciation_rate)
+            depreciation_rate = getattr(
+                self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05
+            )
+            self.capital_stock *= 1.0 - depreciation_rate
 
             # Phase 21: Automation Decay
-            self.automation_level *= 0.995 # Slow decay (0.5% per tick)
-            if self.automation_level < 0.001: self.automation_level = 0.0
+            self.automation_level *= 0.995  # Slow decay (0.5% per tick)
+            if self.automation_level < 0.001:
+                self.automation_level = 0.0
 
             # 2. 노동 및 자본 투입량 계산
             # SoC Refactor: Get total labor skill from HR
@@ -434,13 +472,19 @@ class Firm(BaseAgent):
 
             # 3. Cobb-Douglas Parameters
             base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
-            automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+            automation_reduction = getattr(
+                self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5
+            )
 
             # Phase 21: Adjusted Alpha
             # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
             # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
-            alpha_raw = base_alpha * (1.0 - (self.automation_level * automation_reduction))
-            alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
+            alpha_raw = base_alpha * (
+                1.0 - (self.automation_level * automation_reduction)
+            )
+            alpha_adjusted = max(
+                getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw
+            )
             beta_adjusted = 1.0 - alpha_adjusted
 
             # Effective Labor & Capital
@@ -449,10 +493,14 @@ class Firm(BaseAgent):
             # Technology Multiplier (WO-053)
             tech_multiplier = 1.0
 
-            tfp = self.productivity_factor * tech_multiplier  # Total Factor Productivity
+            tfp = (
+                self.productivity_factor * tech_multiplier
+            )  # Total Factor Productivity
 
             if technology_manager:
-                tech_multiplier = technology_manager.get_productivity_multiplier(self.id, self.sector)
+                tech_multiplier = technology_manager.get_productivity_multiplier(
+                    self.id, self.sector
+                )
                 tfp *= tech_multiplier
 
             # Phase 15: Quality Calculation
@@ -460,21 +508,27 @@ class Firm(BaseAgent):
 
             item_config = self.config_module.GOODS.get(self.specialization, {})
             quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-            actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+            actual_quality = self.base_quality + (
+                math.log1p(avg_skill) * quality_sensitivity
+            )
 
             self.current_production = 0.0
 
             if total_labor_skill > 0 and capital > 0:
-                produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
+                produced_quantity = (
+                    tfp * (total_labor_skill**alpha_adjusted) * (capital**beta_adjusted)
+                )
             else:
                 produced_quantity = 0.0
 
             if produced_quantity > 0:
                 # WO-030: Input Constraints Logic
-                input_config = self.config_module.GOODS.get(self.specialization, {}).get("inputs", {})
+                input_config = self.config_module.GOODS.get(
+                    self.specialization, {}
+                ).get("inputs", {})
 
                 if input_config:
-                    max_by_inputs = float('inf')
+                    max_by_inputs = float("inf")
                     for mat, req_per_unit in input_config.items():
                         available = self.input_inventory.get(mat, 0.0)
                         if req_per_unit > 0:
@@ -486,7 +540,9 @@ class Firm(BaseAgent):
                     # Deduct used inputs
                     for mat, req_per_unit in input_config.items():
                         amount_to_deduct = actual_produced * req_per_unit
-                        self.input_inventory[mat] = max(0.0, self.input_inventory.get(mat, 0.0) - amount_to_deduct)
+                        self.input_inventory[mat] = max(
+                            0.0, self.input_inventory.get(mat, 0.0) - amount_to_deduct
+                        )
                 else:
                     actual_produced = produced_quantity
 
@@ -496,7 +552,10 @@ class Firm(BaseAgent):
                     current_quality = self.inventory_quality.get(item_id, 1.0)
 
                     total_qty = current_inventory + actual_produced
-                    new_avg_quality = ((current_inventory * current_quality) + (actual_produced * actual_quality)) / total_qty
+                    new_avg_quality = (
+                        (current_inventory * current_quality)
+                        + (actual_produced * actual_quality)
+                    ) / total_qty
 
                     self.inventory_quality[item_id] = new_avg_quality
                     self.inventory[item_id] = total_qty
@@ -505,7 +564,8 @@ class Firm(BaseAgent):
                     self.current_production = 0.0
         except Exception as e:
             import traceback
-            logger.error(f'FIRM_CRASH_PREVENTED | Firm {self.id}: {e}')
+
+            logger.error(f"FIRM_CRASH_PREVENTED | Firm {self.id}: {e}")
             logger.debug(traceback.format_exc())
             self.current_production = 0.0
             return
@@ -513,21 +573,21 @@ class Firm(BaseAgent):
     def issue_shares(self, quantity: float, price: float) -> float:
         """
         신규 주식을 발행합니다 (유상증자).
-        
+
         Args:
             quantity: 발행할 주식 수량
             price: 주당 발행 가격
-            
+
         Returns:
             조달된 자본금
         """
         if quantity <= 0 or price <= 0:
             return 0.0
-        
+
         self.total_shares += quantity
         raised_capital = quantity * price
         self.assets += raised_capital
-        
+
         self.logger.info(
             f"Firm {self.id} issued {quantity:.1f} shares at {price:.2f}, "
             f"raising {raised_capital:.2f} capital. Total shares: {self.total_shares:.1f}",
@@ -537,8 +597,8 @@ class Firm(BaseAgent):
                 "price": price,
                 "raised_capital": raised_capital,
                 "total_shares": self.total_shares,
-                "tags": ["stock", "issue"]
-            }
+                "tags": ["stock", "issue"],
+            },
         )
         return raised_capital
 
@@ -551,10 +611,10 @@ class Firm(BaseAgent):
         # Calculate liabilities from bank loans
         liabilities = 0.0
         try:
-            loan_market = getattr(self.decision_engine, 'loan_market', None)
-            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
+            loan_market = getattr(self.decision_engine, "loan_market", None)
+            if loan_market and hasattr(loan_market, "bank") and loan_market.bank:
                 debt_summary = loan_market.bank.get_debt_summary(self.id)
-                liabilities = debt_summary.get('total_principal', 0.0)
+                liabilities = debt_summary.get("total_principal", 0.0)
         except Exception:
             pass  # Graceful fallback
 
@@ -564,19 +624,18 @@ class Firm(BaseAgent):
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
         """
         시가총액을 계산합니다.
-        
+
         Args:
             stock_price: 주가 (None이면 순자산가치 기반 계산)
-            
+
         Returns:
             시가총액
         """
         if stock_price is None:
             stock_price = self.get_book_value_per_share()
-        
+
         outstanding_shares = self.total_shares - self.treasury_shares
         return outstanding_shares * stock_price
-
 
     @override
     def clone(self, new_id: int, initial_assets_from_parent: float) -> "Firm":
@@ -598,7 +657,7 @@ class Firm(BaseAgent):
             initial_inventory=copy.deepcopy(self.inventory),
             loan_market=self.decision_engine.loan_market,  # loan_market은 공유
             logger=self.logger,
-            personality=self.personality # Propagate personality
+            personality=self.personality,  # Propagate personality
         )
         new_firm.logger.info(
             f"Firm {self.id} was cloned to new Firm {new_id}",
@@ -610,7 +669,9 @@ class Firm(BaseAgent):
         )
         return new_firm
 
-    def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
+    def distribute_dividends(
+        self, households: List[Household], current_time: int
+    ) -> List[Transaction]:
         # SoC Refactor
         return self.finance.distribute_dividends(households, current_time)
 
@@ -621,7 +682,7 @@ class Firm(BaseAgent):
             "assets": self.assets,
             "needs": self.needs.copy(),
             "inventory": self.inventory.copy(),
-            "input_inventory": self.input_inventory.copy(), # WO-030
+            "input_inventory": self.input_inventory.copy(),  # WO-030
             "employees": [emp.id for emp in self.employees],  # Only pass employee IDs
             "is_active": self.is_active,
             "current_production": self.current_production,
@@ -634,19 +695,24 @@ class Firm(BaseAgent):
             "treasury_shares": self.treasury_shares,
             "dividend_rate": self.dividend_rate,
             "capital_stock": self.capital_stock,
-            "base_quality": self.base_quality, # AI needs to know this
+            "base_quality": self.base_quality,  # AI needs to know this
             "inventory_quality": self.inventory_quality.copy(),
-            "automation_level": self.automation_level, # Phase 21
+            "automation_level": self.automation_level,  # Phase 21
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:
         """AI 학습을 위한 이전 상태 데이터를 반환합니다."""
         return getattr(self, "pre_state_snapshot", self.get_agent_data())
 
-
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None
+        self,
+        markets: Dict[str, Any],
+        goods_data: list[Dict[str, Any]],
+        market_data: Dict[str, Any],
+        current_time: int,
+        government: Optional[Any] = None,
+        reflux_system: Optional[Any] = None,
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         self.logger.debug(
@@ -684,14 +750,16 @@ class Firm(BaseAgent):
         )
         return decisions, tactic
 
-    def _calculate_invisible_hand_price(self, markets: Dict[str, Any], current_tick: int) -> None:
+    def _calculate_invisible_hand_price(
+        self, markets: Dict[str, Any], current_tick: int
+    ) -> None:
         """
         WO-056: Stage 1 Shadow Mode (Price Discovery 2.0).
         Calculates and logs the shadow price based on Excess Demand.
         """
         market = markets.get(self.specialization)
         # Check if market supports order book inspection
-        if not market or not hasattr(market, 'get_all_bids'):
+        if not market or not hasattr(market, "get_all_bids"):
             return
 
         # 1. Get Demand and Supply (Market-wide for this good)
@@ -730,11 +798,17 @@ class Firm(BaseAgent):
             metric="shadow_price",
             current_value=current_price,
             shadow_value=shadow_price,
-            details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
+            details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}",
         )
 
     @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
+    def update_needs(
+        self,
+        current_time: int,
+        government: Optional[Any] = None,
+        market_data: Optional[Dict[str, Any]] = None,
+        reflux_system: Optional[Any] = None,
+    ) -> None:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
         self.logger.debug(
             f"FIRM_NEEDS_UPDATE_START | Firm {self.id} needs before update: Liquidity={self.needs['liquidity_need']:.1f}, Assets={self.assets:.2f}, Employees={len(self.employees)}",
@@ -768,24 +842,26 @@ class Firm(BaseAgent):
                 f"Paid total wages: {total_wages:.2f} to {len(self.employees)} employees.",
                 extra={**log_extra, "total_wages": total_wages},
             )
-        
+
         # --- Phase 6: Marketing Spend & Brand Update ---
         # Adaptive Budgeting
         marketing_spend = 0.0
         if self.assets > 100.0:
-            marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
-        
+            marketing_spend = max(
+                10.0, self.finance.revenue_this_turn * self.marketing_budget_rate
+            )
+
         # Check affordability
         if self.assets < marketing_spend:
-             marketing_spend = 0.0
+            marketing_spend = 0.0
 
         # Apply spend
         if marketing_spend > 0:
-             self.assets -= marketing_spend
-             self.finance.record_expense(marketing_spend)
-             # Phase 8-B: Capture marketing spend (Ad Agency Fee)
-             if reflux_system:
-                 reflux_system.capture(marketing_spend, str(self.id), "marketing")
+            self.assets -= marketing_spend
+            self.finance.record_expense(marketing_spend)
+            # Phase 8-B: Capture marketing spend (Ad Agency Fee)
+            if reflux_system:
+                reflux_system.capture(marketing_spend, str(self.id), "marketing")
 
         # Update state for AI/ROI (Explicitly assign to instance variable)
         self.marketing_budget = marketing_spend
@@ -804,7 +880,9 @@ class Firm(BaseAgent):
             self.finance.pay_taxes(government, current_time)
         # ---------------------------------------------
 
-        brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
+        brand_premium = (
+            self.calculate_brand_premium(market_data) if market_data else 0.0
+        )
         self.logger.info(
             f"FIRM_BRAND_METRICS | Firm {self.id}: Awareness={self.brand_manager.brand_awareness:.4f}, "
             f"Quality={self.brand_manager.perceived_quality:.4f}, Premium={brand_premium:.2f}",
@@ -812,8 +890,8 @@ class Firm(BaseAgent):
                 **log_extra,
                 "brand_awareness": self.brand_manager.brand_awareness,
                 "perceived_quality": self.brand_manager.perceived_quality,
-                "brand_premium": brand_premium
-            }
+                "brand_premium": brand_premium,
+            },
         )
 
         self.needs["liquidity_need"] += self.config_module.LIQUIDITY_NEED_INCREASE_RATE
@@ -845,7 +923,7 @@ class Firm(BaseAgent):
                 "num_employees_after": len(self.employees),
                 "is_active_after": self.is_active,
                 "brand_awareness": self.brand_manager.brand_awareness,
-                "perceived_quality": self.brand_manager.perceived_quality
+                "perceived_quality": self.brand_manager.perceived_quality,
             },
         )
 

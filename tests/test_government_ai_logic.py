@@ -1,7 +1,7 @@
-
 import unittest
 from unittest.mock import MagicMock
 from simulation.ai.government_ai import GovernmentAI
+
 
 class TestGovernmentAILogic(unittest.TestCase):
     def setUp(self):
@@ -18,7 +18,7 @@ class TestGovernmentAILogic(unittest.TestCase):
 
         # Configure Agent defaults
         self.mock_agent.id = "gov_test"
-        self.mock_agent._assets = -600.0 # Debt Ratio 0.6 (Ideal)
+        self.mock_agent._assets = -600.0  # Debt Ratio 0.6 (Ideal)
 
         self.ai = GovernmentAI(self.mock_agent, self.mock_config)
 
@@ -65,7 +65,7 @@ class TestGovernmentAILogic(unittest.TestCase):
         self.mock_agent.sensory_data.unemployment_sma = 0.04
         self.mock_agent.sensory_data.gdp_growth_sma = 0.0
         self.mock_agent.sensory_data.current_gdp = 1000.0
-        self.mock_agent._assets = -1000.0 # Debt 1000
+        self.mock_agent._assets = -1000.0  # Debt 1000
 
         # Debt Ratio: 1000/1000 = 1.0 -> Gap 0.4 > 0.05 -> High (2)
 
@@ -112,7 +112,7 @@ class TestGovernmentAILogic(unittest.TestCase):
 
         # Step 2: Update Learning (simulate outcome)
         # Under ideal conditions, reward should be 0.
-        dummy_reward = -999.0 # This should be ignored by the learning function
+        dummy_reward = -999.0  # This should be ignored by the learning function
         self.ai.update_learning_with_state(dummy_reward, current_tick=2)
 
         # Q-Value should not change as reward is 0
@@ -129,5 +129,6 @@ class TestGovernmentAILogic(unittest.TestCase):
         updated_q_2 = self.ai.q_table.get_q_value(previous_state, previous_action)
         self.assertAlmostEqual(updated_q_2, -0.0045, places=6)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

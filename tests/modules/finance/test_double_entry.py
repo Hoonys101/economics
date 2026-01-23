@@ -4,42 +4,67 @@ from modules.finance.system import FinanceSystem
 from modules.finance.api import InsufficientFundsError
 from simulation.models import Transaction
 
+
 # Mock objects that will be passed to FinanceSystem
 class MockGovernment:
     def __init__(self, initial_assets):
         self.id = 0
         self._assets = initial_assets
         self.sensory_data = None
+
     @property
-    def assets(self): return self._assets
+    def assets(self):
+        return self._assets
+
     def get_debt_to_gdp_ratio(self):
         return 0.5
+
     # Deprecated methods for Phase 3 but kept for interface compliance
-    def deposit(self, amount): self._assets += amount
-    def withdraw(self, amount): self._assets -= amount
+    def deposit(self, amount):
+        self._assets += amount
+
+    def withdraw(self, amount):
+        self._assets -= amount
+
 
 class MockCentralBank:
     def __init__(self, initial_cash):
         self.id = 999
         self._assets = {"cash": initial_cash, "bonds": []}
+
     @property
-    def assets(self): return self._assets
+    def assets(self):
+        return self._assets
+
     def get_base_rate(self):
         return 0.01
+
     def purchase_bonds(self, bond):
         self.assets["bonds"].append(bond)
+
     # Mocking IFinancialEntity behavior loosely
-    def deposit(self, amount): self.assets['cash'] += amount
-    def withdraw(self, amount): self.assets['cash'] -= amount
+    def deposit(self, amount):
+        self.assets["cash"] += amount
+
+    def withdraw(self, amount):
+        self.assets["cash"] -= amount
+
 
 class MockBank:
     def __init__(self, initial_assets):
         self.id = 1
         self._assets = initial_assets
+
     @property
-    def assets(self): return self._assets
-    def deposit(self, amount): self._assets += amount
-    def withdraw(self, amount): self._assets -= amount
+    def assets(self):
+        return self._assets
+
+    def deposit(self, amount):
+        self._assets += amount
+
+    def withdraw(self, amount):
+        self._assets -= amount
+
 
 class MockFirm:
     def __init__(self, id, initial_cash_reserve):
@@ -49,10 +74,17 @@ class MockFirm:
         self.finance = MagicMock()
         self.has_bailout_loan = False
         self.age = 100
+
     @property
-    def assets(self): return self.cash_reserve
-    def deposit(self, amount): self.cash_reserve += amount
-    def withdraw(self, amount): self.cash_reserve -= amount
+    def assets(self):
+        return self.cash_reserve
+
+    def deposit(self, amount):
+        self.cash_reserve += amount
+
+    def withdraw(self, amount):
+        self.cash_reserve -= amount
+
 
 class MockConfig:
     QE_INTERVENTION_YIELD_THRESHOLD = 0.05
@@ -82,7 +114,6 @@ class MockConfig:
 
 
 class TestDoubleEntry(unittest.TestCase):
-
     def setUp(self):
         self.mock_config = MockConfig()
         self.mock_gov = MockGovernment(initial_assets=10000)
@@ -94,12 +125,14 @@ class TestDoubleEntry(unittest.TestCase):
             government=self.mock_gov,
             central_bank=self.mock_cb,
             bank=self.mock_bank,
-            config_module=self.mock_config
+            config_module=self.mock_config,
         )
 
         # Mock FiscalMonitor to redirect to Gov mock method
         self.finance_system.fiscal_monitor = MagicMock()
-        self.finance_system.fiscal_monitor.get_debt_to_gdp_ratio.side_effect = lambda gov, dto: gov.get_debt_to_gdp_ratio()
+        self.finance_system.fiscal_monitor.get_debt_to_gdp_ratio.side_effect = (
+            lambda gov, dto: gov.get_debt_to_gdp_ratio()
+        )
 
     def test_bailout_loan_generates_transaction(self):
         """
@@ -110,7 +143,9 @@ class TestDoubleEntry(unittest.TestCase):
         initial_firm_cash = self.mock_firm.cash_reserve
         bailout_amount = 500
 
-        loan, txs = self.finance_system.grant_bailout_loan(self.mock_firm, bailout_amount, current_tick=1)
+        loan, txs = self.finance_system.grant_bailout_loan(
+            self.mock_firm, bailout_amount, current_tick=1
+        )
 
         # Assertions
         # Assets Unchanged
@@ -136,20 +171,22 @@ class TestDoubleEntry(unittest.TestCase):
         self.mock_gov.get_debt_to_gdp_ratio = lambda: 1.5
 
         initial_gov_assets = self.mock_gov.assets
-        initial_cb_cash = self.mock_cb.assets['cash']
+        initial_cb_cash = self.mock_cb.assets["cash"]
         bond_amount = 1000
 
-        bonds, txs = self.finance_system.issue_treasury_bonds(bond_amount, current_tick=1)
+        bonds, txs = self.finance_system.issue_treasury_bonds(
+            bond_amount, current_tick=1
+        )
 
         # Assertions
         # Assets Unchanged
         self.assertEqual(self.mock_gov.assets, initial_gov_assets)
-        self.assertEqual(self.mock_cb.assets['cash'], initial_cb_cash)
+        self.assertEqual(self.mock_cb.assets["cash"], initial_cb_cash)
 
         # Transaction Generated (Buyer -> Gov)
         self.assertEqual(len(txs), 1)
         tx = txs[0]
-        self.assertEqual(tx.buyer_id, self.mock_cb.id) # Central Bank buys
+        self.assertEqual(tx.buyer_id, self.mock_cb.id)  # Central Bank buys
         self.assertEqual(tx.seller_id, self.mock_gov.id)
         self.assertEqual(tx.price, bond_amount)
 
@@ -164,7 +201,9 @@ class TestDoubleEntry(unittest.TestCase):
         initial_bank_assets = self.mock_bank.assets
         bond_amount = 2000
 
-        bonds, txs = self.finance_system.issue_treasury_bonds(bond_amount, current_tick=1)
+        bonds, txs = self.finance_system.issue_treasury_bonds(
+            bond_amount, current_tick=1
+        )
 
         # Assertions
         self.assertEqual(self.mock_gov.assets, initial_gov_assets)
@@ -172,9 +211,10 @@ class TestDoubleEntry(unittest.TestCase):
 
         self.assertEqual(len(txs), 1)
         tx = txs[0]
-        self.assertEqual(tx.buyer_id, self.mock_bank.id) # Bank buys
+        self.assertEqual(tx.buyer_id, self.mock_bank.id)  # Bank buys
         self.assertEqual(tx.seller_id, self.mock_gov.id)
         self.assertEqual(tx.price, bond_amount)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

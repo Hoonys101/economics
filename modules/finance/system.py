@@ -1,18 +1,34 @@
 from typing import List, Dict, Optional, Any, Tuple
 import logging
-from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
+from modules.finance.api import (
+    IFinanceSystem,
+    BondDTO,
+    BailoutLoanDTO,
+    BailoutCovenant,
+    IFinancialEntity,
+    InsufficientFundsError,
+)
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
+
 # Forward reference for type hinting
 from simulation.firms import Firm
 from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
 
+
 class FinanceSystem(IFinanceSystem):
     """Manages sovereign debt, corporate bailouts, and solvency checks."""
 
-    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: Any, settlement_system: Any = None):
+    def __init__(
+        self,
+        government: "Government",
+        central_bank: "CentralBank",
+        bank: "Bank",
+        config_module: Any,
+        settlement_system: Any = None,
+    ):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
@@ -21,10 +37,14 @@ class FinanceSystem(IFinanceSystem):
         self.outstanding_bonds: List[BondDTO] = []
         self.fiscal_monitor = FiscalMonitor()
 
-    def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+    def evaluate_solvency(self, firm: "Firm", current_tick: int) -> bool:
         """Evaluates a firm's solvency to determine bailout eligibility."""
-        startup_grace_period = self.config_module.get("economy_params.STARTUP_GRACE_PERIOD_TICKS", 24)
-        z_score_threshold = self.config_module.get("economy_params.ALTMAN_Z_SCORE_THRESHOLD", 1.81)
+        startup_grace_period = self.config_module.get(
+            "economy_params.STARTUP_GRACE_PERIOD_TICKS", 24
+        )
+        z_score_threshold = self.config_module.get(
+            "economy_params.ALTMAN_Z_SCORE_THRESHOLD", 1.81
+        )
 
         if firm.age < startup_grace_period:
             # Runway Check for startups
@@ -34,22 +54,26 @@ class FinanceSystem(IFinanceSystem):
         else:
             # Altman Z-Score for established firms
             total_assets = firm.assets + firm.capital_stock + firm.get_inventory_value()
-            working_capital = firm.assets - getattr(firm, 'total_debt', 0.0)
+            working_capital = firm.assets - getattr(firm, "total_debt", 0.0)
             retained_earnings = firm.finance.retained_earnings
 
             # Safe calculation of average profit
             profit_history = firm.finance.profit_history
-            average_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+            average_profit = (
+                sum(profit_history) / len(profit_history) if profit_history else 0.0
+            )
 
             z_score = AltmanZScoreCalculator.calculate(
                 total_assets=total_assets,
                 working_capital=working_capital,
                 retained_earnings=retained_earnings,
-                average_profit=average_profit
+                average_profit=average_profit,
             )
             return z_score > z_score_threshold
 
-    def issue_treasury_bonds(self, amount: float, current_tick: int) -> Tuple[List[BondDTO], List[Transaction]]:
+    def issue_treasury_bonds(
+        self, amount: float, current_tick: int
+    ) -> Tuple[List[BondDTO], List[Transaction]]:
         """
         Issues new treasury bonds to the market, allowing for crowding out.
         Returns newly issued bonds AND transactions for bond purchase.
@@ -58,21 +82,26 @@ class FinanceSystem(IFinanceSystem):
         generated_transactions = []
 
         # Use FiscalMonitor for risk assessment
-        world_dto = getattr(self.government, 'sensory_data', None)
-        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, world_dto)
+        world_dto = getattr(self.government, "sensory_data", None)
+        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(
+            self.government, world_dto
+        )
 
         # Config-driven risk premium tiers
-        risk_premium_tiers = self.config_module.get("economy_params.DEBT_RISK_PREMIUM_TIERS", {
-            1.2: 0.05,
-            0.9: 0.02,
-            0.6: 0.005,
-        })
+        risk_premium_tiers = self.config_module.get(
+            "economy_params.DEBT_RISK_PREMIUM_TIERS",
+            {
+                1.2: 0.05,
+                0.9: 0.02,
+                0.6: 0.005,
+            },
+        )
 
         risk_premium = 0.0
         sorted_tiers = sorted(
             [(float(k), v) for k, v in risk_premium_tiers.items()],
             key=lambda x: x[0],
-            reverse=True
+            reverse=True,
         )
 
         for threshold, premium in sorted_tiers:
@@ -82,16 +111,20 @@ class FinanceSystem(IFinanceSystem):
 
         yield_rate = base_rate + risk_premium
 
-        bond_maturity = self.config_module.get("economy_params.BOND_MATURITY_TICKS", 400)
+        bond_maturity = self.config_module.get(
+            "economy_params.BOND_MATURITY_TICKS", 400
+        )
         new_bond = BondDTO(
             id=f"BOND_{current_tick}_{len(self.outstanding_bonds)}",
             issuer="GOVERNMENT",
             face_value=amount,
             yield_rate=yield_rate,
-            maturity_date=current_tick + bond_maturity
+            maturity_date=current_tick + bond_maturity,
         )
 
-        qe_threshold = self.config_module.get("economy_params.QE_INTERVENTION_YIELD_THRESHOLD", 0.10)
+        qe_threshold = self.config_module.get(
+            "economy_params.QE_INTERVENTION_YIELD_THRESHOLD", 0.10
+        )
         buyer = None
 
         if yield_rate > qe_threshold:
@@ -103,7 +136,9 @@ class FinanceSystem(IFinanceSystem):
             if self.bank.assets >= amount:
                 buyer = self.bank
             else:
-                logger.warning("BOND_ISSUANCE_FAILED | No buyer found (Bank insufficient funds).")
+                logger.warning(
+                    "BOND_ISSUANCE_FAILED | No buyer found (Bank insufficient funds)."
+                )
                 return [], []
 
         # Generate Transaction: Buyer -> Government
@@ -115,19 +150,19 @@ class FinanceSystem(IFinanceSystem):
             price=amount,
             market_id="financial",
             transaction_type="bond_purchase",
-            time=current_tick
+            time=current_tick,
         )
         generated_transactions.append(tx)
 
         # Optimistic State Update
         self.outstanding_bonds.append(new_bond)
-        if hasattr(buyer, 'add_bond_to_portfolio'):
+        if hasattr(buyer, "add_bond_to_portfolio"):
             buyer.add_bond_to_portfolio(new_bond)
         elif buyer == self.central_bank:
             if isinstance(buyer.assets, dict):
-                 if "bonds" not in buyer.assets:
-                     buyer.assets["bonds"] = []
-                 buyer.assets["bonds"].append(new_bond)
+                if "bonds" not in buyer.assets:
+                    buyer.assets["bonds"] = []
+                buyer.assets["bonds"].append(new_bond)
 
         return [new_bond], generated_transactions
 
@@ -137,27 +172,35 @@ class FinanceSystem(IFinanceSystem):
         Tax collection should now be handled via Transaction Generation.
         Kept for interface compatibility but warns usage.
         """
-        logger.warning("FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.")
+        logger.warning(
+            "FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation."
+        )
         return False
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float, current_tick: int) -> Tuple[Optional[BailoutLoanDTO], List[Transaction]]:
+    def grant_bailout_loan(
+        self, firm: "Firm", amount: float, current_tick: int
+    ) -> Tuple[Optional[BailoutLoanDTO], List[Transaction]]:
         """
         Converts a bailout from a grant to an interest-bearing senior loan.
         Returns the loan DTO and Transaction.
         """
         base_rate = self.central_bank.get_base_rate()
-        penalty_premium = self.config_module.get("economy_params.BAILOUT_PENALTY_PREMIUM", 0.05)
+        penalty_premium = self.config_module.get(
+            "economy_params.BAILOUT_PENALTY_PREMIUM", 0.05
+        )
 
         covenants = BailoutCovenant(
             dividends_allowed=False,
             executive_salary_freeze=True,
-            mandatory_repayment=self.config_module.get("economy_params.BAILOUT_COVENANT_RATIO", 0.5)
+            mandatory_repayment=self.config_module.get(
+                "economy_params.BAILOUT_COVENANT_RATIO", 0.5
+            ),
         )
         loan = BailoutLoanDTO(
             firm_id=firm.id,
             amount=amount,
             interest_rate=base_rate + penalty_premium,
-            covenants=covenants
+            covenants=covenants,
         )
 
         # Generate Transaction: Government -> Firm
@@ -169,16 +212,26 @@ class FinanceSystem(IFinanceSystem):
             price=amount,
             market_id="financial",
             transaction_type="bailout_loan",
-            time=current_tick
+            time=current_tick,
         )
 
         # Optimistic State Update
-        firm.finance.add_liability(amount, loan.interest_rate)
+        # WO-116: Do not call add_liability() as it adds cash directly.
+        # Cash is transferred via TransactionProcessor. We only record the debt here.
+        if not hasattr(firm, 'total_debt'):
+             firm.total_debt = 0.0
+        firm.total_debt += amount
         firm.has_bailout_loan = True
 
         return loan, [tx]
 
-    def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float, memo: str = "FinanceSystem Transfer") -> bool:
+    def _transfer(
+        self,
+        debtor: IFinancialEntity,
+        creditor: IFinancialEntity,
+        amount: float,
+        memo: str = "FinanceSystem Transfer",
+    ) -> bool:
         """
         Legacy method.
         Should not be used in Phase 3 Normalized Sequence.
@@ -197,23 +250,33 @@ class FinanceSystem(IFinanceSystem):
         Returns List of Transactions.
         """
         transactions = []
-        matured_bonds = [b for b in self.outstanding_bonds if b.maturity_date <= current_tick]
+        matured_bonds = [
+            b for b in self.outstanding_bonds if b.maturity_date <= current_tick
+        ]
 
-        bond_maturity_ticks = self.config_module.get("economy_params.BOND_MATURITY_TICKS", 400)
+        bond_maturity_ticks = self.config_module.get(
+            "economy_params.BOND_MATURITY_TICKS", 400
+        )
         ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 48)
 
         for bond in matured_bonds:
             # Calculate simple interest accrued over the bond's lifetime
-            interest_amount = bond.face_value * bond.yield_rate * (bond_maturity_ticks / ticks_per_year)
+            interest_amount = (
+                bond.face_value
+                * bond.yield_rate
+                * (bond_maturity_ticks / ticks_per_year)
+            )
             total_repayment = bond.face_value + interest_amount
 
             # Identify bond holder
-            bond_holder = self.bank # Default
+            bond_holder = self.bank  # Default
 
             # Check Central Bank
-            if hasattr(self.central_bank, 'assets') and isinstance(self.central_bank.assets, dict):
-                 if bond in self.central_bank.assets.get("bonds", []):
-                      bond_holder = self.central_bank
+            if hasattr(self.central_bank, "assets") and isinstance(
+                self.central_bank.assets, dict
+            ):
+                if bond in self.central_bank.assets.get("bonds", []):
+                    bond_holder = self.central_bank
 
             # Generate Transaction: Government -> Holder
             tx = Transaction(
@@ -224,13 +287,13 @@ class FinanceSystem(IFinanceSystem):
                 price=total_repayment,
                 market_id="financial",
                 transaction_type="bond_repayment",
-                time=current_tick
+                time=current_tick,
             )
             transactions.append(tx)
 
             # Optimistic Cleanup
             if bond_holder == self.central_bank:
-                 self.central_bank.assets["bonds"].remove(bond)
+                self.central_bank.assets["bonds"].remove(bond)
 
             self.outstanding_bonds.remove(bond)
 

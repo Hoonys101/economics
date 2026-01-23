@@ -1,4 +1,3 @@
-
 import unittest
 from unittest.mock import MagicMock
 import logging
@@ -14,6 +13,7 @@ from simulation.schemas import FirmActionVector
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("TestServiceMarket")
 
+
 class TestServiceMarket(unittest.TestCase):
     def setUp(self):
         self.config = config
@@ -24,13 +24,14 @@ class TestServiceMarket(unittest.TestCase):
         self.ai_engine = MagicMock(spec=AIDecisionEngine)
         self.ai_engine.config_module = self.config
         self.ai_engine.action_selector = MagicMock()
-        self.ai_engine.action_selector.choose_action.return_value = 2 # Neutral action
+        self.ai_engine.action_selector.choose_action.return_value = 2  # Neutral action
 
         self.service_ai = ServiceFirmAI(
-            agent_id="firm_1",
-            ai_decision_engine=self.ai_engine
+            agent_id="firm_1", ai_decision_engine=self.ai_engine
         )
-        self.decision_engine = AIDrivenFirmDecisionEngine(self.service_ai, self.config, logger)
+        self.decision_engine = AIDrivenFirmDecisionEngine(
+            self.service_ai, self.config, logger
+        )
         self.decision_engine.loan_market = MagicMock()
 
         self.firm = ServiceFirm(
@@ -42,7 +43,7 @@ class TestServiceMarket(unittest.TestCase):
             decision_engine=self.decision_engine,
             value_orientation="growth",
             config_module=self.config,
-            logger=logger
+            logger=logger,
         )
 
     def test_perishability(self):
@@ -70,14 +71,16 @@ class TestServiceMarket(unittest.TestCase):
         self.assertNotEqual(initial_capacity, new_capacity)
         self.assertEqual(self.firm.inventory["service.education"], new_capacity)
 
-        logger.info(f"Perishability Test Passed: Waste={self.firm.waste_this_tick}, New Cap={new_capacity}")
+        logger.info(
+            f"Perishability Test Passed: Waste={self.firm.waste_this_tick}, New Cap={new_capacity}"
+        )
 
     def test_ai_utilization_state(self):
         """Verify AI receives utilization-based state."""
         # Setup state
         self.firm.capacity_this_tick = 100.0
-        self.firm.sales_volume_this_tick = 80.0 # 80% Utilization -> Healthy (Idx 1)
-        self.firm.expenses_this_tick = 50.0 # Cost
+        self.firm.sales_volume_this_tick = 80.0  # 80% Utilization -> Healthy (Idx 1)
+        self.firm.expenses_this_tick = 50.0  # Cost
         self.firm._assets = 1000.0
 
         # Create dummy market data
@@ -103,14 +106,14 @@ class TestServiceMarket(unittest.TestCase):
         self.assertEqual(util_idx, 1)
 
         # Test Low Utilization
-        agent_data["sales_volume_this_tick"] = 10.0 # 10%
+        agent_data["sales_volume_this_tick"] = 10.0  # 10%
         state_low = self.service_ai._get_common_state(agent_data, market_data)
-        self.assertEqual(state_low[0], 0) # Idx 0 (< 0.5)
+        self.assertEqual(state_low[0], 0)  # Idx 0 (< 0.5)
 
         # Test High Utilization
-        agent_data["sales_volume_this_tick"] = 95.0 # 95%
+        agent_data["sales_volume_this_tick"] = 95.0  # 95%
         state_high = self.service_ai._get_common_state(agent_data, market_data)
-        self.assertEqual(state_high[0], 2) # Idx 2 (>= 0.9)
+        self.assertEqual(state_high[0], 2)  # Idx 2 (>= 0.9)
 
         logger.info("AI Utilization State Test Passed")
 
@@ -118,10 +121,10 @@ class TestServiceMarket(unittest.TestCase):
         """Verify waste penalty is applied to reward."""
         # Setup
         self.firm.capacity_this_tick = 100.0
-        self.firm.waste_this_tick = 20.0 # 20% Waste
-        self.firm.expenses_this_tick = 100.0 # Unit Cost = 1.0
-        self.firm.revenue_this_turn = 80.0 # Sold 80 @ 1.0 (Profit -20)
-        self.firm._assets = 1000.0 # Dummy
+        self.firm.waste_this_tick = 20.0  # 20% Waste
+        self.firm.expenses_this_tick = 100.0  # Unit Cost = 1.0
+        self.firm.revenue_this_turn = 80.0  # Sold 80 @ 1.0 (Profit -20)
+        self.firm._assets = 1000.0  # Dummy
 
         # Unit Cost = 100 / 100 = 1.0
         # Waste Penalty = 20 * 1.0 * 0.5 = 10.0
@@ -131,8 +134,12 @@ class TestServiceMarket(unittest.TestCase):
         # Base Reward ~ -20.
         # Total Reward = -20 - 10 = -30.
 
-        prev_state = {"assets": 1020.0} # Started with 1020, lost 20 -> 1000
-        curr_state = {"assets": 1000.0, "revenue_this_turn": 80.0, "capacity_this_tick": 100.0}
+        prev_state = {"assets": 1020.0}  # Started with 1020, lost 20 -> 1000
+        curr_state = {
+            "assets": 1000.0,
+            "revenue_this_turn": 80.0,
+            "capacity_this_tick": 100.0,
+        }
 
         reward = self.service_ai.calculate_reward(self.firm, prev_state, curr_state)
 
@@ -154,19 +161,25 @@ class TestServiceMarket(unittest.TestCase):
 
         # 1. Force High Utilization State
         self.firm.capacity_this_tick = 100.0
-        self.firm.sales_volume_this_tick = 95.0 # 95% -> Over-utilized
+        self.firm.sales_volume_this_tick = 95.0  # 95% -> Over-utilized
 
         # 2. Mock Action Selector to choose 'High Aggressiveness' (Index 4 -> 1.0)
         # q_hiring uses action_selector
-        self.ai_engine.action_selector.choose_action.return_value = 4 # 1.0 Aggressiveness
+        self.ai_engine.action_selector.choose_action.return_value = (
+            4  # 1.0 Aggressiveness
+        )
 
         # 3. Call make_decision
         market_data = {
-            "debt_data": {"firm_1": {"total_principal": 0.0, "daily_interest_burden": 0.0}},
-            "goods_market": {}
+            "debt_data": {
+                "firm_1": {"total_principal": 0.0, "daily_interest_burden": 0.0}
+            },
+            "goods_market": {},
         }
 
-        vector = self.service_ai.decide_action_vector(self.firm.get_agent_data(), market_data)
+        vector = self.service_ai.decide_action_vector(
+            self.firm.get_agent_data(), market_data
+        )
 
         # Check Hiring Aggressiveness
         self.assertEqual(vector.hiring_aggressiveness, 1.0)
@@ -177,28 +190,37 @@ class TestServiceMarket(unittest.TestCase):
         # The prompt asks: "Verify AI Adaptation".
         # If AI outputs "Hire Aggressiveness 1.0" when "Over-utilized", it IS adapting.
 
-        logger.info(f"Adaptation Test 1 (Over-utilization): Hiring Aggressiveness = {vector.hiring_aggressiveness} (Expected 1.0)")
+        logger.info(
+            f"Adaptation Test 1 (Over-utilization): Hiring Aggressiveness = {vector.hiring_aggressiveness} (Expected 1.0)"
+        )
 
         # Scenario 2: Under-utilization (Idx 0) -> Should CONTRACT (Low Hiring/Capital Aggressiveness)
 
         # 1. Force Low Utilization State
         self.firm.capacity_this_tick = 100.0
-        self.firm.sales_volume_this_tick = 10.0 # 10% -> Under-utilized
+        self.firm.sales_volume_this_tick = 10.0  # 10% -> Under-utilized
 
         # 2. Mock Action Selector to choose 'Low Aggressiveness' (Index 0 -> 0.0)
-        self.ai_engine.action_selector.choose_action.return_value = 0 # 0.0 Aggressiveness
+        self.ai_engine.action_selector.choose_action.return_value = (
+            0  # 0.0 Aggressiveness
+        )
 
         # 3. Call make_decision
-        vector_low = self.service_ai.decide_action_vector(self.firm.get_agent_data(), market_data)
+        vector_low = self.service_ai.decide_action_vector(
+            self.firm.get_agent_data(), market_data
+        )
 
         # Check Hiring Aggressiveness
         self.assertEqual(vector_low.hiring_aggressiveness, 0.0)
 
-        logger.info(f"Adaptation Test 2 (Under-utilization): Hiring Aggressiveness = {vector_low.hiring_aggressiveness} (Expected 0.0)")
+        logger.info(
+            f"Adaptation Test 2 (Under-utilization): Hiring Aggressiveness = {vector_low.hiring_aggressiveness} (Expected 0.0)"
+        )
 
         # Verify CorporateManager interprets 0.0 as "Fire" or "Do Nothing"?
         # CorporateManager logic: if aggressiveness < 0.2 -> Fire?
         # Let's assume standard behavior. The verification is that AI outputs correct signal.
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

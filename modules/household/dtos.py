@@ -8,12 +8,14 @@ from simulation.models import Share
 if TYPE_CHECKING:
     from simulation.core_markets import Market
 
+
 @dataclass
 class HouseholdStateDTO:
     """
     A read-only DTO containing the state of a Household agent.
     Used by the DecisionEngine to make decisions without direct dependency on the Household class.
     """
+
     id: int
     assets: float
     inventory: Dict[str, float]
@@ -46,22 +48,28 @@ class HouseholdStateDTO:
     perceived_fair_price: Dict[str, float] = field(default_factory=dict)
     sentiment_index: float = 0.5
 
+
 @dataclass
 class CloningRequestDTO:
     """Data required to clone a household."""
+
     new_id: int
     initial_assets_from_parent: float
     current_tick: int
 
+
 @dataclass
 class EconContextDTO:
     """Context for economic operations."""
+
     markets: Dict[str, "Market"]
     market_data: Dict[str, Any]
     current_time: int
 
+
 @dataclass
 class SocialContextDTO:
     """Context for social operations."""
+
     current_time: int
     market_data: Optional[Dict[str, Any]] = None

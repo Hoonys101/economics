@@ -7,13 +7,14 @@ Tasks:
 3. Analyze results against thresholds.
 4. Output report.
 """
+
 import sys
 from pathlib import Path
 import os
 import argparse
 import logging
 import json
-import time # Added for TPS
+import time  # Added for TPS
 
 # Add project root to path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -23,36 +24,39 @@ from main import create_simulation
 
 # Configure Logging
 # Force configuration after main import might have messed with it
-logging.getLogger().setLevel(logging.ERROR) # Suppress all other logs (e.g. from Matplotlib, Systems)
+logging.getLogger().setLevel(
+    logging.ERROR
+)  # Suppress all other logs (e.g. from Matplotlib, Systems)
 logger = logging.getLogger("IRON_TEST")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s'))
+    handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
     logger.addHandler(handler)
 logger.propagate = False
+
 
 def run_simulation(ticks: int, overrides: dict = None):
     logger.info(f"=== IRON TEST START: {ticks} Ticks ===")
 
-    start_time = time.time() # Start Timer
+    start_time = time.time()  # Start Timer
 
     # Initialize Simulation via Factory
     simulation = create_simulation(overrides=overrides)
     households = simulation.households
     # Note: SimulationRepository is already handled in create_simulation
-    
+
     # 5. Baseline for GDP
-    simulation.run_tick() # Tick 1
+    simulation.run_tick()  # Tick 1
     initial_indicators = simulation.tracker.get_latest_indicators()
     initial_gdp = initial_indicators.get("total_production", 0.0)
     logger.info(f"Baseline GDP (Physical): {initial_gdp}")
-    
+
     # Metrics tracking
     labor_share_sum = 0.0
     labor_share_count = 0
     max_unemployment = 0.0
-    
+
     passed = True
     failure_reason = ""
 
@@ -60,7 +64,7 @@ def run_simulation(ticks: int, overrides: dict = None):
     for t in range(2, ticks + 1):
         try:
             simulation.run_tick()
-            
+
             indicators = simulation.tracker.get_latest_indicators()
             current_gdp = indicators.get("total_production", 0.0)
 
@@ -77,14 +81,15 @@ def run_simulation(ticks: int, overrides: dict = None):
             velocity = indicators.get("velocity_of_money", 0.0)
             turnover = indicators.get("inventory_turnover", 0.0)
 
-            if t > 10: # Warmup
+            if t > 10:  # Warmup
                 labor_share_sum += l_share
                 labor_share_count += 1
 
             # 3. Unemployment
             u_rate = indicators.get("unemployment_rate", 0.0) / 100.0
-            if t > 10: # Warmup
-                if u_rate > max_unemployment: max_unemployment = u_rate
+            if t > 10:  # Warmup
+                if u_rate > max_unemployment:
+                    max_unemployment = u_rate
 
             if t % 50 == 0:
                 avg_ls = labor_share_sum / max(1, labor_share_count)
@@ -102,25 +107,26 @@ def run_simulation(ticks: int, overrides: dict = None):
             passed = False
             failure_reason = f"Crash: {e}"
             import traceback
+
             traceback.print_exc()
             break
 
     # Final Checks
-    end_time = time.time() # End Timer
+    end_time = time.time()  # End Timer
     total_time = end_time - start_time
     tps = ticks / total_time if total_time > 0 else 0
 
     final_indicators = simulation.tracker.get_latest_indicators()
     final_gdp = final_indicators.get("total_production", 0.0)
     final_pop = sum(1 for h in households if h.is_active)
-    
+
     # Verification Rules
-    if final_pop < config.NUM_HOUSEHOLDS * 0.5: # Pop collapse check
+    if final_pop < config.NUM_HOUSEHOLDS * 0.5:  # Pop collapse check
         passed = False
         failure_reason += " | Population Collapse"
 
     avg_labor_share = labor_share_sum / max(1, labor_share_count)
-    if avg_labor_share < 0.01: # 1% Average Labor Share Minimum
+    if avg_labor_share < 0.01:  # 1% Average Labor Share Minimum
         passed = False
         failure_reason += f" | Labor Share Too Low (Avg: {avg_labor_share:.1%})"
 
@@ -131,9 +137,9 @@ def run_simulation(ticks: int, overrides: dict = None):
     # Note: User requirements say "Verification: Labor Share >= 30%".
     # User instructions for Analysis: "Labor Share < 30% -> Increase Cost".
     # This implies failing the test is EXPECTED during tuning.
-    
+
     simulation.finalize_simulation()
-    
+
     # Report
     # Report Generation Disabled for Git Safety
     # with open("reports/iron_test_phase21_result.md", "w") as f:
@@ -150,7 +156,10 @@ def run_simulation(ticks: int, overrides: dict = None):
     #     if not passed:
     #         f.write(f"**Reason**: {failure_reason}\n")
 
-    logger.info(f"Test Complete. Verdict: {'PASS' if passed else 'FAIL'} | TPS: {tps:.2f}")
+    logger.info(
+        f"Test Complete. Verdict: {'PASS' if passed else 'FAIL'} | TPS: {tps:.2f}"
+    )
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -178,20 +187,28 @@ if __name__ == "__main__":
 
     # [Genesis Fix] Inject Liquidity to prevent immediate collapse
     overrides["INITIAL_HOUSEHOLD_ASSETS_MEAN"] = 5000.0
-    overrides["INITIAL_FIRM_CAPITAL_MEAN"] = 50000.0 # Huge runway
-    overrides["INITIAL_FIRM_INVENTORY_MEAN"] = 5.0 # Low -> force immediate hiring
-    overrides["INITIAL_HOUSEHOLD_FOOD_INVENTORY"] = 2.0 # Force Immediate Demand
-    overrides["FIRM_MAINTENANCE_FEE"] = 0.0 # No bleed during startup
-    overrides["FIRM_PRODUCTIVITY_FACTOR"] = 5.0 # WO-047: Balanced Labor Intensity (was 0.1 = extreme)
-    overrides["FIRM_MIN_PRODUCTION_TARGET"] = 30.0 # Force Medium Production (Sustainable)
-    overrides["HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY"] = 10000.0 # Force labor participation
-    overrides["INVENTORY_HOLDING_COST_RATE"] = 0.001 # Reduce bleeding
-    overrides["LABOR_MARKET_MIN_WAGE"] = 12.0 # Close Bid-Ask spread
-    overrides["AUTOMATION_COST_PER_PCT"] = 1e9 # Disable Automation Spending
-    overrides["INITIAL_FIRM_CAPITAL_MEAN"] = 200000.0 # Massive Runway for 100 ticks
-    overrides["DIVIDEND_RATE_MIN"] = 0.0 # Prevent capital drain (Public)
-    overrides["DIVIDEND_RATE_MAX"] = 0.0 # Prevent capital drain (Public)
-    overrides["FIRM_SAFETY_MARGIN"] = 190000.0 # Protect 95% of Capital
-    overrides["CAPITAL_DEPRECIATION_RATE"] = 0.0 # Disable depreciation to prevent Zombie Economy (AI requires training to invest)
+    overrides["INITIAL_FIRM_CAPITAL_MEAN"] = 50000.0  # Huge runway
+    overrides["INITIAL_FIRM_INVENTORY_MEAN"] = 5.0  # Low -> force immediate hiring
+    overrides["INITIAL_HOUSEHOLD_FOOD_INVENTORY"] = 2.0  # Force Immediate Demand
+    overrides["FIRM_MAINTENANCE_FEE"] = 0.0  # No bleed during startup
+    overrides["FIRM_PRODUCTIVITY_FACTOR"] = (
+        5.0  # WO-047: Balanced Labor Intensity (was 0.1 = extreme)
+    )
+    overrides["FIRM_MIN_PRODUCTION_TARGET"] = (
+        30.0  # Force Medium Production (Sustainable)
+    )
+    overrides["HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY"] = (
+        10000.0  # Force labor participation
+    )
+    overrides["INVENTORY_HOLDING_COST_RATE"] = 0.001  # Reduce bleeding
+    overrides["LABOR_MARKET_MIN_WAGE"] = 12.0  # Close Bid-Ask spread
+    overrides["AUTOMATION_COST_PER_PCT"] = 1e9  # Disable Automation Spending
+    overrides["INITIAL_FIRM_CAPITAL_MEAN"] = 200000.0  # Massive Runway for 100 ticks
+    overrides["DIVIDEND_RATE_MIN"] = 0.0  # Prevent capital drain (Public)
+    overrides["DIVIDEND_RATE_MAX"] = 0.0  # Prevent capital drain (Public)
+    overrides["FIRM_SAFETY_MARGIN"] = 190000.0  # Protect 95% of Capital
+    overrides["CAPITAL_DEPRECIATION_RATE"] = (
+        0.0  # Disable depreciation to prevent Zombie Economy (AI requires training to invest)
+    )
 
     run_simulation(ticks, overrides)

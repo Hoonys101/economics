@@ -5,6 +5,7 @@ from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
+
 class CentralBank:
     """
     Phase 10: Central Bank Agent.
@@ -29,11 +30,11 @@ class CentralBank:
 
         # GDP Potential Tracking (EMA)
         self.potential_gdp = 0.0
-        self.gdp_ema_alpha = 0.05 # Smoothing factor for Potential GDP (slow moving)
+        self.gdp_ema_alpha = 0.05  # Smoothing factor for Potential GDP (slow moving)
 
         logger.info(
             f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}",
-            extra={"tick": 0, "tags": ["central_bank", "init"]}
+            extra={"tick": 0, "tags": ["central_bank", "init"]},
         )
 
     def purchase_bonds(self, bond: Any) -> None:
@@ -45,7 +46,7 @@ class CentralBank:
         logger.info(
             f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}. "
             f"Total bonds held: {len(self.assets['bonds'])}",
-            extra={"tags": ["central_bank", "qe"]}
+            extra={"tags": ["central_bank", "qe"]},
         )
 
     def get_base_rate(self) -> float:
@@ -64,12 +65,21 @@ class CentralBank:
             if self.potential_gdp == 0.0:
                 self.potential_gdp = current_gdp
             else:
-                self.potential_gdp = (self.gdp_ema_alpha * current_gdp) + ((1 - self.gdp_ema_alpha) * self.potential_gdp)
+                self.potential_gdp = (self.gdp_ema_alpha * current_gdp) + (
+                    (1 - self.gdp_ema_alpha) * self.potential_gdp
+                )
 
         # 2. Check Update Interval (and if AI is not in control)
-        is_ai_controlled = getattr(self.config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE") == "AI_ADAPTIVE"
+        is_ai_controlled = (
+            getattr(self.config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
+            == "AI_ADAPTIVE"
+        )
 
-        if not is_ai_controlled and current_tick > 0 and current_tick % self.update_interval == 0:
+        if (
+            not is_ai_controlled
+            and current_tick > 0
+            and current_tick % self.update_interval == 0
+        ):
             self.calculate_rate(current_tick, current_gdp)
 
     def calculate_rate(self, current_tick: int, current_gdp: float):
@@ -105,7 +115,9 @@ class CentralBank:
 
                 ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
                 period_inflation = (p_current - p_prev) / p_prev
-                inflation_rate = period_inflation * (ticks_per_year / self.update_interval)
+                inflation_rate = period_inflation * (
+                    ticks_per_year / self.update_interval
+                )
 
         # B. Calculate Output Gap
         output_gap = 0.0
@@ -124,9 +136,12 @@ class CentralBank:
         # My config has ALPHA=1.5. I should assume config ALPHA is the coefficient for (pi - pi*).
         # Formula: i = neutral_rate + inflation_rate + alpha * (inflation_rate - target) + beta * output_gap
 
-        taylor_rate = neutral_rate + inflation_rate + \
-                      self.alpha * (inflation_rate - self.inflation_target) + \
-                      self.beta * output_gap
+        taylor_rate = (
+            neutral_rate
+            + inflation_rate
+            + self.alpha * (inflation_rate - self.inflation_target)
+            + self.beta * output_gap
+        )
 
         # D. Zero Lower Bound (ZLB) and Smoothing
         # ZLB
@@ -142,10 +157,14 @@ class CentralBank:
         self.base_rate = target_rate
 
         old_rate_val = old_rate if isinstance(old_rate, (int, float)) else 0.0
-        new_rate_val = self.base_rate if isinstance(self.base_rate, (int, float)) else 0.0
+        new_rate_val = (
+            self.base_rate if isinstance(self.base_rate, (int, float)) else 0.0
+        )
         infl_val = inflation_rate if isinstance(inflation_rate, (int, float)) else 0.0
         gap_val = output_gap if isinstance(output_gap, (int, float)) else 0.0
-        pot_gdp_val = self.potential_gdp if isinstance(self.potential_gdp, (int, float)) else 0.0
+        pot_gdp_val = (
+            self.potential_gdp if isinstance(self.potential_gdp, (int, float)) else 0.0
+        )
 
         logger.info(
             f"CB_RATE_UPDATE | Rate: {old_rate_val:.2%} -> {new_rate_val:.2%} "
@@ -156,14 +175,14 @@ class CentralBank:
                 "new_rate": self.base_rate,
                 "inflation": inflation_rate,
                 "output_gap": output_gap,
-                "tags": ["central_bank", "policy"]
-            }
+                "tags": ["central_bank", "policy"],
+            },
         )
 
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
         if amount > 0:
-            self.assets['cash'] = self.assets.get('cash', 0) + amount
+            self.assets["cash"] = self.assets.get("cash", 0) + amount
 
     def withdraw(self, amount: float) -> None:
         """
@@ -171,7 +190,7 @@ class CentralBank:
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
         """
         if amount > 0:
-            current_cash = self.assets.get('cash', 0)
+            current_cash = self.assets.get("cash", 0)
             # Central Bank can withdraw (create money) even if it results in negative cash
             # This represents expansion of the monetary base.
-            self.assets['cash'] = current_cash - amount
+            self.assets["cash"] = current_cash - amount

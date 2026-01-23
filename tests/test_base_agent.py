@@ -53,10 +53,18 @@ def test_base_agent_abstract_methods():
         def update_needs(self, current_tick: int):
             pass
 
-        def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
+        def make_decision(
+            self,
+            markets: Dict[str, Any],
+            goods_data: list[Dict[str, Any]],
+            market_data: Dict[str, Any],
+            current_time: int,
+        ) -> tuple[list[Any], Any]:
             return [], None
 
-        def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
+        def clone(
+            self, new_id: int, initial_assets_from_parent: float, current_tick: int
+        ) -> "BaseAgent":
             pass
 
     agent = ConcreteAgent(

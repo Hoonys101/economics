@@ -4,10 +4,13 @@ from typing import List, Any
 from simulation.core_agents import Household, Talent
 from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
-from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from simulation.decisions.ai_driven_household_engine import (
+    AIDrivenHouseholdDecisionEngine,
+)
 from simulation.ai_model import AIEngineRegistry
 
 logger = logging.getLogger(__name__)
+
 
 class ImmigrationManager:
     """
@@ -48,7 +51,7 @@ class ImmigrationManager:
             batch_size = getattr(self.config, "IMMIGRATION_BATCH_SIZE", 5)
             logger.info(
                 f"IMMIGRATION_TRIGGERED | Pop: {total_population}, Unemp: {unemployment_rate:.2%}, Vacancies: {job_vacancies}. Influx: {batch_size}",
-                extra={"tick": engine.time, "tags": ["immigration"]}
+                extra={"tick": engine.time, "tags": ["immigration"]},
             )
 
             new_immigrants = self._create_immigrants(engine, batch_size)
@@ -67,7 +70,7 @@ class ImmigrationManager:
             "needs_and_social_status",
         ]
 
-        goods_data = engine.goods_data # Reuse from engine
+        goods_data = engine.goods_data  # Reuse from engine
 
         for _ in range(count):
             agent_id = engine.next_agent_id
@@ -86,9 +89,12 @@ class ImmigrationManager:
                     # If government funds are insufficient, immigration is restricted.
                     logger.warning(
                         f"IMMIGRATION_RESTRICTED | Government lacks funds for immigrant grant {initial_assets:.2f}",
-                        extra={"tick": engine.time, "tags": ["immigration", "funding_fail"]}
+                        extra={
+                            "tick": engine.time,
+                            "tags": ["immigration", "funding_fail"],
+                        },
                     )
-                    break # Stop creating immigrants in this batch
+                    break  # Stop creating immigrants in this batch
 
             personality = random.choice(list(Personality))
             value_orientation = random.choice(all_value_orientations)
@@ -99,8 +105,12 @@ class ImmigrationManager:
 
             # Setup AI Engine
             # Note: We need the ai_trainer from engine to get the shared engine instance
-            ai_decision_engine_instance = engine.ai_trainer.get_engine(value_orientation)
-            household_ai_instance = HouseholdAI(agent_id=agent_id, ai_decision_engine=ai_decision_engine_instance)
+            ai_decision_engine_instance = engine.ai_trainer.get_engine(
+                value_orientation
+            )
+            household_ai_instance = HouseholdAI(
+                agent_id=agent_id, ai_decision_engine=ai_decision_engine_instance
+            )
 
             household_decision_engine = AIDrivenHouseholdDecisionEngine(
                 ai_engine=household_ai_instance, config_module=self.config
@@ -114,7 +124,7 @@ class ImmigrationManager:
                 "asset": 10.0,
                 "imitation_need": 15.0,
                 "labor_need": 0.0,
-                "liquidity_need": 50.0
+                "liquidity_need": 50.0,
             }
 
             # Create Household
@@ -132,13 +142,13 @@ class ImmigrationManager:
                 personality=personality,
                 config_module=self.config,
                 risk_aversion=risk_aversion,
-                logger=logger
+                logger=logger,
             )
 
             # Set specific immigrant traits
             household.education_level = education_level
             household.gender = random.choice(["M", "F"])
-            household.age = random.randint(20, 35) # Young workforce
+            household.age = random.randint(20, 35)  # Young workforce
 
             # Initial Inventory (Survival Kit)
             household.inventory["basic_food"] = 5.0

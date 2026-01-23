@@ -21,11 +21,11 @@ BANK_MARGIN = 0.02
 @dataclass
 class Loan:
     borrower_id: int
-    principal: float       # 원금
-    remaining_balance: float # 잔액
-    annual_interest_rate: float # 연이율
-    term_ticks: int        # 만기 (틱)
-    start_tick: int        # 대출 실행 틱
+    principal: float  # 원금
+    remaining_balance: float  # 잔액
+    annual_interest_rate: float  # 연이율
+    term_ticks: int  # 만기 (틱)
+    start_tick: int  # 대출 실행 틱
 
     @property
     def tick_interest_rate(self) -> float:
@@ -35,8 +35,8 @@ class Loan:
 @dataclass
 class Deposit:
     depositor_id: int
-    amount: float          # 예치금
-    annual_interest_rate: float # 연이율
+    amount: float  # 예치금
+    annual_interest_rate: float  # 연이율
 
     @property
     def tick_interest_rate(self) -> float:
@@ -49,9 +49,15 @@ class Bank(IFinancialEntity):
     Manages loans, deposits, and monetary policy interaction.
     """
 
-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None):
+    def __init__(
+        self,
+        id: int,
+        initial_assets: float,
+        config_manager: ConfigManager,
+        settlement_system: Optional["ISettlementSystem"] = None,
+    ):
         self._id = id
-        self._assets = initial_assets # Reserves
+        self._assets = initial_assets  # Reserves
         self.config_manager = config_manager
         self.settlement_system = settlement_system
 
@@ -60,7 +66,9 @@ class Bank(IFinancialEntity):
         self.deposits: Dict[str, Deposit] = {}
 
         # Policy Rates
-        self.base_rate = self._get_config("bank_defaults.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE)
+        self.base_rate = self._get_config(
+            "bank_defaults.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE
+        )
 
         # Counters
         self.next_loan_id = 0
@@ -112,7 +120,7 @@ class Bank(IFinancialEntity):
         self.base_rate = new_rate
         logger.info(
             f"MONETARY_POLICY | Base Rate updated: {old_rate:.2%} -> {self.base_rate:.2%}",
-            extra={"agent_id": self.id, "tags": ["bank", "policy"]}
+            extra={"agent_id": self.id, "tags": ["bank", "policy"]},
         )
 
     def grant_loan(
@@ -120,7 +128,7 @@ class Bank(IFinancialEntity):
         borrower_id: int,
         amount: float,
         term_ticks: Optional[int] = None,
-        interest_rate: Optional[float] = None
+        interest_rate: Optional[float] = None,
     ) -> Optional[str]:
         """
         Grants a loan to an agent if eligible.
@@ -155,7 +163,10 @@ class Bank(IFinancialEntity):
             if self.assets < amount:
                 logger.warning(
                     f"LOAN_REJECTED | Insufficient reserves (Gold Standard) for {amount:.2f}. Reserves: {self.assets:.2f}",
-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "gold_standard"]}
+                    extra={
+                        "agent_id": self.id,
+                        "tags": ["bank", "loan", "gold_standard"],
+                    },
                 )
                 return None
         else:
@@ -170,7 +181,10 @@ class Bank(IFinancialEntity):
                     f"LOAN_DENIED | Insufficient reserves for fractional lending. "
                     f"Assets: {self.assets:.2f}, Required: {required_reserves:.2f} "
                     f"(Deposits: {total_deposits:.2f}, Loan: {amount:.2f}, Ratio: {reserve_ratio:.2%})",
-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "fractional_reserve"]}
+                    extra={
+                        "agent_id": self.id,
+                        "tags": ["bank", "loan", "fractional_reserve"],
+                    },
                 )
                 return None
 
@@ -178,7 +192,10 @@ class Bank(IFinancialEntity):
             if self.assets < amount:
                 logger.info(
                     f"[CREDIT_CREATION] Bank {self.id} created {amount} credit. Reserves: {self.assets:.2f}",
-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation"]}
+                    extra={
+                        "agent_id": self.id,
+                        "tags": ["bank", "loan", "credit_creation"],
+                    },
                 )
 
         # 3. Execution (Update Bank State Only)
@@ -192,14 +209,14 @@ class Bank(IFinancialEntity):
             remaining_balance=amount,
             annual_interest_rate=annual_rate,
             term_ticks=term_ticks,
-            start_tick=0
+            start_tick=0,
         )
         self.loans[loan_id] = new_loan
 
         logger.info(
             f"LOAN_GRANTED | Loan {loan_id} to Agent {borrower_id}. "
             f"Amt: {amount:.2f}, Rate: {annual_rate:.2%}, Term: {term_ticks}",
-            extra={"agent_id": self.id, "tags": ["bank", "loan"]}
+            extra={"agent_id": self.id, "tags": ["bank", "loan"]},
         )
         return loan_id
 
@@ -212,7 +229,12 @@ class Bank(IFinancialEntity):
         Returns deposit ID.
         """
         margin = self._get_config("bank_defaults.bank_margin", 0.02)
-        deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
+        deposit_rate = max(
+            0.0,
+            self.base_rate
+            + self._get_config("bank_defaults.credit_spread_base", 0.02)
+            - margin,
+        )
 
         # self.assets += amount <-- REMOVED: Asset transfer handled by LoanMarket Transaction
 
@@ -220,9 +242,7 @@ class Bank(IFinancialEntity):
         self.next_deposit_id += 1
 
         new_deposit = Deposit(
-            depositor_id=depositor_id,
-            amount=amount,
-            annual_interest_rate=deposit_rate
+            depositor_id=depositor_id, amount=amount, annual_interest_rate=deposit_rate
         )
 
         self.deposits[deposit_id] = new_deposit
@@ -230,7 +250,7 @@ class Bank(IFinancialEntity):
         logger.info(
             f"DEPOSIT_ACCEPTED | Deposit {deposit_id} from Agent {depositor_id}. "
             f"Amt: {amount:.2f}, Rate: {deposit_rate:.2%}",
-            extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
+            extra={"agent_id": self.id, "tags": ["bank", "deposit"]},
         )
         return deposit_id
 
@@ -262,7 +282,7 @@ class Bank(IFinancialEntity):
 
         logger.info(
             f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
-            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
+            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]},
         )
         return True
 
@@ -283,23 +303,29 @@ class Bank(IFinancialEntity):
         """
         if amount > 0:
             if self.assets < amount:
-                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+                raise InsufficientFundsError(
+                    f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}"
+                )
             self._assets -= amount
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Returns debt info for AI state."""
         total_principal = 0.0
         daily_interest_burden = 0.0
-        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+        ticks_per_year = self._get_config(
+            "bank_defaults.ticks_per_year", TICKS_PER_YEAR
+        )
 
         for loan in self.loans.values():
             if loan.borrower_id == agent_id:
                 total_principal += loan.remaining_balance
-                daily_interest_burden += (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+                daily_interest_burden += (
+                    loan.remaining_balance * loan.annual_interest_rate
+                ) / ticks_per_year
 
         return {
             "total_principal": total_principal,
-            "daily_interest_burden": daily_interest_burden
+            "daily_interest_burden": daily_interest_burden,
         }
 
     def get_deposit_balance(self, agent_id: int) -> float:
@@ -310,25 +336,34 @@ class Bank(IFinancialEntity):
                 total_deposit += deposit.amount
         return total_deposit
 
-    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None) -> List[Transaction]:
+    def run_tick(
+        self,
+        agents_dict: Dict[int, Any],
+        current_tick: int = 0,
+        reflux_system: Optional[Any] = None,
+    ) -> List[Transaction]:
         """
         Process interest payments and distributions.
         Returns a list of transactions to be executed by TransactionProcessor.
         """
         generated_transactions: List[Transaction] = []
-        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+        ticks_per_year = self._get_config(
+            "bank_defaults.ticks_per_year", TICKS_PER_YEAR
+        )
 
         # 1. Collect Interest from Loans
         total_loan_interest = 0.0
 
         for loan_id, loan in self.loans.items():
             agent = agents_dict.get(loan.borrower_id)
-            if not agent or not getattr(agent, 'is_active', True):
+            if not agent or not getattr(agent, "is_active", True):
                 # Default logic or write-off logic here
                 continue
 
             # Calculate Interest Payment
-            interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+            interest_payment = (
+                loan.remaining_balance * loan.annual_interest_rate
+            ) / ticks_per_year
             payment = interest_payment
 
             # Optimistic check (actual verification happens in TransactionProcessor)
@@ -340,14 +375,14 @@ class Bank(IFinancialEntity):
 
             if agent.assets >= payment:
                 tx = Transaction(
-                    buyer_id=agent.id, # Payer
-                    seller_id=self.id, # Payee
+                    buyer_id=agent.id,  # Payer
+                    seller_id=self.id,  # Payee
                     item_id=loan_id,
                     quantity=1.0,
                     price=payment,
                     market_id="financial",
                     transaction_type="loan_interest",
-                    time=current_tick
+                    time=current_tick,
                 )
                 generated_transactions.append(tx)
                 total_loan_interest += payment
@@ -364,7 +399,7 @@ class Bank(IFinancialEntity):
                         price=partial,
                         market_id="financial",
                         transaction_type="loan_default_recovery",
-                        time=current_tick
+                        time=current_tick,
                     )
                     generated_transactions.append(tx)
                     total_loan_interest += partial
@@ -376,29 +411,34 @@ class Bank(IFinancialEntity):
             if not agent:
                 continue
 
-            interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
+            interest_payout = (
+                deposit.amount * deposit.annual_interest_rate
+            ) / ticks_per_year
 
             # Optimistic check
             if self.assets >= interest_payout:
-                 tx = Transaction(
-                    buyer_id=self.id, # Bank pays
-                    seller_id=agent.id, # Depositor receives
+                tx = Transaction(
+                    buyer_id=self.id,  # Bank pays
+                    seller_id=agent.id,  # Depositor receives
                     item_id=dep_id,
                     quantity=1.0,
                     price=interest_payout,
                     market_id="financial",
                     transaction_type="deposit_interest",
-                    time=current_tick
-                 )
-                 generated_transactions.append(tx)
-                 total_deposit_interest += interest_payout
+                    time=current_tick,
+                )
+                generated_transactions.append(tx)
+                total_deposit_interest += interest_payout
 
-                 # Side effect: Track capital income
-                 from simulation.core_agents import Household
-                 if isinstance(agent, Household) and hasattr(agent, "capital_income_this_tick"):
+                # Side effect: Track capital income
+                from simulation.core_agents import Household
+
+                if isinstance(agent, Household) and hasattr(
+                    agent, "capital_income_this_tick"
+                ):
                     agent.capital_income_this_tick += interest_payout
             else:
-                 logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
+                logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
 
         # 3. Bank Profit Capture (Reflux)
         net_profit = total_loan_interest - total_deposit_interest
@@ -406,27 +446,29 @@ class Bank(IFinancialEntity):
         # Find Government for profit transfer
         gov_agent = None
         for a in agents_dict.values():
-             if a.__class__.__name__ == 'Government':
-                 gov_agent = a
-                 break
+            if a.__class__.__name__ == "Government":
+                gov_agent = a
+                break
 
         if net_profit > 0 and gov_agent:
-             tx = Transaction(
-                 buyer_id=self.id, # Bank pays
-                 seller_id=gov_agent.id, # Government receives
-                 item_id="bank_profit",
-                 quantity=1.0,
-                 price=net_profit,
-                 market_id="financial",
-                 transaction_type="reflux_capture",
-                 time=current_tick
-             )
-             generated_transactions.append(tx)
-             logger.info(f"BANK_PROFIT_CAPTURE | Generated transaction of {net_profit:.2f} to Government.")
+            tx = Transaction(
+                buyer_id=self.id,  # Bank pays
+                seller_id=gov_agent.id,  # Government receives
+                item_id="bank_profit",
+                quantity=1.0,
+                price=net_profit,
+                market_id="financial",
+                transaction_type="reflux_capture",
+                time=current_tick,
+            )
+            generated_transactions.append(tx)
+            logger.info(
+                f"BANK_PROFIT_CAPTURE | Generated transaction of {net_profit:.2f} to Government."
+            )
 
         logger.info(
             f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Net Profit: {net_profit:.2f}, Generated Txs: {len(generated_transactions)}",
-            extra={"agent_id": self.id, "tags": ["bank", "tick"]}
+            extra={"agent_id": self.id, "tags": ["bank", "tick"]},
         )
 
         return generated_transactions
@@ -439,20 +481,22 @@ class Bank(IFinancialEntity):
                 "borrower_id": l.borrower_id,
                 "amount": l.remaining_balance,
                 "interest_rate": l.annual_interest_rate,
-                "duration": l.term_ticks
+                "duration": l.term_ticks,
             }
-            for l in self.loans.values() if l.borrower_id == agent_id
+            for l in self.loans.values()
+            if l.borrower_id == agent_id
         ]
+
     def process_repayment(self, loan_id: str, amount: float):
         if loan_id in self.loans:
             # We don't touch assets here, handled by Transaction
             self.loans[loan_id].remaining_balance -= amount
             if self.loans[loan_id].remaining_balance <= 0:
                 # Fully repaid
-                pass # Logic to archive loan?
+                pass  # Logic to archive loan?
             logger.info(
                 f"REPAYMENT_PROCESSED | Loan {loan_id} repaid by {amount}",
-                extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
+                extra={"agent_id": self.id, "tags": ["bank", "repayment"]},
             )
 
     def _borrow_from_central_bank(self, amount: float):
@@ -462,17 +506,19 @@ class Bank(IFinancialEntity):
         """
         self._assets += amount
         if self._get_config("government_id", None) is not None:
-             # If we have a reference to government via simulation later, but here we take config
-             pass
-        
-        logger.warning(f"BANK_BORROWING | Central Bank injected {amount:.2f} into Bank {self.id} reserves.")
+            # If we have a reference to government via simulation later, but here we take config
+            pass
+
+        logger.warning(
+            f"BANK_BORROWING | Central Bank injected {amount:.2f} into Bank {self.id} reserves."
+        )
 
     def check_solvency(self, government: Any):
         """
         Phase 23.5: Ensuring Bank always has positive reserves for TransactionProcessor.
         """
         if self.assets < 0:
-            borrow_amount = abs(self.assets) + 1000.0 # Maintain buffer
+            borrow_amount = abs(self.assets) + 1000.0  # Maintain buffer
 
             # Lender of Last Resort is MONEY CREATION (Minting), not a transfer.
             # Government creates money and injects it into the Bank.
@@ -480,7 +526,9 @@ class Bank(IFinancialEntity):
             self.deposit(borrow_amount)
             government.total_money_issued += borrow_amount
 
-            logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government (Money Creation).")
+            logger.warning(
+                f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government (Money Creation)."
+            )
 
     def process_default(self, agent: Any, loan: Loan, current_tick: int):
         """
@@ -491,7 +539,7 @@ class Bank(IFinancialEntity):
         """
         logger.warning(
             f"DEFAULT_EVENT | Agent {agent.id} defaulted on Loan {loan.principal:.2f}",
-            extra={"agent_id": agent.id, "loan_id": getattr(loan, "id", "unknown")}
+            extra={"agent_id": agent.id, "loan_id": getattr(loan, "id", "unknown")},
         )
 
         # 1. Liquidation
@@ -500,7 +548,7 @@ class Bank(IFinancialEntity):
             logger.info(f"LIQUIDATION | Agent {agent.id} shares confiscated.")
 
         # 2. Forgiveness (Write-off)
-        loan.remaining_balance = 0.0 # Effectively forgiven
+        loan.remaining_balance = 0.0  # Effectively forgiven
 
         # 3. Penalty
         # Credit Jail
@@ -511,9 +559,11 @@ class Bank(IFinancialEntity):
         # 4. XP Penalty
         xp_penalty = self._get_config("bankruptcy_xp_penalty", 0.2)
         if hasattr(agent, "education_xp"):
-             agent.education_xp *= (1.0 - xp_penalty)
+            agent.education_xp *= 1.0 - xp_penalty
         if hasattr(agent, "skills"):
-             for skill in agent.skills.values():
-                 skill.value *= (1.0 - xp_penalty)
+            for skill in agent.skills.values():
+                skill.value *= 1.0 - xp_penalty
 
-        logger.info(f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP.")
+        logger.info(
+            f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP."
+        )

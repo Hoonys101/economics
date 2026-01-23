@@ -1,7 +1,7 @@
-
 import unittest
 from unittest.mock import Mock, MagicMock
 from simulation.decisions.corporate_manager import CorporateManager
+
 
 class TestAutomationTax(unittest.TestCase):
     def setUp(self):
@@ -19,7 +19,7 @@ class TestAutomationTax(unittest.TestCase):
         self.mock_firm.revenue_this_turn = 5000.0
 
         # Setup guidance mock
-        self.mock_guidance = {"target_automation": 0.6} # Target 0.6 (Gap 0.1)
+        self.mock_guidance = {"target_automation": 0.6}  # Target 0.6 (Gap 0.1)
 
         self.mock_government = Mock()
 
@@ -40,7 +40,7 @@ class TestAutomationTax(unittest.TestCase):
             aggressiveness,
             self.mock_guidance,
             current_time,
-            government=self.mock_government
+            government=self.mock_government,
         )
 
         # Verify Logic
@@ -53,8 +53,11 @@ class TestAutomationTax(unittest.TestCase):
         # unless the implementation does `firm._assets = firm.assets - x`.
 
         # Better verification: Check if government.collect_tax was called with expected amount.
-        expected_tax = 4000.0 * 0.05 # 200.0
-        self.mock_government.collect_tax.assert_called_with(expected_tax, "automation_tax", 1, current_time)
+        expected_tax = 4000.0 * 0.05  # 200.0
+        self.mock_government.collect_tax.assert_called_with(
+            expected_tax, "automation_tax", 1, current_time
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

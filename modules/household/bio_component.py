@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class BioComponent(IBioComponent):
     """
     Manages biological and demographic aspects of the Household.
@@ -28,7 +29,7 @@ class BioComponent(IBioComponent):
         initial_age: Optional[float] = None,
         gender: Optional[str] = None,
         parent_id: Optional[int] = None,
-        generation: Optional[int] = None
+        generation: Optional[int] = None,
     ):
         self.owner = owner
         self.config_module = config_module
@@ -47,7 +48,7 @@ class BioComponent(IBioComponent):
             gender=gender,
             parent_id=parent_id,
             generation=generation,
-            config_module=config_module
+            config_module=config_module,
         )
 
         self.lifecycle_component = AgentLifecycleComponent(owner, config_module)
@@ -101,7 +102,9 @@ class BioComponent(IBioComponent):
         from simulation.core_agents import Household
 
         # 1. Create offspring demographics data
-        offspring_demo_data = self.demographics.create_offspring_demographics(request.new_id, request.current_tick)
+        offspring_demo_data = self.demographics.create_offspring_demographics(
+            request.new_id, request.current_tick
+        )
 
         # 2. Create new Household instance
         # We need to access owner's properties to pass to constructor
@@ -124,7 +127,7 @@ class BioComponent(IBioComponent):
 
         cloned_household = Household(
             id=request.new_id,
-            talent=self.owner.talent, # Inherit talent object (immutable?) or should copy? Original code passed self.talent.
+            talent=self.owner.talent,  # Inherit talent object (immutable?) or should copy? Original code passed self.talent.
             goods_data=[g for g in self.owner.goods_info_map.values()],
             initial_assets=request.initial_assets_from_parent,
             initial_needs=self.owner.needs.copy(),
@@ -135,14 +138,17 @@ class BioComponent(IBioComponent):
             loan_market=self.owner.decision_engine.loan_market,
             risk_aversion=self.owner.risk_aversion,
             logger=self.owner.logger,
-            **offspring_demo_data
+            **offspring_demo_data,
         )
 
         # Attribute Sync (Biological/Physical mainly, but some Econ state is copied in original clone)
         # Original clone copied: skills, inventory, labor_skill, aptitude.
 
         # Skills (Biological/Learned capability)
-        cloned_household.skills = {k: Skill(v.domain, v.value, v.observability) for k, v in self.owner.skills.items()}
+        cloned_household.skills = {
+            k: Skill(v.domain, v.value, v.observability)
+            for k, v in self.owner.skills.items()
+        }
 
         # Inventory (Inheritance? Usually empty for newborn, but maybe mitosis implies split?)
         # Original code copied inventory, leading to duplication.
@@ -159,4 +165,6 @@ class BioComponent(IBioComponent):
         return cloned_household
 
     def get_generational_similarity(self, other: "Household") -> float:
-        return self.demographics.get_generational_similarity(self.owner.talent.base_learning_rate, other.talent.base_learning_rate)
+        return self.demographics.get_generational_similarity(
+            self.owner.talent.base_learning_rate, other.talent.base_learning_rate
+        )

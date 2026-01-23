@@ -6,18 +6,24 @@ from typing import List, Protocol, TypedDict, Set
 
 # --- Data Transfer Objects (DTOs) ---
 
+
 class FirmTechInfoDTO(TypedDict):
     """Minimal firm data required for technology diffusion."""
+
     id: int
     sector: str
     is_visionary: bool
 
+
 class HouseholdEducationDTO(TypedDict):
     """Minimal household data required for human capital calculation."""
+
     is_active: bool
     education_level: float
 
+
 # --- System Interface ---
+
 
 class TechnologySystemAPI(Protocol):
     """
@@ -29,7 +35,7 @@ class TechnologySystemAPI(Protocol):
         self,
         current_tick: int,
         firms: List[FirmTechInfoDTO],
-        human_capital_index: float
+        human_capital_index: float,
     ) -> None:
         """
         Updates the state of technology diffusion.

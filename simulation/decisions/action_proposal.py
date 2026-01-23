@@ -92,7 +92,9 @@ class ActionProposalEngine:
                 # --- Phase 21.6: The Invisible Hand (Track A: Reservation Wage) ---
                 # Legacy Support: Accessing market_data via agent if available
                 should_refuse = False
-                if hasattr(agent, "decision_engine") and hasattr(agent.decision_engine, "context"):
+                if hasattr(agent, "decision_engine") and hasattr(
+                    agent.decision_engine, "context"
+                ):
                     # Only if context is persisted, which is unlikely in V1 proposal logic.
                     # Best effort: Use simple assumption or skip for legacy
                     pass
@@ -121,7 +123,7 @@ class ActionProposalEngine:
                         available_goods = getattr(
                             self.config_module,
                             "HOUSEHOLD_CONSUMABLE_GOODS",
-                            ["basic_food", "luxury_food"]
+                            ["basic_food", "luxury_food"],
                         )
 
                     good_to_trade = random.choice(available_goods)
@@ -178,10 +180,7 @@ class ActionProposalEngine:
             # 행동 결정: 노동력 구매 또는 상품 판매
             if random.random() < 0.5:  # TODO: 더 정교한 로직으로 변경
                 # 노동 시장에 노동력 구매 주문
-                offer_wage = (
-                    self.config_module.INITIAL_WAGE
-                    * random.uniform(0.9, 1.1)
-                )
+                offer_wage = self.config_module.INITIAL_WAGE * random.uniform(0.9, 1.1)
                 orders.append(
                     Order(agent.id, "BUY", "labor", 1, offer_wage, "labor_market")
                 )

@@ -8,6 +8,7 @@ from simulation.systems.tech.api import FirmTechInfoDTO
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class TechNode:
     id: str
@@ -18,6 +19,7 @@ class TechNode:
     diffusion_rate: float  # Probability of adoption per tick for non-visionaries
     is_unlocked: bool = False
 
+
 class TechnologyManager:
     """
     Phase 23: Technology Manager
@@ -27,15 +29,15 @@ class TechnologyManager:
     def __init__(self, config_module: Any, logger: logging.Logger):
         self.config = config_module
         self.logger = logger
-        
+
         # Tech Registry
         self.tech_tree: Dict[str, TechNode] = {}
-        self.active_techs: List[str] = [] # List of unlocked tech IDs
-        
+        self.active_techs: List[str] = []  # List of unlocked tech IDs
+
         # Adoption Registry: {FirmID: {TechID}}
         self.adoption_registry: Dict[int, Set[str]] = {}
-        
-        self.human_capital_index: float = 1.0 # WO-054
+
+        self.human_capital_index: float = 1.0  # WO-054
 
         self._initialize_tech_tree()
 
@@ -46,13 +48,20 @@ class TechnologyManager:
             id="TECH_AGRI_CHEM_01",
             name="Chemical Fertilizer (Haber-Bosch)",
             sector="FOOD",
-            multiplier=3.0, # 300% TFP
-            unlock_tick=getattr(self.config, "TECH_FERTILIZER_UNLOCK_TICK", 50), # Early unlock for test
-            diffusion_rate=getattr(self.config, "TECH_DIFFUSION_RATE", 0.05)
+            multiplier=3.0,  # 300% TFP
+            unlock_tick=getattr(
+                self.config, "TECH_FERTILIZER_UNLOCK_TICK", 50
+            ),  # Early unlock for test
+            diffusion_rate=getattr(self.config, "TECH_DIFFUSION_RATE", 0.05),
         )
         self.tech_tree[fertilizer.id] = fertilizer
 
-    def update(self, current_tick: int, firms: List[FirmTechInfoDTO], human_capital_index: float) -> None:
+    def update(
+        self,
+        current_tick: int,
+        firms: List[FirmTechInfoDTO],
+        human_capital_index: float,
+    ) -> None:
         """
         Called every tick.
         1. Check Unlocks.
@@ -69,11 +78,13 @@ class TechnologyManager:
         # 2. Diffusion Process (S-Curve)
         self._process_diffusion(firms, current_tick)
 
-    def _unlock_tech(self, tech: TechNode, firms: List[FirmTechInfoDTO], current_tick: int):
+    def _unlock_tech(
+        self, tech: TechNode, firms: List[FirmTechInfoDTO], current_tick: int
+    ):
         """Unlock technology and assign to Early Adopters (Visionaries)."""
         tech.is_unlocked = True
         self.active_techs.append(tech.id)
-        
+
         # Immediate Adoption by Visionaries
         early_adopters_count = 0
         for firm_dto in firms:
@@ -85,11 +96,11 @@ class TechnologyManager:
             if firm_dto["is_visionary"]:
                 self._adopt(firm_dto["id"], tech)
                 early_adopters_count += 1
-        
+
         self.logger.info(
             f"TECH_UNLOCK | Unlocked {tech.name} (ID: {tech.id}). "
             f"Early Adopters: {early_adopters_count} firms.",
-            extra={"tick": current_tick, "tech_id": tech.id}
+            extra={"tick": current_tick, "tech_id": tech.id},
         )
 
     def _get_effective_diffusion_rate(self, base_rate: float) -> float:
@@ -111,7 +122,7 @@ class TechnologyManager:
         """
         for tech_id in self.active_techs:
             tech = self.tech_tree[tech_id]
-            
+
             # WO-054: Calculate effective rate
             effective_rate = self._get_effective_diffusion_rate(tech.diffusion_rate)
 
@@ -124,13 +135,17 @@ class TechnologyManager:
                 # Check if already adopted
                 if self.has_adopted(firm_dto["id"], tech_id):
                     continue
-                
+
                 # Diffusion Chance
                 if random.random() < effective_rate:
                     self._adopt(firm_dto["id"], tech)
                     self.logger.info(
                         f"TECH_DIFFUSION | Firm {firm_dto['id']} adopted {tech.name}. Rate: {effective_rate:.4f} (Base: {tech.diffusion_rate})",
-                        extra={"tick": current_tick, "agent_id": firm_dto['id'], "tech_id": tech.id}
+                        extra={
+                            "tick": current_tick,
+                            "agent_id": firm_dto["id"],
+                            "tech_id": tech.id,
+                        },
                     )
 
     def _adopt(self, firm_id: int, tech: TechNode):
@@ -150,10 +165,10 @@ class TechnologyManager:
         """
         if firm_id not in self.adoption_registry:
             return 1.0
-        
+
         total_mult = 1.0
         adopted_techs = self.adoption_registry[firm_id]
-        
+
         for tech_id in adopted_techs:
             tech = self.tech_tree.get(tech_id)
             if tech:
@@ -161,5 +176,5 @@ class TechnologyManager:
                 # Spec says "Multiplies productivity_factor by 3.0".
                 # If multiple techs? Usually multiplicative for TFP.
                 total_mult *= tech.multiplier
-        
+
         return total_mult

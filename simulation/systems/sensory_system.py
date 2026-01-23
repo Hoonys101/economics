@@ -1,10 +1,12 @@
 """
 Implements the SensorySystem which processes raw economic indicators into smoothed data for the government.
 """
+
 from collections import deque
 from typing import Any, Deque
 from simulation.systems.api import ISensorySystem, SensoryContext
 from simulation.dtos import GovernmentStateDTO
+
 
 class SensorySystem(ISensorySystem):
     """
@@ -25,7 +27,9 @@ class SensorySystem(ISensorySystem):
         self.last_avg_price_for_sma: float = 10.0
         self.last_gdp_for_sma: float = 0.0
 
-    def generate_government_sensory_dto(self, context: SensoryContext) -> GovernmentStateDTO:
+    def generate_government_sensory_dto(
+        self, context: SensoryContext
+    ) -> GovernmentStateDTO:
         """
         Calculates indicators, updates buffers, and returns the DTO.
         """
@@ -38,7 +42,9 @@ class SensorySystem(ISensorySystem):
         # 1. Inflation (Price Change)
         current_price = latest_indicators.get("avg_goods_price", 10.0)
         last_price = self.last_avg_price_for_sma
-        inflation_rate = (current_price - last_price) / last_price if last_price > 0 else 0.0
+        inflation_rate = (
+            (current_price - last_price) / last_price if last_price > 0 else 0.0
+        )
         self.last_avg_price_for_sma = current_price
 
         # 2. Unemployment
@@ -74,5 +80,5 @@ class SensorySystem(ISensorySystem):
             gdp_growth_sma=calculate_sma(self.gdp_growth_buffer),
             wage_sma=calculate_sma(self.wage_buffer),
             approval_sma=calculate_sma(self.approval_buffer),
-            current_gdp=current_gdp
+            current_gdp=current_gdp,
         )

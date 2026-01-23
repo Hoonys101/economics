@@ -43,7 +43,7 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
     def make_decisions(
         self,
         context: DecisionContext,
-    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+    ) -> Tuple[List[Order], Any]:  # Returns FirmActionVector
         """
         Main Decision Loop.
         1. AI decides Strategy (Vector).
@@ -58,6 +58,8 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         )
 
         # 2. Corporate Manager Execution
-        orders = self.corporate_manager.realize_ceo_actions(firm_state, context, action_vector)
+        orders = self.corporate_manager.realize_ceo_actions(
+            firm_state, context, action_vector
+        )
 
         return orders, action_vector

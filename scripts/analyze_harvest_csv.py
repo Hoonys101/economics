@@ -1,6 +1,7 @@
 import csv
 import statistics
 
+
 def analyze_harvest():
     data = {
         "tick": [],
@@ -11,10 +12,10 @@ def analyze_harvest():
         "total_inventory": [],
         "total_sales": [],
         "active_food_firms": [],
-        "avg_firm_cash": []
+        "avg_firm_cash": [],
     }
 
-    with open('harvest_data.csv', 'r') as f:
+    with open("harvest_data.csv", "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             for k in data.keys():
@@ -25,7 +26,7 @@ def analyze_harvest():
     initial_price = data["food_price"][0]
     final_price = data["food_price"][-1]
     price_drop = (initial_price - final_price) / initial_price
-    print(f"Price: {initial_price} -> {final_price} (Drop: {price_drop*100:.1f}%)")
+    print(f"Price: {initial_price} -> {final_price} (Drop: {price_drop * 100:.1f}%)")
 
     # 2. Population Trend
     initial_pop = data["population"][0]
@@ -34,7 +35,9 @@ def analyze_harvest():
     print(f"Population: {initial_pop} -> {final_pop} (Growth: {pop_growth:.2f}x)")
 
     # 3. Engel Trend
-    print(f"Engel Coefficient: Start {data['engel_coeff'][0]:.2f} -> End {data['engel_coeff'][-1]:.2f}")
+    print(
+        f"Engel Coefficient: Start {data['engel_coeff'][0]:.2f} -> End {data['engel_coeff'][-1]:.2f}"
+    )
 
     # 4. Supply Dynamics
     print(f"Total Inventory (Peak): {max(data['total_inventory'])}")
@@ -56,6 +59,7 @@ def analyze_harvest():
 
     # Detect period where inventory spiked but sales didn't
     # Simple correlation?
+
 
 if __name__ == "__main__":
     analyze_harvest()

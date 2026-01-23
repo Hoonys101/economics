@@ -34,29 +34,32 @@ else:
 
     # Chart 1: GDP
     st.subheader("GDP (Real vs. Nominal)")
-    if 'gdp_real' in economic_indicators_df.columns and 'gdp_nominal' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df[['gdp_real', 'gdp_nominal']])
+    if (
+        "gdp_real" in economic_indicators_df.columns
+        and "gdp_nominal" in economic_indicators_df.columns
+    ):
+        st.line_chart(economic_indicators_df[["gdp_real", "gdp_nominal"]])
     else:
         st.warning("GDP data not available.")
 
     # Chart 2: Inflation (CPI)
     st.subheader("Inflation (CPI)")
-    if 'cpi' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df['cpi'])
+    if "cpi" in economic_indicators_df.columns:
+        st.line_chart(economic_indicators_df["cpi"])
     else:
         st.warning("CPI data not available.")
 
     # Chart 3: Population
     st.subheader("Population")
-    if 'population' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df['population'])
+    if "population" in economic_indicators_df.columns:
+        st.line_chart(economic_indicators_df["population"])
     else:
         st.warning("Population data not available.")
 
     # Chart 4: Gini Coefficient
     st.subheader("Gini Coefficient")
-    if 'gini_coefficient' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df['gini_coefficient'])
+    if "gini_coefficient" in economic_indicators_df.columns:
+        st.line_chart(economic_indicators_df["gini_coefficient"])
     else:
         st.warning("Gini Coefficient data not available.")
 

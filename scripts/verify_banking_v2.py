@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 import os
@@ -13,10 +12,13 @@ from simulation.bank import Bank, Loan, Deposit
 from simulation.loan_market import LoanMarket
 from simulation.models import Order
 
+
 class TestBankingSystemVerification(unittest.TestCase):
     def setUp(self):
         self.bank = Bank(id=999, initial_assets=1000000.0, config_module=config)
-        self.loan_market = LoanMarket(market_id="loan_market", bank=self.bank, config_module=config)
+        self.loan_market = LoanMarket(
+            market_id="loan_market", bank=self.bank, config_module=config
+        )
 
         self.agent1_id = 1
         self.agent2_id = 2
@@ -32,15 +34,15 @@ class TestBankingSystemVerification(unittest.TestCase):
             item_id="cash",
             quantity=deposit_amount,
             price=1.0,
-            market_id="loan_market"
+            market_id="loan_market",
         )
 
         txs = self.loan_market.place_order(deposit_order, current_tick=1)
 
         self.assertEqual(len(txs), 1)
         self.assertEqual(txs[0].transaction_type, "deposit")
-        self.assertEqual(txs[0].buyer_id, self.agent2_id) # Agent gives money
-        self.assertEqual(txs[0].seller_id, self.bank.id) # Bank receives
+        self.assertEqual(txs[0].buyer_id, self.agent2_id)  # Agent gives money
+        self.assertEqual(txs[0].seller_id, self.bank.id)  # Bank receives
 
         # Check Bank State
         # Bank methods no longer modify assets directly. Assets are moved by Engine via Transactions.
@@ -62,16 +64,16 @@ class TestBankingSystemVerification(unittest.TestCase):
             order_type="LOAN_REQUEST",
             item_id="cash",
             quantity=loan_amount,
-            price=0.07, # Requested rate, ignored by bank logic which uses base+spread
-            market_id="loan_market"
+            price=0.07,  # Requested rate, ignored by bank logic which uses base+spread
+            market_id="loan_market",
         )
 
         txs = self.loan_market.place_order(loan_order, current_tick=1)
 
         self.assertEqual(len(txs), 1)
         self.assertEqual(txs[0].transaction_type, "loan")
-        self.assertEqual(txs[0].buyer_id, self.bank.id) # Bank gives money
-        self.assertEqual(txs[0].seller_id, self.agent1_id) # Agent receives
+        self.assertEqual(txs[0].buyer_id, self.bank.id)  # Bank gives money
+        self.assertEqual(txs[0].seller_id, self.agent1_id)  # Agent receives
 
         # Check Bank State (Simulated)
         if txs:
@@ -87,14 +89,19 @@ class TestBankingSystemVerification(unittest.TestCase):
         deposit = list(self.bank.deposits.values())[0]
 
         ticks_per_year = 100.0
-        expected_loan_interest = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
-        expected_deposit_interest = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
+        expected_loan_interest = (
+            loan.remaining_balance * loan.annual_interest_rate
+        ) / ticks_per_year
+        expected_deposit_interest = (
+            deposit.amount * deposit.annual_interest_rate
+        ) / ticks_per_year
 
         self.assertGreater(expected_loan_interest, 0)
         self.assertGreater(expected_deposit_interest, 0)
-        self.assertGreater(expected_loan_interest, expected_deposit_interest) # Spread
+        self.assertGreater(expected_loan_interest, expected_deposit_interest)  # Spread
 
         print("✅ Deposit & Loan Flow Verified")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

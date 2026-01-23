@@ -14,7 +14,10 @@ if TYPE_CHECKING:
     from simulation.markets.stock_market import StockMarket
     from simulation.metrics.economic_tracker import EconomicIndicatorTracker
     from simulation.metrics.inequality_tracker import InequalityTracker
-    from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
+    from simulation.metrics.stock_tracker import (
+        StockMarketTracker,
+        PersonalityStatisticsTracker,
+    )
     from simulation.ai_model import AIEngineRegistry
     from simulation.ai.ai_training_manager import AITrainingManager
     from simulation.systems.ma_manager import MAManager
@@ -54,7 +57,7 @@ class WorldState:
         config_manager: ConfigManager,
         config_module: Any,
         logger: logging.Logger,
-        repository: SimulationRepository
+        repository: SimulationRepository,
     ) -> None:
         self.config_manager = config_manager
         self.config_module = config_module
@@ -90,7 +93,7 @@ class WorldState:
         self.generational_wealth_audit: Optional[GenerationalWealthAudit] = None
         self.breeding_planner: Optional[VectorizedHouseholdPlanner] = None
         self.transaction_processor: Optional[TransactionProcessor] = None
-        self.lifecycle_manager: Optional[Any] = None # To be AgentLifecycleManager
+        self.lifecycle_manager: Optional[Any] = None  # To be AgentLifecycleManager
         self.goods_data: List[Dict[str, Any]] = []
         self.real_estate_units: List[RealEstateUnit] = []
         self.finance_system: Optional[FinanceSystem] = None

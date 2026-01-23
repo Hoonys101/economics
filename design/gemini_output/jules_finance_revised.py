@@ -11,11 +11,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class FinanceDepartment:
     """
     Manages maintenance fees, corporate taxes, dividend distribution, and tracks financial metrics.
     Extracted from Firm class (SoC Refactor).
     """
+
     def __init__(self, firm: Firm, config_module: Any):
         self.firm = firm
         self.config_module = config_module
@@ -33,7 +35,9 @@ class FinanceDepartment:
         self.expenses_this_tick: float = 0.0
 
         # History
-        self.profit_history: deque[float] = deque(maxlen=self.config_module.PROFIT_HISTORY_TICKS)
+        self.profit_history: deque[float] = deque(
+            maxlen=self.config_module.PROFIT_HISTORY_TICKS
+        )
         self.last_revenue: float = 0.0
         self.last_marketing_spend: float = 0.0
 
@@ -45,14 +49,19 @@ class FinanceDepartment:
     def record_revenue(self, amount: float):
         self.revenue_this_turn += amount
         self.revenue_this_tick += amount
-        self.current_profit += amount # Basic cash flow add
+        self.current_profit += amount  # Basic cash flow add
 
     def record_expense(self, amount: float):
         self.cost_this_turn += amount
         self.expenses_this_tick += amount
         self.current_profit -= amount
 
-    def pay_maintenance(self, government: Any, reflux_system: Optional[EconomicRefluxSystem], current_time: int):
+    def pay_maintenance(
+        self,
+        government: Any,
+        reflux_system: Optional[EconomicRefluxSystem],
+        current_time: int,
+    ):
         """Pay fixed maintenance fee."""
         fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
         payment = min(self.firm.assets, fee)
@@ -60,11 +69,17 @@ class FinanceDepartment:
         if payment > 0:
             self.firm.assets -= payment
             self.record_expense(payment)
-            government.collect_tax(payment, "firm_maintenance", self.firm.id, current_time)
+            government.collect_tax(
+                payment, "firm_maintenance", self.firm.id, current_time
+            )
 
             self.firm.logger.info(
                 f"Paid maintenance fee: {payment:.2f}",
-                extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "maintenance"]}
+                extra={
+                    "tick": current_time,
+                    "agent_id": self.firm.id,
+                    "tags": ["tax", "maintenance"],
+                },
             )
 
     def pay_taxes(self, government: Any, current_time: int):
@@ -79,17 +94,25 @@ class FinanceDepartment:
 
             if payment > 0:
                 self.firm.assets -= payment
-                government.collect_tax(payment, "corporate_tax", self.firm.id, current_time)
+                government.collect_tax(
+                    payment, "corporate_tax", self.firm.id, current_time
+                )
 
                 after_tax_profit = net_profit - payment
                 self.retained_earnings += after_tax_profit
 
                 self.firm.logger.info(
                     f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}. Retained Earnings increased by {after_tax_profit:.2f}",
-                    extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
+                    extra={
+                        "tick": current_time,
+                        "agent_id": self.firm.id,
+                        "tags": ["tax", "corporate_tax"],
+                    },
                 )
 
-    def distribute_dividends(self, households: List[Household], current_time: int) -> List[Transaction]:
+    def distribute_dividends(
+        self, households: List[Household], current_time: int
+    ) -> List[Transaction]:
         """Public Shareholders Dividend"""
         transactions = []
         distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)
@@ -101,7 +124,9 @@ class FinanceDepartment:
             for household in households:
                 shares = household.shares_owned.get(self.firm.id, 0.0)
                 if shares > 0:
-                    dividend_amount = distributable_profit * (shares / self.firm.total_shares)
+                    dividend_amount = distributable_profit * (
+                        shares / self.firm.total_shares
+                    )
                     transactions.append(
                         Transaction(
                             buyer_id=household.id,
@@ -117,7 +142,13 @@ class FinanceDepartment:
                     self.dividends_paid_last_tick += dividend_amount
                     self.firm.logger.info(
                         f"Firm {self.firm.id} distributed {dividend_amount:.2f} dividend to Household {household.id}.",
-                        extra={"tick": current_time, "agent_id": self.firm.id, "household_id": household.id, "amount": dividend_amount, "tags": ["dividend"]},
+                        extra={
+                            "tick": current_time,
+                            "agent_id": self.firm.id,
+                            "household_id": household.id,
+                            "amount": dividend_amount,
+                            "tags": ["dividend"],
+                        },
                     )
 
         # Reset period counters
@@ -129,7 +160,9 @@ class FinanceDepartment:
 
         return transactions
 
-    def distribute_profit_private(self, agents: Dict[int, Any], current_time: int) -> float:
+    def distribute_profit_private(
+        self, agents: Dict[int, Any], current_time: int
+    ) -> float:
         """Phase 14-1: Private Owner Dividend"""
         if self.firm.owner_id is None:
             return 0.0
@@ -158,9 +191,9 @@ class FinanceDepartment:
             self.firm.assets -= dividend_amount
             owner.assets += dividend_amount
 
-            if hasattr(owner, 'income_capital_cumulative'):
+            if hasattr(owner, "income_capital_cumulative"):
                 owner.income_capital_cumulative += dividend_amount
-            if hasattr(owner, 'capital_income_this_tick'):
+            if hasattr(owner, "capital_income_this_tick"):
                 owner.capital_income_this_tick += dividend_amount
 
             self.retained_earnings -= dividend_amount
@@ -169,7 +202,11 @@ class FinanceDepartment:
             if self.firm.logger:
                 self.firm.logger.info(
                     f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
-                    extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
+                    extra={
+                        "tick": current_time,
+                        "event": "DIVIDEND",
+                        "amount": dividend_amount,
+                    },
                 )
             return dividend_amount
 
@@ -181,7 +218,7 @@ class FinanceDepartment:
         self.firm.assets += amount  # The loan increases cash assets
         # In a more complex model, this would be a separate liability account
         # For now, we'll just track the total debt.
-        if not hasattr(self.firm, 'total_debt'):
+        if not hasattr(self.firm, "total_debt"):
             self.firm.total_debt = 0.0
         self.firm.total_debt += amount
 
@@ -193,20 +230,26 @@ class FinanceDepartment:
         X2: Retained Earnings / Total Assets
         X3: Average Profit / Total Assets
         """
-        total_assets = self.firm.assets + self.firm.capital_stock + self.firm.get_inventory_value()
+        total_assets = (
+            self.firm.assets + self.firm.capital_stock + self.firm.get_inventory_value()
+        )
         if total_assets == 0:
             return 0.0
 
         # X1: Working Capital / Total Assets
         # Working Capital = Current Assets - Current Liabilities. Assume liabilities are total_debt for now.
-        working_capital = self.firm.assets - getattr(self.firm, 'total_debt', 0.0)
+        working_capital = self.firm.assets - getattr(self.firm, "total_debt", 0.0)
         x1 = working_capital / total_assets
 
         # X2: Retained Earnings / Total Assets
         x2 = self.retained_earnings / total_assets
 
         # X3: Average Profit / Total Assets
-        avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
+        avg_profit = (
+            sum(self.profit_history) / len(self.profit_history)
+            if self.profit_history
+            else 0.0
+        )
         x3 = avg_profit / total_assets
 
         z_score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3

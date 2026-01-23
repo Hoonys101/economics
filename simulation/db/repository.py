@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 
 from simulation.db.database import get_db_connection, close_db_connection
+
 if TYPE_CHECKING:
     from simulation.dtos import (
         TransactionData,
@@ -78,7 +79,9 @@ class SimulationRepository:
                     data.tick,
                     data.agent_id,
                     data.decision_type,
-                    json.dumps(data.decision_details) if data.decision_details else None,
+                    json.dumps(data.decision_details)
+                    if data.decision_details
+                    else None,
                     data.predicted_reward,
                     data.actual_reward,
                 ),
@@ -100,7 +103,7 @@ class SimulationRepository:
             self.cursor.execute("DELETE FROM economic_indicators")
             self.cursor.execute("DELETE FROM ai_decisions_history")
             self.conn.commit()
-            
+
             # Reclaim disk space
             self.cursor.execute("VACUUM")
             logger.info("All simulation data cleared and VACUUMed database.")
@@ -318,7 +321,9 @@ class SimulationRepository:
             self.conn.rollback()
             raise
 
-    def save_economic_indicators_batch(self, indicators_data: List["EconomicIndicatorData"]):
+    def save_economic_indicators_batch(
+        self, indicators_data: List["EconomicIndicatorData"]
+    ):
         """
         여러 경제 지표 데이터를 데이터베이스에 일괄 저장합니다.
         """
@@ -415,14 +420,19 @@ class SimulationRepository:
                 data_to_insert,
             )
             self.conn.commit()
-            logger.debug(f"Saved {len(market_history_data)} market history records in batch")
+            logger.debug(
+                f"Saved {len(market_history_data)} market history records in batch"
+            )
         except sqlite3.Error as e:
             logger.error(f"Error saving market history batch: {e}")
             self.conn.rollback()
             raise
 
     def get_economic_indicators(
-        self, start_tick: Optional[int] = None, end_tick: Optional[int] = None, run_id: Optional[int] = None
+        self,
+        start_tick: Optional[int] = None,
+        end_tick: Optional[int] = None,
+        run_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         경제 지표 데이터를 조회합니다.
@@ -551,7 +561,9 @@ class SimulationRepository:
         """
         close_db_connection()
 
-    def get_generation_stats(self, tick: int, run_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_generation_stats(
+        self, tick: int, run_id: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """
         특정 틱의 세대별 인구 및 자산 통계를 조회합니다.
         """
@@ -565,12 +577,14 @@ class SimulationRepository:
             query += " AND run_id = ?"
             params.append(run_id)
         query += " GROUP BY generation"
-        
+
         self.cursor.execute(query, params)
         columns = [description[0] for description in self.cursor.description]
         return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
 
-    def get_attrition_counts(self, start_tick: int, end_tick: int, run_id: Optional[int] = None) -> Dict[str, int]:
+    def get_attrition_counts(
+        self, start_tick: int, end_tick: int, run_id: Optional[int] = None
+    ) -> Dict[str, int]:
         """
         Calculates the number of agents that became inactive (bankruptcy/death) between start_tick and end_tick.
 
@@ -609,7 +623,7 @@ class SimulationRepository:
         if run_id:
             query_suffix = " AND run_id = ?"
             params.append(run_id)
-            params.append(run_id) # For the subquery
+            params.append(run_id)  # For the subquery
 
         # Bankruptcy (Firms)
         firm_query = f"""

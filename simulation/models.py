@@ -14,7 +14,9 @@ class Order:
     price: float
     market_id: str
     target_agent_id: Optional[int] = None  # Phase 6: Targeted Orders (Brand Loyalty)
-    brand_info: Optional[Dict[str, Any]] = None # Phase 6: Brand Metadata (awareness, quality)
+    brand_info: Optional[Dict[str, Any]] = (
+        None  # Phase 6: Brand Metadata (awareness, quality)
+    )
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
 
 
@@ -37,11 +39,11 @@ class Transaction:
 class StockOrder:
     """주식 시장에 제출되는 주문을 나타내는 데이터 클래스"""
 
-    agent_id: int          # 주문 제출자 ID
-    order_type: str        # "BUY" or "SELL"
-    firm_id: int           # 대상 기업 ID
-    quantity: float        # 주문 수량
-    price: float           # 호가 (주당 가격)
+    agent_id: int  # 주문 제출자 ID
+    order_type: str  # "BUY" or "SELL"
+    firm_id: int  # 대상 기업 ID
+    quantity: float  # 주문 수량
+    price: float  # 호가 (주당 가격)
     market_id: str = "stock_market"
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
 
@@ -49,16 +51,17 @@ class StockOrder:
 @dataclass
 class Share:
     """주식 보유 정보를 담는 데이터 클래스"""
-    
-    firm_id: int               # 발행 기업 ID
-    holder_id: int             # 보유자 ID (가계 또는 기업)
-    quantity: float            # 보유 수량
-    acquisition_price: float   # 평균 매입 가격
+
+    firm_id: int  # 발행 기업 ID
+    holder_id: int  # 보유자 ID (가계 또는 기업)
+    quantity: float  # 보유 수량
+    acquisition_price: float  # 평균 매입 가격
 
 
 @dataclass
 class RealEstateUnit:
     """부동산 자산 단위 (Phase 17-3A)"""
+
     id: int
     owner_id: Optional[int] = None  # None = Government
     occupant_id: Optional[int] = None  # Tenant
@@ -67,16 +70,20 @@ class RealEstateUnit:
     rent_price: float = 100.0
     mortgage_id: Optional[int] = None
 
+
 @dataclass
 class Talent:
     """가계의 선천적 재능을 나타내는 클래스입니다."""
+
     base_learning_rate: float
     max_potential: Dict[str, float]
     related_domains: Dict[str, List[str]] = field(default_factory=dict)
 
+
 @dataclass
 class Skill:
     """가계의 후천적 역량을 나타내는 클래스입니다."""
+
     domain: str
     value: float = 0.0
     observability: float = 0.5

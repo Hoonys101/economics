@@ -1,10 +1,10 @@
-
 import pytest
 from unittest.mock import Mock, MagicMock
 import math
 from simulation.firms import Firm
 from simulation.components.production_department import ProductionDepartment
 from simulation.components.sales_department import SalesDepartment
+
 
 class TestFirmBookValue:
     @pytest.fixture
@@ -33,7 +33,7 @@ class TestFirmBookValue:
             productivity_factor=1.0,
             decision_engine=mock_decision_engine,
             value_orientation="PROFIT",
-            config_module=mock_config
+            config_module=mock_config,
         )
 
     def test_book_value_no_liabilities(self, firm):
@@ -61,7 +61,7 @@ class TestFirmBookValue:
         assert firm.finance.get_book_value_per_share() == 12.5
 
     def test_book_value_negative_net_assets(self, firm, mock_decision_engine):
-         # Setup Huge Liabilities
+        # Setup Huge Liabilities
         mock_loan_market = Mock()
         mock_bank = Mock()
         mock_decision_engine.loan_market = mock_loan_market
@@ -78,6 +78,7 @@ class TestFirmBookValue:
         firm.total_shares = 0.0
         firm.treasury_shares = 0.0
         assert firm.finance.get_book_value_per_share() == 0.0
+
 
 class TestProductionDepartment:
     @pytest.fixture
@@ -118,9 +119,14 @@ class TestProductionDepartment:
         # Replicate the quality calculation to get the expected value
         avg_skill = firm.hr.get_avg_skill.return_value
         quality_sensitivity = mock_config.GOODS["test"]["quality_sensitivity"]
-        expected_quality = firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+        expected_quality = firm.base_quality + (
+            math.log1p(avg_skill) * quality_sensitivity
+        )
 
-        firm.add_inventory.assert_called_once_with("test", produced_quantity, expected_quality)
+        firm.add_inventory.assert_called_once_with(
+            "test", produced_quantity, expected_quality
+        )
+
 
 class TestSalesDepartment:
     @pytest.fixture
@@ -142,7 +148,7 @@ class TestSalesDepartment:
         firm.brand_manager.brand_awareness = 0.5
         firm.inventory_quality = {}
         firm.marketing_budget = 100.0
-        firm.finance.last_marketing_spend = 50.0 # Lower spend last tick
+        firm.finance.last_marketing_spend = 50.0  # Lower spend last tick
         firm.finance.revenue_this_turn = 200.0
         firm.finance.last_revenue = 100.0
         firm.marketing_budget_rate = 0.1
@@ -172,8 +178,8 @@ class TestSalesDepartment:
 
     def test_adjust_marketing_budget_decrease(self, firm, mock_config):
         # Low ROI should decrease the budget rate
-        firm.finance.last_marketing_spend = 200.0 # High spend
-        firm.finance.revenue_this_turn = 110.0 # Low return
+        firm.finance.last_marketing_spend = 200.0  # High spend
+        firm.finance.revenue_this_turn = 110.0  # Low return
         firm.finance.last_revenue = 100.0
 
         sales_dept = SalesDepartment(firm, mock_config)

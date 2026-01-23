@@ -2,6 +2,7 @@
 Dynasty Report (Phase Alpha Optimizer)
 Goal: Run 1000 ticks simulation with maximized speed and report TPS.
 """
+
 import sys
 from pathlib import Path
 import os
@@ -25,9 +26,10 @@ from main import create_simulation
 report_logger = logging.getLogger("DYNASTY_REPORT")
 report_logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter('%(message)s'))
+handler.setFormatter(logging.Formatter("%(message)s"))
 report_logger.addHandler(handler)
 report_logger.propagate = False
+
 
 def run_dynasty_test(ticks: int = 1000):
     report_logger.info(f"🏎️ Starting Dynasty Speed Test: {ticks} Ticks")
@@ -39,7 +41,7 @@ def run_dynasty_test(ticks: int = 1000):
     overrides = {
         "INITIAL_HOUSEHOLD_ASSETS_MEAN": 5000.0,
         "INITIAL_FIRM_CAPITAL_MEAN": 50000.0,
-        "BATCH_SAVE_INTERVAL": 50 # Reinforce config level too
+        "BATCH_SAVE_INTERVAL": 50,  # Reinforce config level too
     }
 
     simulation = create_simulation(overrides=overrides)
@@ -59,6 +61,7 @@ def run_dynasty_test(ticks: int = 1000):
     except Exception as e:
         report_logger.error(f"Simulation Crashed: {e}")
         import traceback
+
         traceback.print_exc()
 
     end_time = time.time()
@@ -74,6 +77,7 @@ def run_dynasty_test(ticks: int = 1000):
         report_logger.info(f"Est. 1000 Ticks Time: {minutes:.2f} minutes")
 
     simulation.finalize_simulation()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

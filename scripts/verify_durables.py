@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 import os
@@ -16,6 +15,7 @@ from simulation.core_agents import Household
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("verify_durables")
 
+
 def generate_ascii_chart(data: List[float], title: str, max_width: int = 50) -> str:
     if not data:
         return "No Data"
@@ -25,7 +25,9 @@ def generate_ascii_chart(data: List[float], title: str, max_width: int = 50) -> 
     if max_val == min_val:
         normalized = [0 for _ in data]
     else:
-        normalized = [int((x - min_val) / (max_val - min_val) * max_width) for x in data]
+        normalized = [
+            int((x - min_val) / (max_val - min_val) * max_width) for x in data
+        ]
 
     lines = [f"### {title}"]
     lines.append(f"Range: {min_val:.2f} - {max_val:.2f}")
@@ -35,6 +37,7 @@ def generate_ascii_chart(data: List[float], title: str, max_width: int = 50) -> 
         lines.append(f"T{i:03d} | {bar} ({val:.2f})")
     lines.append("```")
     return "\n".join(lines)
+
 
 def run_verification():
     logger.info("Starting Durables Business Cycle Verification...")
@@ -56,20 +59,17 @@ def run_verification():
         "GOVERNMENT_STIMULUS_ENABLED": True,
         "INITIAL_FIRM_INVENTORY_MEAN": 0.0,
         "FIRM_MIN_PRODUCTION_TARGET": 50.0,
-
         # Prevent initial panic selling by firms (Give them runway)
         "INITIAL_FIRM_CAPITAL_MEAN": 50000.0,
-
         # Prevent hoarding by households (Don't buy if need is low)
         "NEED_FACTOR_BASE": 0.1,
-
         # Force immediate consumption (installation) of durables
         "INITIAL_HOUSEHOLD_NEEDS_MEAN": {
             "survival": 60.0,
             "asset": 10.0,
             "social": 20.0,
             "improvement": 10.0,
-            "quality": 90.0, # High initial need -> Buy & Install immediately
+            "quality": 90.0,  # High initial need -> Buy & Install immediately
             "liquidity_need": 50.0,
             # Legacy Keys
             "survival_need": 60.0,
@@ -78,7 +78,7 @@ def run_verification():
             "wealth_need": 10.0,
             "imitation_need": 15.0,
             "labor_need": 0.0,
-            "child_rearing_need": 0.0
+            "child_rearing_need": 0.0,
         },
         "NEED_MEDIUM_THRESHOLD": 10.0,
     }
@@ -102,7 +102,7 @@ def run_verification():
         # Metric 1: Sales Volume
         market = sim.markets.get("consumer_goods")
         daily_vol = 0.0
-        daily_price = 15.0 # Default
+        daily_price = 15.0  # Default
 
         if market:
             daily_vol = market.get_daily_volume()
@@ -138,14 +138,16 @@ def run_verification():
                     price = daily_price
                     durable_value += quality * (remaining / base_life) * price
 
-            total_wealth += (cash + durable_value)
+            total_wealth += cash + durable_value
             active_count += 1
 
         avg_wealth = total_wealth / active_count if active_count > 0 else 0.0
         avg_wealth_history.append(avg_wealth)
 
         if tick % 10 == 0:
-            logger.info(f"Tick {tick}: Vol={daily_vol:.1f}, AvgWealth={avg_wealth:.1f}, InvGoods={total_inventory_goods:.1f}, Installed={total_durable_count}")
+            logger.info(
+                f"Tick {tick}: Vol={daily_vol:.1f}, AvgWealth={avg_wealth:.1f}, InvGoods={total_inventory_goods:.1f}, Installed={total_durable_count}"
+            )
 
     # 4. Post-Simulation Analysis (Metric 3: Quality Segmentation)
     logger.info("Calculating Quality Segmentation...")
@@ -155,7 +157,8 @@ def run_verification():
 
     market = sim.markets.get("consumer_goods")
     final_price = market.get_daily_avg_price() if market else 15.0
-    if final_price <= 0: final_price = 15.0
+    if final_price <= 0:
+        final_price = 15.0
 
     for h in sim.households:
         if not h.is_active:
@@ -163,7 +166,9 @@ def run_verification():
 
         cash = h.assets
         durable_val = 0.0
-        owned_durables = [a for a in h.durable_assets if a["item_id"] == "consumer_goods"]
+        owned_durables = [
+            a for a in h.durable_assets if a["item_id"] == "consumer_goods"
+        ]
 
         for asset in owned_durables:
             q = asset["quality"]
@@ -177,12 +182,14 @@ def run_verification():
         if owned_durables:
             avg_q = sum(a["quality"] for a in owned_durables) / len(owned_durables)
 
-        household_wealth_map.append({
-            "id": h.id,
-            "wealth": total,
-            "avg_quality": avg_q,
-            "owned_count": len(owned_durables)
-        })
+        household_wealth_map.append(
+            {
+                "id": h.id,
+                "wealth": total,
+                "avg_quality": avg_q,
+                "owned_count": len(owned_durables),
+            }
+        )
 
     # Sort by wealth descending
     household_wealth_map.sort(key=lambda x: x["wealth"], reverse=True)
@@ -195,7 +202,9 @@ def run_verification():
     bottom_10 = household_wealth_map[-bottom_10_idx:]
 
     avg_q_top = sum(x["avg_quality"] for x in top_10) / len(top_10) if top_10 else 0.0
-    avg_q_bottom = sum(x["avg_quality"] for x in bottom_10) / len(bottom_10) if bottom_10 else 0.0
+    avg_q_bottom = (
+        sum(x["avg_quality"] for x in bottom_10) / len(bottom_10) if bottom_10 else 0.0
+    )
 
     logger.info(f"Top 10% Avg Quality: {avg_q_top:.2f}")
     logger.info(f"Bottom 10% Avg Quality: {avg_q_bottom:.2f}")
@@ -208,19 +217,21 @@ def run_verification():
         generate_ascii_chart(sales_volume_history, "Consumer Goods Sales Volume"),
         "",
         "## 2. Wealth Storage (Asset Accumulation)",
-        generate_ascii_chart(avg_wealth_history, "Avg Household Wealth (Cash + Durable Value)"),
+        generate_ascii_chart(
+            avg_wealth_history, "Avg Household Wealth (Cash + Durable Value)"
+        ),
         "",
         "## 3. Quality Segmentation (at T=100)",
         "| Group | Avg Quality | Avg Wealth | Owned Count (Avg) |",
         "|---|---|---|---|",
-        f"| Top 10% | {avg_q_top:.2f} | {sum(x['wealth'] for x in top_10)/len(top_10):.1f} | {sum(x['owned_count'] for x in top_10)/len(top_10):.1f} |",
-        f"| Bottom 10% | {avg_q_bottom:.2f} | {sum(x['wealth'] for x in bottom_10)/len(bottom_10):.1f} | {sum(x['owned_count'] for x in bottom_10)/len(bottom_10):.1f} |",
+        f"| Top 10% | {avg_q_top:.2f} | {sum(x['wealth'] for x in top_10) / len(top_10):.1f} | {sum(x['owned_count'] for x in top_10) / len(top_10):.1f} |",
+        f"| Bottom 10% | {avg_q_bottom:.2f} | {sum(x['wealth'] for x in bottom_10) / len(bottom_10):.1f} | {sum(x['owned_count'] for x in bottom_10) / len(bottom_10):.1f} |",
         "",
         "## Analysis",
         "- **Cliff & Echo**: Check T=0-10 for spike and ~T=50 for echo.",
         "- **Wealth**: Check for sawtooth pattern.",
         "- **Quality**: Check if Top 10% > Bottom 10% (Expect > 1.0 for rich).",
-        ""
+        "",
     ]
 
     os.makedirs("reports", exist_ok=True)
@@ -228,6 +239,7 @@ def run_verification():
         f.write("\n".join(report_content))
 
     logger.info("Report generated at reports/DURABLES_CYCLE_REPORT.md")
+
 
 if __name__ == "__main__":
     run_verification()

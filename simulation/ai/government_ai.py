@@ -6,6 +6,7 @@ from simulation.ai.action_selector import ActionSelector
 
 logger = logging.getLogger(__name__)
 
+
 class GovernmentAI:
     """
     Intelligent Government AI (Brain Module).
@@ -59,11 +60,13 @@ class GovernmentAI:
         """
         # WO-057-Fix: Use live sensory data. If not available, return neutral state.
         if not self.agent.sensory_data:
-            return (1, 1, 1, 1) # Neutral state
+            return (1, 1, 1, 1)  # Neutral state
 
         # 1. Retrieve Targets from Config
         target_inflation = getattr(self.config_module, "TARGET_INFLATION_RATE", 0.02)
-        target_unemployment = getattr(self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04)
+        target_unemployment = getattr(
+            self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04
+        )
 
         # 2. Retrieve Current Metrics from Sensory DTO
         inflation = self.agent.sensory_data.inflation_sma
@@ -75,31 +78,43 @@ class GovernmentAI:
         assets = getattr(self.agent, "assets", 0.0)
         debt = max(0.0, -assets)
         debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
-        debt_gap_val = debt_ratio - 0.60 # Target Debt Ratio 60%
+        debt_gap_val = debt_ratio - 0.60  # Target Debt Ratio 60%
 
         # 3. Discretize
         # Inflation Gap: I - I*
         inf_gap_val = inflation - target_inflation
-        if inf_gap_val < -0.01: s_inf = 0
-        elif inf_gap_val > 0.01: s_inf = 2
-        else: s_inf = 1
+        if inf_gap_val < -0.01:
+            s_inf = 0
+        elif inf_gap_val > 0.01:
+            s_inf = 2
+        else:
+            s_inf = 1
 
         # Unemployment Gap: U - U*
         unemp_gap_val = unemployment - target_unemployment
-        if unemp_gap_val < -0.01: s_unemp = 0
-        elif unemp_gap_val > 0.01: s_unemp = 2
-        else: s_unemp = 1
+        if unemp_gap_val < -0.01:
+            s_unemp = 0
+        elif unemp_gap_val > 0.01:
+            s_unemp = 2
+        else:
+            s_unemp = 1
 
         # GDP Growth (Directly, not as a gap)
         # Thresholds: <0% is bad, >2% is good? Let's use -0.5% and +0.5% for now.
-        if gdp_growth < -0.005: s_gdp = 0 # Low (Recession)
-        elif gdp_growth > 0.005: s_gdp = 2 # High (Overheating)
-        else: s_gdp = 1 # Ideal
+        if gdp_growth < -0.005:
+            s_gdp = 0  # Low (Recession)
+        elif gdp_growth > 0.005:
+            s_gdp = 2  # High (Overheating)
+        else:
+            s_gdp = 1  # Ideal
 
         # Debt Gap: Ratio - 0.6
-        if debt_gap_val < -0.05: s_debt = 0 # Low
-        elif debt_gap_val > 0.05: s_debt = 2 # High
-        else: s_debt = 1 # Ideal
+        if debt_gap_val < -0.05:
+            s_debt = 0  # Low
+        elif debt_gap_val > 0.05:
+            s_debt = 2  # High
+        else:
+            s_debt = 1  # Ideal
 
         return (s_inf, s_unemp, s_gdp, s_debt)
 
@@ -114,7 +129,9 @@ class GovernmentAI:
             return 0.0
 
         target_inflation = getattr(self.config_module, "TARGET_INFLATION_RATE", 0.02)
-        target_unemployment = getattr(self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04)
+        target_unemployment = getattr(
+            self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04
+        )
 
         # Retrieve metrics from Sensory DTO
         inflation = self.agent.sensory_data.inflation_sma
@@ -132,7 +149,7 @@ class GovernmentAI:
         debt_gap = debt_ratio - 0.60
 
         # Calculate Reward (Loss Function)
-        loss = (0.5 * (inf_gap ** 2)) + (0.4 * (unemp_gap ** 2)) + (0.1 * (debt_gap ** 2))
+        loss = (0.5 * (inf_gap**2)) + (0.4 * (unemp_gap**2)) + (0.1 * (debt_gap**2))
         reward = -loss * 100.0  # Scale for significance
 
         return reward
@@ -147,7 +164,9 @@ class GovernmentAI:
         state = self._get_state()
 
         # Action Selection
-        action_idx = self.action_selector.choose_action(self.q_table, state, self.actions, current_tick=current_tick)
+        action_idx = self.action_selector.choose_action(
+            self.q_table, state, self.actions, current_tick=current_tick
+        )
 
         # Learning happens in update_learning, called separately (or before next decision)
         # We just return the decision here.
@@ -189,9 +208,7 @@ class GovernmentAI:
             next_state=current_state,
             next_actions=self.actions,
             alpha=self.alpha,
-            gamma=self.gamma
+            gamma=self.gamma,
         )
 
-        logger.debug(
-            f"GOV_AI_LEARN | Reward: {real_reward:.5f} | Tick: {current_tick}"
-        )
+        logger.debug(f"GOV_AI_LEARN | Reward: {real_reward:.5f} | Tick: {current_tick}")

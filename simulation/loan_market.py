@@ -3,7 +3,7 @@ import logging
 
 from simulation.models import Order, Transaction
 from simulation.bank import Bank  # Bank 클래스 임포트
-from simulation.core_markets import Market # Import Market
+from simulation.core_markets import Market  # Import Market
 
 logger = logging.getLogger(__name__)
 
@@ -125,13 +125,11 @@ class LoanMarket(Market):
             # `self.markets["loan_market"].set_agents_ref(self.agents)`?
             # This is cleaner.
 
-            pass # Placeholder for diff, actual logic below
+            pass  # Placeholder for diff, actual logic below
 
             loan_amount = order.quantity
             interest_rate = order.price
-            duration = (
-                self.config_module.DEFAULT_LOAN_DURATION
-            )
+            duration = self.config_module.DEFAULT_LOAN_DURATION
 
             # Credit Jail Check via Agent Lookup (Assuming we have agent ref, see set_agents_ref)
             borrower_id = order.agent_id
@@ -155,9 +153,7 @@ class LoanMarket(Market):
                 # Bank calculates rate internally based on base rate + spread
                 # We ignore order.price (interest_rate) as the bank sets the rate
                 loan_id = self.bank.grant_loan(
-                    borrower_id=order.agent_id,
-                    amount=loan_amount,
-                    term_ticks=duration
+                    borrower_id=order.agent_id, amount=loan_amount, term_ticks=duration
                 )
             # Fetch details if needed or assume success if ID returned
             # Legacy expected loan_details but we only got ID.
@@ -191,7 +187,7 @@ class LoanMarket(Market):
 
             # Update Bank State (Principal Reduction)
             if hasattr(self.bank, "process_repayment"):
-                 self.bank.process_repayment(loan_id, repay_amount)
+                self.bank.process_repayment(loan_id, repay_amount)
 
             # Transaction: Money from Borrower (Buyer) to Bank (Seller)
             # Transaction: Money from Borrower (Buyer) to Bank (Seller)
@@ -201,7 +197,7 @@ class LoanMarket(Market):
                     item_id="loan_repaid",
                     quantity=repay_amount,
                     price=1.0,
-                    buyer_id=order.agent_id, # Agent pays money (Assets decrease)
+                    buyer_id=order.agent_id,  # Agent pays money (Assets decrease)
                     seller_id=self.bank.id,  # Bank gets money (Assets increase)
                     transaction_type="loan",
                     time=current_tick,
@@ -225,8 +221,8 @@ class LoanMarket(Market):
                         item_id="deposit",
                         quantity=amount,
                         price=1.0,
-                        buyer_id=order.agent_id,   # Agent pays
-                        seller_id=self.bank.id,    # Bank receives
+                        buyer_id=order.agent_id,  # Agent pays
+                        seller_id=self.bank.id,  # Bank receives
                         transaction_type="deposit",
                         time=current_tick,
                         market_id=self.id,
@@ -251,7 +247,7 @@ class LoanMarket(Market):
                         item_id="withdrawal",
                         quantity=amount,
                         price=1.0,
-                        buyer_id=self.bank.id,     # Bank pays
+                        buyer_id=self.bank.id,  # Bank pays
                         seller_id=order.agent_id,  # Agent receives
                         transaction_type="withdrawal",
                         time=current_tick,
@@ -263,7 +259,9 @@ class LoanMarket(Market):
                     extra=log_extra,
                 )
             else:
-                logger.warning(f"Withdrawal failed for {order.agent_id}", extra=log_extra)
+                logger.warning(
+                    f"Withdrawal failed for {order.agent_id}", extra=log_extra
+                )
 
         else:  # Handle unknown order types
             logger.warning(f"Unknown order type: {order.order_type}", extra=log_extra)
@@ -340,4 +338,3 @@ class LoanMarket(Market):
     def clear_orders(self) -> None:
         """LoanMarket은 매 틱 초기화할 내부 상태가 없습니다."""
         self.matched_transactions = []
-

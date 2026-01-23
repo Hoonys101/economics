@@ -1,6 +1,7 @@
 from typing import Protocol, List
 from dataclasses import dataclass
 
+
 class AltmanZScoreCalculator:
     """
     Calculates the Altman Z-Score for a firm to assess its solvency and bankruptcy risk.
@@ -14,7 +15,7 @@ class AltmanZScoreCalculator:
         total_assets: float,
         working_capital: float,
         retained_earnings: float,
-        average_profit: float
+        average_profit: float,
     ) -> float:
         """
         Calculates the Altman Z-Score.

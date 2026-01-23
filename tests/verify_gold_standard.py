@@ -17,28 +17,45 @@ from simulation.ai.api import Personality
 import config
 
 # Set up logging to capture output
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("VERIFY_GOLD")
 
+
 class MockRepository:
-    def save_simulation_run(self, **kwargs): return "mock_run_id"
-    def update_simulation_run_end_time(self, run_id): pass
-    def save_agent_states_batch(self, batch): pass
-    def save_transactions_batch(self, batch): pass
-    def save_economic_indicators_batch(self, batch): pass
-    def save_market_history_batch(self, batch): pass
-    def save_ai_decision(self, decision): pass
-    def close(self): pass
+    def save_simulation_run(self, **kwargs):
+        return "mock_run_id"
+
+    def update_simulation_run_end_time(self, run_id):
+        pass
+
+    def save_agent_states_batch(self, batch):
+        pass
+
+    def save_transactions_batch(self, batch):
+        pass
+
+    def save_economic_indicators_batch(self, batch):
+        pass
+
+    def save_market_history_batch(self, batch):
+        pass
+
+    def save_ai_decision(self, decision):
+        pass
+
+    def close(self):
+        pass
+
 
 class VerifyGoldStandard(unittest.TestCase):
     def setUp(self):
         # Override Config for Gold Standard
         self.config = config
         self.config.GOLD_STANDARD_MODE = True
-        self.config.INITIAL_MONEY_SUPPLY = 100000.0 # Just a reference
+        self.config.INITIAL_MONEY_SUPPLY = 100000.0  # Just a reference
         self.config.NUM_HOUSEHOLDS = 10
         self.config.NUM_FIRMS = 2
-        self.config.BATCH_SAVE_INTERVAL = 100 # Disable freq saving
+        self.config.BATCH_SAVE_INTERVAL = 100  # Disable freq saving
 
     def test_gold_standard_conservation(self):
         # 1. Initialize Objects
@@ -57,12 +74,17 @@ class VerifyGoldStandard(unittest.TestCase):
                 talent=Talent(base_learning_rate=0.1, max_potential={}),
                 goods_data=[],
                 initial_assets=5000.0,
-                initial_needs={"survival": 0.0, "asset": 0.0, "social": 0.0, "improvement": 0.0},
+                initial_needs={
+                    "survival": 0.0,
+                    "asset": 0.0,
+                    "social": 0.0,
+                    "improvement": 0.0,
+                },
                 decision_engine=decision_engine,
                 value_orientation="wealth_and_needs",
                 personality=Personality.GROWTH_ORIENTED,
                 config_module=self.config,
-                logger=logger
+                logger=logger,
             )
             # Add mock return values for decision
             mock_vector = MagicMock()
@@ -97,7 +119,7 @@ class VerifyGoldStandard(unittest.TestCase):
                 decision_engine=decision_engine,
                 value_orientation="wealth_and_needs",
                 config_module=self.config,
-                logger=logger
+                logger=logger,
             )
             # Add mocks to bypass logic errors in test
             mock_firm_vector = MagicMock()
@@ -108,7 +130,9 @@ class VerifyGoldStandard(unittest.TestCase):
             mock_firm_vector.investment_aggressiveness = 0.5
 
             f.make_decision = MagicMock(return_value=([], mock_firm_vector))
-            f.decision_engine.make_decision = MagicMock(return_value=([], mock_firm_vector))
+            f.decision_engine.make_decision = MagicMock(
+                return_value=([], mock_firm_vector)
+            )
 
             firms.append(f)
 
@@ -126,7 +150,7 @@ class VerifyGoldStandard(unittest.TestCase):
             repository=repo,
             config_module=self.config,
             goods_data=[],
-            logger=logger
+            logger=logger,
         )
 
         # 2. Run Ticks
@@ -141,15 +165,19 @@ class VerifyGoldStandard(unittest.TestCase):
 
                 # Check Conservation
                 current_money = sim._calculate_total_money()
-                expected_money = sim.baseline_money_supply + sim.government.get_monetary_delta()
+                expected_money = (
+                    sim.baseline_money_supply + sim.government.get_monetary_delta()
+                )
                 delta = current_money - expected_money
                 deltas.append(delta)
 
-                print(f"Tick {i+1}: Current={current_money:.2f}, Expected={expected_money:.2f}, Delta={delta:.4f}")
+                print(
+                    f"Tick {i + 1}: Current={current_money:.2f}, Expected={expected_money:.2f}, Delta={delta:.4f}"
+                )
 
                 # Assertion
                 if abs(delta) > 1.0:
-                     self.fail(f"Conservation broken at tick {i+1}. Delta: {delta}")
+                    self.fail(f"Conservation broken at tick {i + 1}. Delta: {delta}")
 
         except Exception as e:
             logger.error(f"Simulation crashed: {e}")
@@ -167,7 +195,7 @@ class VerifyGoldStandard(unittest.TestCase):
 ## Summary
 - **Mode**: Gold Standard (Full Reserve)
 - **Ticks Simulated**: 50
-- **Verification Status**: {'PASSED' if max_delta < 1.0 else 'FAILED'}
+- **Verification Status**: {"PASSED" if max_delta < 1.0 else "FAILED"}
 - **Max Delta**: {max_delta:.4f}
 - **Avg Delta**: {avg_delta:.4f}
 
@@ -188,5 +216,6 @@ Bank reserves were strictly enforced, preventing unauthorized credit creation.
             f.write(report_content)
         print("\nReport generated at reports/GOLD_STANDARD_REPORT.md")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

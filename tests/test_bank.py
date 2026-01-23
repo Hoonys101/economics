@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from simulation.bank import Bank, Loan
 from modules.finance.api import InsufficientFundsError
 
+
 @pytest.fixture(autouse=True)
 def mock_logger():
     with patch("simulation.bank.logging.getLogger") as mock_get_logger:
@@ -10,8 +11,10 @@ def mock_logger():
         mock_get_logger.return_value = mock_logger_instance
         yield mock_logger_instance
 
+
 from modules.common.config_manager.impl import ConfigManagerImpl
 from pathlib import Path
+
 
 @pytest.fixture
 def config_manager(tmp_path: Path):
@@ -19,10 +22,12 @@ def config_manager(tmp_path: Path):
     config_dir.mkdir()
     return ConfigManagerImpl(config_dir)
 
+
 @pytest.fixture
 def bank_instance(config_manager: ConfigManagerImpl):
     # Initialize with enough assets for tests
     return Bank(id=1, initial_assets=10000.0, config_manager=config_manager)
+
 
 class TestBank:
     def test_initialization(self, bank_instance: Bank):
@@ -34,8 +39,12 @@ class TestBank:
         assert bank_instance.needs == {}
 
     def test_grant_loan_successful(self, bank_instance: Bank):
-        bank_instance.config_manager.set_value_for_test("bank_defaults.initial_base_annual_rate", 0.05)
-        bank_instance.config_manager.set_value_for_test("bank_defaults.credit_spread_base", 0.02)
+        bank_instance.config_manager.set_value_for_test(
+            "bank_defaults.initial_base_annual_rate", 0.05
+        )
+        bank_instance.config_manager.set_value_for_test(
+            "bank_defaults.credit_spread_base", 0.02
+        )
         initial_assets = bank_instance.assets
         # Mock a borrower agent
         borrower_id = 101
@@ -178,7 +187,7 @@ class TestBank:
         # Mock Agents
         mock_borrower = MagicMock()
         mock_borrower.id = borrower_id
-        mock_borrower.assets = 100.0 # Enough to pay interest
+        mock_borrower.assets = 100.0  # Enough to pay interest
         mock_borrower.is_active = True
 
         mock_depositor = MagicMock()
@@ -191,7 +200,9 @@ class TestBank:
         transactions = bank_instance.run_tick(agents, current_tick=1)
 
         # Assert
-        assert len(transactions) >= 2 # Interest Payment (Loan) + Interest Payment (Deposit)
+        assert (
+            len(transactions) >= 2
+        )  # Interest Payment (Loan) + Interest Payment (Deposit)
 
         # Check types
         tx_types = [tx.transaction_type for tx in transactions]

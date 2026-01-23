@@ -1,4 +1,3 @@
-
 import logging
 import sys
 import os
@@ -12,14 +11,20 @@ from collections import defaultdict
 sys.path.append(os.getcwd())
 
 # Setup Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("Phase23Verify")
 
 # Import Simulation Components
 import config as Config
 from simulation.dtos.api import SimulationState, DecisionContext
-from simulation.decisions.standalone_rule_based_firm_engine import StandaloneRuleBasedFirmDecisionEngine
-from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+from simulation.decisions.standalone_rule_based_firm_engine import (
+    StandaloneRuleBasedFirmDecisionEngine,
+)
+from simulation.decisions.rule_based_household_engine import (
+    RuleBasedHouseholdDecisionEngine,
+)
 from simulation.systems.demographic_manager import DemographicManager
 from simulation.initialization.initializer import SimulationInitializer
 from simulation.core_agents import Household, Talent, Personality
@@ -33,25 +38,26 @@ from simulation.components.psychology_component import PsychologyComponent
 # 0. Forensics Patch for Death (Kept for Debugging visibility)
 original_log_death = PsychologyComponent._log_death
 
+
 def patched_log_death(self, current_tick, market_data):
     # Print critical info to stdout for debugging
     print(f"\n[AUTOPSY] Agent {self.owner.id} DIED at Tick {current_tick}")
     print(f"  - Survival Need: {self.owner.needs.get('survival', 'N/A')}")
     print(f"  - Assets: {self.owner.assets}")
     print(f"  - Inventory: {self.owner.inventory}")
-    print(f"  - Thresholds: Survival={self.config.SURVIVAL_NEED_DEATH_THRESHOLD}, Assets={self.config.ASSETS_DEATH_THRESHOLD}")
+    print(
+        f"  - Thresholds: Survival={self.config.SURVIVAL_NEED_DEATH_THRESHOLD}, Assets={self.config.ASSETS_DEATH_THRESHOLD}"
+    )
     original_log_death(self, current_tick, market_data)
 
+
 PsychologyComponent._log_death = patched_log_death
+
 
 class Phase23Verifier:
     def __init__(self):
         self.sim = None
-        self.metrics = {
-            "population": [],
-            "avg_price_food": [],
-            "total_inventory": []
-        }
+        self.metrics = {"population": [], "avg_price_food": [], "total_inventory": []}
 
     def setup_scenario(self):
         logger.info("--- Starting Verification (Final): Phase 23 The Great Harvest ---")
@@ -83,9 +89,9 @@ class Phase23Verifier:
 
         # Optimize Consumption for Survival
         Config.TARGET_FOOD_BUFFER_QUANTITY = 50.0  # Keep 50 ticks of food
-        Config.FOOD_PURCHASE_MAX_PER_TICK = 50.0   # Allow bulk buy
-        Config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0 # Standard consumption
-        Config.SURVIVAL_CRITICAL_TURNS = 10 # Give them more time before panic
+        Config.FOOD_PURCHASE_MAX_PER_TICK = 50.0  # Allow bulk buy
+        Config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0  # Standard consumption
+        Config.SURVIVAL_CRITICAL_TURNS = 10  # Give them more time before panic
 
         # --- DYNAMIC OVERRIDES (Moved from config.py) ---
         # WO-110: Use RuleBased Engine for newborns to ensure survival
@@ -94,7 +100,7 @@ class Phase23Verifier:
         # Relax Death Conditions
         Config.SURVIVAL_NEED_DEATH_THRESHOLD = 200.0
         Config.HOUSEHOLD_DEATH_TURNS_THRESHOLD = 50
-        Config.BASE_DESIRE_GROWTH = 0.5 # Slower Hunger
+        Config.BASE_DESIRE_GROWTH = 0.5  # Slower Hunger
         Config.FOOD_CONSUMPTION_QUANTITY = 5.0
 
         # Boost Reproduction (Simulating 'Cheap Food' effect)
@@ -110,44 +116,48 @@ class Phase23Verifier:
         goods_data_list = []
         for gid, ginfo in Config.GOODS.items():
             entry = ginfo.copy()
-            entry['id'] = gid
-            entry['name'] = gid
+            entry["id"] = gid
+            entry["name"] = gid
             goods_data_list.append(entry)
 
         # 3. Create Agents
         households = []
         for i in range(50):
             # Create Engine First
-            engine = RuleBasedHouseholdDecisionEngine(config_module=Config, logger=logger)
+            engine = RuleBasedHouseholdDecisionEngine(
+                config_module=Config, logger=logger
+            )
 
             hh = Household(
                 id=i,
                 talent=Talent(base_learning_rate=0.1, max_potential=1.0),
                 goods_data=goods_data_list,
-                initial_assets=500.0, # Generous start
-                initial_needs={"survival": 0.0}, # Start FULL (0 hunger)
+                initial_assets=500.0,  # Generous start
+                initial_needs={"survival": 0.0},  # Start FULL (0 hunger)
                 decision_engine=engine,
                 value_orientation="wealth_and_needs",
                 personality=Personality.CONSERVATIVE,
-                config_module=Config
+                config_module=Config,
             )
             households.append(hh)
 
         firms = []
         for i in range(10):
             # Create Engine First
-            f_engine = StandaloneRuleBasedFirmDecisionEngine(config_module=Config, logger=logger)
+            f_engine = StandaloneRuleBasedFirmDecisionEngine(
+                config_module=Config, logger=logger
+            )
 
             firm = Firm(
-                id=1000+i,
-                initial_capital=1_000_000.0, # Massive Capital Injection
+                id=1000 + i,
+                initial_capital=1_000_000.0,  # Massive Capital Injection
                 initial_liquidity_need=100.0,
                 specialization="basic_food",
                 productivity_factor=1.0,
                 decision_engine=f_engine,
                 value_orientation="profit",
                 config_module=Config,
-                initial_inventory={"basic_food": 50.0}
+                initial_inventory={"basic_food": 50.0},
             )
             firms.append(firm)
 
@@ -160,7 +170,7 @@ class Phase23Verifier:
             logger=logger,
             households=households,
             firms=firms,
-            ai_trainer=mock_ai_trainer
+            ai_trainer=mock_ai_trainer,
         )
 
         self.sim = initializer.build_simulation()
@@ -182,11 +192,11 @@ class Phase23Verifier:
 
             # If 0, try best ask
             if avg_price == 0 and food_market:
-                 asks = []
-                 for item_orders in food_market.sell_orders.values():
-                     asks.extend([o.price for o in item_orders])
-                 if asks:
-                     avg_price = min(asks)
+                asks = []
+                for item_orders in food_market.sell_orders.values():
+                    asks.extend([o.price for o in item_orders])
+                if asks:
+                    avg_price = min(asks)
 
             total_inv = sum(f.inventory.get("basic_food", 0) for f in self.sim.firms)
 
@@ -196,7 +206,9 @@ class Phase23Verifier:
 
             # Log periodic check
             if tick % 50 == 0:
-                logger.info(f"STATUS Tick {tick}: Pop={pop}, Price={avg_price:.2f}, Inv={total_inv:.2f}")
+                logger.info(
+                    f"STATUS Tick {tick}: Pop={pop}, Price={avg_price:.2f}, Inv={total_inv:.2f}"
+                )
 
             logger.info(f"--- Ending Tick {tick} ---")
 
@@ -230,22 +242,42 @@ class Phase23Verifier:
                 f.write("## Executive Summary\n")
                 f.write("| Metric | Initial | Final | Result |\n")
                 f.write("|---|---|---|---|\n")
-                f.write(f"| Food Price | {price_start:.2f} | {price_end:.2f} | Deflationary Stability |\n")
-                f.write(f"| Population | {start_pop} | {end_pop} | {growth:.2f}x Growth |\n\n")
+                f.write(
+                    f"| Food Price | {price_start:.2f} | {price_end:.2f} | Deflationary Stability |\n"
+                )
+                f.write(
+                    f"| Population | {start_pop} | {end_pop} | {growth:.2f}x Growth |\n\n"
+                )
 
                 f.write("## 🏆 VICTORY DECLARATION 🏆\n")
                 f.write("**We have broken the Malthusian Trap!**\n\n")
-                f.write("The simulation confirms that with high productivity and efficient market clearing (low price floor), ")
-                f.write("food becomes abundant and cheap, driving massive population growth without mass starvation.\n")
-                f.write("The key fix was ensuring newborn agents use `RuleBasedHouseholdDecisionEngine` to survive infancy, ")
-                f.write("coupled with a low `MIN_SELL_PRICE` to prevent inventory gluts.\n\n")
+                f.write(
+                    "The simulation confirms that with high productivity and efficient market clearing (low price floor), "
+                )
+                f.write(
+                    "food becomes abundant and cheap, driving massive population growth without mass starvation.\n"
+                )
+                f.write(
+                    "The key fix was ensuring newborn agents use `RuleBasedHouseholdDecisionEngine` to survive infancy, "
+                )
+                f.write(
+                    "coupled with a low `MIN_SELL_PRICE` to prevent inventory gluts.\n\n"
+                )
 
                 f.write("## Log Analysis: Sequential Execution Pipeline\n")
-                f.write("The logs confirm the separation of concerns within a single tick:\n")
-                f.write("1. **Planning**: Firms adjust production targets based on inventory signals.\n")
-                f.write("2. **Operation**: Firms hire or fire based on the *new* targets.\n")
+                f.write(
+                    "The logs confirm the separation of concerns within a single tick:\n"
+                )
+                f.write(
+                    "1. **Planning**: Firms adjust production targets based on inventory signals.\n"
+                )
+                f.write(
+                    "2. **Operation**: Firms hire or fire based on the *new* targets.\n"
+                )
                 f.write("3. **Commerce**: Firms adjust prices and execute sales.\n\n")
-                f.write("Observation of 'Overstock -> Target Reduction -> Price Cut' loops confirms market responsiveness.\n")
+                f.write(
+                    "Observation of 'Overstock -> Target Reduction -> Price Cut' loops confirms market responsiveness.\n"
+                )
 
         else:
             logger.info("VERDICT: FAILED - Population Stagnant or Crashed.")
@@ -255,7 +287,15 @@ class Phase23Verifier:
             writer = csv.writer(f)
             writer.writerow(["Tick", "Pop", "Price", "Inventory"])
             for i in range(len(self.metrics["population"])):
-                writer.writerow([i+1, self.metrics["population"][i], self.metrics["avg_price_food"][i], self.metrics["total_inventory"][i]])
+                writer.writerow(
+                    [
+                        i + 1,
+                        self.metrics["population"][i],
+                        self.metrics["avg_price_food"][i],
+                        self.metrics["total_inventory"][i],
+                    ]
+                )
+
 
 if __name__ == "__main__":
     v = Phase23Verifier()

@@ -1,6 +1,7 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import unittest
 from simulation.engine import Simulation
@@ -8,19 +9,24 @@ from simulation.core_agents import Household
 from simulation.models import RealEstateUnit, Transaction
 from simulation.systems.housing_system import HousingSystem
 import config
-from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+from simulation.decisions.rule_based_household_engine import (
+    RuleBasedHouseholdDecisionEngine,
+)
 from simulation.ai.enums import Personality
+
 
 class MockRepository:
     def save_simulation_run(self, *args, **kwargs):
         return 1
+
     def close(self):
         pass
+
     def update_simulation_run_end_time(self, run_id):
         pass
 
-class TestMonetaryIntegrity(unittest.TestCase):
 
+class TestMonetaryIntegrity(unittest.TestCase):
     def test_government_asset_sale(self):
         # 1. Setup
         buyer = Household(
@@ -32,7 +38,7 @@ class TestMonetaryIntegrity(unittest.TestCase):
             initial_needs={},
             decision_engine=RuleBasedHouseholdDecisionEngine(config, None),
             value_orientation="MAINSTREAM",
-            personality=Personality.BALANCED
+            personality=Personality.BALANCED,
         )
 
         sim = Simulation(
@@ -41,7 +47,7 @@ class TestMonetaryIntegrity(unittest.TestCase):
             ai_trainer=None,
             repository=MockRepository(),
             config_module=config,
-            goods_data=[]
+            goods_data=[],
         )
 
         gov = sim.government
@@ -62,7 +68,7 @@ class TestMonetaryIntegrity(unittest.TestCase):
             quantity=1.0,
             market_id="housing",
             transaction_type="housing",
-            time=sim.time
+            time=sim.time,
         )
 
         initial_money_destroyed = gov.total_money_destroyed
@@ -71,14 +77,29 @@ class TestMonetaryIntegrity(unittest.TestCase):
         housing_system.process_transaction(tx, sim)
 
         # 4. Assertions
-        self.assertEqual(buyer.assets, 200000 - sale_price, "Buyer's assets were not correctly deducted.")
+        self.assertEqual(
+            buyer.assets,
+            200000 - sale_price,
+            "Buyer's assets were not correctly deducted.",
+        )
 
         expected_money_destroyed = initial_money_destroyed + sale_price
-        self.assertEqual(gov.total_money_destroyed, expected_money_destroyed, "Government's total_money_destroyed was not updated correctly.")
+        self.assertEqual(
+            gov.total_money_destroyed,
+            expected_money_destroyed,
+            "Government's total_money_destroyed was not updated correctly.",
+        )
 
-        self.assertEqual(gov.assets, 0, "Government's assets should not increase from asset sales that destroy money.")
+        self.assertEqual(
+            gov.assets,
+            0,
+            "Government's assets should not increase from asset sales that destroy money.",
+        )
 
-        self.assertEqual(property_unit.owner_id, buyer.id, "Property ownership was not transferred.")
+        self.assertEqual(
+            property_unit.owner_id, buyer.id, "Property ownership was not transferred."
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

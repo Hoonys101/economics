@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 import os
@@ -12,6 +11,7 @@ import config
 from simulation.ai.household_ai import HouseholdAI
 from simulation.schemas import HouseholdActionVector
 
+
 class TestMaslowVerification(unittest.TestCase):
     def setUp(self):
         # Mock Decision Engine and Config
@@ -20,8 +20,7 @@ class TestMaslowVerification(unittest.TestCase):
 
         # Initialize HouseholdAI
         self.ai = HouseholdAI(
-            agent_id="test_household",
-            ai_decision_engine=self.mock_decision_engine
+            agent_id="test_household", ai_decision_engine=self.mock_decision_engine
         )
 
         # Define goods list
@@ -43,29 +42,40 @@ class TestMaslowVerification(unittest.TestCase):
         # Mock Data: Survival Need > Threshold (50.0)
         agent_data = {
             "assets": 1000.0,
-            "needs": {"survival": 80.0}, # Starving!
-            "inventory": {}
+            "needs": {"survival": 80.0},  # Starving!
+            "inventory": {},
         }
         market_data = {}
 
         # Execute Decision
-        action_vector = self.ai.decide_action_vector(agent_data, market_data, self.goods_list)
+        action_vector = self.ai.decide_action_vector(
+            agent_data, market_data, self.goods_list
+        )
 
         # Verify Results
         print(f"Action Vector: {action_vector}")
 
         # 1. Survival Goods (basic_food) should be aggressive (1.0)
-        self.assertEqual(action_vector.consumption_aggressiveness.get("basic_food"), 1.0,
-                         "Survival good (basic_food) should not be gated.")
+        self.assertEqual(
+            action_vector.consumption_aggressiveness.get("basic_food"),
+            1.0,
+            "Survival good (basic_food) should not be gated.",
+        )
 
         # 2. Non-Survival Goods (education_service) should be 0.0
         # education_service has utility {improvement: 15}, survival: 0 (implicit)
-        self.assertEqual(action_vector.consumption_aggressiveness.get("education_service"), 0.0,
-                         "Non-survival good (education_service) should be gated to 0.0.")
+        self.assertEqual(
+            action_vector.consumption_aggressiveness.get("education_service"),
+            0.0,
+            "Non-survival good (education_service) should be gated to 0.0.",
+        )
 
         # 3. Investment should be 0.0
-        self.assertEqual(action_vector.investment_aggressiveness, 0.0,
-                         "Investment should be gated to 0.0 when starving.")
+        self.assertEqual(
+            action_vector.investment_aggressiveness,
+            0.0,
+            "Investment should be gated to 0.0 when starving.",
+        )
 
         print("✅ Maslow Gating Verified: Starving agents focus on survival.")
 
@@ -75,26 +85,35 @@ class TestMaslowVerification(unittest.TestCase):
         # Mock Data: Survival Need < Threshold (50.0)
         agent_data = {
             "assets": 1000.0,
-            "needs": {"survival": 20.0}, # Not Starving
-            "inventory": {}
+            "needs": {"survival": 20.0},  # Not Starving
+            "inventory": {},
         }
         market_data = {}
 
         # Execute Decision
-        action_vector = self.ai.decide_action_vector(agent_data, market_data, self.goods_list)
+        action_vector = self.ai.decide_action_vector(
+            agent_data, market_data, self.goods_list
+        )
 
         # Verify Results
         print(f"Action Vector: {action_vector}")
 
         # 1. Non-Survival Goods (education_service) should NOT be gated
-        self.assertEqual(action_vector.consumption_aggressiveness.get("education_service"), 1.0,
-                         "Non-survival good (education_service) should NOT be gated when not starving.")
+        self.assertEqual(
+            action_vector.consumption_aggressiveness.get("education_service"),
+            1.0,
+            "Non-survival good (education_service) should NOT be gated when not starving.",
+        )
 
         # 3. Investment should NOT be 0.0 (since assets > 500)
-        self.assertEqual(action_vector.investment_aggressiveness, 1.0,
-                         "Investment should NOT be gated when not starving.")
+        self.assertEqual(
+            action_vector.investment_aggressiveness,
+            1.0,
+            "Investment should NOT be gated when not starving.",
+        )
 
         print("✅ Maslow Gating Verified: Normal agents can pursue other goals.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

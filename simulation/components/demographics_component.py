@@ -10,10 +10,19 @@ if TYPE_CHECKING:
     # from config import YourConfigModule # TBD: 실제 설정 모듈 경로로 변경
 import config
 
+
 class DemographicsComponent:
     """Handles the demographic data and lifecycle logic for a Household."""
 
-    def __init__(self, owner: "Household", initial_age: float, gender: str, generation: int = 0, parent_id: Optional[int] = None, config_module: Any = config):
+    def __init__(
+        self,
+        owner: "Household",
+        initial_age: float,
+        gender: str,
+        generation: int = 0,
+        parent_id: Optional[int] = None,
+        config_module: Any = config,
+    ):
         self._owner = owner
         self._age = initial_age
         self._gender = gender
@@ -85,7 +94,9 @@ class DemographicsComponent:
         self._age += 1.0 / ticks_per_year
 
         if self.handle_death(current_tick):
-            self.logger.info(f"DEATH | Household {self.owner.id} has died at age {self._age:.1f}.")
+            self.logger.info(
+                f"DEATH | Household {self.owner.id} has died at age {self._age:.1f}."
+            )
 
     def handle_death(self, current_tick: int) -> bool:
         """
@@ -132,7 +143,9 @@ class DemographicsComponent:
         if child_id not in self._children_ids:
             self._children_ids.append(child_id)
 
-    def get_generational_similarity(self, talent_learning_rate_1: float, talent_learning_rate_2: float) -> float:
+    def get_generational_similarity(
+        self, talent_learning_rate_1: float, talent_learning_rate_2: float
+    ) -> float:
         """Calculates the generational/genetic similarity based on talent learning rates."""
 
         # A simple comparison of talents.
@@ -140,11 +153,13 @@ class DemographicsComponent:
         similarity = max(0.0, 1.0 - talent_diff)
         return similarity
 
-    def create_offspring_demographics(self, new_id: int, current_tick: int) -> Dict[str, Any]:
+    def create_offspring_demographics(
+        self, new_id: int, current_tick: int
+    ) -> Dict[str, Any]:
         """Creates the initial demographic attributes for an offspring."""
         return {
             "generation": self._generation + 1,
             "parent_id": self.owner.id,
             "initial_age": 0.0,
-            "gender": random.choice(["M", "F"])
+            "gender": random.choice(["M", "F"]),
         }

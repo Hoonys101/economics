@@ -6,12 +6,14 @@ from simulation.core_agents import Household
 
 logger = logging.getLogger(__name__)
 
+
 class DemographicManager:
     """
     Phase 19: Demographic Manager
     - Handles lifecycle events: Aging, Birth, Death, Inheritance.
     - Implements evolutionary population dynamics.
     """
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -41,7 +43,7 @@ class DemographicManager:
                 continue
 
             # Increment Age for households
-            agent.age += (1.0 / ticks_per_year)
+            agent.age += 1.0 / ticks_per_year
 
             # Check Natural Death (Gompertz-Makeham law simplified)
             if agent.age > 80:
@@ -60,13 +62,11 @@ class DemographicManager:
         agent.is_active = False
         self.logger.info(
             f"NATURAL_DEATH | Household {agent.id} died of old age at {agent.age:.1f}.",
-            extra={"agent_id": agent.id, "age": agent.age, "tick": current_tick}
+            extra={"agent_id": agent.id, "age": agent.age, "tick": current_tick},
         )
 
     def process_births(
-        self,
-        simulation: Any,
-        birth_requests: List[Household]
+        self, simulation: Any, birth_requests: List[Household]
     ) -> List[Household]:
         """
         Executes birth requests.
@@ -76,7 +76,11 @@ class DemographicManager:
 
         for parent in birth_requests:
             # Re-verify biological capability (sanity check)
-            if not (self.config_module.REPRODUCTION_AGE_START <= parent.age <= self.config_module.REPRODUCTION_AGE_END):
+            if not (
+                self.config_module.REPRODUCTION_AGE_START
+                <= parent.age
+                <= self.config_module.REPRODUCTION_AGE_END
+            ):
                 continue
 
             # Create Child
@@ -111,14 +115,16 @@ class DemographicManager:
             ai_trainer = simulation.ai_trainer
 
             # Value Orientation Inheritance (with mutation?)
-            value_orientation = parent.value_orientation # Strict inheritance for now
+            value_orientation = parent.value_orientation  # Strict inheritance for now
 
             # Get base engine
             base_ai_engine = ai_trainer.get_engine(value_orientation)
 
             # Create HouseholdAI wrapper
             from simulation.ai.household_ai import HouseholdAI
-            from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+            from simulation.decisions.ai_driven_household_engine import (
+                AIDrivenHouseholdDecisionEngine,
+            )
 
             # Inherit Personality (with mutation)
             child_personality = self._inherit_personality(parent.personality)
@@ -131,19 +137,23 @@ class DemographicManager:
 
             # Create Decision Engine
             # WO-110: Allow selecting engine type for newborns (AIDriven vs RuleBased)
-            newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
+            newborn_engine_type = getattr(
+                self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven"
+            )
 
             if newborn_engine_type == "RuleBased":
-                from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+                from simulation.decisions.rule_based_household_engine import (
+                    RuleBasedHouseholdDecisionEngine,
+                )
+
                 new_decision_engine = RuleBasedHouseholdDecisionEngine(
-                    config_module=self.config_module,
-                    logger=simulation.logger
+                    config_module=self.config_module, logger=simulation.logger
                 )
             else:
                 new_decision_engine = AIDrivenHouseholdDecisionEngine(
                     ai_engine=new_ai,
                     config_module=self.config_module,
-                    logger=simulation.logger
+                    logger=simulation.logger,
                 )
                 new_decision_engine.loan_market = simulation.markets.get("loan_market")
 
@@ -152,19 +162,19 @@ class DemographicManager:
                 talent=child_talent,
                 goods_data=simulation.goods_data,
                 initial_assets=initial_gift,
-                initial_needs={}, # Default reset
+                initial_needs={},  # Default reset
                 decision_engine=new_decision_engine,
                 value_orientation=value_orientation,
                 personality=child_personality,
                 config_module=self.config_module,
                 loan_market=simulation.markets.get("loan_market"),
-                risk_aversion=parent.risk_aversion, # Inherit risk aversion
-                logger=simulation.logger
+                risk_aversion=parent.risk_aversion,  # Inherit risk aversion
+                logger=simulation.logger,
             )
 
             # Initialize Phase 19 Attributes
-            child.age = 0.0 # Newborn
-            child.education_level = 0 # Start at 0
+            child.age = 0.0  # Newborn
+            child.education_level = 0  # Start at 0
             child.expected_wage = self._calculate_expected_wage(child.education_level)
             child.parent_id = parent.id
             child.generation = parent.generation + 1
@@ -177,14 +187,20 @@ class DemographicManager:
                 simulation.ai_training_manager.inherit_brain(parent, child)
             else:
                 # Fallback if manager not found (e.g. mocked simulation)
-                self.logger.warning("AITrainingManager not found for brain inheritance.")
+                self.logger.warning(
+                    "AITrainingManager not found for brain inheritance."
+                )
 
             new_children.append(child)
 
             self.logger.info(
                 f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
                 f"Assets: {initial_gift:.2f}",
-                extra={"parent_id": parent.id, "child_id": child.id, "tick": simulation.time}
+                extra={
+                    "parent_id": parent.id,
+                    "child_id": child.id,
+                    "tick": simulation.time,
+                },
             )
 
         return new_children
@@ -202,7 +218,9 @@ class DemographicManager:
 
         # Mutation
         mutation_range = 0.1
-        new_talent.base_learning_rate *= random.uniform(1.0 - mutation_range, 1.0 + mutation_range)
+        new_talent.base_learning_rate *= random.uniform(
+            1.0 - mutation_range, 1.0 + mutation_range
+        )
 
         return new_talent
 
@@ -211,8 +229,11 @@ class DemographicManager:
         Inherit personality with potential mutation.
         """
         # Mutation Probability
-        if random.random() < getattr(self.config_module, "MITOSIS_MUTATION_PROBABILITY", 0.1):
+        if random.random() < getattr(
+            self.config_module, "MITOSIS_MUTATION_PROBABILITY", 0.1
+        ):
             from simulation.ai.enums import Personality
+
             available = list(Personality)
             return random.choice(available)
         return parent_personality
@@ -229,13 +250,17 @@ class DemographicManager:
         """
         if not deceased_agent.children_ids:
             # No heirs -> State (Tax)
-            return # Already handled by existing liquidation logic (Government collection)
+            return  # Already handled by existing liquidation logic (Government collection)
 
         # Find living heirs
-        heirs = [simulation.agents[cid] for cid in deceased_agent.children_ids if cid in simulation.agents and simulation.agents[cid].is_active]
+        heirs = [
+            simulation.agents[cid]
+            for cid in deceased_agent.children_ids
+            if cid in simulation.agents and simulation.agents[cid].is_active
+        ]
 
         if not heirs:
-            return # No living heirs
+            return  # No living heirs
 
         # Distribute Assets
         # Existing logic in engine._handle_agent_lifecycle wipes assets via tax?
@@ -244,7 +269,8 @@ class DemographicManager:
         # Inheritance logic might need to run before standard liquidation.
 
         amount = deceased_agent.assets
-        if amount <= 0: return
+        if amount <= 0:
+            return
 
         # Tax
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.0)
@@ -252,7 +278,9 @@ class DemographicManager:
         net_amount = amount - tax
 
         # Send Tax
-        simulation.government.collect_tax(tax, "inheritance_tax", deceased_agent.id, simulation.time)
+        simulation.government.collect_tax(
+            tax, "inheritance_tax", deceased_agent.id, simulation.time
+        )
 
         # Distribute
         share = net_amount / len(heirs)
@@ -260,7 +288,7 @@ class DemographicManager:
             heir._add_assets(share)
             self.logger.info(
                 f"INHERITANCE | Heir {heir.id} received {share:.2f} from {deceased_agent.id}.",
-                extra={"heir_id": heir.id, "deceased_id": deceased_agent.id}
+                extra={"heir_id": heir.id, "deceased_id": deceased_agent.id},
             )
 
         # Clear deceased assets so engine doesn't double count or tax again

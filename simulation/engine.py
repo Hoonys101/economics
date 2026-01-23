@@ -23,7 +23,7 @@ class Simulation:
         config_manager: ConfigManager,
         config_module: Any,
         logger: logging.Logger,
-        repository: SimulationRepository
+        repository: SimulationRepository,
     ) -> None:
         """
         초기화된 구성 요소들을 할당받습니다.
@@ -33,7 +33,7 @@ class Simulation:
             config_manager=config_manager,
             config_module=config_module,
             logger=logger,
-            repository=repository
+            repository=repository,
         )
         self.action_processor = ActionProcessor(self.world_state)
         self.tick_scheduler = TickScheduler(self.world_state, self.action_processor)
@@ -49,20 +49,26 @@ class Simulation:
 
         # Delegate to world_state if it has the attribute or if we are setting it dynamically
         if hasattr(self, "world_state"):
-             setattr(self.world_state, name, value)
+            setattr(self.world_state, name, value)
         else:
-             super().__setattr__(name, value)
+            super().__setattr__(name, value)
 
     def finalize_simulation(self):
         """시뮬레이션 종료 시 Repository 연결을 닫고, 시뮬레이션 종료 시간을 기록합니다."""
         if self.world_state.persistence_manager:
             self.world_state.persistence_manager.flush_buffers(self.world_state.time)
-        
-        self.world_state.repository.update_simulation_run_end_time(self.world_state.run_id)
-        self.world_state.repository.close()
-        self.world_state.logger.info("Simulation finalized and Repository connection closed.")
 
-    def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
+        self.world_state.repository.update_simulation_run_end_time(
+            self.world_state.run_id
+        )
+        self.world_state.repository.close()
+        self.world_state.logger.info(
+            "Simulation finalized and Repository connection closed."
+        )
+
+    def run_tick(
+        self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None
+    ) -> None:
         self.tick_scheduler.run_tick(injectable_sensory_dto)
 
     def get_all_agents(self) -> List[Any]:
@@ -83,7 +89,9 @@ class Simulation:
         """Legacy wrapper for ActionProcessor.process_transactions"""
         # We need to reconstruct the callback.
         # Note: self.tracker comes from world_state via __getattr__
-        market_data_cb = lambda: self._prepare_market_data(self.tracker).get("goods_market", {})
+        market_data_cb = lambda: self._prepare_market_data(self.tracker).get(
+            "goods_market", {}
+        )
         self.action_processor.process_transactions(transactions, market_data_cb)
 
     def _process_stock_transactions(self, transactions: List[Transaction]) -> None:

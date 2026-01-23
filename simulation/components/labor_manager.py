@@ -79,4 +79,7 @@ class LaborManager:
         Returns:
             The total income (labor + capital) for the current tick.
         """
-        return self._household.labor_income_this_tick + self._household.capital_income_this_tick
+        return (
+            self._household.labor_income_this_tick
+            + self._household.capital_income_this_tick
+        )

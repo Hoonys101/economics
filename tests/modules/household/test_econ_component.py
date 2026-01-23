@@ -4,13 +4,14 @@ from collections import deque
 from modules.household.econ_component import EconComponent
 from simulation.ai.api import Personality
 
+
 class TestEconComponent:
     @pytest.fixture
     def mock_owner(self):
         owner = MagicMock()
         owner.goods_info_map = {
             "food": {"id": "food", "initial_price": 10.0},
-            "water": {"id": "water", "initial_price": 5.0}
+            "water": {"id": "water", "initial_price": 5.0},
         }
         owner.personality = Personality.CONSERVATIVE
         owner.logger = MagicMock()
@@ -33,11 +34,7 @@ class TestEconComponent:
         econ.expected_inflation["food"] = 0.0
         econ.perceived_avg_prices["food"] = 10.0
 
-        market_data = {
-            "goods_market": {
-                "food_avg_traded_price": 11.0
-            }
-        }
+        market_data = {"goods_market": {"food_avg_traded_price": 11.0}}
 
         econ.update_perceived_prices(market_data)
 
@@ -56,7 +53,9 @@ class TestEconComponent:
 
     def test_update_perceived_prices_hyperinflation(self, mock_owner, mock_config):
         econ = EconComponent(mock_owner, mock_config)
-        econ.adaptation_rate = 0.2 # Force a rate override just to be sure, or rely on init
+        econ.adaptation_rate = (
+            0.2  # Force a rate override just to be sure, or rely on init
+        )
 
         # Override adaptation rate logic for test isolation or rely on mock_owner having CONSERVATIVE (0.1)
         # But here let's assume we want to test the multiplier logic.
@@ -67,15 +66,11 @@ class TestEconComponent:
         econ.price_history["food"].append(100.0)
         econ.expected_inflation["food"] = 0.05
 
-        market_data = {
-            "goods_market": {
-                "food_avg_traded_price": 120.0
-            }
-        }
+        market_data = {"goods_market": {"food_avg_traded_price": 120.0}}
 
         stress_config = MagicMock()
         stress_config.is_active = True
-        stress_config.scenario_name = 'hyperinflation'
+        stress_config.scenario_name = "hyperinflation"
         stress_config.inflation_expectation_multiplier = 2.0
 
         econ.update_perceived_prices(market_data, stress_scenario_config=stress_config)

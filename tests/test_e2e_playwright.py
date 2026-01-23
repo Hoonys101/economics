@@ -9,11 +9,13 @@ import config
 # Note: This script assumes the app is running on localhost:5001 or starts it.
 # To keep it simple and autonomous, I will try to start the app in a thread.
 
+
 def run_app():
     # Use a different port for testing to avoid conflict if already running
     # But for E2E we usually want to test the configuration
     app.config["TESTING"] = True
     app.run(port=5005, debug=False, use_reloader=False)
+
 
 def wait_for_server(url, timeout=10):
     start = time.time()
@@ -24,6 +26,7 @@ def wait_for_server(url, timeout=10):
         except requests.exceptions.ConnectionError:
             time.sleep(0.5)
     return False
+
 
 def test_frontend_flow():
     # Start server in thread
@@ -49,7 +52,7 @@ def test_frontend_flow():
         print("Injecting Auth Token...")
         # config.SECRET_TOKEN should be available
         page.evaluate(f"localStorage.setItem('secretToken', '{config.SECRET_TOKEN}')")
-        page.reload() # Reload to apply token if needed by init scripts
+        page.reload()  # Reload to apply token if needed by init scripts
 
         # 3. Check for Start Button and Click
         print("Starting Simulation...")
@@ -82,6 +85,7 @@ def test_frontend_flow():
 
         browser.close()
         print("E2E Test Completed Successfully")
+
 
 if __name__ == "__main__":
     test_frontend_flow()

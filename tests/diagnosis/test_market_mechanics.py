@@ -1,7 +1,7 @@
-
 import pytest
 from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
+
 
 def test_order_book_matching(simple_market):
     """Spec 1: OrderBookMarket 매칭 로직 검증"""
@@ -14,15 +14,15 @@ def test_order_book_matching(simple_market):
         price=10.0,
         quantity=1.0,
         order_type="BUY",
-        market_id="basic_food"
+        market_id="basic_food",
     )
     sell_order = Order(
         agent_id=101,
         item_id="basic_food",
-        price=9.0, # Sell for less than buy -> Match expected
+        price=9.0,  # Sell for less than buy -> Match expected
         quantity=1.0,
         order_type="SELL",
-        market_id="basic_food"
+        market_id="basic_food",
     )
 
     # Act

@@ -12,11 +12,14 @@ from main import create_simulation
 import config
 
 # Configure Logger to INFO level for higher visibility as requested
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
 
 def operation_trinity():
-    print("[Operation Trinity]: Initiating Grand Adaptive Interaction Test (2000 Ticks)...")
-    
+    print(
+        "[Operation Trinity]: Initiating Grand Adaptive Interaction Test (2000 Ticks)..."
+    )
+
     # 1. Configuration Override
     overrides = {
         "SIMULATION_TICKS": 2000,
@@ -24,48 +27,56 @@ def operation_trinity():
         "NUM_FIRMS": 10,  # Increased for corporate life cycle monitoring
         "INITIAL_BASE_ANNUAL_RATE": 0.05,
         "TAX_RATE_BASE": 0.10,
-        "DEBT_CEILING_RATIO": 1.5, # Slightly higher as per Architect's Criteria
+        "DEBT_CEILING_RATIO": 1.5,  # Slightly higher as per Architect's Criteria
     }
-    
+
     # 2. Initialize Simulation
     sim = create_simulation(overrides=overrides)
-    
+
     # 3. Execution Loop with Enhanced Telemetry
     records = []
     print("Monitoring 3-Agent Adaptivity...")
-    
-    prev_metrics = {
-        "prev_avg_price": 10.0
-    }
+
+    prev_metrics = {"prev_avg_price": 10.0}
 
     try:
         for tick in range(1, 2001):
             sim.run_tick()
-            
+
             # Telemetry Extraction
             indicators = sim.tracker.get_latest_indicators()
             current_price = indicators.get("avg_goods_price", 10.0)
-            
+
             # Inflation
             inflation = 0.0
             if prev_metrics["prev_avg_price"] > 0:
-                inflation = (current_price - prev_metrics["prev_avg_price"]) / prev_metrics["prev_avg_price"]
+                inflation = (
+                    current_price - prev_metrics["prev_avg_price"]
+                ) / prev_metrics["prev_avg_price"]
             prev_metrics["prev_avg_price"] = current_price
-            
+
             # Firm Metrics (Averaged)
             active_firms = [f for f in sim.firms if f.is_active]
-            avg_marketing_rate = np.mean([f.marketing_budget_rate for f in active_firms]) if active_firms else 0
+            avg_marketing_rate = (
+                np.mean([f.marketing_budget_rate for f in active_firms])
+                if active_firms
+                else 0
+            )
             total_revenue = sum([f.revenue_this_turn for f in active_firms])
-            
+
             # Government Metrics
             gov = sim.government
             debt_ratio = gov.total_debt / max(gov.potential_gdp, 1.0)
-            
+
             # Household Metrics
             active_households = [h for h in sim.households if h.is_active]
             # Fix: consumption_aggressiveness is internal state. Use current_consumption instead.
-            avg_consumption = np.mean([h.current_consumption for h in active_households]) if active_households else 0
-            
+            avg_consumption = (
+                np.mean([h.current_consumption for h in active_households])
+                if active_households
+                else 0
+            )
+
             record = {
                 "Tick": tick,
                 "GDP": indicators.get("total_production", 0),
@@ -80,40 +91,46 @@ def operation_trinity():
                 "TotalRevenue": total_revenue,
                 "AvgConsumption": avg_consumption,
                 "Unemployment": indicators.get("unemployment_rate", 0),
-                "ApprovalRating": gov.average_approval_rating
+                "ApprovalRating": gov.average_approval_rating,
             }
             records.append(record)
-            
+
             if tick % 100 == 0:
-                print(f"   Tick {tick:4}: GDP={record['GDP']:5.1f} | Tax={record['TaxRate']:4.1%} | Debt/GDP={record['DebtRatio']:4.2f} | Firms={record['ActiveFirms']}")
-                
+                print(
+                    f"   Tick {tick:4}: GDP={record['GDP']:5.1f} | Tax={record['TaxRate']:4.1%} | Debt/GDP={record['DebtRatio']:4.2f} | Firms={record['ActiveFirms']}"
+                )
+
     except Exception as e:
         print(f"\nCRITICAL ERROR: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         sim.repository.close()
-        
+
     # 4. Export Report
     df = pd.DataFrame(records)
     output_path = "simulation_results/trinity_report.csv"
     os.makedirs("simulation_results", exist_ok=True)
     df.to_csv(output_path, index=False)
     print(f"\nReport saved to {output_path}")
-    
+
     # 5. Automated Analysis against Success Criteria
     analyze_trinity(df)
+
 
 def analyze_trinity(df):
     print("\nDIAGNOSTIC REPORT: OPERATION TRINITY")
     print("=" * 60)
-    
+
     # 1. Government (Counter-cyclicality)
     # Correlation between GDP Growth and TaxRate
-    df['GDP_Growth'] = df['GDP'].pct_change()
-    corr_gdp_tax = df['GDP_Growth'].corr(df['TaxRate'])
+    df["GDP_Growth"] = df["GDP"].pct_change()
+    corr_gdp_tax = df["GDP_Growth"].corr(df["TaxRate"])
     print(f"1. GOVERNMENT ADAPTIVITY (Fiscal)")
-    print(f"   - GDP-Tax Correlation: {corr_gdp_tax:.4f} (Expected Positive for Pro-cyclical, Negative/Zero for Counter-cyclical)")
+    print(
+        f"   - GDP-Tax Correlation: {corr_gdp_tax:.4f} (Expected Positive for Pro-cyclical, Negative/Zero for Counter-cyclical)"
+    )
     # Actually, if GDP growth is high, we want TaxRate to increase (Counter-cyclical) -> Positive Correlation
     # Wait, Stance = -OutputGap. OutputGap high -> Stance negative -> TaxRate = Base * (1 - Stance) = Base * (1 + |Stance|) -> TaxRate high.
     # So Positive Correlation is CORRECT for counter-cyclical tax policy.
@@ -132,9 +149,9 @@ def analyze_trinity(df):
         print("   ✅ PASS: Corporate ecosystem is stable.")
     else:
         print("   ❌ FAIL: Mass extinction detected.")
-        
+
     # Marketing ROI Correlation (Revenue vs MarketingRate)
-    corr_rev_mkt = df['TotalRevenue'].corr(df['AvgMarketingRate'])
+    corr_rev_mkt = df["TotalRevenue"].corr(df["AvgMarketingRate"])
     print(f"   - Revenue-Marketing Correlation: {corr_rev_mkt:.4f}")
     if corr_rev_mkt > 0.2:
         print("   ✅ PASS: Marketing spend is responsive to revenue.")
@@ -157,6 +174,7 @@ def analyze_trinity(df):
 
     print("=" * 60)
     print("End of Trinity Diagnostic.")
+
 
 if __name__ == "__main__":
     operation_trinity()

@@ -1,4 +1,3 @@
-
 import logging
 import sys
 from pathlib import Path
@@ -18,6 +17,7 @@ import logging.config
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("education_roi")
 
+
 def run_experiment():
     """
     Runs the Education ROI Experiment (Sociologist Directive).
@@ -28,34 +28,31 @@ def run_experiment():
     # Override config to ensure Halo Effect is active
     overrides = {
         "HALO_EFFECT": 0.15,
-        "SIMULATION_TICKS": 1000, # Increased to 1000 per directive
+        "SIMULATION_TICKS": 1000,  # Increased to 1000 per directive
         # Adjusted Thresholds for 500.0 Mean (Range 100-900)
         "EDUCATION_WEALTH_THRESHOLDS": {0: 0, 1: 300, 2: 400, 3: 500, 4: 600, 5: 700},
-
         # INDUSTRIAL REVOLUTION MODE: Poor workers, Rich firms
-        "INITIAL_HOUSEHOLD_ASSETS_MEAN": 500.0, # Desperate
+        "INITIAL_HOUSEHOLD_ASSETS_MEAN": 500.0,  # Desperate
         "INITIAL_HOUSEHOLD_ASSETS_RANGE": 0.8,
-        "INITIAL_FIRM_CAPITAL_MEAN": 200000.0, # Rich
+        "INITIAL_FIRM_CAPITAL_MEAN": 200000.0,  # Rich
         "FIRM_MAINTENANCE_FEE": 0.0,
         "GOVERNMENT_STIMULUS_ENABLED": True,
         "UNEMPLOYMENT_BENEFIT_RATIO": 0.5,
-        "LABOR_MARKET_MIN_WAGE": 1.0, # Very low floor
-        "FIRM_MIN_PRODUCTION_TARGET": 1000.0, # Infinite demand
-        "FIRM_PRODUCTIVITY_FACTOR": 1.0, # Inefficient -> Mass hiring
-
+        "LABOR_MARKET_MIN_WAGE": 1.0,  # Very low floor
+        "FIRM_MIN_PRODUCTION_TARGET": 1000.0,  # Infinite demand
+        "FIRM_PRODUCTIVITY_FACTOR": 1.0,  # Inefficient -> Mass hiring
         # Flatten expectations so rich kids still accept jobs
         "EDUCATION_COST_MULTIPLIERS": {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0},
         "HOUSEHOLD_MIN_WAGE_DEMAND": 0.1,
-
         # Force Labor Supply even if they get some money
         "HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY": 100000.0,
-        "ASSETS_THRESHOLD_FOR_OTHER_ACTIONS": 100000.0, # Used by RuleBasedHousehold
-
+        "ASSETS_THRESHOLD_FOR_OTHER_ACTIONS": 100000.0,  # Used by RuleBasedHousehold
         # USE RULE BASED ENGINE TO FORCE BEHAVIOR (Bypass AI Learning Curve)
         "DEFAULT_ENGINE_TYPE": "RuleBased",
     }
 
     from main import create_simulation
+
     sim = create_simulation(overrides)
 
     # 2. Run Simulation
@@ -75,7 +72,7 @@ def run_experiment():
                 if not h.is_employed and h.is_active:
                     h.is_employed = True
                     h.employer_id = firm.id
-                    h.current_wage = 10.0 # Base wage
+                    h.current_wage = 10.0  # Base wage
                     firm.employees.append(h)
                     firm.employee_wages[h.id] = 10.0
                     count += 1
@@ -90,7 +87,11 @@ def run_experiment():
         # Periodic Data Collection
         if tick % 10 == 0:
             for agent in sim.households:
-                if agent.is_active and agent.is_employed and getattr(agent, "current_wage", 0.0) > 0:
+                if (
+                    agent.is_active
+                    and agent.is_employed
+                    and getattr(agent, "current_wage", 0.0) > 0
+                ):
                     # Use labor_income_this_tick to capture the Halo Effect applied in update_needs
                     wage_metric = getattr(agent, "labor_income_this_tick", 0.0)
                     if wage_metric <= 0:
@@ -102,14 +103,18 @@ def run_experiment():
                         "labor_skill": getattr(agent, "labor_skill", 1.0),
                         "wage": wage_metric,
                         "initial_assets": getattr(agent, "initial_assets_record", 0.0),
-                        "tick": tick
+                        "tick": tick,
                     }
                     history_data.append(data)
 
         if tick % 50 == 0:
             active_count = len([h for h in sim.households if h.is_active])
-            employed_count = len([h for h in sim.households if h.is_active and h.is_employed])
-            logger.info(f"Tick {tick}/{target_ticks}: Active {active_count}, Employed {employed_count}")
+            employed_count = len(
+                [h for h in sim.households if h.is_active and h.is_employed]
+            )
+            logger.info(
+                f"Tick {tick}/{target_ticks}: Active {active_count}, Employed {employed_count}"
+            )
 
     # 3. Collect Data from Agents (Cumulative)
     logger.info("Collecting agent data...")
@@ -121,18 +126,32 @@ def run_experiment():
     active_households = [h for h in sim.households if h.is_active]
     final_active_count = len(active_households)
     final_employed_count = len([h for h in active_households if h.is_employed])
-    employment_rate = final_employed_count / final_active_count if final_active_count > 0 else 0.0
+    employment_rate = (
+        final_employed_count / final_active_count if final_active_count > 0 else 0.0
+    )
 
     if df.empty:
-        logger.error("No employed agents found. Simulation failed to generate valid data.")
+        logger.error(
+            "No employed agents found. Simulation failed to generate valid data."
+        )
         # Generate Failure Report
-        _generate_report(None, None, None, None, 0.0, employment_rate, target_ticks, 0, "FAIL - NO DATA")
+        _generate_report(
+            None,
+            None,
+            None,
+            None,
+            0.0,
+            employment_rate,
+            target_ticks,
+            0,
+            "FAIL - NO DATA",
+        )
         return
 
     # 4. Analysis: Mincer Equation
     # log(Wage) = a + b*Edu + c*Skill
 
-    df["log_wage"] = np.log(df["wage"].replace(0, 0.001)) # Avoid log(0)
+    df["log_wage"] = np.log(df["wage"].replace(0, 0.001))  # Avoid log(0)
 
     # Simple Regression using numpy (Least Squares)
     # Model 1: log(Wage) ~ Edu + Skill (Signaling)
@@ -145,7 +164,17 @@ def run_experiment():
         intercept1, coeff_edu_signaling, coeff_skill = beta1
     except Exception as e:
         logger.error(f"Regression failed: {e}")
-        _generate_report(None, None, None, None, 0.0, employment_rate, target_ticks, len(df), f"FAIL - REGRESSION ERROR: {e}")
+        _generate_report(
+            None,
+            None,
+            None,
+            None,
+            0.0,
+            employment_rate,
+            target_ticks,
+            len(df),
+            f"FAIL - REGRESSION ERROR: {e}",
+        )
         return
 
     # Model 2: log(Wage) ~ Edu (Total Return)
@@ -181,11 +210,32 @@ def run_experiment():
     final_status = "[PASS]" if pass_criteria else f"[FAIL] {status_msg}"
 
     # 7. Generate Report
-    _generate_report(coeff_edu_signaling, coeff_skill, intercept1, coeff_edu_total, corr_wealth_edu, employment_rate, target_ticks, len(df), final_status, corr_wealth_wage)
+    _generate_report(
+        coeff_edu_signaling,
+        coeff_skill,
+        intercept1,
+        coeff_edu_total,
+        corr_wealth_edu,
+        employment_rate,
+        target_ticks,
+        len(df),
+        final_status,
+        corr_wealth_wage,
+    )
 
 
-def _generate_report(coeff_edu_signaling, coeff_skill, intercept1, coeff_edu_total, corr_wealth_edu, employment_rate, target_ticks, data_points, status, corr_wealth_wage=0.0):
-
+def _generate_report(
+    coeff_edu_signaling,
+    coeff_skill,
+    intercept1,
+    coeff_edu_total,
+    corr_wealth_edu,
+    employment_rate,
+    target_ticks,
+    data_points,
+    status,
+    corr_wealth_wage=0.0,
+):
     if coeff_edu_signaling is None:
         # Failure Fallback
         report_content = f"""# 🎓 Education ROI & Social Ladder Report (Dynasty Report v2)
@@ -201,7 +251,11 @@ Analysis failed to complete successfully.
 """
     else:
         # Success (or partial success with Fail status)
-        signaling_share = (coeff_edu_signaling / coeff_edu_total * 100) if abs(coeff_edu_total) > 0.001 else 0.0
+        signaling_share = (
+            (coeff_edu_signaling / coeff_edu_total * 100)
+            if abs(coeff_edu_total) > 0.001
+            else 0.0
+        )
 
         report_content = f"""# 🎓 Education ROI & Social Ladder Report (Dynasty Report v2)
 
@@ -256,6 +310,7 @@ Simulation confirms the **"Pareto-Iron Law"**:
 
     logger.info(f"Report generated at {report_path}")
     print(report_content)
+
 
 if __name__ == "__main__":
     run_experiment()

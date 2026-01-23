@@ -1,9 +1,9 @@
-
 import unittest
 from unittest.mock import MagicMock, patch
 import random
 import config
 from simulation.ai.household_ai import HouseholdAI
+
 
 class TestWO048Breeding(unittest.TestCase):
     def setUp(self):
@@ -13,8 +13,7 @@ class TestWO048Breeding(unittest.TestCase):
 
         # Instantiate HouseholdAI
         self.ai = HouseholdAI(
-            agent_id="test_agent",
-            ai_decision_engine=self.mock_engine
+            agent_id="test_agent", ai_decision_engine=self.mock_engine
         )
 
         # Base agent data (valid age)
@@ -34,17 +33,25 @@ class TestWO048Breeding(unittest.TestCase):
         Set: TECH_CONTRACEPTION_ENABLED = False
         Expectation: Returns True approx 15% of the time (Biological Fertility).
         """
-        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', False):
+        with patch.object(config, "TECH_CONTRACEPTION_ENABLED", False):
             # We fix random seed or patch random to verify behavior
             # Let's patch random.random
 
             # Case 1: Random < 0.15 -> True
-            with patch('random.random', return_value=0.1):
-                self.assertTrue(self.ai.decide_reproduction(self.agent_data, self.market_data, self.current_time))
+            with patch("random.random", return_value=0.1):
+                self.assertTrue(
+                    self.ai.decide_reproduction(
+                        self.agent_data, self.market_data, self.current_time
+                    )
+                )
 
             # Case 2: Random > 0.15 -> False
-            with patch('random.random', return_value=0.2):
-                self.assertFalse(self.ai.decide_reproduction(self.agent_data, self.market_data, self.current_time))
+            with patch("random.random", return_value=0.2):
+                self.assertFalse(
+                    self.ai.decide_reproduction(
+                        self.agent_data, self.market_data, self.current_time
+                    )
+                )
 
     def test_scenario_b_high_income(self):
         """
@@ -56,9 +63,14 @@ class TestWO048Breeding(unittest.TestCase):
         # Monthly 10,000 -> Hourly = 10000 / (8 * 20) = 62.5
         self.agent_data["current_wage"] = 62.5
 
-        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', True):
-            decision = self.ai.decide_reproduction(self.agent_data, self.market_data, self.current_time)
-            self.assertFalse(decision, "High income agent should reject reproduction due to opportunity cost.")
+        with patch.object(config, "TECH_CONTRACEPTION_ENABLED", True):
+            decision = self.ai.decide_reproduction(
+                self.agent_data, self.market_data, self.current_time
+            )
+            self.assertFalse(
+                decision,
+                "High income agent should reject reproduction due to opportunity cost.",
+            )
 
     def test_scenario_c_low_income(self):
         """
@@ -70,9 +82,14 @@ class TestWO048Breeding(unittest.TestCase):
         # Monthly 1,000 -> Hourly = 1000 / (8 * 20) = 6.25
         self.agent_data["current_wage"] = 6.25
 
-        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', True):
-            decision = self.ai.decide_reproduction(self.agent_data, self.market_data, self.current_time)
-            self.assertFalse(decision, "Low income agent should reject reproduction due to direct cost burden.")
+        with patch.object(config, "TECH_CONTRACEPTION_ENABLED", True):
+            decision = self.ai.decide_reproduction(
+                self.agent_data, self.market_data, self.current_time
+            )
+            self.assertFalse(
+                decision,
+                "Low income agent should reject reproduction due to direct cost burden.",
+            )
 
     def test_scenario_d_middle_income(self):
         """
@@ -84,25 +101,30 @@ class TestWO048Breeding(unittest.TestCase):
         # Testing Monthly 4,000 -> Hourly = 4000 / (8 * 20) = 25.0
         self.agent_data["current_wage"] = 25.0
 
-        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', True):
-            decision = self.ai.decide_reproduction(self.agent_data, self.market_data, self.current_time)
+        with patch.object(config, "TECH_CONTRACEPTION_ENABLED", True):
+            decision = self.ai.decide_reproduction(
+                self.agent_data, self.market_data, self.current_time
+            )
 
             # Debugging info if failed
             if not decision:
                 # Calculate manually to see why
                 monthly = 4000.0
-                c_direct = 500.0 * 12 * 20 # 120,000
-                c_opp = monthly * 0.5 * 12 * 20 # 4000 * 0.5 * 240 = 480,000
-                total_cost = 120000 + 480000 # 600,000
+                c_direct = 500.0 * 12 * 20  # 120,000
+                c_opp = monthly * 0.5 * 12 * 20  # 4000 * 0.5 * 240 = 480,000
+                total_cost = 120000 + 480000  # 600,000
 
-                u_emo = 200000.0 / 1 # 200,000
-                u_supp = monthly * 0.1 * 12 * 20 # 4000 * 24 = 96,000
-                total_ben = 200000 + 96000 # 296,000
+                u_emo = 200000.0 / 1  # 200,000
+                u_supp = monthly * 0.1 * 12 * 20  # 4000 * 24 = 96,000
+                total_ben = 200000 + 96000  # 296,000
 
                 # NPV = 296,000 - 600,000 = -304,000
-                print(f"DEBUG Scenario D: Cost={total_cost}, Benefit={total_ben}, NPV={total_ben-total_cost}")
+                print(
+                    f"DEBUG Scenario D: Cost={total_cost}, Benefit={total_ben}, NPV={total_ben - total_cost}"
+                )
 
             self.assertTrue(decision, "Middle income agent should accept reproduction.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

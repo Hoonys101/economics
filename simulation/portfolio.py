@@ -2,11 +2,13 @@ from typing import Dict, Optional, List
 from simulation.models import Share
 import copy
 
+
 class Portfolio:
     """
     Manages a collection of Shares with Average Cost Basis logic.
     Supports atomic merge and synchronization with legacy dictionaries.
     """
+
     def __init__(self, owner_id: int):
         self.owner_id = owner_id
         self.holdings: Dict[int, Share] = {}  # firm_id -> Share
@@ -30,7 +32,7 @@ class Portfolio:
                 firm_id=firm_id,
                 holder_id=self.owner_id,
                 quantity=quantity,
-                acquisition_price=price
+                acquisition_price=price,
             )
 
     def remove(self, firm_id: int, quantity: float):
@@ -47,7 +49,7 @@ class Portfolio:
         else:
             share.quantity -= quantity
 
-    def merge(self, other_portfolio: 'Portfolio', fraction: float = 1.0):
+    def merge(self, other_portfolio: "Portfolio", fraction: float = 1.0):
         """
         Merges a fraction of another portfolio into this one.
         Recalculates WAC for incoming shares.
@@ -73,7 +75,9 @@ class Portfolio:
         """
         return {fid: share.quantity for fid, share in self.holdings.items()}
 
-    def sync_from_legacy(self, legacy_dict: Dict[int, float], default_price: float = 1.0):
+    def sync_from_legacy(
+        self, legacy_dict: Dict[int, float], default_price: float = 1.0
+    ):
         """
         One-time sync from legacy dict (lossy: assumes default price if missing).
         """

@@ -13,8 +13,8 @@ from simulation.decisions.ai_driven_household_engine import (
 )
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 import config
-from simulation.ai.api import Tactic, Aggressiveness # Import Tactic and Aggressiveness
-from simulation.core_markets import Market # Import Market
+from simulation.ai.api import Tactic, Aggressiveness  # Import Tactic and Aggressiveness
+from simulation.core_markets import Market  # Import Market
 
 # Add project root to sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -145,12 +145,12 @@ def set_config_for_tests():
 
 
 class TestDecisionEngineIntegration:
-    @patch.object(Firm, 'make_decision')
+    @patch.object(Firm, "make_decision")
     def test_firm_places_sell_order_for_food(
         self, mock_make_decision: MagicMock, firm: Firm, goods_market: OrderBookMarket
     ):
         """기업이 식량 판매 주문을 올바르게 제출하는지 테스트합니다."""
-        mock_make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = (  # Corrected mock assignment
             [
                 Order(
                     agent_id=firm.id,
@@ -161,14 +161,17 @@ class TestDecisionEngineIntegration:
                     market_id="goods_market",
                 )
             ],
-            (Tactic.ADJUST_PRICE, Aggressiveness.NORMAL) # Firm's make_decision also returns a tactic tuple
+            (
+                Tactic.ADJUST_PRICE,
+                Aggressiveness.NORMAL,
+            ),  # Firm's make_decision also returns a tactic tuple
         )
         markets = {"goods_market": goods_market}
         orders, _ = firm.make_decision(
             markets=markets,
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
-            current_time=1
+            current_time=1,
         )
 
         for order in orders:
@@ -177,15 +180,18 @@ class TestDecisionEngineIntegration:
         assert len(goods_market.sell_orders["food"]) == 1
         assert goods_market.sell_orders["food"][0].agent_id == firm.id
 
-    @patch.object(Household, 'make_decision')
+    @patch.object(Household, "make_decision")
     def test_household_places_buy_order_for_food(
-        self, mock_make_decision: MagicMock, household: Household, goods_market: OrderBookMarket
+        self,
+        mock_make_decision: MagicMock,
+        household: Household,
+        goods_market: OrderBookMarket,
     ):
         """가계가 식량 구매 주문을 올바르게 제출하는지 테스트합니다."""
         household.needs["survival_need"] = 80.0
         household.inventory["food"] = 0.0
 
-        mock_make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = (  # Corrected mock assignment
             [
                 Order(
                     agent_id=household.id,
@@ -196,7 +202,7 @@ class TestDecisionEngineIntegration:
                     market_id="goods_market",
                 )
             ],
-            (Tactic.EVALUATE_CONSUMPTION_OPTIONS, Aggressiveness.NORMAL)
+            (Tactic.EVALUATE_CONSUMPTION_OPTIONS, Aggressiveness.NORMAL),
         )
 
         markets = {"goods_market": goods_market}
@@ -204,7 +210,7 @@ class TestDecisionEngineIntegration:
             markets=cast(Dict[str, Market], markets),
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
-            current_time=1
+            current_time=1,
         )
 
         for order in orders:
@@ -214,16 +220,19 @@ class TestDecisionEngineIntegration:
         assert len(goods_market.buy_orders["food"]) == 1
         assert goods_market.buy_orders["food"][0].agent_id == household.id
 
-    @patch.object(Household, 'make_decision')
+    @patch.object(Household, "make_decision")
     def test_household_sells_labor(
-        self, mock_make_decision: MagicMock, household: Household, labor_market: OrderBookMarket
+        self,
+        mock_make_decision: MagicMock,
+        household: Household,
+        labor_market: OrderBookMarket,
     ):
         """가계가 노동 판매 주문을 올바르게 제출하는지 테스트합니다."""
         household.is_employed = False
         household.needs["labor_need"] = 50
         household.needs["survival_need"] = 10.0
 
-        mock_make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = (  # Corrected mock assignment
             [
                 Order(
                     agent_id=household.id,
@@ -234,7 +243,7 @@ class TestDecisionEngineIntegration:
                     market_id="labor_market",
                 )
             ],
-            (Tactic.PARTICIPATE_LABOR_MARKET, Aggressiveness.NORMAL)
+            (Tactic.PARTICIPATE_LABOR_MARKET, Aggressiveness.NORMAL),
         )
         markets = {"labor_market": labor_market}
         orders, _ = household.make_decision(
@@ -250,13 +259,13 @@ class TestDecisionEngineIntegration:
         assert len(labor_market.sell_orders["labor"]) == 1
         assert labor_market.sell_orders["labor"][0].agent_id == household.id
 
-    @patch.object(Firm, 'make_decision')
+    @patch.object(Firm, "make_decision")
     def test_firm_buys_labor(
         self, mock_make_decision: MagicMock, firm: Firm, labor_market: OrderBookMarket
     ):
         """기업이 노동 구매 주문을 올바르게 제출하는지 테스트합니다."""
         firm.employees = []
-        mock_make_decision.return_value = ( # Corrected mock assignment
+        mock_make_decision.return_value = (  # Corrected mock assignment
             [
                 Order(
                     agent_id=firm.id,
@@ -267,14 +276,17 @@ class TestDecisionEngineIntegration:
                     market_id="labor_market",
                 )
             ],
-            (Tactic.ADJUST_WAGES, Aggressiveness.NORMAL) # Firm's make_decision also returns a tactic tuple
+            (
+                Tactic.ADJUST_WAGES,
+                Aggressiveness.NORMAL,
+            ),  # Firm's make_decision also returns a tactic tuple
         )
         markets = {"labor_market": labor_market}
         orders, _ = firm.make_decision(
             markets=markets,
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
-            current_time=1
+            current_time=1,
         )
 
         for order in orders:

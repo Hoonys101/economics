@@ -83,7 +83,9 @@ def test_save_and_get_agent_state(test_repo: SimulationRepository):
 
     retrieved_state = retrieved_states[0]
     assert retrieved_state["agent_id"] == 101
-    assert retrieved_state["assets"] == 100.0 # Changed from 1000.0 to 100.0 to match DTO
+    assert (
+        retrieved_state["assets"] == 100.0
+    )  # Changed from 1000.0 to 100.0 to match DTO
     assert retrieved_state["inventory_food"] == 10.0
 
 

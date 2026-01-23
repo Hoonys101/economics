@@ -5,6 +5,7 @@ from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 import config
 
+
 class TestSocioTechDynamics(unittest.TestCase):
     def setUp(self):
         # Override Config
@@ -38,7 +39,7 @@ class TestSocioTechDynamics(unittest.TestCase):
             decision_engine=MagicMock(),
             value_orientation="wealth_and_needs",
             personality=Personality.CONSERVATIVE,
-            config_module=config
+            config_module=config,
         )
         agent.decision_engine.ai_engine = ai
         agent.decision_engine.config_module = config
@@ -52,7 +53,7 @@ class TestSocioTechDynamics(unittest.TestCase):
         Verify Female Labor Drop.
         """
         config.FORMULA_TECH_LEVEL = 0.0
-        children_data = [{"age": 1}] # Infant
+        children_data = [{"age": 1}]  # Infant
         spouse_data_m = {"id": self.female.id}
         spouse_data_f = {"id": self.male.id}
 
@@ -67,27 +68,37 @@ class TestSocioTechDynamics(unittest.TestCase):
         )
 
         print("\n[Scenario A: Dark Ages]")
-        print(f"Male Obligations: {alloc_m['total_obligated']} (HW: {alloc_m['housework']}, CC: {alloc_m['childcare']})")
-        print(f"Female Obligations: {alloc_f['total_obligated']} (HW: {alloc_f['housework']}, CC: {alloc_f['childcare']})")
+        print(
+            f"Male Obligations: {alloc_m['total_obligated']} (HW: {alloc_m['housework']}, CC: {alloc_m['childcare']})"
+        )
+        print(
+            f"Female Obligations: {alloc_f['total_obligated']} (HW: {alloc_f['housework']}, CC: {alloc_f['childcare']})"
+        )
 
         # Assertions
         # Housework split 50/50 (6.0 / 2 = 3.0)
-        self.assertEqual(alloc_m['housework'], 3.0)
-        self.assertEqual(alloc_f['housework'], 3.0)
+        self.assertEqual(alloc_m["housework"], 3.0)
+        self.assertEqual(alloc_f["housework"], 3.0)
 
         # Childcare: Female takes all (8.0)
-        self.assertEqual(alloc_f['childcare'], 8.0)
-        self.assertEqual(alloc_m['childcare'], 0.0)
+        self.assertEqual(alloc_f["childcare"], 8.0)
+        self.assertEqual(alloc_m["childcare"], 0.0)
 
         # Labor Capacity (Max 14)
-        labor_cap_m = max(0, 14 - alloc_m['total_obligated'])
-        labor_cap_f = max(0, 14 - alloc_f['total_obligated'])
+        labor_cap_m = max(0, 14 - alloc_m["total_obligated"])
+        labor_cap_f = max(0, 14 - alloc_f["total_obligated"])
 
         print(f"Male Labor Cap: {labor_cap_m}h")
         print(f"Female Labor Cap: {labor_cap_f}h")
 
-        self.assertLess(labor_cap_f, labor_cap_m, "Female should have significantly less labor capacity")
-        self.assertLessEqual(labor_cap_f, 4.0, "Female labor capacity should be critically low (<= 4h)")
+        self.assertLess(
+            labor_cap_f,
+            labor_cap_m,
+            "Female should have significantly less labor capacity",
+        )
+        self.assertLessEqual(
+            labor_cap_f, 4.0, "Female labor capacity should be critically low (<= 4h)"
+        )
 
     def test_scenario_b_techno_optimism(self):
         """
@@ -111,14 +122,16 @@ class TestSocioTechDynamics(unittest.TestCase):
         print(f"Female Obligations: {alloc_f['total_obligated']}")
 
         # Childcare Shared (4.0 each)
-        self.assertEqual(alloc_f['childcare'], 4.0)
-        self.assertEqual(alloc_m['childcare'], 4.0)
+        self.assertEqual(alloc_f["childcare"], 4.0)
+        self.assertEqual(alloc_m["childcare"], 4.0)
 
         # Labor Capacity
-        labor_cap_f = max(0, 14 - alloc_f['total_obligated'])
+        labor_cap_f = max(0, 14 - alloc_f["total_obligated"])
         print(f"Female Labor Cap: {labor_cap_f}h")
 
-        self.assertEqual(labor_cap_f, 7.0, "Female labor capacity should recover to 7h (14 - 3 - 4)")
+        self.assertEqual(
+            labor_cap_f, 7.0, "Female labor capacity should recover to 7h (14 - 3 - 4)"
+        )
 
     def test_appliance_effect(self):
         """
@@ -128,12 +141,15 @@ class TestSocioTechDynamics(unittest.TestCase):
         self.female.home_quality_score = 1.5
 
         alloc_m = self.male.decision_engine.ai_engine.decide_time_allocation(
-            self.male.get_agent_data(), {"id":2}, [], config
+            self.male.get_agent_data(), {"id": 2}, [], config
         )
 
         # Base 6.0 -> Reduced to 3.0 total -> Shared 1.5 each
-        self.assertEqual(alloc_m['housework'], 1.5)
-        print(f"\n[Appliance Effect] Housework per person: {alloc_m['housework']}h (Reduced from 3.0h)")
+        self.assertEqual(alloc_m["housework"], 1.5)
+        print(
+            f"\n[Appliance Effect] Housework per person: {alloc_m['housework']}h (Reduced from 3.0h)"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

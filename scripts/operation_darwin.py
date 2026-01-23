@@ -13,7 +13,7 @@ from main import create_simulation
 import config
 
 # Configure Logger
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("OperationDarwin")
 
 # Capture logs to string buffer for analysis
@@ -21,6 +21,7 @@ log_capture_string = io.StringIO()
 ch = logging.StreamHandler(log_capture_string)
 ch.setLevel(logging.INFO)
 logging.getLogger().addHandler(ch)
+
 
 def run_test(name, ticks, overrides):
     print(f"\n[Operation Darwin] Running {name} Test ({ticks} ticks)...")
@@ -41,20 +42,25 @@ def run_test(name, ticks, overrides):
     except Exception as e:
         print(f"CRITICAL ERROR in {name}: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Capture final metrics
     logs = log_capture_string.getvalue()
     metrics = {
         "GDP": sim.tracker.get_latest_indicators().get("total_production", 0),
-        "MoneyDeltaMax": 0.0
+        "MoneyDeltaMax": 0.0,
     }
 
     # Analyze logs
     mitosis_count = logs.count("MITOSIS")
     death_count = logs.count("HOUSEHOLD_INACTIVE")
     spending_rejected_count = logs.count("SPENDING_REJECTED")
-    money_warnings = [line for line in logs.split('\n') if "MONEY_SUPPLY_CHECK" in line and "WARNING" in line]
+    money_warnings = [
+        line
+        for line in logs.split("\n")
+        if "MONEY_SUPPLY_CHECK" in line and "WARNING" in line
+    ]
 
     metrics["MitosisCount"] = mitosis_count
     metrics["DeathCount"] = death_count
@@ -63,6 +69,7 @@ def run_test(name, ticks, overrides):
 
     sim.repository.close()
     return metrics, logs
+
 
 def operation_darwin():
     print("=== Operation Darwin: Survival of the Fittest Verification ===")
@@ -74,7 +81,7 @@ def operation_darwin():
     # We might increase population to ensure interaction? Default is 20.
     overrides = {
         "SIMULATION_TICKS": 1000,
-        "UNEMPLOYMENT_BENEFIT_RATIO": 0.0 # Force override just in case, though file edit should handle it
+        "UNEMPLOYMENT_BENEFIT_RATIO": 0.0,  # Force override just in case, though file edit should handle it
     }
 
     # --- Test 1: Short Test (100 Ticks) - Money Integrity ---
@@ -86,7 +93,7 @@ def operation_darwin():
     else:
         print(f"❌ FAIL: Money Warnings Detected: {metrics_short['MoneyWarnings']}")
         # Print first few warnings
-        for line in logs_short.split('\n'):
+        for line in logs_short.split("\n"):
             if "MONEY_SUPPLY_CHECK" in line and "WARNING" in line:
                 print(f"   -> {line}")
                 break
@@ -104,19 +111,27 @@ def operation_darwin():
 
     # 2. Mitosis > 0
     if metrics_full["MitosisCount"] > 0:
-        print(f"✅ PASS: Evolution Occurred (Mitosis Count: {metrics_full['MitosisCount']})")
+        print(
+            f"✅ PASS: Evolution Occurred (Mitosis Count: {metrics_full['MitosisCount']})"
+        )
     else:
-        print("⚠️ WARNING: No Mitosis detected. (Rich households might not be rich enough?)")
+        print(
+            "⚠️ WARNING: No Mitosis detected. (Rich households might not be rich enough?)"
+        )
 
     # 3. Death > 0 (Natural Selection)
     if metrics_full["DeathCount"] > 0:
-        print(f"✅ PASS: Natural Selection Active (Death Count: {metrics_full['DeathCount']})")
+        print(
+            f"✅ PASS: Natural Selection Active (Death Count: {metrics_full['DeathCount']})"
+        )
     else:
         print("⚠️ WARNING: No Deaths detected. (Starvation condition not met?)")
 
     # 4. Spending Rejected (Hard Stop Verification)
     if metrics_full["SpendingRejected"] > 0:
-        print(f"✅ PASS: Hard Budget Constraint Active (Rejections: {metrics_full['SpendingRejected']})")
+        print(
+            f"✅ PASS: Hard Budget Constraint Active (Rejections: {metrics_full['SpendingRejected']})"
+        )
     else:
         print("ℹ️ INFO: No Spending Rejected. (Government was solvent throughout?)")
 
@@ -125,19 +140,20 @@ def operation_darwin():
 Operation Darwin Verification Report
 ====================================
 Short Test (100 Ticks):
-- Money Warnings: {metrics_short['MoneyWarnings']}
+- Money Warnings: {metrics_short["MoneyWarnings"]}
 
 Full Test (1000 Ticks):
-- Final GDP: {metrics_full['GDP']:.2f}
-- Mitosis Events: {metrics_full['MitosisCount']}
-- Death Events: {metrics_full['DeathCount']}
-- Government Spending Rejections: {metrics_full['SpendingRejected']}
+- Final GDP: {metrics_full["GDP"]:.2f}
+- Mitosis Events: {metrics_full["MitosisCount"]}
+- Death Events: {metrics_full["DeathCount"]}
+- Government Spending Rejections: {metrics_full["SpendingRejected"]}
     """
 
     os.makedirs("reports", exist_ok=True)
     with open("reports/darwin_report.txt", "w") as f:
         f.write(report)
     print("\nReport saved to reports/darwin_report.txt")
+
 
 if __name__ == "__main__":
     operation_darwin()

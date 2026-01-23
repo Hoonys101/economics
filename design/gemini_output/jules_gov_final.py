@@ -13,6 +13,7 @@ from simulation.systems.ministry_of_education import MinistryOfEducation
 
 logger = logging.getLogger(__name__)
 
+
 class Government:
     """
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
@@ -22,7 +23,7 @@ class Government:
         self.id = id
         self.assets = initial_assets
         self.config_module = config_module
-        
+
         self.tax_agency = TaxAgency(config_module)
         self.ministry_of_education = MinistryOfEducation(config_module)
 
@@ -33,7 +34,7 @@ class Government:
         # Gold Standard Money Tracking
         self.total_money_issued: float = 0.0
         self.total_money_destroyed: float = 0.0
-        
+
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
 
@@ -45,7 +46,9 @@ class Government:
         # --- Phase 24: Policy Strategy Selection ---
         policy_mode = getattr(config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
         if policy_mode == "AI_ADAPTIVE":
-            self.policy_engine: IGovernmentPolicy = SmartLeviathanPolicy(self, config_module)
+            self.policy_engine: IGovernmentPolicy = SmartLeviathanPolicy(
+                self, config_module
+            )
         else:
             self.policy_engine: IGovernmentPolicy = TaylorRulePolicy(config_module)
 
@@ -53,28 +56,32 @@ class Government:
         self.ai = getattr(self.policy_engine, "ai", None)
 
         # Political State
-        self.ruling_party: PoliticalParty = PoliticalParty.BLUE # Default
+        self.ruling_party: PoliticalParty = PoliticalParty.BLUE  # Default
         self.approval_rating: float = 0.5
-        self.public_opinion_queue: Deque[float] = deque(maxlen=4) # 4-tick lag
+        self.public_opinion_queue: Deque[float] = deque(maxlen=4)  # 4-tick lag
         self.perceived_public_opinion: float = 0.5
         self.last_election_tick: int = 0
 
         # Policy Levers (Tax Rates)
         self.income_tax_rate: float = getattr(config_module, "INCOME_TAX_RATE", 0.1)
-        self.corporate_tax_rate: float = getattr(config_module, "CORPORATE_TAX_RATE", 0.2)
+        self.corporate_tax_rate: float = getattr(
+            config_module, "CORPORATE_TAX_RATE", 0.2
+        )
 
         # Spending Multipliers (AI Controlled)
         # 1.0 = Normal (Budget Neutral-ish), >1.0 = Stimulus, <1.0 = Austerity
         self.welfare_budget_multiplier: float = 1.0
         self.firm_subsidy_budget_multiplier: float = 1.0
 
-        self.effective_tax_rate: float = self.income_tax_rate # Legacy compatibility
+        self.effective_tax_rate: float = self.income_tax_rate  # Legacy compatibility
         self.total_debt: float = 0.0
         # ---------------------------------------------
 
         # History buffers for visualization
-        self.tax_history: List[Dict[str, Any]] = [] # For Stacked Bar Chart (breakdown per tick)
-        self.welfare_history: List[Dict[str, float]] = [] # For Welfare Line Chart
+        self.tax_history: List[
+            Dict[str, Any]
+        ] = []  # For Stacked Bar Chart (breakdown per tick)
+        self.welfare_history: List[Dict[str, float]] = []  # For Welfare Line Chart
         self.history_window_size = 5000
 
         # Current tick accumulators (reset every tick)
@@ -83,13 +90,13 @@ class Government:
             "welfare_spending": 0.0,
             "stimulus_spending": 0.0,
             "total_collected": 0.0,
-            "education_spending": 0.0 # WO-054
+            "education_spending": 0.0,  # WO-054
         }
 
         # GDP Tracking for Stimulus
         self.gdp_history: List[float] = []
         self.gdp_history_window = 20
-        
+
         # WO-056: Shadow Policy Metrics
         ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
@@ -97,7 +104,7 @@ class Government:
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
-        
+
         self.average_approval_rating = 0.5
 
         # WO-057-B: Sensory Data Container
@@ -119,13 +126,19 @@ class Government:
         if dto.tick % 50 == 0:
             logger.debug(
                 f"SENSORY_UPDATE | Government received macro data. Inflation_SMA: {dto.inflation_sma:.4f}, Approval_SMA: {dto.approval_sma:.2f}",
-                extra={"tick": dto.tick, "agent_id": self.id, "tags": ["sensory", "wo-057-b"]}
+                extra={
+                    "tick": dto.tick,
+                    "agent_id": self.id,
+                    "tags": ["sensory", "wo-057-b"],
+                },
             )
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """Delegates income tax calculation to the TaxAgency."""
         tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
-        return self.tax_agency.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
+        return self.tax_agency.calculate_income_tax(
+            income, survival_cost, self.income_tax_rate, tax_mode
+        )
 
     def calculate_corporate_tax(self, profit: float) -> float:
         """Delegates corporate tax calculation to the TaxAgency."""
@@ -137,15 +150,19 @@ class Government:
         이전 틱의 데이터를 History에 저장합니다.
         """
         if getattr(self, "revenue_breakdown_this_tick", None) is None:
-             self.revenue_breakdown_this_tick = {}
+            self.revenue_breakdown_this_tick = {}
 
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
 
-    def collect_tax(self, amount: float, tax_type: str, source_id: int, current_tick: int):
+    def collect_tax(
+        self, amount: float, tax_type: str, source_id: int, current_tick: int
+    ):
         """세금을 징수합니다."""
-        return self.tax_agency.collect_tax(self, amount, tax_type, source_id, current_tick)
+        return self.tax_agency.collect_tax(
+            self, amount, tax_type, source_id, current_tick
+        )
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -169,7 +186,7 @@ class Government:
         if len(self.public_opinion_queue) > 0:
             self.perceived_public_opinion = self.public_opinion_queue[0]
 
-        self.approval_rating = avg_approval # Real-time value (for omniscient logging)
+        self.approval_rating = avg_approval  # Real-time value (for omniscient logging)
 
     def check_election(self, current_tick: int):
         """
@@ -184,34 +201,52 @@ class Government:
             if self.perceived_public_opinion < 0.5:
                 # Flip Party
                 old_party = self.ruling_party
-                self.ruling_party = PoliticalParty.RED if old_party == PoliticalParty.BLUE else PoliticalParty.BLUE
+                self.ruling_party = (
+                    PoliticalParty.RED
+                    if old_party == PoliticalParty.BLUE
+                    else PoliticalParty.BLUE
+                )
 
                 logger.warning(
                     f"ELECTION_RESULTS | REGIME CHANGE! {old_party.name} -> {self.ruling_party.name}. Approval: {self.perceived_public_opinion:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["election", "regime_change"]}
+                    extra={
+                        "tick": current_tick,
+                        "agent_id": self.id,
+                        "tags": ["election", "regime_change"],
+                    },
                 )
             else:
                 logger.info(
                     f"ELECTION_RESULTS | INCUMBENT VICTORY ({self.ruling_party.name}). Approval: {self.perceived_public_opinion:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["election"]}
+                    extra={
+                        "tick": current_tick,
+                        "agent_id": self.id,
+                        "tags": ["election"],
+                    },
                 )
 
-    def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int, central_bank: "CentralBank"):
+    def make_policy_decision(
+        self,
+        market_data: Dict[str, Any],
+        current_tick: int,
+        central_bank: "CentralBank",
+    ):
         """
         정책 엔진에게 의사결정을 위임하고 결과를 반영합니다.
         (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
         # WO-057-B FIX: Pass the smoothed sensory data, not the raw market_data
-        decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)
-        
+        decision = self.policy_engine.decide(
+            self, self.sensory_data, current_tick, central_bank
+        )
+
         # 2. 결과 로깅 (엔진 내부에서 상세 로깅 수행)
         if decision.get("status") == "EXECUTED":
-             logger.debug(
+            logger.debug(
                 f"POLICY_EXECUTED | Tick: {current_tick} | Action: {decision.get('action_taken')}",
-                extra={"tick": current_tick, "agent_id": self.id}
+                extra={"tick": current_tick, "agent_id": self.id},
             )
-
 
         gdp_gap = 0.0
         if self.potential_gdp > 0:
@@ -220,7 +255,9 @@ class Government:
 
             # Simple EMA update for Potential GDP
             alpha = 0.01
-            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+            self.potential_gdp = (alpha * current_gdp) + (
+                (1 - alpha) * self.potential_gdp
+            )
 
         # 1. Calculate Inflation (YoY)
         inflation = 0.0
@@ -243,9 +280,14 @@ class Government:
         target_inflation = getattr(self.config_module, "CB_INFLATION_TARGET", 0.02)
 
         # Neutral Rate assumption: Real Growth
-        neutral_rate = max(0.01, real_gdp_growth) # Floor at 1%?
+        neutral_rate = max(0.01, real_gdp_growth)  # Floor at 1%?
 
-        target_rate = neutral_rate + inflation + 0.5 * (inflation - target_inflation) + 0.5 * gdp_gap
+        target_rate = (
+            neutral_rate
+            + inflation
+            + 0.5 * (inflation - target_inflation)
+            + 0.5 * gdp_gap
+        )
 
         # 6. Log
         # Get current base rate from market_data["loan_market"] or similar
@@ -262,10 +304,12 @@ class Government:
             metric="taylor_rule_rate",
             current_value=current_base_rate,
             shadow_value=target_rate,
-            details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
+            details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}",
         )
 
-    def provide_household_support(self, household: Any, amount: float, current_tick: int):
+    def provide_household_support(
+        self, household: Any, amount: float, current_tick: int
+    ):
         """Provides subsidies to households (e.g., unemployment, stimulus)."""
         effective_amount = amount * self.welfare_budget_multiplier
 
@@ -284,7 +328,12 @@ class Government:
 
         logger.info(
             f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
-            extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
+            extra={
+                "tick": current_tick,
+                "agent_id": self.id,
+                "amount": effective_amount,
+                "target_id": household.id,
+            },
         )
         return effective_amount
 
@@ -296,22 +345,30 @@ class Government:
             self.expenditure_this_tick += amount
             return loan
         else:
-            logger.warning(f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout.")
+            logger.warning(
+                f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout."
+            )
             return None
 
     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
-        """ Calculates current survival cost based on food prices. """
+        """Calculates current survival cost based on food prices."""
         avg_food_price = 0.0
         goods_market = market_data.get("goods_market", {})
         if "basic_food_current_sell_price" in goods_market:
             avg_food_price = goods_market["basic_food_current_sell_price"]
         else:
-            avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+            avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get(
+                "basic_food", 5.0
+            )
 
-        daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+        daily_food_need = getattr(
+            self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0
+        )
         return max(avg_food_price * daily_food_need, 10.0)
 
-    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int):
+    def run_welfare_check(
+        self, agents: List[Any], market_data: Dict[str, Any], current_tick: int
+    ):
         """
         Government Main Loop Step.
         1. Reset Tick Flow.
@@ -343,12 +400,16 @@ class Government:
         survival_cost = self.get_survival_cost(market_data)
 
         # 2. Wealth Tax & Unemployment Benefit
-        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02)
+        wealth_tax_rate_annual = getattr(
+            self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02
+        )
         ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100.0)
         wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
         wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", 50000.0)
 
-        unemployment_ratio = getattr(self.config_module, "UNEMPLOYMENT_BENEFIT_RATIO", 0.8)
+        unemployment_ratio = getattr(
+            self.config_module, "UNEMPLOYMENT_BENEFIT_RATIO", 0.8
+        )
         benefit_amount = survival_cost * unemployment_ratio
 
         total_wealth_tax = 0.0
@@ -367,7 +428,9 @@ class Government:
                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
                     if agent.assets >= tax_amount:
                         agent.assets -= tax_amount
-                        self.collect_tax(tax_amount, "wealth_tax", agent.id, current_tick)
+                        self.collect_tax(
+                            tax_amount, "wealth_tax", agent.id, current_tick
+                        )
                         total_wealth_tax += tax_amount
                     else:
                         taken = agent.assets
@@ -397,27 +460,37 @@ class Government:
                     should_stimulus = True
 
         if should_stimulus:
-             stimulus_amount = survival_cost * 5.0
-             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
+            stimulus_amount = survival_cost * 5.0
+            active_households = [
+                a
+                for a in agents
+                if hasattr(a, "is_employed") and getattr(a, "is_active", False)
+            ]
 
-             total_stimulus = 0.0
-             for h in active_households:
-                 paid = self.provide_subsidy(h, stimulus_amount, current_tick)
-                 total_stimulus += paid
+            total_stimulus = 0.0
+            for h in active_households:
+                paid = self.provide_subsidy(h, stimulus_amount, current_tick)
+                total_stimulus += paid
 
-             if total_stimulus > 0:
-                 logger.warning(
-                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Paid {total_stimulus:.2f}.",
-                     extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
-                 )
+            if total_stimulus > 0:
+                logger.warning(
+                    f"STIMULUS_TRIGGERED | GDP Drop Detected. Paid {total_stimulus:.2f}.",
+                    extra={
+                        "tick": current_tick,
+                        "agent_id": self.id,
+                        "gdp_current": current_gdp,
+                    },
+                )
 
-    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> bool:
+    def invest_infrastructure(
+        self, current_tick: int, reflux_system: Any = None
+    ) -> bool:
         """인프라에 투자하여 전체 생산성을 향상시킵니다."""
         cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
-        
+
         # Apply AI Multiplier? Maybe firm subsidy multiplier applies here too?
         # Let's say BLUE party loves infrastructure.
-        effective_cost = cost # Cost is fixed, but decision to buy depends on funds
+        effective_cost = cost  # Cost is fixed, but decision to buy depends on funds
 
         # If multiplier < 1.0 (Austerity), maybe we skip investment?
         if self.firm_subsidy_budget_multiplier < 0.8:
@@ -440,8 +513,8 @@ class Government:
                 "tick": current_tick,
                 "agent_id": self.id,
                 "level": self.infrastructure_level,
-                "tags": ["investment", "infrastructure"]
-            }
+                "tags": ["investment", "infrastructure"],
+            },
         )
         return True
 
@@ -467,9 +540,11 @@ class Government:
             "tick": current_tick,
             "welfare": self.current_tick_stats["welfare_spending"],
             "stimulus": self.current_tick_stats["stimulus_spending"],
-            "education": self.current_tick_stats.get("education_spending", 0.0), # WO-054
+            "education": self.current_tick_stats.get(
+                "education_spending", 0.0
+            ),  # WO-054
             "debt": self.total_debt,
-            "assets": self.assets
+            "assets": self.assets,
         }
         self.welfare_history.append(welfare_snapshot)
         if len(self.welfare_history) > self.history_window_size:
@@ -479,8 +554,8 @@ class Government:
             "tax_revenue": {},
             "welfare_spending": 0.0,
             "stimulus_spending": 0.0,
-            "education_spending": 0.0, # WO-054
-            "total_collected": 0.0
+            "education_spending": 0.0,  # WO-054
+            "total_collected": 0.0,
         }
 
     def get_monetary_delta(self) -> float:
@@ -495,7 +570,7 @@ class Government:
             "approval_rating": self.approval_rating,
             "income_tax_rate": self.income_tax_rate,
             "corporate_tax_rate": self.corporate_tax_rate,
-            "perceived_public_opinion": self.perceived_public_opinion
+            "perceived_public_opinion": self.perceived_public_opinion,
         }
 
     def get_debt_to_gdp_ratio(self) -> float:
@@ -507,9 +582,17 @@ class Government:
         return debt / self.sensory_data.current_gdp
 
     # WO-054: Public Education System
-    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:
+    def run_public_education(
+        self,
+        agents: List[Any],
+        config_module: Any,
+        current_tick: int,
+        reflux_system: Any = None,
+    ) -> None:
         """
         Delegates public education logic to the Ministry of Education.
         """
-        households = [a for a in agents if hasattr(a, 'education_level')]
-        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
+        households = [a for a in agents if hasattr(a, "education_level")]
+        self.ministry_of_education.run_public_education(
+            households, self, current_tick, reflux_system
+        )

@@ -1,9 +1,9 @@
-
 import pytest
 from unittest.mock import MagicMock
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.models import Transaction
 from simulation.markets.order_book_market import OrderBookMarket
+
 
 def test_indicator_aggregation(simple_household, mock_config_module):
     """Spec 2: EconomicIndicatorTracker 지표 집계 검증"""
@@ -18,12 +18,7 @@ def test_indicator_aggregation(simple_household, mock_config_module):
 
     # Act
     # track(self, time: int, households: List[Household], firms: List[Firm], markets: Dict[str, Market])
-    tracker.track(
-        time=1,
-        households=[simple_household],
-        firms=[],
-        markets={}
-    )
+    tracker.track(time=1, households=[simple_household], firms=[], markets={})
 
     # Assert
     # Check self.metrics for "total_consumption"

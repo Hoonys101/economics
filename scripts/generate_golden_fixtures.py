@@ -9,8 +9,9 @@ sys.path.append(str(root_dir))
 
 # Mock matplotlib to prevent "no display name" errors on headless systems
 import unittest.mock
-sys.modules['matplotlib'] = unittest.mock.MagicMock()
-sys.modules['matplotlib.pyplot'] = unittest.mock.MagicMock()
+
+sys.modules["matplotlib"] = unittest.mock.MagicMock()
+sys.modules["matplotlib.pyplot"] = unittest.mock.MagicMock()
 
 try:
     from main import create_simulation
@@ -18,6 +19,7 @@ try:
 except ImportError as e:
     print(f"❌ ImportError: {e}")
     sys.exit(1)
+
 
 def generate_golden_fixtures():
     print("🚀 Starting Golden Fixture Generation...")
@@ -31,6 +33,7 @@ def generate_golden_fixtures():
     except Exception as e:
         print(f"❌ Failed to create simulation: {e}")
         import traceback
+
         traceback.print_exc()
         return
 
@@ -40,7 +43,7 @@ def generate_golden_fixtures():
     capture_schedule = {
         0: "initial_state.json",
         10: "early_economy.json",
-        100: "stable_economy.json"
+        100: "stable_economy.json",
     }
 
     max_tick = max(capture_schedule.keys())
@@ -63,20 +66,23 @@ def generate_golden_fixtures():
             except Exception as e:
                 print(f"❌ Failed to capture fixture at tick {current_tick}: {e}")
                 import traceback
+
                 traceback.print_exc()
 
         if sim.time < max_tick:
             try:
                 sim.run_tick()
             except Exception as e:
-                 print(f"❌ Simulation failed at tick {current_tick}: {e}")
-                 import traceback
-                 traceback.print_exc()
-                 break
+                print(f"❌ Simulation failed at tick {current_tick}: {e}")
+                import traceback
+
+                traceback.print_exc()
+                break
         else:
             break
 
     print("✅ Golden Fixture Generation Complete.")
+
 
 if __name__ == "__main__":
     generate_golden_fixtures()

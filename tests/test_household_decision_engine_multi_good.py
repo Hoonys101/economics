@@ -124,37 +124,49 @@ def mock_markets():
 
 
 class TestHouseholdDecisionEngineMultiGood:
-    @pytest.mark.skip(reason="Refactoring needed: tests private method on non-existent rule_based_engine")
+    @pytest.mark.skip(
+        reason="Refactoring needed: tests private method on non-existent rule_based_engine"
+    )
     def test_get_consumption_candidates(
         self, household_decision_engine, mock_markets, mock_household
     ):
         pass
 
-    @pytest.mark.skip(reason="Refactoring needed: tests private method on non-existent rule_based_engine")
+    @pytest.mark.skip(
+        reason="Refactoring needed: tests private method on non-existent rule_based_engine"
+    )
     def test_calculate_utility_gain_basic_food(
         self, household_decision_engine, mock_household
     ):
         pass
 
-    @pytest.mark.skip(reason="Refactoring needed: tests private method on non-existent rule_based_engine")
+    @pytest.mark.skip(
+        reason="Refactoring needed: tests private method on non-existent rule_based_engine"
+    )
     def test_calculate_utility_gain_luxury_food(
         self, household_decision_engine, mock_household
     ):
         pass
-    
-    @pytest.mark.skip(reason="Refactoring needed: tests private method on non-existent rule_based_engine")
+
+    @pytest.mark.skip(
+        reason="Refactoring needed: tests private method on non-existent rule_based_engine"
+    )
     def test_find_optimal_consumption_bundle_prioritize_cheaper(
         self, household_decision_engine, mock_household, mock_markets
     ):
         pass
 
-    @pytest.mark.skip(reason="Refactoring needed: tests private method on non-existent rule_based_engine")
+    @pytest.mark.skip(
+        reason="Refactoring needed: tests private method on non-existent rule_based_engine"
+    )
     def test_find_optimal_consumption_bundle_insufficient_funds(
         self, household_decision_engine, mock_household, mock_markets
     ):
         pass
 
-    @pytest.mark.skip(reason="Refactoring needed: tests private method on non-existent rule_based_engine")
+    @pytest.mark.skip(
+        reason="Refactoring needed: tests private method on non-existent rule_based_engine"
+    )
     def test_find_optimal_consumption_bundle_no_candidates(
         self, household_decision_engine, mock_household, mock_markets
     ):
@@ -166,7 +178,8 @@ class TestHouseholdDecisionEngineMultiGood:
         engine, mock_ai_engine = household_decision_engine
         # Mock AI to return EVALUATE_CONSUMPTION_OPTIONS
         mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.EVALUATE_CONSUMPTION_OPTIONS, Aggressiveness.NORMAL
+            Tactic.EVALUATE_CONSUMPTION_OPTIONS,
+            Aggressiveness.NORMAL,
         )
 
         # Household has 100 assets, will buy basic_food
@@ -192,7 +205,8 @@ class TestHouseholdDecisionEngineMultiGood:
         engine, mock_ai_engine = household_decision_engine
         # Mock AI to return PARTICIPATE_LABOR_MARKET
         mock_ai_engine.decide_and_learn.return_value = (
-            Tactic.PARTICIPATE_LABOR_MARKET, Aggressiveness.NORMAL
+            Tactic.PARTICIPATE_LABOR_MARKET,
+            Aggressiveness.NORMAL,
         )
         mock_household.get_desired_wage.return_value = 12.0
         mock_household.is_employed = False
@@ -214,7 +228,9 @@ class TestHouseholdDecisionEngineMultiGood:
         assert orders[0].price == 12.0
         assert orders[0].market_id == "labor_market"
 
-    @pytest.mark.skip(reason="Refactoring needed: tests private method on non-existent rule_based_engine")
+    @pytest.mark.skip(
+        reason="Refactoring needed: tests private method on non-existent rule_based_engine"
+    )
     def test_find_optimal_consumption_bundle_mix_goods_sufficient_budget(
         self, household_decision_engine, mock_household, mock_markets
     ):

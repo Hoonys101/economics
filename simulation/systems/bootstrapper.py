@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class Bootstrapper:
     """
     System responsible for initializing agents with necessary resources
@@ -14,11 +15,12 @@ class Bootstrapper:
 
     Ref: WO-058 Economic CPR
     """
+
     MIN_CAPITAL = 100_000.0  # Increased from 2000
     INITIAL_INVENTORY = 50.0  # New constant
 
     @staticmethod
-    def force_assign_workers(firms: List['Firm'], households: List['Household']) -> int:
+    def force_assign_workers(firms: List["Firm"], households: List["Household"]) -> int:
         MAX_FORCED_WORKERS = 5
         DEFAULT_WAGE = 50.0
         assigned_count = 0
@@ -37,13 +39,15 @@ class Bootstrapper:
                     worker.wage = DEFAULT_WAGE
                     firm.hr.hire(worker, DEFAULT_WAGE)
                     assigned_count += 1
-                logger.info(f'BOOTSTRAPPER | Force-assigned {workers_needed} workers to Firm {firm.id}')
+                logger.info(
+                    f"BOOTSTRAPPER | Force-assigned {workers_needed} workers to Firm {firm.id}"
+                )
 
-        logger.info(f'BOOTSTRAPPER | Total force-assigned workers: {assigned_count}')
+        logger.info(f"BOOTSTRAPPER | Total force-assigned workers: {assigned_count}")
         return assigned_count
 
     @staticmethod
-    def inject_initial_liquidity(firms: List['Firm'], config: Any) -> None:
+    def inject_initial_liquidity(firms: List["Firm"], config: Any) -> None:
         """
         Injects a 30-tick buffer of raw materials and minimum capital.
 
@@ -61,8 +65,8 @@ class Bootstrapper:
                 item_config = config.GOODS[firm.specialization]
 
                 # Check if this good requires inputs
-                if 'inputs' in item_config and item_config['inputs']:
-                    for mat, qty_per_unit in item_config['inputs'].items():
+                if "inputs" in item_config and item_config["inputs"]:
+                    for mat, qty_per_unit in item_config["inputs"].items():
                         # Calculate needed amount: Qty * Target * Days
                         needed = qty_per_unit * firm.production_target * BUFFER_DAYS
 
@@ -76,8 +80,9 @@ class Bootstrapper:
                 current_inv = firm.inventory.get(firm.specialization, 0.0)
                 if current_inv < Bootstrapper.INITIAL_INVENTORY:
                     firm.inventory[firm.specialization] = Bootstrapper.INITIAL_INVENTORY
-                    logger.info(f'BOOTSTRAPPER | Injected {Bootstrapper.INITIAL_INVENTORY} units to Firm {firm.id}')
-
+                    logger.info(
+                        f"BOOTSTRAPPER | Injected {Bootstrapper.INITIAL_INVENTORY} units to Firm {firm.id}"
+                    )
 
             # 2. Capital Injection (Demand Side)
             if firm.assets < Bootstrapper.MIN_CAPITAL:

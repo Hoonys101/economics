@@ -1,4 +1,3 @@
-
 import pytest
 from unittest.mock import MagicMock, patch
 from simulation.systems.event_system import EventSystem
@@ -7,8 +6,8 @@ from simulation.dtos.scenario import StressScenarioConfig
 from simulation.core_agents import Household, Personality
 from simulation.systems.api import EventContext, CommerceContext
 
-class TestPhase28StressScenarios:
 
+class TestPhase28StressScenarios:
     @pytest.fixture
     def mock_households(self):
         h1 = MagicMock(spec=Household)
@@ -25,7 +24,7 @@ class TestPhase28StressScenarios:
 
         h2 = MagicMock(spec=Household)
         h2.id = 2
-        h2._assets = 5000.0 # Wealthy
+        h2._assets = 5000.0  # Wealthy
         h2.is_active = True
 
         return [h1, h2]
@@ -56,15 +55,15 @@ class TestPhase28StressScenarios:
         """Verify Cash Injection Trigger"""
         config = StressScenarioConfig(
             is_active=True,
-            scenario_name='hyperinflation',
+            scenario_name="hyperinflation",
             start_tick=10,
-            demand_shock_cash_injection=0.5
+            demand_shock_cash_injection=0.5,
         )
 
         context: EventContext = {
             "households": mock_households,
             "firms": mock_firms,
-            "markets": {}
+            "markets": {},
         }
 
         # Trigger event
@@ -97,15 +96,15 @@ class TestPhase28StressScenarios:
         """Verify Asset Reduction Trigger"""
         config = StressScenarioConfig(
             is_active=True,
-            scenario_name='deflation',
+            scenario_name="deflation",
             start_tick=20,
-            asset_shock_reduction=0.2
+            asset_shock_reduction=0.2,
         )
 
         context: EventContext = {
             "households": mock_households,
             "firms": mock_firms,
-            "markets": {}
+            "markets": {},
         }
 
         event_system.execute_scheduled_events(20, context, config)
@@ -119,17 +118,17 @@ class TestPhase28StressScenarios:
         """Verify Consumption Collapse for Unemployed"""
         config = StressScenarioConfig(
             is_active=True,
-            scenario_name='deflation',
-            consumption_pessimism_factor=0.3 # 30% reduction
+            scenario_name="deflation",
+            consumption_pessimism_factor=0.3,  # 30% reduction
         )
 
         # Setup Breeding Planner Mock to return consumption decisions
         planner = MagicMock()
         # Returns dict with lists matching household indices
         planner.decide_consumption_batch.return_value = {
-            'consume': [10.0, 10.0],
-            'buy': [0.0, 0.0],
-            'price': 1.0
+            "consume": [10.0, 10.0],
+            "buy": [0.0, 0.0],
+            "price": 1.0,
         }
 
         # Household 1: Unemployed -> Should be reduced
@@ -145,7 +144,7 @@ class TestPhase28StressScenarios:
             "reflux_system": MagicMock(),
             "market_data": {},
             "config": MagicMock(),
-            "time": 100
+            "time": 100,
         }
 
         commerce_system.execute_consumption_and_leisure(context, config)
@@ -161,16 +160,12 @@ class TestPhase28StressScenarios:
     def test_supply_shock(self, event_system, mock_firms):
         config = StressScenarioConfig(
             is_active=True,
-            scenario_name='supply_shock',
+            scenario_name="supply_shock",
             start_tick=30,
-            exogenous_productivity_shock={"Farm": 0.5}
+            exogenous_productivity_shock={"Farm": 0.5},
         )
 
-        context: EventContext = {
-            "households": [],
-            "firms": mock_firms,
-            "markets": {}
-        }
+        context: EventContext = {"households": [], "firms": mock_firms, "markets": {}}
 
         event_system.execute_scheduled_events(30, context, config)
 
@@ -190,20 +185,18 @@ class TestPhase28StressScenarios:
             id=1,
             talent=MagicMock(),
             goods_data=[],
-            initial_assets=400.0, # Below threshold
+            initial_assets=400.0,  # Below threshold
             initial_needs={},
             decision_engine=MagicMock(),
             value_orientation="wealth_and_needs",
             personality=Personality.CONSERVATIVE,
-            config_module=config_module
+            config_module=config_module,
         )
         household.portfolio = MagicMock()
-        household.portfolio.holdings = {101: 10.0} # Owns 10 shares of firm 101
+        household.portfolio.holdings = {101: 10.0}  # Owns 10 shares of firm 101
 
         stress_config = StressScenarioConfig(
-            is_active=True,
-            scenario_name='deflation',
-            panic_selling_enabled=True
+            is_active=True, scenario_name="deflation", panic_selling_enabled=True
         )
 
         # Act
@@ -211,9 +204,14 @@ class TestPhase28StressScenarios:
         markets = {}
         # We don't need detailed markets as we are testing order generation logic in Household.make_decision wrapper
         # Household.make_decision calls decision_engine.make_decisions first.
-        household.decision_engine.make_decisions.return_value = ([], None) # Normal engine returns nothing
+        household.decision_engine.make_decisions.return_value = (
+            [],
+            None,
+        )  # Normal engine returns nothing
 
-        orders, _ = household.make_decision(markets, [], {}, 100, stress_scenario_config=stress_config)
+        orders, _ = household.make_decision(
+            markets, [], {}, 100, stress_scenario_config=stress_config
+        )
 
         # Assert
         assert len(orders) == 1
@@ -221,7 +219,7 @@ class TestPhase28StressScenarios:
         assert order.order_type == "SELL"
         assert order.item_id == "stock_101"
         assert order.quantity == 10.0
-        assert order.price == 0.0 # Market sell
+        assert order.price == 0.0  # Market sell
 
     def test_hoarding_amplification(self):
         """Verify Hoarding amplifies buy quantity."""
@@ -230,7 +228,7 @@ class TestPhase28StressScenarios:
         config_module.GOODS = {"basic_food": {"utility_effects": {"survival": 10}}}
         config_module.HOUSEHOLD_CONSUMABLE_GOODS = ["basic_food"]
         config_module.HOUSEHOLD_MAX_PURCHASE_QUANTITY = 5.0
-        config_module.BULK_BUY_NEED_THRESHOLD = 1000.0 # Don't trigger normal bulk buy
+        config_module.BULK_BUY_NEED_THRESHOLD = 1000.0  # Don't trigger normal bulk buy
         config_module.BULK_BUY_AGG_THRESHOLD = 1.0
         config_module.MIN_PURCHASE_QUANTITY = 0.1
         config_module.BUDGET_LIMIT_NORMAL_RATIO = 1.0
@@ -249,12 +247,15 @@ class TestPhase28StressScenarios:
         config_module.WAGE_RECOVERY_RATE = 0.01
 
         # Import real engine for logic test
-        from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+        from simulation.decisions.ai_driven_household_engine import (
+            AIDrivenHouseholdDecisionEngine,
+        )
         from simulation.dtos import DecisionContext
 
         ai_engine = MagicMock()
         # Return aggressive consumption
         from simulation.schemas import HouseholdActionVector
+
         vector = HouseholdActionVector()
         vector.consumption_aggressiveness = {"basic_food": 0.5}
         ai_engine.decide_action_vector.return_value = vector
@@ -267,12 +268,12 @@ class TestPhase28StressScenarios:
         household.inventory = {}
         household.needs = {"survival": 50.0}
         household.get_agent_data.return_value = {}
-        household.expected_inflation = {} # Empty dict
+        household.expected_inflation = {}  # Empty dict
         household.preference_asset = 1.0
         household.preference_social = 1.0
         household.preference_growth = 1.0
         household.current_wage = 10.0
-        household.wage_modifier = 1.0 # Fix TypeError in min() comparison
+        household.wage_modifier = 1.0  # Fix TypeError in min() comparison
         # Fix ZeroDivisionError in _calculate_savings_roi
         # Mocks can be truthy but empty. Explicitly set to empty dict which is falsy in bool context?
         # No, Mock objects are truthy.
@@ -282,8 +283,8 @@ class TestPhase28StressScenarios:
 
         stress_config = StressScenarioConfig(
             is_active=True,
-            scenario_name='hyperinflation',
-            hoarding_propensity_factor=0.5 # 50% more
+            scenario_name="hyperinflation",
+            hoarding_propensity_factor=0.5,  # 50% more
         )
 
         context = DecisionContext(
@@ -292,7 +293,7 @@ class TestPhase28StressScenarios:
             goods_data=[],
             market_data={"goods_market": {"basic_food_current_sell_price": 5.0}},
             current_time=100,
-            stress_scenario_config=stress_config
+            stress_scenario_config=stress_config,
         )
 
         # Act
@@ -320,7 +321,9 @@ class TestPhase28StressScenarios:
         config_module.DEBT_LIQUIDITY_RATIO = 0.9
         config_module.DSR_CRITICAL_THRESHOLD = 1.0
 
-        from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+        from simulation.decisions.ai_driven_household_engine import (
+            AIDrivenHouseholdDecisionEngine,
+        )
         from simulation.dtos import DecisionContext
         from simulation.schemas import HouseholdActionVector
 
@@ -335,24 +338,22 @@ class TestPhase28StressScenarios:
         household = MagicMock()
         household.id = 1
         household._assets = 1000.0
-        household.current_wage = 10.0 # Fix TypeError
-        household.preference_asset = 1.0 # Fix
-        household.expected_inflation = {} # Avoid ZeroDivisionError
-        household.wage_modifier = 1.0 # Fix TypeError
-        household.wage_modifier = 1.0 # Fix TypeError
+        household.current_wage = 10.0  # Fix TypeError
+        household.preference_asset = 1.0  # Fix
+        household.expected_inflation = {}  # Avoid ZeroDivisionError
+        household.wage_modifier = 1.0  # Fix TypeError
+        household.wage_modifier = 1.0  # Fix TypeError
 
         stress_config = StressScenarioConfig(
             is_active=True,
-            scenario_name='deflation',
-            debt_aversion_multiplier=2.0 # Double priority
+            scenario_name="deflation",
+            debt_aversion_multiplier=2.0,  # Double priority
         )
 
         # Market data with debt
         market_data = {
-            "debt_data": {
-                1: {"total_principal": 500.0}
-            },
-            "loan_market": {"interest_rate": 0.05}
+            "debt_data": {1: {"total_principal": 500.0}},
+            "loan_market": {"interest_rate": 0.05},
         }
 
         context = DecisionContext(
@@ -361,7 +362,7 @@ class TestPhase28StressScenarios:
             goods_data=[],
             market_data=market_data,
             current_time=100,
-            stress_scenario_config=stress_config
+            stress_scenario_config=stress_config,
         )
 
         # Act

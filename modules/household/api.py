@@ -5,7 +5,13 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Deque
 if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.dtos import LeisureEffectDTO, StressScenarioConfig
-    from modules.household.dtos import CloningRequestDTO, EconContextDTO, SocialContextDTO, HouseholdStateDTO
+    from modules.household.dtos import (
+        CloningRequestDTO,
+        EconContextDTO,
+        SocialContextDTO,
+        HouseholdStateDTO,
+    )
+
 
 class IBioComponent(ABC):
     """Interface for Biological Component."""
@@ -24,6 +30,7 @@ class IBioComponent(ABC):
     @abstractmethod
     def run_lifecycle(self, context: Dict[str, Any]): ...
 
+
 class IEconComponent(ABC):
     """Interface for Economic Component."""
 
@@ -38,7 +45,12 @@ class IEconComponent(ABC):
     def consume(self, item_id: str, quantity: float, current_time: int) -> Any: ...
 
     @abstractmethod
-    def orchestrate_economic_decisions(self, context: EconContextDTO, orders: List[Any], stress_scenario_config: Optional[StressScenarioConfig] = None): ...
+    def orchestrate_economic_decisions(
+        self,
+        context: EconContextDTO,
+        orders: List[Any],
+        stress_scenario_config: Optional[StressScenarioConfig] = None,
+    ): ...
 
     # --- Phase 23: Inflation Expectation & Price Memory ---
     @property
@@ -61,13 +73,14 @@ class IEconComponent(ABC):
     def update_perceived_prices(
         self,
         market_data: Dict[str, Any],
-        stress_scenario_config: Optional[StressScenarioConfig] = None
+        stress_scenario_config: Optional[StressScenarioConfig] = None,
     ) -> None:
         """
         Calculates and updates the agent's inflation expectation and
         perceived average prices based on market data.
         """
         ...
+
 
 class ISocialComponent(ABC):
     """Interface for Social Component."""
@@ -79,4 +92,6 @@ class ISocialComponent(ABC):
     def update_political_opinion(self) -> None: ...
 
     @abstractmethod
-    def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffectDTO: ...
+    def apply_leisure_effect(
+        self, leisure_hours: float, consumed_items: Dict[str, float]
+    ) -> LeisureEffectDTO: ...

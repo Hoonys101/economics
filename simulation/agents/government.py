@@ -19,6 +19,7 @@ from modules.finance.api import InsufficientFundsError
 
 logger = logging.getLogger(__name__)
 
+
 class Government:
     """
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
@@ -29,7 +30,7 @@ class Government:
         self._assets = initial_assets
         self.config_module = config_module
         self.settlement_system: Optional["ISettlementSystem"] = None
-        
+
         self.tax_agency = TaxAgency(config_module)
         self.ministry_of_education = MinistryOfEducation(config_module)
 
@@ -40,7 +41,7 @@ class Government:
         # Gold Standard Money Tracking
         self.total_money_issued: float = 0.0
         self.total_money_destroyed: float = 0.0
-        
+
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
 
@@ -52,7 +53,9 @@ class Government:
         # --- Phase 24: Policy Strategy Selection ---
         policy_mode = getattr(config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
         if policy_mode == "AI_ADAPTIVE":
-            self.policy_engine: IGovernmentPolicy = SmartLeviathanPolicy(self, config_module)
+            self.policy_engine: IGovernmentPolicy = SmartLeviathanPolicy(
+                self, config_module
+            )
         else:
             self.policy_engine: IGovernmentPolicy = TaylorRulePolicy(config_module)
 
@@ -60,28 +63,32 @@ class Government:
         self.ai = getattr(self.policy_engine, "ai", None)
 
         # Political State
-        self.ruling_party: PoliticalParty = PoliticalParty.BLUE # Default
+        self.ruling_party: PoliticalParty = PoliticalParty.BLUE  # Default
         self.approval_rating: float = 0.5
-        self.public_opinion_queue: Deque[float] = deque(maxlen=4) # 4-tick lag
+        self.public_opinion_queue: Deque[float] = deque(maxlen=4)  # 4-tick lag
         self.perceived_public_opinion: float = 0.5
         self.last_election_tick: int = 0
 
         # Policy Levers (Tax Rates)
         self.income_tax_rate: float = getattr(config_module, "INCOME_TAX_RATE", 0.1)
-        self.corporate_tax_rate: float = getattr(config_module, "CORPORATE_TAX_RATE", 0.2)
+        self.corporate_tax_rate: float = getattr(
+            config_module, "CORPORATE_TAX_RATE", 0.2
+        )
 
         # Spending Multipliers (AI Controlled)
         # 1.0 = Normal (Budget Neutral-ish), >1.0 = Stimulus, <1.0 = Austerity
         self.welfare_budget_multiplier: float = 1.0
         self.firm_subsidy_budget_multiplier: float = 1.0
 
-        self.effective_tax_rate: float = self.income_tax_rate # Legacy compatibility
+        self.effective_tax_rate: float = self.income_tax_rate  # Legacy compatibility
         self.total_debt: float = 0.0
         # ---------------------------------------------
 
         # History buffers for visualization
-        self.tax_history: List[Dict[str, Any]] = [] # For Stacked Bar Chart (breakdown per tick)
-        self.welfare_history: List[Dict[str, float]] = [] # For Welfare Line Chart
+        self.tax_history: List[
+            Dict[str, Any]
+        ] = []  # For Stacked Bar Chart (breakdown per tick)
+        self.welfare_history: List[Dict[str, float]] = []  # For Welfare Line Chart
         self.history_window_size = 5000
 
         # Current tick accumulators (reset every tick)
@@ -90,13 +97,13 @@ class Government:
             "welfare_spending": 0.0,
             "stimulus_spending": 0.0,
             "total_collected": 0.0,
-            "education_spending": 0.0 # WO-054
+            "education_spending": 0.0,  # WO-054
         }
 
         # GDP Tracking for Stimulus
         self.gdp_history: List[float] = []
         self.gdp_history_window = 20
-        
+
         # WO-056: Shadow Policy Metrics
         ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
@@ -104,7 +111,7 @@ class Government:
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
-        
+
         self.average_approval_rating = 0.5
 
         # WO-057-B: Sensory Data Container
@@ -136,17 +143,29 @@ class Government:
         self.sensory_data = dto
         # Log reception (Debug)
         if dto.tick % 50 == 0:
-            inf_sma = dto.inflation_sma if isinstance(dto.inflation_sma, (int, float)) else 0.0
-            app_sma = dto.approval_sma if isinstance(dto.approval_sma, (int, float)) else 0.0
+            inf_sma = (
+                dto.inflation_sma
+                if isinstance(dto.inflation_sma, (int, float))
+                else 0.0
+            )
+            app_sma = (
+                dto.approval_sma if isinstance(dto.approval_sma, (int, float)) else 0.0
+            )
             logger.debug(
                 f"SENSORY_UPDATE | Government received macro data. Inflation_SMA: {inf_sma:.4f}, Approval_SMA: {app_sma:.2f}",
-                extra={"tick": dto.tick, "agent_id": self.id, "tags": ["sensory", "wo-057-b"]}
+                extra={
+                    "tick": dto.tick,
+                    "agent_id": self.id,
+                    "tags": ["sensory", "wo-057-b"],
+                },
             )
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """Delegates income tax calculation to the TaxAgency."""
         tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
-        return self.tax_agency.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
+        return self.tax_agency.calculate_income_tax(
+            income, survival_cost, self.income_tax_rate, tax_mode
+        )
 
     def calculate_corporate_tax(self, profit: float) -> float:
         """Delegates corporate tax calculation to the TaxAgency."""
@@ -158,7 +177,7 @@ class Government:
         이전 틱의 데이터를 History에 저장합니다.
         """
         if getattr(self, "revenue_breakdown_this_tick", None) is None:
-             self.revenue_breakdown_this_tick = {}
+            self.revenue_breakdown_this_tick = {}
 
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
@@ -168,6 +187,12 @@ class Government:
         """세금을 징수합니다."""
         # Legacy method support if any direct calls remain, though TickScheduler uses transactions now.
         return self.tax_agency.collect_tax(self, amount, tax_type, payer, current_tick)
+
+    def record_revenue(
+        self, amount: float, tax_type: str, payer_id: Any, current_tick: int
+    ):
+        """Records revenue without collection (manual transfer case)."""
+        self.tax_agency.record_revenue(self, amount, tax_type, payer_id, current_tick)
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -201,30 +226,49 @@ class Government:
             if self.perceived_public_opinion < 0.5:
                 # Flip Party
                 old_party = self.ruling_party
-                self.ruling_party = PoliticalParty.RED if old_party == PoliticalParty.BLUE else PoliticalParty.BLUE
+                self.ruling_party = (
+                    PoliticalParty.RED
+                    if old_party == PoliticalParty.BLUE
+                    else PoliticalParty.BLUE
+                )
 
                 logger.warning(
                     f"ELECTION_RESULTS | REGIME CHANGE! {old_party.name} -> {self.ruling_party.name}. Approval: {self.perceived_public_opinion:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["election", "regime_change"]}
+                    extra={
+                        "tick": current_tick,
+                        "agent_id": self.id,
+                        "tags": ["election", "regime_change"],
+                    },
                 )
             else:
                 logger.info(
                     f"ELECTION_RESULTS | INCUMBENT VICTORY ({self.ruling_party.name}). Approval: {self.perceived_public_opinion:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["election"]}
+                    extra={
+                        "tick": current_tick,
+                        "agent_id": self.id,
+                        "tags": ["election"],
+                    },
                 )
 
-    def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int, central_bank: "CentralBank"):
+    def make_policy_decision(
+        self,
+        market_data: Dict[str, Any],
+        current_tick: int,
+        central_bank: "CentralBank",
+    ):
         """
         정책 엔진에게 의사결정을 위임하고 결과를 반영합니다.
         (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
-        decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)
-        
+        decision = self.policy_engine.decide(
+            self, self.sensory_data, current_tick, central_bank
+        )
+
         if decision.get("status") == "EXECUTED":
-             logger.debug(
+            logger.debug(
                 f"POLICY_EXECUTED | Tick: {current_tick} | Action: {decision.get('action_taken')}",
-                extra={"tick": current_tick, "agent_id": self.id}
+                extra={"tick": current_tick, "agent_id": self.id},
             )
 
         gdp_gap = 0.0
@@ -233,7 +277,9 @@ class Government:
             gdp_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
 
             alpha = 0.01
-            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+            self.potential_gdp = (alpha * current_gdp) + (
+                (1 - alpha) * self.potential_gdp
+            )
 
         # 1. Calculate Inflation (YoY)
         inflation = 0.0
@@ -253,7 +299,12 @@ class Government:
 
         target_inflation = getattr(self.config_module, "CB_INFLATION_TARGET", 0.02)
         neutral_rate = max(0.01, real_gdp_growth)
-        target_rate = neutral_rate + inflation + 0.5 * (inflation - target_inflation) + 0.5 * gdp_gap
+        target_rate = (
+            neutral_rate
+            + inflation
+            + 0.5 * (inflation - target_inflation)
+            + 0.5 * gdp_gap
+        )
 
         current_base_rate = 0.05
         if "loan_market" in market_data:
@@ -268,10 +319,12 @@ class Government:
             metric="taylor_rule_rate",
             current_value=current_base_rate,
             shadow_value=target_rate,
-            details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
+            details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}",
         )
 
-    def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
+    def provide_household_support(
+        self, household: Any, amount: float, current_tick: int
+    ) -> List[Transaction]:
         """Provides subsidies to households (e.g., unemployment, stimulus). Returns transactions."""
         transactions = []
         effective_amount = amount * self.welfare_budget_multiplier
@@ -286,7 +339,9 @@ class Government:
             # FinanceSystem now returns (bonds, transactions)
             bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
             if not bonds:
-                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
+                logger.warning(
+                    f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support."
+                )
                 return []
             transactions.extend(txs)
 
@@ -299,7 +354,7 @@ class Government:
             price=effective_amount,
             market_id="system",
             transaction_type="welfare",
-            time=current_tick
+            time=current_tick,
         )
         transactions.append(tx)
 
@@ -309,36 +364,53 @@ class Government:
 
         logger.info(
             f"HOUSEHOLD_SUPPORT | Generated support tx of {effective_amount:.2f} to {household.id}",
-            extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
+            extra={
+                "tick": current_tick,
+                "agent_id": self.id,
+                "amount": effective_amount,
+                "target_id": household.id,
+            },
         )
         return transactions
 
-    def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
+    def provide_firm_bailout(
+        self, firm: Any, amount: float, current_tick: int
+    ) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
         if self.finance_system.evaluate_solvency(firm, current_tick):
             logger.info(f"BAILOUT_APPROVED | Firm {firm.id} is eligible for a bailout.")
             # FinanceSystem now returns (loan, transactions)
-            loan, txs = self.finance_system.grant_bailout_loan(firm, amount, current_tick)
+            loan, txs = self.finance_system.grant_bailout_loan(
+                firm, amount, current_tick
+            )
             if loan:
                 self.expenditure_this_tick += amount
             return loan, txs
         else:
-            logger.warning(f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout.")
+            logger.warning(
+                f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout."
+            )
             return None, []
 
     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
-        """ Calculates current survival cost based on food prices. """
+        """Calculates current survival cost based on food prices."""
         avg_food_price = 0.0
         goods_market = market_data.get("goods_market", {})
         if "basic_food_current_sell_price" in goods_market:
             avg_food_price = goods_market["basic_food_current_sell_price"]
         else:
-            avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+            avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get(
+                "basic_food", 5.0
+            )
 
-        daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+        daily_food_need = getattr(
+            self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0
+        )
         return max(avg_food_price * daily_food_need, 10.0)
 
-    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
+    def run_welfare_check(
+        self, agents: List[Any], market_data: Dict[str, Any], current_tick: int
+    ) -> List[Transaction]:
         """
         Government Main Loop Step.
         Returns List of Transactions.
@@ -350,12 +422,16 @@ class Government:
         survival_cost = self.get_survival_cost(market_data)
 
         # 2. Wealth Tax & Unemployment Benefit
-        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02)
+        wealth_tax_rate_annual = getattr(
+            self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02
+        )
         ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100.0)
         wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
         wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", 50000.0)
 
-        unemployment_ratio = getattr(self.config_module, "UNEMPLOYMENT_BENEFIT_RATIO", 0.8)
+        unemployment_ratio = getattr(
+            self.config_module, "UNEMPLOYMENT_BENEFIT_RATIO", 0.8
+        )
         benefit_amount = survival_cost * unemployment_ratio
 
         total_wealth_tax = 0.0
@@ -382,14 +458,16 @@ class Government:
                             price=tax_amount,
                             market_id="system",
                             transaction_type="tax",
-                            time=current_tick
+                            time=current_tick,
                         )
                         transactions.append(tx)
                         total_wealth_tax += tax_amount
 
                 # B. Unemployment Benefit
                 if not agent.is_employed:
-                    txs = self.provide_household_support(agent, benefit_amount, current_tick)
+                    txs = self.provide_household_support(
+                        agent, benefit_amount, current_tick
+                    )
                     transactions.extend(txs)
                     total_welfare_paid += benefit_amount
 
@@ -410,33 +488,43 @@ class Government:
                     should_stimulus = True
 
         if should_stimulus:
-             stimulus_amount = survival_cost * 5.0
-             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
+            stimulus_amount = survival_cost * 5.0
+            active_households = [
+                a
+                for a in agents
+                if hasattr(a, "is_employed") and getattr(a, "is_active", False)
+            ]
 
-             total_stimulus = 0.0
-             for h in active_households:
-                 txs = self.provide_household_support(h, stimulus_amount, current_tick)
-                 transactions.extend(txs)
+            total_stimulus = 0.0
+            for h in active_households:
+                txs = self.provide_household_support(h, stimulus_amount, current_tick)
+                transactions.extend(txs)
 
-                 # Calculate total from txs for logging?
-                 # Assuming 1 welfare tx per support call
-                 for tx in txs:
-                     if tx.transaction_type == 'welfare':
-                         total_stimulus += tx.price
+                # Calculate total from txs for logging?
+                # Assuming 1 welfare tx per support call
+                for tx in txs:
+                    if tx.transaction_type == "welfare":
+                        total_stimulus += tx.price
 
-             if total_stimulus > 0:
-                 logger.warning(
-                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Generated stimulus txs total {total_stimulus:.2f}.",
-                     extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
-                 )
+            if total_stimulus > 0:
+                logger.warning(
+                    f"STIMULUS_TRIGGERED | GDP Drop Detected. Generated stimulus txs total {total_stimulus:.2f}.",
+                    extra={
+                        "tick": current_tick,
+                        "agent_id": self.id,
+                        "gdp_current": current_gdp,
+                    },
+                )
 
         return transactions
 
-    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> Tuple[bool, List[Transaction]]:
+    def invest_infrastructure(
+        self, current_tick: int, reflux_system: Any = None
+    ) -> Tuple[bool, List[Transaction]]:
         """인프라에 투자하여 전체 생산성을 향상시킵니다. Returns (Success, Transactions)."""
         transactions = []
         cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
-        
+
         effective_cost = cost
 
         if self.firm_subsidy_budget_multiplier < 0.8:
@@ -452,26 +540,28 @@ class Government:
             needed = effective_cost - self.assets
             bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
             if not bonds:
-                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                logger.warning(
+                    f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure."
+                )
                 return False, []
             transactions.extend(txs)
-            potential_revenue = needed # Assume success
+            potential_revenue = needed  # Assume success
 
         # Generate Investment Transaction (Gov -> Reflux)
         # Using RefluxSystem ID (999999) as Receiver
         reflux_id = 999999
-        if reflux_system and hasattr(reflux_system, 'id'):
+        if reflux_system and hasattr(reflux_system, "id"):
             reflux_id = reflux_system.id
 
         tx = Transaction(
-            buyer_id=self.id, # Government Pays
-            seller_id=reflux_id, # Reflux Receives
+            buyer_id=self.id,  # Government Pays
+            seller_id=reflux_id,  # Reflux Receives
             item_id="infrastructure_investment",
             quantity=1.0,
             price=effective_cost,
             market_id="system",
             transaction_type="infrastructure",
-            time=current_tick
+            time=current_tick,
         )
         transactions.append(tx)
 
@@ -488,8 +578,8 @@ class Government:
                 "tick": current_tick,
                 "agent_id": self.id,
                 "level": self.infrastructure_level,
-                "tags": ["investment", "infrastructure"]
-            }
+                "tags": ["investment", "infrastructure"],
+            },
         )
         return True, transactions
 
@@ -503,11 +593,13 @@ class Government:
 
         # WO-057 Deficit Spending: Update total_debt based on FinanceSystem
         if self.finance_system:
-             self.total_debt = sum(b.face_value for b in self.finance_system.outstanding_bonds)
+            self.total_debt = sum(
+                b.face_value for b in self.finance_system.outstanding_bonds
+            )
         elif self.assets < 0:
-             self.total_debt = abs(self.assets)
+            self.total_debt = abs(self.assets)
         else:
-             self.total_debt = 0.0
+            self.total_debt = 0.0
 
         self.tax_history.append(revenue_snapshot)
         if len(self.tax_history) > self.history_window_size:
@@ -517,9 +609,11 @@ class Government:
             "tick": current_tick,
             "welfare": self.current_tick_stats["welfare_spending"],
             "stimulus": self.current_tick_stats["stimulus_spending"],
-            "education": self.current_tick_stats.get("education_spending", 0.0), # WO-054
+            "education": self.current_tick_stats.get(
+                "education_spending", 0.0
+            ),  # WO-054
             "debt": self.total_debt,
-            "assets": self.assets
+            "assets": self.assets,
         }
         self.welfare_history.append(welfare_snapshot)
         if len(self.welfare_history) > self.history_window_size:
@@ -529,8 +623,8 @@ class Government:
             "tax_revenue": {},
             "welfare_spending": 0.0,
             "stimulus_spending": 0.0,
-            "education_spending": 0.0, # WO-054
-            "total_collected": 0.0
+            "education_spending": 0.0,  # WO-054
+            "total_collected": 0.0,
         }
 
     def get_monetary_delta(self) -> float:
@@ -545,7 +639,7 @@ class Government:
             "approval_rating": self.approval_rating,
             "income_tax_rate": self.income_tax_rate,
             "corporate_tax_rate": self.corporate_tax_rate,
-            "perceived_public_opinion": self.perceived_public_opinion
+            "perceived_public_opinion": self.perceived_public_opinion,
         }
 
     def get_debt_to_gdp_ratio(self) -> float:
@@ -565,13 +659,23 @@ class Government:
         """Withdraws a given amount from the government's assets."""
         if amount > 0:
             if self.assets < amount:
-                raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+                raise InsufficientFundsError(
+                    f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}"
+                )
             self._assets -= amount
 
     # WO-054: Public Education System
-    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:
+    def run_public_education(
+        self,
+        agents: List[Any],
+        config_module: Any,
+        current_tick: int,
+        reflux_system: Any = None,
+    ) -> None:
         """
         Delegates public education logic to the Ministry of Education.
         """
-        households = [a for a in agents if hasattr(a, 'education_level')]
-        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
+        households = [a for a in agents if hasattr(a, "education_level")]
+        self.ministry_of_education.run_public_education(
+            households, self, current_tick, reflux_system
+        )

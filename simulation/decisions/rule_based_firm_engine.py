@@ -36,7 +36,11 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         )
 
     def _execute_tactic(
-        self, tactic: Tactic, firm: FirmStateDTO, current_tick: int, market_data: Dict[str, Any]
+        self,
+        tactic: Tactic,
+        firm: FirmStateDTO,
+        current_tick: int,
+        market_data: Dict[str, Any],
     ) -> List[Order]:
         """
         선택된 전술에 따라 실제 행동(주문 생성)을 수행한다.
@@ -100,7 +104,9 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             )
 
         if new_target != target_quantity:
-            return [Order(firm.id, "SET_TARGET", "internal", new_target, 0.0, "internal")]
+            return [
+                Order(firm.id, "SET_TARGET", "internal", new_target, 0.0, "internal")
+            ]
 
         return []
 
@@ -154,7 +160,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         current_inventory = firm.inventory.get(item_id, 0)
         needed_production = max(0, target_quantity - current_inventory)
         if firm.productivity_factor <= 0:
-            return 999999.0 # Impossible to produce without productivity
+            return 999999.0  # Impossible to produce without productivity
 
         needed_labor = needed_production / firm.productivity_factor
         return needed_labor
@@ -176,7 +182,9 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         return self.config_module.BASE_WAGE * (1 + wage_premium)
 
-    def _fire_excess_labor(self, firm: FirmStateDTO, needed_labor: float) -> List[Order]:
+    def _fire_excess_labor(
+        self, firm: FirmStateDTO, needed_labor: float
+    ) -> List[Order]:
         """
         WO-110: Firing logic for Rule-Based Firms.
         Fires excess employees if current workforce exceeds needed labor (with tolerance).
@@ -214,19 +222,21 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             severance_pay = wage * skill * severance_weeks
 
             # Create FIRE Order
-            orders.append(Order(
-                firm.id,
-                "FIRE",
-                "internal",
-                1,
-                severance_pay,
-                "internal",
-                target_agent_id=emp_id
-            ))
+            orders.append(
+                Order(
+                    firm.id,
+                    "FIRE",
+                    "internal",
+                    1,
+                    severance_pay,
+                    "internal",
+                    target_agent_id=emp_id,
+                )
+            )
 
             self.logger.info(
                 f"RuleBased Firing: Firm {firm.id} planning to fire Agent {emp_id}. Severance: {severance_pay:.2f}",
-                extra={"tick": 0, "agent_id": firm.id, "tags": ["firing"]}
+                extra={"tick": 0, "agent_id": firm.id, "tags": ["firing"]},
             )
 
         return orders
