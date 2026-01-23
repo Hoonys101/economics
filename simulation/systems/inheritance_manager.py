@@ -26,9 +26,14 @@ class InheritanceManager:
             government: The entity collecting tax.
             simulation: Access to markets/registry for liquidation and transfer.
         """
+        # Access SettlementSystem via standard Simulation facade or WorldState DTO
         settlement = getattr(simulation, 'settlement_system', None)
         if not settlement and hasattr(simulation, 'world_state'):
              settlement = getattr(simulation.world_state, 'settlement_system', None)
+
+        # If simulation is WorldState DTO itself (legacy compatibility)
+        if not settlement and hasattr(simulation, 'time'): # Weak check for DTO
+             settlement = getattr(simulation, 'settlement_system', None)
 
         self.logger.info(
             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",

@@ -1,9 +1,12 @@
 import logging
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import math
 from modules.common.config_manager.api import ConfigManager
 from modules.finance.api import InsufficientFundsError, IFinancialEntity
+
+if TYPE_CHECKING:
+    from simulation.finance.api import ISettlementSystem
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +48,7 @@ class Bank(IFinancialEntity):
     Manages loans, deposits, and monetary policy interaction.
     """
 
-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Any = None):
+    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None):
         self._id = id
         self._assets = initial_assets # Reserves
         self.config_manager = config_manager

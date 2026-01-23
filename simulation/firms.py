@@ -25,6 +25,7 @@ from modules.finance.api import InsufficientFundsError
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
 
 if TYPE_CHECKING:
+    from simulation.finance.api import ISettlementSystem
     from simulation.loan_market import LoanMarket
     from simulation.ai.firm_system2_planner import FirmSystem2Planner
     from simulation.markets.stock_market import StockMarket
@@ -67,7 +68,7 @@ class Firm(BaseAgent, ILearningAgent):
             name=f"Firm_{id}",
             logger=logger,
         )
-        self.settlement_system: Optional[Any] = None
+        self.settlement_system: Optional["ISettlementSystem"] = None
         self.config_module = config_module  # Store config_module
         if initial_inventory is not None:
             self.inventory.update(initial_inventory)

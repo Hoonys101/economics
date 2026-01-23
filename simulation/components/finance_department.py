@@ -148,7 +148,7 @@ class FinanceDepartment:
                 self.firm.settlement_system.transfer(self.firm, government, repayment, "Bailout Repayment")
             else:
                 self.debit(repayment, "Bailout Repayment")
-                government._add_assets(repayment)
+                government.deposit(repayment)
 
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
@@ -231,7 +231,7 @@ class FinanceDepartment:
                 success = self.firm.settlement_system.transfer(self.firm, owner, dividend_amount, "Private Dividend")
             else:
                 self.debit(dividend_amount, "Private Dividend")
-                owner._add_assets(dividend_amount)
+                owner.deposit(dividend_amount)
                 success = True
 
             if success:
@@ -412,7 +412,7 @@ class FinanceDepartment:
                 return False
             else:
                 self.debit(amount, "Severance Pay")
-                employee._add_assets(amount)
+                employee.deposit(amount)
                 self.record_expense(amount)
                 return True
         return False

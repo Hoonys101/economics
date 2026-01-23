@@ -6,8 +6,11 @@ from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.policies.taylor_rule_policy import TaylorRulePolicy
 from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 from simulation.dtos import GovernmentStateDTO
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from simulation.utils.shadow_logger import log_shadow
+
+if TYPE_CHECKING:
+    from simulation.finance.api import ISettlementSystem
 from simulation.systems.tax_agency import TaxAgency
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from modules.finance.api import InsufficientFundsError
@@ -23,7 +26,7 @@ class Government:
         self.id = id
         self._assets = initial_assets
         self.config_module = config_module
-        self.settlement_system = None
+        self.settlement_system: Optional["ISettlementSystem"] = None
         
         self.tax_agency = TaxAgency(config_module)
         self.ministry_of_education = MinistryOfEducation(config_module)
@@ -299,11 +302,8 @@ class Government:
         if self.settlement_system:
             success = self.settlement_system.transfer(self, household, effective_amount, "Household Support")
         else:
-            self._sub_assets(effective_amount)
-            if hasattr(household, '_add_assets'):
-                household._add_assets(effective_amount)
-            else:
-                household.assets += effective_amount
+            self.withdraw(effective_amount)
+            household.deposit(effective_amount)
             success = True
 
         if success:
@@ -456,7 +456,9 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
                 return False
 
-        self._sub_assets(effective_cost)
+        # Note: Ideally this would be a transfer to a contractor/firm, but for now it's a sink or abstract investment.
+        # We use withdraw().
+        self.withdraw(effective_cost)
         self.expenditure_this_tick += effective_cost
         if reflux_system:
             reflux_system.capture(effective_cost, str(self.id), "infrastructure")
@@ -536,6 +538,18 @@ class Government:
 
         debt = max(0.0, -self.assets)
         return debt / self.sensory_data.current_gdp
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the government's assets."""
+        if amount > 0:
+            self._assets += amount
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws a given amount from the government's assets."""
+        if amount > 0:
+            if self.assets < amount:
+                raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+            self._assets -= amount
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:

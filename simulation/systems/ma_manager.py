@@ -189,14 +189,16 @@ class MAManager:
              if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
                  self.simulation.settlement_system.transfer(predator, target_agent, price, f"M&A Acquisition {prey.id}")
              else:
-                 predator.assets -= price
-                 target_agent.assets += price
+                 predator.withdraw(price)
+                 target_agent.deposit(price)
         else:
              # If no owner found, transfer to government (state capture)
+             # This policy (State Capture) ensures zero-sum integrity when owner is missing.
              if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
                  self.simulation.settlement_system.transfer(predator, self.simulation.government, price, f"M&A Acquisition {prey.id} (State)")
              else:
-                 predator.assets -= price
+                 predator.withdraw(price)
+                 self.simulation.government.deposit(price)
         
         # 2. Asset Transfer
         # SoC Refactor: use production.add_capital
