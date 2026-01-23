@@ -464,8 +464,8 @@ class Government:
             reflux_id = reflux_system.id
 
         tx = Transaction(
-            buyer_id=reflux_id, # Reflux Receives
-            seller_id=self.id, # Government Pays
+            buyer_id=self.id, # Government Pays
+            seller_id=reflux_id, # Reflux Receives
             item_id="infrastructure_investment",
             quantity=1.0,
             price=effective_cost,

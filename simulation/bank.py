@@ -412,8 +412,8 @@ class Bank(IFinancialEntity):
 
         if net_profit > 0 and gov_agent:
              tx = Transaction(
-                 buyer_id=gov_agent.id, # Government receives
-                 seller_id=self.id, # Bank pays
+                 buyer_id=self.id, # Bank pays
+                 seller_id=gov_agent.id, # Government receives
                  item_id="bank_profit",
                  quantity=1.0,
                  price=net_profit,

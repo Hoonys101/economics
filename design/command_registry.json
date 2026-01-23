@@ -28,8 +28,8 @@
   },
   "jules": {
     "command": "create",
-    "title": "WO-116_PhaseB_Normalization",
-    "instruction": "Execute WO-116 Phase B followed by the spec in `design/specs/WO116_PHASE_B_SPEC.md`. Focus on Tick Sequence Normalization.",
+    "title": "WO-116_Leak_Hunter",
+    "instruction": "Fix the -750k M2 leak! Read 'design/specs/WO116_HOTFIX_LEAK_PLUGGING.md'. Fix obvious reversals, then summarize: 1. Rejected Hypotheses (what was NOT leaking), 2. New Hypotheses (deeper issues found), 3. Solved Problems. Priority: Integrity Analysis & Reporting.",
     "wait": false
   },
   "git_review": {

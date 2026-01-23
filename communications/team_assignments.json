@@ -61,6 +61,10 @@
       "8635535602606687900": {
         "title": "WO-116_PhaseA_Component_Purity",
         "initial_mission": "Execute WO-116 Phase A ONLY. 1. Refactor `InheritanceManager`, `MAManager`, `FinanceDepartment`, and `Bank.check_solvency` to use `SettlementSystem.transfer` instead of direct mutations. 2. DO NOT modify `TickScheduler`. 3. Verification: Ensure simulation runs without crashing (Smoke Test). Strict Zero-Sum check is deferred to Phase B."
+      },
+      "2873398772113156484": {
+        "title": "WO-116_PhaseB_Normalization",
+        "initial_mission": "Execute WO-116 Phase B followed by the spec in `design/specs/WO116_PHASE_B_SPEC.md`. Focus on Tick Sequence Normalization."
       }
     },
     "completed_sessions": {
