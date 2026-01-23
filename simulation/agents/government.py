@@ -294,29 +294,48 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
                 return 0.0
 
-        self._sub_assets(effective_amount)
-        self.total_spent_subsidies += effective_amount
-        self.expenditure_this_tick += effective_amount
+        # Refactored to use SettlementSystem
+        if self.finance_system and self.finance_system.settlement_system:
+             success = self.finance_system.settlement_system.transfer(
+                 self, household, effective_amount, "household_support"
+             )
+             if success:
+                 self.total_spent_subsidies += effective_amount
+                 self.expenditure_this_tick += effective_amount
+                 self.current_tick_stats["welfare_spending"] += effective_amount
 
-        if hasattr(household, '_add_assets'):
-            household._add_assets(effective_amount)
+                 logger.info(
+                    f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
+                    extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
+                 )
+                 return effective_amount
+             else:
+                 return 0.0
         else:
-            household.assets += effective_amount
+            # Fallback (Legacy)
+            self._sub_assets(effective_amount)
+            if hasattr(household, '_add_assets'):
+                household._add_assets(effective_amount)
+            else:
+                household.assets += effective_amount
 
-        self.current_tick_stats["welfare_spending"] += effective_amount
+            self.total_spent_subsidies += effective_amount
+            self.expenditure_this_tick += effective_amount
+            self.current_tick_stats["welfare_spending"] += effective_amount
 
-        logger.info(
-            f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
-            extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
-        )
-        return effective_amount
+            logger.info(
+                f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
+                extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
+            )
+            return effective_amount
 
     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int):
         """Provides a bailout loan to a firm if it's eligible."""
         if self.finance_system.evaluate_solvency(firm, current_tick):
             logger.info(f"BAILOUT_APPROVED | Firm {firm.id} is eligible for a bailout.")
             loan = self.finance_system.grant_bailout_loan(firm, amount)
-            self.expenditure_this_tick += amount
+            if loan:
+                self.expenditure_this_tick += amount
             return loan
         else:
             logger.warning(f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout.")
@@ -450,11 +469,18 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
                 return False
 
-        self._sub_assets(effective_cost)
-        self.expenditure_this_tick += effective_cost
-        if reflux_system:
-            reflux_system.capture(effective_cost, str(self.id), "infrastructure")
+        if self.finance_system and self.finance_system.settlement_system and reflux_system:
+            success = self.finance_system.settlement_system.transfer(
+                self, reflux_system, effective_cost, "infrastructure_investment"
+            )
+            if not success:
+                return False
+        else:
+            self._sub_assets(effective_cost)
+            if reflux_system:
+                reflux_system.capture(effective_cost, str(self.id), "infrastructure")
 
+        self.expenditure_this_tick += effective_cost
         self.infrastructure_level += 1
 
         logger.info(

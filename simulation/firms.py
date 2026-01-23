@@ -516,12 +516,12 @@ class Firm(BaseAgent, ILearningAgent):
 
     # Legacy: _pay_maintenance and _pay_taxes removed as they are now in FinanceDepartment
 
-    def distribute_profit(self, agents: Dict[int, Any], current_time: int) -> float:
+    def distribute_profit(self, agents: Dict[int, Any], current_time: int, settlement_system: Any = None) -> float:
         """
         Phase 14-1: Mandatory Dividend Rule.
         Distribute surplus cash to owner if reserves are met.
         """
-        return self.finance.distribute_profit_private(agents, current_time)
+        return self.finance.distribute_profit_private(agents, current_time, settlement_system)
 
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the firm's cash reserves."""

@@ -89,7 +89,7 @@ class TickScheduler:
 
         # Phase 14-1: Firm Profit Distribution (Operation Reflux)
         for firm in state.firms:
-             firm.distribute_profit(state.agents, state.time)
+             firm.distribute_profit(state.agents, state.time, state.settlement_system)
 
         for firm in state.firms:
             firm.hires_last_tick = 0
@@ -413,7 +413,7 @@ class TickScheduler:
         state.government.finalize_tick(state.time)
 
         # Phase 8-B: Distribute Reflux
-        state.reflux_system.distribute(state.households)
+        state.reflux_system.distribute(state.households, state.settlement_system)
 
         # Save all state
         # Persistence manager needs ALL transactions?

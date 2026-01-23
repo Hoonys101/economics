@@ -18,6 +18,20 @@ def mock_config():
     config.BAILOUT_PENALTY_PREMIUM = 0.05
     config.BAILOUT_REPAYMENT_RATIO = 0.5
     config.TICKS_PER_YEAR = 48
+
+    def get_side_effect(key, default=None):
+        mapping = {
+            "economy_params.STARTUP_GRACE_PERIOD_TICKS": 24,
+            "economy_params.ALTMAN_Z_SCORE_THRESHOLD": 1.81,
+            "economy_params.DEBT_RISK_PREMIUM_TIERS": {1.2: 0.05, 0.9: 0.02, 0.6: 0.005},
+            "economy_params.BOND_MATURITY_TICKS": 400,
+            "economy_params.QE_INTERVENTION_YIELD_THRESHOLD": 0.10,
+            "economy_params.BAILOUT_PENALTY_PREMIUM": 0.05,
+            "economy_params.BAILOUT_REPAYMENT_RATIO": 0.5,
+            "economy_params.BAILOUT_COVENANT_RATIO": 0.5
+        }
+        return mapping.get(key, default)
+    config.get.side_effect = get_side_effect
     return config
 
 # Define simple stub classes for entity behavior
@@ -25,6 +39,8 @@ class StubGovernment:
     def __init__(self, assets=10000.0):
         self._assets = assets
         self.debt_to_gdp_ratio = 0.5
+    @property
+    def assets(self): return self._assets
     def get_debt_to_gdp_ratio(self):
         return self.debt_to_gdp_ratio
     def deposit(self, amount): self._assets += amount
@@ -37,6 +53,8 @@ class StubCentralBank:
     def __init__(self, cash=50000.0):
         self._assets = {'cash': cash, 'bonds': []}
         self.base_rate = 0.02
+    @property
+    def assets(self): return self._assets
     def get_base_rate(self):
         return self.base_rate
     def purchase_bonds(self, bond):
@@ -50,6 +68,8 @@ class StubCentralBank:
 class StubBank:
     def __init__(self, assets=100000.0):
         self._assets = assets
+    @property
+    def assets(self): return self._assets
     def deposit(self, amount): self._assets += amount
     def withdraw(self, amount):
         if self.assets < amount:
@@ -69,8 +89,21 @@ def mock_bank():
     return StubBank()
 
 @pytest.fixture
-def finance_system(mock_government, mock_central_bank, mock_bank, mock_config):
-    return FinanceSystem(mock_government, mock_central_bank, mock_bank, mock_config)
+def mock_settlement_system():
+    settlement = Mock()
+    def transfer_side_effect(debit, credit, amount, memo=None, debit_context=None, credit_context=None):
+        try:
+            debit.withdraw(amount)
+            credit.deposit(amount)
+            return True
+        except InsufficientFundsError:
+            return False
+    settlement.transfer.side_effect = transfer_side_effect
+    return settlement
+
+@pytest.fixture
+def finance_system(mock_government, mock_central_bank, mock_bank, mock_config, mock_settlement_system):
+    return FinanceSystem(mock_government, mock_central_bank, mock_bank, mock_config, settlement_system=mock_settlement_system)
 
 class StubFirm:
     def __init__(self):
@@ -92,6 +125,10 @@ class StubFirm:
         self.finance.retained_earnings = 5000.0
         self.finance.profit_history = [1000.0, 1000.0]
         self.has_bailout_loan = False
+
+    @property
+    def assets(self):
+        return self._assets
 
     def get_inventory_value(self):
         return 0.0
@@ -140,6 +177,9 @@ def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank)
     assert mock_government.assets == initial_gov_assets + amount
 
 def test_issue_treasury_bonds_qe(finance_system, mock_government, mock_central_bank):
+    finance_system.fiscal_monitor = Mock()
+    finance_system.fiscal_monitor.get_debt_to_gdp_ratio.return_value = 1.5
+
     mock_government.debt_to_gdp_ratio = 1.5
     # Fix: The yield rate (base + risk premium) must exceed the QE threshold.
     # Original: 0.02 (base) + 0.05 (risk) = 0.07 <= 0.10 (QE threshold) -> No QE
@@ -193,6 +233,9 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
     "money destruction" bug.
     """
     # 1. Setup: Issue a bond that will be bought by the Central Bank via QE
+    finance_system.fiscal_monitor = Mock()
+    finance_system.fiscal_monitor.get_debt_to_gdp_ratio.return_value = 1.5
+
     mock_government.debt_to_gdp_ratio = 1.5
     mock_central_bank.base_rate = 0.06
     mock_central_bank._assets = {"bonds": [], "cash": 10000.0}

@@ -180,14 +180,8 @@ class FinanceSystem(IFinanceSystem):
         if self.settlement_system:
             return self.settlement_system.transfer(debtor, creditor, amount, memo)
         else:
-            # Fallback legacy logic
-            try:
-                debtor.withdraw(amount)
-                creditor.deposit(amount)
-                return True
-            except InsufficientFundsError as e:
-                logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
-                return False
+            logger.error("SETTLEMENT_SYSTEM_MISSING | Cannot perform transfer. SettlementSystem not initialized.")
+            return False
 
     def service_debt(self, current_tick: int) -> None:
         """

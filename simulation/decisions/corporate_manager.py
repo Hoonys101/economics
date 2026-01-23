@@ -101,7 +101,7 @@ class CorporateManager:
         # It assumes L * TFP = Output.
         # But Cobb-Douglas is Y = TFP * L^a * K^b.
         # We need to update hiring logic to inverse the production function properly!
-        hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data)
+        hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data, context.government)
         orders.extend(hiring_orders)
 
         # 7. Secondary Offering (SEO)
@@ -461,7 +461,7 @@ class CorporateManager:
 
         return None
 
-    def _manage_hiring(self, firm: Firm, aggressiveness: float, market_data: Dict) -> List[Order]:
+    def _manage_hiring(self, firm: Firm, aggressiveness: float, market_data: Dict, government: Optional[Any] = None) -> List[Order]:
         """
         Hiring Channel.
         Phase 21: Updated to account for Automation in labor demand.
@@ -542,7 +542,8 @@ class CorporateManager:
                     severance_pay = wage * severance_weeks
 
                     # SoC Refactor: use finance.pay_severance
-                    if firm.finance.pay_severance(emp, severance_pay):
+                    settlement = government.finance_system.settlement_system if government and hasattr(government, 'finance_system') else None
+                    if firm.finance.pay_severance(emp, severance_pay, settlement):
                         emp.quit()
                         self.logger.info(
                             f"LAYOFF | Firm {firm.id} laid off Household {emp.id} with Severance {severance_pay:.2f}. Excess labor.",

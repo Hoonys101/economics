@@ -41,8 +41,11 @@ class LaborManager:
             return LaborResult(hours_worked=0, income_earned=0)
 
         income = self._household.current_wage * hours
-        self._household.adjust_assets(income)
-        self._household.add_labor_income(income)
+        # CRITICAL FIX (WO-116): Removed direct asset modification.
+        # Income is transferred by TransactionProcessor (SettlementSystem) via labor transactions.
+        # self._household.adjust_assets(income)
+        # self._household.add_labor_income(income)
+
         return LaborResult(hours_worked=hours, income_earned=income)
 
     def search_job(self) -> None:

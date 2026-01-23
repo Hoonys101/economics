@@ -144,18 +144,27 @@ class FinanceDepartment:
                 self.firm.total_debt = 0.0
 
             # Bailout repayment
-            self.debit(repayment, "Bailout Repayment")
-            government._add_assets(repayment) # Direct transfer to government
+            success = False
+            if hasattr(government, 'finance_system') and government.finance_system and government.finance_system.settlement_system:
+                success = government.finance_system.settlement_system.transfer(
+                    self.firm, government, repayment, "bailout_repayment"
+                )
+            else:
+                # Fallback
+                self.debit(repayment, "Bailout Repayment")
+                government._add_assets(repayment) # Direct transfer to government
+                success = True
 
-            self.firm.total_debt -= repayment
-            self.current_profit -= repayment
-            self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan to the government.")
+            if success:
+                self.firm.total_debt -= repayment
+                self.current_profit -= repayment
+                self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan to the government.")
 
-            # Check if the loan is fully repaid
-            if self.firm.total_debt <= 0:
-                self.firm.total_debt = 0.0
-                self.firm.has_bailout_loan = False
-                self.firm.logger.info(f"BAILOUT_PAID_OFF | Firm {self.firm.id} has fully repaid its bailout loan.")
+                # Check if the loan is fully repaid
+                if self.firm.total_debt <= 0:
+                    self.firm.total_debt = 0.0
+                    self.firm.has_bailout_loan = False
+                    self.firm.logger.info(f"BAILOUT_PAID_OFF | Firm {self.firm.id} has fully repaid its bailout loan.")
 
         transactions = []
         distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)
@@ -198,7 +207,7 @@ class FinanceDepartment:
 
         return transactions
 
-    def distribute_profit_private(self, agents: Dict[int, Any], current_time: int) -> float:
+    def distribute_profit_private(self, agents: Dict[int, Any], current_time: int, settlement_system: Any = None) -> float:
         """Phase 14-1: Private Owner Dividend"""
         if self.firm.owner_id is None:
             return 0.0
@@ -223,23 +232,33 @@ class FinanceDepartment:
 
         if distributable_cash > 0:
             dividend_amount = distributable_cash
-            self.debit(dividend_amount, "Private Dividend")
-            owner._add_assets(dividend_amount)
+            success = False
 
-            if hasattr(owner, 'income_capital_cumulative'):
-                owner.income_capital_cumulative += dividend_amount
-            if hasattr(owner, 'capital_income_this_tick'):
-                owner.capital_income_this_tick += dividend_amount
+            if settlement_system:
+                success = settlement_system.transfer(self.firm, owner, dividend_amount, "private_dividend")
+            else:
+                self.debit(dividend_amount, "Private Dividend")
+                if hasattr(owner, '_add_assets'):
+                    owner._add_assets(dividend_amount)
+                else:
+                    owner.assets += dividend_amount
+                success = True
 
-            self.retained_earnings -= dividend_amount
-            self.dividends_paid_last_tick += dividend_amount
+            if success:
+                if hasattr(owner, 'income_capital_cumulative'):
+                    owner.income_capital_cumulative += dividend_amount
+                if hasattr(owner, 'capital_income_this_tick'):
+                    owner.capital_income_this_tick += dividend_amount
 
-            if self.firm.logger:
-                self.firm.logger.info(
-                    f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
-                    extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
-                )
-            return dividend_amount
+                self.retained_earnings -= dividend_amount
+                self.dividends_paid_last_tick += dividend_amount
+
+                if self.firm.logger:
+                    self.firm.logger.info(
+                        f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
+                        extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
+                    )
+                return dividend_amount
 
         return 0.0
 
@@ -394,10 +413,20 @@ class FinanceDepartment:
     def set_dividend_rate(self, rate: float) -> None:
         self.firm.dividend_rate = rate
 
-    def pay_severance(self, employee: Household, amount: float) -> bool:
-        if self._cash >= amount:
-            self.debit(amount, "Severance Pay")
-            employee._add_assets(amount)
+    def pay_severance(self, employee: Household, amount: float, settlement_system: Any = None) -> bool:
+        success = False
+        if settlement_system:
+            success = settlement_system.transfer(self.firm, employee, amount, "severance_pay")
+        else:
+            if self._cash >= amount:
+                self.debit(amount, "Severance Pay")
+                if hasattr(employee, '_add_assets'):
+                    employee._add_assets(amount)
+                else:
+                    employee.assets += amount
+                success = True
+
+        if success:
             self.record_expense(amount)
             return True
         return False
