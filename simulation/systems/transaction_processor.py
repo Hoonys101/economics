@@ -66,14 +66,7 @@ class TransactionProcessor(SystemInterface):
                     if tax_amount > 0:
                         settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
                 else:
-                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value + tax_amount)
-                    else: buyer.assets -= (trade_value + tax_amount)
-
-                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
-                    else: seller.assets += trade_value
-
-                    if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
-                    else: government.assets += tax_amount
+                    logger.critical(f"SETTLEMENT_MISSING | Cannot process goods trade for {tx.item_id}")
 
                 government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
 
@@ -82,10 +75,7 @@ class TransactionProcessor(SystemInterface):
                 if settlement:
                     settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
                 else:
-                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
-                    else: buyer.assets -= trade_value
-                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
-                    else: seller.assets += trade_value
+                    logger.critical(f"SETTLEMENT_MISSING | Cannot process stock trade for {tx.item_id}")
             
             elif tx.transaction_type in ["labor", "research_labor"]:
                 # Labor: Apply Income Tax
@@ -107,14 +97,7 @@ class TransactionProcessor(SystemInterface):
                         if tax_amount > 0:
                             settlement.transfer(buyer, government, tax_amount, f"labor_tax_firm:{tx.transaction_type}")
                     else:
-                        if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value + tax_amount)
-                        else: buyer.assets -= (trade_value + tax_amount)
-
-                        if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
-                        else: seller.assets += trade_value
-
-                        if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
-                        else: government.assets += tax_amount
+                        logger.critical(f"SETTLEMENT_MISSING | Cannot process firm-paid labor tax for {tx.transaction_type}")
 
                     government.collect_tax(tax_amount, "income_tax_firm", buyer.id, current_time)
                 else:
@@ -125,14 +108,7 @@ class TransactionProcessor(SystemInterface):
                         if tax_amount > 0:
                             settlement.transfer(buyer, government, tax_amount, f"labor_tax_withheld:{tx.transaction_type}")
                     else:
-                        if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value) # Buyer pays full (net + tax split dest)
-                        else: buyer.assets -= trade_value
-
-                        if hasattr(seller, '_add_assets'): seller._add_assets(net_wage)
-                        else: seller.assets += net_wage
-
-                        if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
-                        else: government.assets += tax_amount
+                        logger.critical(f"SETTLEMENT_MISSING | Cannot process labor tax withholding for {tx.transaction_type}")
 
                     government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
             
@@ -140,10 +116,7 @@ class TransactionProcessor(SystemInterface):
                 if settlement:
                     settlement.transfer(buyer, seller, trade_value, "interest_payment")
                 else:
-                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
-                    else: buyer.assets -= trade_value
-                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
-                    else: seller.assets += trade_value
+                    logger.critical("SETTLEMENT_MISSING | Cannot process interest payment")
 
                 if isinstance(buyer, Firm):
                     buyer.finance.record_expense(trade_value)
@@ -152,10 +125,7 @@ class TransactionProcessor(SystemInterface):
                 if settlement:
                     settlement.transfer(seller, buyer, trade_value, "dividend_payment")
                 else:
-                    if hasattr(seller, '_sub_assets'): seller._sub_assets(trade_value)
-                    else: seller.assets -= trade_value
-                    if hasattr(buyer, '_add_assets'): buyer._add_assets(trade_value)
-                    else: buyer.assets += trade_value
+                    logger.critical("SETTLEMENT_MISSING | Cannot process dividend payment")
 
                 if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
                     buyer.capital_income_this_tick += trade_value
@@ -164,10 +134,7 @@ class TransactionProcessor(SystemInterface):
                 if settlement:
                     settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
                 else:
-                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
-                    else: buyer.assets -= trade_value
-                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
-                    else: seller.assets += trade_value
+                    logger.critical(f"SETTLEMENT_MISSING | Cannot process generic transaction {tx.transaction_type}")
 
             # ==================================================================
             # 2. Meta Logic (Inventory, Employment, Share Registry)

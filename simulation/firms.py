@@ -409,7 +409,7 @@ class Firm(BaseAgent, ILearningAgent):
         )
 
     @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None, settlement_system: Optional[Any] = None) -> None:
         self.age += 1
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_needs"]}
         # SoC Refactor
@@ -429,17 +429,21 @@ class Firm(BaseAgent, ILearningAgent):
 
         # 2. Pay Wages & Holding Costs
         # WO-103 Phase 1: Delegated Holding Cost Calculation
-        holding_cost = self.finance.calculate_and_debit_holding_costs()
+        # Use settlement system if available (via updated finance method, or pass it)
+        # For now, pass settlement_system if we update finance.
+        # But finance.calculate_and_debit_holding_costs() needs update.
+        holding_cost = self.finance.calculate_and_debit_holding_costs(reflux_system, settlement_system)
 
         if holding_cost > 0:
-            if reflux_system:
-                reflux_system.capture(holding_cost, str(self.id), "fixed_cost")
+            # Capture is now handled inside calculate_and_debit_holding_costs if settlement_system is used
+            # But if not, we do it here?
+            # Ideally finance handles it. We'll update finance to do it.
             self.logger.info(
                 f"Paid inventory holding cost: {holding_cost:.2f}",
                 extra={**log_extra, "holding_cost": holding_cost},
             )
 
-        total_wages = self.hr.process_payroll(current_time, government, market_data)
+        total_wages = self.hr.process_payroll(current_time, government, market_data, settlement_system)
         if total_wages > 0:
             self.finance.record_expense(total_wages)
             self.logger.info(
@@ -458,10 +462,15 @@ class Firm(BaseAgent, ILearningAgent):
 
         if marketing_spend > 0:
              # WO-103 Phase 1: Transactional method
-             self.finance.debit(marketing_spend, "Marketing")
+             # Refactor: Use settlement system if available
+             if settlement_system and reflux_system:
+                 settlement_system.transfer(self, reflux_system, marketing_spend, "marketing")
+             else:
+                 self.finance.debit(marketing_spend, "Marketing")
+                 if reflux_system:
+                     reflux_system.capture(marketing_spend, str(self.id), "marketing")
+
              self.finance.record_expense(marketing_spend)
-             if reflux_system:
-                 reflux_system.capture(marketing_spend, str(self.id), "marketing")
 
         self.marketing_budget = marketing_spend
         self.brand_manager.update(marketing_spend, self.productivity_factor / 10.0)
@@ -469,8 +478,8 @@ class Firm(BaseAgent, ILearningAgent):
 
         # 4. Pay Taxes (after all other expenses)
         if government:
-            self.finance.pay_maintenance(government, reflux_system, current_time)
-            self.finance.pay_taxes(government, current_time)
+            self.finance.pay_maintenance(government, reflux_system, current_time, settlement_system)
+            self.finance.pay_taxes(government, current_time, settlement_system)
 
         brand_premium = self.calculate_brand_premium(market_data) if market_data else 0.0
         self.logger.info(

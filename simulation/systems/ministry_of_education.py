@@ -7,7 +7,7 @@ class MinistryOfEducation:
     def __init__(self, config_module: Any):
         self.config_module = config_module
 
-    def run_public_education(self, households: List[Any], government: Any, current_tick: int, reflux_system: Any = None) -> None:
+    def run_public_education(self, households: List[Any], government: Any, current_tick: int, reflux_system: Any = None, settlement_system: Any = None) -> None:
         """
         WO-054: Public Education System Implementation.
         1. Free Basic Education (Level 0 -> 1)
@@ -38,7 +38,14 @@ class MinistryOfEducation:
                 if edu_budget >= cost:
                     agent.education_level = 1
                     edu_budget -= cost
-                    government._sub_assets(cost)
+
+                    if settlement_system and reflux_system:
+                         settlement_system.transfer(government, reflux_system, cost, "edu_basic_grant")
+                    else:
+                         government._sub_assets(cost)
+                         if reflux_system:
+                             reflux_system.capture(cost, str(government.id), "education_services")
+
                     spent_total += cost
 
                     logger.debug(
@@ -57,12 +64,24 @@ class MinistryOfEducation:
                     if edu_budget >= subsidy and agent.assets >= student_share:
                         agent.education_level = next_level
                         edu_budget -= subsidy
-                        government._sub_assets(subsidy)
+
+                        # Govt Subsidy
+                        if settlement_system and reflux_system:
+                             settlement_system.transfer(government, reflux_system, subsidy, "edu_subsidy")
+                        else:
+                             government._sub_assets(subsidy)
+                             if reflux_system:
+                                 reflux_system.capture(subsidy, str(government.id), "education_services")
+
                         spent_total += subsidy
 
-                        agent._sub_assets(student_share)
-                        if reflux_system:
-                            reflux_system.capture(student_share, f"Household_{agent.id}", "education_tuition")
+                        # Student Share
+                        if settlement_system and reflux_system:
+                             settlement_system.transfer(agent, reflux_system, student_share, "edu_tuition")
+                        else:
+                             agent._sub_assets(student_share)
+                             if reflux_system:
+                                 reflux_system.capture(student_share, f"Household_{agent.id}", "education_tuition")
 
                         logger.info(
                             f"EDU_SCHOLARSHIP | Household {agent.id} (Aptitude {agent.aptitude:.2f}) promoted to Level {next_level}. Subsidy: {subsidy:.2f}, Student Share: {student_share:.2f}",
@@ -71,7 +90,15 @@ class MinistryOfEducation:
 
         government.expenditure_this_tick += spent_total
         government.total_money_issued += spent_total
-        if reflux_system:
-            reflux_system.capture(spent_total, str(government.id), "education_services")
+
+        # NOTE: reflux_system.capture(spent_total) was here.
+        # But we now handle transfers inside the loop (or via fallback).
+        # So we should REMOVE the bulk capture if using settlement.
+        # However, for backward compatibility (if no settlement), we added fallback inside loop.
+        # The previous code captured 'spent_total' at end.
+        # So I moved the capture logic inside the loop for fallback case too.
+        # Thus, remove the bulk capture here.
+        # if reflux_system:
+        #    reflux_system.capture(spent_total, str(government.id), "education_services")
 
         government.current_tick_stats["education_spending"] = spent_total

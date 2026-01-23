@@ -32,7 +32,7 @@ class HRDepartment:
 
         return base_wage * actual_skill * halo_modifier
 
-    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]]) -> float:
+    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]], settlement_system: Any = None) -> float:
         """
         Pays wages to employees. Handles insolvency firing if assets are insufficient.
         Returns total wages paid.
@@ -70,26 +70,32 @@ class HRDepartment:
 
                 net_wage = wage - income_tax
 
-                # Transactions
-                self.firm._sub_assets(wage)
-                employee._add_assets(net_wage)
+                # Atomic Transfer 1: Net Wage -> Employee
+                if settlement_system:
+                    settlement_system.transfer(self.firm, employee, net_wage, "wage_net")
+                else:
+                    self.firm._sub_assets(net_wage)
+                    employee._add_assets(net_wage)
 
                 # Track Labor Income
                 if hasattr(employee, "labor_income_this_tick"):
                     employee.labor_income_this_tick += net_wage
 
+                # Atomic Transfer 2: Tax -> Government (Withholding)
                 if income_tax > 0 and government:
-                    government.collect_tax(income_tax, "income_tax", employee.id, current_time)
+                    # government.collect_tax handles settlement if configured
+                    # We pass self.firm as payer (Withholding Agent)
+                    government.collect_tax(income_tax, "income_tax", self.firm, current_time)
                     total_tax_withheld += income_tax
 
                 total_wages += wage
             else:
                 # Insolvency Handling
-                self._handle_insolvency(employee, wage)
+                self._handle_insolvency(employee, wage, settlement_system)
 
         return total_wages
 
-    def _handle_insolvency(self, employee: Household, wage: float):
+    def _handle_insolvency(self, employee: Household, wage: float, settlement_system: Any = None):
         """
         Handles case where firm cannot afford wage.
         Attempts severance pay; if fails, zombie state (unpaid retention).
@@ -97,11 +103,8 @@ class HRDepartment:
         severance_weeks = getattr(self.firm.config_module, "SEVERANCE_PAY_WEEKS", 4)
         severance_pay = wage * severance_weeks
 
-        if self.firm.assets >= severance_pay:
-            # Fire with severance
-            self.firm._sub_assets(severance_pay)
-            employee._add_assets(severance_pay)
-
+        # Delegate to FinanceDepartment which now handles settlement
+        if self.firm.finance.pay_severance(employee, severance_pay, settlement_system):
             self.firm.logger.info(
                 f"SEVERANCE | Firm {self.firm.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
                 extra={"tick": self.firm.decision_engine.context.current_time if hasattr(self.firm.decision_engine, 'context') else 0, "agent_id": self.firm.id, "severance_pay": severance_pay}

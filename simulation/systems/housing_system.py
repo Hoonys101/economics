@@ -25,6 +25,8 @@ class HousingSystem:
         Processes mortgage payments, maintenance costs, rent collection, and eviction/foreclosure checks.
         Consolidated from Simulation._process_housing (Line 1221 in engine.py).
         """
+        settlement = getattr(simulation, 'settlement_system', None)
+
         # 1. Process Bank/Mortgages
         for unit in simulation.real_estate_units:
             if unit.mortgage_id:
@@ -68,15 +70,17 @@ class HousingSystem:
                 owner = simulation.agents.get(unit.owner_id)
                 if owner:
                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
-                    if owner.assets >= cost:
-                        owner._sub_assets(cost)
-                        if simulation.reflux_system:
-                            simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
-                    else:
-                        taken = owner.assets
-                        owner._sub_assets(taken)
-                        if simulation.reflux_system:
-                            simulation.reflux_system.capture(taken, f"{owner.id}", "housing_maintenance")
+                    # Cap cost at owner assets (simple model)
+                    if owner.assets < cost:
+                        cost = owner.assets
+
+                    if cost > 0:
+                        if settlement and simulation.reflux_system:
+                            settlement.transfer(owner, simulation.reflux_system, cost, "housing_maintenance")
+                        else:
+                            owner._sub_assets(cost)
+                            if simulation.reflux_system:
+                                simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:
@@ -89,8 +93,11 @@ class HousingSystem:
                 if tenant and owner and tenant.is_active and owner.is_active:
                     rent = unit.rent_price
                     if tenant.assets >= rent:
-                        tenant._sub_assets(rent)
-                        owner._add_assets(rent)
+                        if settlement:
+                            settlement.transfer(tenant, owner, rent, "rent")
+                        else:
+                            tenant._sub_assets(rent)
+                            owner._add_assets(rent)
                     else:
                         # Eviction due to rent non-payment
                         logger.info(
@@ -156,8 +163,12 @@ class HousingSystem:
                 )
                 
                 if loan_id:
-                    simulation.bank._sub_assets(loan_amount)
-                    buyer._add_assets(loan_amount)
+                    settlement = getattr(simulation, 'settlement_system', None)
+                    if settlement:
+                        settlement.transfer(simulation.bank, buyer, loan_amount, "mortgage_disbursement")
+                    else:
+                        simulation.bank._sub_assets(loan_amount)
+                        buyer._add_assets(loan_amount)
                     unit.mortgage_id = loan_id
                 else:
                     unit.mortgage_id = None
@@ -165,18 +176,45 @@ class HousingSystem:
                 unit.mortgage_id = None
                 
             # 2. Process Funds Transfer
-            buyer._sub_assets(trade_value)
+            settlement = getattr(simulation, 'settlement_system', None)
+            if settlement:
+                settlement.transfer(buyer, seller, trade_value, "housing_purchase")
+            else:
+                buyer._sub_assets(trade_value)
+                seller._add_assets(trade_value)
 
             if isinstance(seller, Government):
-                # The original code called 'record_asset_sale', which doesn't exist on Government.
-                # The intent seems to be to track government income. We'll use the existing
-                # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
+                # Record as revenue
                 seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
-                # Note: collect_tax no longer adds assets! We must add it manually or use SettlementSystem.
-                # Since we are inside HousingSystem legacy logic, we add it here.
-                seller._add_assets(trade_value)
-            else:
-                seller._add_assets(trade_value)
+                # Note: collect_tax handles transfer ONLY if configured with FinanceSystem.
+                # But here we ALREADY transferred via settlement (or manually above).
+                # If we transferred to 'seller' (Government), assets are updated.
+                # collect_tax usually transfers too!
+                # If we transferred manually above, calling collect_tax might double-transfer if government has finance_system.
+                # However, collect_tax expects to PULL from payer.
+                # Here we PUSHED to seller.
+                # So we should NOT call collect_tax logic that transfers.
+                # We just want to record stats.
+                # Government.collect_tax calls finance_system...
+                # This is tricky.
+                # If we used settlement.transfer(buyer, seller), seller (Govt) has funds.
+                # If we call collect_tax, it will try to pull from 'buyer' again.
+                # DOUBLE CHARGE!
+                # Solution: Do NOT call collect_tax for transfer if we already transferred.
+                # Just update stats manually on Government?
+                # Or trust collect_tax to do the transfer, and NOT do it manually above?
+
+                # If seller is Government:
+                # If we rely on collect_tax, it pulls from buyer.
+                # But we have logic `settlement.transfer(buyer, seller, ...)` above which is generic.
+                # The cleanest way:
+                # If seller is Government, call collect_tax INSTEAD of generic transfer?
+                # OR: Use generic transfer, and implement a `record_revenue` method on Government that doesn't transfer.
+                # Government has `revenue_this_tick` and `tax_revenue`.
+                # I'll manually update stats here to avoid double transfer.
+                seller.revenue_this_tick += trade_value
+                seller.current_tick_stats["total_collected"] += trade_value
+                # seller.tax_revenue["asset_sale"] += trade_value # Optional
 
             # 3. Transfer Title
             unit.owner_id = buyer.id

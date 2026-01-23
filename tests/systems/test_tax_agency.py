@@ -53,12 +53,28 @@ class TestTaxAgency(unittest.TestCase):
 
     def test_collect_tax(self):
         mock_gov = MagicMock()
-        mock_gov._assets = 10000
+        mock_gov.assets = 10000
         mock_gov.total_collected_tax = 0
-        # ... other attributes ...
+        mock_gov.revenue_this_tick = 0
+        mock_gov.total_money_destroyed = 0
+        mock_gov.tax_revenue = {}
+        mock_gov.current_tick_stats = {"tax_revenue": {}, "total_collected": 0.0}
 
-        self.tax_agency.collect_tax(mock_gov, 100, "income", 1, 1)
-        self.assertEqual(mock_gov.assets, 10100)
+        # Mock FinanceSystem to simulate successful transfer
+        mock_gov.finance_system = MagicMock()
+        mock_gov.finance_system.collect_corporate_tax.return_value = True
+
+        mock_payer = MagicMock()
+        mock_payer.id = 1
+
+        self.tax_agency.collect_tax(mock_gov, 100, "income", mock_payer, 1)
+
+        # Verify stats updated (assets not updated directly by TaxAgency anymore)
+        self.assertEqual(mock_gov.total_collected_tax, 100)
+        self.assertEqual(mock_gov.current_tick_stats["total_collected"], 100)
+
+        # Verify FinanceSystem interaction
+        mock_gov.finance_system.collect_corporate_tax.assert_called_with(mock_payer, 100)
 
 if __name__ == '__main__':
     unittest.main()

@@ -105,10 +105,8 @@ class InheritanceManager:
                 if settlement:
                     settlement.transfer(government, deceased, proceeds, f"liquidation_stock:{firm_id}")
                 else:
-                    if hasattr(government, '_sub_assets'): government._sub_assets(proceeds)
-                    else: government.assets -= proceeds
-                    if hasattr(deceased, '_add_assets'): deceased._add_assets(proceeds)
-                    else: deceased.assets += proceeds
+                    # WO-116: Fallback removed. Strict enforcement.
+                    logger.critical(f"SETTLEMENT_MISSING | Cannot liquidate stock for {deceased.id}")
 
                 simulation.government.total_money_issued += proceeds # Injection (Bank/Gov Buyout)
 
@@ -153,10 +151,7 @@ class InheritanceManager:
                 if settlement:
                     settlement.transfer(government, deceased, sale_price, f"liquidation_re:{unit.id}")
                 else:
-                    if hasattr(government, '_sub_assets'): government._sub_assets(sale_price)
-                    else: government.assets -= sale_price
-                    if hasattr(deceased, '_add_assets'): deceased._add_assets(sale_price)
-                    else: deceased.assets += sale_price
+                    logger.critical(f"SETTLEMENT_MISSING | Cannot liquidate RE for {deceased.id}")
 
                 simulation.government.total_money_issued += sale_price # Injection
 
@@ -181,10 +176,7 @@ class InheritanceManager:
             if settlement:
                 settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
             else:
-                if hasattr(deceased, '_sub_assets'): deceased._sub_assets(actual_tax_paid)
-                else: deceased.assets -= actual_tax_paid
-                if hasattr(government, '_add_assets'): government._add_assets(actual_tax_paid)
-                else: government.assets += actual_tax_paid
+                 logger.critical(f"SETTLEMENT_MISSING | Cannot pay inheritance tax for {deceased.id}")
 
             simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased.id, simulation.time)
 
@@ -204,8 +196,7 @@ class InheritanceManager:
                 if settlement:
                     settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
                 else:
-                    deceased._sub_assets(surplus)
-                    government._add_assets(surplus)
+                    logger.critical(f"SETTLEMENT_MISSING | Cannot escheat surplus for {deceased.id}")
 
                 simulation.government.collect_tax(surplus, "escheatment", deceased.id, simulation.time)
                 self.logger.info(
@@ -255,8 +246,7 @@ class InheritanceManager:
             if settlement:
                 settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
             else:
-                deceased._sub_assets(cash_share)
-                heir._add_assets(cash_share)
+                logger.critical(f"SETTLEMENT_MISSING | Cannot distribute share to {heir.id}")
             total_distributed += cash_share
 
         # Residual Catch-all (WO-112)
@@ -272,8 +262,7 @@ class InheritanceManager:
              if settlement:
                  settlement.transfer(deceased, government, remainder, "inheritance_residual")
              else:
-                 deceased._sub_assets(remainder)
-                 government._add_assets(remainder)
+                 logger.critical(f"SETTLEMENT_MISSING | Cannot sweep residual for {deceased.id}")
 
              simulation.government.collect_tax(remainder, "inheritance_residual", deceased.id, simulation.time)
              self.logger.info(f"RESIDUAL_CAPTURED | Transferred {remainder:.4f} residual dust to Government.")
