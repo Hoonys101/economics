@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 import logging
+from modules.finance.api import InsufficientFundsError
 
 
 class BaseAgent(ABC):
@@ -46,6 +47,23 @@ class BaseAgent(ABC):
     def _sub_assets(self, amount: float) -> None:
         """[PROTECTED] Decrease assets. Only for SettlementSystem."""
         self._assets -= amount
+
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the entity's account."""
+        if amount > 0:
+            self._add_assets(amount)
+
+    def withdraw(self, amount: float) -> None:
+        """
+        Withdraws a given amount from the entity's account.
+
+        Raises:
+            InsufficientFundsError: If the withdrawal amount exceeds available funds.
+        """
+        if amount > 0:
+            if self.assets < amount:
+                raise InsufficientFundsError(f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+            self._sub_assets(amount)
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""

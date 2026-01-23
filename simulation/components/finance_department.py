@@ -92,9 +92,9 @@ class FinanceDepartment:
         payment = min(self._cash, fee) # Cap at available cash
 
         if payment > 0:
-            self.debit(payment, "Maintenance Fee")
+            # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
+            government.collect_tax(payment, "firm_maintenance", self.firm, current_time)
             self.record_expense(payment)
-            government.collect_tax(payment, "firm_maintenance", self.firm.id, current_time)
 
             self.firm.logger.info(
                 f"Paid maintenance fee: {payment:.2f}",
@@ -112,11 +112,21 @@ class FinanceDepartment:
             payment = min(self._cash, tax_amount) # Cap at available cash
 
             if payment > 0:
-                self.debit(payment, "Corporate Tax")
-                government.collect_tax(payment, "corporate_tax", self.firm.id, current_time)
+                # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
+                government.collect_tax(payment, "corporate_tax", self.firm, current_time)
 
                 after_tax_profit = net_profit - payment
                 self.retained_earnings += after_tax_profit
+                # Note: We do NOT record_expense here because tax is usually considered separate from operating expenses in this model logic,
+                # OR it was already implicitly deducted from 'retained_earnings' calc.
+                # Wait, original code:
+                # self.debit(...)
+                # government.collect_tax(...)
+                # after_tax_profit = net_profit - payment
+                # retained_earnings += after_tax_profit
+
+                # It did NOT call record_expense().
+                # So we are fine.
 
                 self.firm.logger.info(
                     f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}. Retained Earnings increased by {after_tax_profit:.2f}",
@@ -394,8 +404,8 @@ class FinanceDepartment:
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Government, current_time: int) -> bool:
         if self._cash >= amount:
-            self.debit(amount, f"Ad Hoc Tax: {tax_type}")
-            government.collect_tax(amount, tax_type, self.firm.id, current_time)
+            # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
+            government.collect_tax(amount, tax_type, self.firm, current_time)
             self.record_expense(amount)
             return True
         return False

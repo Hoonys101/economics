@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +48,30 @@ class TaxAgency:
         """Calculates corporate tax based on the current rate provided by the Government."""
         return profit * current_corporate_tax_rate if profit > 0 else 0.0
 
-    def collect_tax(self, government, amount, tax_type, source_id, current_tick) -> float:
+    def collect_tax(self, government, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
         """
-        Records tax collection statistics.
-        NOTE: Asset transfer must be handled by SettlementSystem external to this method.
+        Executes tax collection via FinanceSystem and records statistics.
+        payer: IFinancialEntity (Firm, Household, etc.)
         """
         if amount <= 0:
             return 0.0
 
-        # government.assets += amount  <-- REMOVED: Handled by SettlementSystem
+        payer_id = payer.id if hasattr(payer, 'id') else payer
+
+        # Delegate to FinanceSystem for atomic transfer
+        if hasattr(government, 'finance_system') and government.finance_system:
+            if hasattr(payer, 'id'):
+                 success = government.finance_system.collect_corporate_tax(payer, amount)
+                 if not success:
+                      logger.warning(f"TAX_COLLECTION_FAILED | Failed to collect {amount} from {payer_id}")
+                      return 0.0
+            else:
+                 logger.error(f"TAX_COLLECTION_ERROR | Payer {payer} is not an object. Cannot use FinanceSystem.")
+                 return 0.0
+        else:
+            logger.error("TAX_COLLECTION_ERROR | No FinanceSystem linked to Government.")
+            return 0.0
+
         government.total_collected_tax += amount
         government.revenue_this_tick += amount
         government.total_money_destroyed += amount
@@ -64,13 +80,13 @@ class TaxAgency:
         government.current_tick_stats["total_collected"] += amount
 
         logger.info(
-            f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {source_id}",
+            f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {payer_id}",
             extra={
                 "tick": current_tick,
                 "agent_id": government.id,
                 "amount": amount,
                 "tax_type": tax_type,
-                "source_id": source_id,
+                "source_id": payer_id,
                 "tags": ["tax", "revenue"]
             }
         )

@@ -158,9 +158,9 @@ class Government:
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
 
-    def collect_tax(self, amount: float, tax_type: str, source_id: int, current_tick: int):
+    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int):
         """세금을 징수합니다."""
-        return self.tax_agency.collect_tax(self, amount, tax_type, source_id, current_tick)
+        return self.tax_agency.collect_tax(self, amount, tax_type, payer, current_tick)
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -388,24 +388,12 @@ class Government:
 
                 if net_worth > wealth_threshold:
                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
-                    if agent.assets >= tax_amount:
-                        if hasattr(agent, '_sub_assets'):
-                            agent._sub_assets(tax_amount)
-                        else:
-                            agent.assets -= tax_amount
-                        self.collect_tax(tax_amount, "wealth_tax", agent.id, current_tick)
-                        # Note: collect_tax does not add assets anymore.
-                        self._add_assets(tax_amount)
+                    # Check available assets
+                    tax_amount = min(tax_amount, agent.assets)
+
+                    if tax_amount > 0:
+                        self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
                         total_wealth_tax += tax_amount
-                    else:
-                        taken = agent.assets
-                        if hasattr(agent, '_sub_assets'):
-                            agent._sub_assets(taken)
-                        else:
-                            agent.assets = 0
-                        self.collect_tax(taken, "wealth_tax", agent.id, current_tick)
-                        self._add_assets(taken)
-                        total_wealth_tax += taken
 
                 # B. Unemployment Benefit
                 if not agent.is_employed:
@@ -488,11 +476,13 @@ class Government:
         revenue_snapshot["tick"] = current_tick
         revenue_snapshot["total"] = self.current_tick_stats["total_collected"]
 
-        # WO-057 Deficit Spending: Update total_debt based on negative assets
-        if self.assets < 0:
-            self.total_debt = abs(self.assets)
+        # WO-057 Deficit Spending: Update total_debt based on FinanceSystem
+        if self.finance_system:
+             self.total_debt = sum(b.face_value for b in self.finance_system.outstanding_bonds)
+        elif self.assets < 0:
+             self.total_debt = abs(self.assets)
         else:
-            self.total_debt = 0.0
+             self.total_debt = 0.0
 
         self.tax_history.append(revenue_snapshot)
         if len(self.tax_history) > self.history_window_size:

@@ -1,7 +1,8 @@
 from typing import Optional, Dict, Any, cast
 import logging
 
-from simulation.finance.api import ISettlementSystem, IFinancialEntity
+from simulation.finance.api import ISettlementSystem
+from modules.finance.api import IFinancialEntity, InsufficientFundsError
 
 class SettlementSystem(ISettlementSystem):
     """
@@ -39,22 +40,12 @@ class SettlementSystem(ISettlementSystem):
             )
             return False
 
-        # 2. Solvency Check
-        # Note: Some agents (like Government/CentralBank) might have infinite liquidity or negative balance allowance.
-        # However, purely based on IFinancialEntity, we just check assets.
-        # If specific agents can go negative, they should handle it or we need a 'can_afford' check on the agent.
-        # For now, we enforce strict solvency for standard agents.
-        # We can trust that if the agent's logic called this, they *expect* to pay.
-        # But we must verify they *can* pay to prevent negative assets (unless allowed).
-
-        # Assumption: Government/Bank usually have logic to mint or go negative, but BaseAgent assets is float.
-        # If assets < amount, we fail, unless it's a special entity that overrides assets logic (but interface just reads property).
-        # We'll enforce strictly here. If Govt needs to print money, it should happen BEFORE transfer (Minting).
-        # OR: Government is exempt?
-        # Ideally, Government should have a "Treasury" that can be negative or it mints.
-        # Let's check solvency.
-
-        if debit_agent.assets < amount:
+        # 2. Solvency Check & Atomic Operation
+        try:
+            # Withdraw first (this performs solvency check inside for BaseAgent)
+            # For agents that allow negative balance (if any), withdraw implementation should handle it.
+            debit_agent.withdraw(amount)
+        except InsufficientFundsError:
             self.logger.error(
                 f"INSUFFICIENT_FUNDS | Agent {debit_agent.id} (Assets: {debit_agent.assets:.2f}) "
                 f"cannot pay {amount:.2f} to Agent {credit_agent.id}. | Memo: {memo}",
@@ -66,27 +57,30 @@ class SettlementSystem(ISettlementSystem):
                 }
             )
             return False
+        except Exception as e:
+             self.logger.critical(
+                f"WITHDRAW_FAILURE | Agent {debit_agent.id} failed to withdraw {amount}. Error: {e}",
+                extra={"tags": ["settlement", "error"]}
+            )
+             return False
 
-        # 3. Atomic Operation
         try:
-            debit_agent._sub_assets(amount)
-            # Failure point simulation:
-            # raise Exception("Simulated Failure")
-            credit_agent._add_assets(amount)
+            credit_agent.deposit(amount)
         except Exception as e:
             self.logger.critical(
-                f"ATOMICITY_FAILURE | Rolled back transfer of {amount} from {debit_agent.id} to {credit_agent.id}. Error: {e}",
+                f"DEPOSIT_FAILURE | Rolled back transfer of {amount} from {debit_agent.id} to {credit_agent.id}. Error: {e}",
                 extra={"tags": ["settlement", "critical"]}
             )
             # Rollback: Try to add back to debit_agent
             try:
-                debit_agent._add_assets(amount)
+                debit_agent.deposit(amount)
             except Exception as rollback_error:
                 self.logger.critical(
                     f"ROLLBACK_FAILED | SYSTEM CORRUPTED. Agent {debit_agent.id} lost {amount}. Error: {rollback_error}",
                     extra={"tags": ["settlement", "fatal"]}
                 )
             return False
+
 
         # 4. Success Logging
         self.logger.info(
