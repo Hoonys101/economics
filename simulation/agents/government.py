@@ -10,17 +10,17 @@ from typing import Optional
 from simulation.utils.shadow_logger import log_shadow
 from simulation.systems.tax_agency import TaxAgency
 from simulation.systems.ministry_of_education import MinistryOfEducation
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, IFinancialEntity
 
 logger = logging.getLogger(__name__)
 
-class Government:
+class Government(IFinancialEntity):
     """
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
     """
 
     def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None):
-        self.id = id
+        self._id = id
         self._assets = initial_assets
         self.config_module = config_module
         
@@ -109,6 +109,10 @@ class Government:
             f"Government {self.id} initialized with assets: {self.assets}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
+
+    @property
+    def id(self) -> int:
+        return self._id
 
     @property
     def assets(self) -> float:
@@ -294,22 +298,25 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
                 return 0.0
 
-        self._sub_assets(effective_amount)
-        self.total_spent_subsidies += effective_amount
-        self.expenditure_this_tick += effective_amount
-
-        if hasattr(household, '_add_assets'):
-            household._add_assets(effective_amount)
+        # Use SettlementSystem via FinanceSystem
+        success = False
+        if self.finance_system and self.finance_system.settlement_system:
+             if self.finance_system.settlement_system.transfer(self, household, effective_amount, "Household Support"):
+                  success = True
         else:
-            household.assets += effective_amount
+             logger.critical("STRICT_MODE_ERROR | Cannot provide household support. Missing FinanceSystem or SettlementSystem.")
 
-        self.current_tick_stats["welfare_spending"] += effective_amount
+        if success:
+            self.total_spent_subsidies += effective_amount
+            self.expenditure_this_tick += effective_amount
+            self.current_tick_stats["welfare_spending"] += effective_amount
 
-        logger.info(
-            f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
-            extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
-        )
-        return effective_amount
+            logger.info(
+                f"HOUSEHOLD_SUPPORT | Paid {effective_amount:.2f} to {household.id}",
+                extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
+            )
+            return effective_amount
+        return 0.0
 
     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int):
         """Provides a bailout loan to a firm if it's eligible."""
@@ -344,23 +351,6 @@ class Government:
         """
         # Ensure tick flow is reset at the start of government processing
         self.reset_tick_flow()
-
-        # --- Phase 17-5: Leviathan Logic ---
-        # 1. Update Opinion & Make Decision
-        # Note: Opinion is updated by Engine calling update_public_opinion BEFORE this method?
-        # Yes, Plan says engine.py loop will call update_public_opinion -> make_decision -> check_election.
-        # But here in run_welfare_check, we can group them if engine calls this.
-        # Current engine.py calls run_welfare_check.
-        # So I will move the AI calls HERE or keep them in Engine.
-        # The prompt plan says "Update Simulation Engine... Call household.update_political_opinion... government.update_public_opinion... make_policy_decision".
-        # If I put them in Engine, run_welfare_check becomes just "Execute Welfare".
-        # Let's keep run_welfare_check focused on Welfare execution, and let Engine handle the high level "Government Thinking".
-
-        # However, run_welfare_check also did "adjust_fiscal_policy".
-        # I should REMOVE the old `adjust_fiscal_policy` call here as AI replaces it.
-        # I removed it below.
-
-        # ---------------------------------------
 
         # 1. Calculate Survival Cost (Dynamic)
         survival_cost = self.get_survival_cost(market_data)
@@ -435,11 +425,8 @@ class Government:
         """인프라에 투자하여 전체 생산성을 향상시킵니다."""
         cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
         
-        # Apply AI Multiplier? Maybe firm subsidy multiplier applies here too?
-        # Let's say BLUE party loves infrastructure.
-        effective_cost = cost # Cost is fixed, but decision to buy depends on funds
+        effective_cost = cost
 
-        # If multiplier < 1.0 (Austerity), maybe we skip investment?
         if self.firm_subsidy_budget_multiplier < 0.8:
             return False
 
@@ -450,23 +437,28 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
                 return False
 
-        self._sub_assets(effective_cost)
-        self.expenditure_this_tick += effective_cost
-        if reflux_system:
-            reflux_system.capture(effective_cost, str(self.id), "infrastructure")
+        success = False
+        if self.finance_system and self.finance_system.settlement_system and reflux_system:
+             if self.finance_system.settlement_system.transfer(self, reflux_system, effective_cost, "Infrastructure Investment"):
+                  success = True
+        else:
+             logger.critical("STRICT_MODE_ERROR | Cannot invest in infrastructure. Missing FinanceSystem, SettlementSystem or RefluxSystem.")
 
-        self.infrastructure_level += 1
+        if success:
+            self.expenditure_this_tick += effective_cost
+            self.infrastructure_level += 1
 
-        logger.info(
-            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Cost: {effective_cost}",
-            extra={
-                "tick": current_tick,
-                "agent_id": self.id,
-                "level": self.infrastructure_level,
-                "tags": ["investment", "infrastructure"]
-            }
-        )
-        return True
+            logger.info(
+                f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Cost: {effective_cost}",
+                extra={
+                    "tick": current_tick,
+                    "agent_id": self.id,
+                    "level": self.infrastructure_level,
+                    "tags": ["investment", "infrastructure"]
+                }
+            )
+            return True
+        return False
 
     def finalize_tick(self, current_tick: int):
         """

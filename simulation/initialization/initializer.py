@@ -91,6 +91,9 @@ class SimulationInitializer(SimulationInitializerInterface):
             repository=self.repository
         )
 
+        # Initialize SettlementSystem EARLY (Critical for FinanceSystem and Agents)
+        sim.settlement_system = SettlementSystem(logger=self.logger)
+
         # 2. Populate the shell with all its components
         sim.households = self.households
         sim.firms = self.firms
@@ -126,6 +129,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             config_module=self.config
         )
 
+        # Now FinanceSystem can receive the initialized settlement_system
         sim.finance_system = FinanceSystem(
             government=sim.government,
             central_bank=sim.central_bank,
@@ -189,20 +193,42 @@ class SimulationInitializer(SimulationInitializerInterface):
                 if "housing" in sim.markets:
                     sim.markets["housing"].place_order(sell_order, sim.time)
 
+        # Initialize RefluxSystem EARLY to be available for updates
+        sim.reflux_system = EconomicRefluxSystem()
+
+        # Initialize TechnologyManager early too if needed
+        sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger)
+
+        # Inject Settlement System into Agents AND update needs
         for agent in sim.households + sim.firms:
-            agent.update_needs(sim.time)
-            agent.decision_engine.markets = sim.markets
-            agent.decision_engine.goods_data = self.goods_data
+            # 1. Inject SettlementSystem
+            agent.settlement_system = sim.settlement_system
             if isinstance(agent, Firm):
                 agent.config_module = self.config
+                if hasattr(agent, 'finance'):
+                    agent.finance.settlement_system = sim.settlement_system
+
+            agent.decision_engine.markets = sim.markets
+            agent.decision_engine.goods_data = self.goods_data
+
+            # 2. Update Needs (with necessary systems passed)
+            # Firm.update_needs requires reflux_system for strict mode payments
+            if isinstance(agent, Firm):
+                agent.update_needs(
+                    sim.time,
+                    government=sim.government,
+                    reflux_system=sim.reflux_system,
+                    technology_manager=sim.technology_manager
+                )
+            else:
+                agent.update_needs(sim.time)
 
         sim.inequality_tracker = InequalityTracker(config_module=self.config)
         sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)
-        # Initialize with a combined list copy to prevent aliasing sim.households
-        # Note: New agents must be explicitly added to this list by lifecycle managers.
+
         sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
         sim.ma_manager = MAManager(sim, self.config)
-        sim.reflux_system = EconomicRefluxSystem()
+
         sim.demographic_manager = DemographicManager(config_module=self.config)
         sim.immigration_manager = ImmigrationManager(config_module=self.config)
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
@@ -213,9 +239,15 @@ class SimulationInitializer(SimulationInitializerInterface):
             repository=self.repository
         )
         sim.firm_system = FirmSystem(config_module=self.config)
-        sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger)
+        # technology_manager already initialized
 
-        Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
+        # Inject initial liquidity using SettlementSystem and CentralBank
+        Bootstrapper.inject_initial_liquidity(
+            sim.firms,
+            self.config,
+            sim.settlement_system,
+            sim.central_bank
+        )
         Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
@@ -235,7 +267,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.social_system = SocialSystem(self.config)
         sim.event_system = EventSystem(self.config)
         sim.sensory_system = SensorySystem(self.config)
-        sim.settlement_system = SettlementSystem(logger=self.logger)
+        # sim.settlement_system was already initialized at the top
         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 

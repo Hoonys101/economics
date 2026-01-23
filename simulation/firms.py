@@ -346,7 +346,8 @@ class Firm(BaseAgent, ILearningAgent):
         external_orders = []
         for order in decisions:
             if order.market_id == "internal":
-                self._execute_internal_order(order, government, current_time)
+                # WO-116: Pass reflux_system to internal order execution
+                self._execute_internal_order(order, government, current_time, reflux_system)
             else:
                 external_orders.append(order)
 
@@ -366,7 +367,7 @@ class Firm(BaseAgent, ILearningAgent):
         )
         return external_orders, tactic
 
-    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int) -> None:
+    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int, reflux_system: Optional[Any] = None) -> None:
         """Executes internal orders (state modifications) received from the Decision Engine."""
         if order.order_type == "SET_TARGET":
             self.production_target = order.quantity
@@ -374,7 +375,7 @@ class Firm(BaseAgent, ILearningAgent):
 
         elif order.order_type == "INVEST_AUTOMATION":
             spend = order.quantity
-            if self.finance.invest_in_automation(spend):
+            if self.finance.invest_in_automation(spend, reflux_system):
                 cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
                 if cost_per_pct > 0:
                     gained_a = (spend / cost_per_pct) / 100.0
@@ -389,12 +390,12 @@ class Firm(BaseAgent, ILearningAgent):
 
         elif order.order_type == "INVEST_RD":
             budget = order.quantity
-            if self.finance.invest_in_rd(budget):
+            if self.finance.invest_in_rd(budget, reflux_system):
                 self._execute_rd_outcome(budget, current_time)
 
         elif order.order_type == "INVEST_CAPEX":
             budget = order.quantity
-            if self.finance.invest_in_capex(budget):
+            if self.finance.invest_in_capex(budget, reflux_system):
                 efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
                 added_capital = budget * efficiency
                 self.production.add_capital(added_capital)
@@ -511,11 +512,15 @@ class Firm(BaseAgent, ILearningAgent):
 
         # 2. Pay Wages & Holding Costs
         # WO-103 Phase 1: Delegated Holding Cost Calculation
-        holding_cost = self.finance.calculate_and_debit_holding_costs()
+        holding_cost = self.finance.calculate_and_debit_holding_costs(reflux_system)
 
         if holding_cost > 0:
             if reflux_system:
-                reflux_system.capture(holding_cost, str(self.id), "fixed_cost")
+                # Capture is now redundant if calculate_and_debit_holding_costs transfers to Reflux
+                # reflux_system.capture(holding_cost, str(self.id), "fixed_cost")
+                # But to maintain logging if finance doesn't handle logging fully?
+                # Finance logs record_expense.
+                pass
             self.logger.info(
                 f"Paid inventory holding cost: {holding_cost:.2f}",
                 extra={**log_extra, "holding_cost": holding_cost},
@@ -540,10 +545,7 @@ class Firm(BaseAgent, ILearningAgent):
 
         if marketing_spend > 0:
              # WO-103 Phase 1: Transactional method
-             self.finance.debit(marketing_spend, "Marketing")
-             self.finance.record_expense(marketing_spend)
-             if reflux_system:
-                 reflux_system.capture(marketing_spend, str(self.id), "marketing")
+             self.finance.invest_in_marketing(marketing_spend, reflux_system)
 
         self.marketing_budget = marketing_spend
         self.brand_manager.update(marketing_spend, self.productivity_factor / 10.0)

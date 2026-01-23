@@ -1,22 +1,25 @@
 import logging
 from typing import Any, List, Optional, Dict
 import numpy as np
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, IFinancialEntity
 
 logger = logging.getLogger(__name__)
 
-class CentralBank:
+class CentralBank(IFinancialEntity):
     """
     Phase 10: Central Bank Agent.
     Implements Taylor Rule to dynamically adjust interest rates.
     """
 
-    def __init__(self, tracker: Any, config_module: Any):
+    def __init__(self, tracker: Any, config_module: Any, id: int = -200):
+        # Default ID -200 for Central Bank
+        self._id = id
         self.tracker = tracker
         self.config_module = config_module
 
         # Balance Sheet
-        self.assets: Dict[str, Any] = {"bonds": [], "cash": 0.0}
+        # Renamed from assets to balance_sheet to avoid conflict with IFinancialEntity.assets
+        self.balance_sheet: Dict[str, Any] = {"bonds": [], "cash": 0.0}
 
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
@@ -36,15 +39,24 @@ class CentralBank:
             extra={"tick": 0, "tags": ["central_bank", "init"]}
         )
 
+    @property
+    def id(self) -> int:
+        return self._id
+
+    @property
+    def assets(self) -> float:
+        """Returns the cash balance (Reserves)."""
+        return self.balance_sheet.get('cash', 0.0)
+
     def purchase_bonds(self, bond: Any) -> None:
         """
         Purchases government bonds, adding them to the Central Bank's balance sheet.
         This is a key part of Quantitative Easing (QE).
         """
-        self.assets["bonds"].append(bond)
+        self.balance_sheet["bonds"].append(bond)
         logger.info(
             f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}. "
-            f"Total bonds held: {len(self.assets['bonds'])}",
+            f"Total bonds held: {len(self.balance_sheet['bonds'])}",
             extra={"tags": ["central_bank", "qe"]}
         )
 
@@ -163,7 +175,7 @@ class CentralBank:
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
         if amount > 0:
-            self.assets['cash'] = self.assets.get('cash', 0) + amount
+            self.balance_sheet['cash'] = self.balance_sheet.get('cash', 0) + amount
 
     def withdraw(self, amount: float) -> None:
         """
@@ -171,7 +183,7 @@ class CentralBank:
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
         """
         if amount > 0:
-            current_cash = self.assets.get('cash', 0)
+            current_cash = self.balance_sheet.get('cash', 0)
             # Central Bank can withdraw (create money) even if it results in negative cash
             # This represents expansion of the monetary base.
-            self.assets['cash'] = current_cash - amount
+            self.balance_sheet['cash'] = current_cash - amount

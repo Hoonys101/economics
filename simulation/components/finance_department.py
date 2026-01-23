@@ -3,13 +3,14 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 from collections import deque
 from simulation.models import Transaction
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, IFinancialEntity
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.core_agents import Household
     from simulation.systems.reflux_system import EconomicRefluxSystem
     from simulation.agents.government import Government
+    from simulation.systems.settlement_system import SettlementSystem
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +19,15 @@ class FinanceDepartment:
     Manages assets, maintenance fees, corporate taxes, dividend distribution, and tracks financial metrics.
     Centralized Asset Management (WO-103 Phase 1).
     """
-    def __init__(self, firm: Firm, config_module: Any, initial_capital: float = 0.0):
+    def __init__(self, firm: Firm, config_module: Any, initial_capital: float = 0.0, settlement_system: Optional[SettlementSystem] = None):
         self.firm = firm
         self.config_module = config_module
 
         # Centralized Assets (WO-103 Phase 1)
         self._cash: float = initial_capital
+
+        # Dependency Injection
+        self.settlement_system = settlement_system
 
         # Financial State
         self.retained_earnings: float = 0.0
@@ -52,27 +56,30 @@ class FinanceDepartment:
         return self._cash
 
     def credit(self, amount: float, description: str = "") -> None:
-        """Adds funds to the firm's cash reserves."""
-        # Unchecked credit. In some scenarios (correction) negative credit might be theoretically possible
-        # but generally discouraged. We accept it to handle external 'assets' property setters robustly.
+        """
+        Adds funds to the firm's cash reserves.
+        Should ONLY be called by SettlementSystem via Firm.deposit().
+        """
         self._cash += amount
 
     def debit(self, amount: float, description: str = "") -> None:
         """
         Deducts funds from the firm's cash reserves.
-        Allows negative balance (insolvency) to be tracked rather than crashing,
-        but caller should generally check funds first.
+        Should ONLY be called by SettlementSystem via Firm.withdraw().
         """
         self._cash -= amount
 
-    def calculate_and_debit_holding_costs(self) -> float:
+    def calculate_and_debit_holding_costs(self, reflux_system: Optional[IFinancialEntity] = None) -> float:
         """Calculates and pays inventory holding costs."""
         inventory_value = self.get_inventory_value()
         holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
 
         if holding_cost > 0:
-            self.debit(holding_cost, "Inventory Holding Cost")
-            self.record_expense(holding_cost)
+            if self.settlement_system and reflux_system:
+                if self.settlement_system.transfer(self.firm, reflux_system, holding_cost, "Inventory Holding Cost"):
+                     self.record_expense(holding_cost)
+            else:
+                 logger.critical(f"STRICT_MODE_ERROR | Cannot pay holding cost. SettlementSystem or RefluxSystem missing. SS={bool(self.settlement_system)}, Reflux={bool(reflux_system)}")
 
         return holding_cost
 
@@ -93,6 +100,7 @@ class FinanceDepartment:
 
         if payment > 0:
             # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
+            # Government.collect_tax uses SettlementSystem
             government.collect_tax(payment, "firm_maintenance", self.firm, current_time)
             self.record_expense(payment)
 
@@ -117,16 +125,6 @@ class FinanceDepartment:
 
                 after_tax_profit = net_profit - payment
                 self.retained_earnings += after_tax_profit
-                # Note: We do NOT record_expense here because tax is usually considered separate from operating expenses in this model logic,
-                # OR it was already implicitly deducted from 'retained_earnings' calc.
-                # Wait, original code:
-                # self.debit(...)
-                # government.collect_tax(...)
-                # after_tax_profit = net_profit - payment
-                # retained_earnings += after_tax_profit
-
-                # It did NOT call record_expense().
-                # So we are fine.
 
                 self.firm.logger.info(
                     f"Paid corporate tax: {payment:.2f} on profit {net_profit:.2f}. Retained Earnings increased by {after_tax_profit:.2f}",
@@ -143,13 +141,13 @@ class FinanceDepartment:
             if not hasattr(self.firm, 'total_debt'):
                 self.firm.total_debt = 0.0
 
-            # Bailout repayment
-            self.debit(repayment, "Bailout Repayment")
-            government._add_assets(repayment) # Direct transfer to government
-
-            self.firm.total_debt -= repayment
-            self.current_profit -= repayment
-            self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan to the government.")
+            if self.settlement_system:
+                if self.settlement_system.transfer(self.firm, government, repayment, "Bailout Repayment"):
+                     self.firm.total_debt -= repayment
+                     self.current_profit -= repayment
+                     self.firm.logger.info(f"BAILOUT_REPAYMENT | Firm {self.firm.id} repaid {repayment:.2f} of its bailout loan to the government.")
+            else:
+                logger.critical("STRICT_MODE_ERROR | SettlementSystem missing for Bailout Repayment.")
 
             # Check if the loan is fully repaid
             if self.firm.total_debt <= 0:
@@ -168,9 +166,7 @@ class FinanceDepartment:
                 shares = household.shares_owned.get(self.firm.id, 0.0)
                 if shares > 0:
                     dividend_amount = distributable_profit * (shares / self.firm.total_shares)
-                    # NOTE: Dividends are paid via TransactionProcessor normally.
-                    # TransactionProcessor sees "dividend" and does: seller.assets -= trade_value.
-                    # Since seller.assets will delegate to finance.debit, this works.
+                    # Transactions are processed by TransactionProcessor which uses SettlementSystem
                     transactions.append(
                         Transaction(
                             buyer_id=household.id,
@@ -223,23 +219,28 @@ class FinanceDepartment:
 
         if distributable_cash > 0:
             dividend_amount = distributable_cash
-            self.debit(dividend_amount, "Private Dividend")
-            owner._add_assets(dividend_amount)
 
-            if hasattr(owner, 'income_capital_cumulative'):
-                owner.income_capital_cumulative += dividend_amount
-            if hasattr(owner, 'capital_income_this_tick'):
-                owner.capital_income_this_tick += dividend_amount
+            success = False
+            if self.settlement_system:
+                success = self.settlement_system.transfer(self.firm, owner, dividend_amount, "Private Dividend")
+            else:
+                 logger.critical("STRICT_MODE_ERROR | SettlementSystem missing for Private Dividend.")
 
-            self.retained_earnings -= dividend_amount
-            self.dividends_paid_last_tick += dividend_amount
+            if success:
+                if hasattr(owner, 'income_capital_cumulative'):
+                    owner.income_capital_cumulative += dividend_amount
+                if hasattr(owner, 'capital_income_this_tick'):
+                    owner.capital_income_this_tick += dividend_amount
 
-            if self.firm.logger:
-                self.firm.logger.info(
-                    f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
-                    extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
-                )
-            return dividend_amount
+                self.retained_earnings -= dividend_amount
+                self.dividends_paid_last_tick += dividend_amount
+
+                if self.firm.logger:
+                    self.firm.logger.info(
+                        f"DIVIDEND | Firm {self.firm.id} -> Household {self.firm.owner_id} : ${dividend_amount:.2f}",
+                        extra={"tick": current_time, "event": "DIVIDEND", "amount": dividend_amount}
+                    )
+                return dividend_amount
 
         return 0.0
 
@@ -372,34 +373,51 @@ class FinanceDepartment:
         """Returns the current assets (cash) of the firm."""
         return self._cash
 
-    def invest_in_automation(self, amount: float) -> bool:
-        if self._cash >= amount:
-            self.debit(amount, "Automation Investment")
-            return True
+    def invest_in_automation(self, amount: float, reflux_system: Optional[IFinancialEntity] = None) -> bool:
+        if self.settlement_system and reflux_system:
+             if self.settlement_system.transfer(self.firm, reflux_system, amount, "Automation Investment"):
+                  return True
+        else:
+             logger.critical(f"STRICT_MODE_ERROR | Cannot invest in automation. Missing SS or Reflux.")
         return False
 
-    def invest_in_rd(self, amount: float) -> bool:
-        if self._cash >= amount:
-            self.debit(amount, "R&D Investment")
-            self.record_expense(amount)
-            return True
+    def invest_in_rd(self, amount: float, reflux_system: Optional[IFinancialEntity] = None) -> bool:
+        if self.settlement_system and reflux_system:
+             if self.settlement_system.transfer(self.firm, reflux_system, amount, "R&D Investment"):
+                 self.record_expense(amount)
+                 return True
+        else:
+             logger.critical(f"STRICT_MODE_ERROR | Cannot invest in R&D. Missing SS or Reflux.")
         return False
 
-    def invest_in_capex(self, amount: float) -> bool:
-        if self._cash >= amount:
-            self.debit(amount, "CAPEX")
-            return True
+    def invest_in_capex(self, amount: float, reflux_system: Optional[IFinancialEntity] = None) -> bool:
+        if self.settlement_system and reflux_system:
+             if self.settlement_system.transfer(self.firm, reflux_system, amount, "CAPEX"):
+                 return True
+        else:
+             logger.critical(f"STRICT_MODE_ERROR | Cannot invest in CAPEX. Missing SS or Reflux.")
+        return False
+
+    def invest_in_marketing(self, amount: float, reflux_system: Optional[IFinancialEntity] = None) -> bool:
+        """Executes marketing spending."""
+        if self.settlement_system and reflux_system:
+             if self.settlement_system.transfer(self.firm, reflux_system, amount, "Marketing"):
+                 self.record_expense(amount)
+                 return True
+        else:
+             logger.critical(f"STRICT_MODE_ERROR | Cannot invest in Marketing. Missing SS or Reflux.")
         return False
 
     def set_dividend_rate(self, rate: float) -> None:
         self.firm.dividend_rate = rate
 
     def pay_severance(self, employee: Household, amount: float) -> bool:
-        if self._cash >= amount:
-            self.debit(amount, "Severance Pay")
-            employee._add_assets(amount)
-            self.record_expense(amount)
-            return True
+        if self.settlement_system:
+             if self.settlement_system.transfer(self.firm, employee, amount, "Severance Pay"):
+                 self.record_expense(amount)
+                 return True
+        else:
+             logger.critical(f"STRICT_MODE_ERROR | Cannot pay severance. Missing SS.")
         return False
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Government, current_time: int) -> bool:

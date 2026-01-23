@@ -46,7 +46,7 @@ class Bank(IFinancialEntity):
     """
 
     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager):
-        self.id = id
+        self._id = id
         self._assets = initial_assets # Reserves
         self.config_manager = config_manager
 
@@ -69,6 +69,10 @@ class Bank(IFinancialEntity):
             f"Bank {self.id} initialized. Assets: {self.assets:.2f}, Base Rate: {self.base_rate:.2%}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
         )
+
+    @property
+    def id(self) -> int:
+        return self._id
 
     @property
     def assets(self) -> float:

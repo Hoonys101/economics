@@ -20,6 +20,9 @@ class FinanceSystem(IFinanceSystem):
         self.outstanding_bonds: List[BondDTO] = []
         self.fiscal_monitor = FiscalMonitor()
 
+        if not self.settlement_system:
+            logger.warning("FinanceSystem initialized without SettlementSystem. Strict mode transfers will fail.")
+
     def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
         """Evaluates a firm's solvency to determine bailout eligibility."""
         startup_grace_period = self.config_module.get("economy_params.STARTUP_GRACE_PERIOD_TICKS", 24)
@@ -173,21 +176,19 @@ class FinanceSystem(IFinanceSystem):
     def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float, memo: str = "FinanceSystem Transfer") -> bool:
         """
         Atomically handles the movement of funds using SettlementSystem.
+        Strict Mode: Fails if SettlementSystem is missing.
         """
         if amount <= 0:
             return True
 
         if self.settlement_system:
             return self.settlement_system.transfer(debtor, creditor, amount, memo)
-        else:
-            # Fallback legacy logic
-            try:
-                debtor.withdraw(amount)
-                creditor.deposit(amount)
-                return True
-            except InsufficientFundsError as e:
-                logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
-                return False
+
+        logger.critical(
+            f"TRANSFER_FAILED | SettlementSystem not available for transfer of {amount:.2f} from {debtor.id} to {creditor.id}. Strict Mode enforced.",
+            extra={"tags": ["finance_system", "strict_mode_error"]}
+        )
+        return False
 
     def service_debt(self, current_tick: int) -> None:
         """
