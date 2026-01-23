@@ -21,6 +21,10 @@
       "5173331688343789029": {
         "title": "WO-113-Sovereign-Debt",
         "initial_mission": "Phase 26.5: Sovereign Debt & Corporate Finance 시스템을 구현하라. | 1. `design/specs/Phase26-Sovereign-Debt-Spec.md`와 `design/work_orders/WO-113-Sovereign-Debt.md`를 필독하라. | 2. `FiscalMonitor`를 구현하여 정부의 재정 건전성을 모니터링하라. | 3. `FinanceSystem`에 국채 발행(`issue_treasury_bonds`)과 법인세 징수(`collect_corporate_tax`) 로직을 구현하되, 반드시 `SettlementSystem`을 사용해 원자적으로 처리하라. | 4. `Government` 에이전트에서 직접적인 자산 수정을 모두 제거하고 `FinanceSystem`에 위임하라. | 5. '실무자 보고서'에 구현 중 발견한 특이사항을 기록하라."
+      },
+      "2513104936953701906": {
+        "title": "WO-114_DTO_Purity_Gate_Completion",
+        "initial_mission": "Work Order WO-114-DTO-Purity-Gate-Completion.md에 따라 DTO Purity Gate 리팩토링을 완료하라. | 1. 모든 의사결정 엔진이 context.state와 context.config만 사용하도록 전환. | 2. 에이전트 인스턴스 직접 참조 제거. | 3. 단위 테스트 수정 및 Purity Gate 검증 테스트 추가. | 작업 완료 후 실무자 보고서를 제출하라."
       }
     },
     "completed_sessions": {
