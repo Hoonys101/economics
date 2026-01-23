@@ -13,6 +13,10 @@
       "536275271873576648": {
         "title": "AUDIT-STRUCTURAL-V2",
         "initial_mission": "너는 시니어 시스템 아키텍트이다. 'design/specs/AUDIT_SPEC_STRUCTURAL.md'를 기반으로 SoC 원칙 준수 여부를 감사하라. | 1. 800라인 이상의 God Class 후보를 식별하라. | 2. `make_decision` 호출부에서 DTO가 아닌 에이전트 인스턴스(self)를 직접 전달하는 'Leaky Abstraction' 지점을 검색하라. | 3. `tick_scheduler.py`가 Sacred Sequence를 준수하는지 검증하라. | 4. 결과를 'design/gemini_output/audit_structural_v2.md'에 보고하라. | 구조적 결함은 실무자 보고서에 상세히 기술하라."
+      },
+      "6487612405285359418": {
+        "title": "WO-112-Settlement-System-Implementation",
+        "initial_mission": "경제 엔진의 무결성을 회복하기 위한 'SettlementSystem'을 구현하고 전체 코드를 리팩토링하라. | 1. `design/specs/ECONOMIC_PURITY_REFORMS_SPEC.md`와 `design/work_orders/WO-112-Settlement-System-Spec.md`를 필독하라. | 2. 모든 에이전트의 `assets`를 `_assets`로 캡슐화하고 외부 수정을 차단하라. | 3. `SettlementSystem`을 통해 모든 자산 이전을 원자적으로 통합하라 (TransactionProcessor, InheritanceManager, Government 등). | 4. 상속 시 발생하는 소수점 잔차를 국고로 귀속시켜 증발을 막아라. | 5. 작업 중 발견한 기술적 제약이나 추가 부채는 '실무자 보고서'에 상세히 기록하라. | **주의**: 기존 테스트 코드가 `agent.assets +=`를 사용하고 있다면 이를 시스템 호출로 수정해야 한다."
       }
     },
     "completed_sessions": {

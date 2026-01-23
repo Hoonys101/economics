@@ -1,0 +1,2355 @@
+diff --git a/communications/insights/WO-112-settlement-insights.md b/communications/insights/WO-112-settlement-insights.md
+new file mode 100644
+index 0000000..bdd218d
+--- /dev/null
++++ b/communications/insights/WO-112-settlement-insights.md
+@@ -0,0 +1,24 @@
++# WO-112 Settlement System Insights
++
++## Summary
++The `SettlementSystem` has been successfully implemented to enforce the Zero-Sum principle and atomic transactions. Direct modification of `agent.assets` is now blocked via property encapsulation, requiring the use of `_add_assets` / `_sub_assets` (protected) or `SettlementSystem.transfer` (public).
++
++## Key Changes
++1.  **Encapsulation**: `BaseAgent`, `Household`, `Firm`, `Government`, and `Bank` now use `_assets` for storage and expose a read-only `assets` property.
++2.  **Settlement System**: A centralized `SettlementSystem` handles transfers, ensuring atomicity and logging.
++3.  **Refactoring**:
++    -   `TransactionProcessor` now uses `SettlementSystem` for trade and tax.
++    -   `InheritanceManager` uses `SettlementSystem` and captures rounding residuals to Government.
++    -   `FinanceSystem` (Bonds/Bailouts) now delegates to `SettlementSystem`.
++    -   Legacy systems (`HousingSystem`, `Bootstrapper`, `DemographicManager`) were updated to use protected methods instead of direct assignment.
++
++## Technical Debts & Future Work
++1.  **Legacy Bypasses**: Several systems (`HousingSystem`, `Bootstrapper`) use `_add_assets` / `_sub_assets` directly instead of injecting `SettlementSystem`. This reduces auditability.
++    -   *Recommendation*: Inject `SettlementSystem` into all systems via `SimulationState` or constructor.
++2.  **TaxAgency**: `collect_tax` logic was split. Asset transfer happens via `SettlementSystem` (or manual `_add`), and `collect_tax` only records statistics. This split responsibility can be error-prone if the transfer is forgotten.
++    -   *Recommendation*: Make `TaxAgency` a full system that handles both transfer and recording via `SettlementSystem`.
++3.  **Firm Initialization**: `Firm` initialization logic regarding `FinanceDepartment` and `BaseAgent` assets was complex and prone to desynchronization. It has been patched but needs simplification.
++
++## Verification
++-   `scripts/audit_zero_sum.py` passes, confirming Money Supply integrity and Reflux System capture.
++-   Key tests (`test_fiscal_policy.py`, `test_double_entry.py`) pass.
+diff --git a/design/TECH_DEBT_LEDGER.md b/design/TECH_DEBT_LEDGER.md
+index c6e5aa1..887ec4d 100644
+--- a/design/TECH_DEBT_LEDGER.md
++++ b/design/TECH_DEBT_LEDGER.md
+@@ -70,8 +70,8 @@
+ 
+ | ID | Date | Description | Remediation Plan | Impact | Status |
+ |---|---|---|---|---|---|
+-| **TD-101** | 2026-01-23 | **Shadow Economy (Direct Mutation)** | Implement `FinanceSystem.atomic_transfer` and ban `assets +=` | Zero-sum violation / Audit blindness | **HIGH_PRIORITY** |
+-| **TD-102** | 2026-01-23 | **Residual Evaporation (Inheritance Leak)** | Implement Remainder Tracking in `InheritanceManager` | Systemic Deflation / Float Leak | **ACTUAL_LEAK** |
++| **TD-101** | 2026-01-23 | **Shadow Economy (Direct Mutation)** | Implement `SettlementSystem` and ban `assets +=` | Zero-sum violation / Audit blindness | **RESOLVED** (WO-112) |
++| **TD-102** | 2026-01-23 | **Residual Evaporation (Inheritance Leak)** | Implemented Residual Catch-all in `InheritanceManager` | Systemic Deflation / Float Leak | **RESOLVED** (WO-112) |
+ | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
+ | **TD-104** | 2026-01-23 | **Bank Interface Ghosting** | Formalize `IBankService` Protocol in `modules/finance/api.py` | Implementation/Design Gap | **PARITY_ERROR** |
+ 
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index 68b90e0..4708274 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
+ class FinanceSystem(IFinanceSystem):
+     """Manages sovereign debt, corporate bailouts, and solvency checks."""
+ 
+-    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: any):
++    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: any, settlement_system: any = None):
+         self.government = government
+         self.central_bank = central_bank
+         self.bank = bank
+         self.config_module = config_module
++        self.settlement_system = settlement_system
+         self.outstanding_bonds: List[BondDTO] = []
+ 
+     def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+@@ -155,26 +156,22 @@ class FinanceSystem(IFinanceSystem):
+ 
+     def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float) -> bool:
+         """
+-        Atomically handles the movement of funds between two entities using the IFinancialEntity protocol.
+-
+-        Args:
+-            debtor: The entity from which money is withdrawn.
+-            creditor: The entity to which money is deposited.
+-            amount: The amount of money to transfer.
+-
+-        Returns:
+-            True if the transfer was successful, False otherwise.
++        Atomically handles the movement of funds using SettlementSystem.
+         """
+         if amount <= 0:
+-            return True # A zero-amount transfer is trivially successful.
+-
+-        try:
+-            debtor.withdraw(amount)
+-            creditor.deposit(amount)
+             return True
+-        except InsufficientFundsError as e:
+-            logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
+-            return False
++
++        if self.settlement_system:
++            return self.settlement_system.transfer(debtor, creditor, amount, "FinanceSystem Transfer")
++        else:
++            # Fallback legacy logic
++            try:
++                debtor.withdraw(amount)
++                creditor.deposit(amount)
++                return True
++            except InsufficientFundsError as e:
++                logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
++                return False
+ 
+     def service_debt(self, current_tick: int) -> None:
+         """
+diff --git a/modules/household/econ_component.py b/modules/household/econ_component.py
+index f56e941..41b9282 100644
+--- a/modules/household/econ_component.py
++++ b/modules/household/econ_component.py
+@@ -148,9 +148,13 @@ class EconComponent(IEconComponent):
+     def assets(self) -> float:
+         return self._assets
+ 
+-    @assets.setter
+-    def assets(self, value: float) -> None:
+-        self._assets = value
++    def _add_assets(self, amount: float) -> None:
++        """[PROTECTED] Increase assets. Only for SettlementSystem."""
++        self._assets += amount
++
++    def _sub_assets(self, amount: float) -> None:
++        """[PROTECTED] Decrease assets. Only for SettlementSystem."""
++        self._assets -= amount
+ 
+     @property
+     def inventory(self) -> Dict[str, float]:
+diff --git a/scripts/audit_zero_sum.py b/scripts/audit_zero_sum.py
+index d605e17..5c95191 100644
+--- a/scripts/audit_zero_sum.py
++++ b/scripts/audit_zero_sum.py
+@@ -165,7 +165,7 @@ def audit_integrity():
+     # ------------------------------------------------------------------
+     logger.info("Checking Immigration Funding...")
+     gov = sim.government
+-    gov.assets = 10000.0
++    gov._assets = 10000.0
+     initial_gov = gov.assets
+ 
+     # We call _create_immigrants directly to force it
+@@ -191,7 +191,11 @@ def audit_integrity():
+     victim = sim.firms[0]
+     victim.inventory['basic_food'] = 10.0
+     victim.capital_stock = 500.0
+-    victim.assets = 100.0
++    diff = 100.0 - victim.assets
++    if hasattr(victim, '_add_assets'):
++        victim._add_assets(diff)
++    else:
++        victim.assets = 100.0
+ 
+     # Ensure market exists for basic_food for pricing
+     if 'basic_food' not in sim.markets:
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 6d9a7cb..1bfb993 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -21,7 +21,7 @@ class Government:
+ 
+     def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None):
+         self.id = id
+-        self.assets = initial_assets
++        self._assets = initial_assets
+         self.config_module = config_module
+         
+         self.tax_agency = TaxAgency(config_module)
+@@ -110,6 +110,18 @@ class Government:
+             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
+         )
+ 
++    @property
++    def assets(self) -> float:
++        return self._assets
++
++    def _add_assets(self, amount: float) -> None:
++        """[PROTECTED] Increase assets."""
++        self._assets += amount
++
++    def _sub_assets(self, amount: float) -> None:
++        """[PROTECTED] Decrease assets."""
++        self._assets -= amount
++
+     def update_sensory_data(self, dto: GovernmentStateDTO):
+         """
+         WO-057-B: Sensory Module Interface.
+@@ -282,10 +294,15 @@ class Government:
+                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
+                 return 0.0
+ 
+-        self.assets -= effective_amount
++        self._sub_assets(effective_amount)
+         self.total_spent_subsidies += effective_amount
+         self.expenditure_this_tick += effective_amount
+-        household.assets += effective_amount
++
++        if hasattr(household, '_add_assets'):
++            household._add_assets(effective_amount)
++        else:
++            household.assets += effective_amount
++
+         self.current_tick_stats["welfare_spending"] += effective_amount
+ 
+         logger.info(
+@@ -372,13 +389,22 @@ class Government:
+                 if net_worth > wealth_threshold:
+                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
+                     if agent.assets >= tax_amount:
+-                        agent.assets -= tax_amount
++                        if hasattr(agent, '_sub_assets'):
++                            agent._sub_assets(tax_amount)
++                        else:
++                            agent.assets -= tax_amount
+                         self.collect_tax(tax_amount, "wealth_tax", agent.id, current_tick)
++                        # Note: collect_tax does not add assets anymore.
++                        self._add_assets(tax_amount)
+                         total_wealth_tax += tax_amount
+                     else:
+                         taken = agent.assets
+-                        agent.assets = 0
++                        if hasattr(agent, '_sub_assets'):
++                            agent._sub_assets(taken)
++                        else:
++                            agent.assets = 0
+                         self.collect_tax(taken, "wealth_tax", agent.id, current_tick)
++                        self._add_assets(taken)
+                         total_wealth_tax += taken
+ 
+                 # B. Unemployment Benefit
+@@ -436,7 +462,7 @@ class Government:
+                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                 return False
+ 
+-        self.assets -= effective_cost
++        self._sub_assets(effective_cost)
+         self.expenditure_this_tick += effective_cost
+         if reflux_system:
+             reflux_system.capture(effective_cost, str(self.id), "infrastructure")
+@@ -526,11 +552,11 @@ class Government:
+     def deposit(self, amount: float) -> None:
+         """Deposits a given amount into the government's assets."""
+         if amount > 0:
+-            self.assets += amount
++            self._assets += amount
+ 
+     def withdraw(self, amount: float) -> None:
+         """Withdraws a given amount from the government's assets."""
+         if amount > 0:
+             if self.assets < amount:
+                 raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+-            self.assets -= amount
++            self._assets -= amount
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 3b0e794..20ebaac 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -47,7 +47,7 @@ class Bank(IFinancialEntity):
+ 
+     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager):
+         self.id = id
+-        self.assets = initial_assets # Reserves
++        self._assets = initial_assets # Reserves
+         self.config_manager = config_manager
+ 
+         # Data Stores
+@@ -70,6 +70,16 @@ class Bank(IFinancialEntity):
+             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
+         )
+ 
++    @property
++    def assets(self) -> float:
++        return self._assets
++
++    def _add_assets(self, amount: float) -> None:
++        self._assets += amount
++
++    def _sub_assets(self, amount: float) -> None:
++        self._assets -= amount
++
+     def get_interest_rate(self) -> float:
+         """Returns the current base interest rate."""
+         return self.base_rate
+@@ -268,7 +278,7 @@ class Bank(IFinancialEntity):
+         Implementation of IFinancialEntity.deposit.
+         """
+         if amount > 0:
+-            self.assets += amount
++            self._assets += amount
+ 
+     def withdraw(self, amount: float) -> None:
+         """
+@@ -278,7 +288,7 @@ class Bank(IFinancialEntity):
+         if amount > 0:
+             if self.assets < amount:
+                 raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+-            self.assets -= amount
++            self._assets -= amount
+ 
+     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+         """Returns debt info for AI state."""
+@@ -334,8 +344,11 @@ class Bank(IFinancialEntity):
+ 
+             # Try to collect
+             if agent.assets >= payment:
+-                agent.assets -= payment
+-                self.assets += payment
++                if hasattr(agent, '_sub_assets'):
++                    agent._sub_assets(payment)
++                else:
++                    agent.assets -= payment
++                self._assets += payment
+                 total_loan_interest += payment
+ 
+                 # Record Expense for Firms (FinanceDepartment)
+@@ -350,8 +363,11 @@ class Bank(IFinancialEntity):
+                 # Take whatever is left (process_default might have seized assets already)
+                 partial = agent.assets
+                 if partial > 0:
+-                     agent.assets = 0
+-                     self.assets += partial
++                     if hasattr(agent, '_sub_assets'):
++                        agent._sub_assets(partial)
++                     else:
++                        agent.assets = 0
++                     self._assets += partial
+                      total_loan_interest += partial
+ 
+         # 2. Pay Interest to Depositors
+@@ -364,8 +380,11 @@ class Bank(IFinancialEntity):
+             interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
+ 
+             if self.assets >= interest_payout:
+-                self.assets -= interest_payout
+-                agent.assets += interest_payout
++                self._assets -= interest_payout
++                if hasattr(agent, '_add_assets'):
++                    agent._add_assets(interest_payout)
++                else:
++                    agent.assets += interest_payout
+ 
+                 # Track Capital Income (Interest)
+                 from simulation.core_agents import Household
+@@ -389,7 +408,7 @@ class Bank(IFinancialEntity):
+             # This ensures Bank doesn't accumulate infinite money.
+             # Bank assets were already updated above (+loan_int, -dep_int).
+             # So we subtract net_profit from assets.
+-            self.assets -= net_profit
++            self._assets -= net_profit
+             reflux_system.capture(net_profit, "Bank", "net_profit")
+             logger.info(f"BANK_PROFIT_CAPTURE | Transferred {net_profit:.2f} to Reflux System.")
+ 
+@@ -427,7 +446,7 @@ class Bank(IFinancialEntity):
+         Phase 23.5: Lender of Last Resort.
+         Creates money via Government to cover liquidity gaps.
+         """
+-        self.assets += amount
++        self._assets += amount
+         if self._get_config("government_id", None) is not None:
+              # If we have a reference to government via simulation later, but here we take config
+              pass
+@@ -444,7 +463,7 @@ class Bank(IFinancialEntity):
+         """
+         if self.assets < 0:
+             borrow_amount = abs(self.assets) + 1000.0 # Maintain buffer
+-            self.assets += borrow_amount
++            self._assets += borrow_amount
+             government.total_money_issued += borrow_amount
+             logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government.")
+ 
+diff --git a/simulation/base_agent.py b/simulation/base_agent.py
+index d817551..d30130b 100644
+--- a/simulation/base_agent.py
++++ b/simulation/base_agent.py
+@@ -15,7 +15,7 @@ class BaseAgent(ABC):
+         logger: Optional[logging.Logger] = None,
+     ):
+         self.id = id
+-        self.assets = initial_assets
++        self._assets = initial_assets
+         self.needs = initial_needs
+         self.decision_engine = decision_engine
+         self.value_orientation = value_orientation
+@@ -34,6 +34,19 @@ class BaseAgent(ABC):
+         # [Cleanup] Standardized Memory Structure
+         self.memory: Dict[str, Any] = {}
+ 
++    @property
++    def assets(self) -> float:
++        """Current assets (Read-Only)."""
++        return self._assets
++
++    def _add_assets(self, amount: float) -> None:
++        """[PROTECTED] Increase assets. Only for SettlementSystem."""
++        self._assets += amount
++
++    def _sub_assets(self, amount: float) -> None:
++        """[PROTECTED] Decrease assets. Only for SettlementSystem."""
++        self._assets -= amount
++
+     def get_agent_data(self) -> Dict[str, Any]:
+         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
+         # 이 메서드는 하위 클래스에서 구체적인 내용을 구현해야 합니다.
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index 93a2ca0..26493a6 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -135,7 +135,7 @@ class FinanceDepartment:
+ 
+             # Bailout repayment
+             self.debit(repayment, "Bailout Repayment")
+-            government.assets += repayment # Direct transfer to government
++            government._add_assets(repayment) # Direct transfer to government
+ 
+             self.firm.total_debt -= repayment
+             self.current_profit -= repayment
+@@ -214,7 +214,7 @@ class FinanceDepartment:
+         if distributable_cash > 0:
+             dividend_amount = distributable_cash
+             self.debit(dividend_amount, "Private Dividend")
+-            owner.assets += dividend_amount
++            owner._add_assets(dividend_amount)
+ 
+             if hasattr(owner, 'income_capital_cumulative'):
+                 owner.income_capital_cumulative += dividend_amount
+@@ -387,7 +387,7 @@ class FinanceDepartment:
+     def pay_severance(self, employee: Household, amount: float) -> bool:
+         if self._cash >= amount:
+             self.debit(amount, "Severance Pay")
+-            employee.assets += amount
++            employee._add_assets(amount)
+             self.record_expense(amount)
+             return True
+         return False
+diff --git a/simulation/components/hr_department.py b/simulation/components/hr_department.py
+index 862c2da..9df0b10 100644
+--- a/simulation/components/hr_department.py
++++ b/simulation/components/hr_department.py
+@@ -71,8 +71,8 @@ class HRDepartment:
+                 net_wage = wage - income_tax
+ 
+                 # Transactions
+-                self.firm.assets -= wage
+-                employee.assets += net_wage
++                self.firm._sub_assets(wage)
++                employee._add_assets(net_wage)
+ 
+                 # Track Labor Income
+                 if hasattr(employee, "labor_income_this_tick"):
+@@ -99,8 +99,8 @@ class HRDepartment:
+ 
+         if self.firm.assets >= severance_pay:
+             # Fire with severance
+-            self.firm.assets -= severance_pay
+-            employee.assets += severance_pay
++            self.firm._sub_assets(severance_pay)
++            employee._add_assets(severance_pay)
+ 
+             self.firm.logger.info(
+                 f"SEVERANCE | Firm {self.firm.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 9493a2d..c48b210 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -99,7 +99,7 @@ class Household(BaseAgent, ILearningAgent):
+         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
+ 
+         # Initialize Econ Component Initial State
+-        self.econ_component.assets = initial_assets
++        self.econ_component._assets = initial_assets
+         # Skills & Inventory are managed by Econ Component primarily, but accessed via Facade
+         # Currently BaseAgent has self.inventory. We should sync or delegate.
+         # EconComponent has its own _inventory. BaseAgent's inventory is initialized empty.
+@@ -168,7 +168,7 @@ class Household(BaseAgent, ILearningAgent):
+         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
+         
+         # Initialize Econ Component Initial State
+-        self.econ_component.assets = initial_assets
++        self.econ_component._assets = initial_assets
+         # Skills & Inventory are managed by Econ Component primarily, but accessed via Facade
+         # Currently BaseAgent has self.inventory. We should sync or delegate.
+         # EconComponent has its own _inventory. BaseAgent's inventory is initialized empty.
+@@ -242,9 +242,13 @@ class Household(BaseAgent, ILearningAgent):
+     def assets(self) -> float:
+         return self.econ_component.assets
+ 
+-    @assets.setter
+-    def assets(self, value: float) -> None:
+-        self.econ_component.assets = value
++    def _add_assets(self, amount: float) -> None:
++        """[PROTECTED] Delegate to EconComponent."""
++        self.econ_component._add_assets(amount)
++
++    def _sub_assets(self, amount: float) -> None:
++        """[PROTECTED] Delegate to EconComponent."""
++        self.econ_component._sub_assets(amount)
+ 
+     @property
+     def inventory(self) -> Dict[str, float]:
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index 8a45f52..9c29fab 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -127,6 +127,7 @@ class SimulationState:
+     reflux_system: Any
+     ai_training_manager: Optional[Any]
+     ai_trainer: Optional[Any] # Added for WO-103
++    settlement_system: Optional[Any] = None # WO-112: Settlement System
+     next_agent_id: int = 0 # Added for WO-103
+     real_estate_units: List[Any] = field(default_factory=list) # Added for WO-103
+     # Mutable state for the tick
+diff --git a/simulation/finance/api.py b/simulation/finance/api.py
+new file mode 100644
+index 0000000..43b0474
+--- /dev/null
++++ b/simulation/finance/api.py
+@@ -0,0 +1,63 @@
++from typing import Protocol, runtime_checkable, Optional, Dict, Any
++from abc import ABC, abstractmethod
++
++@runtime_checkable
++class IFinancialEntity(Protocol):
++    """
++    Protocol for any entity that possesses assets and participates in financial transactions.
++    Assets are read-only to the public; state changes must occur via the SettlementSystem
++    calling the protected _add_assets / _sub_assets methods (or equivalent internal logic).
++    """
++    id: int
++
++    @property
++    def assets(self) -> float:
++        """Current assets (Read-Only)."""
++        ...
++
++    def _add_assets(self, amount: float) -> None:
++        """
++        [PROTECTED] Increase assets.
++        Should ONLY be called by SettlementSystem.
++        """
++        ...
++
++    def _sub_assets(self, amount: float) -> None:
++        """
++        [PROTECTED] Decrease assets.
++        Should ONLY be called by SettlementSystem.
++        """
++        ...
++
++
++class ISettlementSystem(ABC):
++    """
++    Interface for the centralized settlement system.
++    Ensures atomicity and zero-sum integrity of all financial transfers.
++    """
++
++    @abstractmethod
++    def transfer(
++        self,
++        debit_agent: IFinancialEntity,
++        credit_agent: IFinancialEntity,
++        amount: float,
++        memo: str,
++        debit_context: Optional[Dict[str, Any]] = None,
++        credit_context: Optional[Dict[str, Any]] = None
++    ) -> bool:
++        """
++        Executes an atomic transfer from debit_agent to credit_agent.
++
++        Args:
++            debit_agent: The sender (assets will decrease).
++            credit_agent: The receiver (assets will increase).
++            amount: The amount to transfer (must be positive).
++            memo: Description of the transaction for audit logging.
++            debit_context: Optional metadata for the debit side logic.
++            credit_context: Optional metadata for the credit side logic.
++
++        Returns:
++            bool: True if transfer succeeded, False otherwise (e.g., insufficient funds).
++        """
++        ...
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 4296f7f..7ee71ca 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -91,7 +91,8 @@ class Firm(BaseAgent, ILearningAgent):
+         # SoC Refactor: HR and Finance Components
+         self.hr = HRDepartment(self)
+         # WO-103 Phase 1: Initialize Finance with buffered assets
+-        self.finance = FinanceDepartment(self, config_module, initial_capital=self._assets_buffer)
++        # Fix: Use initial_capital passed to constructor, or self._assets from BaseAgent
++        self.finance = FinanceDepartment(self, config_module, initial_capital=initial_capital)
+ 
+         self.production = ProductionDepartment(self, config_module)
+         self.sales = SalesDepartment(self, config_module)
+@@ -155,19 +156,19 @@ class Firm(BaseAgent, ILearningAgent):
+             return self.finance.balance
+         return self._assets_buffer
+ 
+-    @assets.setter
+-    def assets(self, value: float) -> None:
++    def _add_assets(self, amount: float) -> None:
++        """[PROTECTED] Delegate to FinanceDepartment."""
+         if hasattr(self, 'finance'):
+-             # Calculate diff to update finance.
+-             # This supports external direct modifications (like +=, -=) by delegating to credit/debit.
+-             current = self.finance.balance
+-             diff = value - current
+-             if diff > 0:
+-                 self.finance.credit(diff, "External Update (Setter)")
+-             elif diff < 0:
+-                 self.finance.debit(abs(diff), "External Update (Setter)")
++            self.finance.credit(amount, "Settlement Transfer")
+         else:
+-             self._assets_buffer = value
++            self._assets_buffer += amount
++
++    def _sub_assets(self, amount: float) -> None:
++        """[PROTECTED] Delegate to FinanceDepartment."""
++        if hasattr(self, 'finance'):
++            self.finance.debit(amount, "Settlement Transfer")
++        else:
++            self._assets_buffer -= amount
+ 
+     def init_ipo(self, stock_market: StockMarket):
+         """Register firm in stock market order book."""
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index d759546..b0cefce 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -49,6 +49,7 @@ from simulation.engine import Simulation
+ from simulation.systems.social_system import SocialSystem
+ from simulation.systems.event_system import EventSystem
+ from simulation.systems.sensory_system import SensorySystem
++from simulation.systems.settlement_system import SettlementSystem
+ from simulation.systems.commerce_system import CommerceSystem
+ from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+ 
+@@ -129,7 +130,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+             government=sim.government,
+             central_bank=sim.central_bank,
+             bank=sim.bank,
+-            config_module=self.config_manager
++            config_module=self.config_manager,
++            settlement_system=sim.settlement_system
+         )
+         sim.government.finance_system = sim.finance_system
+ 
+@@ -233,6 +235,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.social_system = SocialSystem(self.config)
+         sim.event_system = EventSystem(self.config)
+         sim.sensory_system = SensorySystem(self.config)
++        sim.settlement_system = SettlementSystem(logger=self.logger)
+         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
+         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
+ 
+diff --git a/simulation/systems/bootstrapper.py b/simulation/systems/bootstrapper.py
+index 2b20f21..0ffbd57 100644
+--- a/simulation/systems/bootstrapper.py
++++ b/simulation/systems/bootstrapper.py
+@@ -81,6 +81,7 @@ class Bootstrapper:
+ 
+             # 2. Capital Injection (Demand Side)
+             if firm.assets < Bootstrapper.MIN_CAPITAL:
+-                firm.assets = Bootstrapper.MIN_CAPITAL
++                diff = Bootstrapper.MIN_CAPITAL - firm.assets
++                firm._add_assets(diff)
+ 
+         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")
+diff --git a/simulation/systems/demographic_manager.py b/simulation/systems/demographic_manager.py
+index 17e6269..60174be 100644
+--- a/simulation/systems/demographic_manager.py
++++ b/simulation/systems/demographic_manager.py
+@@ -90,7 +90,7 @@ class DemographicManager:
+             # Let's assume standard INITIAL_ASSETS or small portion from parent.
+             # "Initial 자산은 부모 자산의 일부 이전"
+             initial_gift = parent.assets * 0.1
+-            parent.assets -= initial_gift
++            parent._sub_assets(initial_gift)
+ 
+             # Create Instance
+             # We need to clone parent's structure but reset state
+@@ -257,11 +257,11 @@ class DemographicManager:
+         # Distribute
+         share = net_amount / len(heirs)
+         for heir in heirs:
+-            heir.assets += share
++            heir._add_assets(share)
+             self.logger.info(
+                 f"INHERITANCE | Heir {heir.id} received {share:.2f} from {deceased_agent.id}.",
+                 extra={"heir_id": heir.id, "deceased_id": deceased_agent.id}
+             )
+ 
+         # Clear deceased assets so engine doesn't double count or tax again
+-        deceased_agent.assets = 0.0
++        deceased_agent._sub_assets(deceased_agent.assets)
+diff --git a/simulation/systems/firm_management.py b/simulation/systems/firm_management.py
+index 7b8baa1..d5ab7cb 100644
+--- a/simulation/systems/firm_management.py
++++ b/simulation/systems/firm_management.py
+@@ -28,7 +28,7 @@ class FirmSystem:
+         # 1. Capital Deduction
+         if founder_household.assets < startup_cost:
+             return None
+-        founder_household.assets -= startup_cost
++        founder_household._sub_assets(startup_cost)
+ 
+         # 2. Generate New Firm ID
+         max_id = max([a.id for a in simulation.agents.values()], default=0)
+diff --git a/simulation/systems/housing_system.py b/simulation/systems/housing_system.py
+index b2239c6..17c1d94 100644
+--- a/simulation/systems/housing_system.py
++++ b/simulation/systems/housing_system.py
+@@ -69,12 +69,12 @@ class HousingSystem:
+                 if owner:
+                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
+                     if owner.assets >= cost:
+-                        owner.assets -= cost
++                        owner._sub_assets(cost)
+                         if simulation.reflux_system:
+                             simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
+                     else:
+                         taken = owner.assets
+-                        owner.assets = 0.0
++                        owner._sub_assets(taken)
+                         if simulation.reflux_system:
+                             simulation.reflux_system.capture(taken, f"{owner.id}", "housing_maintenance")
+ 
+@@ -89,8 +89,8 @@ class HousingSystem:
+                 if tenant and owner and tenant.is_active and owner.is_active:
+                     rent = unit.rent_price
+                     if tenant.assets >= rent:
+-                        tenant.assets -= rent
+-                        owner.assets += rent
++                        tenant._sub_assets(rent)
++                        owner._add_assets(rent)
+                     else:
+                         # Eviction due to rent non-payment
+                         logger.info(
+@@ -156,8 +156,8 @@ class HousingSystem:
+                 )
+                 
+                 if loan_id:
+-                    simulation.bank.assets -= loan_amount
+-                    buyer.assets += loan_amount
++                    simulation.bank._sub_assets(loan_amount)
++                    buyer._add_assets(loan_amount)
+                     unit.mortgage_id = loan_id
+                 else:
+                     unit.mortgage_id = None
+@@ -165,15 +165,18 @@ class HousingSystem:
+                 unit.mortgage_id = None
+                 
+             # 2. Process Funds Transfer
+-            buyer.assets -= trade_value
++            buyer._sub_assets(trade_value)
+ 
+             if isinstance(seller, Government):
+                 # The original code called 'record_asset_sale', which doesn't exist on Government.
+                 # The intent seems to be to track government income. We'll use the existing
+                 # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
+                 seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
++                # Note: collect_tax no longer adds assets! We must add it manually or use SettlementSystem.
++                # Since we are inside HousingSystem legacy logic, we add it here.
++                seller._add_assets(trade_value)
+             else:
+-                seller.assets += trade_value
++                seller._add_assets(trade_value)
+ 
+             # 3. Transfer Title
+             unit.owner_id = buyer.id
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index cd7478f..141c458 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -26,6 +26,8 @@ class InheritanceManager:
+             government: The entity collecting tax.
+             simulation: Access to markets/registry for liquidation and transfer.
+         """
++        settlement = getattr(simulation.state, 'settlement_system', None)
++
+         self.logger.info(
+             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",
+             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
+@@ -100,9 +102,14 @@ class InheritanceManager:
+                 proceeds = share.quantity * price
+ 
+                 # Transfer: Deceased -> Cash, Government -> Stock (or burn?)
+-                # If Govt buys, it pays Cash.
+-                deceased.assets += proceeds
+-                simulation.government.assets -= proceeds
++                if settlement:
++                    settlement.transfer(government, deceased, proceeds, f"liquidation_stock:{firm_id}")
++                else:
++                    if hasattr(government, '_sub_assets'): government._sub_assets(proceeds)
++                    else: government.assets -= proceeds
++                    if hasattr(deceased, '_add_assets'): deceased._add_assets(proceeds)
++                    else: deceased.assets += proceeds
++
+                 simulation.government.total_money_issued += proceeds # Injection (Bank/Gov Buyout)
+ 
+                 liquidation_proceeds += proceeds
+@@ -143,8 +150,14 @@ class InheritanceManager:
+                 sale_price = unit.estimated_value * fire_sale_ratio
+ 
+                 # Govt buys unit
+-                deceased.assets += sale_price
+-                simulation.government.assets -= sale_price
++                if settlement:
++                    settlement.transfer(government, deceased, sale_price, f"liquidation_re:{unit.id}")
++                else:
++                    if hasattr(government, '_sub_assets'): government._sub_assets(sale_price)
++                    else: government.assets -= sale_price
++                    if hasattr(deceased, '_add_assets'): deceased._add_assets(sale_price)
++                    else: deceased.assets += sale_price
++
+                 simulation.government.total_money_issued += sale_price # Injection
+ 
+                 # Transfer Title
+@@ -165,7 +178,14 @@ class InheritanceManager:
+         # Determine final tax payment (limited by assets if bankruptcy)
+         actual_tax_paid = min(deceased.assets, tax_amount)
+         if actual_tax_paid > 0:
+-            deceased.assets -= actual_tax_paid
++            if settlement:
++                settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
++            else:
++                if hasattr(deceased, '_sub_assets'): deceased._sub_assets(actual_tax_paid)
++                else: deceased.assets -= actual_tax_paid
++                if hasattr(government, '_add_assets'): government._add_assets(actual_tax_paid)
++                else: government.assets += actual_tax_paid
++
+             simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased.id, simulation.time)
+ 
+         # 5. Distribution (Transfer)
+@@ -181,7 +201,12 @@ class InheritanceManager:
+             # 1. State Confiscation (Cash)
+             surplus = deceased.assets
+             if surplus > 0:
+-                deceased.assets = 0
++                if settlement:
++                    settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
++                else:
++                    deceased._sub_assets(surplus)
++                    government._add_assets(surplus)
++
+                 simulation.government.collect_tax(surplus, "escheatment", deceased.id, simulation.time)
+                 self.logger.info(
+                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
+@@ -222,10 +247,38 @@ class InheritanceManager:
+         num_heirs = len(heirs)
+ 
+         # A. Cash
+-        cash_share = deceased.assets / num_heirs
++        total_cash = deceased.assets
++        cash_share = round(total_cash / num_heirs, 2)
++        total_distributed = 0.0
++
+         for heir in heirs:
+-            heir.assets += cash_share
+-        deceased.assets = 0.0
++            if settlement:
++                settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
++            else:
++                deceased._sub_assets(cash_share)
++                heir._add_assets(cash_share)
++            total_distributed += cash_share
++
++        # Residual Catch-all (WO-112)
++        # Note: If deceased.assets was reduced by transfer, we check remainder via calculation or checking asset balance.
++        # Since we used settlement (which reduces asset), deceased.assets should be ~0.
++        # But cash_share logic used deceased.assets (initial) / num_heirs.
++        # The remainder is mathematically (Total - (Share * N)).
++        # If we transferred (Share * N), the deceased might have a small remaining balance due to rounding.
++        # Let's check remaining balance.
++
++        remainder = deceased.assets
++        if remainder > 0:
++             if settlement:
++                 settlement.transfer(deceased, government, remainder, "inheritance_residual")
++             else:
++                 deceased._sub_assets(remainder)
++                 government._add_assets(remainder)
++
++             simulation.government.collect_tax(remainder, "inheritance_residual", deceased.id, simulation.time)
++             self.logger.info(f"RESIDUAL_CAPTURED | Transferred {remainder:.4f} residual dust to Government.")
++
++        # deceased.assets should be 0.0 now.
+ 
+         # B. Stocks (Portfolio Merge)
+         # Split each holding N ways
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index e5940d0..2007946 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -137,7 +137,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                         if household.is_active and firm.id in household.shares_owned:
+                             share_ratio = household.shares_owned[firm.id] / outstanding_shares
+                             distribution = total_cash * share_ratio
+-                            household.assets += distribution
++                            household._add_assets(distribution)
+                             self.logger.info(
+                                 f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
+                                 f"{distribution:.2f} from Firm {firm.id} liquidation",
+@@ -146,13 +146,15 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 else:
+                     from simulation.agents.government import Government
+                     if isinstance(state.government, Government):
++                        # Note: collect_tax no longer adds assets. We must transfer/add manually.
++                        state.government._add_assets(total_cash)
+                         state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
+             for household in state.households:
+                 if firm.id in household.shares_owned:
+                     del household.shares_owned[firm.id]
+                     if state.stock_market:
+                         state.stock_market.update_shareholder(household.id, firm.id, 0)
+-            firm.assets = 0.0
++            firm._sub_assets(firm.assets)
+             self.logger.info(
+                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
+                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
+diff --git a/simulation/systems/ministry_of_education.py b/simulation/systems/ministry_of_education.py
+index fb446db..d0085ee 100644
+--- a/simulation/systems/ministry_of_education.py
++++ b/simulation/systems/ministry_of_education.py
+@@ -38,7 +38,7 @@ class MinistryOfEducation:
+                 if edu_budget >= cost:
+                     agent.education_level = 1
+                     edu_budget -= cost
+-                    government.assets -= cost
++                    government._sub_assets(cost)
+                     spent_total += cost
+ 
+                     logger.debug(
+@@ -57,10 +57,10 @@ class MinistryOfEducation:
+                     if edu_budget >= subsidy and agent.assets >= student_share:
+                         agent.education_level = next_level
+                         edu_budget -= subsidy
+-                        government.assets -= subsidy
++                        government._sub_assets(subsidy)
+                         spent_total += subsidy
+ 
+-                        agent.assets -= student_share
++                        agent._sub_assets(student_share)
+                         if reflux_system:
+                             reflux_system.capture(student_share, f"Household_{agent.id}", "education_tuition")
+ 
+diff --git a/simulation/systems/reflux_system.py b/simulation/systems/reflux_system.py
+index 1b03b4a..23b8f05 100644
+--- a/simulation/systems/reflux_system.py
++++ b/simulation/systems/reflux_system.py
+@@ -38,7 +38,7 @@ class EconomicRefluxSystem:
+         amount_per_household = total_amount / len(active_households)
+ 
+         for agent in active_households:
+-            agent.assets += amount_per_household
++            agent._add_assets(amount_per_household)
+ 
+             # Record as additional labor income (Service Sector)
+             if hasattr(agent, "labor_income_this_tick"):
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+new file mode 100644
+index 0000000..c98ee45
+--- /dev/null
++++ b/simulation/systems/settlement_system.py
+@@ -0,0 +1,102 @@
++from typing import Optional, Dict, Any, cast
++import logging
++
++from simulation.finance.api import ISettlementSystem, IFinancialEntity
++
++class SettlementSystem(ISettlementSystem):
++    """
++    Centralized system for handling all financial transfers between entities.
++    Enforces atomicity and zero-sum integrity.
++    """
++
++    def __init__(self, logger: Optional[logging.Logger] = None):
++        self.logger = logger if logger else logging.getLogger(__name__)
++
++    def transfer(
++        self,
++        debit_agent: IFinancialEntity,
++        credit_agent: IFinancialEntity,
++        amount: float,
++        memo: str,
++        debit_context: Optional[Dict[str, Any]] = None,
++        credit_context: Optional[Dict[str, Any]] = None
++    ) -> bool:
++        """
++        Executes an atomic transfer from debit_agent to credit_agent.
++        """
++        # 1. Validation
++        if amount <= 0:
++            self.logger.warning(
++                f"TRANSFER_INVALID_AMOUNT | Amount must be positive. Given: {amount} | Memo: {memo}",
++                extra={"tags": ["settlement", "error"]}
++            )
++            return False
++
++        if debit_agent.id == credit_agent.id:
++            self.logger.warning(
++                f"TRANSFER_SELF | Agent {debit_agent.id} attempted self-transfer. | Memo: {memo}",
++                extra={"tags": ["settlement", "warning"]}
++            )
++            return False
++
++        # 2. Solvency Check
++        # Note: Some agents (like Government/CentralBank) might have infinite liquidity or negative balance allowance.
++        # However, purely based on IFinancialEntity, we just check assets.
++        # If specific agents can go negative, they should handle it or we need a 'can_afford' check on the agent.
++        # For now, we enforce strict solvency for standard agents.
++        # We can trust that if the agent's logic called this, they *expect* to pay.
++        # But we must verify they *can* pay to prevent negative assets (unless allowed).
++
++        # Assumption: Government/Bank usually have logic to mint or go negative, but BaseAgent assets is float.
++        # If assets < amount, we fail, unless it's a special entity that overrides assets logic (but interface just reads property).
++        # We'll enforce strictly here. If Govt needs to print money, it should happen BEFORE transfer (Minting).
++        # OR: Government is exempt?
++        # Ideally, Government should have a "Treasury" that can be negative or it mints.
++        # Let's check solvency.
++
++        if debit_agent.assets < amount:
++            self.logger.error(
++                f"INSUFFICIENT_FUNDS | Agent {debit_agent.id} (Assets: {debit_agent.assets:.2f}) "
++                f"cannot pay {amount:.2f} to Agent {credit_agent.id}. | Memo: {memo}",
++                extra={
++                    "debit_agent_id": debit_agent.id,
++                    "credit_agent_id": credit_agent.id,
++                    "amount": amount,
++                    "tags": ["settlement", "insolvency"]
++                }
++            )
++            return False
++
++        # 3. Atomic Operation
++        try:
++            debit_agent._sub_assets(amount)
++            # Failure point simulation:
++            # raise Exception("Simulated Failure")
++            credit_agent._add_assets(amount)
++        except Exception as e:
++            self.logger.critical(
++                f"ATOMICITY_FAILURE | Rolled back transfer of {amount} from {debit_agent.id} to {credit_agent.id}. Error: {e}",
++                extra={"tags": ["settlement", "critical"]}
++            )
++            # Rollback: Try to add back to debit_agent
++            try:
++                debit_agent._add_assets(amount)
++            except Exception as rollback_error:
++                self.logger.critical(
++                    f"ROLLBACK_FAILED | SYSTEM CORRUPTED. Agent {debit_agent.id} lost {amount}. Error: {rollback_error}",
++                    extra={"tags": ["settlement", "fatal"]}
++                )
++            return False
++
++        # 4. Success Logging
++        self.logger.info(
++            f"TRANSFER | {debit_agent.id} -> {credit_agent.id} : {amount:.2f} | {memo}",
++            extra={
++                "debit_agent_id": debit_agent.id,
++                "credit_agent_id": credit_agent.id,
++                "amount": amount,
++                "memo": memo,
++                "tags": ["settlement", "transfer"]
++            }
++        )
++        return True
+diff --git a/simulation/systems/tax_agency.py b/simulation/systems/tax_agency.py
+index 3fafa6f..26953b9 100644
+--- a/simulation/systems/tax_agency.py
++++ b/simulation/systems/tax_agency.py
+@@ -48,11 +48,14 @@ class TaxAgency:
+         return profit * current_corporate_tax_rate if profit > 0 else 0.0
+ 
+     def collect_tax(self, government, amount, tax_type, source_id, current_tick) -> float:
+-        """Collects tax and updates government state."""
++        """
++        Records tax collection statistics.
++        NOTE: Asset transfer must be handled by SettlementSystem external to this method.
++        """
+         if amount <= 0:
+             return 0.0
+ 
+-        government.assets += amount
++        # government.assets += amount  <-- REMOVED: Handled by SettlementSystem
+         government.total_collected_tax += amount
+         government.revenue_this_tick += amount
+         government.total_money_destroyed += amount
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index 5f713b9..8f87319 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -50,6 +50,8 @@ class TransactionProcessor(SystemInterface):
+             # ==================================================================
+             # 1. Financial Settlement (Asset Transfer & Taxes)
+             # ==================================================================
++            settlement = getattr(state, 'settlement_system', None)
++
+             if tx.transaction_type == "goods":
+                 # Goods: Apply Sales Tax
+                 tax_amount = trade_value * sales_tax_rate
+@@ -59,20 +61,36 @@ class TransactionProcessor(SystemInterface):
+                     if buyer.assets < (trade_value + tax_amount):
+                         buyer.check_solvency(government)
+ 
+-                buyer.assets -= (trade_value + tax_amount)
+-                seller.assets += trade_value
++                if settlement:
++                    settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
++                    if tax_amount > 0:
++                        settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
++                else:
++                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value + tax_amount)
++                    else: buyer.assets -= (trade_value + tax_amount)
++
++                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
++                    else: seller.assets += trade_value
++
++                    if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
++                    else: government.assets += tax_amount
++
+                 government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
+ 
+             elif tx.transaction_type == "stock":
+-                # Stock: NO Sales Tax (Capital Gains Tax is handled elsewhere/later)
+-                buyer.assets -= trade_value
+-                seller.assets += trade_value
++                # Stock: NO Sales Tax
++                if settlement:
++                    settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
++                else:
++                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
++                    else: buyer.assets -= trade_value
++                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
++                    else: seller.assets += trade_value
+             
+             elif tx.transaction_type in ["labor", "research_labor"]:
+                 # Labor: Apply Income Tax
+                 tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
+ 
+-                # Progressive Tax Bracket survival cost check
+                 if "basic_food_current_sell_price" in goods_market_data:
+                     avg_food_price = goods_market_data["basic_food_current_sell_price"]
+                 else:
+@@ -84,31 +102,72 @@ class TransactionProcessor(SystemInterface):
+                 tax_amount = government.calculate_income_tax(trade_value, survival_cost)
+                 
+                 if tax_payer == "FIRM":
+-                    buyer.assets -= (trade_value + tax_amount)
+-                    seller.assets += trade_value
++                    if settlement:
++                        settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
++                        if tax_amount > 0:
++                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_firm:{tx.transaction_type}")
++                    else:
++                        if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value + tax_amount)
++                        else: buyer.assets -= (trade_value + tax_amount)
++
++                        if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
++                        else: seller.assets += trade_value
++
++                        if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
++                        else: government.assets += tax_amount
++
+                     government.collect_tax(tax_amount, "income_tax_firm", buyer.id, current_time)
+                 else:
+-                    buyer.assets -= trade_value
+-                    seller.assets += (trade_value - tax_amount)
++                    # Household pays tax (Withholding model)
++                    net_wage = trade_value - tax_amount
++                    if settlement:
++                        settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
++                        if tax_amount > 0:
++                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_withheld:{tx.transaction_type}")
++                    else:
++                        if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value) # Buyer pays full (net + tax split dest)
++                        else: buyer.assets -= trade_value
++
++                        if hasattr(seller, '_add_assets'): seller._add_assets(net_wage)
++                        else: seller.assets += net_wage
++
++                        if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
++                        else: government.assets += tax_amount
++
+                     government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
+             
+             elif tx.item_id == "interest_payment":
+-                # Interest Payment: Buyer (Borrower) pays Seller (Bank)
+-                buyer.assets -= trade_value
+-                seller.assets += trade_value
++                if settlement:
++                    settlement.transfer(buyer, seller, trade_value, "interest_payment")
++                else:
++                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
++                    else: buyer.assets -= trade_value
++                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
++                    else: seller.assets += trade_value
++
+                 if isinstance(buyer, Firm):
+                     buyer.finance.record_expense(trade_value)
+ 
+             elif tx.transaction_type == "dividend":
+-                # Dividend: Firm (Seller) pays Household (Buyer)
+-                seller.assets -= trade_value
+-                buyer.assets += trade_value
++                if settlement:
++                    settlement.transfer(seller, buyer, trade_value, "dividend_payment")
++                else:
++                    if hasattr(seller, '_sub_assets'): seller._sub_assets(trade_value)
++                    else: seller.assets -= trade_value
++                    if hasattr(buyer, '_add_assets'): buyer._add_assets(trade_value)
++                    else: buyer.assets += trade_value
++
+                 if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+                     buyer.capital_income_this_tick += trade_value
+             else:
+-                # Default / Other (Loan principals, etc.)
+-                buyer.assets -= trade_value
+-                seller.assets += trade_value
++                # Default / Other
++                if settlement:
++                    settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
++                else:
++                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
++                    else: buyer.assets -= trade_value
++                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
++                    else: seller.assets += trade_value
+ 
+             # ==================================================================
+             # 2. Meta Logic (Inventory, Employment, Share Registry)
+diff --git a/simulation/tick_scheduler.py b/simulation/tick_scheduler.py
+index 89d8913..e40f400 100644
+--- a/simulation/tick_scheduler.py
++++ b/simulation/tick_scheduler.py
+@@ -315,7 +315,12 @@ class TickScheduler:
+                  # 2a. Corporate Tax
+                  if firm.is_active and firm.current_profit > 0:
+                      tax_amount = state.government.calculate_corporate_tax(firm.current_profit)
+-                     firm.assets -= tax_amount
++                     if state.settlement_system:
++                         state.settlement_system.transfer(firm, state.government, tax_amount, "corporate_tax")
++                     else:
++                         # Fallback
++                         firm._sub_assets(tax_amount)
++                         state.government._add_assets(tax_amount)
+                      state.government.collect_tax(tax_amount, "corporate_tax", firm.id, state.time)
+ 
+         # 2b. Government Infra Investment
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 1776ef1..bf3d5a1 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -34,6 +34,7 @@ if TYPE_CHECKING:
+     from simulation.systems.social_system import SocialSystem
+     from simulation.systems.event_system import EventSystem
+     from simulation.systems.sensory_system import SensorySystem
++    from simulation.systems.settlement_system import SettlementSystem
+     from simulation.systems.commerce_system import CommerceSystem
+     from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+     from modules.analysis.crisis_monitor import CrisisMonitor
+@@ -99,6 +100,7 @@ class WorldState:
+         self.social_system: Optional[SocialSystem] = None
+         self.event_system: Optional[EventSystem] = None
+         self.sensory_system: Optional[SensorySystem] = None
++        self.settlement_system: Optional[SettlementSystem] = None
+         self.commerce_system: Optional[CommerceSystem] = None
+         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
+         self.crisis_monitor: Optional[CrisisMonitor] = None
+diff --git a/tests/agents/test_government.py b/tests/agents/test_government.py
+index d71afdb..93a1e15 100644
+--- a/tests/agents/test_government.py
++++ b/tests/agents/test_government.py
+@@ -107,9 +107,9 @@ def deficit_government_setup():
+ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
+     """Test that the government can spend more than its assets, creating debt."""
+     government = deficit_government_setup
+-    government.assets = 100
++    government._assets = 100
+     target_agent = Mock()
+-    target_agent.assets = 0
++    target_agent._assets = 0
+ 
+     # Debt limit = 10000 * 0.30 = 3000
+     # Spending 500 will result in assets of -400, which is within the limit
+@@ -126,9 +126,9 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
+ def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
+     """Test that spending is blocked when it would exceed the debt/GDP limit."""
+     government = deficit_government_setup
+-    government.assets = -2900 # Already near the debt limit
++    government._assets = -2900 # Already near the debt limit
+     target_agent = Mock()
+-    target_agent.assets = 0
++    target_agent._assets = 0
+ 
+     # Debt limit = 10000 * 0.30 = 3000
+     # Current debt is 2900. Spending another 200 would make debt 3100, exceeding the limit.
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 0de9829..f45757c 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -53,7 +53,7 @@ def mock_central_bank(mock_tracker, mock_config):
+ def mock_bank():
+     """Provides a mock commercial Bank."""
+     bank = Mock(spec=Bank)
+-    bank.assets = 5000000.0
++    bank._assets = 5000000.0
+     return bank
+ 
+ @pytest.fixture
+@@ -76,7 +76,7 @@ def government(mock_config, mock_tracker, finance_system):
+     """
+     # Refactored Government constructor no longer takes tracker or initial_assets
+     gov = Government(id=1, config_module=mock_config)
+-    gov.assets = mock_config.GOVERNMENT_INITIAL_ASSETS
++    gov._assets = mock_config.GOVERNMENT_INITIAL_ASSETS
+ 
+     # Replace the real finance system with our mocked one
+     gov.finance_system = finance_system
+diff --git a/tests/modules/finance/test_double_entry.py b/tests/modules/finance/test_double_entry.py
+index 82c8bc5..9820039 100644
+--- a/tests/modules/finance/test_double_entry.py
++++ b/tests/modules/finance/test_double_entry.py
+@@ -8,18 +8,26 @@ from modules.finance.api import InsufficientFundsError
+ # Mock objects that will be passed to FinanceSystem
+ class MockGovernment:
+     def __init__(self, initial_assets):
+-        self.assets = initial_assets
++        self._assets = initial_assets
++    @property
++    def assets(self): return self._assets
+     def get_debt_to_gdp_ratio(self):
+         return 0.5
+-    def deposit(self, amount): self.assets += amount
++    def deposit(self, amount): self._assets += amount
+     def withdraw(self, amount):
+-        if self.assets < amount:
++        if self._assets < amount:
+             raise InsufficientFundsError()
+-        self.assets -= amount
++        self._assets -= amount
++    # Interface compatibility
++    def _add_assets(self, amount): self._assets += amount
++    def _sub_assets(self, amount): self._assets -= amount
++
+ 
+ class MockCentralBank:
+     def __init__(self, initial_cash):
+-        self.assets = {"cash": initial_cash, "bonds": []}
++        self._assets = {"cash": initial_cash, "bonds": []}
++    @property
++    def assets(self): return self._assets
+     def get_base_rate(self):
+         return 0.01
+     def purchase_bonds(self, bond):
+@@ -29,15 +37,20 @@ class MockCentralBank:
+         if self.assets['cash'] < amount:
+             raise InsufficientFundsError()
+         self.assets['cash'] -= amount
++    # Central Bank mock uses dict for assets, complicated to verify against IFinancialEntity, ignoring for now
+ 
+ class MockBank:
+     def __init__(self, initial_assets):
+-        self.assets = initial_assets
+-    def deposit(self, amount): self.assets += amount
++        self._assets = initial_assets
++    @property
++    def assets(self): return self._assets
++    def deposit(self, amount): self._assets += amount
+     def withdraw(self, amount):
+-        if self.assets < amount:
++        if self._assets < amount:
+             raise InsufficientFundsError()
+-        self.assets -= amount
++        self._assets -= amount
++    def _add_assets(self, amount): self._assets += amount
++    def _sub_assets(self, amount): self._assets -= amount
+ 
+ class MockFirm:
+     def __init__(self, id, initial_cash_reserve):
+diff --git a/tests/modules/finance/test_system.py b/tests/modules/finance/test_system.py
+index a688ccf..58ffc5f 100644
+--- a/tests/modules/finance/test_system.py
++++ b/tests/modules/finance/test_system.py
+@@ -23,19 +23,19 @@ def mock_config():
+ # Define simple stub classes for entity behavior
+ class StubGovernment:
+     def __init__(self, assets=10000.0):
+-        self.assets = assets
++        self._assets = assets
+         self.debt_to_gdp_ratio = 0.5
+     def get_debt_to_gdp_ratio(self):
+         return self.debt_to_gdp_ratio
+-    def deposit(self, amount): self.assets += amount
++    def deposit(self, amount): self._assets += amount
+     def withdraw(self, amount):
+         if self.assets < amount:
+             raise InsufficientFundsError()
+-        self.assets -= amount
++        self._assets -= amount
+ 
+ class StubCentralBank:
+     def __init__(self, cash=50000.0):
+-        self.assets = {'cash': cash, 'bonds': []}
++        self._assets = {'cash': cash, 'bonds': []}
+         self.base_rate = 0.02
+     def get_base_rate(self):
+         return self.base_rate
+@@ -49,12 +49,12 @@ class StubCentralBank:
+ 
+ class StubBank:
+     def __init__(self, assets=100000.0):
+-        self.assets = assets
+-    def deposit(self, amount): self.assets += amount
++        self._assets = assets
++    def deposit(self, amount): self._assets += amount
+     def withdraw(self, amount):
+         if self.assets < amount:
+             raise InsufficientFundsError()
+-        self.assets -= amount
++        self._assets -= amount
+ 
+ @pytest.fixture
+ def mock_government():
+@@ -76,7 +76,7 @@ class StubFirm:
+     def __init__(self):
+         self.id = 1
+         self.age = 100
+-        self.assets = 10000.0
++        self._assets = 10000.0
+         self.capital_stock = 0.0
+         self.total_debt = 0.0
+         self.cash_reserve = 5000.0
+@@ -161,7 +161,7 @@ def test_issue_treasury_bonds_fail(finance_system, mock_government, mock_bank):
+ 
+ def test_bailout_fails_with_insufficient_government_funds(finance_system, mock_government, mock_firm):
+     """Verify that a bailout loan is not granted if the government cannot afford it."""
+-    mock_government.assets = 100.0  # Not enough for the bailout
++    mock_government._assets = 100.0  # Not enough for the bailout
+     amount = 500.0
+     initial_gov_assets = mock_government.assets
+     initial_firm_cash = mock_firm.cash_reserve
+@@ -195,7 +195,7 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
+     # 1. Setup: Issue a bond that will be bought by the Central Bank via QE
+     mock_government.debt_to_gdp_ratio = 1.5
+     mock_central_bank.base_rate = 0.06
+-    mock_central_bank.assets = {"bonds": [], "cash": 10000.0}
++    mock_central_bank._assets = {"bonds": [], "cash": 10000.0}
+ 
+     amount = 1000.0
+     issue_tick = 100
+diff --git a/tests/phase21/test_automation.py b/tests/phase21/test_automation.py
+index 4d712bf..d970104 100644
+--- a/tests/phase21/test_automation.py
++++ b/tests/phase21/test_automation.py
+@@ -71,7 +71,7 @@ def test_system2_planner_guidance(firm_mock):
+     # Mock Data
+     market_data = {}
+     firm_mock.revenue_this_turn = 5000.0
+-    firm_mock.assets = 300000.0 # Rich firm (Needs to be > 50 * Revenue = 250k)
++    firm_mock._assets = 300000.0 # Rich firm (Needs to be > 50 * Revenue = 250k)
+ 
+     # High wages to justify automation
+     firm_mock.employee_wages = {1: 1000.0, 2: 1000.0}
+diff --git a/tests/phase21/test_firm_system2.py b/tests/phase21/test_firm_system2.py
+index 757eee6..b144074 100644
+--- a/tests/phase21/test_firm_system2.py
++++ b/tests/phase21/test_firm_system2.py
+@@ -30,7 +30,7 @@ def test_system2_planner_guidance_automation_preference(firm_mock):
+     firm_mock.config_module.AUTOMATION_COST_PER_PCT = 100.0
+     firm_mock.employee_wages = {1: 1000.0}
+     firm_mock.revenue_this_turn = 5000.0
+-    firm_mock.assets = 50000.0
++    firm_mock._assets = 50000.0
+ 
+     firm_mock.personality = Personality.CASH_COW
+     firm_mock.system2_planner = FirmSystem2Planner(firm_mock, config)
+@@ -40,7 +40,7 @@ def test_system2_planner_guidance_automation_preference(firm_mock):
+ 
+ def test_system2_planner_guidance_ma_preference(firm_mock):
+     """Test that GROWTH_HACKER prefers M&A when rich."""
+-    firm_mock.assets = 1000000.0
++    firm_mock._assets = 1000000.0
+     firm_mock.revenue_this_turn = 10000.0
+     firm_mock.personality = Personality.GROWTH_HACKER
+     firm_mock.system2_planner = FirmSystem2Planner(firm_mock, config)
+diff --git a/tests/phase28/test_stress_scenarios.py b/tests/phase28/test_stress_scenarios.py
+index 09f265e..af004bc 100644
+--- a/tests/phase28/test_stress_scenarios.py
++++ b/tests/phase28/test_stress_scenarios.py
+@@ -13,7 +13,7 @@ class TestPhase28StressScenarios:
+     def mock_households(self):
+         h1 = MagicMock(spec=Household)
+         h1.id = 1
+-        h1.assets = 1000.0
++        h1._assets = 1000.0
+         h1.inventory = {}
+         h1.is_active = True
+         h1.is_employed = False
+@@ -25,7 +25,7 @@ class TestPhase28StressScenarios:
+ 
+         h2 = MagicMock(spec=Household)
+         h2.id = 2
+-        h2.assets = 5000.0 # Wealthy
++        h2._assets = 5000.0 # Wealthy
+         h2.is_active = True
+ 
+         return [h1, h2]
+@@ -36,7 +36,7 @@ class TestPhase28StressScenarios:
+         f1.id = 101
+         f1.type = "Farm"
+         f1.productivity_factor = 1.0
+-        f1.assets = 10000.0
++        f1._assets = 10000.0
+         return [f1]
+ 
+     @pytest.fixture
+@@ -86,7 +86,7 @@ class TestPhase28StressScenarios:
+         # Let's inspect the code: `h.assets *= (1 + ...)`
+         # This calls `h.assets.__imul__(1.5)`.
+         # However, `h.assets` is likely a primitive in the real code, but here it's a Mock or float.
+-        # If I set h1.assets = 1000.0 (float), then `h1.assets *= 1.5` updates the attribute on the mock object instance.
++        # If I set h1._assets = 1000.0 (float), then `h1.assets *= 1.5` updates the attribute on the mock object instance.
+ 
+         assert mock_households[0].assets == 1500.0
+         assert mock_households[1].assets == 7500.0
+@@ -263,7 +263,7 @@ class TestPhase28StressScenarios:
+ 
+         household = MagicMock()
+         household.id = 1
+-        household.assets = 1000.0
++        household._assets = 1000.0
+         household.inventory = {}
+         household.needs = {"survival": 50.0}
+         household.get_agent_data.return_value = {}
+@@ -334,7 +334,7 @@ class TestPhase28StressScenarios:
+ 
+         household = MagicMock()
+         household.id = 1
+-        household.assets = 1000.0
++        household._assets = 1000.0
+         household.current_wage = 10.0 # Fix TypeError
+         household.preference_asset = 1.0 # Fix
+         household.expected_inflation = {} # Avoid ZeroDivisionError
+diff --git a/tests/systems/test_commerce_system.py b/tests/systems/test_commerce_system.py
+index 549e677..971704d 100644
+--- a/tests/systems/test_commerce_system.py
++++ b/tests/systems/test_commerce_system.py
+@@ -16,7 +16,7 @@ def test_execute_consumption_and_leisure(commerce_system):
+     h1 = MagicMock()
+     h1.id = 1
+     h1.is_active = True
+-    h1.assets = 100.0
++    h1._assets = 100.0
+     h1.inventory = {"basic_food": 0}
+     # Mock apply_leisure_effect return
+     effect_dto = MagicMock()
+@@ -76,7 +76,7 @@ def test_fast_track_consumption_if_needed(commerce_system):
+     h1 = MagicMock()
+     h1.id = 1
+     h1.is_active = True
+-    h1.assets = 100.0
++    h1._assets = 100.0
+     h1.inventory = {"basic_food": 0}
+ 
+     effect_dto = MagicMock()
+diff --git a/tests/systems/test_event_system.py b/tests/systems/test_event_system.py
+index f926ac9..574c8e0 100644
+--- a/tests/systems/test_event_system.py
++++ b/tests/systems/test_event_system.py
+@@ -31,7 +31,7 @@ def test_inflation_shock(event_system):
+ def test_recession_shock(event_system):
+     # Setup
+     h1 = MagicMock()
+-    h1.assets = 1000.0
++    h1._assets = 1000.0
+     households = [h1]
+ 
+     context: EventContext = {
+@@ -49,7 +49,7 @@ def test_recession_shock(event_system):
+ def test_no_event(event_system):
+     # Setup
+     h1 = MagicMock()
+-    h1.assets = 1000.0
++    h1._assets = 1000.0
+     market = MagicMock()
+     market.current_price = 100.0
+ 
+diff --git a/tests/systems/test_ministry_of_education.py b/tests/systems/test_ministry_of_education.py
+index dfe6086..99238e9 100644
+--- a/tests/systems/test_ministry_of_education.py
++++ b/tests/systems/test_ministry_of_education.py
+@@ -14,7 +14,7 @@ class TestMinistryOfEducation(unittest.TestCase):
+         self.ministry = MinistryOfEducation(self.mock_config)
+ 
+         self.mock_government = MagicMock()
+-        self.mock_government.assets = 10000
++        self.mock_government._assets = 10000
+         self.mock_government.revenue_this_tick = 10000  # Simulate 10k revenue for budget calcs
+         self.mock_government.id = 1
+         self.mock_government.expenditure_this_tick = 0
+@@ -24,7 +24,7 @@ class TestMinistryOfEducation(unittest.TestCase):
+     def _create_household(self, id, assets, edu_level, aptitude, is_active=True):
+         h = Mock()
+         h.id = id
+-        h.assets = assets
++        h._assets = assets
+         h.education_level = edu_level
+         h.aptitude = aptitude
+         h.is_active = is_active
+diff --git a/tests/systems/test_tax_agency.py b/tests/systems/test_tax_agency.py
+index c1def49..1e15921 100644
+--- a/tests/systems/test_tax_agency.py
++++ b/tests/systems/test_tax_agency.py
+@@ -53,7 +53,7 @@ class TestTaxAgency(unittest.TestCase):
+ 
+     def test_collect_tax(self):
+         mock_gov = MagicMock()
+-        mock_gov.assets = 10000
++        mock_gov._assets = 10000
+         mock_gov.total_collected_tax = 0
+         # ... other attributes ...
+ 
+diff --git a/tests/test_ai_training_manager.py b/tests/test_ai_training_manager.py
+index 9601851..46ba7e7 100644
+--- a/tests/test_ai_training_manager.py
++++ b/tests/test_ai_training_manager.py
+@@ -34,7 +34,7 @@ def mock_households(golden_households):
+     for i in range(10):
+         hh = Mock(spec=Household)
+         hh.id = i
+-        hh.assets = float(i * 100.0)
++        hh._assets = float(i * 100.0)
+ 
+         # Ensure deep structure exists
+         decision_engine = Mock()
+diff --git a/tests/test_ai_training_manager_new.py b/tests/test_ai_training_manager_new.py
+index dfd6de5..7d98605 100644
+--- a/tests/test_ai_training_manager_new.py
++++ b/tests/test_ai_training_manager_new.py
+@@ -16,7 +16,7 @@ def mock_agents():
+     for i in range(10):
+         agent = Mock(spec=Household)
+         agent.id = i
+-        agent.assets = float(i * 100) # 0, 100, ..., 900
++        agent._assets = float(i * 100) # 0, 100, ..., 900
+         
+         # Mock Decision Engine and AI Engine
+         agent.decision_engine = Mock()
+diff --git a/tests/test_api_extensions.py b/tests/test_api_extensions.py
+index 8dc5c12..d2c71ec 100644
+--- a/tests/test_api_extensions.py
++++ b/tests/test_api_extensions.py
+@@ -22,12 +22,12 @@ class TestEconomicIndicatorsViewModel:
+                  else [MagicMock() for _ in range(2)])
+ 
+         # Override assets
+-        households[0].assets = 10
+-        households[1].assets = 20
+-        households[2].assets = 100
++        households[0]._assets = 10
++        households[1]._assets = 20
++        households[2]._assets = 100
+ 
+-        firms[0].assets = 50
+-        firms[1].assets = 10
++        firms[0]._assets = 50
++        firms[1]._assets = 10
+ 
+         # Total assets: 10, 20, 100, 50, 10
+         # Min: 10, Max: 100
+diff --git a/tests/test_bank.py b/tests/test_bank.py
+index c1acacc..4d37834 100644
+--- a/tests/test_bank.py
++++ b/tests/test_bank.py
+@@ -45,10 +45,10 @@ class TestBank:
+         )
+ 
+         assert loan_id == "loan_0"
+-        # Bank assets decreased (reserved) - Wait, we REMOVED self.assets -= amount in grant_loan
++        # Bank assets decreased (reserved) - Wait, we REMOVED self._assets -= amount in grant_loan
+         # So assets should remain same in grant_loan, assuming Transaction handles it.
+         # However, checking Bank.py:
+-        # "self.assets -= amount # Reserve reduced immediately" -> This was in the *previous* version.
++        # "self._assets -= amount # Reserve reduced immediately" -> This was in the *previous* version.
+         # I removed it in "Fix Bank Double Counting".
+         # So asset check should be == initial_assets.
+         assert bank_instance.assets == initial_assets
+diff --git a/tests/test_corporate_manager.py b/tests/test_corporate_manager.py
+index 26ab3ef..625554f 100644
+--- a/tests/test_corporate_manager.py
++++ b/tests/test_corporate_manager.py
+@@ -28,7 +28,7 @@ def firm_mock(golden_firms):
+     firm = golden_firms[0]
+ 
+     # Initialize BaseAgent fields
+-    firm.assets = 10000.0 # Default assets
++    firm._assets = 10000.0 # Default assets
+ 
+     # --- SoC Components Mocking ---
+     firm.finance = MagicMock()
+@@ -38,18 +38,18 @@ def firm_mock(golden_firms):
+ 
+     # Side effects to simulate real behavior on mock firm assets
+     def invest_side_effect(amount):
+-        firm.assets -= amount
++        firm._assets -= amount
+         return True
+ 
+     def pay_tax_side_effect(amount, *args, **kwargs):
+-        firm.assets -= amount
++        firm._assets -= amount
+         return True
+ 
+     def pay_severance_side_effect(emp, amount):
+-        firm.assets -= amount
++        firm._assets -= amount
+         # emp is a mock, so emp.assets update is mocked
+         if hasattr(emp, 'assets'):
+-             emp.assets += amount
++             emp._assets += amount
+         return True
+ 
+     def set_dividend_rate_side_effect(rate):
+@@ -140,7 +140,7 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
+     )
+ 
+     # Need enough assets to pass safety margin (default 2000)
+-    firm_mock.assets = 10000.0
++    firm_mock._assets = 10000.0
+     firm_mock.finance.revenue_this_turn = 1000.0 # Set on finance
+     expected_budget = 1000.0 * 0.2 # 200
+ 
+@@ -181,7 +181,7 @@ def test_hiring_logic(firm_mock, context_mock):
+ 
+ def test_debt_logic_borrow(firm_mock, context_mock):
+     manager = CorporateManager(MockConfig())
+-    firm_mock.assets = 1000.0
++    firm_mock._assets = 1000.0
+     firm_mock.total_debt = 0.0
+ 
+     vector = FirmActionVector(debt_aggressiveness=0.5)
+diff --git a/tests/test_decision_engine_integration.py b/tests/test_decision_engine_integration.py
+index 713e9ae..54c9ef3 100644
+--- a/tests/test_decision_engine_integration.py
++++ b/tests/test_decision_engine_integration.py
+@@ -60,7 +60,7 @@ def mock_logger():
+ def household():
+     hh = Mock(spec=Household)
+     hh.id = 1
+-    hh.assets = 1000.0
++    hh._assets = 1000.0
+     hh.inventory = {"food": 10.0}
+     hh.needs = {"survival_need": 50.0, "labor_need": 0.0}
+     hh.perceived_avg_prices = {"food": 10.0}
+@@ -77,7 +77,7 @@ def household():
+ def firm():
+     f = Mock(spec=Firm)
+     f.id = 1
+-    f.assets = 10000.0
++    f._assets = 10000.0
+     f.inventory = {"food": 50.0}
+     f.employees = []
+     f.production_targets = {"food": 100.0}
+diff --git a/tests/test_engine.py b/tests/test_engine.py
+index 5cb7fc5..201cfce 100644
+--- a/tests/test_engine.py
++++ b/tests/test_engine.py
+@@ -143,7 +143,7 @@ def mock_households(mock_config_module):
+ 
+     hh1 = Mock(spec=Household)
+     hh1.id = 1
+-    hh1.assets = 100.0
++    hh1._assets = 100.0
+     hh1.is_active = True
+     hh1.value_orientation = "wealth_and_needs"
+     hh1.decision_engine = Mock()
+@@ -165,7 +165,7 @@ def mock_households(mock_config_module):
+ 
+     hh2 = Mock(spec=Household)
+     hh2.id = 2
+-    hh2.assets = 150.0
++    hh2._assets = 150.0
+     hh2.is_active = True
+     hh2.value_orientation = "needs_and_growth"
+     hh2.decision_engine = Mock()
+diff --git a/tests/test_finance_bailout.py b/tests/test_finance_bailout.py
+index 702df77..8e8a35e 100644
+--- a/tests/test_finance_bailout.py
++++ b/tests/test_finance_bailout.py
+@@ -13,16 +13,16 @@ class MockConfig:
+ def finance_test_environment():
+     """Sets up a test environment with mocked financial entities."""
+     mock_government = Mock()
+-    mock_government.assets = 1_000_000  # Starting with 1M in assets
++    mock_government._assets = 1_000_000  # Starting with 1M in assets
+ 
+     # We need to mock the withdraw/deposit methods to simulate transactions
+     def withdraw(amount):
+         if mock_government.assets >= amount:
+-            mock_government.assets -= amount
++            mock_government._assets -= amount
+         else:
+             raise InsufficientFundsError("Not enough assets.")
+     def deposit(amount):
+-        mock_government.assets += amount
++        mock_government._assets += amount
+ 
+     mock_government.withdraw.side_effect = withdraw
+     mock_government.deposit.side_effect = deposit
+@@ -35,7 +35,7 @@ def finance_test_environment():
+     # Mock the Firm and its departments
+     mock_firm = Mock()
+     mock_firm.id = 1
+-    mock_firm.assets = 100_000
++    mock_firm._assets = 100_000
+     mock_firm.total_debt = 0.0
+     mock_firm.has_bailout_loan = False
+ 
+@@ -44,7 +44,7 @@ def finance_test_environment():
+ 
+     def add_liability_side_effect(amount, interest_rate):
+         # Simulate the firm receiving cash and taking on debt
+-        mock_firm.assets += amount
++        mock_firm._assets += amount
+         mock_firm.total_debt += amount
+ 
+     mock_firm.finance.add_liability.side_effect = add_liability_side_effect
+@@ -112,7 +112,7 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
+ 
+     # Arrange: Government has less money than the loan amount
+     loan_amount = 2_000_000
+-    mock_government.assets = 1_000_000 # Government has 1M, loan is 2M
++    mock_government._assets = 1_000_000 # Government has 1M, loan is 2M
+ 
+     initial_govt_assets = mock_government.assets
+     initial_firm_assets = mock_firm.assets
+@@ -122,7 +122,7 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
+     def limited_withdraw(amount):
+         if mock_government.assets < amount:
+             raise InsufficientFundsError("Test: Not enough funds")
+-        mock_government.assets -= amount
++        mock_government._assets -= amount
+     mock_government.withdraw.side_effect = limited_withdraw
+ 
+     # Act
+diff --git a/tests/test_firm_decision_engine_new.py b/tests/test_firm_decision_engine_new.py
+index bee3593..530eb63 100644
+--- a/tests/test_firm_decision_engine_new.py
++++ b/tests/test_firm_decision_engine_new.py
+@@ -73,7 +73,7 @@ def mock_config():
+ def mock_firm(mock_config):
+     firm = Mock(spec=Firm)
+     firm.id = 1
+-    firm.assets = 1000.0
++    firm._assets = 1000.0
+     firm.employees = []
+     firm.production_target = 100.0
+     firm.inventory = {"food": 100.0}
+@@ -451,7 +451,7 @@ class TestFirmDecisionEngine:
+     ):
+         """Verify R&D investment when aggressiveness is high."""
+         # Setup High Cash
+-        mock_firm.assets = 100000.0
++        mock_firm._assets = 100000.0
+         firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+             rd_aggressiveness=0.9,
+             sales_aggressiveness=0.5, hiring_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
+@@ -475,7 +475,7 @@ class TestFirmDecisionEngine:
+     ):
+         """Verify Capex investment when aggressiveness is high."""
+         # Setup High Cash
+-        mock_firm.assets = 100000.0
++        mock_firm._assets = 100000.0
+         firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
+             capital_aggressiveness=0.9,
+             sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
+diff --git a/tests/test_fiscal_policy.py b/tests/test_fiscal_policy.py
+index bf71169..cc94e64 100644
+--- a/tests/test_fiscal_policy.py
++++ b/tests/test_fiscal_policy.py
+@@ -55,7 +55,7 @@ def test_counter_cyclical_tax_adjustment_boom(government, mock_config, mock_cent
+ 
+ def test_debt_ceiling_enforcement(government):
+     """Test that spending is blocked when Debt Ceiling is hit."""
+-    government.assets = 0.0
++    government._assets = 0.0
+     government.total_debt = 0.0
+     government.potential_gdp = 1000.0
+     # From config, Debt Ceiling Ratio is 2.0, so ceiling is 2000.0
+@@ -64,13 +64,13 @@ def test_debt_ceiling_enforcement(government):
+ 
+     agent = Mock()
+     agent.id = 123
+-    agent.assets = 0.0
++    agent._assets = 0.0
+ 
+     # This is the critical fix. We need to simulate the side effect of
+     # `issue_treasury_bonds`, which is that the government's assets INCREASE
+     # by the amount of the bond. A simple mock doesn't do this.
+     def issue_bonds_side_effect(amount, tick):
+-        government.assets += amount
++        government._assets += amount
+         return [Mock()] # Return a successful bond issuance
+ 
+     government.finance_system.issue_treasury_bonds = Mock(side_effect=issue_bonds_side_effect)
+diff --git a/tests/test_generational_wealth_audit.py b/tests/test_generational_wealth_audit.py
+index 09a92f4..c61a9d5 100644
+--- a/tests/test_generational_wealth_audit.py
++++ b/tests/test_generational_wealth_audit.py
+@@ -11,7 +11,7 @@ class TestGenerationalWealthAudit(unittest.TestCase):
+     def create_mock_household(self, id, assets, generation):
+         mock_household = MagicMock()
+         mock_household.id = id
+-        mock_household.assets = assets
++        mock_household._assets = assets
+         mock_household.generation = generation
+         mock_household.is_active = True
+         return mock_household
+diff --git a/tests/test_government_ai_logic.py b/tests/test_government_ai_logic.py
+index d4272d9..57fc8a6 100644
+--- a/tests/test_government_ai_logic.py
++++ b/tests/test_government_ai_logic.py
+@@ -18,7 +18,7 @@ class TestGovernmentAILogic(unittest.TestCase):
+ 
+         # Configure Agent defaults
+         self.mock_agent.id = "gov_test"
+-        self.mock_agent.assets = -600.0 # Debt Ratio 0.6 (Ideal)
++        self.mock_agent._assets = -600.0 # Debt Ratio 0.6 (Ideal)
+ 
+         self.ai = GovernmentAI(self.mock_agent, self.mock_config)
+ 
+@@ -65,7 +65,7 @@ class TestGovernmentAILogic(unittest.TestCase):
+         self.mock_agent.sensory_data.unemployment_sma = 0.04
+         self.mock_agent.sensory_data.gdp_growth_sma = 0.0
+         self.mock_agent.sensory_data.current_gdp = 1000.0
+-        self.mock_agent.assets = -1000.0 # Debt 1000
++        self.mock_agent._assets = -1000.0 # Debt 1000
+ 
+         # Debt Ratio: 1000/1000 = 1.0 -> Gap 0.4 > 0.05 -> High (2)
+ 
+@@ -79,7 +79,7 @@ class TestGovernmentAILogic(unittest.TestCase):
+         self.mock_agent.sensory_data.inflation_sma = 0.05
+         self.mock_agent.sensory_data.unemployment_sma = 0.04
+         self.mock_agent.sensory_data.current_gdp = 1000.0
+-        self.mock_agent.assets = -600.0
++        self.mock_agent._assets = -600.0
+ 
+         # Inf Gap: 0.03 -> Sq: 0.0009
+         # Unemp Gap: 0.0 -> Sq: 0.0
+diff --git a/tests/test_government_fiscal_policy.py b/tests/test_government_fiscal_policy.py
+index 31b8a53..4a11fd0 100644
+--- a/tests/test_government_fiscal_policy.py
++++ b/tests/test_government_fiscal_policy.py
+@@ -16,7 +16,7 @@ def test_tax_collection_and_bailouts(government):
+     # 2. Bailout Test (now a loan, not a subsidy)
+     mock_firm = Mock()
+     mock_firm.id = 101
+-    mock_firm.assets = 1000.0
++    mock_firm._assets = 1000.0
+     initial_firm_assets = mock_firm.assets
+ 
+     # Mock the finance system to approve the bailout
+@@ -25,7 +25,7 @@ def test_tax_collection_and_bailouts(government):
+     # This is the key fix: the grant_bailout_loan method *itself* should
+     # have the side effect of decreasing the government's assets.
+     def grant_loan_side_effect(firm, amount):
+-        government.assets -= amount
++        government._assets -= amount
+         return Mock()
+ 
+     government.finance_system.grant_bailout_loan = Mock(side_effect=grant_loan_side_effect)
+@@ -47,7 +47,7 @@ def test_infrastructure_investment(government):
+ 
+     # Mock config for investment cost
+     government.config_module.INFRASTRUCTURE_INVESTMENT_COST = 5000.0
+-    government.assets = 6000.0
++    government._assets = 6000.0
+     initial_assets = government.assets
+     initial_level = government.infrastructure_level
+ 
+diff --git a/tests/test_household_ai_consumption.py b/tests/test_household_ai_consumption.py
+index b6a2c01..fb66b4a 100644
+--- a/tests/test_household_ai_consumption.py
++++ b/tests/test_household_ai_consumption.py
+@@ -34,7 +34,7 @@ class TestHouseholdAIConsumption:
+         household.id = 1
+         household.needs = {"survival": 80.0} # High survival need
+         household.inventory = {"food": 0.0}
+-        household.assets = 100.0
++        household._assets = 100.0
+         household.get_agent_data.return_value = {}
+         household.get_pre_state_data.return_value = {}
+         household.perceived_avg_prices = {"food": 10.0}
+diff --git a/tests/test_household_decision_engine_multi_good.py b/tests/test_household_decision_engine_multi_good.py
+index 84da139..8d02abf 100644
+--- a/tests/test_household_decision_engine_multi_good.py
++++ b/tests/test_household_decision_engine_multi_good.py
+@@ -61,7 +61,7 @@ def mock_config_module():
+ def mock_household(mock_config_module):
+     household = Mock(spec=Household)
+     household.id = 1
+-    household.assets = 100.0
++    household._assets = 100.0
+     household.inventory = {"basic_food": 0, "luxury_food": 0}
+     household.needs = {
+         "survival": 70.0,
+diff --git a/tests/test_household_decision_engine_new.py b/tests/test_household_decision_engine_new.py
+index 3bb4f03..5b6cae7 100644
+--- a/tests/test_household_decision_engine_new.py
++++ b/tests/test_household_decision_engine_new.py
+@@ -181,7 +181,7 @@ class TestAIDrivenHouseholdDecisionEngine:
+         mock_goods_market.get_best_ask.return_value = 1000.0
+         mock_markets = {"goods_market": mock_goods_market}
+         
+-        mock_household_dto.assets = 100.0 # DTO assets
++        mock_household_dto._assets = 100.0 # DTO assets
+ 
+         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
+              consumption_aggressiveness={"luxury_food": 0.9}
+diff --git a/tests/test_household_marginal_utility.py b/tests/test_household_marginal_utility.py
+index ee0b249..c815112 100644
+--- a/tests/test_household_marginal_utility.py
++++ b/tests/test_household_marginal_utility.py
+@@ -65,7 +65,7 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
+             config_module=self.config
+         )
+         # Give infinite money
+-        self.household.assets = 1_000_000_000 
++        self.household._assets = 1_000_000_000
+         self.household.inventory = {"food": 0}
+         self.household.needs = {"survival": 1.0} # Needs > 0 to have utility
+ 
+diff --git a/tests/test_loan_market.py b/tests/test_loan_market.py
+index f3f721d..31bb1eb 100644
+--- a/tests/test_loan_market.py
++++ b/tests/test_loan_market.py
+@@ -11,7 +11,7 @@ import config  # Import config for DEFAULT_LOAN_DURATION
+ def mock_bank():
+     bank = Mock(spec=Bank)
+     bank.id = 0
+-    bank.assets = 1000000.0
++    bank._assets = 1000000.0
+     bank.loans = {}
+     bank.grant_loan.return_value = "loan_id_123"
+     bank.process_repayment.return_value = None
+diff --git a/tests/test_phase20_integration.py b/tests/test_phase20_integration.py
+index 9599a09..1214e96 100644
+--- a/tests/test_phase20_integration.py
++++ b/tests/test_phase20_integration.py
+@@ -96,7 +96,7 @@ class TestPhase20Integration:
+     def test_system2_housing_cost_renter(self, mock_config):
+         """Test System2Planner deducting rent for non-owners."""
+         agent = MagicMock()
+-        agent.assets = 1000.0
++        agent._assets = 1000.0
+         agent.expected_wage = 10.0 # Make sure this is float
+         agent.residing_property_id = None # Homeless/Renter
+         agent.owned_properties = []
+@@ -138,7 +138,7 @@ class TestPhase20Integration:
+     def test_system2_housing_cost_owner(self, mock_config):
+         """Test System2Planner deducting mortgage interest for owners."""
+         agent = MagicMock()
+-        agent.assets = 1000.0
++        agent._assets = 1000.0
+         agent.expected_wage = 10.0 # Make sure this is float
+         agent.residing_property_id = 1
+         agent.owned_properties = [1]
+diff --git a/tests/test_phase20_scaffolding.py b/tests/test_phase20_scaffolding.py
+index d36dfda..2dc1727 100644
+--- a/tests/test_phase20_scaffolding.py
++++ b/tests/test_phase20_scaffolding.py
+@@ -69,7 +69,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
+         """Verify System2Planner positive projection logic."""
+         # Create a mock agent for the planner
+         mock_agent = MagicMock()
+-        mock_agent.assets = 1000.0
++        mock_agent._assets = 1000.0
+         mock_agent.expected_wage = 10.0
+         mock_agent.children_ids = []
+         mock_agent.spouse_id = None
+@@ -102,7 +102,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
+         """Verify System2Planner bankruptcy detection."""
+         # Create a mock agent for the planner
+         mock_agent = MagicMock()
+-        mock_agent.assets = 100.0
++        mock_agent._assets = 100.0
+         mock_agent.expected_wage = 0.0 # No income
+         mock_agent.children_ids = []
+         mock_agent.spouse_id = None
+diff --git a/tests/test_phase29_depression.py b/tests/test_phase29_depression.py
+index ade38ea..3978b0e 100644
+--- a/tests/test_phase29_depression.py
++++ b/tests/test_phase29_depression.py
+@@ -120,7 +120,7 @@ class TestPhase29Depression(unittest.TestCase):
+             h.current_wage = 10.0
+             h.children_ids = []
+             h.needs = {"survival": 0.5}
+-            h.assets = 1000
++            h._assets = 1000
+             h.decision_engine = MagicMock()
+             h.decision_engine.ai_engine = MagicMock()
+             # make_decision must return (orders, action_vector)
+@@ -139,7 +139,7 @@ class TestPhase29Depression(unittest.TestCase):
+             f.specialization = "food" if i % 2 == 0 else "electronics"
+             f.is_active = True
+             f.age = 0
+-            f.assets = 5000
++            f._assets = 5000
+             f.current_profit = 100
+             f.consecutive_loss_turns = 0
+             f.valuation = 5000.0
+diff --git a/tests/test_stock_market.py b/tests/test_stock_market.py
+index e45949b..a6bca52 100644
+--- a/tests/test_stock_market.py
++++ b/tests/test_stock_market.py
+@@ -304,7 +304,7 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
+     firm.specialization = "food"
+ 
+     # State Override
+-    firm.assets = mock_config.STARTUP_COST * 0.4  # Below threshold
++    firm._assets = mock_config.STARTUP_COST * 0.4  # Below threshold
+     firm.treasury_shares = 500
+     firm.total_shares = 1000.0
+ 
+@@ -348,7 +348,7 @@ def test_household_investment(stock_market, mock_config, golden_households):
+     household.personality = Personality.BALANCED
+ 
+     # State Override
+-    household.assets = 1000.0
++    household._assets = 1000.0
+     household.needs = {}
+     household.value_orientation = "v"
+ 
+diff --git a/tests/verification/verify_inheritance.py b/tests/verification/verify_inheritance.py
+index a1ef901..a6f5da6 100644
+--- a/tests/verification/verify_inheritance.py
++++ b/tests/verification/verify_inheritance.py
+@@ -17,7 +17,7 @@ class TestInheritance:
+         self.manager = InheritanceManager(self.config)
+         self.simulation = MagicMock()
+         self.government = MagicMock()
+-        self.government.assets = 0.0
++        self.government._assets = 0.0
+         self.simulation.government = self.government
+ 
+         # Use golden households
+@@ -40,13 +40,13 @@ class TestInheritance:
+         # Setup Deceased State
+         self.deceased.id = 1
+         # Override assets for consistency with original test logic
+-        self.deceased.assets = 50000.0
++        self.deceased._assets = 50000.0
+         self.deceased.shares_owned = {}
+         self.deceased.owned_properties = []
+         self.deceased.children_ids = [self.heir.id] # Use dynamic ID from heir
+ 
+         # Setup Heir State
+-        self.heir.assets = 0.0
++        self.heir._assets = 0.0
+         self.heir.shares_owned = {}
+         self.heir.is_active = True
+         self.heir.owned_properties = []
+@@ -71,7 +71,7 @@ class TestInheritance:
+ 
+     def test_liquidation_stocks(self):
+         """Cash poor, Stock rich. Stocks sold to pay tax."""
+-        self.deceased.assets = 1000.0 # Low cash
++        self.deceased._assets = 1000.0 # Low cash
+         self.deceased.portfolio.add(99, 100, 100.0) # 100 shares of Firm 99 @ 100.0
+         # Value = 10000.0
+         # Total Wealth = 11000.0
+diff --git a/tests/verification/verify_mitosis.py b/tests/verification/verify_mitosis.py
+index c4b4d22..8436608 100644
+--- a/tests/verification/verify_mitosis.py
++++ b/tests/verification/verify_mitosis.py
+@@ -106,7 +106,7 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
+     mock_h = golden_households[0] if golden_households else MagicMock()
+ 
+     parent = create_real_household_from_golden(mock_h, golden_config)
+-    parent.assets = 10000.0
++    parent._assets = 10000.0
+     initial_total_assets = parent.assets
+ 
+     # Simulate Mitosis (DemographicManager logic)
+@@ -114,7 +114,7 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
+     split_amount = parent.assets * 0.5
+ 
+     # 2. Deduct from parent
+-    parent.assets -= split_amount
++    parent._assets -= split_amount
+ 
+     # 3. Create child with deducted amount
+     child = parent.clone(new_id=999, initial_assets_from_parent=split_amount, current_tick=100)
+diff --git a/tests/verify_automation_tax.py b/tests/verify_automation_tax.py
+index ee147f9..61bd695 100644
+--- a/tests/verify_automation_tax.py
++++ b/tests/verify_automation_tax.py
+@@ -15,7 +15,7 @@ class TestAutomationTax(unittest.TestCase):
+         self.mock_firm = Mock()
+         self.mock_firm.id = 1
+         self.mock_firm.automation_level = 0.5
+-        self.mock_firm.assets = 10000.0
++        self.mock_firm._assets = 10000.0
+         self.mock_firm.revenue_this_turn = 5000.0
+ 
+         # Setup guidance mock
+@@ -47,10 +47,10 @@ class TestAutomationTax(unittest.TestCase):
+         # 1. Firm assets decreased by spend (4000) AND tax (4000 * 0.05 = 200)
+         # However, mocks don't automatically subtract unless side_effect logic is added.
+         # But we can check if assets were modified.
+-        # Wait, the code does firm.assets -= actual_spend.
++        # Wait, the code does firm._assets -= actual_spend.
+         # Mocks track assignments if it's a PropertyMock, but standard Mock attributes just store values.
+         # Since I didn't set up specific side effects for subtraction, checking the exact value is hard
+-        # unless the implementation does `firm.assets = firm.assets - x`.
++        # unless the implementation does `firm._assets = firm.assets - x`.
+ 
+         # Better verification: Check if government.collect_tax was called with expected amount.
+         expected_tax = 4000.0 * 0.05 # 200.0
+diff --git a/tests/verify_capital_labor_dynamics.py b/tests/verify_capital_labor_dynamics.py
+index 4c0b2f1..ca78a5b 100644
+--- a/tests/verify_capital_labor_dynamics.py
++++ b/tests/verify_capital_labor_dynamics.py
+@@ -158,7 +158,7 @@ class TestCapitalLaborDynamics(unittest.TestCase):
+         inv_budget = firm.assets * 0.1 * (cap_agg - 0.5) * 2.0
+         efficiency = 1.0 / getattr(config, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
+         added_capital = inv_budget * efficiency
+-        firm.assets -= inv_budget
++        firm._assets -= inv_budget
+         firm.capital_stock += added_capital
+         
+         logger.info(f"After Investment - Capital: {firm.capital_stock:.2f}, Assets: {firm.assets:.2f}")
+diff --git a/tests/verify_corporate_tax.py b/tests/verify_corporate_tax.py
+index 81118c6..3e928ea 100644
+--- a/tests/verify_corporate_tax.py
++++ b/tests/verify_corporate_tax.py
+@@ -78,7 +78,7 @@ class TestCorporateTax(unittest.TestCase):
+         """Test critical fix: Liquidation should not create money."""
+         self.firm.inventory = {"goods": 100.0} # Value shouldn't matter
+         self.firm.capital_stock = 50.0 # Value shouldn't matter
+-        self.firm.assets = 500.0 # Only this should be returned
++        self.firm._assets = 500.0 # Only this should be returned
+         
+         initial_total_money = self.firm.assets
+         
+diff --git a/tests/verify_leviathan.py b/tests/verify_leviathan.py
+index 504810c..de68627 100644
+--- a/tests/verify_leviathan.py
++++ b/tests/verify_leviathan.py
+@@ -24,7 +24,7 @@ def government(golden_config):
+     config.CB_INFLATION_TARGET = 0.02
+ 
+     gov = Government(id=1, config_module=config)
+-    gov.assets = 10000.0
++    gov._assets = 10000.0
+ 
+     # Ensure AI is initialized if not already (lazy init)
+     if gov.ai is None:
+diff --git a/tests/verify_monetary_integrity.py b/tests/verify_monetary_integrity.py
+index 662e085..65388d8 100644
+--- a/tests/verify_monetary_integrity.py
++++ b/tests/verify_monetary_integrity.py
+@@ -45,7 +45,7 @@ class TestMonetaryIntegrity(unittest.TestCase):
+         )
+ 
+         gov = sim.government
+-        gov.assets = 0
++        gov._assets = 0
+ 
+         property_unit = RealEstateUnit(id=101, owner_id=0, estimated_value=150000)
+         sim.real_estate_units.append(property_unit)
+diff --git a/tests/verify_monetary_transmission.py b/tests/verify_monetary_transmission.py
+index 0f5b15e..cac48e0 100644
+--- a/tests/verify_monetary_transmission.py
++++ b/tests/verify_monetary_transmission.py
+@@ -78,7 +78,7 @@ def run_scenario(interest_rate_override: float, label: str):
+     # Force initial inflation expectations to 0 and low survival need
+     for h in sim.households:
+         h.expected_inflation = {k: 0.0 for k in h.expected_inflation}
+-        h.assets = 10000.0
++        h._assets = 10000.0
+         h.needs["survival"] = 20.0  # Force low survival need to enable interest sensitivity
+ 
+     # Run for 50 ticks
+diff --git a/tests/verify_real_estate_sales.py b/tests/verify_real_estate_sales.py
+index 602b893..a27a40a 100644
+--- a/tests/verify_real_estate_sales.py
++++ b/tests/verify_real_estate_sales.py
+@@ -160,7 +160,7 @@ class TestRealEstateSales(unittest.TestCase):
+         # 4. Process Transactions (Logic we implemented)
+         # Give buyer some assets but less than price to trigger Mortgage
+         buyer = engine.households[0]
+-        buyer.assets = 3000.0 # Needs 7000 Loan (LTV 70%)
++        buyer._assets = 3000.0 # Needs 7000 Loan (LTV 70%)
+         # Note: Logic grants LTV 80% (8000). Max Loan.
+         # Downpayment = 2000. Buyer has 3000. OK.
+         
+diff --git a/tests/verify_service_market.py b/tests/verify_service_market.py
+index f902c77..f1ff0a3 100644
+--- a/tests/verify_service_market.py
++++ b/tests/verify_service_market.py
+@@ -78,7 +78,7 @@ class TestServiceMarket(unittest.TestCase):
+         self.firm.capacity_this_tick = 100.0
+         self.firm.sales_volume_this_tick = 80.0 # 80% Utilization -> Healthy (Idx 1)
+         self.firm.expenses_this_tick = 50.0 # Cost
+-        self.firm.assets = 1000.0
++        self.firm._assets = 1000.0
+ 
+         # Create dummy market data
+         market_data = {
+@@ -121,7 +121,7 @@ class TestServiceMarket(unittest.TestCase):
+         self.firm.waste_this_tick = 20.0 # 20% Waste
+         self.firm.expenses_this_tick = 100.0 # Unit Cost = 1.0
+         self.firm.revenue_this_turn = 80.0 # Sold 80 @ 1.0 (Profit -20)
+-        self.firm.assets = 1000.0 # Dummy
++        self.firm._assets = 1000.0 # Dummy
+ 
+         # Unit Cost = 100 / 100 = 1.0
+         # Waste Penalty = 20 * 1.0 * 0.5 = 10.0
+diff --git a/tests/verify_vanity_society.py b/tests/verify_vanity_society.py
+index e505afc..9021fcc 100644
+--- a/tests/verify_vanity_society.py
++++ b/tests/verify_vanity_society.py
+@@ -116,7 +116,7 @@ def test_veblen_demand(vanity_config):
+     household.conformity = 1.0 # Max conformity
+     household.inventory = {}
+     household.needs = {"social": 10.0}
+-    household.assets = 10000.0
++    household._assets = 10000.0
+     household.expected_inflation = {} # Fix attribute error
+     household.personality = Personality.STATUS_SEEKER # Fix attribute error
+     household.preference_asset = 1.0
+diff --git a/tests/verify_wo103_phase1.py b/tests/verify_wo103_phase1.py
+index fbf8544..67272f5 100644
+--- a/tests/verify_wo103_phase1.py
++++ b/tests/verify_wo103_phase1.py
+@@ -62,12 +62,12 @@ class TestWO103Phase1(unittest.TestCase):
+     def test_assets_property_setter(self):
+         print("\nTest Assets Property Setter (External Update)...")
+         # Emulate TransactionProcessor adding money
+-        self.firm.assets += 500.0
++        self.firm._assets += 500.0
+         self.assertEqual(self.firm.assets, 1500.0)
+         self.assertEqual(self.firm.finance.balance, 1500.0)
+ 
+         # Emulate TransactionProcessor removing money
+-        self.firm.assets -= 200.0
++        self.firm._assets -= 200.0
+         self.assertEqual(self.firm.assets, 1300.0)
+         self.assertEqual(self.firm.finance.balance, 1300.0)
+         print("Property Setter Passed.")
+@@ -84,7 +84,7 @@ class TestWO103Phase1(unittest.TestCase):
+     def test_holding_costs(self):
+         print("\nTest Holding Costs...")
+         # Reset assets to 1000
+-        self.firm.assets = 1000.0
++        self.firm._assets = 1000.0
+ 
+         # Setup inventory
+         self.firm.inventory = {"food": 10.0}

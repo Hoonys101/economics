@@ -114,9 +114,15 @@ def run_jules(args, registry):
             print(f"❌ Error: {e}")
 
 def run_git_review(args, registry):
-    data = registry.get("git_review", {})
-    branch = args[0] if args else data.get("branch", "main")
-    instruction = args[1] if len(args) > 1 else data.get("instruction", "Analyze this PR.").replace("\n", "|")
+    key = args[0] if args else "git_review"
+    data = registry.get(key, {})
+    if not data and args:
+        # Fallback for direct branch name passing
+        branch = args[0]
+        instruction = args[1] if len(args) > 1 else "Analyze this PR."
+    else:
+        branch = data.get("branch", args[0] if args else "main")
+        instruction = data.get("instruction", "Analyze this PR.").replace("\n", "|")
 
     print(f"🔍 [Git-Review] Syncing and analyzing branch: {branch}")
     
@@ -156,8 +162,14 @@ def run_git_review(args, registry):
     print(f"✅ Review complete. Report: {review_output}")
 
 def run_merge(args, registry):
-    data = registry.get("merge", {})
-    branch = args[0] if args else data.get("branch", "")
+    key = args[0] if args else "merge"
+    data = registry.get(key, {})
+    
+    if not data and args:
+        branch = args[0]
+    else:
+        branch = data.get("branch", "")
+        
     if not branch:
         print("❌ Error: Branch name required for merge.")
         return
@@ -173,7 +185,7 @@ def run_merge(args, registry):
 
     for cmd in commands:
         res = run_command(cmd)
-        if res.returncode != 0:
+        if res is None or res.returncode != 0:
             print(f"❌ Stop: Merge sequence interrupted at '{' '.join(cmd)}'")
             return
     print(f"✅ Branch {branch} successfully merged and cleaned up.")
@@ -198,12 +210,10 @@ def main():
         "harvest": run_harvest
     }
 
-    if tool in ["gemini", "jules"]:
-        registry = load_registry()
+    if tool in dispatch:
+        # Load registry for all tools that might use it
+        registry = load_registry() if tool != "harvest" else {}
         dispatch[tool](extra_args, registry)
-    elif tool in dispatch:
-        # For git-review, merge, harvest, passed registry is None or empty dict if not loaded
-        dispatch[tool](extra_args, {})
     else:
         print(f"❌ Unknown tool: {tool}")
         sys.exit(1)
