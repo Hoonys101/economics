@@ -78,9 +78,7 @@ class HousingSystem:
                         if settlement and simulation.reflux_system:
                             settlement.transfer(owner, simulation.reflux_system, cost, "housing_maintenance")
                         else:
-                            owner._sub_assets(cost)
-                            if simulation.reflux_system:
-                                simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
+                            logger.critical("HOUSING_STRICT_MODE | Missing settlement for maintenance.")
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:
@@ -96,8 +94,7 @@ class HousingSystem:
                         if settlement:
                             settlement.transfer(tenant, owner, rent, "rent")
                         else:
-                            tenant._sub_assets(rent)
-                            owner._add_assets(rent)
+                            logger.critical("HOUSING_STRICT_MODE | Missing settlement for rent.")
                     else:
                         # Eviction due to rent non-payment
                         logger.info(
@@ -167,8 +164,7 @@ class HousingSystem:
                     if settlement:
                         settlement.transfer(simulation.bank, buyer, loan_amount, "mortgage_disbursement")
                     else:
-                        simulation.bank._sub_assets(loan_amount)
-                        buyer._add_assets(loan_amount)
+                        logger.critical("HOUSING_STRICT_MODE | Missing settlement for mortgage.")
                     unit.mortgage_id = loan_id
                 else:
                     unit.mortgage_id = None
@@ -180,8 +176,7 @@ class HousingSystem:
             if settlement:
                 settlement.transfer(buyer, seller, trade_value, "housing_purchase")
             else:
-                buyer._sub_assets(trade_value)
-                seller._add_assets(trade_value)
+                logger.critical("HOUSING_STRICT_MODE | Missing settlement for housing transaction.")
 
             if isinstance(seller, Government):
                 # Use record_revenue to avoid double charge (Settlement done above)
