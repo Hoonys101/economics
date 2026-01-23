@@ -59,7 +59,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         agent_data = household.agent_data
 
-        goods_list = list(config.GOODS.keys()) # Error here, DTO doesn't have GOODS.
+        # Use self.config_module which contains the full GOODS definition
+        goods_list = list(self.config_module.GOODS.keys())
         
         action_vector = self.ai_engine.decide_action_vector(
             agent_data, market_data, goods_list

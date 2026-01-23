@@ -67,7 +67,7 @@ class CommerceSystem(ICommerceSystem):
                 if b_amt > 0:
                     cost = b_amt * food_price
                     if household.assets >= cost:
-                        household.assets -= cost
+                        household.withdraw(cost)
                         household.inventory["basic_food"] = household.inventory.get("basic_food", 0) + b_amt
 
                         # Capture money sink

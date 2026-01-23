@@ -46,7 +46,7 @@ class Bank(IFinancialEntity):
     """
 
     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager):
-        self.id = id
+        self._id = id
         self._assets = initial_assets # Reserves
         self.config_manager = config_manager
 
@@ -69,6 +69,10 @@ class Bank(IFinancialEntity):
             f"Bank {self.id} initialized. Assets: {self.assets:.2f}, Base Rate: {self.base_rate:.2%}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
         )
+
+    @property
+    def id(self) -> int:
+        return self._id
 
     @property
     def assets(self) -> float:
@@ -132,23 +136,6 @@ class Bank(IFinancialEntity):
         # 2. Liquidity Check
         # 1a. Credit Jail Check (Phase 4)
         if self._get_config("credit_recovery_ticks", None) is not None:
-            # We assume borrower_id maps to an agent object passed somewhere, but here we only have ID.
-            # We need to access the agent to check 'credit_frozen_until_tick'.
-            # Bank doesn't have direct access to agent list in grant_loan signature.
-            # But grant_loan is usually called by LoanMarket which has access or the Agent itself calls it via Market.
-            # Wait, LoanMarket.process_loan_request calls this.
-            # Ideally, LoanMarket should check this before calling grant_loan.
-            # BUT, to enforce it at the Bank level, we'd need the agent object or a way to look it up.
-            # Since we don't have it here easily without changing signature, let's assume LoanMarket checks it OR
-            # we rely on the fact that if an agent is in credit jail, their 'credit_rating' (conceptually) is 0.
-            # Let's enforce it in LoanMarket instead?
-            # The spec says "Modify Bank to handle defaults ... prevents Moral Hazard".
-            # It also says "Bankrupt agents remain active but are economically crippled (Credit Jail)."
-            # Let's add an optional 'borrower_agent' arg or rely on LoanMarket.
-            # I'll update LoanMarket in the next steps or if I can modify Bank signature.
-            # Actually, Bank.run_tick has access to 'agents_dict'.
-            # Let's trust LoanMarket for now, OR change signature.
-            # I will assume LoanMarket handles the denial based on the flag I added to Household.
             pass
 
         # 3. Gold Standard (Full Reserve) Check vs. Fractional Reserve (WO-064)
