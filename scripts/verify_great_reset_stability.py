@@ -36,7 +36,6 @@ def verify_great_reset():
     logger.info("Starting Great Reset Stress Test (WO-115)...")
 
     # 2. Initialize Simulation
-    # Ensure standard config
     config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0
     config.GOVERNMENT_STIMULUS_ENABLED = True
     config.TICKS_PER_YEAR = 100
@@ -47,7 +46,7 @@ def verify_great_reset():
     m2_history: List[float] = []
     debt_ratio_history: List[float] = []
 
-    m2_baseline = 0.0
+    initial_wealth_sum = 0.0
 
     total_ticks = 1000
 
@@ -61,46 +60,63 @@ def verify_great_reset():
 
         # 4. Calculate Metrics
 
-        # M2 Calculation (Zero-Sum Check)
-        # M2 = Households + Firms + Government + Reflux + Bank
-        # Note: We access _assets directly or via property if available.
-        # Assuming all agents implement IFinancialEntity which usually exposes assets property.
+        # Access Data via DTOs/Public Interface (Encapsulation)
+        h_assets_sum = 0.0
+        for h in sim.households:
+            if h.is_active:
+                # Use get_state_dto() if available, else get_agent_data()
+                if hasattr(h, "create_state_dto"):
+                    h_assets_sum += h.create_state_dto().assets
+                else:
+                    h_assets_sum += h.get_agent_data().get("assets", 0.0)
 
-        h_assets = sum(h.assets for h in sim.households if h.is_active)
-        f_assets = sum(f.assets for f in sim.firms if f.is_active)
+        f_assets_sum = 0.0
+        for f in sim.firms:
+            if f.is_active:
+                # Use get_state_dto() for firms
+                if hasattr(f, "get_state_dto"):
+                    f_assets_sum += f.get_state_dto().assets
+                else:
+                    f_assets_sum += f.get_agent_data().get("assets", 0.0)
 
-        # Government
+        # Government & Bank (System Agents) - Access via properties as they are IFinancialEntity
         gov_assets = sim.government.assets
-
-        # Reflux
+        bank_assets = sim.bank.assets if sim.bank else 0.0
         reflux_bal = sim.reflux_system.balance if sim.reflux_system else 0.0
 
-        # Bank
-        bank_assets = sim.bank.assets if sim.bank else 0.0
+        # Total System Wealth (M2 Proxy in Closed System)
+        # Sum of all cash/reserves held by all entities.
+        current_wealth_sum = h_assets_sum + f_assets_sum + gov_assets + reflux_bal + bank_assets
 
-        current_m2 = h_assets + f_assets + gov_assets + reflux_bal + bank_assets
-        m2_history.append(current_m2)
+        # Track Money Injection (Government Emission)
+        money_issued = sim.government.total_money_issued
+        money_destroyed = sim.government.total_money_destroyed
+        net_injection = money_issued - money_destroyed
 
         if tick == 1:
-            m2_baseline = current_m2
+            initial_wealth_sum = current_wealth_sum - net_injection
+
+        # Check Zero-Sum Integrity
+        # Expected Wealth = Initial + Net Injection
+        expected_wealth = initial_wealth_sum + net_injection
+
+        # Floating point tolerance
+        if abs(current_wealth_sum - expected_wealth) > 1.0:
+             logger.warning(
+                 f"ZERO_SUM_DRIFT | Tick {tick} | Current: {current_wealth_sum:,.2f} vs Expected: {expected_wealth:,.2f} | Diff: {current_wealth_sum - expected_wealth:,.2f}"
+             )
+
+        m2_history.append(current_wealth_sum)
 
         # Debt-to-GDP Calculation
-        # Debt = Government Total Debt
-        # GDP = Current Nominal GDP (Production * Price)
-
         debt = sim.government.total_debt
 
-        # Get GDP from tracker
+        # GDP from tracker
         metrics = sim.tracker.get_latest_indicators()
         prod = metrics.get("total_production", 0.0)
         price = metrics.get("avg_goods_price", 0.0)
 
-        # If production/price is 0 (early ticks), use approximation or 0
         nominal_gdp = prod * price
-
-        # Use smoothed GDP if available to avoid volatility spikes
-        # But tracker usually gives current tick data.
-        # Let's use nominal_gdp directly.
 
         debt_ratio = 0.0
         if nominal_gdp > 0:
@@ -108,9 +124,12 @@ def verify_great_reset():
 
         debt_ratio_history.append(debt_ratio)
 
+        if debt_ratio > 2.0:
+             logger.warning(f"FISCAL_WARNING | Debt-to-GDP Ratio > 200% ({debt_ratio:.2%}) at Tick {tick}")
+
         # Log Progress
         if tick % 100 == 0:
-            logger.info(f"Tick {tick}/{total_ticks} | M2: {current_m2:,.2f} | Debt/GDP: {debt_ratio:.2%}")
+            logger.info(f"Tick {tick}/{total_ticks} | Total Wealth: {current_wealth_sum:,.2f} | Debt/GDP: {debt_ratio:.2%}")
 
     # 5. Analysis & Reporting
     logger.info("Simulation Complete. Generating Report...")
@@ -124,46 +143,38 @@ def verify_great_reset():
     report_lines.append("## 1. System Stability (Atomicity)")
     if verification_handler.atomicity_failures:
         report_lines.append(f"**FAILED**: {len(verification_handler.atomicity_failures)} Atomicity Failures detected.")
-        for fail in verification_handler.atomicity_failures[:10]:
-            report_lines.append(f"- {fail}")
-        if len(verification_handler.atomicity_failures) > 10:
-            report_lines.append(f"- ... and {len(verification_handler.atomicity_failures) - 10} more.")
     else:
         report_lines.append("**PASSED**: No Atomicity Failures (DEPOSIT_FAILURE / ROLLBACK_FAILED) detected.")
 
     # M2 Integrity Check
     report_lines.append("")
-    report_lines.append("## 2. M2 Money Supply Integrity")
+    report_lines.append("## 2. Money Supply Integrity (Zero-Sum)")
     m2_start = m2_history[0]
     m2_end = m2_history[-1]
-    m2_delta = m2_end - m2_start
-    m2_pct_change = (m2_delta / m2_start) * 100 if m2_start != 0 else 0.0
 
-    report_lines.append(f"- Start M2: {m2_start:,.2f}")
-    report_lines.append(f"- End M2: {m2_end:,.2f}")
-    report_lines.append(f"- Delta: {m2_delta:,.2f} ({m2_pct_change:+.2f}%)")
+    money_issued = sim.government.total_money_issued
+    money_destroyed = sim.government.total_money_destroyed
+    net_gov_injection = money_issued - money_destroyed
 
-    # Zero-Sum Analysis
-    # In a pure Zero-Sum system, Delta should be 0.
-    # However, Bank Loans create money (Deposit) and Loan Repayment destroys it.
-    # Government Bond Issuance: Buyers(Cash) -> Govt(Cash). M2 const.
-    # Tax: HH(Cash) -> Govt(Cash). M2 const.
-    # Spending: Govt(Cash) -> HH(Cash). M2 const.
-    # So ONLY Bank Credit Creation/Destruction affects M2 in this definition.
-    # If M2 grows, it implies Net Lending > 0.
-    # We check if the change corresponds to Net Loan Growth?
-    # Bank Assets = Cash + Loans (Receivable)?
-    # Wait. Bank Assets in code usually means 'Cash/Reserves'.
-    # If Bank lends 100: Bank Cash -100, Firm Cash +100. Sum M2 = 0.
-    # IF Bank creates money from thin air (Fractional Reserve):
-    # Bank Cash (Reserves) doesn't change? Firm Cash +100.
-    # In this sim, does Bank have infinite cash or is it constrained?
-    # Usually `bank.withdraw` reduces its assets.
-    # If Bank Assets go negative (which is allowed for Central Bank but maybe not commercial Bank),
-    # then M2 Sum would still be 0 if we count negative Bank Assets.
-    # BUT, if Bank Assets floor at 0 and it still lends -> Creation.
-    # Let's see what the report says.
+    # Verify: End Wealth approx Start Wealth + Net Injection
+    # Note: Start M2 in history includes Injection up to Tick 1.
+    # We should use 'initial_wealth_sum' calculated at Tick 1 start logic.
 
+    expected_end = initial_wealth_sum + net_gov_injection
+    drift = m2_end - expected_end
+
+    report_lines.append(f"- Initial Base Money: {initial_wealth_sum:,.2f}")
+    report_lines.append(f"- Net Govt Injection: {net_gov_injection:,.2f} (Issued: {money_issued:,.2f}, Destroyed: {money_destroyed:,.2f})")
+    report_lines.append(f"- Final Total Wealth: {m2_end:,.2f}")
+    report_lines.append(f"- Expected Total Wealth: {expected_end:,.2f}")
+    report_lines.append(f"- Unexplained Drift: {drift:,.2f}")
+
+    if abs(drift) < 100.0: # Tolerance
+        report_lines.append("**PASSED**: Money supply evolution is consistent with Government emission.")
+    else:
+        report_lines.append(f"**WARNING**: Significant unexplained money drift ({drift:,.2f}). Possible leak.")
+
+    # Fiscal Stability
     report_lines.append("")
     report_lines.append("## 3. Fiscal Stability (Debt-to-GDP)")
     if debt_ratio_history:
@@ -171,10 +182,11 @@ def verify_great_reset():
         end_debt = debt_ratio_history[-1]
         report_lines.append(f"- Max Debt/GDP: {max_debt:.2%}")
         report_lines.append(f"- Final Debt/GDP: {end_debt:.2%}")
-        if end_debt > 2.0: # Arbitrary threshold for "Spiral"
-            report_lines.append("- **WARNING**: Debt-to-GDP ratio is very high (>200%).")
+
+        if max_debt > 2.0:
+            report_lines.append("- **WARNING**: Debt-to-GDP ratio exceeded 200% at some point.")
         else:
-            report_lines.append("- Debt levels appear sustainable.")
+            report_lines.append("- Debt levels remained within safe limits (<200%).")
     else:
         report_lines.append("- No Debt/GDP data available.")
 
@@ -191,8 +203,6 @@ def verify_great_reset():
     if verification_handler.atomicity_failures:
         sys.exit(1)
 
-    # We don't fail on M2 drift yet as we are diagnosing, unless it's huge.
-    # But WO says "Monitor".
     sys.exit(0)
 
 if __name__ == "__main__":
