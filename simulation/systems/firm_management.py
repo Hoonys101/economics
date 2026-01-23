@@ -28,7 +28,7 @@ class FirmSystem:
         # 1. Capital Deduction
         if founder_household.assets < startup_cost:
             return None
-        founder_household.assets -= startup_cost
+        founder_household._sub_assets(startup_cost)
 
         # 2. Generate New Firm ID
         max_id = max([a.id for a in simulation.agents.values()], default=0)

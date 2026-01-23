@@ -96,7 +96,7 @@ class TestPhase20Integration:
     def test_system2_housing_cost_renter(self, mock_config):
         """Test System2Planner deducting rent for non-owners."""
         agent = MagicMock()
-        agent.assets = 1000.0
+        agent._assets = 1000.0
         agent.expected_wage = 10.0 # Make sure this is float
         agent.residing_property_id = None # Homeless/Renter
         agent.owned_properties = []
@@ -138,7 +138,7 @@ class TestPhase20Integration:
     def test_system2_housing_cost_owner(self, mock_config):
         """Test System2Planner deducting mortgage interest for owners."""
         agent = MagicMock()
-        agent.assets = 1000.0
+        agent._assets = 1000.0
         agent.expected_wage = 10.0 # Make sure this is float
         agent.residing_property_id = 1
         agent.owned_properties = [1]

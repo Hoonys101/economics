@@ -55,7 +55,7 @@ def test_counter_cyclical_tax_adjustment_boom(government, mock_config, mock_cent
 
 def test_debt_ceiling_enforcement(government):
     """Test that spending is blocked when Debt Ceiling is hit."""
-    government.assets = 0.0
+    government._assets = 0.0
     government.total_debt = 0.0
     government.potential_gdp = 1000.0
     # From config, Debt Ceiling Ratio is 2.0, so ceiling is 2000.0
@@ -64,13 +64,13 @@ def test_debt_ceiling_enforcement(government):
 
     agent = Mock()
     agent.id = 123
-    agent.assets = 0.0
+    agent._assets = 0.0
 
     # This is the critical fix. We need to simulate the side effect of
     # `issue_treasury_bonds`, which is that the government's assets INCREASE
     # by the amount of the bond. A simple mock doesn't do this.
     def issue_bonds_side_effect(amount, tick):
-        government.assets += amount
+        government._assets += amount
         return [Mock()] # Return a successful bond issuance
 
     government.finance_system.issue_treasury_bonds = Mock(side_effect=issue_bonds_side_effect)

@@ -99,7 +99,7 @@ class Household(BaseAgent, ILearningAgent):
         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
 
         # Initialize Econ Component Initial State
-        self.econ_component.assets = initial_assets
+        self.econ_component._assets = initial_assets
         # Skills & Inventory are managed by Econ Component primarily, but accessed via Facade
         # Currently BaseAgent has self.inventory. We should sync or delegate.
         # EconComponent has its own _inventory. BaseAgent's inventory is initialized empty.
@@ -168,7 +168,7 @@ class Household(BaseAgent, ILearningAgent):
         self.aptitude: float = max(0.0, min(1.0, raw_aptitude))
         
         # Initialize Econ Component Initial State
-        self.econ_component.assets = initial_assets
+        self.econ_component._assets = initial_assets
         # Skills & Inventory are managed by Econ Component primarily, but accessed via Facade
         # Currently BaseAgent has self.inventory. We should sync or delegate.
         # EconComponent has its own _inventory. BaseAgent's inventory is initialized empty.
@@ -242,9 +242,13 @@ class Household(BaseAgent, ILearningAgent):
     def assets(self) -> float:
         return self.econ_component.assets
 
-    @assets.setter
-    def assets(self, value: float) -> None:
-        self.econ_component.assets = value
+    def _add_assets(self, amount: float) -> None:
+        """[PROTECTED] Delegate to EconComponent."""
+        self.econ_component._add_assets(amount)
+
+    def _sub_assets(self, amount: float) -> None:
+        """[PROTECTED] Delegate to EconComponent."""
+        self.econ_component._sub_assets(amount)
 
     @property
     def inventory(self) -> Dict[str, float]:

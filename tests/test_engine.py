@@ -143,7 +143,7 @@ def mock_households(mock_config_module):
 
     hh1 = Mock(spec=Household)
     hh1.id = 1
-    hh1.assets = 100.0
+    hh1._assets = 100.0
     hh1.is_active = True
     hh1.value_orientation = "wealth_and_needs"
     hh1.decision_engine = Mock()
@@ -165,7 +165,7 @@ def mock_households(mock_config_module):
 
     hh2 = Mock(spec=Household)
     hh2.id = 2
-    hh2.assets = 150.0
+    hh2._assets = 150.0
     hh2.is_active = True
     hh2.value_orientation = "needs_and_growth"
     hh2.decision_engine = Mock()

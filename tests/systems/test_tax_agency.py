@@ -53,7 +53,7 @@ class TestTaxAgency(unittest.TestCase):
 
     def test_collect_tax(self):
         mock_gov = MagicMock()
-        mock_gov.assets = 10000
+        mock_gov._assets = 10000
         mock_gov.total_collected_tax = 0
         # ... other attributes ...
 

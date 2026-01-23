@@ -90,7 +90,7 @@ class DemographicManager:
             # Let's assume standard INITIAL_ASSETS or small portion from parent.
             # "Initial 자산은 부모 자산의 일부 이전"
             initial_gift = parent.assets * 0.1
-            parent.assets -= initial_gift
+            parent._sub_assets(initial_gift)
 
             # Create Instance
             # We need to clone parent's structure but reset state
@@ -257,11 +257,11 @@ class DemographicManager:
         # Distribute
         share = net_amount / len(heirs)
         for heir in heirs:
-            heir.assets += share
+            heir._add_assets(share)
             self.logger.info(
                 f"INHERITANCE | Heir {heir.id} received {share:.2f} from {deceased_agent.id}.",
                 extra={"heir_id": heir.id, "deceased_id": deceased_agent.id}
             )
 
         # Clear deceased assets so engine doesn't double count or tax again
-        deceased_agent.assets = 0.0
+        deceased_agent._sub_assets(deceased_agent.assets)

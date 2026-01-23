@@ -91,7 +91,8 @@ class Firm(BaseAgent, ILearningAgent):
         # SoC Refactor: HR and Finance Components
         self.hr = HRDepartment(self)
         # WO-103 Phase 1: Initialize Finance with buffered assets
-        self.finance = FinanceDepartment(self, config_module, initial_capital=self._assets_buffer)
+        # Fix: Use initial_capital passed to constructor, or self._assets from BaseAgent
+        self.finance = FinanceDepartment(self, config_module, initial_capital=initial_capital)
 
         self.production = ProductionDepartment(self, config_module)
         self.sales = SalesDepartment(self, config_module)
@@ -155,19 +156,19 @@ class Firm(BaseAgent, ILearningAgent):
             return self.finance.balance
         return self._assets_buffer
 
-    @assets.setter
-    def assets(self, value: float) -> None:
+    def _add_assets(self, amount: float) -> None:
+        """[PROTECTED] Delegate to FinanceDepartment."""
         if hasattr(self, 'finance'):
-             # Calculate diff to update finance.
-             # This supports external direct modifications (like +=, -=) by delegating to credit/debit.
-             current = self.finance.balance
-             diff = value - current
-             if diff > 0:
-                 self.finance.credit(diff, "External Update (Setter)")
-             elif diff < 0:
-                 self.finance.debit(abs(diff), "External Update (Setter)")
+            self.finance.credit(amount, "Settlement Transfer")
         else:
-             self._assets_buffer = value
+            self._assets_buffer += amount
+
+    def _sub_assets(self, amount: float) -> None:
+        """[PROTECTED] Delegate to FinanceDepartment."""
+        if hasattr(self, 'finance'):
+            self.finance.debit(amount, "Settlement Transfer")
+        else:
+            self._assets_buffer -= amount
 
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""

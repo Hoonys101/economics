@@ -45,7 +45,7 @@ class TestMonetaryIntegrity(unittest.TestCase):
         )
 
         gov = sim.government
-        gov.assets = 0
+        gov._assets = 0
 
         property_unit = RealEstateUnit(id=101, owner_id=0, estimated_value=150000)
         sim.real_estate_units.append(property_unit)

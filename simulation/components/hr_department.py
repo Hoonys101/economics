@@ -71,8 +71,8 @@ class HRDepartment:
                 net_wage = wage - income_tax
 
                 # Transactions
-                self.firm.assets -= wage
-                employee.assets += net_wage
+                self.firm._sub_assets(wage)
+                employee._add_assets(net_wage)
 
                 # Track Labor Income
                 if hasattr(employee, "labor_income_this_tick"):
@@ -99,8 +99,8 @@ class HRDepartment:
 
         if self.firm.assets >= severance_pay:
             # Fire with severance
-            self.firm.assets -= severance_pay
-            employee.assets += severance_pay
+            self.firm._sub_assets(severance_pay)
+            employee._add_assets(severance_pay)
 
             self.firm.logger.info(
                 f"SEVERANCE | Firm {self.firm.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",

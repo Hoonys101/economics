@@ -17,7 +17,7 @@ class TestInheritance:
         self.manager = InheritanceManager(self.config)
         self.simulation = MagicMock()
         self.government = MagicMock()
-        self.government.assets = 0.0
+        self.government._assets = 0.0
         self.simulation.government = self.government
 
         # Use golden households
@@ -40,13 +40,13 @@ class TestInheritance:
         # Setup Deceased State
         self.deceased.id = 1
         # Override assets for consistency with original test logic
-        self.deceased.assets = 50000.0
+        self.deceased._assets = 50000.0
         self.deceased.shares_owned = {}
         self.deceased.owned_properties = []
         self.deceased.children_ids = [self.heir.id] # Use dynamic ID from heir
 
         # Setup Heir State
-        self.heir.assets = 0.0
+        self.heir._assets = 0.0
         self.heir.shares_owned = {}
         self.heir.is_active = True
         self.heir.owned_properties = []
@@ -71,7 +71,7 @@ class TestInheritance:
 
     def test_liquidation_stocks(self):
         """Cash poor, Stock rich. Stocks sold to pay tax."""
-        self.deceased.assets = 1000.0 # Low cash
+        self.deceased._assets = 1000.0 # Low cash
         self.deceased.portfolio.add(99, 100, 100.0) # 100 shares of Firm 99 @ 100.0
         # Value = 10000.0
         # Total Wealth = 11000.0

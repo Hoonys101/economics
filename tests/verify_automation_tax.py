@@ -15,7 +15,7 @@ class TestAutomationTax(unittest.TestCase):
         self.mock_firm = Mock()
         self.mock_firm.id = 1
         self.mock_firm.automation_level = 0.5
-        self.mock_firm.assets = 10000.0
+        self.mock_firm._assets = 10000.0
         self.mock_firm.revenue_this_turn = 5000.0
 
         # Setup guidance mock
@@ -47,10 +47,10 @@ class TestAutomationTax(unittest.TestCase):
         # 1. Firm assets decreased by spend (4000) AND tax (4000 * 0.05 = 200)
         # However, mocks don't automatically subtract unless side_effect logic is added.
         # But we can check if assets were modified.
-        # Wait, the code does firm.assets -= actual_spend.
+        # Wait, the code does firm._assets -= actual_spend.
         # Mocks track assignments if it's a PropertyMock, but standard Mock attributes just store values.
         # Since I didn't set up specific side effects for subtraction, checking the exact value is hard
-        # unless the implementation does `firm.assets = firm.assets - x`.
+        # unless the implementation does `firm._assets = firm.assets - x`.
 
         # Better verification: Check if government.collect_tax was called with expected amount.
         expected_tax = 4000.0 * 0.05 # 200.0

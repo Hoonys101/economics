@@ -50,6 +50,8 @@ class TransactionProcessor(SystemInterface):
             # ==================================================================
             # 1. Financial Settlement (Asset Transfer & Taxes)
             # ==================================================================
+            settlement = getattr(state, 'settlement_system', None)
+
             if tx.transaction_type == "goods":
                 # Goods: Apply Sales Tax
                 tax_amount = trade_value * sales_tax_rate
@@ -59,20 +61,36 @@ class TransactionProcessor(SystemInterface):
                     if buyer.assets < (trade_value + tax_amount):
                         buyer.check_solvency(government)
 
-                buyer.assets -= (trade_value + tax_amount)
-                seller.assets += trade_value
+                if settlement:
+                    settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+                    if tax_amount > 0:
+                        settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
+                else:
+                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value + tax_amount)
+                    else: buyer.assets -= (trade_value + tax_amount)
+
+                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
+                    else: seller.assets += trade_value
+
+                    if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
+                    else: government.assets += tax_amount
+
                 government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
 
             elif tx.transaction_type == "stock":
-                # Stock: NO Sales Tax (Capital Gains Tax is handled elsewhere/later)
-                buyer.assets -= trade_value
-                seller.assets += trade_value
+                # Stock: NO Sales Tax
+                if settlement:
+                    settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
+                else:
+                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
+                    else: buyer.assets -= trade_value
+                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
+                    else: seller.assets += trade_value
             
             elif tx.transaction_type in ["labor", "research_labor"]:
                 # Labor: Apply Income Tax
                 tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
 
-                # Progressive Tax Bracket survival cost check
                 if "basic_food_current_sell_price" in goods_market_data:
                     avg_food_price = goods_market_data["basic_food_current_sell_price"]
                 else:
@@ -84,31 +102,72 @@ class TransactionProcessor(SystemInterface):
                 tax_amount = government.calculate_income_tax(trade_value, survival_cost)
                 
                 if tax_payer == "FIRM":
-                    buyer.assets -= (trade_value + tax_amount)
-                    seller.assets += trade_value
+                    if settlement:
+                        settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
+                        if tax_amount > 0:
+                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_firm:{tx.transaction_type}")
+                    else:
+                        if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value + tax_amount)
+                        else: buyer.assets -= (trade_value + tax_amount)
+
+                        if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
+                        else: seller.assets += trade_value
+
+                        if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
+                        else: government.assets += tax_amount
+
                     government.collect_tax(tax_amount, "income_tax_firm", buyer.id, current_time)
                 else:
-                    buyer.assets -= trade_value
-                    seller.assets += (trade_value - tax_amount)
+                    # Household pays tax (Withholding model)
+                    net_wage = trade_value - tax_amount
+                    if settlement:
+                        settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
+                        if tax_amount > 0:
+                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_withheld:{tx.transaction_type}")
+                    else:
+                        if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value) # Buyer pays full (net + tax split dest)
+                        else: buyer.assets -= trade_value
+
+                        if hasattr(seller, '_add_assets'): seller._add_assets(net_wage)
+                        else: seller.assets += net_wage
+
+                        if hasattr(government, '_add_assets'): government._add_assets(tax_amount)
+                        else: government.assets += tax_amount
+
                     government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
             
             elif tx.item_id == "interest_payment":
-                # Interest Payment: Buyer (Borrower) pays Seller (Bank)
-                buyer.assets -= trade_value
-                seller.assets += trade_value
+                if settlement:
+                    settlement.transfer(buyer, seller, trade_value, "interest_payment")
+                else:
+                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
+                    else: buyer.assets -= trade_value
+                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
+                    else: seller.assets += trade_value
+
                 if isinstance(buyer, Firm):
                     buyer.finance.record_expense(trade_value)
 
             elif tx.transaction_type == "dividend":
-                # Dividend: Firm (Seller) pays Household (Buyer)
-                seller.assets -= trade_value
-                buyer.assets += trade_value
+                if settlement:
+                    settlement.transfer(seller, buyer, trade_value, "dividend_payment")
+                else:
+                    if hasattr(seller, '_sub_assets'): seller._sub_assets(trade_value)
+                    else: seller.assets -= trade_value
+                    if hasattr(buyer, '_add_assets'): buyer._add_assets(trade_value)
+                    else: buyer.assets += trade_value
+
                 if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
                     buyer.capital_income_this_tick += trade_value
             else:
-                # Default / Other (Loan principals, etc.)
-                buyer.assets -= trade_value
-                seller.assets += trade_value
+                # Default / Other
+                if settlement:
+                    settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
+                else:
+                    if hasattr(buyer, '_sub_assets'): buyer._sub_assets(trade_value)
+                    else: buyer.assets -= trade_value
+                    if hasattr(seller, '_add_assets'): seller._add_assets(trade_value)
+                    else: seller.assets += trade_value
 
             # ==================================================================
             # 2. Meta Logic (Inventory, Employment, Share Registry)

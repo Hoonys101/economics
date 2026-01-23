@@ -137,7 +137,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                         if household.is_active and firm.id in household.shares_owned:
                             share_ratio = household.shares_owned[firm.id] / outstanding_shares
                             distribution = total_cash * share_ratio
-                            household.assets += distribution
+                            household._add_assets(distribution)
                             self.logger.info(
                                 f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
                                 f"{distribution:.2f} from Firm {firm.id} liquidation",
@@ -146,13 +146,15 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 else:
                     from simulation.agents.government import Government
                     if isinstance(state.government, Government):
+                        # Note: collect_tax no longer adds assets. We must transfer/add manually.
+                        state.government._add_assets(total_cash)
                         state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
             for household in state.households:
                 if firm.id in household.shares_owned:
                     del household.shares_owned[firm.id]
                     if state.stock_market:
                         state.stock_market.update_shareholder(household.id, firm.id, 0)
-            firm.assets = 0.0
+            firm._sub_assets(firm.assets)
             self.logger.info(
                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}

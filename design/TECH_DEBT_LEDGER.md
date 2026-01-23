@@ -70,8 +70,8 @@
 
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
-| **TD-101** | 2026-01-23 | **Shadow Economy (Direct Mutation)** | Implement `FinanceSystem.atomic_transfer` and ban `assets +=` | Zero-sum violation / Audit blindness | **HIGH_PRIORITY** |
-| **TD-102** | 2026-01-23 | **Residual Evaporation (Inheritance Leak)** | Implement Remainder Tracking in `InheritanceManager` | Systemic Deflation / Float Leak | **ACTUAL_LEAK** |
+| **TD-101** | 2026-01-23 | **Shadow Economy (Direct Mutation)** | Implement `SettlementSystem` and ban `assets +=` | Zero-sum violation / Audit blindness | **RESOLVED** (WO-112) |
+| **TD-102** | 2026-01-23 | **Residual Evaporation (Inheritance Leak)** | Implemented Residual Catch-all in `InheritanceManager` | Systemic Deflation / Float Leak | **RESOLVED** (WO-112) |
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
 | **TD-104** | 2026-01-23 | **Bank Interface Ghosting** | Formalize `IBankService` Protocol in `modules/finance/api.py` | Implementation/Design Gap | **PARITY_ERROR** |
 

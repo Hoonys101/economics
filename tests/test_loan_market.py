@@ -11,7 +11,7 @@ import config  # Import config for DEFAULT_LOAN_DURATION
 def mock_bank():
     bank = Mock(spec=Bank)
     bank.id = 0
-    bank.assets = 1000000.0
+    bank._assets = 1000000.0
     bank.loans = {}
     bank.grant_loan.return_value = "loan_id_123"
     bank.process_repayment.return_value = None

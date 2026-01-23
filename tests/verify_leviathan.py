@@ -24,7 +24,7 @@ def government(golden_config):
     config.CB_INFLATION_TARGET = 0.02
 
     gov = Government(id=1, config_module=config)
-    gov.assets = 10000.0
+    gov._assets = 10000.0
 
     # Ensure AI is initialized if not already (lazy init)
     if gov.ai is None:

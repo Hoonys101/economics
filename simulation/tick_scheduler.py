@@ -315,7 +315,12 @@ class TickScheduler:
                  # 2a. Corporate Tax
                  if firm.is_active and firm.current_profit > 0:
                      tax_amount = state.government.calculate_corporate_tax(firm.current_profit)
-                     firm.assets -= tax_amount
+                     if state.settlement_system:
+                         state.settlement_system.transfer(firm, state.government, tax_amount, "corporate_tax")
+                     else:
+                         # Fallback
+                         firm._sub_assets(tax_amount)
+                         state.government._add_assets(tax_amount)
                      state.government.collect_tax(tax_amount, "corporate_tax", firm.id, state.time)
 
         # 2b. Government Infra Investment

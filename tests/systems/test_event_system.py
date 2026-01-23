@@ -31,7 +31,7 @@ def test_inflation_shock(event_system):
 def test_recession_shock(event_system):
     # Setup
     h1 = MagicMock()
-    h1.assets = 1000.0
+    h1._assets = 1000.0
     households = [h1]
 
     context: EventContext = {
@@ -49,7 +49,7 @@ def test_recession_shock(event_system):
 def test_no_event(event_system):
     # Setup
     h1 = MagicMock()
-    h1.assets = 1000.0
+    h1._assets = 1000.0
     market = MagicMock()
     market.current_price = 100.0
 

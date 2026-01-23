@@ -61,7 +61,7 @@ def mock_config_module():
 def mock_household(mock_config_module):
     household = Mock(spec=Household)
     household.id = 1
-    household.assets = 100.0
+    household._assets = 100.0
     household.inventory = {"basic_food": 0, "luxury_food": 0}
     household.needs = {
         "survival": 70.0,

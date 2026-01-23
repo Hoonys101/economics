@@ -78,7 +78,7 @@ class TestServiceMarket(unittest.TestCase):
         self.firm.capacity_this_tick = 100.0
         self.firm.sales_volume_this_tick = 80.0 # 80% Utilization -> Healthy (Idx 1)
         self.firm.expenses_this_tick = 50.0 # Cost
-        self.firm.assets = 1000.0
+        self.firm._assets = 1000.0
 
         # Create dummy market data
         market_data = {
@@ -121,7 +121,7 @@ class TestServiceMarket(unittest.TestCase):
         self.firm.waste_this_tick = 20.0 # 20% Waste
         self.firm.expenses_this_tick = 100.0 # Unit Cost = 1.0
         self.firm.revenue_this_turn = 80.0 # Sold 80 @ 1.0 (Profit -20)
-        self.firm.assets = 1000.0 # Dummy
+        self.firm._assets = 1000.0 # Dummy
 
         # Unit Cost = 100 / 100 = 1.0
         # Waste Penalty = 20 * 1.0 * 0.5 = 10.0

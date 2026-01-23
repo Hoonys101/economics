@@ -135,7 +135,7 @@ class FinanceDepartment:
 
             # Bailout repayment
             self.debit(repayment, "Bailout Repayment")
-            government.assets += repayment # Direct transfer to government
+            government._add_assets(repayment) # Direct transfer to government
 
             self.firm.total_debt -= repayment
             self.current_profit -= repayment
@@ -214,7 +214,7 @@ class FinanceDepartment:
         if distributable_cash > 0:
             dividend_amount = distributable_cash
             self.debit(dividend_amount, "Private Dividend")
-            owner.assets += dividend_amount
+            owner._add_assets(dividend_amount)
 
             if hasattr(owner, 'income_capital_cumulative'):
                 owner.income_capital_cumulative += dividend_amount
@@ -387,7 +387,7 @@ class FinanceDepartment:
     def pay_severance(self, employee: Household, amount: float) -> bool:
         if self._cash >= amount:
             self.debit(amount, "Severance Pay")
-            employee.assets += amount
+            employee._add_assets(amount)
             self.record_expense(amount)
             return True
         return False

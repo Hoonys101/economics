@@ -120,7 +120,7 @@ class TestPhase29Depression(unittest.TestCase):
             h.current_wage = 10.0
             h.children_ids = []
             h.needs = {"survival": 0.5}
-            h.assets = 1000
+            h._assets = 1000
             h.decision_engine = MagicMock()
             h.decision_engine.ai_engine = MagicMock()
             # make_decision must return (orders, action_vector)
@@ -139,7 +139,7 @@ class TestPhase29Depression(unittest.TestCase):
             f.specialization = "food" if i % 2 == 0 else "electronics"
             f.is_active = True
             f.age = 0
-            f.assets = 5000
+            f._assets = 5000
             f.current_profit = 100
             f.consecutive_loss_turns = 0
             f.valuation = 5000.0

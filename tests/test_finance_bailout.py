@@ -13,16 +13,16 @@ class MockConfig:
 def finance_test_environment():
     """Sets up a test environment with mocked financial entities."""
     mock_government = Mock()
-    mock_government.assets = 1_000_000  # Starting with 1M in assets
+    mock_government._assets = 1_000_000  # Starting with 1M in assets
 
     # We need to mock the withdraw/deposit methods to simulate transactions
     def withdraw(amount):
         if mock_government.assets >= amount:
-            mock_government.assets -= amount
+            mock_government._assets -= amount
         else:
             raise InsufficientFundsError("Not enough assets.")
     def deposit(amount):
-        mock_government.assets += amount
+        mock_government._assets += amount
 
     mock_government.withdraw.side_effect = withdraw
     mock_government.deposit.side_effect = deposit
@@ -35,7 +35,7 @@ def finance_test_environment():
     # Mock the Firm and its departments
     mock_firm = Mock()
     mock_firm.id = 1
-    mock_firm.assets = 100_000
+    mock_firm._assets = 100_000
     mock_firm.total_debt = 0.0
     mock_firm.has_bailout_loan = False
 
@@ -44,7 +44,7 @@ def finance_test_environment():
 
     def add_liability_side_effect(amount, interest_rate):
         # Simulate the firm receiving cash and taking on debt
-        mock_firm.assets += amount
+        mock_firm._assets += amount
         mock_firm.total_debt += amount
 
     mock_firm.finance.add_liability.side_effect = add_liability_side_effect
@@ -112,7 +112,7 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
 
     # Arrange: Government has less money than the loan amount
     loan_amount = 2_000_000
-    mock_government.assets = 1_000_000 # Government has 1M, loan is 2M
+    mock_government._assets = 1_000_000 # Government has 1M, loan is 2M
 
     initial_govt_assets = mock_government.assets
     initial_firm_assets = mock_firm.assets
@@ -122,7 +122,7 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
     def limited_withdraw(amount):
         if mock_government.assets < amount:
             raise InsufficientFundsError("Test: Not enough funds")
-        mock_government.assets -= amount
+        mock_government._assets -= amount
     mock_government.withdraw.side_effect = limited_withdraw
 
     # Act

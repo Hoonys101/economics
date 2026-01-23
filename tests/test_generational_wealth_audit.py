@@ -11,7 +11,7 @@ class TestGenerationalWealthAudit(unittest.TestCase):
     def create_mock_household(self, id, assets, generation):
         mock_household = MagicMock()
         mock_household.id = id
-        mock_household.assets = assets
+        mock_household._assets = assets
         mock_household.generation = generation
         mock_household.is_active = True
         return mock_household

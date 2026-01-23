@@ -78,7 +78,7 @@ def run_scenario(interest_rate_override: float, label: str):
     # Force initial inflation expectations to 0 and low survival need
     for h in sim.households:
         h.expected_inflation = {k: 0.0 for k in h.expected_inflation}
-        h.assets = 10000.0
+        h._assets = 10000.0
         h.needs["survival"] = 20.0  # Force low survival need to enable interest sensitivity
 
     # Run for 50 ticks

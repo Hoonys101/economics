@@ -165,7 +165,7 @@ def audit_integrity():
     # ------------------------------------------------------------------
     logger.info("Checking Immigration Funding...")
     gov = sim.government
-    gov.assets = 10000.0
+    gov._assets = 10000.0
     initial_gov = gov.assets
 
     # We call _create_immigrants directly to force it
@@ -191,7 +191,11 @@ def audit_integrity():
     victim = sim.firms[0]
     victim.inventory['basic_food'] = 10.0
     victim.capital_stock = 500.0
-    victim.assets = 100.0
+    diff = 100.0 - victim.assets
+    if hasattr(victim, '_add_assets'):
+        victim._add_assets(diff)
+    else:
+        victim.assets = 100.0
 
     # Ensure market exists for basic_food for pricing
     if 'basic_food' not in sim.markets:

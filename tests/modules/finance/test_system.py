@@ -23,19 +23,19 @@ def mock_config():
 # Define simple stub classes for entity behavior
 class StubGovernment:
     def __init__(self, assets=10000.0):
-        self.assets = assets
+        self._assets = assets
         self.debt_to_gdp_ratio = 0.5
     def get_debt_to_gdp_ratio(self):
         return self.debt_to_gdp_ratio
-    def deposit(self, amount): self.assets += amount
+    def deposit(self, amount): self._assets += amount
     def withdraw(self, amount):
         if self.assets < amount:
             raise InsufficientFundsError()
-        self.assets -= amount
+        self._assets -= amount
 
 class StubCentralBank:
     def __init__(self, cash=50000.0):
-        self.assets = {'cash': cash, 'bonds': []}
+        self._assets = {'cash': cash, 'bonds': []}
         self.base_rate = 0.02
     def get_base_rate(self):
         return self.base_rate
@@ -49,12 +49,12 @@ class StubCentralBank:
 
 class StubBank:
     def __init__(self, assets=100000.0):
-        self.assets = assets
-    def deposit(self, amount): self.assets += amount
+        self._assets = assets
+    def deposit(self, amount): self._assets += amount
     def withdraw(self, amount):
         if self.assets < amount:
             raise InsufficientFundsError()
-        self.assets -= amount
+        self._assets -= amount
 
 @pytest.fixture
 def mock_government():
@@ -76,7 +76,7 @@ class StubFirm:
     def __init__(self):
         self.id = 1
         self.age = 100
-        self.assets = 10000.0
+        self._assets = 10000.0
         self.capital_stock = 0.0
         self.total_debt = 0.0
         self.cash_reserve = 5000.0
@@ -161,7 +161,7 @@ def test_issue_treasury_bonds_fail(finance_system, mock_government, mock_bank):
 
 def test_bailout_fails_with_insufficient_government_funds(finance_system, mock_government, mock_firm):
     """Verify that a bailout loan is not granted if the government cannot afford it."""
-    mock_government.assets = 100.0  # Not enough for the bailout
+    mock_government._assets = 100.0  # Not enough for the bailout
     amount = 500.0
     initial_gov_assets = mock_government.assets
     initial_firm_cash = mock_firm.cash_reserve
@@ -195,7 +195,7 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
     # 1. Setup: Issue a bond that will be bought by the Central Bank via QE
     mock_government.debt_to_gdp_ratio = 1.5
     mock_central_bank.base_rate = 0.06
-    mock_central_bank.assets = {"bonds": [], "cash": 10000.0}
+    mock_central_bank._assets = {"bonds": [], "cash": 10000.0}
 
     amount = 1000.0
     issue_tick = 100

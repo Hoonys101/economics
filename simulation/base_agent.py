@@ -15,7 +15,7 @@ class BaseAgent(ABC):
         logger: Optional[logging.Logger] = None,
     ):
         self.id = id
-        self.assets = initial_assets
+        self._assets = initial_assets
         self.needs = initial_needs
         self.decision_engine = decision_engine
         self.value_orientation = value_orientation
@@ -33,6 +33,19 @@ class BaseAgent(ABC):
         
         # [Cleanup] Standardized Memory Structure
         self.memory: Dict[str, Any] = {}
+
+    @property
+    def assets(self) -> float:
+        """Current assets (Read-Only)."""
+        return self._assets
+
+    def _add_assets(self, amount: float) -> None:
+        """[PROTECTED] Increase assets. Only for SettlementSystem."""
+        self._assets += amount
+
+    def _sub_assets(self, amount: float) -> None:
+        """[PROTECTED] Decrease assets. Only for SettlementSystem."""
+        self._assets -= amount
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""

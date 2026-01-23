@@ -158,7 +158,7 @@ class TestCapitalLaborDynamics(unittest.TestCase):
         inv_budget = firm.assets * 0.1 * (cap_agg - 0.5) * 2.0
         efficiency = 1.0 / getattr(config, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
         added_capital = inv_budget * efficiency
-        firm.assets -= inv_budget
+        firm._assets -= inv_budget
         firm.capital_stock += added_capital
         
         logger.info(f"After Investment - Capital: {firm.capital_stock:.2f}, Assets: {firm.assets:.2f}")

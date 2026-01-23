@@ -26,6 +26,8 @@ class InheritanceManager:
             government: The entity collecting tax.
             simulation: Access to markets/registry for liquidation and transfer.
         """
+        settlement = getattr(simulation.state, 'settlement_system', None)
+
         self.logger.info(
             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
@@ -100,9 +102,14 @@ class InheritanceManager:
                 proceeds = share.quantity * price
 
                 # Transfer: Deceased -> Cash, Government -> Stock (or burn?)
-                # If Govt buys, it pays Cash.
-                deceased.assets += proceeds
-                simulation.government.assets -= proceeds
+                if settlement:
+                    settlement.transfer(government, deceased, proceeds, f"liquidation_stock:{firm_id}")
+                else:
+                    if hasattr(government, '_sub_assets'): government._sub_assets(proceeds)
+                    else: government.assets -= proceeds
+                    if hasattr(deceased, '_add_assets'): deceased._add_assets(proceeds)
+                    else: deceased.assets += proceeds
+
                 simulation.government.total_money_issued += proceeds # Injection (Bank/Gov Buyout)
 
                 liquidation_proceeds += proceeds
@@ -143,8 +150,14 @@ class InheritanceManager:
                 sale_price = unit.estimated_value * fire_sale_ratio
 
                 # Govt buys unit
-                deceased.assets += sale_price
-                simulation.government.assets -= sale_price
+                if settlement:
+                    settlement.transfer(government, deceased, sale_price, f"liquidation_re:{unit.id}")
+                else:
+                    if hasattr(government, '_sub_assets'): government._sub_assets(sale_price)
+                    else: government.assets -= sale_price
+                    if hasattr(deceased, '_add_assets'): deceased._add_assets(sale_price)
+                    else: deceased.assets += sale_price
+
                 simulation.government.total_money_issued += sale_price # Injection
 
                 # Transfer Title
@@ -165,7 +178,14 @@ class InheritanceManager:
         # Determine final tax payment (limited by assets if bankruptcy)
         actual_tax_paid = min(deceased.assets, tax_amount)
         if actual_tax_paid > 0:
-            deceased.assets -= actual_tax_paid
+            if settlement:
+                settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
+            else:
+                if hasattr(deceased, '_sub_assets'): deceased._sub_assets(actual_tax_paid)
+                else: deceased.assets -= actual_tax_paid
+                if hasattr(government, '_add_assets'): government._add_assets(actual_tax_paid)
+                else: government.assets += actual_tax_paid
+
             simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased.id, simulation.time)
 
         # 5. Distribution (Transfer)
@@ -181,7 +201,12 @@ class InheritanceManager:
             # 1. State Confiscation (Cash)
             surplus = deceased.assets
             if surplus > 0:
-                deceased.assets = 0
+                if settlement:
+                    settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
+                else:
+                    deceased._sub_assets(surplus)
+                    government._add_assets(surplus)
+
                 simulation.government.collect_tax(surplus, "escheatment", deceased.id, simulation.time)
                 self.logger.info(
                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
@@ -222,10 +247,38 @@ class InheritanceManager:
         num_heirs = len(heirs)
 
         # A. Cash
-        cash_share = deceased.assets / num_heirs
+        total_cash = deceased.assets
+        cash_share = round(total_cash / num_heirs, 2)
+        total_distributed = 0.0
+
         for heir in heirs:
-            heir.assets += cash_share
-        deceased.assets = 0.0
+            if settlement:
+                settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
+            else:
+                deceased._sub_assets(cash_share)
+                heir._add_assets(cash_share)
+            total_distributed += cash_share
+
+        # Residual Catch-all (WO-112)
+        # Note: If deceased.assets was reduced by transfer, we check remainder via calculation or checking asset balance.
+        # Since we used settlement (which reduces asset), deceased.assets should be ~0.
+        # But cash_share logic used deceased.assets (initial) / num_heirs.
+        # The remainder is mathematically (Total - (Share * N)).
+        # If we transferred (Share * N), the deceased might have a small remaining balance due to rounding.
+        # Let's check remaining balance.
+
+        remainder = deceased.assets
+        if remainder > 0:
+             if settlement:
+                 settlement.transfer(deceased, government, remainder, "inheritance_residual")
+             else:
+                 deceased._sub_assets(remainder)
+                 government._add_assets(remainder)
+
+             simulation.government.collect_tax(remainder, "inheritance_residual", deceased.id, simulation.time)
+             self.logger.info(f"RESIDUAL_CAPTURED | Transferred {remainder:.4f} residual dust to Government.")
+
+        # deceased.assets should be 0.0 now.
 
         # B. Stocks (Portfolio Merge)
         # Split each holding N ways

@@ -60,7 +60,7 @@ def mock_logger():
 def household():
     hh = Mock(spec=Household)
     hh.id = 1
-    hh.assets = 1000.0
+    hh._assets = 1000.0
     hh.inventory = {"food": 10.0}
     hh.needs = {"survival_need": 50.0, "labor_need": 0.0}
     hh.perceived_avg_prices = {"food": 10.0}
@@ -77,7 +77,7 @@ def household():
 def firm():
     f = Mock(spec=Firm)
     f.id = 1
-    f.assets = 10000.0
+    f._assets = 10000.0
     f.inventory = {"food": 50.0}
     f.employees = []
     f.production_targets = {"food": 100.0}

@@ -62,12 +62,12 @@ class TestWO103Phase1(unittest.TestCase):
     def test_assets_property_setter(self):
         print("\nTest Assets Property Setter (External Update)...")
         # Emulate TransactionProcessor adding money
-        self.firm.assets += 500.0
+        self.firm._assets += 500.0
         self.assertEqual(self.firm.assets, 1500.0)
         self.assertEqual(self.firm.finance.balance, 1500.0)
 
         # Emulate TransactionProcessor removing money
-        self.firm.assets -= 200.0
+        self.firm._assets -= 200.0
         self.assertEqual(self.firm.assets, 1300.0)
         self.assertEqual(self.firm.finance.balance, 1300.0)
         print("Property Setter Passed.")
@@ -84,7 +84,7 @@ class TestWO103Phase1(unittest.TestCase):
     def test_holding_costs(self):
         print("\nTest Holding Costs...")
         # Reset assets to 1000
-        self.firm.assets = 1000.0
+        self.firm._assets = 1000.0
 
         # Setup inventory
         self.firm.inventory = {"food": 10.0}

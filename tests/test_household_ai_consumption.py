@@ -34,7 +34,7 @@ class TestHouseholdAIConsumption:
         household.id = 1
         household.needs = {"survival": 80.0} # High survival need
         household.inventory = {"food": 0.0}
-        household.assets = 100.0
+        household._assets = 100.0
         household.get_agent_data.return_value = {}
         household.get_pre_state_data.return_value = {}
         household.perceived_avg_prices = {"food": 10.0}

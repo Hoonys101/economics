@@ -160,7 +160,7 @@ class TestRealEstateSales(unittest.TestCase):
         # 4. Process Transactions (Logic we implemented)
         # Give buyer some assets but less than price to trigger Mortgage
         buyer = engine.households[0]
-        buyer.assets = 3000.0 # Needs 7000 Loan (LTV 70%)
+        buyer._assets = 3000.0 # Needs 7000 Loan (LTV 70%)
         # Note: Logic grants LTV 80% (8000). Max Loan.
         # Downpayment = 2000. Buyer has 3000. OK.
         

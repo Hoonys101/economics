@@ -18,7 +18,7 @@ class TestGovernmentAILogic(unittest.TestCase):
 
         # Configure Agent defaults
         self.mock_agent.id = "gov_test"
-        self.mock_agent.assets = -600.0 # Debt Ratio 0.6 (Ideal)
+        self.mock_agent._assets = -600.0 # Debt Ratio 0.6 (Ideal)
 
         self.ai = GovernmentAI(self.mock_agent, self.mock_config)
 
@@ -65,7 +65,7 @@ class TestGovernmentAILogic(unittest.TestCase):
         self.mock_agent.sensory_data.unemployment_sma = 0.04
         self.mock_agent.sensory_data.gdp_growth_sma = 0.0
         self.mock_agent.sensory_data.current_gdp = 1000.0
-        self.mock_agent.assets = -1000.0 # Debt 1000
+        self.mock_agent._assets = -1000.0 # Debt 1000
 
         # Debt Ratio: 1000/1000 = 1.0 -> Gap 0.4 > 0.05 -> High (2)
 
@@ -79,7 +79,7 @@ class TestGovernmentAILogic(unittest.TestCase):
         self.mock_agent.sensory_data.inflation_sma = 0.05
         self.mock_agent.sensory_data.unemployment_sma = 0.04
         self.mock_agent.sensory_data.current_gdp = 1000.0
-        self.mock_agent.assets = -600.0
+        self.mock_agent._assets = -600.0
 
         # Inf Gap: 0.03 -> Sq: 0.0009
         # Unemp Gap: 0.0 -> Sq: 0.0

@@ -8,18 +8,26 @@ from modules.finance.api import InsufficientFundsError
 # Mock objects that will be passed to FinanceSystem
 class MockGovernment:
     def __init__(self, initial_assets):
-        self.assets = initial_assets
+        self._assets = initial_assets
+    @property
+    def assets(self): return self._assets
     def get_debt_to_gdp_ratio(self):
         return 0.5
-    def deposit(self, amount): self.assets += amount
+    def deposit(self, amount): self._assets += amount
     def withdraw(self, amount):
-        if self.assets < amount:
+        if self._assets < amount:
             raise InsufficientFundsError()
-        self.assets -= amount
+        self._assets -= amount
+    # Interface compatibility
+    def _add_assets(self, amount): self._assets += amount
+    def _sub_assets(self, amount): self._assets -= amount
+
 
 class MockCentralBank:
     def __init__(self, initial_cash):
-        self.assets = {"cash": initial_cash, "bonds": []}
+        self._assets = {"cash": initial_cash, "bonds": []}
+    @property
+    def assets(self): return self._assets
     def get_base_rate(self):
         return 0.01
     def purchase_bonds(self, bond):
@@ -29,15 +37,20 @@ class MockCentralBank:
         if self.assets['cash'] < amount:
             raise InsufficientFundsError()
         self.assets['cash'] -= amount
+    # Central Bank mock uses dict for assets, complicated to verify against IFinancialEntity, ignoring for now
 
 class MockBank:
     def __init__(self, initial_assets):
-        self.assets = initial_assets
-    def deposit(self, amount): self.assets += amount
+        self._assets = initial_assets
+    @property
+    def assets(self): return self._assets
+    def deposit(self, amount): self._assets += amount
     def withdraw(self, amount):
-        if self.assets < amount:
+        if self._assets < amount:
             raise InsufficientFundsError()
-        self.assets -= amount
+        self._assets -= amount
+    def _add_assets(self, amount): self._assets += amount
+    def _sub_assets(self, amount): self._assets -= amount
 
 class MockFirm:
     def __init__(self, id, initial_cash_reserve):

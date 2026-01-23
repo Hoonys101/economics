@@ -53,7 +53,7 @@ def mock_central_bank(mock_tracker, mock_config):
 def mock_bank():
     """Provides a mock commercial Bank."""
     bank = Mock(spec=Bank)
-    bank.assets = 5000000.0
+    bank._assets = 5000000.0
     return bank
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def government(mock_config, mock_tracker, finance_system):
     """
     # Refactored Government constructor no longer takes tracker or initial_assets
     gov = Government(id=1, config_module=mock_config)
-    gov.assets = mock_config.GOVERNMENT_INITIAL_ASSETS
+    gov._assets = mock_config.GOVERNMENT_INITIAL_ASSETS
 
     # Replace the real finance system with our mocked one
     gov.finance_system = finance_system

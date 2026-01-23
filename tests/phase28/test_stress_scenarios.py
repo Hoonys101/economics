@@ -13,7 +13,7 @@ class TestPhase28StressScenarios:
     def mock_households(self):
         h1 = MagicMock(spec=Household)
         h1.id = 1
-        h1.assets = 1000.0
+        h1._assets = 1000.0
         h1.inventory = {}
         h1.is_active = True
         h1.is_employed = False
@@ -25,7 +25,7 @@ class TestPhase28StressScenarios:
 
         h2 = MagicMock(spec=Household)
         h2.id = 2
-        h2.assets = 5000.0 # Wealthy
+        h2._assets = 5000.0 # Wealthy
         h2.is_active = True
 
         return [h1, h2]
@@ -36,7 +36,7 @@ class TestPhase28StressScenarios:
         f1.id = 101
         f1.type = "Farm"
         f1.productivity_factor = 1.0
-        f1.assets = 10000.0
+        f1._assets = 10000.0
         return [f1]
 
     @pytest.fixture
@@ -86,7 +86,7 @@ class TestPhase28StressScenarios:
         # Let's inspect the code: `h.assets *= (1 + ...)`
         # This calls `h.assets.__imul__(1.5)`.
         # However, `h.assets` is likely a primitive in the real code, but here it's a Mock or float.
-        # If I set h1.assets = 1000.0 (float), then `h1.assets *= 1.5` updates the attribute on the mock object instance.
+        # If I set h1._assets = 1000.0 (float), then `h1.assets *= 1.5` updates the attribute on the mock object instance.
 
         assert mock_households[0].assets == 1500.0
         assert mock_households[1].assets == 7500.0
@@ -263,7 +263,7 @@ class TestPhase28StressScenarios:
 
         household = MagicMock()
         household.id = 1
-        household.assets = 1000.0
+        household._assets = 1000.0
         household.inventory = {}
         household.needs = {"survival": 50.0}
         household.get_agent_data.return_value = {}
@@ -334,7 +334,7 @@ class TestPhase28StressScenarios:
 
         household = MagicMock()
         household.id = 1
-        household.assets = 1000.0
+        household._assets = 1000.0
         household.current_wage = 10.0 # Fix TypeError
         household.preference_asset = 1.0 # Fix
         household.expected_inflation = {} # Avoid ZeroDivisionError

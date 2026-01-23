@@ -69,7 +69,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
         """Verify System2Planner positive projection logic."""
         # Create a mock agent for the planner
         mock_agent = MagicMock()
-        mock_agent.assets = 1000.0
+        mock_agent._assets = 1000.0
         mock_agent.expected_wage = 10.0
         mock_agent.children_ids = []
         mock_agent.spouse_id = None
@@ -102,7 +102,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
         """Verify System2Planner bankruptcy detection."""
         # Create a mock agent for the planner
         mock_agent = MagicMock()
-        mock_agent.assets = 100.0
+        mock_agent._assets = 100.0
         mock_agent.expected_wage = 0.0 # No income
         mock_agent.children_ids = []
         mock_agent.spouse_id = None

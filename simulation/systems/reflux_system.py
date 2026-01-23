@@ -38,7 +38,7 @@ class EconomicRefluxSystem:
         amount_per_household = total_amount / len(active_households)
 
         for agent in active_households:
-            agent.assets += amount_per_household
+            agent._add_assets(amount_per_household)
 
             # Record as additional labor income (Service Sector)
             if hasattr(agent, "labor_income_this_tick"):

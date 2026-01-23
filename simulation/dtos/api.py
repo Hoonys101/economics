@@ -127,6 +127,7 @@ class SimulationState:
     reflux_system: Any
     ai_training_manager: Optional[Any]
     ai_trainer: Optional[Any] # Added for WO-103
+    settlement_system: Optional[Any] = None # WO-112: Settlement System
     next_agent_id: int = 0 # Added for WO-103
     real_estate_units: List[Any] = field(default_factory=list) # Added for WO-103
     # Mutable state for the tick

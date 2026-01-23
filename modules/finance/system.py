@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 class FinanceSystem(IFinanceSystem):
     """Manages sovereign debt, corporate bailouts, and solvency checks."""
 
-    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: any):
+    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: any, settlement_system: any = None):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
         self.config_module = config_module
+        self.settlement_system = settlement_system
         self.outstanding_bonds: List[BondDTO] = []
 
     def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
@@ -155,26 +156,22 @@ class FinanceSystem(IFinanceSystem):
 
     def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float) -> bool:
         """
-        Atomically handles the movement of funds between two entities using the IFinancialEntity protocol.
-
-        Args:
-            debtor: The entity from which money is withdrawn.
-            creditor: The entity to which money is deposited.
-            amount: The amount of money to transfer.
-
-        Returns:
-            True if the transfer was successful, False otherwise.
+        Atomically handles the movement of funds using SettlementSystem.
         """
         if amount <= 0:
-            return True # A zero-amount transfer is trivially successful.
-
-        try:
-            debtor.withdraw(amount)
-            creditor.deposit(amount)
             return True
-        except InsufficientFundsError as e:
-            logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
-            return False
+
+        if self.settlement_system:
+            return self.settlement_system.transfer(debtor, creditor, amount, "FinanceSystem Transfer")
+        else:
+            # Fallback legacy logic
+            try:
+                debtor.withdraw(amount)
+                creditor.deposit(amount)
+                return True
+            except InsufficientFundsError as e:
+                logger.warning(f"TRANSFER_FAILED | Atomic transfer of {amount:.2f} failed: {e}")
+                return False
 
     def service_debt(self, current_tick: int) -> None:
         """

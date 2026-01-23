@@ -69,12 +69,12 @@ class HousingSystem:
                 if owner:
                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
                     if owner.assets >= cost:
-                        owner.assets -= cost
+                        owner._sub_assets(cost)
                         if simulation.reflux_system:
                             simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
                     else:
                         taken = owner.assets
-                        owner.assets = 0.0
+                        owner._sub_assets(taken)
                         if simulation.reflux_system:
                             simulation.reflux_system.capture(taken, f"{owner.id}", "housing_maintenance")
 
@@ -89,8 +89,8 @@ class HousingSystem:
                 if tenant and owner and tenant.is_active and owner.is_active:
                     rent = unit.rent_price
                     if tenant.assets >= rent:
-                        tenant.assets -= rent
-                        owner.assets += rent
+                        tenant._sub_assets(rent)
+                        owner._add_assets(rent)
                     else:
                         # Eviction due to rent non-payment
                         logger.info(
@@ -156,8 +156,8 @@ class HousingSystem:
                 )
                 
                 if loan_id:
-                    simulation.bank.assets -= loan_amount
-                    buyer.assets += loan_amount
+                    simulation.bank._sub_assets(loan_amount)
+                    buyer._add_assets(loan_amount)
                     unit.mortgage_id = loan_id
                 else:
                     unit.mortgage_id = None
@@ -165,15 +165,18 @@ class HousingSystem:
                 unit.mortgage_id = None
                 
             # 2. Process Funds Transfer
-            buyer.assets -= trade_value
+            buyer._sub_assets(trade_value)
 
             if isinstance(seller, Government):
                 # The original code called 'record_asset_sale', which doesn't exist on Government.
                 # The intent seems to be to track government income. We'll use the existing
                 # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
                 seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
+                # Note: collect_tax no longer adds assets! We must add it manually or use SettlementSystem.
+                # Since we are inside HousingSystem legacy logic, we add it here.
+                seller._add_assets(trade_value)
             else:
-                seller.assets += trade_value
+                seller._add_assets(trade_value)
 
             # 3. Transfer Title
             unit.owner_id = buyer.id

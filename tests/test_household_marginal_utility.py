@@ -65,7 +65,7 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
             config_module=self.config
         )
         # Give infinite money
-        self.household.assets = 1_000_000_000 
+        self.household._assets = 1_000_000_000
         self.household.inventory = {"food": 0}
         self.household.needs = {"survival": 1.0} # Needs > 0 to have utility
 

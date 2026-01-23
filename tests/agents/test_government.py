@@ -107,9 +107,9 @@ def deficit_government_setup():
 def test_deficit_spending_allowed_within_limit(deficit_government_setup):
     """Test that the government can spend more than its assets, creating debt."""
     government = deficit_government_setup
-    government.assets = 100
+    government._assets = 100
     target_agent = Mock()
-    target_agent.assets = 0
+    target_agent._assets = 0
 
     # Debt limit = 10000 * 0.30 = 3000
     # Spending 500 will result in assets of -400, which is within the limit
@@ -126,9 +126,9 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
 def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
     """Test that spending is blocked when it would exceed the debt/GDP limit."""
     government = deficit_government_setup
-    government.assets = -2900 # Already near the debt limit
+    government._assets = -2900 # Already near the debt limit
     target_agent = Mock()
-    target_agent.assets = 0
+    target_agent._assets = 0
 
     # Debt limit = 10000 * 0.30 = 3000
     # Current debt is 2900. Spending another 200 would make debt 3100, exceeding the limit.

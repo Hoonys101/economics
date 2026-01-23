@@ -181,7 +181,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         mock_goods_market.get_best_ask.return_value = 1000.0
         mock_markets = {"goods_market": mock_goods_market}
         
-        mock_household_dto.assets = 100.0 # DTO assets
+        mock_household_dto._assets = 100.0 # DTO assets
 
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
              consumption_aggressiveness={"luxury_food": 0.9}

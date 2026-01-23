@@ -304,7 +304,7 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
     firm.specialization = "food"
 
     # State Override
-    firm.assets = mock_config.STARTUP_COST * 0.4  # Below threshold
+    firm._assets = mock_config.STARTUP_COST * 0.4  # Below threshold
     firm.treasury_shares = 500
     firm.total_shares = 1000.0
 
@@ -348,7 +348,7 @@ def test_household_investment(stock_market, mock_config, golden_households):
     household.personality = Personality.BALANCED
 
     # State Override
-    household.assets = 1000.0
+    household._assets = 1000.0
     household.needs = {}
     household.value_orientation = "v"
 

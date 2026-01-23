@@ -116,7 +116,7 @@ def test_veblen_demand(vanity_config):
     household.conformity = 1.0 # Max conformity
     household.inventory = {}
     household.needs = {"social": 10.0}
-    household.assets = 10000.0
+    household._assets = 10000.0
     household.expected_inflation = {} # Fix attribute error
     household.personality = Personality.STATUS_SEEKER # Fix attribute error
     household.preference_asset = 1.0

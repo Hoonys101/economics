@@ -34,7 +34,7 @@ def mock_households(golden_households):
     for i in range(10):
         hh = Mock(spec=Household)
         hh.id = i
-        hh.assets = float(i * 100.0)
+        hh._assets = float(i * 100.0)
 
         # Ensure deep structure exists
         decision_engine = Mock()

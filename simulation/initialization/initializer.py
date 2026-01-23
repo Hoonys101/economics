@@ -49,6 +49,7 @@ from simulation.engine import Simulation
 from simulation.systems.social_system import SocialSystem
 from simulation.systems.event_system import EventSystem
 from simulation.systems.sensory_system import SensorySystem
+from simulation.systems.settlement_system import SettlementSystem
 from simulation.systems.commerce_system import CommerceSystem
 from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
 
@@ -129,7 +130,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             government=sim.government,
             central_bank=sim.central_bank,
             bank=sim.bank,
-            config_module=self.config_manager
+            config_module=self.config_manager,
+            settlement_system=sim.settlement_system
         )
         sim.government.finance_system = sim.finance_system
 
@@ -233,6 +235,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.social_system = SocialSystem(self.config)
         sim.event_system = EventSystem(self.config)
         sim.sensory_system = SensorySystem(self.config)
+        sim.settlement_system = SettlementSystem(logger=self.logger)
         sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 

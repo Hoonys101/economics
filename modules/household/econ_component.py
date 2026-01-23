@@ -148,9 +148,13 @@ class EconComponent(IEconComponent):
     def assets(self) -> float:
         return self._assets
 
-    @assets.setter
-    def assets(self, value: float) -> None:
-        self._assets = value
+    def _add_assets(self, amount: float) -> None:
+        """[PROTECTED] Increase assets. Only for SettlementSystem."""
+        self._assets += amount
+
+    def _sub_assets(self, amount: float) -> None:
+        """[PROTECTED] Decrease assets. Only for SettlementSystem."""
+        self._assets -= amount
 
     @property
     def inventory(self) -> Dict[str, float]:

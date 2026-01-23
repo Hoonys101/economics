@@ -16,7 +16,7 @@ def test_tax_collection_and_bailouts(government):
     # 2. Bailout Test (now a loan, not a subsidy)
     mock_firm = Mock()
     mock_firm.id = 101
-    mock_firm.assets = 1000.0
+    mock_firm._assets = 1000.0
     initial_firm_assets = mock_firm.assets
 
     # Mock the finance system to approve the bailout
@@ -25,7 +25,7 @@ def test_tax_collection_and_bailouts(government):
     # This is the key fix: the grant_bailout_loan method *itself* should
     # have the side effect of decreasing the government's assets.
     def grant_loan_side_effect(firm, amount):
-        government.assets -= amount
+        government._assets -= amount
         return Mock()
 
     government.finance_system.grant_bailout_loan = Mock(side_effect=grant_loan_side_effect)
@@ -47,7 +47,7 @@ def test_infrastructure_investment(government):
 
     # Mock config for investment cost
     government.config_module.INFRASTRUCTURE_INVESTMENT_COST = 5000.0
-    government.assets = 6000.0
+    government._assets = 6000.0
     initial_assets = government.assets
     initial_level = government.infrastructure_level
 

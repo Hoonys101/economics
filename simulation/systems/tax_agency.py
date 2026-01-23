@@ -48,11 +48,14 @@ class TaxAgency:
         return profit * current_corporate_tax_rate if profit > 0 else 0.0
 
     def collect_tax(self, government, amount, tax_type, source_id, current_tick) -> float:
-        """Collects tax and updates government state."""
+        """
+        Records tax collection statistics.
+        NOTE: Asset transfer must be handled by SettlementSystem external to this method.
+        """
         if amount <= 0:
             return 0.0
 
-        government.assets += amount
+        # government.assets += amount  <-- REMOVED: Handled by SettlementSystem
         government.total_collected_tax += amount
         government.revenue_this_tick += amount
         government.total_money_destroyed += amount

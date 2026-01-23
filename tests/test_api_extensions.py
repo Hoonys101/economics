@@ -22,12 +22,12 @@ class TestEconomicIndicatorsViewModel:
                  else [MagicMock() for _ in range(2)])
 
         # Override assets
-        households[0].assets = 10
-        households[1].assets = 20
-        households[2].assets = 100
+        households[0]._assets = 10
+        households[1]._assets = 20
+        households[2]._assets = 100
 
-        firms[0].assets = 50
-        firms[1].assets = 10
+        firms[0]._assets = 50
+        firms[1]._assets = 10
 
         # Total assets: 10, 20, 100, 50, 10
         # Min: 10, Max: 100

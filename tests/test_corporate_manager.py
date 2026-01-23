@@ -28,7 +28,7 @@ def firm_mock(golden_firms):
     firm = golden_firms[0]
 
     # Initialize BaseAgent fields
-    firm.assets = 10000.0 # Default assets
+    firm._assets = 10000.0 # Default assets
 
     # --- SoC Components Mocking ---
     firm.finance = MagicMock()
@@ -38,18 +38,18 @@ def firm_mock(golden_firms):
 
     # Side effects to simulate real behavior on mock firm assets
     def invest_side_effect(amount):
-        firm.assets -= amount
+        firm._assets -= amount
         return True
 
     def pay_tax_side_effect(amount, *args, **kwargs):
-        firm.assets -= amount
+        firm._assets -= amount
         return True
 
     def pay_severance_side_effect(emp, amount):
-        firm.assets -= amount
+        firm._assets -= amount
         # emp is a mock, so emp.assets update is mocked
         if hasattr(emp, 'assets'):
-             emp.assets += amount
+             emp._assets += amount
         return True
 
     def set_dividend_rate_side_effect(rate):
@@ -140,7 +140,7 @@ def test_rd_logic(firm_mock, context_mock, monkeypatch):
     )
 
     # Need enough assets to pass safety margin (default 2000)
-    firm_mock.assets = 10000.0
+    firm_mock._assets = 10000.0
     firm_mock.finance.revenue_this_turn = 1000.0 # Set on finance
     expected_budget = 1000.0 * 0.2 # 200
 
@@ -181,7 +181,7 @@ def test_hiring_logic(firm_mock, context_mock):
 
 def test_debt_logic_borrow(firm_mock, context_mock):
     manager = CorporateManager(MockConfig())
-    firm_mock.assets = 1000.0
+    firm_mock._assets = 1000.0
     firm_mock.total_debt = 0.0
 
     vector = FirmActionVector(debt_aggressiveness=0.5)

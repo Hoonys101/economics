@@ -16,7 +16,7 @@ def test_execute_consumption_and_leisure(commerce_system):
     h1 = MagicMock()
     h1.id = 1
     h1.is_active = True
-    h1.assets = 100.0
+    h1._assets = 100.0
     h1.inventory = {"basic_food": 0}
     # Mock apply_leisure_effect return
     effect_dto = MagicMock()
@@ -76,7 +76,7 @@ def test_fast_track_consumption_if_needed(commerce_system):
     h1 = MagicMock()
     h1.id = 1
     h1.is_active = True
-    h1.assets = 100.0
+    h1._assets = 100.0
     h1.inventory = {"basic_food": 0}
 
     effect_dto = MagicMock()

@@ -47,7 +47,7 @@ class Bank(IFinancialEntity):
 
     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager):
         self.id = id
-        self.assets = initial_assets # Reserves
+        self._assets = initial_assets # Reserves
         self.config_manager = config_manager
 
         # Data Stores
@@ -69,6 +69,16 @@ class Bank(IFinancialEntity):
             f"Bank {self.id} initialized. Assets: {self.assets:.2f}, Base Rate: {self.base_rate:.2%}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
         )
+
+    @property
+    def assets(self) -> float:
+        return self._assets
+
+    def _add_assets(self, amount: float) -> None:
+        self._assets += amount
+
+    def _sub_assets(self, amount: float) -> None:
+        self._assets -= amount
 
     def get_interest_rate(self) -> float:
         """Returns the current base interest rate."""
@@ -268,7 +278,7 @@ class Bank(IFinancialEntity):
         Implementation of IFinancialEntity.deposit.
         """
         if amount > 0:
-            self.assets += amount
+            self._assets += amount
 
     def withdraw(self, amount: float) -> None:
         """
@@ -278,7 +288,7 @@ class Bank(IFinancialEntity):
         if amount > 0:
             if self.assets < amount:
                 raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self.assets -= amount
+            self._assets -= amount
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Returns debt info for AI state."""
@@ -334,8 +344,11 @@ class Bank(IFinancialEntity):
 
             # Try to collect
             if agent.assets >= payment:
-                agent.assets -= payment
-                self.assets += payment
+                if hasattr(agent, '_sub_assets'):
+                    agent._sub_assets(payment)
+                else:
+                    agent.assets -= payment
+                self._assets += payment
                 total_loan_interest += payment
 
                 # Record Expense for Firms (FinanceDepartment)
@@ -350,8 +363,11 @@ class Bank(IFinancialEntity):
                 # Take whatever is left (process_default might have seized assets already)
                 partial = agent.assets
                 if partial > 0:
-                     agent.assets = 0
-                     self.assets += partial
+                     if hasattr(agent, '_sub_assets'):
+                        agent._sub_assets(partial)
+                     else:
+                        agent.assets = 0
+                     self._assets += partial
                      total_loan_interest += partial
 
         # 2. Pay Interest to Depositors
@@ -364,8 +380,11 @@ class Bank(IFinancialEntity):
             interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
 
             if self.assets >= interest_payout:
-                self.assets -= interest_payout
-                agent.assets += interest_payout
+                self._assets -= interest_payout
+                if hasattr(agent, '_add_assets'):
+                    agent._add_assets(interest_payout)
+                else:
+                    agent.assets += interest_payout
 
                 # Track Capital Income (Interest)
                 from simulation.core_agents import Household
@@ -389,7 +408,7 @@ class Bank(IFinancialEntity):
             # This ensures Bank doesn't accumulate infinite money.
             # Bank assets were already updated above (+loan_int, -dep_int).
             # So we subtract net_profit from assets.
-            self.assets -= net_profit
+            self._assets -= net_profit
             reflux_system.capture(net_profit, "Bank", "net_profit")
             logger.info(f"BANK_PROFIT_CAPTURE | Transferred {net_profit:.2f} to Reflux System.")
 
@@ -427,7 +446,7 @@ class Bank(IFinancialEntity):
         Phase 23.5: Lender of Last Resort.
         Creates money via Government to cover liquidity gaps.
         """
-        self.assets += amount
+        self._assets += amount
         if self._get_config("government_id", None) is not None:
              # If we have a reference to government via simulation later, but here we take config
              pass
@@ -444,7 +463,7 @@ class Bank(IFinancialEntity):
         """
         if self.assets < 0:
             borrow_amount = abs(self.assets) + 1000.0 # Maintain buffer
-            self.assets += borrow_amount
+            self._assets += borrow_amount
             government.total_money_issued += borrow_amount
             logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government.")
 

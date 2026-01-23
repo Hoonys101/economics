@@ -38,7 +38,7 @@ class MinistryOfEducation:
                 if edu_budget >= cost:
                     agent.education_level = 1
                     edu_budget -= cost
-                    government.assets -= cost
+                    government._sub_assets(cost)
                     spent_total += cost
 
                     logger.debug(
@@ -57,10 +57,10 @@ class MinistryOfEducation:
                     if edu_budget >= subsidy and agent.assets >= student_share:
                         agent.education_level = next_level
                         edu_budget -= subsidy
-                        government.assets -= subsidy
+                        government._sub_assets(subsidy)
                         spent_total += subsidy
 
-                        agent.assets -= student_share
+                        agent._sub_assets(student_share)
                         if reflux_system:
                             reflux_system.capture(student_share, f"Household_{agent.id}", "education_tuition")
 

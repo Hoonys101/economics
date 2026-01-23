@@ -81,6 +81,7 @@ class Bootstrapper:
 
             # 2. Capital Injection (Demand Side)
             if firm.assets < Bootstrapper.MIN_CAPITAL:
-                firm.assets = Bootstrapper.MIN_CAPITAL
+                diff = Bootstrapper.MIN_CAPITAL - firm.assets
+                firm._add_assets(diff)
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

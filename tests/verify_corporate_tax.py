@@ -78,7 +78,7 @@ class TestCorporateTax(unittest.TestCase):
         """Test critical fix: Liquidation should not create money."""
         self.firm.inventory = {"goods": 100.0} # Value shouldn't matter
         self.firm.capital_stock = 50.0 # Value shouldn't matter
-        self.firm.assets = 500.0 # Only this should be returned
+        self.firm._assets = 500.0 # Only this should be returned
         
         initial_total_money = self.firm.assets
         

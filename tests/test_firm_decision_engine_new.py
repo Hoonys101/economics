@@ -73,7 +73,7 @@ def mock_config():
 def mock_firm(mock_config):
     firm = Mock(spec=Firm)
     firm.id = 1
-    firm.assets = 1000.0
+    firm._assets = 1000.0
     firm.employees = []
     firm.production_target = 100.0
     firm.inventory = {"food": 100.0}
@@ -451,7 +451,7 @@ class TestFirmDecisionEngine:
     ):
         """Verify R&D investment when aggressiveness is high."""
         # Setup High Cash
-        mock_firm.assets = 100000.0
+        mock_firm._assets = 100000.0
         firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
             rd_aggressiveness=0.9,
             sales_aggressiveness=0.5, hiring_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5
@@ -475,7 +475,7 @@ class TestFirmDecisionEngine:
     ):
         """Verify Capex investment when aggressiveness is high."""
         # Setup High Cash
-        mock_firm.assets = 100000.0
+        mock_firm._assets = 100000.0
         firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
             capital_aggressiveness=0.9,
             sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5

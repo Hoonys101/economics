@@ -21,7 +21,7 @@ class Government:
 
     def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None):
         self.id = id
-        self.assets = initial_assets
+        self._assets = initial_assets
         self.config_module = config_module
         
         self.tax_agency = TaxAgency(config_module)
@@ -109,6 +109,18 @@ class Government:
             f"Government {self.id} initialized with assets: {self.assets}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
+
+    @property
+    def assets(self) -> float:
+        return self._assets
+
+    def _add_assets(self, amount: float) -> None:
+        """[PROTECTED] Increase assets."""
+        self._assets += amount
+
+    def _sub_assets(self, amount: float) -> None:
+        """[PROTECTED] Decrease assets."""
+        self._assets -= amount
 
     def update_sensory_data(self, dto: GovernmentStateDTO):
         """
@@ -282,10 +294,15 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
                 return 0.0
 
-        self.assets -= effective_amount
+        self._sub_assets(effective_amount)
         self.total_spent_subsidies += effective_amount
         self.expenditure_this_tick += effective_amount
-        household.assets += effective_amount
+
+        if hasattr(household, '_add_assets'):
+            household._add_assets(effective_amount)
+        else:
+            household.assets += effective_amount
+
         self.current_tick_stats["welfare_spending"] += effective_amount
 
         logger.info(
@@ -372,13 +389,22 @@ class Government:
                 if net_worth > wealth_threshold:
                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
                     if agent.assets >= tax_amount:
-                        agent.assets -= tax_amount
+                        if hasattr(agent, '_sub_assets'):
+                            agent._sub_assets(tax_amount)
+                        else:
+                            agent.assets -= tax_amount
                         self.collect_tax(tax_amount, "wealth_tax", agent.id, current_tick)
+                        # Note: collect_tax does not add assets anymore.
+                        self._add_assets(tax_amount)
                         total_wealth_tax += tax_amount
                     else:
                         taken = agent.assets
-                        agent.assets = 0
+                        if hasattr(agent, '_sub_assets'):
+                            agent._sub_assets(taken)
+                        else:
+                            agent.assets = 0
                         self.collect_tax(taken, "wealth_tax", agent.id, current_tick)
+                        self._add_assets(taken)
                         total_wealth_tax += taken
 
                 # B. Unemployment Benefit
@@ -436,7 +462,7 @@ class Government:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
                 return False
 
-        self.assets -= effective_cost
+        self._sub_assets(effective_cost)
         self.expenditure_this_tick += effective_cost
         if reflux_system:
             reflux_system.capture(effective_cost, str(self.id), "infrastructure")
@@ -526,11 +552,11 @@ class Government:
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the government's assets."""
         if amount > 0:
-            self.assets += amount
+            self._assets += amount
 
     def withdraw(self, amount: float) -> None:
         """Withdraws a given amount from the government's assets."""
         if amount > 0:
             if self.assets < amount:
                 raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self.assets -= amount
+            self._assets -= amount

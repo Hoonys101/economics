@@ -45,10 +45,10 @@ class TestBank:
         )
 
         assert loan_id == "loan_0"
-        # Bank assets decreased (reserved) - Wait, we REMOVED self.assets -= amount in grant_loan
+        # Bank assets decreased (reserved) - Wait, we REMOVED self._assets -= amount in grant_loan
         # So assets should remain same in grant_loan, assuming Transaction handles it.
         # However, checking Bank.py:
-        # "self.assets -= amount # Reserve reduced immediately" -> This was in the *previous* version.
+        # "self._assets -= amount # Reserve reduced immediately" -> This was in the *previous* version.
         # I removed it in "Fix Bank Double Counting".
         # So asset check should be == initial_assets.
         assert bank_instance.assets == initial_assets

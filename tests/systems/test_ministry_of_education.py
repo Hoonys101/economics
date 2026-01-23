@@ -14,7 +14,7 @@ class TestMinistryOfEducation(unittest.TestCase):
         self.ministry = MinistryOfEducation(self.mock_config)
 
         self.mock_government = MagicMock()
-        self.mock_government.assets = 10000
+        self.mock_government._assets = 10000
         self.mock_government.revenue_this_tick = 10000  # Simulate 10k revenue for budget calcs
         self.mock_government.id = 1
         self.mock_government.expenditure_this_tick = 0
@@ -24,7 +24,7 @@ class TestMinistryOfEducation(unittest.TestCase):
     def _create_household(self, id, assets, edu_level, aptitude, is_active=True):
         h = Mock()
         h.id = id
-        h.assets = assets
+        h._assets = assets
         h.education_level = edu_level
         h.aptitude = aptitude
         h.is_active = is_active

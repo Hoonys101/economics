@@ -16,7 +16,7 @@ def mock_agents():
     for i in range(10):
         agent = Mock(spec=Household)
         agent.id = i
-        agent.assets = float(i * 100) # 0, 100, ..., 900
+        agent._assets = float(i * 100) # 0, 100, ..., 900
         
         # Mock Decision Engine and AI Engine
         agent.decision_engine = Mock()

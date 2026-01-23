@@ -71,7 +71,7 @@ def test_system2_planner_guidance(firm_mock):
     # Mock Data
     market_data = {}
     firm_mock.revenue_this_turn = 5000.0
-    firm_mock.assets = 300000.0 # Rich firm (Needs to be > 50 * Revenue = 250k)
+    firm_mock._assets = 300000.0 # Rich firm (Needs to be > 50 * Revenue = 250k)
 
     # High wages to justify automation
     firm_mock.employee_wages = {1: 1000.0, 2: 1000.0}
