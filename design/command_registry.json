@@ -4,21 +4,10 @@
     "updated": "2026-01-24",
     "author": "Antigravity"
   },
-  "fix_td105_mission": {
+  "fix_td106_bankruptcy": {
     "command": "create",
-    "title": "Fix_TD105_Positive_Drift",
-    "instruction": "You are assigned to fix TD-105. Please implement the solution defined in the attached Specification. Ensure Zero-Sum integrity.",
-    "file": "design/specs/TD105_DRIFT_FIX_SPEC.md",
-    "wait": false
-  },
-  "bankruptcy_link_spec": {
-    "worker": "spec",
-    "instruction": "PROJECT: TD-106 Bankruptcy Ledger Connection.\n\nOBJECTIVE: Ensure `Firm.liquidate()` registers destroyed money with `SettlementSystem`. \n\nOUTPUT: 'design/specs/TD106_BANKRUPTCY_ALIGNED.md'",
-    "context": [
-      "simulation/systems/ma_manager.py",
-      "simulation/agents/firm.py"
-    ],
-    "output": "design/specs/TD106_BANKRUPTCY_ALIGNED.md",
-    "model": "pro"
+    "instruction": "Implement the Bankruptcy Ledger connection to fix TD-106. Ensure Firm liquidation losses are recorded in SettlementSystem.",
+    "title": "Fix_TD106_Bankruptcy_Ledger",
+    "file": "design/specs/TD106_BANKRUPTCY_ALIGNED.md"
   }
 }
