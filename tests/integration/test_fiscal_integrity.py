@@ -82,31 +82,11 @@ def test_infrastructure_investment_is_zero_sum():
     diff = final_total - initial_total
 
     # Assertions
-    if not hasattr(finance_system, 'issue_treasury_bonds_synchronous'):
-         # Before implementation, we expect this test to fail/behave differently
-         # Currently invest_infrastructure uses async issue_treasury_bonds.
-         # So assets won't update for the bond part immediately.
-         # gov.assets < cost, so it will try to issue bonds.
-         # But issue_treasury_bonds returns (bonds, txs). Assets not updated.
-         # Then checks self.assets < effective_cost. Still true (1000 < 5000).
-         # So it proceeds to SettlementSystem.transfer?
-         # Wait, logic in Government.invest_infrastructure:
-         # if self.assets < effective_cost:
-         #    needed = ...
-         #    bonds, txs = self.finance_system.issue_treasury_bonds(...)
-         #    potential_revenue = needed # Assume success
-         # if not self.settlement_system ... return False
-         # transfer_success = self.settlement_system.transfer(..., effective_cost, ...)
-
-         # If assets (1000) < cost (5000), transfer will FAIL in SettlementSystem due to InsufficientFundsError (Withdraw check).
-         # So success should be False.
-         pass
-    else:
-         assert success, "Infrastructure investment should succeed with synchronous financing."
-         assert abs(diff) < 1e-9, f"Zero-sum violation! Drift: {diff}"
-         assert gov.assets == 0.0
-         assert bank.assets == 6000.0
-         assert reflux.assets == 5000.0
+    assert success, "Infrastructure investment should succeed with synchronous financing."
+    assert abs(diff) < 1e-9, f"Zero-sum violation! Drift: {diff}"
+    assert gov.assets == 0.0
+    assert bank.assets == 6000.0
+    assert reflux.assets == 5000.0
 
 def test_education_spending_is_zero_sum():
     # Setup
@@ -164,17 +144,15 @@ def test_education_spending_is_zero_sum():
     diff = final_total - initial_total
 
     # After fix
-    if hasattr(finance_system, 'issue_treasury_bonds_synchronous'):
-         # Gov should have issued 400 bonds. Assets 100 + 400 = 500.
-         # Spent 500. Assets 0.
-         # Bank assets 10000 - 400 = 9600.
-         # Reflux assets 500.
+    # Gov should have issued 400 bonds. Assets 100 + 400 = 500.
+    # Spent 500. Assets 0.
+    # Bank assets 10000 - 400 = 9600.
+    # Reflux assets 500.
 
-         # assert gov.assets == 0.0
-         # assert bank.assets == 9600.0
-         # assert reflux.assets == 500.0
-         # assert abs(diff) < 1e-9
-         pass
+    assert gov.assets == 0.0
+    assert bank.assets == 9600.0
+    assert reflux.assets == 500.0
+    assert abs(diff) < 1e-9
 
 if __name__ == "__main__":
     test_infrastructure_investment_is_zero_sum()

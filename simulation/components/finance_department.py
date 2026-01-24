@@ -449,8 +449,9 @@ class FinanceDepartment:
                 if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "Automation Investment"):
                     return True
             else:
-                self.debit(amount, "Automation Investment")
-                return True
+                # WO-117: Prevent money destruction. Investment requires RefluxSystem.
+                self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for Automation.")
+                return False
         return False
 
     def invest_in_rd(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
@@ -460,9 +461,9 @@ class FinanceDepartment:
                     self.record_expense(amount)
                     return True
             else:
-                self.debit(amount, "R&D Investment")
-                self.record_expense(amount)
-                return True
+                # WO-117: Prevent money destruction. Investment requires RefluxSystem.
+                self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for R&D.")
+                return False
         return False
 
     def invest_in_capex(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
@@ -471,8 +472,9 @@ class FinanceDepartment:
                 if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "CAPEX"):
                     return True
             else:
-                self.debit(amount, "CAPEX")
-                return True
+                # WO-117: Prevent money destruction. Investment requires RefluxSystem.
+                self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for CAPEX.")
+                return False
         return False
 
     def set_dividend_rate(self, rate: float) -> None:
