@@ -4,20 +4,6 @@
     "updated": "2026-01-24",
     "author": "Antigravity"
   },
-  "drift_spec": {
-    "worker": "spec",
-    "instruction": "PROJECT: TD-105 Drift Fix Specification.\n\nRead 'design/audits/TD105_DRIFT_FORENSICS.md'.\nDesign a fix to satisfy Zero-Sum Property.\n\nPROBLEM:\n`RefluxSystem` receives funds via `invest_infrastructure` and `invest_rd`, but the Debit side (sender) might be failing or bypassed, causing net money creation when the reflux distributes these balance.\n\nREQUIREMENTS:\n1. Update `SettlementSystem.transfer()` usage in `Government` and `FinanceDepartment` to ensure the sender ACTUALLY loses the money.\n2. If the sender doesn't have enough money, the investment MUST fail.\n3. `RefluxSystem.distribute()` is fine as magic minting IF AND ONLY IF its balance purely represents 'money destroyed elsewhere'. But here, it seems to be receiving 'phantom money'.\n4. Actually, the fix is to ENSURE that `transfer(sender, reflux)` is atomic. If sender balance doesn't drop, reflux balance shouldn't rise.\n\nOUTPUT:\nCreate 'design/specs/TD105_DRIFT_FIX_SPEC.md'",
-    "context": [
-      "design/audits/TD105_DRIFT_FORENSICS.md",
-      "simulation/bank.py",
-      "simulation/agents/government.py",
-      "simulation/components/finance_department.py",
-      "simulation/systems/reflux_system.py",
-      "modules/finance/system.py"
-    ],
-    "output": "design/specs/TD105_DRIFT_FIX_SPEC.md",
-    "model": "pro"
-  },
   "fix_td105_mission": {
     "command": "create",
     "title": "Fix_TD105_Positive_Drift",

@@ -18,8 +18,14 @@ except ImportError:
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+def cleanup_key(key):
+    """Deletes the executed key from registry using cmd_ops.py"""
+    ops_script = BASE_DIR / "scripts" / "cmd_ops.py"
+    if ops_script.exists():
+        subprocess.run([sys.executable, str(ops_script), "del", key], cwd=BASE_DIR, capture_output=True)
+        print(f"🧹 Mission '{key}' removed from registry.")
+
 def get_file_content(filepath_str):
-    """Safely read file content with encoding handling."""
     path = BASE_DIR / filepath_str
     if not path.exists():
         print(f"❌ File not found: {path}")
@@ -36,14 +42,13 @@ def run_create_menu(registry, bridge):
     print("   ⚡ JULES: NEW MISSION")
     print("==========================================")
     
-    # Filter Jules creation tasks from registry
     jules_tasks = {}
     for key, data in registry.items():
         if data.get("command") == "create":
             jules_tasks[key] = data
             
     if not jules_tasks:
-        print("⚠️ No Jules 'create' missions found in command_registry.json")
+        print("⚠️ No pending 'create' missions.")
         input("Press Enter to return...")
         return
 
@@ -60,9 +65,7 @@ def run_create_menu(registry, bridge):
     
     if choice == '0': return
     
-    title = ""
-    instruction = ""
-    
+    # Custom Mission (No Cleanup)
     if choice == 'C':
         title = input("Enter Task Title: ")
         print("Select Instruction Source:")
@@ -70,6 +73,7 @@ def run_create_menu(registry, bridge):
         print("2. Load from File")
         
         src = input("Select (1-2): ").strip()
+        instruction = ""
         if src == '1':
             instruction = input("Enter Instruction: ")
         elif src == '2':
@@ -82,7 +86,6 @@ def run_create_menu(registry, bridge):
         else:
             return
 
-        # Auto-sync Git
         print("\n🔄 Syncing Git before dispatch...")
         bridge.sync_git(title)
         
@@ -101,6 +104,7 @@ def run_create_menu(registry, bridge):
             input("Press Enter...")
         return
 
+    # Registered Mission (With Cleanup)
     if choice.isdigit():
         idx = int(choice) - 1
         if 0 <= idx < len(keys):
@@ -109,7 +113,6 @@ def run_create_menu(registry, bridge):
             title = task.get('title', key)
             instruction = task.get('instruction', "")
             
-            # File injection for create
             if task.get("file"):
                 f_content = get_file_content(task["file"])
                 if f_content:
@@ -127,6 +130,10 @@ def run_create_menu(registry, bridge):
                 )
                 register_session(session.id, title, instruction[:100] + "...")
                 print(f"\n✅ Session Created! ID: {session.id}")
+                
+                # CLEANUP
+                cleanup_key(key)
+                
                 input("Press Enter...")
             except Exception as e:
                 print(f"❌ Failed: {e}")
@@ -172,12 +179,11 @@ def run_reply_menu(bridge, registry):
         except Exception as e:
             print(f"⚠️ Failed to fetch history: {e}")
 
-        # --- REVISED: Pre-loaded Only ---
+        # Pre-loaded Only
         reply_tasks = {k: v for k, v in registry.items() if v.get("command") == "send-message"}
         
         if not reply_tasks:
             print("\n⚠️ No 'send-message' tasks found in registry.")
-            print("   Please add one to command_registry.json first.")
             input("Press Enter...")
             return
 
@@ -185,7 +191,6 @@ def run_reply_menu(bridge, registry):
         r_keys = list(reply_tasks.keys())
         for i, rk in enumerate(r_keys):
             task = reply_tasks[rk]
-            # Preview instruction
             preview = task.get("instruction", "")[:40].replace("\n", " ")
             file_hint = f" (File: {task.get('file')})" if task.get("file") else ""
             print(f"{i+1}. {rk}{file_hint} -> \"{preview}...\"")
@@ -199,7 +204,6 @@ def run_reply_menu(bridge, registry):
                 task = reply_tasks[key]
                 message = task.get("instruction", "")
                 
-                # File Injection Logic
                 if task.get("file"):
                     f_content = get_file_content(task["file"])
                     if f_content:
@@ -211,6 +215,9 @@ def run_reply_menu(bridge, registry):
                 try:
                     bridge.send_message(sid, message)
                     print("✅ Sent.")
+                    
+                    # CLEANUP
+                    cleanup_key(key)
                     
                     if input("Wait for reply? (y/n): ").lower() == 'y':
                         resp = bridge.wait_for_agent_response(sid)
@@ -227,9 +234,11 @@ def run_reply_menu(bridge, registry):
 
 def main():
     bridge = JulesBridge()
-    registry = load_registry()
     
     while True:
+        # Re-load registry every loop to reflect cleanups
+        registry = load_registry()
+        
         clear_screen()
         print("==========================================")
         print("   ⚡ JULES COMMAND CENTER")

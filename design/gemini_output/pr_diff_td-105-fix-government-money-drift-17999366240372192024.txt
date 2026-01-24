@@ -1,0 +1,145 @@
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 0bb2f89..37f31bc 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -497,6 +497,18 @@ class Government:
+              logger.error(f"INFRASTRUCTURE_FAIL | Settlement transfer failed.")
+              return False, []
+ 
++        # [FIX] Perform the corresponding DEBIT manually to ensure a zero-sum transaction.
++        # This corrects the drift by guaranteeing the sender's assets are reduced.
++        try:
++            self.withdraw(effective_cost)
++        except InsufficientFundsError as e:
++            logger.critical(
++                f"GOVERNMENT_INCOHERENCE | Post-transfer debit failed for infra investment! "
++                f"Assets were available pre-transfer but not post-transfer. This indicates a critical bug. "
++                f"Error: {e}",
++                extra={"tick": current_tick, "agent_id": self.id}
++            )
++
+         self.expenditure_this_tick += effective_cost
+         self.infrastructure_level += 1
+ 
+diff --git a/tests/test_government_finance.py b/tests/test_government_finance.py
+new file mode 100644
+index 0000000..641fece
+--- /dev/null
++++ b/tests/test_government_finance.py
+@@ -0,0 +1,86 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.agents.government import Government
++from simulation.finance.api import IFinancialEntity, ISettlementSystem
++from typing import Optional, Dict, Any, List
++
++class MockRefluxSystem:
++    def __init__(self, id: int, initial_assets: float = 0.0):
++        self.id = id
++        self._assets = initial_assets
++
++    @property
++    def assets(self) -> float:
++        return self._assets
++
++    def _add_assets(self, amount: float) -> None:
++        self._assets += amount
++
++    def _sub_assets(self, amount: float) -> None:
++        self._assets -= amount
++
++    def deposit(self, amount: float) -> None:
++        self._add_assets(amount)
++
++class MockSettlementSystem(ISettlementSystem):
++    def transfer(
++        self,
++        debit_agent: IFinancialEntity,
++        credit_agent: IFinancialEntity,
++        amount: float,
++        memo: str,
++        debit_context: Optional[Dict[str, Any]] = None,
++        credit_context: Optional[Dict[str, Any]] = None
++    ) -> bool:
++        # Simulate the bug: Only credit the receiver, do NOT debit the sender.
++        # This forces the caller to handle the debit if they want to ensure zero-sum
++        # in the presence of this "untrusted" system.
++        credit_agent._add_assets(amount)
++        return True
++
++class MockConfig:
++    INFRASTRUCTURE_INVESTMENT_COST = 1000.0
++    TICKS_PER_YEAR = 100
++    GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
++    INCOME_TAX_RATE = 0.1
++    CORPORATE_TAX_RATE = 0.2
++    TAX_MODE = "PROGRESSIVE" # Needed for TaxAgency
++
++def test_invest_infrastructure_is_zero_sum():
++    # 1. Setup
++    config = MockConfig()
++    government = Government(id=1, initial_assets=10000.0, config_module=config)
++    reflux = MockRefluxSystem(id=999, initial_assets=0.0)
++
++    settlement_system = MockSettlementSystem()
++    government.settlement_system = settlement_system
++
++    # 2. Record State Before
++    assets_gov_before = government.assets
++    assets_reflux_before = reflux.assets
++    total_before = assets_gov_before + assets_reflux_before
++
++    print(f"Before: Gov={assets_gov_before}, Reflux={assets_reflux_before}, Total={total_before}")
++
++    # 3. Execute
++    success, txs = government.invest_infrastructure(current_tick=1, reflux_system=reflux)
++
++    assert success is True
++
++    # 4. Record State After
++    assets_gov_after = government.assets
++    assets_reflux_after = reflux.assets
++    total_after = assets_gov_after + assets_reflux_after
++
++    print(f"After: Gov={assets_gov_after}, Reflux={assets_reflux_after}, Total={total_after}")
++
++    # 5. Assert Zero-Sum
++    # With the "buggy" MockSettlementSystem, Reflux gains 1000, Gov loses nothing.
++    # Total increases by 1000.
++    # This assertion is expected to FAIL until the fix is implemented.
++    assert total_after == total_before, \
++        f"Zero-Sum Violation! Delta: {total_after - total_before}. Gov Delta: {assets_gov_after - assets_gov_before}, Reflux Delta: {assets_reflux_after - assets_reflux_before}"
++
++    # Also check specific expectations
++    assert assets_reflux_after == assets_reflux_before + config.INFRASTRUCTURE_INVESTMENT_COST
++    assert assets_gov_after == assets_gov_before - config.INFRASTRUCTURE_INVESTMENT_COST
+diff --git a/tests/test_government_fiscal_policy.py b/tests/test_government_fiscal_policy.py
+index 817e5eb..9a07847 100644
+--- a/tests/test_government_fiscal_policy.py
++++ b/tests/test_government_fiscal_policy.py
+@@ -55,16 +55,19 @@ def test_infrastructure_investment():
+     initial_assets = gov.assets
+     initial_level = gov.infrastructure_level
+ 
+-    invested_result = gov.invest_infrastructure(current_tick=1)
++    # Fix for TD-105: Provide required dependencies for zero-sum execution
++    reflux_mock = Mock()
++    gov.settlement_system = Mock()
++    gov.settlement_system.transfer.return_value = True
++
++    invested_result = gov.invest_infrastructure(current_tick=1, reflux_system=reflux_mock)
+ 
+     assert isinstance(invested_result, tuple)
+     success, txs = invested_result
+     assert success is True
+     assert isinstance(txs, list)
+ 
+-    # In Normalized Tick Phase B, Invest Infrastructure returns Transactions.
+-    # It NO LONGER executes self.withdraw() immediately (side effect removed).
+-    # So gov.assets should REMAIN UNCHANGED at this step.
+-    # The transaction will reduce assets when processed.
+-    assert gov.assets == initial_assets
++    # TD-105 Fix: Immediate withdrawal is now enforced to ensure Zero-Sum
++    # when transferring to RefluxSystem.
++    assert gov.assets == initial_assets - config_mock.INFRASTRUCTURE_INVESTMENT_COST
+     assert gov.infrastructure_level == initial_level + 1

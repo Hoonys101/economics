@@ -97,6 +97,10 @@
       "17533533089149661785": {
         "title": "WO-117_Zero_Sum_Victory",
         "initial_mission": "ZERO-SUM VICTORY. 1. READ 'design/specs/ZERO_SUM_FIX_SPEC.md'. 2. Implement 'issue_treasury_bonds_synchronous' in FinanceSystem to eliminate the timing gap. 3. Refactor Government Infrastructure and Education logic to use this synchronous pattern. 4. Ensure 0.0000 drift in these specific operations. 5. Secondary Mission: Search for the source of the -99,680 leak at Tick 1 (check INITIAL_ASSETS setup in main.py/initializer.py). Output to 'design/REPORTS/FINAL_VERIFICATION.md'."
+      },
+      "17999366240372192024": {
+        "title": "Fix_TD105_Positive_Drift",
+        "initial_mission": "You are assigned to fix TD-105. Please implement the solution defined in the attached Specification...."
       }
     },
     "completed_sessions": {

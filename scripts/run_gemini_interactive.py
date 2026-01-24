@@ -17,33 +17,46 @@ except ImportError:
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def main():
-    registry = load_registry()
-    
-    # Filter only Gemini tasks (those with 'worker' or 'instruction' but no 'command' like 'create')
-    gemini_tasks = {}
-    for key, data in registry.items():
-        if "worker" in data and "instruction" in data:
-            gemini_tasks[key] = data
-            
-    if not gemini_tasks:
-        print("⚠️ No Gemini tasks found in command_registry.json")
-        return
+def cleanup_key(key):
+    """Deletes the executed key from registry using cmd_ops.py"""
+    ops_script = BASE_DIR / "scripts" / "cmd_ops.py"
+    if ops_script.exists():
+        subprocess.run([sys.executable, str(ops_script), "del", key], cwd=BASE_DIR, capture_output=True)
+        # We don't print "Deleted" here to keep UI clean, or maybe a small visual cue.
+        print(f"🧹 Mission '{key}' removed from registry.")
 
-    while True:
+def main():
+    while True: # Loop to refresh registry after deletion
+        registry = load_registry()
+        
+        # Filter only Gemini tasks (those with 'worker' or 'instruction' but no 'command' like 'create')
+        gemini_tasks = {}
+        for key, data in registry.items():
+            if "worker" in data:  # Strict check for worker
+                gemini_tasks[key] = data
+                
+        if not gemini_tasks:
+            clear_screen()
+            print("==========================================")
+            print("   💎 GEMINI MISSION CONTROL")
+            print("==========================================")
+            print("\n   (No Missions Pending)")
+            print("\n   [Ops] To add a mission, Antigravity will use cmd_ops.py")
+            print("\n0. Exit")
+            input("\nPress Enter to exit...")
+            break
+
         clear_screen()
         print("==========================================")
         print("   💎 GEMINI MISSION CONTROL")
         print("==========================================")
-        print(f"Loaded {len(gemini_tasks)} missions from registry.\n")
+        print(f"Pending Missions: {len(gemini_tasks)}\n")
         
         # Display Menu
         keys = list(gemini_tasks.keys())
         for idx, key in enumerate(keys):
             task = gemini_tasks[key]
-            # Try to get a clean title or use key
             title = key.replace("_", " ").title()
-            # If instruction is long, truncate
             inst_preview = task.get("instruction", "")[:60].replace("\n", " ")
             print(f"{idx + 1}. {title}")
             print(f"   └─ [{task.get('worker', 'unknown')}] {inst_preview}...")
@@ -62,11 +75,15 @@ def main():
                 selected_key = keys[idx]
                 print(f"\n🚀 Launching: {selected_key}")
                 
-                # Use the existing logic in launcher.py
-                # We simulate argv passing: [key]
-                run_gemini([selected_key], registry)
+                # Execute
+                result = run_gemini([selected_key], registry)
                 
-                input("\n✅ Task Completed. Press Enter to continue...")
+                # Auto-Cleanup: Always remove from list if executed, assuming success or at least consumption
+                # If run_gemini returns False/Error, maybe we should ask? 
+                # For now, let's assume consumption = delete to keep workflow flowing.
+                cleanup_key(selected_key)
+                
+                input("\n✅ Task Completed & Removed. Press Enter to continue...")
             else:
                 print("❌ Invalid selection.")
                 input("Press Enter...")
