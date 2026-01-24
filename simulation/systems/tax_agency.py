@@ -62,7 +62,7 @@ class TaxAgency:
 
         government.total_collected_tax += amount
         government.revenue_this_tick += amount
-        government.total_money_destroyed += amount
+        # government.total_money_destroyed += amount  <-- REMOVED: Tax is Transfer, not Destruction
         government.tax_revenue[tax_type] = (
             government.tax_revenue.get(tax_type, 0.0) + amount
         )
@@ -109,7 +109,7 @@ class TaxAgency:
 
         government.total_collected_tax += amount
         government.revenue_this_tick += amount
-        government.total_money_destroyed += amount
+        # government.total_money_destroyed += amount  <-- REMOVED: Tax is Transfer, not Destruction
         government.tax_revenue[tax_type] = government.tax_revenue.get(tax_type, 0.0) + amount
         government.current_tick_stats["tax_revenue"][tax_type] = government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
         government.current_tick_stats["total_collected"] += amount

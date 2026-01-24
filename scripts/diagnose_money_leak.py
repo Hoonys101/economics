@@ -48,7 +48,7 @@ def diagnose():
     last_b = get_balances()
     logger.info(f"START | Total: {last_b['total']:,.2f} | H: {last_b['h_active']:,.2f} | Bank: {last_b['bank']:,.2f}")
 
-    for tick in range(1, 11): # 초기 10틱만 집중 관찰
+    for tick in range(1, 101): # Run for 100 ticks
         sim.run_tick()
         curr_b = get_balances()
         diff = curr_b['total'] - last_b['total']

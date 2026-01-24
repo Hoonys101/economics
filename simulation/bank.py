@@ -318,6 +318,13 @@ class Bank(IFinancialEntity):
         generated_transactions: List[Transaction] = []
         ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
 
+        # Find Government for default processing & profit transfer
+        gov_agent = None
+        for a in agents_dict.values():
+             if a.__class__.__name__ == 'Government':
+                 gov_agent = a
+                 break
+
         # 1. Collect Interest from Loans
         total_loan_interest = 0.0
 
@@ -353,7 +360,7 @@ class Bank(IFinancialEntity):
                 total_loan_interest += payment
 
             else:
-                self.process_default(agent, loan, current_tick)
+                self.process_default(agent, loan, current_tick, government=gov_agent)
                 partial = agent.assets
                 if partial > 0:
                     tx = Transaction(
@@ -402,13 +409,6 @@ class Bank(IFinancialEntity):
 
         # 3. Bank Profit Capture (Reflux)
         net_profit = total_loan_interest - total_deposit_interest
-
-        # Find Government for profit transfer
-        gov_agent = None
-        for a in agents_dict.values():
-             if a.__class__.__name__ == 'Government':
-                 gov_agent = a
-                 break
 
         if net_profit > 0 and gov_agent:
              tx = Transaction(
@@ -482,7 +482,7 @@ class Bank(IFinancialEntity):
 
             logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government (Money Creation).")
 
-    def process_default(self, agent: Any, loan: Loan, current_tick: int):
+    def process_default(self, agent: Any, loan: Loan, current_tick: int, government: Optional[Any] = None):
         """
         Phase 4: Handles loan default.
         1. Liquidation: Sell assets (stocks, inventory) to repay.
@@ -500,6 +500,10 @@ class Bank(IFinancialEntity):
             logger.info(f"LIQUIDATION | Agent {agent.id} shares confiscated.")
 
         # 2. Forgiveness (Write-off)
+        if government and loan.remaining_balance > 0:
+            government.total_money_destroyed += loan.remaining_balance
+            logger.info(f"MONEY_DESTRUCTION | Loan Write-off {loan.remaining_balance:.2f} recorded as destroyed money.")
+
         loan.remaining_balance = 0.0 # Effectively forgiven
 
         # 3. Penalty

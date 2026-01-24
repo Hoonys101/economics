@@ -116,10 +116,16 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
                 if inv_value > 0:
                     state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
+                    # FIX: Track Reflux Alchemy as Issuance
+                    if hasattr(state.government, "total_money_issued"):
+                        state.government.total_money_issued += inv_value
 
                 # 2. Capital Stock (Scrap Value)
                 if firm.capital_stock > 0:
                     state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
+                    # FIX: Track Reflux Alchemy as Issuance
+                    if hasattr(state.government, "total_money_issued"):
+                        state.government.total_money_issued += firm.capital_stock
 
             # SoC Refactor: use hr.employees
             for employee in firm.hr.employees:
@@ -133,15 +139,25 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             if total_cash > 0:
                 outstanding_shares = firm.total_shares - firm.treasury_shares
                 if outstanding_shares > 0:
-                    for household in state.households:
-                        if household.is_active and firm.id in household.shares_owned:
-                            share_ratio = household.shares_owned[firm.id] / outstanding_shares
+                    # Fix: Include Inactive Households (pre-inheritance) and Government
+                    shareholders = list(state.households)
+                    if hasattr(state, 'government') and state.government:
+                        shareholders.append(state.government)
+
+                    for agent in shareholders:
+                        # Check shares safely (Government might not have shares_owned init)
+                        shares = 0
+                        if hasattr(agent, "shares_owned"):
+                            shares = agent.shares_owned.get(firm.id, 0)
+
+                        if shares > 0:
+                            share_ratio = shares / outstanding_shares
                             distribution = total_cash * share_ratio
-                            household._add_assets(distribution)
+                            agent._add_assets(distribution)
                             self.logger.info(
-                                f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
+                                f"LIQUIDATION_DISTRIBUTION | Agent {agent.id} received "
                                 f"{distribution:.2f} from Firm {firm.id} liquidation",
-                                extra={"agent_id": household.id, "tags": ["liquidation"]}
+                                extra={"agent_id": agent.id, "tags": ["liquidation"]}
                             )
                 else:
                     from simulation.agents.government import Government
@@ -170,6 +186,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 inv_value = self._calculate_inventory_value(household.inventory, state.markets)
                 if inv_value > 0:
                     state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
+                    # FIX: Track Reflux Alchemy as Issuance
+                    if hasattr(state.government, "total_money_issued"):
+                        state.government.total_money_issued += inv_value
 
             household.inventory.clear()
             household.shares_owned.clear()
