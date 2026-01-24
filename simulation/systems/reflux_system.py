@@ -56,27 +56,41 @@ class EconomicRefluxSystem(IFinancialEntity):
             return
 
         total_amount = self.balance
-        amount_per_household = total_amount / len(active_households)
+        count = len(active_households)
 
-        for agent in active_households:
+        # WO-Fix: Exact Distribution to prevent floating point drift
+        amount_per_household = total_amount / count
+
+        distributed_so_far = 0.0
+
+        for i, agent in enumerate(active_households):
+            is_last = (i == count - 1)
+
+            if is_last:
+                # Give all remaining balance to the last agent to ensure zero-sum
+                allocation = total_amount - distributed_so_far
+            else:
+                allocation = amount_per_household
+
             # We use _add_assets for now as this is a distribution phase separate from transactions?
             # Or should we generate transactions?
             # Reflux distribute happens in Phase 4 (Lifecycle/Post-Processing) in TickScheduler.
             # So direct modification is acceptable here as it's outside the Transaction Phase strictness?
             # Ideally yes, or we move it to Transaction Phase.
             # For now, leaving as direct modification (Legacy).
-            agent._add_assets(amount_per_household)
+            agent._add_assets(allocation)
+            distributed_so_far += allocation
 
             # Record as additional labor income (Service Sector)
             if hasattr(agent, "labor_income_this_tick"):
-                agent.labor_income_this_tick += amount_per_household
+                agent.labor_income_this_tick += allocation
 
             # Legacy support if needed
             if hasattr(agent, 'income_history') and isinstance(agent.income_history, dict):
-                 agent.income_history['service'] = agent.income_history.get('service', 0.0) + amount_per_household
+                 agent.income_history['service'] = agent.income_history.get('service', 0.0) + allocation
 
         logger.info(
-            f"REFLUX_DISTRIBUTE | Distributed {total_amount:.2f} to {len(active_households)} households. ({amount_per_household:.2f} each)",
+            f"REFLUX_DISTRIBUTE | Distributed {total_amount:.4f} to {count} households. (Avg: {amount_per_household:.4f})",
             extra={"tags": ["reflux", "distribution"], "total_amount": total_amount}
         )
 
