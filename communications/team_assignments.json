@@ -89,6 +89,10 @@
       "13173314960969369906": {
         "title": "WO-116_Zero_Sum_Final_Sprint",
         "initial_mission": "The Zero-Sum Final Sprint. 1. Read 'design/REPORTS/final_zero_sum_check.log'. 2. Focus on the EXACT recurring leak of +299.7760. 3. Audit 'simulation/agents/government.py' (invest_infrastructure) and 'simulation/systems/reflux_system.py'. 4. Find why 5000.0 infrastructure spending results in a +299.7760 drift. 5. Fix the math to reach 0.0000 leak. Output to 'design/audits/FINAL_DRIFT_FIX.md'."
+      },
+      "7958702835499376780": {
+        "title": "WO-116_Zero_Sum_Final_Sprint",
+        "initial_mission": "The Zero-Sum Final Sprint. 1. Read 'design/REPORTS/final_zero_sum_check.log'. 2. Focus on the EXACT recurring leak of +299.7760. 3. Audit 'simulation/agents/government.py' (invest_infrastructure) and 'simulation/systems/reflux_system.py'. 4. Find why 5000.0 infrastructure spending results in a +299.7760 drift. 5. Fix the math to reach 0.0000 leak. Output to 'design/audits/FINAL_DRIFT_FIX.md'."
       }
     },
     "completed_sessions": {

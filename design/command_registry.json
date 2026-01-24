@@ -39,16 +39,26 @@
   },
   "root_cause": {
     "worker": "audit",
-    "instruction": "Root Cause Profiling. 1. Use 'design/REPORTS/FINAL_V4_VERDICT.md' as your case file. 2. Dive into the attached code to find the EXACT BUG for the 3 anomalies: (A) The -185k Tick 1 leak - check start-of-simulation logic. (B) The systemic +293.3120 creation - audit 'infrastructure' and 'deposit_interest' math. (C) The Tax Collection Error at Tick 256+ - fix the agent de-registration in LifecycleManager. 3. Produce 'design/audits/ROOT_CAUSE_PROFILE.md' with code snippets and fix strategies.",
+    "instruction": "Root Cause Analysis (Sequence & Timing). 1. Analyze why Tick 1 has a massive leak despite 'bond_purchase' being logged. 2. Compare 'government.invest_infrastructure' (immediate settlement) vs 'bond issuance' (transaction queue). 3. Prove that Government is spending money it hasn't received yet. 4. Audit 'MinistryOfEducation' for similar timing/transfer gaps. Output findings to 'design/audits/ROOT_CAUSE_PROFILE.md'.",
     "context": [
-      "design/REPORTS/FINAL_V4_VERDICT.md",
-      "simulation/tick_scheduler.py",
-      "simulation/systems/lifecycle_manager.py",
-      "simulation/systems/tax_agency.py",
+      "design/REPORTS/victory_check.log",
       "simulation/agents/government.py",
-      "simulation/bank.py"
+      "simulation/systems/ministry_of_education.py",
+      "simulation/tick_scheduler.py",
+      "simulation/systems/transaction_processor.py"
     ],
     "output": "design/audits/ROOT_CAUSE_PROFILE.md",
+    "model": "pro"
+  },
+  "spec_design": {
+    "worker": "spec",
+    "instruction": "Implementation Spec for Zero-Sum Victory. 1. Read 'design/audits/ROOT_CAUSE_PROFILE.md'. 2. Design a fix to synchronize Bond Revenue with Infrastructure Spending (e.g., Immediate Bond Settlement or Infrastructure-via-Transaction). 3. Ensure 'MinistryOfEducation' also follows the pure settlement pattern. 4. Define the validation tests to prove 0.0000 leak. Output to 'design/specs/ZERO_SUM_FIX_SPEC.md'.",
+    "context": [
+      "design/audits/ROOT_CAUSE_PROFILE.md",
+      "simulation/agents/government.py",
+      "simulation/systems/ministry_of_education.py"
+    ],
+    "output": "design/specs/ZERO_SUM_FIX_SPEC.md",
     "model": "pro"
   },
   "purity_audit": {
@@ -80,8 +90,8 @@
   },
   "mission_profiler_engine": {
     "command": "create",
-    "title": "WO-116_Zero_Sum_Final_Sprint",
-    "instruction": "The Zero-Sum Final Sprint. 1. Read 'design/REPORTS/final_zero_sum_check.log'. 2. Focus on the EXACT recurring leak of +299.7760. 3. Audit 'simulation/agents/government.py' (invest_infrastructure) and 'simulation/systems/reflux_system.py'. 4. Find why 5000.0 infrastructure spending results in a +299.7760 drift. 5. Fix the math to reach 0.0000 leak. Output to 'design/audits/FINAL_DRIFT_FIX.md'.",
+    "title": "WO-117_Zero_Sum_Victory",
+    "instruction": "ZERO-SUM VICTORY. 1. READ 'design/specs/ZERO_SUM_FIX_SPEC.md'. 2. Implement 'issue_treasury_bonds_synchronous' in FinanceSystem to eliminate the timing gap. 3. Refactor Government Infrastructure and Education logic to use this synchronous pattern. 4. Ensure 0.0000 drift in these specific operations. 5. Secondary Mission: Search for the source of the -99,680 leak at Tick 1 (check INITIAL_ASSETS setup in main.py/initializer.py). Output to 'design/REPORTS/FINAL_VERIFICATION.md'.",
     "wait": false
   },
   "git_review": {

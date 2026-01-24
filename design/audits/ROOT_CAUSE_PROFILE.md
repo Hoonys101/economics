@@ -1,37 +1,51 @@
-# Deep Root Cause Profile
+I will write the analysis to `design/audits/ROOT_CAUSE_PROFILE.md`.
+# Root Cause Analysis: Government Spending & Financial Leak
 
 ## Executive Summary
-This audit identifies three critical systemic failures causing the reported financial discrepancies. The primary "Tick 1 Deletion" (-185k) is a false positive leak caused by an accounting definition error where Government assets were excluded from the Money Supply (M2) calculation. The "Lifecycle Errors" are caused by a type error in the `TransactionProcessor`, preventing tax collection and leading to statistical drift. The "+293.3120 Anomaly" is a result of consistent money creation flow that appears as a leak due to the same accounting definition error or minor floating-point accumulation in interest payments.
+The simulation exhibits a critical timing flaw where government spending occurs before funds from deficit-financing (bond sales) are settled, leading to predictable `INSUFFICIENT_FUNDS` errors. This is evident in the `invest_infrastructure` function and a similar vulnerability exists in the `MinistryOfEducation` module. Additionally, a massive, unrelated financial leak of -99,680.00 occurs at Tick 1, whose origin is not in the analyzed code and points to a separate, severe data integrity issue at simulation startup.
 
-## 1. Tick 1 Deletion (-185,430.00)
-- **Status**: Identified
-- **Root Cause**: **Accounting Definition Error**.
-    - The `WorldState.calculate_total_money()` method explicitly excludes `Government.assets` from the M2 calculation.
-    - At Tick 1, the `MinistryOfEducation` executes the "Public Education" logic.
-    - Households pay "Student Share" of education costs to the Government.
-    - **Mechanism**: Money moves from `Households` (Inside M2) to `Government` (Outside M2).
-    - **Result**: M2 decreases by the total student share amount (~185k), which the system flags as a "Leak" because it is not recorded as "Money Destruction".
-- **Fix**: Update `WorldState.calculate_total_money()` to include `state.government.assets`. This recognizes the Government as an economic actor holding liquidity, ensuring transfers to/from the government satisfy zero-sum conservation.
+## Detailed Analysis
 
-## 2. Systemic Money Destruction (Lifecycle/Tax Errors)
-- **Status**: Identified
-- **Root Cause**: **Type Error in TransactionProcessor**.
-    - The `TransactionProcessor` calls `government.collect_tax(..., payer_id, ...)` passing the agent's **ID** (int/str) instead of the **Agent Object**.
-    - `TaxAgency.collect_tax` expects an object to verify `hasattr(payer, 'id')`.
-    - **Mechanism**: `collect_tax` logs "Payer X is not an object" and returns 0.0, failing to record tax statistics or execute `FinanceSystem` logic (if connected).
-    - **Result**: While the `SettlementSystem` successfully transfers the funds (via `TransactionProcessor`'s direct call), the statistical tracking of tax revenue fails, leading to discrepancies between "Collected Tax" and actual asset movements.
-- **Fix**: Update `TransactionProcessor` to pass the `buyer` or `seller` object itself to `government.collect_tax`, not just the ID.
+### 1. Government Overspending due to Sequence Error
+- **Status**: ✅ Confirmed
+- **Finding**: The government attempts to execute payments for infrastructure immediately after creating bond sale transactions, but before those transactions are processed and the funds are actually deposited into its account.
+- **Evidence**:
+    1.  **Trigger**: `tick_scheduler.py:L104` calls `government.invest_infrastructure(..)`.
+    2.  **Bond Issuance**: Inside `government.py`, because the government's assets are 0, it calls `self.finance_system.issue_treasury_bonds` (`L582`). This function correctly returns `Transaction` objects representing the bond sales. These transactions are queued.
+    3.  **Premature Spending**: The function does not wait for the transactions to be processed. It immediately proceeds to call `self.settlement_system.transfer` (`L599`) to pay for the infrastructure.
+    4.  **Failure**: At this point, the government's assets are still 0. The transfer fails, as confirmed by the log `victory_check.log:L6`: `[ERROR] main: INSUFFICIENT_FUNDS | Agent 25 (Assets: 0.00) cannot pay 5000.00...`
 
-## 3. The +293.3120 Anomaly
-- **Status**: Identified
-- **Root Cause**: **M2 Exclusion of Government & Infrastructure**.
-    - Similar to the Tick 1 error, the Government invests in Infrastructure (~5000/tick) by paying the `EconomicRefluxSystem`.
-    - **Mechanism**: `Government` (Outside M2) pays `RefluxSystem` (Inside M2).
-    - **Result**: M2 **increases** by the investment amount. This should appear as a positive leak.
-    - The specific value `293.3120` suggests a net effect of multiple flows (e.g., Infrastructure + Interest - Tax). If Tax leaks (negative) and Infrastructure adds (positive), the net result is the anomaly.
-    - Once Government is added to M2, all these flows become internal transfers, eliminating the "Leak" noise.
+### 2. Mismatched Settlement Mechanisms
+- **Status**: ✅ Confirmed
+- **Finding**: The core of the timing flaw is the use of two different settlement mechanisms for a single logical operation (deficit spending).
+- **Evidence**:
+    - **Deferred Settlement**: Bond sales are handled by creating `Transaction` objects. These are processed later in the tick by the `TransactionProcessor` (`tick_scheduler.py:L311`). This correctly defers the asset transfer.
+    - **Immediate Settlement**: The corresponding expenditure for infrastructure attempts an *immediate* asset transfer via `settlement_system.transfer` (`government.py:L599`).
+- **Conclusion**: This architectural mismatch is the direct cause of the `INSUFFICIENT_FUNDS` errors. The infrastructure payment should also be a deferred `Transaction` to ensure it's executed only after the government's assets have been updated by the bond sales.
 
-## 4. De-registration Bug
-- **Status**: Clarified
-- **Root Cause**: The reported "De-registration" issue is largely the symptom of the `TaxAgency` Type Error described above. When `TransactionProcessor` fails to handle the object/ID distinction, it manifests as "Payer not found" errors that worsen when agents die (as IDs might be reused or lookups fail, though the primary error is the Type mismatch).
-- **Fix**: The fix for #2 addresses the root cause. No complex de-registration logic is needed beyond what `LifecycleManager` already does (rebuilding `state.agents`), provided the `TransactionProcessor` uses valid object references from the current state.
+### 3. Audit of `MinistryOfEducation`
+- **Status**: ✅ Vulnerability Found
+- **Finding**: The `MinistryOfEducation` system is built with the same potential timing flaw.
+- **Evidence**:
+    - The system is triggered at the start of the tick (`tick_scheduler.py:L90`).
+    - Its spending logic also uses direct, immediate calls to `settlement_system.transfer` (`ministry_of_education.py:L44`, `L70`, `L71`).
+    - While the budget logic currently prevents this from triggering at Tick 1 (`L15`, `L41`), any scenario where `edu_budget` exceeds the government's cash-on-hand would require bond issuance and lead to the exact same failure mode seen in infrastructure investment.
+
+### 4. Analysis of Tick 1 Financial Leak
+- **Status**: ⚠️ Unresolved (External Cause)
+- **Finding**: A leak of **-99,680.00** occurs at Tick 1. This amount does not correspond to any transactions or failed logic within the provided files and appears to be a separate, critical bug.
+- **Evidence**:
+    - **Initial State**: The simulation starts with a total money supply of `1,498,268.17` (`victory_check.log:L5`).
+    - **Tick 1 State**: After Tick 1, the total money supply is `1,398,588.17`, a decrease of exactly `99,680.00` (`victory_check.log:L7`).
+    - **Transaction Mismatch**: The transaction summary for Tick 1 shows a total volume of only a few hundred, which cannot account for the leak.
+    - **Forensic Report Error**: The `[FORENSIC]` section in the log incorrectly reports `Money Supply Delta: 0.0000`, contradicting the global money tracker and indicating a bug in the forensic tool itself.
+- **Conclusion**: This leak is not caused by the government's failed spending. The code reviewed (`government.py`, `tick_scheduler.py`, `ministry_of_education.py`, `transaction_processor.py`) does not contain logic that would destroy this amount of money. The cause is likely in a system executed at the very beginning of the tick, such as initial state setup, bank interest/fee calculations, or another module not provided for this analysis.
+
+## Risk Assessment
+- **High Severity**: The spending sequence flaw makes any form of government deficit spending unreliable and prone to failure, invalidating fiscal policy experiments.
+- **Critical Severity**: The unexplained leak at Tick 1 compromises the financial integrity of the entire simulation run. All subsequent economic data is based on an incorrect and unexplained initial financial state.
+
+## Conclusion & Action Items
+1.  **Fix Sequence Flaw**: Refactor `government.invest_infrastructure` and `ministry_of_education.run_public_education`. All government expenditures should be converted into deferred `Transaction` objects, just like their financing mechanisms. This will ensure payments are only attempted after funds have been settled.
+2.  **Investigate Tick 1 Leak**: A high-priority investigation must be launched to find the source of the initial -99,680.00 leak. The investigation should focus on the earliest stages of the tick execution, before agent decisions are made.
+3.  **Audit Forensic Tool**: The forensic reconciliation check should be audited, as it failed to detect the massive drop in total money supply.
