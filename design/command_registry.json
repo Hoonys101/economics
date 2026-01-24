@@ -29,7 +29,7 @@
   "jules": {
     "command": "create",
     "title": "WO-116_Leak_Hunter",
-    "instruction": "Initiate Second Hunt (2차 사냥) for money leaks! Read 'design/specs/WO116_SECOND_HUNT_SPEC.md'. 1. Verify Deficit Trap & Debt Shadow hypotheses. 2. Audit LifecycleManager liquidation. 3. Find and plug any remaining leaks. Report on verified/rejected/new hypotheses.",
+    "instruction": "Loop 2: Late-Stage Leak Hunt (-680k). READ 'design/specs/WO116_LOOP2_HUNT.md'. Loop 1 is merged. Investigate Bank defaults (TD-114). MANDATORY: Report anomalies in commits as per Constitution Rule #6. Target: Leak < 10.0 at Tick 100.",
     "wait": false
   },
   "git_review": {
