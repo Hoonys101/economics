@@ -473,37 +473,27 @@ class Government:
             potential_revenue = needed # Assume success
 
         # WO-Fix: Bypass TransactionProcessor for internal transfers to prevent zero-sum drift (phantom tax/leaks)
-        # We execute the transfer directly using SettlementSystem if available.
-        transfer_success = False
+        # We execute the transfer directly using SettlementSystem.
+        # Fallback to Transaction logic is REMOVED to prevent recurring drift bugs.
 
-        if self.settlement_system and reflux_system:
-             transfer_success = self.settlement_system.transfer(
-                 self,
-                 reflux_system,
-                 effective_cost,
-                 "Infrastructure Investment (Direct)"
+        if not self.settlement_system or not reflux_system:
+             logger.critical(
+                 "INFRASTRUCTURE_ABORTED | Missing SettlementSystem or RefluxSystem. "
+                 "Cannot execute zero-sum investment.",
+                 extra={"tick": current_tick, "agent_id": self.id}
              )
-             if not transfer_success:
-                 logger.error(f"INFRASTRUCTURE_FAIL | Settlement transfer failed.")
-                 return False, []
-        else:
-            # Legacy Fallback (Transaction-based)
-            reflux_id = 999999
-            if reflux_system and hasattr(reflux_system, 'id'):
-                reflux_id = reflux_system.id
+             return False, []
 
-            tx = Transaction(
-                buyer_id=self.id, # Government Pays
-                seller_id=reflux_id, # Reflux Receives
-                item_id="infrastructure_investment",
-                quantity=1.0,
-                price=effective_cost,
-                market_id="system",
-                transaction_type="infrastructure",
-                time=current_tick
-            )
-            transactions.append(tx)
-            transfer_success = True # Assumed deferred success
+        transfer_success = self.settlement_system.transfer(
+             self,
+             reflux_system,
+             effective_cost,
+             "Infrastructure Investment (Direct)"
+        )
+
+        if not transfer_success:
+             logger.error(f"INFRASTRUCTURE_FAIL | Settlement transfer failed.")
+             return False, []
 
         self.expenditure_this_tick += effective_cost
         self.infrastructure_level += 1
