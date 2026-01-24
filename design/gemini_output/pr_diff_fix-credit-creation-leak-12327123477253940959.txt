@@ -1,0 +1,118 @@
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index 057958e..78d475b 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -97,6 +97,14 @@ class FinanceSystem(IFinanceSystem):
+         if yield_rate > qe_threshold:
+             # Central Bank intervenes as buyer of last resort (QE)
+             buyer = self.central_bank
++            # QE is money creation: Record it
++            if hasattr(self.government, 'total_money_issued'):
++                self.government.total_money_issued += amount
++                logger.info(
++                    f"QUANTITATIVE_EASING | Central Bank purchased bond {amount:.2f}. "
++                    f"Total Money Issued updated.",
++                    extra={"tick": current_tick, "tag": "QE"}
++                )
+         else:
+             # Commercial bank buys it
+             # Optimistic check for Phase B
+diff --git a/scripts/diagnose_money_leak.py b/scripts/diagnose_money_leak.py
+index cdd9602..59a0461 100644
+--- a/scripts/diagnose_money_leak.py
++++ b/scripts/diagnose_money_leak.py
+@@ -48,7 +48,7 @@ def diagnose():
+     last_b = get_balances()
+     logger.info(f"START | Total: {last_b['total']:,.2f} | H: {last_b['h_active']:,.2f} | Bank: {last_b['bank']:,.2f}")
+ 
+-    for tick in range(1, 101): # Run for 100 ticks
++    for tick in range(1, 501): # Run for 500 ticks
+         sim.run_tick()
+         curr_b = get_balances()
+         diff = curr_b['total'] - last_b['total']
+diff --git a/simulation/bank.py b/simulation/bank.py
+index c24da75..e1cc919 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -8,6 +8,7 @@ from simulation.models import Transaction
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
++    from simulation.agents.government import Government
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -54,6 +55,7 @@ class Bank(IFinancialEntity):
+         self._assets = initial_assets # Reserves
+         self.config_manager = config_manager
+         self.settlement_system = settlement_system
++        self.government: Optional["Government"] = None
+ 
+         # Data Stores
+         self.loans: Dict[str, Loan] = {}
+@@ -100,6 +102,10 @@ class Bank(IFinancialEntity):
+     def _get_config(self, key: str, default: Any) -> Any:
+         return self.config_manager.get(key, default)
+ 
++    def set_government(self, government: "Government") -> None:
++        """Sets the government reference for monetary issuance tracking."""
++        self.government = government
++
+     def update_base_rate(self, new_rate: float):
+         """
+         Called by Central Bank (via Engine) to update monetary policy.
+@@ -176,10 +182,22 @@ class Bank(IFinancialEntity):
+ 
+             # If assets are less than the loan amount, but we have enough reserves, this is credit creation.
+             if self.assets < amount:
+-                logger.info(
+-                    f"[CREDIT_CREATION] Bank {self.id} created {amount} credit. Reserves: {self.assets:.2f}",
+-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation"]}
+-                )
++                shortfall = amount - self.assets
++                if self.government and hasattr(self.government, "total_money_issued"):
++                    self.government.total_money_issued += shortfall
++                    self.deposit(shortfall)
++                    logger.info(
++                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit to fund loan of {amount:.2f}. "
++                        f"Reserves before: {self.assets - shortfall:.2f}, after: {self.assets:.2f}. "
++                        f"Total Issued updated.",
++                        extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation"]}
++                    )
++                else:
++                    logger.warning(
++                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit but Government reference is MISSING or invalid. "
++                        "Issuance NOT tracked!",
++                        extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation", "error"]}
++                    )
+ 
+         # 3. Execution (Update Bank State Only)
+         # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 279f156..9030189 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -128,6 +128,9 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.agents[sim.government.id] = sim.government
+         sim.next_agent_id += 1
+ 
++        # Inject government into bank for monetary tracking
++        sim.bank.set_government(sim.government)
++
+         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
+ 
+         sim.central_bank = CentralBank(
+diff --git a/simulation/tick_scheduler.py b/simulation/tick_scheduler.py
+index f7f01b0..671291d 100644
+--- a/simulation/tick_scheduler.py
++++ b/simulation/tick_scheduler.py
+@@ -264,7 +264,8 @@ class TickScheduler:
+             ai_training_manager=getattr(state, "ai_training_manager", None),
+             ai_trainer=getattr(state, "ai_trainer", None),
+             next_agent_id=state.next_agent_id,
+-            real_estate_units=state.real_estate_units
++            real_estate_units=state.real_estate_units,
++            settlement_system=getattr(state, "settlement_system", None)
+         )
+ 
+         # 1. Decisions

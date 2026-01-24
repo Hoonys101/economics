@@ -69,6 +69,10 @@
       "15885642735639860418": {
         "title": "WO-116_Leak_Hunter",
         "initial_mission": "Fix the -750k M2 leak! Read 'design/specs/WO116_HOTFIX_LEAK_PLUGGING.md'. Fix obvious reversals, then summarize: 1. Rejected Hypotheses (what was NOT leaking), 2. New Hypotheses (deeper issues found), 3. Solved Problems. Priority: Integrity Analysis & Reporting."
+      },
+      "12327123477253940959": {
+        "title": "WO-116_Leak_Hunter",
+        "initial_mission": "Loop 3: Credit Creation Integrity. READ 'design/specs/WO116_LOOP3_HUNT.md'. Patch Bank.grant_loan to record created credit as 'money_issued'. This is likely the cause of the remaining drift. Verify Zero-Sum Stability."
       }
     },
     "completed_sessions": {

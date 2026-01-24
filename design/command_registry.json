@@ -28,19 +28,18 @@
   },
   "verify": {
     "worker": "audit",
-    "instruction": "Verify the Loop 2 fix for the -680k Money Leak. 1. Run `python scripts/diagnose_money_leak.py`. 2. Analyze the log: Did the 680k late-stage drift disappear? Is the total leak near 0.0000? 3. If leaks persist, identify the EXACT tick and component (e.g. Bank Interest, Tax) causing it. 4. Produce a final status report 'design/REPORTS/LOOP2_VERIFICATION.md'.",
+    "instruction": "Verify Loop 3 fix (Credit Creation). Read 'design/REPORTS/check_loop3.log'. 1. Check if the 'Leak' column remains stable (near 0.0000) for 500 ticks. 2. If valid, declare VICTORY. If drift persists, identify the pattern (Linear? Exponential? Spikes?). 3. Produce 'design/REPORTS/LOOP3_VERIFICATION.md'.",
     "context": [
-      "scripts/diagnose_money_leak.py",
-      "simulation/bank.py",
-      "simulation/systems/tax_agency.py"
+      "design/REPORTS/check_loop3.log",
+      "simulation/bank.py"
     ],
-    "output": "design/REPORTS/LOOP2_VERIFICATION.md",
+    "output": "design/REPORTS/LOOP3_VERIFICATION.md",
     "model": "pro"
   },
   "jules": {
     "command": "create",
     "title": "WO-116_Leak_Hunter",
-    "instruction": "Loop 3: Credit Creation Integrity. READ 'design/specs/WO116_LOOP3_HUNT.md'. Patch Bank.grant_loan to record created credit as 'money_issued'. This is likely the cause of the remaining drift. Verify Zero-Sum Stability.",
+    "instruction": "Loop 3.5: Refine Verification Tool. READ 'design/specs/WO116_LOOP3_5_TOOLING.md'. Modify 'scripts/diagnose_money_leak.py' to suppress engine noise and perform self-verification. Success = Clean summary output + [SUCCESS/FAIL] verdict.",
     "wait": false
   },
   "git_review": {
