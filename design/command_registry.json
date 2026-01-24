@@ -28,18 +28,40 @@
   },
   "verify": {
     "worker": "audit",
-    "instruction": "Verify Loop 3 fix (Credit Creation). Read 'design/REPORTS/check_loop3.log'. 1. Check if the 'Leak' column remains stable (near 0.0000) for 500 ticks. 2. If valid, declare VICTORY. If drift persists, identify the pattern (Linear? Exponential? Spikes?). 3. Produce 'design/REPORTS/LOOP3_VERIFICATION.md'.",
+    "instruction": "Deep Forensic Analysis. Read 'design/REPORTS/refined_diagnosis_v2.txt'. 1. Identify why Tick 1 has a massive -63k leak despite ZERO transactions. 2. Look for 'Shadow Asset Mutation' values in the forensic blocks. 3. Pinpoint the exact tick where money stops leaking or changes behavior. 4. Determine if the 'Credit Creation' fix moved the needle. 5. Final Report: 'design/REPORTS/LOOP3_FINAL_VERDICT.md'.",
     "context": [
-      "design/REPORTS/check_loop3.log",
-      "simulation/bank.py"
+      "design/REPORTS/refined_diagnosis_v2.txt",
+      "simulation/bank.py",
+      "scripts/diagnose_money_leak.py"
     ],
-    "output": "design/REPORTS/LOOP3_VERIFICATION.md",
+    "output": "design/REPORTS/LOOP3_FINAL_VERDICT.md",
+    "model": "pro"
+  },
+  "purity_audit": {
+    "worker": "audit",
+    "instruction": "Deep Asset Purity Scan. 1. Search for all direct asset mutations: regex patterns like `\\.(?:_)?assets\\s*[+\\-*/]?=` and calls to `_sub_assets`/`_add_assets`. 2. Identify why these markers are not yet replaced by `SettlementSystem.transfer`. 3. Focus on the Tick 1 startup sequence and agent initialization. 4. Produce 'design/audits/ASSET_PURITY_REPORT.md' listing every 'illegal' mutation with its line number and a fix recommendation.",
+    "context": [
+      "simulation/"
+    ],
+    "output": "design/audits/ASSET_PURITY_REPORT.md",
+    "model": "pro"
+  },
+  "dep_audit": {
+    "worker": "audit",
+    "instruction": "Audit project dependencies. 1. Scan all .py files (especially under `tests/`) for `import` and `from ... import` statements. 2. Compare the identified packages with the contents of `requirements.txt`. 3. Identify: (a) Used but not in requirements.txt, (b) In requirements.txt but never used, (c) System/Internal modules vs External packages. 4. Produce a report 'design/audits/DEPENDENCY_AUDIT.md' with a recommended new requirements.txt content.",
+    "context": [
+      "requirements.txt",
+      "simulation/",
+      "tests/",
+      "scripts/"
+    ],
+    "output": "design/audits/DEPENDENCY_AUDIT.md",
     "model": "pro"
   },
   "jules": {
     "command": "create",
     "title": "WO-116_Leak_Hunter",
-    "instruction": "Loop 3.5: Refine Verification Tool. READ 'design/specs/WO116_LOOP3_5_TOOLING.md'. Modify 'scripts/diagnose_money_leak.py' to suppress engine noise and perform self-verification. Success = Clean summary output + [SUCCESS/FAIL] verdict.",
+    "instruction": "Loop 4: Erasing Shadow Mutations. READ 'design/specs/WO116_LOOP4_SHADOW_FIX.md'. The forensic tool proved that -63k leaks occur without transactions. Fix the 5 suspect files (Inheritance, Liquidation, Bank, Gov, BaseAgent) to ensure 100% ledger purity. Tick 1 must be 0.0000 leak.",
     "wait": false
   },
   "git_review": {

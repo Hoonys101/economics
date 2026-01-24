@@ -73,6 +73,10 @@
       "12327123477253940959": {
         "title": "WO-116_Leak_Hunter",
         "initial_mission": "Loop 3: Credit Creation Integrity. READ 'design/specs/WO116_LOOP3_HUNT.md'. Patch Bank.grant_loan to record created credit as 'money_issued'. This is likely the cause of the remaining drift. Verify Zero-Sum Stability."
+      },
+      "14525228153841719624": {
+        "title": "WO-116_Leak_Hunter",
+        "initial_mission": "Loop 3.5: Refine Verification Tool. READ 'design/specs/WO116_LOOP3_5_TOOLING.md'. Modify 'scripts/diagnose_money_leak.py' to suppress engine noise and perform self-verification. Success = Clean summary output + [SUCCESS/FAIL] verdict."
       }
     },
     "completed_sessions": {
