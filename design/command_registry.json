@@ -26,10 +26,21 @@
     "output": "design/specs/WO116_PHASE_B_SPEC.md",
     "model": "pro"
   },
+  "verify": {
+    "worker": "audit",
+    "instruction": "Verify the Loop 2 fix for the -680k Money Leak. 1. Run `python scripts/diagnose_money_leak.py`. 2. Analyze the log: Did the 680k late-stage drift disappear? Is the total leak near 0.0000? 3. If leaks persist, identify the EXACT tick and component (e.g. Bank Interest, Tax) causing it. 4. Produce a final status report 'design/REPORTS/LOOP2_VERIFICATION.md'.",
+    "context": [
+      "scripts/diagnose_money_leak.py",
+      "simulation/bank.py",
+      "simulation/systems/tax_agency.py"
+    ],
+    "output": "design/REPORTS/LOOP2_VERIFICATION.md",
+    "model": "pro"
+  },
   "jules": {
     "command": "create",
     "title": "WO-116_Leak_Hunter",
-    "instruction": "Loop 2: Late-Stage Leak Hunt (-680k). READ 'design/specs/WO116_LOOP2_HUNT.md'. Loop 1 is merged. Investigate Bank defaults (TD-114). MANDATORY: Report anomalies in commits as per Constitution Rule #6. Target: Leak < 10.0 at Tick 100.",
+    "instruction": "Loop 3: Credit Creation Integrity. READ 'design/specs/WO116_LOOP3_HUNT.md'. Patch Bank.grant_loan to record created credit as 'money_issued'. This is likely the cause of the remaining drift. Verify Zero-Sum Stability.",
     "wait": false
   },
   "git_review": {
