@@ -479,11 +479,12 @@ class Bank(IFinancialEntity):
         Creates money via Government to cover liquidity gaps.
         """
         self._assets += amount
-        if self._get_config("government_id", None) is not None:
-             # If we have a reference to government via simulation later, but here we take config
-             pass
         
-        logger.warning(f"BANK_BORROWING | Central Bank injected {amount:.2f} into Bank {self.id} reserves.")
+        # Track Money Issuance (Lender of Last Resort is Minting)
+        if self.government and hasattr(self.government, "total_money_issued"):
+            self.government.total_money_issued += amount
+
+        logger.warning(f"BANK_BORROWING | Central Bank injected {amount:.2f} into Bank {self.id} reserves (New Money).")
 
     def check_solvency(self, government: Any):
         """

@@ -41,11 +41,24 @@ class BaseAgent(ABC):
         return self._assets
 
     def _add_assets(self, amount: float) -> None:
-        """[PROTECTED] Increase assets. Only for SettlementSystem."""
+        """
+        [INTERNAL ONLY] Increase assets.
+        MUST ONLY BE CALLED BY:
+        1. SettlementSystem.transfer (Normal Operation)
+        2. System Managers for Minting (e.g. Bank Credit Creation, Reflux Alchemy) WITH corresponding Ledger Update.
+
+        DO NOT CALL DIRECTLY for standard transfers. Use SettlementSystem.
+        """
         self._assets += amount
 
     def _sub_assets(self, amount: float) -> None:
-        """[PROTECTED] Decrease assets. Only for SettlementSystem."""
+        """
+        [INTERNAL ONLY] Decrease assets.
+        MUST ONLY BE CALLED BY:
+        1. SettlementSystem.transfer (Normal Operation)
+
+        DO NOT CALL DIRECTLY. Use SettlementSystem.
+        """
         self._assets -= amount
 
     def deposit(self, amount: float) -> None:

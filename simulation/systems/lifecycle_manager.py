@@ -118,6 +118,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
                     # FIX: Track Reflux Alchemy as Issuance
                     if hasattr(state.government, "total_money_issued"):
+                        # MINTING: Inject value into Firm so it can be distributed
+                        firm._add_assets(inv_value)
                         state.government.total_money_issued += inv_value
 
                 # 2. Capital Stock (Scrap Value)
@@ -125,6 +127,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
                     # FIX: Track Reflux Alchemy as Issuance
                     if hasattr(state.government, "total_money_issued"):
+                        # MINTING: Inject value into Firm so it can be distributed
+                        firm._add_assets(firm.capital_stock)
                         state.government.total_money_issued += firm.capital_stock
 
             # SoC Refactor: use hr.employees
@@ -153,7 +157,13 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                         if shares > 0:
                             share_ratio = shares / outstanding_shares
                             distribution = total_cash * share_ratio
-                            agent._add_assets(distribution)
+
+                            # Use SettlementSystem for distribution
+                            if hasattr(state, "settlement_system") and state.settlement_system:
+                                state.settlement_system.transfer(firm, agent, distribution, "liquidation_dividend")
+                            else:
+                                raise RuntimeError("SettlementSystem missing during liquidation distribution")
+
                             self.logger.info(
                                 f"LIQUIDATION_DISTRIBUTION | Agent {agent.id} received "
                                 f"{distribution:.2f} from Firm {firm.id} liquidation",
@@ -163,14 +173,26 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     from simulation.agents.government import Government
                     if isinstance(state.government, Government):
                         # Note: collect_tax no longer adds assets. We must transfer/add manually.
-                        state.government._add_assets(total_cash)
-                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
+                        # Use SettlementSystem for Escheatment
+                        if hasattr(state, "settlement_system") and state.settlement_system:
+                            state.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment")
+                        else:
+                             raise RuntimeError("SettlementSystem missing during liquidation escheatment")
+
+                        state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
+
+            # Verification: Firm assets should be ~0 now
+            if firm.assets > 1e-6:
+                 self.logger.warning(f"LIQUIDATION_RESIDUAL | Firm {firm.id} has {firm.assets} left after distribution. Forcing to 0.")
+                 firm._sub_assets(firm.assets) # Destroy residual dust
+                 if hasattr(state.government, "total_money_destroyed"):
+                     state.government.total_money_destroyed += firm.assets
+
             for household in state.households:
                 if firm.id in household.shares_owned:
                     del household.shares_owned[firm.id]
                     if state.stock_market:
                         state.stock_market.update_shareholder(household.id, firm.id, 0)
-            firm._sub_assets(firm.assets)
             self.logger.info(
                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
@@ -188,6 +210,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
                     # FIX: Track Reflux Alchemy as Issuance
                     if hasattr(state.government, "total_money_issued"):
+                        # Minting to Government (Escheatment of dead inventory)
+                        state.government._add_assets(inv_value)
                         state.government.total_money_issued += inv_value
 
             household.inventory.clear()

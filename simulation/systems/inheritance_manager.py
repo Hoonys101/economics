@@ -35,6 +35,9 @@ class InheritanceManager:
         if not settlement and hasattr(simulation, 'time'): # Weak check for DTO
              settlement = getattr(simulation, 'settlement_system', None)
 
+        if not settlement:
+            raise ValueError(f"SettlementSystem missing in InheritanceManager for agent {deceased.id}")
+
         self.logger.info(
             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
@@ -109,15 +112,14 @@ class InheritanceManager:
                 proceeds = share.quantity * price
 
                 # Transfer: Deceased -> Cash, Government -> Stock (or burn?)
-                if settlement:
-                    settlement.transfer(government, deceased, proceeds, f"liquidation_stock:{firm_id}")
-                else:
-                    if hasattr(government, '_sub_assets'): government._sub_assets(proceeds)
-                    else: government.assets -= proceeds
-                    if hasattr(deceased, '_add_assets'): deceased._add_assets(proceeds)
-                    else: deceased.assets += proceeds
+                # Minting Logic: Gov creates money to buy asset
+                if hasattr(government, '_add_assets'):
+                     government._add_assets(proceeds)
 
                 simulation.government.total_money_issued += proceeds # Injection (Bank/Gov Buyout)
+
+                # Transfer
+                settlement.transfer(government, deceased, proceeds, f"liquidation_stock:{firm_id}")
 
                 liquidation_proceeds += proceeds
 
@@ -157,15 +159,14 @@ class InheritanceManager:
                 sale_price = unit.estimated_value * fire_sale_ratio
 
                 # Govt buys unit
-                if settlement:
-                    settlement.transfer(government, deceased, sale_price, f"liquidation_re:{unit.id}")
-                else:
-                    if hasattr(government, '_sub_assets'): government._sub_assets(sale_price)
-                    else: government.assets -= sale_price
-                    if hasattr(deceased, '_add_assets'): deceased._add_assets(sale_price)
-                    else: deceased.assets += sale_price
+                # Minting Logic: Gov creates money to buy asset
+                if hasattr(government, '_add_assets'):
+                     government._add_assets(sale_price)
 
                 simulation.government.total_money_issued += sale_price # Injection
+
+                # Transfer
+                settlement.transfer(government, deceased, sale_price, f"liquidation_re:{unit.id}")
 
                 # Transfer Title
                 unit.owner_id = None # Government/Public
@@ -185,11 +186,7 @@ class InheritanceManager:
         # Determine final tax payment (limited by assets if bankruptcy)
         actual_tax_paid = min(deceased.assets, tax_amount)
         if actual_tax_paid > 0:
-            if settlement:
-                settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
-            else:
-                deceased.withdraw(actual_tax_paid)
-                government.deposit(actual_tax_paid)
+            settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
 
             # WO-116: Use record_revenue to avoid Double-Charge via FinanceSystem
             simulation.government.record_revenue(
@@ -209,12 +206,7 @@ class InheritanceManager:
             # 1. State Confiscation (Cash)
             surplus = deceased.assets
             if surplus > 0:
-                if settlement:
-                    settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
-                else:
-                    deceased.withdraw(surplus)
-                    government.deposit(surplus)
-
+                settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
                 simulation.government.record_revenue(surplus, "escheatment", deceased.id, simulation.time)
                 self.logger.info(
                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
@@ -255,16 +247,14 @@ class InheritanceManager:
         num_heirs = len(heirs)
 
         # A. Cash
+        import math
         total_cash = deceased.assets
-        cash_share = round(total_cash / num_heirs, 2)
+        # Use floor to avoid over-distribution
+        cash_share = math.floor((total_cash / num_heirs) * 100) / 100.0
         total_distributed = 0.0
 
         for heir in heirs:
-            if settlement:
-                settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
-            else:
-                deceased._sub_assets(cash_share)
-                heir._add_assets(cash_share)
+            settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
             total_distributed += cash_share
 
         # Residual Catch-all (WO-112)
@@ -277,12 +267,7 @@ class InheritanceManager:
 
         remainder = deceased.assets
         if remainder > 0:
-             if settlement:
-                 settlement.transfer(deceased, government, remainder, "inheritance_residual")
-             else:
-                 deceased.withdraw(remainder)
-                 government.deposit(remainder)
-
+             settlement.transfer(deceased, government, remainder, "inheritance_residual")
              simulation.government.record_revenue(remainder, "inheritance_residual", deceased.id, simulation.time)
              self.logger.info(f"RESIDUAL_CAPTURED | Transferred {remainder:.4f} residual dust to Government.")
 

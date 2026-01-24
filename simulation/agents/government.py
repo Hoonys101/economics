@@ -121,11 +121,17 @@ class Government:
         return self._assets
 
     def _add_assets(self, amount: float) -> None:
-        """[PROTECTED] Increase assets."""
+        """
+        [INTERNAL ONLY] Increase assets.
+        See BaseAgent._add_assets docstring.
+        """
         self._assets += amount
 
     def _sub_assets(self, amount: float) -> None:
-        """[PROTECTED] Decrease assets."""
+        """
+        [INTERNAL ONLY] Decrease assets.
+        See BaseAgent._sub_assets docstring.
+        """
         self._assets -= amount
 
     def update_sensory_data(self, dto: GovernmentStateDTO):
@@ -172,7 +178,10 @@ class Government:
     def record_revenue(
         self, amount: float, tax_type: str, payer_id: Any, current_tick: int
     ):
-        """Records revenue without collection (manual transfer case)."""
+        """
+        Records revenue statistics WITHOUT attempting collection (No Asset Modification).
+        Used when funds are transferred via SettlementSystem manually.
+        """
         self.tax_agency.record_revenue(self, amount, tax_type, payer_id, current_tick)
 
     def update_public_opinion(self, households: List[Any]):
