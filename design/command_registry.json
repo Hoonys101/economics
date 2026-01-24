@@ -28,13 +28,27 @@
   },
   "verify": {
     "worker": "audit",
-    "instruction": "Deep Forensic Analysis. Read 'design/REPORTS/refined_diagnosis_v2.txt'. 1. Identify why Tick 1 has a massive -63k leak despite ZERO transactions. 2. Look for 'Shadow Asset Mutation' values in the forensic blocks. 3. Pinpoint the exact tick where money stops leaking or changes behavior. 4. Determine if the 'Credit Creation' fix moved the needle. 5. Final Report: 'design/REPORTS/LOOP3_FINAL_VERDICT.md'.",
+    "instruction": "Final Forensic Audit (V4). Read 'design/REPORTS/final_v4_check.log'. 1. Analyze the -185k leak at Tick 1. Why did it INCREASE after the fix? 2. Look for patterns: Is money vanishing (Negative Leak) or appearing (Positive Leak)? 3. Compare Transaction Volume with System Asset Delta. Identify the 'Invisible Hand' or component still calling _sub_assets directly. 4. Correlate with 'simulation/initialization/initializer.py' or 'Tick 1' startup sequence. 5. Produce 'design/REPORTS/FINAL_V4_VERDICT.md'.",
     "context": [
-      "design/REPORTS/refined_diagnosis_v2.txt",
-      "simulation/bank.py",
-      "scripts/diagnose_money_leak.py"
+      "design/REPORTS/final_v4_check.log",
+      "simulation/initialization/initializer.py",
+      "simulation/tick_scheduler.py"
     ],
-    "output": "design/REPORTS/LOOP3_FINAL_VERDICT.md",
+    "output": "design/REPORTS/FINAL_V4_VERDICT.md",
+    "model": "pro"
+  },
+  "root_cause": {
+    "worker": "audit",
+    "instruction": "Root Cause Profiling. 1. Use 'design/REPORTS/FINAL_V4_VERDICT.md' as your case file. 2. Dive into the attached code to find the EXACT BUG for the 3 anomalies: (A) The -185k Tick 1 leak - check start-of-simulation logic. (B) The systemic +293.3120 creation - audit 'infrastructure' and 'deposit_interest' math. (C) The Tax Collection Error at Tick 256+ - fix the agent de-registration in LifecycleManager. 3. Produce 'design/audits/ROOT_CAUSE_PROFILE.md' with code snippets and fix strategies.",
+    "context": [
+      "design/REPORTS/FINAL_V4_VERDICT.md",
+      "simulation/tick_scheduler.py",
+      "simulation/systems/lifecycle_manager.py",
+      "simulation/systems/tax_agency.py",
+      "simulation/agents/government.py",
+      "simulation/bank.py"
+    ],
+    "output": "design/audits/ROOT_CAUSE_PROFILE.md",
     "model": "pro"
   },
   "purity_audit": {
@@ -62,6 +76,12 @@
     "command": "create",
     "title": "WO-116_Leak_Hunter",
     "instruction": "Loop 4: Erasing Shadow Mutations. READ 'design/specs/WO116_LOOP4_SHADOW_FIX.md'. The forensic tool proved that -63k leaks occur without transactions. Fix the 5 suspect files (Inheritance, Liquidation, Bank, Gov, BaseAgent) to ensure 100% ledger purity. Tick 1 must be 0.0000 leak.",
+    "wait": false
+  },
+  "mission_profiler_engine": {
+    "command": "create",
+    "title": "WO-116_Root_Cause_Profiler",
+    "instruction": "Deep Root Cause Profiling. 1. Read 'design/REPORTS/FINAL_V4_VERDICT.md'. 2. Audit the 5 core files (TickScheduler, Lifecycle, TaxAgency, Gov, Bank). 3. Identify the EXACT line causing the -185k Tick 1 deletion. 4. Find the math error for +293.3120 anomaly. 5. Fix the de-registration bug in LifecycleManager. Output findings to 'design/audits/ROOT_CAUSE_PROFILE.md'.",
     "wait": false
   },
   "git_review": {
