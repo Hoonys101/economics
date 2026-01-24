@@ -1,8 +1,11 @@
-from typing import Optional, Dict, Any, cast
+from typing import Optional, Dict, Any, cast, TYPE_CHECKING
 import logging
 
 from simulation.finance.api import ISettlementSystem
 from modules.finance.api import IFinancialEntity, InsufficientFundsError
+
+if TYPE_CHECKING:
+    from simulation.firms import Firm
 
 class SettlementSystem(ISettlementSystem):
     """
@@ -12,6 +15,26 @@ class SettlementSystem(ISettlementSystem):
 
     def __init__(self, logger: Optional[logging.Logger] = None):
         self.logger = logger if logger else logging.getLogger(__name__)
+        self.total_liquidation_losses: float = 0.0
+
+    def record_liquidation_loss(self, firm: "Firm", amount: float, tick: int) -> None:
+        """
+        Records the value destroyed during a firm's bankruptcy and liquidation.
+        This ensures the value is accounted for in the simulation's total wealth.
+
+        Args:
+            firm: The firm that went bankrupt.
+            amount: The value of assets liquidated (and thus destroyed).
+            tick: The simulation tick when the event occurred.
+        """
+        # 1. Update the total wealth tracker (debit/track loss)
+        self.total_liquidation_losses += amount
+
+        # 2. Log a clear message
+        self.logger.info(
+            f"LIQUIDATION: Firm {firm.id} liquidated, destroying {amount:.2f} in value. Total Destroyed: {self.total_liquidation_losses:.2f}",
+            extra={"tick": tick, "tags": ["liquidation", "bankruptcy", "ledger"]}
+        )
 
     def transfer(
         self,

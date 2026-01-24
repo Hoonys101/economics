@@ -246,6 +246,18 @@ class MAManager:
     def _execute_bankruptcy(self, firm: "Firm", tick: int):
         recovered = firm.liquidate_assets()
         self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
+
+        # 2. [NEW] Record the asset destruction in the central ledger.
+        # This is the core change to fix the money leak.
+        if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
+            self.simulation.settlement_system.record_liquidation_loss(
+                firm=firm,
+                amount=recovered,
+                tick=tick
+            )
+        else:
+            # Fallback or error if the settlement system is missing
+            self.logger.error(f"CRITICAL: SettlementSystem not found. Liquidation loss of {recovered} for Firm {firm.id} is NOT RECORDED.")
         
         # SoC Refactor: use hr.employees
         for emp in list(firm.hr.employees):
