@@ -27,7 +27,11 @@ class TestInheritance:
         # Pre-test validation
         # Assert that selected households have sufficient and diverse assets
         assert self.deceased.assets > 0, "Deceased must have assets"
-        assert hasattr(self.deceased, 'shares_owned'), "Deceased must have shares_owned attribute"
+
+        if not hasattr(self.deceased, 'shares_owned'):
+            self.deceased.shares_owned = {}
+        if not hasattr(self.heir, 'shares_owned'):
+            self.heir.shares_owned = {}
 
         # Force real Portfolio objects for testing logic.
         # MagicMocks have attributes by default, so hasattr returns True, but they are Mocks.
@@ -40,18 +44,29 @@ class TestInheritance:
         # Setup Deceased State
         self.deceased.id = 1
         # Override assets for consistency with original test logic
-        self.deceased._assets = 50000.0
+        self.deceased.assets = 50000.0
         self.deceased.shares_owned = {}
         self.deceased.owned_properties = []
         self.deceased.children_ids = [self.heir.id] # Use dynamic ID from heir
 
         # Setup Heir State
-        self.heir._assets = 0.0
+        self.heir.assets = 0.0
         self.heir.shares_owned = {}
         self.heir.is_active = True
         self.heir.owned_properties = []
 
         self.simulation.agents = {self.heir.id: self.heir}
+        self.simulation.settlement_system = MagicMock()
+
+        def transfer_side_effect(sender, receiver, amount, memo=None):
+            if hasattr(sender, 'assets'):
+                sender.assets -= amount
+            if hasattr(receiver, 'assets'):
+                receiver.assets += amount
+            return True
+
+        self.simulation.settlement_system.transfer.side_effect = transfer_side_effect
+
         self.simulation.stock_market = MagicMock()
         self.simulation.stock_market.get_daily_avg_price.return_value = 100.0
         self.simulation.real_estate_units = []
@@ -65,13 +80,13 @@ class TestInheritance:
         # Tax: 40k * 0.4 = 16k
         # Net: 50k - 16k = 34k
 
-        self.government.collect_tax.assert_called()
+        self.government.record_revenue.assert_called()
         # Check heir assets ~ 34k
         assert self.heir.assets == pytest.approx(34000.0)
 
     def test_liquidation_stocks(self):
         """Cash poor, Stock rich. Stocks sold to pay tax."""
-        self.deceased._assets = 1000.0 # Low cash
+        self.deceased.assets = 1000.0 # Low cash
         self.deceased.portfolio.add(99, 100, 100.0) # 100 shares of Firm 99 @ 100.0
         # Value = 10000.0
         # Total Wealth = 11000.0

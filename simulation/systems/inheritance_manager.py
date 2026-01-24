@@ -246,48 +246,62 @@ class InheritanceManager:
         # Split Remaining Assets
         num_heirs = len(heirs)
 
-        # A. Cash
-        import math
+        # A. Cash (Integer-based)
         total_cash = deceased.assets
-        # Use floor to avoid over-distribution
-        cash_share = math.floor((total_cash / num_heirs) * 100) / 100.0
-        total_distributed = 0.0
+        if total_cash > 0:
+            # 1. Convert to integer (pennies) for precise calculation
+            total_pennies = int(total_cash * 100)
 
-        for heir in heirs:
-            settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
-            total_distributed += cash_share
+            # 2. Calculate base share and remainder
+            pennies_per_heir = total_pennies // num_heirs
+            remainder_pennies = total_pennies % num_heirs
 
-        # Residual Catch-all (WO-112)
-        # Note: If deceased.assets was reduced by transfer, we check remainder via calculation or checking asset balance.
-        # Since we used settlement (which reduces asset), deceased.assets should be ~0.
-        # But cash_share logic used deceased.assets (initial) / num_heirs.
-        # The remainder is mathematically (Total - (Share * N)).
-        # If we transferred (Share * N), the deceased might have a small remaining balance due to rounding.
-        # Let's check remaining balance.
+            cash_share = pennies_per_heir / 100.0
 
-        remainder = deceased.assets
-        if remainder > 0:
-             settlement.transfer(deceased, government, remainder, "inheritance_residual")
-             simulation.government.record_revenue(remainder, "inheritance_residual", deceased.id, simulation.time)
-             self.logger.info(f"RESIDUAL_CAPTURED | Transferred {remainder:.4f} residual dust to Government.")
+            # 3. Distribute base share to all heirs
+            for i, heir in enumerate(heirs):
+                # The last heir gets the remainder
+                if i == num_heirs - 1:
+                    final_share = (pennies_per_heir + remainder_pennies) / 100.0
+                    if final_share > 0:
+                        settlement.transfer(deceased, heir, final_share, f"inheritance_share_final:{deceased.id}")
+                else:
+                    if cash_share > 0:
+                        settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
 
         # deceased.assets should be 0.0 now.
 
-        # B. Stocks (Portfolio Merge)
-        # Split each holding N ways
+        # B. Stocks (Portfolio Merge - Integer-based)
         for firm_id, share in list(deceased.portfolio.holdings.items()):
-            qty_per_heir = share.quantity / num_heirs
-            if qty_per_heir > 0:
+            total_shares = share.quantity
+            if total_shares <= 0:
+                continue
+
+            # 1. Calculate base shares and remainder
+            shares_per_heir = total_shares // num_heirs
+            remainder_shares = total_shares % num_heirs
+
+            # 2. Distribute base shares to all heirs
+            if shares_per_heir > 0:
                 for heir in heirs:
-                    heir.portfolio.add(firm_id, qty_per_heir, share.acquisition_price)
+                    heir.portfolio.add(firm_id, shares_per_heir, share.acquisition_price)
                     # Legacy Sync
                     current_legacy = heir.shares_owned.get(firm_id, 0.0)
-                    heir.shares_owned[firm_id] = current_legacy + qty_per_heir
-
+                    heir.shares_owned[firm_id] = current_legacy + shares_per_heir
                     if simulation.stock_market:
-                         simulation.stock_market.update_shareholder(heir.id, firm_id, heir.shares_owned[firm_id])
+                        simulation.stock_market.update_shareholder(heir.id, firm_id, heir.shares_owned[firm_id])
 
-            # Clear deceased
+            # 3. Distribute remainder shares one-by-one to heirs until exhausted
+            for i in range(remainder_shares):
+                heir = heirs[i]
+                heir.portfolio.add(firm_id, 1, share.acquisition_price)
+                # Legacy Sync
+                current_legacy = heir.shares_owned.get(firm_id, 0.0)
+                heir.shares_owned[firm_id] = current_legacy + 1
+                if simulation.stock_market:
+                    simulation.stock_market.update_shareholder(heir.id, firm_id, heir.shares_owned[firm_id])
+
+            # 4. Clear deceased's holding for this stock
             if simulation.stock_market:
                 simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
 
