@@ -54,6 +54,7 @@ class Bank(IFinancialEntity):
         self._assets = initial_assets # Reserves
         self.config_manager = config_manager
         self.settlement_system = settlement_system
+        self.government: Optional[Any] = None
 
         # Data Stores
         self.loans: Dict[str, Loan] = {}
@@ -99,6 +100,10 @@ class Bank(IFinancialEntity):
 
     def _get_config(self, key: str, default: Any) -> Any:
         return self.config_manager.get(key, default)
+
+    def set_government(self, government: Any) -> None:
+        """Sets the government reference for monetary issuance tracking."""
+        self.government = government
 
     def update_base_rate(self, new_rate: float):
         """
@@ -176,10 +181,22 @@ class Bank(IFinancialEntity):
 
             # If assets are less than the loan amount, but we have enough reserves, this is credit creation.
             if self.assets < amount:
-                logger.info(
-                    f"[CREDIT_CREATION] Bank {self.id} created {amount} credit. Reserves: {self.assets:.2f}",
-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation"]}
-                )
+                shortfall = amount - self.assets
+                if self.government:
+                    self.government.total_money_issued += shortfall
+                    self.deposit(shortfall)
+                    logger.info(
+                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit to fund loan of {amount:.2f}. "
+                        f"Reserves before: {self.assets - shortfall:.2f}, after: {self.assets:.2f}. "
+                        f"Total Issued updated.",
+                        extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation"]}
+                    )
+                else:
+                    logger.warning(
+                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit but Government reference is MISSING. "
+                        "Issuance NOT tracked!",
+                        extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation", "error"]}
+                    )
 
         # 3. Execution (Update Bank State Only)
         # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction

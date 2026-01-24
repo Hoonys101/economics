@@ -128,6 +128,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.agents[sim.government.id] = sim.government
         sim.next_agent_id += 1
 
+        # Inject government into bank for monetary tracking
+        sim.bank.set_government(sim.government)
+
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 
         sim.central_bank = CentralBank(

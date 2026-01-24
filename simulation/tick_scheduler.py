@@ -264,7 +264,8 @@ class TickScheduler:
             ai_training_manager=getattr(state, "ai_training_manager", None),
             ai_trainer=getattr(state, "ai_trainer", None),
             next_agent_id=state.next_agent_id,
-            real_estate_units=state.real_estate_units
+            real_estate_units=state.real_estate_units,
+            settlement_system=getattr(state, "settlement_system", None)
         )
 
         # 1. Decisions

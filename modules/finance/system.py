@@ -97,6 +97,14 @@ class FinanceSystem(IFinanceSystem):
         if yield_rate > qe_threshold:
             # Central Bank intervenes as buyer of last resort (QE)
             buyer = self.central_bank
+            # QE is money creation: Record it
+            if hasattr(self.government, 'total_money_issued'):
+                self.government.total_money_issued += amount
+                logger.info(
+                    f"QUANTITATIVE_EASING | Central Bank purchased bond {amount:.2f}. "
+                    f"Total Money Issued updated.",
+                    extra={"tick": current_tick, "tag": "QE"}
+                )
         else:
             # Commercial bank buys it
             # Optimistic check for Phase B
