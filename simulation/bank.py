@@ -182,7 +182,7 @@ class Bank(IFinancialEntity):
             # If assets are less than the loan amount, but we have enough reserves, this is credit creation.
             if self.assets < amount:
                 shortfall = amount - self.assets
-                if self.government:
+                if self.government and hasattr(self.government, "total_money_issued"):
                     self.government.total_money_issued += shortfall
                     self.deposit(shortfall)
                     logger.info(
@@ -193,7 +193,7 @@ class Bank(IFinancialEntity):
                     )
                 else:
                     logger.warning(
-                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit but Government reference is MISSING. "
+                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit but Government reference is MISSING or invalid. "
                         "Issuance NOT tracked!",
                         extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation", "error"]}
                     )
