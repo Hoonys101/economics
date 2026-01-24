@@ -178,10 +178,11 @@ class TransactionProcessor(SystemInterface):
 
         if isinstance(buyer, Firm):
             # SoC Refactor: Use HRDepartment and FinanceDepartment
-            if seller not in buyer.hr.employees:
-                buyer.hr.hire(seller, tx.price)
-            else:
-                 buyer.hr.employee_wages[seller.id] = tx.price
+            if isinstance(seller, Household):
+                if seller not in buyer.hr.employees:
+                    buyer.hr.hire(seller, tx.price)
+                else:
+                    buyer.hr.employee_wages[seller.id] = tx.price
 
             buyer.finance.record_expense(trade_value)
 

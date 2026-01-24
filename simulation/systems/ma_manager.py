@@ -179,6 +179,22 @@ class MAManager:
         # 1. Payment
         # predator.assets -= price
 
+        # Transfer Cash Assets (Zero Leak)
+        cash_assets = prey.assets
+        if cash_assets > 0:
+            if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
+                self.simulation.settlement_system.transfer(prey, predator, cash_assets, f"merger_asset_transfer:{prey.id}")
+            else:
+                prey.withdraw(cash_assets)
+                predator.deposit(cash_assets)
+
+        # Transfer Debt (Assumption)
+        if hasattr(self.simulation, 'bank') and self.simulation.bank:
+            for loan_id, loan in self.simulation.bank.loans.items():
+                if loan.borrower_id == prey.id:
+                    loan.borrower_id = predator.id
+                    self.logger.info(f"DEBT_TRANSFER | Loan {loan_id} transferred from {prey.id} to {predator.id}")
+
         # Pay Shareholders (Households)
         # Assuming 100% buyout.
         # Ideally iterate shareholders.
@@ -247,6 +263,16 @@ class MAManager:
         recovered = firm.liquidate_assets()
         self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
         
+        # Transfer recovered cash to Government (Escheatment)
+        if recovered > 0:
+            if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
+                self.simulation.settlement_system.transfer(firm, self.simulation.government, recovered, f"bankruptcy_liquidation:{firm.id}")
+            else:
+                firm.withdraw(recovered)
+                self.simulation.government.deposit(recovered)
+
+            self.simulation.government.record_revenue(recovered, "escheatment", firm.id, tick)
+
         # SoC Refactor: use hr.employees
         for emp in list(firm.hr.employees):
             emp.quit()
