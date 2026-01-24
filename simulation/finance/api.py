@@ -47,17 +47,21 @@ class ISettlementSystem(ABC):
         credit_context: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
-        Executes an atomic transfer from debit_agent to credit_agent.
+        Atomically transfers an amount from one financial entity to another.
+
+        This operation MUST be atomic. It checks if the debit_agent has
+        sufficient funds. If so, it debits the debit_agent and credits the
+        credit_agent. If not, the operation fails and no state is changed.
 
         Args:
-            debit_agent: The sender (assets will decrease).
-            credit_agent: The receiver (assets will increase).
-            amount: The amount to transfer (must be positive).
-            memo: Description of the transaction for audit logging.
+            debit_agent: The entity from which to withdraw funds.
+            credit_agent: The entity to which to deposit funds.
+            amount: The amount to transfer.
+            memo: A description of the transaction.
             debit_context: Optional metadata for the debit side logic.
             credit_context: Optional metadata for the credit side logic.
 
         Returns:
-            bool: True if transfer succeeded, False otherwise (e.g., insufficient funds).
+            True if the transfer was successful, False otherwise.
         """
         ...

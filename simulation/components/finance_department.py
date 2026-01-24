@@ -444,38 +444,53 @@ class FinanceDepartment:
         return self._cash
 
     def invest_in_automation(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
-        if self._cash >= amount:
-            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and reflux_system:
-                if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "Automation Investment"):
-                    return True
+        if self._cash < amount:
+            return False
+
+        if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and reflux_system:
+            transfer_success = self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "Automation Investment")
+            if transfer_success:
+                return True
             else:
-                # WO-117: Prevent money destruction. Investment requires RefluxSystem.
-                self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for Automation.")
+                self.firm.logger.warning(f"Automation investment of {amount:.2f} failed due to failed settlement transfer.")
                 return False
-        return False
+        else:
+            # WO-117: Prevent money destruction. Investment requires RefluxSystem.
+            self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for Automation.")
+            return False
 
     def invest_in_rd(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
-        if self._cash >= amount:
-            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and reflux_system:
-                if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "R&D Investment"):
-                    self.record_expense(amount)
-                    return True
+        if self._cash < amount:
+            return False
+
+        if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and reflux_system:
+            transfer_success = self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "R&D Investment")
+            if transfer_success:
+                self.record_expense(amount)
+                return True
             else:
-                # WO-117: Prevent money destruction. Investment requires RefluxSystem.
-                self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for R&D.")
+                self.firm.logger.warning(f"R&D investment of {amount:.2f} failed due to failed settlement transfer.")
                 return False
-        return False
+        else:
+            # WO-117: Prevent money destruction. Investment requires RefluxSystem.
+            self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for R&D.")
+            return False
 
     def invest_in_capex(self, amount: float, reflux_system: Optional[Any] = None) -> bool:
-        if self._cash >= amount:
-            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and reflux_system:
-                if self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "CAPEX"):
-                    return True
+        if self._cash < amount:
+            return False
+
+        if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and reflux_system:
+            transfer_success = self.firm.settlement_system.transfer(self.firm, reflux_system, amount, "CAPEX")
+            if transfer_success:
+                return True
             else:
-                # WO-117: Prevent money destruction. Investment requires RefluxSystem.
-                self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for CAPEX.")
+                self.firm.logger.warning(f"CAPEX investment of {amount:.2f} failed due to failed settlement transfer.")
                 return False
-        return False
+        else:
+            # WO-117: Prevent money destruction. Investment requires RefluxSystem.
+            self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or RefluxSystem for CAPEX.")
+            return False
 
     def set_dividend_rate(self, rate: float) -> None:
         self.firm.dividend_rate = rate
