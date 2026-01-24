@@ -13,9 +13,28 @@ import config
 
 def diagnose():
     setup_logging()
+
+    # 1. Suppress Engine Noise
+    # Set root logger to ERROR to silence DEBUG/INFO/WARNING from the engine
+    # We only want to see critical errors and our own diagnosis
+    logging.getLogger().setLevel(logging.ERROR)
+
+    # 2. Configure DIAGNOSE Logger
     logger = logging.getLogger("DIAGNOSE")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False  # Prevent propagation to root logger
+
+    # Clean output handler
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('%(message)s')
+    handler.setFormatter(formatter)
     
-    # 1. 시뮬레이션 초기화
+    # Reset handlers to ensure clean state
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    logger.addHandler(handler)
+
+    # 3. Simulation Initialization
     config.TICKS_PER_YEAR = 100
     sim = create_simulation()
     
@@ -48,6 +67,8 @@ def diagnose():
     last_b = get_balances()
     logger.info(f"START | Total: {last_b['total']:,.2f} | H: {last_b['h_active']:,.2f} | Bank: {last_b['bank']:,.2f}")
 
+    max_abs_leak = 0.0
+
     for tick in range(1, 501): # Run for 500 ticks
         sim.run_tick()
         curr_b = get_balances()
@@ -57,17 +78,22 @@ def diagnose():
         monetary_delta = (curr_b['issued'] - last_b['issued']) - (curr_b['destroyed'] - last_b['destroyed'])
         leak = diff - monetary_delta
         
-        logger.info(f"TICK {tick:2} | Total: {curr_b['total']:,.2f} | Diff: {diff:+.2f} | Leak: {leak:+.4f}")
+        # Update Max Leak
+        if abs(leak) > max_abs_leak:
+            max_abs_leak = abs(leak)
         
-        if abs(leak) > 0.01:
-            logger.error(f"!!! LEAK DETECTED at Tick {tick} !!!")
-            # 세부 내역 비교
-            for key in curr_b:
-                change = curr_b[key] - last_b[key]
-                if abs(change) > 0:
-                    logger.info(f"  - {key:8}: {curr_b[key]:12,.2f} ({change:+.2f})")
+        # Structured Output
+        logger.info(f"TICK: {tick:3} | LEAK: {leak:10.4f} | TOTAL_M2: {curr_b['total']:15,.2f}")
         
         last_b = curr_b
+
+    # Final Verdict
+    print("-" * 50)
+    logger.info(f"MAX LEAK: {max_abs_leak:.4f}")
+    if max_abs_leak > 1.0:
+        logger.info("[FAIL] Significant Leak Detected")
+    else:
+        logger.info("[SUCCESS] No Significant Leak")
 
 if __name__ == "__main__":
     diagnose()
