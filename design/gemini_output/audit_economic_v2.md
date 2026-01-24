@@ -1,112 +1,125 @@
-# ECONOMIC PURITY AUDIT REPORT (v2.0)
+# [AUDIT-ECONOMIC-V2] 경제적 무결성 및 누출 정밀 추적 보고서
 
-**Date:** Phase 24 Audit Cycle
-**Auditor:** Jules (AI Forensic Auditor)
-**Target:** Simulation Economic Engine (`simulation/`, `modules/`)
-**Reference Spec:** `design/specs/AUDIT_SPEC_ECONOMIC.md`
+## [발견된 누출 지점 리스트]
 
----
+### 1. 상속 시스템의 부동소수점 절삭 누출 (Precision Leak)
+*   **위치**: `simulation/systems/inheritance_manager.py` (Line 225 근처)
+*   **현상**: `total_pennies = int(total_cash * 100)` 로직에서 소수점 셋째 자리 이하의 `total_cash`가 절삭되어 시스템에서 사라짐.
+*   **영향**: `deceased.assets`가 10.005일 경우, 0.005가 증발함. 제로섬 게임에서 미세한 디플레이션 유발.
 
-## 1. Executive Summary
+### 2. 거래 시스템의 '팬텀 택스' (Phantom Tax / Statistical Leak)
+*   **위치**: `simulation/systems/transaction_processor.py` (Line 71, 107, 122)
+*   **현상**:
+    1. `SettlementSystem.transfer`를 통해 구매자->정부로 세금 자산이 실제로 이동함 (자산 이동 성공).
+    2. 이후 호출되는 `government.collect_tax`는 내부적으로 `FinanceSystem.collect_corporate_tax`를 호출하나, `FinanceSystem`은 이를 Legacy 호출로 간주하여 `False`를 반환하고 경고 로그를 남김.
+    3. 결과적으로 `Government` 객체의 자산(`assets`)은 증가하지만, 통계(`total_collected_tax`)는 증가하지 않음.
+*   **영향**: 정부의 재정 상태표(Assets)와 손익계산서(Revenue Stats)의 불일치 발생.
 
-The audit reveals systemic violations of the [Double-Entry Bookkeeping] and [Atomicity] principles defined in the economic specifications. While a `FinanceSystem` exists to handle authorized transfers, it is frequently bypassed by core system components (`TransactionProcessor`, `InheritanceManager`, `Bank`), leading to a "Shadow Economy" of direct state mutations.
-
-**Critical Findings:**
-1.  **Direct Asset Mutation:** Over 40+ instances of direct `assets +=` or `assets -=` operations found outside the Finance module.
-2.  **Atomicity Failures:** `TransactionProcessor` performs manual Debit/Credit sequences without rollback mechanisms.
-3.  **Inheritance Leakage:** `InheritanceManager` utilizes floating-point division for asset distribution without remainder handling, causing potential deflationary pressure (Residual Evaporation).
-
----
-
-## 2. Asset Integrity Audit (Direct Mutation)
-
-The specification requires all value transfers to route through `FinanceSystem.transfer` (or `IFinancialEntity.deposit/withdraw`). The following components violate this by directly modifying `assets` or `_cash`.
-
-### 2.1. Critical Violations (Top Offenders)
-
-| Component | Location | Violation Pattern | Impact |
-| :--- | :--- | :--- | :--- |
-| **TransactionProcessor** | `simulation/systems/transaction_processor.py` | `buyer.assets -= ...`, `seller.assets += ...` | Bypasses transaction logs, non-atomic updates. |
-| **Bank** | `simulation/bank.py` | `self.assets += ...` | Reserves updated without counter-party record. |
-| **InheritanceManager** | `simulation/systems/inheritance_manager.py` | `heir.assets += cash_share` | Bypasses inheritance tax logging/tracking if not careful. |
-| **FinanceDepartment** | `simulation/components/finance_department.py` | `government.assets += repayment` | Corporate finance logic modifying Government state directly. |
-| **HRDepartment** | `simulation/components/hr_department.py` | `employee.assets += net_wage` | Wages paid via magic injection rather than firm withdrawal. |
-
-### 2.2. Forensic Grep Evidence (Sample)
-```text
-simulation/bank.py:        self.assets = initial_assets # Reserves
-simulation/bank.py:            self.assets += amount
-simulation/systems/transaction_processor.py:                buyer.assets -= (trade_value + tax_amount)
-simulation/systems/transaction_processor.py:                seller.assets += trade_value
-simulation/systems/inheritance_manager.py:            heir.assets += cash_share
-simulation/components/finance_department.py:            government.assets += repayment
-```
+### 3. 파산 청산 시 잔여 자산 소멸 (Residual Dust)
+*   **위치**: `simulation/systems/lifecycle_manager.py`
+*   **현상**: `firm.assets > 1e-6`인 경우 `_sub_assets`로 강제 소멸시키고 `total_money_destroyed`에 기록함.
+*   **영향**: `total_money_destroyed`로 추적은 되나, 경제적으로는 정부로 귀속되거나 재분배되어야 할 자산이 물리적으로 파괴됨.
 
 ---
 
-## 3. Inheritance Audit (Residual Evaporation)
+## [원자성 위반 코드 블록]
 
-**File:** `simulation/systems/inheritance_manager.py`
+### 1. TransactionProcessor의 비원자적 송금 (Non-Atomic Transfers)
+`simulation/systems/transaction_processor.py`의 Line 60-70 구간:
 
-**Finding:**
-The current logic distributes cash using simple division:
 ```python
-cash_share = deceased.assets / num_heirs
-for heir in heirs:
-    heir.assets += cash_share
-deceased.assets = 0.0
+# 현재 코드 구조
+if settlement:
+    # 1. 물품 대금 송금 (성공 가능성 높음)
+    settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+
+    if tax_amount > 0:
+        # 2. 세금 송금 (별도 호출)
+        # 만약 1번은 성공했으나, 그 사이 상태 변경 등으로 2번이 실패하면?
+        # 구매자는 물건을 샀으나 세금을 내지 않은 상태가 됨 (탈세 버그).
+        settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
 ```
 
-**Forensic Analysis:**
-- **Floating Point Error:** If `deceased.assets` is 100.00 and there are 3 heirs, `cash_share` is 33.3333...
-- **Evaporation:** The system forces `deceased.assets = 0.0` after distribution. Any microscopic remainder between `sum(cash_share * N)` and `original_assets` is effectively destroyed (or created).
-- **Compliance:** Violates the "Zero-Sum" rule.
-- **Recommendation:** Calculate `total_distributed` and assign the remainder (`deceased.assets - total_distributed`) to the `RefluxSystem` or the first heir.
+*   **증명**: `buyer.assets` 차감액은 `trade_value + tax_amount`이어야 하나, 두 번째 `transfer`가 실패할 경우 `trade_value`만 차감됨. `TransactionProcessor` 레벨에서는 롤백 메커니즘이 없음.
 
----
-
-## 4. Atomicity Audit (Transaction Processor)
-
-**File:** `simulation/systems/transaction_processor.py`
-
-**Finding:**
-Transactions are processed as sequential steps without a transaction block:
+### 2. TransactionProcessor와 TaxAgency의 이중 책임 (Double Responsibility Risk)
 ```python
-# Step 1: Debit Buyer
-buyer.assets -= (trade_value + tax_amount)
-# ... code gap ...
-# Step 2: Credit Seller
-seller.assets += trade_value
+# 현재 코드
+settlement.transfer(buyer, government, tax_amount, ...) # 자산 이동 1
+government.collect_tax(tax_amount, ...) # 내부적으로 자산 이동 시도 가능성 (현재는 차단됨)
 ```
-
-**Forensic Analysis:**
-- **No Rollback:** If `seller.assets += trade_value` fails (e.g., property setter validation error), `buyer.assets` remains debited. Money is destroyed.
-- **Race Conditions:** While currently single-threaded, this pattern prevents future parallelization.
-- **Logic Fragmentation:** Tax calculation and solvency checks are inline, leading to "Spaghetti Accounting" where tax rules are duplicated across transaction types.
+*   만약 `FinanceSystem.collect_corporate_tax`가 활성화된다면 이중 과세(Double Charge)가 발생함. 현재는 비활성화되어 '통계 누락'만 발생함.
 
 ---
 
-## 5. Practitioner's Report (Technical Debt)
+## [해결을 위한 슈도코드]
 
-As a result of this audit, the following technical debts are flagged for the "Engine Repair Phase":
+### 1. TransactionProcessor 수정 (팬텀 택스 및 원자성 해결)
 
-### 5.1. The "Leaky Bank" Pattern
-The `Bank` class treats `self.assets` as a magic bucket. It manually increments/decrements reserves based on logic scattered across the system, rather than acting as a true `IFinancialEntity` that interacts via the `FinanceSystem`.
+```python
+# simulation/systems/transaction_processor.py
 
-### 5.2. God Class: TransactionProcessor
-`TransactionProcessor` knows too much. It handles:
-- Tax Law (Income vs Sales vs VAT)
-- Solvency Checks
-- Inventory Management
-- Stock Registry updates
-- Asset Transfer
-**Recommendation:** Decompose into `TaxAgent`, `SettlementSystem`, and `Registry`.
+def execute(self, state):
+    # ...
+    # 1. 원자성 확보를 위해 총액 계산
+    total_deduction = trade_value + tax_amount
 
-### 5.3. Inconsistent Financial Interfaces
-- `Firm` uses `FinanceDepartment` (via `firm.finance`).
-- `Household` manages assets directly (`household.assets`).
-- `Government` is a hybrid.
-This asymmetry makes standardized auditing impossible. All agents should implement `IFinancialEntity` properly or delegate to a standardized wallet component.
+    # 2. 사전 검증 (SettlementSystem이 하겠지만, 명시적으로)
+    if buyer.assets < total_deduction:
+        return # 거래 취소
 
-### 5.4. Hardcoded Economic Parameters
-Tax rates and thresholds are often hardcoded or retrieved via `getattr(config, "KEY", default)` repeatedly inside tight loops, causing performance drag and configuration opacity.
+    # 3. 송금 실행 (순차적 실행이되, 실패 시 처리 필요)
+    # 가장 안전한 방법: Bundle Transfer 기능을 SettlementSystem에 추가하거나
+    # 순차 실행 후 실패 시 보정. 여기서는 순차 실행 + 통계 수정 제안.
+
+    if settlement:
+        # 판매자에게 송금
+        s1 = settlement.transfer(buyer, seller, trade_value, ...)
+        if s1 and tax_amount > 0:
+            # 세금 송금
+            s2 = settlement.transfer(buyer, government, tax_amount, ...)
+            if s2:
+                # [FIX] collect_tax 대신 record_revenue 사용
+                # 자산은 이미 이동했으므로 통계만 기록
+                government.record_revenue(tax_amount, "sales_tax", buyer.id, current_time)
+            else:
+                # 세금 납부 실패 시? (심각한 오류, 롤백 필요하나 복잡함)
+                # 최소한 로그 남김.
+                logger.critical("Tax transfer failed after goods transfer!")
+```
+
+### 2. InheritanceManager 수정 (부동소수점 누출 해결)
+
+```python
+# simulation/systems/inheritance_manager.py
+
+def process_death(...):
+    # ...
+    total_cash = deceased.assets # 예: 10.005
+
+    # [FIX] 정수 변환 전 잔여물 계산
+    total_pennies = int(total_cash * 100) # 1000 pennies
+    distributed_cash = total_pennies / 100.0 # 10.00
+
+    residual_dust = total_cash - distributed_cash # 0.005
+
+    # 상속 로직 수행 (pennies 기준)
+    # ...
+
+    # [FIX] 잔여 먼지 처리 (마지막 상속자 혹은 정부에게 귀속)
+    if residual_dust > 0:
+        target = heirs[-1] if heirs else government
+        settlement.transfer(deceased, target, residual_dust, "inheritance_dust_sweep")
+```
+
+### 3. LifecycleManager 수정 (파산 먼지 회수)
+
+```python
+# simulation/systems/lifecycle_manager.py
+
+# [FIX] 파괴 대신 정부 귀속
+if firm.assets > 0:
+    # 1e-6 체크 제거하고 전액 정부로 이체
+    settlement.transfer(firm, state.government, firm.assets, "liquidation_dust_sweep")
+    state.government.record_revenue(firm.assets, "liquidation_dust", firm.id, state.time)
+```
