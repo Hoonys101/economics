@@ -8,6 +8,7 @@ from simulation.models import Transaction
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
+    from simulation.agents.government import Government
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ class Bank(IFinancialEntity):
         self._assets = initial_assets # Reserves
         self.config_manager = config_manager
         self.settlement_system = settlement_system
-        self.government: Optional[Any] = None
+        self.government: Optional["Government"] = None
 
         # Data Stores
         self.loans: Dict[str, Loan] = {}
@@ -101,7 +102,7 @@ class Bank(IFinancialEntity):
     def _get_config(self, key: str, default: Any) -> Any:
         return self.config_manager.get(key, default)
 
-    def set_government(self, government: Any) -> None:
+    def set_government(self, government: "Government") -> None:
         """Sets the government reference for monetary issuance tracking."""
         self.government = government
 
