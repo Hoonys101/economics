@@ -1,113 +1,38 @@
 {
-  "gemini": {
-    "worker": "audit",
-    "instruction": "Analyze the readiness for WO-116 Phase B (Tick Sequence Normalization). 1. Review `simulation/tick_scheduler.py` to identify all asset transfers (Tax, Profit, Welfare, Debt) currently running outside the 'Transactions' phase. 2. Evaluate if moving these to the Transactions phase causes data dependencies or circular logic. 3. Verify if the merged Phase A changes are sufficient to support this sequence shift. 4. Propose a safe implementation path for Jules to ensure 100% zero-sum integrity.",
+  "_meta": {
+    "session": "Phase 27: Credit Creation Recovery",
+    "updated": "2026-01-24",
+    "author": "Antigravity"
+  },
+  "drift_spec": {
+    "worker": "spec",
+    "instruction": "PROJECT: TD-105 Drift Fix Specification.\n\nRead 'design/audits/TD105_DRIFT_FORENSICS.md'.\nDesign a fix to satisfy Zero-Sum Property.\n\nPROBLEM:\n`RefluxSystem` receives funds via `invest_infrastructure` and `invest_rd`, but the Debit side (sender) might be failing or bypassed, causing net money creation when the reflux distributes these balance.\n\nREQUIREMENTS:\n1. Update `SettlementSystem.transfer()` usage in `Government` and `FinanceDepartment` to ensure the sender ACTUALLY loses the money.\n2. If the sender doesn't have enough money, the investment MUST fail.\n3. `RefluxSystem.distribute()` is fine as magic minting IF AND ONLY IF its balance purely represents 'money destroyed elsewhere'. But here, it seems to be receiving 'phantom money'.\n4. Actually, the fix is to ENSURE that `transfer(sender, reflux)` is atomic. If sender balance doesn't drop, reflux balance shouldn't rise.\n\nOUTPUT:\nCreate 'design/specs/TD105_DRIFT_FIX_SPEC.md'",
     "context": [
-      "simulation/tick_scheduler.py",
-      "simulation/systems/inheritance_manager.py",
-      "simulation/systems/ma_manager.py",
+      "design/audits/TD105_DRIFT_FORENSICS.md",
+      "simulation/bank.py",
+      "simulation/agents/government.py",
       "simulation/components/finance_department.py",
-      "simulation/agents/government.py",
-      "modules/finance/system.py",
-      "simulation/bank.py"
+      "simulation/systems/reflux_system.py",
+      "modules/finance/system.py"
     ],
-    "output": "design/audits/AUDIT_WO116_PHASE_B_READINESS.md",
+    "output": "design/specs/TD105_DRIFT_FIX_SPEC.md",
     "model": "pro"
   },
-  "gemini_spec": {
-    "worker": "spec",
-    "instruction": "Based on the findings in `design/audits/AUDIT_WO116_PHASE_B_READINESS.md`, create a detailed implementation specification for WO-116 Phase B (Tick Sequence Normalization). 1. Define the exact line-by-line changes in `TickScheduler.py`. 2. Specify how to register 'floating' transactions (Tax/Profit) into the Transaction Phase. 3. Ensure the `SettlementSystem` can handle these batch settlements atomically. 4. Define the verification criteria for zero-sum success.",
-    "context": [
-      "design/audits/AUDIT_WO116_PHASE_B_READINESS.md",
-      "simulation/tick_scheduler.py",
-      "modules/finance/system.py",
-      "simulation/bank.py"
-    ],
-    "output": "design/specs/WO116_PHASE_B_SPEC.md",
-    "model": "pro"
-  },
-  "verify": {
-    "worker": "audit",
-    "instruction": "Final Forensic Audit (V4). Read 'design/REPORTS/final_v4_check.log'. 1. Analyze the -185k leak at Tick 1. Why did it INCREASE after the fix? 2. Look for patterns: Is money vanishing (Negative Leak) or appearing (Positive Leak)? 3. Compare Transaction Volume with System Asset Delta. Identify the 'Invisible Hand' or component still calling _sub_assets directly. 4. Correlate with 'simulation/initialization/initializer.py' or 'Tick 1' startup sequence. 5. Produce 'design/REPORTS/FINAL_V4_VERDICT.md'.",
-    "context": [
-      "design/REPORTS/final_v4_check.log",
-      "simulation/initialization/initializer.py",
-      "simulation/tick_scheduler.py"
-    ],
-    "output": "design/REPORTS/FINAL_V4_VERDICT.md",
-    "model": "pro"
-  },
-  "root_cause": {
-    "worker": "audit",
-    "instruction": "Root Cause Analysis (Sequence & Timing). 1. Analyze why Tick 1 has a massive leak despite 'bond_purchase' being logged. 2. Compare 'government.invest_infrastructure' (immediate settlement) vs 'bond issuance' (transaction queue). 3. Prove that Government is spending money it hasn't received yet. 4. Audit 'MinistryOfEducation' for similar timing/transfer gaps. Output findings to 'design/audits/ROOT_CAUSE_PROFILE.md'.",
-    "context": [
-      "design/REPORTS/victory_check.log",
-      "simulation/agents/government.py",
-      "simulation/systems/ministry_of_education.py",
-      "simulation/tick_scheduler.py",
-      "simulation/systems/transaction_processor.py"
-    ],
-    "output": "design/audits/ROOT_CAUSE_PROFILE.md",
-    "model": "pro"
-  },
-  "spec_design": {
-    "worker": "spec",
-    "instruction": "Implementation Spec for Zero-Sum Victory. 1. Read 'design/audits/ROOT_CAUSE_PROFILE.md'. 2. Design a fix to synchronize Bond Revenue with Infrastructure Spending (e.g., Immediate Bond Settlement or Infrastructure-via-Transaction). 3. Ensure 'MinistryOfEducation' also follows the pure settlement pattern. 4. Define the validation tests to prove 0.0000 leak. Output to 'design/specs/ZERO_SUM_FIX_SPEC.md'.",
-    "context": [
-      "design/audits/ROOT_CAUSE_PROFILE.md",
-      "simulation/agents/government.py",
-      "simulation/systems/ministry_of_education.py"
-    ],
-    "output": "design/specs/ZERO_SUM_FIX_SPEC.md",
-    "model": "pro"
-  },
-  "purity_audit": {
-    "worker": "audit",
-    "instruction": "Deep Asset Purity Scan. 1. Search for all direct asset mutations: regex patterns like `\\.(?:_)?assets\\s*[+\\-*/]?=` and calls to `_sub_assets`/`_add_assets`. 2. Identify why these markers are not yet replaced by `SettlementSystem.transfer`. 3. Focus on the Tick 1 startup sequence and agent initialization. 4. Produce 'design/audits/ASSET_PURITY_REPORT.md' listing every 'illegal' mutation with its line number and a fix recommendation.",
-    "context": [
-      "simulation/"
-    ],
-    "output": "design/audits/ASSET_PURITY_REPORT.md",
-    "model": "pro"
-  },
-  "dep_audit": {
-    "worker": "audit",
-    "instruction": "Audit project dependencies. 1. Scan all .py files (especially under `tests/`) for `import` and `from ... import` statements. 2. Compare the identified packages with the contents of `requirements.txt`. 3. Identify: (a) Used but not in requirements.txt, (b) In requirements.txt but never used, (c) System/Internal modules vs External packages. 4. Produce a report 'design/audits/DEPENDENCY_AUDIT.md' with a recommended new requirements.txt content.",
-    "context": [
-      "requirements.txt",
-      "simulation/",
-      "tests/",
-      "scripts/"
-    ],
-    "output": "design/audits/DEPENDENCY_AUDIT.md",
-    "model": "pro"
-  },
-  "jules": {
+  "fix_td105_mission": {
     "command": "create",
-    "title": "WO-116_Leak_Hunter",
-    "instruction": "Loop 4: Erasing Shadow Mutations. READ 'design/specs/WO116_LOOP4_SHADOW_FIX.md'. The forensic tool proved that -63k leaks occur without transactions. Fix the 5 suspect files (Inheritance, Liquidation, Bank, Gov, BaseAgent) to ensure 100% ledger purity. Tick 1 must be 0.0000 leak.",
+    "title": "Fix_TD105_Positive_Drift",
+    "instruction": "You are assigned to fix TD-105. Please implement the solution defined in the attached Specification. Ensure Zero-Sum integrity.",
+    "file": "design/specs/TD105_DRIFT_FIX_SPEC.md",
     "wait": false
   },
-  "mission_profiler_engine": {
-    "command": "create",
-    "title": "WO-117_Zero_Sum_Victory",
-    "instruction": "ZERO-SUM VICTORY. 1. READ 'design/specs/ZERO_SUM_FIX_SPEC.md'. 2. Implement 'issue_treasury_bonds_synchronous' in FinanceSystem to eliminate the timing gap. 3. Refactor Government Infrastructure and Education logic to use this synchronous pattern. 4. Ensure 0.0000 drift in these specific operations. 5. Secondary Mission: Search for the source of the -99,680 leak at Tick 1 (check INITIAL_ASSETS setup in main.py/initializer.py). Output to 'design/REPORTS/FINAL_VERIFICATION.md'.",
-    "wait": false
-  },
-  "git_review": {
-    "branch": "main",
-    "instruction": "DTO Purity Gate 초기 구현분 검토"
-  },
-  "storage_audit": {
-    "worker": "audit",
-    "instruction": "Analyze the directories `design/gemini_output`, `design/specs`, and `design/work_orders` to identify redundant or obsolete files that can be safely deleted to free up space.",
+  "bankruptcy_link_spec": {
+    "worker": "spec",
+    "instruction": "PROJECT: TD-106 Bankruptcy Ledger Connection.\n\nOBJECTIVE: Ensure `Firm.liquidate()` registers destroyed money with `SettlementSystem`. \n\nOUTPUT: 'design/specs/TD106_BANKRUPTCY_ALIGNED.md'",
     "context": [
-      "design/gemini_output",
-      "design/specs",
-      "design/work_orders"
+      "simulation/systems/ma_manager.py",
+      "simulation/agents/firm.py"
     ],
-    "output": "design/audits/STORAGE_CLEANUP_REPORT.md",
+    "output": "design/specs/TD106_BANKRUPTCY_ALIGNED.md",
     "model": "pro"
-  },
-  "harvest": {}
+  }
 }

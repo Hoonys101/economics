@@ -3,9 +3,12 @@ setlocal
 chcp 65001 > nul
 set PYTHONIOENCODING=utf-8
 
-:: Structured Command Registry (HITL 2.0)
-:: This tool uses design/command_registry.json for its parameters.
-
-python scripts/launcher.py gemini %*
+:: If arguments are provided, use classic launcher
+if "%~1" neq "" (
+    python scripts/launcher.py gemini %*
+) else (
+    :: No arguments -> Interactive Mode
+    python scripts/run_gemini_interactive.py
+)
 
 endlocal

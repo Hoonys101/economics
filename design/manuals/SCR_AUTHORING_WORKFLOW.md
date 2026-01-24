@@ -1,49 +1,107 @@
----
-description: How to author and register a new command in the SCR (Structured Command Registry)
----
-
-# 📖 SCR Command Authoring Workflow
-
-이 워크플로우는 팀장(Antigravity)이 `design/command_registry.json`을 작성할 때 파이썬 코드를 뒤져보지 않고도 즉시 명령을 구성할 수 있도록 설계되었습니다.
-
-## 1. 📋 사전 체크리스트
-- [ ] 작업을 수행할 도구가 무엇인가? (Gemini, Jules, Git-Review, Merge)
-- [ ] 관련 템플릿이 `design/templates/command_registry_template.json` 에 정의되어 있는가?
-- [ ] 입력할 `instruction`에 `|` (파이프)를 사용하여 단계별 구분을 명시했는가?
-
-## 2. 🏗️ 도구별 JSON 구조 가이드
-
-### 🧠 Gemini (Planning/Audit)
-- **Key**: `gemini` (또는 커스텀 키)
-- **Fields**:
-  - `worker`: `spec`(명세), `audit`(감사), `verify`(검증), `reporter`(보고)
-  - `instruction`: 수행할 작업의 세부 내용
-  - `context`: [Array] 참조할 파일 경로 리스트
-  - `output`: 결과 저장 경로 (`design/specs/` 또는 `design/gemini_output/`)
-  - `audit`: (Spec 작성 시) 선행 감사 보고서 경로
-
-### 🛠️ Jules (Implementation)
-- **Key**: `jules` (또는 미션 제목)
-- **Fields**:
-  - `command`: `create` (새 세션), `send-message` (피드백)
-  - `title`: 미션 제목 (예: `WO-112-Fix-Bug`)
-  - `session_id`: (피드백 시 필수) 활성 세션 ID
-  - `instruction`: 구현 상세 지침 + **실무자 보고서 요구 포함**
-  - `wait`: `true` (기본값)
-
-### 🐙 Git Review & Merge
-- **Git Review**: `branch`, `instruction`
-- **Merge**: `branch`
-
-## 3. ⚡ 자동화 원칙 (Self-Correction)
-- Antigravity(나)는 명령을 작성할 때 반드시 `design/manuals/scr_launcher.md`의 문법을 준수한다.
-- JSON 작성 시 문법 오류를 방지하기 위해 `write_to_file` 도구를 사용하며, 기존 레지스트리를 덮어쓸지 추가할지 결정한다.
-- **보고서 요구**: Jules 발항 시 반드시 "구현 과정의 기술적 한계 및 부채를 포함한 실무자 보고서를 제출하라"는 문구를 포함한다.
-
-## 4. 🚀 실행 프로세스
-1. `design/command_registry.json`에 데이터 작성 (장전).
-2. 사용자에게 `.\gemini-go.bat` 또는 `.\jules-go.bat` 실행 요청.
-3. 실행 결과(`design/gemini_output/` 또는 `communications/jules_logs/`) 확인.
+# 📜 SCR (Structured Command Registry) Authoring Workflow
+> **File**: `design/manuals/SCR_AUTHORING_WORKFLOW.md`
+> **Purpose**: Guide for authoring `command_registry.json` to control the Ops Toolkit (Gemini/Jules).
 
 ---
-**"데이터가 명령을 내리고, 코드는 실행할 뿐이다."**
+
+## 🏗️ Core Philosophy
+The `command_registry.json` is the **Single Source of Truth** for all Agent Operations.
+- **Antigravity (AI)**: Writes the JSON entries to define the mission.
+- **User (Human)**: Executes the mission via `gemini-go` or `jules-go` menus.
+
+## 📝 JSON Schema & Rules
+
+### 1. General Structure
+The root object contains unique keys for each mission. The key name becomes the menu title.
+
+```json
+{
+  "_meta": {
+    "session": "Current Session Name",
+    "updated": "YYYY-MM-DD"
+  },
+  "unique_mission_key": { ... },
+  "another_mission": { ... }
+}
+```
+
+### 2. Gemini Missions (Analysis & Design)
+Used for dispatching Gemini workers (`audit`, `spec`, `report`, `git-review`).
+
+| Field | Type | Description |
+|---|---|---|
+| `worker` | string | **Required**. Worker type: `audit`, `spec`, `git-review`, `context`, `verify`. |
+| `instruction` | string | **Required**. The prompt for the agent. Use `\n` for formatting. |
+| `context` | list[str] | List of file paths to read. Relative to project root. |
+| `output` | string | Optional. Path to save the result markdown file. |
+| `model` | string | Optional. `pro` or `flash`. Default is configured in script. |
+
+**Example:**
+```json
+"td105_hunt": {
+  "worker": "audit",
+  "instruction": "Find the +320 drift source in bank.py...",
+  "context": ["simulation/bank.py", "simulation/tick_scheduler.py"],
+  "output": "design/audits/drift_report.md"
+}
+```
+
+### 3. Jules Missions (Coding & Implementation)
+Used for dispatching Jules agents for code modification.
+
+#### A. New Session (`create`)
+| Field | Type | Description |
+|---|---|---|
+| `command` | string | Must be `"create"`. |
+| `title` | string | Title of the Task/PR. |
+| `instruction` | string | The prompt for Jules. |
+| `file` | string | **Optional**. Path to a file (e.g., Spec) whose content will be appended to the instruction. |
+| `wait` | bool | Optional. `false` (default). |
+
+**Example:**
+```json
+"fix_drift": {
+  "command": "create",
+  "title": "Fix_TD105_Drift",
+  "instruction": "Implement the fix as per the spec.",
+  "file": "design/specs/TD105_DRIFT_FIX_SPEC.md"
+}
+```
+
+#### B. Reply / Follow-up (`send-message`)
+Used to send a pre-defined message to an active session via the interactive menu.
+
+| Field | Type | Description |
+|---|---|---|
+| `command` | string | Must be `"send-message"`. |
+| `instruction` | string | The message content. |
+| `file` | string | **Optional**. Path to a file to inject into the message (e.g., Updated Spec). |
+
+**Example:**
+```json
+"reply_with_spec": {
+  "command": "send-message",
+  "instruction": "Please review the updated logical flow in the attached spec.",
+  "file": "design/specs/UPDATED_SPEC.md"
+}
+```
+
+---
+
+## 🚦 Workflow for Antigravity
+
+1.  **Define Goal**: What needs to be done? Analysis (Gemini) or Coding (Jules)?
+2.  **Prepare Files**:
+    - If it's a Jules mission, first ensure the **Spec File** exists (`design/specs/...`).
+    - If it's a Gemini mission, identify the **Context Files** (`simulation/...`).
+3.  **Update Registry**:
+    - Use `write_to_file` to update `command_registry.json`.
+    - **Overwrite** the file with the new set of relevant missions. (Keep missions relevant to the *current* session only to avoid clutter).
+4.  **Notify User**:
+    - Inform the user: *"Missions loaded. Run `gemini-go` and select 'X' to start."*
+
+## ⚠️ Anti-Patterns (Do NOT do this)
+- **Do NOT** try to run `gemini-go` or `jules-go` directly via `run_command`.
+- **Do NOT** include absolute paths (e.g., `C:\...`) in the JSON. Use relative paths.
+- **Do NOT** forget to specify `worker` for Gemini tasks.
+

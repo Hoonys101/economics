@@ -93,22 +93,24 @@
     - [ ] WO-070: Inverse ETF & Hedging Mechanism
     - [ ] WO-071: Strategy Backtest Framework
 
-### Phase 26.5: Sovereign Debt & Corporate Credit ⭐ **[IN PROGRESS]**
+### Phase 26.5: Sovereign Debt & Corporate Credit ⭐ **[COMPLETED]**
 - **Goal**: Transition to debt-based financing and market-driven interest rates.
 - **Tasks**:
     - [x] WO-072: Finance System Scaffolding (api.py & DTOs) ✅ **[MERGED 2026-01-16]**
-    - [ ] WO-073: Finance System Double-Entry Refactor (Zero-Question Spec) ⭐ **[NEXT]**
-    - [ ] WO-074: Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period)
-    - [ ] WO-075: National Debt Auction & Yield Curve Mechanism
+    - [x] WO-073: Finance System Double-Entry Refactor (Zero-Question Spec) ✅ **[MERGED 2026-01-24]**
+    - [x] WO-074: Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period) ✅
+    - [x] WO-075: National Debt Auction & Yield Curve Mechanism ✅
 
-### Phase 27: Social Dynamics & Realism **[DEFERRED]**
-- **Goal**: 시뮬레이션 리얼리티 향상 및 기술부채 상환
-- **Deferred Technical Debts**:
-    - [ ] TD-005: Halo Effect 하드코딩 → Dynamic Interview 시스템
-    - [ ] TD-006: Deterministic Class Caste → Dynamic Education Market
-    - [ ] TD-007: Industrial Revolution Stress Test Config → Natural Equilibrium Tuning
-    - [ ] TD-008: CPR Primitive Valuation → Solvency/Liquidity 메트릭
-    - [ ] TD-009: CPR Unconditional Grants → Government Loans/Bonds
+### Phase 27: Credit Creation Recovery ⭐ **[IN PROGRESS]**
+- **Goal**: Implement "Fractional Reserve Banking" on top of the SettlementSystem. Reactivate credit growth while maintaining zero-sum integrity.
+- **Key Objectives**:
+    - **TD-105**: Resolve the +320 Drift Mystery (Unknown Minting).
+    - **TD-106**: Link Bankruptcy Liquidation to `Total Money Destroyed` ledger.
+    - **M2 Multiplier**: Enable Banks to create credit (loans) as an asset expansion, not magic money.
+- **Tasks**:
+    - [ ] WO-076: Forensic Detective (TD-105 Solution)
+    - [ ] WO-077: Bankruptcy Ledger Linking (TD-106 Solution)
+    - [ ] WO-078: Fractional Reserve Logic & LTV/DTI Reliability
 
 ### Phase 22: The Awakening (Adaptive AI) **[COMPLETED]**
 - **Goal**: Wake up the Agents (System 2 Activation).

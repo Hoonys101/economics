@@ -93,6 +93,10 @@
       "7958702835499376780": {
         "title": "WO-116_Zero_Sum_Final_Sprint",
         "initial_mission": "The Zero-Sum Final Sprint. 1. Read 'design/REPORTS/final_zero_sum_check.log'. 2. Focus on the EXACT recurring leak of +299.7760. 3. Audit 'simulation/agents/government.py' (invest_infrastructure) and 'simulation/systems/reflux_system.py'. 4. Find why 5000.0 infrastructure spending results in a +299.7760 drift. 5. Fix the math to reach 0.0000 leak. Output to 'design/audits/FINAL_DRIFT_FIX.md'."
+      },
+      "17533533089149661785": {
+        "title": "WO-117_Zero_Sum_Victory",
+        "initial_mission": "ZERO-SUM VICTORY. 1. READ 'design/specs/ZERO_SUM_FIX_SPEC.md'. 2. Implement 'issue_treasury_bonds_synchronous' in FinanceSystem to eliminate the timing gap. 3. Refactor Government Infrastructure and Education logic to use this synchronous pattern. 4. Ensure 0.0000 drift in these specific operations. 5. Secondary Mission: Search for the source of the -99,680 leak at Tick 1 (check INITIAL_ASSETS setup in main.py/initializer.py). Output to 'design/REPORTS/FINAL_VERIFICATION.md'."
       }
     },
     "completed_sessions": {
