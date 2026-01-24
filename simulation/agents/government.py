@@ -580,4 +580,4 @@ class Government:
         Delegates public education logic to the Ministry of Education.
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
-        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system)
+        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system, self.settlement_system)

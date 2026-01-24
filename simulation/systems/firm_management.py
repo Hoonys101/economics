@@ -23,18 +23,9 @@ class FirmSystem:
         """
         Wealthy households found new firms.
         """
-        startup_cost = getattr(self.config, "STARTUP_COST", 30000.0)
+        base_startup_cost = getattr(self.config, "STARTUP_COST", 30000.0)
 
-        # 1. Capital Deduction
-        if founder_household.assets < startup_cost:
-            return None
-        founder_household._sub_assets(startup_cost)
-
-        # 2. Generate New Firm ID
-        max_id = max([a.id for a in simulation.agents.values()], default=0)
-        new_firm_id = max_id + 1
-
-        # 3. Choose Specialization (Blue Ocean Strategy)
+        # 1. Choose Specialization First to calculate REAL cost
         specializations = list(self.config.GOODS.keys())
         is_visionary = False
         
@@ -56,9 +47,18 @@ class FirmSystem:
         goods_config = self.config.GOODS.get(specialization, {})
         sector = goods_config.get("sector", "OTHER")
 
+        final_startup_cost = base_startup_cost
         has_inputs = bool(goods_config.get("inputs"))
         if has_inputs:
-             startup_cost *= 1.5
+             final_startup_cost *= 1.5
+
+        # 2. Capital Deduction Check
+        if founder_household.assets < final_startup_cost:
+            return None
+
+        # 3. Generate New Firm ID
+        max_id = max([a.id for a in simulation.agents.values()], default=0)
+        new_firm_id = max_id + 1
 
         # 4. AI Setup
         from simulation.ai.firm_ai import FirmAI
@@ -82,11 +82,11 @@ class FirmSystem:
 
         firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config, simulation.logger)
 
-        # 5. Create Firm
+        # 5. Create Firm (Initial Capital = 0.0, will transfer)
         instance_class = ServiceFirm if is_service else Firm
         new_firm = instance_class(
             id=new_firm_id,
-            initial_capital=startup_cost,
+            initial_capital=0.0, # WO-116: Start with 0, transfer later
             initial_liquidity_need=getattr(self.config, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
             specialization=specialization,
             productivity_factor=random.uniform(8.0, 12.0),
@@ -102,7 +102,25 @@ class FirmSystem:
         if "loan_market" in simulation.markets:
             new_firm.decision_engine.loan_market = simulation.markets["loan_market"]
 
-        # 6. Add to Simulation
+        # 6. Execute Financial Transfer (SettlementSystem)
+        # Check for settlement_system on simulation (via world_state usually)
+        settlement_system = getattr(simulation, "settlement_system", None)
+        success = False
+        if settlement_system:
+            success = settlement_system.transfer(
+                founder_household, new_firm, final_startup_cost, f"Startup Capital for Firm {new_firm.id}"
+            )
+        else:
+            # Fallback (Legacy) - But enforce correct order and logic
+            founder_household._sub_assets(final_startup_cost)
+            new_firm._add_assets(final_startup_cost)
+            success = True
+
+        if not success:
+            logger.warning(f"STARTUP_FAILED | Failed to transfer capital from {founder_household.id} to new firm {new_firm_id}. Aborting.")
+            return None
+
+        # 7. Add to Simulation
         simulation.firms.append(new_firm)
         simulation.agents[new_firm.id] = new_firm
         simulation.ai_training_manager.agents.append(new_firm)
@@ -112,7 +130,7 @@ class FirmSystem:
 
         logger.info(
             f"STARTUP | Household {founder_household.id} founded Firm {new_firm_id} "
-            f"(Specialization: {specialization}, Capital: {startup_cost})"
+            f"(Specialization: {specialization}, Capital: {final_startup_cost})"
         )
         return new_firm
 
