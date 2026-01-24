@@ -55,16 +55,19 @@ def test_infrastructure_investment():
     initial_assets = gov.assets
     initial_level = gov.infrastructure_level
 
-    invested_result = gov.invest_infrastructure(current_tick=1)
+    # Fix for TD-105: Provide required dependencies for zero-sum execution
+    reflux_mock = Mock()
+    gov.settlement_system = Mock()
+    gov.settlement_system.transfer.return_value = True
+
+    invested_result = gov.invest_infrastructure(current_tick=1, reflux_system=reflux_mock)
 
     assert isinstance(invested_result, tuple)
     success, txs = invested_result
     assert success is True
     assert isinstance(txs, list)
 
-    # In Normalized Tick Phase B, Invest Infrastructure returns Transactions.
-    # It NO LONGER executes self.withdraw() immediately (side effect removed).
-    # So gov.assets should REMAIN UNCHANGED at this step.
-    # The transaction will reduce assets when processed.
-    assert gov.assets == initial_assets
+    # TD-105 Fix: Immediate withdrawal is now enforced to ensure Zero-Sum
+    # when transferring to RefluxSystem.
+    assert gov.assets == initial_assets - config_mock.INFRASTRUCTURE_INVESTMENT_COST
     assert gov.infrastructure_level == initial_level + 1

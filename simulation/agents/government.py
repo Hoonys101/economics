@@ -497,6 +497,18 @@ class Government:
              logger.error(f"INFRASTRUCTURE_FAIL | Settlement transfer failed.")
              return False, []
 
+        # [FIX] Perform the corresponding DEBIT manually to ensure a zero-sum transaction.
+        # This corrects the drift by guaranteeing the sender's assets are reduced.
+        try:
+            self.withdraw(effective_cost)
+        except InsufficientFundsError as e:
+            logger.critical(
+                f"GOVERNMENT_INCOHERENCE | Post-transfer debit failed for infra investment! "
+                f"Assets were available pre-transfer but not post-transfer. This indicates a critical bug. "
+                f"Error: {e}",
+                extra={"tick": current_tick, "agent_id": self.id}
+            )
+
         self.expenditure_this_tick += effective_cost
         self.infrastructure_level += 1
 
