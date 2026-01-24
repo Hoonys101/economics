@@ -47,6 +47,9 @@ class HRDepartment:
         if government and market_data:
             survival_cost = government.get_survival_cost(market_data)
 
+        # WO-116: Track running balance to prevent Overdraft Crash during Transaction Execution
+        running_balance = self.firm.assets
+
         # Iterate over copy to allow modification
         for employee in list(self.employees):
             # Defensive checks
@@ -63,8 +66,11 @@ class HRDepartment:
             base_wage = self.employee_wages.get(employee.id, self.firm.config_module.LABOR_MARKET_MIN_WAGE)
             wage = self.calculate_wage(employee, base_wage)
 
-            # Affordability Check (Optimistic)
-            if self.firm.assets >= wage:
+            # Affordability Check (Running Balance)
+            if running_balance >= wage:
+                # Deduct from running balance
+                running_balance -= wage
+
                 # Calculate Tax
                 income_tax = 0.0
                 if government:

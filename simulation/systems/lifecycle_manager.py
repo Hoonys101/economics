@@ -132,29 +132,51 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             total_cash = firm.assets
             if total_cash > 0:
                 outstanding_shares = firm.total_shares - firm.treasury_shares
+                total_distributed = 0.0
+
                 if outstanding_shares > 0:
                     for household in state.households:
                         if household.is_active and firm.id in household.shares_owned:
                             share_ratio = household.shares_owned[firm.id] / outstanding_shares
                             distribution = total_cash * share_ratio
-                            household._add_assets(distribution)
-                            self.logger.info(
-                                f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
-                                f"{distribution:.2f} from Firm {firm.id} liquidation",
-                                extra={"agent_id": household.id, "tags": ["liquidation"]}
-                            )
-                else:
+
+                            if distribution > 0:
+                                if hasattr(state, 'settlement_system') and state.settlement_system:
+                                    state.settlement_system.transfer(firm, household, distribution, f"liquidation_div:{firm.id}")
+                                else:
+                                    firm.withdraw(distribution)
+                                    household.deposit(distribution)
+
+                                total_distributed += distribution
+
+                                self.logger.info(
+                                    f"LIQUIDATION_DISTRIBUTION | Household {household.id} received "
+                                    f"{distribution:.2f} from Firm {firm.id} liquidation",
+                                    extra={"agent_id": household.id, "tags": ["liquidation"]}
+                                )
+
+                # Transfer Residual to Government (Escheatment)
+                residual = total_cash - total_distributed
+                if residual > 0.0001: # Float epsilon
                     from simulation.agents.government import Government
                     if isinstance(state.government, Government):
-                        # Note: collect_tax no longer adds assets. We must transfer/add manually.
-                        state.government._add_assets(total_cash)
-                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm.id, state.time)
+                        if hasattr(state, 'settlement_system') and state.settlement_system:
+                            state.settlement_system.transfer(firm, state.government, residual, f"liquidation_escheatment:{firm.id}")
+                        else:
+                            firm.withdraw(residual)
+                            state.government.deposit(residual)
+
+                        state.government.record_revenue(residual, "liquidation_escheatment", firm.id, state.time)
+
             for household in state.households:
                 if firm.id in household.shares_owned:
                     del household.shares_owned[firm.id]
                     if state.stock_market:
                         state.stock_market.update_shareholder(household.id, firm.id, 0)
-            firm._sub_assets(firm.assets)
+
+            # Clear any remaining dust
+            if firm.assets > 0:
+                firm._sub_assets(firm.assets)
             self.logger.info(
                 f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
