@@ -4,22 +4,16 @@
     "updated": "2026-01-24",
     "author": "Antigravity"
   },
-  "fix_td112_legacy": {
+  "fix_td109_sequence": {
     "command": "create",
-    "instruction": "Implement Integer-based Inheritance logic to prevent asset leaks.",
-    "title": "Fix_TD112_Inheritance_Rounding",
-    "file": "design/specs/TD112_INHERITANCE_FIX_SPEC.md"
+    "instruction": "Refactor Government, Bank, and InheritanceManager to use Transactions instead of direct transfers.",
+    "title": "Fix_TD109_Sacred_Sequence",
+    "file": "design/specs/TD109_SEQUENCE_FIX_SPEC.md"
   },
-  "spec_td109_sequence": {
-    "worker": "spec",
-    "instruction": "PROJECT: TD-109 Sacred Sequence Fix Spec.\\n\\nOBJECTIVE: Design the architecture to ensure Government, Bank, and InheritanceManager emit Transactions instead of calling direct transfers.\\n\\nREQUIREMENTS:\\n1. Update TickScheduler to collect transactions from agents/managers.\\n2. Refactor Government.invest_infrastructure to return Transaction.\\n3. Refactor Bank.check_solvency to return Transaction (Lender of Last Resort).\\n4. Refactor InheritanceManager to return Transaction list.\\n\\nOUTPUT: 'design/specs/TD109_SEQUENCE_FIX_SPEC.md'",
-    "context": [
-      "design/audits/TD109_SEQUENCE_PROFILE.md",
-      "simulation/tick_scheduler.py",
-      "simulation/agents/government.py",
-      "simulation/bank.py",
-      "simulation/systems/inheritance_manager.py"
-    ],
-    "output": "design/specs/TD109_SEQUENCE_FIX_SPEC.md"
+  "fix_td110_phantom_tax": {
+    "command": "create",
+    "instruction": "Couple Tax Collection and Revenue Recording to prevent Phantom Tax.",
+    "title": "Fix_TD110_Phantom_Tax",
+    "file": "design/specs/TD110_TAX_FIX_SPEC.md"
   }
 }
