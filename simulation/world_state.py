@@ -127,8 +127,8 @@ class WorldState:
     def calculate_total_money(self) -> float:
         """
         Calculates the total money supply in the system.
-        Money_Total = Household_Assets + Firm_Assets + Bank_Reserves + Reflux_Balance
-        (Government assets are excluded as it is the issuer)
+        Money_Total = Household_Assets + Firm_Assets + Bank_Reserves + Reflux_Balance + Government_Assets
+        (Government assets are INCLUDED to ensure zero-sum integrity during transfers)
         """
         total = 0.0
 
@@ -149,6 +149,10 @@ class WorldState:
         # 4. Reflux System Balance (Undistributed)
         if self.reflux_system:
             total += self.reflux_system.balance
+
+        # 5. Government Assets (WO-Fix: Include Government in M2 to prevent leaks)
+        if self.government:
+            total += self.government.assets
 
         return total
 

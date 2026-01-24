@@ -70,7 +70,8 @@ class TransactionProcessor(SystemInterface):
                     seller.deposit(trade_value)
                     government.deposit(tax_amount)
 
-                government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer.id, current_time)
+                # Fix: Pass buyer object, not ID, to collect_tax
+                government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
 
             elif tx.transaction_type == "stock":
                 # Stock: NO Sales Tax
@@ -104,7 +105,8 @@ class TransactionProcessor(SystemInterface):
                         seller.deposit(trade_value)
                         government.deposit(tax_amount)
 
-                    government.collect_tax(tax_amount, "income_tax_firm", buyer.id, current_time)
+                    # Fix: Pass buyer object (Firm) to collect_tax
+                    government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
                 else:
                     # Household pays tax (Withholding model)
                     net_wage = trade_value - tax_amount
@@ -117,7 +119,8 @@ class TransactionProcessor(SystemInterface):
                         seller.deposit(net_wage)
                         government.deposit(tax_amount)
 
-                    government.collect_tax(tax_amount, "income_tax_household", seller.id, current_time)
+                    # Fix: Pass seller object (Household) to collect_tax
+                    government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
             
             elif tx.item_id == "interest_payment":
                 if settlement:
