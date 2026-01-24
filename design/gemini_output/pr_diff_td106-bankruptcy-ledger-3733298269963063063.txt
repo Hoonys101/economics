@@ -1,0 +1,172 @@
+diff --git a/communications/insights/2026-01-24_TD106_bankruptcy_ledger_findings.md b/communications/insights/2026-01-24_TD106_bankruptcy_ledger_findings.md
+new file mode 100644
+index 0000000..d728dbe
+--- /dev/null
++++ b/communications/insights/2026-01-24_TD106_bankruptcy_ledger_findings.md
+@@ -0,0 +1,33 @@
++# Insight Report: TD-106 Bankruptcy Ledger Connection
++
++**Date:** 2026-01-24
++**Author:** Jules
++**Task:** TD-106 Bankruptcy Ledger Connection
++
++## Executive Summary
++Successfully connected `Firm.liquidate_assets()` to the `SettlementSystem` via `MAManager`. This ensures that value destroyed during bankruptcy is formally recorded, addressing the "money leak" issue.
++
++## Technical Implementation
++- **SettlementSystem**: Added `record_liquidation_loss` method and `total_liquidation_losses` tracker. This allows the system to not just log but also accumulate the total value destroyed, satisfying the requirement to "Debit the simulation's total wealth tracker".
++- **MAManager**: Updated `_execute_bankruptcy` to call the new method.
++- **Verification**: Created `tests/systems/test_ma_manager.py` to verify the integration.
++
++## Insights & Findings
++
++### 1. Wealth Tracking in SettlementSystem
++The original spec mentioned "Debit the simulation's total wealth tracker". Upon inspection, `SettlementSystem` acts primarily as a transfer engine and doesn't inherently track global wealth state (which is calculated dynamically in `WorldState`).
++**Solution**: I introduced `self.total_liquidation_losses` in `SettlementSystem` to explicitly track these specific losses. This provides a precise metric for "money destroyed via bankruptcy" which can be used for reconciliation against the dynamic `total_money` calculation in `WorldState`.
++
++### 2. Dependency Injection
++`MAManager` has access to `Simulation` (and thus `SettlementSystem`), which made the integration straightforward. However, `SettlementSystem` itself is relatively isolated (Good Design). The decision to pass `Firm` to `record_liquidation_loss` allows for rich logging without coupling `SettlementSystem` to the entire `Firm` logic (beyond what's needed for the log).
++
++## Technical Debt & Future Recommendations
++
++### 1. Explicit Money Destruction Ledger
++While `total_liquidation_losses` tracks the amount, a more robust "Central Bank" or "Treasury" ledger might be beneficial to unify all forms of money creation (issuance) and destruction (tax overflow, liquidation, fines). Currently, these might be scattered.
++
++### 2. Refactoring M&A Logic
++The `MAManager` handles both M&A and Bankruptcy. As the simulation grows, splitting `BankruptcyManager` might be cleaner, especially given the distinct nature of "Asset Transfer" (M&A) vs "Asset Destruction" (Liquidation).
++
++### 3. Testing Infrastructure
++The lack of existing tests for `MAManager` required creating a new test file. The testing infrastructure for "Systems" seems sparse compared to "Agents". Recommendation to increase coverage for `HousingSystem`, `EducationSystem`, etc.
+diff --git a/simulation/systems/ma_manager.py b/simulation/systems/ma_manager.py
+index 165937f..91077e0 100644
+--- a/simulation/systems/ma_manager.py
++++ b/simulation/systems/ma_manager.py
+@@ -246,6 +246,18 @@ class MAManager:
+     def _execute_bankruptcy(self, firm: "Firm", tick: int):
+         recovered = firm.liquidate_assets()
+         self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
++
++        # 2. [NEW] Record the asset destruction in the central ledger.
++        # This is the core change to fix the money leak.
++        if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
++            self.simulation.settlement_system.record_liquidation_loss(
++                firm=firm,
++                amount=recovered,
++                tick=tick
++            )
++        else:
++            # Fallback or error if the settlement system is missing
++            self.logger.error(f"CRITICAL: SettlementSystem not found. Liquidation loss of {recovered} for Firm {firm.id} is NOT RECORDED.")
+         
+         # SoC Refactor: use hr.employees
+         for emp in list(firm.hr.employees):
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index a8da08b..91f97e9 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -1,9 +1,12 @@
+-from typing import Optional, Dict, Any, cast
++from typing import Optional, Dict, Any, cast, TYPE_CHECKING
+ import logging
+ 
+ from simulation.finance.api import ISettlementSystem
+ from modules.finance.api import IFinancialEntity, InsufficientFundsError
+ 
++if TYPE_CHECKING:
++    from simulation.firms import Firm
++
+ class SettlementSystem(ISettlementSystem):
+     """
+     Centralized system for handling all financial transfers between entities.
+@@ -12,6 +15,26 @@ class SettlementSystem(ISettlementSystem):
+ 
+     def __init__(self, logger: Optional[logging.Logger] = None):
+         self.logger = logger if logger else logging.getLogger(__name__)
++        self.total_liquidation_losses: float = 0.0
++
++    def record_liquidation_loss(self, firm: "Firm", amount: float, tick: int) -> None:
++        """
++        Records the value destroyed during a firm's bankruptcy and liquidation.
++        This ensures the value is accounted for in the simulation's total wealth.
++
++        Args:
++            firm: The firm that went bankrupt.
++            amount: The value of assets liquidated (and thus destroyed).
++            tick: The simulation tick when the event occurred.
++        """
++        # 1. Update the total wealth tracker (debit/track loss)
++        self.total_liquidation_losses += amount
++
++        # 2. Log a clear message
++        self.logger.info(
++            f"LIQUIDATION: Firm {firm.id} liquidated, destroying {amount:.2f} in value. Total Destroyed: {self.total_liquidation_losses:.2f}",
++            extra={"tick": tick, "tags": ["liquidation", "bankruptcy", "ledger"]}
++        )
+ 
+     def transfer(
+         self,
+diff --git a/tests/systems/test_ma_manager.py b/tests/systems/test_ma_manager.py
+new file mode 100644
+index 0000000..247bff2
+--- /dev/null
++++ b/tests/systems/test_ma_manager.py
+@@ -0,0 +1,59 @@
++import unittest
++from unittest.mock import Mock, MagicMock, patch
++from simulation.systems.ma_manager import MAManager
++
++class TestMAManager(unittest.TestCase):
++    def setUp(self):
++        self.mock_simulation = MagicMock()
++        self.mock_config = Mock()
++        self.mock_config.MA_ENABLED = True
++        self.mock_config.BANKRUPTCY_CONSECUTIVE_LOSS_TICKS = 20
++        self.mock_config.HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD = 0.7
++        self.mock_config.MIN_ACQUISITION_CASH_RATIO = 1.5
++
++        # Mock simulation components
++        self.mock_simulation.firms = []
++        self.mock_simulation.agents = {}
++        self.mock_simulation.government = MagicMock()
++
++        # Initialize MAManager
++        self.ma_manager = MAManager(self.mock_simulation, self.mock_config)
++
++    def test_execute_bankruptcy_records_loss_in_ledger(self):
++        """
++        Verify that _execute_bankruptcy calls settlement_system.record_liquidation_loss.
++        """
++        # 1. Setup Firm
++        mock_firm = MagicMock()
++        mock_firm.id = 999
++        mock_firm.is_active = True
++        mock_firm.hr.employees = []
++
++        # Mock liquidate_assets to return a specific amount
++        recovered_cash = 1000.0
++        mock_firm.liquidate_assets.return_value = recovered_cash
++
++        # 2. Setup SettlementSystem
++        mock_settlement_system = MagicMock()
++        self.mock_simulation.settlement_system = mock_settlement_system
++
++        # 3. Execute
++        current_tick = 123
++        self.ma_manager._execute_bankruptcy(mock_firm, current_tick)
++
++        # 4. Assert
++        # Assert liquidation was called
++        mock_firm.liquidate_assets.assert_called_once()
++
++        # Assert loss was recorded in ledger
++        mock_settlement_system.record_liquidation_loss.assert_called_once_with(
++            firm=mock_firm,
++            amount=recovered_cash,
++            tick=current_tick
++        )
++
++        # Assert firm deactivated
++        self.assertFalse(mock_firm.is_active)
++
++if __name__ == '__main__':
++    unittest.main()

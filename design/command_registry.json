@@ -4,10 +4,22 @@
     "updated": "2026-01-24",
     "author": "Antigravity"
   },
-  "fix_td106_bankruptcy": {
+  "fix_td112_legacy": {
     "command": "create",
-    "instruction": "Implement the Bankruptcy Ledger connection to fix TD-106. Ensure Firm liquidation losses are recorded in SettlementSystem.",
-    "title": "Fix_TD106_Bankruptcy_Ledger",
-    "file": "design/specs/TD106_BANKRUPTCY_ALIGNED.md"
+    "instruction": "Implement Integer-based Inheritance logic to prevent asset leaks.",
+    "title": "Fix_TD112_Inheritance_Rounding",
+    "file": "design/specs/TD112_INHERITANCE_FIX_SPEC.md"
+  },
+  "spec_td109_sequence": {
+    "worker": "spec",
+    "instruction": "PROJECT: TD-109 Sacred Sequence Fix Spec.\\n\\nOBJECTIVE: Design the architecture to ensure Government, Bank, and InheritanceManager emit Transactions instead of calling direct transfers.\\n\\nREQUIREMENTS:\\n1. Update TickScheduler to collect transactions from agents/managers.\\n2. Refactor Government.invest_infrastructure to return Transaction.\\n3. Refactor Bank.check_solvency to return Transaction (Lender of Last Resort).\\n4. Refactor InheritanceManager to return Transaction list.\\n\\nOUTPUT: 'design/specs/TD109_SEQUENCE_FIX_SPEC.md'",
+    "context": [
+      "design/audits/TD109_SEQUENCE_PROFILE.md",
+      "simulation/tick_scheduler.py",
+      "simulation/agents/government.py",
+      "simulation/bank.py",
+      "simulation/systems/inheritance_manager.py"
+    ],
+    "output": "design/specs/TD109_SEQUENCE_FIX_SPEC.md"
   }
 }

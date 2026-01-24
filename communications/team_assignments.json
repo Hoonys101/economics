@@ -105,6 +105,10 @@
       "7254945996439639761": {
         "title": "Fix_TD105_Positive_Drift",
         "initial_mission": "You are assigned to fix TD-105. Please implement the solution defined in the attached Specification...."
+      },
+      "3733298269963063063": {
+        "title": "Fix_TD106_Bankruptcy_Ledger",
+        "initial_mission": "Implement the Bankruptcy Ledger connection to fix TD-106. Ensure Firm liquidation losses are recorde..."
       }
     },
     "completed_sessions": {
