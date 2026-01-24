@@ -95,6 +95,7 @@ class WorldState:
         self.real_estate_units: List[RealEstateUnit] = []
         self.finance_system: Optional[FinanceSystem] = None
         self.ai_trainer: Optional[AIEngineRegistry] = None
+        self.transactions: List[Any] = []  # Stores transactions of the current tick
 
         # New Systems
         self.social_system: Optional[SocialSystem] = None

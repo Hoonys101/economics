@@ -3,6 +3,7 @@ import sys
 import os
 import logging
 from pathlib import Path
+from collections import defaultdict
 
 # Add project root to sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -16,7 +17,6 @@ def diagnose():
 
     # 1. Suppress Engine Noise
     # Set root logger to ERROR to silence DEBUG/INFO/WARNING from the engine
-    # We only want to see critical errors and our own diagnosis
     logging.getLogger().setLevel(logging.ERROR)
 
     # 2. Configure DIAGNOSE Logger
@@ -28,7 +28,7 @@ def diagnose():
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter('%(message)s')
     handler.setFormatter(formatter)
-    
+
     # Reset handlers to ensure clean state
     if logger.hasHandlers():
         logger.handlers.clear()
@@ -85,6 +85,38 @@ def diagnose():
         # Structured Output
         logger.info(f"TICK: {tick:3} | LEAK: {leak:10.4f} | TOTAL_M2: {curr_b['total']:15,.2f}")
         
+        # Forensic Mode
+        if abs(leak) > 1.0:
+            logger.info(f"  [FORENSIC] Significant Leak Detected at Tick {tick}")
+            logger.info(f"  Reconciliation Check:")
+            logger.info(f"    - System Asset Delta:    {diff:15,.4f}")
+            logger.info(f"    - Money Supply Delta:    {monetary_delta:15,.4f}")
+            logger.info(f"    - Unexplained (Leak):    {leak:15,.4f}")
+
+            # Transaction Summary
+            tx_summary = defaultdict(lambda: {'count': 0, 'volume': 0.0})
+
+            # sim.transactions should hold the transactions of the current tick
+            current_transactions = getattr(sim, 'transactions', [])
+
+            for tx in current_transactions:
+                t_type = tx.transaction_type
+                # Group generic/other types by item_id if needed
+                if t_type == 'other' or t_type is None:
+                    t_type = f"other:{tx.item_id}"
+
+                vol = tx.price * tx.quantity
+                tx_summary[t_type]['count'] += 1
+                tx_summary[t_type]['volume'] += vol
+
+            logger.info(f"  Transaction Summary:")
+            logger.info(f"    {'Type':<25} | {'Count':>8} | {'Volume':>15}")
+            logger.info(f"    {'-'*25}-+-{'-'*8}-+-{'-'*15}")
+
+            for t_type, stats in sorted(tx_summary.items()):
+                logger.info(f"    {t_type:<25} | {stats['count']:8d} | {stats['volume']:15,.2f}")
+            logger.info("")
+
         last_b = curr_b
 
     # Final Verdict

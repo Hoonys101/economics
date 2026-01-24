@@ -279,6 +279,7 @@ class TickScheduler:
 
         # 3. Transactions
         self._phase_transactions(sim_state, system_transactions)
+        state.transactions = sim_state.transactions  # Sync back for observability
 
         # 4. Lifecycle
         self._phase_lifecycle(sim_state)
