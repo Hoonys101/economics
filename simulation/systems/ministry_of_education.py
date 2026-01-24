@@ -38,6 +38,13 @@ class MinistryOfEducation:
 
             if current_level == 0:
                 if edu_budget >= cost:
+                    # Synchronous Financing Check
+                    if government.assets < cost:
+                        needed = cost - government.assets
+                        if hasattr(government.finance_system, 'issue_treasury_bonds_synchronous'):
+                            if not government.finance_system.issue_treasury_bonds_synchronous(government, needed, current_tick):
+                                continue
+
                     success = False
                     if settlement_system and reflux_system:
                         if settlement_system.transfer(government, reflux_system, cost, "Education Grant"):
@@ -67,6 +74,13 @@ class MinistryOfEducation:
                     student_share = cost * 0.2
 
                     if edu_budget >= subsidy and agent.assets >= student_share:
+                        # Synchronous Financing Check (Subsidy)
+                        if government.assets < subsidy:
+                            needed = subsidy - government.assets
+                            if hasattr(government.finance_system, 'issue_treasury_bonds_synchronous'):
+                                if not government.finance_system.issue_treasury_bonds_synchronous(government, needed, current_tick):
+                                    continue
+
                         success = False
 
                         if settlement_system and reflux_system:

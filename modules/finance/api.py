@@ -73,6 +73,13 @@ class IFinanceSystem(Protocol):
         """Issues new treasury bonds to the market."""
         ...
 
+    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> bool:
+        """
+        Issues bonds and attempts to settle them immediately via SettlementSystem.
+        Returns True if full amount raised, False otherwise.
+        """
+        ...
+
     def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: float) -> bool:
         """Collects corporate tax using atomic settlement."""
         ...

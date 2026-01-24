@@ -12,6 +12,7 @@ class CentralBank:
     """
 
     def __init__(self, tracker: Any, config_module: Any):
+        self.id = "CENTRAL_BANK" # Identifier for SettlementSystem
         self.tracker = tracker
         self.config_module = config_module
 

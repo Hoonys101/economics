@@ -457,20 +457,22 @@ class Government:
         if self.firm_subsidy_budget_multiplier < 0.8:
             return False, []
 
-        # Optimistic Check: Do we have enough + potential bond revenue?
-        # Note: Since bond transactions are returned and executed later, self.assets isn't updated yet.
-        # But we also delay infrastructure spending via Transaction.
-        # So we check: Current Assets + (Bond Revenue) >= Cost
-
-        potential_revenue = 0.0
+        # Synchronous Financing (WO-117)
         if self.assets < effective_cost:
             needed = effective_cost - self.assets
-            bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
-            if not bonds:
-                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
-                return False, []
-            transactions.extend(txs)
-            potential_revenue = needed # Assume success
+            # Use new synchronous method
+            if hasattr(self.finance_system, 'issue_treasury_bonds_synchronous'):
+                success = self.finance_system.issue_treasury_bonds_synchronous(self, needed, current_tick)
+                if not success:
+                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                     return False, []
+            else:
+                # Fallback to old behavior (should not happen if system is updated)
+                bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
+                if not bonds:
+                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                    return False, []
+                transactions.extend(txs)
 
         # WO-Fix: Bypass TransactionProcessor for internal transfers to prevent zero-sum drift (phantom tax/leaks)
         # We execute the transfer directly using SettlementSystem.

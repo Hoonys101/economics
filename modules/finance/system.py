@@ -139,6 +139,104 @@ class FinanceSystem(IFinanceSystem):
 
         return [new_bond], generated_transactions
 
+    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> bool:
+        """
+        Issues bonds and attempts to settle them immediately via SettlementSystem.
+        Returns True on full success, False on failure.
+        """
+        # 1. Logic Reuse: Yield Calculation
+        base_rate = self.central_bank.get_base_rate()
+
+        # Use FiscalMonitor for risk assessment
+        world_dto = getattr(self.government, 'sensory_data', None)
+        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, world_dto)
+
+        # Config-driven risk premium tiers
+        risk_premium_tiers = self.config_module.get("economy_params.DEBT_RISK_PREMIUM_TIERS", {
+            1.2: 0.05,
+            0.9: 0.02,
+            0.6: 0.005,
+        })
+
+        risk_premium = 0.0
+        sorted_tiers = sorted(
+            [(float(k), v) for k, v in risk_premium_tiers.items()],
+            key=lambda x: x[0],
+            reverse=True
+        )
+
+        for threshold, premium in sorted_tiers:
+            if debt_to_gdp > threshold:
+                risk_premium = premium
+                break
+
+        yield_rate = base_rate + risk_premium
+        bond_maturity = self.config_module.get("economy_params.BOND_MATURITY_TICKS", 400)
+
+        # 2. Find Buyers and Execute Transfer
+        qe_threshold = self.config_module.get("economy_params.QE_INTERVENTION_YIELD_THRESHOLD", 0.10)
+        potential_buyers = []
+
+        if yield_rate > qe_threshold:
+             # QE: Central Bank
+             potential_buyers.append(self.central_bank)
+        else:
+             # Normal: Bank
+             potential_buyers.append(self.bank)
+
+        amount_raised = 0.0
+
+        for buyer in potential_buyers:
+             if amount_raised >= amount_to_raise:
+                 break
+
+             purchase_amount = amount_to_raise - amount_raised
+
+             # Check Solvency (Optimistic)
+             # Bank is the primary liquidity provider. It should buy all if possible.
+             if buyer == self.bank:
+                  if buyer.assets < purchase_amount:
+                      logger.warning(f"BOND_SYNC_FAIL | Bank has {buyer.assets}, needed {purchase_amount}")
+                      continue
+
+             # Execute Transfer
+             if self.settlement_system:
+                  success = self.settlement_system.transfer(
+                      debit_agent=buyer,
+                      credit_agent=issuer,
+                      amount=purchase_amount,
+                      memo=f"Bond Purchase from {buyer.id}"
+                  )
+
+                  if success:
+                       # Create Bond
+                       new_bond = BondDTO(
+                            id=f"BOND_{current_tick}_{len(self.outstanding_bonds)}",
+                            issuer="GOVERNMENT",
+                            face_value=purchase_amount,
+                            yield_rate=yield_rate,
+                            maturity_date=current_tick + bond_maturity
+                       )
+                       self.outstanding_bonds.append(new_bond)
+                       if hasattr(buyer, 'add_bond_to_portfolio'):
+                            buyer.add_bond_to_portfolio(new_bond)
+                       elif buyer == self.central_bank:
+                           if isinstance(buyer.assets, dict):
+                               if "bonds" not in buyer.assets:
+                                   buyer.assets["bonds"] = []
+                               buyer.assets["bonds"].append(new_bond)
+
+                       # QE specific: If buyer is Central Bank, record money issuance
+                       if buyer == self.central_bank and hasattr(self.government, 'total_money_issued'):
+                            self.government.total_money_issued += purchase_amount
+
+                       amount_raised += purchase_amount
+                       logger.info(f"BOND_SYNC_SUCCESS | Raised {purchase_amount:.2f} from {buyer.id}")
+                  else:
+                       logger.error(f"BOND_SYNC_FAIL | Settlement failed for {purchase_amount:.2f} from {buyer.id}")
+
+        return amount_raised >= amount_to_raise
+
     def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: float) -> bool:
         """
         Legacy method.
