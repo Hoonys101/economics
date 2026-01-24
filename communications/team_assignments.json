@@ -81,6 +81,10 @@
       "6817026115371816099": {
         "title": "WO-116_Leak_Hunter",
         "initial_mission": "Loop 4: Erasing Shadow Mutations. READ 'design/specs/WO116_LOOP4_SHADOW_FIX.md'. The forensic tool proved that -63k leaks occur without transactions. Fix the 5 suspect files (Inheritance, Liquidation, Bank, Gov, BaseAgent) to ensure 100% ledger purity. Tick 1 must be 0.0000 leak."
+      },
+      "7165644413044139156": {
+        "title": "WO-116_Root_Cause_Profiler",
+        "initial_mission": "Deep Root Cause Profiling. 1. Read 'design/REPORTS/FINAL_V4_VERDICT.md'. 2. Audit the 5 core files (TickScheduler, Lifecycle, TaxAgency, Gov, Bank). 3. Identify the EXACT line causing the -185k Tick 1 deletion. 4. Find the math error for +293.3120 anomaly. 5. Fix the de-registration bug in LifecycleManager. Output findings to 'design/audits/ROOT_CAUSE_PROFILE.md'."
       }
     },
     "completed_sessions": {

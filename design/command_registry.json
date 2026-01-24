@@ -80,8 +80,8 @@
   },
   "mission_profiler_engine": {
     "command": "create",
-    "title": "WO-116_Root_Cause_Profiler",
-    "instruction": "Deep Root Cause Profiling. 1. Read 'design/REPORTS/FINAL_V4_VERDICT.md'. 2. Audit the 5 core files (TickScheduler, Lifecycle, TaxAgency, Gov, Bank). 3. Identify the EXACT line causing the -185k Tick 1 deletion. 4. Find the math error for +293.3120 anomaly. 5. Fix the de-registration bug in LifecycleManager. Output findings to 'design/audits/ROOT_CAUSE_PROFILE.md'.",
+    "title": "WO-116_Zero_Sum_Final_Sprint",
+    "instruction": "The Zero-Sum Final Sprint. 1. Read 'design/REPORTS/final_zero_sum_check.log'. 2. Focus on the EXACT recurring leak of +299.7760. 3. Audit 'simulation/agents/government.py' (invest_infrastructure) and 'simulation/systems/reflux_system.py'. 4. Find why 5000.0 infrastructure spending results in a +299.7760 drift. 5. Fix the math to reach 0.0000 leak. Output to 'design/audits/FINAL_DRIFT_FIX.md'.",
     "wait": false
   },
   "git_review": {
