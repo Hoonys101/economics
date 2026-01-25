@@ -113,6 +113,10 @@
       "12428961078552329384": {
         "title": "Fix_TD112_Inheritance_Rounding",
         "initial_mission": "Implement Integer-based Inheritance logic to prevent asset leaks.\n\n[File Content: design/specs/TD112..."
+      },
+      "11881942992589980843": {
+        "title": "Fix_TD109_Sacred_Sequence",
+        "initial_mission": "Refactor Government, Bank, and InheritanceManager to use Transactions instead of direct transfers.\n\n..."
       }
     },
     "completed_sessions": {

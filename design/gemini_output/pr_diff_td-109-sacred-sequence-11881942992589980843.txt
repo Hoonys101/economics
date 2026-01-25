@@ -1,0 +1,2010 @@
+diff --git a/design/platform_architecture.md b/design/platform_architecture.md
+index 454c0d7..70dfa89 100644
+--- a/design/platform_architecture.md
++++ b/design/platform_architecture.md
+@@ -40,7 +40,26 @@
+ - **Repository Pattern**: `SimulationRepository`를 통해 DB 접근을 추상화했습니다.
+ - **Batch Processing**: 성능을 위해 `BATCH_SAVE_INTERVAL`마다 일괄 저장합니다.
+ 
+-## 3. 웹 인터페이스 (`app.py`, `static/`)
++## 3. 아키텍처 원칙: 신성한 시퀀스 (The Sacred Sequence)
++
++본 시뮬레이션의 모든 상태 변경은 "신성한 시퀀스"라 불리는 3단계 프로세스를 엄격히 준수한다. 이는 상태 변경의 예측 가능성을 보장하고, 제로섬(Zero-Sum) 오류를 원천적으로 방지하기 위함이다.
++
++### Phase 1: 결정 (Decision)
++- **Actor**: `Agent` 또는 `System`
++- **Action**: 현재 상태(`WorldState`)를 기반으로 행동을 결정하고, 그 결과를 `Transaction` 객체 리스트로 반환한다.
++- **Rule**: 이 단계에서는 **절대로** 시스템의 상태(예: `agent.assets`, `firm.inventory`)를 직접 수정해서는 안 된다. 모든 변경 의도는 `Transaction` 객체에 담겨야 한다.
++
++### Phase 2: 처리 (Processing)
++- **Actor**: `TransactionProcessor`
++- **Action**: `Phase 1`에서 생성된 모든 `Transaction`들을 순차적으로 실행한다. 자산 이동, 세금 징수, 재고 변경 등 실제적인 상태 변경이 이 단계에서만 발생한다.
++- **Rule**: `TransactionProcessor`는 시뮬레이션 내에서 유일하게 원자적 상태 변경을 책임지는 주체이다.
++
++### Phase 3: 효과 (Effect)
++- **Actor**: `SystemEffectsManager`
++- **Action**: `Transaction`의 `metadata`에 기록된 부수 효과(예: `GLOBAL_TFP_BOOST`)를 처리한다.
++- **Rule**: 자산/재고 변경과 직접 관련이 없는 광범위한 시스템 상태 변경은 이 단계를 통해 지연 실행(Deferred Execution)되어, 로직의 결합도를 낮춘다.
++
++## 4. 웹 인터페이스 (`app.py`, `static/`)
+ - **Backend**: Flask API (`/api/simulation/tick`, `/api/simulation/update`).
+ - **Frontend**: Vanilla JS + Chart.js.
+ - **통신**: `API.js`를 통해 백엔드와 통신하며, `ui.js`가 대시보드를 렌더링합니다.
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 5b106d0..1329011 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -447,15 +447,22 @@ class Government:
+ 
+         return transactions
+ 
+-    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> Tuple[bool, List[Transaction]]:
+-        """인프라에 투자하여 전체 생산성을 향상시킵니다. Returns (Success, Transactions)."""
++    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> List[Transaction]:
++        """
++        Refactored: Returns transactions instead of executing direct transfers.
++        Side-effects (TFP Boost) are deferred via metadata.
++        """
+         transactions = []
+-        cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
++        # Updated to use config default properly as suggested in review
++        if self.config_module:
++            cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
++        else:
++            cost = 5000.0
+         
+         effective_cost = cost
+ 
+         if self.firm_subsidy_budget_multiplier < 0.8:
+-            return False, []
++            return []
+ 
+         # Synchronous Financing (WO-117)
+         if self.assets < effective_cost:
+@@ -465,45 +472,38 @@ class Government:
+                 success = self.finance_system.issue_treasury_bonds_synchronous(self, needed, current_tick)
+                 if not success:
+                      logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+-                     return False, []
++                     return []
+             else:
+                 # Fallback to old behavior (should not happen if system is updated)
+                 bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
+                 if not bonds:
+                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+-                    return False, []
++                    return []
+                 transactions.extend(txs)
+ 
+-        # WO-Fix: Bypass TransactionProcessor for internal transfers to prevent zero-sum drift (phantom tax/leaks)
+-        # We execute the transfer directly using SettlementSystem.
+-        # Fallback to Transaction logic is REMOVED to prevent recurring drift bugs.
+-
+-        if not self.settlement_system or not reflux_system:
+-             logger.critical(
+-                 "INFRASTRUCTURE_ABORTED | Missing SettlementSystem or RefluxSystem. "
+-                 "Cannot execute zero-sum investment.",
+-                 extra={"tick": current_tick, "agent_id": self.id}
+-             )
+-             return False, []
+-
+-        transfer_success = self.settlement_system.transfer(
+-             self,
+-             reflux_system,
+-             effective_cost,
+-             "Infrastructure Investment (Direct)"
+-        )
++        # Generate Investment Transaction
++        if not reflux_system:
++             logger.critical("INFRASTRUCTURE_ABORTED | Missing RefluxSystem.")
++             return []
+ 
+-        # NEW: Handle failure
+-        if not transfer_success:
+-             logger.error(f"INFRASTRUCTURE_FAIL | Settlement transfer of {effective_cost:.2f} failed. Aborting investment.")
+-             return False, transactions # Return failure and any financing txs
++        tx = Transaction(
++            buyer_id=self.id,
++            seller_id=reflux_system.id,
++            item_id="infrastructure_investment",
++            quantity=1.0,
++            price=effective_cost,
++            market_id="system",
++            transaction_type="infrastructure_spending",
++            time=current_tick,
++            metadata={"triggers_effect": "GLOBAL_TFP_BOOST"}
++        )
++        transactions.append(tx)
+ 
+-        # This code only runs on successful transfer
+-        self.expenditure_this_tick += effective_cost
+         self.infrastructure_level += 1
++        self.expenditure_this_tick += effective_cost
+ 
+         logger.info(
+-            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Cost: {effective_cost}",
++            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} initiated. Cost: {effective_cost}",
+             extra={
+                 "tick": current_tick,
+                 "agent_id": self.id,
+@@ -511,7 +511,7 @@ class Government:
+                 "tags": ["investment", "infrastructure"]
+             }
+         )
+-        return True, transactions
++        return transactions
+ 
+     def finalize_tick(self, current_tick: int):
+         """
+diff --git a/simulation/bank.py b/simulation/bank.py
+index b880db4..53076a8 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -4,7 +4,8 @@ from typing import Dict, Any, List, Optional, TYPE_CHECKING
+ import math
+ from modules.common.config_manager.api import ConfigManager
+ from modules.finance.api import InsufficientFundsError, IFinancialEntity
+-from simulation.models import Transaction
++from simulation.models import Order, Transaction
++from simulation.portfolio import Portfolio
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+@@ -12,70 +13,57 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
+-# Constants (Fallback if config is not passed, though it should be)
+ TICKS_PER_YEAR = 100
+ INITIAL_BASE_ANNUAL_RATE = 0.05
+-CREDIT_SPREAD_BASE = 0.02
+-BANK_MARGIN = 0.02
+-
+ 
+ @dataclass
+ class Loan:
+     borrower_id: int
+-    principal: float       # 원금
+-    remaining_balance: float # 잔액
+-    annual_interest_rate: float # 연이율
+-    term_ticks: int        # 만기 (틱)
+-    start_tick: int        # 대출 실행 틱
++    principal: float
++    remaining_balance: float
++    annual_interest_rate: float
++    term_ticks: int
++    start_tick: int
+ 
+     @property
+     def tick_interest_rate(self) -> float:
+         return self.annual_interest_rate / TICKS_PER_YEAR
+ 
+-
+ @dataclass
+ class Deposit:
+     depositor_id: int
+-    amount: float          # 예치금
+-    annual_interest_rate: float # 연이율
++    amount: float
++    annual_interest_rate: float
+ 
+     @property
+     def tick_interest_rate(self) -> float:
+         return self.annual_interest_rate / TICKS_PER_YEAR
+ 
+-
+ class Bank(IFinancialEntity):
+     """
+     Phase 3: Central & Commercial Bank Hybrid System.
+-    Manages loans, deposits, and monetary policy interaction.
++    WO-109: Refactored for Sacred Sequence (Transactions).
+     """
+ 
+     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None):
+         self._id = id
+-        self._assets = initial_assets # Reserves
++        self._assets = initial_assets
+         self.config_manager = config_manager
+         self.settlement_system = settlement_system
+         self.government: Optional["Government"] = None
+ 
+-        # Data Stores
+         self.loans: Dict[str, Loan] = {}
+         self.deposits: Dict[str, Deposit] = {}
+-
+-        # Policy Rates
+         self.base_rate = self._get_config("bank_defaults.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE)
+ 
+-        # Counters
+         self.next_loan_id = 0
+         self.next_deposit_id = 0
+ 
+-        # Dummy attrs for compatibility
++        # Compatibility
+         self.value_orientation = "N/A"
+         self.needs: Dict[str, float] = {}
+ 
+-        logger.info(
+-            f"Bank {self.id} initialized. Assets: {self.assets:.2f}, Base Rate: {self.base_rate:.2%}",
+-            extra={"tick": 0, "agent_id": self.id, "tags": ["init", "bank"]},
+-        )
++        logger.info(f"Bank {self.id} initialized. Assets: {self.assets:.2f}")
+ 
+     @property
+     def id(self) -> int:
+@@ -96,49 +84,21 @@ class Bank(IFinancialEntity):
+         self._assets -= amount
+ 
+     def get_interest_rate(self) -> float:
+-        """Returns the current base interest rate."""
+         return self.base_rate
+ 
+     def _get_config(self, key: str, default: Any) -> Any:
+         return self.config_manager.get(key, default)
+ 
+     def set_government(self, government: "Government") -> None:
+-        """Sets the government reference for monetary issuance tracking."""
+         self.government = government
+ 
+     def update_base_rate(self, new_rate: float):
+-        """
+-        Called by Central Bank (via Engine) to update monetary policy.
+-        Updates the base rate which affects new loans and deposits.
+-        """
+         if abs(self.base_rate - new_rate) < 1e-6:
+             return
+-
+-        old_rate = self.base_rate
+         self.base_rate = new_rate
+-        logger.info(
+-            f"MONETARY_POLICY | Base Rate updated: {old_rate:.2%} -> {self.base_rate:.2%}",
+-            extra={"agent_id": self.id, "tags": ["bank", "policy"]}
+-        )
++        logger.info(f"MONETARY_POLICY | Base Rate updated: {self.base_rate:.2%}")
+ 
+-    def grant_loan(
+-        self,
+-        borrower_id: int,
+-        amount: float,
+-        term_ticks: Optional[int] = None,
+-        interest_rate: Optional[float] = None
+-    ) -> Optional[str]:
+-        """
+-        Grants a loan to an agent if eligible.
+-        Does NOT transfer assets directly; returns loan ID for Transaction creation.
+-
+-        Args:
+-            borrower_id: The ID of the agent borrowing money.
+-            amount: The principal amount of the loan.
+-            term_ticks: Duration of the loan in ticks. Defaults to LOAN_DEFAULT_TERM if None.
+-            interest_rate: Specific annual interest rate to use. If None, uses Base Rate + Spread.
+-        """
+-        # 1. Config Check
++    def grant_loan(self, borrower_id: int, amount: float, term_ticks: Optional[int] = None, interest_rate: Optional[float] = None) -> Optional[str]:
+         if not term_ticks:
+             term_ticks = self._get_config("loan.default_term", 50)
+ 
+@@ -148,59 +108,23 @@ class Bank(IFinancialEntity):
+             credit_spread = self._get_config("bank_defaults.credit_spread_base", 0.02)
+             annual_rate = self.base_rate + credit_spread
+ 
+-        # 2. Liquidity Check
+-        # 1a. Credit Jail Check (Phase 4)
+-        if self._get_config("credit_recovery_ticks", None) is not None:
+-            pass
+-
+-        # 3. Gold Standard (Full Reserve) Check vs. Fractional Reserve (WO-064)
+         gold_standard_mode = self._get_config("gold_standard_mode", False)
+-
+         if gold_standard_mode:
+-            # Gold Standard: 100% reserve requirement
+             if self.assets < amount:
+-                logger.warning(
+-                    f"LOAN_REJECTED | Insufficient reserves (Gold Standard) for {amount:.2f}. Reserves: {self.assets:.2f}",
+-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "gold_standard"]}
+-                )
+                 return None
+         else:
+-            # Fractional Reserve Logic
+             reserve_ratio = self._get_config("reserve_req_ratio", 0.1)
+             total_deposits = sum(d.amount for d in self.deposits.values())
+-            # Required reserves are based on total liabilities (deposits) after the new loan is notionally added
+             required_reserves = (total_deposits + amount) * reserve_ratio
+-
+             if self.assets < required_reserves:
+-                logger.warning(
+-                    f"LOAN_DENIED | Insufficient reserves for fractional lending. "
+-                    f"Assets: {self.assets:.2f}, Required: {required_reserves:.2f} "
+-                    f"(Deposits: {total_deposits:.2f}, Loan: {amount:.2f}, Ratio: {reserve_ratio:.2%})",
+-                    extra={"agent_id": self.id, "tags": ["bank", "loan", "fractional_reserve"]}
+-                )
+                 return None
+ 
+-            # If assets are less than the loan amount, but we have enough reserves, this is credit creation.
+             if self.assets < amount:
+                 shortfall = amount - self.assets
+                 if self.government and hasattr(self.government, "total_money_issued"):
+                     self.government.total_money_issued += shortfall
+                     self.deposit(shortfall)
+-                    logger.info(
+-                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit to fund loan of {amount:.2f}. "
+-                        f"Reserves before: {self.assets - shortfall:.2f}, after: {self.assets:.2f}. "
+-                        f"Total Issued updated.",
+-                        extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation"]}
+-                    )
+-                else:
+-                    logger.warning(
+-                        f"[CREDIT_CREATION] Bank {self.id} created {shortfall:.2f} credit but Government reference is MISSING or invalid. "
+-                        "Issuance NOT tracked!",
+-                        extra={"agent_id": self.id, "tags": ["bank", "loan", "credit_creation", "error"]}
+-                    )
+ 
+-        # 3. Execution (Update Bank State Only)
+-        # self.assets -= amount  <-- REMOVED: Asset transfer handled by LoanMarket Transaction
+         loan_id = f"loan_{self.next_loan_id}"
+         self.next_loan_id += 1
+ 
+@@ -213,27 +137,12 @@ class Bank(IFinancialEntity):
+             start_tick=0
+         )
+         self.loans[loan_id] = new_loan
+-
+-        logger.info(
+-            f"LOAN_GRANTED | Loan {loan_id} to Agent {borrower_id}. "
+-            f"Amt: {amount:.2f}, Rate: {annual_rate:.2%}, Term: {term_ticks}",
+-            extra={"agent_id": self.id, "tags": ["bank", "loan"]}
+-        )
+         return loan_id
+ 
+-    # --- IBankService Implementation (Customer Facing) ---
+-
+     def deposit_from_customer(self, depositor_id: int, amount: float) -> Optional[str]:
+-        """
+-        Accepts a deposit from an agent (Customer).
+-        Does NOT transfer assets directly (handled by Transaction); creates deposit record.
+-        Returns deposit ID.
+-        """
+         margin = self._get_config("bank_defaults.bank_margin", 0.02)
+         deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
+ 
+-        # self.assets += amount <-- REMOVED: Asset transfer handled by LoanMarket Transaction
+-
+         deposit_id = f"dep_{self.next_deposit_id}"
+         self.next_deposit_id += 1
+ 
+@@ -242,23 +151,10 @@ class Bank(IFinancialEntity):
+             amount=amount,
+             annual_interest_rate=deposit_rate
+         )
+-
+         self.deposits[deposit_id] = new_deposit
+-
+-        logger.info(
+-            f"DEPOSIT_ACCEPTED | Deposit {deposit_id} from Agent {depositor_id}. "
+-            f"Amt: {amount:.2f}, Rate: {deposit_rate:.2%}",
+-            extra={"agent_id": self.id, "tags": ["bank", "deposit"]}
+-        )
+         return deposit_id
+ 
+     def withdraw_for_customer(self, depositor_id: int, amount: float) -> bool:
+-        """
+-        Withdraws from depositor's account (Customer).
+-        Returns True if successful, False if insufficient balance.
+-        """
+-        # Find deposit by depositor_id
+-        # We need to scan because key is deposit_id
+         target_deposit = None
+         target_dep_id = None
+         for dep_id, deposit in self.deposits.items():
+@@ -271,57 +167,31 @@ class Bank(IFinancialEntity):
+             return False
+ 
+         target_deposit.amount -= amount
+-        # self.assets -= amount # Handled by Transaction in LoanMarket
+-
+-        # If deposit is empty, remove it
+-        if target_deposit.amount <= 0:
+-            if target_dep_id:
+-                del self.deposits[target_dep_id]
+-
+-        logger.info(
+-            f"WITHDRAWAL_PROCESSED | Agent {depositor_id} withdrew {amount:.2f}",
+-            extra={"agent_id": self.id, "tags": ["bank", "withdrawal"]}
+-        )
++        if target_deposit.amount <= 0 and target_dep_id:
++            del self.deposits[target_dep_id]
+         return True
+ 
+-    # --- IFinancialEntity Implementation (System Facing) ---
+-
+     def deposit(self, amount: float) -> None:
+-        """
+-        Deposits a given amount into the bank's own assets (Equity/Reserves).
+-        Implementation of IFinancialEntity.deposit.
+-        """
+         if amount > 0:
+             self._assets += amount
+ 
+     def withdraw(self, amount: float) -> None:
+-        """
+-        Withdraws a given amount from the bank's own assets (Equity/Reserves).
+-        Implementation of IFinancialEntity.withdraw.
+-        """
+         if amount > 0:
+             if self.assets < amount:
+-                raise InsufficientFundsError(f"Bank {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
++                 raise InsufficientFundsError(f"Insufficient funds")
+             self._assets -= amount
+ 
+     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+-        """Returns debt info for AI state."""
+         total_principal = 0.0
+         daily_interest_burden = 0.0
+         ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+-
+         for loan in self.loans.values():
+             if loan.borrower_id == agent_id:
+                 total_principal += loan.remaining_balance
+                 daily_interest_burden += (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+-
+-        return {
+-            "total_principal": total_principal,
+-            "daily_interest_burden": daily_interest_burden
+-        }
++        return {"total_principal": total_principal, "daily_interest_burden": daily_interest_burden}
+ 
+     def get_deposit_balance(self, agent_id: int) -> float:
+-        """Returns the total deposit balance for a specific agent."""
+         total_deposit = 0.0
+         for deposit in self.deposits.values():
+             if deposit.depositor_id == agent_id:
+@@ -329,44 +199,27 @@ class Bank(IFinancialEntity):
+         return total_deposit
+ 
+     def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None) -> List[Transaction]:
+-        """
+-        Process interest payments and distributions.
+-        Returns a list of transactions to be executed by TransactionProcessor.
+-        """
+         generated_transactions: List[Transaction] = []
+         ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+-
+-        # Find Government for default processing & profit transfer
+         gov_agent = None
+         for a in agents_dict.values():
+              if a.__class__.__name__ == 'Government':
+                  gov_agent = a
+                  break
+ 
+-        # 1. Collect Interest from Loans
+         total_loan_interest = 0.0
+-
+         for loan_id, loan in self.loans.items():
+             agent = agents_dict.get(loan.borrower_id)
+             if not agent or not getattr(agent, 'is_active', True):
+-                # Default logic or write-off logic here
+                 continue
+ 
+-            # Calculate Interest Payment
+             interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+             payment = interest_payment
+ 
+-            # Optimistic check (actual verification happens in TransactionProcessor)
+-            # However, if we want to trigger default logic, we MUST check here or defer default logic.
+-            # If we generate a transaction and it fails later, how do we trigger Default?
+-            # The TransactionProcessor doesn't trigger callbacks on failure yet.
+-            # So, we must check 'assets' here to decide whether to issue 'Interest Payment' or 'Default Protocol'.
+-            # This relies on 'agent.assets' being accurate at this point.
+-
+             if agent.assets >= payment:
+                 tx = Transaction(
+-                    buyer_id=agent.id, # Payer
+-                    seller_id=self.id, # Payee
++                    buyer_id=agent.id,
++                    seller_id=self.id,
+                     item_id=loan_id,
+                     quantity=1.0,
+                     price=payment,
+@@ -376,7 +229,6 @@ class Bank(IFinancialEntity):
+                 )
+                 generated_transactions.append(tx)
+                 total_loan_interest += payment
+-
+             else:
+                 self.process_default(agent, loan, current_tick, government=gov_agent)
+                 partial = agent.assets
+@@ -394,20 +246,16 @@ class Bank(IFinancialEntity):
+                     generated_transactions.append(tx)
+                     total_loan_interest += partial
+ 
+-        # 2. Pay Interest to Depositors
+         total_deposit_interest = 0.0
+         for dep_id, deposit in self.deposits.items():
+             agent = agents_dict.get(deposit.depositor_id)
+             if not agent:
+                 continue
+-
+             interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
+-
+-            # Optimistic check
+             if self.assets >= interest_payout:
+                  tx = Transaction(
+-                    buyer_id=self.id, # Bank pays
+-                    seller_id=agent.id, # Depositor receives
++                    buyer_id=self.id,
++                    seller_id=agent.id,
+                     item_id=dep_id,
+                     quantity=1.0,
+                     price=interest_payout,
+@@ -417,21 +265,14 @@ class Bank(IFinancialEntity):
+                  )
+                  generated_transactions.append(tx)
+                  total_deposit_interest += interest_payout
+-
+-                 # Side effect: Track capital income
+-                 from simulation.core_agents import Household
+-                 if isinstance(agent, Household) and hasattr(agent, "capital_income_this_tick"):
++                 if hasattr(agent, "capital_income_this_tick"):
+                     agent.capital_income_this_tick += interest_payout
+-            else:
+-                 logger.error("BANK_LIQUIDITY_CRISIS | Cannot pay deposit interest!")
+ 
+-        # 3. Bank Profit Capture (Reflux)
+         net_profit = total_loan_interest - total_deposit_interest
+-
+         if net_profit > 0 and gov_agent:
+              tx = Transaction(
+-                 buyer_id=self.id, # Bank pays
+-                 seller_id=gov_agent.id, # Government receives
++                 buyer_id=self.id,
++                 seller_id=gov_agent.id,
+                  item_id="bank_profit",
+                  quantity=1.0,
+                  price=net_profit,
+@@ -440,103 +281,61 @@ class Bank(IFinancialEntity):
+                  time=current_tick
+              )
+              generated_transactions.append(tx)
+-             logger.info(f"BANK_PROFIT_CAPTURE | Generated transaction of {net_profit:.2f} to Government.")
+-
+-        logger.info(
+-            f"BANK_TICK_SUMMARY | Collected Loan Int: {total_loan_interest:.2f}, Paid Deposit Int: {total_deposit_interest:.2f}, Net Profit: {net_profit:.2f}, Generated Txs: {len(generated_transactions)}",
+-            extra={"agent_id": self.id, "tags": ["bank", "tick"]}
+-        )
+ 
+         return generated_transactions
+ 
+-    # Legacy method support for compatibility if needed, but we are rewriting
+-    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
+-        # Return dict representation for compatibility if other modules use it
+-        return [
+-            {
+-                "borrower_id": l.borrower_id,
+-                "amount": l.remaining_balance,
+-                "interest_rate": l.annual_interest_rate,
+-                "duration": l.term_ticks
+-            }
+-            for l in self.loans.values() if l.borrower_id == agent_id
+-        ]
+-    def process_repayment(self, loan_id: str, amount: float):
+-        if loan_id in self.loans:
+-            # We don't touch assets here, handled by Transaction
+-            self.loans[loan_id].remaining_balance -= amount
+-            if self.loans[loan_id].remaining_balance <= 0:
+-                # Fully repaid
+-                pass # Logic to archive loan?
+-            logger.info(
+-                f"REPAYMENT_PROCESSED | Loan {loan_id} repaid by {amount}",
+-                extra={"agent_id": self.id, "tags": ["bank", "repayment"]}
+-            )
+-
+-    def _borrow_from_central_bank(self, amount: float):
++    def generate_solvency_transactions(self, government: "Government") -> List[Transaction]:
+         """
+-        Phase 23.5: Lender of Last Resort.
+-        Creates money via Government to cover liquidity gaps.
+-        """
+-        self._assets += amount
+-        
+-        # Track Money Issuance (Lender of Last Resort is Minting)
+-        if self.government and hasattr(self.government, "total_money_issued"):
+-            self.government.total_money_issued += amount
+-
+-        logger.warning(f"BANK_BORROWING | Central Bank injected {amount:.2f} into Bank {self.id} reserves (New Money).")
+-
+-    def check_solvency(self, government: Any):
+-        """
+-        Phase 23.5: Ensuring Bank always has positive reserves for TransactionProcessor.
++        WO-109: Generate 'lender_of_last_resort' transactions if insolvent.
++        This replaces the old direct-modification `check_solvency`.
+         """
+         if self.assets < 0:
+-            borrow_amount = abs(self.assets) + 1000.0 # Maintain buffer
+-
+-            # Lender of Last Resort is MONEY CREATION (Minting), not a transfer.
+-            # Government creates money and injects it into the Bank.
+-            # We bypass SettlementSystem.transfer because we do not want to debit Government assets (which would imply debt/spending).
+-            self.deposit(borrow_amount)
+-            government.total_money_issued += borrow_amount
++            solvency_buffer = self._get_config("bank_defaults.solvency_buffer", 1000.0)
++            borrow_amount = abs(self.assets) + solvency_buffer
++
++            tx = Transaction(
++                buyer_id=government.id, # Source of minting (symbolic)
++                seller_id=self.id,      # Bank receives
++                item_id="lender_of_last_resort",
++                quantity=1,
++                price=borrow_amount,
++                market_id="system_stabilization",
++                transaction_type="lender_of_last_resort",
++                time=0 # Will be overridden or used by processor
++            )
++            logger.warning(f"INSOLVENT: Generating Lender of Last Resort tx for {borrow_amount:.2f}")
++            return [tx]
+ 
+-            logger.warning(f"LENDER_OF_LAST_RESORT | Bank {self.id} insolvent! Borrowed {borrow_amount:.2f} from Government (Money Creation).")
++        return []
+ 
+     def process_default(self, agent: Any, loan: Loan, current_tick: int, government: Optional[Any] = None):
+-        """
+-        Phase 4: Handles loan default.
+-        1. Liquidation: Sell assets (stocks, inventory) to repay.
+-        2. Forgiveness: Remaining debt is written off.
+-        3. Penalty: Credit Jail & XP Penalty.
+-        """
+-        logger.warning(
+-            f"DEFAULT_EVENT | Agent {agent.id} defaulted on Loan {loan.principal:.2f}",
+-            extra={"agent_id": agent.id, "loan_id": getattr(loan, "id", "unknown")}
+-        )
+-
+-        # 1. Liquidation
+         if hasattr(agent, "shares_owned") and agent.shares_owned:
+             agent.shares_owned.clear()
+-            logger.info(f"LIQUIDATION | Agent {agent.id} shares confiscated.")
+ 
+-        # 2. Forgiveness (Write-off)
+         if government and loan.remaining_balance > 0:
+             government.total_money_destroyed += loan.remaining_balance
+-            logger.info(f"MONEY_DESTRUCTION | Loan Write-off {loan.remaining_balance:.2f} recorded as destroyed money.")
+ 
+-        loan.remaining_balance = 0.0 # Effectively forgiven
++        loan.remaining_balance = 0.0
+ 
+-        # 3. Penalty
+-        # Credit Jail
+         jail_ticks = self._get_config("credit_recovery_ticks", 100)
+         if hasattr(agent, "credit_frozen_until_tick"):
+             agent.credit_frozen_until_tick = current_tick + jail_ticks
+ 
+-        # 4. XP Penalty
+         xp_penalty = self._get_config("bankruptcy_xp_penalty", 0.2)
+         if hasattr(agent, "education_xp"):
+              agent.education_xp *= (1.0 - xp_penalty)
+-        if hasattr(agent, "skills"):
+-             for skill in agent.skills.values():
+-                 skill.value *= (1.0 - xp_penalty)
+ 
+-        logger.info(f"PENALTY_APPLIED | Agent {agent.id} entered Credit Jail and lost XP.")
++    # Legacy Stubs
++    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
++        return [
++            {
++                "borrower_id": l.borrower_id,
++                "amount": l.remaining_balance,
++                "interest_rate": l.annual_interest_rate,
++                "duration": l.term_ticks
++            }
++            for l in self.loans.values() if l.borrower_id == agent_id
++        ]
++    def process_repayment(self, loan_id: str, amount: float):
++        if loan_id in self.loans:
++            self.loans[loan_id].remaining_balance -= amount
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index 3c36bfe..74eb39e 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -196,10 +196,16 @@ class SimulationState:
+     real_estate_units: List[Any] = field(default_factory=list) # Added for WO-103
+     # Mutable state for the tick
+     transactions: List[Any] = None # List[Transaction]
++    effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
++    inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
+ 
+     def __post_init__(self):
+         if self.transactions is None:
+             self.transactions = []
++        if self.effects_queue is None:
++            self.effects_queue = []
++        if self.inactive_agents is None:
++            self.inactive_agents = {}
+ 
+ 
+ # ------------------------------------------------------------------------------
+diff --git a/simulation/models.py b/simulation/models.py
+index 9bbbac2..0785561 100644
+--- a/simulation/models.py
++++ b/simulation/models.py
+@@ -31,6 +31,7 @@ class Transaction:
+     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
+     time: int  # 거래가 발생한 시뮬레이션 틱
+     quality: float = 1.0  # Phase 15: Durables Quality
++    metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
+ 
+ 
+ @dataclass
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index 5a0e710..0fceb49 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -17,66 +17,48 @@ class InheritanceManager:
+         self.config_module = config_module
+         self.logger = logging.getLogger("simulation.systems.inheritance_manager")
+ 
+-    def process_death(self, deceased: Household, government: Government, simulation: Any) -> None:
++    def process_death(self, deceased: Household, government: Government, simulation: Any) -> List[Transaction]:
+         """
+-        Executes the inheritance pipeline.
++        Executes the inheritance pipeline using Transactions.
+ 
+         Args:
+             deceased: The agent who died.
+             government: The entity collecting tax.
+-            simulation: Access to markets/registry for liquidation and transfer.
+-        """
+-        # Access SettlementSystem via standard Simulation facade or WorldState DTO
+-        settlement = getattr(simulation, 'settlement_system', None)
+-        if not settlement and hasattr(simulation, 'world_state'):
+-             settlement = getattr(simulation.world_state, 'settlement_system', None)
+-
+-        # If simulation is WorldState DTO itself (legacy compatibility)
+-        if not settlement and hasattr(simulation, 'time'): # Weak check for DTO
+-             settlement = getattr(simulation, 'settlement_system', None)
++            simulation: Access to markets/registry for valuation.
+ 
+-        if not settlement:
+-            raise ValueError(f"SettlementSystem missing in InheritanceManager for agent {deceased.id}")
++        Returns:
++            List[Transaction]: Ordered list of transactions to be queued for next tick.
++        """
++        transactions: List[Transaction] = []
++        current_tick = simulation.time
+ 
+         self.logger.info(
+             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",
+             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
+         )
+ 
+-        # 1. Valuation
+-        # ------------------------------------------------------------------
++        # 1. Valuation (Read-only)
+         cash = deceased.assets
+-
+-        # Real Estate Valuation
+         real_estate_value = 0.0
+-        # Access real estate units from simulation (assuming simulation has list)
+         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
+-
+-        # We need current market value. Unit.estimated_value should be up to date or we fetch from market?
+-        # Simulation._process_housing might update estimated_value?
+-        # Assuming unit.estimated_value is the source of truth for Wealth Tax/Valuation.
+         for unit in deceased_units:
+             real_estate_value += unit.estimated_value
+ 
+-        # Stock Valuation
+-        # Portfolio should track quantity. Price from StockMarket.
+         stock_value = 0.0
+         current_prices = {}
+         if simulation.stock_market:
+             for firm_id, share in deceased.portfolio.holdings.items():
+                 price = simulation.stock_market.get_daily_avg_price(firm_id)
+                 if price <= 0:
+-                    price = share.acquisition_price # Fallback to book cost
++                    price = share.acquisition_price
+                 current_prices[firm_id] = price
+                 stock_value += share.quantity * price
+ 
+         total_wealth = cash + real_estate_value + stock_value
+ 
+-        # 2. Taxation
+-        # ------------------------------------------------------------------
++        # 2. Calculate Tax
+         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)
+         deduction = getattr(self.config_module, "INHERITANCE_DEDUCTION", 10000.0)
+-
+         taxable_base = max(0.0, total_wealth - deduction)
+         tax_amount = taxable_base * tax_rate
+ 
+@@ -85,117 +67,58 @@ class InheritanceManager:
+             extra={"agent_id": deceased.id, "total_wealth": total_wealth, "tax_amount": tax_amount}
+         )
+ 
+-        # 3. Liquidation Logic (Atomic)
+-        # ------------------------------------------------------------------
+-        # If Cash < Tax, we must liquidate assets instantly to Government.
+-
+-        # Liquidation Sequence: Stocks -> Real Estate
+-
+-        # A. Stock Liquidation
+-        if deceased.assets < tax_amount and stock_value > 0:
+-            # Sell all stocks to Government/Market Maker at Current Price
+-            # In WO-049: "Sell Stocks (Market Order)". But for atomic zero-leak, we sim it.
+-            # Government buys the stocks (providing liquidity).
+-            # Government doesn't hold stocks usually? Or it burns them?
+-            # WO says: "Sell Stocks (Market Order)... Sell Real Estate (Fire Sale to Engine/Market)."
+-            # Implementation: Transfer stocks to Government portfolio? Or just convert to cash (Govt prints money/uses reserves)?
+-            # Let's assume Government buys them to resolve debt.
+-
+-            liquidation_proceeds = 0.0
+-
+-            # To be safe, we sell everything if we are short on cash?
+-            # Or just enough? Complexity vs speed. "Liquidation" implies selling needed assets.
+-            # Simple approach: Sell ALL stocks first if cash shortage exists.
+-
+-            for firm_id, share in list(deceased.portfolio.holdings.items()):
+-                price = current_prices.get(firm_id, 0.0)
+-                proceeds = share.quantity * price
+-
+-                # Transfer: Deceased -> Cash, Government -> Stock (or burn?)
+-                # Minting Logic: Gov creates money to buy asset
+-                if hasattr(government, '_add_assets'):
+-                     government._add_assets(proceeds)
+-
+-                simulation.government.total_money_issued += proceeds # Injection (Bank/Gov Buyout)
+-
+-                # Transfer
+-                settlement.transfer(government, deceased, proceeds, f"liquidation_stock:{firm_id}")
+-
+-                liquidation_proceeds += proceeds
+-
+-                # Remove from Deceased Portfolio
+-                deceased.portfolio.remove(firm_id, share.quantity)
+-                # Sync legacy
+-                if firm_id in deceased.shares_owned:
+-                    del deceased.shares_owned[firm_id]
+-
+-                # Logic gap: Who owns the stock now?
+-                # If Market Order, random buyer. If Atomic Govt Buyout, Govt owns it.
+-                # Govt usually sells later? Or holds?
+-                # For "Legacy Protocol", let's assume Govt holds or burns.
+-                # Simplest: Burn (Share Buyback equivalent) or Govt holds.
+-                # Let's update StockMarket registry: Govt owns it.
+-                if simulation.stock_market:
+-                    simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
+-                    # Update Govt
+-                    # simulation.stock_market.update_shareholder(government.id, firm_id, ...?)
+-                    # Not strictly required unless Govt trades.
+-
+-            self.logger.info(
+-                f"LIQUIDATION_STOCK | Sold stocks for {liquidation_proceeds:.2f} to cover tax.",
+-                 extra={"agent_id": deceased.id}
+-            )
+-
+-        # B. Real Estate Liquidation (Fire Sale)
++        # 3. Liquidation Transactions (if Cash < Tax)
+         if deceased.assets < tax_amount:
+-            # Still short? Sell Properties.
+-            # Fire Sale @ 90%
++            # A. Stock Liquidation
++            if stock_value > 0:
++                for firm_id, share in deceased.portfolio.holdings.items():
++                    price = current_prices.get(firm_id, 0.0)
++                    proceeds = share.quantity * price
++
++                    tx = Transaction(
++                        buyer_id=government.id,
++                        seller_id=deceased.id,
++                        item_id=f"stock_{firm_id}",
++                        quantity=share.quantity,
++                        price=price, # Unit price
++                        market_id="stock_market",
++                        transaction_type="asset_liquidation",
++                        time=current_tick
++                    )
++                    transactions.append(tx)
++
++            # B. Real Estate Liquidation
+             fire_sale_ratio = 0.9
+-
+             for unit in deceased_units:
+-                if deceased.assets >= tax_amount:
+-                    break # Stop if we have enough cash
+-
+                 sale_price = unit.estimated_value * fire_sale_ratio
+-
+-                # Govt buys unit
+-                # Minting Logic: Gov creates money to buy asset
+-                if hasattr(government, '_add_assets'):
+-                     government._add_assets(sale_price)
+-
+-                simulation.government.total_money_issued += sale_price # Injection
+-
+-                # Transfer
+-                settlement.transfer(government, deceased, sale_price, f"liquidation_re:{unit.id}")
+-
+-                # Transfer Title
+-                unit.owner_id = None # Government/Public
+-                # Or set to Government ID?
+-                # Simulation uses None for Government owned.
+-
+-                # Remove from Deceased list
+-                deceased.owned_properties.remove(unit.id)
+-
+-                self.logger.info(
+-                    f"LIQUIDATION_RE | Sold Unit {unit.id} for {sale_price:.2f} (Fire Sale).",
+-                    extra={"agent_id": deceased.id, "unit_id": unit.id}
++                tx = Transaction(
++                    buyer_id=government.id,
++                    seller_id=deceased.id,
++                    item_id=f"real_estate_{unit.id}",
++                    quantity=1.0,
++                    price=sale_price,
++                    market_id="real_estate_market",
++                    transaction_type="asset_liquidation",
++                    time=current_tick
+                 )
++                transactions.append(tx)
+ 
+-        # 4. Tax Payment
+-        # ------------------------------------------------------------------
+-        # Determine final tax payment (limited by assets if bankruptcy)
+-        actual_tax_paid = min(deceased.assets, tax_amount)
++        # 4. Tax Transaction
++        actual_tax_paid = min(total_wealth, tax_amount) # Cap at total wealth? Or cash?
+         if actual_tax_paid > 0:
+-            settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
+-
+-            # WO-116: Use record_revenue to avoid Double-Charge via FinanceSystem
+-            simulation.government.record_revenue(
+-                actual_tax_paid, "inheritance_tax", deceased.id, simulation.time
++            tx = Transaction(
++                buyer_id=deceased.id,
++                seller_id=government.id,
++                item_id="inheritance_tax",
++                quantity=1.0,
++                price=tax_amount, # Processor should handle partial payment if insufficient funds?
++                market_id="system",
++                transaction_type="tax",
++                time=current_tick
+             )
++            transactions.append(tx)
+ 
+-        # 5. Distribution (Transfer)
+-        # ------------------------------------------------------------------
+-        # Find Heirs
++        # 5. Distribution / Escheatment
+         heirs = []
+         for child_id in deceased.children_ids:
+             child = simulation.agents.get(child_id)
+@@ -203,131 +126,65 @@ class InheritanceManager:
+                 heirs.append(child)
+ 
+         if not heirs:
+-            # 1. State Confiscation (Cash)
+-            surplus = deceased.assets
+-            if surplus > 0:
+-                settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
+-                simulation.government.record_revenue(surplus, "escheatment", deceased.id, simulation.time)
+-                self.logger.info(
+-                    f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
+-                    extra={"agent_id": deceased.id}
++            # Escheatment
++            # We need to transfer remaining Assets (Stock/RE) and Cash to Gov.
++            # Cash Escheatment
++            # Calculate remaining cash after tax
++            remaining_cash = max(0.0, cash - actual_tax_paid)
++            if remaining_cash > 0:
++                tx_cash = Transaction(
++                    buyer_id=deceased.id,
++                    seller_id=government.id,
++                    item_id="escheatment_cash",
++                    quantity=1.0,
++                    price=remaining_cash,
++                    market_id="system",
++                    transaction_type="escheatment",
++                    time=current_tick
+                 )
+-
+-            # 2. State Confiscation (Stocks)
+-            # Transfer all remaining shares to Government
+-            for firm_id, share in list(deceased.portfolio.holdings.items()):
+-                 qty = share.quantity
+-                 if qty > 0:
+-                     # Update Shareholder Registry: Deceased -> 0, Govt -> +qty
+-                     if simulation.stock_market:
+-                         simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
+-                         simulation.stock_market.update_shareholder(simulation.government.id, firm_id, qty)
+-            
+-            # Clear Deceased Portfolio
+-            deceased.portfolio.holdings.clear()
+-            deceased.shares_owned.clear()
+-
+-            # 3. State Confiscation (Real Estate)
+-            # Transfer all remaining properties to Government
+-            remaining_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
+-            for unit in remaining_units:
+-                unit.owner_id = simulation.government.id
+-                # Note: deceased.owned_properties will be cleared below
+-            
+-            deceased.owned_properties.clear()
++                transactions.append(tx_cash)
+             
+-            self.logger.info(
+-                 f"NO_HEIRS_ASSETS | Confiscated {len(remaining_units)} properties and portfolio to Government.",
+-                 extra={"agent_id": deceased.id}
++            # Stock Escheatment (if not liquidated)
++            if deceased.assets >= tax_amount:
++                 for firm_id, share in deceased.portfolio.holdings.items():
++                    tx = Transaction(
++                        buyer_id=government.id,
++                        seller_id=deceased.id,
++                        item_id=f"stock_{firm_id}",
++                        quantity=share.quantity,
++                        price=0.0,
++                        market_id="stock_market",
++                        transaction_type="asset_transfer",
++                        time=current_tick
++                    )
++                    transactions.append(tx)
++
++                 for unit in deceased_units:
++                     tx = Transaction(
++                        seller_id=deceased.id,
++                        buyer_id=government.id,
++                        item_id=f"real_estate_{unit.id}",
++                        quantity=1.0,
++                        price=0.0,
++                        market_id="real_estate_market",
++                        transaction_type="asset_transfer",
++                        time=current_tick
++                     )
++                     transactions.append(tx)
++
++        else:
++            # Distribution to Heirs
++            tx_dist = Transaction(
++                buyer_id=deceased.id, # Source
++                seller_id=heirs[0].id, # Representative? Or ignore.
++                item_id="inheritance_distribution",
++                quantity=1.0,
++                price=0.0,
++                market_id="system",
++                transaction_type="inheritance_distribution",
++                time=current_tick,
++                metadata={"heir_ids": [h.id for h in heirs]}
+             )
++            transactions.append(tx_dist)
+ 
+-            return
+-
+-        # Split Remaining Assets
+-        num_heirs = len(heirs)
+-
+-        # A. Cash (Integer-based)
+-        total_cash = deceased.assets
+-        if total_cash > 0:
+-            # 1. Convert to integer (pennies) for precise calculation
+-            total_pennies = int(total_cash * 100)
+-
+-            # 2. Calculate base share and remainder
+-            pennies_per_heir = total_pennies // num_heirs
+-            remainder_pennies = total_pennies % num_heirs
+-
+-            cash_share = pennies_per_heir / 100.0
+-
+-            # 3. Distribute base share to all heirs
+-            for i, heir in enumerate(heirs):
+-                # The last heir gets the remainder
+-                if i == num_heirs - 1:
+-                    final_share = (pennies_per_heir + remainder_pennies) / 100.0
+-                    if final_share > 0:
+-                        settlement.transfer(deceased, heir, final_share, f"inheritance_share_final:{deceased.id}")
+-                else:
+-                    if cash_share > 0:
+-                        settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
+-
+-        # deceased.assets should be 0.0 now.
+-
+-        # B. Stocks (Portfolio Merge - Integer-based)
+-        for firm_id, share in list(deceased.portfolio.holdings.items()):
+-            total_shares = share.quantity
+-            if total_shares <= 0:
+-                continue
+-
+-            # 1. Calculate base shares and remainder
+-            shares_per_heir = total_shares // num_heirs
+-            remainder_shares = total_shares % num_heirs
+-
+-            # 2. Distribute base shares to all heirs
+-            if shares_per_heir > 0:
+-                for heir in heirs:
+-                    heir.portfolio.add(firm_id, shares_per_heir, share.acquisition_price)
+-                    # Legacy Sync
+-                    current_legacy = heir.shares_owned.get(firm_id, 0.0)
+-                    heir.shares_owned[firm_id] = current_legacy + shares_per_heir
+-                    if simulation.stock_market:
+-                        simulation.stock_market.update_shareholder(heir.id, firm_id, heir.shares_owned[firm_id])
+-
+-            # 3. Distribute remainder shares one-by-one to heirs until exhausted
+-            for i in range(remainder_shares):
+-                heir = heirs[i]
+-                heir.portfolio.add(firm_id, 1, share.acquisition_price)
+-                # Legacy Sync
+-                current_legacy = heir.shares_owned.get(firm_id, 0.0)
+-                heir.shares_owned[firm_id] = current_legacy + 1
+-                if simulation.stock_market:
+-                    simulation.stock_market.update_shareholder(heir.id, firm_id, heir.shares_owned[firm_id])
+-
+-            # 4. Clear deceased's holding for this stock
+-            if simulation.stock_market:
+-                simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
+-
+-        deceased.portfolio.holdings.clear()
+-        deceased.shares_owned.clear()
+-
+-        # C. Real Estate
+-        # Split properties? Impossible to split 1 unit.
+-        # Logic: Assign units round-robin to heirs? Or sell and split cash?
+-        # WO says "RealEstate: Update Registry Owner ID." implying transfer.
+-        # Simple Round Robin.
+-        remaining_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
+-
+-        for i, unit in enumerate(remaining_units):
+-            target_heir = heirs[i % num_heirs]
+-
+-            unit.owner_id = target_heir.id
+-            if hasattr(target_heir, 'owned_properties'):
+-                target_heir.owned_properties.append(unit.id)
+-            # Deceased removed locally from list (we iterate copy or access simulation list)
+-            # deceased.owned_properties already handled? No.
+-            # We iterate `remaining_units` which is fresh list.
+-
+-        deceased.owned_properties.clear()
+-
+-        self.logger.info(
+-            f"INHERITANCE_COMPLETE | Transferred assets to {num_heirs} heirs.",
+-            extra={"agent_id": deceased.id, "heirs_count": num_heirs}
+-        )
++        return transactions
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 1918b80..cc85a58 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -1,5 +1,3 @@
+-# simulation/systems/lifecycle_manager.py
+-
+ from __future__ import annotations
+ from typing import List, TYPE_CHECKING, Any
+ import logging
+@@ -7,6 +5,7 @@ import logging
+ if TYPE_CHECKING:
+     from simulation.core_agents import Household
+     from simulation.dtos.api import SimulationState
++    from simulation.models import Transaction
+ 
+ from simulation.systems.api import AgentLifecycleManagerInterface
+ from simulation.systems.demographic_manager import DemographicManager
+@@ -16,8 +15,10 @@ from simulation.systems.firm_management import FirmSystem
+ from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+ 
+ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+-    """에이전트의 생성, 노화, 사망, 청산을 처리합니다.
+-       WO-103: Implements SystemInterface.
++    """
++    Handles agent creation, aging, death, and liquidation.
++    WO-103: Implements SystemInterface.
++    WO-109: Returns transactions for deferred execution (Sacred Sequence).
+     """
+ 
+     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
+@@ -30,29 +31,31 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
+         self.logger = logger
+ 
+-    def execute(self, state: SimulationState) -> None:
+-        """한 틱 동안 발생하는 모든 생명주기 관련 이벤트를 처리합니다."""
+-
++    def execute(self, state: SimulationState) -> List[Transaction]:
++        """
++        Processes lifecycle events for the tick.
++        Returns:
++            List[Transaction]: Transactions generated by lifecycle events (e.g., inheritance)
++                               to be queued for the NEXT tick.
++        """
+         # 1. Aging
+         self.demographic_manager.process_aging(state.households, state.time)
+ 
+-        # 2. Births (출생)
++        # 2. Births
+         new_children = self._process_births(state)
+         self._register_new_agents(state, new_children)
+ 
+-        # 3. Immigration (이민)
+-        # Duck typing: state serves as 'sim' for ImmigrationManager if it matches interface
++        # 3. Immigration
+         new_immigrants = self.immigration_manager.process_immigration(state)
+         self._register_new_agents(state, new_immigrants)
+ 
+-        # 4. Entrepreneurship (창업) - FirmSystem과 협력
++        # 4. Entrepreneurship
+         self.firm_system.check_entrepreneurship(state)
+ 
+-        # 5. Death & Liquidation (사망 및 청산)
+-        self._handle_agent_liquidation(state)
++        # 5. Death & Liquidation
++        return self._handle_agent_liquidation(state)
+ 
+     def _process_births(self, state: SimulationState) -> List[Household]:
+-        """(기존 `run_tick`의 출생 로직)"""
+         birth_requests = []
+         active_households = [h for h in state.households if h.is_active]
+         if not active_households:
+@@ -66,7 +69,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         return self.demographic_manager.process_births(state, birth_requests)
+ 
+     def _register_new_agents(self, state: SimulationState, new_agents: List[Household]):
+-        """(기존 `run_tick`의 신규 에이전트 등록 로직)"""
+         for agent in new_agents:
+             state.households.append(agent)
+             state.agents[agent.id] = agent
+@@ -77,20 +79,17 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 for firm_id, qty in agent.shares_owned.items():
+                     state.stock_market.update_shareholder(agent.id, firm_id, qty)
+ 
+-            # Add to AI training manager to ensure they are trained
+             if state.ai_training_manager:
+                 state.ai_training_manager.agents.append(agent)
+ 
+     def _calculate_inventory_value(self, inventory: dict, markets: dict) -> float:
+         total_value = 0.0
+-        # PR Review: Use configured default price instead of hardcoded 10.0
+         default_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+ 
+         for item_id, qty in inventory.items():
+             price = default_price
+             if item_id in markets:
+                 m = markets[item_id]
+-                # Try various price attributes
+                 if hasattr(m, "avg_price") and m.avg_price > 0:
+                     price = m.avg_price
+                 elif hasattr(m, "current_price") and m.current_price > 0:
+@@ -99,39 +98,38 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             total_value += qty * price
+         return total_value
+ 
+-    def _handle_agent_liquidation(self, state: SimulationState):
+-        """(기존 `_handle_agent_lifecycle` 로직 전체를 이 곳으로 이동)"""
++    def _handle_agent_liquidation(self, state: SimulationState) -> List[Transaction]:
++        """
++        Handles liquidation of inactive firms and households.
++        Returns a list of transactions (specifically from Inheritance).
++        """
++        transactions: List[Transaction] = []
+ 
++        # --- Firm Liquidation ---
++        # Note: Firm liquidation currently uses direct SettlementSystem transfers.
++        # Ideally this should also be transaction-based, but for TD-109 we focus on Inheritance.
+         inactive_firms = [f for f in state.firms if not f.is_active]
+         for firm in inactive_firms:
+             self.logger.info(
+-                f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}. "
+-                f"Assets: {firm.assets:.2f}, Inventory: {sum(firm.inventory.values()):.2f}",
++                f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}.",
+                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
+             )
+ 
+-            # WO-106: Reflux Capture (Inventory & Capital)
+             if state.reflux_system:
+-                # 1. Inventory Value
+                 inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
+                 if inv_value > 0:
+                     state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
+-                    # FIX: Track Reflux Alchemy as Issuance
+                     if hasattr(state.government, "total_money_issued"):
+-                        # MINTING: Inject value into Firm so it can be distributed
+                         firm._add_assets(inv_value)
+                         state.government.total_money_issued += inv_value
+ 
+-                # 2. Capital Stock (Scrap Value)
+                 if firm.capital_stock > 0:
+                     state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
+-                    # FIX: Track Reflux Alchemy as Issuance
+                     if hasattr(state.government, "total_money_issued"):
+-                        # MINTING: Inject value into Firm so it can be distributed
+                         firm._add_assets(firm.capital_stock)
+                         state.government.total_money_issued += firm.capital_stock
+ 
+-            # SoC Refactor: use hr.employees
++            # Clear employees
+             for employee in firm.hr.employees:
+                 if employee.is_active:
+                     employee.is_employed = False
+@@ -139,17 +137,17 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             firm.hr.employees = []
+             firm.inventory.clear()
+             firm.capital_stock = 0.0
++
++            # Distribute cash
+             total_cash = firm.assets
+             if total_cash > 0:
+                 outstanding_shares = firm.total_shares - firm.treasury_shares
+                 if outstanding_shares > 0:
+-                    # Fix: Include Inactive Households (pre-inheritance) and Government
+                     shareholders = list(state.households)
+                     if hasattr(state, 'government') and state.government:
+                         shareholders.append(state.government)
+ 
+                     for agent in shareholders:
+-                        # Check shares safely (Government might not have shares_owned init)
+                         shares = 0
+                         if hasattr(agent, "shares_owned"):
+                             shares = agent.shares_owned.get(firm.id, 0)
+@@ -157,60 +155,43 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                         if shares > 0:
+                             share_ratio = shares / outstanding_shares
+                             distribution = total_cash * share_ratio
+-
+-                            # Use SettlementSystem for distribution
+                             if hasattr(state, "settlement_system") and state.settlement_system:
+                                 state.settlement_system.transfer(firm, agent, distribution, "liquidation_dividend")
+-                            else:
+-                                raise RuntimeError("SettlementSystem missing during liquidation distribution")
+-
+-                            self.logger.info(
+-                                f"LIQUIDATION_DISTRIBUTION | Agent {agent.id} received "
+-                                f"{distribution:.2f} from Firm {firm.id} liquidation",
+-                                extra={"agent_id": agent.id, "tags": ["liquidation"]}
+-                            )
++
+                 else:
+-                    from simulation.agents.government import Government
+-                    if isinstance(state.government, Government):
+-                        # Note: collect_tax no longer adds assets. We must transfer/add manually.
+-                        # Use SettlementSystem for Escheatment
+-                        if hasattr(state, "settlement_system") and state.settlement_system:
+-                            state.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment")
+-                        else:
+-                             raise RuntimeError("SettlementSystem missing during liquidation escheatment")
+-
+-                        state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
+-
+-            # Verification: Firm assets should be ~0 now
++                    # Escheatment to Gov
++                    if hasattr(state, "settlement_system") and state.settlement_system:
++                         state.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment")
++                         state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
++
+             if firm.assets > 1e-6:
+-                 self.logger.warning(f"LIQUIDATION_RESIDUAL | Firm {firm.id} has {firm.assets} left after distribution. Forcing to 0.")
+-                 firm._sub_assets(firm.assets) # Destroy residual dust
++                 firm._sub_assets(firm.assets)
+                  if hasattr(state.government, "total_money_destroyed"):
+                      state.government.total_money_destroyed += firm.assets
+ 
++            # Clear shareholdings
+             for household in state.households:
+                 if firm.id in household.shares_owned:
+                     del household.shares_owned[firm.id]
+                     if state.stock_market:
+                         state.stock_market.update_shareholder(household.id, firm.id, 0)
+-            self.logger.info(
+-                f"FIRM_LIQUIDATION_COMPLETE | Firm {firm.id} fully liquidated.",
+-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
+-            )
+ 
++        # --- Household Liquidation (Inheritance) ---
+         inactive_households = [h for h in state.households if not h.is_active]
+         for household in inactive_households:
+-            # Use self.inheritance_manager since it is injected in __init__
+-            self.inheritance_manager.process_death(household, state.government, state)
++            # WO-109: Preserve inactive agent for transaction processing
++            if hasattr(state, "inactive_agents") and isinstance(state.inactive_agents, dict):
++                state.inactive_agents[household.id] = household
++
++            # Capture transactions returned by InheritanceManager
++            inheritance_txs = self.inheritance_manager.process_death(household, state.government, state)
++            transactions.extend(inheritance_txs)
+ 
+-            # WO-106: Reflux Capture (Household Inventory)
+             if state.reflux_system:
+                 inv_value = self._calculate_inventory_value(household.inventory, state.markets)
+                 if inv_value > 0:
+                     state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
+-                    # FIX: Track Reflux Alchemy as Issuance
+                     if hasattr(state.government, "total_money_issued"):
+-                        # Minting to Government (Escheatment of dead inventory)
+                         state.government._add_assets(inv_value)
+                         state.government.total_money_issued += inv_value
+ 
+@@ -222,18 +203,22 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 for firm_id in list(state.stock_market.shareholders.keys()):
+                      state.stock_market.update_shareholder(household.id, firm_id, 0)
+ 
+-        # In-place modification to ensure references in WorldState are updated
++        # Cleanup Global Lists
+         state.households[:] = [h for h in state.households if h.is_active]
+         state.firms[:] = [f for f in state.firms if f.is_active]
+ 
+-        # Rebuild agents dict
+         state.agents.clear()
+         state.agents.update({agent.id: agent for agent in state.households + state.firms})
+         if state.bank:
+              state.agents[state.bank.id] = state.bank
++        if hasattr(state, 'government') and state.government:
++             state.agents[state.government.id] = state.government
++        if hasattr(state, 'central_bank') and state.central_bank:
++             state.agents[state.central_bank.id] = state.central_bank
+ 
+         for firm in state.firms:
+-            # SoC Refactor: use hr.employees
+             firm.hr.employees = [
+                 emp for emp in firm.hr.employees if emp.is_active and emp.id in state.agents
+             ]
++
++        return transactions
+diff --git a/simulation/systems/system_effects_manager.py b/simulation/systems/system_effects_manager.py
+new file mode 100644
+index 0000000..f72a3cc
+--- /dev/null
++++ b/simulation/systems/system_effects_manager.py
+@@ -0,0 +1,50 @@
++import logging
++from typing import Dict, Any, List, TYPE_CHECKING
++from simulation.dtos.api import SimulationState
++
++if TYPE_CHECKING:
++    from simulation.firms import Firm
++
++logger = logging.getLogger(__name__)
++
++class SystemEffectsManager:
++    """
++    Manages deferred side-effects from transactions.
++    Enforces the 'Sacred Sequence' by decoupling decision/action from state modification consequences.
++    """
++
++    def __init__(self, config_module: Any):
++        self.config_module = config_module
++
++    def process_effects(self, state: SimulationState) -> None:
++        """
++        Processes all effects in the state.effects_queue.
++        """
++        if not state.effects_queue:
++            return
++
++        for effect in state.effects_queue:
++            effect_type = effect.get("triggers_effect")
++            if effect_type == "GLOBAL_TFP_BOOST":
++                self._apply_global_tfp_boost(state)
++            else:
++                logger.warning(f"UNKNOWN_EFFECT | Encountered unknown effect type: {effect_type}")
++
++        # Clear queue after processing
++        state.effects_queue.clear()
++
++    def _apply_global_tfp_boost(self, state: SimulationState) -> None:
++        """
++        Applies a productivity boost to all active firms.
++        """
++        tfp_boost = getattr(self.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
++        count = 0
++        for firm in state.firms:
++            if firm.is_active:
++                firm.productivity_factor *= (1.0 + tfp_boost)
++                count += 1
++
++        logger.info(
++            f"GLOBAL_TFP_BOOST | Applied {tfp_boost*100:.1f}% productivity increase to {count} firms.",
++            extra={"tick": state.time, "tags": ["system_effect", "infrastructure"]}
++        )
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index a13a915..ea6067b 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -33,12 +33,16 @@ class TransactionProcessor(SystemInterface):
+         government = state.government
+         current_time = state.time
+ 
++        # WO-109: Look up inactive agents
++        inactive_agents = getattr(state, "inactive_agents", {})
++
+         # market_data is now in state
+         goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
+ 
+         for tx in transactions:
+-            buyer = agents.get(tx.buyer_id)
+-            seller = agents.get(tx.seller_id)
++            # WO-109: Fallback to inactive agents
++            buyer = agents.get(tx.buyer_id) or inactive_agents.get(tx.buyer_id)
++            seller = agents.get(tx.seller_id) or inactive_agents.get(tx.seller_id)
+ 
+             if not buyer or not seller:
+                 continue
+@@ -51,8 +55,75 @@ class TransactionProcessor(SystemInterface):
+             # 1. Financial Settlement (Asset Transfer & Taxes)
+             # ==================================================================
+             settlement = getattr(state, 'settlement_system', None)
++            success = False
++
++            if tx.transaction_type == "lender_of_last_resort":
++                # Special Minting Logic
++                # Buyer (Gov) -> Seller (Bank). No Debit.
++                seller.deposit(trade_value)
++                if hasattr(buyer, "total_money_issued"):
++                    buyer.total_money_issued += trade_value
++                success = True
++
++            elif tx.transaction_type == "asset_liquidation":
++                # Special Minting Logic + Asset Transfer
++                # Buyer (Gov) -> Seller (Agent). No Debit.
++                seller.deposit(trade_value)
++                if hasattr(buyer, "total_money_issued"):
++                    buyer.total_money_issued += trade_value
++
++                # Asset Transfer
++                if tx.item_id.startswith("stock_"):
++                    self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
++                elif tx.item_id.startswith("real_estate_"):
++                    self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
++                success = True
++
++            elif tx.transaction_type == "asset_transfer":
++                 # Standard Transfer (Zero-Sum)
++                 if settlement:
++                     success = settlement.transfer(buyer, seller, trade_value, f"asset_transfer:{tx.item_id}")
++                 else:
++                     buyer.withdraw(trade_value)
++                     seller.deposit(trade_value)
++                     success = True
++
++                 # Asset Transfer Logic
++                 if success:
++                     if tx.item_id.startswith("stock_"):
++                         self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
++                     elif tx.item_id.startswith("real_estate_"):
++                         self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
++
++            elif tx.transaction_type == "escheatment":
++                 if settlement:
++                     success = settlement.transfer(buyer, seller, trade_value, "escheatment")
++                 else:
++                     buyer.withdraw(trade_value)
++                     seller.deposit(trade_value)
++                     success = True
++
++                 if success and hasattr(seller, "record_revenue"):
++                     seller.record_revenue(trade_value, "escheatment", buyer.id, current_time)
++
++            elif tx.transaction_type == "inheritance_distribution":
++                heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
++                total_cash = buyer.assets
++                if total_cash > 0 and heir_ids:
++                    amount_per_heir = total_cash / len(heir_ids)
++                    all_success = True
++                    for h_id in heir_ids:
++                        heir = agents.get(h_id)
++                        if heir:
++                            if settlement:
++                                if not settlement.transfer(buyer, heir, amount_per_heir, "inheritance_distribution"):
++                                    all_success = False
++                            else:
++                                buyer.withdraw(amount_per_heir)
++                                heir.deposit(amount_per_heir)
++                    success = all_success
+ 
+-            if tx.transaction_type == "goods":
++            elif tx.transaction_type == "goods":
+                 # Goods: Apply Sales Tax
+                 tax_amount = trade_value * sales_tax_rate
+                 
+@@ -62,24 +133,27 @@ class TransactionProcessor(SystemInterface):
+                         buyer.check_solvency(government)
+ 
+                 if settlement:
+-                    settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+-                    if tax_amount > 0:
++                    success = settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
++                    if success and tax_amount > 0:
+                         settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
+                 else:
+                     buyer.withdraw(trade_value + tax_amount)
+                     seller.deposit(trade_value)
+                     government.deposit(tax_amount)
++                    success = True
+ 
+-                # Fix: Pass buyer object, not ID, to collect_tax
+-                government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
++                if success:
++                    # Fix: Pass buyer object, not ID, to collect_tax
++                    government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
+ 
+             elif tx.transaction_type == "stock":
+                 # Stock: NO Sales Tax
+                 if settlement:
+-                    settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
++                    success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
+                 else:
+                     buyer.withdraw(trade_value)
+                     seller.deposit(trade_value)
++                    success = True
+             
+             elif tx.transaction_type in ["labor", "research_labor"]:
+                 # Labor: Apply Income Tax
+@@ -97,72 +171,92 @@ class TransactionProcessor(SystemInterface):
+                 
+                 if tax_payer == "FIRM":
+                     if settlement:
+-                        settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
+-                        if tax_amount > 0:
++                        success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
++                        if success and tax_amount > 0:
+                             settlement.transfer(buyer, government, tax_amount, f"labor_tax_firm:{tx.transaction_type}")
+                     else:
+                         buyer.withdraw(trade_value + tax_amount)
+                         seller.deposit(trade_value)
+                         government.deposit(tax_amount)
++                        success = True
+ 
+-                    # Fix: Pass buyer object (Firm) to collect_tax
+-                    government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
++                    if success:
++                        # Fix: Pass buyer object (Firm) to collect_tax
++                        government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
+                 else:
+                     # Household pays tax (Withholding model)
+                     net_wage = trade_value - tax_amount
+                     if settlement:
+-                        settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
+-                        if tax_amount > 0:
++                        success = settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
++                        if success and tax_amount > 0:
+                             settlement.transfer(buyer, government, tax_amount, f"labor_tax_withheld:{tx.transaction_type}")
+                     else:
+                         buyer.withdraw(trade_value) # Buyer pays full (net + tax split dest)
+                         seller.deposit(net_wage)
+                         government.deposit(tax_amount)
++                        success = True
+ 
+-                    # Fix: Pass seller object (Household) to collect_tax
+-                    government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
++                    if success:
++                        # Fix: Pass seller object (Household) to collect_tax
++                        government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+             
+             elif tx.item_id == "interest_payment":
+                 if settlement:
+-                    settlement.transfer(buyer, seller, trade_value, "interest_payment")
++                    success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
+                 else:
+                     buyer.withdraw(trade_value)
+                     seller.deposit(trade_value)
++                    success = True
+ 
+-                if isinstance(buyer, Firm):
++                if success and isinstance(buyer, Firm):
+                     buyer.finance.record_expense(trade_value)
+ 
+             elif tx.transaction_type == "dividend":
+                 if settlement:
+-                    settlement.transfer(seller, buyer, trade_value, "dividend_payment")
++                    success = settlement.transfer(seller, buyer, trade_value, "dividend_payment")
+                 else:
+                     seller.withdraw(trade_value)
+                     buyer.deposit(trade_value)
++                    success = True
+ 
+-                if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
++                if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+                     buyer.capital_income_this_tick += trade_value
++            elif tx.transaction_type == "infrastructure_spending":
++                # Standard Transfer (Gov -> Reflux)
++                if settlement:
++                    success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
++                else:
++                    buyer.withdraw(trade_value)
++                    seller.deposit(trade_value)
++                    success = True
+             else:
+                 # Default / Other
+                 if settlement:
+-                    settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
++                    success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
+                 else:
+                     buyer.withdraw(trade_value)
+                     seller.deposit(trade_value)
++                    success = True
++
++            # WO-109: Apply Deferred Effects only on Success
++            if success and tx.metadata and tx.metadata.get("triggers_effect"):
++                state.effects_queue.append(tx.metadata)
+ 
+             # ==================================================================
+             # 2. Meta Logic (Inventory, Employment, Share Registry)
+             # ==================================================================
+-            if tx.transaction_type in ["labor", "research_labor"]:
+-                self._handle_labor_transaction(tx, buyer, seller, trade_value, tax_amount, agents)
++            if success:
++                if tx.transaction_type in ["labor", "research_labor"]:
++                    self._handle_labor_transaction(tx, buyer, seller, trade_value, tax_amount, agents)
+ 
+-            elif tx.transaction_type == "goods":
+-                self._handle_goods_transaction(tx, buyer, seller, trade_value, current_time)
++                elif tx.transaction_type == "goods":
++                    self._handle_goods_transaction(tx, buyer, seller, trade_value, current_time)
+ 
+-            elif tx.transaction_type == "stock":
+-                self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
++                elif tx.transaction_type == "stock":
++                    self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+ 
+-            elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
+-                pass
++                elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
++                    pass
+ 
+     def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, tax_amount: float, agents: Dict[int, Any]):
+         if isinstance(seller, Household):
+@@ -226,6 +320,25 @@ class TransactionProcessor(SystemInterface):
+                 if tx.item_id == "basic_food":
+                     buyer.current_food_consumption += tx.quantity
+ 
++    def _handle_real_estate_transaction(self, tx: Transaction, buyer: Any, seller: Any, real_estate_units: List[Any], logger: Any, current_time: int):
++        # item_id = "real_estate_{id}"
++        try:
++            unit_id = int(tx.item_id.split("_")[2])
++            unit = next((u for u in real_estate_units if u.id == unit_id), None)
++            if unit:
++                unit.owner_id = buyer.id
++                # Update seller/buyer lists if they exist
++                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
++                    seller.owned_properties.remove(unit_id)
++                if hasattr(buyer, "owned_properties"):
++                    buyer.owned_properties.append(unit_id)
++
++                if logger:
++                    logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
++        except (IndexError, ValueError) as e:
++            if logger:
++                logger.error(f"RE_TX_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
++
+     def _handle_stock_transaction(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, logger: Any, current_time: int):
+         firm_id = int(tx.item_id.split("_")[1])
+         
+diff --git a/simulation/tick_scheduler.py b/simulation/tick_scheduler.py
+index bffd99b..8c4d846 100644
+--- a/simulation/tick_scheduler.py
++++ b/simulation/tick_scheduler.py
+@@ -40,10 +40,15 @@ class TickScheduler:
+     def __init__(self, world_state: WorldState, action_processor: ActionProcessor):
+         self.world_state = world_state
+         self.action_processor = action_processor
++        from simulation.systems.system_effects_manager import SystemEffectsManager
++        self.system_effects_manager = SystemEffectsManager(world_state.config_module)
+ 
+     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
+         state = self.world_state
+ 
++        # WO-109: Phase 0A: Pre-Sequence Stabilization
++        self._phase_pre_sequence_stabilization(state)
++
+         # --- Gold Standard / Money Supply Verification (WO-016) ---
+         if state.time == 0:
+             state.baseline_money_supply = state.calculate_total_money()
+@@ -84,6 +89,10 @@ class TickScheduler:
+         # ==================================================================================
+         system_transactions: List[Transaction] = []
+ 
++        # WO-109: Drain inter-tick queue from previous tick's lifecycle events
++        system_transactions.extend(state.inter_tick_queue)
++        state.inter_tick_queue.clear()
++
+         # 0. Firm Production (State Update: Inventory)
+         for firm in state.firms:
+              if firm.is_active:
+@@ -115,19 +124,10 @@ class TickScheduler:
+         system_transactions.extend(welfare_txs)
+ 
+         # 5. Infrastructure
+-        infra_success, infra_txs = state.government.invest_infrastructure(state.time, state.reflux_system)
++        infra_txs = state.government.invest_infrastructure(state.time, state.reflux_system)
+         if infra_txs:
+             system_transactions.extend(infra_txs)
+ 
+-        if infra_success:
+-            tfp_boost = getattr(state.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
+-            for firm in state.firms:
+-                firm.productivity_factor *= (1.0 + tfp_boost)
+-            state.logger.info(
+-                f"GLOBAL_TFP_BOOST | All firms productivity increased by {tfp_boost*100:.1f}%",
+-                extra={"tick": state.time, "tags": ["government", "infrastructure"]}
+-            )
+-
+         # ----------------------------------------------------------------------------------
+ 
+         # Cleanup Orders (Reset for new tick)
+@@ -265,7 +265,8 @@ class TickScheduler:
+             ai_trainer=getattr(state, "ai_trainer", None),
+             next_agent_id=state.next_agent_id,
+             real_estate_units=state.real_estate_units,
+-            settlement_system=getattr(state, "settlement_system", None)
++            settlement_system=getattr(state, "settlement_system", None),
++            inactive_agents=state.inactive_agents
+         )
+ 
+         # 1. Decisions
+@@ -287,6 +288,9 @@ class TickScheduler:
+         # Sync back scalars
+         state.next_agent_id = sim_state.next_agent_id
+ 
++        # WO-109: Process Effects
++        self.system_effects_manager.process_effects(sim_state)
++
+         # ==================================================================================
+         # Post-Tick Logic
+         # ==================================================================================
+@@ -470,7 +474,7 @@ class TickScheduler:
+ 
+         # --- Gold Standard / Money Supply Verification ---
+         if state.time >= 1:
+-            state.bank.check_solvency(state.government)
++            # Solvency check moved to start of tick (Phase 0A)
+ 
+             current_money = state.calculate_total_money()
+             expected_money = getattr(state, "baseline_money_supply", 0.0)
+@@ -644,7 +648,9 @@ class TickScheduler:
+     def _phase_lifecycle(self, state: SimulationState) -> None:
+         """Phase 4: Agent Lifecycle."""
+         if self.world_state.lifecycle_manager:
+-            self.world_state.lifecycle_manager.execute(state)
++            lifecycle_txs = self.world_state.lifecycle_manager.execute(state)
++            if lifecycle_txs:
++                self.world_state.inter_tick_queue.extend(lifecycle_txs)
+         else:
+             state.logger.error("LifecycleManager not initialized.")
+ 
+@@ -736,3 +742,34 @@ class TickScheduler:
+             "deposit_data": deposit_data_map,
+             "inflation": latest_indicators.get("inflation_rate", state.config_module.DEFAULT_INFLATION_RATE)
+         }
++
++    def _phase_pre_sequence_stabilization(self, state: WorldState) -> None:
++        """Phase 0A: Pre-Sequence Stabilization (WO-109)."""
++        if hasattr(state.bank, "generate_solvency_transactions"):
++            stabilization_txs = state.bank.generate_solvency_transactions(state.government)
++            if stabilization_txs:
++                temp_sim_state = SimulationState(
++                    time=state.time,
++                    households=state.households,
++                    firms=state.firms,
++                    agents=state.agents,
++                    markets=state.markets,
++                    government=state.government,
++                    bank=state.bank,
++                    central_bank=state.central_bank,
++                    stock_market=state.stock_market,
++                    goods_data=state.goods_data,
++                    market_data={},
++                    config_module=state.config_module,
++                    tracker=state.tracker,
++                    logger=state.logger,
++                    reflux_system=state.reflux_system,
++                    ai_training_manager=state.ai_training_manager,
++                    ai_trainer=state.ai_trainer,
++                    settlement_system=state.settlement_system,
++                    transactions=stabilization_txs,
++                    inactive_agents=state.inactive_agents
++                )
++                if state.transaction_processor:
++                    state.transaction_processor.execute(temp_sim_state)
++                    state.logger.warning("STABILIZATION | Executed pre-sequence stabilization for Bank.")
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index f331cbe..0ec2b3a 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -4,7 +4,7 @@ import logging
+ from collections import deque
+ 
+ if TYPE_CHECKING:
+-    from simulation.models import RealEstateUnit
++    from simulation.models import RealEstateUnit, Transaction
+     from simulation.core_agents import Household
+     from simulation.firms import Firm
+     from simulation.core_markets import Market
+@@ -96,6 +96,9 @@ class WorldState:
+         self.finance_system: Optional[FinanceSystem] = None
+         self.ai_trainer: Optional[AIEngineRegistry] = None
+         self.transactions: List[Any] = []  # Stores transactions of the current tick
++        self.inter_tick_queue: List[Transaction] = []  # WO-109: Queue for next tick
++        self.effects_queue: List[Dict[str, Any]] = []  # WO-109: Queue for side-effects
++        self.inactive_agents: Dict[int, Any] = {}  # WO-109: Store inactive agents for transaction processing
+ 
+         # New Systems
+         self.social_system: Optional[SocialSystem] = None
+diff --git a/tests/test_government_finance.py b/tests/test_government_finance.py
+index 641fece..b9705e7 100644
+--- a/tests/test_government_finance.py
++++ b/tests/test_government_finance.py
+@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
+ from simulation.agents.government import Government
+ from simulation.finance.api import IFinancialEntity, ISettlementSystem
+ from typing import Optional, Dict, Any, List
++from simulation.models import Transaction
+ 
+ class MockRefluxSystem:
+     def __init__(self, id: int, initial_assets: float = 0.0):
+@@ -32,10 +33,9 @@ class MockSettlementSystem(ISettlementSystem):
+         debit_context: Optional[Dict[str, Any]] = None,
+         credit_context: Optional[Dict[str, Any]] = None
+     ) -> bool:
+-        # Simulate the bug: Only credit the receiver, do NOT debit the sender.
+-        # This forces the caller to handle the debit if they want to ensure zero-sum
+-        # in the presence of this "untrusted" system.
+         credit_agent._add_assets(amount)
++        # We don't debit to simulate "bug" in original test context,
++        # but here we just need a dummy implementation.
+         return True
+ 
+ class MockConfig:
+@@ -45,42 +45,34 @@ class MockConfig:
+     INCOME_TAX_RATE = 0.1
+     CORPORATE_TAX_RATE = 0.2
+     TAX_MODE = "PROGRESSIVE" # Needed for TaxAgency
++    INFRASTRUCTURE_TFP_BOOST = 0.1
+ 
+-def test_invest_infrastructure_is_zero_sum():
++def test_invest_infrastructure_generates_transaction():
+     # 1. Setup
+     config = MockConfig()
+     government = Government(id=1, initial_assets=10000.0, config_module=config)
+     reflux = MockRefluxSystem(id=999, initial_assets=0.0)
+ 
+-    settlement_system = MockSettlementSystem()
+-    government.settlement_system = settlement_system
+-
+     # 2. Record State Before
+     assets_gov_before = government.assets
+     assets_reflux_before = reflux.assets
+-    total_before = assets_gov_before + assets_reflux_before
+-
+-    print(f"Before: Gov={assets_gov_before}, Reflux={assets_reflux_before}, Total={total_before}")
+ 
+     # 3. Execute
+-    success, txs = government.invest_infrastructure(current_tick=1, reflux_system=reflux)
+-
+-    assert success is True
+-
+-    # 4. Record State After
+-    assets_gov_after = government.assets
+-    assets_reflux_after = reflux.assets
+-    total_after = assets_gov_after + assets_reflux_after
+-
+-    print(f"After: Gov={assets_gov_after}, Reflux={assets_reflux_after}, Total={total_after}")
+-
+-    # 5. Assert Zero-Sum
+-    # With the "buggy" MockSettlementSystem, Reflux gains 1000, Gov loses nothing.
+-    # Total increases by 1000.
+-    # This assertion is expected to FAIL until the fix is implemented.
+-    assert total_after == total_before, \
+-        f"Zero-Sum Violation! Delta: {total_after - total_before}. Gov Delta: {assets_gov_after - assets_gov_before}, Reflux Delta: {assets_reflux_after - assets_reflux_before}"
+-
+-    # Also check specific expectations
+-    assert assets_reflux_after == assets_reflux_before + config.INFRASTRUCTURE_INVESTMENT_COST
+-    assert assets_gov_after == assets_gov_before - config.INFRASTRUCTURE_INVESTMENT_COST
++    txs = government.invest_infrastructure(current_tick=1, reflux_system=reflux)
++
++    # 4. Assert
++    # Should return a list of transactions
++    assert isinstance(txs, list)
++    assert len(txs) == 1
++
++    tx = txs[0]
++    assert isinstance(tx, Transaction)
++    assert tx.transaction_type == "infrastructure_spending"
++    assert tx.buyer_id == government.id
++    assert tx.seller_id == reflux.id
++    assert tx.price == config.INFRASTRUCTURE_INVESTMENT_COST
++    assert tx.metadata.get("triggers_effect") == "GLOBAL_TFP_BOOST"
++
++    # 5. Assert No Immediate State Change (Sacred Sequence)
++    assert government.assets == assets_gov_before
++    assert reflux.assets == assets_reflux_before

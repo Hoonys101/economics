@@ -27,3 +27,8 @@
 - **audit_structural_v2.md** (from `audit-structural-v2-7801408603710225423`) -> `structural-v2-7801408603710225423_audit_structural_v2.md`
 - **audit_economic_v2.md** (from `audit-economic-v2-14840183892782426317`) -> `economic-v2-14840183892782426317_audit_economic_v2.md`
 - **audit_structural_v2.md** (from `audit-structural-v2-3565876745588032036`) -> `structural-v2-3565876745588032036_audit_structural_v2.md`
+
+## Harvested on 2026-01-25 08:48:42
+- **audit_parity_v2.md** (from `audit-parity-v2-15523760182563808163`) -> `parity-v2-15523760182563808163_audit_parity_v2.md`
+- **audit_structural_v2.md** (from `audit-structural-v2-4281726444852051844`) -> `structural-v2-4281726444852051844_audit_structural_v2.md`
+- **audit_economic_v2.md** (from `audit-economic-v2-13373444691094674973`) -> `economic-v2-13373444691094674973_audit_economic_v2.md`
