@@ -63,8 +63,7 @@ class TransactionProcessor(SystemInterface):
 
                 if settlement:
                     settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
-                    if tax_amount > 0:
-                        settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
+                    # Tax collection is now handled via government.collect_tax
                 else:
                     buyer.withdraw(trade_value + tax_amount)
                     seller.deposit(trade_value)
@@ -98,8 +97,7 @@ class TransactionProcessor(SystemInterface):
                 if tax_payer == "FIRM":
                     if settlement:
                         settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
-                        if tax_amount > 0:
-                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_firm:{tx.transaction_type}")
+                        # Tax collection is now handled via government.collect_tax
                     else:
                         buyer.withdraw(trade_value + tax_amount)
                         seller.deposit(trade_value)
@@ -111,9 +109,9 @@ class TransactionProcessor(SystemInterface):
                     # Household pays tax (Withholding model)
                     net_wage = trade_value - tax_amount
                     if settlement:
-                        settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
-                        if tax_amount > 0:
-                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_withheld:{tx.transaction_type}")
+                        # Refactor: Pay GROSS wage to household, then collect tax from household
+                        settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
+                        # Tax collection is now handled via government.collect_tax (debited from household)
                     else:
                         buyer.withdraw(trade_value) # Buyer pays full (net + tax split dest)
                         seller.deposit(net_wage)

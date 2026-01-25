@@ -172,14 +172,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 else:
                     from simulation.agents.government import Government
                     if isinstance(state.government, Government):
-                        # Note: collect_tax no longer adds assets. We must transfer/add manually.
-                        # Use SettlementSystem for Escheatment
-                        if hasattr(state, "settlement_system") and state.settlement_system:
-                            state.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment")
-                        else:
-                             raise RuntimeError("SettlementSystem missing during liquidation escheatment")
-
-                        state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
+                        # Atomic Collection via Government
+                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm, state.time)
 
             # Verification: Firm assets should be ~0 now
             if firm.assets > 1e-6:

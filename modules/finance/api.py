@@ -1,4 +1,4 @@
-from typing import Protocol, Dict, List, Any, Optional
+from typing import Protocol, Dict, List, Any, Optional, TypedDict
 from dataclasses import dataclass
 
 # Forward reference for type hinting
@@ -27,6 +27,17 @@ class BailoutLoanDTO:
     amount: float
     interest_rate: float
     covenants: BailoutCovenant
+
+class TaxCollectionResult(TypedDict):
+    """
+    Represents the verified outcome of a tax collection attempt.
+    """
+    success: bool
+    amount_collected: float
+    tax_type: str
+    payer_id: Any
+    payee_id: Any
+    error_message: Optional[str]
 
 class InsufficientFundsError(Exception):
     """Raised when a withdrawal is attempted with insufficient funds."""

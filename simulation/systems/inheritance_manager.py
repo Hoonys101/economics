@@ -186,12 +186,8 @@ class InheritanceManager:
         # Determine final tax payment (limited by assets if bankruptcy)
         actual_tax_paid = min(deceased.assets, tax_amount)
         if actual_tax_paid > 0:
-            settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
-
-            # WO-116: Use record_revenue to avoid Double-Charge via FinanceSystem
-            simulation.government.record_revenue(
-                actual_tax_paid, "inheritance_tax", deceased.id, simulation.time
-            )
+            # Atomic Collection via Government
+            simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased, simulation.time)
 
         # 5. Distribution (Transfer)
         # ------------------------------------------------------------------
@@ -206,8 +202,8 @@ class InheritanceManager:
             # 1. State Confiscation (Cash)
             surplus = deceased.assets
             if surplus > 0:
-                settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
-                simulation.government.record_revenue(surplus, "escheatment", deceased.id, simulation.time)
+                # Atomic Collection via Government
+                simulation.government.collect_tax(surplus, "escheatment", deceased, simulation.time)
                 self.logger.info(
                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
                     extra={"agent_id": deceased.id}
