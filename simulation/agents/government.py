@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from modules.finance.api import BailoutLoanDTO
 from simulation.systems.tax_agency import TaxAgency
 from simulation.systems.ministry_of_education import MinistryOfEducation
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, TaxCollectionResult
 
 logger = logging.getLogger(__name__)
 
@@ -170,19 +170,51 @@ class Government:
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
 
-    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int):
-        """세금을 징수합니다."""
-        # Legacy method support if any direct calls remain, though TickScheduler uses transactions now.
-        return self.tax_agency.collect_tax(self, amount, tax_type, payer, current_tick)
+    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
+        """
+        Legacy adapter method used by TransactionProcessor.
+        Now delegates to the new atomic collect_tax and records revenue.
+        """
+        if not self.settlement_system:
+            logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
+            return 0.0
 
-    def record_revenue(
-        self, amount: float, tax_type: str, payer_id: Any, current_tick: int
-    ):
+        # Execute atomic transfer
+        result = self.tax_agency.collect_tax(
+            payer=payer,
+            payee=self,
+            amount=amount,
+            tax_type=tax_type,
+            settlement_system=self.settlement_system,
+            current_tick=current_tick
+        )
+
+        # Record stats
+        self.record_revenue(result)
+
+        return result['amount_collected']
+
+    def record_revenue(self, result: "TaxCollectionResult"):
         """
-        Records revenue statistics WITHOUT attempting collection (No Asset Modification).
-        Used when funds are transferred via SettlementSystem manually.
+        [NEW] Updates the government's internal ledgers based on a verified
+        TaxCollectionResult DTO.
         """
-        self.tax_agency.record_revenue(self, amount, tax_type, payer_id, current_tick)
+        if not result['success'] or result['amount_collected'] <= 0:
+            return
+
+        amount = result['amount_collected']
+        tax_type = result['tax_type']
+        payer_id = result['payer_id']
+
+        self.total_collected_tax += amount
+        self.revenue_this_tick += amount
+        self.tax_revenue[tax_type] = (
+            self.tax_revenue.get(tax_type, 0.0) + amount
+        )
+        self.current_tick_stats["tax_revenue"][tax_type] = (
+            self.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
+        )
+        self.current_tick_stats["total_collected"] += amount
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -381,26 +413,25 @@ class Government:
                 continue
 
             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
-                # A. Wealth Tax
+                # A. Wealth Tax (Synchronous & Atomic)
                 net_worth = agent.assets
                 if net_worth > wealth_threshold:
                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
+                    # Ensure we don't tax more than they have (safety, though collect_tax checks too)
                     tax_amount = min(tax_amount, agent.assets)
 
-                    if tax_amount > 0:
-                        # Generate Tax Transaction
-                        tx = Transaction(
-                            buyer_id=agent.id,
-                            seller_id=self.id,
-                            item_id="wealth_tax",
-                            quantity=1.0,
-                            price=tax_amount,
-                            market_id="system",
-                            transaction_type="tax",
-                            time=current_tick
+                    if tax_amount > 0 and self.settlement_system:
+                        result = self.tax_agency.collect_tax(
+                            payer=agent,
+                            payee=self,
+                            amount=tax_amount,
+                            tax_type="wealth_tax",
+                            settlement_system=self.settlement_system,
+                            current_tick=current_tick
                         )
-                        transactions.append(tx)
-                        total_wealth_tax += tax_amount
+                        self.record_revenue(result)
+                        if result['success']:
+                             total_wealth_tax += result['amount_collected']
 
                 # B. Unemployment Benefit
                 if not agent.is_employed:
