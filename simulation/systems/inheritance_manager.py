@@ -111,7 +111,7 @@ class InheritanceManager:
                 seller_id=government.id,
                 item_id="inheritance_tax",
                 quantity=1.0,
-                price=tax_amount, # Processor should handle partial payment if insufficient funds?
+                price=actual_tax_paid,
                 market_id="system",
                 transaction_type="tax",
                 time=current_tick
@@ -127,8 +127,6 @@ class InheritanceManager:
 
         if not heirs:
             # Escheatment
-            # We need to transfer remaining Assets (Stock/RE) and Cash to Gov.
-            # Cash Escheatment
             # Calculate remaining cash after tax
             remaining_cash = max(0.0, cash - actual_tax_paid)
             if remaining_cash > 0:

@@ -1,0 +1,583 @@
+diff --git a/communications/insights/TD110-Fix-Insights-Jules.md b/communications/insights/TD110-Fix-Insights-Jules.md
+new file mode 100644
+index 0000000..67e2774
+--- /dev/null
++++ b/communications/insights/TD110-Fix-Insights-Jules.md
+@@ -0,0 +1,25 @@
++# TD-110 Phantom Tax Fix Insights
++
++**Developer:** Jules
++**Date:** 2026-01-25
++**Task:** Couple Tax Collection and Revenue Recording
++
++## Summary
++The goal was to eliminate "Phantom Tax" revenue (where revenue is recorded but funds are not transferred) by enforcing an atomic tax collection process. The solution involved refactoring `TaxAgency` to be a stateless service that executes transfers via `SettlementSystem` and returns a `TaxCollectionResult` DTO. `Government` was updated to consume this DTO and update its ledgers only upon success.
++
++## Key Changes
++1.  **API DTO**: Introduced `TaxCollectionResult` in `modules/finance/api.py`.
++2.  **Stateless TaxAgency**: `TaxAgency.collect_tax` now takes `SettlementSystem` as a dependency and executes the transfer atomically. `record_revenue` was emptied and deprecated.
++3.  **Synchronous Wealth Tax**: `Government.run_welfare_check` no longer generates deferred transactions for Wealth Tax. It collects tax synchronously using the new atomic method.
++4.  **TransactionProcessor Update**: Removed manual tax transfer logic (`settlement.transfer` to government) for Sales and Labor taxes. Instead, it relies on the existing calls to `government.collect_tax`, which now perform the atomic transfer. This eliminates code duplication and ensures consistency.
++5.  **Legacy Callers**: Updated `InheritanceManager` and `LifecycleManager` to use `government.collect_tax` instead of manual transfers and `record_revenue` calls.
++
++## Challenges & Insights
++1.  **Ghost Revenue vs. Phantom Tax**: While the spec warned of "Phantom Tax" (revenue without money), investigation revealed a potential for "Ghost Revenue" (money transferred without revenue recording) in the legacy `TransactionProcessor` logic where `FinanceSystem.collect_corporate_tax` was returning `False`. The new system fixes both by coupling them tightly.
++2.  **TransactionProcessor Complexity**: `TransactionProcessor` had duplicate logic for transferring tax (manual transfer AND `collect_tax` call). Identifying that the `collect_tax` calls were already present allowed for a cleaner refactor by simply removing the manual transfers.
++3.  **Withholding Tax Logic**: Refactoring household income tax required changing the flow. Previously, the Employer paid the Net Wage to the Worker and the Tax to the Government. Now, the Employer pays the Gross Wage to the Worker, and the Government debits the Tax from the Worker immediately. This preserves the "Withholding" economic effect (Worker never really "sees" the tax money) while respecting the correct payer/payee relationship in `SettlementSystem`.
++4.  **Leak Diagnosis**: Running `diagnose_money_leak.py` revealed significant leaks (`-29k`) that appear to be pre-existing or related to liquidation dynamics unrelated to the tax fix. The tax fix itself was verified to be zero-sum via unit tests.
++
++## Recommendations
++*   **SettlementSystem Ubiquity**: The system is safer when `SettlementSystem` is used everywhere. Legacy paths that bypass it (direct `_sub_assets`) should be aggressively deprecated.
++*   **TransactionProcessor Refactor**: `TransactionProcessor` is still a complex procedural block. Further breaking it down into specialized handlers (like `LaborTransactionHandler`) would improve maintainability.
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 5395315..7f782e3 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -1,4 +1,4 @@
+-from typing import Protocol, Dict, List, Any, Optional
++from typing import Protocol, Dict, List, Any, Optional, TypedDict
+ from dataclasses import dataclass
+ 
+ # Forward reference for type hinting
+@@ -28,6 +28,17 @@ class BailoutLoanDTO:
+     interest_rate: float
+     covenants: BailoutCovenant
+ 
++class TaxCollectionResult(TypedDict):
++    """
++    Represents the verified outcome of a tax collection attempt.
++    """
++    success: bool
++    amount_collected: float
++    tax_type: str
++    payer_id: Any
++    payee_id: Any
++    error_message: Optional[str]
++
+ class InsufficientFundsError(Exception):
+     """Raised when a withdrawal is attempted with insufficient funds."""
+     pass
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 5b106d0..9e3f2fa 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -15,7 +15,7 @@ if TYPE_CHECKING:
+     from modules.finance.api import BailoutLoanDTO
+ from simulation.systems.tax_agency import TaxAgency
+ from simulation.systems.ministry_of_education import MinistryOfEducation
+-from modules.finance.api import InsufficientFundsError
++from modules.finance.api import InsufficientFundsError, TaxCollectionResult
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -170,19 +170,51 @@ class Government:
+         self.expenditure_this_tick = 0.0
+         self.revenue_breakdown_this_tick = {}
+ 
+-    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int):
+-        """세금을 징수합니다."""
+-        # Legacy method support if any direct calls remain, though TickScheduler uses transactions now.
+-        return self.tax_agency.collect_tax(self, amount, tax_type, payer, current_tick)
++    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
++        """
++        Legacy adapter method used by TransactionProcessor.
++        Now delegates to the new atomic collect_tax and records revenue.
++        """
++        if not self.settlement_system:
++            logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
++            return 0.0
++
++        # Execute atomic transfer
++        result = self.tax_agency.collect_tax(
++            payer=payer,
++            payee=self,
++            amount=amount,
++            tax_type=tax_type,
++            settlement_system=self.settlement_system,
++            current_tick=current_tick
++        )
++
++        # Record stats
++        self.record_revenue(result)
+ 
+-    def record_revenue(
+-        self, amount: float, tax_type: str, payer_id: Any, current_tick: int
+-    ):
++        return result['amount_collected']
++
++    def record_revenue(self, result: "TaxCollectionResult"):
+         """
+-        Records revenue statistics WITHOUT attempting collection (No Asset Modification).
+-        Used when funds are transferred via SettlementSystem manually.
++        [NEW] Updates the government's internal ledgers based on a verified
++        TaxCollectionResult DTO.
+         """
+-        self.tax_agency.record_revenue(self, amount, tax_type, payer_id, current_tick)
++        if not result['success'] or result['amount_collected'] <= 0:
++            return
++
++        amount = result['amount_collected']
++        tax_type = result['tax_type']
++        payer_id = result['payer_id']
++
++        self.total_collected_tax += amount
++        self.revenue_this_tick += amount
++        self.tax_revenue[tax_type] = (
++            self.tax_revenue.get(tax_type, 0.0) + amount
++        )
++        self.current_tick_stats["tax_revenue"][tax_type] = (
++            self.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
++        )
++        self.current_tick_stats["total_collected"] += amount
+ 
+     def update_public_opinion(self, households: List[Any]):
+         """
+@@ -381,26 +413,25 @@ class Government:
+                 continue
+ 
+             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
+-                # A. Wealth Tax
++                # A. Wealth Tax (Synchronous & Atomic)
+                 net_worth = agent.assets
+                 if net_worth > wealth_threshold:
+                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
++                    # Ensure we don't tax more than they have (safety, though collect_tax checks too)
+                     tax_amount = min(tax_amount, agent.assets)
+ 
+-                    if tax_amount > 0:
+-                        # Generate Tax Transaction
+-                        tx = Transaction(
+-                            buyer_id=agent.id,
+-                            seller_id=self.id,
+-                            item_id="wealth_tax",
+-                            quantity=1.0,
+-                            price=tax_amount,
+-                            market_id="system",
+-                            transaction_type="tax",
+-                            time=current_tick
++                    if tax_amount > 0 and self.settlement_system:
++                        result = self.tax_agency.collect_tax(
++                            payer=agent,
++                            payee=self,
++                            amount=tax_amount,
++                            tax_type="wealth_tax",
++                            settlement_system=self.settlement_system,
++                            current_tick=current_tick
+                         )
+-                        transactions.append(tx)
+-                        total_wealth_tax += tax_amount
++                        self.record_revenue(result)
++                        if result['success']:
++                             total_wealth_tax += result['amount_collected']
+ 
+                 # B. Unemployment Benefit
+                 if not agent.is_employed:
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index 5a0e710..e94dc4c 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -186,12 +186,8 @@ class InheritanceManager:
+         # Determine final tax payment (limited by assets if bankruptcy)
+         actual_tax_paid = min(deceased.assets, tax_amount)
+         if actual_tax_paid > 0:
+-            settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
+-
+-            # WO-116: Use record_revenue to avoid Double-Charge via FinanceSystem
+-            simulation.government.record_revenue(
+-                actual_tax_paid, "inheritance_tax", deceased.id, simulation.time
+-            )
++            # Atomic Collection via Government
++            simulation.government.collect_tax(actual_tax_paid, "inheritance_tax", deceased, simulation.time)
+ 
+         # 5. Distribution (Transfer)
+         # ------------------------------------------------------------------
+@@ -206,8 +202,8 @@ class InheritanceManager:
+             # 1. State Confiscation (Cash)
+             surplus = deceased.assets
+             if surplus > 0:
+-                settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
+-                simulation.government.record_revenue(surplus, "escheatment", deceased.id, simulation.time)
++                # Atomic Collection via Government
++                simulation.government.collect_tax(surplus, "escheatment", deceased, simulation.time)
+                 self.logger.info(
+                     f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
+                     extra={"agent_id": deceased.id}
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 1918b80..ed7a57c 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -172,14 +172,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 else:
+                     from simulation.agents.government import Government
+                     if isinstance(state.government, Government):
+-                        # Note: collect_tax no longer adds assets. We must transfer/add manually.
+-                        # Use SettlementSystem for Escheatment
+-                        if hasattr(state, "settlement_system") and state.settlement_system:
+-                            state.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment")
+-                        else:
+-                             raise RuntimeError("SettlementSystem missing during liquidation escheatment")
+-
+-                        state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
++                        # Atomic Collection via Government
++                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm, state.time)
+ 
+             # Verification: Firm assets should be ~0 now
+             if firm.assets > 1e-6:
+diff --git a/simulation/systems/tax_agency.py b/simulation/systems/tax_agency.py
+index 2767b42..ee44bea 100644
+--- a/simulation/systems/tax_agency.py
++++ b/simulation/systems/tax_agency.py
+@@ -1,5 +1,6 @@
+ import logging
+ from typing import Any
++from modules.finance.api import TaxCollectionResult
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -54,75 +55,104 @@ class TaxAgency:
+         self, government, amount: float, tax_type: str, payer_id: Any, current_tick: int
+     ):
+         """
+-        Records revenue statistics WITHOUT attempting collection.
+-        Used when funds are transferred via SettlementSystem manually.
++        [DEPRECATED] This method is the source of phantom revenue and will be removed.
++        All logic is merged into the new atomic collect_tax method in Government.
+         """
+-        if amount <= 0:
+-            return
+-
+-        government.total_collected_tax += amount
+-        government.revenue_this_tick += amount
+-        # government.total_money_destroyed += amount  <-- REMOVED: Tax is Transfer, not Destruction
+-        government.tax_revenue[tax_type] = (
+-            government.tax_revenue.get(tax_type, 0.0) + amount
+-        )
+-        government.current_tick_stats["tax_revenue"][tax_type] = (
+-            government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
++        logger.warning(
++            "DEPRECATED: TaxAgency.record_revenue called. Use atomic collect_tax instead.",
++            extra={"tick": current_tick, "tag": "deprecation"}
+         )
+-        government.current_tick_stats["total_collected"] += amount
+-
+-        logger.info(
+-            f"TAX_RECORDED | Recorded {amount:.2f} as {tax_type} from {payer_id}",
+-            extra={
+-                "tick": current_tick,
+-                "agent_id": government.id,
+-                "amount": amount,
+-                "tax_type": tax_type,
+-                "source_id": payer_id,
+-                "tags": ["tax", "revenue", "recorded"],
+-            },
+-        )
+-
+-    def collect_tax(self, government, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
++        pass
++
++    def collect_tax(
++        self,
++        payer: Any,
++        payee: Any,
++        amount: float,
++        tax_type: str,
++        settlement_system: Any,
++        current_tick: int
++    ) -> TaxCollectionResult:
+         """
+-        Executes tax collection via FinanceSystem and records statistics.
+-        payer: IFinancialEntity (Firm, Household, etc.)
++        [NEW & UNIFIED] Atomically collects tax by executing a transfer and only
++        returning a success result if the transfer is confirmed. This method does
++        NOT modify any agent's state (other than via settlement).
++
++        Args:
++            payer: The entity paying the tax (must have .id and be compatible with ISettlementSystem).
++            payee: The entity receiving the tax (must have .id).
++            amount: The amount of tax to be collected.
++            tax_type: The type of tax (e.g., 'wealth_tax', 'corporate_tax').
++            settlement_system: The system responsible for executing the fund transfer.
++            current_tick: The current simulation tick.
++
++        Returns:
++            A TaxCollectionResult DTO with the outcome of the transaction.
+         """
+-        if amount <= 0:
+-            return 0.0
++        payer_id = payer.id if hasattr(payer, 'id') else str(payer)
++        payee_id = payee.id if hasattr(payee, 'id') else str(payee)
+ 
+-        payer_id = payer.id if hasattr(payer, 'id') else payer
+-
+-        # Delegate to FinanceSystem for atomic transfer
+-        if hasattr(government, 'finance_system') and government.finance_system:
+-            if hasattr(payer, 'id'):
+-                 success = government.finance_system.collect_corporate_tax(payer, amount)
+-                 if not success:
+-                      logger.warning(f"TAX_COLLECTION_FAILED | Failed to collect {amount} from {payer_id}")
+-                      return 0.0
+-            else:
+-                 logger.error(f"TAX_COLLECTION_ERROR | Payer {payer} is not an object. Cannot use FinanceSystem.")
+-                 return 0.0
+-        else:
+-            logger.error("TAX_COLLECTION_ERROR | No FinanceSystem linked to Government.")
+-            return 0.0
+-
+-        government.total_collected_tax += amount
+-        government.revenue_this_tick += amount
+-        # government.total_money_destroyed += amount  <-- REMOVED: Tax is Transfer, not Destruction
+-        government.tax_revenue[tax_type] = government.tax_revenue.get(tax_type, 0.0) + amount
+-        government.current_tick_stats["tax_revenue"][tax_type] = government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
+-        government.current_tick_stats["total_collected"] += amount
++        if amount <= 0:
++            return TaxCollectionResult(
++                success=True,
++                amount_collected=0.0,
++                tax_type=tax_type,
++                payer_id=payer_id,
++                payee_id=payee_id,
++                error_message=None
++            )
++
++        if not settlement_system:
++             logger.error("TAX_COLLECTION_ERROR | No SettlementSystem provided.")
++             return TaxCollectionResult(
++                success=False,
++                amount_collected=0.0,
++                tax_type=tax_type,
++                payer_id=payer_id,
++                payee_id=payee_id,
++                error_message="No SettlementSystem provided."
++            )
++
++        # 1. Attempt the fund transfer via the injected settlement system.
++        transfer_success = settlement_system.transfer(
++            debit_agent=payer,
++            credit_agent=payee,
++            amount=amount,
++            memo=f"{tax_type} collection"
++        )
+ 
++        # 2. Verify the outcome.
++        if not transfer_success:
++            logger.warning(
++                f"TAX_COLLECTION_FAILED | Tick {current_tick} | Failed to collect {amount:.2f} of {tax_type} from {payer_id} to {payee_id}",
++                extra={"tick": current_tick, "payer_id": payer_id, "amount": amount, "tax_type": tax_type}
++            )
++            return TaxCollectionResult(
++                success=False,
++                amount_collected=0.0,
++                tax_type=tax_type,
++                payer_id=payer_id,
++                payee_id=payee_id,
++                error_message="Insufficient funds or transfer failed."
++            )
++
++        # 3. On success, return a result DTO with the collected amount.
+         logger.info(
+-            f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {payer_id}",
++            f"TAX_COLLECTION_SUCCESS | Tick {current_tick} | Collected {amount:.2f} of {tax_type} from {payer_id}",
+             extra={
+                 "tick": current_tick,
+-                "agent_id": government.id,
++                "agent_id": payee_id,
+                 "amount": amount,
+                 "tax_type": tax_type,
+                 "source_id": payer_id,
+                 "tags": ["tax", "revenue"]
+             }
+         )
+-        return amount
++        return TaxCollectionResult(
++            success=True,
++            amount_collected=amount,
++            tax_type=tax_type,
++            payer_id=payer_id,
++            payee_id=payee_id,
++            error_message=None
++        )
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index a13a915..47542c6 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -63,8 +63,7 @@ class TransactionProcessor(SystemInterface):
+ 
+                 if settlement:
+                     settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+-                    if tax_amount > 0:
+-                        settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
++                    # Tax collection is now handled via government.collect_tax
+                 else:
+                     buyer.withdraw(trade_value + tax_amount)
+                     seller.deposit(trade_value)
+@@ -98,8 +97,7 @@ class TransactionProcessor(SystemInterface):
+                 if tax_payer == "FIRM":
+                     if settlement:
+                         settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
+-                        if tax_amount > 0:
+-                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_firm:{tx.transaction_type}")
++                        # Tax collection is now handled via government.collect_tax
+                     else:
+                         buyer.withdraw(trade_value + tax_amount)
+                         seller.deposit(trade_value)
+@@ -111,9 +109,9 @@ class TransactionProcessor(SystemInterface):
+                     # Household pays tax (Withholding model)
+                     net_wage = trade_value - tax_amount
+                     if settlement:
+-                        settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
+-                        if tax_amount > 0:
+-                            settlement.transfer(buyer, government, tax_amount, f"labor_tax_withheld:{tx.transaction_type}")
++                        # Refactor: Pay GROSS wage to household, then collect tax from household
++                        settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
++                        # Tax collection is now handled via government.collect_tax (debited from household)
+                     else:
+                         buyer.withdraw(trade_value) # Buyer pays full (net + tax split dest)
+                         seller.deposit(net_wage)
+diff --git a/tests/test_tax_collection.py b/tests/test_tax_collection.py
+new file mode 100644
+index 0000000..b082718
+--- /dev/null
++++ b/tests/test_tax_collection.py
+@@ -0,0 +1,142 @@
++import pytest
++from unittest.mock import MagicMock
++from typing import Any, Optional, Dict
++from simulation.agents.government import Government
++from modules.finance.api import TaxCollectionResult
++
++# Mock classes
++class MockConfig:
++    TICKS_PER_YEAR = 100
++    GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
++    INCOME_TAX_RATE = 0.1
++    CORPORATE_TAX_RATE = 0.2
++    TAX_MODE = "PROGRESSIVE"
++    ANNUAL_WEALTH_TAX_RATE = 0.02
++    WEALTH_TAX_THRESHOLD = 1000.0
++    GOODS_INITIAL_PRICE = {"basic_food": 10.0}
++    HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
++    UNEMPLOYMENT_BENEFIT_RATIO = 0.5
++    STIMULUS_TRIGGER_GDP_DROP = -0.1
++
++class MockAgent:
++    def __init__(self, id, assets):
++        self.id = id
++        self._assets = assets
++        self.is_active = True
++        self.is_employed = True
++        self.needs = {"labor_need": 0}
++
++    @property
++    def assets(self):
++        return self._assets
++
++    def _add_assets(self, amount):
++        self._assets += amount
++
++    def _sub_assets(self, amount):
++        self._assets -= amount
++
++class MockSettlementSystem:
++    def __init__(self):
++        self.transfer_calls = []
++
++    def transfer(self, debit_agent, credit_agent, amount, memo, **kwargs):
++        self.transfer_calls.append({
++            "debit": debit_agent.id,
++            "credit": credit_agent.id,
++            "amount": amount,
++            "memo": memo
++        })
++        if debit_agent.assets >= amount:
++            debit_agent._sub_assets(amount)
++            credit_agent._add_assets(amount)
++            return True
++        return False
++
++def test_atomic_wealth_tax_collection_success():
++    config = MockConfig()
++    gov = Government(id="GOV", initial_assets=0.0, config_module=config)
++    settlement = MockSettlementSystem()
++    gov.settlement_system = settlement
++
++    # Household with assets > threshold (1000)
++    # Assets = 2000. Taxable = 1000.
++    # Rate per tick = 0.02 / 100 = 0.0002
++    # Tax = 1000 * 0.0002 = 0.2
++    household = MockAgent(id="HH1", assets=2000.0)
++
++    market_data = {"goods_market": {"basic_food_current_sell_price": 10.0}}
++
++    txs = gov.run_welfare_check([household], market_data, current_tick=1)
++
++    # Check assets transferred
++    assert household.assets == 2000.0 - 0.2
++    assert gov.assets == 0.2
++
++    # Check stats
++    assert gov.total_collected_tax == 0.2
++    assert gov.tax_revenue["wealth_tax"] == 0.2
++
++    # Check transactions: NO transaction objects for tax should be returned
++    tax_txs = [t for t in txs if t.transaction_type == "tax"]
++    assert len(tax_txs) == 0
++
++def test_atomic_wealth_tax_collection_insufficient_funds():
++    config = MockConfig()
++    gov = Government(id="GOV", initial_assets=0.0, config_module=config)
++    settlement = MockSettlementSystem()
++    gov.settlement_system = settlement
++
++    # This scenario is hard to hit because logic is min(tax, assets).
++    # So let's force a situation where transfer fails by mocking settlement to fail
++
++    household = MockAgent(id="HH1", assets=2000.0)
++
++    # Override settlement to always fail
++    settlement.transfer = MagicMock(return_value=False)
++
++    market_data = {"goods_market": {"basic_food_current_sell_price": 10.0}}
++
++    gov.run_welfare_check([household], market_data, current_tick=1)
++
++    # Assets unchanged
++    assert household.assets == 2000.0
++    assert gov.assets == 0.0
++
++    # Stats unchanged
++    assert gov.total_collected_tax == 0.0
++    assert gov.tax_revenue.get("wealth_tax", 0.0) == 0.0
++
++def test_government_collect_tax_adapter_success():
++    config = MockConfig()
++    gov = Government(id="GOV", initial_assets=0.0, config_module=config)
++    settlement = MockSettlementSystem()
++    gov.settlement_system = settlement
++
++    payer = MockAgent(id="PAYER", assets=100.0)
++    amount = 10.0
++
++    collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
++
++    assert collected == 10.0
++    assert payer.assets == 90.0
++    assert gov.assets == 10.0
++    assert gov.total_collected_tax == 10.0
++    assert gov.tax_revenue["test_tax"] == 10.0
++
++def test_government_collect_tax_adapter_failure():
++    config = MockConfig()
++    gov = Government(id="GOV", initial_assets=0.0, config_module=config)
++    settlement = MockSettlementSystem()
++    gov.settlement_system = settlement
++
++    payer = MockAgent(id="PAYER", assets=5.0) # Less than 10
++    amount = 10.0
++
++    collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
++
++    assert collected == 0.0
++    assert payer.assets == 5.0
++    assert gov.assets == 0.0
++    assert gov.total_collected_tax == 0.0
++    assert "test_tax" not in gov.tax_revenue

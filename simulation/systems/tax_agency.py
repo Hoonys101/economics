@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from modules.finance.api import TaxCollectionResult
 
 logger = logging.getLogger(__name__)
 
@@ -54,75 +55,104 @@ class TaxAgency:
         self, government, amount: float, tax_type: str, payer_id: Any, current_tick: int
     ):
         """
-        Records revenue statistics WITHOUT attempting collection.
-        Used when funds are transferred via SettlementSystem manually.
+        [DEPRECATED] This method is the source of phantom revenue and will be removed.
+        All logic is merged into the new atomic collect_tax method in Government.
         """
+        logger.warning(
+            "DEPRECATED: TaxAgency.record_revenue called. Use atomic collect_tax instead.",
+            extra={"tick": current_tick, "tag": "deprecation"}
+        )
+        pass
+
+    def collect_tax(
+        self,
+        payer: Any,
+        payee: Any,
+        amount: float,
+        tax_type: str,
+        settlement_system: Any,
+        current_tick: int
+    ) -> TaxCollectionResult:
+        """
+        [NEW & UNIFIED] Atomically collects tax by executing a transfer and only
+        returning a success result if the transfer is confirmed. This method does
+        NOT modify any agent's state (other than via settlement).
+
+        Args:
+            payer: The entity paying the tax (must have .id and be compatible with ISettlementSystem).
+            payee: The entity receiving the tax (must have .id).
+            amount: The amount of tax to be collected.
+            tax_type: The type of tax (e.g., 'wealth_tax', 'corporate_tax').
+            settlement_system: The system responsible for executing the fund transfer.
+            current_tick: The current simulation tick.
+
+        Returns:
+            A TaxCollectionResult DTO with the outcome of the transaction.
+        """
+        payer_id = payer.id if hasattr(payer, 'id') else str(payer)
+        payee_id = payee.id if hasattr(payee, 'id') else str(payee)
+
         if amount <= 0:
-            return
+            return TaxCollectionResult(
+                success=True,
+                amount_collected=0.0,
+                tax_type=tax_type,
+                payer_id=payer_id,
+                payee_id=payee_id,
+                error_message=None
+            )
 
-        government.total_collected_tax += amount
-        government.revenue_this_tick += amount
-        # government.total_money_destroyed += amount  <-- REMOVED: Tax is Transfer, not Destruction
-        government.tax_revenue[tax_type] = (
-            government.tax_revenue.get(tax_type, 0.0) + amount
-        )
-        government.current_tick_stats["tax_revenue"][tax_type] = (
-            government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
-        )
-        government.current_tick_stats["total_collected"] += amount
+        if not settlement_system:
+             logger.error("TAX_COLLECTION_ERROR | No SettlementSystem provided.")
+             return TaxCollectionResult(
+                success=False,
+                amount_collected=0.0,
+                tax_type=tax_type,
+                payer_id=payer_id,
+                payee_id=payee_id,
+                error_message="No SettlementSystem provided."
+            )
 
+        # 1. Attempt the fund transfer via the injected settlement system.
+        transfer_success = settlement_system.transfer(
+            debit_agent=payer,
+            credit_agent=payee,
+            amount=amount,
+            memo=f"{tax_type} collection"
+        )
+
+        # 2. Verify the outcome.
+        if not transfer_success:
+            logger.warning(
+                f"TAX_COLLECTION_FAILED | Tick {current_tick} | Failed to collect {amount:.2f} of {tax_type} from {payer_id} to {payee_id}",
+                extra={"tick": current_tick, "payer_id": payer_id, "amount": amount, "tax_type": tax_type}
+            )
+            return TaxCollectionResult(
+                success=False,
+                amount_collected=0.0,
+                tax_type=tax_type,
+                payer_id=payer_id,
+                payee_id=payee_id,
+                error_message="Insufficient funds or transfer failed."
+            )
+
+        # 3. On success, return a result DTO with the collected amount.
         logger.info(
-            f"TAX_RECORDED | Recorded {amount:.2f} as {tax_type} from {payer_id}",
+            f"TAX_COLLECTION_SUCCESS | Tick {current_tick} | Collected {amount:.2f} of {tax_type} from {payer_id}",
             extra={
                 "tick": current_tick,
-                "agent_id": government.id,
-                "amount": amount,
-                "tax_type": tax_type,
-                "source_id": payer_id,
-                "tags": ["tax", "revenue", "recorded"],
-            },
-        )
-
-    def collect_tax(self, government, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
-        """
-        Executes tax collection via FinanceSystem and records statistics.
-        payer: IFinancialEntity (Firm, Household, etc.)
-        """
-        if amount <= 0:
-            return 0.0
-
-        payer_id = payer.id if hasattr(payer, 'id') else payer
-
-        # Delegate to FinanceSystem for atomic transfer
-        if hasattr(government, 'finance_system') and government.finance_system:
-            if hasattr(payer, 'id'):
-                 success = government.finance_system.collect_corporate_tax(payer, amount)
-                 if not success:
-                      logger.warning(f"TAX_COLLECTION_FAILED | Failed to collect {amount} from {payer_id}")
-                      return 0.0
-            else:
-                 logger.error(f"TAX_COLLECTION_ERROR | Payer {payer} is not an object. Cannot use FinanceSystem.")
-                 return 0.0
-        else:
-            logger.error("TAX_COLLECTION_ERROR | No FinanceSystem linked to Government.")
-            return 0.0
-
-        government.total_collected_tax += amount
-        government.revenue_this_tick += amount
-        # government.total_money_destroyed += amount  <-- REMOVED: Tax is Transfer, not Destruction
-        government.tax_revenue[tax_type] = government.tax_revenue.get(tax_type, 0.0) + amount
-        government.current_tick_stats["tax_revenue"][tax_type] = government.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
-        government.current_tick_stats["total_collected"] += amount
-
-        logger.info(
-            f"TAX_COLLECTED | Collected {amount:.2f} as {tax_type} from {payer_id}",
-            extra={
-                "tick": current_tick,
-                "agent_id": government.id,
+                "agent_id": payee_id,
                 "amount": amount,
                 "tax_type": tax_type,
                 "source_id": payer_id,
                 "tags": ["tax", "revenue"]
             }
         )
-        return amount
+        return TaxCollectionResult(
+            success=True,
+            amount_collected=amount,
+            tax_type=tax_type,
+            payer_id=payer_id,
+            payee_id=payee_id,
+            error_message=None
+        )

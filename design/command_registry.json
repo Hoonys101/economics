@@ -4,12 +4,6 @@
     "updated": "2026-01-24",
     "author": "Antigravity"
   },
-  "fix_td110_phantom_tax": {
-    "command": "create",
-    "instruction": "Couple Tax Collection and Revenue Recording to prevent Phantom Tax.",
-    "title": "Fix_TD110_Phantom_Tax",
-    "file": "design/specs/TD110_TAX_FIX_SPEC.md"
-  },
   "reply_fix_td109": {
     "command": "send-message",
     "instruction": "Reviewer requested changes:\\n\\nGovernment.invest_infrastructure violates Sacred Sequence by mutating infrastructure_level directly in the Decision Phase.\\n\\nPlease refactor this to use SystemEffectsManager (e.g. add \u001bffect_type='infrastructure_boost' to Transaction metadata) so the state change happens ONLY after transaction success in the Processing Phase."

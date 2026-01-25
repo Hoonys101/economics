@@ -159,11 +159,11 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                                 state.settlement_system.transfer(firm, agent, distribution, "liquidation_dividend")
 
                 else:
-                    # Escheatment to Gov
-                    if hasattr(state, "settlement_system") and state.settlement_system:
-                         state.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment")
-                         state.government.record_revenue(total_cash, "liquidation_escheatment", firm.id, state.time)
+                    if hasattr(state, "government") and state.government:
+                        # Atomic Collection via Government (handles transfer and revenue recording)
+                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm, state.time)
 
+            # Verification: Firm assets should be ~0 now
             if firm.assets > 1e-6:
                  firm._sub_assets(firm.assets)
                  if hasattr(state.government, "total_money_destroyed"):

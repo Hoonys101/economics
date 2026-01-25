@@ -2,121 +2,13 @@
   "antigravity": {
     "project": "economics",
     "active_sessions": {
-      "939740966705037931": {
-        "title": "AUDIT-ECONOMIC-V2",
-        "initial_mission": "너는 경제 수사관(Forensic Auditor)이다. 'design/specs/AUDIT_SPEC_ECONOMIC.md' 명세서의 [복식부기] 및 [원자성] 원칙을 코드베이스에 투영하여 자산 이동 경로를 추적하라. | 1. Grep 패턴 `\\.assets\\s*[\\+\\-\\*\\/]?=`을 사용하여 시뮬레이션 폴더 전체를 검색하라. | 2. `FinanceSystem.transfer`를 거치지 않고 자산을 직접 수정하는 지점을 모두 리스트업하라. | 3. 특히 `inheritance_manager.py`의 상속 계산 잔차 증발 여부와 `transaction_processor.py`의 거래 원자성을 정밀 검증하라. | 4. 결과를 'design/gemini_output/audit_economic_v2.md'에 상세 보고하라. | 추가로, 작업 과정에서 발견한 기술 부채를 '실무자 보고서' 섹션에 포함하라."
+      "17963829443458868753": {
+        "title": "Fix_TD110_Phantom_Tax",
+        "initial_mission": "Couple Tax Collection and Revenue Recording to prevent Phantom Tax.\n\n[File Content: design/specs/TD1..."
       },
-      "5165098539568103978": {
-        "title": "AUDIT-PARITY-V2",
-        "initial_mission": "너는 제품 정합성 전문 감사관이다. 'design/specs/AUDIT_SPEC_PARITY.md'를 로드하고, 'project_status.md'의 완료 항목들과 'simulation/' 내 실제 코드를 대조하라. | 1. 'Chemical Fertilizer (TFP x3.0)', 'TD-085 (Mutual Exclusivity)', 'TD-086 (Newborn Engine)'이 명세대로 구현되었는지 검증하라. | 2. 완료로 표시되었으나 로직이 미비한 'Ghost Implementation'을 식별하라. | 3. 수치화된 Parity Score를 포함하여 'design/gemini_output/audit_parity_v2.md'로 제출하라. | 발견된 괴리는 실무자 보고서에 기록하라."
-      },
-      "536275271873576648": {
-        "title": "AUDIT-STRUCTURAL-V2",
-        "initial_mission": "너는 시니어 시스템 아키텍트이다. 'design/specs/AUDIT_SPEC_STRUCTURAL.md'를 기반으로 SoC 원칙 준수 여부를 감사하라. | 1. 800라인 이상의 God Class 후보를 식별하라. | 2. `make_decision` 호출부에서 DTO가 아닌 에이전트 인스턴스(self)를 직접 전달하는 'Leaky Abstraction' 지점을 검색하라. | 3. `tick_scheduler.py`가 Sacred Sequence를 준수하는지 검증하라. | 4. 결과를 'design/gemini_output/audit_structural_v2.md'에 보고하라. | 구조적 결함은 실무자 보고서에 상세히 기술하라."
-      },
-      "6487612405285359418": {
-        "title": "WO-112-Settlement-System-Implementation",
-        "initial_mission": "경제 엔진의 무결성을 회복하기 위한 'SettlementSystem'을 구현하고 전체 코드를 리팩토링하라. | 1. `design/specs/ECONOMIC_PURITY_REFORMS_SPEC.md`와 `design/work_orders/WO-112-Settlement-System-Spec.md`를 필독하라. | 2. 모든 에이전트의 `assets`를 `_assets`로 캡슐화하고 외부 수정을 차단하라. | 3. `SettlementSystem`을 통해 모든 자산 이전을 원자적으로 통합하라 (TransactionProcessor, InheritanceManager, Government 등). | 4. 상속 시 발생하는 소수점 잔차를 국고로 귀속시켜 증발을 막아라. | 5. 작업 중 발견한 기술적 제약이나 추가 부채는 '실무자 보고서'에 상세히 기록하라. | **주의**: 기존 테스트 코드가 `agent.assets +=`를 사용하고 있다면 이를 시스템 호출로 수정해야 한다."
-      },
-      "5173331688343789029": {
-        "title": "WO-113-Sovereign-Debt",
-        "initial_mission": "Phase 26.5: Sovereign Debt & Corporate Finance 시스템을 구현하라. | 1. `design/specs/Phase26-Sovereign-Debt-Spec.md`와 `design/work_orders/WO-113-Sovereign-Debt.md`를 필독하라. | 2. `FiscalMonitor`를 구현하여 정부의 재정 건전성을 모니터링하라. | 3. `FinanceSystem`에 국채 발행(`issue_treasury_bonds`)과 법인세 징수(`collect_corporate_tax`) 로직을 구현하되, 반드시 `SettlementSystem`을 사용해 원자적으로 처리하라. | 4. `Government` 에이전트에서 직접적인 자산 수정을 모두 제거하고 `FinanceSystem`에 위임하라. | 5. '실무자 보고서'에 구현 중 발견한 특이사항을 기록하라."
-      },
-      "2513104936953701906": {
-        "title": "WO-114_DTO_Purity_Gate_Completion",
-        "initial_mission": "Work Order WO-114-DTO-Purity-Gate-Completion.md에 따라 DTO Purity Gate 리팩토링을 완료하라. | 1. 모든 의사결정 엔진이 context.state와 context.config만 사용하도록 전환. | 2. 에이전트 인스턴스 직접 참조 제거. | 3. 단위 테스트 수정 및 Purity Gate 검증 테스트 추가. | 작업 완료 후 실무자 보고서를 제출하라."
-      },
-      "16428660261459271791": {
-        "title": "WO-115_Great_Reset_Stability_Verification",
-        "initial_mission": "Work Order WO-115-Great-Reset-Stress-Test.md에 따라 시스템 안정성을 검증하라. | 1. 1,000틱 롱런 시뮬레이션 스크립트 작성 및 실행. | 2. M2 통화량 무결성(Zero-Sum) 및 부채 대 GDP 비율 모니터링. | 3. 발견된 '수치적 누출'이나 불안정성 보고."
-      },
-      "2810292832470995059": {
-        "title": "WO-116_Asset_Mutation_Cleanup",
-        "initial_mission": "Work Order WO-116-Asset-Mutation-Cleanup.md에 따라 자산 수정 로직을 전수 조사하고 청소하라. | 1. `_assets +=`, `_add_assets` 등 직접 수정 코드 검색 및 정산 시스템 호출로 교체. | 2. `InheritanceManager`, `LifecycleManager` 등 핵심 시스템의 원자성 보장 확인. | 3. 발견된 '그림자 로직' 보고."
-      },
-      "16199040358203801629": {
-        "title": "WO-116_Strict_Mode_Refactor",
-        "initial_mission": "PR 리뷰 결과에 따라 자산 수정 리팩토링을 보완하라. | 1. 모든 시스템에 SettlementSystem 'Strict Mode'를 적용하고, 정산 시스템 호출 없이 자산을 수정하거나 transfer 실패 시 수동으로 복구하는 등의 레거시 폴백(Fallback) 로직을 전수 제거하라."
-      },
-      "17585728839844634482": {
-        "title": "WO-116_Strict_Mode_Refactor",
-        "initial_mission": "PR 리뷰 결과에 따라 자산 수정 리팩토링을 보완하라. | 1. 모든 시스템에 SettlementSystem 'Strict Mode'를 적용하고, 정산 시스템 호출 없이 자산을 수정하거나 transfer 실패 시 수동으로 복구하는 등의 레거시 폴백(Fallback) 로직을 전수 제거하라."
-      },
-      "3577359281312705663": {
-        "title": "WO-116_Stop_Money_Leaks",
-        "initial_mission": "Fix critical money leaks by enforcing SettlementSystem strictly. Follow WO-116-Asset-Mutation-Cleanup.md. 1. Refactor InheritanceManager, MAManager, and FinanceDepartment to use SettlementSystem.transfer (No fallbacks allowed). 2. Normalize TickScheduler sequence to move Profit/Tax/Welfare transfers into the transaction-safe phase. 3. Fix Bank.check_solvency direct mutation. 4. Verify results with verify_great_reset_stability.py. Zero-sum integrity is the TOP PRIORITY."
-      },
-      "842822366014658805": {
-        "title": "WO-116_Stop_Money_Leaks_V2",
-        "initial_mission": "Plug critical money leaks by replacing direct mutations with SettlementSystem.transfer. Reference WO-116-Asset-Mutation-Cleanup.md. 1. Inheritence/M&A: Replace `deceased._sub_assets()` or `predator.assets -=` with `settlement.transfer()`. 2. FinanceDept: Use settlement for dividends/severance. 3. Normalize TickScheduler: ensure all asset movements happen in Transaction Phase. 4. Verify Zero-Sum with verify_great_reset_stability.py. (God Class Splitting is a separate Phase 2 TODO)."
-      },
-      "15617154995968631919": {
-        "title": "WO-116_Stop_Money_Leaks_V2",
-        "initial_mission": "Plug critical money leaks by replacing direct mutations with SettlementSystem.transfer. Reference WO-116-Asset-Mutation-Cleanup.md. 1. Inheritence/M&A: Replace `deceased._sub_assets()` or `predator.assets -=` with `settlement.transfer()`. 2. FinanceDept: Use settlement for dividends/severance. 3. Normalize TickScheduler: ensure all asset movements happen in Transaction Phase. 4. Verify Zero-Sum with verify_great_reset_stability.py. (God Class Splitting is a separate Phase 2 TODO)."
-      },
-      "16229951468194679232": {
-        "title": "WO-116_PhaseA_Component_Purity",
-        "initial_mission": "Execute WO-116 Phase A ONLY. 1. Refactor `InheritanceManager`, `MAManager`, `FinanceDepartment`, and `Bank.check_solvency` to use `SettlementSystem.transfer` instead of direct mutations. 2. DO NOT modify `TickScheduler`. 3. Verify with `verify_great_reset_stability.py`."
-      },
-      "8635535602606687900": {
-        "title": "WO-116_PhaseA_Component_Purity",
-        "initial_mission": "Execute WO-116 Phase A ONLY. 1. Refactor `InheritanceManager`, `MAManager`, `FinanceDepartment`, and `Bank.check_solvency` to use `SettlementSystem.transfer` instead of direct mutations. 2. DO NOT modify `TickScheduler`. 3. Verification: Ensure simulation runs without crashing (Smoke Test). Strict Zero-Sum check is deferred to Phase B."
-      },
-      "2873398772113156484": {
-        "title": "WO-116_PhaseB_Normalization",
-        "initial_mission": "Execute WO-116 Phase B followed by the spec in `design/specs/WO116_PHASE_B_SPEC.md`. Focus on Tick Sequence Normalization."
-      },
-      "15885642735639860418": {
-        "title": "WO-116_Leak_Hunter",
-        "initial_mission": "Fix the -750k M2 leak! Read 'design/specs/WO116_HOTFIX_LEAK_PLUGGING.md'. Fix obvious reversals, then summarize: 1. Rejected Hypotheses (what was NOT leaking), 2. New Hypotheses (deeper issues found), 3. Solved Problems. Priority: Integrity Analysis & Reporting."
-      },
-      "12327123477253940959": {
-        "title": "WO-116_Leak_Hunter",
-        "initial_mission": "Loop 3: Credit Creation Integrity. READ 'design/specs/WO116_LOOP3_HUNT.md'. Patch Bank.grant_loan to record created credit as 'money_issued'. This is likely the cause of the remaining drift. Verify Zero-Sum Stability."
-      },
-      "14525228153841719624": {
-        "title": "WO-116_Leak_Hunter",
-        "initial_mission": "Loop 3.5: Refine Verification Tool. READ 'design/specs/WO116_LOOP3_5_TOOLING.md'. Modify 'scripts/diagnose_money_leak.py' to suppress engine noise and perform self-verification. Success = Clean summary output + [SUCCESS/FAIL] verdict."
-      },
-      "6817026115371816099": {
-        "title": "WO-116_Leak_Hunter",
-        "initial_mission": "Loop 4: Erasing Shadow Mutations. READ 'design/specs/WO116_LOOP4_SHADOW_FIX.md'. The forensic tool proved that -63k leaks occur without transactions. Fix the 5 suspect files (Inheritance, Liquidation, Bank, Gov, BaseAgent) to ensure 100% ledger purity. Tick 1 must be 0.0000 leak."
-      },
-      "7165644413044139156": {
-        "title": "WO-116_Root_Cause_Profiler",
-        "initial_mission": "Deep Root Cause Profiling. 1. Read 'design/REPORTS/FINAL_V4_VERDICT.md'. 2. Audit the 5 core files (TickScheduler, Lifecycle, TaxAgency, Gov, Bank). 3. Identify the EXACT line causing the -185k Tick 1 deletion. 4. Find the math error for +293.3120 anomaly. 5. Fix the de-registration bug in LifecycleManager. Output findings to 'design/audits/ROOT_CAUSE_PROFILE.md'."
-      },
-      "13173314960969369906": {
-        "title": "WO-116_Zero_Sum_Final_Sprint",
-        "initial_mission": "The Zero-Sum Final Sprint. 1. Read 'design/REPORTS/final_zero_sum_check.log'. 2. Focus on the EXACT recurring leak of +299.7760. 3. Audit 'simulation/agents/government.py' (invest_infrastructure) and 'simulation/systems/reflux_system.py'. 4. Find why 5000.0 infrastructure spending results in a +299.7760 drift. 5. Fix the math to reach 0.0000 leak. Output to 'design/audits/FINAL_DRIFT_FIX.md'."
-      },
-      "7958702835499376780": {
-        "title": "WO-116_Zero_Sum_Final_Sprint",
-        "initial_mission": "The Zero-Sum Final Sprint. 1. Read 'design/REPORTS/final_zero_sum_check.log'. 2. Focus on the EXACT recurring leak of +299.7760. 3. Audit 'simulation/agents/government.py' (invest_infrastructure) and 'simulation/systems/reflux_system.py'. 4. Find why 5000.0 infrastructure spending results in a +299.7760 drift. 5. Fix the math to reach 0.0000 leak. Output to 'design/audits/FINAL_DRIFT_FIX.md'."
-      },
-      "17533533089149661785": {
-        "title": "WO-117_Zero_Sum_Victory",
-        "initial_mission": "ZERO-SUM VICTORY. 1. READ 'design/specs/ZERO_SUM_FIX_SPEC.md'. 2. Implement 'issue_treasury_bonds_synchronous' in FinanceSystem to eliminate the timing gap. 3. Refactor Government Infrastructure and Education logic to use this synchronous pattern. 4. Ensure 0.0000 drift in these specific operations. 5. Secondary Mission: Search for the source of the -99,680 leak at Tick 1 (check INITIAL_ASSETS setup in main.py/initializer.py). Output to 'design/REPORTS/FINAL_VERIFICATION.md'."
-      },
-      "17999366240372192024": {
-        "title": "Fix_TD105_Positive_Drift",
-        "initial_mission": "You are assigned to fix TD-105. Please implement the solution defined in the attached Specification...."
-      },
-      "7254945996439639761": {
-        "title": "Fix_TD105_Positive_Drift",
-        "initial_mission": "You are assigned to fix TD-105. Please implement the solution defined in the attached Specification...."
-      },
-      "3733298269963063063": {
-        "title": "Fix_TD106_Bankruptcy_Ledger",
-        "initial_mission": "Implement the Bankruptcy Ledger connection to fix TD-106. Ensure Firm liquidation losses are recorde..."
-      },
-      "12428961078552329384": {
-        "title": "Fix_TD112_Inheritance_Rounding",
-        "initial_mission": "Implement Integer-based Inheritance logic to prevent asset leaks.\n\n[File Content: design/specs/TD112..."
-      },
-      "11881942992589980843": {
-        "title": "Fix_TD109_Sacred_Sequence",
-        "initial_mission": "Refactor Government, Bank, and InheritanceManager to use Transactions instead of direct transfers.\n\n..."
+      "14380937838417142870": {
+        "title": "[WO-104] Regime Strategy Pattern Refactoring",
+        "initial_mission": "Synchronized from server"
       }
     },
     "completed_sessions": {
@@ -141,7 +33,36 @@
       "8111922141870240162": "WO-083C-P1: Test Migration (LOW Risk) - MERGED 2026-01-20",
       "11202564815416347618": "WO-083C-P2: Test Migration (MEDIUM Risk) - MERGED 2026-01-20",
       "16754935071282510850": "WO-081: Bank Interface Segregation - MERGED 2026-01-19",
-      "15965755950889487504": "WO-082: Golden Loader Infrastructure - MERGED 2026-01-19"
+      "15965755950889487504": "WO-082: Golden Loader Infrastructure - MERGED 2026-01-19",
+      "939740966705037931": "AUDIT-ECONOMIC-V2 - NOT_FOUND_ON_SERVER",
+      "5165098539568103978": "AUDIT-PARITY-V2 - NOT_FOUND_ON_SERVER",
+      "536275271873576648": "AUDIT-STRUCTURAL-V2 - NOT_FOUND_ON_SERVER",
+      "6487612405285359418": "WO-112-Settlement-System-Implementation - NOT_FOUND_ON_SERVER",
+      "5173331688343789029": "WO-113-Sovereign-Debt - NOT_FOUND_ON_SERVER",
+      "2513104936953701906": "WO-114_DTO_Purity_Gate_Completion - NOT_FOUND_ON_SERVER",
+      "16428660261459271791": "WO-115_Great_Reset_Stability_Verification - NOT_FOUND_ON_SERVER",
+      "2810292832470995059": "WO-116_Asset_Mutation_Cleanup - NOT_FOUND_ON_SERVER",
+      "16199040358203801629": "WO-116_Strict_Mode_Refactor - NOT_FOUND_ON_SERVER",
+      "17585728839844634482": "WO-116_Strict_Mode_Refactor - NOT_FOUND_ON_SERVER",
+      "3577359281312705663": "WO-116_Stop_Money_Leaks - NOT_FOUND_ON_SERVER",
+      "842822366014658805": "WO-116_Stop_Money_Leaks_V2 - NOT_FOUND_ON_SERVER",
+      "15617154995968631919": "WO-116_Stop_Money_Leaks_V2 - NOT_FOUND_ON_SERVER",
+      "16229951468194679232": "WO-116_PhaseA_Component_Purity - NOT_FOUND_ON_SERVER",
+      "8635535602606687900": "WO-116_PhaseA_Component_Purity - NOT_FOUND_ON_SERVER",
+      "2873398772113156484": "WO-116_PhaseB_Normalization - NOT_FOUND_ON_SERVER",
+      "15885642735639860418": "WO-116_Leak_Hunter - NOT_FOUND_ON_SERVER",
+      "12327123477253940959": "WO-116_Leak_Hunter - NOT_FOUND_ON_SERVER",
+      "14525228153841719624": "WO-116_Leak_Hunter - NOT_FOUND_ON_SERVER",
+      "6817026115371816099": "WO-116_Leak_Hunter - NOT_FOUND_ON_SERVER",
+      "7165644413044139156": "WO-116_Root_Cause_Profiler - NOT_FOUND_ON_SERVER",
+      "13173314960969369906": "WO-116_Zero_Sum_Final_Sprint - NOT_FOUND_ON_SERVER",
+      "7958702835499376780": "WO-116_Zero_Sum_Final_Sprint - NOT_FOUND_ON_SERVER",
+      "17533533089149661785": "WO-117_Zero_Sum_Victory - NOT_FOUND_ON_SERVER",
+      "17999366240372192024": "Fix_TD105_Positive_Drift - NOT_FOUND_ON_SERVER",
+      "7254945996439639761": "Fix_TD105_Positive_Drift - NOT_FOUND_ON_SERVER",
+      "3733298269963063063": "Fix_TD106_Bankruptcy_Ledger - NOT_FOUND_ON_SERVER",
+      "12428961078552329384": "Fix_TD112_Inheritance_Rounding - NOT_FOUND_ON_SERVER",
+      "11881942992589980843": "Fix_TD109_Sacred_Sequence - NOT_FOUND_ON_SERVER"
     }
   }
 }
