@@ -447,15 +447,18 @@ class Government:
 
         return transactions
 
-    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> Tuple[bool, List[Transaction]]:
-        """인프라에 투자하여 전체 생산성을 향상시킵니다. Returns (Success, Transactions)."""
+    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> List[Transaction]:
+        """
+        Refactored: Returns transactions instead of executing direct transfers.
+        Side-effects (TFP Boost) are deferred via metadata.
+        """
         transactions = []
         cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
         
         effective_cost = cost
 
         if self.firm_subsidy_budget_multiplier < 0.8:
-            return False, []
+            return []
 
         # Synchronous Financing (WO-117)
         if self.assets < effective_cost:
@@ -465,45 +468,38 @@ class Government:
                 success = self.finance_system.issue_treasury_bonds_synchronous(self, needed, current_tick)
                 if not success:
                      logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
-                     return False, []
+                     return []
             else:
                 # Fallback to old behavior (should not happen if system is updated)
                 bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
                 if not bonds:
                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
-                    return False, []
+                    return []
                 transactions.extend(txs)
 
-        # WO-Fix: Bypass TransactionProcessor for internal transfers to prevent zero-sum drift (phantom tax/leaks)
-        # We execute the transfer directly using SettlementSystem.
-        # Fallback to Transaction logic is REMOVED to prevent recurring drift bugs.
+        # Generate Investment Transaction
+        if not reflux_system:
+             logger.critical("INFRASTRUCTURE_ABORTED | Missing RefluxSystem.")
+             return []
 
-        if not self.settlement_system or not reflux_system:
-             logger.critical(
-                 "INFRASTRUCTURE_ABORTED | Missing SettlementSystem or RefluxSystem. "
-                 "Cannot execute zero-sum investment.",
-                 extra={"tick": current_tick, "agent_id": self.id}
-             )
-             return False, []
-
-        transfer_success = self.settlement_system.transfer(
-             self,
-             reflux_system,
-             effective_cost,
-             "Infrastructure Investment (Direct)"
+        tx = Transaction(
+            buyer_id=self.id,
+            seller_id=reflux_system.id,
+            item_id="infrastructure_investment",
+            quantity=1.0,
+            price=effective_cost,
+            market_id="system",
+            transaction_type="infrastructure_spending",
+            time=current_tick,
+            metadata={"triggers_effect": "GLOBAL_TFP_BOOST"}
         )
+        transactions.append(tx)
 
-        # NEW: Handle failure
-        if not transfer_success:
-             logger.error(f"INFRASTRUCTURE_FAIL | Settlement transfer of {effective_cost:.2f} failed. Aborting investment.")
-             return False, transactions # Return failure and any financing txs
-
-        # This code only runs on successful transfer
-        self.expenditure_this_tick += effective_cost
         self.infrastructure_level += 1
+        self.expenditure_this_tick += effective_cost
 
         logger.info(
-            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} reached. Cost: {effective_cost}",
+            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} initiated. Cost: {effective_cost}",
             extra={
                 "tick": current_tick,
                 "agent_id": self.id,
@@ -511,7 +507,7 @@ class Government:
                 "tags": ["investment", "infrastructure"]
             }
         )
-        return True, transactions
+        return transactions
 
     def finalize_tick(self, current_tick: int):
         """

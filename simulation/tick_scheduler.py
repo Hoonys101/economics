@@ -40,9 +40,14 @@ class TickScheduler:
     def __init__(self, world_state: WorldState, action_processor: ActionProcessor):
         self.world_state = world_state
         self.action_processor = action_processor
+        from simulation.systems.system_effects_manager import SystemEffectsManager
+        self.system_effects_manager = SystemEffectsManager(world_state.config_module)
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
         state = self.world_state
+
+        # WO-109: Phase 0A: Pre-Sequence Stabilization
+        self._phase_pre_sequence_stabilization(state)
 
         # --- Gold Standard / Money Supply Verification (WO-016) ---
         if state.time == 0:
@@ -84,6 +89,10 @@ class TickScheduler:
         # ==================================================================================
         system_transactions: List[Transaction] = []
 
+        # WO-109: Drain inter-tick queue from previous tick's lifecycle events
+        system_transactions.extend(state.inter_tick_queue)
+        state.inter_tick_queue.clear()
+
         # 0. Firm Production (State Update: Inventory)
         for firm in state.firms:
              if firm.is_active:
@@ -115,18 +124,9 @@ class TickScheduler:
         system_transactions.extend(welfare_txs)
 
         # 5. Infrastructure
-        infra_success, infra_txs = state.government.invest_infrastructure(state.time, state.reflux_system)
+        infra_txs = state.government.invest_infrastructure(state.time, state.reflux_system)
         if infra_txs:
             system_transactions.extend(infra_txs)
-
-        if infra_success:
-            tfp_boost = getattr(state.config_module, "INFRASTRUCTURE_TFP_BOOST", 0.05)
-            for firm in state.firms:
-                firm.productivity_factor *= (1.0 + tfp_boost)
-            state.logger.info(
-                f"GLOBAL_TFP_BOOST | All firms productivity increased by {tfp_boost*100:.1f}%",
-                extra={"tick": state.time, "tags": ["government", "infrastructure"]}
-            )
 
         # ----------------------------------------------------------------------------------
 
@@ -265,7 +265,8 @@ class TickScheduler:
             ai_trainer=getattr(state, "ai_trainer", None),
             next_agent_id=state.next_agent_id,
             real_estate_units=state.real_estate_units,
-            settlement_system=getattr(state, "settlement_system", None)
+            settlement_system=getattr(state, "settlement_system", None),
+            inactive_agents=state.inactive_agents
         )
 
         # 1. Decisions
@@ -286,6 +287,9 @@ class TickScheduler:
 
         # Sync back scalars
         state.next_agent_id = sim_state.next_agent_id
+
+        # WO-109: Process Effects
+        self.system_effects_manager.process_effects(sim_state)
 
         # ==================================================================================
         # Post-Tick Logic
@@ -470,7 +474,7 @@ class TickScheduler:
 
         # --- Gold Standard / Money Supply Verification ---
         if state.time >= 1:
-            state.bank.check_solvency(state.government)
+            # Solvency check moved to start of tick (Phase 0A)
 
             current_money = state.calculate_total_money()
             expected_money = getattr(state, "baseline_money_supply", 0.0)
@@ -644,7 +648,9 @@ class TickScheduler:
     def _phase_lifecycle(self, state: SimulationState) -> None:
         """Phase 4: Agent Lifecycle."""
         if self.world_state.lifecycle_manager:
-            self.world_state.lifecycle_manager.execute(state)
+            lifecycle_txs = self.world_state.lifecycle_manager.execute(state)
+            if lifecycle_txs:
+                self.world_state.inter_tick_queue.extend(lifecycle_txs)
         else:
             state.logger.error("LifecycleManager not initialized.")
 
@@ -736,3 +742,34 @@ class TickScheduler:
             "deposit_data": deposit_data_map,
             "inflation": latest_indicators.get("inflation_rate", state.config_module.DEFAULT_INFLATION_RATE)
         }
+
+    def _phase_pre_sequence_stabilization(self, state: WorldState) -> None:
+        """Phase 0A: Pre-Sequence Stabilization (WO-109)."""
+        if hasattr(state.bank, "generate_solvency_transactions"):
+            stabilization_txs = state.bank.generate_solvency_transactions(state.government)
+            if stabilization_txs:
+                temp_sim_state = SimulationState(
+                    time=state.time,
+                    households=state.households,
+                    firms=state.firms,
+                    agents=state.agents,
+                    markets=state.markets,
+                    government=state.government,
+                    bank=state.bank,
+                    central_bank=state.central_bank,
+                    stock_market=state.stock_market,
+                    goods_data=state.goods_data,
+                    market_data={},
+                    config_module=state.config_module,
+                    tracker=state.tracker,
+                    logger=state.logger,
+                    reflux_system=state.reflux_system,
+                    ai_training_manager=state.ai_training_manager,
+                    ai_trainer=state.ai_trainer,
+                    settlement_system=state.settlement_system,
+                    transactions=stabilization_txs,
+                    inactive_agents=state.inactive_agents
+                )
+                if state.transaction_processor:
+                    state.transaction_processor.execute(temp_sim_state)
+                    state.logger.warning("STABILIZATION | Executed pre-sequence stabilization for Bank.")

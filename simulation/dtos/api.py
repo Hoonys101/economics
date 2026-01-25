@@ -196,10 +196,16 @@ class SimulationState:
     real_estate_units: List[Any] = field(default_factory=list) # Added for WO-103
     # Mutable state for the tick
     transactions: List[Any] = None # List[Transaction]
+    effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
+    inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
 
     def __post_init__(self):
         if self.transactions is None:
             self.transactions = []
+        if self.effects_queue is None:
+            self.effects_queue = []
+        if self.inactive_agents is None:
+            self.inactive_agents = {}
 
 
 # ------------------------------------------------------------------------------
