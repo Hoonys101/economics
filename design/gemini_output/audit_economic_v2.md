@@ -1,112 +1,106 @@
-# ECONOMIC PURITY AUDIT REPORT (v2.0)
+# Economic Integrity & Leak Audit V2
+**Mission:** [AUDIT-ECONOMIC-V2]
+**Target:** Identify "Zero-Sum Violations" (Asset Creation/Evaporation)
 
-**Date:** Phase 24 Audit Cycle
-**Auditor:** Jules (AI Forensic Auditor)
-**Target:** Simulation Economic Engine (`simulation/`, `modules/`)
-**Reference Spec:** `design/specs/AUDIT_SPEC_ECONOMIC.md`
+## [발견된 누출 지점 리스트]
 
----
+### 1. Inheritance Distribution Rounding Error
+*   **File:** `simulation/systems/transaction_processor.py`
+*   **Location:** `execute_transaction` method, `elif tx.transaction_type == "inheritance_distribution":` block.
+*   **Severity:** Low (Floating Point Drift) but cumulative.
+*   **Description:**
+    The code calculates `amount_per_heir = total_cash / len(heir_ids)`.
+    If `total_cash` is not perfectly divisible by `len(heir_ids)`, the remainder (e.g., `0.333...`) is left in the `buyer` (Deceased Agent) account.
+    Since the Deceased Agent is subsequently removed from the simulation without a final sweep of this residual cash, the money effectively evaporates.
 
-## 1. Executive Summary
+### 2. Household Liquidation Asset Evaporation
+*   **File:** `simulation/systems/lifecycle_manager.py`
+*   **Location:** `_handle_agent_liquidation` method, `Household Liquidation` section.
+*   **Severity:** Critical (Potential large leaks if inheritance fails).
+*   **Description:**
+    The code explicitly clears `household.inventory` and `household.shares_owned`. However, unlike the `Firm Liquidation` block (which has a check `if firm.assets > 1e-6: firm._sub_assets(...)`), there is **no check** to ensure `household.assets` is 0.0 before the agent is removed from the `state.agents` list.
+    Any residual cash (from the inheritance rounding error above, or if inheritance transactions fail) is permanently destroyed without being recorded in `Government.total_money_destroyed`.
 
-The audit reveals systemic violations of the [Double-Entry Bookkeeping] and [Atomicity] principles defined in the economic specifications. While a `FinanceSystem` exists to handle authorized transfers, it is frequently bypassed by core system components (`TransactionProcessor`, `InheritanceManager`, `Bank`), leading to a "Shadow Economy" of direct state mutations.
+## [원자성 위반 코드 블록]
 
-**Critical Findings:**
-1.  **Direct Asset Mutation:** Over 40+ instances of direct `assets +=` or `assets -=` operations found outside the Finance module.
-2.  **Atomicity Failures:** `TransactionProcessor` performs manual Debit/Credit sequences without rollback mechanisms.
-3.  **Inheritance Leakage:** `InheritanceManager` utilizes floating-point division for asset distribution without remainder handling, causing potential deflationary pressure (Residual Evaporation).
+### 1. Asset Liquidation (Money Creation)
+*   **File:** `simulation/systems/transaction_processor.py`
+*   **Code:**
+    ```python
+    elif tx.transaction_type == "asset_liquidation":
+        # Special Minting Logic + Asset Transfer
+        # Buyer (Gov) -> Seller (Agent). No Debit.
+        seller.deposit(trade_value)
+        if hasattr(buyer, "total_money_issued"):
+            buyer.total_money_issued += trade_value
+    ```
+*   **Analysis:**
+    This logic intentionally violates the `Buyer.assets -= TradeValue` rule. It credits the Seller without debiting the Buyer (Government).
+    **Proof:** `Buyer Delta (0) != Seller Delta (+TradeValue) + Tax (0)`.
+    **Context:** This is a "Minting" operation (Quantitative Easing). While it technically creates money, it tracks it via `total_money_issued`. It is an "Authorized Violation" of Zero-Sum, but must be strictly monitored.
 
----
+### 2. Goods Transaction (Atomicity Confirmed)
+*   **File:** `simulation/systems/transaction_processor.py`
+*   **Code:**
+    ```python
+    if settlement:
+        success = settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+        if success and tax_amount > 0:
+            # Atomic collection from buyer
+            government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
+    ```
+*   **Analysis:**
+    The deduction from Buyer is `TradeValue` (via settlement) + `TaxAmount` (via collect_tax).
+    The addition to Seller is `TradeValue`.
+    The addition to Government is `TaxAmount`.
+    **Proof:** `Buyer Delta (-(P+T)) == Seller Delta (+P) + Gov Delta (+T)`.
+    **Result:** Mathematically consistent, provided `collect_tax` succeeds. If `collect_tax` fails (e.g. insufficient funds after the first transfer), the tax is uncollected, but money is not destroyed/created, just retained by the buyer.
 
-## 2. Asset Integrity Audit (Direct Mutation)
+## [해결을 위한 슈도코드]
 
-The specification requires all value transfers to route through `FinanceSystem.transfer` (or `IFinancialEntity.deposit/withdraw`). The following components violate this by directly modifying `assets` or `_cash`.
+### Solution 1: Exact Inheritance Distribution
+**Target:** `simulation/systems/transaction_processor.py`
 
-### 2.1. Critical Violations (Top Offenders)
-
-| Component | Location | Violation Pattern | Impact |
-| :--- | :--- | :--- | :--- |
-| **TransactionProcessor** | `simulation/systems/transaction_processor.py` | `buyer.assets -= ...`, `seller.assets += ...` | Bypasses transaction logs, non-atomic updates. |
-| **Bank** | `simulation/bank.py` | `self.assets += ...` | Reserves updated without counter-party record. |
-| **InheritanceManager** | `simulation/systems/inheritance_manager.py` | `heir.assets += cash_share` | Bypasses inheritance tax logging/tracking if not careful. |
-| **FinanceDepartment** | `simulation/components/finance_department.py` | `government.assets += repayment` | Corporate finance logic modifying Government state directly. |
-| **HRDepartment** | `simulation/components/hr_department.py` | `employee.assets += net_wage` | Wages paid via magic injection rather than firm withdrawal. |
-
-### 2.2. Forensic Grep Evidence (Sample)
-```text
-simulation/bank.py:        self.assets = initial_assets # Reserves
-simulation/bank.py:            self.assets += amount
-simulation/systems/transaction_processor.py:                buyer.assets -= (trade_value + tax_amount)
-simulation/systems/transaction_processor.py:                seller.assets += trade_value
-simulation/systems/inheritance_manager.py:            heir.assets += cash_share
-simulation/components/finance_department.py:            government.assets += repayment
-```
-
----
-
-## 3. Inheritance Audit (Residual Evaporation)
-
-**File:** `simulation/systems/inheritance_manager.py`
-
-**Finding:**
-The current logic distributes cash using simple division:
 ```python
-cash_share = deceased.assets / num_heirs
-for heir in heirs:
-    heir.assets += cash_share
-deceased.assets = 0.0
+# [Pseudocode Fix]
+elif tx.transaction_type == "inheritance_distribution":
+    heir_ids = tx.metadata.get("heir_ids", [])
+    total_cash = buyer.assets
+
+    if total_cash > 0 and heir_ids:
+        count = len(heir_ids)
+        # 1. Floor division to guarantee safe amount
+        base_amount = math.floor((total_cash / count) * 100) / 100.0
+
+        # 2. Distribute base amount to all except last
+        for i in range(count - 1):
+             heir = agents.get(heir_ids[i])
+             settlement.transfer(buyer, heir, base_amount, "inheritance_part")
+
+        # 3. Give EVERYTHING remaining to the last heir (Exact Distribution)
+        # This captures the 0.000...1 residuals
+        last_heir = agents.get(heir_ids[-1])
+        remaining = buyer.assets # Should be base_amount + dust
+        settlement.transfer(buyer, last_heir, remaining, "inheritance_final")
 ```
 
-**Forensic Analysis:**
-- **Floating Point Error:** If `deceased.assets` is 100.00 and there are 3 heirs, `cash_share` is 33.3333...
-- **Evaporation:** The system forces `deceased.assets = 0.0` after distribution. Any microscopic remainder between `sum(cash_share * N)` and `original_assets` is effectively destroyed (or created).
-- **Compliance:** Violates the "Zero-Sum" rule.
-- **Recommendation:** Calculate `total_distributed` and assign the remainder (`deceased.assets - total_distributed`) to the `RefluxSystem` or the first heir.
+### Solution 2: Household Liquidation Dust Sweeper
+**Target:** `simulation/systems/lifecycle_manager.py`
 
----
-
-## 4. Atomicity Audit (Transaction Processor)
-
-**File:** `simulation/systems/transaction_processor.py`
-
-**Finding:**
-Transactions are processed as sequential steps without a transaction block:
 ```python
-# Step 1: Debit Buyer
-buyer.assets -= (trade_value + tax_amount)
-# ... code gap ...
-# Step 2: Credit Seller
-seller.assets += trade_value
+# [Pseudocode Fix]
+# Inside _handle_agent_liquidation for Households
+for household in inactive_households:
+    # ... existing processing ...
+
+    # [NEW] Final Dust Sweep
+    if household.assets > 0:
+        # Option A: Escheat to Government (Revenue)
+        # state.government.collect_tax(household.assets, "death_dust_sweep", household, state.time)
+
+        # Option B: Record as Destruction (if we want to just delete it safely)
+        dust = household.assets
+        household._sub_assets(dust)
+        if hasattr(state.government, "total_money_destroyed"):
+            state.government.total_money_destroyed += dust
 ```
-
-**Forensic Analysis:**
-- **No Rollback:** If `seller.assets += trade_value` fails (e.g., property setter validation error), `buyer.assets` remains debited. Money is destroyed.
-- **Race Conditions:** While currently single-threaded, this pattern prevents future parallelization.
-- **Logic Fragmentation:** Tax calculation and solvency checks are inline, leading to "Spaghetti Accounting" where tax rules are duplicated across transaction types.
-
----
-
-## 5. Practitioner's Report (Technical Debt)
-
-As a result of this audit, the following technical debts are flagged for the "Engine Repair Phase":
-
-### 5.1. The "Leaky Bank" Pattern
-The `Bank` class treats `self.assets` as a magic bucket. It manually increments/decrements reserves based on logic scattered across the system, rather than acting as a true `IFinancialEntity` that interacts via the `FinanceSystem`.
-
-### 5.2. God Class: TransactionProcessor
-`TransactionProcessor` knows too much. It handles:
-- Tax Law (Income vs Sales vs VAT)
-- Solvency Checks
-- Inventory Management
-- Stock Registry updates
-- Asset Transfer
-**Recommendation:** Decompose into `TaxAgent`, `SettlementSystem`, and `Registry`.
-
-### 5.3. Inconsistent Financial Interfaces
-- `Firm` uses `FinanceDepartment` (via `firm.finance`).
-- `Household` manages assets directly (`household.assets`).
-- `Government` is a hybrid.
-This asymmetry makes standardized auditing impossible. All agents should implement `IFinancialEntity` properly or delegate to a standardized wallet component.
-
-### 5.4. Hardcoded Economic Parameters
-Tax rates and thresholds are often hardcoded or retrieved via `getattr(config, "KEY", default)` repeatedly inside tight loops, causing performance drag and configuration opacity.
