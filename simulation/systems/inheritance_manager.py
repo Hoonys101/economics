@@ -17,66 +17,48 @@ class InheritanceManager:
         self.config_module = config_module
         self.logger = logging.getLogger("simulation.systems.inheritance_manager")
 
-    def process_death(self, deceased: Household, government: Government, simulation: Any) -> None:
+    def process_death(self, deceased: Household, government: Government, simulation: Any) -> List[Transaction]:
         """
-        Executes the inheritance pipeline.
+        Executes the inheritance pipeline using Transactions.
 
         Args:
             deceased: The agent who died.
             government: The entity collecting tax.
-            simulation: Access to markets/registry for liquidation and transfer.
+            simulation: Access to markets/registry for valuation.
+
+        Returns:
+            List[Transaction]: Ordered list of transactions to be queued for next tick.
         """
-        # Access SettlementSystem via standard Simulation facade or WorldState DTO
-        settlement = getattr(simulation, 'settlement_system', None)
-        if not settlement and hasattr(simulation, 'world_state'):
-             settlement = getattr(simulation.world_state, 'settlement_system', None)
-
-        # If simulation is WorldState DTO itself (legacy compatibility)
-        if not settlement and hasattr(simulation, 'time'): # Weak check for DTO
-             settlement = getattr(simulation, 'settlement_system', None)
-
-        if not settlement:
-            raise ValueError(f"SettlementSystem missing in InheritanceManager for agent {deceased.id}")
+        transactions: List[Transaction] = []
+        current_tick = simulation.time
 
         self.logger.info(
             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
         )
 
-        # 1. Valuation
-        # ------------------------------------------------------------------
+        # 1. Valuation (Read-only)
         cash = deceased.assets
-
-        # Real Estate Valuation
         real_estate_value = 0.0
-        # Access real estate units from simulation (assuming simulation has list)
         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
-
-        # We need current market value. Unit.estimated_value should be up to date or we fetch from market?
-        # Simulation._process_housing might update estimated_value?
-        # Assuming unit.estimated_value is the source of truth for Wealth Tax/Valuation.
         for unit in deceased_units:
             real_estate_value += unit.estimated_value
 
-        # Stock Valuation
-        # Portfolio should track quantity. Price from StockMarket.
         stock_value = 0.0
         current_prices = {}
         if simulation.stock_market:
             for firm_id, share in deceased.portfolio.holdings.items():
                 price = simulation.stock_market.get_daily_avg_price(firm_id)
                 if price <= 0:
-                    price = share.acquisition_price # Fallback to book cost
+                    price = share.acquisition_price
                 current_prices[firm_id] = price
                 stock_value += share.quantity * price
 
         total_wealth = cash + real_estate_value + stock_value
 
-        # 2. Taxation
-        # ------------------------------------------------------------------
+        # 2. Calculate Tax
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)
         deduction = getattr(self.config_module, "INHERITANCE_DEDUCTION", 10000.0)
-
         taxable_base = max(0.0, total_wealth - deduction)
         tax_amount = taxable_base * tax_rate
 
@@ -85,117 +67,58 @@ class InheritanceManager:
             extra={"agent_id": deceased.id, "total_wealth": total_wealth, "tax_amount": tax_amount}
         )
 
-        # 3. Liquidation Logic (Atomic)
-        # ------------------------------------------------------------------
-        # If Cash < Tax, we must liquidate assets instantly to Government.
-
-        # Liquidation Sequence: Stocks -> Real Estate
-
-        # A. Stock Liquidation
-        if deceased.assets < tax_amount and stock_value > 0:
-            # Sell all stocks to Government/Market Maker at Current Price
-            # In WO-049: "Sell Stocks (Market Order)". But for atomic zero-leak, we sim it.
-            # Government buys the stocks (providing liquidity).
-            # Government doesn't hold stocks usually? Or it burns them?
-            # WO says: "Sell Stocks (Market Order)... Sell Real Estate (Fire Sale to Engine/Market)."
-            # Implementation: Transfer stocks to Government portfolio? Or just convert to cash (Govt prints money/uses reserves)?
-            # Let's assume Government buys them to resolve debt.
-
-            liquidation_proceeds = 0.0
-
-            # To be safe, we sell everything if we are short on cash?
-            # Or just enough? Complexity vs speed. "Liquidation" implies selling needed assets.
-            # Simple approach: Sell ALL stocks first if cash shortage exists.
-
-            for firm_id, share in list(deceased.portfolio.holdings.items()):
-                price = current_prices.get(firm_id, 0.0)
-                proceeds = share.quantity * price
-
-                # Transfer: Deceased -> Cash, Government -> Stock (or burn?)
-                # Minting Logic: Gov creates money to buy asset
-                if hasattr(government, '_add_assets'):
-                     government._add_assets(proceeds)
-
-                simulation.government.total_money_issued += proceeds # Injection (Bank/Gov Buyout)
-
-                # Transfer
-                settlement.transfer(government, deceased, proceeds, f"liquidation_stock:{firm_id}")
-
-                liquidation_proceeds += proceeds
-
-                # Remove from Deceased Portfolio
-                deceased.portfolio.remove(firm_id, share.quantity)
-                # Sync legacy
-                if firm_id in deceased.shares_owned:
-                    del deceased.shares_owned[firm_id]
-
-                # Logic gap: Who owns the stock now?
-                # If Market Order, random buyer. If Atomic Govt Buyout, Govt owns it.
-                # Govt usually sells later? Or holds?
-                # For "Legacy Protocol", let's assume Govt holds or burns.
-                # Simplest: Burn (Share Buyback equivalent) or Govt holds.
-                # Let's update StockMarket registry: Govt owns it.
-                if simulation.stock_market:
-                    simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
-                    # Update Govt
-                    # simulation.stock_market.update_shareholder(government.id, firm_id, ...?)
-                    # Not strictly required unless Govt trades.
-
-            self.logger.info(
-                f"LIQUIDATION_STOCK | Sold stocks for {liquidation_proceeds:.2f} to cover tax.",
-                 extra={"agent_id": deceased.id}
-            )
-
-        # B. Real Estate Liquidation (Fire Sale)
+        # 3. Liquidation Transactions (if Cash < Tax)
         if deceased.assets < tax_amount:
-            # Still short? Sell Properties.
-            # Fire Sale @ 90%
+            # A. Stock Liquidation
+            if stock_value > 0:
+                for firm_id, share in deceased.portfolio.holdings.items():
+                    price = current_prices.get(firm_id, 0.0)
+                    proceeds = share.quantity * price
+
+                    tx = Transaction(
+                        buyer_id=government.id,
+                        seller_id=deceased.id,
+                        item_id=f"stock_{firm_id}",
+                        quantity=share.quantity,
+                        price=price, # Unit price
+                        market_id="stock_market",
+                        transaction_type="asset_liquidation",
+                        time=current_tick
+                    )
+                    transactions.append(tx)
+
+            # B. Real Estate Liquidation
             fire_sale_ratio = 0.9
-
             for unit in deceased_units:
-                if deceased.assets >= tax_amount:
-                    break # Stop if we have enough cash
-
                 sale_price = unit.estimated_value * fire_sale_ratio
-
-                # Govt buys unit
-                # Minting Logic: Gov creates money to buy asset
-                if hasattr(government, '_add_assets'):
-                     government._add_assets(sale_price)
-
-                simulation.government.total_money_issued += sale_price # Injection
-
-                # Transfer
-                settlement.transfer(government, deceased, sale_price, f"liquidation_re:{unit.id}")
-
-                # Transfer Title
-                unit.owner_id = None # Government/Public
-                # Or set to Government ID?
-                # Simulation uses None for Government owned.
-
-                # Remove from Deceased list
-                deceased.owned_properties.remove(unit.id)
-
-                self.logger.info(
-                    f"LIQUIDATION_RE | Sold Unit {unit.id} for {sale_price:.2f} (Fire Sale).",
-                    extra={"agent_id": deceased.id, "unit_id": unit.id}
+                tx = Transaction(
+                    buyer_id=government.id,
+                    seller_id=deceased.id,
+                    item_id=f"real_estate_{unit.id}",
+                    quantity=1.0,
+                    price=sale_price,
+                    market_id="real_estate_market",
+                    transaction_type="asset_liquidation",
+                    time=current_tick
                 )
+                transactions.append(tx)
 
-        # 4. Tax Payment
-        # ------------------------------------------------------------------
-        # Determine final tax payment (limited by assets if bankruptcy)
-        actual_tax_paid = min(deceased.assets, tax_amount)
+        # 4. Tax Transaction
+        actual_tax_paid = min(total_wealth, tax_amount) # Cap at total wealth? Or cash?
         if actual_tax_paid > 0:
-            settlement.transfer(deceased, government, actual_tax_paid, "inheritance_tax")
-
-            # WO-116: Use record_revenue to avoid Double-Charge via FinanceSystem
-            simulation.government.record_revenue(
-                actual_tax_paid, "inheritance_tax", deceased.id, simulation.time
+            tx = Transaction(
+                buyer_id=deceased.id,
+                seller_id=government.id,
+                item_id="inheritance_tax",
+                quantity=1.0,
+                price=tax_amount, # Processor should handle partial payment if insufficient funds?
+                market_id="system",
+                transaction_type="tax",
+                time=current_tick
             )
+            transactions.append(tx)
 
-        # 5. Distribution (Transfer)
-        # ------------------------------------------------------------------
-        # Find Heirs
+        # 5. Distribution / Escheatment
         heirs = []
         for child_id in deceased.children_ids:
             child = simulation.agents.get(child_id)
@@ -203,131 +126,65 @@ class InheritanceManager:
                 heirs.append(child)
 
         if not heirs:
-            # 1. State Confiscation (Cash)
-            surplus = deceased.assets
-            if surplus > 0:
-                settlement.transfer(deceased, government, surplus, "escheatment_no_heirs")
-                simulation.government.record_revenue(surplus, "escheatment", deceased.id, simulation.time)
-                self.logger.info(
-                    f"NO_HEIRS | Confiscated cash {surplus:.2f} to Government.",
-                    extra={"agent_id": deceased.id}
+            # Escheatment
+            # We need to transfer remaining Assets (Stock/RE) and Cash to Gov.
+            # Cash Escheatment
+            # Calculate remaining cash after tax
+            remaining_cash = max(0.0, cash - actual_tax_paid)
+            if remaining_cash > 0:
+                tx_cash = Transaction(
+                    buyer_id=deceased.id,
+                    seller_id=government.id,
+                    item_id="escheatment_cash",
+                    quantity=1.0,
+                    price=remaining_cash,
+                    market_id="system",
+                    transaction_type="escheatment",
+                    time=current_tick
                 )
+                transactions.append(tx_cash)
+            
+            # Stock Escheatment (if not liquidated)
+            if deceased.assets >= tax_amount:
+                 for firm_id, share in deceased.portfolio.holdings.items():
+                    tx = Transaction(
+                        buyer_id=government.id,
+                        seller_id=deceased.id,
+                        item_id=f"stock_{firm_id}",
+                        quantity=share.quantity,
+                        price=0.0,
+                        market_id="stock_market",
+                        transaction_type="asset_transfer",
+                        time=current_tick
+                    )
+                    transactions.append(tx)
 
-            # 2. State Confiscation (Stocks)
-            # Transfer all remaining shares to Government
-            for firm_id, share in list(deceased.portfolio.holdings.items()):
-                 qty = share.quantity
-                 if qty > 0:
-                     # Update Shareholder Registry: Deceased -> 0, Govt -> +qty
-                     if simulation.stock_market:
-                         simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
-                         simulation.stock_market.update_shareholder(simulation.government.id, firm_id, qty)
-            
-            # Clear Deceased Portfolio
-            deceased.portfolio.holdings.clear()
-            deceased.shares_owned.clear()
+                 for unit in deceased_units:
+                     tx = Transaction(
+                        seller_id=deceased.id,
+                        buyer_id=government.id,
+                        item_id=f"real_estate_{unit.id}",
+                        quantity=1.0,
+                        price=0.0,
+                        market_id="real_estate_market",
+                        transaction_type="asset_transfer",
+                        time=current_tick
+                     )
+                     transactions.append(tx)
 
-            # 3. State Confiscation (Real Estate)
-            # Transfer all remaining properties to Government
-            remaining_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
-            for unit in remaining_units:
-                unit.owner_id = simulation.government.id
-                # Note: deceased.owned_properties will be cleared below
-            
-            deceased.owned_properties.clear()
-            
-            self.logger.info(
-                 f"NO_HEIRS_ASSETS | Confiscated {len(remaining_units)} properties and portfolio to Government.",
-                 extra={"agent_id": deceased.id}
+        else:
+            # Distribution to Heirs
+            tx_dist = Transaction(
+                buyer_id=deceased.id, # Source
+                seller_id=heirs[0].id, # Representative? Or ignore.
+                item_id="inheritance_distribution",
+                quantity=1.0,
+                price=0.0,
+                market_id="system",
+                transaction_type="inheritance_distribution",
+                time=current_tick,
+                metadata={"heir_ids": [h.id for h in heirs]}
             )
+            transactions.append(tx_dist)
 
-            return
-
-        # Split Remaining Assets
-        num_heirs = len(heirs)
-
-        # A. Cash (Integer-based)
-        total_cash = deceased.assets
-        if total_cash > 0:
-            # 1. Convert to integer (pennies) for precise calculation
-            total_pennies = int(total_cash * 100)
-
-            # 2. Calculate base share and remainder
-            pennies_per_heir = total_pennies // num_heirs
-            remainder_pennies = total_pennies % num_heirs
-
-            cash_share = pennies_per_heir / 100.0
-
-            # 3. Distribute base share to all heirs
-            for i, heir in enumerate(heirs):
-                # The last heir gets the remainder
-                if i == num_heirs - 1:
-                    final_share = (pennies_per_heir + remainder_pennies) / 100.0
-                    if final_share > 0:
-                        settlement.transfer(deceased, heir, final_share, f"inheritance_share_final:{deceased.id}")
-                else:
-                    if cash_share > 0:
-                        settlement.transfer(deceased, heir, cash_share, f"inheritance_share:{deceased.id}")
-
-        # deceased.assets should be 0.0 now.
-
-        # B. Stocks (Portfolio Merge - Integer-based)
-        for firm_id, share in list(deceased.portfolio.holdings.items()):
-            total_shares = share.quantity
-            if total_shares <= 0:
-                continue
-
-            # 1. Calculate base shares and remainder
-            shares_per_heir = total_shares // num_heirs
-            remainder_shares = total_shares % num_heirs
-
-            # 2. Distribute base shares to all heirs
-            if shares_per_heir > 0:
-                for heir in heirs:
-                    heir.portfolio.add(firm_id, shares_per_heir, share.acquisition_price)
-                    # Legacy Sync
-                    current_legacy = heir.shares_owned.get(firm_id, 0.0)
-                    heir.shares_owned[firm_id] = current_legacy + shares_per_heir
-                    if simulation.stock_market:
-                        simulation.stock_market.update_shareholder(heir.id, firm_id, heir.shares_owned[firm_id])
-
-            # 3. Distribute remainder shares one-by-one to heirs until exhausted
-            for i in range(remainder_shares):
-                heir = heirs[i]
-                heir.portfolio.add(firm_id, 1, share.acquisition_price)
-                # Legacy Sync
-                current_legacy = heir.shares_owned.get(firm_id, 0.0)
-                heir.shares_owned[firm_id] = current_legacy + 1
-                if simulation.stock_market:
-                    simulation.stock_market.update_shareholder(heir.id, firm_id, heir.shares_owned[firm_id])
-
-            # 4. Clear deceased's holding for this stock
-            if simulation.stock_market:
-                simulation.stock_market.update_shareholder(deceased.id, firm_id, 0)
-
-        deceased.portfolio.holdings.clear()
-        deceased.shares_owned.clear()
-
-        # C. Real Estate
-        # Split properties? Impossible to split 1 unit.
-        # Logic: Assign units round-robin to heirs? Or sell and split cash?
-        # WO says "RealEstate: Update Registry Owner ID." implying transfer.
-        # Simple Round Robin.
-        remaining_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
-
-        for i, unit in enumerate(remaining_units):
-            target_heir = heirs[i % num_heirs]
-
-            unit.owner_id = target_heir.id
-            if hasattr(target_heir, 'owned_properties'):
-                target_heir.owned_properties.append(unit.id)
-            # Deceased removed locally from list (we iterate copy or access simulation list)
-            # deceased.owned_properties already handled? No.
-            # We iterate `remaining_units` which is fresh list.
-
-        deceased.owned_properties.clear()
-
-        self.logger.info(
-            f"INHERITANCE_COMPLETE | Transferred assets to {num_heirs} heirs.",
-            extra={"agent_id": deceased.id, "heirs_count": num_heirs}
-        )
+        return transactions

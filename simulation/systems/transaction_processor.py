@@ -33,12 +33,16 @@ class TransactionProcessor(SystemInterface):
         government = state.government
         current_time = state.time
 
+        # WO-109: Look up inactive agents
+        inactive_agents = getattr(state, "inactive_agents", {})
+
         # market_data is now in state
         goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
 
         for tx in transactions:
-            buyer = agents.get(tx.buyer_id)
-            seller = agents.get(tx.seller_id)
+            # WO-109: Fallback to inactive agents
+            buyer = agents.get(tx.buyer_id) or inactive_agents.get(tx.buyer_id)
+            seller = agents.get(tx.seller_id) or inactive_agents.get(tx.seller_id)
 
             if not buyer or not seller:
                 continue
@@ -51,8 +55,75 @@ class TransactionProcessor(SystemInterface):
             # 1. Financial Settlement (Asset Transfer & Taxes)
             # ==================================================================
             settlement = getattr(state, 'settlement_system', None)
+            success = False
 
-            if tx.transaction_type == "goods":
+            if tx.transaction_type == "lender_of_last_resort":
+                # Special Minting Logic
+                # Buyer (Gov) -> Seller (Bank). No Debit.
+                seller.deposit(trade_value)
+                if hasattr(buyer, "total_money_issued"):
+                    buyer.total_money_issued += trade_value
+                success = True
+
+            elif tx.transaction_type == "asset_liquidation":
+                # Special Minting Logic + Asset Transfer
+                # Buyer (Gov) -> Seller (Agent). No Debit.
+                seller.deposit(trade_value)
+                if hasattr(buyer, "total_money_issued"):
+                    buyer.total_money_issued += trade_value
+
+                # Asset Transfer
+                if tx.item_id.startswith("stock_"):
+                    self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+                elif tx.item_id.startswith("real_estate_"):
+                    self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
+                success = True
+
+            elif tx.transaction_type == "asset_transfer":
+                 # Standard Transfer (Zero-Sum)
+                 if settlement:
+                     success = settlement.transfer(buyer, seller, trade_value, f"asset_transfer:{tx.item_id}")
+                 else:
+                     buyer.withdraw(trade_value)
+                     seller.deposit(trade_value)
+                     success = True
+
+                 # Asset Transfer Logic
+                 if success:
+                     if tx.item_id.startswith("stock_"):
+                         self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+                     elif tx.item_id.startswith("real_estate_"):
+                         self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
+
+            elif tx.transaction_type == "escheatment":
+                 if settlement:
+                     success = settlement.transfer(buyer, seller, trade_value, "escheatment")
+                 else:
+                     buyer.withdraw(trade_value)
+                     seller.deposit(trade_value)
+                     success = True
+
+                 if success and hasattr(seller, "record_revenue"):
+                     seller.record_revenue(trade_value, "escheatment", buyer.id, current_time)
+
+            elif tx.transaction_type == "inheritance_distribution":
+                heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
+                total_cash = buyer.assets
+                if total_cash > 0 and heir_ids:
+                    amount_per_heir = total_cash / len(heir_ids)
+                    all_success = True
+                    for h_id in heir_ids:
+                        heir = agents.get(h_id)
+                        if heir:
+                            if settlement:
+                                if not settlement.transfer(buyer, heir, amount_per_heir, "inheritance_distribution"):
+                                    all_success = False
+                            else:
+                                buyer.withdraw(amount_per_heir)
+                                heir.deposit(amount_per_heir)
+                    success = all_success
+
+            elif tx.transaction_type == "goods":
                 # Goods: Apply Sales Tax
                 tax_amount = trade_value * sales_tax_rate
                 
@@ -62,24 +133,27 @@ class TransactionProcessor(SystemInterface):
                         buyer.check_solvency(government)
 
                 if settlement:
-                    settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
-                    if tax_amount > 0:
+                    success = settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+                    if success and tax_amount > 0:
                         settlement.transfer(buyer, government, tax_amount, f"sales_tax:{tx.item_id}")
                 else:
                     buyer.withdraw(trade_value + tax_amount)
                     seller.deposit(trade_value)
                     government.deposit(tax_amount)
+                    success = True
 
-                # Fix: Pass buyer object, not ID, to collect_tax
-                government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
+                if success:
+                    # Fix: Pass buyer object, not ID, to collect_tax
+                    government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
 
             elif tx.transaction_type == "stock":
                 # Stock: NO Sales Tax
                 if settlement:
-                    settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
+                    success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
                 else:
                     buyer.withdraw(trade_value)
                     seller.deposit(trade_value)
+                    success = True
             
             elif tx.transaction_type in ["labor", "research_labor"]:
                 # Labor: Apply Income Tax
@@ -97,72 +171,92 @@ class TransactionProcessor(SystemInterface):
                 
                 if tax_payer == "FIRM":
                     if settlement:
-                        settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
-                        if tax_amount > 0:
+                        success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
+                        if success and tax_amount > 0:
                             settlement.transfer(buyer, government, tax_amount, f"labor_tax_firm:{tx.transaction_type}")
                     else:
                         buyer.withdraw(trade_value + tax_amount)
                         seller.deposit(trade_value)
                         government.deposit(tax_amount)
+                        success = True
 
-                    # Fix: Pass buyer object (Firm) to collect_tax
-                    government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
+                    if success:
+                        # Fix: Pass buyer object (Firm) to collect_tax
+                        government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
                 else:
                     # Household pays tax (Withholding model)
                     net_wage = trade_value - tax_amount
                     if settlement:
-                        settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
-                        if tax_amount > 0:
+                        success = settlement.transfer(buyer, seller, net_wage, f"labor_wage_net:{tx.transaction_type}")
+                        if success and tax_amount > 0:
                             settlement.transfer(buyer, government, tax_amount, f"labor_tax_withheld:{tx.transaction_type}")
                     else:
                         buyer.withdraw(trade_value) # Buyer pays full (net + tax split dest)
                         seller.deposit(net_wage)
                         government.deposit(tax_amount)
+                        success = True
 
-                    # Fix: Pass seller object (Household) to collect_tax
-                    government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+                    if success:
+                        # Fix: Pass seller object (Household) to collect_tax
+                        government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
             
             elif tx.item_id == "interest_payment":
                 if settlement:
-                    settlement.transfer(buyer, seller, trade_value, "interest_payment")
+                    success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
                 else:
                     buyer.withdraw(trade_value)
                     seller.deposit(trade_value)
+                    success = True
 
-                if isinstance(buyer, Firm):
+                if success and isinstance(buyer, Firm):
                     buyer.finance.record_expense(trade_value)
 
             elif tx.transaction_type == "dividend":
                 if settlement:
-                    settlement.transfer(seller, buyer, trade_value, "dividend_payment")
+                    success = settlement.transfer(seller, buyer, trade_value, "dividend_payment")
                 else:
                     seller.withdraw(trade_value)
                     buyer.deposit(trade_value)
+                    success = True
 
-                if isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+                if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
                     buyer.capital_income_this_tick += trade_value
-            else:
-                # Default / Other
+            elif tx.transaction_type == "infrastructure_spending":
+                # Standard Transfer (Gov -> Reflux)
                 if settlement:
-                    settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
+                    success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
                 else:
                     buyer.withdraw(trade_value)
                     seller.deposit(trade_value)
+                    success = True
+            else:
+                # Default / Other
+                if settlement:
+                    success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
+                else:
+                    buyer.withdraw(trade_value)
+                    seller.deposit(trade_value)
+                    success = True
+
+            # WO-109: Apply Deferred Effects only on Success
+            if success and tx.metadata and tx.metadata.get("triggers_effect"):
+                state.effects_queue.append(tx.metadata)
 
             # ==================================================================
             # 2. Meta Logic (Inventory, Employment, Share Registry)
             # ==================================================================
-            if tx.transaction_type in ["labor", "research_labor"]:
-                self._handle_labor_transaction(tx, buyer, seller, trade_value, tax_amount, agents)
+            if success:
+                if tx.transaction_type in ["labor", "research_labor"]:
+                    self._handle_labor_transaction(tx, buyer, seller, trade_value, tax_amount, agents)
 
-            elif tx.transaction_type == "goods":
-                self._handle_goods_transaction(tx, buyer, seller, trade_value, current_time)
+                elif tx.transaction_type == "goods":
+                    self._handle_goods_transaction(tx, buyer, seller, trade_value, current_time)
 
-            elif tx.transaction_type == "stock":
-                self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+                elif tx.transaction_type == "stock":
+                    self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
 
-            elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
-                pass
+                elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
+                    pass
 
     def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, tax_amount: float, agents: Dict[int, Any]):
         if isinstance(seller, Household):
@@ -225,6 +319,25 @@ class TransactionProcessor(SystemInterface):
                 buyer.current_consumption += tx.quantity
                 if tx.item_id == "basic_food":
                     buyer.current_food_consumption += tx.quantity
+
+    def _handle_real_estate_transaction(self, tx: Transaction, buyer: Any, seller: Any, real_estate_units: List[Any], logger: Any, current_time: int):
+        # item_id = "real_estate_{id}"
+        try:
+            unit_id = int(tx.item_id.split("_")[2])
+            unit = next((u for u in real_estate_units if u.id == unit_id), None)
+            if unit:
+                unit.owner_id = buyer.id
+                # Update seller/buyer lists if they exist
+                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
+                    seller.owned_properties.remove(unit_id)
+                if hasattr(buyer, "owned_properties"):
+                    buyer.owned_properties.append(unit_id)
+
+                if logger:
+                    logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
+        except (IndexError, ValueError) as e:
+            if logger:
+                logger.error(f"RE_TX_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
 
     def _handle_stock_transaction(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, logger: Any, current_time: int):
         firm_id = int(tx.item_id.split("_")[1])

@@ -4,7 +4,7 @@ import logging
 from collections import deque
 
 if TYPE_CHECKING:
-    from simulation.models import RealEstateUnit
+    from simulation.models import RealEstateUnit, Transaction
     from simulation.core_agents import Household
     from simulation.firms import Firm
     from simulation.core_markets import Market
@@ -96,6 +96,9 @@ class WorldState:
         self.finance_system: Optional[FinanceSystem] = None
         self.ai_trainer: Optional[AIEngineRegistry] = None
         self.transactions: List[Any] = []  # Stores transactions of the current tick
+        self.inter_tick_queue: List[Transaction] = []  # WO-109: Queue for next tick
+        self.effects_queue: List[Dict[str, Any]] = []  # WO-109: Queue for side-effects
+        self.inactive_agents: Dict[int, Any] = {}  # WO-109: Store inactive agents for transaction processing
 
         # New Systems
         self.social_system: Optional[SocialSystem] = None

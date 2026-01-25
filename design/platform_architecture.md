@@ -40,7 +40,26 @@
 - **Repository Pattern**: `SimulationRepository`를 통해 DB 접근을 추상화했습니다.
 - **Batch Processing**: 성능을 위해 `BATCH_SAVE_INTERVAL`마다 일괄 저장합니다.
 
-## 3. 웹 인터페이스 (`app.py`, `static/`)
+## 3. 아키텍처 원칙: 신성한 시퀀스 (The Sacred Sequence)
+
+본 시뮬레이션의 모든 상태 변경은 "신성한 시퀀스"라 불리는 3단계 프로세스를 엄격히 준수한다. 이는 상태 변경의 예측 가능성을 보장하고, 제로섬(Zero-Sum) 오류를 원천적으로 방지하기 위함이다.
+
+### Phase 1: 결정 (Decision)
+- **Actor**: `Agent` 또는 `System`
+- **Action**: 현재 상태(`WorldState`)를 기반으로 행동을 결정하고, 그 결과를 `Transaction` 객체 리스트로 반환한다.
+- **Rule**: 이 단계에서는 **절대로** 시스템의 상태(예: `agent.assets`, `firm.inventory`)를 직접 수정해서는 안 된다. 모든 변경 의도는 `Transaction` 객체에 담겨야 한다.
+
+### Phase 2: 처리 (Processing)
+- **Actor**: `TransactionProcessor`
+- **Action**: `Phase 1`에서 생성된 모든 `Transaction`들을 순차적으로 실행한다. 자산 이동, 세금 징수, 재고 변경 등 실제적인 상태 변경이 이 단계에서만 발생한다.
+- **Rule**: `TransactionProcessor`는 시뮬레이션 내에서 유일하게 원자적 상태 변경을 책임지는 주체이다.
+
+### Phase 3: 효과 (Effect)
+- **Actor**: `SystemEffectsManager`
+- **Action**: `Transaction`의 `metadata`에 기록된 부수 효과(예: `GLOBAL_TFP_BOOST`)를 처리한다.
+- **Rule**: 자산/재고 변경과 직접 관련이 없는 광범위한 시스템 상태 변경은 이 단계를 통해 지연 실행(Deferred Execution)되어, 로직의 결합도를 낮춘다.
+
+## 4. 웹 인터페이스 (`app.py`, `static/`)
 - **Backend**: Flask API (`/api/simulation/tick`, `/api/simulation/update`).
 - **Frontend**: Vanilla JS + Chart.js.
 - **통신**: `API.js`를 통해 백엔드와 통신하며, `ui.js`가 대시보드를 렌더링합니다.
