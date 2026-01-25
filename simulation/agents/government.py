@@ -453,7 +453,11 @@ class Government:
         Side-effects (TFP Boost) are deferred via metadata.
         """
         transactions = []
-        cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
+        # Updated to use config default properly as suggested in review
+        if self.config_module:
+            cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
+        else:
+            cost = 5000.0
         
         effective_cost = cost
 

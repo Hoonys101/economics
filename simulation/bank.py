@@ -290,7 +290,8 @@ class Bank(IFinancialEntity):
         This replaces the old direct-modification `check_solvency`.
         """
         if self.assets < 0:
-            borrow_amount = abs(self.assets) + 1000.0 # Buffer
+            solvency_buffer = self._get_config("bank_defaults.solvency_buffer", 1000.0)
+            borrow_amount = abs(self.assets) + solvency_buffer
 
             tx = Transaction(
                 buyer_id=government.id, # Source of minting (symbolic)
