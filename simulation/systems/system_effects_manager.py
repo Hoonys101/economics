@@ -27,6 +27,10 @@ class SystemEffectsManager:
             effect_type = effect.get("triggers_effect")
             if effect_type == "GLOBAL_TFP_BOOST":
                 self._apply_global_tfp_boost(state)
+            elif effect_type == "GOVERNMENT_INFRA_UPGRADE":
+                self._apply_gov_infra_upgrade(state)
+            elif effect_type == "EDUCATION_UPGRADE":
+                self._apply_education_upgrade(state, effect)
             else:
                 logger.warning(f"UNKNOWN_EFFECT | Encountered unknown effect type: {effect_type}")
 
@@ -48,3 +52,29 @@ class SystemEffectsManager:
             f"GLOBAL_TFP_BOOST | Applied {tfp_boost*100:.1f}% productivity increase to {count} firms.",
             extra={"tick": state.time, "tags": ["system_effect", "infrastructure"]}
         )
+
+    def _apply_gov_infra_upgrade(self, state: SimulationState) -> None:
+        """Increments the government infrastructure level."""
+        if state.government:
+            state.government.infrastructure_level += 1
+            # Link to productivity increase
+            self._apply_global_tfp_boost(state)
+            logger.info(
+                f"GOVERNMENT_INFRA_UPGRADE | Level increased to {state.government.infrastructure_level}.",
+                extra={"tick": state.time, "tags": ["system_effect", "infrastructure"]}
+            )
+
+    def _apply_education_upgrade(self, state: SimulationState, effect: Dict[str, Any]) -> None:
+        """Increments education level for a specific household."""
+        target_id = effect.get("target_agent_id")
+        if target_id is None:
+            return
+
+        household = state.agents.get(target_id)
+        if household:
+            old_level = getattr(household, 'education_level', 0)
+            household.education_level = old_level + 1
+            logger.info(
+                f"EDUCATION_UPGRADE | Household {target_id} promoted to Level {household.education_level}.",
+                extra={"tick": state.time, "tags": ["system_effect", "education"]}
+            )

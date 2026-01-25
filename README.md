@@ -37,6 +37,7 @@
 -   [📜 프로젝트 역사 (PROJ_HISTORY)](design/PROJ_HISTORY.md): 탄생부터 현재까지의 기술적 이정표.
 -   [🏺 유기 자산 인벤토리 (HERITAGE_ASSETS)](design/HERITAGE_ASSETS.md): 대시보드 v1, 분석 스크립트 등 레거시 자산 가이드.
 -   [📍 현재 현황 브리핑 (CURRENT_BRIEFING)](design/CURRENT_BRIEFING.md): **가장 먼저 읽어야 할 현재 작업 상황.**
+-   [🤖 AI 협업 프로토콜 (GEMINI_USAGE)](design/manuals/GEMINI_USAGE_MANUAL.md): **AI 에이전트(Gemini, Jules 등)와 협업하기 위한 SCR 및 미션 컨트롤 가이드.**
 
 ---
 

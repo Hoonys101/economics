@@ -75,9 +75,6 @@ class TickScheduler:
              }
              state.event_system.execute_scheduled_events(state.time, context, state.stress_scenario_config)
 
-        # WO-054: Government Public Education Logic (START OF TICK)
-        state.government.run_public_education(state.households, state.config_module, state.time, state.reflux_system)
-
         if (
             state.time > 0
             and state.time % state.config_module.IMITATION_LEARNING_INTERVAL == 0
@@ -127,6 +124,11 @@ class TickScheduler:
         infra_txs = state.government.invest_infrastructure(state.time, state.reflux_system)
         if infra_txs:
             system_transactions.extend(infra_txs)
+
+        # 6. Education (WO-054 Refactor)
+        edu_txs = state.government.run_public_education(state.households, state.config_module, state.time, state.reflux_system)
+        if edu_txs:
+            system_transactions.extend(edu_txs)
 
         # ----------------------------------------------------------------------------------
 

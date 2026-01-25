@@ -130,6 +130,7 @@ Antigravity가 설계를 마치고 Jules에게 넘기기 전, 반드시 형상 �
 2.  **Active Feedback Loop**: Jules의 질문은 설계의 누락을 보충할 기회로 삼는다. 텍스트 명령으로 즉각 응답하되, 중요한 변경점은 문서에 즉시 반영한다.
 3.  **Post-Update (소급 반영)**: 세션 중 발생한 모든 프롬프트 수정 사항 및 결정은 세션 종료 후 관련 문서(`specs`, `roadmap` 등)에 소급 반영하여 전체적인 설계 품질을 유지한다.
 4.  **Efficiency Focus**: 완벽한 'Zero-Question'에 집착하여 속도를 늦추기보다, 명확한 가이드와 유연한 소통을 통해 **토큰 효율**과 **개발 속도**의 균형을 맞춘다.
+5.  **SCR Execution Protocol**: 모든 AI 미션 관리 및 Jules/Gemini 제어 시, `design/manuals/GEMINI_USAGE_MANUAL.md`의 SCR(Structured Command Registry) 절차를 준수하여 `cmd_ops.py`로 명령을 장전하고 발사한다.
 
 ---
 
@@ -171,6 +172,7 @@ python scripts/iron_test.py --num_ticks 1000
 
 ## 7. 참고 문서
 
+- `design/manuals/GEMINI_USAGE_MANUAL.md`: **AI 협업 프로토콜 및 SCR 미션 컨트롤 가이드 (필독)**
 - `gemini.md`: 이전 버전 지침 (Deprecated, 참고용)
 - `design/JULES_DOCUMENTATION_GUIDE.md`: 문서화 가이드
 - `task.md`: 프로젝트 체크리스트

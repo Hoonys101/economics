@@ -201,6 +201,11 @@ class SimulationInitializer(SimulationInitializerInterface):
                 if "housing" in sim.markets:
                     sim.markets["housing"].place_order(sell_order, sim.time)
 
+        # Phase 22.5 & WO-058: Bootstrap firms BEFORE first update_needs call
+        # This prevents Tick 1 liquidation due to 0 assets/employees
+        Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
+        Bootstrapper.force_assign_workers(sim.firms, sim.households)
+
         for agent in sim.households + sim.firms:
             agent.update_needs(sim.time)
             agent.decision_engine.markets = sim.markets
@@ -226,9 +231,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         )
         sim.firm_system = FirmSystem(config_module=self.config)
         sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger)
-
-        Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
-        Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)

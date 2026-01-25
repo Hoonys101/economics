@@ -1,11 +1,26 @@
 {
   "_meta": {
-    "session": "Phase 27: Credit Creation Recovery",
-    "updated": "2026-01-24",
-    "author": "Antigravity"
+    "session": "Architectural Integrity & Leak Resolution (TD-109/110/115)",
+    "updated": "2026-01-25",
+    "author": "Antigravity (Supervisor)"
   },
-  "reply_fix_td109": {
-    "command": "send-message",
-    "instruction": "Reviewer requested changes:\\n\\nGovernment.invest_infrastructure violates Sacred Sequence by mutating infrastructure_level directly in the Decision Phase.\\n\\nPlease refactor this to use SystemEffectsManager (e.g. add \u001bffect_type='infrastructure_boost' to Transaction metadata) so the state change happens ONLY after transaction success in the Processing Phase."
+  "gemini": {
+    "worker": "spec",
+    "instruction": "Generate a comprehensive 'Consolidated Technical Debt Resolution Report' for TD-109 (Sacred Sequence Compliance), TD-110 (Phantom Tax Fix), and TD-115 (Tick 1 -99,680 Leak). \n\nFocus on:\n1. Proof of resolution: How initialization reordering eliminated the Tick 1 leak.\n2. Architectural Purity: How converting Government/Education spending to deferred Transactions and using SystemEffectsManager handlers enforced the Sacred Sequence.\n3. Financial Integrity: Confirmation that all fixes maintain zero-sum stability as per the Gold Standard (WO-016).\n\nOutput should be saved to design/gemini_output/CONSOLIDATED_RESOLUTION_REPORT.md.",
+    "context": [
+      "design/audits/ROOT_CAUSE_PROFILE.md",
+      "simulation/initialization/initializer.py",
+      "simulation/agents/government.py",
+      "simulation/systems/ministry_of_education.py",
+      "simulation/systems/system_effects_manager.py",
+      "simulation/systems/transaction_processor.py",
+      "simulation/tick_scheduler.py"
+    ],
+    "walkthrough": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\1177222d-3e86-470b-9bbd-773d20c27aa9\\walkthrough.md"
+  },
+  "final_integrity_verification": {
+    "command": "create",
+    "instruction": "Run scripts/trace_leak.py to verify that the Tick 1 leak (-99,680) is resolved and the Sacred Sequence for government spending is functioning. If any anomalies (hangs, money supply delta > 1.0, agent deactivation) are detected, perform a root cause analysis. Reference design/handover/walkthrough.md.",
+    "title": "Final Integrity Trace & Analysis"
   }
 }

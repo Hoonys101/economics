@@ -526,19 +526,29 @@ class Government:
             market_id="system",
             transaction_type="infrastructure_spending",
             time=current_tick,
-            metadata={"triggers_effect": "GLOBAL_TFP_BOOST"}
+            metadata={
+                "triggers_effect": "GLOBAL_TFP_BOOST",
+                "additional_effects": ["GOVERNMENT_INFRA_UPGRADE"] # Refactor: Multi-effect support or combined
+            }
         )
+        # We use a combined effect in SystemEffectsManager or handle list. 
+        # For simplicity, let's use GOVERNMENT_INFRA_UPGRADE which should also trigger TFP boost? 
+        # Or just use two triggers if supported. 
+        # Current SystemEffectsManager only checks triggers_effect.
+        tx.metadata["triggers_effect"] = "GOVERNMENT_INFRA_UPGRADE"
+        # I will update SystemEffectsManager to also apply TFP boost when INFRA_UPGRADE happens.
+        
         transactions.append(tx)
 
-        self.infrastructure_level += 1
-        self.expenditure_this_tick += effective_cost
+        # Remove immediate mutations:
+        # self.infrastructure_level += 1
+        # self.expenditure_this_tick += effective_cost
 
         logger.info(
-            f"INFRASTRUCTURE_INVESTED | Level {self.infrastructure_level} initiated. Cost: {effective_cost}",
+            f"INFRASTRUCTURE_PENDING | Level {self.infrastructure_level + 1} initiated. Cost: {effective_cost}",
             extra={
                 "tick": current_tick,
                 "agent_id": self.id,
-                "level": self.infrastructure_level,
                 "tags": ["investment", "infrastructure"]
             }
         )
@@ -620,9 +630,10 @@ class Government:
             self._assets -= amount
 
     # WO-054: Public Education System
-    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> None:
+    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> List[Transaction]:
         """
         Delegates public education logic to the Ministry of Education.
+        Returns transactions.
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
-        self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system, self.settlement_system)
+        return self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system, self.settlement_system)
