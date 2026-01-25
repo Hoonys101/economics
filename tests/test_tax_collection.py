@@ -118,7 +118,8 @@ def test_government_collect_tax_adapter_success():
 
     collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
 
-    assert collected == 10.0
+    assert collected['amount_collected'] == 10.0
+    assert collected['success'] is True
     assert payer.assets == 90.0
     assert gov.assets == 10.0
     assert gov.total_collected_tax == 10.0
@@ -135,7 +136,8 @@ def test_government_collect_tax_adapter_failure():
 
     collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
 
-    assert collected == 0.0
+    assert collected['amount_collected'] == 0.0
+    assert collected['success'] is False
     assert payer.assets == 5.0
     assert gov.assets == 0.0
     assert gov.total_collected_tax == 0.0

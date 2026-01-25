@@ -120,13 +120,13 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 if inv_value > 0:
                     state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
                     if hasattr(state.government, "total_money_issued"):
-                        firm._add_assets(inv_value)
+                        # firm._add_assets(inv_value) # Removed to prevent Double Creation (Reflux has it)
                         state.government.total_money_issued += inv_value
 
                 if firm.capital_stock > 0:
                     state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
                     if hasattr(state.government, "total_money_issued"):
-                        firm._add_assets(firm.capital_stock)
+                        # firm._add_assets(firm.capital_stock) # Removed to prevent Double Creation
                         state.government.total_money_issued += firm.capital_stock
 
             # Clear employees
@@ -192,7 +192,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 if inv_value > 0:
                     state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
                     if hasattr(state.government, "total_money_issued"):
-                        state.government._add_assets(inv_value)
+                        # state.government._add_assets(inv_value) # Removed to prevent Double Creation
                         state.government.total_money_issued += inv_value
 
             household.inventory.clear()

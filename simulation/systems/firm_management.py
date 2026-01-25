@@ -57,7 +57,8 @@ class FirmSystem:
             return None
 
         # 3. Generate New Firm ID
-        max_id = max([a.id for a in simulation.agents.values()], default=0)
+        # Filter for integer IDs only (CentralBank might have string ID)
+        max_id = max([a.id for a in simulation.agents.values() if isinstance(a.id, int)], default=0)
         new_firm_id = max_id + 1
 
         # 4. AI Setup
