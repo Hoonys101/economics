@@ -170,14 +170,21 @@ class Government:
         self.expenditure_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
 
-    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> float:
+    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
         """
         Legacy adapter method used by TransactionProcessor.
         Now delegates to the new atomic collect_tax and records revenue.
         """
         if not self.settlement_system:
             logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
-            return 0.0
+            return {
+                "success": False,
+                "amount_collected": 0.0,
+                "tax_type": tax_type,
+                "payer_id": payer.id if hasattr(payer, 'id') else str(payer),
+                "payee_id": self.id,
+                "error_message": "No SettlementSystem linked"
+            }
 
         # Execute atomic transfer
         result = self.tax_agency.collect_tax(
@@ -192,7 +199,7 @@ class Government:
         # Record stats
         self.record_revenue(result)
 
-        return result['amount_collected']
+        return result
 
     def record_revenue(self, result: "TaxCollectionResult"):
         """
