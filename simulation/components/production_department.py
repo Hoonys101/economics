@@ -54,10 +54,17 @@ class ProductionDepartment:
             capital = max(self.firm.capital_stock, 0.01)
 
             # Technology Multiplier (WO-053)
-            tfp = self.firm.productivity_factor  # Total Factor Productivity
+            # TD-076: Removed redundant TFP calculation.
+            # firm.productivity_factor is the BASE TFP.
+            # We fetch the multiplier from TechnologyManager and apply it.
+            # If technology_manager is None, multiplier is 1.0.
 
+            base_tfp = self.firm.productivity_factor
+            tech_multiplier = 1.0
             if technology_manager:
-                tfp *= technology_manager.get_productivity_multiplier(self.firm.id)
+                tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id)
+
+            tfp = base_tfp * tech_multiplier
 
             # Phase 15: Quality Calculation
             avg_skill = self.firm.hr.get_avg_skill()
