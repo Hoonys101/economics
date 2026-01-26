@@ -38,45 +38,91 @@ def mock_config():
 
     # Defaults
     config.MARKET_PRICE_FALLBACK = 10.0
+    config.market_price_fallback = 10.0 # DTO alias
     config.NEED_FACTOR_BASE = 0.5
+    config.need_factor_base = 0.5
     config.NEED_FACTOR_SCALE = 100.0
+    config.need_factor_scale = 100.0
     config.VALUATION_MODIFIER_BASE = 0.9
+    config.valuation_modifier_base = 0.9
     config.VALUATION_MODIFIER_RANGE = 0.2
+    config.valuation_modifier_range = 0.2
     config.HOUSEHOLD_MAX_PURCHASE_QUANTITY = 5.0
+    config.household_max_purchase_quantity = 5.0
     config.BULK_BUY_NEED_THRESHOLD = 70.0
+    config.bulk_buy_need_threshold = 70.0
     config.BULK_BUY_AGG_THRESHOLD = 0.8
+    config.bulk_buy_agg_threshold = 0.8
     config.BULK_BUY_MODERATE_RATIO = 0.6
+    config.bulk_buy_moderate_ratio = 0.6
     config.BUDGET_LIMIT_NORMAL_RATIO = 0.5
+    config.budget_limit_normal_ratio = 0.5
     config.BUDGET_LIMIT_URGENT_NEED = 80.0
+    config.budget_limit_urgent_need = 80.0
     config.BUDGET_LIMIT_URGENT_RATIO = 0.9
+    config.budget_limit_urgent_ratio = 0.9
     config.MIN_PURCHASE_QUANTITY = 0.1
+    config.min_purchase_quantity = 0.1
     config.LABOR_MARKET_MIN_WAGE = 8.0
+    config.labor_market_min_wage = 8.0
     config.JOB_QUIT_THRESHOLD_BASE = 2.0
+    config.job_quit_threshold_base = 2.0
     config.JOB_QUIT_PROB_BASE = 0.1
+    config.job_quit_prob_base = 0.1
     config.JOB_QUIT_PROB_SCALE = 0.9
+    config.job_quit_prob_scale = 0.9
     config.RESERVATION_WAGE_BASE = 1.5
     config.RESERVATION_WAGE_RANGE = 1.0
 
     # Phase 21.6 Constants
     config.WAGE_DECAY_RATE = 0.02
+    config.wage_decay_rate = 0.02
     config.WAGE_RECOVERY_RATE = 0.01
     config.RESERVATION_WAGE_FLOOR = 0.3
+    config.reservation_wage_floor = 0.3
     config.SURVIVAL_CRITICAL_TURNS = 5
+    config.survival_critical_turns = 5
 
     # Phase 8 Constants
     config.PANIC_BUYING_THRESHOLD = 0.05
+    config.panic_buying_threshold = 0.05
     config.HOARDING_FACTOR = 0.5
+    config.hoarding_factor = 0.5
     config.DEFLATION_WAIT_THRESHOLD = -0.05
+    config.deflation_wait_threshold = -0.05
     config.DELAY_FACTOR = 0.5
+    config.delay_factor = 0.5
 
     # Portfolio / Stock
     config.STOCK_MARKET_ENABLED = False
+    config.stock_market_enabled = False
     config.EXPECTED_STARTUP_ROI = 0.15
+    config.expected_startup_roi = 0.15
     config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0
     config.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0
+    config.household_min_assets_for_investment = 500.0
     config.DEBT_REPAYMENT_RATIO = 0.5
+    config.debt_repayment_ratio = 0.5
     config.DEBT_REPAYMENT_CAP = 1.1
+    config.debt_repayment_cap = 1.1
     config.DEBT_LIQUIDITY_RATIO = 0.9
+    config.debt_liquidity_ratio = 0.9
+
+    # Missing DTO fields
+    config.initial_rent_price = 100.0
+    config.survival_need_consumption_threshold = 50.0
+    config.target_food_buffer_quantity = 5.0
+    config.food_purchase_max_per_tick = 10.0
+    config.assets_threshold_for_other_actions = 100.0
+    config.household_low_asset_threshold = 100.0
+    config.household_low_asset_wage = 5.0
+    config.household_default_wage = 10.0
+    config.dsr_critical_threshold = 0.4
+    config.stock_investment_equity_delta_threshold = 100.0
+    config.stock_investment_diversification_count = 5
+    config.startup_cost = 30000.0
+    config.DEFAULT_MORTGAGE_RATE = 0.05
+    config.default_mortgage_rate = 0.05
 
     return config
 
@@ -119,10 +165,11 @@ def decision_engine(mock_ai_engine, mock_config):
 
 class TestAIDrivenHouseholdDecisionEngine:
     def test_make_decisions_calls_ai(
-        self, decision_engine, mock_household_dto, mock_ai_engine
+        self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
+            config=mock_config,
             markets={},
             goods_data=[],
             market_data={},
@@ -132,7 +179,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         mock_ai_engine.decide_action_vector.assert_called_once()
 
     def test_consumption_do_nothing(
-        self, decision_engine, mock_household_dto, mock_ai_engine
+        self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
         # Action Vector with 0 aggressiveness implies "Do Nothing" or buy minimum
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
@@ -140,7 +187,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
+            config=mock_config,
             markets={},
             goods_data=[],
             market_data={},
@@ -163,7 +211,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
+            config=mock_config,
             markets=mock_markets,
             goods_data=[],
             market_data={},
@@ -196,7 +245,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         }
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
+            config=mock_config,
             markets=mock_markets,
             goods_data=[],
             market_data=market_data,
@@ -222,7 +272,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
+            config=mock_config,
             markets=mock_markets,
             goods_data=[],
             market_data={},
@@ -233,7 +284,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         assert len(orders) >= 1
 
     def test_labor_market_participation_aggressive(
-        self, decision_engine, mock_household_dto, mock_ai_engine
+        self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
         mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
         mock_labor_market.get_all_bids = Mock(
@@ -260,7 +311,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         }
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
+            config=mock_config,
             markets=mock_markets,
             goods_data=[],
             market_data=market_data,
@@ -277,7 +329,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         assert labor_order.price == 45.0
 
     def test_labor_market_participation_passive_no_offer(
-        self, decision_engine, mock_household_dto, mock_ai_engine
+        self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
         mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
         mock_labor_market.get_all_bids = Mock(
@@ -304,7 +356,8 @@ class TestAIDrivenHouseholdDecisionEngine:
         }
 
         context = DecisionContext(
-            household=mock_household_dto,
+            state=mock_household_dto,
+            config=mock_config,
             markets=mock_markets,
             goods_data=[],
             market_data=market_data,

@@ -83,6 +83,12 @@
     - Distribute `total - (N-1) * distributed_amount` to the last recipient.
 - **Effect**: Guarantees strict Zero-Sum conservation of assets within the system.
 
+### 4.4 의사결정 엔진의 순수성 (Purity of Decision Engines)
+- **현상:** 의사결정 로직(예: `AIDrivenHouseholdDecisionEngine`)이 `market`과 같은 live 서비스 객체를 직접 참조하면서, 테스트가 복잡해지고 서비스 간 결합도가 높아지는 문제가 발생했습니다.
+- **원인:** 엔진이 외부 상태(live object)에 직접 의존하여, 동일 입력에 대해 다른 결과를 낼 수 있는 비결정적 특성을 가집니다.
+- **해결:** 의사결정 엔진은 반드시 `DecisionContext`를 통해 전달되는 정적 데이터(State DTO, Market Data, Config)에만 의존해야 합니다. 엔진 내부에서 live 서비스 객체의 메서드를 직접 호출해서는 안 됩니다. 필요한 모든 외부 상태 정보는 호출하는 쪽에서 `market_data`와 같은 직렬화 가능한 데이터 구조로 변환하여 `Context`에 담아 전달해야 합니다.
+- **교훈:** 이 원칙은 의사결정 로직을 외부 서비스로부터 완전히 분리(decoupling)하여, 행위를 예측 가능하게 만들고 테스트 용이성을 극대화합니다. 엔진은 입력 데이터에 대해서만 작동하는 순수 함수(pure function)처럼 동작하게 됩니다.
+
 ---
 
 ## 5. 웹 인터페이스 (`app.py`, `static/`)

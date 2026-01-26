@@ -156,6 +156,8 @@ class HouseholdConfigDTO:
     debt_liquidity_ratio: float
     # Added for parity
     initial_rent_price: float
+    # Added for AI Engine Purity
+    default_mortgage_rate: float
 
 @dataclass
 class FirmConfigDTO:
