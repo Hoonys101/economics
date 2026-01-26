@@ -4,13 +4,6 @@
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "jules_bravo": {
-    "command": "create",
-    "title": "Track_Bravo_Remediation",
-    "instruction": "Fix Phantom Tax (TD-110) by enforcing Settle->Record and formalize IBankService (TD-119). Refer to the attached spec.",
-    "file": "design/specs/D_TRACK_BRAVO_REMEDIATION.md",
-    "wait": true
-  },
   "jules_core": {
     "command": "create",
     "title": "Remediation_TD116_117_118",

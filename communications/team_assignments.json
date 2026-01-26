@@ -17,6 +17,10 @@
       "6037925106170011541": {
         "title": "Track_Alpha_Redemption",
         "initial_mission": "Fix the Tick 1 leak (-99,680) and update M2 calculation. Use the generated spec for logic details. R..."
+      },
+      "11698650339345650580": {
+        "title": "Track_Bravo_Remediation",
+        "initial_mission": "Fix Phantom Tax (TD-110) by enforcing Settle->Record and formalize IBankService (TD-119). Refer to t..."
       }
     },
     "completed_sessions": {
