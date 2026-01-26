@@ -110,17 +110,42 @@ class TransactionProcessor(SystemInterface):
                 heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
                 total_cash = buyer.assets
                 if total_cash > 0 and heir_ids:
-                    amount_per_heir = total_cash / len(heir_ids)
+                    import math
+                    count = len(heir_ids)
+                    # Calculate amount per heir, avoiding float precision issues
+                    base_amount = math.floor((total_cash / count) * 100) / 100.0
+
+                    distributed_sum = 0.0
                     all_success = True
-                    for h_id in heir_ids:
+
+                    # Distribute to all but the last heir
+                    for i in range(count - 1):
+                        h_id = heir_ids[i]
                         heir = agents.get(h_id)
                         if heir:
                             if settlement:
-                                if not settlement.transfer(buyer, heir, amount_per_heir, "inheritance_distribution"):
+                                if settlement.transfer(buyer, heir, base_amount, "inheritance_part"):
+                                    distributed_sum += base_amount
+                                else:
                                     all_success = False
                             else:
-                                buyer.withdraw(amount_per_heir)
-                                heir.deposit(amount_per_heir)
+                                buyer.withdraw(base_amount)
+                                heir.deposit(base_amount)
+                                distributed_sum += base_amount
+
+                    # Last heir gets the remainder to ensure zero-sum
+                    last_heir = agents.get(heir_ids[-1])
+                    if last_heir:
+                        remaining_amount = total_cash - distributed_sum
+                        # Ensure we don't transfer negative if something went wrong, though logic prevents it
+                        if remaining_amount > 0:
+                            if settlement:
+                                if not settlement.transfer(buyer, last_heir, remaining_amount, "inheritance_final"):
+                                    all_success = False
+                            else:
+                                buyer.withdraw(remaining_amount)
+                                last_heir.deposit(remaining_amount)
+
                     success = all_success
 
             elif tx.transaction_type == "goods":

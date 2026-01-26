@@ -7,6 +7,7 @@ from simulation.models import Share
 
 if TYPE_CHECKING:
     from simulation.core_markets import Market
+    from simulation.dtos.api import MarketSnapshotDTO
 
 @dataclass
 class HouseholdStateDTO:
@@ -56,7 +57,7 @@ class CloningRequestDTO:
 @dataclass
 class EconContextDTO:
     """Context for economic operations."""
-    markets: Dict[str, "Market"]
+    market_snapshot: "MarketSnapshotDTO"
     market_data: Dict[str, Any]
     current_time: int
 

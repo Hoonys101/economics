@@ -17,16 +17,8 @@ class MarketComponent(IMarketComponent):
         """
         Selects the best seller based on Utility = (Quality^alpha * (1+Awareness)^beta * Loyalty) / Price.
         """
-        markets = context["markets"]
-        market = markets.get(item_id)
-        if not market:
-            return None, 0.0
-
-        # Assumes market has get_all_asks method returning list of orders
-        if not hasattr(market, 'get_all_asks'):
-            return None, 0.0
-
-        asks = market.get_all_asks(item_id)
+        market_snapshot = context["market_snapshot"]
+        asks = market_snapshot.asks.get(item_id, [])
         if not asks:
             return None, 0.0
 

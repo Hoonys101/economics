@@ -51,9 +51,10 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             from simulation.schemas import HouseholdActionVector
             return [], HouseholdActionVector()
 
-        markets = context.markets
+        # markets = context.markets # Removed in TD-117
         market_data = context.market_data
         current_time = context.current_time
+        market_snapshot = context.market_snapshot
 
         agent_data = household.agent_data
 
@@ -283,12 +284,10 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         # 4. Stock Investment Logic
         stock_orders = self._make_stock_investment_decisions(
-            household, markets, market_data, action_vector, current_time, macro_context
+            household, market_data, action_vector, current_time, macro_context
         )
-        stock_market = markets.get("stock_market")
-        if stock_market is not None:
-            for stock_order in stock_orders:
-                stock_market.place_order(stock_order, current_time)
+        # TD-117: Do not place orders directly. Return them.
+        orders.extend(stock_orders)
 
         # 5. Liquidity Management
         stress_config = context.stress_scenario_config
@@ -330,8 +329,11 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             orders.extend(emergency_orders)
 
         # 6. Real Estate Logic
-        if "housing" in markets:
-             housing_market = markets["housing"]
+        # TD-117: Use market_snapshot instead of markets["housing"]
+        # Check if housing items exist in asks
+        has_housing = any(k.startswith("unit_") for k in market_snapshot.asks.keys())
+
+        if has_housing:
              from simulation.decisions.housing_manager import HousingManager
 
              housing_manager = HousingManager(household, self.config_module) # Now passes DTO
@@ -456,7 +458,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
     def _make_stock_investment_decisions(
         self,
         household: "HouseholdStateDTO",
-        markets: Dict[str, Any],
         market_data: Dict[str, Any],
         action_vector: Any,
         current_time: int,
@@ -467,8 +468,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         if not getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
             return stock_orders
         
-        stock_market = markets.get("stock_market")
-        if stock_market is None:
+        stock_market_data = market_data.get("stock_market")
+        if not stock_market_data:
             return stock_orders
 
         if household.assets < self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT:
@@ -496,7 +497,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             macro_context=macro_context
         )
 
-        current_prices = {firm_id: stock_market.get_stock_price(firm_id) for firm_id in household.portfolio_holdings.keys()}
+        current_prices = {}
+        stock_market_data = market_data.get("stock_market", {})
+        for firm_id in household.portfolio_holdings.keys():
+            item_key = f"stock_{firm_id}"
+            price_info = stock_market_data.get(item_key, {})
+            current_prices[firm_id] = price_info.get("avg_price", 0.0)
 
         # Calculate valuation manually for DTO
         current_equity_value = 0.0
@@ -507,9 +513,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         equity_delta = target_equity - current_equity_value
 
         if equity_delta > self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD:
-            stock_orders.extend(self._place_buy_orders(household, equity_delta, stock_market, current_time))
+            stock_orders.extend(self._place_buy_orders(household, equity_delta, stock_market_data, current_time))
         elif equity_delta < -self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD:
-            stock_orders.extend(self._place_sell_orders(household, -equity_delta, stock_market, current_time))
+            stock_orders.extend(self._place_sell_orders(household, -equity_delta, stock_market_data, current_time))
         
         return stock_orders
 
@@ -520,9 +526,17 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             return 5.0
         return 2.0
 
-    def _place_buy_orders(self, household: "HouseholdStateDTO", amount_to_invest: float, stock_market: Any, tick: int) -> List[StockOrder]:
+    def _place_buy_orders(self, household: "HouseholdStateDTO", amount_to_invest: float, stock_market_data: Dict[str, Any], tick: int) -> List[StockOrder]:
         orders = []
-        available_stocks = [fid for fid in stock_market.reference_prices.keys() if stock_market.get_stock_price(fid) > 0]
+        available_stocks = []
+        for key, info in stock_market_data.items():
+            if key.startswith("stock_") and info.get("avg_price", 0) > 0:
+                try:
+                    fid = int(key.replace("stock_", ""))
+                    available_stocks.append(fid)
+                except ValueError:
+                    pass
+
         if not available_stocks:
             return orders
 
@@ -530,7 +544,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         investment_per_stock = amount_to_invest / diversification_count
         for _ in range(diversification_count):
             firm_id = random.choice(available_stocks)
-            price = stock_market.get_stock_price(firm_id)
+            price = stock_market_data.get(f"stock_{firm_id}", {}).get("avg_price", 0.0)
             if price > 0:
                 quantity = investment_per_stock / price
                 if quantity >= 1.0:
@@ -538,11 +552,15 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                     orders.append(order)
         return orders
 
-    def _place_sell_orders(self, household: "HouseholdStateDTO", amount_to_sell: float, stock_market: Any, tick: int) -> List[StockOrder]:
+    def _place_sell_orders(self, household: "HouseholdStateDTO", amount_to_sell: float, stock_market_data: Dict[str, Any], tick: int) -> List[StockOrder]:
         orders = []
+
+        def get_price(fid):
+            return stock_market_data.get(f"stock_{fid}", {}).get("avg_price", 0.0)
+
         sorted_holdings = sorted(
             household.portfolio_holdings.items(),
-            key=lambda item: item[1].quantity * stock_market.get_stock_price(item[0]), # Access .quantity
+            key=lambda item: item[1].quantity * get_price(item[0]),
             reverse=True
         )
 
@@ -550,7 +568,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             quantity = share.quantity
             if amount_to_sell <= 0:
                 break
-            price = stock_market.get_stock_price(firm_id)
+            price = get_price(firm_id)
             if price > 0:
                 value_of_holding = quantity * price
                 sell_value = min(amount_to_sell, value_of_holding)

@@ -11,7 +11,9 @@ from simulation.agents.government import Government
 from simulation.dtos import (
     AIDecisionData,
     GovernmentStateDTO,
-    MacroFinancialContext
+    MacroFinancialContext,
+    MarketSnapshotDTO,
+    GovernmentPolicyDTO
 )
 from simulation.systems.api import (
     EventContext,
@@ -277,6 +279,39 @@ class TickScheduler:
         )
         state.household_time_allocation = household_time_allocation # Update state
 
+        # TD-118: Commerce Planning (Phase 1 Extension)
+        current_vacancies = 0
+        labor_market = state.markets.get("labor")
+        if labor_market and isinstance(labor_market, OrderBookMarket):
+             for item_orders in labor_market.buy_orders.values():
+                 for order in item_orders:
+                     current_vacancies += order.quantity
+
+        consumption_market_data = market_data.copy()
+        consumption_market_data["job_vacancies"] = current_vacancies
+
+        commerce_context: CommerceContext = {
+            "households": state.households,
+            "agents": state.agents,
+            "breeding_planner": state.breeding_planner,
+            "household_time_allocation": household_time_allocation,
+            "reflux_system": state.reflux_system,
+            "market_data": consumption_market_data,
+            "config": state.config_module,
+            "time": state.time
+        }
+
+        if state.commerce_system:
+            plans, commerce_orders = state.commerce_system.plan_consumption_and_leisure(commerce_context, state.stress_scenario_config)
+            sim_state.planned_consumption = plans
+            # Inject orders into markets
+            for order in commerce_orders:
+                target_market = state.markets.get(order.market_id)
+                if target_market:
+                    target_market.place_order(order, state.time)
+        else:
+            sim_state.planned_consumption = {}
+
         # 2. Matching
         self._phase_matching(sim_state)
 
@@ -300,29 +335,9 @@ class TickScheduler:
         # ---------------------------------------------------------
         # Activate Consumption Logic & Leisure Effects (via CommerceSystem)
         # ---------------------------------------------------------
-        current_vacancies = 0
-        labor_market = state.markets.get("labor")
-        if labor_market and isinstance(labor_market, OrderBookMarket):
-             for item_orders in labor_market.buy_orders.values():
-                 for order in item_orders:
-                     current_vacancies += order.quantity
-
-        consumption_market_data = market_data.copy()
-        consumption_market_data["job_vacancies"] = current_vacancies
-
-        commerce_context: CommerceContext = {
-            "households": state.households,
-            "agents": state.agents,
-            "breeding_planner": state.breeding_planner,
-            "household_time_allocation": household_time_allocation,
-            "reflux_system": state.reflux_system,
-            "market_data": consumption_market_data,
-            "config": state.config_module,
-            "time": state.time
-        }
-
+        # TD-118: Finalize Consumption (Phase 4 Extension)
         if state.commerce_system:
-            household_leisure_effects = state.commerce_system.execute_consumption_and_leisure(commerce_context, state.stress_scenario_config)
+            household_leisure_effects = state.commerce_system.finalize_consumption_and_leisure(commerce_context, sim_state.planned_consumption)
         else:
             state.logger.error("CommerceSystem not initialized! Skipping consumption cycle.")
             household_leisure_effects = {}
@@ -518,6 +533,10 @@ class TickScheduler:
         household_pre_states = {}
         household_time_allocation = {}
 
+        # TD-117: Create DTOs
+        market_snapshot = self._create_market_snapshot(state, market_data)
+        government_policy = self._create_government_policy(state)
+
         # 1. Firms
         for firm in state.firms:
             if firm.is_active:
@@ -541,15 +560,21 @@ class TickScheduler:
 
                 stress_config = self.world_state.stress_scenario_config
 
+                # TD-117: Pass DTOs
                 firm_orders, action_vector = firm.make_decision(
-                    state.markets, state.goods_data, market_data, state.time,
-                    state.government, state.reflux_system, stress_config
+                    market_snapshot, government_policy, state.goods_data, market_data, state.time,
+                    state.reflux_system, stress_config
                 )
 
                 for order in firm_orders:
-                    target_market = state.markets.get(order.market_id)
-                    if target_market:
-                        target_market.place_order(order, state.time)
+                    # TD-117: Handle StockOrder (returned, not placed directly)
+                    if hasattr(order, 'firm_id') or order.market_id == 'stock_market':
+                         if state.stock_market:
+                             state.stock_market.place_order(order, state.time)
+                    else:
+                        target_market = state.markets.get(order.market_id)
+                        if target_market:
+                            target_market.place_order(order, state.time)
 
                 state.logger.debug(f"TRACE_ENGINE | Firm {firm.id} submitted {len(firm_orders)} orders to markets.")
 
@@ -567,8 +592,10 @@ class TickScheduler:
                     }
 
                 stress_config = self.world_state.stress_scenario_config
+                # TD-117: Pass DTOs
                 household_orders, action_vector = household.make_decision(
-                    state.markets, state.goods_data, market_data, state.time, state.government, macro_context, stress_config
+                    market_snapshot, government_policy, state.goods_data, market_data, state.time,
+                    macro_context, stress_config
                 )
 
                 if hasattr(action_vector, 'work_aggressiveness'):
@@ -597,6 +624,12 @@ class TickScheduler:
                     elif order.item_id in ["deposit", "currency"]:
                         target_market_id = "loan_market"
 
+                    # TD-117: Handle StockOrder
+                    if hasattr(order, 'firm_id') or target_market_id == 'stock_market':
+                         if state.stock_market:
+                             state.stock_market.place_order(order, state.time)
+                         continue
+
                     household_target_market = state.markets.get(target_market_id)
 
                     if household_target_market:
@@ -610,6 +643,45 @@ class TickScheduler:
                 state.logger.debug(f"TRACE_ENGINE | Household {household.id} submitted {len(household_orders)} orders back to engine.")
 
         return firm_pre_states, household_pre_states, household_time_allocation
+
+    def _create_market_snapshot(self, state: SimulationState, market_data: Dict[str, Any]) -> MarketSnapshotDTO:
+        prices = {}
+        volumes = {}
+        asks = {}
+        bids = {}
+
+        # Populate from market_data (which aggregates prices)
+        if "goods_market" in market_data:
+            for k, v in market_data["goods_market"].items():
+                if k.endswith("_current_sell_price"):
+                    item_id = k.replace("_current_sell_price", "")
+                    prices[item_id] = v
+
+        # Populate asks, bids and volumes from live markets
+        for market_id, market in state.markets.items():
+            if isinstance(market, OrderBookMarket):
+                # Asks for seller selection:
+                for item_id in market.sell_orders.keys():
+                    if item_id not in asks:
+                        asks[item_id] = []
+                    asks[item_id].extend(market.get_all_asks(item_id))
+
+                # Bids for demand analysis:
+                for item_id in market.buy_orders.keys():
+                    if item_id not in bids:
+                        bids[item_id] = []
+                    bids[item_id].extend(market.get_all_bids(item_id))
+
+        return MarketSnapshotDTO(prices=prices, volumes=volumes, asks=asks, bids=bids)
+
+    def _create_government_policy(self, state: SimulationState) -> GovernmentPolicyDTO:
+        # Default rates if not available
+        return GovernmentPolicyDTO(
+            income_tax_rate=getattr(state.government, 'income_tax_rate', 0.2),
+            sales_tax_rate=getattr(state.government, 'sales_tax_rate', 0.1),
+            corporate_tax_rate=getattr(state.government, 'corporate_tax_rate', 0.25),
+            base_interest_rate=state.central_bank.get_base_rate() if state.central_bank else 0.05
+        )
 
     def _phase_matching(self, state: SimulationState) -> None:
         """Phase 2: Match orders in all markets."""

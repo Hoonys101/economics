@@ -2,12 +2,35 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union
 from simulation.dtos.firm_state_dto import FirmStateDTO
+from simulation.models import Order
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.firms import Firm
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.household.dtos import HouseholdStateDTO
+
+# ==============================================================================
+# TD-117: Structural Purity DTOs
+# ==============================================================================
+
+@dataclass
+class MarketSnapshotDTO:
+    """A pure-data snapshot of the state of all markets at a point in time."""
+    prices: Dict[str, float]
+    volumes: Dict[str, float]
+    asks: Dict[str, List[Order]] # For seller selection logic
+    bids: Dict[str, List[Order]] # For demand analysis (Shadow Mode)
+    # Add other aggregated market data as needed by decision engines
+
+@dataclass
+class GovernmentPolicyDTO:
+    """A pure-data snapshot of current government policies affecting agent decisions."""
+    income_tax_rate: float
+    sales_tax_rate: float
+    corporate_tax_rate: float
+    base_interest_rate: float
+    # Add other policy data as needed, e.g., welfare amounts, subsidies
 
 @dataclass
 class TransactionData:
@@ -151,8 +174,8 @@ class DecisionContext:
     """
     A pure data container for decision-making.
     Direct agent instance access is strictly forbidden (Enforced by Purity Gate).
+    TD-117 CHANGE: Replaced live objects with DTOs.
     """
-    markets: Dict[str, Any]
     goods_data: List[Dict[str, Any]]
     market_data: Dict[str, Any]
     current_time: int
@@ -163,9 +186,13 @@ class DecisionContext:
     # Static configuration values relevant to the agent type
     config: Union[HouseholdConfigDTO, FirmConfigDTO]
 
-    government: Optional[Any] = None
-    reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
-    stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+    # DTO-based context
+    market_snapshot: MarketSnapshotDTO
+    government_policy: GovernmentPolicyDTO
+
+    # Legacy systems passed through - to be phased out
+    reflux_system: Optional[Any] = None
+    stress_scenario_config: Optional[StressScenarioConfig] = None
 
 
 @dataclass
@@ -198,6 +225,8 @@ class SimulationState:
     transactions: List[Any] = None # List[Transaction]
     effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
     inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
+    # TD-118: Planned consumption from Phase 1
+    planned_consumption: Optional[Dict[int, Dict[str, Any]]] = None
 
     def __post_init__(self):
         if self.transactions is None:
@@ -206,6 +235,8 @@ class SimulationState:
             self.effects_queue = []
         if self.inactive_agents is None:
             self.inactive_agents = {}
+        if self.planned_consumption is None:
+            self.planned_consumption = {}
 
 
 # ------------------------------------------------------------------------------
