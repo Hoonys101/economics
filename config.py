@@ -72,6 +72,16 @@ DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
 NEWBORN_ENGINE_TYPE = "AIDriven"  # Default engine for newborns: "AIDriven" or "RuleBased"
 
 # --- Initial Agent Configuration ---
+NEWBORN_INITIAL_NEEDS = {
+    "survival": 60.0,
+    "social": 20.0,
+    "improvement": 10.0,
+    "asset": 10.0,
+    "imitation_need": 15.0,
+    "labor_need": 0.0,
+    "liquidity_need": 50.0
+}
+
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 50.0
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2

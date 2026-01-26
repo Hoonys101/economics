@@ -151,7 +151,8 @@ class DemographicManager:
                 )
                 new_decision_engine.loan_market = simulation.markets.get("loan_market")
 
-            initial_needs_for_newborn = {
+            # WO-121: Externalize newborn needs to config
+            default_needs = {
                 "survival": 60.0,
                 "social": 20.0,
                 "improvement": 10.0,
@@ -160,6 +161,7 @@ class DemographicManager:
                 "labor_need": 0.0,
                 "liquidity_need": 50.0
             }
+            initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", default_needs)
 
             child = Household(
                 id=child_id,
