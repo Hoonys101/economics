@@ -4,9 +4,16 @@
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "fix-all-tests": {
+  "implement-ai-memory-v2": {
     "command": "create",
-    "instruction": "현재 프로젝트의 tests/ 폴더에 있는 모든 테스트를 실행하고, 실패하는 테스트들을 분석하여 DTO Purity Gate 등 최신 아키텍처 변경 사항에 맞게 코드를 수정하세요. 모든 테스트가 통과(Green)하는 것이 목표입니다.",
-    "title": "WO-122: Test Suite Cleanroom"
+    "instruction": "1. design/specs/WO-123_AI_MEMORY_V2.md 스펙 문서를 읽고, 명세된 대로 AI Memory System V2를 구현하세요. 2. modules/ai/memory/ 패키지를 생성하고 api.py, system.py, dao.py 등을 작성하세요. 3. 스펙 절차에 따라 단위 테스트를 작성하고 통과시키세요.",
+    "title": "WO-123: Implement AI Memory System V2",
+    "file": "design/specs/WO-123_AI_MEMORY_V2.md"
+  },
+  "master-reentry-wo122-wo123": {
+    "command": "create",
+    "instruction": "1. design/specs/MASTER_PLAN_REENTRY.md 마스터 플랜을 정독하고, Phase 1부터 Phase 4까지 체크리스트 순서대로 작업을 수행하세요. 2. 특히 'Test Purity Protocol'을 엄격히 준수하여 MagicMock 오염을 방지하고 DTO Factory를 가장 먼저 구축하세요. 3. 각 단계 완료 시 테스트를 통해 검증하고 다음 단계로 넘어가세요.",
+    "title": "Master Re-entry: WO-122 & WO-123 Implementation",
+    "file": "design/specs/MASTER_PLAN_REENTRY.md"
   }
 }
