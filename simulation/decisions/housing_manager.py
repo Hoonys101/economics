@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 import math
 from simulation.models import Order
 
 if TYPE_CHECKING:
     from modules.household.dtos import HouseholdStateDTO
+    from simulation.dtos import HouseholdConfigDTO
 
 class PurchaseIntent:
     """DTO for Mimicry Purchase decision"""
@@ -21,7 +22,7 @@ class HousingManager:
     Refactored for DTO Purity Gate.
     """
 
-    def __init__(self, agent: "HouseholdStateDTO", config: Any):
+    def __init__(self, agent: "HouseholdStateDTO", config: Union[Any, HouseholdConfigDTO]):
         self.agent = agent  # HouseholdStateDTO
         self.config = config
 
@@ -37,7 +38,10 @@ class HousingManager:
         """
         Phase 17-4: Mimicry Consumption Logic.
         """
-        if not getattr(self.config, "ENABLE_VANITY_SYSTEM", False):
+        # Use DTO attribute if available, otherwise legacy getattr
+        enable_vanity = self.config.enable_vanity_system if hasattr(self.config, 'enable_vanity_system') else getattr(self.config, "ENABLE_VANITY_SYSTEM", False)
+
+        if not enable_vanity:
             return None
 
         # 1. Calculate Gap
@@ -50,7 +54,8 @@ class HousingManager:
 
         # 2. Calculate Urgency
         conformity = getattr(self.agent, "conformity", 0.5)
-        mimicry_factor = getattr(self.config, "MIMICRY_FACTOR", 0.5)
+
+        mimicry_factor = self.config.mimicry_factor if hasattr(self.config, 'mimicry_factor') else getattr(self.config, "MIMICRY_FACTOR", 0.5)
 
         urgency = conformity * gap * mimicry_factor
 
@@ -70,7 +75,7 @@ class HousingManager:
         # 1. Base Economic Parameters
         horizon = 120
         discount_rate = 0.005
-        maintenance_rate = self.config.MAINTENANCE_RATE_PER_TICK
+        maintenance_rate = self.config.maintenance_rate_per_tick if hasattr(self.config, 'maintenance_rate_per_tick') else self.config.MAINTENANCE_RATE_PER_TICK
         
         # 2. Personality-Biased Parameters
         

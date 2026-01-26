@@ -158,12 +158,36 @@ class HouseholdConfigDTO:
     initial_rent_price: float
     # Added for AI Engine Purity
     default_mortgage_rate: float
+    # Housing Manager
+    enable_vanity_system: bool
+    mimicry_factor: float
+    maintenance_rate_per_tick: float
 
 @dataclass
 class FirmConfigDTO:
     """Static configuration values relevant to firm decisions."""
     firm_min_production_target: float
-    # Add other firm config values as needed for engines
+    firm_max_production_target: float
+    startup_cost: float
+    seo_trigger_ratio: float
+    seo_max_sell_ratio: float
+    automation_cost_per_pct: float
+    firm_safety_margin: float
+    automation_tax_rate: float
+    altman_z_score_threshold: float
+    dividend_suspension_loss_ticks: int
+    dividend_rate_min: float
+    dividend_rate_max: float
+    labor_alpha: float
+    automation_labor_reduction: float
+    severance_pay_weeks: float
+    labor_market_min_wage: float
+    overstock_threshold: float
+    understock_threshold: float
+    production_adjustment_factor: float
+    max_sell_quantity: float
+    invisible_hand_sensitivity: float
+    capital_to_output_ratio: float
 
 @dataclass
 class DecisionContext:

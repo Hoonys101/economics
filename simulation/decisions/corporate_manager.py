@@ -5,7 +5,7 @@ import random
 
 from simulation.models import Order, StockOrder
 from simulation.schemas import FirmActionVector
-from simulation.dtos import DecisionContext, FirmStateDTO
+from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from simulation.markets.stock_market import StockMarket
 
@@ -35,6 +35,10 @@ class CorporateManager:
         Returns a list of Orders (External and Internal).
         """
         orders: List[Order] = []
+        config: FirmConfigDTO = context.config
+
+        # Helper map for goods data
+        goods_map = {g['id']: g for g in context.goods_data}
 
         # Phase 21: System 2 Strategic Guidance
         if self.system2_planner is None:
@@ -43,16 +47,16 @@ class CorporateManager:
         guidance = self.system2_planner.project_future(context.current_time, context.market_data, firm)
 
         # 0. Production Target Adjustment (Restored Logic)
-        target_order = self._manage_production_target(firm)
+        target_order = self._manage_production_target(firm, config)
         if target_order:
             orders.append(target_order)
 
         # 0. Procurement Channel (Raw Materials) - WO-030
-        procurement_orders = self._manage_procurement(firm, context.market_data)
+        procurement_orders = self._manage_procurement(firm, context.market_data, config, goods_map)
         orders.extend(procurement_orders)
 
         # Phase 21: Automation Channel
-        auto_orders = self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time)
+        auto_orders = self._manage_automation(firm, action_vector.capital_aggressiveness, guidance, context.current_time, config)
         orders.extend(auto_orders)
 
         # 1. R&D Channel (Innovation)
@@ -60,18 +64,18 @@ class CorporateManager:
         if guidance.get("rd_intensity", 0.0) > 0.1:
              rd_agg = max(rd_agg, 0.5)
 
-        rd_order = self._manage_r_and_d(firm, rd_agg, context.current_time)
+        rd_order = self._manage_r_and_d(firm, rd_agg, context.current_time, config)
         if rd_order:
             orders.append(rd_order)
 
         # 2. Capital Channel (CAPEX)
         capex_agg = action_vector.capital_aggressiveness
-        capex_order = self._manage_capex(firm, capex_agg, context.current_time)
+        capex_order = self._manage_capex(firm, capex_agg, context.current_time, config)
         if capex_order:
             orders.append(capex_order)
 
         # 3. Dividend Channel
-        div_order = self._manage_dividends(firm, action_vector.dividend_aggressiveness)
+        div_order = self._manage_dividends(firm, action_vector.dividend_aggressiveness, config)
         if div_order:
             orders.append(div_order)
 
@@ -80,24 +84,24 @@ class CorporateManager:
         orders.extend(debt_orders)
 
         # 5. Pricing Channel (Sales)
-        pricing_orders = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.current_time)
+        pricing_orders = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.current_time, config, goods_map)
         orders.extend(pricing_orders)
 
         # 6. Hiring Channel (Employment)
-        hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data)
+        hiring_orders = self._manage_hiring(firm, action_vector.hiring_aggressiveness, context.market_data, config)
         orders.extend(hiring_orders)
 
         # 7. Secondary Offering (SEO)
-        seo_order = self._attempt_secondary_offering(firm, context)
+        seo_order = self._attempt_secondary_offering(firm, context, config)
         if seo_order:
             orders.append(seo_order)
 
         return orders
 
-    def _attempt_secondary_offering(self, firm: FirmStateDTO, context: DecisionContext) -> Optional[StockOrder]:
+    def _attempt_secondary_offering(self, firm: FirmStateDTO, context: DecisionContext, config: FirmConfigDTO) -> Optional[StockOrder]:
         """Sell treasury shares to raise capital when cash is low."""
-        startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
-        trigger_ratio = getattr(self.config_module, "SEO_TRIGGER_RATIO", 0.5)
+        startup_cost = config.startup_cost
+        trigger_ratio = config.seo_trigger_ratio
 
         if firm.assets >= startup_cost * trigger_ratio:
             return None
@@ -109,7 +113,7 @@ class CorporateManager:
         if not market_snapshot:
             return None
 
-        max_sell_ratio = getattr(self.config_module, "SEO_MAX_SELL_RATIO", 0.10)
+        max_sell_ratio = config.seo_max_sell_ratio
         sell_qty = min(firm.treasury_shares * max_sell_ratio, firm.treasury_shares)
 
         if sell_qty < 1.0:
@@ -141,12 +145,14 @@ class CorporateManager:
         self.logger.info(f"SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}")
         return order
 
-    def _manage_procurement(self, firm: FirmStateDTO, market_data: Dict[str, Any]) -> List[Order]:
+    def _manage_procurement(self, firm: FirmStateDTO, market_data: Dict[str, Any], config: FirmConfigDTO, goods_map: Dict[str, Any]) -> List[Order]:
         """
         WO-030: Manage Raw Material Procurement.
         """
         orders = []
-        input_config = self.config_module.GOODS.get(firm.specialization, {}).get("inputs", {})
+        # Access goods_map instead of config_module.GOODS
+        good_info = goods_map.get(firm.specialization, {})
+        input_config = good_info.get("inputs", {})
 
         if not input_config:
             return orders
@@ -167,14 +173,15 @@ class CorporateManager:
                 if last_price <= 0:
                      last_price = mat_market_data.get(fallback_price_key, 0.0)
                 if last_price <= 0:
-                     last_price = self.config_module.GOODS.get(mat, {}).get("initial_price", 10.0)
+                     mat_info = goods_map.get(mat, {})
+                     last_price = mat_info.get("initial_price", 10.0)
 
                 bid_price = last_price * 1.05
                 orders.append(Order(firm.id, "BUY", mat, deficit, bid_price, mat))
 
         return orders
 
-    def _manage_automation(self, firm: FirmStateDTO, aggressiveness: float, guidance: Dict[str, Any], current_time: int) -> List[Order]:
+    def _manage_automation(self, firm: FirmStateDTO, aggressiveness: float, guidance: Dict[str, Any], current_time: int, config: FirmConfigDTO) -> List[Order]:
         """
         Phase 21: Automation Investment.
         """
@@ -186,10 +193,10 @@ class CorporateManager:
             return orders
 
         gap = target_a - current_a
-        cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
+        cost_per_pct = config.automation_cost_per_pct
         cost = cost_per_pct * (gap * 100.0)
 
-        safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
+        safety_margin = config.firm_safety_margin
         investable_cash = max(0.0, firm.assets - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
@@ -202,7 +209,7 @@ class CorporateManager:
         orders.append(Order(firm.id, "INVEST_AUTOMATION", "internal", actual_spend, 0.0, "internal"))
 
         # WO-044-Track-B: Automation Tax
-        automation_tax_rate = getattr(self.config_module, "AUTOMATION_TAX_RATE", 0.05)
+        automation_tax_rate = config.automation_tax_rate
         tax_amount = actual_spend * automation_tax_rate
 
         if tax_amount > 0:
@@ -210,7 +217,7 @@ class CorporateManager:
 
         return orders
 
-    def _manage_r_and_d(self, firm: FirmStateDTO, aggressiveness: float, current_time: int) -> Optional[Order]:
+    def _manage_r_and_d(self, firm: FirmStateDTO, aggressiveness: float, current_time: int, config: FirmConfigDTO) -> Optional[Order]:
         """
         Innovation Physics.
         """
@@ -221,7 +228,7 @@ class CorporateManager:
         rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
-        safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
+        safety_margin = config.firm_safety_margin
         investable_cash = max(0.0, firm.assets - safety_margin)
 
         if investable_cash < budget:
@@ -232,14 +239,14 @@ class CorporateManager:
 
         return Order(firm.id, "INVEST_RD", "internal", budget, 0.0, "internal")
 
-    def _manage_capex(self, firm: FirmStateDTO, aggressiveness: float, current_time: int) -> Optional[Order]:
+    def _manage_capex(self, firm: FirmStateDTO, aggressiveness: float, current_time: int, config: FirmConfigDTO) -> Optional[Order]:
         """
         Capacity Expansion.
         """
         if aggressiveness <= 0.2:
             return None
 
-        safety_margin = getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0)
+        safety_margin = config.firm_safety_margin
         investable_cash = max(0.0, firm.assets - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
@@ -249,21 +256,21 @@ class CorporateManager:
 
         return Order(firm.id, "INVEST_CAPEX", "internal", budget, 0.0, "internal")
 
-    def _manage_dividends(self, firm: FirmStateDTO, aggressiveness: float) -> Optional[Order]:
+    def _manage_dividends(self, firm: FirmStateDTO, aggressiveness: float, config: FirmConfigDTO) -> Optional[Order]:
         """
         Set Dividend Rate.
         """
         z_score = firm.altman_z_score
-        z_score_threshold = getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81)
-        loss_limit = getattr(self.config_module, "DIVIDEND_SUSPENSION_LOSS_TICKS", 3)
+        z_score_threshold = config.altman_z_score_threshold
+        loss_limit = config.dividend_suspension_loss_ticks
 
         is_distressed = (z_score < z_score_threshold) or (firm.consecutive_loss_turns >= loss_limit)
 
         if is_distressed:
             return Order(firm.id, "SET_DIVIDEND", "internal", 0.0, 0.0, "internal")
 
-        base_rate = getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1)
-        max_rate = getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5)
+        base_rate = config.dividend_rate_min
+        max_rate = config.dividend_rate_max
         new_rate = base_rate + (aggressiveness * (max_rate - base_rate))
 
         return Order(firm.id, "SET_DIVIDEND", "internal", new_rate, 0.0, "internal")
@@ -304,7 +311,7 @@ class CorporateManager:
 
         return orders
 
-    def _manage_pricing(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict, current_time: int) -> List[Order]:
+    def _manage_pricing(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict, current_time: int, config: FirmConfigDTO, goods_map: Dict[str, Any]) -> List[Order]:
         """
         Sales Channel.
         """
@@ -321,7 +328,7 @@ class CorporateManager:
         if market_price <= 0:
              market_price = firm.price_history.get(item_id, 0)
         if market_price <= 0:
-             market_price = self.config_module.GOODS.get(item_id, {}).get("production_cost", 10.0)
+             market_price = goods_map.get(item_id, {}).get("production_cost", 10.0)
 
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
@@ -341,7 +348,7 @@ class CorporateManager:
         orders.append(Order(firm.id, "SET_PRICE", item_id, target_price, 0.0, "internal"))
 
         # 2. Market Order to sell
-        qty = min(current_inventory, self.config_module.MAX_SELL_QUANTITY)
+        qty = min(current_inventory, config.max_sell_quantity)
 
         # We generate a direct SELL order here.
         # Note: Previous logic called `firm.sales.post_ask` which might do more (logging, etc).
@@ -359,7 +366,7 @@ class CorporateManager:
 
         return orders
 
-    def _manage_hiring(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict) -> List[Order]:
+    def _manage_hiring(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict, config: FirmConfigDTO) -> List[Order]:
         """
         Hiring Channel.
         """
@@ -368,8 +375,8 @@ class CorporateManager:
         current_inventory = firm.inventory.get(firm.specialization, 0)
         inventory_gap = target_inventory - current_inventory
 
-        base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
-        automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+        base_alpha = config.labor_alpha
+        automation_reduction = config.automation_labor_reduction
         alpha_adjusted = base_alpha * (1.0 - (firm.automation_level * automation_reduction))
         beta_adjusted = 1.0 - alpha_adjusted
 
@@ -400,12 +407,12 @@ class CorporateManager:
                 # Identify candidates (FIFO from ID list)
                 candidates = firm.employees[:fire_count]
 
-                severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
+                severance_weeks = config.severance_pay_weeks
 
                 for emp_id in candidates:
                     # Get wage and skill from DTO
                     emp_data = firm.employees_data.get(emp_id, {})
-                    wage = emp_data.get("wage", self.config_module.LABOR_MARKET_MIN_WAGE)
+                    wage = emp_data.get("wage", config.labor_market_min_wage)
                     skill = emp_data.get("skill", 1.0)
 
                     adjusted_wage = wage * skill
@@ -425,13 +432,13 @@ class CorporateManager:
                 return orders
 
         # B. Hiring Logic
-        market_wage = self.config_module.LABOR_MARKET_MIN_WAGE
+        market_wage = config.labor_market_min_wage
         if "labor" in market_data and "avg_wage" in market_data["labor"]:
              market_wage = market_data["labor"]["avg_wage"]
 
         adjustment = -0.2 + (aggressiveness * 0.5)
         offer_wage = market_wage * (1.0 + adjustment)
-        offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
+        offer_wage = max(config.labor_market_min_wage, offer_wage)
 
         # Competitive Bidding Logic (Simplified from original due to DTO access limits or replicate it?)
         # We can replicate `_adjust_wage_for_vacancies` using DTO data.
@@ -488,7 +495,7 @@ class CorporateManager:
 
         return max(base_offer_wage, new_wage)
 
-    def _manage_production_target(self, firm: FirmStateDTO) -> Optional[Order]:
+    def _manage_production_target(self, firm: FirmStateDTO, config: FirmConfigDTO) -> Optional[Order]:
         """
         Adjust Production Target based on Inventory Levels.
         """
@@ -496,11 +503,11 @@ class CorporateManager:
         current_inventory = firm.inventory.get(item, 0.0)
         target = firm.production_target
 
-        overstock_threshold = getattr(self.config_module, "OVERSTOCK_THRESHOLD", 1.2)
-        understock_threshold = getattr(self.config_module, "UNDERSTOCK_THRESHOLD", 0.8)
-        adj_factor = getattr(self.config_module, "PRODUCTION_ADJUSTMENT_FACTOR", 0.1)
-        min_target = getattr(self.config_module, "FIRM_MIN_PRODUCTION_TARGET", 10.0)
-        max_target = getattr(self.config_module, "FIRM_MAX_PRODUCTION_TARGET", 500.0)
+        overstock_threshold = config.overstock_threshold
+        understock_threshold = config.understock_threshold
+        adj_factor = config.production_adjustment_factor
+        min_target = config.firm_min_production_target
+        max_target = config.firm_max_production_target
 
         new_target = target
         if current_inventory > target * overstock_threshold:

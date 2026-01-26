@@ -328,12 +328,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             orders.extend(emergency_orders)
 
         # 6. Real Estate Logic
-        # Fix NameError: 'markets' -> 'context.markets'
-        if context.markets and "housing" in context.markets:
-             housing_market = context.markets["housing"]
+        # Refactored for DTO Purity (WO-103)
+        if context.market_snapshot:
              from simulation.decisions.housing_manager import HousingManager
 
-             housing_manager = HousingManager(household, self.config_module) # Now passes DTO
+             # Use context.config (HouseholdConfigDTO)
+             housing_manager = HousingManager(household, context.config)
 
              reference_standard = market_data.get("reference_standard", {})
              mimicry_intent = housing_manager.decide_mimicry_purchase(reference_standard)
@@ -345,9 +345,15 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                  best_offer = None
                  min_price = float('inf')
                  
-                 for item_id, orders_list in housing_market.sell_orders.items():
-                     if not orders_list: continue
-                     cheapest = orders_list[0]
+                 # Iterate over snapshot asks to find housing units
+                 # Housing units are identified by 'unit_' prefix in item_id
+                 for item_id, orders_list in context.market_snapshot.asks.items():
+                     if not item_id.startswith("unit_"):
+                         continue
+                     if not orders_list:
+                         continue
+
+                     cheapest = orders_list[0] # Assuming sorted ascending
                      if cheapest.price < min_price:
                          min_price = cheapest.price
                          best_offer = cheapest

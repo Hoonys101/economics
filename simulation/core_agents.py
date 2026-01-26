@@ -733,7 +733,10 @@ class Household(BaseAgent, ILearningAgent):
             debt_repayment_cap=self.config_module.DEBT_REPAYMENT_CAP,
             debt_liquidity_ratio=self.config_module.DEBT_LIQUIDITY_RATIO,
             initial_rent_price=self.config_module.INITIAL_RENT_PRICE,
-            default_mortgage_rate=getattr(self.config_module, "DEFAULT_MORTGAGE_RATE", 0.05)
+            default_mortgage_rate=getattr(self.config_module, "DEFAULT_MORTGAGE_RATE", 0.05),
+            enable_vanity_system=getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False),
+            mimicry_factor=getattr(self.config_module, "MIMICRY_FACTOR", 0.5),
+            maintenance_rate_per_tick=self.config_module.MAINTENANCE_RATE_PER_TICK
         )
 
         # Context for Decision Engine (Pure Logic)

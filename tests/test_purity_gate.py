@@ -109,6 +109,13 @@ def test_household_engine_uses_dto():
     household_dto.preference_growth = 1.0
     household_dto.durable_assets = []
     household_dto.is_employed = True
+    household_dto.portfolio_holdings = {}
+    household_dto.is_homeless = False
+    household_dto.residing_property_id = 1
+    household_dto.owned_properties = [1]
+    household_dto.conformity = 0.5
+    household_dto.optimism = 0.5
+    household_dto.ambition = 0.5
 
     config_dto = MagicMock()
     config_dto.market_price_fallback = 10.0
@@ -142,6 +149,11 @@ def test_household_engine_uses_dto():
     config_mock.JOB_QUIT_THRESHOLD_BASE = 0.5
     config_mock.JOB_QUIT_PROB_BASE = 0.1
     config_mock.JOB_QUIT_PROB_SCALE = 0.1
+    config_mock.STOCK_MARKET_ENABLED = True
+    config_mock.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0
+    config_mock.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 2.0
+    config_mock.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD = 100.0
+    config_mock.STOCK_INVESTMENT_DIVERSIFICATION_COUNT = 5
 
     context = MagicMock(spec=DecisionContext)
     context.state = household_dto

@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.decisions.corporate_manager import CorporateManager
-from simulation.dtos import DecisionContext, FirmStateDTO
+from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from simulation.schemas import FirmActionVector
 from simulation.models import Order
 from simulation.ai.enums import Personality
@@ -26,6 +26,39 @@ class MockConfig:
     SEO_TRIGGER_RATIO = 0.5
     SEO_MAX_SELL_RATIO = 0.1
     STARTUP_COST = 30000.0
+    LABOR_ALPHA = 0.7
+    AUTOMATION_LABOR_REDUCTION = 0.5
+    INVISIBLE_HAND_SENSITIVITY = 0.1
+    ALTMAN_Z_SCORE_THRESHOLD = 1.81
+    DIVIDEND_SUSPENSION_LOSS_TICKS = 3
+
+@pytest.fixture
+def firm_config_dto():
+    c = MockConfig()
+    return FirmConfigDTO(
+        firm_min_production_target=c.FIRM_MIN_PRODUCTION_TARGET,
+        firm_max_production_target=c.FIRM_MAX_PRODUCTION_TARGET,
+        startup_cost=c.STARTUP_COST,
+        seo_trigger_ratio=c.SEO_TRIGGER_RATIO,
+        seo_max_sell_ratio=c.SEO_MAX_SELL_RATIO,
+        automation_cost_per_pct=c.AUTOMATION_COST_PER_PCT,
+        firm_safety_margin=c.FIRM_SAFETY_MARGIN,
+        automation_tax_rate=c.AUTOMATION_TAX_RATE,
+        altman_z_score_threshold=c.ALTMAN_Z_SCORE_THRESHOLD,
+        dividend_suspension_loss_ticks=c.DIVIDEND_SUSPENSION_LOSS_TICKS,
+        dividend_rate_min=c.DIVIDEND_RATE_MIN,
+        dividend_rate_max=c.DIVIDEND_RATE_MAX,
+        labor_alpha=c.LABOR_ALPHA,
+        automation_labor_reduction=c.AUTOMATION_LABOR_REDUCTION,
+        severance_pay_weeks=float(c.SEVERANCE_PAY_WEEKS),
+        labor_market_min_wage=c.LABOR_MARKET_MIN_WAGE,
+        overstock_threshold=c.OVERSTOCK_THRESHOLD,
+        understock_threshold=c.UNDERSTOCK_THRESHOLD,
+        production_adjustment_factor=c.PRODUCTION_ADJUSTMENT_FACTOR,
+        max_sell_quantity=float(c.MAX_SELL_QUANTITY),
+        invisible_hand_sensitivity=c.INVISIBLE_HAND_SENSITIVITY,
+        capital_to_output_ratio=c.CAPITAL_TO_OUTPUT_RATIO
+    )
 
 @pytest.fixture
 def firm_dto():
@@ -65,9 +98,10 @@ def firm_dto():
     )
 
 @pytest.fixture
-def context_mock(firm_dto):
+def context_mock(firm_dto, firm_config_dto):
     context = MagicMock(spec=DecisionContext)
     context.state = firm_dto # Use state
+    context.config = firm_config_dto
     context.current_time = 1
     context.market_data = {
         "goods_market": {
@@ -76,6 +110,7 @@ def context_mock(firm_dto):
         },
         "debt_data": {1: {"total_principal": 0.0}}
     }
+    context.goods_data = [{"id": "food", "production_cost": 10.0, "inputs": {}}]
     context.markets = {
         "food": MagicMock(),
         "labor": MagicMock(),
@@ -153,6 +188,9 @@ def test_debt_logic_borrow(firm_dto, context_mock):
 def test_automation_investment(firm_dto, context_mock):
     config = MockConfig()
     config.AUTOMATION_COST_PER_PCT = 10.0 # Make it cheap
+    # Update config DTO
+    context_mock.config.automation_cost_per_pct = 10.0
+
     manager = CorporateManager(config)
     # Ensure automation is profitable so System 2 recommends it
     # High wages so automation saves money

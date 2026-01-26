@@ -329,7 +329,28 @@ class Firm(BaseAgent, ILearningAgent):
             },
         )
         config_dto = FirmConfigDTO(
-            firm_min_production_target=self.config_module.FIRM_MIN_PRODUCTION_TARGET
+            firm_min_production_target=self.config_module.FIRM_MIN_PRODUCTION_TARGET,
+            firm_max_production_target=getattr(self.config_module, "FIRM_MAX_PRODUCTION_TARGET", 500.0),
+            startup_cost=getattr(self.config_module, "STARTUP_COST", 30000.0),
+            seo_trigger_ratio=getattr(self.config_module, "SEO_TRIGGER_RATIO", 0.5),
+            seo_max_sell_ratio=getattr(self.config_module, "SEO_MAX_SELL_RATIO", 0.10),
+            automation_cost_per_pct=getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0),
+            firm_safety_margin=getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0),
+            automation_tax_rate=getattr(self.config_module, "AUTOMATION_TAX_RATE", 0.05),
+            altman_z_score_threshold=getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81),
+            dividend_suspension_loss_ticks=getattr(self.config_module, "DIVIDEND_SUSPENSION_LOSS_TICKS", 3),
+            dividend_rate_min=getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1),
+            dividend_rate_max=getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5),
+            labor_alpha=getattr(self.config_module, "LABOR_ALPHA", 0.7),
+            automation_labor_reduction=getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5),
+            severance_pay_weeks=getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4),
+            labor_market_min_wage=self.config_module.LABOR_MARKET_MIN_WAGE,
+            overstock_threshold=getattr(self.config_module, "OVERSTOCK_THRESHOLD", 1.2),
+            understock_threshold=getattr(self.config_module, "UNDERSTOCK_THRESHOLD", 0.8),
+            production_adjustment_factor=getattr(self.config_module, "PRODUCTION_ADJUSTMENT_FACTOR", 0.1),
+            max_sell_quantity=self.config_module.MAX_SELL_QUANTITY,
+            invisible_hand_sensitivity=getattr(self.config_module, "INVISIBLE_HAND_SENSITIVITY", 0.1),
+            capital_to_output_ratio=getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
         )
         state_dto = self.get_state_dto()
 
