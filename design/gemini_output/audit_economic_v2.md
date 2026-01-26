@@ -1,112 +1,142 @@
-# ECONOMIC PURITY AUDIT REPORT (v2.0)
+# Audit Economic V2: Economic Integrity and Leak Detection
 
-**Date:** Phase 24 Audit Cycle
-**Auditor:** Jules (AI Forensic Auditor)
-**Target:** Simulation Economic Engine (`simulation/`, `modules/`)
-**Reference Spec:** `design/specs/AUDIT_SPEC_ECONOMIC.md`
+## 1. Introduction
+This audit investigates the economic integrity of the simulation, focusing on "Zero-Sum" violations where assets are created or destroyed without proper accounting. The audit targets `simulation/systems/transaction_processor.py`, `inheritance_manager.py`, `lifecycle_manager.py`, and `government.py`.
 
----
+## 2. Direct Asset Modification (Grep Results)
+A search for direct modification of `.assets` revealed the following:
 
-## 1. Executive Summary
+### Safe / Intentional
+*   **`simulation/decisions/ai_driven_household_engine.py`**:
+    *   `household.assets -= repay_amount`
+    *   `household.assets = temp_assets`
+    *   **Verdict**: **Safe**. This occurs within a decision engine using a DTO (`HouseholdStateDTO`). The modification is temporary for local simulation and is reverted in a `finally` block.
+*   **`simulation/systems/event_system.py`**:
+    *   `h.assets *= (1 + config.demand_shock_cash_injection)`
+    *   `agent.assets *= (1 - config.asset_shock_reduction)`
+    *   **Verdict**: **Intentional**. These are "God Mode" stress test scenarios (Hyperinflation, Deflation) designed to inject or remove liquidity exogenously.
+*   **`simulation/agents/government.py`**:
+    *   `_add_assets` / `_sub_assets`
+    *   **Verdict**: **Safe**. Internal helper methods used by the `TransactionProcessor` or strictly controlled system components.
 
-The audit reveals systemic violations of the [Double-Entry Bookkeeping] and [Atomicity] principles defined in the economic specifications. While a `FinanceSystem` exists to handle authorized transfers, it is frequently bypassed by core system components (`TransactionProcessor`, `InheritanceManager`, `Bank`), leading to a "Shadow Economy" of direct state mutations.
+### Leaks / Violations
+*   **`simulation/systems/lifecycle_manager.py`** (Line 169):
+    *   `firm._sub_assets(firm.assets)`
+    *   **Verdict**: **Leak**. During firm liquidation, if `settlement.transfer` fails or leaves residuals (e.g., floating point dust), the remaining assets are simply subtracted and added to `total_money_destroyed`. While statistically tracked, this removes circulating money from the economy without a corresponding transaction (e.g., to Government/Escheatment), effectively "evaporating" wealth.
 
-**Critical Findings:**
-1.  **Direct Asset Mutation:** Over 40+ instances of direct `assets +=` or `assets -=` operations found outside the Finance module.
-2.  **Atomicity Failures:** `TransactionProcessor` performs manual Debit/Credit sequences without rollback mechanisms.
-3.  **Inheritance Leakage:** `InheritanceManager` utilizes floating-point division for asset distribution without remainder handling, causing potential deflationary pressure (Residual Evaporation).
+## 3. Atomicity Violations & Logic Flaws
 
----
+### A. Tax Collection Atomicity (TransactionProcessor)
+In `simulation/systems/transaction_processor.py` (around line 154 for Goods):
+The system calculates `trade_value` and `tax_amount`. It checks solvency for the sum, but executes the transfers sequentially.
 
-## 2. Asset Integrity Audit (Direct Mutation)
-
-The specification requires all value transfers to route through `FinanceSystem.transfer` (or `IFinancialEntity.deposit/withdraw`). The following components violate this by directly modifying `assets` or `_cash`.
-
-### 2.1. Critical Violations (Top Offenders)
-
-| Component | Location | Violation Pattern | Impact |
-| :--- | :--- | :--- | :--- |
-| **TransactionProcessor** | `simulation/systems/transaction_processor.py` | `buyer.assets -= ...`, `seller.assets += ...` | Bypasses transaction logs, non-atomic updates. |
-| **Bank** | `simulation/bank.py` | `self.assets += ...` | Reserves updated without counter-party record. |
-| **InheritanceManager** | `simulation/systems/inheritance_manager.py` | `heir.assets += cash_share` | Bypasses inheritance tax logging/tracking if not careful. |
-| **FinanceDepartment** | `simulation/components/finance_department.py` | `government.assets += repayment` | Corporate finance logic modifying Government state directly. |
-| **HRDepartment** | `simulation/components/hr_department.py` | `employee.assets += net_wage` | Wages paid via magic injection rather than firm withdrawal. |
-
-### 2.2. Forensic Grep Evidence (Sample)
-```text
-simulation/bank.py:        self.assets = initial_assets # Reserves
-simulation/bank.py:            self.assets += amount
-simulation/systems/transaction_processor.py:                buyer.assets -= (trade_value + tax_amount)
-simulation/systems/transaction_processor.py:                seller.assets += trade_value
-simulation/systems/inheritance_manager.py:            heir.assets += cash_share
-simulation/components/finance_department.py:            government.assets += repayment
-```
-
----
-
-## 3. Inheritance Audit (Residual Evaporation)
-
-**File:** `simulation/systems/inheritance_manager.py`
-
-**Finding:**
-The current logic distributes cash using simple division:
 ```python
-cash_share = deceased.assets / num_heirs
-for heir in heirs:
-    heir.assets += cash_share
-deceased.assets = 0.0
+# Current Logic Structure
+if settlement:
+    # Step 1: Trade (Buyer -> Seller)
+    success = settlement.transfer(buyer, seller, trade_value, ...)
+
+    # Step 2: Tax (Buyer -> Government)
+    if success and tax_amount > 0:
+        government.collect_tax(tax_amount, ...)
 ```
 
-**Forensic Analysis:**
-- **Floating Point Error:** If `deceased.assets` is 100.00 and there are 3 heirs, `cash_share` is 33.3333...
-- **Evaporation:** The system forces `deceased.assets = 0.0` after distribution. Any microscopic remainder between `sum(cash_share * N)` and `original_assets` is effectively destroyed (or created).
-- **Compliance:** Violates the "Zero-Sum" rule.
-- **Recommendation:** Calculate `total_distributed` and assign the remainder (`deceased.assets - total_distributed`) to the `RefluxSystem` or the first heir.
+**The Flaw**: If Step 1 succeeds (Buyer pays Seller), the Buyer's assets decrease. If Step 2 fails (e.g., due to a race condition, recalculation error, or system error in `collect_tax`), the Trade is valid, but the Tax is never collected. The Government loses revenue, and the Buyer evades tax. This is a **Policy Leak**.
 
----
+### B. Inheritance Distribution (TransactionProcessor)
+In `simulation/systems/transaction_processor.py` (Inheritance Logic):
+The system calculates a `base_amount` to distribute to heirs and gives the remainder to the last heir.
 
-## 4. Atomicity Audit (Transaction Processor)
-
-**File:** `simulation/systems/transaction_processor.py`
-
-**Finding:**
-Transactions are processed as sequential steps without a transaction block:
 ```python
-# Step 1: Debit Buyer
-buyer.assets -= (trade_value + tax_amount)
-# ... code gap ...
-# Step 2: Credit Seller
-seller.assets += trade_value
+# Current Logic Structure
+distributed_sum = 0.0
+for i in range(count - 1):
+    if settlement.transfer(buyer, heir, base_amount, ...):
+        distributed_sum += base_amount
+    # If transfer fails, distributed_sum does NOT increase.
+
+# Last Heir Logic
+remaining_amount = total_cash - distributed_sum
+settlement.transfer(buyer, last_heir, remaining_amount, ...)
 ```
 
-**Forensic Analysis:**
-- **No Rollback:** If `seller.assets += trade_value` fails (e.g., property setter validation error), `buyer.assets` remains debited. Money is destroyed.
-- **Race Conditions:** While currently single-threaded, this pattern prevents future parallelization.
-- **Logic Fragmentation:** Tax calculation and solvency checks are inline, leading to "Spaghetti Accounting" where tax rules are duplicated across transaction types.
+**The Flaw**: If an intermediate transfer fails (e.g., `heir` is invalid or system error), `distributed_sum` remains lower than expected. `remaining_amount` becomes abnormally large (containing the share of the failed transfer). The Last Heir attempts to claim this large amount.
+*   If the money remained with the Deceased (Buyer), the Last Heir gets everything (Unfair Distribution).
+*   If the money was deducted but not credited (Atomicity failure in `settlement`), the Last Heir transaction fails too.
+*   **Verdict**: **Distribution Logic Error**. While likely Zero-Sum safe (money stays with deceased), it leads to unpredictable inheritance outcomes.
 
----
+## 4. Proposed Solutions (Pseudocode)
 
-## 5. Practitioner's Report (Technical Debt)
+### A. Atomic Trade Execution
+Move the Trade and Tax logic into a single atomic block within `SettlementSystem` or verify execution rigorously.
 
-As a result of this audit, the following technical debts are flagged for the "Engine Repair Phase":
+```python
+def execute_atomic_trade(buyer, seller, government, trade_amount, tax_amount):
+    total_cost = trade_amount + tax_amount
 
-### 5.1. The "Leaky Bank" Pattern
-The `Bank` class treats `self.assets` as a magic bucket. It manually increments/decrements reserves based on logic scattered across the system, rather than acting as a true `IFinancialEntity` that interacts via the `FinanceSystem`.
+    # 1. Pre-validation
+    if buyer.assets < total_cost:
+        return False # Insufficient Funds
 
-### 5.2. God Class: TransactionProcessor
-`TransactionProcessor` knows too much. It handles:
-- Tax Law (Income vs Sales vs VAT)
-- Solvency Checks
-- Inventory Management
-- Stock Registry updates
-- Asset Transfer
-**Recommendation:** Decompose into `TaxAgent`, `SettlementSystem`, and `Registry`.
+    # 2. Execution (All or Nothing)
+    try:
+        # Depending on SettlementSystem capabilities, use a batch transfer
+        # or optimistic locking.
 
-### 5.3. Inconsistent Financial Interfaces
-- `Firm` uses `FinanceDepartment` (via `firm.finance`).
-- `Household` manages assets directly (`household.assets`).
-- `Government` is a hybrid.
-This asymmetry makes standardized auditing impossible. All agents should implement `IFinancialEntity` properly or delegate to a standardized wallet component.
+        # Scenario: Batch
+        transfers = [
+            (buyer, seller, trade_amount),
+            (buyer, government, tax_amount)
+        ]
+        settlement.batch_transfer(transfers)
+        return True
+    except TransferError:
+        return False
+```
 
-### 5.4. Hardcoded Economic Parameters
-Tax rates and thresholds are often hardcoded or retrieved via `getattr(config, "KEY", default)` repeatedly inside tight loops, causing performance drag and configuration opacity.
+### B. Safe Liquidation (Escheatment)
+In `lifecycle_manager.py`, replace destruction with transfer to Government.
+
+```python
+# simulation/systems/lifecycle_manager.py
+
+# ... inside Firm Liquidation ...
+total_cash = firm.assets
+
+# 1. Distribute to Shareholders
+# ... existing logic ...
+
+# 2. Escheat Remainder (Instead of Destroying)
+remaining_assets = firm.assets
+if remaining_assets > 0:
+    # Transfer ALL remaining assets to Government
+    if settlement:
+         settlement.transfer(firm, government, remaining_assets, "liquidation_escheatment_final")
+    else:
+         firm.withdraw(remaining_assets)
+         government.deposit(remaining_assets)
+
+    # Now firm.assets should be 0.
+    # If still > 0 due to float error, force set to 0 (destruction of dust only).
+```
+
+### C. Robust Inheritance
+Calculate shares independently of transfer success.
+
+```python
+# simulation/systems/transaction_processor.py
+
+base_amount = math.floor((total_cash / count) * 100) / 100.0
+remainder_dust = total_cash - (base_amount * count)
+
+for i, heir_id in enumerate(heir_ids):
+    amount = base_amount
+    if i == len(heir_ids) - 1:
+        amount += remainder_dust # Only give the dust to the last heir
+
+    # Execute Transfer independently
+    settlement.transfer(buyer, heir, amount, "inheritance_distribution")
+
+    # If this fails, the money stays with Deceased (Buyer), which is correct behavior for a failed transaction.
+    # It does NOT get forwarded to the next heir or the last heir.
+```
