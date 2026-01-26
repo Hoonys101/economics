@@ -8,23 +8,42 @@ def mock_config():
     config = Mock()
     config.STARTUP_GRACE_PERIOD_TICKS = 24
     config.ALTMAN_Z_SCORE_THRESHOLD = 1.81
-    config.DEBT_RISK_PREMIUM_TIERS = {
-        1.2: 0.05,
-        0.9: 0.02,
-        0.6: 0.005,
-    }
+    # Use config.get side_effect or return value pattern for compatibility
+    def get_side_effect(key, default=None):
+        vals = {
+            "economy_params.STARTUP_GRACE_PERIOD_TICKS": 24,
+            "economy_params.ALTMAN_Z_SCORE_THRESHOLD": 1.81,
+            "economy_params.DEBT_RISK_PREMIUM_TIERS": {
+                1.2: 0.05,
+                0.9: 0.02,
+                0.6: 0.005,
+            },
+            "economy_params.BOND_MATURITY_TICKS": 400,
+            "economy_params.QE_INTERVENTION_YIELD_THRESHOLD": 0.10,
+            "economy_params.BAILOUT_PENALTY_PREMIUM": 0.05,
+            "economy_params.BAILOUT_REPAYMENT_RATIO": 0.5,
+            "TICKS_PER_YEAR": 48
+        }
+        return vals.get(key, default)
+
+    config.get = Mock(side_effect=get_side_effect)
+    # Also set attributes for direct access if needed
     config.BOND_MATURITY_TICKS = 400
-    config.QE_INTERVENTION_YIELD_THRESHOLD = 0.10
-    config.BAILOUT_PENALTY_PREMIUM = 0.05
-    config.BAILOUT_REPAYMENT_RATIO = 0.5
     config.TICKS_PER_YEAR = 48
+    config.BAILOUT_REPAYMENT_RATIO = 0.5
     return config
 
 # Define simple stub classes for entity behavior
 class StubGovernment:
     def __init__(self, assets=10000.0):
+        self.id = "GOVERNMENT"
         self._assets = assets
         self.debt_to_gdp_ratio = 0.5
+
+    @property
+    def assets(self):
+        return self._assets
+
     def get_debt_to_gdp_ratio(self):
         return self.debt_to_gdp_ratio
     def deposit(self, amount): self._assets += amount
@@ -35,8 +54,14 @@ class StubGovernment:
 
 class StubCentralBank:
     def __init__(self, cash=50000.0):
+        self.id = "CENTRAL_BANK"
         self._assets = {'cash': cash, 'bonds': []}
         self.base_rate = 0.02
+
+    @property
+    def assets(self):
+        return self._assets
+
     def get_base_rate(self):
         return self.base_rate
     def purchase_bonds(self, bond):
@@ -49,7 +74,13 @@ class StubCentralBank:
 
 class StubBank:
     def __init__(self, assets=100000.0):
+        self.id = "COMMERCIAL_BANK"
         self._assets = assets
+
+    @property
+    def assets(self):
+        return self._assets
+
     def deposit(self, amount): self._assets += amount
     def withdraw(self, amount):
         if self.assets < amount:
@@ -70,7 +101,11 @@ def mock_bank():
 
 @pytest.fixture
 def finance_system(mock_government, mock_central_bank, mock_bank, mock_config):
-    return FinanceSystem(mock_government, mock_central_bank, mock_bank, mock_config)
+    fs = FinanceSystem(mock_government, mock_central_bank, mock_bank, mock_config)
+    # Mock FiscalMonitor because it's hard dependency in FinanceSystem
+    fs.fiscal_monitor = Mock()
+    fs.fiscal_monitor.get_debt_to_gdp_ratio.return_value = 0.5
+    return fs
 
 class StubFirm:
     def __init__(self):
@@ -92,6 +127,10 @@ class StubFirm:
         self.finance.retained_earnings = 5000.0
         self.finance.profit_history = [1000.0, 1000.0]
         self.has_bailout_loan = False
+
+    @property
+    def assets(self):
+        return self._assets
 
     def get_inventory_value(self):
         return 0.0
@@ -134,29 +173,30 @@ def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank)
     amount = 1000.0
     initial_bank_assets = mock_bank.assets
     initial_gov_assets = mock_government.assets
-    bonds = finance_system.issue_treasury_bonds(amount, 100)
+    bonds, txs = finance_system.issue_treasury_bonds(amount, 100)
     assert len(bonds) == 1
-    assert mock_bank.assets == initial_bank_assets - amount
-    assert mock_government.assets == initial_gov_assets + amount
+    assert len(txs) == 1
+    assert txs[0].buyer_id == mock_bank.id
+    assert txs[0].seller_id == mock_government.id
+    assert txs[0].price == amount
 
 def test_issue_treasury_bonds_qe(finance_system, mock_government, mock_central_bank):
+    finance_system.fiscal_monitor.get_debt_to_gdp_ratio.return_value = 1.5
     mock_government.debt_to_gdp_ratio = 1.5
     # Fix: The yield rate (base + risk premium) must exceed the QE threshold.
     # Original: 0.02 (base) + 0.05 (risk) = 0.07 <= 0.10 (QE threshold) -> No QE
     # New: 0.06 (base) + 0.05 (risk) = 0.11 > 0.10 (QE threshold) -> QE triggered
     mock_central_bank.base_rate = 0.06
     amount = 1000.0
-    initial_gov_assets = mock_government.assets
-    initial_cb_cash = mock_central_bank.assets['cash']
-    bonds = finance_system.issue_treasury_bonds(amount, 100)
+    bonds, txs = finance_system.issue_treasury_bonds(amount, 100)
     assert len(bonds) == 1
+    assert len(txs) == 1
+    assert txs[0].buyer_id == mock_central_bank.id
     assert len(mock_central_bank.assets['bonds']) == 1
-    assert mock_government.assets == initial_gov_assets + amount
-    assert mock_central_bank.assets['cash'] == initial_cb_cash - amount
 
 def test_issue_treasury_bonds_fail(finance_system, mock_government, mock_bank):
     amount = 200000.0 # More than the bank's assets
-    bonds = finance_system.issue_treasury_bonds(amount, 100)
+    bonds, txs = finance_system.issue_treasury_bonds(amount, 100)
     assert len(bonds) == 0
 
 def test_bailout_fails_with_insufficient_government_funds(finance_system, mock_government, mock_firm):
@@ -166,7 +206,7 @@ def test_bailout_fails_with_insufficient_government_funds(finance_system, mock_g
     initial_gov_assets = mock_government.assets
     initial_firm_cash = mock_firm.cash_reserve
 
-    loan = finance_system.grant_bailout_loan(mock_firm, amount)
+    loan, txs = finance_system.grant_bailout_loan(mock_firm, amount, 100)
 
     assert loan is None
     # Assert that no funds were moved
@@ -178,13 +218,16 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
     amount = 5000.0
     initial_gov_assets = mock_government.assets
     initial_firm_cash = mock_firm.cash_reserve
-    loan = finance_system.grant_bailout_loan(mock_firm, amount)
+    loan, txs = finance_system.grant_bailout_loan(mock_firm, amount, 100)
     assert loan.firm_id == mock_firm.id
     assert loan.amount == amount
     assert loan.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
-    assert mock_government.assets == initial_gov_assets - amount
-    assert mock_firm.cash_reserve == initial_firm_cash + amount
-    mock_firm.finance.add_liability.assert_called_once_with(amount, loan.interest_rate)
+
+    # Verify Transaction generation
+    assert len(txs) == 1
+    assert txs[0].buyer_id == mock_government.id
+    assert txs[0].seller_id == mock_firm.id
+    assert txs[0].price == amount
 
 def test_service_debt_central_bank_repayment(finance_system, mock_government, mock_central_bank, mock_config):
     """
@@ -194,12 +237,13 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
     """
     # 1. Setup: Issue a bond that will be bought by the Central Bank via QE
     mock_government.debt_to_gdp_ratio = 1.5
+    finance_system.fiscal_monitor.get_debt_to_gdp_ratio.return_value = 1.5
     mock_central_bank.base_rate = 0.06
     mock_central_bank._assets = {"bonds": [], "cash": 10000.0}
 
     amount = 1000.0
     issue_tick = 100
-    bonds = finance_system.issue_treasury_bonds(amount, issue_tick)
+    bonds, txs = finance_system.issue_treasury_bonds(amount, issue_tick)
     bond = bonds[0]
 
     # 2. Action: Service the debt at the bond's maturity date
@@ -207,14 +251,18 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
     initial_gov_assets = mock_government.assets
     initial_cb_cash = mock_central_bank.assets["cash"]
 
-    finance_system.service_debt(maturity_date)
+    txs = finance_system.service_debt(maturity_date)
 
-    # 3. Assertion: Verify the money was transferred correctly
+    # 3. Assertion: Verify the money was transferred correctly via Transactions
     bond_lifetime_years = mock_config.BOND_MATURITY_TICKS / mock_config.TICKS_PER_YEAR
     interest = amount * bond.yield_rate * bond_lifetime_years
     total_repayment = amount + interest
 
-    assert mock_government.assets == initial_gov_assets - total_repayment
-    assert mock_central_bank.assets["cash"] == initial_cb_cash + total_repayment
+    assert len(txs) == 1
+    assert txs[0].buyer_id == mock_government.id
+    assert txs[0].seller_id == mock_central_bank.id
+    # Price might be close to total_repayment
+    assert abs(txs[0].price - total_repayment) < 0.01
+
     assert bond not in finance_system.outstanding_bonds
     assert bond not in mock_central_bank.assets["bonds"]

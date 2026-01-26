@@ -199,6 +199,23 @@ class Firm(BaseAgent, ILearningAgent):
         self.automation_level = 0.0
 
         self.is_bankrupt = True
+
+        # WO-123: Memory Logging - Record Bankruptcy
+        if self.memory_v2:
+            from modules.memory.V2.dtos import MemoryRecordDTO
+            # Note: We don't have access to current_tick here easily without changing signature
+            # or fetching from elsewhere. For now, using -1 as placeholder or 0.
+            # Ideally, liquidate_assets should receive current_tick.
+            # Assuming tick is passed or available via context if we refactor, but for now
+            # we will just log it.
+            record = MemoryRecordDTO(
+                tick=-1, # Unknown tick
+                agent_id=self.id,
+                event_type="BANKRUPTCY",
+                data={"assets_returned": self.assets}
+            )
+            self.memory_v2.add_record(record)
+
         return self.assets
 
     def add_inventory(self, item_id: str, quantity: float, quality: float):

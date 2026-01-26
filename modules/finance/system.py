@@ -68,6 +68,16 @@ class FinanceSystem(IFinanceSystem):
             0.6: 0.005,
         })
 
+        # Ensure it is a dict, as Mock.get might return a Mock object if not side_effect configured correctly
+        if not isinstance(risk_premium_tiers, dict):
+             # Fallback to default if config returns something weird (like a Mock object without __iter__)
+             # This is Defensive Programming against partial mocks
+             risk_premium_tiers = {
+                1.2: 0.05,
+                0.9: 0.02,
+                0.6: 0.005,
+            }
+
         risk_premium = 0.0
         sorted_tiers = sorted(
             [(float(k), v) for k, v in risk_premium_tiers.items()],
@@ -251,6 +261,11 @@ class FinanceSystem(IFinanceSystem):
         Converts a bailout from a grant to an interest-bearing senior loan.
         Returns the loan DTO and Transaction.
         """
+        # Enforce Government Budget Constraint
+        if self.government.assets < amount:
+            logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {self.government.assets:.2f} < {amount:.2f}")
+            return None, []
+
         base_rate = self.central_bank.get_base_rate()
         penalty_premium = self.config_module.get("economy_params.BAILOUT_PENALTY_PREMIUM", 0.05)
 

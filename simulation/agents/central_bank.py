@@ -1,7 +1,10 @@
 import logging
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import numpy as np
 from modules.finance.api import InsufficientFundsError
+
+if TYPE_CHECKING:
+    from modules.memory.api import MemoryV2Interface
 
 logger = logging.getLogger(__name__)
 
@@ -11,10 +14,11 @@ class CentralBank:
     Implements Taylor Rule to dynamically adjust interest rates.
     """
 
-    def __init__(self, tracker: Any, config_module: Any):
+    def __init__(self, tracker: Any, config_module: Any, memory_interface: Optional["MemoryV2Interface"] = None):
         self.id = "CENTRAL_BANK" # Identifier for SettlementSystem
         self.tracker = tracker
         self.config_module = config_module
+        self.memory_v2 = memory_interface
 
         # Balance Sheet
         self.assets: Dict[str, Any] = {"bonds": [], "cash": 0.0}

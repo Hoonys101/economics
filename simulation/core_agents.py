@@ -58,6 +58,7 @@ class Household(BaseAgent, ILearningAgent):
         gender: Optional[str] = None,
         parent_id: Optional[int] = None,
         generation: Optional[int] = None,
+        **kwargs,
     ) -> None:
         self.id = id # Initialize ID early for components
         # --- Core Attributes ---
@@ -127,7 +128,19 @@ class Household(BaseAgent, ILearningAgent):
             value_orientation,
             name=f"Household_{id}",
             logger=logger,
+            **kwargs,
         )
+
+        # WO-123: Memory Logging - Record Birth
+        if self.memory_v2:
+            from modules.memory.V2.dtos import MemoryRecordDTO
+            record = MemoryRecordDTO(
+                tick=0,
+                agent_id=self.id,
+                event_type="BIRTH",
+                data={"initial_assets": initial_assets}
+            )
+            self.memory_v2.add_record(record)
 
         # --- Core Attributes ---
         self.talent = talent

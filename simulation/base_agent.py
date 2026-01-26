@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 import logging
 from modules.finance.api import InsufficientFundsError
+
+if TYPE_CHECKING:
+    from modules.memory.api import MemoryV2Interface
 
 
 class BaseAgent(ABC):
@@ -14,6 +17,7 @@ class BaseAgent(ABC):
         value_orientation: str,
         name: Optional[str] = None,
         logger: Optional[logging.Logger] = None,
+        memory_interface: Optional["MemoryV2Interface"] = None,
     ):
         self.id = id
         self._assets = initial_assets
@@ -34,6 +38,7 @@ class BaseAgent(ABC):
         
         # [Cleanup] Standardized Memory Structure
         self.memory: Dict[str, Any] = {}
+        self.memory_v2 = memory_interface
 
     @property
     def assets(self) -> float:

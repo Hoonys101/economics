@@ -45,32 +45,28 @@ class TestSovereignDebt:
         fs = setup_system
         fs.central_bank.get_base_rate.return_value = 0.05
 
-        bonds = fs.issue_treasury_bonds(100.0, 1)
+        # Updated: returns (bonds, transactions)
+        bonds, txs = fs.issue_treasury_bonds(100.0, 1)
 
         assert len(bonds) == 1
         assert len(fs.outstanding_bonds) == 1
 
-        # Verify Settlement Call
-        # Should transfer from Bank to Govt
-        fs.settlement_system.transfer.assert_called_once()
-        args = fs.settlement_system.transfer.call_args
-        assert args[0][0] == fs.bank # Debtor
-        assert args[0][1] == fs.government # Creditor
-        assert args[0][2] == 100.0 # Amount
+        # New: Check transactions
+        assert len(txs) == 1
+        assert txs[0].buyer_id == fs.bank.id
+        assert txs[0].seller_id == fs.government.id
+        assert txs[0].price == 100.0
 
     def test_collect_corporate_tax_calls_settlement_system(self, setup_system):
         fs = setup_system
         firm = MagicMock(spec=Firm)
         firm.id = 101
 
+        # This method is deprecated and should return False
         success = fs.collect_corporate_tax(firm, 50.0)
 
-        assert success is True
-        fs.settlement_system.transfer.assert_called_once()
-        args = fs.settlement_system.transfer.call_args
-        assert args[0][0] == firm # Debtor
-        assert args[0][1] == fs.government # Creditor
-        assert args[0][2] == 50.0
+        assert success is False
+        fs.settlement_system.transfer.assert_not_called()
 
     def test_risk_premium_calculation(self, setup_system):
         fs = setup_system
@@ -78,7 +74,7 @@ class TestSovereignDebt:
         # High debt ratio -> high risk
         fs.fiscal_monitor.get_debt_to_gdp_ratio.return_value = 1.3
 
-        bonds = fs.issue_treasury_bonds(100.0, 1)
+        bonds, txs = fs.issue_treasury_bonds(100.0, 1)
         # Base 0.05 + Risk 0.05 = 0.10
         # Note: 0.05 + 0.05 = 0.1
         assert abs(bonds[0].yield_rate - 0.10) < 1e-6
@@ -88,7 +84,7 @@ class TestSovereignDebt:
         fs.central_bank.get_base_rate.return_value = 0.05
         fs.bank.assets = 0.0 # Bank has no money
 
-        bonds = fs.issue_treasury_bonds(100.0, 1)
+        bonds, txs = fs.issue_treasury_bonds(100.0, 1)
 
         assert len(bonds) == 0
-        fs.settlement_system.transfer.assert_not_called()
+        assert len(txs) == 0
