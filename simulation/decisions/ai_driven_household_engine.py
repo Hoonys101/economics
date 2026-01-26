@@ -67,7 +67,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # --- [Phase 4.5] Organic Monetary Transmission: Utility Competition Model ---
         
         loan_market_data = market_data.get("loan_market", {})
-        nominal_rate = loan_market_data.get("interest_rate", 0.05)
+        nominal_rate = loan_market_data.get("interest_rate", config.default_mortgage_rate)
         
         # 1. Savings Utility (Saving ROI)
         savings_roi = self._calculate_savings_roi(household, nominal_rate)
@@ -394,7 +394,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         risk_aversion = household.risk_aversion
 
         loan_market = market_data.get("loan_market", {})
-        risk_free_rate = loan_market.get("interest_rate", 0.05)
+        risk_free_rate = loan_market.get("interest_rate", getattr(self.config_module, "DEFAULT_MORTGAGE_RATE", 0.05))
 
         equity_return = getattr(self.config_module, "EXPECTED_STARTUP_ROI", 0.15)
 

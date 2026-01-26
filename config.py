@@ -379,6 +379,7 @@ DEFAULT_LOAN_DURATION = 10
 # --- Banking & Time Scale (Phase 3) ---
 TICKS_PER_YEAR = 100.0          # 1년 = 100틱 (모든 이자 계산의 기준)
 INITIAL_BASE_ANNUAL_RATE = 0.05 # 연 5% (틱당 금리가 아님!)
+DEFAULT_MORTGAGE_RATE = 0.05    # Default mortgage rate
 LOAN_DEFAULT_TERM = 50          # 6개월 (50틱)
 CREDIT_SPREAD_BASE = 0.02       # 연 2% 가산금리
 BANK_MARGIN = 0.02              # 예대마진 (연 2%)

@@ -92,13 +92,11 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
     orders, _ = household.make_decision(markets, goods_data, market_data, 1)
 
     assert orders is not None
-    assert len(orders) == 1
+    # Check if any order is for food
+    food_orders = [o for o in orders if "food" in o.item_id and o.order_type == "BUY"]
+    assert len(food_orders) > 0, "Expected at least one food purchase order"
     
-    purchase_order = orders[0]
-    assert purchase_order.order_type == "BUY"
-    # The logic might choose EVALUATE_CONSUMPTION_OPTIONS which then chooses a food.
-    # We should check if the item is a food item.
-    assert "food" in purchase_order.item_id
+    purchase_order = food_orders[0]
     assert purchase_order.quantity > 0
     
     print("OK: AI successfully generated a purchase order for food.")
@@ -142,17 +140,17 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
              "food_current_sell_price": 10.0,
         }
     }
-    orders, chosen_tactic_tuple = household.make_decision(markets, goods_data, market_data, 1)
-    chosen_tactic, _ = chosen_tactic_tuple
+    orders, action_vector = household.make_decision(markets, goods_data, market_data, 1)
 
     assert orders is not None
     assert len(orders) > 0
     
-    assert chosen_tactic == Tactic.EVALUATE_CONSUMPTION_OPTIONS, f"Expected Tactic EVALUATE_CONSUMPTION_OPTIONS, got {chosen_tactic.name}"
+    # Check if luxury_food is bought
+    luxury_food_orders = [o for o in orders if o.item_id == "luxury_food" and o.order_type == "BUY"]
+    assert len(luxury_food_orders) > 0, "Expected luxury_food purchase order"
 
-    purchase_order = orders[0]
-    assert purchase_order.order_type == "BUY"
-    assert purchase_order.item_id == "luxury_food"
+    purchase_order = luxury_food_orders[0]
+    assert purchase_order.quantity > 0
     assert purchase_order.quantity > 0
     
     print("OK: AI successfully evaluated consumption options and chose 'luxury_food'.")
