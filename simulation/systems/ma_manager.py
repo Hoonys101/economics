@@ -244,7 +244,7 @@ class MAManager:
         prey.is_active = False 
 
     def _execute_bankruptcy(self, firm: "Firm", tick: int):
-        recovered = firm.liquidate_assets()
+        recovered = firm.liquidate_assets(current_tick=tick)
         self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
 
         # 2. [NEW] Record the asset destruction in the central ledger.

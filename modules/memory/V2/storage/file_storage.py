@@ -6,6 +6,14 @@ from .base_storage import StorageInterface
 from dataclasses import asdict
 
 class FileStorage(StorageInterface):
+    """
+    WARNING: This implementation is for prototyping and testing only.
+    It loads the entire JSON file into memory for every read/write operation.
+    Scalability Limitation:
+    - Performance degrades linearly with file size (O(N)).
+    - Not concurrency-safe.
+    - Should be replaced with a database (e.g., SQLite) for production or long simulations.
+    """
     def __init__(self, filepath: str = "memory_store.json"):
         self.filepath = filepath
         self._ensure_file()
