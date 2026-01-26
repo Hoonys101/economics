@@ -4,10 +4,12 @@
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "WO-121-Fix-Leak": {
+  "WO-121-R2-Impl": {
+    "worker": "jules",
     "command": "create",
-    "instruction": "Initialize newborn households with a complete needs dictionary in demographic_manager.py to prevent KeyError and failed asset transfers. Refer to spec in reports/temp/report_20260126_140205_Analyze_leak_debug_t.md",
-    "title": "Fix Newborn Money Leak",
-    "file": "reports/temp/report_20260126_140205_Analyze_leak_debug_t.md"
+     "title": "WO-121-R2: Newborn Initialization Fix (Config Externalization)",
+    "instruction": "Implement the fix for newborn initialization by externalizing config and refactoring tests according to WO-121-R2.",
+    "file": "design/work_orders/WO-121-R2-Fix-Newborn-Initialization.md",
+    "wait": true
   }
 }

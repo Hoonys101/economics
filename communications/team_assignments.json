@@ -37,6 +37,10 @@
       "1538673354517803812": {
         "title": "Fix Housing Money Leak",
         "initial_mission": "Execute work order WO-121 to fix the 320.00 money leak in Housing System...."
+      },
+      "9381524358026310082": {
+        "title": "Fix Newborn Money Leak",
+        "initial_mission": "Initialize newborn households with a complete needs dictionary in demographic_manager.py to prevent ..."
       }
     },
     "completed_sessions": {

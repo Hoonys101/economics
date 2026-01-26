@@ -1,0 +1,152 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index f7fb55b..101cff4 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -165,4 +165,13 @@ RL_DISCOUNT_FACTOR = 0.95
+ 
+ ---
+ 
++### Principle: Newborn Agent Initialization
++
++*   **현상 (Phenomenon)**: 새로 생성된 에이전트(신생아)가 경제 활동에 참여하지 않고 빠르게 도태되었습니다.
++*   **원인 (Cause)**: 에이전트의 `needs` 딕셔너리가 빈 상태(`{}`)로 초기화되어, 행동을 유발할 동기(motivation)가 전혀 없었습니다.
++*   **해결 (Solution)**: 에이전트 생성 시점에서 생존, 사회적 욕구 등 행동에 필수적인 최소한의 초기 `needs` 값을 주입합니다.
++*   **교훈 (Lesson)**: 모든 에이전트는 반드시 행동의 기반이 되는 초기 상태(욕구, 자산 등)를 가져야 합니다. '진공 상태'의 에이전트는 시뮬레이션의 안정성을 해치는 요인이 됩니다.
++
++---
++
+ > **Tip**: 작업 중 질문이 있으면 `communications/requests/` 폴더에 질의 문서를 생성하세요.
+diff --git a/config.py b/config.py
+index 610e268..61f4cd5 100644
+--- a/config.py
++++ b/config.py
+@@ -72,6 +72,16 @@ DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
+ NEWBORN_ENGINE_TYPE = "AIDriven"  # Default engine for newborns: "AIDriven" or "RuleBased"
+ 
+ # --- Initial Agent Configuration ---
++NEWBORN_INITIAL_NEEDS = {
++    "survival": 60.0,
++    "social": 20.0,
++    "improvement": 10.0,
++    "asset": 10.0,
++    "imitation_need": 15.0,
++    "labor_need": 0.0,
++    "liquidity_need": 50.0
++}
++
+ INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
+ INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 50.0
+ INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
+diff --git a/simulation/systems/demographic_manager.py b/simulation/systems/demographic_manager.py
+index 1e1ea37..995bcd0 100644
+--- a/simulation/systems/demographic_manager.py
++++ b/simulation/systems/demographic_manager.py
+@@ -151,12 +151,24 @@ class DemographicManager:
+                 )
+                 new_decision_engine.loan_market = simulation.markets.get("loan_market")
+ 
++            # WO-121: Externalize newborn needs to config
++            default_needs = {
++                "survival": 60.0,
++                "social": 20.0,
++                "improvement": 10.0,
++                "asset": 10.0,
++                "imitation_need": 15.0,
++                "labor_need": 0.0,
++                "liquidity_need": 50.0
++            }
++            initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", default_needs)
++
+             child = Household(
+                 id=child_id,
+                 talent=child_talent,
+                 goods_data=simulation.goods_data,
+                 initial_assets=initial_gift,
+-                initial_needs={}, # Default reset
++                initial_needs=initial_needs_for_newborn,
+                 decision_engine=new_decision_engine,
+                 value_orientation=value_orientation,
+                 personality=child_personality,
+diff --git a/tests/systems/test_demographic_manager_newborn.py b/tests/systems/test_demographic_manager_newborn.py
+new file mode 100644
+index 0000000..0e6a186
+--- /dev/null
++++ b/tests/systems/test_demographic_manager_newborn.py
+@@ -0,0 +1,77 @@
++
++import unittest
++from unittest.mock import MagicMock
++from simulation.systems.demographic_manager import DemographicManager
++from simulation.core_agents import Household
++from simulation.ai.api import Personality
++import config  # Import actual config to use defaults where possible
++
++class TestDemographicManagerNewborn(unittest.TestCase):
++    def setUp(self):
++        # Reset Singleton to ensure clean state
++        DemographicManager._instance = None
++
++        # Create a mock config module that mimics actual config structure
++        self.config_module = MagicMock()
++
++        # Populate other required config values from the actual config.py to avoid brittleness
++        # We iterate over dir(config) to copy over constants
++        for key in dir(config):
++            if key.isupper():
++                setattr(self.config_module, key, getattr(config, key))
++
++        # Define the specific config values we care about for this test
++        # Override after copying defaults to ensure this specific value is used
++        self.config_module.NEWBORN_INITIAL_NEEDS = {
++            "survival": 70.0, # Different from default to verify config usage
++            "social": 20.0,
++            "improvement": 10.0,
++            "asset": 10.0,
++            "imitation_need": 15.0,
++            "labor_need": 0.0,
++            "liquidity_need": 50.0
++        }
++
++        # Explicitly ensure MITOSIS_MUTATION_PROBABILITY is set (it should be in config.py, but just in case)
++        if not hasattr(self.config_module, "MITOSIS_MUTATION_PROBABILITY"):
++             self.config_module.MITOSIS_MUTATION_PROBABILITY = 0.1
++
++        self.manager = DemographicManager(config_module=self.config_module)
++
++        self.simulation = MagicMock()
++        self.simulation.next_agent_id = 100
++        self.simulation.goods_data = [{"id": "food", "price": 10}]
++        self.simulation.markets = {"loan_market": MagicMock()}
++        self.simulation.time = 1
++
++        self.simulation.ai_trainer = MagicMock()
++        self.simulation.ai_trainer.get_engine.return_value = MagicMock()
++
++    def test_newborn_has_initial_needs_from_config(self):
++        parent = MagicMock(spec=Household)
++        parent.id = 1
++        parent.age = 30
++        parent.assets = 1000
++        parent.talent = MagicMock()
++        parent.personality = MagicMock()
++        parent.personality.name = "Conscientious"
++        parent.value_orientation = "wealth_and_needs"
++        parent.risk_aversion = 0.5
++        parent.generation = 1
++        parent.children_ids = []
++        parent._sub_assets = MagicMock()
++
++        birth_requests = [parent]
++        new_children = self.manager.process_births(self.simulation, birth_requests)
++
++        self.assertEqual(len(new_children), 1)
++        child = new_children[0]
++
++        # Verify needs match the configured values (specifically "survival": 70.0)
++        expected_needs = self.config_module.NEWBORN_INITIAL_NEEDS
++
++        self.assertEqual(child.needs, expected_needs)
++        self.assertEqual(child.needs["survival"], 70.0)
++
++if __name__ == '__main__':
++    unittest.main()
