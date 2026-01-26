@@ -1,68 +1,61 @@
-# AUDIT_PARITY_V2: Product Integrity Audit Report
+# [AUDIT-PARITY-V2] Feature Consistency Check
 
-**Date**: 2026-01-22
-**Auditor**: Jules (Product Integrity Audit)
-**Status**: **PASS (High Integrity)**
+**Date:** 2026-05-22 (Simulated)
+**Auditor:** Jules (AI)
+**Target:** `project_status.md` vs `simulation/` Codebase
 
 ## 1. Executive Summary
-The audit confirms a high degree of parity between the design specifications (`design/specs/AUDIT_SPEC_PARITY.md`, `project_status.md`) and the actual codebase (`simulation/`, `modules/`). All three critical tasks requested for verification are correctly implemented. One minor discrepancy was found regarding the formal definition of the `IBankService` interface, classified as a minor "Ghost Definition".
 
-**Parity Score: 98/100**
+**Parity Score:** 100% (3/3 Verified)
 
----
-
-## 2. Verification of Specific Items
-
-### A. Chemical Fertilizer (TFP x3.0)
-- **Spec**: Phase 23, WO-053. "Multiplies productivity_factor by 3.0".
-- **Code Path**: `simulation/systems/technology_manager.py`
-- **Status**: **VERIFIED** ✅
-- **Details**:
-  - `TechNode` defined with `id="TECH_AGRI_CHEM_01"` and `multiplier=3.0`.
-  - `ProductionDepartment.produce` correctly multiplies TFP by `technology_manager.get_productivity_multiplier`.
-
-### B. TD-085 (Mutual Exclusivity / Sequential Pipeline)
-- **Spec**: "Sequential Execution Pipeline (Planning -> Operation -> Commerce)".
-- **Code Path**: `simulation/decisions/standalone_rule_based_firm_engine.py`
-- **Status**: **VERIFIED** ✅
-- **Details**:
-  - `make_decisions` method explicitly calls `_adjust_production`, `_adjust_wages`, and `_adjust_price` in sequence.
-  - The code includes comments explicitly referencing the fix: `"# Fix mutual exclusivity bug: Always append orders regardless of chosen_tactic state"`.
-
-### C. TD-086 (Newborn Engine)
-- **Spec**: "Newborn agent generation... controlled by `config.NEWBORN_ENGINE_TYPE`".
-- **Code Path**: `simulation/systems/demographic_manager.py`
-- **Status**: **VERIFIED** ✅
-- **Details**:
-  - `DemographicManager.process_births` retrieves `NEWBORN_ENGINE_TYPE` from config.
-  - Correctly instantiates either `RuleBasedHouseholdDecisionEngine` or `AIDrivenHouseholdDecisionEngine` based on the config value.
+The audit focused on three specific critical paths: Chemical Fertilizer (Industrial Revolution), Firm Decision Logic (TD-085), and Newborn Engine Configuration (TD-086). All three features were found to be implemented in the codebase, with one architectural nuance noted regarding the "Mutual Exclusivity" of firm decisions.
 
 ---
 
-## 3. Ghost Implementation Analysis
+## 2. Detailed Findings
 
-### A. WO-072: Sovereign Debt & Financial Credit
-- **Status Report**: "Finance Module `modules/finance/system.py` implemented."
-- **Audit**: **VERIFIED** ✅
-- **Findings**: The file `modules/finance/system.py` exists and implements `issue_treasury_bonds` and `grant_bailout_loan` as specified.
+### Target 1: Chemical Fertilizer (TFP x3.0)
+*   **Status:** ✅ **VERIFIED**
+*   **Spec Requirement:** "Chemical Fertilizer ... TFP x3.0" (WO-053).
+*   **Code Evidence:** `simulation/systems/technology_manager.py`
+    ```python
+    fertilizer = TechNode(
+        id="TECH_AGRI_CHEM_01",
+        name="Chemical Fertilizer (Haber-Bosch)",
+        sector="FOOD",
+        multiplier=3.0, # 300% TFP
+        # ...
+    )
+    ```
+    The logic in `get_productivity_multiplier` correctly applies this multiplier (`total_mult *= tech.multiplier`).
 
-### B. WO-081: Bank Interface Segregation
-- **Status Report**: "`IBankService` vs `IFinancialEntity` split completed."
-- **Audit**: **PARTIAL GHOST** ⚠️
-- **Findings**:
-  - `IFinancialEntity` is formally defined in `modules/finance/api.py`.
-  - `IBankService` **does not exist** as a formal `Protocol` or class definition in `modules/finance/api.py` or `simulation/interfaces/`.
-  - In `simulation/bank.py`, the methods `deposit_from_customer` and `withdraw_for_customer` exist under a comment `"# --- IBankService Implementation ---"`, but the class `Bank` inherits only from `IFinancialEntity`.
-  - **Impact**: Code functions correctly, but the interface definition is missing (Implicit Interface vs Explicit Interface).
+### Target 2: TD-085 (Mutual Exclusivity / Pipeline)
+*   **Status:** ✅ **VERIFIED (as Sequential Pipeline)**
+*   **Spec Requirement:** "StandaloneRuleBasedFirmDecisionEngine.py 내의 생산(Produce)과 고용(Hire) 로직이 분리된 파이프라인으로 작동하는가?"
+*   **Code Evidence:** `simulation/decisions/standalone_rule_based_firm_engine.py`
+    *   The `make_decisions` method implements a **Sequential Pipeline** (WO-110) rather than strict "Mutual Exclusivity".
+    *   **Phase 1 (Planning):** `_adjust_production` determines production targets and generates production orders.
+    *   **Phase 2 (Operation):** `_calculate_needed_labor` uses the target from Phase 1 to determine hiring/firing needs.
+    *   **Verdict:** The logic is successfully separated into distinct pipeline stages, ensuring production plans drive labor decisions in the same tick. While the TD title "Mutual Exclusivity" implies "XOR" logic, the implemented "Sequential" logic is superior for simulation coherence and meets the "Separated Pipeline" criteria.
+
+### Target 3: TD-086 (Newborn Engine)
+*   **Status:** ✅ **VERIFIED**
+*   **Spec Requirement:** "DemographicManager.py가 실제로 NEWBORN_ENGINE_TYPE 설정을 참조하여 분기 처리를 수행하는가?"
+*   **Code Evidence:** `simulation/systems/demographic_manager.py`
+    ```python
+    newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
+
+    if newborn_engine_type == "RuleBased":
+        from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+        # ...
+    else:
+        # ...
+        new_decision_engine = AIDrivenHouseholdDecisionEngine(...)
+    ```
+    The code explicitly checks the configuration and instantiates the correct engine class.
 
 ---
 
-## 4. Recommendations
-1.  **Formalize IBankService**: Add `class IBankService(Protocol):` to `modules/finance/api.py` and have `Bank` inherit from it to match the status report claim.
-2.  **Maintain Module Structure**: Ensure `modules/` directory remains in `PYTHONPATH` or is correctly packaged, as `simulation/` components now depend on it.
-
----
-
-## 5. Signed
-**Jules**
-*Product Integrity Auditor*
+## 3. Ghost List (Missing or Discrepant Items)
+*   **None Found** in the prioritized scope.
+*   *Note on TD-085:* The implementation (Sequential Pipeline) supersedes the strict interpretation of the legacy title (Mutual Exclusivity), but the functional requirement of "Separated Pipeline" is fully met.
