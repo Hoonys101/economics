@@ -93,108 +93,118 @@ class DemographicManager:
             # but usually children start with 0 or small amount.
             # Let's assume standard INITIAL_ASSETS or small portion from parent.
             # "Initial 자산은 부모 자산의 일부 이전"
-            initial_gift = parent.assets * 0.1
+            initial_gift = max(0.0, min(parent.assets * 0.1, parent.assets))
+
+            # Atomic Transaction: Subtract -> Create -> Add back on failure
             parent._sub_assets(initial_gift)
 
-            # Create Instance
-            # We need to clone parent's structure but reset state
-            # Assuming Household.__init__ takes similar args.
-            # We need to access simulation.goods_data etc.
-            # Ideally Simulation passes factory or we use parent's references.
+            try:
+                # Create Instance
+                # We need to clone parent's structure but reset state
+                # Assuming Household.__init__ takes similar args.
+                # We need to access simulation.goods_data etc.
+                # Ideally Simulation passes factory or we use parent's references.
 
-            # 1. Talent Inheritance & Mutation
-            child_talent = self._inherit_talent(parent.talent)
+                # 1. Talent Inheritance & Mutation
+                child_talent = self._inherit_talent(parent.talent)
 
-            # 2. Brain (HouseholdAI) - Inherit weights/policy
-            # This requires creating a new decision engine.
-            # We can use parent.clone() logic but customized.
+                # 2. Brain (HouseholdAI) - Inherit weights/policy
+                # This requires creating a new decision engine.
+                # We can use parent.clone() logic but customized.
 
-            # Create Decision Engine (similar to parent's type)
-            # We need simulation.ai_trainer to get engine
-            # Accessing simulation.ai_trainer...
-            ai_trainer = simulation.ai_trainer
+                # Create Decision Engine (similar to parent's type)
+                # We need simulation.ai_trainer to get engine
+                # Accessing simulation.ai_trainer...
+                ai_trainer = simulation.ai_trainer
 
-            # Value Orientation Inheritance (with mutation?)
-            value_orientation = parent.value_orientation # Strict inheritance for now
+                # Value Orientation Inheritance (with mutation?)
+                value_orientation = parent.value_orientation # Strict inheritance for now
 
-            # Get base engine
-            base_ai_engine = ai_trainer.get_engine(value_orientation)
+                # Get base engine
+                base_ai_engine = ai_trainer.get_engine(value_orientation)
 
-            # Create HouseholdAI wrapper
-            from simulation.ai.household_ai import HouseholdAI
-            from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+                # Create HouseholdAI wrapper
+                from simulation.ai.household_ai import HouseholdAI
+                from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 
-            # Inherit Personality (with mutation)
-            child_personality = self._inherit_personality(parent.personality)
+                # Inherit Personality (with mutation)
+                child_personality = self._inherit_personality(parent.personality)
 
-            new_ai = HouseholdAI(
-                agent_id=str(child_id),
-                ai_decision_engine=base_ai_engine,
-                # Inherit parameters maybe?
-            )
+                new_ai = HouseholdAI(
+                    agent_id=str(child_id),
+                    ai_decision_engine=base_ai_engine,
+                    # Inherit parameters maybe?
+                )
 
-            # Create Decision Engine
-            # WO-110: Allow selecting engine type for newborns (AIDriven vs RuleBased)
-            newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
+                # Create Decision Engine
+                # WO-110: Allow selecting engine type for newborns (AIDriven vs RuleBased)
+                newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
 
-            if newborn_engine_type == "RuleBased":
-                from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
-                new_decision_engine = RuleBasedHouseholdDecisionEngine(
+                if newborn_engine_type == "RuleBased":
+                    from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+                    new_decision_engine = RuleBasedHouseholdDecisionEngine(
+                        config_module=self.config_module,
+                        logger=simulation.logger
+                    )
+                else:
+                    new_decision_engine = AIDrivenHouseholdDecisionEngine(
+                        ai_engine=new_ai,
+                        config_module=self.config_module,
+                        logger=simulation.logger
+                    )
+                    new_decision_engine.loan_market = simulation.markets.get("loan_market")
+
+                # Load initial needs from config
+                initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", {})
+                if not initial_needs_for_newborn:
+                    self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
+
+                child = Household(
+                    id=child_id,
+                    talent=child_talent,
+                    goods_data=simulation.goods_data,
+                    initial_assets=initial_gift,
+                    initial_needs=initial_needs_for_newborn.copy(),
+                    decision_engine=new_decision_engine,
+                    value_orientation=value_orientation,
+                    personality=child_personality,
                     config_module=self.config_module,
+                    loan_market=simulation.markets.get("loan_market"),
+                    risk_aversion=parent.risk_aversion, # Inherit risk aversion
                     logger=simulation.logger
                 )
-            else:
-                new_decision_engine = AIDrivenHouseholdDecisionEngine(
-                    ai_engine=new_ai,
-                    config_module=self.config_module,
-                    logger=simulation.logger
+
+                # Initialize Phase 19 Attributes
+                child.age = 0.0 # Newborn
+                child.education_level = 0 # Start at 0
+                child.expected_wage = self._calculate_expected_wage(child.education_level)
+                child.parent_id = parent.id
+                child.generation = parent.generation + 1
+
+                # Brain Weight Inheritance
+                if hasattr(simulation, "ai_training_manager"):
+                    simulation.ai_training_manager.inherit_brain(parent, child)
+                else:
+                    # Fallback if manager not found (e.g. mocked simulation)
+                    self.logger.warning("AITrainingManager not found for brain inheritance.")
+
+                # Register linkage and finalize
+                parent.children_ids.append(child_id)
+                new_children.append(child)
+
+                self.logger.info(
+                    f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
+                    f"Assets: {initial_gift:.2f}",
+                    extra={"parent_id": parent.id, "child_id": child.id, "tick": simulation.time}
                 )
-                new_decision_engine.loan_market = simulation.markets.get("loan_market")
-
-            # Load initial needs from config
-            initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", {})
-            if not initial_needs_for_newborn:
-                self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
-
-            child = Household(
-                id=child_id,
-                talent=child_talent,
-                goods_data=simulation.goods_data,
-                initial_assets=initial_gift,
-                initial_needs=initial_needs_for_newborn.copy(),
-                decision_engine=new_decision_engine,
-                value_orientation=value_orientation,
-                personality=child_personality,
-                config_module=self.config_module,
-                loan_market=simulation.markets.get("loan_market"),
-                risk_aversion=parent.risk_aversion, # Inherit risk aversion
-                logger=simulation.logger
-            )
-
-            # Initialize Phase 19 Attributes
-            child.age = 0.0 # Newborn
-            child.education_level = 0 # Start at 0
-            child.expected_wage = self._calculate_expected_wage(child.education_level)
-            child.parent_id = parent.id
-            child.generation = parent.generation + 1
-
-            # Register linkage
-            parent.children_ids.append(child_id)
-
-            # Brain Weight Inheritance
-            if hasattr(simulation, "ai_training_manager"):
-                simulation.ai_training_manager.inherit_brain(parent, child)
-            else:
-                # Fallback if manager not found (e.g. mocked simulation)
-                self.logger.warning("AITrainingManager not found for brain inheritance.")
-
-            new_children.append(child)
-
-            self.logger.info(
-                f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
-                f"Assets: {initial_gift:.2f}",
-                extra={"parent_id": parent.id, "child_id": child.id, "tick": simulation.time}
-            )
+            except Exception as e:
+                # Rollback transaction on failure to prevent asset leak
+                parent._add_assets(initial_gift)
+                self.logger.error(
+                    f"BIRTH_FAILED | Failed to create child for parent {parent.id}. Rolled back {initial_gift:.2f}. Error: {e}",
+                    extra={"parent_id": parent.id, "error": str(e)}
+                )
+                continue
 
         return new_children
 
