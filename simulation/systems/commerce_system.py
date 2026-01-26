@@ -1,10 +1,11 @@
 """
 Implements the CommerceSystem which orchestrates consumption, purchases, and leisure.
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 from simulation.systems.api import ICommerceSystem, CommerceContext
 from simulation.systems.reflux_system import EconomicRefluxSystem
+from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -17,21 +18,19 @@ class CommerceSystem(ICommerceSystem):
         self.config = config
         self.reflux_system = reflux_system
 
-    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Dict[int, float]:
+    def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
         """
-        Executes vectorized consumption, applies fast-track purchases,
-        and calculates leisure effects. Incorporates stress scenario behavioral changes.
-
-        Returns:
-            Dict[int, float]: Map of Household ID to Utility Gained.
+        Phase 1: Decisions.
+        Determines desired consumption and generates transactions for Fast Purchase.
+        Returns (PlannedConsumptionMap, Transactions).
         """
         households = context["households"]
         breeding_planner = context["breeding_planner"]
-        time_allocation = context["household_time_allocation"]
         market_data = context["market_data"]
         current_time = context["time"]
 
-        household_leisure_effects: Dict[int, float] = {}
+        planned_consumptions = {}
+        transactions = []
 
         # 1. Vectorized Decision Making
         batch_decisions = breeding_planner.decide_consumption_batch(households, market_data)
@@ -44,12 +43,9 @@ class CommerceSystem(ICommerceSystem):
             if not household.is_active:
                 continue
 
-            consumed_items = {}
-
-            # 2a. Fast Consumption
+            c_amt = 0.0
             if i < len(consume_list):
                 c_amt = consume_list[i]
-
                 # Phase 28: Deflationary Spiral - Consumption Collapse
                 if scenario_config and scenario_config.is_active and scenario_config.scenario_name == 'deflation':
                     if not household.is_employed and scenario_config.consumption_pessimism_factor > 0:
@@ -57,32 +53,77 @@ class CommerceSystem(ICommerceSystem):
                         c_amt *= (1 - scenario_config.consumption_pessimism_factor)
                         logger.debug(f"PESSIMISM_IMPACT | Household {household.id} consumption reduced from {original_amt:.2f} to {c_amt:.2f}")
 
-                if c_amt > 0:
-                    household.consume("basic_food", c_amt, current_time)
-                    consumed_items["basic_food"] = c_amt
+            # Store plan
+            planned_consumptions[household.id] = {
+                "consume_amount": c_amt,
+                "buy_amount": 0.0,
+                "consumed_immediately_from_buy": 0.0
+            }
 
-            # 2b. Fast Purchase (Emergency Buy)
+            # 2b. Fast Purchase (Emergency Buy) -> Generate Transaction
             if i < len(buy_list):
                 b_amt = buy_list[i]
                 if b_amt > 0:
                     cost = b_amt * food_price
+                    # Optimistic check (actual balance check in TransactionProcessor)
                     if household.assets >= cost:
-                        household.withdraw(cost)
-                        household.inventory["basic_food"] = household.inventory.get("basic_food", 0) + b_amt
+                        planned_consumptions[household.id]["buy_amount"] = b_amt
 
-                        # Capture money sink
-                        self.reflux_system.capture(cost, source=f"Household_{household.id}", category="emergency_food")
+                        # Generate Emergency Buy Transaction
+                        tx = Transaction(
+                            buyer_id=household.id,
+                            seller_id=self.reflux_system.id if hasattr(self.reflux_system, 'id') else 0, # Assuming Reflux has ID or use 0/System
+                            item_id="basic_food",
+                            quantity=b_amt,
+                            price=cost, # Total price as trade_value? No, Transaction takes unit price usually?
+                            # Transaction: trade_value = quantity * price.
+                            # Here price should be unit price.
+                            # But cost = b_amt * food_price. So price = food_price.
+                            market_id="system",
+                            transaction_type="emergency_buy",
+                            time=current_time
+                        )
+                        # Fix: Transaction takes UNIT PRICE.
+                        tx.price = food_price
+
+                        transactions.append(tx)
 
                         logger.debug(
-                            f"VECTOR_BUY | Household {household.id} bought {b_amt:.1f} food (Fast Track)",
+                            f"VECTOR_BUY_PLAN | Household {household.id} planning to buy {b_amt:.1f} food (Fast Track)",
                             extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
                         )
 
-                        # Immediate consumption if needed
-                        if c_amt == 0:
-                            consume_now = min(b_amt, getattr(self.config, "FOOD_CONSUMPTION_QUANTITY", 1.0))
-                            household.consume("basic_food", consume_now, current_time)
-                            consumed_items["basic_food"] = consume_now
+                        # Immediate consumption if needed (Logic Logic: If planned consumption > inventory, assume some came from buy)
+                        # But we execute transactions later.
+                        # So inventory update happens in Phase 3.
+                        # Consumption happens in Phase 4 (Finalize).
+                        # So finalize will see updated inventory.
+                        pass
+
+        return planned_consumptions, transactions
+
+    def finalize_consumption_and_leisure(self, context: CommerceContext, planned_consumptions: Dict[int, Dict[str, Any]]) -> Dict[int, float]:
+        """
+        Phase 4: Lifecycle Effects.
+        Executes consumption from inventory and applies leisure effects.
+        """
+        households = context["households"]
+        time_allocation = context["household_time_allocation"]
+        current_time = context["time"]
+
+        household_leisure_effects: Dict[int, float] = {}
+
+        for household in households:
+            if not household.is_active:
+                continue
+
+            plan = planned_consumptions.get(household.id, {})
+            c_amt = plan.get("consume_amount", 0.0)
+
+            consumed_items = {}
+            if c_amt > 0:
+                household.consume("basic_food", c_amt, current_time)
+                consumed_items["basic_food"] = c_amt
 
             # 3. Leisure Effect
             leisure_hours = time_allocation.get(household.id, 0.0)
@@ -90,23 +131,8 @@ class CommerceSystem(ICommerceSystem):
 
             household_leisure_effects[household.id] = effect_dto.utility_gained
 
-            # 4. Lifecycle Update (Needs, Tax, Psychology)
-            # This is now delegated to AgentLifecycleComponent inside household.update_needs
-            # But wait, household.update_needs calls labor_manager.work()!
-            # work() shouldn't be called here if it was already done or calculated.
-            # In the old `Simulation.run_tick`:
-            # - Transactions happened.
-            # - Then this loop happened.
-            # - household.update_needs() was called here.
-            # - household.update_needs() calls labor_manager.work(8.0)
-
-            # So we must call household.update_needs() here to maintain logic.
-            # BUT, we are refactoring update_needs to AgentLifecycleComponent.
-            # So we should call household.lifecycle.run_tick() ideally.
-            # Since household still has update_needs wrapping the new component (in the intermediate step),
-            # we call household.update_needs().
-
-            household.update_needs(current_time, market_data)
+            # 4. Lifecycle Update (update_needs) REMOVED
+            # Moved to DemographicManager/LifecycleManager
 
             # 5. Parenting XP Transfer
             if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:

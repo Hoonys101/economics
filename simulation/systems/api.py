@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from simulation.markets.market import Market
     from simulation.dtos.scenario import StressScenarioConfig
     from simulation.dtos.api import SimulationState
+    from simulation.models import Transaction
 
 
 # ===================================================================
@@ -133,11 +134,15 @@ class ICommerceSystem(Protocol):
     """틱의 소비 및 여가 부분을 관리하는 시스템의 인터페이스입니다."""
     def __init__(self, config: Any, reflux_system: 'EconomicRefluxSystem'): ...
 
-    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Dict[int, float]:
+    def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
         """
-        가계 소비, 긴급 구매(fast-track purchases), 여가 효과를 조율합니다.
-        Returns:
-            Dict[int, float]: 가계 ID별 여가 효용(Leisure Utility) 맵.
+        Phase 1: 소비 및 여가 계획. Fast Purchase를 위한 트랜잭션 생성.
+        """
+        ...
+
+    def finalize_consumption_and_leisure(self, context: CommerceContext, planned_consumptions: Dict[int, Dict[str, Any]]) -> Dict[int, float]:
+        """
+        Phase 4: 소비 실행(재고 차감) 및 여가 효과 적용.
         """
         ...
 

@@ -28,9 +28,9 @@ class DemographicManager:
         self.initialized = True
         self.logger.info("DemographicManager initialized.")
 
-    def process_aging(self, agents: List[Household], current_tick: int) -> None:
+    def process_aging(self, agents: List[Household], current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> None:
         """
-        Increments age for all households.
+        Increments age for all households and runs internal lifecycle updates.
         Handles natural death (old age).
         """
         # Ticks per Year is defined in config (e.g., 100 ticks = 1 year)
@@ -40,8 +40,12 @@ class DemographicManager:
             if not agent.is_active:
                 continue
 
-            # Increment Age for households
-            agent.age += (1.0 / ticks_per_year)
+            # Phase 4 Lifecycle Update (Replaced CommerceSystem call)
+            # Delegate internal lifecycle (aging, needs, taxes)
+            agent.update_needs(current_tick, market_data)
+
+            # Explicit aging removed as update_needs -> bio_component handles it.
+            # However, we check death here.
 
             # Check Natural Death (Gompertz-Makeham law simplified)
             if agent.age > 80:

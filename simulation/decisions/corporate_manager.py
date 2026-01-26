@@ -48,7 +48,7 @@ class CorporateManager:
             orders.append(target_order)
 
         # 0. Procurement Channel (Raw Materials) - WO-030
-        procurement_orders = self._manage_procurement(firm, context.market_data, context.markets)
+        procurement_orders = self._manage_procurement(firm, context.market_data)
         orders.extend(procurement_orders)
 
         # Phase 21: Automation Channel
@@ -80,7 +80,7 @@ class CorporateManager:
         orders.extend(debt_orders)
 
         # 5. Pricing Channel (Sales)
-        pricing_orders = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.markets, context.current_time)
+        pricing_orders = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.current_time)
         orders.extend(pricing_orders)
 
         # 6. Hiring Channel (Employment)
@@ -104,9 +104,9 @@ class CorporateManager:
         if firm.treasury_shares <= 0:
             return None
 
-        stock_market = context.markets.get("stock_market")
-        # Check if market exists
-        if not stock_market:
+        # Use DTO
+        market_snapshot = context.market_snapshot
+        if not market_snapshot:
             return None
 
         max_sell_ratio = getattr(self.config_module, "SEO_MAX_SELL_RATIO", 0.10)
@@ -117,13 +117,8 @@ class CorporateManager:
 
         # Determine price (Market Price or Book Value)
         price = 0.0
-        # Accessing market directly via context might violate purity if we modify it, but we are just reading price?
-        # Actually context.markets contains Market objects.
-        # Ideally we should use market_data.
-        # But stock_market logic below uses get_stock_price method.
-        # Assuming context.markets["stock_market"] is available.
-        if stock_market and hasattr(stock_market, "get_stock_price"):
-             price = stock_market.get_stock_price(firm.id)
+        if market_snapshot:
+             price = market_snapshot.prices.get(f"stock_{firm.id}", 0.0)
 
         if price is None or price <= 0:
             # Fallback to Book Value
@@ -146,7 +141,7 @@ class CorporateManager:
         self.logger.info(f"SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}")
         return order
 
-    def _manage_procurement(self, firm: FirmStateDTO, market_data: Dict[str, Any], markets: Dict[str, Any]) -> List[Order]:
+    def _manage_procurement(self, firm: FirmStateDTO, market_data: Dict[str, Any]) -> List[Order]:
         """
         WO-030: Manage Raw Material Procurement.
         """
@@ -309,7 +304,7 @@ class CorporateManager:
 
         return orders
 
-    def _manage_pricing(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict, markets: Dict, current_time: int) -> List[Order]:
+    def _manage_pricing(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict, current_time: int) -> List[Order]:
         """
         Sales Channel.
         """
@@ -352,16 +347,15 @@ class CorporateManager:
         # Note: Previous logic called `firm.sales.post_ask` which might do more (logging, etc).
         # But we are in DTO mode. The Engine outputs Intent.
 
-        target_market = markets.get(item_id)
-        if target_market:
-             orders.append(Order(
-                 agent_id=firm.id,
-                 order_type="SELL",
-                 item_id=item_id,
-                 quantity=qty,
-                 price=target_price,
-                 market_id=item_id # Assumes market_id == item_id
-             ))
+        # target_market check removed for DTO purity
+        orders.append(Order(
+             agent_id=firm.id,
+             order_type="SELL",
+             item_id=item_id,
+             quantity=qty,
+             price=target_price,
+             market_id=item_id # Assumes market_id == item_id
+        ))
 
         return orders
 

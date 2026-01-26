@@ -110,17 +110,43 @@ class TransactionProcessor(SystemInterface):
                 heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
                 total_cash = buyer.assets
                 if total_cash > 0 and heir_ids:
-                    amount_per_heir = total_cash / len(heir_ids)
+                    import math
+                    count = len(heir_ids)
+                    # Calculate amount per heir, avoiding float precision issues (floor to cent)
+                    base_amount = math.floor((total_cash / count) * 100) / 100.0
+
+                    distributed_sum = 0.0
                     all_success = True
-                    for h_id in heir_ids:
+
+                    # Distribute to all but the last heir
+                    for i in range(count - 1):
+                        h_id = heir_ids[i]
                         heir = agents.get(h_id)
                         if heir:
                             if settlement:
-                                if not settlement.transfer(buyer, heir, amount_per_heir, "inheritance_distribution"):
+                                if settlement.transfer(buyer, heir, base_amount, "inheritance_distribution"):
+                                    distributed_sum += base_amount
+                                else:
                                     all_success = False
                             else:
-                                buyer.withdraw(amount_per_heir)
-                                heir.deposit(amount_per_heir)
+                                buyer.withdraw(base_amount)
+                                heir.deposit(base_amount)
+                                distributed_sum += base_amount
+
+                    # Last heir gets the remainder to ensure zero-sum
+                    last_heir_id = heir_ids[-1]
+                    last_heir = agents.get(last_heir_id)
+                    if last_heir:
+                        remaining_amount = total_cash - distributed_sum
+                        # Ensure we don't transfer negative amounts or dust if something went wrong
+                        if remaining_amount > 0:
+                            if settlement:
+                                if not settlement.transfer(buyer, last_heir, remaining_amount, "inheritance_distribution_final"):
+                                    all_success = False
+                            else:
+                                buyer.withdraw(remaining_amount)
+                                last_heir.deposit(remaining_amount)
+
                     success = all_success
 
             elif tx.transaction_type == "goods":
@@ -230,6 +256,20 @@ class TransactionProcessor(SystemInterface):
                     buyer.withdraw(trade_value)
                     seller.deposit(trade_value)
                     success = True
+
+            elif tx.transaction_type == "emergency_buy":
+                # Fast Purchase (Buyer -> Reflux/System)
+                # No Sales Tax, Immediate Inventory Update
+                if settlement:
+                    success = settlement.transfer(buyer, seller, trade_value, "emergency_buy")
+                else:
+                    buyer.withdraw(trade_value)
+                    seller.deposit(trade_value)
+                    success = True
+
+                if success:
+                    buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
+
             else:
                 # Default / Other
                 if settlement:
