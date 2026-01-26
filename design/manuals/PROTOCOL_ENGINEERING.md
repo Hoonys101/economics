@@ -11,7 +11,9 @@ This protocol defines the architectural standards and design workflows for the p
     *   **Market Logic**: Order matching and transaction generation.
     *   **System Logic**: Governing the simulation loop (e.g., TickScheduler).
 3.  **DTO (Data Transfer Object) Pattern**: Data must move between layers via DTO classes, never raw dictionaries.
-    *   **Data-Driven Purity**: Decision engines must depend ONLY on immutable snapshots (e.g., `MarketSnapshotDTO`). Direct access to Live State objects (Market, Government) is forbidden.
+    *   **Data-Driven Purity**: Decision engines must depend ONLY on immutable snapshots (e.g., `MarketSnapshotDTO`). 
+        - **Rule**: Engines must not call methods on live service objects (Market, Bank, etc.). 
+        - **Rule**: All external state must be passed via `DecisionContext` in a serialized or DTO format.
 
 ---
 

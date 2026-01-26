@@ -25,6 +25,10 @@
       "15105794138622903483": {
         "title": "Remediation_TD116_117_118",
         "initial_mission": "Implement core structural fixes (DTO Decisions, Sacred Sequence Commerce, Inheritance residue).\n\n[Fi..."
+      },
+      "16308090739982688151": {
+        "title": "Hotfix_AI_Engine_NameError",
+        "initial_mission": "Fix the NameError in `simulation/decisions/ai_driven_household_engine.py` around L331. The variable ..."
       }
     },
     "completed_sessions": {

@@ -60,12 +60,14 @@
 - **효과**: 시작 시점에 자산이 없어 대량으로 파산하는 "Tick 1 Leak" 현상을 방지한다.
 
 ### 4.1 Data-Driven Purity (DTOs for Decisions)
-- **Phenomenon**: Decision logic (Decision Engines) directly accessing mutable `Market` or `Government` objects, leading to side effects and unpredictable behavior.
-- **Principle**: All decision logic must rely on immutable data snapshots captured at a specific point in time (`MarketSnapshotDTO`, etc.). Direct injection of live state objects is forbidden.
-- **Benefits**:
-    - **Purity**: Decision functions produce no side effects and are deterministic.
-    - **Testability**: Unit tests can easily be constructed by synthesizing DTOs.
-    - **Debugging**: Snapshot logging allows exact reproduction of decision logic.
+
+- **현상(Phenomenon)**: 의사결정 로직(예: `AIDrivenHouseholdDecisionEngine`)이 `market`과 같은 live 서비스 객체를 직접 참조하면서, 테스트가 복잡해지고 서비스 간 결합도가 높아지는 문제.
+- **원인(Cause)**: 엔진이 외부 상태(live object)에 직접 의존하여, 동일 입력에 대해 다른 결과를 낼 수 있는 비결정적 특성을 가짐.
+- **해결(Solution)**: 의사결정 엔진은 반드시 `DecisionContext`를 통해 전달되는 정적 데이터(State DTO, Market Data, Config)에만 의존해야 한다. 엔진 내부에서 live 서비스 객체의 메서드를 직접 호출해서는 안 된다. 
+- **효과(Effect)**:
+    - **순수성**: 의사결정 함수는 Side-Effect를 일으키지 않으며, 동일 입력에 대해 항상 동일 출력을 보장하는 순수 함수(pure function)처럼 동작한다.
+    - **테스트 용이성**: 외부 서비스로부터 완전히 분리되어, 다양한 시나리오의 DTO를 통해 행위를 예측 가능하게 검증할 수 있다.
+    - **디버깅 용이성**: 특정 시점의 `DecisionContext`를 로깅하여, 의사결정 로직의 동작을 정확히 재현하고 분석할 수 있다.
 
 ### 4.2 Two-Phase State Transition (Plan & Finalize)
 - **Phenomenon**: Complex logic mixing state reading, decision making, and state mutation in a single function (e.g., deciding consumption and immediately deducting inventory).
