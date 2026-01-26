@@ -1,0 +1,351 @@
+diff --git a/hunt_leak.py b/hunt_leak.py
+new file mode 100644
+index 0000000..fc24f7b
+--- /dev/null
++++ b/hunt_leak.py
+@@ -0,0 +1,135 @@
++
++import sys
++import os
++import unittest
++from unittest.mock import MagicMock, patch
++
++# Add repository root to path
++sys.path.append(os.getcwd())
++
++from simulation.systems.demographic_manager import DemographicManager
++from simulation.core_agents import Household
++
++class TestBirthLeak(unittest.TestCase):
++    def setUp(self):
++        self.mock_config = MagicMock()
++        self.mock_config.REPRODUCTION_AGE_START = 20
++        self.mock_config.REPRODUCTION_AGE_END = 45
++        self.mock_config.NEWBORN_ENGINE_TYPE = "AIDriven"
++        self.mock_config.MITOSIS_MUTATION_PROBABILITY = 0.1
++        self.mock_config.NEWBORN_INITIAL_NEEDS = {"survival": 10.0}
++
++        self.mock_sim = MagicMock()
++        self.mock_sim.next_agent_id = 100
++        self.mock_sim.time = 1
++        self.mock_sim.markets = {"loan_market": MagicMock()}
++        self.mock_sim.goods_data = []
++        self.mock_sim.ai_trainer.get_engine.return_value = MagicMock()
++        self.mock_sim.ai_training_manager = MagicMock()
++
++        self.manager = DemographicManager(config_module=self.mock_config)
++
++    def test_atomic_rollback_on_failure(self):
++        """
++        Verify that if child creation fails, parent assets are restored (Leak = 0).
++        """
++        print("\n[Test] Atomic Rollback on Failure")
++
++        # Parent with 1000 assets
++        parent = MagicMock(spec=Household)
++        parent.id = 1
++        parent.age = 30
++        parent.assets = 1000.0
++        parent.talent = MagicMock()
++        parent.personality = "MOCK_PERSONALITY"
++        parent.value_orientation = "TRADITIONAL"
++        parent.risk_aversion = 0.5
++        parent.generation = 1
++        parent.children_ids = []
++
++        # Mock _sub_assets to actually decrease mocked assets
++        def sub_assets(amount):
++            parent.assets -= amount
++        parent._sub_assets.side_effect = sub_assets
++
++        # Mock _add_assets to actually increase mocked assets (for rollback)
++        def add_assets(amount):
++            parent.assets += amount
++        parent._add_assets.side_effect = add_assets
++
++        # Patch Household to raise Exception
++        with patch("simulation.systems.demographic_manager.Household", side_effect=Exception("Simulated Creation Failure")):
++
++            # Run process_births
++            # Expectation: Exception caught (or not?), assets restored.
++            # Current code: Exception propagates or (if I fix it) caught and refunded.
++            # Since current code does NOT catch, this test might crash or show leak if I catch it externally.
++
++            try:
++                self.manager.process_births(self.mock_sim, [parent])
++            except Exception as e:
++                print(f"Caught expected exception: {e}")
++
++            # Verify Assets
++            print(f"Parent Assets after failure: {parent.assets}")
++
++            # If leak exists (current behavior):
++            # parent.assets = 1000 - 100 = 900. (Money destroyed).
++            # If fixed:
++            # parent.assets = 1000.
++
++            if parent.assets == 1000.0:
++                print("SUCCESS: No leak detected (Rollback worked).")
++            else:
++                print(f"FAILURE: Leak detected! Assets missing: {1000.0 - parent.assets}")
++
++            self.assertEqual(parent.assets, 1000.0, f"Leak detected! Parent has {parent.assets}, expected 1000.0")
++
++    def test_insufficient_funds_adjustment(self):
++        """
++        Verify that if parent has low funds, gift is adjusted (prevent negative).
++        Though 10% is always feasible, we test boundary logic.
++        """
++        print("\n[Test] Insufficient Funds Adjustment")
++
++        parent = MagicMock(spec=Household)
++        parent.id = 2
++        parent.age = 30
++        parent.assets = 5.0 # Low assets
++        parent.talent = MagicMock()
++        parent.personality = "MOCK_PERSONALITY"
++        parent.value_orientation = "TRADITIONAL"
++        parent.risk_aversion = 0.5
++        parent.children_ids = []
++        parent.generation = 1
++
++        # Mock assets
++        def sub_assets(amount):
++            parent.assets -= amount
++        parent._sub_assets.side_effect = sub_assets
++
++        # We need successful creation here
++        with patch("simulation.systems.demographic_manager.Household") as MockChild:
++            mock_child_instance = MagicMock()
++            MockChild.return_value = mock_child_instance
++
++            # Capture initial_assets passed to child
++
++            self.manager.process_births(self.mock_sim, [parent])
++
++            # Verify child received 10% (0.5)
++            # Or if we implement "adjust", maybe different.
++            # Currently 0.5 is fine.
++
++            args, kwargs = MockChild.call_args
++            initial_assets = kwargs.get('initial_assets')
++            print(f"Parent Assets: 5.0 -> Child Init Assets: {initial_assets}")
++
++            # Verify conservation
++            # Parent should have 4.5
++            self.assertAlmostEqual(parent.assets, 4.5)
++            self.assertAlmostEqual(initial_assets, 0.5)
++            print("SUCCESS: Assets conserved (Standard case).")
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/simulation/systems/demographic_manager.py b/simulation/systems/demographic_manager.py
+index a55bdda..0ce3e19 100644
+--- a/simulation/systems/demographic_manager.py
++++ b/simulation/systems/demographic_manager.py
+@@ -93,108 +93,118 @@ class DemographicManager:
+             # but usually children start with 0 or small amount.
+             # Let's assume standard INITIAL_ASSETS or small portion from parent.
+             # "Initial 자산은 부모 자산의 일부 이전"
+-            initial_gift = parent.assets * 0.1
+-            parent._sub_assets(initial_gift)
++            initial_gift = max(0.0, min(parent.assets * 0.1, parent.assets))
+ 
+-            # Create Instance
+-            # We need to clone parent's structure but reset state
+-            # Assuming Household.__init__ takes similar args.
+-            # We need to access simulation.goods_data etc.
+-            # Ideally Simulation passes factory or we use parent's references.
++            # Atomic Transaction: Subtract -> Create -> Add back on failure
++            parent._sub_assets(initial_gift)
+ 
+-            # 1. Talent Inheritance & Mutation
+-            child_talent = self._inherit_talent(parent.talent)
++            try:
++                # Create Instance
++                # We need to clone parent's structure but reset state
++                # Assuming Household.__init__ takes similar args.
++                # We need to access simulation.goods_data etc.
++                # Ideally Simulation passes factory or we use parent's references.
+ 
+-            # 2. Brain (HouseholdAI) - Inherit weights/policy
+-            # This requires creating a new decision engine.
+-            # We can use parent.clone() logic but customized.
++                # 1. Talent Inheritance & Mutation
++                child_talent = self._inherit_talent(parent.talent)
+ 
+-            # Create Decision Engine (similar to parent's type)
+-            # We need simulation.ai_trainer to get engine
+-            # Accessing simulation.ai_trainer...
+-            ai_trainer = simulation.ai_trainer
++                # 2. Brain (HouseholdAI) - Inherit weights/policy
++                # This requires creating a new decision engine.
++                # We can use parent.clone() logic but customized.
+ 
+-            # Value Orientation Inheritance (with mutation?)
+-            value_orientation = parent.value_orientation # Strict inheritance for now
++                # Create Decision Engine (similar to parent's type)
++                # We need simulation.ai_trainer to get engine
++                # Accessing simulation.ai_trainer...
++                ai_trainer = simulation.ai_trainer
+ 
+-            # Get base engine
+-            base_ai_engine = ai_trainer.get_engine(value_orientation)
++                # Value Orientation Inheritance (with mutation?)
++                value_orientation = parent.value_orientation # Strict inheritance for now
+ 
+-            # Create HouseholdAI wrapper
+-            from simulation.ai.household_ai import HouseholdAI
+-            from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
++                # Get base engine
++                base_ai_engine = ai_trainer.get_engine(value_orientation)
+ 
+-            # Inherit Personality (with mutation)
+-            child_personality = self._inherit_personality(parent.personality)
++                # Create HouseholdAI wrapper
++                from simulation.ai.household_ai import HouseholdAI
++                from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+ 
+-            new_ai = HouseholdAI(
+-                agent_id=str(child_id),
+-                ai_decision_engine=base_ai_engine,
+-                # Inherit parameters maybe?
+-            )
++                # Inherit Personality (with mutation)
++                child_personality = self._inherit_personality(parent.personality)
+ 
+-            # Create Decision Engine
+-            # WO-110: Allow selecting engine type for newborns (AIDriven vs RuleBased)
+-            newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
+-
+-            if newborn_engine_type == "RuleBased":
+-                from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+-                new_decision_engine = RuleBasedHouseholdDecisionEngine(
+-                    config_module=self.config_module,
+-                    logger=simulation.logger
++                new_ai = HouseholdAI(
++                    agent_id=str(child_id),
++                    ai_decision_engine=base_ai_engine,
++                    # Inherit parameters maybe?
+                 )
+-            else:
+-                new_decision_engine = AIDrivenHouseholdDecisionEngine(
+-                    ai_engine=new_ai,
++
++                # Create Decision Engine
++                # WO-110: Allow selecting engine type for newborns (AIDriven vs RuleBased)
++                newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
++
++                if newborn_engine_type == "RuleBased":
++                    from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
++                    new_decision_engine = RuleBasedHouseholdDecisionEngine(
++                        config_module=self.config_module,
++                        logger=simulation.logger
++                    )
++                else:
++                    new_decision_engine = AIDrivenHouseholdDecisionEngine(
++                        ai_engine=new_ai,
++                        config_module=self.config_module,
++                        logger=simulation.logger
++                    )
++                    new_decision_engine.loan_market = simulation.markets.get("loan_market")
++
++                # Load initial needs from config
++                initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", {})
++                if not initial_needs_for_newborn:
++                    self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
++
++                child = Household(
++                    id=child_id,
++                    talent=child_talent,
++                    goods_data=simulation.goods_data,
++                    initial_assets=initial_gift,
++                    initial_needs=initial_needs_for_newborn.copy(),
++                    decision_engine=new_decision_engine,
++                    value_orientation=value_orientation,
++                    personality=child_personality,
+                     config_module=self.config_module,
++                    loan_market=simulation.markets.get("loan_market"),
++                    risk_aversion=parent.risk_aversion, # Inherit risk aversion
+                     logger=simulation.logger
+                 )
+-                new_decision_engine.loan_market = simulation.markets.get("loan_market")
+-
+-            # Load initial needs from config
+-            initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", {})
+-            if not initial_needs_for_newborn:
+-                self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
+-
+-            child = Household(
+-                id=child_id,
+-                talent=child_talent,
+-                goods_data=simulation.goods_data,
+-                initial_assets=initial_gift,
+-                initial_needs=initial_needs_for_newborn.copy(),
+-                decision_engine=new_decision_engine,
+-                value_orientation=value_orientation,
+-                personality=child_personality,
+-                config_module=self.config_module,
+-                loan_market=simulation.markets.get("loan_market"),
+-                risk_aversion=parent.risk_aversion, # Inherit risk aversion
+-                logger=simulation.logger
+-            )
+-
+-            # Initialize Phase 19 Attributes
+-            child.age = 0.0 # Newborn
+-            child.education_level = 0 # Start at 0
+-            child.expected_wage = self._calculate_expected_wage(child.education_level)
+-            child.parent_id = parent.id
+-            child.generation = parent.generation + 1
+ 
+-            # Register linkage
+-            parent.children_ids.append(child_id)
+-
+-            # Brain Weight Inheritance
+-            if hasattr(simulation, "ai_training_manager"):
+-                simulation.ai_training_manager.inherit_brain(parent, child)
+-            else:
+-                # Fallback if manager not found (e.g. mocked simulation)
+-                self.logger.warning("AITrainingManager not found for brain inheritance.")
+-
+-            new_children.append(child)
+-
+-            self.logger.info(
+-                f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
+-                f"Assets: {initial_gift:.2f}",
+-                extra={"parent_id": parent.id, "child_id": child.id, "tick": simulation.time}
+-            )
++                # Initialize Phase 19 Attributes
++                child.age = 0.0 # Newborn
++                child.education_level = 0 # Start at 0
++                child.expected_wage = self._calculate_expected_wage(child.education_level)
++                child.parent_id = parent.id
++                child.generation = parent.generation + 1
++
++                # Brain Weight Inheritance
++                if hasattr(simulation, "ai_training_manager"):
++                    simulation.ai_training_manager.inherit_brain(parent, child)
++                else:
++                    # Fallback if manager not found (e.g. mocked simulation)
++                    self.logger.warning("AITrainingManager not found for brain inheritance.")
++
++                # Register linkage and finalize
++                parent.children_ids.append(child_id)
++                new_children.append(child)
++
++                self.logger.info(
++                    f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
++                    f"Assets: {initial_gift:.2f}",
++                    extra={"parent_id": parent.id, "child_id": child.id, "tick": simulation.time}
++                )
++            except Exception as e:
++                # Rollback transaction on failure to prevent asset leak
++                parent._add_assets(initial_gift)
++                self.logger.error(
++                    f"BIRTH_FAILED | Failed to create child for parent {parent.id}. Rolled back {initial_gift:.2f}. Error: {e}",
++                    extra={"parent_id": parent.id, "error": str(e)}
++                )
++                continue
+ 
+         return new_children
+ 

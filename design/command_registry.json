@@ -4,12 +4,6 @@
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "fix-track-alpha-leak": {
-    "command": "create",
-    "instruction": "1. simulation/systems/demographic_manager.py의 process_births 메서드를 수정하세요. 2. 신생아에게 초기 자금(initial_gift)을 줄 때, 반드시 부모의 자산에서 해당 금액을 차감(parent._sub_assets)하는 로직이 원자적(Atomic)으로 실행되도록 보장하세요. 3. 부모 자산이 부족하면 탄생을 취소하거나 초기 자금을 조정해야 합니다. 4. 수정 후 hunt_leak.py를 실행하여 Leak이 0이 됨을 검증하는 테스트 스크립트를 작성하세요.",
-    "title": "Fix Asset Leak in DemographicManager",
-    "file": "design/specs/D_TRACK_ALPHA_REMEDIATION.md"
-  },
   "fix-dto-purity-violations": {
     "command": "create",
     "instruction": "1. simulation/decisions/ai_driven_household_engine.py를 수정하세요. 2. _make_decisions_internal 메서드 등에서 context.markets['housing']에 직접 접근하는 코드를 찾아 제거하고, context.market_data 또는 context.market_snapshot DTO를 사용하도록 리팩토링하세요. 3. simulation/decisions/corporate_manager.py가 self.config_module 대신 context.config DTO를 사용하도록 수정하세요.",
