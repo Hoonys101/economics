@@ -15,6 +15,7 @@ data_loader = DataLoader(db_path="simulation_data.db")
 run_id_input = st.text_input("Enter Simulation Run ID", value="latest")
 
 # 4. Data Loading
+economic_indicators_df = None
 try:
     # Use the validated run_id for loading. The loader handles the 'latest' keyword.
     economic_indicators_df = data_loader.load_economic_indicators(run_id=run_id_input)
