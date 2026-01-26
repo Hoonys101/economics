@@ -67,7 +67,10 @@ class IFinancialEntity(Protocol):
 
 class IBankService(IFinancialEntity, Protocol):
     """Interface for commercial and central banks."""
-    def add_bond_to_portfolio(self, bond: BondDTO) -> None: ...
+    # The following method will be removed as it's not a core function
+    # of the current Bank implementation.
+    # def add_bond_to_portfolio(self, bond: BondDTO) -> None: ...
+    pass # The protocol now correctly reflects the Bank's capabilities
 
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""
