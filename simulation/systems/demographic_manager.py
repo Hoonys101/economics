@@ -151,12 +151,22 @@ class DemographicManager:
                 )
                 new_decision_engine.loan_market = simulation.markets.get("loan_market")
 
+            initial_needs_for_newborn = {
+                "survival": 60.0,
+                "social": 20.0,
+                "improvement": 10.0,
+                "asset": 10.0,
+                "imitation_need": 15.0,
+                "labor_need": 0.0,
+                "liquidity_need": 50.0
+            }
+
             child = Household(
                 id=child_id,
                 talent=child_talent,
                 goods_data=simulation.goods_data,
                 initial_assets=initial_gift,
-                initial_needs={}, # Default reset
+                initial_needs=initial_needs_for_newborn,
                 decision_engine=new_decision_engine,
                 value_orientation=value_orientation,
                 personality=child_personality,
