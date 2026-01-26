@@ -13,6 +13,10 @@
       "12570818305275603561": {
         "title": "Remediation_TD116_117_118",
         "initial_mission": "Implement the core structural and economic integrity fixes for TD-116 (Inheritance Leaks), TD-117 (D..."
+      },
+      "6037925106170011541": {
+        "title": "Track_Alpha_Redemption",
+        "initial_mission": "Fix the Tick 1 leak (-99,680) and update M2 calculation. Use the generated spec for logic details. R..."
       }
     },
     "completed_sessions": {

@@ -4,13 +4,6 @@
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "jules_alpha": {
-    "command": "create",
-    "title": "Track_Alpha_Redemption",
-    "instruction": "Fix the Tick 1 leak (-99,680) and update M2 calculation. Use the generated spec for logic details. REPORT: Capture findings on কেন Initialization order causes leaks.",
-    "file": "design/specs/D_TRACK_ALPHA_REMEDIATION.md",
-    "wait": true
-  },
   "jules_bravo": {
     "command": "create",
     "title": "Track_Bravo_Remediation",
