@@ -114,6 +114,11 @@ class HousingSystem:
                     hh.is_homeless = False
 
                 if hh.is_homeless:
+                    if "survival" not in hh.needs:
+                        logger.error(f"CRITICAL: Household {hh.id} missing 'survival' need! Needs: {hh.needs.keys()}")
+                        # Hotfix: Restore survival need
+                        hh.needs["survival"] = 50.0
+
                     hh.needs["survival"] += self.config.HOMELESS_PENALTY_PER_TICK
                     logger.debug(
                         f"HOMELESS_PENALTY | Household {hh.id} survival need increased.",
@@ -171,10 +176,8 @@ class HousingSystem:
                 # The original code called 'record_asset_sale', which doesn't exist on Government.
                 # The intent seems to be to track government income. We'll use the existing
                 # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
+                # seller.collect_tax handles the transfer via SettlementSystem.
                 seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
-                # Note: collect_tax no longer adds assets! We must add it manually or use SettlementSystem.
-                # Since we are inside HousingSystem legacy logic, we add it here.
-                seller._add_assets(trade_value)
             else:
                 seller._add_assets(trade_value)
 

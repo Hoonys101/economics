@@ -130,6 +130,10 @@ class TickScheduler:
         if edu_txs:
             system_transactions.extend(edu_txs)
 
+        # [DEBUG LEAK]
+        current = state.calculate_total_money()
+        state.logger.info(f"DEBUG_MONEY | Steps 0-6 Complete. Money: {current:,.2f}")
+
         # ----------------------------------------------------------------------------------
 
         # Cleanup Orders (Reset for new tick)
@@ -352,7 +356,7 @@ class TickScheduler:
         }
 
         if state.commerce_system:
-            household_leisure_effects = state.commerce_system.execute_consumption_and_leisure(commerce_context, state.stress_scenario_config)
+            household_leisure_effects = state.commerce_system.finalize_consumption_and_leisure(commerce_context, state.planned_consumption if hasattr(state, "planned_consumption") else {})
         else:
             state.logger.error("CommerceSystem not initialized! Skipping consumption cycle.")
             household_leisure_effects = {}
@@ -379,8 +383,14 @@ class TickScheduler:
         # Phase 17-3B: Process Housing (Logic that didn't fit in matching/lifecycle)
         # Housing matching happened in _phase_matching.
         # But apply_homeless_penalty needs to run.
+        current_pre_housing = state.calculate_total_money()
+        print(f"DEBUG_MONEY | Pre-Housing Process. Money: {current_pre_housing:,.2f}")
+
         state.housing_system.process_housing(state) # Update rent/maintenance
         state.housing_system.apply_homeless_penalty(state)
+
+        current_post_housing = state.calculate_total_money()
+        print(f"DEBUG_MONEY | Post-Housing Process. Money: {current_post_housing:,.2f}")
 
         # ---------------------------------------------------------
         # Activate Farm Logic (Production & Needs/Wages)

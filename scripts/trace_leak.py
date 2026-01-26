@@ -13,12 +13,36 @@ def trace():
     sim = create_simulation()
     
     print(f"Tick 0 (START) Total Money: {sim.world_state.calculate_total_money():,.2f}")
+    
+    # Baseline is established at Tick 0
+    baseline_money = sim.world_state.calculate_total_money()
+
     for f in sim.world_state.firms:
         print(f"Firm {f.id}: Assets={f.assets:,.2f}, Active={f.is_active}")
     
     sim.run_tick()
     
-    print(f"\nTick 1 (END) Total Money: {sim.world_state.calculate_total_money():,.2f}")
+    current_money = sim.world_state.calculate_total_money()
+    delta = current_money - baseline_money
+    
+    # WO-120: Authorized Delta (Credit Creation / Destruction)
+    authorized_delta = 0.0
+    if hasattr(sim.government, "get_monetary_delta"):
+        authorized_delta = sim.government.get_monetary_delta()
+        
+    print(f"\nTick 1 (END) Total Money: {current_money:,.2f}")
+    print(f"Baseline: {baseline_money:,.2f}")
+    print(f"Authorized Delta (Minted - Destroyed): {authorized_delta:,.2f}")
+    print(f"Actual Delta: {delta:,.2f}")
+    
+    # Check Integrity
+    leak = delta - authorized_delta
+    if abs(leak) > 1.0:
+        print(f"❌ LEAK DETECTED: {leak:,.4f}")
+        sys.exit(1)
+    else:
+        print(f"✅ INTEGRITY CONFIRMED (Leak: {leak:,.4f})")
+
     for f in sim.world_state.firms:
         print(f"Firm {f.id}: Assets={f.assets:,.2f}, Active={f.is_active}")
         
