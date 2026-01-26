@@ -1,14 +1,27 @@
 {
   "_meta": {
-    "session": "Parallel Remediation Wave 1",
+    "session": "Parallel Remediation Cluster (Core/Alpha/Bravo)",
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "jules_core": {
+  "jules_alpha_fix": {
     "command": "create",
-    "title": "Remediation_TD116_117_118",
-    "instruction": "Implement core structural fixes (DTO Decisions, Sacred Sequence Commerce, Inheritance residue).",
-    "file": "design/specs/D_REMEDIATION_TD116_117_118.md",
+    "title": "Track_Alpha_Redemption_Fix",
+    "instruction": "PR Review result: REQUEST_CHANGES. Please fix the brittle test in 'tests/verify_td_115_111.py'. Replace the hardcoded asset expectation (assert baseline == 101800.0) with a dynamic calculation based on the fixtures provided in the test file.",
+    "file": "design/specs/D_TRACK_ALPHA_REMEDIATION.md",
+    "wait": true
+  },
+  "jules_bravo": {
+    "command": "create",
+    "title": "Track_Bravo_Remediation",
+    "instruction": "Fix Phantom Tax (TD-110) by enforcing Settle->Record and formalize IBankService (TD-119). Refer to the attached spec.",
+    "file": "design/specs/D_TRACK_BRAVO_REMEDIATION.md",
+    "wait": true
+  },
+  "jules_core_correction": {
+    "command": "send-message",
+    "session_id": "12570818305275603561",
+    "instruction": "PR Review result: REQUEST_CHANGES. Please fix the following structural gaps:\n\n1. [ai_driven_household_engine.py]: Replace 'pass' with logger.warning for fid parsing failures in _place_buy_orders.\n2. [tick_scheduler.py]: Add logger.warning when fallback values are used for GovernmentPolicyDTO properties.\n3. Implement all suggestions in design/gemini_output/pr_review_remediation-td116-118-12570818305275603561.md.",
     "wait": true
   },
   "git_review": {

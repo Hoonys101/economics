@@ -8,7 +8,7 @@ This is the definitive entry point for all contributors. **Read this first.**
 **The Architect (AI/Antigravity) MUST NOT write code or debug directly in the source.** 
 - All research, planning, and design are delegated to **Gemini**.
 - All implementation and debugging are delegated to **Jules**.
-- The Architect only **Arms** the tools via Spec & SCR Registry.
+- The Architect only **Arms** the tools via Spec & SCR Registry and **Extracts Insights** from PR reviews to update protocols.
 
 ---
 

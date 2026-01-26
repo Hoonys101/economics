@@ -1,3 +1,1699 @@
+diff --git a/communications/team_assignments.json b/communications/team_assignments.json
+index 9c40ef7..f6f6099 100644
+--- a/communications/team_assignments.json
++++ b/communications/team_assignments.json
+@@ -9,18 +9,6 @@
+       "14380937838417142870": {
+         "title": "[WO-104] Regime Strategy Pattern Refactoring",
+         "initial_mission": "Synchronized from server"
+-      },
+-      "12570818305275603561": {
+-        "title": "Remediation_TD116_117_118",
+-        "initial_mission": "Implement the core structural and economic integrity fixes for TD-116 (Inheritance Leaks), TD-117 (D..."
+-      },
+-      "6037925106170011541": {
+-        "title": "Track_Alpha_Redemption",
+-        "initial_mission": "Fix the Tick 1 leak (-99,680) and update M2 calculation. Use the generated spec for logic details. R..."
+-      },
+-      "11698650339345650580": {
+-        "title": "Track_Bravo_Remediation",
+-        "initial_mission": "Fix Phantom Tax (TD-110) by enforcing Settle->Record and formalize IBankService (TD-119). Refer to t..."
+       }
+     },
+     "completed_sessions": {
+diff --git a/design/command_registry.json b/design/command_registry.json
+index 4f20157..cb73628 100644
+--- a/design/command_registry.json
++++ b/design/command_registry.json
+@@ -1,18 +1,18 @@
+ {
+-  "_meta": {
+-    "session": "Parallel Remediation Wave 1",
+-    "updated": "2026-01-26",
+-    "author": "Antigravity"
+-  },
+-  "jules_core": {
++  "jules": {
+     "command": "create",
+     "title": "Remediation_TD116_117_118",
+-    "instruction": "Implement core structural fixes (DTO Decisions, Sacred Sequence Commerce, Inheritance residue).",
++    "session_id": "",
++    "instruction": "Implement the core structural and economic integrity fixes for TD-116 (Inheritance Leaks), TD-117 (DTO-Only Decisions), and TD-118 (CommerceSystem Sequence Integration). \n\nFocus on exact inheritance distribution logic, refactoring make_decision to use Snapshot DTOs, and splitting CommerceSystem into Plan/Finalize phases within the 4-Phase Sacred Sequence.",
+     "file": "design/specs/D_REMEDIATION_TD116_117_118.md",
+     "wait": true
+   },
+   "git_review": {
+     "branch": "main",
+     "instruction": "Analyze this PR. Check behavior logic and test coverage."
+-  }
++  },
++  "merge": {
++    "branch": ""
++  },
++  "harvest": {}
+ }
+\ No newline at end of file
+diff --git a/design/gemini_output/parallel_work_order_proposal.md b/design/gemini_output/parallel_work_order_proposal.md
+deleted file mode 100644
+index 9e2f5c0..0000000
+--- a/design/gemini_output/parallel_work_order_proposal.md
++++ /dev/null
+@@ -1,50 +0,0 @@
+-# 🚀 Parallel Work Order Proposal: Scalable Remediation
+-
+-Based on the [TECH_DEBT_LEDGER.md](file:///c:/coding/economics/design/TECH_DEBT_LEDGER.md), we have organized the remaining high-priority tasks into independent tracks. These tracks target non-overlapping files, allowing multiple **Jules** agents (or sequential sessions) to proceed without merge conflicts.
+-
+----
+-
+-## 🏗️ Track Alpha: Monetary Initialization & Leak Hunt
+-**Focus**: Initialization integrity and M2 money supply accounting.
+-- **TD-115**: Root cause capture of the -99,680 asset leak at Tick 1.
+-- **TD-111**: Exclude `RefluxSystem` balance from M2 calculation.
+-
+-| Module | Target File | Conflict Status |
+-|---|---|---|
+-| **Initializer** | `simulation/initialization/initializer.py` | ✅ Pure |
+-| **Reflux** | `simulation/systems/reflux_system.py` | ✅ Pure |
+-| **Integrity** | `simulation/world_state.py` | ⚠️ Shared |
+-
+----
+-
+-## 🏛️ Track Bravo: Policy Purity & Interface Ghosting
+-**Focus**: Government accounting accuracy and interface formalization.
+-- **TD-110**: Phantom Tax Revenue fix (decoupling stats from transfer).
+-- **TD-119**: Formal definition of `IBankService` Protocol.
+-
+-| Module | Target File | Conflict Status |
+-|---|---|---|
+-| **Tax** | `simulation/systems/tax_agency.py` | ✅ Pure |
+-| **Government** | `simulation/agents/government.py` | ✅ Pure |
+-| **Finance API** | `modules/finance/api.py` | ✅ Pure |
+-
+----
+-
+-## 🧪 Track Charlie: Quality Guard (Post-Core)
+-**Focus**: Removing legacy fallbacks and expanding coverage.
+-- **TD-113**: Removal of legacy `withdraw/deposit` fallbacks.
+-- **TD-114**: Implementation of sparse system tests (Housing, Education).
+-
+-| Module | Target File | Conflict Status |
+-|---|---|---|
+-| **Processor** | `simulation/systems/transaction_processor.py` | 🛑 Blocked by Core |
+-| **Tests** | `tests/system/` | ✅ Pure (New Files) |
+-
+----
+-
+-## 📈 Summary for PM
+-- **Immediately Dispatchable**: Track Alpha & Track Bravo.
+-- **Dependency**: Track Charlie requires completion of the current `Remediation_TD116_117_118` mission.
+-
+-> [!TIP]
+-> Use `scripts/cmd_ops.py` to prepare the specs for Alpha and Bravo tracks in parallel while the current mission is running.
+diff --git a/design/gemini_output/pr_diff_remediation-td116-118-12570818305275603561.txt b/design/gemini_output/pr_diff_remediation-td116-118-12570818305275603561.txt
+deleted file mode 100644
+index 70b25b1..0000000
+--- a/design/gemini_output/pr_diff_remediation-td116-118-12570818305275603561.txt
++++ /dev/null
+@@ -1,900 +0,0 @@
+-diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+-index 34d0aa5..3c04ebf 100644
+---- a/simulation/core_agents.py
+-+++ b/simulation/core_agents.py
+-@@ -668,6 +668,8 @@ class Household(BaseAgent, ILearningAgent):
+-         government: Optional[Any] = None,
+-         macro_context: Optional[MacroFinancialContext] = None,
+-         stress_scenario_config: Optional["StressScenarioConfig"] = None,
+-+        market_snapshot: Optional[Any] = None,
+-+        government_policy: Optional[Any] = None,
+-     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
+- 
+-         # 0. Update Social Status (Before Decision)
+-@@ -742,7 +744,9 @@ class Household(BaseAgent, ILearningAgent):
+-             market_data=market_data,
+-             current_time=current_time,
+-             government=government,
+--            stress_scenario_config=stress_scenario_config
+-+            stress_scenario_config=stress_scenario_config,
+-+            market_snapshot=market_snapshot,
+-+            government_policy=government_policy
+-         )
+- 
+-         # 2. Call Decision Engine
+-diff --git a/simulation/decisions/ai_driven_household_engine.py b/simulation/decisions/ai_driven_household_engine.py
+-index 491ed30..8839d32 100644
+---- a/simulation/decisions/ai_driven_household_engine.py
+-+++ b/simulation/decisions/ai_driven_household_engine.py
+-@@ -51,7 +51,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-             from simulation.schemas import HouseholdActionVector
+-             return [], HouseholdActionVector()
+- 
+--        markets = context.markets
+-+        # TD-117: Use DTOs
+-+        market_snapshot = context.market_snapshot
+-         market_data = context.market_data
+-         current_time = context.current_time
+- 
+-@@ -283,12 +284,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+- 
+-         # 4. Stock Investment Logic
+-         stock_orders = self._make_stock_investment_decisions(
+--            household, markets, market_data, action_vector, current_time, macro_context
+-+            household, market_snapshot, market_data, action_vector, current_time, macro_context
+-         )
+--        stock_market = markets.get("stock_market")
+--        if stock_market is not None:
+--            for stock_order in stock_orders:
+--                stock_market.place_order(stock_order, current_time)
+-+        orders.extend(stock_orders)
+- 
+-         # 5. Liquidity Management
+-         stress_config = context.stress_scenario_config
+-@@ -456,7 +454,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-     def _make_stock_investment_decisions(
+-         self,
+-         household: "HouseholdStateDTO",
+--        markets: Dict[str, Any],
+-+        market_snapshot: Any, # MarketSnapshotDTO
+-         market_data: Dict[str, Any],
+-         action_vector: Any,
+-         current_time: int,
+-@@ -467,8 +465,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-         if not getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
+-             return stock_orders
+-         
+--        stock_market = markets.get("stock_market")
+--        if stock_market is None:
+-+        if market_snapshot is None:
+-             return stock_orders
+- 
+-         if household.assets < self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT:
+-@@ -496,7 +493,11 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-             macro_context=macro_context
+-         )
+- 
+--        current_prices = {firm_id: stock_market.get_stock_price(firm_id) for firm_id in household.portfolio_holdings.keys()}
+-+        current_prices = {}
+-+        if market_snapshot:
+-+            for firm_id in household.portfolio_holdings.keys():
+-+                price = market_snapshot.prices.get(f"stock_{firm_id}", 0.0)
+-+                current_prices[firm_id] = price
+- 
+-         # Calculate valuation manually for DTO
+-         current_equity_value = 0.0
+-@@ -507,9 +508,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-         equity_delta = target_equity - current_equity_value
+- 
+-         if equity_delta > self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD:
+--            stock_orders.extend(self._place_buy_orders(household, equity_delta, stock_market, current_time))
+-+            stock_orders.extend(self._place_buy_orders(household, equity_delta, market_snapshot, current_time))
+-         elif equity_delta < -self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD:
+--            stock_orders.extend(self._place_sell_orders(household, -equity_delta, stock_market, current_time))
+-+            stock_orders.extend(self._place_sell_orders(household, -equity_delta, market_snapshot, current_time))
+-         
+-         return stock_orders
+- 
+-@@ -520,9 +521,18 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-             return 5.0
+-         return 2.0
+- 
+--    def _place_buy_orders(self, household: "HouseholdStateDTO", amount_to_invest: float, stock_market: Any, tick: int) -> List[StockOrder]:
+-+    def _place_buy_orders(self, household: "HouseholdStateDTO", amount_to_invest: float, market_snapshot: Any, tick: int) -> List[StockOrder]:
+-         orders = []
+--        available_stocks = [fid for fid in stock_market.reference_prices.keys() if stock_market.get_stock_price(fid) > 0]
+-+        # Filter stock prices from snapshot
+-+        available_stocks = []
+-+        for key, price in market_snapshot.prices.items():
+-+            if key.startswith("stock_") and price > 0:
+-+                try:
+-+                    fid = int(key.split("_")[1])
+-+                    available_stocks.append(fid)
+-+                except:
+-+                    pass
+-+
+-         if not available_stocks:
+-             return orders
+- 
+-@@ -530,7 +540,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-         investment_per_stock = amount_to_invest / diversification_count
+-         for _ in range(diversification_count):
+-             firm_id = random.choice(available_stocks)
+--            price = stock_market.get_stock_price(firm_id)
+-+            price = market_snapshot.prices.get(f"stock_{firm_id}", 0.0)
+-             if price > 0:
+-                 quantity = investment_per_stock / price
+-                 if quantity >= 1.0:
+-@@ -538,11 +548,11 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-                     orders.append(order)
+-         return orders
+- 
+--    def _place_sell_orders(self, household: "HouseholdStateDTO", amount_to_sell: float, stock_market: Any, tick: int) -> List[StockOrder]:
+-+    def _place_sell_orders(self, household: "HouseholdStateDTO", amount_to_sell: float, market_snapshot: Any, tick: int) -> List[StockOrder]:
+-         orders = []
+-         sorted_holdings = sorted(
+-             household.portfolio_holdings.items(),
+--            key=lambda item: item[1].quantity * stock_market.get_stock_price(item[0]), # Access .quantity
+-+            key=lambda item: item[1].quantity * market_snapshot.prices.get(f"stock_{item[0]}", 0.0), # Access .quantity
+-             reverse=True
+-         )
+- 
+-@@ -550,7 +560,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+-             quantity = share.quantity
+-             if amount_to_sell <= 0:
+-                 break
+--            price = stock_market.get_stock_price(firm_id)
+-+            price = market_snapshot.prices.get(f"stock_{firm_id}", 0.0)
+-             if price > 0:
+-                 value_of_holding = quantity * price
+-                 sell_value = min(amount_to_sell, value_of_holding)
+-diff --git a/simulation/decisions/corporate_manager.py b/simulation/decisions/corporate_manager.py
+-index 6c2a6c6..f047591 100644
+---- a/simulation/decisions/corporate_manager.py
+-+++ b/simulation/decisions/corporate_manager.py
+-@@ -48,7 +48,7 @@ class CorporateManager:
+-             orders.append(target_order)
+- 
+-         # 0. Procurement Channel (Raw Materials) - WO-030
+--        procurement_orders = self._manage_procurement(firm, context.market_data, context.markets)
+-+        procurement_orders = self._manage_procurement(firm, context.market_data)
+-         orders.extend(procurement_orders)
+- 
+-         # Phase 21: Automation Channel
+-@@ -80,7 +80,7 @@ class CorporateManager:
+-         orders.extend(debt_orders)
+- 
+-         # 5. Pricing Channel (Sales)
+--        pricing_orders = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.markets, context.current_time)
+-+        pricing_orders = self._manage_pricing(firm, action_vector.sales_aggressiveness, context.market_data, context.current_time)
+-         orders.extend(pricing_orders)
+- 
+-         # 6. Hiring Channel (Employment)
+-@@ -104,9 +104,9 @@ class CorporateManager:
+-         if firm.treasury_shares <= 0:
+-             return None
+- 
+--        stock_market = context.markets.get("stock_market")
+--        # Check if market exists
+--        if not stock_market:
+-+        # Use DTO
+-+        market_snapshot = context.market_snapshot
+-+        if not market_snapshot:
+-             return None
+- 
+-         max_sell_ratio = getattr(self.config_module, "SEO_MAX_SELL_RATIO", 0.10)
+-@@ -117,13 +117,8 @@ class CorporateManager:
+- 
+-         # Determine price (Market Price or Book Value)
+-         price = 0.0
+--        # Accessing market directly via context might violate purity if we modify it, but we are just reading price?
+--        # Actually context.markets contains Market objects.
+--        # Ideally we should use market_data.
+--        # But stock_market logic below uses get_stock_price method.
+--        # Assuming context.markets["stock_market"] is available.
+--        if stock_market and hasattr(stock_market, "get_stock_price"):
+--             price = stock_market.get_stock_price(firm.id)
+-+        if market_snapshot:
+-+             price = market_snapshot.prices.get(f"stock_{firm.id}", 0.0)
+- 
+-         if price is None or price <= 0:
+-             # Fallback to Book Value
+-@@ -146,7 +141,7 @@ class CorporateManager:
+-         self.logger.info(f"SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}")
+-         return order
+- 
+--    def _manage_procurement(self, firm: FirmStateDTO, market_data: Dict[str, Any], markets: Dict[str, Any]) -> List[Order]:
+-+    def _manage_procurement(self, firm: FirmStateDTO, market_data: Dict[str, Any]) -> List[Order]:
+-         """
+-         WO-030: Manage Raw Material Procurement.
+-         """
+-@@ -309,7 +304,7 @@ class CorporateManager:
+- 
+-         return orders
+- 
+--    def _manage_pricing(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict, markets: Dict, current_time: int) -> List[Order]:
+-+    def _manage_pricing(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict, current_time: int) -> List[Order]:
+-         """
+-         Sales Channel.
+-         """
+-@@ -352,16 +347,15 @@ class CorporateManager:
+-         # Note: Previous logic called `firm.sales.post_ask` which might do more (logging, etc).
+-         # But we are in DTO mode. The Engine outputs Intent.
+- 
+--        target_market = markets.get(item_id)
+--        if target_market:
+--             orders.append(Order(
+--                 agent_id=firm.id,
+--                 order_type="SELL",
+--                 item_id=item_id,
+--                 quantity=qty,
+--                 price=target_price,
+--                 market_id=item_id # Assumes market_id == item_id
+--             ))
+-+        # target_market check removed for DTO purity
+-+        orders.append(Order(
+-+             agent_id=firm.id,
+-+             order_type="SELL",
+-+             item_id=item_id,
+-+             quantity=qty,
+-+             price=target_price,
+-+             market_id=item_id # Assumes market_id == item_id
+-+        ))
+- 
+-         return orders
+- 
+-diff --git a/simulation/decisions/rule_based_household_engine.py b/simulation/decisions/rule_based_household_engine.py
+-index d7c987b..fd91144 100644
+---- a/simulation/decisions/rule_based_household_engine.py
+-+++ b/simulation/decisions/rule_based_household_engine.py
+-@@ -43,7 +43,8 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+-         state: HouseholdStateDTO = context.state
+-         config: HouseholdConfigDTO = context.config
+-         
+--        markets = context.markets
+-+        # TD-117: Use DTOs
+-+        market_snapshot = context.market_snapshot
+-         market_data = context.market_data
+-         current_time = context.current_time
+- 
+-@@ -68,9 +69,9 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+- 
+-                 needed_quantity = target_buffer - food_in_inventory
+-                 market_id = food_item_id 
+--                market = markets.get(market_id)
+- 
+--                best_ask = market.get_best_ask(item_id=food_item_id) if market else None
+-+                # TD-117: Use MarketSnapshotDTO
+-+                best_ask = market_snapshot.best_asks.get(food_item_id) if market_snapshot else None
+- 
+-                 if best_ask is None or best_ask == 0:
+-                     best_ask = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
+-diff --git a/simulation/decisions/standalone_rule_based_firm_engine.py b/simulation/decisions/standalone_rule_based_firm_engine.py
+-index f4ceb61..87b9d47 100644
+---- a/simulation/decisions/standalone_rule_based_firm_engine.py
+-+++ b/simulation/decisions/standalone_rule_based_firm_engine.py
+-@@ -44,7 +44,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
+-         생산 조정, 임금 조정, 가격 조정에 집중한다.
+-         """
+-         firm = context.state # FirmStateDTO
+--        markets = context.markets
+-+        # markets = context.markets # Removed for DTO purity
+-         goods_data = context.goods_data
+-         market_data = context.market_data
+-         current_time = context.current_time
+-diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+-index 74eb39e..331aa26 100644
+---- a/simulation/dtos/api.py
+-+++ b/simulation/dtos/api.py
+-@@ -2,6 +2,7 @@ from __future__ import annotations
+- from dataclasses import dataclass, field
+- from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union
+- from simulation.dtos.firm_state_dto import FirmStateDTO
+-+from simulation.models import Order
+- 
+- if TYPE_CHECKING:
+-     from simulation.core_agents import Household
+-@@ -90,6 +91,22 @@ class AIDecisionData:
+-     predicted_reward: Optional[float] = None
+-     actual_reward: Optional[float] = None
+- 
+-+@dataclass
+-+class MarketSnapshotDTO:
+-+    """A pure-data snapshot of the state of all markets at a point in time."""
+-+    prices: Dict[str, float]
+-+    volumes: Dict[str, float]
+-+    asks: Dict[str, List[Order]]
+-+    best_asks: Dict[str, float]
+-+
+-+@dataclass
+-+class GovernmentPolicyDTO:
+-+    """A pure-data snapshot of current government policies affecting agent decisions."""
+-+    income_tax_rate: float
+-+    sales_tax_rate: float
+-+    corporate_tax_rate: float
+-+    base_interest_rate: float
+-+
+- @dataclass
+- class HouseholdConfigDTO:
+-     """Static configuration values relevant to household decisions."""
+-@@ -152,7 +169,6 @@ class DecisionContext:
+-     A pure data container for decision-making.
+-     Direct agent instance access is strictly forbidden (Enforced by Purity Gate).
+-     """
+--    markets: Dict[str, Any]
+-     goods_data: List[Dict[str, Any]]
+-     market_data: Dict[str, Any]
+-     current_time: int
+-@@ -163,7 +179,14 @@ class DecisionContext:
+-     # Static configuration values relevant to the agent type
+-     config: Union[HouseholdConfigDTO, FirmConfigDTO]
+- 
+-+    # Deprecated: Will be removed after full migration to DTOs
+-+    markets: Optional[Dict[str, Any]] = None
+-     government: Optional[Any] = None
+-+
+-+    # New DTOs
+-+    market_snapshot: Optional[MarketSnapshotDTO] = None
+-+    government_policy: Optional[GovernmentPolicyDTO] = None
+-+
+-     reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
+-     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+- 
+-@@ -198,6 +221,7 @@ class SimulationState:
+-     transactions: List[Any] = None # List[Transaction]
+-     effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
+-     inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
+-+    planned_consumption: Optional[Dict[int, Dict[str, Any]]] = None # TD-118
+- 
+-     def __post_init__(self):
+-         if self.transactions is None:
+-@@ -206,6 +230,8 @@ class SimulationState:
+-             self.effects_queue = []
+-         if self.inactive_agents is None:
+-             self.inactive_agents = {}
+-+        if self.planned_consumption is None:
+-+            self.planned_consumption = {}
+- 
+- 
+- # ------------------------------------------------------------------------------
+-diff --git a/simulation/firms.py b/simulation/firms.py
+-index ca263c7..d57e263 100644
+---- a/simulation/firms.py
+-+++ b/simulation/firms.py
+-@@ -314,7 +314,8 @@ class Firm(BaseAgent, ILearningAgent):
+- 
+-     @override
+-     def make_decision(
+--        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None
+-+        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
+-+        market_snapshot: Optional[Any] = None, government_policy: Optional[Any] = None
+-     ) -> tuple[list[Order], Any]:
+-         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
+-         # SoC Refactor
+-@@ -342,6 +343,8 @@ class Firm(BaseAgent, ILearningAgent):
+-             government=government,
+-             reflux_system=reflux_system,
+-             stress_scenario_config=stress_scenario_config,
+-+            market_snapshot=market_snapshot,
+-+            government_policy=government_policy
+-         )
+-         decisions, tactic = self.decision_engine.make_decisions(context)
+- 
+-diff --git a/simulation/systems/api.py b/simulation/systems/api.py
+-index b8398ee..19ac36b 100644
+---- a/simulation/systems/api.py
+-+++ b/simulation/systems/api.py
+-@@ -22,6 +22,7 @@ if TYPE_CHECKING:
+-     from simulation.markets.market import Market
+-     from simulation.dtos.scenario import StressScenarioConfig
+-     from simulation.dtos.api import SimulationState
+-+    from simulation.models import Transaction
+- 
+- 
+- # ===================================================================
+-@@ -133,11 +134,15 @@ class ICommerceSystem(Protocol):
+-     """틱의 소비 및 여가 부분을 관리하는 시스템의 인터페이스입니다."""
+-     def __init__(self, config: Any, reflux_system: 'EconomicRefluxSystem'): ...
+- 
+--    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Dict[int, float]:
+-+    def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
+-         """
+--        가계 소비, 긴급 구매(fast-track purchases), 여가 효과를 조율합니다.
+--        Returns:
+--            Dict[int, float]: 가계 ID별 여가 효용(Leisure Utility) 맵.
+-+        Phase 1: 소비 및 여가 계획. Fast Purchase를 위한 트랜잭션 생성.
+-+        """
+-+        ...
+-+
+-+    def finalize_consumption_and_leisure(self, context: CommerceContext, planned_consumptions: Dict[int, Dict[str, Any]]) -> Dict[int, float]:
+-+        """
+-+        Phase 4: 소비 실행(재고 차감) 및 여가 효과 적용.
+-         """
+-         ...
+- 
+-diff --git a/simulation/systems/commerce_system.py b/simulation/systems/commerce_system.py
+-index c87fcf3..80f6f26 100644
+---- a/simulation/systems/commerce_system.py
+-+++ b/simulation/systems/commerce_system.py
+-@@ -1,10 +1,11 @@
+- """
+- Implements the CommerceSystem which orchestrates consumption, purchases, and leisure.
+- """
+--from typing import Any, Dict, List, Optional
+-+from typing import Any, Dict, List, Optional, Tuple
+- import logging
+- from simulation.systems.api import ICommerceSystem, CommerceContext
+- from simulation.systems.reflux_system import EconomicRefluxSystem
+-+from simulation.models import Transaction
+- 
+- logger = logging.getLogger(__name__)
+- 
+-@@ -17,21 +18,19 @@ class CommerceSystem(ICommerceSystem):
+-         self.config = config
+-         self.reflux_system = reflux_system
+- 
+--    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Dict[int, float]:
+-+    def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
+-         """
+--        Executes vectorized consumption, applies fast-track purchases,
+--        and calculates leisure effects. Incorporates stress scenario behavioral changes.
+--
+--        Returns:
+--            Dict[int, float]: Map of Household ID to Utility Gained.
+-+        Phase 1: Decisions.
+-+        Determines desired consumption and generates transactions for Fast Purchase.
+-+        Returns (PlannedConsumptionMap, Transactions).
+-         """
+-         households = context["households"]
+-         breeding_planner = context["breeding_planner"]
+--        time_allocation = context["household_time_allocation"]
+-         market_data = context["market_data"]
+-         current_time = context["time"]
+- 
+--        household_leisure_effects: Dict[int, float] = {}
+-+        planned_consumptions = {}
+-+        transactions = []
+- 
+-         # 1. Vectorized Decision Making
+-         batch_decisions = breeding_planner.decide_consumption_batch(households, market_data)
+-@@ -44,12 +43,9 @@ class CommerceSystem(ICommerceSystem):
+-             if not household.is_active:
+-                 continue
+- 
+--            consumed_items = {}
+--
+--            # 2a. Fast Consumption
+-+            c_amt = 0.0
+-             if i < len(consume_list):
+-                 c_amt = consume_list[i]
+--
+-                 # Phase 28: Deflationary Spiral - Consumption Collapse
+-                 if scenario_config and scenario_config.is_active and scenario_config.scenario_name == 'deflation':
+-                     if not household.is_employed and scenario_config.consumption_pessimism_factor > 0:
+-@@ -57,32 +53,77 @@ class CommerceSystem(ICommerceSystem):
+-                         c_amt *= (1 - scenario_config.consumption_pessimism_factor)
+-                         logger.debug(f"PESSIMISM_IMPACT | Household {household.id} consumption reduced from {original_amt:.2f} to {c_amt:.2f}")
+- 
+--                if c_amt > 0:
+--                    household.consume("basic_food", c_amt, current_time)
+--                    consumed_items["basic_food"] = c_amt
+-+            # Store plan
+-+            planned_consumptions[household.id] = {
+-+                "consume_amount": c_amt,
+-+                "buy_amount": 0.0,
+-+                "consumed_immediately_from_buy": 0.0
+-+            }
+- 
+--            # 2b. Fast Purchase (Emergency Buy)
+-+            # 2b. Fast Purchase (Emergency Buy) -> Generate Transaction
+-             if i < len(buy_list):
+-                 b_amt = buy_list[i]
+-                 if b_amt > 0:
+-                     cost = b_amt * food_price
+-+                    # Optimistic check (actual balance check in TransactionProcessor)
+-                     if household.assets >= cost:
+--                        household.withdraw(cost)
+--                        household.inventory["basic_food"] = household.inventory.get("basic_food", 0) + b_amt
+-+                        planned_consumptions[household.id]["buy_amount"] = b_amt
+-+
+-+                        # Generate Emergency Buy Transaction
+-+                        tx = Transaction(
+-+                            buyer_id=household.id,
+-+                            seller_id=self.reflux_system.id if hasattr(self.reflux_system, 'id') else 0, # Assuming Reflux has ID or use 0/System
+-+                            item_id="basic_food",
+-+                            quantity=b_amt,
+-+                            price=cost, # Total price as trade_value? No, Transaction takes unit price usually?
+-+                            # Transaction: trade_value = quantity * price.
+-+                            # Here price should be unit price.
+-+                            # But cost = b_amt * food_price. So price = food_price.
+-+                            market_id="system",
+-+                            transaction_type="emergency_buy",
+-+                            time=current_time
+-+                        )
+-+                        # Fix: Transaction takes UNIT PRICE.
+-+                        tx.price = food_price
+- 
+--                        # Capture money sink
+--                        self.reflux_system.capture(cost, source=f"Household_{household.id}", category="emergency_food")
+-+                        transactions.append(tx)
+- 
+-                         logger.debug(
+--                            f"VECTOR_BUY | Household {household.id} bought {b_amt:.1f} food (Fast Track)",
+-+                            f"VECTOR_BUY_PLAN | Household {household.id} planning to buy {b_amt:.1f} food (Fast Track)",
+-                             extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
+-                         )
+- 
+--                        # Immediate consumption if needed
+--                        if c_amt == 0:
+--                            consume_now = min(b_amt, getattr(self.config, "FOOD_CONSUMPTION_QUANTITY", 1.0))
+--                            household.consume("basic_food", consume_now, current_time)
+--                            consumed_items["basic_food"] = consume_now
+-+                        # Immediate consumption if needed (Logic Logic: If planned consumption > inventory, assume some came from buy)
+-+                        # But we execute transactions later.
+-+                        # So inventory update happens in Phase 3.
+-+                        # Consumption happens in Phase 4 (Finalize).
+-+                        # So finalize will see updated inventory.
+-+                        pass
+-+
+-+        return planned_consumptions, transactions
+-+
+-+    def finalize_consumption_and_leisure(self, context: CommerceContext, planned_consumptions: Dict[int, Dict[str, Any]]) -> Dict[int, float]:
+-+        """
+-+        Phase 4: Lifecycle Effects.
+-+        Executes consumption from inventory and applies leisure effects.
+-+        """
+-+        households = context["households"]
+-+        time_allocation = context["household_time_allocation"]
+-+        current_time = context["time"]
+-+
+-+        household_leisure_effects: Dict[int, float] = {}
+-+
+-+        for household in households:
+-+            if not household.is_active:
+-+                continue
+-+
+-+            plan = planned_consumptions.get(household.id, {})
+-+            c_amt = plan.get("consume_amount", 0.0)
+-+
+-+            consumed_items = {}
+-+            if c_amt > 0:
+-+                household.consume("basic_food", c_amt, current_time)
+-+                consumed_items["basic_food"] = c_amt
+- 
+-             # 3. Leisure Effect
+-             leisure_hours = time_allocation.get(household.id, 0.0)
+-@@ -90,23 +131,8 @@ class CommerceSystem(ICommerceSystem):
+- 
+-             household_leisure_effects[household.id] = effect_dto.utility_gained
+- 
+--            # 4. Lifecycle Update (Needs, Tax, Psychology)
+--            # This is now delegated to AgentLifecycleComponent inside household.update_needs
+--            # But wait, household.update_needs calls labor_manager.work()!
+--            # work() shouldn't be called here if it was already done or calculated.
+--            # In the old `Simulation.run_tick`:
+--            # - Transactions happened.
+--            # - Then this loop happened.
+--            # - household.update_needs() was called here.
+--            # - household.update_needs() calls labor_manager.work(8.0)
+--
+--            # So we must call household.update_needs() here to maintain logic.
+--            # BUT, we are refactoring update_needs to AgentLifecycleComponent.
+--            # So we should call household.lifecycle.run_tick() ideally.
+--            # Since household still has update_needs wrapping the new component (in the intermediate step),
+--            # we call household.update_needs().
+--
+--            household.update_needs(current_time, market_data)
+-+            # 4. Lifecycle Update (update_needs) REMOVED
+-+            # Moved to DemographicManager/LifecycleManager
+- 
+-             # 5. Parenting XP Transfer
+-             if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:
+-diff --git a/simulation/systems/demographic_manager.py b/simulation/systems/demographic_manager.py
+-index 60174be..1e1ea37 100644
+---- a/simulation/systems/demographic_manager.py
+-+++ b/simulation/systems/demographic_manager.py
+-@@ -28,9 +28,9 @@ class DemographicManager:
+-         self.initialized = True
+-         self.logger.info("DemographicManager initialized.")
+- 
+--    def process_aging(self, agents: List[Household], current_tick: int) -> None:
+-+    def process_aging(self, agents: List[Household], current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> None:
+-         """
+--        Increments age for all households.
+-+        Increments age for all households and runs internal lifecycle updates.
+-         Handles natural death (old age).
+-         """
+-         # Ticks per Year is defined in config (e.g., 100 ticks = 1 year)
+-@@ -40,8 +40,12 @@ class DemographicManager:
+-             if not agent.is_active:
+-                 continue
+- 
+--            # Increment Age for households
+--            agent.age += (1.0 / ticks_per_year)
+-+            # Phase 4 Lifecycle Update (Replaced CommerceSystem call)
+-+            # Delegate internal lifecycle (aging, needs, taxes)
+-+            agent.update_needs(current_tick, market_data)
+-+
+-+            # Explicit aging removed as update_needs -> bio_component handles it.
+-+            # However, we check death here.
+- 
+-             # Check Natural Death (Gompertz-Makeham law simplified)
+-             if agent.age > 80:
+-diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+-index 6436695..16cde82 100644
+---- a/simulation/systems/lifecycle_manager.py
+-+++ b/simulation/systems/lifecycle_manager.py
+-@@ -38,8 +38,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+-             List[Transaction]: Transactions generated by lifecycle events (e.g., inheritance)
+-                                to be queued for the NEXT tick.
+-         """
+--        # 1. Aging
+--        self.demographic_manager.process_aging(state.households, state.time)
+-+        # 1. Aging (and internal lifecycle update)
+-+        self.demographic_manager.process_aging(state.households, state.time, state.market_data)
+- 
+-         # 2. Births
+-         new_children = self._process_births(state)
+-diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+-index 496e397..6154c41 100644
+---- a/simulation/systems/transaction_processor.py
+-+++ b/simulation/systems/transaction_processor.py
+-@@ -110,17 +110,43 @@ class TransactionProcessor(SystemInterface):
+-                 heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
+-                 total_cash = buyer.assets
+-                 if total_cash > 0 and heir_ids:
+--                    amount_per_heir = total_cash / len(heir_ids)
+-+                    import math
+-+                    count = len(heir_ids)
+-+                    # Calculate amount per heir, avoiding float precision issues (floor to cent)
+-+                    base_amount = math.floor((total_cash / count) * 100) / 100.0
+-+
+-+                    distributed_sum = 0.0
+-                     all_success = True
+--                    for h_id in heir_ids:
+-+
+-+                    # Distribute to all but the last heir
+-+                    for i in range(count - 1):
+-+                        h_id = heir_ids[i]
+-                         heir = agents.get(h_id)
+-                         if heir:
+-                             if settlement:
+--                                if not settlement.transfer(buyer, heir, amount_per_heir, "inheritance_distribution"):
+-+                                if settlement.transfer(buyer, heir, base_amount, "inheritance_distribution"):
+-+                                    distributed_sum += base_amount
+-+                                else:
+-                                     all_success = False
+-                             else:
+--                                buyer.withdraw(amount_per_heir)
+--                                heir.deposit(amount_per_heir)
+-+                                buyer.withdraw(base_amount)
+-+                                heir.deposit(base_amount)
+-+                                distributed_sum += base_amount
+-+
+-+                    # Last heir gets the remainder to ensure zero-sum
+-+                    last_heir_id = heir_ids[-1]
+-+                    last_heir = agents.get(last_heir_id)
+-+                    if last_heir:
+-+                        remaining_amount = total_cash - distributed_sum
+-+                        # Ensure we don't transfer negative amounts or dust if something went wrong
+-+                        if remaining_amount > 0:
+-+                            if settlement:
+-+                                if not settlement.transfer(buyer, last_heir, remaining_amount, "inheritance_distribution_final"):
+-+                                    all_success = False
+-+                            else:
+-+                                buyer.withdraw(remaining_amount)
+-+                                last_heir.deposit(remaining_amount)
+-+
+-                     success = all_success
+- 
+-             elif tx.transaction_type == "goods":
+-@@ -230,6 +256,20 @@ class TransactionProcessor(SystemInterface):
+-                     buyer.withdraw(trade_value)
+-                     seller.deposit(trade_value)
+-                     success = True
+-+
+-+            elif tx.transaction_type == "emergency_buy":
+-+                # Fast Purchase (Buyer -> Reflux/System)
+-+                # No Sales Tax, Immediate Inventory Update
+-+                if settlement:
+-+                    success = settlement.transfer(buyer, seller, trade_value, "emergency_buy")
+-+                else:
+-+                    buyer.withdraw(trade_value)
+-+                    seller.deposit(trade_value)
+-+                    success = True
+-+
+-+                if success:
+-+                    buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
+-+
+-             else:
+-                 # Default / Other
+-                 if settlement:
+-diff --git a/simulation/tick_scheduler.py b/simulation/tick_scheduler.py
+-index 0bd0004..8a75fb6 100644
+---- a/simulation/tick_scheduler.py
+-+++ b/simulation/tick_scheduler.py
+-@@ -277,6 +277,36 @@ class TickScheduler:
+-         )
+-         state.household_time_allocation = household_time_allocation # Update state
+- 
+-+        # TD-118: Commerce Planning (Phase 1 Extension)
+-+        # Prepare context for CommerceSystem
+-+        current_vacancies = 0
+-+        labor_market = state.markets.get("labor")
+-+        if labor_market and isinstance(labor_market, OrderBookMarket):
+-+             for item_orders in labor_market.buy_orders.values():
+-+                 for order in item_orders:
+-+                     current_vacancies += order.quantity
+-+
+-+        consumption_market_data = market_data.copy()
+-+        consumption_market_data["job_vacancies"] = current_vacancies
+-+
+-+        commerce_context: CommerceContext = {
+-+            "households": state.households,
+-+            "agents": state.agents,
+-+            "breeding_planner": state.breeding_planner,
+-+            "household_time_allocation": household_time_allocation,
+-+            "reflux_system": state.reflux_system,
+-+            "market_data": consumption_market_data,
+-+            "config": state.config_module,
+-+            "time": state.time
+-+        }
+-+
+-+        if state.commerce_system:
+-+            planned_cons, commerce_txs = state.commerce_system.plan_consumption_and_leisure(
+-+                commerce_context, state.stress_scenario_config
+-+            )
+-+            sim_state.planned_consumption = planned_cons
+-+            system_transactions.extend(commerce_txs)
+-+
+-         # 2. Matching
+-         self._phase_matching(sim_state)
+- 
+-@@ -518,6 +548,63 @@ class TickScheduler:
+-         household_pre_states = {}
+-         household_time_allocation = {}
+- 
+-+        # --- TD-117: Create DTOs ---
+-+        from simulation.dtos.api import MarketSnapshotDTO, GovernmentPolicyDTO
+-+
+-+        # Create MarketSnapshotDTO
+-+        prices = {}
+-+        volumes = {}
+-+        asks = {}
+-+        best_asks = {}
+-+
+-+        for m_id, market in state.markets.items():
+-+            if hasattr(market, "get_daily_avg_price"):
+-+                 prices[m_id] = market.get_daily_avg_price()
+-+            if hasattr(market, "get_daily_volume"):
+-+                 volumes[m_id] = market.get_daily_volume()
+-+
+-+            # Extract Asks
+-+            if hasattr(market, "sell_orders"):
+-+                for item_id, orders in market.sell_orders.items():
+-+                    asks[item_id] = orders
+-+
+-+                    # Best Ask
+-+                    if orders:
+-+                        if hasattr(market, "get_best_ask"):
+-+                            best_asks[item_id] = market.get_best_ask(item_id)
+-+                        else:
+-+                            best_asks[item_id] = orders[0].price if orders else 0.0
+-+            elif hasattr(market, "get_best_ask"):
+-+                # Fallback for markets without exposed sell_orders but with get_best_ask (e.g. StockMarket?)
+-+                # We iterate known items or catch on demand?
+-+                # Stock market uses firm_id as item_id.
+-+                # For now we rely on explicit loops if needed, or assume OrderBookMarket structure.
+-+                pass
+-+
+-+        # Stock Market Prices
+-+        if state.stock_market:
+-+            for firm in state.firms:
+-+                if firm.is_active:
+-+                    price = state.stock_market.get_stock_price(firm.id)
+-+                    prices[f"stock_{firm.id}"] = price
+-+
+-+        market_snapshot = MarketSnapshotDTO(
+-+            prices=prices,
+-+            volumes=volumes,
+-+            asks=asks,
+-+            best_asks=best_asks
+-+        )
+-+
+-+        # Create GovernmentPolicyDTO
+-+        gov = state.government
+-+        bank = state.bank
+-+        gov_policy = GovernmentPolicyDTO(
+-+             income_tax_rate=gov.income_tax_rate if hasattr(gov, "income_tax_rate") else 0.1,
+-+             sales_tax_rate=getattr(state.config_module, "SALES_TAX_RATE", 0.05),
+-+             corporate_tax_rate=gov.corporate_tax_rate if hasattr(gov, "corporate_tax_rate") else 0.2,
+-+             base_interest_rate=bank.base_rate if hasattr(bank, "base_rate") else 0.05
+-+        )
+-+
+-         # 1. Firms
+-         for firm in state.firms:
+-             if firm.is_active:
+-@@ -543,7 +630,8 @@ class TickScheduler:
+- 
+-                 firm_orders, action_vector = firm.make_decision(
+-                     state.markets, state.goods_data, market_data, state.time,
+--                    state.government, state.reflux_system, stress_config
+-+                    state.government, state.reflux_system, stress_config,
+-+                    market_snapshot=market_snapshot, government_policy=gov_policy
+-                 )
+- 
+-                 for order in firm_orders:
+-@@ -568,7 +656,8 @@ class TickScheduler:
+- 
+-                 stress_config = self.world_state.stress_scenario_config
+-                 household_orders, action_vector = household.make_decision(
+--                    state.markets, state.goods_data, market_data, state.time, state.government, macro_context, stress_config
+-+                    state.markets, state.goods_data, market_data, state.time, state.government, macro_context, stress_config,
+-+                    market_snapshot=market_snapshot, government_policy=gov_policy
+-                 )
+- 
+-                 if hasattr(action_vector, 'work_aggressiveness'):
+-@@ -649,6 +738,7 @@ class TickScheduler:
+- 
+-     def _phase_lifecycle(self, state: SimulationState) -> None:
+-         """Phase 4: Agent Lifecycle."""
+-+        # 1. Agent Lifecycle (Aging, Birth, Death)
+-         if self.world_state.lifecycle_manager:
+-             lifecycle_txs = self.world_state.lifecycle_manager.execute(state)
+-             if lifecycle_txs:
+-@@ -656,6 +746,55 @@ class TickScheduler:
+-         else:
+-             state.logger.error("LifecycleManager not initialized.")
+- 
+-+        # 2. Commerce Finalization (Consumption & Leisure Effects) - TD-118
+-+        # Re-construct context or pass relevant data?
+-+        # Ideally we reuse context but it's local to run_tick.
+-+        # We'll reconstruct minimal context here or rely on state.
+-+        # Actually, finalized consumption needs time_allocation which is in state (updated in run_tick).
+-+
+-+        # We need to reconstruct CommerceContext.
+-+        # Since _phase_lifecycle is a method, we can't easily pass the local commerce_context from run_tick
+-+        # without changing signature.
+-+        # We'll reconstruct it. It's cheap.
+-+
+-+        consumption_market_data = state.market_data # Use existing
+-+
+-+        # Household time allocation is needed.
+-+        # state.households is available.
+-+        # We need to know who is active.
+-+        # We need 'household_time_allocation' which IS NOT in SimulationState DTO explicitly?
+-+        # Check SimulationState definition in api.py.
+-+        # I didn't add it.
+-+        # But 'household_time_allocation' is returned by _phase_decisions and stored in WorldState (self.world_state.household_time_allocation).
+-+        # We can access it via self.world_state if needed, but 'state' arg here is SimulationState DTO.
+-+        # SimulationState doesn't have it.
+-+        # But we updated WorldState in run_tick: `state.household_time_allocation = household_time_allocation`.
+-+        # So we can access self.world_state.household_time_allocation.
+-+
+-+        commerce_context: CommerceContext = {
+-+            "households": state.households,
+-+            "agents": state.agents,
+-+            "breeding_planner": self.world_state.breeding_planner,
+-+            "household_time_allocation": getattr(self.world_state, "household_time_allocation", {}),
+-+            "reflux_system": state.reflux_system,
+-+            "market_data": state.market_data,
+-+            "config": state.config_module,
+-+            "time": state.time
+-+        }
+-+
+-+        if self.world_state.commerce_system:
+-+            leisure_effects = self.world_state.commerce_system.finalize_consumption_and_leisure(
+-+                commerce_context, state.planned_consumption
+-+            )
+-+            # Store effects for learning?
+-+            # Learning update happens in Post-Tick.
+-+            # We should probably store this somewhere.
+-+            # The original code returned it from execute_consumption_and_leisure and used it in Learning Update.
+-+            # In run_tick, we need `household_leisure_effects` variable.
+-+            # We should store it in SimulationState or WorldState?
+-+            # WorldState seems appropriate for transient tick data.
+-+            self.world_state.household_leisure_effects = leisure_effects
+-+
+-     def prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
+-         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""
+-         state = self.world_state
+diff --git a/design/gemini_output/pr_review_remediation-td116-118-12570818305275603561.md b/design/gemini_output/pr_review_remediation-td116-118-12570818305275603561.md
+deleted file mode 100644
+index 973ec75..0000000
+--- a/design/gemini_output/pr_review_remediation-td116-118-12570818305275603561.md
++++ /dev/null
+@@ -1,85 +0,0 @@
+-🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
+-📖 Attached context: C:\coding\economics\design\gemini_output\pr_diff_remediation-td116-118-12570818305275603561.txt
+-🚀 [GeminiWorker] Running task with manual: git_reviewer.md
+-
+-📝 [Review Report]
+-============================================================
+-# 🔍 Git Diff Review: TD-117 & TD-118 Remediation
+-
+-## 1. 🔍 Summary
+-
+-이 변경 사항은 두 가지 주요 아키텍처 리팩토링(TD-117, TD-118)을 구현합니다.
+-- **TD-117**: `MarketSnapshotDTO`와 `GovernmentPolicyDTO`를 도입하여, 의사결정 로직을 시장의 실제 상태(Live State)와 분리했습니다. 이로써 결정 로직의 순수성(Purity)과 테스트 용이성이 향상되었습니다.
+-- **TD-118**: 소비 시스템(`CommerceSystem`)을 계획(Plan)과 실행(Finalize)의 2단계로 분리하여 트랜잭션 무결성을 강화했습니다.
+-- 추가로, 상속 자산 분배 시 발생할 수 있는 부동 소수점 정밀도 문제를 해결하여 자금 유실을 방지하는 로직이 개선되었습니다.
+-
+-## 2. 🚨 Critical Issues
+-
+-- 발견되지 않았습니다.
+-
+-## 3. ⚠️ Logic & Spec Gaps
+-
+-- **`AIDrivenHouseholdDecisionEngine`의 빈 예외 처리**:
+-  - **위치**: `simulation/decisions/ai_driven_household_engine.py`, `_place_buy_orders` 함수
+-  - **문제**: `market_snapshot`에서 주식 ID를 파싱하는 `try-except` 블록이 `pass`로 구현되어 있습니다. 만약 `market_snapshot.prices`에 예기치 않은 형식의 키(`stock_...`)가 포함될 경우, 오류가 조용히 무시되어 투자 가능한 주식 목록에서 누락될 수 있습니다. 이는 잠재적으로 투자 기회 손실로 이어질 수 있습니다.
+-  - **권장**: 최소한 `logger.warning`을 통해 예외 상황을 기록하여 디버깅을 용이하게 해야 합니다.
+-
+-- **`TickScheduler`의 암묵적 폴백(Fallback) 값 사용**:
+-  - **위치**: `simulation/tick_scheduler.py`, `_phase_decisions` 함수
+-  - **문제**: `GovernmentPolicyDTO`를 생성할 때 `hasattr` 체크 후 폴백 값(e.g., `income_tax_rate: ... else 0.1`)을 사용합니다. 이는 시스템의 안정성을 높여주지만, `government`나 `bank` 객체가 예상된 속성을 갖지 않는 설정 오류를 은폐할 수 있습니다.
+-  - **권장**: 폴백 값이 사용될 때 `logger.warning`을 기록하여, 설정이 잘못되었을 가능성을 인지할 수 있도록 하는 것이 좋습니다.
+-
+-- **`TransactionProcessor`의 상속 로직 개선**:
+-  - **위치**: `simulation/systems/transaction_processor.py`
+-  - **분석**: 자산 분배 로직이 부동 소수점 문제를 해결하기 위해 (N-1)명의 상속인에게는 `floor` 처리된 금액을 분배하고, 마지막 상속인에게는 남은 금액 전부를 주는 방식으로 변경되었습니다.
+-  - **평가**: 이는 Zero-Sum을 보장하는 매우 정확하고 안정적인 수정입니다. 자금 유실 버그를 성공적으로 해결했습니다.
+-
+-## 4. 💡 Suggestions
+-
+-- **`household_time_allocation` 데이터 흐름 개선**:
+-  - **위치**: `simulation/tick_scheduler.py`, `_phase_lifecycle` 함수
+-  - **제안**: 현재 `commerce_context`를 재구성할 때 `household_time_allocation` 데이터를 `self.world_state`에서 `getattr`로 가져오고 있습니다. 이는 `SimulationState` DTO의 순수성을 약간 해치는 방식입니다. 장기적으로는 `household_time_allocation`을 `SimulationState` DTO의 정식 필드로 포함하여, `_phase_lifecycle`에 명시적으로 전달하는 구조로 리팩토링하는 것을 고려해볼 수 있습니다.
+-
+-## 5. 🧠 Manual Update Proposal
+-
+-이번 변경 사항에서 도출된 중요한 아키텍처 원칙들을 문서화할 것을 제안합니다.
+-
+-- **Target File**: `design/platform_architecture.md`
+-- **Update Content**:
+-  ```markdown
+-  ## 3. Core Architectural Patterns
+-  
+-  ### 3.1 Data-Driven Purity (DTOs for Decisions)
+-  
+-  - **현상**: 의사결정 로직(Decision Engine)이 실시간으로 변하는 Market 객체에 직접 접근하여 상태를 변경하거나 예측 불가능한 결과를 초래하는 문제.
+-  - **원칙**: 모든 의사결정 로직은 반드시 특정 시점의 불변 데이터 스냅샷(`DTO`, e.g., `MarketSnapshotDTO`)에 의존해야 한다. Market 객체와 같은 Live State 객체를 직접 주입하는 것을 금지한다.
+-  - **효과**:
+-      - **순수성**: 의사결정 함수는 Side-Effect를 일으키지 않으며, 동일 입력에 대해 항상 동일 출력을 보장한다.
+-      - **테스트 용이성**: 다양한 시나리오의 DTO를 생성하여 단위 테스트를 쉽게 작성할 수 있다.
+-      - **디버깅**: 특정 Tick의 `MarketSnapshotDTO`를 로깅하면, 해당 시점의 모든 결정 과정을 정확히 재현할 수 있다.
+-  
+-  ### 3.2 Two-Phase State Transition (Plan & Finalize)
+-  
+-  - **현상**: 단일 함수 내에서 상태 조회, 의사결정, 상태 변경이 뒤섞여 있어 로직 추적이 어렵고 동시성 문제가 발생할 수 있는 경우. (e.g., 소비를 결정하고 즉시 재고를 차감하는 경우)
+-  - **원칙**: 상태 변경이 포함된 복잡한 로직은 **계획(Plan)**과 **실행(Finalize)**의 두 단계로 분리한다.
+-      1.  **Phase 1 (Plan)**: 현재 상태를 바탕으로 모든 행위자(Agent)의 의도(Intent)나 트랜잭션(Transaction)을 생성하여 리스트에 담는다. 이 단계에서는 절대 상태를 변경하지 않는다.
+-      2.  **Phase 2 (Finalize/Process)**: 생성된 모든 트랜잭션과 의도를 중앙 처리기(e.g., `TransactionProcessor`)에서 일괄적으로 처리하여 상태를 변경한다.
+-  - **효과**:
+-      - **원자성(Atomicity)**: Tick 내의 모든 결정이 내려진 후 한 번에 상태 변경이 일어나므로 일관성이 유지된다.
+-      - **가시성**: `plan` 단계에서 생성된 트랜잭션 목록만 보면 해당 Tick에서 어떤 일이 일어날지 명확히 알 수 있다.
+-  
+-  ### 3.3 Financial Calculation Integrity (Zero-Sum Distribution)
+-  
+-  - **현상**: 다수에게 자산을 분배할 때, 부동 소수점 나눗셈으로 인해 총합이 미세하게 달라져 자산이 증발하거나 생성되는 버그.
+-  - **원칙**: 자산 분배 시, N-1명에게는 `floor` (또는 `round`) 처리된 금액을 분배하고, 마지막 1명에게는 `(총액 - 이미 분배된 금액)`을 할당하여 총합의 무결성을 강제한다.
+-  - **예시 (상속)**: `total_cash`를 3명에게 분배할 때, 2명에게 `floor(total_cash / 3)`를 주고, 마지막 1명에게 `total_cash - (2 * floor(total_cash / 3))`를 준다.
+-  - **효과**: 시스템 내에서 자산의 총량이 완벽하게 보존(Zero-Sum)된다.
+-  ```
+-
+-## 6. ✅ Verdict
+-
+-**REQUEST_CHANGES**
+-
+-전반적으로 매우 훌륭한 아키텍처 개선입니다. 위에 언급된 사소한 로직 및 로깅 관련 문제(`⚠️ Logic & Spec Gaps`)들을 수정한 후 머지하는 것을 권장합니다.
+-
+-============================================================
+diff --git a/design/gemini_output/review_backup_20260126_105805_Analyze_this_PR.md b/design/gemini_output/review_backup_20260126_105805_Analyze_this_PR.md
+deleted file mode 100644
+index 8a0950a..0000000
+--- a/design/gemini_output/review_backup_20260126_105805_Analyze_this_PR.md
++++ /dev/null
+@@ -1,77 +0,0 @@
+-# 🔍 Git Diff Review: TD-117 & TD-118 Remediation
+-
+-## 1. 🔍 Summary
+-
+-이 변경 사항은 두 가지 주요 아키텍처 리팩토링(TD-117, TD-118)을 구현합니다.
+-- **TD-117**: `MarketSnapshotDTO`와 `GovernmentPolicyDTO`를 도입하여, 의사결정 로직을 시장의 실제 상태(Live State)와 분리했습니다. 이로써 결정 로직의 순수성(Purity)과 테스트 용이성이 향상되었습니다.
+-- **TD-118**: 소비 시스템(`CommerceSystem`)을 계획(Plan)과 실행(Finalize)의 2단계로 분리하여 트랜잭션 무결성을 강화했습니다.
+-- 추가로, 상속 자산 분배 시 발생할 수 있는 부동 소수점 정밀도 문제를 해결하여 자금 유실을 방지하는 로직이 개선되었습니다.
+-
+-## 2. 🚨 Critical Issues
+-
+-- 발견되지 않았습니다.
+-
+-## 3. ⚠️ Logic & Spec Gaps
+-
+-- **`AIDrivenHouseholdDecisionEngine`의 빈 예외 처리**:
+-  - **위치**: `simulation/decisions/ai_driven_household_engine.py`, `_place_buy_orders` 함수
+-  - **문제**: `market_snapshot`에서 주식 ID를 파싱하는 `try-except` 블록이 `pass`로 구현되어 있습니다. 만약 `market_snapshot.prices`에 예기치 않은 형식의 키(`stock_...`)가 포함될 경우, 오류가 조용히 무시되어 투자 가능한 주식 목록에서 누락될 수 있습니다. 이는 잠재적으로 투자 기회 손실로 이어질 수 있습니다.
+-  - **권장**: 최소한 `logger.warning`을 통해 예외 상황을 기록하여 디버깅을 용이하게 해야 합니다.
+-
+-- **`TickScheduler`의 암묵적 폴백(Fallback) 값 사용**:
+-  - **위치**: `simulation/tick_scheduler.py`, `_phase_decisions` 함수
+-  - **문제**: `GovernmentPolicyDTO`를 생성할 때 `hasattr` 체크 후 폴백 값(e.g., `income_tax_rate: ... else 0.1`)을 사용합니다. 이는 시스템의 안정성을 높여주지만, `government`나 `bank` 객체가 예상된 속성을 갖지 않는 설정 오류를 은폐할 수 있습니다.
+-  - **권장**: 폴백 값이 사용될 때 `logger.warning`을 기록하여, 설정이 잘못되었을 가능성을 인지할 수 있도록 하는 것이 좋습니다.
+-
+-- **`TransactionProcessor`의 상속 로직 개선**:
+-  - **위치**: `simulation/systems/transaction_processor.py`
+-  - **분석**: 자산 분배 로직이 부동 소수점 문제를 해결하기 위해 (N-1)명의 상속인에게는 `floor` 처리된 금액을 분배하고, 마지막 상속인에게는 남은 금액 전부를 주는 방식으로 변경되었습니다.
+-  - **평가**: 이는 Zero-Sum을 보장하는 매우 정확하고 안정적인 수정입니다. 자금 유실 버그를 성공적으로 해결했습니다.
+-
+-## 4. 💡 Suggestions
+-
+-- **`household_time_allocation` 데이터 흐름 개선**:
+-  - **위치**: `simulation/tick_scheduler.py`, `_phase_lifecycle` 함수
+-  - **제안**: 현재 `commerce_context`를 재구성할 때 `household_time_allocation` 데이터를 `self.world_state`에서 `getattr`로 가져오고 있습니다. 이는 `SimulationState` DTO의 순수성을 약간 해치는 방식입니다. 장기적으로는 `household_time_allocation`을 `SimulationState` DTO의 정식 필드로 포함하여, `_phase_lifecycle`에 명시적으로 전달하는 구조로 리팩토링하는 것을 고려해볼 수 있습니다.
+-
+-## 5. 🧠 Manual Update Proposal
+-
+-이번 변경 사항에서 도출된 중요한 아키텍처 원칙들을 문서화할 것을 제안합니다.
+-
+-- **Target File**: `design/platform_architecture.md`
+-- **Update Content**:
+-  ```markdown
+-  ## 3. Core Architectural Patterns
+-  
+-  ### 3.1 Data-Driven Purity (DTOs for Decisions)
+-  
+-  - **현상**: 의사결정 로직(Decision Engine)이 실시간으로 변하는 Market 객체에 직접 접근하여 상태를 변경하거나 예측 불가능한 결과를 초래하는 문제.
+-  - **원칙**: 모든 의사결정 로직은 반드시 특정 시점의 불변 데이터 스냅샷(`DTO`, e.g., `MarketSnapshotDTO`)에 의존해야 한다. Market 객체와 같은 Live State 객체를 직접 주입하는 것을 금지한다.
+-  - **효과**:
+-      - **순수성**: 의사결정 함수는 Side-Effect를 일으키지 않으며, 동일 입력에 대해 항상 동일 출력을 보장한다.
+-      - **테스트 용이성**: 다양한 시나리오의 DTO를 생성하여 단위 테스트를 쉽게 작성할 수 있다.
+-      - **디버깅**: 특정 Tick의 `MarketSnapshotDTO`를 로깅하면, 해당 시점의 모든 결정 과정을 정확히 재현할 수 있다.
+-  
+-  ### 3.2 Two-Phase State Transition (Plan & Finalize)
+-  
+-  - **현상**: 단일 함수 내에서 상태 조회, 의사결정, 상태 변경이 뒤섞여 있어 로직 추적이 어렵고 동시성 문제가 발생할 수 있는 경우. (e.g., 소비를 결정하고 즉시 재고를 차감하는 경우)
+-  - **원칙**: 상태 변경이 포함된 복잡한 로직은 **계획(Plan)**과 **실행(Finalize)**의 두 단계로 분리한다.
+-      1.  **Phase 1 (Plan)**: 현재 상태를 바탕으로 모든 행위자(Agent)의 의도(Intent)나 트랜잭션(Transaction)을 생성하여 리스트에 담는다. 이 단계에서는 절대 상태를 변경하지 않는다.
+-      2.  **Phase 2 (Finalize/Process)**: 생성된 모든 트랜잭션과 의도를 중앙 처리기(e.g., `TransactionProcessor`)에서 일괄적으로 처리하여 상태를 변경한다.
+-  - **효과**:
+-      - **원자성(Atomicity)**: Tick 내의 모든 결정이 내려진 후 한 번에 상태 변경이 일어나므로 일관성이 유지된다.
+-      - **가시성**: `plan` 단계에서 생성된 트랜잭션 목록만 보면 해당 Tick에서 어떤 일이 일어날지 명확히 알 수 있다.
+-  
+-  ### 3.3 Financial Calculation Integrity (Zero-Sum Distribution)
+-  
+-  - **현상**: 다수에게 자산을 분배할 때, 부동 소수점 나눗셈으로 인해 총합이 미세하게 달라져 자산이 증발하거나 생성되는 버그.
+-  - **원칙**: 자산 분배 시, N-1명에게는 `floor` (또는 `round`) 처리된 금액을 분배하고, 마지막 1명에게는 `(총액 - 이미 분배된 금액)`을 할당하여 총합의 무결성을 강제한다.
+-  - **예시 (상속)**: `total_cash`를 3명에게 분배할 때, 2명에게 `floor(total_cash / 3)`를 주고, 마지막 1명에게 `total_cash - (2 * floor(total_cash / 3))`를 준다.
+-  - **효과**: 시스템 내에서 자산의 총량이 완벽하게 보존(Zero-Sum)된다.
+-  ```
+-
+-## 6. ✅ Verdict
+-
+-**REQUEST_CHANGES**
+-
+-전반적으로 매우 훌륭한 아키텍처 개선입니다. 위에 언급된 사소한 로직 및 로깅 관련 문제(`⚠️ Logic & Spec Gaps`)들을 수정한 후 머지하는 것을 권장합니다.
+diff --git a/design/platform_architecture.md b/design/platform_architecture.md
+index 70dfa89..7a9658a 100644
+--- a/design/platform_architecture.md
++++ b/design/platform_architecture.md
+@@ -1,65 +1,30 @@
+-# 시스템 아키텍처 (V2)
++# Platform Architecture & Design Patterns
+ 
+-**작성일**: 2025-12-29
+-**분석 대상 코드**: `simulation/engine.py`, `app.py`, `simulation/db/repository.py`
++## 3. Core Architectural Patterns
+ 
+-## 1. 개요
++### 3.1 Data-Driven Purity (DTOs for Decisions)
+ 
+-본 시뮬레이션은 Python 기반의 **이산 사건 시뮬레이션(Discrete Event Simulation)** 엔진과 Flask 기반의 **웹 대시보드**로 구성됩니다. 에이전트(가계, 기업, 정부)는 AI 모델(Q-Learning)을 통해 의사결정을 내리며, 모든 데이터는 SQLite 데이터베이스에 기록됩니다.
++- **Phenomenon**: Decision logic (Decision Engines) directly accessing mutable `Market` or `Government` objects, leading to side effects and unpredictable behavior.
++- **Principle**: All decision logic must rely on immutable data snapshots (`DTOs`, e.g., `MarketSnapshotDTO`) captured at a specific point in time. Direct injection of live state objects like `Market` is forbidden.
++- **Benefits**:
++    - **Purity**: Decision functions produce no side effects and are deterministic for the same input.
++    - **Testability**: Unit tests can easily constructed by synthesizing DTOs.
++    - **Debugging**: Logging the `MarketSnapshotDTO` allows exact reproduction of decision logic.
+ 
+-## 2. 핵심 컴포넌트
++### 3.2 Two-Phase State Transition (Plan & Finalize)
+ 
+-### 2.1. Simulation Engine (`simulation/engine.py`)
+-- **역할**: 시뮬레이션의 시간(`tick`)을 진행시키고 에이전트와 시장의 상호작용을 조율합니다.
+-- **주요 루프**:
+-    1. `run_tick()` 시작
+-    2. 시장 초기화 (`clear_orders`)
+-    3. 에이전트 의사결정 (`make_decision`) -> 주문 생성
+-    4. 시장 매칭 (`match_orders`) -> 거래 생성
+-    5. 거래 처리 및 상태 업데이트 (`process_transactions`)
+-    6. 소비 및 생산 활동 (`consume`, `produce`)
+-    7. 지표 추적 및 DB 저장 (`tracker.track`, `_save_state_to_db`)
+-    8. 소비 카운터 리셋
++- **Phenomenon**: Complex logic mixing state reading, decision making, and state mutation in a single function (e.g., deciding consumption and immediately deducting inventory).
++- **Principle**: Separate complex state transitions into **Plan** and **Finalize** phases.
++    1.  **Phase 1 (Plan)**: Generate Intents or Transactions based on current state. No state mutation allowed.
++    2.  **Phase 2 (Finalize/Process)**: Execute generated Transactions/Intents in a batch to update state.
++- **Benefits**:
++    - **Atomicity**: State updates happen atomically after all decisions are made.
++    - **Visibility**: The list of generated transactions provides a clear audit trail of what will happen.
+ 
+-### 2.2. Agents
+-- **Household**: 소비, 노동 공급, 투자 주체. `HouseholdAI`를 통해 적극성 벡터를 결정합니다.
+-- **Firm**: 생산, 고용, 판매 주체. `FirmAI`를 통해 가격, 임금, 배당 등을 결정합니다.
+-- **Government**: 세금 징수 및 재분배(UBI, 보조금) 담당.
+-- **Bank**: 대출 및 예금 관리 (초기 단계).
++### 3.3 Financial Calculation Integrity (Zero-Sum Distribution)
+ 
+-### 2.3. AI Engine (`simulation/ai/`)
+-- **구조**: Multi-Channel Aggressiveness Vector 방식.
+-- **학습**: Q-Table 기반 강화학습. `AITrainingManager`를 통해 주기적으로 우수 에이전트의 전략을 복제/변이(Evolutionary Learning)합니다.
+-
+-### 2.5. Optimization Layer (WO-051)
+-- **VectorizedHouseholdPlanner**: `numpy`를 활용한 벡터화된 의사결정 엔진.
+-- **ETL Pattern**: Agent Data Extract -> Matrix Computation -> Result Inject 패턴을 사용하여 대규모 에이전트의 반복 연산(예: 출산 결정)을 가속화합니다.
+-
+-### 2.4. Data Persistence (`simulation/db/`)
+-- **SQLite**: 시뮬레이션의 모든 상태(거래, 에이전트 상태, 지표)를 저장합니다.
+-- **Repository Pattern**: `SimulationRepository`를 통해 DB 접근을 추상화했습니다.
+-- **Batch Processing**: 성능을 위해 `BATCH_SAVE_INTERVAL`마다 일괄 저장합니다.
+-
+-## 3. 아키텍처 원칙: 신성한 시퀀스 (The Sacred Sequence)
+-
+-본 시뮬레이션의 모든 상태 변경은 "신성한 시퀀스"라 불리는 3단계 프로세스를 엄격히 준수한다. 이는 상태 변경의 예측 가능성을 보장하고, 제로섬(Zero-Sum) 오류를 원천적으로 방지하기 위함이다.
+-
+-### Phase 1: 결정 (Decision)
+-- **Actor**: `Agent` 또는 `System`
+-- **Action**: 현재 상태(`WorldState`)를 기반으로 행동을 결정하고, 그 결과를 `Transaction` 객체 리스트로 반환한다.
+-- **Rule**: 이 단계에서는 **절대로** 시스템의 상태(예: `agent.assets`, `firm.inventory`)를 직접 수정해서는 안 된다. 모든 변경 의도는 `Transaction` 객체에 담겨야 한다.
+-
+-### Phase 2: 처리 (Processing)
+-- **Actor**: `TransactionProcessor`
+-- **Action**: `Phase 1`에서 생성된 모든 `Transaction`들을 순차적으로 실행한다. 자산 이동, 세금 징수, 재고 변경 등 실제적인 상태 변경이 이 단계에서만 발생한다.
+-- **Rule**: `TransactionProcessor`는 시뮬레이션 내에서 유일하게 원자적 상태 변경을 책임지는 주체이다.
+-
+-### Phase 3: 효과 (Effect)
+-- **Actor**: `SystemEffectsManager`
+-- **Action**: `Transaction`의 `metadata`에 기록된 부수 효과(예: `GLOBAL_TFP_BOOST`)를 처리한다.
+-- **Rule**: 자산/재고 변경과 직접 관련이 없는 광범위한 시스템 상태 변경은 이 단계를 통해 지연 실행(Deferred Execution)되어, 로직의 결합도를 낮춘다.
+-
+-## 4. 웹 인터페이스 (`app.py`, `static/`)
+-- **Backend**: Flask API (`/api/simulation/tick`, `/api/simulation/update`).
+-- **Frontend**: Vanilla JS + Chart.js.
+-- **통신**: `API.js`를 통해 백엔드와 통신하며, `ui.js`가 대시보드를 렌더링합니다.
++- **Phenomenon**: Asset leakage or creation due to floating-point precision errors when distributing funds (e.g., Inheritance).
++- **Principle**: When distributing assets to N recipients:
++    - Distribute `floor(total / N)` to N-1 recipients.
++    - Distribute `total - (N-1) * distributed_amount` to the last recipient.
++- **Effect**: Guarantees strict Zero-Sum conservation of assets within the system.
+diff --git a/design/specs/D_TRACK_ALPHA_REMEDIATION.md b/design/specs/D_TRACK_ALPHA_REMEDIATION.md
+deleted file mode 100644
+index 9e366d0..0000000
+--- a/design/specs/D_TRACK_ALPHA_REMEDIATION.md
++++ /dev/null
+@@ -1,167 +0,0 @@
+-# Spec: Track Alpha Remediation (TD-115 & TD-111)
+-
+-## 1. Objectives
+-
+-This document outlines the remediation plan for two critical monetary integrity issues:
+-1.  **TD-115 (CRITICAL):** Fix the source of a **-99,680 asset leak** that occurs at Tick 1, before any simulation steps are run. The investigation must focus on the agent/system initialization sequence.
+-2.  **TD-111 (ECONOMIC_RISK):** Correct the M2 money supply calculation to **exclude the `EconomicRefluxSystem` balance**, without breaking the system's zero-sum integrity checks.
+-
+-## 2. 🚨 Risk & Impact Audit (Pre-flight Analysis)
+-
+-This remediation is high-risk due to the following architectural constraints identified during the pre-flight audit.
+-
+--   **God Class Initializer**: `simulation/initialization/initializer.py:build_simulation` is a "God Method" that instantiates and wires the entire simulation. Changes to the initialization order are fragile and have a high risk of causing unforeseen side-effects.
+--   **Conflicting Function Responsibility**: `world_state.py:calculate_total_money` serves two irreconcilable purposes:
+-    1.  **System Integrity Check**: A zero-sum validator ensuring no assets are created or destroyed.
+-    2.  **Economic Reporting**: An M2 money supply metric.
+--   **Risk of Masking Leaks**: The fix for TD-111, if implemented incorrectly by modifying `calculate_total_money`, will break the system's primary leak detection tool. It would create constant false positives, masking the discovery of future, real asset leaks.
+-
+-**Conclusion**: The implementation must strictly adhere to the plan below to avoid catastrophic architectural damage.
+-
+-## 3. Remediation Plan: TD-115 (Tick 1 Asset Leak)
+-
+-### 3.1. Hypothesis
+-
+-The asset leak occurs because some components incur costs (`withdraw` is called) *before* all initial liquidity has been distributed and accounted for. Prime suspects are `Bootstrapper.force_assign_workers` and initial `agent.update_needs()` calls, which may trigger financial activity before the system's baseline money supply is established.
+-
+-### 3.2. Investigation & Solution
+-
+-#### Phase 1: Establish a Stable Baseline
+-
+-The `WorldState` needs a definitive record of the total money that *should* exist at Tick 0.
+-
+-1.  **Add Attribute to `WorldState`**: In `simulation/world_state.py`, add a new attribute to the `WorldState` class.
+-
+-    ```python
+-    # simulation/world_state.py
+-
+-    class WorldState:
+-        def __init__(...):
+-            # ... existing attributes
+-            self.baseline_money_supply: float = 0.0
+-            # ...
+-    ```
+-
+-2.  **Set Baseline in `SimulationInitializer`**: In `simulation/initialization/initializer.py`, after all agents and liquidity have been created, calculate the total money supply *once* and set it as the baseline.
+-
+-    ```python
+-    # simulation/initialization/initializer.py
+-
+-    class SimulationInitializer:
+-        def build_simulation(self) -> Simulation:
+-            # ... (all initialization logic from sim.settlement_system = ... to Bootstrapper.force_assign_workers(...))
+-
+-            # NEW: After all agents and initial funds are created
+-            sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
+-            self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
+-
+-            # ... (rest of initialization)
+-            return sim
+-    ```
+-
+-    *Note: This change will likely reveal that `calculate_total_money()` already returns the incorrect value at this stage. The next step is to find out why.*
+-
+-#### Phase 2: Pinpoint the Leak
+-
+-The order of operations in `build_simulation` is flawed. The `Bootstrapper` calls are the most likely source of the leak.
+-
+-1.  **Re-order `Bootstrapper` Calls**: In `initializer.py`, ensure that liquidity is injected *before* workers are assigned. Worker assignment may trigger costs (e.g., signing bonuses, administrative fees) that cause the leak if firms have no cash.
+-
+-    ```python
+-    # simulation/initialization/initializer.py
+-
+-    # Correct Order:
+-    # 1. Inject money first.
+-    Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
+-    # 2. Then assign workers, which might have associated costs.
+-    Bootstrapper.force_assign_workers(sim.firms, sim.households)
+-    ```
+-
+-2.  **Verify**: After re-ordering, run the simulation. The leak should be resolved. The value logged for `baseline_money_supply` should now be positive and match the expected total initial assets.
+-
+-## 4. Remediation Plan: TD-111 (Reflux M2 Calculation)
+-
+-### 4.1. Mandate
+-
+-**DO NOT MODIFY `world_state.py:calculate_total_money`.** This function must be preserved as the system's zero-sum integrity check.
+-
+-### 4.2. Solution
+-
+-Create a new, dedicated method for economic reporting within the `EconomicIndicatorTracker`.
+-
+-1.  **Create New Method**: In `simulation/metrics/economic_tracker.py`, add a new method `get_m2_money_supply`.
+-
+-    ```python
+-    # simulation/metrics/economic_tracker.py
+-    from __future__ import annotations
+-    from typing import TYPE_CHECKING
+-
+-    if TYPE_CHECKING:
+-        from simulation.world_state import WorldState
+-
+-    class EconomicIndicatorTracker:
+-        # ... existing methods
+-
+-        def get_m2_money_supply(self, world_state: 'WorldState') -> float:
+-            """
+-            Calculates the M2 money supply for economic reporting.
+-            M2 = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
+-            This calculation EXCLUDES the RefluxSystem balance, as it represents
+-            money in transit not yet realized by economic agents.
+-            """
+-            total = 0.0
+-
+-            # 1. Households
+-            for h in world_state.households:
+-                if h.is_active:
+-                    total += h.assets
+-
+-            # 2. Firms
+-            for f in world_state.firms:
+-                if f.is_active:
+-                    total += f.assets
+-
+-            # 3. Bank Reserves
+-            if world_state.bank:
+-                total += world_state.bank.assets
+-
+-            # 4. Government Assets
+-            if world_state.government:
+-                total += world_state.government.assets
+-
+-            # NOTE: world_state.reflux_system.balance is INTENTIONALLY EXCLUDED.
+-
+-            return total
+-    ```
+-
+-2.  **Update Consumers**: Any part of the codebase that requires the M2 money supply for reporting (e.g., `generate_phase1_report.py`, `dashboard/app.py`) must be updated to call `tracker.get_m2_money_supply(world_state)` instead of `world_state.calculate_total_money()`.
+-
+-## 5. API & Interface Changes
+-
+--   **`simulation.world_state.WorldState`**:
+-    -   ADD: `baseline_money_supply: float = 0.0`
+--   **`simulation.metrics.economic_tracker.EconomicIndicatorTracker`**:
+-    -   ADD: `get_m2_money_supply(self, world_state: 'WorldState') -> float`
+-
+-## 6. Verification Plan
+-
+-1.  **TD-115 Verification**:
+-    -   Start a new simulation.
+-    -   At Tick 0, check the logs for the `Initial baseline money supply established` message.
+-    -   Assert that the logged value equals the sum of all configured initial assets (e.g., `config.INITIAL_BANK_ASSETS` + `config.INITIAL_FIRM_LIQUIDITY` * num_firms). The value should be positive and correct.
+-    -   Run the simulation for 1 tick. Verify no new leaks are reported by the zero-sum check.
+-
+-2.  **TD-111 Verification**:
+-    -   Run a simulation for ~10 ticks until `reflux_system.balance` is greater than 0.
+-    -   Pause the simulation.
+-    -   Invoke `ws_total = world_state.calculate_total_money()`.
+-    -   Invoke `m2_total = tracker.get_m2_money_supply(world_state)`.
+-    -   Invoke `reflux_balance = world_state.reflux_system.balance`.
+-    -   Assert `abs(ws_total - (m2_total + reflux_balance)) < 1e-6`. The zero-sum total must equal the M2 total plus the reflux balance.
+-
+----
+-
+-## 7. [Routine] Mandatory Reporting
+-
+--   Upon completion, document any new insights or discovered technical debt in `communications/insights/`.
+--   Update the `TECH_DEBT_LEDGER.md` with the status of **TD-115** and **TD-111** to `RESOLVED`.
+diff --git a/design/specs/D_TRACK_BRAVO_REMEDIATION.md b/design/specs/D_TRACK_BRAVO_REMEDIATION.md
+deleted file mode 100644
+index 01cb0fc..0000000
+--- a/design/specs/D_TRACK_BRAVO_REMEDIATION.md
++++ /dev/null
+@@ -1,140 +0,0 @@
+-```markdown
+-# Remediation Spec: Track Bravo - Policy Purity & Interfaces
+-
+-**Objective:** This document outlines the technical specification to resolve critical technical debts TD-110 and TD-119. The focus is on enforcing architectural purity by ensuring atomic settlements and formalizing key financial interfaces.
+-
+-**Related WO:** `WO-120` (tentative)
+-**Priority:** CRITICAL
+-**Author:** Gemini (Administrative Assistant)
+-
+----
+-
+-## 1. TD-110: Phantom Tax Revenue
+-
+-### 1.1. Problem Statement
+-The current system suffers from "phantom revenue," where tax income is recorded without a verified, successful fund transfer. This violates the `Settle -> Record` architectural pattern and compromises the integrity of the government's budget and all dependent economic analytics. The root cause is a leaky abstraction where state recording is not strictly decoupled from the settlement attempt.
+-
+-### 1.2. Remediation Plan: Enforce the `Settle -> Record` Pattern
+-
+-The remediation will enforce a strict one-way data flow. `TaxAgency` is responsible for *attempting* collection. `Government` is responsible for *recording* the verified outcome.
+-
+-#### 1.2.1. Step 1: Solidify `TaxAgency` as an Atomic Collector
+-
+-The `TaxAgency.collect_tax` method is the **sole authorized entry point** for any tax collection. Its responsibilities are strictly limited to:
+-1.  Receiving payer, payee, and amount.
+-2.  Interacting with the injected `ISettlementSystem` to perform an atomic fund transfer.
+-3.  Returning a `TaxCollectionResult` DTO that immutably describes the transaction's outcome (`success` flag and `amount_collected`).
+-
+-**No changes are required in `simulation/systems/tax_agency.py`**, as its current implementation already adheres to this principle. The focus is on its usage.
+-
+-#### 1.2.2. Step 2: Solidify `Government` as a Responsible Recorder
+-
+-The `Government.record_revenue` method is the **sole authorized entry point** for updating the government's internal financial ledgers (e.g., `total_collected_tax`, `revenue_this_tick`).
+-
+-This method MUST only be called *after* receiving a **successful** `TaxCollectionResult` DTO from `TaxAgency.collect_tax`.
+-
+-**Code Review Mandate:** All call sites for tax collection within `government.py` must be audited to ensure they follow this exact pattern:
+-
+-```python
+-# CORRECT PATTERN TO BE ENFORCED
+-# Location: e.g., government.py -> run_welfare_check
+-
+-# 1. Attempt settlement via TaxAgency
+-result = self.tax_agency.collect_tax(
+-    payer=agent,
+-    payee=self,
+-    amount=tax_amount,
+-    tax_type="wealth_tax",
+-    settlement_system=self.settlement_system,
+-    current_tick=current_tick
+-)
+-
+-# 2. Conditionally record the verified outcome
+-if result['success']:
+-    self.record_revenue(result)
+-```
+-
+-#### 1.2.3. Step 3: Deprecate and Remove Legacy Pathways
+-
+-The legacy adapter `Government.collect_tax` is a major risk. While immediate removal might break the `TransactionProcessor`, it must be phased out.
+-
+-1.  **Mark for Deprecation:** Add a prominent `DeprecationWarning` to `Government.collect_tax`, pointing to the new standard of direct `tax_agency.collect_tax` calls followed by `record_revenue`.
+-2.  **Audit `TransactionProcessor` (Future Work):** A new technical debt task (TD-120) must be created to audit `TransactionProcessor` and refactor its calls away from `Government.collect_tax`.
+-
+-### 1.3. Verification Plan
+-1.  **Static Analysis:** Use `search_file_content` to find all usages of `total_collected_tax` and `revenue_this_tick` within `government.py`. Any modification to these attributes outside of `record_revenue` is a failure.
+-2.  **Unit Testing:** Write a unit test for `Government` that mocks `tax_agency.collect_tax` to return both successful and failed `TaxCollectionResult` DTOs.
+-    - Assert that `record_revenue` is **only** called when the result is successful.
+-    - Assert that the government's assets and tax ledgers remain unchanged when the result is a failure.
+-
+----
+-
+-## 2. TD-119: Formalize `IBankService` Protocol
+-
+-### 2.1. Problem Statement
+-The `IBankService` protocol is implicitly defined but not formally implemented by the `Bank` class. Furthermore, the protocol definition in `modules/finance/api.py` is mismatched with the `Bank` class's actual implementation, specifically regarding the `add_bond_to_portfolio` method. This creates interface inconsistency and risk of static analysis or runtime errors.
+-
+-### 2.2. Remediation Plan: Align Protocol with Reality
+-
+-The remediation will align the `IBankService` protocol with the existing, stable implementation of the `Bank` class. Introducing new, unimplemented features to the `Bank` is out of scope for this fix.
+-
+-#### 2.2.1. Step 1: Refine `IBankService` Protocol
+-
+-The `add_bond_to_portfolio` method is not a core function of the current `Bank` implementation. It will be removed from the protocol to reflect the implemented reality.
+-
+-**File:** `modules/finance/api.py`
+-**Change:** Remove the `add_bond_to_portfolio` method from the `IBankService` protocol.
+-
+-```python
+-# modules/finance/api.py
+-
+-class IBankService(IFinancialEntity, Protocol):
+-    """Interface for commercial and central banks."""
+-    # The following method will be removed as it's not a core function
+-    # of the current Bank implementation.
+-    # def add_bond_to_portfolio(self, bond: BondDTO) -> None: ...
+-    pass # The protocol now correctly reflects the Bank's capabilities
+-```
+-
+-#### 2.2.2. Step 2: Explicitly Implement the Protocol
+-
+-The `Bank` class will be explicitly declared as an implementer of the now-matching `IBankService` protocol. This makes the relationship clear and allows for robust type checking.
+-
+-**File:** `simulation/bank.py`
+-**Change:** Update the `Bank` class signature to inherit from `IBankService`.
+-
+-```python
+-# simulation/bank.py
+-
+-# ... imports
+-from modules.finance.api import InsufficientFundsError, IBankService # IBankService is imported
+-# ...
+-
+-# Change class signature from IFinancialEntity to IBankService
+-class Bank(IBankService):
+-    """
+-    Phase 3: Central & Commercial Bank Hybrid System.
+-    WO-109: Refactored for Sacred Sequence (Transactions).
+-    """
+-
+-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None):
+-        # ... no other changes needed in __init__
+-```
+-
+-### 2.3. Verification Plan
+-1.  **Static Analysis (`mypy`):** After the changes, run `mypy` on the `simulation/` and `modules/` directories. The check must pass without errors, confirming that `Bank` correctly implements the `IBankService` protocol.
+-2.  **Code Review:** Confirm that the `add_bond_to_portfolio` method has been removed from `IBankService` and that the `Bank` class signature has been updated.
+-
+----
+-
+-## 3. 🚨 Risk & Impact Audit (Summary)
+-
+--   **TD-110 (Phantom Tax):** The primary risk remains the legacy `TransactionProcessor`. The changes specified here are safe and correct, but the phantom revenue issue may persist until the `TransactionProcessor` is refactored. Modifying the `Government` God Class is inherently risky; changes must be limited to the scope defined above.
+--   **TD-119 (IBankService):** Risk is low. This change aligns the interface with the implementation, improving code quality and maintainability without altering runtime logic.
+-
+-## 4. 📝 Mandatory Reporting (Jules's Task)
+-
+-Upon implementing these changes, the developer (Jules) is required to:
+-1.  **Document Discoveries:** If any other modules are found to be calling `Government.collect_tax` or modifying government revenue ledgers directly, they must be documented in `communications/insights/YYYY-MM-DD_tax_remediation_findings.md`.
+-2.  **Update Tech Debt:** Create a new entry `TD-120: Refactor TransactionProcessor Tax Calls` in `design/TECH_DEBT_LEDGER.md`.
+-```
+diff --git a/design/specs/D_TRACK_CHARLIE_REMEDIATION.md b/design/specs/D_TRACK_CHARLIE_REMEDIATION.md
+deleted file mode 100644
+index 040e99f..0000000
+--- a/design/specs/D_TRACK_CHARLIE_REMEDIATION.md
++++ /dev/null
+@@ -1,87 +0,0 @@
+-# Design Spec: D_TRACK_CHARLIE_REMEDIATION (Education System)
+-
+-## 1. Objective
+-
+-This document outlines the test plan to remediate **TD-114 (Sparse System Tests)** by creating a comprehensive, robust, and maintainable test suite for the `MinistryOfEducation` system.
+-
+-The primary goals are:
+-1.  **Achieve Test Coverage**: Implement unit and integration tests for the `run_public_education` function, covering all major logic paths, including basic education grants and scholarships.
+-2.  **Mitigate Architectural Risks**: Design tests that are decoupled from stateful, "God-Class" objects, directly addressing the concerns raised in **TD-108 (Stateful Engine Violation)** and **TD-103/107 (Leaky Abstractions)**.
+-3.  **Future-Proofing**: Align the testing strategy with the project's stated goal of a DTO-driven architecture (**TD-117**), ensuring test longevity through planned refactoring.
+-4.  **Verify System Integrity**: Validate the two-stage process of transaction generation and settlement, respecting the principle of **TD-109 (Sacred Sequence Violation)**.
+-
+----
+-
+-## 2. Testing Strategy: A Two-Level Approach
+-
+-To isolate logic and verify end-to-end behavior, we will implement two distinct levels of tests.
+-
+-### Level 1: Unit Tests (Transaction Generation Logic)
+-
+--   **Focus**: Verify that the `MinistryOfEducation.run_public_education` function generates the correct `Transaction` objects based on a given state.
+--   **Methodology**:
+-    -   Input: DTO-like mock objects representing households and the government.
+-    -   Action: Call `run_public_education`.
+-    -   Assertion: Assert against the properties of the `Transaction` objects in the returned list (e.g., `buyer_id`, `seller_id`, `price`, `item_id`, `metadata`).
+--   **Benefit**: Isolates the system's decision-making logic from any external dependencies or subsequent processing steps.
+-
+-### Level 2: Integration Tests (End-to-End State Verification)
+-
+--   **Focus**: Verify that the transactions generated by the system lead to the correct final state for all involved agents.
+--   **Methodology**:
+-    1.  Input: The same DTO-like mock objects from the unit tests.
+-    2.  Action 1: Call `run_public_education` to get the list of transactions.
+-    3.  Action 2: Pass these transactions to a `FakeTransactionProcessor`.
+-    4.  Assertion: Assert against the final state of the mock household and government objects (e.g., `agent.assets`, `agent.education_level`, `government.assets`).
+--   **Benefit**: Confirms the system's intended economic impact is correctly realized, validating the entire workflow from decision to settlement.
+-
+----
+-
+-## 3. Test Harness & Mocking Strategy
+-
+-To avoid brittle tests and adhere to architectural principles, the following mocking strategy is mandated.
+-
+--   **Use Test Doubles, Not Real Objects**:
+-    -   All `Household` and `Government` objects will be replaced with simple test doubles (e.g., Python's `SimpleNamespace` or a lightweight dataclass). This prevents dependency on the complex internal state of the actual simulation models.
+-    -   **Example Household Double**: `SimpleNamespace(id=1, assets=1000, education_level=0, aptitude=0.8, is_active=True)`
+-
+--   **FakeTransactionProcessor**:
+-    -   A simple, in-test `FakeTransactionProcessor` will be created. It will have a method like `process(transactions, agents_by_id)` that iterates through transactions and updates the `assets` of the corresponding agent doubles. This is critical for Level 2 tests.
+-
+--   **Mock System Dependencies**:
+-    -   `reflux_system` and `settlement_system` will be simple mocks, primarily providing an `id` to act as the `seller_id` in transactions.
+-
+----
+-
+-## 4. Test Cases
+-
+-The following test cases will be implemented for both Unit (Level 1) and Integration (Level 2) levels.
+-
+-### 4.1. Basic Education (Level 1 Grant)
+-
+-| Case ID | Scenario | Expected Outcome (Unit Test) | Expected Outcome (Integration Test) |
+-| :--- | :--- | :--- | :--- |
+-| **EDU-01** | Sufficient budget for all households. | One `education_level_1` transaction is generated for each active household. | Each agent's `education_level` becomes 1. Government assets decrease by `cost * num_agents`. |
+-| **EDU-02** | Insufficient budget for all, but enough for some. | Transactions are generated until the budget is depleted. | Agents are educated sequentially until budget runs out. |
+-| **EDU-03** | Zero budget. | No transactions are generated. | No state changes occur. |
+-| **EDU-04** | No active households. | No transactions are generated. | No state changes occur. |
+-
+-### 4.2. Scholarship (Advanced Education)
+-
+-| Case ID | Scenario | Expected Outcome (Unit Test) | Expected Outcome (Integration Test) |
+-| :--- | :--- | :--- | :--- |
+-| **EDU-10** | **Qualifying Scholar**: Poor, high-aptitude household with sufficient personal funds for their share. | Two transactions are generated: one `_subsidy` (from govt) and one `_tuition` (from agent). | Agent's `education_level` increments. Agent's assets decrease by their share. Govt assets decrease by the subsidy amount. |
+-| **EDU-11** | **Non-Qualifying (Rich)**: Rich, high-aptitude household. | No scholarship transactions are generated. | No state changes occur. |
+-| **EDU-12** | **Non-Qualifying (Low Aptitude)**: Poor, low-aptitude household. | No scholarship transactions are generated. | No state changes occur. |
+-| **EDU-13** | **Non-Qualifying (Broke)**: Poor, high-aptitude, but cannot afford their 20% share. | No scholarship transactions are generated. | No state changes occur. |
+-| **EDU-14** | **Budget Exhaustion**: A qualifying scholar is evaluated after the scholarship budget has been spent. | No scholarship transactions are generated for this agent. | No state changes occur for this agent. |
+-
+----
+-
+-## 5. Implementation Plan
+-
+--   **File Location**: `tests/system/test_education_system.py`
+--   **Fixtures**:
+-    -   Test configuration values (costs, budget ratios) will be managed within the test file.
+-    -   Helper functions will be created to generate the required test doubles for households and government, e.g., `create_mock_household(...)`.
+--   **Initial Focus**: Implement the test cases for `MinistryOfEducation` as defined above. The same pattern will then be applied to create similar test specs for the Housing and Labor market systems as part of the broader **TD-114** remediation.
 diff --git a/simulation/core_agents.py b/simulation/core_agents.py
 index 34d0aa5..3c04ebf 100644
 --- a/simulation/core_agents.py
@@ -23,7 +1719,7 @@ index 34d0aa5..3c04ebf 100644
  
          # 2. Call Decision Engine
 diff --git a/simulation/decisions/ai_driven_household_engine.py b/simulation/decisions/ai_driven_household_engine.py
-index 491ed30..8839d32 100644
+index 491ed30..20ba4e4 100644
 --- a/simulation/decisions/ai_driven_household_engine.py
 +++ b/simulation/decisions/ai_driven_household_engine.py
 @@ -51,7 +51,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
@@ -110,8 +1806,8 @@ index 491ed30..8839d32 100644
 +                try:
 +                    fid = int(key.split("_")[1])
 +                    available_stocks.append(fid)
-+                except:
-+                    pass
++                except Exception as e:
++                    self.logger.warning(f"STOCK_KEY_ERROR | Invalid stock key format '{key}': {e}")
 +
          if not available_stocks:
              return orders
@@ -710,7 +2406,7 @@ index 496e397..6154c41 100644
                  # Default / Other
                  if settlement:
 diff --git a/simulation/tick_scheduler.py b/simulation/tick_scheduler.py
-index 0bd0004..8a75fb6 100644
+index 0bd0004..51f3c33 100644
 --- a/simulation/tick_scheduler.py
 +++ b/simulation/tick_scheduler.py
 @@ -277,6 +277,36 @@ class TickScheduler:
@@ -750,7 +2446,7 @@ index 0bd0004..8a75fb6 100644
          # 2. Matching
          self._phase_matching(sim_state)
  
-@@ -518,6 +548,63 @@ class TickScheduler:
+@@ -518,6 +548,82 @@ class TickScheduler:
          household_pre_states = {}
          household_time_allocation = {}
  
@@ -804,17 +2500,36 @@ index 0bd0004..8a75fb6 100644
 +        # Create GovernmentPolicyDTO
 +        gov = state.government
 +        bank = state.bank
++
++        income_tax = 0.1
++        if hasattr(gov, "income_tax_rate"):
++            income_tax = gov.income_tax_rate
++        else:
++            state.logger.warning("DTO_FALLBACK | Government missing income_tax_rate, using 0.1")
++
++        corporate_tax = 0.2
++        if hasattr(gov, "corporate_tax_rate"):
++            corporate_tax = gov.corporate_tax_rate
++        else:
++            state.logger.warning("DTO_FALLBACK | Government missing corporate_tax_rate, using 0.2")
++
++        base_rate = 0.05
++        if hasattr(bank, "base_rate"):
++            base_rate = bank.base_rate
++        else:
++            state.logger.warning("DTO_FALLBACK | Bank missing base_rate, using 0.05")
++
 +        gov_policy = GovernmentPolicyDTO(
-+             income_tax_rate=gov.income_tax_rate if hasattr(gov, "income_tax_rate") else 0.1,
++             income_tax_rate=income_tax,
 +             sales_tax_rate=getattr(state.config_module, "SALES_TAX_RATE", 0.05),
-+             corporate_tax_rate=gov.corporate_tax_rate if hasattr(gov, "corporate_tax_rate") else 0.2,
-+             base_interest_rate=bank.base_rate if hasattr(bank, "base_rate") else 0.05
++             corporate_tax_rate=corporate_tax,
++             base_interest_rate=base_rate
 +        )
 +
          # 1. Firms
          for firm in state.firms:
              if firm.is_active:
-@@ -543,7 +630,8 @@ class TickScheduler:
+@@ -543,7 +649,8 @@ class TickScheduler:
  
                  firm_orders, action_vector = firm.make_decision(
                      state.markets, state.goods_data, market_data, state.time,
@@ -824,7 +2539,7 @@ index 0bd0004..8a75fb6 100644
                  )
  
                  for order in firm_orders:
-@@ -568,7 +656,8 @@ class TickScheduler:
+@@ -568,7 +675,8 @@ class TickScheduler:
  
                  stress_config = self.world_state.stress_scenario_config
                  household_orders, action_vector = household.make_decision(
@@ -834,7 +2549,7 @@ index 0bd0004..8a75fb6 100644
                  )
  
                  if hasattr(action_vector, 'work_aggressiveness'):
-@@ -649,6 +738,7 @@ class TickScheduler:
+@@ -649,6 +757,7 @@ class TickScheduler:
  
      def _phase_lifecycle(self, state: SimulationState) -> None:
          """Phase 4: Agent Lifecycle."""
@@ -842,7 +2557,7 @@ index 0bd0004..8a75fb6 100644
          if self.world_state.lifecycle_manager:
              lifecycle_txs = self.world_state.lifecycle_manager.execute(state)
              if lifecycle_txs:
-@@ -656,6 +746,55 @@ class TickScheduler:
+@@ -656,6 +765,55 @@ class TickScheduler:
          else:
              state.logger.error("LifecycleManager not initialized.")
  

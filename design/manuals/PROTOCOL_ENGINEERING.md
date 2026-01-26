@@ -11,6 +11,7 @@ This protocol defines the architectural standards and design workflows for the p
     *   **Market Logic**: Order matching and transaction generation.
     *   **System Logic**: Governing the simulation loop (e.g., TickScheduler).
 3.  **DTO (Data Transfer Object) Pattern**: Data must move between layers via DTO classes, never raw dictionaries.
+    *   **Data-Driven Purity**: Decision engines must depend ONLY on immutable snapshots (e.g., `MarketSnapshotDTO`). Direct access to Live State objects (Market, Government) is forbidden.
 
 ---
 
@@ -20,6 +21,7 @@ Implementation never begins without an approved Spec.
 ### Required Spec Components:
 - **Interfaces**: DTO and Class signatures in `api.py`.
 - **Logic Flow**: Step-by-step pseudocode for the business logic.
+- **Financial Calculation Integrity**: Use `floor` for N-1 participants and assign the remainder to the last participant to ensure Zero-Sum integrity.
 - **Exception Handling**: Specific error cases and fallback strategies.
 - **Verification Plan**: Unit tests and integration trace requirements.
 - **🚨 Risk & Impact Audit**: Analysis of circular references or test regressions.
