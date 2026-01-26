@@ -1,0 +1,265 @@
+diff --git a/communications/insights/2026-01-27_tax_remediation_findings.md b/communications/insights/2026-01-27_tax_remediation_findings.md
+new file mode 100644
+index 0000000..963e4e6
+--- /dev/null
++++ b/communications/insights/2026-01-27_tax_remediation_findings.md
+@@ -0,0 +1,50 @@
++# Tax Remediation Findings
++
++**Date:** 2026-01-27
++**Author:** Jules (Software Engineer)
++**Related Tasks:** TD-110, TD-120
++
++## Overview
++
++As part of the remediation for **TD-110 (Phantom Tax Revenue)**, we enforced a strict `Settle -> Record` pattern in the `Government` class. The `Government.collect_tax` method has been marked as **DEPRECATED**.
++
++During this process, an audit of the codebase revealed that the `TransactionProcessor` (`simulation/systems/transaction_processor.py`) heavily relies on this deprecated method.
++
++## Findings: Legacy Usage in TransactionProcessor
++
++The `TransactionProcessor` calls `Government.collect_tax` in the following contexts:
++
++1.  **Escheatment (`escheatment`)**:
++    -   Used to collect assets from deceased agents.
++    -   Line ~100: `result = government.collect_tax(trade_value, "escheatment", buyer, current_time)`
++
++2.  **Sales Tax (`goods`)**:
++    -   Used to collect tax on goods transactions.
++    -   Line ~142: `government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)`
++
++3.  **Labor Income Tax (`labor`, `research_labor`)**:
++    -   **Firm Payer**: Line ~174: `government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)`
++    -   **Household Payer**: Line ~184: `government.collect_tax(tax_amount, "income_tax_household", seller, current_time)`
++
++4.  **Direct Tax Transaction (`tax`)**:
++    -   Used for explicit tax transactions.
++    -   Line ~211: `result = government.collect_tax(trade_value, tx.item_id, buyer, current_time)`
++
++## Risks
++
++*   **Phantom Revenue Risk (Mitigated):** The deprecated `Government.collect_tax` now correctly delegates to the atomic `TaxAgency.collect_tax` and `record_revenue`, so the immediate risk of recording revenue without settlement is mitigated.
++*   **Maintenance Risk:** The `TransactionProcessor` is coupled to a deprecated method. Future changes to `Government` might break this if the deprecated method is removed.
++*   **Performance/Architectural Risk:** The `TransactionProcessor` should ideally interact with the `TaxAgency` directly for collection logic, or use a specialized service, rather than treating `Government` as a pass-through.
++
++## Recommendations (TD-120)
++
++**TD-120: Refactor TransactionProcessor Tax Calls** has been created to address this. The refactoring should:
++
++1.  Inject `TaxAgency` into `TransactionProcessor` (or access it via `Government` if necessary, but call `collect_tax` on the agency).
++2.  Replace calls to `government.collect_tax` with:
++    ```python
++    result = government.tax_agency.collect_tax(...)
++    if result['success']:
++        government.record_revenue(result)
++    ```
++    Or a similar pattern that respects the atomic separation of settlement and recording.
+diff --git a/design/TECH_DEBT_LEDGER.md b/design/TECH_DEBT_LEDGER.md
+index 114fd9b..2673114 100644
+--- a/design/TECH_DEBT_LEDGER.md
++++ b/design/TECH_DEBT_LEDGER.md
+@@ -19,7 +19,6 @@
+ | **TD-107** | 2026-01-23 | **Leaky Abstraction (HR Back-ref & Demeter)** | Remove back-references from components to DecisionContext | High Coupling | **STRUCTURAL_RISK** |
+ | **TD-108** | 2026-01-23 | **Stateful Engine Violation (Market & Govt Injection)** | Inject markets and GovernmentStateDTO via DecisionContext | Purity Gate Violation | **STRUCTURAL_RISK** |
+ | **TD-109** | 2026-01-23 | **Sacred Sequence Violation** | Move asset transfers (taxes, profit, infra) into Transaction Phase | Atomicity / Integration Risk | **PARTIALLY_RESOLVED** (Pending Fix) |
+-| **TD-110** | 2026-01-24 | **Phantom Tax Revenue (Stats Failure)** | Decouple tax recording from transfer; fix `TaxAgency` logic | Budget analytics failure | **IN_PROGRESS** |
+ | **TD-111** | 2026-01-24 | **Reflux Alchemy (M2 Inflation)** | Exclude `RefluxSystem` balance from M2 calculation | Monetary Integrity | **ECONOMIC_RISK** |
+ | **TD-113** | 2026-01-24 | **Non-atomic Transfer Fallbacks** | Remove legacy `withdraw/deposit` fallbacks in `TransactionProcessor` | Asset destruction risk | **STRUCTURAL_RISK** |
+ | **TD-114** | 2026-01-25 | **Sparse System Tests** | Add tests for Housing, Education, etc. | Regression Risk | **STRUCTURAL_RISK** |
+@@ -27,7 +26,7 @@
+ | **TD-116** | 2026-01-26 | **Inheritance Residual Evaporation** | Exact distribution with residue to last heir (math.floor) | Zero-Sum Integrity | **ACTIVE** |
+ | **TD-117** | 2026-01-26 | **Structural Purity: DTO-Only Decisions** | Replace live objects with MarketSnapshotDTO in make_decision | Purity Gate Violation | **ACTIVE** |
+ | **TD-118** | 2026-01-26 | **CommerceSystem Sequence Violation** | Split execution into 4-Phase integration in TickScheduler | Sacred Sequence Compliance| **ACTIVE** |
+-| **TD-119** | 2026-01-26 | **Implicit IBankService (Ghost Interface)** | Formally define IBankService(Protocol) in modules/finance/api.py | Interface Consistency | **LOW_PRIORITY** |
++| **TD-120** | 2026-01-27 | **Refactor TransactionProcessor Tax Calls** | Inject TaxAgency; use atomic collection pattern | Maintenance Risk | **ACTIVE** |
+ 
+ ---
+ 
+@@ -54,6 +53,8 @@
+ | TD-105 | 2026-01-24 | Positive Drift (+320) | Fix Reflux atomic transfer (TD-105) | Zero-sum violation | **RESOLVED** |
+ | TD-106 | 2026-01-24 | Bankruptcy Money Leak | Link Bankruptcy to Settlement (TD-106) | Zero-sum violation | **RESOLVED** |
+ | TD-112 | 2026-01-25 | Inheritance Rounding | Integer distribution (TD-112) | System Crash | **RESOLVED** |
++| TD-110 | 2026-01-24 | Phantom Tax Revenue | Enforce Settle->Record pattern (WO-120) | Budget analytics failure | **RESOLVED** |
++| TD-119 | 2026-01-26 | Implicit IBankService | Formalize IBankService Protocol (WO-120) | Interface Consistency | **RESOLVED** |
+ 
+ ---
+ 
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 7f782e3..ba4416b 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -67,7 +67,10 @@ class IFinancialEntity(Protocol):
+ 
+ class IBankService(IFinancialEntity, Protocol):
+     """Interface for commercial and central banks."""
+-    def add_bond_to_portfolio(self, bond: BondDTO) -> None: ...
++    # The following method will be removed as it's not a core function
++    # of the current Bank implementation.
++    # def add_bond_to_portfolio(self, bond: BondDTO) -> None: ...
++    pass # The protocol now correctly reflects the Bank's capabilities
+ 
+ class IFiscalMonitor(Protocol):
+     """Interface for the fiscal health analysis component."""
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 607e712..c24145d 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -1,4 +1,5 @@
+ import logging
++import warnings
+ from typing import Dict, List, Any, Deque, Tuple
+ from collections import deque
+ from simulation.ai.enums import PoliticalParty
+@@ -174,7 +175,16 @@ class Government:
+         """
+         Legacy adapter method used by TransactionProcessor.
+         Now delegates to the new atomic collect_tax and records revenue.
++
++        DEPRECATED: Direct usage of this method is discouraged.
++        Use tax_agency.collect_tax() followed by government.record_revenue().
+         """
++        warnings.warn(
++            "Government.collect_tax is deprecated. Use tax_agency.collect_tax() and government.record_revenue() instead.",
++            DeprecationWarning,
++            stacklevel=2
++        )
++
+         if not self.settlement_system:
+             logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
+             return {
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 53076a8..418c414 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -3,7 +3,7 @@ from dataclasses import dataclass
+ from typing import Dict, Any, List, Optional, TYPE_CHECKING
+ import math
+ from modules.common.config_manager.api import ConfigManager
+-from modules.finance.api import InsufficientFundsError, IFinancialEntity
++from modules.finance.api import InsufficientFundsError, IBankService
+ from simulation.models import Order, Transaction
+ from simulation.portfolio import Portfolio
+ 
+@@ -39,7 +39,7 @@ class Deposit:
+     def tick_interest_rate(self) -> float:
+         return self.annual_interest_rate / TICKS_PER_YEAR
+ 
+-class Bank(IFinancialEntity):
++class Bank(IBankService):
+     """
+     Phase 3: Central & Commercial Bank Hybrid System.
+     WO-109: Refactored for Sacred Sequence (Transactions).
+diff --git a/tests/test_government_tax.py b/tests/test_government_tax.py
+new file mode 100644
+index 0000000..55ea0ad
+--- /dev/null
++++ b/tests/test_government_tax.py
+@@ -0,0 +1,108 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.agents.government import Government
++from modules.finance.api import TaxCollectionResult
++
++class TestGovernmentTax:
++    @pytest.fixture
++    def government(self):
++        config = MagicMock()
++        # Mocking config attributes accessed in __init__
++        config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
++        config.INCOME_TAX_RATE = 0.1
++        config.CORPORATE_TAX_RATE = 0.2
++        config.TICKS_PER_YEAR = 100
++        config.TAX_BRACKETS = [] # Add this to avoid error in TaxAgency init if it checks
++
++        gov = Government(id=1, initial_assets=1000.0, config_module=config)
++        gov.tax_agency = MagicMock()
++        gov.settlement_system = MagicMock()
++        return gov
++
++    def test_record_revenue_success(self, government):
++        # Arrange
++        result: TaxCollectionResult = {
++            "success": True,
++            "amount_collected": 100.0,
++            "tax_type": "income_tax",
++            "payer_id": 101,
++            "payee_id": 1,
++            "error_message": None
++        }
++        initial_total = government.total_collected_tax
++        initial_revenue = government.revenue_this_tick
++
++        # Act
++        government.record_revenue(result)
++
++        # Assert
++        assert government.total_collected_tax == initial_total + 100.0
++        assert government.revenue_this_tick == initial_revenue + 100.0
++        assert government.tax_revenue["income_tax"] == 100.0
++
++    def test_record_revenue_failure(self, government):
++        # Arrange
++        result: TaxCollectionResult = {
++            "success": False,
++            "amount_collected": 0.0,
++            "tax_type": "income_tax",
++            "payer_id": 101,
++            "payee_id": 1,
++            "error_message": "Insufficient funds"
++        }
++        initial_total = government.total_collected_tax
++
++        # Act
++        government.record_revenue(result)
++
++        # Assert
++        assert government.total_collected_tax == initial_total
++        assert "income_tax" not in government.tax_revenue
++
++    def test_collect_tax_legacy(self, government):
++        # Arrange
++        payer = MagicMock()
++        payer.id = 101
++        amount = 50.0
++        tax_type = "wealth_tax"
++        current_tick = 10
++
++        expected_result: TaxCollectionResult = {
++            "success": True,
++            "amount_collected": 50.0,
++            "tax_type": tax_type,
++            "payer_id": payer.id,
++            "payee_id": government.id,
++            "error_message": None
++        }
++        government.tax_agency.collect_tax.return_value = expected_result
++
++        # Act
++        with pytest.warns(DeprecationWarning, match="Government.collect_tax is deprecated"):
++            result = government.collect_tax(amount, tax_type, payer, current_tick)
++
++        # Assert
++        government.tax_agency.collect_tax.assert_called_once_with(
++            payer=payer,
++            payee=government,
++            amount=amount,
++            tax_type=tax_type,
++            settlement_system=government.settlement_system,
++            current_tick=current_tick
++        )
++        assert result == expected_result
++        assert government.total_collected_tax == 50.0 # Should have called record_revenue internally
++
++    def test_collect_tax_no_settlement_system(self, government):
++        # Arrange
++        government.settlement_system = None
++        payer = MagicMock()
++        payer.id = 101
++
++        # Act
++        with pytest.warns(DeprecationWarning):
++            result = government.collect_tax(100.0, "tax", payer, 1)
++
++        # Assert
++        assert result["success"] is False
++        assert result["error_message"] == "No SettlementSystem linked"
