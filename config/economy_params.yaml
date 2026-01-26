@@ -8,3 +8,17 @@ BAILOUT_PENALTY_PREMIUM: 0.05
 BAILOUT_COVENANT_RATIO: 0.5
 STARTUP_GRACE_PERIOD_TICKS: 24
 ALTMAN_Z_SCORE_THRESHOLD: 1.81
+
+# ----------------------------------------------------------------------
+# Demographics & Household Configuration
+# ----------------------------------------------------------------------
+NEWBORN_INITIAL_NEEDS:
+  # Basic physiological needs to ensure survival and initial action.
+  # Values represent the starting level of the need.
+  survival: 60.0
+  social: 20.0
+  improvement: 10.0
+  asset: 10.0
+  imitation_need: 15.0
+  labor_need: 0.0
+  liquidity_need: 50.0

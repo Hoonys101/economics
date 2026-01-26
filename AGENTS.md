@@ -166,3 +166,12 @@ RL_DISCOUNT_FACTOR = 0.95
 ---
 
 > **Tip**: 작업 중 질문이 있으면 `communications/requests/` 폴더에 질의 문서를 생성하세요.
+
+## 10. Core Principles & Lessons
+
+### Principle: All Agents are Born with Purpose (Newborn Initialization)
+
+-   **Phenomenon**: Newborn agents were created but remained inactive, eventually being culled by the simulation for failing to act.
+-   **Cause**: Agents were initialized with an empty `initial_needs` dictionary (`{}`). The decision-making engine had no unmet needs to address, resulting in a permanent state of inaction (apathy).
+-   **Solution**: A default set of `NEWBORN_INITIAL_NEEDS` (e.g., for survival, social status) is now defined in `config/economy_params.yaml`. The `DemographicManager` injects these needs upon agent creation, providing an immediate set of goals.
+-   **Lesson**: An agent's existence requires not just physical attributes but also **intrinsic motivation**. Every agent must be initialized with a non-empty set of needs that drives their first actions. Without a goal, an agent is inert.

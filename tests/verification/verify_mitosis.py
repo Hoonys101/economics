@@ -106,7 +106,8 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     mock_h = golden_households[0] if golden_households else MagicMock()
 
     parent = create_real_household_from_golden(mock_h, golden_config)
-    parent._assets = 10000.0
+    # Fix: Access econ_component._assets directly as Household delegates assets property
+    parent.econ_component._assets = 10000.0
     initial_total_assets = parent.assets
 
     # Simulate Mitosis (DemographicManager logic)
@@ -114,7 +115,7 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     split_amount = parent.assets * 0.5
 
     # 2. Deduct from parent
-    parent._assets -= split_amount
+    parent.econ_component._assets -= split_amount
 
     # 3. Create child with deducted amount
     child = parent.clone(new_id=999, initial_assets_from_parent=split_amount, current_tick=100)

@@ -151,12 +151,17 @@ class DemographicManager:
                 )
                 new_decision_engine.loan_market = simulation.markets.get("loan_market")
 
+            # Load initial needs from config
+            initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", {})
+            if not initial_needs_for_newborn:
+                self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
+
             child = Household(
                 id=child_id,
                 talent=child_talent,
                 goods_data=simulation.goods_data,
                 initial_assets=initial_gift,
-                initial_needs={}, # Default reset
+                initial_needs=initial_needs_for_newborn.copy(),
                 decision_engine=new_decision_engine,
                 value_orientation=value_orientation,
                 personality=child_personality,
