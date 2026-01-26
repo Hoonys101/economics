@@ -328,8 +328,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             orders.extend(emergency_orders)
 
         # 6. Real Estate Logic
-        if "housing" in markets:
-             housing_market = markets["housing"]
+        # Fix NameError: 'markets' -> 'context.markets'
+        if context.markets and "housing" in context.markets:
+             housing_market = context.markets["housing"]
              from simulation.decisions.housing_manager import HousingManager
 
              housing_manager = HousingManager(household, self.config_module) # Now passes DTO
@@ -352,8 +353,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                          best_offer = cheapest
                          
                  if best_offer:
-                     loan_market = markets.get("loan_market")
-                     mortgage_rate = loan_market.interest_rate if loan_market else 0.05
+                     # Use market_data instead of live loan_market object (IBankService formalization)
+                     mortgage_rate = market_data.get("loan_market", {}).get("interest_rate", 0.05)
 
                      should_buy = False
 
