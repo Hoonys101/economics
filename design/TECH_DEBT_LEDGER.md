@@ -21,6 +21,8 @@
 | **TD-109** | 2026-01-23 | **Sacred Sequence Violation** | Move asset transfers (taxes, profit, infra) into Transaction Phase | Atomicity / Integration Risk | **PARTIALLY_RESOLVED** (Pending Fix) |
 | **TD-113** | 2026-01-24 | **Non-atomic Transfer Fallbacks** | Remove legacy `withdraw/deposit` fallbacks in `TransactionProcessor` | Asset destruction risk | **STRUCTURAL_RISK** |
 | **TD-114** | 2026-01-25 | **Sparse System Tests** | Add tests for Housing, Education, etc. | Regression Risk | **STRUCTURAL_RISK** |
+| **TD-115** | 2026-01-25 | **Tick 1 Financial Leak (-99,680)** | Track Alpha (Refund Cancelled) | Monetary Integrity | **PENDING** |
+| **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
 
 ---
 
@@ -50,11 +52,11 @@
 | TD-110 | 2026-01-24 | Phantom Tax Revenue | Enforce Settle->Record pattern (WO-120) | Budget analytics failure | **RESOLVED** |
 | TD-119 | 2026-01-26 | Implicit IBankService | Formalize IBankService Protocol (WO-120) | Interface Consistency | **RESOLVED** |
 | TD-111 | 2026-01-24 | Reflux Alchemy (M2 Inflation) | Exclude `RefluxSystem` balance from M2 calculation | Monetary Integrity | **RESOLVED** |
-| TD-115 | 2026-01-25 | Tick 1 Financial Leak (-99,680) | Pre-Viability Bootstrapping (Track Alpha) | Monetary Integrity | **RESOLVED** |
 | TD-116 | 2026-01-26 | Inheritance Residual Evaporation | Integer Distribution (Core Track) | Zero-Sum Integrity | **RESOLVED** |
 | TD-117 | 2026-01-26 | Structural Purity: DTO-Only Decisions | DTO Injection (Core Track) | Purity Gate | **RESOLVED** |
 | TD-118 | 2026-01-26 | CommerceSystem Sequence Violation | 4-Phase Integration (Core Track) | Sacred Sequence | **RESOLVED** |
 | TD-120 | 2026-01-27 | Refactor TransactionProcessor Tax Calls | TaxAgency Injection (Track Bravo) | Maintenance Risk | **RESOLVED** |
+| TD-121 | 2026-01-26 | Newborn Money Leak (DOA) | Initial Needs Config Injection (WO-121) | Agent Viability | **RESOLVED** |
 
 ---
 
