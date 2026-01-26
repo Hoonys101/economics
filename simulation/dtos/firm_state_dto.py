@@ -49,6 +49,9 @@ class FirmStateDTO:
     agent_data: Dict[str, Any]
     system2_guidance: Dict[str, Any]
 
+    # Sales
+    last_sales_volume: float = 0.0
+
     # WO-108: Parity Fields
     sentiment_index: float = 0.5
 
@@ -98,6 +101,9 @@ class FirmStateDTO:
         # Refined: (1.0 / (1 + consecutive_loss_turns))
         sentiment = 1.0 / (1.0 + consecutive_loss_turns)
 
+        # Sales Volume
+        last_sales_volume = getattr(firm, 'last_sales_volume', 0.0)
+
         return cls(
             id=firm.id,
             assets=firm.assets,
@@ -130,5 +136,6 @@ class FirmStateDTO:
             employees_data=employees_data,
             agent_data=firm.get_agent_data(),
             system2_guidance={}, # Placeholder
-            sentiment_index=sentiment
+            sentiment_index=sentiment,
+            last_sales_volume=last_sales_volume
         )

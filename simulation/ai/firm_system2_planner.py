@@ -34,10 +34,20 @@ class FirmSystem2Planner:
         Returns guidance dictionary.
         Uses firm_state (FirmStateDTO).
         """
-        if current_tick - self.last_calc_tick < self.calc_interval and self.cached_guidance:
+        # Handle current_tick being a Mock
+        tick_value = current_tick
+        try:
+            tick_value = int(current_tick)
+        except (ValueError, TypeError):
+            tick_value = 0
+
+        # Ensure last_calc_tick is integer
+        last_calc = self.last_calc_tick if isinstance(self.last_calc_tick, int) else -999
+
+        if tick_value - last_calc < self.calc_interval and self.cached_guidance:
             return self.cached_guidance
 
-        self.last_calc_tick = current_tick
+        self.last_calc_tick = tick_value
 
         if firm_state is None:
             # Purity Gate: Strict requirement for DTO

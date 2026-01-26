@@ -3,7 +3,7 @@ import time
 import requests
 import json
 import threading
-from app import app
+from dashboard.app import app
 import config
 
 # Note: This script assumes the app is running on localhost:5001 or starts it.
