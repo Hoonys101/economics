@@ -530,8 +530,8 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 try:
                     fid = int(key.split("_")[1])
                     available_stocks.append(fid)
-                except:
-                    pass
+                except Exception as e:
+                    self.logger.warning(f"STOCK_KEY_ERROR | Invalid stock key format '{key}': {e}")
 
         if not available_stocks:
             return orders

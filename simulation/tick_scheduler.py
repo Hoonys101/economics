@@ -598,11 +598,30 @@ class TickScheduler:
         # Create GovernmentPolicyDTO
         gov = state.government
         bank = state.bank
+
+        income_tax = 0.1
+        if hasattr(gov, "income_tax_rate"):
+            income_tax = gov.income_tax_rate
+        else:
+            state.logger.warning("DTO_FALLBACK | Government missing income_tax_rate, using 0.1")
+
+        corporate_tax = 0.2
+        if hasattr(gov, "corporate_tax_rate"):
+            corporate_tax = gov.corporate_tax_rate
+        else:
+            state.logger.warning("DTO_FALLBACK | Government missing corporate_tax_rate, using 0.2")
+
+        base_rate = 0.05
+        if hasattr(bank, "base_rate"):
+            base_rate = bank.base_rate
+        else:
+            state.logger.warning("DTO_FALLBACK | Bank missing base_rate, using 0.05")
+
         gov_policy = GovernmentPolicyDTO(
-             income_tax_rate=gov.income_tax_rate if hasattr(gov, "income_tax_rate") else 0.1,
+             income_tax_rate=income_tax,
              sales_tax_rate=getattr(state.config_module, "SALES_TAX_RATE", 0.05),
-             corporate_tax_rate=gov.corporate_tax_rate if hasattr(gov, "corporate_tax_rate") else 0.2,
-             base_interest_rate=bank.base_rate if hasattr(bank, "base_rate") else 0.05
+             corporate_tax_rate=corporate_tax,
+             base_interest_rate=base_rate
         )
 
         # 1. Firms
