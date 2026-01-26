@@ -1,0 +1,276 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index f7fb55b..3e73df2 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -166,3 +166,12 @@ RL_DISCOUNT_FACTOR = 0.95
+ ---
+ 
+ > **Tip**: 작업 중 질문이 있으면 `communications/requests/` 폴더에 질의 문서를 생성하세요.
++
++## 10. Core Principles & Lessons
++
++### Principle: All Agents are Born with Purpose (Newborn Initialization)
++
++-   **Phenomenon**: Newborn agents were created but remained inactive, eventually being culled by the simulation for failing to act.
++-   **Cause**: Agents were initialized with an empty `initial_needs` dictionary (`{}`). The decision-making engine had no unmet needs to address, resulting in a permanent state of inaction (apathy).
++-   **Solution**: A default set of `NEWBORN_INITIAL_NEEDS` (e.g., for survival, social status) is now defined in `config/economy_params.yaml`. The `DemographicManager` injects these needs upon agent creation, providing an immediate set of goals.
++-   **Lesson**: An agent's existence requires not just physical attributes but also **intrinsic motivation**. Every agent must be initialized with a non-empty set of needs that drives their first actions. Without a goal, an agent is inert.
+diff --git a/communications/insights/WO-121-newborn-initialization.md b/communications/insights/WO-121-newborn-initialization.md
+new file mode 100644
+index 0000000..6664bb3
+--- /dev/null
++++ b/communications/insights/WO-121-newborn-initialization.md
+@@ -0,0 +1,36 @@
++# WO-121: Newborn Initialization Fix & Feedback Integration
++
++**Date:** 2026-05-25 (Simulation Time)
++**Author:** Jules
++**Status:** Completed
++
++## 1. Summary of Changes
++
++To address the "Dead on Arrival" newborn agent issue, we have:
++1.  **Configuration Centralization**: Externalized `NEWBORN_INITIAL_NEEDS` to `config/economy_params.yaml`. This allows tuning of newborn motivation without code changes.
++2.  **Logic Update**: Refactored `DemographicManager.process_births` to inject these configured needs into new `Household` agents, replacing the empty default.
++3.  **Documentation**: Added the "Principle: All Agents are Born with Purpose" to `AGENTS.md` to codify this architectural decision.
++4.  **Test Coverage**: Created `tests/systems/test_demographic_manager_newborn.py` to verify the fix in isolation.
++
++## 2. Technical Insights & Challenges
++
++### Mocking the Simulation "God Object"
++The `DemographicManager` is tightly coupled to the `Simulation` object, which made unit testing challenging. To test `process_births` in isolation, we had to mock:
++-   `simulation.next_agent_id`
++-   `simulation.time`
++-   `simulation.logger`
++-   `simulation.ai_trainer` (and its `get_engine` method)
++-   `simulation.markets` (specifically `loan_market`)
++-   `simulation.goods_data`
++-   `simulation.ai_training_manager` (as a class property)
++
++This confirms the high coupling risk identified in the audit. Future refactoring should consider injecting specific services (e.g., `IAITrainer`, `IMarketProvider`) instead of the entire `simulation` object.
++
++### Test Fixture Fragility
++We encountered an `AttributeError` in `SocialComponent` because the test fixture provided a string `"STABLE"` for personality, while the component expected a `Personality` Enum member. This highlights the importance of using typed Enums in test fixtures to match the strict typing of the codebase.
++
++### Regression in `verify_mitosis.py`
++While validating changes, we discovered that `tests/verification/verify_mitosis.py` was broken due to a recent refactor of the `Household` class (delegating assets to `EconComponent`). The test was attempting to modify `parent._assets` directly, which no longer affected the actual assets. We fixed this by targeting `parent.econ_component._assets`, ensuring the regression suite is green.
++
++## 3. Conclusion
++The fix is robust and verified. The newborn agents now start with intrinsic motivation (needs), preventing them from being culled due to inactivity. The testing ecosystem is slightly cleaner with the new isolated test, though the `Simulation` dependency remains a long-term architectural concern.
+diff --git a/config/economy_params.yaml b/config/economy_params.yaml
+index d342465..53a450a 100644
+--- a/config/economy_params.yaml
++++ b/config/economy_params.yaml
+@@ -8,3 +8,17 @@ BAILOUT_PENALTY_PREMIUM: 0.05
+ BAILOUT_COVENANT_RATIO: 0.5
+ STARTUP_GRACE_PERIOD_TICKS: 24
+ ALTMAN_Z_SCORE_THRESHOLD: 1.81
++
++# ----------------------------------------------------------------------
++# Demographics & Household Configuration
++# ----------------------------------------------------------------------
++NEWBORN_INITIAL_NEEDS:
++  # Basic physiological needs to ensure survival and initial action.
++  # Values represent the starting level of the need.
++  survival: 60.0
++  social: 20.0
++  improvement: 10.0
++  asset: 10.0
++  imitation_need: 15.0
++  labor_need: 0.0
++  liquidity_need: 50.0
+diff --git a/simulation/systems/demographic_manager.py b/simulation/systems/demographic_manager.py
+index 1e1ea37..a55bdda 100644
+--- a/simulation/systems/demographic_manager.py
++++ b/simulation/systems/demographic_manager.py
+@@ -151,12 +151,17 @@ class DemographicManager:
+                 )
+                 new_decision_engine.loan_market = simulation.markets.get("loan_market")
+ 
++            # Load initial needs from config
++            initial_needs_for_newborn = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", {})
++            if not initial_needs_for_newborn:
++                self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
++
+             child = Household(
+                 id=child_id,
+                 talent=child_talent,
+                 goods_data=simulation.goods_data,
+                 initial_assets=initial_gift,
+-                initial_needs={}, # Default reset
++                initial_needs=initial_needs_for_newborn.copy(),
+                 decision_engine=new_decision_engine,
+                 value_orientation=value_orientation,
+                 personality=child_personality,
+diff --git a/tests/systems/test_demographic_manager_newborn.py b/tests/systems/test_demographic_manager_newborn.py
+new file mode 100644
+index 0000000..c22f2a1
+--- /dev/null
++++ b/tests/systems/test_demographic_manager_newborn.py
+@@ -0,0 +1,143 @@
++import pytest
++from unittest.mock import MagicMock, PropertyMock
++
++from simulation.systems.demographic_manager import DemographicManager
++from simulation.core_agents import Household
++from simulation.ai.enums import Personality
++
++# [Test File Start]
++
++@pytest.fixture
++def mock_config():
++    """Fixture to create a mock config object for testing."""
++    config = MagicMock()
++
++    # Define the expected config value for this test
++    config.NEWBORN_INITIAL_NEEDS = {
++        "survival": 60.0,
++        "social": 20.0,
++        "improvement": 10.0,
++        "asset": 10.0,
++        "imitation_need": 15.0,
++        "labor_need": 0.0,
++        "liquidity_need": 50.0
++    }
++
++    # Mock other required config values
++    config.REPRODUCTION_AGE_START = 20
++    config.REPRODUCTION_AGE_END = 45
++    config.NEWBORN_ENGINE_TYPE = "AIDriven"
++    config.MITOSIS_MUTATION_PROBABILITY = 0.1
++    # Add other necessary config mocks as needed/discovered
++    config.VALUE_ORIENTATION_MAPPING = {}
++    config.SURVIVAL_NEED_CONSUMPTION_THRESHOLD = 0.8
++    config.FOOD_PURCHASE_MAX_PER_TICK = 5.0
++    config.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS = 100.0
++    config.LABOR_MARKET_MIN_WAGE = 5.0
++    config.HOUSEHOLD_LOW_ASSET_THRESHOLD = 50.0
++    config.HOUSEHOLD_LOW_ASSET_WAGE = 6.0
++    config.HOUSEHOLD_DEFAULT_WAGE = 10.0
++    config.MARKET_PRICE_FALLBACK = 1.0
++    config.NEED_FACTOR_BASE = 1.0
++    config.NEED_FACTOR_SCALE = 1.0
++    config.VALUATION_MODIFIER_BASE = 1.0
++    config.VALUATION_MODIFIER_RANGE = 0.1
++    config.HOUSEHOLD_MAX_PURCHASE_QUANTITY = 5.0
++    config.BULK_BUY_NEED_THRESHOLD = 0.9
++    config.BULK_BUY_AGG_THRESHOLD = 0.8
++    config.BULK_BUY_MODERATE_RATIO = 0.5
++    config.DSR_CRITICAL_THRESHOLD = 0.8
++    config.BUDGET_LIMIT_NORMAL_RATIO = 0.8
++    config.BUDGET_LIMIT_URGENT_NEED = 0.9
++    config.BUDGET_LIMIT_URGENT_RATIO = 0.9
++    config.MIN_PURCHASE_QUANTITY = 0.1
++    config.JOB_QUIT_THRESHOLD_BASE = 0.5
++    config.JOB_QUIT_PROB_BASE = 0.1
++    config.JOB_QUIT_PROB_SCALE = 0.1
++    config.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0
++    config.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD = 0.1
++    config.STOCK_INVESTMENT_DIVERSIFICATION_COUNT = 3
++    config.DEBT_REPAYMENT_RATIO = 0.1
++    config.DEBT_REPAYMENT_CAP = 100.0
++    config.DEBT_LIQUIDITY_RATIO = 0.5
++    config.INITIAL_RENT_PRICE = 50.0
++    config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000.0
++    config.CONFORMITY_RANGES = {}
++    config.QUALITY_PREF_MISER_MAX = 0.3
++    config.QUALITY_PREF_SNOB_MIN = 0.7
++    config.SOCIAL_STATUS_ASSET_WEIGHT = 0.5
++
++    return config
++
++@pytest.fixture
++def mock_simulation():
++    """Fixture to create a mock simulation 'God Object'."""
++    sim = MagicMock()
++
++    # Mock all attributes accessed by process_births
++    sim.next_agent_id = 101
++    sim.time = 1000
++    sim.logger = MagicMock()
++
++    # Mock dependent systems
++    sim.ai_trainer = MagicMock()
++    sim.ai_trainer.get_engine.return_value = MagicMock()
++    sim.markets = {"loan_market": MagicMock()}
++    sim.goods_data = [{"id": "food"}, {"id": "housing"}] # Assuming this is sufficient
++
++    # Mock the AI Training Manager for brain inheritance
++    type(sim).ai_training_manager = PropertyMock(return_value=MagicMock())
++
++    return sim
++
++@pytest.fixture
++def parent_agent(mock_config):
++    """Fixture for a parent Household agent ready to give birth."""
++    parent = MagicMock(spec=Household)
++    parent.id = 1
++    parent.age = 30
++    parent.assets = 1000.0
++    parent.talent = MagicMock()
++    parent.personality = Personality.MISER
++    parent.value_orientation = "TRADITIONAL"
++    parent.risk_aversion = 0.5
++    parent.generation = 1
++    parent.children_ids = []
++
++    # Mock methods
++    parent._sub_assets.return_value = None
++
++    return parent
++
++def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation, parent_agent):
++    """
++    VERIFY: A newborn household is initialized with 'initial_needs' from the
++            mocked config, not a hardcoded default.
++    """
++    # ARRANGE
++    # Instantiate the manager and surgically attach the mock config
++    manager = DemographicManager(config_module=mock_config)
++    manager.logger = MagicMock() # Isolate logger
++
++    birth_requests = [parent_agent]
++
++    # ACT
++    # This now uses a completely mocked ecosystem
++    new_children = manager.process_births(mock_simulation, birth_requests)
++
++    # ASSERT
++    assert len(new_children) == 1
++    child = new_children[0]
++
++    # The CRITICAL check: are the needs from our mock_config?
++    assert child.needs == mock_config.NEWBORN_INITIAL_NEEDS
++    assert "survival" in child.needs
++    assert child.needs["survival"] == 60.0
++
++    # Verify other attributes were set correctly
++    assert child.id == 101
++    assert child.parent_id == parent_agent.id
++    assert child.age == 0.0
++
++    # Verify asset transfer happened
++    parent_agent._sub_assets.assert_called_once_with(parent_agent.assets * 0.1)
+diff --git a/tests/verification/verify_mitosis.py b/tests/verification/verify_mitosis.py
+index 8436608..01e910c 100644
+--- a/tests/verification/verify_mitosis.py
++++ b/tests/verification/verify_mitosis.py
+@@ -106,7 +106,8 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
+     mock_h = golden_households[0] if golden_households else MagicMock()
+ 
+     parent = create_real_household_from_golden(mock_h, golden_config)
+-    parent._assets = 10000.0
++    # Fix: Access econ_component._assets directly as Household delegates assets property
++    parent.econ_component._assets = 10000.0
+     initial_total_assets = parent.assets
+ 
+     # Simulate Mitosis (DemographicManager logic)
+@@ -114,7 +115,7 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
+     split_amount = parent.assets * 0.5
+ 
+     # 2. Deduct from parent
+-    parent._assets -= split_amount
++    parent.econ_component._assets -= split_amount
+ 
+     # 3. Create child with deducted amount
+     child = parent.clone(new_id=999, initial_assets_from_parent=split_amount, current_tick=100)
