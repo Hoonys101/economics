@@ -45,6 +45,10 @@
       "18290535406723367891": {
         "title": "Fix Asset Leak in DemographicManager",
         "initial_mission": "1. simulation/systems/demographic_manager.py의 process_births 메서드를 수정하세요. 2. 신생아에게 초기 자금(initial_gift..."
+      },
+      "6297829752984181635": {
+        "title": "Enforce DTO Purity in Decision Engines",
+        "initial_mission": "1. simulation/decisions/ai_driven_household_engine.py를 수정하세요. 2. _make_decisions_internal 메서드 등에서 co..."
       }
     },
     "completed_sessions": {
