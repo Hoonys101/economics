@@ -24,6 +24,10 @@
 | **TD-113** | 2026-01-24 | **Non-atomic Transfer Fallbacks** | Remove legacy `withdraw/deposit` fallbacks in `TransactionProcessor` | Asset destruction risk | **STRUCTURAL_RISK** |
 | **TD-114** | 2026-01-25 | **Sparse System Tests** | Add tests for Housing, Education, etc. | Regression Risk | **STRUCTURAL_RISK** |
 | **TD-115** | 2026-01-25 | **Tick 1 Financial Leak (-99,680)** | Identify source of 99k asset destruction at simulation start | Monetary Integrity | **CRITICAL** |
+| **TD-116** | 2026-01-26 | **Inheritance Residual Evaporation** | Exact distribution with residue to last heir (math.floor) | Zero-Sum Integrity | **ACTIVE** |
+| **TD-117** | 2026-01-26 | **Structural Purity: DTO-Only Decisions** | Replace live objects with MarketSnapshotDTO in make_decision | Purity Gate Violation | **ACTIVE** |
+| **TD-118** | 2026-01-26 | **CommerceSystem Sequence Violation** | Split execution into 4-Phase integration in TickScheduler | Sacred Sequence Compliance| **ACTIVE** |
+| **TD-119** | 2026-01-26 | **Implicit IBankService (Ghost Interface)** | Formally define IBankService(Protocol) in modules/finance/api.py | Interface Consistency | **LOW_PRIORITY** |
 
 ---
 

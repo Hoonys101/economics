@@ -1,0 +1,37 @@
+# 🦅 Protocol: Governance & Administration
+
+This protocol defines the roles, responsibilities, and administrative procedures for the Economics Simulation Project.
+
+---
+
+## 🏛️ 1. Project Roles
+| Role | Entity | Responsibility |
+|---|---|---|
+| **PM** | User (Hoonys101) | Final decision making, vision, tool execution (`.bat` files). |
+| **Architect** | Antigravity (AI) | Planning, Spec writing, PR Review, Task delegation. |
+| **Implementer** | Jules (AI/Human) | Code implementation, test writing, PR creation. |
+
+---
+
+## ⚔️ 2. Core Governance Rules (Inviolable)
+1.  **Direct Coding Ban**: The Architect (Antigravity/AI) MUST NOT move code directly into the source. All changes must go through a Jules session.
+2.  **HITL (Human-In-The-Loop)**: Execution of `.bat` files is the **exclusive right** of the PM (User). The Architect drafts the commands in the SCR Registry; the User fires them.
+3.  **Zero-Question Specs**: Specs must be detailed enough for Jules to implement without further clarification.
+4.  **Collective Accountability**: Implementer is responsible for execution (no crashes, no `NaN`). Architect is responsible for logic (economic correctness).
+
+---
+
+## 🐙 3. PR Review & Security
+PRs are reviewed by the **Git Reviewer** worker.
+- **Criteria**: Zero-Sum violation, Security/Hardcoding leaks, Code Purity, SoC compliance.
+- **Verdict**: Must receive an **APPROVE** verdict from the Reviewer before the PM merges.
+
+---
+
+## 🏁 4. Session Conclusion & Cleanup
+At the end of every work session, the Architect MUST:
+1.  **Update Status**: Update `design/project_status.md` and `task.md`.
+2.  **Manage Debt**: Record all deferred items in `design/TECH_DEBT_LEDGER.md`.
+3.  **Handover**: Draft a `design/handovers/HANDOVER_YYYY-MM-DD.md` with the next session's "First Task".
+4.  **Sync**: Ensure `design/SESSION_LEDGER.md` reflects all active/completed sessions.
+5.  **Commit**: Push all documentation changes to `main`.

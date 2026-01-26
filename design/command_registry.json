@@ -1,26 +1,18 @@
 {
-  "_meta": {
-    "session": "Architectural Integrity & Leak Resolution (TD-109/110/115)",
-    "updated": "2026-01-25",
-    "author": "Antigravity (Supervisor)"
-  },
-  "gemini": {
-    "worker": "spec",
-    "instruction": "Generate a comprehensive 'Consolidated Technical Debt Resolution Report' for TD-109 (Sacred Sequence Compliance), TD-110 (Phantom Tax Fix), and TD-115 (Tick 1 -99,680 Leak). \n\nFocus on:\n1. Proof of resolution: How initialization reordering eliminated the Tick 1 leak.\n2. Architectural Purity: How converting Government/Education spending to deferred Transactions and using SystemEffectsManager handlers enforced the Sacred Sequence.\n3. Financial Integrity: Confirmation that all fixes maintain zero-sum stability as per the Gold Standard (WO-016).\n\nOutput should be saved to design/gemini_output/CONSOLIDATED_RESOLUTION_REPORT.md.",
-    "context": [
-      "design/audits/ROOT_CAUSE_PROFILE.md",
-      "simulation/initialization/initializer.py",
-      "simulation/agents/government.py",
-      "simulation/systems/ministry_of_education.py",
-      "simulation/systems/system_effects_manager.py",
-      "simulation/systems/transaction_processor.py",
-      "simulation/tick_scheduler.py"
-    ],
-    "walkthrough": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\1177222d-3e86-470b-9bbd-773d20c27aa9\\walkthrough.md"
-  },
-  "final_integrity_verification": {
+  "jules": {
     "command": "create",
-    "instruction": "Run scripts/trace_leak.py to verify that the Tick 1 leak (-99,680) is resolved and the Sacred Sequence for government spending is functioning. If any anomalies (hangs, money supply delta > 1.0, agent deactivation) are detected, perform a root cause analysis. Reference design/handover/walkthrough.md.",
-    "title": "Final Integrity Trace & Analysis"
-  }
+    "title": "Remediation_TD116_117_118",
+    "session_id": "",
+    "instruction": "Implement the core structural and economic integrity fixes for TD-116 (Inheritance Leaks), TD-117 (DTO-Only Decisions), and TD-118 (CommerceSystem Sequence Integration). \n\nFocus on exact inheritance distribution logic, refactoring make_decision to use Snapshot DTOs, and splitting CommerceSystem into Plan/Finalize phases within the 4-Phase Sacred Sequence.",
+    "file": "design/specs/D_REMEDIATION_TD116_117_118.md",
+    "wait": true
+  },
+  "git_review": {
+    "branch": "main",
+    "instruction": "Analyze this PR. Check behavior logic and test coverage."
+  },
+  "merge": {
+    "branch": ""
+  },
+  "harvest": {}
 }
