@@ -668,6 +668,8 @@ class Household(BaseAgent, ILearningAgent):
         government: Optional[Any] = None,
         macro_context: Optional[MacroFinancialContext] = None,
         stress_scenario_config: Optional["StressScenarioConfig"] = None,
+        market_snapshot: Optional[Any] = None,
+        government_policy: Optional[Any] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
 
         # 0. Update Social Status (Before Decision)
@@ -742,7 +744,9 @@ class Household(BaseAgent, ILearningAgent):
             market_data=market_data,
             current_time=current_time,
             government=government,
-            stress_scenario_config=stress_scenario_config
+            stress_scenario_config=stress_scenario_config,
+            market_snapshot=market_snapshot,
+            government_policy=government_policy
         )
 
         # 2. Call Decision Engine

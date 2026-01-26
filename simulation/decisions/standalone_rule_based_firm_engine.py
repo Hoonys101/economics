@@ -44,7 +44,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         생산 조정, 임금 조정, 가격 조정에 집중한다.
         """
         firm = context.state # FirmStateDTO
-        markets = context.markets
+        # markets = context.markets # Removed for DTO purity
         goods_data = context.goods_data
         market_data = context.market_data
         current_time = context.current_time

@@ -277,6 +277,36 @@ class TickScheduler:
         )
         state.household_time_allocation = household_time_allocation # Update state
 
+        # TD-118: Commerce Planning (Phase 1 Extension)
+        # Prepare context for CommerceSystem
+        current_vacancies = 0
+        labor_market = state.markets.get("labor")
+        if labor_market and isinstance(labor_market, OrderBookMarket):
+             for item_orders in labor_market.buy_orders.values():
+                 for order in item_orders:
+                     current_vacancies += order.quantity
+
+        consumption_market_data = market_data.copy()
+        consumption_market_data["job_vacancies"] = current_vacancies
+
+        commerce_context: CommerceContext = {
+            "households": state.households,
+            "agents": state.agents,
+            "breeding_planner": state.breeding_planner,
+            "household_time_allocation": household_time_allocation,
+            "reflux_system": state.reflux_system,
+            "market_data": consumption_market_data,
+            "config": state.config_module,
+            "time": state.time
+        }
+
+        if state.commerce_system:
+            planned_cons, commerce_txs = state.commerce_system.plan_consumption_and_leisure(
+                commerce_context, state.stress_scenario_config
+            )
+            sim_state.planned_consumption = planned_cons
+            system_transactions.extend(commerce_txs)
+
         # 2. Matching
         self._phase_matching(sim_state)
 
@@ -518,6 +548,63 @@ class TickScheduler:
         household_pre_states = {}
         household_time_allocation = {}
 
+        # --- TD-117: Create DTOs ---
+        from simulation.dtos.api import MarketSnapshotDTO, GovernmentPolicyDTO
+
+        # Create MarketSnapshotDTO
+        prices = {}
+        volumes = {}
+        asks = {}
+        best_asks = {}
+
+        for m_id, market in state.markets.items():
+            if hasattr(market, "get_daily_avg_price"):
+                 prices[m_id] = market.get_daily_avg_price()
+            if hasattr(market, "get_daily_volume"):
+                 volumes[m_id] = market.get_daily_volume()
+
+            # Extract Asks
+            if hasattr(market, "sell_orders"):
+                for item_id, orders in market.sell_orders.items():
+                    asks[item_id] = orders
+
+                    # Best Ask
+                    if orders:
+                        if hasattr(market, "get_best_ask"):
+                            best_asks[item_id] = market.get_best_ask(item_id)
+                        else:
+                            best_asks[item_id] = orders[0].price if orders else 0.0
+            elif hasattr(market, "get_best_ask"):
+                # Fallback for markets without exposed sell_orders but with get_best_ask (e.g. StockMarket?)
+                # We iterate known items or catch on demand?
+                # Stock market uses firm_id as item_id.
+                # For now we rely on explicit loops if needed, or assume OrderBookMarket structure.
+                pass
+
+        # Stock Market Prices
+        if state.stock_market:
+            for firm in state.firms:
+                if firm.is_active:
+                    price = state.stock_market.get_stock_price(firm.id)
+                    prices[f"stock_{firm.id}"] = price
+
+        market_snapshot = MarketSnapshotDTO(
+            prices=prices,
+            volumes=volumes,
+            asks=asks,
+            best_asks=best_asks
+        )
+
+        # Create GovernmentPolicyDTO
+        gov = state.government
+        bank = state.bank
+        gov_policy = GovernmentPolicyDTO(
+             income_tax_rate=gov.income_tax_rate if hasattr(gov, "income_tax_rate") else 0.1,
+             sales_tax_rate=getattr(state.config_module, "SALES_TAX_RATE", 0.05),
+             corporate_tax_rate=gov.corporate_tax_rate if hasattr(gov, "corporate_tax_rate") else 0.2,
+             base_interest_rate=bank.base_rate if hasattr(bank, "base_rate") else 0.05
+        )
+
         # 1. Firms
         for firm in state.firms:
             if firm.is_active:
@@ -543,7 +630,8 @@ class TickScheduler:
 
                 firm_orders, action_vector = firm.make_decision(
                     state.markets, state.goods_data, market_data, state.time,
-                    state.government, state.reflux_system, stress_config
+                    state.government, state.reflux_system, stress_config,
+                    market_snapshot=market_snapshot, government_policy=gov_policy
                 )
 
                 for order in firm_orders:
@@ -568,7 +656,8 @@ class TickScheduler:
 
                 stress_config = self.world_state.stress_scenario_config
                 household_orders, action_vector = household.make_decision(
-                    state.markets, state.goods_data, market_data, state.time, state.government, macro_context, stress_config
+                    state.markets, state.goods_data, market_data, state.time, state.government, macro_context, stress_config,
+                    market_snapshot=market_snapshot, government_policy=gov_policy
                 )
 
                 if hasattr(action_vector, 'work_aggressiveness'):
@@ -649,12 +738,62 @@ class TickScheduler:
 
     def _phase_lifecycle(self, state: SimulationState) -> None:
         """Phase 4: Agent Lifecycle."""
+        # 1. Agent Lifecycle (Aging, Birth, Death)
         if self.world_state.lifecycle_manager:
             lifecycle_txs = self.world_state.lifecycle_manager.execute(state)
             if lifecycle_txs:
                 self.world_state.inter_tick_queue.extend(lifecycle_txs)
         else:
             state.logger.error("LifecycleManager not initialized.")
+
+        # 2. Commerce Finalization (Consumption & Leisure Effects) - TD-118
+        # Re-construct context or pass relevant data?
+        # Ideally we reuse context but it's local to run_tick.
+        # We'll reconstruct minimal context here or rely on state.
+        # Actually, finalized consumption needs time_allocation which is in state (updated in run_tick).
+
+        # We need to reconstruct CommerceContext.
+        # Since _phase_lifecycle is a method, we can't easily pass the local commerce_context from run_tick
+        # without changing signature.
+        # We'll reconstruct it. It's cheap.
+
+        consumption_market_data = state.market_data # Use existing
+
+        # Household time allocation is needed.
+        # state.households is available.
+        # We need to know who is active.
+        # We need 'household_time_allocation' which IS NOT in SimulationState DTO explicitly?
+        # Check SimulationState definition in api.py.
+        # I didn't add it.
+        # But 'household_time_allocation' is returned by _phase_decisions and stored in WorldState (self.world_state.household_time_allocation).
+        # We can access it via self.world_state if needed, but 'state' arg here is SimulationState DTO.
+        # SimulationState doesn't have it.
+        # But we updated WorldState in run_tick: `state.household_time_allocation = household_time_allocation`.
+        # So we can access self.world_state.household_time_allocation.
+
+        commerce_context: CommerceContext = {
+            "households": state.households,
+            "agents": state.agents,
+            "breeding_planner": self.world_state.breeding_planner,
+            "household_time_allocation": getattr(self.world_state, "household_time_allocation", {}),
+            "reflux_system": state.reflux_system,
+            "market_data": state.market_data,
+            "config": state.config_module,
+            "time": state.time
+        }
+
+        if self.world_state.commerce_system:
+            leisure_effects = self.world_state.commerce_system.finalize_consumption_and_leisure(
+                commerce_context, state.planned_consumption
+            )
+            # Store effects for learning?
+            # Learning update happens in Post-Tick.
+            # We should probably store this somewhere.
+            # The original code returned it from execute_consumption_and_leisure and used it in Learning Update.
+            # In run_tick, we need `household_leisure_effects` variable.
+            # We should store it in SimulationState or WorldState?
+            # WorldState seems appropriate for transient tick data.
+            self.world_state.household_leisure_effects = leisure_effects
 
     def prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
         """현재 틱의 시장 데이터를 에이전트의 의사결정을 위해 준비합니다."""

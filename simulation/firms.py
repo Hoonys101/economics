@@ -314,7 +314,8 @@ class Firm(BaseAgent, ILearningAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None
+        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
+        market_snapshot: Optional[Any] = None, government_policy: Optional[Any] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
@@ -342,6 +343,8 @@ class Firm(BaseAgent, ILearningAgent):
             government=government,
             reflux_system=reflux_system,
             stress_scenario_config=stress_scenario_config,
+            market_snapshot=market_snapshot,
+            government_policy=government_policy
         )
         decisions, tactic = self.decision_engine.make_decisions(context)
 

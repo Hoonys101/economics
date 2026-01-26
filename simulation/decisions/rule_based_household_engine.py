@@ -43,7 +43,8 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
         state: HouseholdStateDTO = context.state
         config: HouseholdConfigDTO = context.config
         
-        markets = context.markets
+        # TD-117: Use DTOs
+        market_snapshot = context.market_snapshot
         market_data = context.market_data
         current_time = context.current_time
 
@@ -68,9 +69,9 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
 
                 needed_quantity = target_buffer - food_in_inventory
                 market_id = food_item_id 
-                market = markets.get(market_id)
 
-                best_ask = market.get_best_ask(item_id=food_item_id) if market else None
+                # TD-117: Use MarketSnapshotDTO
+                best_ask = market_snapshot.best_asks.get(food_item_id) if market_snapshot else None
 
                 if best_ask is None or best_ask == 0:
                     best_ask = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
