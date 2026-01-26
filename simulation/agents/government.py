@@ -1,4 +1,5 @@
 import logging
+import warnings
 from typing import Dict, List, Any, Deque, Tuple
 from collections import deque
 from simulation.ai.enums import PoliticalParty
@@ -174,7 +175,16 @@ class Government:
         """
         Legacy adapter method used by TransactionProcessor.
         Now delegates to the new atomic collect_tax and records revenue.
+
+        DEPRECATED: Direct usage of this method is discouraged.
+        Use tax_agency.collect_tax() followed by government.record_revenue().
         """
+        warnings.warn(
+            "Government.collect_tax is deprecated. Use tax_agency.collect_tax() and government.record_revenue() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         if not self.settlement_system:
             logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
             return {

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import math
 from modules.common.config_manager.api import ConfigManager
-from modules.finance.api import InsufficientFundsError, IFinancialEntity
+from modules.finance.api import InsufficientFundsError, IBankService
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
 
@@ -39,7 +39,7 @@ class Deposit:
     def tick_interest_rate(self) -> float:
         return self.annual_interest_rate / TICKS_PER_YEAR
 
-class Bank(IFinancialEntity):
+class Bank(IBankService):
     """
     Phase 3: Central & Commercial Bank Hybrid System.
     WO-109: Refactored for Sacred Sequence (Transactions).

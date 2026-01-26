@@ -19,7 +19,6 @@
 | **TD-107** | 2026-01-23 | **Leaky Abstraction (HR Back-ref & Demeter)** | Remove back-references from components to DecisionContext | High Coupling | **STRUCTURAL_RISK** |
 | **TD-108** | 2026-01-23 | **Stateful Engine Violation (Market & Govt Injection)** | Inject markets and GovernmentStateDTO via DecisionContext | Purity Gate Violation | **STRUCTURAL_RISK** |
 | **TD-109** | 2026-01-23 | **Sacred Sequence Violation** | Move asset transfers (taxes, profit, infra) into Transaction Phase | Atomicity / Integration Risk | **PARTIALLY_RESOLVED** (Pending Fix) |
-| **TD-110** | 2026-01-24 | **Phantom Tax Revenue (Stats Failure)** | Decouple tax recording from transfer; fix `TaxAgency` logic | Budget analytics failure | **IN_PROGRESS** |
 | **TD-111** | 2026-01-24 | **Reflux Alchemy (M2 Inflation)** | Exclude `RefluxSystem` balance from M2 calculation | Monetary Integrity | **ECONOMIC_RISK** |
 | **TD-113** | 2026-01-24 | **Non-atomic Transfer Fallbacks** | Remove legacy `withdraw/deposit` fallbacks in `TransactionProcessor` | Asset destruction risk | **STRUCTURAL_RISK** |
 | **TD-114** | 2026-01-25 | **Sparse System Tests** | Add tests for Housing, Education, etc. | Regression Risk | **STRUCTURAL_RISK** |
@@ -27,7 +26,7 @@
 | **TD-116** | 2026-01-26 | **Inheritance Residual Evaporation** | Exact distribution with residue to last heir (math.floor) | Zero-Sum Integrity | **ACTIVE** |
 | **TD-117** | 2026-01-26 | **Structural Purity: DTO-Only Decisions** | Replace live objects with MarketSnapshotDTO in make_decision | Purity Gate Violation | **ACTIVE** |
 | **TD-118** | 2026-01-26 | **CommerceSystem Sequence Violation** | Split execution into 4-Phase integration in TickScheduler | Sacred Sequence Compliance| **ACTIVE** |
-| **TD-119** | 2026-01-26 | **Implicit IBankService (Ghost Interface)** | Formally define IBankService(Protocol) in modules/finance/api.py | Interface Consistency | **LOW_PRIORITY** |
+| **TD-120** | 2026-01-27 | **Refactor TransactionProcessor Tax Calls** | Inject TaxAgency; use atomic collection pattern | Maintenance Risk | **ACTIVE** |
 
 ---
 
@@ -54,6 +53,8 @@
 | TD-105 | 2026-01-24 | Positive Drift (+320) | Fix Reflux atomic transfer (TD-105) | Zero-sum violation | **RESOLVED** |
 | TD-106 | 2026-01-24 | Bankruptcy Money Leak | Link Bankruptcy to Settlement (TD-106) | Zero-sum violation | **RESOLVED** |
 | TD-112 | 2026-01-25 | Inheritance Rounding | Integer distribution (TD-112) | System Crash | **RESOLVED** |
+| TD-110 | 2026-01-24 | Phantom Tax Revenue | Enforce Settle->Record pattern (WO-120) | Budget analytics failure | **RESOLVED** |
+| TD-119 | 2026-01-26 | Implicit IBankService | Formalize IBankService Protocol (WO-120) | Interface Consistency | **RESOLVED** |
 
 ---
 
