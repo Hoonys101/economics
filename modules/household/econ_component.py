@@ -244,7 +244,7 @@ class EconComponent(IEconComponent):
         """
         market_data = context.market_data
         current_time = context.current_time
-        markets = context.markets
+        market_snapshot = context.market_snapshot
 
         # 1. System 2 Housing Decision (Run Logic)
         self._decide_housing(market_data, current_time)
@@ -254,21 +254,18 @@ class EconComponent(IEconComponent):
 
         # 3. Execute System 2 Housing Decision (Generate Orders)
         if self.housing_target_mode == "BUY" and self.is_homeless:
-            housing_market = markets.get("housing")
-            if housing_market:
-                target_unit_id = None
-                best_price = float('inf')
+            target_unit_id = None
+            best_price = float('inf')
 
-                # Check for available units
-                if hasattr(housing_market, "sell_orders"):
-                    for item_id, sell_orders in housing_market.sell_orders.items():
-                        if item_id.startswith("unit_") and sell_orders:
-                            ask_price = sell_orders[0].price
-                            if ask_price < best_price:
-                                best_price = ask_price
-                                target_unit_id = item_id
+            # Check for available units via DTO
+            for item_id, asks in market_snapshot.asks.items():
+                if item_id.startswith("unit_") and asks:
+                    ask_price = asks[0].price
+                    if ask_price < best_price:
+                        best_price = ask_price
+                        target_unit_id = item_id
 
-                if target_unit_id:
+            if target_unit_id:
                      # Check affordability (20% down payment)
                      down_payment = best_price * 0.2
                      if self.assets >= down_payment:
@@ -324,7 +321,7 @@ class EconComponent(IEconComponent):
 
             if order.order_type == "BUY" and order.target_agent_id is None:
                 # Select best seller
-                best_seller_id, best_price = self.market_component.choose_best_seller(order.item_id, {"markets": markets})
+                best_seller_id, best_price = self.market_component.choose_best_seller(order.item_id, {"market_snapshot": market_snapshot})
                 if best_seller_id:
                     order.target_agent_id = best_seller_id
             refined_orders.append(order)

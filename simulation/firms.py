@@ -11,7 +11,7 @@ from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext, FirmConfigDTO
+from simulation.dtos import DecisionContext, FirmConfigDTO, MarketSnapshotDTO, GovernmentPolicyDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 
@@ -314,7 +314,7 @@ class Firm(BaseAgent, ILearningAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None
+        self, market_snapshot: MarketSnapshotDTO, government_policy: GovernmentPolicyDTO, goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
@@ -335,11 +335,11 @@ class Firm(BaseAgent, ILearningAgent):
         context = DecisionContext(
             state=state_dto,
             config=config_dto,
-            markets=markets,
+            market_snapshot=market_snapshot,
+            government_policy=government_policy,
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
-            government=government,
             reflux_system=reflux_system,
             stress_scenario_config=stress_scenario_config,
         )
@@ -349,12 +349,13 @@ class Firm(BaseAgent, ILearningAgent):
         external_orders = []
         for order in decisions:
             if order.market_id == "internal":
-                self._execute_internal_order(order, government, current_time, reflux_system)
+                # Note: government access removed from make_decision, passing None.
+                self._execute_internal_order(order, None, current_time, reflux_system)
             else:
                 external_orders.append(order)
 
         # WO-056: Shadow Mode Calculation
-        self._calculate_invisible_hand_price(markets, current_time)
+        self._calculate_invisible_hand_price(market_snapshot, current_time)
 
         # SoC Refactor
         self.logger.debug(
@@ -444,19 +445,14 @@ class Firm(BaseAgent, ILearningAgent):
             self.productivity_factor *= 1.05
             self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {budget:.1f})")
 
-    def _calculate_invisible_hand_price(self, markets: Dict[str, Any], current_tick: int) -> None:
+    def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         """
         WO-056: Stage 1 Shadow Mode (Price Discovery 2.0).
         Calculates and logs the shadow price based on Excess Demand.
         """
-        market = markets.get(self.specialization)
-        # Check if market supports order book inspection
-        if not market or not hasattr(market, 'get_all_bids'):
-            return
-
-        # 1. Get Demand and Supply (Market-wide for this good)
-        bids = market.get_all_bids(self.specialization)
-        asks = market.get_all_asks(self.specialization)
+        # 1. Get Demand and Supply (Market-wide for this good) from DTO
+        bids = market_snapshot.bids.get(self.specialization, [])
+        asks = market_snapshot.asks.get(self.specialization, [])
 
         demand = sum(o.quantity for o in bids)
         supply = sum(o.quantity for o in asks)

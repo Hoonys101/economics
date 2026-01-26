@@ -14,7 +14,7 @@ from simulation.ai.api import (
     Aggressiveness,
 )
 from simulation.core_markets import Market
-from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, HouseholdConfigDTO
+from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, HouseholdConfigDTO, MarketSnapshotDTO, GovernmentPolicyDTO
 from simulation.portfolio import Portfolio
 
 from simulation.ai.household_ai import HouseholdAI
@@ -661,11 +661,11 @@ class Household(BaseAgent, ILearningAgent):
     @override
     def make_decision(
         self,
-        markets: Dict[str, "Market"],
+        market_snapshot: MarketSnapshotDTO,
+        government_policy: GovernmentPolicyDTO,
         goods_data: List[Dict[str, Any]],
         market_data: Dict[str, Any],
         current_time: int,
-        government: Optional[Any] = None,
         macro_context: Optional[MacroFinancialContext] = None,
         stress_scenario_config: Optional["StressScenarioConfig"] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
@@ -737,11 +737,11 @@ class Household(BaseAgent, ILearningAgent):
         context = DecisionContext(
             state=state_dto,
             config=config_dto,
-            markets=markets,
+            market_snapshot=market_snapshot,
+            government_policy=government_policy,
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
-            government=government,
             stress_scenario_config=stress_scenario_config
         )
 
@@ -749,7 +749,7 @@ class Household(BaseAgent, ILearningAgent):
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
 
         # 3. Orchestrate/Refine Orders via EconComponent
-        econ_context = EconContextDTO(markets, market_data, current_time)
+        econ_context = EconContextDTO(market_snapshot, market_data, current_time)
         refined_orders = self.econ_component.orchestrate_economic_decisions(econ_context, orders, stress_scenario_config)
 
         return refined_orders, chosen_tactic_tuple

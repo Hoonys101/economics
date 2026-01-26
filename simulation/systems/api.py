@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from simulation.dtos import GovernmentStateDTO, LeisureEffectDTO
     from simulation.markets.market import Market
     from simulation.dtos.scenario import StressScenarioConfig
-    from simulation.dtos.api import SimulationState
+    from simulation.dtos.api import SimulationState, MarketSnapshotDTO
 
 
 # ===================================================================
@@ -67,7 +67,7 @@ class LifecycleContext(TypedDict):
 
 class MarketInteractionContext(TypedDict):
     """시장 상호작용 컴포넌트에 필요한 데이터입니다."""
-    markets: Dict[str, 'Market']
+    market_snapshot: 'MarketSnapshotDTO'
 
 class LearningUpdateContext(TypedDict):
     """에이전트의 AI 학습 업데이트에 필요한 데이터입니다."""
@@ -133,11 +133,17 @@ class ICommerceSystem(Protocol):
     """틱의 소비 및 여가 부분을 관리하는 시스템의 인터페이스입니다."""
     def __init__(self, config: Any, reflux_system: 'EconomicRefluxSystem'): ...
 
-    def execute_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Dict[int, float]:
+    def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Any]]:
         """
-        가계 소비, 긴급 구매(fast-track purchases), 여가 효과를 조율합니다.
+        Phase 1 (Decisions): 소비 및 여가 계획 수립.
         Returns:
-            Dict[int, float]: 가계 ID별 여가 효용(Leisure Utility) 맵.
+            Tuple[Dict, List[Order]]: (Consumption Plans, Generated Orders)
+        """
+        ...
+
+    def finalize_consumption_and_leisure(self, context: CommerceContext, planned_consumption: Dict[int, Dict[str, Any]]) -> Dict[int, float]:
+        """
+        Phase 4 (Lifecycle): 소비 실행 및 여가 효과 적용.
         """
         ...
 
