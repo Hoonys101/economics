@@ -29,6 +29,10 @@
       "16308090739982688151": {
         "title": "Hotfix_AI_Engine_NameError",
         "initial_mission": "Fix the NameError in `simulation/decisions/ai_driven_household_engine.py` around L331. The variable ..."
+      },
+      "11662040635592794647": {
+        "title": "Hotfix_Correction_Magic_Numbers",
+        "initial_mission": "PR Review result: REQUEST_CHANGES. Fix the following:\n1. [ai_driven_household_engine.py:L356]: Repla..."
       }
     },
     "completed_sessions": {

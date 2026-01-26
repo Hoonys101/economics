@@ -4,11 +4,11 @@
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "jules_hotfix_correction": {
+  "WO-121": {
     "command": "create",
-    "title": "Hotfix_Correction_Magic_Numbers",
-    "instruction": "PR Review result: REQUEST_CHANGES. Fix the following:\n1. [ai_driven_household_engine.py:L356]: Replace hardcoded mortgage rate 0.05 with `self.config_module.DEFAULT_MORTGAGE_RATE`. \n2. Update the config module to include this default value.\n3. Ensure tests reflect this change and don't rely on magic numbers.\n4. Verify that all 'markets' or 'housing_market' references use context.market_snapshot or context.markets correctly.",
-    "file": "simulation/decisions/ai_driven_household_engine.py",
-    "wait": true
+    "title": "Fix Housing Money Leak",
+    "instruction": "Execute work order WO-121 to fix the 320.00 money leak in Housing System.",
+    "file": "design/work_orders/WO-121-HousingLeak.md",
+    "status": "ready"
   }
 }
