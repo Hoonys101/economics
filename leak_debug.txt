@@ -1,0 +1,673 @@
+2026-01-26 13:57:30 [INFO] root: Logging setup complete with basic configuration (config file not found). Standard format applied.
+2026-01-26 13:57:30 [WARNING] root: SamplingFilter not found in logging handlers. Sampling rates not applied.
+2026-01-26 13:57:30 [INFO] root: Initializing simulation.
+2026-01-26 13:57:30 [INFO] simulation.db.repository: All simulation data cleared and VACUUMed database.
+2026-01-26 13:57:30 [INFO] simulation.ai.model_wrapper: No existing model found for wealth_and_needs.
+2026-01-26 13:57:30 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_growth.
+2026-01-26 13:57:30 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_social_status.
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 0 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 0 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 1 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 1 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 2 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 2 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 3 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 3 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 4 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 4 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 5 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 5 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 6 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 6 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 7 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 7 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 8 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 8 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 9 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 9 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 10 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 10 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 11 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 11 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 12 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 12 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 13 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 13 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 14 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 14 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 15 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 15 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 16 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 16 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 17 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 17 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 18 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 18 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 19 initialized (Refactored).
+2026-01-26 13:57:30 [DEBUG] main: HOUSEHOLD_INIT | Household 19 initialized (Refactored).
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-26 13:57:30 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-01-26 13:57:30 [INFO] root: Firm 20 initially hired Household 19.
+2026-01-26 13:57:30 [INFO] root: Firm 20 initially hired Household 14.
+2026-01-26 13:57:30 [INFO] root: Firm 21 initially hired Household 5.
+2026-01-26 13:57:30 [INFO] root: Firm 21 initially hired Household 9.
+2026-01-26 13:57:30 [INFO] root: Firm 22 initially hired Household 4.
+2026-01-26 13:57:30 [INFO] root: Firm 22 initially hired Household 16.
+2026-01-26 13:57:30 [INFO] root: Firm 23 initially hired Household 15.
+2026-01-26 13:57:30 [INFO] root: Firm 23 initially hired Household 8.
+2026-01-26 13:57:30 [INFO] simulation.bank: Bank 24 initialized. Assets: 1000000.00
+2026-01-26 13:57:30 [INFO] simulation.agents.government: Government 25 initialized with assets: 0.0
+2026-01-26 13:57:30 [INFO] simulation.agents.central_bank: CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+2026-01-26 13:57:30 [INFO] Market_basic_food: OrderBookMarket basic_food initialized.
+2026-01-26 13:57:30 [INFO] Market_clothing: OrderBookMarket clothing initialized.
+2026-01-26 13:57:30 [INFO] Market_luxury_food: OrderBookMarket luxury_food initialized.
+2026-01-26 13:57:30 [INFO] Market_education_service: OrderBookMarket education_service initialized.
+2026-01-26 13:57:30 [INFO] Market_iron: OrderBookMarket iron initialized.
+2026-01-26 13:57:30 [INFO] Market_consumer_goods: OrderBookMarket consumer_goods initialized.
+2026-01-26 13:57:30 [INFO] Market_luxury_bag: OrderBookMarket luxury_bag initialized.
+2026-01-26 13:57:30 [INFO] Market_labor: OrderBookMarket labor initialized.
+2026-01-26 13:57:30 [INFO] simulation.loan_market: LoanMarket loan_market initialized with bank: 24
+2026-01-26 13:57:30 [INFO] main: IPO | Firm 20 initialized IPO with 1000.0 shares. Par value: 58.94
+2026-01-26 13:57:30 [INFO] main: IPO | Firm 21 initialized IPO with 1000.0 shares. Par value: 40.91
+2026-01-26 13:57:30 [INFO] main: IPO | Firm 22 initialized IPO with 1000.0 shares. Par value: 56.86
+2026-01-26 13:57:30 [INFO] main: IPO | Firm 23 initialized IPO with 1000.0 shares. Par value: 44.53
+2026-01-26 13:57:30 [INFO] Market_housing: OrderBookMarket housing initialized.
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_4 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_5 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_6 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_7 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_8 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_9 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_10 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_11 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_12 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_13 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_14 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_15 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_16 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_17 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_18 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_19 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_20 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_21 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_22 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_23 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_24 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_25 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_26 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_27 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_28 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_29 at 10000.0 by 25
+2026-01-26 13:57:30 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_30 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_31 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_32 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_33 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_34 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_35 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_36 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_37 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_38 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_39 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_40 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_41 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_42 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_43 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_44 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_45 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_46 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_47 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_48 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_49 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_50 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_51 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_52 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_53 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_54 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_55 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_56 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_57 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_58 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_59 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_60 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_61 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_62 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_63 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_64 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_65 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_66 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_67 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_68 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_69 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_70 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_71 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_72 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_73 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_74 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_75 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_76 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_77 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_78 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_79 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_80 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_81 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_82 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_83 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_84 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_85 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_86 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_87 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_88 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_89 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_90 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_91 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_92 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_93 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_94 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_95 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_96 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_97 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_98 at 10000.0 by 25
+2026-01-26 13:57:31 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_99 at 10000.0 by 25
+2026-01-26 13:57:31 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 20
+2026-01-26 13:57:31 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 21
+2026-01-26 13:57:31 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 22
+2026-01-26 13:57:31 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 23
+2026-01-26 13:57:31 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected resources into 0 firms.
+2026-01-26 13:57:31 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Total force-assigned workers: 0
+2026-01-26 13:57:31 [INFO] simulation.ai.ai_training_manager: AITrainingManager initialized.
+2026-01-26 13:57:31 [INFO] simulation.systems.demographic_manager: DemographicManager initialized.
+2026-01-26 13:57:31 [INFO] main: Loaded Stress Scenario: phase29_depression (Active: False)
+2026-01-26 13:57:31 [INFO] simulation.db.repository: Started new simulation run with ID: 124
+2026-01-26 13:57:31 [INFO] main: Simulation run started with run_id: 124
+2026-01-26 13:57:31 [INFO] main: Simulation fully initialized with run_id: 124
+2026-01-26 13:57:31 [INFO] main: Initial baseline money supply established: 1,499,360.00
+2026-01-26 13:57:31 [INFO] main: MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: 1499360.00
+2026-01-26 13:57:31 [INFO] main: --- Starting Tick 1 ---
+2026-01-26 13:57:31 [INFO] main: Generated maintenance fee tx: 50.00
+2026-01-26 13:57:31 [DEBUG] main: BRAND_UPDATE | Firm 20: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.00, PercQ=0.40
+2026-01-26 13:57:31 [INFO] main: Generated maintenance fee tx: 50.00
+2026-01-26 13:57:31 [DEBUG] main: BRAND_UPDATE | Firm 21: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.00, PercQ=0.40
+2026-01-26 13:57:31 [INFO] main: Generated maintenance fee tx: 50.00
+2026-01-26 13:57:31 [DEBUG] main: BRAND_UPDATE | Firm 22: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.00, PercQ=0.40
+2026-01-26 13:57:31 [INFO] main: Generated maintenance fee tx: 50.00
+2026-01-26 13:57:31 [DEBUG] main: BRAND_UPDATE | Firm 23: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.00, PercQ=0.40
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 5000.00 from 24 to 25. Memo: Bond Purchase from 24
+2026-01-26 13:57:31 [INFO] modules.finance.system: BOND_SYNC_SUCCESS | Raised 5000.00 from 24
+2026-01-26 13:57:31 [INFO] simulation.agents.government: INFRASTRUCTURE_PENDING | Level 1 initiated. Cost: 5000.0
+2026-01-26 13:57:31 [INFO] main: DEBUG_MONEY | Steps 0-6 Complete. Money: 1,499,360.00
+2026-01-26 13:57:31 [DEBUG] Market_basic_food: Market basic_food orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Market clothing orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Market luxury_food orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Market education_service orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_iron: Market iron orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Market consumer_goods orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Market luxury_bag orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_labor: Market labor orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_housing: Market housing orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] simulation.metrics.economic_tracker: TRACKER_UPDATE | Starting tracker update for tick 1
+2026-01-26 13:57:31 [INFO] simulation.utils.shadow_logger: ShadowLogger initialized at logs/shadow_hand_stage1.csv
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_START | Firm 20 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 20 | Vector: FirmActionVector(sales_aggressiveness=1.0, hiring_aggressiveness=0.75, rd_aggressiveness=0.0, capital_aggressiveness=0.25, dividend_aggressiveness=0.75, debt_aggressiveness=0.5)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 12250.00 from System (Deposit)
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 12250.00 from 20 to 999999. Memo: CAPEX
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 20 invested 12250.0 in CAPEX.
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 40.00 from 20 to 19. Memo: Severance Pay
+2026-01-26 13:57:31 [INFO] main: Household 19 is quitting from Firm 20
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 20 fired employee 19.
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_END | Firm 20 after decision: Assets=87710.00, Employees=1, is_active=True, Decisions=2
+2026-01-26 13:57:31 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 1.2000000000000002 by 20
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Firm 20 submitted 2 orders to markets.
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_START | Firm 21 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 21 | Vector: FirmActionVector(sales_aggressiveness=0.5, hiring_aggressiveness=0.75, rd_aggressiveness=0.75, capital_aggressiveness=0.0, dividend_aggressiveness=0.0, debt_aggressiveness=0.25)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 750.00 from System (Deposit)
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 750.00 from 21 to 999999. Memo: R&D Investment
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 21 R&D SUCCESS (Budget: 750.0)
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 40.00 from 21 to 5. Memo: Severance Pay
+2026-01-26 13:57:31 [INFO] main: Household 5 is quitting from Firm 21
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 21 fired employee 5.
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_END | Firm 21 after decision: Assets=99210.00, Employees=1, is_active=True, Decisions=2
+2026-01-26 13:57:31 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 1.5 by 21
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Firm 21 submitted 2 orders to markets.
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_START | Firm 22 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 22 | Vector: FirmActionVector(sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.25, dividend_aggressiveness=1.0, debt_aggressiveness=0.25)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 500.00 from System (Deposit)
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 500.00 from 22 to 999999. Memo: R&D Investment
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 22 R&D SUCCESS (Budget: 500.0)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 12250.00 from System (Deposit)
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 12250.00 from 22 to 999999. Memo: CAPEX
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 22 invested 12250.0 in CAPEX.
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 40.00 from 22 to 4. Memo: Severance Pay
+2026-01-26 13:57:31 [INFO] main: Household 4 is quitting from Firm 22
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 22 fired employee 4.
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_END | Firm 22 after decision: Assets=87210.00, Employees=1, is_active=True, Decisions=2
+2026-01-26 13:57:31 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 1.5 by 22
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Firm 22 submitted 2 orders to markets.
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_START | Firm 23 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 23 | Vector: FirmActionVector(sales_aggressiveness=0.25, hiring_aggressiveness=0.75, rd_aggressiveness=1.0, capital_aggressiveness=0.75, dividend_aggressiveness=1.0, debt_aggressiveness=1.0)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 1000.00 from System (Deposit)
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 1000.00 from 23 to 999999. Memo: R&D Investment
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 23 R&D SUCCESS (Budget: 1000.0)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 36750.00 from System (Deposit)
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 36750.00 from 23 to 999999. Memo: CAPEX
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 23 invested 36750.0 in CAPEX.
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 40.00 from 23 to 15. Memo: Severance Pay
+2026-01-26 13:57:31 [INFO] main: Household 15 is quitting from Firm 23
+2026-01-26 13:57:31 [INFO] main: INTERNAL_EXEC | Firm 23 fired employee 15.
+2026-01-26 13:57:31 [DEBUG] main: FIRM_DECISION_END | Firm 23 after decision: Assets=62210.00, Employees=1, is_active=True, Decisions=2
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: SELL 50.0 of clothing at 2.75 by 23
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Firm 23 submitted 2 orders to markets.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 16.501838615349456 by 0
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 31.266641586977915 by 0
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 28.803104738919618 by 0
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.68 by 0
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.961500000000001 by 0
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1439.3257132597353 by 0
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 0
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 0 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 16.121150036197825 by 1
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 30.54533691069061 by 1
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.285285596172873 by 1
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.64 by 1
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.92325 by 1
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1417.6315240921924 by 1
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 1
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 1 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 17.38331160890838 by 2
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 3.0 of luxury_food at 36.42217670437947 by 2
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.761184100657587 by 2
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.6 by 2
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.989081632504516 by 2
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1408.2327109529992 by 2
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 2
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 2 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 14.448906858690178 by 3
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 32.108681908200396 by 3
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 28.23672685548106 by 3
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.6 by 3
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.038 by 3
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1426.4926107202366 by 3
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 3
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 3 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [INFO] main: MONETARY_TRANS | HH 4 | iron | Need: 0.0 | ConsROI: 0.00 vs SavROI: 1.3650 | AggBuy: 0.03
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 15.755932340779408 by 4
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 28.360678213402934 by 4
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.96102191454717 by 4
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.62 by 4
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.999750000000001 by 4
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1368.9509894347825 by 4
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 4
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 4 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 16.43086450643447 by 5
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 33.75623487329351 by 5
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.79096126846336 by 5
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.64 by 5
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.038 by 5
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1405.108772589845 by 5
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 5
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 5 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 16.549587206659773 by 6
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 3.0 of luxury_food at 38.32535984700158 by 6
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.60051528134118 by 6
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.64 by 6
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.09316326500903 by 6
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1397.761003337565 by 6
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 6
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 6 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [INFO] main: MONETARY_TRANS | HH 7 | iron | Need: 0.0 | ConsROI: 0.00 vs SavROI: 0.6720 | AggBuy: 0.10
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 3.0 of clothing at 18.7446150098549 by 7
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 35.785174109722995 by 7
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.710998386908777 by 7
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.68 by 7
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.961500000000001 by 7
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1450.7068756714486 by 7
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 7
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 7 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 15.89547192247462 by 8
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 33.17424221660493 by 8
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 28.524471812608937 by 8
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.66 by 8
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.885000000000001 by 8
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1334.947789079626 by 8
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 8 submitted 6 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 15.519237641223057 by 9
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 31.038475282446115 by 9
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 28.476478820104525 by 9
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.64 by 9
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.038 by 9
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1412.2584294428266 by 9
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 9 submitted 6 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 15.742776288565729 by 10
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 34.98394730792384 by 10
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.142097641335752 by 10
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.66 by 10
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.09316326500903 by 10
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1438.5735876203544 by 10
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 10
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 10 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 15.767668255947477 by 11
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 33.19509106515258 by 11
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.877015851076845 by 11
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.62 by 11
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.038 by 11
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1356.5479300760985 by 11
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 11
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 11 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 15.657488847779135 by 12
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 34.611291137195984 by 12
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 28.210107444299187 by 12
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.66 by 12
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.937040816252258 by 12
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1407.8714682443217 by 12
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 12
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 12 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 17.623455035202895 by 13
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 30.21163720320496 by 13
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.96935986668816 by 13
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.66 by 13
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.885000000000001 by 13
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1398.5954891674926 by 13
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 13
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 13 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [INFO] main: MONETARY_TRANS | HH 14 | iron | Need: 0.0 | ConsROI: 0.00 vs SavROI: 1.0920 | AggBuy: 0.05
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 3.0 of clothing at 19.2742340552466 by 14
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 35.04406191863018 by 14
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 28.252567604483854 by 14
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.64 by 14
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.038 by 14
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1455.9828747013848 by 14
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 14 submitted 6 orders back to engine.
+2026-01-26 13:57:31 [INFO] main: MONETARY_TRANS | HH 15 | luxury_food | Need: 55.1 | ConsROI: 1.29 vs SavROI: 0.8400 | AggBuy: 0.75
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 3.0 of clothing at 17.345890217634967 by 15
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 33.11488132457585 by 15
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 29.787070535758552 by 15
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.6 by 15
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.885000000000001 by 15
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1412.8101500122705 by 15
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 15
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 15 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [INFO] main: MONETARY_TRANS | HH 16 | education_service | Need: 9.7 | ConsROI: 0.19 vs SavROI: 1.0920 | AggBuy: 0.18
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 16.39311479720327 by 16
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 34.42554107412687 by 16
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.93036365871075 by 16
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.68 by 16
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.999750000000001 by 16
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1366.333611986858 by 16
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 16 submitted 6 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 16.602627930031016 by 17
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 3.0 of luxury_food at 38.448190995861296 by 17
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 29.14358874113278 by 17
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.66 by 17
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.885000000000001 by 17
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1345.767317708702 by 17
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 17
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 17 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 16.33662258452107 by 18
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 36.112534134204466 by 18
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 28.306424613733405 by 18
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.62 by 18
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 6.961500000000001 by 18
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1446.9418667738043 by 18
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 18
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 18 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.household_system2: SYSTEM2_HOUSING | Force RENT due to DTI. Cost: 960.00 > Limit: 400.00
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Placing order: BUY 1.0 of clothing at 15.304991393442924 by 19
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Placing order: BUY 1.0 of luxury_food at 30.609982786885848 by 19
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Placing order: BUY 1.0 of education_service at 27.004608343775462 by 19
+2026-01-26 13:57:31 [DEBUG] Market_iron: Placing order: BUY 1.0 of iron at 3.68 by 19
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 7.145204081172783 by 19
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0 of luxury_bag at 1407.1392148516154 by 19
+2026-01-26 13:57:31 [DEBUG] Market_labor: Placing order: SELL 1 of labor at 7.84 by 19
+2026-01-26 13:57:31 [DEBUG] main: TRACE_ENGINE | Household 19 submitted 7 orders back to engine.
+2026-01-26 13:57:31 [INFO] Market_basic_food: Starting order matching for items: ['basic_food']
+2026-01-26 13:57:31 [INFO] Market_clothing: Starting order matching for items: ['clothing']
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 3.00 of clothing at 2.75. Buyer 14 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 3.00 of clothing at 2.75. Buyer 7 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 13 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 2 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 3.00 of clothing at 2.75. Buyer 15 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 17 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 6 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 0 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 5 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 16 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 18 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 1 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 8 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 11 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 4 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 10 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 12 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 9 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 19 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_clothing: MATCHED_TARGETED | 1.00 of clothing at 2.75. Buyer 3 -> Seller 23 (Targeted)
+2026-01-26 13:57:31 [INFO] Market_luxury_food: Starting order matching for items: ['luxury_food']
+2026-01-26 13:57:31 [INFO] Market_education_service: Starting order matching for items: ['education_service']
+2026-01-26 13:57:31 [INFO] Market_iron: Starting order matching for items: ['iron']
+2026-01-26 13:57:31 [INFO] Market_consumer_goods: Starting order matching for items: ['consumer_goods']
+2026-01-26 13:57:31 [INFO] Market_luxury_bag: Starting order matching for items: ['luxury_bag']
+2026-01-26 13:57:31 [INFO] Market_labor: Starting order matching for items: ['labor']
+2026-01-26 13:57:31 [INFO] Market_housing: No items to match in market housing at tick 1
+2026-01-26 13:57:31 [INFO] Market_housing: No items to match in market housing at tick 1
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 8.25 from 14 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 8.25 from 7 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 13 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 2 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 8.25 from 15 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 17 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 6 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 0 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 5 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 16 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 18 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 1 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 8 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 11 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 4 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 10 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 12 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 9 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 19 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 2.75 from 3 to 23. Memo: goods_trade:clothing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 20 to 19. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 20 to 14. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 4.43 from 20 to 25. Memo: generic:holding_cost
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 50.00 from 20 to 25. Memo: firm_maintenance collection
+2026-01-26 13:57:31 [INFO] simulation.systems.tax_agency: TAX_COLLECTION_SUCCESS | Tick 1 | Collected 50.00 of firm_maintenance from 20
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 20 to 25. Memo: generic:marketing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 21 to 5. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 21 to 9. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 4.43 from 21 to 25. Memo: generic:holding_cost
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 50.00 from 21 to 25. Memo: firm_maintenance collection
+2026-01-26 13:57:31 [INFO] simulation.systems.tax_agency: TAX_COLLECTION_SUCCESS | Tick 1 | Collected 50.00 of firm_maintenance from 21
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 21 to 25. Memo: generic:marketing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 22 to 4. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 22 to 16. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 4.43 from 22 to 25. Memo: generic:holding_cost
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 50.00 from 22 to 25. Memo: firm_maintenance collection
+2026-01-26 13:57:31 [INFO] simulation.systems.tax_agency: TAX_COLLECTION_SUCCESS | Tick 1 | Collected 50.00 of firm_maintenance from 22
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 22 to 25. Memo: generic:marketing
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 23 to 15. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 23 to 8. Memo: generic:wage
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 13.30 from 23 to 25. Memo: generic:holding_cost
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 50.00 from 23 to 25. Memo: firm_maintenance collection
+2026-01-26 13:57:31 [INFO] simulation.systems.tax_agency: TAX_COLLECTION_SUCCESS | Tick 1 | Collected 50.00 of firm_maintenance from 23
+2026-01-26 13:57:31 [DEBUG] main: SETTLEMENT_SUCCESS | Transferred 10.00 from 23 to 25. Memo: generic:marketing
+2026-01-26 13:57:31 [INFO] main: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:31 [DEBUG] main: HOUSEHOLD_INIT | Household 26 initialized (Refactored).
+2026-01-26 13:57:31 [DEBUG] main: HOUSEHOLD_INIT | Household 26 initialized (Refactored).
+2026-01-26 13:57:31 [DEBUG] simulation.ai.ai_training_manager: Cloned and mutated Q-tables from 8 to 26.
+2026-01-26 13:57:31 [INFO] simulation.ai.ai_training_manager: EDUCATION_INHERITANCE | Child 26 base_alpha: 0.1000 (Bonus: 0.0000)
+2026-01-26 13:57:31 [INFO] simulation.systems.demographic_manager: BIRTH | Parent 8 (38.0y) -> Child 26. Assets: 575.55
+2026-01-26 13:57:31 [INFO] main: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:31 [DEBUG] main: HOUSEHOLD_INIT | Household 27 initialized (Refactored).
+2026-01-26 13:57:31 [DEBUG] main: HOUSEHOLD_INIT | Household 27 initialized (Refactored).
+2026-01-26 13:57:31 [DEBUG] simulation.ai.ai_training_manager: Cloned and mutated Q-tables from 9 to 27.
+2026-01-26 13:57:31 [INFO] simulation.ai.ai_training_manager: EDUCATION_INHERITANCE | Child 27 base_alpha: 0.1000 (Bonus: 0.0000)
+2026-01-26 13:57:31 [INFO] simulation.systems.demographic_manager: BIRTH | Parent 9 (27.5y) -> Child 27. Assets: 600.76
+2026-01-26 13:57:31 [INFO] main: AIDrivenHouseholdDecisionEngine initialized.
+2026-01-26 13:57:31 [DEBUG] main: HOUSEHOLD_INIT | Household 28 initialized (Refactored).
+2026-01-26 13:57:31 [DEBUG] main: HOUSEHOLD_INIT | Household 28 initialized (Refactored).
+2026-01-26 13:57:31 [DEBUG] simulation.ai.ai_training_manager: Cloned and mutated Q-tables from 16 to 28.
+2026-01-26 13:57:31 [INFO] simulation.ai.ai_training_manager: EDUCATION_INHERITANCE | Child 28 base_alpha: 0.1000 (Bonus: 0.0000)
+2026-01-26 13:57:31 [INFO] simulation.systems.demographic_manager: BIRTH | Parent 16 (29.6y) -> Child 28. Assets: 466.15
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 0 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 0 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 1 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 1 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 2 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 2 (SELF_DEV) Labor Skill +0.0080
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 3 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 3 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 4 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 4 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 5 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 5 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 6 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 6 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 7 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 7 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 8 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 8 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 9 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 9 (SELF_DEV) Labor Skill +0.0185
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 10 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 10 (SELF_DEV) Labor Skill +0.0080
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 11 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 11 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 12 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 12 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 13 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 13 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 14 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 14 (SELF_DEV) Labor Skill +0.0080
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 15 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 15 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 16 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 16 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 17 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 17 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 18 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 18 (SELF_DEV) Labor Skill +0.0185
+2026-01-26 13:57:31 [DEBUG] main: CONSUME_START | Household 19 attempting to consume: Item=basic_food, Qty=1.0, Inventory=10.0
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 19 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 0 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 1 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 2 (SELF_DEV) Labor Skill +0.0080
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 3 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 4 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 5 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 6 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 7 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 8 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 9 (SELF_DEV) Labor Skill +0.0185
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 10 (SELF_DEV) Labor Skill +0.0080
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 11 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 12 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 13 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 14 (SELF_DEV) Labor Skill +0.0080
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 15 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 16 (SELF_DEV) Labor Skill +0.0220
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 17 (SELF_DEV) Labor Skill +0.0150
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 18 (SELF_DEV) Labor Skill +0.0185
+2026-01-26 13:57:31 [DEBUG] simulation.components.leisure_manager: LEISURE | 19 (SELF_DEV) Labor Skill +0.0115
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 10.00 from 1 (housing_maintenance)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 10.00 from 9 (housing_maintenance)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 10.00 from 8 (housing_maintenance)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.reflux_system: REFLUX_CAPTURE | Captured 10.00 from 15 (housing_maintenance)
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 0 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 2 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 3 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 4 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 5 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 6 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 7 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 10 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 11 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 12 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 13 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 14 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 16 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 17 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 18 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 19 survival need increased.
+2026-01-26 13:57:31 [ERROR] simulation.systems.housing_system: CRITICAL: Household 26 missing 'survival' need! Needs: dict_keys([])
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 26 survival need increased.
+2026-01-26 13:57:31 [ERROR] simulation.systems.housing_system: CRITICAL: Household 27 missing 'survival' need! Needs: dict_keys([])
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 27 survival need increased.
+2026-01-26 13:57:31 [ERROR] simulation.systems.housing_system: CRITICAL: Household 28 missing 'survival' need! Needs: dict_keys([])
+2026-01-26 13:57:31 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 28 survival need increased.
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 20 (BALANCED) | Reward=-11957.50
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 21 (BALANCED) | Reward=-402.78
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 22 (BALANCED) | Reward=-12459.88
+2026-01-26 13:57:31 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 23 (BALANCED) | Reward=-37515.90
+2026-01-26 13:57:31 [INFO] simulation.systems.reflux_system: REFLUX_DISTRIBUTE | Distributed 63540.00 to 23 households. (2762.61 each)
+2026-01-26 13:57:31 [WARNING] main: MONEY_SUPPLY_CHECK | Current: 1499680.00, Expected: 1499360.00, Delta: 320.0000
+2026-01-26 13:57:31 [INFO] main: CRISIS_MONITOR | Tick: 1 | Safe: 0, Gray: 0, Distress: 4 | Active: 4
+2026-01-26 13:57:31 [INFO] main: --- Ending Tick 1 ---
+2026-01-26 13:57:31 [DEBUG] Market_basic_food: Market basic_food orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_clothing: Market clothing orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_luxury_food: Market luxury_food orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_education_service: Market education_service orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_iron: Market iron orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_consumer_goods: Market consumer_goods orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_luxury_bag: Market luxury_bag orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_labor: Market labor orders cleared for new tick.
+2026-01-26 13:57:31 [DEBUG] Market_housing: Market housing orders cleared for new tick.
+--- TRACE START ---
+Tick 0 (START) Total Money: 1,499,360.00
+Firm 20: Assets=100,000.00, Active=True
+Firm 21: Assets=100,000.00, Active=True
+Firm 22: Assets=100,000.00, Active=True
+Firm 23: Assets=100,000.00, Active=True
+DEBUG_MONEY | Pre-Housing Process. Money: 1,499,680.00
+DEBUG_MONEY | Post-Housing Process. Money: 1,499,680.00
+
+Tick 1 (END) Total Money: 1,499,680.00
+Baseline: 1,499,360.00
+Authorized Delta (Minted - Destroyed): 0.00
+Actual Delta: 320.00
+Traceback (most recent call last):
+  File "C:\coding\economics\scripts\trace_leak.py", line 54, in <module>
+    trace()
+    ~~~~~^^
+  File "C:\coding\economics\scripts\trace_leak.py", line 41, in trace
+    print(f"\u274c LEAK DETECTED: {leak:,.4f}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'cp949' codec can't encode character '\u274c' in position 0: illegal multibyte sequence

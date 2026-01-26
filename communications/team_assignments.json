@@ -33,6 +33,10 @@
       "11662040635592794647": {
         "title": "Hotfix_Correction_Magic_Numbers",
         "initial_mission": "PR Review result: REQUEST_CHANGES. Fix the following:\n1. [ai_driven_household_engine.py:L356]: Repla..."
+      },
+      "1538673354517803812": {
+        "title": "Fix Housing Money Leak",
+        "initial_mission": "Execute work order WO-121 to fix the 320.00 money leak in Housing System...."
       }
     },
     "completed_sessions": {

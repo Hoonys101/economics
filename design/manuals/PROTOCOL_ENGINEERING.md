@@ -10,10 +10,14 @@ This protocol defines the architectural standards and design workflows for the p
     *   **Agent Logic**: Pure decision making (System 1/2). NO direct Market access.
     *   **Market Logic**: Order matching and transaction generation.
     *   **System Logic**: Governing the simulation loop (e.g., TickScheduler).
-3.  **DTO (Data Transfer Object) Pattern**: Data must move between layers via DTO classes, never raw dictionaries.
-    *   **Data-Driven Purity**: Decision engines must depend ONLY on immutable snapshots (e.g., `MarketSnapshotDTO`). 
+3.    * **DTO (Data Transfer Object) Pattern**: Data must move between layers via DTO classes, never raw dictionaries.
+    * **Data-Driven Purity**: Decision engines must depend ONLY on immutable snapshots (e.g., `MarketSnapshotDTO`). 
         - **Rule**: Engines must not call methods on live service objects (Market, Bank, etc.). 
         - **Rule**: All external state must be passed via `DecisionContext` in a serialized or DTO format.
+    * **Magic Number Prohibition**: Do not hardcode numerical values (e.g., interest rates, recovery ratios) inside logic.
+        - **Rule**: All constants must be defined in `config.py` and referenced via the config module.
+        - **Rationale**: Ensures maintainability and centralized control of simulation physics.
+
 
 ---
 

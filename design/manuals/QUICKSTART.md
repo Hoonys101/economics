@@ -5,10 +5,21 @@ This is the definitive entry point for all contributors. **Read this first.**
 ---
 
 ## 🛑 0. The Master Principle (Architect's Rule)
-**The Architect (AI/Antigravity) MUST NOT write code or debug directly in the source.** 
-- All research, planning, and design are delegated to **Gemini**.
-- All implementation and debugging are delegated to **Jules**.
-- The Architect only **Arms** the tools via Spec & SCR Registry and **Extracts Insights** from PR reviews to update protocols.
+**The Architect (AI/Antigravity) MUST NOT write code, analyze code, or debug directly in the source.** 
+
+### 1. The Delegation Chain
+- **Gemini**: The Brain (Analysis, Spec Writing, PR Review, Log Forensics).
+- **Jules**: The Hands (Implementation, Debugging, Execution).
+- **Antigravity**: The Orchestrator (Arming scripts, updating protocols, managing the "Handover Chain").
+
+### 2. The Sacred Debug Loop
+When a test fails or a leak is detected, follow this sequence:
+1. **Log Capture**: Run the test and redirect all output to a file: `python scripts/test_name.py > debug_log.txt 2>&1`.
+2. **Brain Analysis**: Arm Gemini to analyze the log and relevant source files:
+   `python scripts/cmd_ops.py set-gemini <mission> --worker audit -i "Analyze debug_log.txt and find root cause" -c debug_log.txt path/to/code.py`
+3. **Spec Design**: Have Gemini (or Antigravity using Gemini's output) draft a Work Order (WO).
+4. **Dispatch**: Arm Jules to execute the fix based on the Work Order.
+
 
 ---
 

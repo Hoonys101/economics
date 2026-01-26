@@ -4,11 +4,10 @@
     "updated": "2026-01-26",
     "author": "Antigravity"
   },
-  "WO-121": {
+  "WO-121-Fix-Leak": {
     "command": "create",
-    "title": "Fix Housing Money Leak",
-    "instruction": "Execute work order WO-121 to fix the 320.00 money leak in Housing System.",
-    "file": "design/work_orders/WO-121-HousingLeak.md",
-    "status": "ready"
+    "instruction": "Initialize newborn households with a complete needs dictionary in demographic_manager.py to prevent KeyError and failed asset transfers. Refer to spec in reports/temp/report_20260126_140205_Analyze_leak_debug_t.md",
+    "title": "Fix Newborn Money Leak",
+    "file": "reports/temp/report_20260126_140205_Analyze_leak_debug_t.md"
   }
 }
