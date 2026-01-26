@@ -9,6 +9,10 @@
       "14380937838417142870": {
         "title": "[WO-104] Regime Strategy Pattern Refactoring",
         "initial_mission": "Synchronized from server"
+      },
+      "12570818305275603561": {
+        "title": "Remediation_TD116_117_118",
+        "initial_mission": "Implement the core structural and economic integrity fixes for TD-116 (Inheritance Leaks), TD-117 (D..."
       }
     },
     "completed_sessions": {

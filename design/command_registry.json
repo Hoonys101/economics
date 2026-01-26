@@ -1,18 +1,32 @@
 {
-  "jules": {
+  "_meta": {
+    "session": "Parallel Remediation Wave 1",
+    "updated": "2026-01-26",
+    "author": "Antigravity"
+  },
+  "jules_alpha": {
+    "command": "create",
+    "title": "Track_Alpha_Redemption",
+    "instruction": "Fix the Tick 1 leak (-99,680) and update M2 calculation. Use the generated spec for logic details. REPORT: Capture findings on কেন Initialization order causes leaks.",
+    "file": "design/specs/D_TRACK_ALPHA_REMEDIATION.md",
+    "wait": true
+  },
+  "jules_bravo": {
+    "command": "create",
+    "title": "Track_Bravo_Remediation",
+    "instruction": "Fix Phantom Tax (TD-110) by enforcing Settle->Record and formalize IBankService (TD-119). Refer to the attached spec.",
+    "file": "design/specs/D_TRACK_BRAVO_REMEDIATION.md",
+    "wait": true
+  },
+  "jules_core": {
     "command": "create",
     "title": "Remediation_TD116_117_118",
-    "session_id": "",
-    "instruction": "Implement the core structural and economic integrity fixes for TD-116 (Inheritance Leaks), TD-117 (DTO-Only Decisions), and TD-118 (CommerceSystem Sequence Integration). \n\nFocus on exact inheritance distribution logic, refactoring make_decision to use Snapshot DTOs, and splitting CommerceSystem into Plan/Finalize phases within the 4-Phase Sacred Sequence.",
+    "instruction": "Implement core structural fixes (DTO Decisions, Sacred Sequence Commerce, Inheritance residue).",
     "file": "design/specs/D_REMEDIATION_TD116_117_118.md",
     "wait": true
   },
   "git_review": {
     "branch": "main",
     "instruction": "Analyze this PR. Check behavior logic and test coverage."
-  },
-  "merge": {
-    "branch": ""
-  },
-  "harvest": {}
+  }
 }
