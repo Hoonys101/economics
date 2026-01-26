@@ -6,7 +6,7 @@ import logging
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from app import app, create_simulation
+from dashboard.app import app, create_simulation
 from simulation.ai.api import Personality
 import config
 
@@ -22,7 +22,7 @@ class TestNeedsFluctuation(unittest.TestCase):
 
         # Initialize simulation
         create_simulation()
-        from app import simulation_instance
+        from dashboard.app import simulation_instance
         self.simulation = simulation_instance
 
         # Force a household to have specific personality and state

@@ -84,7 +84,7 @@ class TestStockMarketInitialization:
         mock_firm.is_active = True
         
         # Since logic is delegated to firm.get_book_value_per_share, we just mock that return value
-        mock_firm.get_book_value_per_share.return_value = 80.0
+        mock_firm.get_book_value_per_share = Mock(return_value=80.0)
 
         firms = {100: mock_firm}
         stock_market.update_reference_prices(firms)
@@ -293,6 +293,8 @@ def test_ipo_share_count(stock_market, mock_config):
 
 def test_seo_triggers(stock_market, mock_config, golden_firms):
     from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+    from simulation.dtos import FirmStateDTO, FirmConfigDTO, DecisionContext
+
     mock_config.PROFIT_HISTORY_TICKS = 10
     firm_decision_engine = AIDrivenFirmDecisionEngine(ai_engine=MagicMock(), config_module=mock_config)
 
@@ -304,17 +306,71 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
     firm.specialization = "food"
 
     # State Override
-    firm._assets = mock_config.STARTUP_COST * 0.4  # Below threshold
-    firm.treasury_shares = 500
+    firm.assets = mock_config.STARTUP_COST * 0.4  # Below threshold
+    firm.treasury_shares = 500.0
     firm.total_shares = 1000.0
+    # Add attributes needed for DTO
+    firm.production_target = 100.0
+    firm.capital_stock = 100.0
+    firm.inventory = {}
+    firm.inventory_quality = {}
+    firm.input_inventory = {}
+    firm.current_production = 0.0
+    firm.base_quality = 1.0
+    firm.automation_level = 0.0
+    firm.dividend_rate = 0.0
+    firm.is_publicly_traded = True
+    firm.valuation = 1000.0
+    firm.revenue_this_turn = 0.0
+    firm.expenses_this_tick = 0.0
+    firm.consecutive_loss_turns = 0
+    firm.altman_z_score = 0.0
+    firm.last_prices = {}
+    firm.brand_manager = MagicMock()
+    firm.brand_manager.brand_awareness = 0.0
+    firm.brand_manager.perceived_quality = 1.0
+    firm.marketing_budget = 0.0
+    firm.get_agent_data = lambda: {}
 
-    context = MagicMock()
-    context.firm = firm
-    context.markets = {"stock_market": stock_market}
-    context.current_time = 1
+    firm_state = FirmStateDTO.from_firm(firm)
 
-    with patch.object(stock_market, 'get_stock_price', return_value=10.0):
-        order = firm_decision_engine.corporate_manager._attempt_secondary_offering(firm, context)
+    firm_config = FirmConfigDTO(
+        firm_min_production_target=10.0,
+        firm_max_production_target=100.0,
+        startup_cost=mock_config.STARTUP_COST,
+        seo_trigger_ratio=mock_config.SEO_TRIGGER_RATIO,
+        seo_max_sell_ratio=mock_config.SEO_MAX_SELL_RATIO,
+        automation_cost_per_pct=1000.0,
+        firm_safety_margin=2000.0,
+        automation_tax_rate=0.05,
+        altman_z_score_threshold=1.8,
+        dividend_suspension_loss_ticks=3,
+        dividend_rate_min=0.1,
+        dividend_rate_max=0.5,
+        labor_alpha=0.7,
+        automation_labor_reduction=0.5,
+        severance_pay_weeks=4,
+        labor_market_min_wage=10.0,
+        overstock_threshold=1.5,
+        understock_threshold=0.5,
+        production_adjustment_factor=0.1,
+        max_sell_quantity=100.0,
+        invisible_hand_sensitivity=0.1,
+        capital_to_output_ratio=2.0
+    )
+
+    context = DecisionContext(
+        state=firm_state,
+        config=firm_config,
+        markets={"stock_market": stock_market},
+        goods_data=[],
+        market_data={},
+        current_time=1,
+        market_snapshot=MagicMock(prices={f"stock_{firm.id}": 10.0}) # Mock snapshot for price
+    )
+
+    # We don't need patch stock_market.get_stock_price because DTO logic uses market_snapshot
+    order = firm_decision_engine.corporate_manager._attempt_secondary_offering(firm_state, context, firm_config)
 
     assert order is not None
     assert order.agent_id == firm.id
@@ -355,6 +411,7 @@ def test_household_investment(stock_market, mock_config, golden_households):
     # Ensure talent is present if needed (mock usually has it as a mock, but explicit override is safer if logic depends on it)
     # household.talent is likely a Mock, which is fine unless we access specific attrs like max_potential.
     # The original test set max_potential={"labor": 10}.
+    household.talent = Mock()
     household.talent.max_potential = {"labor": 10}
 
     stock_market.last_prices = {1: 10.0}
@@ -372,7 +429,12 @@ def test_household_investment(stock_market, mock_config, golden_households):
         }
 
         # Directly test the order creation logic
-        orders = household_decision_engine._place_buy_orders(household, 500, stock_market, 1)
+        # _place_buy_orders expects market_snapshot (DTO-like), not live StockMarket
+        market_snapshot = MagicMock()
+        # Map stock_market.last_prices (dict of int->float) to "stock_{id}" -> float
+        market_snapshot.prices = {f"stock_{k}": v for k, v in stock_market.last_prices.items()}
+
+        orders = household_decision_engine._place_buy_orders(household, 500, market_snapshot, 1)
 
         assert len(orders) > 0
         assert isinstance(orders[0], StockOrder)

@@ -94,7 +94,8 @@ def firm_dto():
         employees_data={},
         agent_data={"personality": "BALANCED"},
         system2_guidance={},
-        sentiment_index=1.0
+        sentiment_index=1.0,
+        last_sales_volume=100.0
     )
 
 @pytest.fixture

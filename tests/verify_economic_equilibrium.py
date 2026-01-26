@@ -12,7 +12,7 @@ from simulation.db.repository import SimulationRepository
 from simulation.core_agents import Household
 from simulation.firms import Firm
 import config
-from app import create_simulation, simulation_instance, get_or_create_simulation
+from dashboard.app import create_simulation, simulation_instance, get_or_create_simulation
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +26,7 @@ class TestEconomicConservation(unittest.TestCase):
         print("\n>>> Initializing Simulation for Conservation Check...")
         
         create_simulation()
-        from app import simulation_instance as sim
+        from dashboard.app import simulation_instance as sim
         
         if not sim:
             self.fail("Failed to create simulation.")

@@ -333,10 +333,9 @@ class CorporateManager:
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
 
-        # Sales volume handling via DTO? DTO doesn't have last_sales_volume explicitly in root, but maybe we can infer?
-        # FirmStateDTO doesn't have sales volume.
-        # Fallback to 1.0 if not available.
-        sales_vol = 1.0
+        sales_vol = firm.last_sales_volume
+        if sales_vol <= 0:
+            sales_vol = 1.0
 
         days_on_hand = current_inventory / sales_vol
         decay = max(0.5, 1.0 - (days_on_hand * 0.005))
