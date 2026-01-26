@@ -121,6 +121,8 @@ def mock_config():
     config.stock_investment_equity_delta_threshold = 100.0
     config.stock_investment_diversification_count = 5
     config.startup_cost = 30000.0
+    config.DEFAULT_MORTGAGE_RATE = 0.05
+    config.default_mortgage_rate = 0.05
 
     return config
 

@@ -354,7 +354,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                          
                  if best_offer:
                      # Use market_data instead of live loan_market object (IBankService formalization)
-                     mortgage_rate = market_data.get("loan_market", {}).get("interest_rate", 0.05)
+                     mortgage_rate = market_data.get("loan_market", {}).get("interest_rate", config.default_mortgage_rate)
 
                      should_buy = False
 
