@@ -1,6 +1,9 @@
 from __future__ import annotations
-from typing import List, Dict, Any
+from typing import List, Dict, Any, TYPE_CHECKING
 import logging
+
+if TYPE_CHECKING:
+    from simulation.world_state import WorldState
 
 from simulation.core_agents import Household
 from simulation.firms import Firm
@@ -277,3 +280,34 @@ class EconomicIndicatorTracker:
             if values:
                 latest_indicators[key] = values[-1]
         return latest_indicators
+
+    def get_m2_money_supply(self, world_state: 'WorldState') -> float:
+        """
+        Calculates the M2 money supply for economic reporting.
+        M2 = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
+        This calculation EXCLUDES the RefluxSystem balance, as it represents
+        money in transit not yet realized by economic agents.
+        """
+        total = 0.0
+
+        # 1. Households
+        for h in world_state.households:
+            if getattr(h, "is_active", True):
+                total += h.assets
+
+        # 2. Firms
+        for f in world_state.firms:
+            if getattr(f, "is_active", False):
+                total += f.assets
+
+        # 3. Bank Reserves
+        if world_state.bank:
+            total += world_state.bank.assets
+
+        # 4. Government Assets
+        if world_state.government:
+            total += world_state.government.assets
+
+        # NOTE: world_state.reflux_system.balance is INTENTIONALLY EXCLUDED.
+
+        return total

@@ -314,4 +314,8 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         self.logger.info(f"Simulation fully initialized with run_id: {sim.run_id}")
 
+        # TD-115: Establish baseline money supply AFTER all initialization steps
+        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
+        self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
+
         return sim
