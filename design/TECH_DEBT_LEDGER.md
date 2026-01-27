@@ -15,11 +15,11 @@
 
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
-| **TD-101** | 2026-01-27 | **Shadow Economy (Direct Mutation)** | Enforce use of `SettlementSystem` in all modules | Zero-sum violation | **REOPENED** |
+| **TD-101** | 2026-01-27 | **Shadow Economy (Direct Mutation)** | Enforce use of `SettlementSystem` in all modules | Zero-sum violation | **ASSIGNED_TO_JULES** (WO-125) |
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
-| **TD-117** | 2026-01-27 | **DTO-Only Decisions (Regression)** | Remove `self` injection in `core_agents.py` | Purity Gate Violation | **REOPENED** |
-| **TD-123** | 2026-01-27 | **God Class: `Household` (840 lines)** | Decompose into Bio/Social/Econ components | Maintenance Overhead | **ACTIVE** |
-| **TD-124** | 2026-01-27 | **God Class: `TransactionProcessor`** | Split into Tax/Settlement/Registry | Scalability Risk | **ACTIVE** |
+| **TD-117** | 2026-01-27 | **DTO-Only Decisions (Regression)** | Remove `self` injection in `core_agents.py` | Purity Gate Violation | **ASSIGNED_TO_JULES** (WO-125) |
+| **TD-123** | 2026-01-27 | **God Class: `Household` (840 lines)** | Decompose into Bio/Social/Econ components | Maintenance Overhead | **PLANNED** (Spec Ready) |
+| **TD-124** | 2026-01-27 | **God Class: `TransactionProcessor`** | Split into Tax/Settlement/Registry | Scalability Risk | **PLANNED** (Spec Ready) |
 | **TD-125** | 2026-01-27 | **Non-atomic Transfer Sequences** | Implement atomic bank/transaction blocks | Monetary Integrity | **ACTIVE** |
 | **TD-126** | 2026-01-27 | **Implicit `IBankService` Protocol** | Formalize API in `modules/finance/api.py` | Design-Impl Gap | **ACTIVE** |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
@@ -64,4 +64,5 @@
 | **Step 1: Purity Guard** | TD-101, TD-102 | Create `SettlementSystem` to centralize all asset movements. | ✅ **DONE** (WO-112) |
 | **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | `gemini:verify` |
 | **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
-| **Step 4: Structural Reset** | TD-106, TD-109 | Normalize Tick Sequence and Split God Classes. | **PLANNED** (Phase 26) |
+| **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | **PLANNED** (Specs Ready) |
+| **Step 5: Normalize Sequence** | TD-106, TD-109 | Normalize Tick Sequence. | **PLANNED** (Phase 26) |

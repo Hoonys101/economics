@@ -35,6 +35,11 @@
     - **Target**: Resolve **TD-103** (Leaky AI Abstraction).
     - **Note**: WO-122 (Test Cleanup) & Track Alpha (Leak Hunt) **DEFERRED**.
 
+- **긴급 작업 (Execution Delegated)**: `Step 3: Purity Finalization`
+    - **Assignee**: **Jules** (WO-125 Dispatch)
+    - **Task**: Liquidate legacy asset mutations (TD-101) & Secure Purity Gate (TD-117).
+    - **Status**: **IN_PROGRESS** (Agent Dispatched)
+
 ---
 
 ## 2. 완료된 작업 요약 (Recent)

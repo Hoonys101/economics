@@ -188,7 +188,23 @@ def run_merge(args, registry):
         if res is None or res.returncode != 0:
             print(f"❌ Stop: Merge sequence interrupted at '{' '.join(cmd)}'")
             return
-    print(f"✅ Branch {branch} successfully merged and cleaned up.")
+            
+    # Cleanup PR Review Artifacts
+    output_dir = BASE_DIR / "design" / "gemini_output"
+    review_file = output_dir / f"pr_review_{branch}.md"
+    diff_file = output_dir / f"pr_diff_{branch}.txt"
+    
+    try:
+        if review_file.exists():
+            review_file.unlink()
+            print(f"🗑️ Deleted review: {review_file.name}")
+        if diff_file.exists():
+            diff_file.unlink()
+            print(f"🗑️ Deleted diff: {diff_file.name}")
+    except Exception as e:
+        print(f"⚠️ Cleanup Warning: {e}")
+
+    print(f"✅ Branch {branch} successfully merged, pushed, and cleaned up.")
 
 def run_harvest(args, registry):
     cmd = [sys.executable, str(BASE_DIR / "scripts" / "report_harvester.py")]
