@@ -180,3 +180,19 @@
 **원인**: 송금 프로세스와 장부 기록 로직이 강하게 결합되어 있어, 송금 실패 시에도 장부가 업데이트되는 누수 발생.
 **해결**: 모든 금융 거래를 **1) 자산 실물 이동(Settle) -> 2) 장부 기록(Record)**의 2단계 순차 구조로 분리.
 **교훈**: 실물 자산 이동의 성공 여부가 확정된 후에만 원장을 업데이트하는 "Settle-then-Record" 패턴은 제로섬 시스템의 설계적 요체임.
+
+---
+
+### **Concept: Fractional Reserve Banking & Endogenous Money**
+
+*   **Phenomenon**: The system has transitioned from a "loanable funds" model (banks lend out existing savings) to a "credit creation" model (banks create new money when they lend).
+*   **Mechanism**:
+    1.  A borrower requests a loan.
+    2.  The bank assesses creditworthiness (DTI, LTV ratios) via the `CreditScoringService`.
+    3.  If approved, the bank checks if it has sufficient **reserves** (a fraction of the new deposit, e.g., 10%), not the full loan amount.
+    4.  The bank creates a `Loan` asset on its books and simultaneously creates a `Deposit` liability of the same amount in the borrower's name. This deposit is **new money**.
+    5.  The system's total money supply (tracked by `government.total_money_issued`) increases by the loan amount.
+*   **Implementation**:
+    -   `simulation/bank.py`'s `grant_loan` method no longer decreases the bank's assets. It creates a new deposit via `deposit_from_customer`.
+    -   The `CreditScoringService` (`modules/finance/credit_scoring.py`) acts as a gatekeeper, preventing reckless lending and managing systemic risk.
+*   **Lesson/Insight**: This change enables the money supply to dynamically expand and contract based on economic activity (demand for credit), which is a more realistic simulation of modern financial systems. It also introduces the critical risk of bank runs and the need for reserve requirements and central bank oversight.

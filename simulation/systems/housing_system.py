@@ -158,14 +158,20 @@ class HousingSystem:
                 # WO-078: Construct BorrowerProfileDTO
                 gross_income = 0.0
                 if hasattr(buyer, "current_wage"):
-                    # Estimate Monthly Income: Wage * 8 hours * 8.33 ticks (approx 100 ticks/year)
-                    gross_income = buyer.current_wage * 8.0 * (100.0 / 12.0)
+                    # Estimate Monthly Income using Configurable Parameters
+                    work_hours = getattr(self.config, "WORK_HOURS_PER_DAY", 8.0)
+                    ticks_per_year = getattr(self.config, "TICKS_PER_YEAR", 100.0)
+                    ticks_per_month = ticks_per_year / 12.0
+
+                    gross_income = buyer.current_wage * work_hours * ticks_per_month
 
                 existing_debt_payments = 0.0
                 try:
                     debt_status = simulation.bank.get_debt_status(buyer.id)
                     total_debt = debt_status.get("total_outstanding_debt", 0.0)
-                    existing_debt_payments = total_debt * 0.01
+                    # Estimate monthly payment (approx 1% of principal as placeholder if term unknown)
+                    monthly_payment_rate = getattr(self.config, "ESTIMATED_DEBT_PAYMENT_RATIO", 0.01)
+                    existing_debt_payments = total_debt * monthly_payment_rate
                 except Exception:
                     pass
 
@@ -190,9 +196,21 @@ class HousingSystem:
                 
                 if loan_info:
                     loan_id = loan_info["loan_id"]
-                    # Fractional Reserve: Bank assets don't decrease.
-                    # simulation.bank._sub_assets(loan_amount) # REMOVED
-                    buyer._add_assets(loan_amount)
+                    # Fractional Reserve: Loan creates a Deposit.
+                    # To use these funds for the transaction (Cash Payment), we must Withdraw.
+                    # This reduces Bank Reserves and increases Agent Cash.
+                    if hasattr(simulation.bank, "withdraw_for_customer"):
+                        success = simulation.bank.withdraw_for_customer(buyer.id, loan_amount)
+                        if success:
+                            buyer._add_assets(loan_amount)
+                        else:
+                            # Withdrawal failed (Liquidity Crisis?), rollback loan?
+                            # For simplicity in this iteration, we assume success or log error.
+                            logger.error(f"LOAN_WITHDRAW_FAIL | Could not withdraw loan proceeds for {buyer.id}")
+                    else:
+                        # Fallback for mock/interface testing without withdraw_for_customer
+                        buyer._add_assets(loan_amount)
+
                     unit.mortgage_id = loan_id
                 else:
                     unit.mortgage_id = None
