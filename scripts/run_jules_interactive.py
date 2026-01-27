@@ -9,7 +9,10 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.append(str(BASE_DIR / "scripts"))
 
 try:
-    from jules_bridge import JulesBridge, get_my_sessions, register_session, AutomationMode, check_jules_status
+    from jules_bridge import (
+        JulesBridge, get_my_sessions, register_session, 
+        AutomationMode, check_jules_status, DEFAULT_SOURCE
+    )
     from launcher import load_registry
 except ImportError:
     print("❌ Critical: Could not import jules_bridge module.")
@@ -155,16 +158,37 @@ def run_reply_menu(bridge, registry):
         
     valid_sessions = []
     idx = 1
+    current_proj = DEFAULT_SOURCE.split('/')[-1]
+    
     for sid, data in sessions.items():
         title = data if isinstance(data, str) else data.get("title", "Unknown")
-        print(f"{idx}. {title} ({sid})")
+        
+        # Simple filter: If the registry has a project defined, only show if it matches.
+        # Since currently we only store one project per team_assignments.json, 
+        # this might show all if not careful. 
+        # But we can check if "(COMPLETED)" is in the title to deprioritize.
+        
+        status_marker = "✅" if "(COMPLETED)" in title else "🔄"
+        print(f"{idx}. {status_marker} {title} ({sid})")
         valid_sessions.append(sid)
         idx += 1
         
-    print("\n0. Back")
+    print("\nA. Archive a session")
+    print("0. Back")
     
-    sel = input("\nSelect Session: ").strip()
+    sel = input("\nSelect Session: ").strip().upper()
     if sel == '0': return
+    
+    if sel == 'A':
+        sid_to_archive = input("Enter Session ID to Archive (or index): ").strip()
+        if sid_to_archive.isdigit() and 1 <= int(sid_to_archive) <= len(valid_sessions):
+            sid_to_archive = valid_sessions[int(sid_to_archive)-1]
+        
+        from jules_bridge import archive_session
+        archive_session(sid_to_archive)
+        print(f"✅ Session {sid_to_archive} archived.")
+        input("Press Enter...")
+        return
     
     if sel.isdigit() and 1 <= int(sel) <= len(valid_sessions):
         sid = valid_sessions[int(sel)-1]

@@ -32,20 +32,46 @@ Manage these documents in every session to maintain the "Handover Chain":
 
 ---
 
-## 🛠️ Phase 2: Operations (The "Arming" Workflow)
-We use **SCR (Structured Command Registry)** to control AI agents. Use `scripts/cmd_ops.py` to "arm" the tools.
+## 🛠️ Phase 2: Operations (The One-Shot Workflow)
+We use **SCR (Structured Command Registry)** to control agents. **DO NOT edit JSON directly.** Use `cmd_ops.py` to "arm" the tools.
 
-### 1. Arm Gemini (Analysis/Spec)
+### 1. Arm Gemini (Analysis & Spec)
 ```powershell
-python scripts/cmd_ops.py set-gemini <mission_name> --worker [audit|spec|git-review] -i "<instruction>" -c <context_files...>
-```
--> Then run **`.\gemini-go.bat`**.
+# Case A: Audit for leaks/bugs
+python scripts/cmd_ops.py set-gemini audit-leak --worker audit -i "Analyze logs/forensics.log and find asset leaks." -c logs/forensics.log simulation/world_state.py
 
-### 2. Arm Jules (Implementation/Debug)
-```powershell
-python scripts/cmd_ops.py set-jules <mission_name> --command create -t "<title>" -i "<instruction>" -f <spec_file>
+# Case B: Create a technical specification
+python scripts/cmd_ops.py set-gemini write-spec --worker spec -i "Draft a spec for Phase 26.5 Sovereign Debt." -o design/specs/WO-125_SOVEREIGN_DEBT.md
+
+# Case C: PR Review
+python scripts/cmd_ops.py set-gemini pr-audit --worker git-review -i "Review this PR for DTO purity." -c design/gemini_output/pr_diff_feature.txt
 ```
--> Then run **`.\jules-go.bat`**.
+-> Execute with: **`.\gemini-go.bat <key>`**
+
+### 2. Arm Jules (Implementation)
+```powershell
+# Case A: Start a new task
+python scripts/cmd_ops.py set-jules fix-leak --command create -t "WO-124: Fix Asset Leak" -i "Follow the spec and restore zero-sum integrity." -f design/work_orders/WO-124_ALPHA_PURITY_REMEDIATION.md
+
+# Case B: Send feedback to active session
+python scripts/cmd_ops.py set-jules reply --command send-message -i "The test failed with at line 45. Please adjust logic."
+```
+### 3. Firing (Interactive UI)
+Once a mission is armed in the registry, the User executes it via the Interactive CLI Dashboard. Simply run the batch file without any arguments:
+
+```powershell
+# To run Gemini missions
+.\gemini-go.bat
+
+# To run Jules missions
+.\jules-go.bat
+```
+*Selection Menu will appear, allowing you to choose the armed mission.*
+
+### 4. Cleanup
+```powershell
+python scripts/cmd_ops.py del <key>
+```
 
 *Full details in **[PROTOCOL_TOOLING.md](PROTOCOL_TOOLING.md)**.*
 

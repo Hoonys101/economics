@@ -329,10 +329,20 @@ def complete_session(session_id: str):
         _save_registry(registry)
         logger.info(f"Session completed: {session_id}")
 
-def get_my_sessions() -> Dict[str, str]:
-    """현재 담당 세션 목록 반환 (토큰 절약)"""
+def get_my_sessions(project_filter: Optional[str] = None) -> Dict[str, Any]:
+    """
+    현재 담당 세션 목록 반환 (프로젝트 필터링 지원).
+    """
     registry = _load_registry()
-    return registry.get("antigravity", {}).get("active_sessions", {})
+    sessions = registry.get("antigravity", {}).get("active_sessions", {})
+    
+    # If project_filter is provided (e.g., 'economics'), and the registry 
+    # belongs to a different project, we return empty to stay isolated.
+    reg_project = registry.get("antigravity", {}).get("project", "")
+    if project_filter and reg_project != project_filter:
+         return {}
+
+    return sessions
 
 def archive_session(session_id: str):
     """완료된 세션을 레지스트리에서 제거"""
@@ -413,7 +423,8 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage:")
         print("  python jules_bridge.py list-sources")
-        print("  python jules_bridge.py list-sessions")
+        print("  python jules_bridge.py list-sessions --summary")
+        print("  python jules_bridge.py dashboard")
         print("  python jules_bridge.py create <title> <prompt>")
         print("  python jules_bridge.py sync-git <title>")
         print("  python jules_bridge.py status <session_id>")
@@ -432,8 +443,8 @@ if __name__ == "__main__":
         for arg in sys.argv:
             if arg.startswith("--limit="):
                 limit = int(arg.split("=")[1])
-        sessions = bridge.list_sessions(page_size=limit, summary=use_summary)
-        print(json.dumps(sessions, indent=2))
+        session_list = bridge.list_sessions(page_size=limit, summary=use_summary)
+        print(json.dumps(session_list, indent=2))
     
     elif command == "create" and len(sys.argv) >= 4:
         title = sys.argv[2]
@@ -472,13 +483,13 @@ if __name__ == "__main__":
             print(json.dumps(status, indent=2, default=str))
         else:
             # Summary Mode (Token Efficient)
-            sess = status.get("session", {})
+            sess_info = status.get("session", {})
             acts = status.get("recent_activities", [])
             pr = status.get("pr_url")
             
-            print(f"\n📊 Session Status: {sess.get('title')}")
-            print(f"ID: {sess.get('id')}")
-            print(f"State: {sess.get('state')}")
+            print(f"\n📊 Session Status: {sess_info.get('title')}")
+            print(f"ID: {sess_info.get('id')}")
+            print(f"State: {sess_info.get('state')}")
             if pr:
                 print(f"🔗 PR: {pr}")
             
@@ -509,9 +520,6 @@ if __name__ == "__main__":
                 sys.exit(1)
         
         # Safety Check: Ensure we are not messaging a session from another project
-        # (This relies on the registry or we could check session source if we fetched it)
-        # For now, we assume if you have the ID, you know what you are doing, 
-        # but let's at least warn if it's not in our local registry.
         registry = _load_registry()
         my_sessions = registry.get("antigravity", {}).get("active_sessions", {})
         if session_id not in my_sessions:
@@ -558,9 +566,9 @@ if __name__ == "__main__":
         print(f"Plan approved for {session_id}: {success}")
     
     elif command == "my-sessions":
-        sessions = get_my_sessions()
-        print(f"\n🗂️ Active Sessions ({len(sessions)}):")
-        for sid, entry in sessions.items():
+        my_sessions_dict = get_my_sessions()
+        print(f"\n🗂️ Active Sessions ({len(my_sessions_dict)}):")
+        for sid, entry in my_sessions_dict.items():
             title = entry["title"] if isinstance(entry, dict) else entry
             if "(COMPLETED)" in title:
                 print(f"   ✅ {sid}: {title}")
@@ -585,43 +593,77 @@ if __name__ == "__main__":
         print(f"Session {session_id} archived")
     
     elif command == "dashboard":
-        limit = 15
+        limit = 20
         sessions = bridge.list_sessions(page_size=limit)
-        
-        # Group sessions by project (source)
-        projects = {}
+        registry = _load_registry()
+        local_sessions = registry.get("antigravity", {}).get("active_sessions", {})
+        current_project_name = DEFAULT_SOURCE.split('/')[-1]
+
+        # Group sessions by project
+        projects_map: Dict[str, List[Dict[str, Any]]] = {}
         for s in sessions:
-            # Active or recently updated sessions
             source_raw = s.get("sourceContext", {}).get("source", "Unknown/Unknown")
             proj_name = source_raw.split('/')[-1]
-            
-            if proj_name not in projects:
-                projects[proj_name] = []
-            projects[proj_name].append(s)
-            
-        print("\n📊 Jules Fleet Project Dashboard")
-        print("=" * 60)
-        
-        if not projects:
-            print("   (No active sessions found)")
-        
-        for proj, sess_list in projects.items():
-            print(f"\n📂 Project: {proj}")
-            for s in sess_list:
+            if proj_name not in projects_map:
+                projects_map[proj_name] = []
+            projects_map[proj_name].append(s)
+
+        print(f"\n📊 Jules Fleet Dashboard | Project: {current_project_name}")
+        print("=" * 70)
+
+        # 1. Show Current Project Sessions (Prioritized)
+        print(f"\n📂 [TARGET] Project: {current_project_name}")
+        target_sessions = projects_map.get(current_project_name, [])
+        if not target_sessions:
+            print("   (No sessions found on server for this project)")
+        else:
+            for s in target_sessions:
                 sid = s.get("id")
                 title = s.get("title", "Untitled Task")
                 state = s.get("state", "UNKNOWN")
                 
-                # Visual markers
+                # Check status in local registry
+                registry_status = ""
+                if sid in local_sessions:
+                    registry_status = " [TRACKED]"
+                    entry = local_sessions[sid]
+                    entry_title = entry.get("title", "") if isinstance(entry, dict) else str(entry)
+                    if "(COMPLETED)" in entry_title:
+                        registry_status = " [DONE]"
+                
                 icon = "   "
                 if state == "COMPLETED": icon = "✅ "
                 elif state == "IN_PROGRESS": icon = "🔄 "
                 elif state == "PLANNING": icon = "📋 "
                 elif state == "FAILED": icon = "❌ "
                 
-                print(f"{icon}{sid:<20} | {title[:50]:<50} [{state}]")
-        
-        print("\n" + "=" * 60)
+                print(f"{icon}{sid:<20} | {title[:40]:<40} [{state}]{registry_status}")
+
+        # 2. Show Other Projects (Summary)
+        other_projects = [p for p in projects_map.keys() if p != current_project_name]
+        if other_projects:
+            print(f"\n🌍 Other Projects ({len(other_projects)})")
+            for p in other_projects:
+                count = len(projects_map[p])
+                print(f"   - {p:<20} | {count} active/recent sessions")
+
+        # 3. Orphaned/Stale Local Sessions
+        stale_sessions = [sid for sid in local_sessions if sid not in [s.get("id") for s in sessions]]
+        if stale_sessions:
+             print(f"\n⚠️ Other Tracked Sessions (Not in recent top {limit}):")
+             for sid in stale_sessions:
+                  entry = local_sessions[sid]
+                  # Ensure entry_title is a string even if entry is None or dict.get returns None
+                  entry_title = ""
+                  if isinstance(entry, dict):
+                      entry_title = str(entry.get("title", "Untitled"))
+                  else:
+                      entry_title = str(entry) if entry else "Untitled"
+                  
+                  print(f"   - {sid:<20} | {entry_title[:40]}")
+
+        print("\n" + "=" * 70)
+        print("Tip: Use 'python scripts/jules_bridge.py archive <id>' to clean up stale entries.")
 
     else:
         print("Usage:")

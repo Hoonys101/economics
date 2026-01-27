@@ -54,6 +54,8 @@ def op_set_jules(args):
         entry["title"] = args.title
     if args.file:
         entry["file"] = args.file
+    if args.session_id:
+        entry["session_id"] = args.session_id
     if args.wait:
         entry["wait"] = True
         
@@ -89,6 +91,7 @@ def main():
     p_jul.add_argument("--instruction", "-i", required=True, help="Instruction Prompt")
     p_jul.add_argument("--title", "-t", help="Task Title (for create)")
     p_jul.add_argument("--file", "-f", help="Attributes File Injection")
+    p_jul.add_argument("--session_id", "-s", help="Active Session ID for send-message")
     p_jul.add_argument("--wait", action="store_true", help="Wait for completion")
 
     # 3. Delete Mission

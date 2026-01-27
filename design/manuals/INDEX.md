@@ -38,5 +38,6 @@ Deep-dive instructions for specific AI workers and specialized tasks.
 
 ## 🆘 5. Knowledge Base
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**: Common errors and solutions.
+- **[COMMAND_REGISTRY_REFERENCE.md](COMMAND_REGISTRY_REFERENCE.md)**: Deep dive into the SCR JSON schema.
 - **[ECONOMIC_INSIGHTS.md](ECONOMIC_INSIGHTS.md)**: Domain knowledge discovered during runtime.
 - **[RELIABILITY_LEDGER.md](RELIABILITY_LEDGER.md)**: System stability metrics.
