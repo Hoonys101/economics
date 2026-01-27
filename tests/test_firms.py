@@ -50,7 +50,9 @@ class TestFirmBookValue:
         mock_loan_market.bank = mock_bank
         firm.treasury_shares = 0
 
+        # Mock both legacy and new interface to be safe
         mock_bank.get_debt_summary.return_value = {"total_principal": 200.0}
+        mock_bank.get_debt_status.return_value = {"total_outstanding_debt": 200.0}
 
         # Net Assets = 1000 - 200 = 800. Shares 100.
         assert firm.finance.get_book_value_per_share() == 8.0
@@ -68,7 +70,9 @@ class TestFirmBookValue:
         mock_loan_market.bank = mock_bank
         firm.treasury_shares = 0
 
+        # Mock both legacy and new interface
         mock_bank.get_debt_summary.return_value = {"total_principal": 2000.0}
+        mock_bank.get_debt_status.return_value = {"total_outstanding_debt": 2000.0}
 
         # Net Assets = 1000 - 2000 = -1000.
         # Should return 0.0

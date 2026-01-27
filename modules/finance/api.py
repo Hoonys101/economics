@@ -76,6 +76,44 @@ class LoanRepaymentError(Exception):
     """Raised when there is an issue with loan repayment."""
     pass
 
+class BorrowerProfileDTO(TypedDict):
+    """
+    Data Transfer Object holding all financial data for a borrower
+    needed for credit assessment. Anonymized from the concrete agent.
+    """
+    borrower_id: str
+    gross_income: float
+    existing_debt_payments: float
+    collateral_value: float # Value of the asset being purchased, if any
+    existing_assets: float
+
+class CreditAssessmentResultDTO(TypedDict):
+    """
+    The result of a credit check from the CreditScoringService.
+    """
+    is_approved: bool
+    max_loan_amount: float
+    reason: Optional[str] # Reason for denial
+
+class ICreditScoringService(Protocol):
+    """
+    Interface for a service that assesses the creditworthiness of a potential borrower.
+    """
+
+    @abc.abstractmethod
+    def assess_creditworthiness(self, profile: BorrowerProfileDTO, requested_loan_amount: float) -> CreditAssessmentResultDTO:
+        """
+        Evaluates a borrower's financial profile against lending criteria.
+
+        Args:
+            profile: A DTO containing the borrower's financial information.
+            requested_loan_amount: The amount of the loan being requested.
+
+        Returns:
+            A DTO indicating approval status and other relevant details.
+        """
+        ...
+
 class IFinancialEntity(Protocol):
     """Protocol for any entity that can hold and transfer funds."""
 
@@ -105,7 +143,7 @@ class IBankService(IFinancialEntity, Protocol):
     """
 
     @abc.abstractmethod
-    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None) -> Optional[LoanInfoDTO]:
+    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
         """
         Grants a loan to a borrower.
 
@@ -114,6 +152,7 @@ class IBankService(IFinancialEntity, Protocol):
             amount: The principal amount of the loan.
             interest_rate: The annual interest rate for the loan.
             due_tick: Optional. The simulation tick when the loan is due. If None, it's an open-ended loan.
+            borrower_profile: Optional. DTO with financial data for credit scoring.
 
         Returns:
             A LoanInfoDTO if the loan is successfully granted, otherwise None.

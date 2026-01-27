@@ -48,6 +48,7 @@ from simulation.systems.accounting import AccountingSystem
 from simulation.systems.central_bank_system import CentralBankSystem
 from simulation.systems.handlers import InheritanceHandler
 from modules.finance.system import FinanceSystem
+from modules.finance.credit_scoring import CreditScoringService
 from simulation.db.repository import SimulationRepository
 from simulation.systems.lifecycle_manager import AgentLifecycleManager
 from simulation.engine import Simulation
@@ -114,11 +115,15 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.time: int = 0
         sim.batch_save_interval = 50
 
+        # WO-078: Initialize CreditScoringService
+        credit_scoring_service = CreditScoringService(config_module=self.config)
+
         sim.bank = Bank(
             id=sim.next_agent_id,
             initial_assets=self.config.INITIAL_BANK_ASSETS,
             config_manager=self.config_manager,
-            settlement_system=sim.settlement_system
+            settlement_system=sim.settlement_system,
+            credit_scoring_service=credit_scoring_service
         )
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank

@@ -64,11 +64,17 @@ class LoanMarket(Market):
             duration = self.config_module.DEFAULT_LOAN_DURATION
             due_tick = current_tick + duration
 
+            # WO-078: Extract BorrowerProfile from metadata
+            borrower_profile = None
+            if order.metadata and "borrower_profile" in order.metadata:
+                borrower_profile = order.metadata["borrower_profile"]
+
             loan_info = self.bank.grant_loan(
                 borrower_id=str(order.agent_id),
                 amount=loan_amount,
                 interest_rate=interest_rate,
-                due_tick=due_tick
+                due_tick=due_tick,
+                borrower_profile=borrower_profile
             )
 
             if loan_info:

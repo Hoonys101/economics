@@ -76,7 +76,43 @@ class TestLoanMarket:
             borrower_id="1",
             amount=100,
             interest_rate=0.05,
-            due_tick=51 # current_tick 1 + 50
+            due_tick=51, # current_tick 1 + 50
+            borrower_profile=None
+        )
+
+    def test_place_loan_request_with_profile(
+        self, loan_market_instance, mock_bank, mock_logger
+    ):
+        profile = {"borrower_id": "1", "gross_income": 1000.0}
+        order = Order(
+            agent_id=1,
+            order_type="LOAN_REQUEST",
+            item_id="loan_item",
+            quantity=100,
+            price=0.05,
+            market_id="test_loan_market",
+            metadata={"borrower_profile": profile}
+        )
+
+        mock_loan_info = LoanInfoDTO(
+            loan_id="loan_id_123",
+            borrower_id="1",
+            original_amount=100.0,
+            outstanding_balance=100.0,
+            interest_rate=0.05,
+            origination_tick=0,
+            due_tick=50
+        )
+        mock_bank.grant_loan.return_value = mock_loan_info
+
+        loan_market_instance.place_order(order, 1)
+
+        mock_bank.grant_loan.assert_called_once_with(
+            borrower_id="1",
+            amount=100,
+            interest_rate=0.05,
+            due_tick=51,
+            borrower_profile=profile
         )
 
     def test_place_loan_request_denies_loan(

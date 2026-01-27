@@ -5,6 +5,7 @@ import random
 
 from simulation.models import Order, StockOrder
 from simulation.schemas import FirmActionVector
+from modules.finance.api import BorrowerProfileDTO
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from simulation.markets.stock_market import StockMarket
@@ -296,9 +297,23 @@ class CorporateManager:
             borrow_amount = min(borrow_amount, current_assets * 0.5)
 
             if borrow_amount > 100.0:
-                orders.append(
-                    Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, 0.10, "loan")
+                # WO-078: Construct BorrowerProfileDTO
+                # Retrieve debt info to estimate payments
+                daily_burden = 0.0
+                if debt_info:
+                    daily_burden = debt_info.get("daily_interest_burden", 0.0)
+
+                borrower_profile = BorrowerProfileDTO(
+                    borrower_id=str(firm.id),
+                    gross_income=firm.revenue_this_turn,
+                    existing_debt_payments=daily_burden * 30, # Approx monthly
+                    collateral_value=0.0, # Unsecured
+                    existing_assets=firm.assets
                 )
+
+                order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, 0.10, "loan")
+                order.metadata = {"borrower_profile": borrower_profile}
+                orders.append(order)
 
         elif current_leverage > target_leverage:
             excess_debt = current_debt - (current_assets * target_leverage)

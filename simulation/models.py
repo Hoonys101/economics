@@ -15,6 +15,7 @@ class Order:
     market_id: str
     target_agent_id: Optional[int] = None  # Phase 6: Targeted Orders (Brand Loyalty)
     brand_info: Optional[Dict[str, Any]] = None # Phase 6: Brand Metadata (awareness, quality)
+    metadata: Optional[Dict[str, Any]] = None # WO-078: Metadata for side-effects (e.g. BorrowerProfile)
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
 
 

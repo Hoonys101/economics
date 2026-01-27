@@ -9,7 +9,9 @@ from modules.finance.api import (
     LoanInfoDTO,
     DebtStatusDTO,
     LoanNotFoundError,
-    LoanRepaymentError
+    LoanRepaymentError,
+    ICreditScoringService,
+    BorrowerProfileDTO
 )
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
@@ -53,11 +55,12 @@ class Bank(IBankService):
     WO-109: Refactored for Sacred Sequence (Transactions).
     """
 
-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None):
+    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None, credit_scoring_service: Optional[ICreditScoringService] = None):
         self._id = id
         self._assets = initial_assets
         self.config_manager = config_manager
         self.settlement_system = settlement_system
+        self.credit_scoring_service = credit_scoring_service
         self.government: Optional["Government"] = None
 
         self.loans: Dict[str, Loan] = {}
@@ -111,7 +114,7 @@ class Bank(IBankService):
 
     # --- IBankService Implementation ---
 
-    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None) -> Optional[LoanInfoDTO]:
+    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
         """
         Grants a loan to a borrower.
         Implements IBankService.grant_loan.
@@ -122,24 +125,29 @@ class Bank(IBankService):
             logger.error(f"Bank.grant_loan: Invalid borrower_id {borrower_id}, expected int-convertible string.")
             return None
 
-        # Check reserves/assets logic
+        # Step 1: Credit Assessment
+        if self.credit_scoring_service and borrower_profile:
+             assessment = self.credit_scoring_service.assess_creditworthiness(borrower_profile, amount)
+             if not assessment['is_approved']:
+                 logger.info(f"LOAN_DENIED | Borrower {borrower_id} denied. Reason: {assessment.get('reason')}")
+                 return None
+
+        # Step 2: Solvency Check (Reserve Requirement)
         gold_standard_mode = self._get_config("gold_standard_mode", False)
         if gold_standard_mode:
             if self.assets < amount:
                 return None
         else:
             reserve_ratio = self._get_config("reserve_req_ratio", 0.1)
-            total_deposits = sum(d.amount for d in self.deposits.values())
-            required_reserves = (total_deposits + amount) * reserve_ratio
+            # New deposit will be created, so total deposits increase by amount
+            projected_deposits = sum(d.amount for d in self.deposits.values()) + amount
+            required_reserves = projected_deposits * reserve_ratio
+
             if self.assets < required_reserves:
+                logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient reserves. Assets: {self.assets:.2f} < Req: {required_reserves:.2f}")
                 return None
 
-            if self.assets < amount:
-                shortfall = amount - self.assets
-                if self.government and hasattr(self.government, "total_money_issued"):
-                    self.government.total_money_issued += shortfall
-                    self.deposit(shortfall)
-
+        # Step 3: Credit Creation (Book the Loan and Create Deposit)
         loan_id = f"loan_{self.next_loan_id}"
         self.next_loan_id += 1
 
@@ -161,6 +169,13 @@ class Bank(IBankService):
             origination_tick=start_tick
         )
         self.loans[loan_id] = new_loan
+
+        # Create the new deposit (Money Creation)
+        self.deposit_from_customer(bid_int, amount)
+
+        # Log Money Creation for System Accounting
+        if self.government and hasattr(self.government, "total_money_issued"):
+             self.government.total_money_issued += amount
 
         return LoanInfoDTO(
             loan_id=loan_id,

@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Any, List, Optional
 from simulation.models import Order, Transaction
 from simulation.agents.government import Government
+from modules.finance.api import BorrowerProfileDTO
 
 
 if TYPE_CHECKING:
@@ -153,15 +154,44 @@ class HousingSystem:
 
             if hasattr(buyer, "owned_properties"): # Household check
                 loan_amount = trade_value * ltv_ratio
-                loan_id = simulation.bank.grant_loan(
-                    buyer.id,
-                    loan_amount,
-                    term_ticks=mortgage_term,
-                    interest_rate=mortgage_rate
+
+                # WO-078: Construct BorrowerProfileDTO
+                gross_income = 0.0
+                if hasattr(buyer, "current_wage"):
+                    # Estimate Monthly Income: Wage * 8 hours * 8.33 ticks (approx 100 ticks/year)
+                    gross_income = buyer.current_wage * 8.0 * (100.0 / 12.0)
+
+                existing_debt_payments = 0.0
+                try:
+                    debt_status = simulation.bank.get_debt_status(buyer.id)
+                    total_debt = debt_status.get("total_outstanding_debt", 0.0)
+                    existing_debt_payments = total_debt * 0.01
+                except Exception:
+                    pass
+
+                borrower_profile = BorrowerProfileDTO(
+                    borrower_id=str(buyer.id),
+                    gross_income=gross_income,
+                    existing_debt_payments=existing_debt_payments,
+                    collateral_value=trade_value,
+                    existing_assets=buyer.assets
+                )
+
+                term_ticks = mortgage_term
+                due_tick = simulation.time + term_ticks
+
+                loan_info = simulation.bank.grant_loan(
+                    borrower_id=str(buyer.id),
+                    amount=loan_amount,
+                    interest_rate=mortgage_rate,
+                    due_tick=due_tick,
+                    borrower_profile=borrower_profile
                 )
                 
-                if loan_id:
-                    simulation.bank._sub_assets(loan_amount)
+                if loan_info:
+                    loan_id = loan_info["loan_id"]
+                    # Fractional Reserve: Bank assets don't decrease.
+                    # simulation.bank._sub_assets(loan_amount) # REMOVED
                     buyer._add_assets(loan_amount)
                     unit.mortgage_id = loan_id
                 else:

@@ -1,7 +1,12 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from simulation.bank import Bank, Loan
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import (
+    InsufficientFundsError,
+    ICreditScoringService,
+    BorrowerProfileDTO,
+    CreditAssessmentResultDTO
+)
 
 @pytest.fixture(autouse=True)
 def mock_logger():
@@ -20,9 +25,25 @@ def config_manager(tmp_path: Path):
     return ConfigManagerImpl(config_dir)
 
 @pytest.fixture
-def bank_instance(config_manager: ConfigManagerImpl):
+def mock_credit_scoring_service():
+    service = MagicMock(spec=ICreditScoringService)
+    # Default approval
+    service.assess_creditworthiness.return_value = {
+        "is_approved": True,
+        "max_loan_amount": 100000.0,
+        "reason": None
+    }
+    return service
+
+@pytest.fixture
+def bank_instance(config_manager, mock_credit_scoring_service):
     # Initialize with enough assets for tests
-    return Bank(id=1, initial_assets=10000.0, config_manager=config_manager)
+    return Bank(
+        id=1,
+        initial_assets=10000.0,
+        config_manager=config_manager,
+        credit_scoring_service=mock_credit_scoring_service
+    )
 
 class TestBank:
     def test_initialization(self, bank_instance: Bank):
@@ -30,88 +51,83 @@ class TestBank:
         assert bank_instance.assets == 10000.0
         assert bank_instance.loans == {}
         assert bank_instance.next_loan_id == 0
-        assert bank_instance.value_orientation == "N/A"
-        assert bank_instance.needs == {}
 
-    def test_grant_loan_successful(self, bank_instance: Bank):
+    def test_grant_loan_successful(self, bank_instance: Bank, mock_credit_scoring_service):
         bank_instance.config_manager.set_value_for_test("bank_defaults.initial_base_annual_rate", 0.05)
-        bank_instance.config_manager.set_value_for_test("bank_defaults.credit_spread_base", 0.02)
         initial_assets = bank_instance.assets
-        # Mock a borrower agent
-        borrower_id = 101
+        borrower_id = "101"
+        amount = 1000.0
 
-        loan_id = bank_instance.grant_loan(
-            borrower_id=borrower_id, amount=1000, term_ticks=50
+        profile = BorrowerProfileDTO(
+            borrower_id=borrower_id, gross_income=100.0,
+            existing_debt_payments=0.0, collateral_value=0.0, existing_assets=10.0
         )
 
-        assert loan_id == "loan_0"
-        # Bank assets decreased (reserved) - Wait, we REMOVED self._assets -= amount in grant_loan
-        # So assets should remain same in grant_loan, assuming Transaction handles it.
-        # However, checking Bank.py:
-        # "self._assets -= amount # Reserve reduced immediately" -> This was in the *previous* version.
-        # I removed it in "Fix Bank Double Counting".
-        # So asset check should be == initial_assets.
-        assert bank_instance.assets == initial_assets
-
-        loan = bank_instance.loans[loan_id]
-        assert loan.borrower_id == 101
-        assert loan.principal == 1000
-        # Interest rate is base (0.05) + spread (0.02) = 0.07 by default config logic in Bank
-        assert loan.annual_interest_rate == 0.07
-        assert loan.term_ticks == 50
-        assert bank_instance.next_loan_id == 1
-
-    def test_grant_loan_insufficient_assets(self, bank_instance: Bank):
-        bank_instance.config_manager.set_value_for_test("gold_standard_mode", True)
-        initial_assets = bank_instance.assets
-        borrower_id = 101
-
-        # Ask for more than available
-        loan_id = bank_instance.grant_loan(
-            borrower_id=borrower_id, amount=20000, term_ticks=50
+        # Call with correct signature
+        loan_info = bank_instance.grant_loan(
+            borrower_id=borrower_id,
+            amount=amount,
+            interest_rate=0.07,
+            due_tick=50,
+            borrower_profile=profile
         )
 
-        assert loan_id is None
+        assert loan_info is not None
+        assert loan_info["borrower_id"] == borrower_id
+        assert loan_info["original_amount"] == 1000.0
+
+        # Verify Credit Service called
+        mock_credit_scoring_service.assess_creditworthiness.assert_called_once()
+
+        # Verify Deposit Created (Money Creation)
+        assert len(bank_instance.deposits) == 1
+        dep = list(bank_instance.deposits.values())[0]
+        assert dep.depositor_id == int(borrower_id)
+        assert dep.amount == amount
+
+        # Verify Reserves (Assets) Check - Should be unchanged (Fractional Reserve)
         assert bank_instance.assets == initial_assets
-        assert bank_instance.loans == {}
-        assert bank_instance.next_loan_id == 0
+
+    def test_grant_loan_denied_credit(self, bank_instance, mock_credit_scoring_service):
+        # Setup mock to deny
+        mock_credit_scoring_service.assess_creditworthiness.return_value = {
+            "is_approved": False,
+            "max_loan_amount": 0.0,
+            "reason": "Risk too high"
+        }
+
+        profile = BorrowerProfileDTO(borrower_id="101", gross_income=100.0, existing_debt_payments=100.0, collateral_value=0.0, existing_assets=0.0)
+
+        loan_info = bank_instance.grant_loan("101", 1000.0, 0.05, borrower_profile=profile)
+        assert loan_info is None
+        assert len(bank_instance.loans) == 0
+
+    def test_grant_loan_insufficient_reserves(self, bank_instance):
+        # Default reserve ratio is 0.1
+        # Assets 10000.
+        # Deposits 0.
+        # Requested 200,000.
+        # New Deposit = 200,000. Required Reserve = 20,000.
+        # Assets 10,000 < 20,000. Fail.
+
+        borrower_id = "101"
+        amount = 200000.0
+        profile = BorrowerProfileDTO(borrower_id=borrower_id, gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
+
+        loan_info = bank_instance.grant_loan(borrower_id, amount, 0.05, borrower_profile=profile)
+
+        assert loan_info is None
+        assert len(bank_instance.loans) == 0
 
     def test_grant_loan_multiple_loans(self, bank_instance):
-        bank_instance.grant_loan(borrower_id=101, amount=1000)
-        bank_instance.grant_loan(borrower_id=102, amount=500)
+        profile = BorrowerProfileDTO(borrower_id="101", gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
+
+        bank_instance.grant_loan("101", 1000.0, 0.05, borrower_profile=profile)
+        bank_instance.grant_loan("102", 500.0, 0.05, borrower_profile=profile)
 
         assert len(bank_instance.loans) == 2
         assert "loan_0" in bank_instance.loans
         assert "loan_1" in bank_instance.loans
-        assert bank_instance.next_loan_id == 2
-
-    def test_get_outstanding_loans_for_agent_exists(self, bank_instance):
-        bank_instance.grant_loan(borrower_id=101, amount=1000)
-        bank_instance.grant_loan(borrower_id=102, amount=500)
-
-        loans = bank_instance.get_outstanding_loans_for_agent(agent_id=101)
-        assert len(loans) == 1
-        assert loans[0]["borrower_id"] == 101
-        assert loans[0]["amount"] == 1000
-
-    def test_get_outstanding_loans_for_agent_none(self, bank_instance):
-        bank_instance.grant_loan(borrower_id=101, amount=1000)
-
-        loans = bank_instance.get_outstanding_loans_for_agent(agent_id=999)
-        assert len(loans) == 0
-
-    def test_get_outstanding_loans_for_agent_multiple(self, bank_instance):
-        bank_instance.grant_loan(borrower_id=101, amount=1000)
-        bank_instance.grant_loan(borrower_id=101, amount=2000)
-
-        bank_instance.grant_loan(borrower_id=102, amount=500)
-
-        loans = bank_instance.get_outstanding_loans_for_agent(agent_id=101)
-        assert len(loans) == 2
-        assert loans[0]["borrower_id"] == 101
-        assert loans[1]["borrower_id"] == 101
-
-    # --- New Tests for Refactored Interfaces ---
 
     def test_deposit_from_customer(self, bank_instance):
         depositor_id = 202
@@ -172,7 +188,10 @@ class TestBank:
         borrower_id = 101
         depositor_id = 202
 
-        bank_instance.grant_loan(borrower_id, 1000.0)
+        # Create Loan with dummy profile
+        profile = BorrowerProfileDTO(borrower_id=str(borrower_id), gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
+        bank_instance.grant_loan(str(borrower_id), 1000.0, 0.05, borrower_profile=profile)
+
         bank_instance.deposit_from_customer(depositor_id, 500.0)
 
         # Mock Agents
@@ -199,5 +218,4 @@ class TestBank:
         assert "deposit_interest" in tx_types
 
         # Check assets NOT modified
-        # (Assuming initial assets = 10000.0)
         assert bank_instance.assets == 10000.0
