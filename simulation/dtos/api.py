@@ -205,7 +205,7 @@ class DecisionContext:
     # Static configuration values relevant to the agent type
     config: Union[HouseholdConfigDTO, FirmConfigDTO]
 
-    # Deprecated: Will be removed after full migration to DTOs
+    # Deprecated: Legacy fields. Will be removed after full migration to DTOs.
     markets: Optional[Dict[str, Any]] = None
     government: Optional[Any] = None
 

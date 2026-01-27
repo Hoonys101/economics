@@ -52,8 +52,6 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
         chosen_tactic: Tactic = Tactic.NO_ACTION
         chosen_aggressiveness: Aggressiveness = Aggressiveness.NEUTRAL
 
-        # Note: Wage modifier evolution (recovery/decay) moved to Household.make_decision
-
         # 1. 생존 욕구 충족 (음식 구매)
         if (
             state.needs["survival"]

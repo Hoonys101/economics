@@ -15,9 +15,7 @@
 
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
-| **TD-101** | 2026-01-27 | **Shadow Economy (Direct Mutation)** | Enforce use of `SettlementSystem` in all modules | Zero-sum violation | **REOPENED** |
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
-| **TD-117** | 2026-01-27 | **DTO-Only Decisions (Regression)** | Remove `self` injection in `core_agents.py` | Purity Gate Violation | **REOPENED** |
 | **TD-123** | 2026-01-27 | **God Class: `Household` (840 lines)** | Decompose into Bio/Social/Econ components | Maintenance Overhead | **ACTIVE** |
 | **TD-124** | 2026-01-27 | **God Class: `TransactionProcessor`** | Split into Tax/Settlement/Registry | Scalability Risk | **ACTIVE** |
 | **TD-125** | 2026-01-27 | **Non-atomic Transfer Sequences** | Implement atomic bank/transaction blocks | Monetary Integrity | **ACTIVE** |
@@ -54,6 +52,8 @@
 | TD-116 | 2026-01-26 | Inheritance Residual Evaporation | Integer Distribution (Core Track) | Zero-Sum Integrity | **RESOLVED** |
 | TD-120 | 2026-01-27 | Refactor TransactionProcessor Tax Calls | TaxAgency Injection (Track Bravo) | Maintenance Risk | **RESOLVED** |
 | TD-121 | 2026-01-26 | Newborn Money Leak (DOA) | Initial Needs Config Injection (WO-121) | Agent Viability | **RESOLVED** |
+| TD-101 | 2026-01-27 | Shadow Economy (Direct Mutation) | Enforce `SettlementSystem` usage (WO-125) | Zero-sum violation | **RESOLVED** |
+| TD-117 | 2026-01-27 | DTO-Only Decisions (Regression) | Enforce Purity Gate (WO-125) | Purity Gate Violation | **RESOLVED** |
 
 ---
 

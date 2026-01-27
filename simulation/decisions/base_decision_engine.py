@@ -23,9 +23,6 @@ class BaseDecisionEngine:
         assert hasattr(context, 'state') and context.state is not None, "Purity Error: context.state DTO is missing."
         assert hasattr(context, 'config') and context.config is not None, "Purity Error: context.config DTO is missing."
         
-        # We allow .household and .firm for now but they should be ignored by new engines.
-        # Once migration is complete, we will explicitly forbid them.
-        
         return self._make_decisions_internal(context, macro_context)
 
     def _make_decisions_internal(
