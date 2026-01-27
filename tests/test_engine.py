@@ -77,6 +77,7 @@ def mock_config_module():
     mock_config.CB_INFLATION_TARGET = 0.02
     mock_config.CB_TAYLOR_ALPHA = 1.5
     mock_config.CB_TAYLOR_BETA = 0.5
+    mock_config.INITIAL_MONEY_SUPPLY = 100000.0  # WO-124
 
     # Inflation Psychology
     mock_config.INFLATION_MEMORY_WINDOW = 10
@@ -96,6 +97,7 @@ def mock_config_module():
         "luxury_food": {"initial_price": 20.0},
         "basic_food": {"initial_price": 10.0},
     }
+    mock_config.GOODS_INITIAL_PRICE = {} # WO-124 Fix for Mock vs Float
 
     mock_config.TAX_BRACKETS = [
         (0.5, 0.0),   # Tax Free
@@ -144,6 +146,7 @@ def mock_households(mock_config_module):
     hh1 = Mock(spec=Household)
     hh1.id = 1
     hh1._assets = 100.0
+    hh1.assets = 100.0 # WO-124: Explicitly set assets for property access
     hh1.is_active = True
     hh1.value_orientation = "wealth_and_needs"
     hh1.decision_engine = Mock()
@@ -166,6 +169,7 @@ def mock_households(mock_config_module):
     hh2 = Mock(spec=Household)
     hh2.id = 2
     hh2._assets = 150.0
+    hh2.assets = 150.0 # WO-124: Explicitly set assets for property access
     hh2.is_active = True
     hh2.value_orientation = "needs_and_growth"
     hh2.decision_engine = Mock()

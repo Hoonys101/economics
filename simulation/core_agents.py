@@ -63,6 +63,7 @@ class Household(BaseAgent, ILearningAgent):
         gender: Optional[str] = None,
         parent_id: Optional[int] = None,
         generation: Optional[int] = None,
+        initial_assets_record: Optional[float] = None,  # WO-124: Explicit record of intended assets
         **kwargs,
     ) -> None:
         self.config_module = config_module
@@ -160,7 +161,7 @@ class Household(BaseAgent, ILearningAgent):
             adaptation_rate=adaptation_rate,
             labor_income_this_tick=0.0,
             capital_income_this_tick=0.0,
-            initial_assets_record=initial_assets
+            initial_assets_record=initial_assets_record if initial_assets_record is not None else initial_assets
         )
 
         # Social State

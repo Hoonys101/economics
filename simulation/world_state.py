@@ -157,6 +157,11 @@ class WorldState:
         if self.government:
             total += self.government.assets
 
+        # 6. Central Bank Assets (WO-124: Include Central Bank for Genesis Protocol Integrity)
+        # Central Bank holds negative cash if it distributed more than it had, or positive if it minted but hasn't distributed.
+        if self.central_bank:
+            total += self.central_bank.assets.get('cash', 0.0)
+
         return total
 
     def get_all_agents(self) -> List[Any]:

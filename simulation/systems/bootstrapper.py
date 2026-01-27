@@ -18,6 +18,16 @@ class Bootstrapper:
     INITIAL_INVENTORY = 50.0  # New constant
 
     @staticmethod
+    def distribute_initial_wealth(central_bank: Any, target_agent: Any, amount: float, settlement_system: Any) -> None:
+        """
+        Transfers initial wealth from Central Bank to target agent.
+        Ensures zero-sum integrity via SettlementSystem.
+        """
+        if amount > 0:
+             settlement_system.transfer(central_bank, target_agent, amount, "GENESIS_GRANT")
+             logger.debug(f"GENESIS_GRANT | Transferred {amount:.2f} to Agent {target_agent.id}")
+
+    @staticmethod
     def force_assign_workers(firms: List['Firm'], households: List['Household']) -> int:
         MAX_FORCED_WORKERS = 5
         DEFAULT_WAGE = 50.0
@@ -43,13 +53,15 @@ class Bootstrapper:
         return assigned_count
 
     @staticmethod
-    def inject_initial_liquidity(firms: List['Firm'], config: Any) -> None:
+    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: Any = None, central_bank: Any = None) -> None:
         """
         Injects a 30-tick buffer of raw materials and minimum capital.
 
         Args:
             firms: List of Firm agents.
             config: Configuration module (contains GOODS definition).
+            settlement_system: System for financial transfers (WO-124).
+            central_bank: Source of liquidity (WO-124).
         """
         BUFFER_DAYS = 30.0
 
@@ -82,6 +94,12 @@ class Bootstrapper:
             # 2. Capital Injection (Demand Side)
             if firm.assets < Bootstrapper.MIN_CAPITAL:
                 diff = Bootstrapper.MIN_CAPITAL - firm.assets
-                firm._add_assets(diff)
+                if settlement_system and central_bank:
+                    settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+                    logger.info(f"BOOTSTRAPPER | Injected {diff:.2f} capital to Firm {firm.id} via Settlement.")
+                else:
+                    # Fallback (Should not be used in Genesis mode, but keeps compatibility)
+                    firm._add_assets(diff)
+                    logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff:.2f} to Firm {firm.id} (No SettlementSystem).")
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

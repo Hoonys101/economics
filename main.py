@@ -100,6 +100,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         for good_name, good_attrs in config.GOODS.items()
     ]
     households = []
+    initial_balances: Dict[int, float] = {}  # WO-124: Collect intended initial balances
+
     for i in range(num_households):
         initial_assets = config.INITIAL_HOUSEHOLD_ASSETS_MEAN * (
             1
@@ -108,6 +110,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
                 config.INITIAL_HOUSEHOLD_ASSETS_RANGE,
             )
         )
+        initial_balances[i] = initial_assets  # Record intended balance
+
         initial_liquidity_need = config.INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN * (
             1
             + random.uniform(
@@ -183,7 +187,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             id=i,
             talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
             goods_data=goods_data,
-            initial_assets=initial_assets,
+            initial_assets=0.0,  # WO-124: Start empty (Genesis Protocol)
+            initial_assets_record=initial_assets, # Record "birthright" for history
             initial_needs=initial_needs,
             decision_engine=household_decision_engine,
             value_orientation=value_orientation,
@@ -207,6 +212,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
                 -config.INITIAL_FIRM_CAPITAL_RANGE, config.INITIAL_FIRM_CAPITAL_RANGE
             )
         )
+        initial_balances[firm_id] = initial_capital  # Record intended capital
+
         initial_liquidity_need = config.INITIAL_FIRM_LIQUIDITY_NEED_MEAN * (
             1
             + random.uniform(
@@ -241,7 +248,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         # Create the Firm instance with specialization instead of production_targets
         firm = Firm(
             id=firm_id,
-            initial_capital=initial_capital,
+            initial_capital=0.0,  # WO-124: Start empty (Genesis Protocol)
             initial_liquidity_need=initial_liquidity_need,
             specialization=specialization,
             productivity_factor=config.FIRM_PRODUCTIVITY_FACTOR,
@@ -316,6 +323,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         households=households,
         firms=firms,
         ai_trainer=ai_trainer,
+        initial_balances=initial_balances, # WO-124: Pass Genesis distribution map
     )
     sim = initializer.build_simulation()
 

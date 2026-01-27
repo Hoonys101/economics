@@ -170,6 +170,13 @@ class CentralBank:
         if amount > 0:
             self.assets['cash'] = self.assets.get('cash', 0) + amount
 
+    def mint(self, amount: float) -> None:
+        """
+        Mints new currency (adds to cash reserves).
+        Alias for deposit but semantically distinct for Genesis Protocol.
+        """
+        self.deposit(amount)
+
     def withdraw(self, amount: float) -> None:
         """
         Withdraws a given amount from the central bank's cash reserves.

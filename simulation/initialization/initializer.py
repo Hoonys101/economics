@@ -74,7 +74,8 @@ class SimulationInitializer(SimulationInitializerInterface):
                  logger: logging.Logger,
                  households: List[Household],
                  firms: List[Firm],
-                 ai_trainer: AIEngineRegistry):
+                 ai_trainer: AIEngineRegistry,
+                 initial_balances: Optional[Dict[int, float]] = None):
         self.config_manager = config_manager
         self.config = config_module
         self.goods_data = goods_data
@@ -83,6 +84,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         self.households = households
         self.firms = firms
         self.ai_trainer = ai_trainer
+        self.initial_balances = initial_balances or {}
 
     def build_simulation(self) -> Simulation:
         """
@@ -99,6 +101,17 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # 2. Populate the shell with all its components
         sim.settlement_system = SettlementSystem(logger=self.logger)
+
+        sim.tracker = EconomicIndicatorTracker(config_module=self.config)
+
+        # WO-124: Initialize CentralBank EARLY for Genesis Protocol
+        sim.central_bank = CentralBank(
+            tracker=sim.tracker,
+            config_module=self.config
+        )
+        # Genesis Step 1: Fiat Lux (Minting M0)
+        sim.central_bank.deposit(self.config.INITIAL_MONEY_SUPPLY)
+        self.logger.info(f"GENESIS | Central Bank minted M0: {self.config.INITIAL_MONEY_SUPPLY:,.2f}")
 
         sim.households = self.households
         sim.firms = self.firms
@@ -118,13 +131,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         # WO-078: Initialize CreditScoringService
         credit_scoring_service = CreditScoringService(config_module=self.config)
 
+        # WO-124: Initialize Bank with 0.0 assets
         sim.bank = Bank(
             id=sim.next_agent_id,
-            initial_assets=self.config.INITIAL_BANK_ASSETS,
+            initial_assets=0.0, # Will be funded via Genesis Grant
             config_manager=self.config_manager,
             settlement_system=sim.settlement_system,
             credit_scoring_service=credit_scoring_service
         )
+        self.initial_balances[sim.bank.id] = self.config.INITIAL_BANK_ASSETS # Record for distribution
+
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
         sim.next_agent_id += 1
@@ -140,13 +156,6 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # Inject government into bank for monetary tracking
         sim.bank.set_government(sim.government)
-
-        sim.tracker = EconomicIndicatorTracker(config_module=self.config)
-
-        sim.central_bank = CentralBank(
-            tracker=sim.tracker,
-            config_module=self.config
-        )
 
         sim.finance_system = FinanceSystem(
             government=sim.government,
@@ -211,12 +220,32 @@ class SimulationInitializer(SimulationInitializerInterface):
                 if "housing" in sim.markets:
                     sim.markets["housing"].place_order(sell_order, sim.time)
 
+        # WO-124: Genesis Step 3 - Distribution (Atomic Transfer)
+        self.logger.info("GENESIS | Starting initial wealth distribution...")
+        distributed_count = 0
+        for agent_id, amount in self.initial_balances.items():
+            if agent_id in sim.agents and amount > 0:
+                Bootstrapper.distribute_initial_wealth(
+                    central_bank=sim.central_bank,
+                    target_agent=sim.agents[agent_id],
+                    amount=amount,
+                    settlement_system=sim.settlement_system
+                )
+                distributed_count += 1
+        self.logger.info(f"GENESIS | Distributed wealth to {distributed_count} agents.")
+
         # Phase 22.5 & WO-058: Bootstrap firms BEFORE first update_needs call
-        # This prevents Tick 1 liquidation due to 0 assets/employees
-        Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
+        # WO-124: Updated to use SettlementSystem
+        Bootstrapper.inject_initial_liquidity(
+            firms=sim.firms,
+            config=self.config,
+            settlement_system=sim.settlement_system,
+            central_bank=sim.central_bank
+        )
 
         # TD-115: Establish baseline money supply AFTER all liquidity injection
         # but BEFORE any agent-level activities (hiring, update_needs) begin.
+        sim.world_state.central_bank = sim.central_bank # Ensure WorldState has CB ref
         sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
         self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
 

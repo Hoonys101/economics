@@ -58,6 +58,14 @@ class SettlementSystem(ISettlementSystem):
             return True # Or False, based on desired strictness. Let's say True.
 
         # 1. ATOMIC CHECK: Verify funds BEFORE any modification
+        if debit_agent is None:
+            self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
+            return False
+
+        if credit_agent is None:
+            self.logger.error(f"SETTLEMENT_FAIL | Credit agent is None. Memo: {memo}")
+            return False
+
         # Special Case: Central Bank (Minting Authority) can have negative assets (Fiat Issuer).
         # We skip the check if the debit agent is the Central Bank.
         is_central_bank = getattr(debit_agent, "id", None) == "CENTRAL_BANK"
