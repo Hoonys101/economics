@@ -10,6 +10,7 @@ from modules.finance.api import (
     DebtStatusDTO,
     LoanNotFoundError,
     LoanRepaymentError,
+    LoanRollbackError,
     ICreditScoringService,
     BorrowerProfileDTO
 )
@@ -485,32 +486,28 @@ class Bank(IBankService):
         # 1. Reverse Deposit (Liability)
         # Use the robust link if available
         target_dep_id = loan.created_deposit_id
+        deposit_reversed = False
 
         if target_dep_id and target_dep_id in self.deposits:
             del self.deposits[target_dep_id]
+            deposit_reversed = True
         else:
             # Fallback for legacy or lost link: Find matching deposit
             # This is brittle but necessary as a last resort
             borrower_id = loan.borrower_id
-            found = False
             for dep_id, deposit in self.deposits.items():
                 if deposit.depositor_id == borrower_id and abs(deposit.amount - amount) < 1e-9:
                     del self.deposits[dep_id]
-                    found = True
+                    deposit_reversed = True
                     break
 
-            if not found:
-                logger.critical(f"VOID_LOAN_FAIL | Could not find deposit for loan {loan_id}. Money leak risk!")
-                # We cannot safely void the loan if we can't reverse the liability.
-                # However, void_loan is typically called when the money hasn't left the bank.
-                # If we raise here, the caller handles it?
-                # Ideally we want atomic failure. If we can't delete deposit, we shouldn't delete loan?
-                # But then the transaction failed, so the user expects rollback.
-                # Let's return False to signal failure.
-                return False
+            if not deposit_reversed:
+                logger.critical(f"VOID_LOAN_FAIL | Could not find deposit for loan {loan_id}. Cannot safely rollback.")
+                raise LoanRollbackError(f"Critical: Could not find deposit to reverse for loan {loan_id}")
 
-        # 2. Destroy Loan (Asset)
-        del self.loans[loan_id]
+        # 2. Destroy Loan (Asset) - Only if liability reversed
+        if deposit_reversed:
+            del self.loans[loan_id]
 
         # 3. Reverse Money Supply Tracking
         if self.government and hasattr(self.government, "total_money_issued"):

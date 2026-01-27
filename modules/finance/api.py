@@ -76,6 +76,10 @@ class LoanRepaymentError(Exception):
     """Raised when there is an issue with loan repayment."""
     pass
 
+class LoanRollbackError(Exception):
+    """Raised when a loan cancellation fails to reverse the associated deposit."""
+    pass
+
 class BorrowerProfileDTO(TypedDict):
     """
     Data Transfer Object holding all financial data for a borrower

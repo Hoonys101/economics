@@ -5,7 +5,8 @@ from modules.finance.api import (
     InsufficientFundsError,
     ICreditScoringService,
     BorrowerProfileDTO,
-    CreditAssessmentResultDTO
+    CreditAssessmentResultDTO,
+    LoanRollbackError
 )
 
 @pytest.fixture(autouse=True)
@@ -219,3 +220,24 @@ class TestBank:
 
         # Check assets NOT modified
         assert bank_instance.assets == 10000.0
+
+    def test_void_loan_failure_raises_exception(self, bank_instance):
+        # Setup: Create a loan manually (bypassing normal grant_loan to simulate broken link)
+        # Note: We need to inject a loan without a valid deposit to test failure
+        from simulation.bank import Loan
+        loan_id = "loan_broken_link"
+        bank_instance.loans[loan_id] = Loan(
+            borrower_id=999,
+            principal=1000.0,
+            remaining_balance=1000.0,
+            annual_interest_rate=0.05,
+            term_ticks=50,
+            start_tick=0,
+            created_deposit_id="non_existent_deposit_id"
+        )
+
+        with pytest.raises(LoanRollbackError):
+            bank_instance.void_loan(loan_id)
+
+        # Verify loan was NOT deleted (Atomic Rollback)
+        assert loan_id in bank_instance.loans
