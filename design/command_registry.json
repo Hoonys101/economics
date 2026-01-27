@@ -21,5 +21,27 @@
     "instruction": "1. design/work_orders/WO-124_ALPHA_PURITY_REMEDIATION.md 작업 지시서를 읽고 TD-115(자산 누출)와 TD-117(DTO 순수성 회귀)을 수정하세요. 2. DemographicManager가 SettlementSystem을 통해 자산을 이체하도록 리팩토링하세요. 3. Household.update_needs에서 self를 넘기는 대신 DTO를 사용하도록 수정하세요. 4. 수정 후 forensics_launcher.py를 실행하여 Money Supply Delta가 0.0000이 되는지 확인하세요.",
     "title": "Fix: Track Alpha & Purity Remediation",
     "file": "design/work_orders/WO-124_ALPHA_PURITY_REMEDIATION.md"
+  },
+  "td-123": {
+    "worker": "spec",
+    "instruction": "Draft a technical specification for TD-123: Decomposing the Household God Class into Bio/Social/Econ components, enforcing pure DTO usage.",
+    "context": [
+      "simulation/core_agents.py"
+    ],
+    "output": "design/specs/TD-123_Household_Decomposition.md"
+  },
+  "td-124": {
+    "worker": "spec",
+    "instruction": "Draft a technical specification for TD-124: Decomposing the TransactionProcessor God Class into separate agencies (TaxAgency, SettlementSystem, Registry), enforcing zero-sum integrity.",
+    "context": [
+      "simulation/systems/transaction_processor.py"
+    ],
+    "output": "design/specs/TD-124_TransactionProcessor_Decomposition.md"
+  },
+  "wo-125-v2": {
+    "command": "create",
+    "instruction": "Finalize economic purity by enforcing SettlementSystem and removing legacy mutation paths. Follow the attached work order strictly.",
+    "title": "WO-125: Purity Finalization (Retake)",
+    "file": "design/work_orders/WO-125-Purity-Finalization.md"
   }
 }

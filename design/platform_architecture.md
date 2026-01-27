@@ -96,7 +96,18 @@ Direct state modification (e.g., `agent_a.assets -= 100; agent_b.assets += 100`)
 - A dedicated `SettlementSystem` (or equivalent) will be responsible for processing these transactions atomically, ensuring that the assets of the buyer and seller are updated in a single, consistent operation.
 - This creates a clear audit trail, simplifies debugging, and enforces the zero-sum principle at an architectural level.
 
-### 4.5 의사결정 엔진의 순수성 (Purity of Decision Engines)
+### 4.5 Principle: The Settlement System Mandate
+
+**Context:** In a complex economic simulation, multiple modules may need to transfer assets between agents. If each module implements its own transfer logic (e.g., `buyer.assets -= X`, `seller.assets += X`), it creates a "Shadow Economy" where value can be accidentally created or destroyed (zero-sum violation) and auditing becomes impossible.
+
+**Implementation:** All inter-agent asset transfers **MUST** be processed through the central `SettlementSystem`. Direct mutation of an agent's financial state (e.g., calling `.withdraw()` or `.deposit()` from an outside system like `TransactionProcessor`) is strictly forbidden.
+
+**Rationale:**
+1.  **Atomicity & Zero-Sum Integrity:** The `SettlementSystem` guarantees that every transfer is atomic, preventing money leaks or duplications.
+2.  **Centralized Auditing:** A single point of settlement provides a clear, auditable ledger for all economic activity, simplifying debugging and analysis.
+3.  **System Stability:** Enforcing this pattern at runtime (e.g., via `RuntimeError` if the system is absent) prevents the simulation from running in a corruptible state.
+
+### 4.6 의사결정 엔진의 순수성 (Purity of Decision Engines)
 - **현상:** 의사결정 로직(예: `AIDrivenHouseholdDecisionEngine`)이 `market`과 같은 live 서비스 객체를 직접 참조하면서, 테스트가 복잡해지고 서비스 간 결합도가 높아지는 문제가 발생했습니다.
 - **원인:** 엔진이 외부 상태(live object)에 직접 의존하여, 동일 입력에 대해 다른 결과를 낼 수 있는 비결정적 특성을 가집니다.
 - **해결:** 의사결정 엔진은 반드시 `DecisionContext`를 통해 전달되는 정적 데이터(State DTO, Market Data, Config)에만 의존해야 합니다. 엔진 내부에서 live 서비스 객체의 메서드를 직접 호출해서는 안 됩니다. 필요한 모든 외부 상태 정보는 호출하는 쪽에서 `market_data`와 같은 직렬화 가능한 데이터 구조로 변환하여 `Context`에 담아 전달해야 합니다.
