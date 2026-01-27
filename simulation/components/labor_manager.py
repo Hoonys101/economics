@@ -29,20 +29,26 @@ class LaborManager:
 
     def work(self, hours: float) -> LaborResult:
         """
-        Executes work for a given number of hours, earning income.
+        Executes work for a given number of hours.
+
+        CRITICAL ARCHITECTURE NOTE (Sacred Sequence):
+        - Financial transactions (Wages) are handled in Phase 3 (Transactions) by TransactionProcessor.
+        - This method runs in Phase 4 (Lifecycle).
+        - Therefore, this method MUST NOT modify assets or record income to prevent double-counting/leaks (TD-115).
+        - It is strictly for updating non-financial state (e.g. skill XP, fatigue).
 
         Args:
             hours: The number of hours to work.
 
         Returns:
-            A LaborResult DTO containing the hours worked and income earned.
+            A LaborResult DTO containing the hours worked and income earned (theoretical/informational).
         """
         if not self._household.is_employed or self._household.employer_id is None:
             return LaborResult(hours_worked=0, income_earned=0)
 
         income = self._household.current_wage * hours
-        self._household.adjust_assets(income)
-        self._household.add_labor_income(income)
+        # WO-124: Explicitly removed asset modification.
+
         return LaborResult(hours_worked=hours, income_earned=income)
 
     def search_job(self) -> None:

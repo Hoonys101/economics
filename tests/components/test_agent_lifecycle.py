@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.components.agent_lifecycle import AgentLifecycleComponent
 from simulation.systems.api import LifecycleContext
+from modules.household.dtos import LifecycleDTO
 
 @pytest.fixture
 def lifecycle_component():
@@ -18,8 +19,9 @@ def test_run_tick_execution_order(lifecycle_component):
     household.economy_manager = MagicMock()
     household.psychology = MagicMock()
 
+    state = LifecycleDTO(is_employed=household.is_employed)
     context: LifecycleContext = {
-        "household": household,
+        "state": state,
         "market_data": {},
         "time": 1
     }
@@ -39,8 +41,9 @@ def test_run_tick_unemployed(lifecycle_component):
     household.economy_manager = MagicMock()
     household.psychology = MagicMock()
 
+    state = LifecycleDTO(is_employed=household.is_employed)
     context: LifecycleContext = {
-        "household": household,
+        "state": state,
         "market_data": {},
         "time": 1
     }

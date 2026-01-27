@@ -84,6 +84,7 @@ def mock_simulation():
     sim.ai_trainer.get_engine.return_value = MagicMock()
     sim.markets = {"loan_market": MagicMock()}
     sim.goods_data = [{"id": "food"}, {"id": "housing"}] # Assuming this is sufficient
+    sim.settlement_system = MagicMock()
 
     # Mock the AI Training Manager for brain inheritance
     type(sim).ai_training_manager = PropertyMock(return_value=MagicMock())
@@ -140,4 +141,10 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
     assert child.age == 0.0
 
     # Verify asset transfer happened
-    parent_agent._sub_assets.assert_called_once_with(parent_agent.assets * 0.1)
+    expected_gift = parent_agent.assets * 0.1
+    # Check if transfer was called on the mock simulation's settlement system
+    # Since we didn't inject into manager.settlement_system in this test (it's None),
+    # the manager falls back to simulation.settlement_system (which is mock_simulation.settlement_system)
+    mock_simulation.settlement_system.transfer.assert_called_once_with(
+        parent_agent, child, expected_gift, "BIRTH_GIFT"
+    )

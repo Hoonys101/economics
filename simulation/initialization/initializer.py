@@ -227,6 +227,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.ma_manager = MAManager(sim, self.config)
         sim.reflux_system = EconomicRefluxSystem()
         sim.demographic_manager = DemographicManager(config_module=self.config)
+        sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
         sim.immigration_manager = ImmigrationManager(config_module=self.config)
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
         sim.housing_system = HousingSystem(config_module=self.config)

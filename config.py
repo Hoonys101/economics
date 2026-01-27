@@ -775,3 +775,19 @@ RL_DISCOUNT_FACTOR = 0.95
 # ==============================================================================
 MACRO_PORTFOLIO_ADJUSTMENT_ENABLED = True
 BAILOUT_REPAYMENT_RATIO = 0.5
+
+# --- Newborn Configuration ---
+NEWBORN_INITIAL_NEEDS = {
+    "survival": 60.0,
+    "asset": 10.0,
+    "social": 20.0,
+    "improvement": 10.0,
+    "survival_need": 60.0,
+    "recognition_need": 20.0,
+    "growth_need": 10.0,
+    "wealth_need": 10.0,
+    "imitation_need": 15.0,
+    "labor_need": 0.0,
+    "child_rearing_need": 0.0,
+    "quality": 0.0,
+}

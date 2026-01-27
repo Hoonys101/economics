@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
     from simulation.dtos.api import SimulationState
     from simulation.models import Transaction
+    from modules.household.dtos import LifecycleDTO
 
 
 # ===================================================================
@@ -62,7 +63,7 @@ class CommerceContext(TypedDict):
 
 class LifecycleContext(TypedDict):
     """에이전트 생명주기 관리에 필요한 데이터입니다."""
-    household: 'Household' # 개별 가계를 대상으로 실행
+    state: 'LifecycleDTO' # WO-124: Replaces household instance
     market_data: Dict[str, Any]
     time: int
 

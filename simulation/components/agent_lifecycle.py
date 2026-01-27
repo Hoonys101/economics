@@ -17,14 +17,14 @@ class AgentLifecycleComponent(IAgentLifecycleComponent):
         """
         Orchestrates the household's tick-level updates.
         """
-        household = context["household"]
+        state = context["state"]
         market_data = context["market_data"]
         time = context["time"]
 
         # 1. Work (via LaborManager)
         # Assuming a fixed 8 hours of work per tick if employed
-        work_hours = 8.0 if household.is_employed else 0.0
-        household.labor_manager.work(work_hours)
+        work_hours = 8.0 if state.is_employed else 0.0
+        self.owner.labor_manager.work(work_hours)
 
         # 2. Consume (via EconomyManager/CommerceSystem)
         # Consumption is now handled by CommerceSystem before calling update_needs.
@@ -33,7 +33,7 @@ class AgentLifecycleComponent(IAgentLifecycleComponent):
         # The logic flow is: CommerceSystem -> execute consumption -> household.update_needs -> Lifecycle.run_tick
 
         # 3. Pay Taxes (via EconomyManager)
-        household.economy_manager.pay_taxes()
+        self.owner.economy_manager.pay_taxes()
 
         # 4. Update Psychological Needs (via PsychologyComponent)
-        household.psychology.update_needs(time, market_data)
+        self.owner.psychology.update_needs(time, market_data)

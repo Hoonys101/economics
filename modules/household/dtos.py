@@ -65,3 +65,8 @@ class SocialContextDTO:
     """Context for social operations."""
     current_time: int
     market_data: Optional[Dict[str, Any]] = None
+
+@dataclass
+class LifecycleDTO:
+    """State data required for lifecycle updates."""
+    is_employed: bool

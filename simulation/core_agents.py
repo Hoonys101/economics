@@ -801,8 +801,12 @@ class Household(BaseAgent, ILearningAgent):
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         """Delegates lifecycle updates to BioComponent."""
+        from modules.household.dtos import LifecycleDTO
+        lifecycle_state = LifecycleDTO(
+            is_employed=self.is_employed
+        )
         context: LifecycleContext = {
-            "household": self, # Some lifecycle logic might still need 'self' to access properties
+            "state": lifecycle_state,
             "market_data": market_data if market_data else {},
             "time": current_tick
         }

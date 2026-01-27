@@ -25,6 +25,7 @@ class DemographicManager:
 
         self.config_module = config_module
         self.logger = logging.getLogger("simulation.systems.demographic_manager")
+        self.settlement_system: Optional[Any] = None # Injected via Initializer
         self.initialized = True
         self.logger.info("DemographicManager initialized.")
 
@@ -95,8 +96,7 @@ class DemographicManager:
             # "Initial 자산은 부모 자산의 일부 이전"
             initial_gift = max(0.0, min(parent.assets * 0.1, parent.assets))
 
-            # Atomic Transaction: Subtract -> Create -> Add back on failure
-            parent._sub_assets(initial_gift)
+            # WO-124: Removed direct asset modification. Transfer happens via SettlementSystem after creation.
 
             try:
                 # Create Instance
@@ -159,11 +159,12 @@ class DemographicManager:
                 if not initial_needs_for_newborn:
                     self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
 
+                # WO-124: Instantiate with 0 assets. Gift is transferred via SettlementSystem.
                 child = Household(
                     id=child_id,
                     talent=child_talent,
                     goods_data=simulation.goods_data,
-                    initial_assets=initial_gift,
+                    initial_assets=0.0,
                     initial_needs=initial_needs_for_newborn.copy(),
                     decision_engine=new_decision_engine,
                     value_orientation=value_orientation,
@@ -192,16 +193,25 @@ class DemographicManager:
                 parent.children_ids.append(child_id)
                 new_children.append(child)
 
+                # WO-124: Transfer Birth Gift via SettlementSystem
+                if initial_gift > 0:
+                    # Prefer injected settlement_system, fallback to simulation object for compatibility
+                    settlement = self.settlement_system or getattr(simulation, "settlement_system", None)
+
+                    if settlement:
+                         settlement.transfer(parent, child, initial_gift, "BIRTH_GIFT")
+                    else:
+                         self.logger.error("BIRTH_ERROR | SettlementSystem not found. Cannot transfer birth gift.")
+
                 self.logger.info(
                     f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
                     f"Assets: {initial_gift:.2f}",
                     extra={"parent_id": parent.id, "child_id": child.id, "tick": simulation.time}
                 )
             except Exception as e:
-                # Rollback transaction on failure to prevent asset leak
-                parent._add_assets(initial_gift)
+                # No asset rollback needed as transfer happens after success.
                 self.logger.error(
-                    f"BIRTH_FAILED | Failed to create child for parent {parent.id}. Rolled back {initial_gift:.2f}. Error: {e}",
+                    f"BIRTH_FAILED | Failed to create child for parent {parent.id}. Error: {e}",
                     extra={"parent_id": parent.id, "error": str(e)}
                 )
                 continue
