@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.append(os.getcwd())
 from main import create_simulation
 
 def verify_wo053():
