@@ -10,10 +10,16 @@
     "title": "WO-123: Implement AI Memory System V2",
     "file": "design/specs/WO-123_AI_MEMORY_V2.md"
   },
-  "master-reentry-wo122-wo123": {
+  "audit-alpha-purity": {
+    "command": "analyze",
+    "instruction": "1. design/specs/D_TRACK_ALPHA_REMEDIATION.md를 읽고 현재 시뮬레이션 초기화 단계에서 발생하는 -99,680 자산 누출(TD-115)의 정확한 지점을 log forensics를 통해 분석하세요. 2. design/specs/DTO_PURITY_GATE_SPEC.md와 최근 병합된 core_agents.py, demographic_manager.py를 대조하여 DTO Purity Gate 회귀(regression, TD-117)가 발생한 지점을 모두 식별하세요. 3. 분석 결과를 design/gemini_output/analysis_track_alpha_purity_recovery.md에 상세히 기록하세요.",
+    "title": "Audit: Track Alpha & Purity Recovery",
+    "file": "design/specs/D_TRACK_ALPHA_REMEDIATION.md"
+  },
+  "remediate-alpha-purity": {
     "command": "create",
-    "instruction": "1. design/specs/MASTER_PLAN_REENTRY.md 마스터 플랜을 정독하고, Phase 1부터 Phase 4까지 체크리스트 순서대로 작업을 수행하세요. 2. 특히 'Test Purity Protocol'을 엄격히 준수하여 MagicMock 오염을 방지하고 DTO Factory를 가장 먼저 구축하세요. 3. 각 단계 완료 시 테스트를 통해 검증하고 다음 단계로 넘어가세요.",
-    "title": "Master Re-entry: WO-122 & WO-123 Implementation",
-    "file": "design/specs/MASTER_PLAN_REENTRY.md"
+    "instruction": "1. design/work_orders/WO-124_ALPHA_PURITY_REMEDIATION.md 작업 지시서를 읽고 TD-115(자산 누출)와 TD-117(DTO 순수성 회귀)을 수정하세요. 2. DemographicManager가 SettlementSystem을 통해 자산을 이체하도록 리팩토링하세요. 3. Household.update_needs에서 self를 넘기는 대신 DTO를 사용하도록 수정하세요. 4. 수정 후 forensics_launcher.py를 실행하여 Money Supply Delta가 0.0000이 되는지 확인하세요.",
+    "title": "Fix: Track Alpha & Purity Remediation",
+    "file": "design/work_orders/WO-124_ALPHA_PURITY_REMEDIATION.md"
   }
 }

@@ -204,6 +204,12 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Phase 22.5 & WO-058: Bootstrap firms BEFORE first update_needs call
         # This prevents Tick 1 liquidation due to 0 assets/employees
         Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
+
+        # TD-115: Establish baseline money supply AFTER all liquidity injection
+        # but BEFORE any agent-level activities (hiring, update_needs) begin.
+        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
+        self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
+
         Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
         for agent in sim.households + sim.firms:
@@ -313,9 +319,5 @@ class SimulationInitializer(SimulationInitializerInterface):
         )
 
         self.logger.info(f"Simulation fully initialized with run_id: {sim.run_id}")
-
-        # TD-115: Establish baseline money supply AFTER all initialization steps
-        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
-        self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
 
         return sim

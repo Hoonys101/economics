@@ -53,6 +53,14 @@
       "9950543563418953925": {
         "title": "WO-122: Test Suite Cleanroom",
         "initial_mission": "현재 프로젝트의 tests/ 폴더에 있는 모든 테스트를 실행하고, 실패하는 테스트들을 분석하여 DTO Purity Gate 등 최신 아키텍처 변경 사항에 맞게 코드를 수정하세요. ..."
+      },
+      "6671994894046104991": {
+        "title": "Master Re-entry: WO-122 & WO-123 Implementation",
+        "initial_mission": "1. design/specs/MASTER_PLAN_REENTRY.md 마스터 플랜을 정독하고, Phase 1부터 Phase 4까지 체크리스트 순서대로 작업을 수행하세요. 2. 특히..."
+      },
+      "12345678901234567890": {
+        "title": "REMEDIATE: Track Alpha & Purity Recovery",
+        "initial_mission": "Execute WO-124 to fix the Tick 1 asset leak (TD-115) and restore DTO Purity (TD-117). This involves refactoring DemographicManager and Household update_needs logic."
       }
     },
     "completed_sessions": {

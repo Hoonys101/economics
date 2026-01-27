@@ -15,13 +15,13 @@
 
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
+| **TD-101** | 2026-01-27 | **Shadow Economy (Direct Mutation)** | Enforce use of `SettlementSystem` in all modules | Zero-sum violation | **REOPENED** |
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
-| **TD-107** | 2026-01-23 | **Leaky Abstraction (HR Back-ref & Demeter)** | Remove back-references from components to DecisionContext | High Coupling | **STRUCTURAL_RISK** |
-| **TD-108** | 2026-01-23 | **Stateful Engine Violation (Market & Govt Injection)** | Inject markets and GovernmentStateDTO via DecisionContext | Purity Gate Violation | **STRUCTURAL_RISK** |
-| **TD-109** | 2026-01-23 | **Sacred Sequence Violation** | Move asset transfers (taxes, profit, infra) into Transaction Phase | Atomicity / Integration Risk | **PARTIALLY_RESOLVED** (Pending Fix) |
-| **TD-113** | 2026-01-24 | **Non-atomic Transfer Fallbacks** | Remove legacy `withdraw/deposit` fallbacks in `TransactionProcessor` | Asset destruction risk | **STRUCTURAL_RISK** |
-| **TD-114** | 2026-01-25 | **Sparse System Tests** | Add tests for Housing, Education, etc. | Regression Risk | **STRUCTURAL_RISK** |
-| **TD-115** | 2026-01-25 | **Tick 1 Financial Leak (-99,680)** | Track Alpha (Refund Cancelled) | Monetary Integrity | **PENDING** |
+| **TD-117** | 2026-01-27 | **DTO-Only Decisions (Regression)** | Remove `self` injection in `core_agents.py` | Purity Gate Violation | **REOPENED** |
+| **TD-123** | 2026-01-27 | **God Class: `Household` (840 lines)** | Decompose into Bio/Social/Econ components | Maintenance Overhead | **ACTIVE** |
+| **TD-124** | 2026-01-27 | **God Class: `TransactionProcessor`** | Split into Tax/Settlement/Registry | Scalability Risk | **ACTIVE** |
+| **TD-125** | 2026-01-27 | **Non-atomic Transfer Sequences** | Implement atomic bank/transaction blocks | Monetary Integrity | **ACTIVE** |
+| **TD-126** | 2026-01-27 | **Implicit `IBankService` Protocol** | Formalize API in `modules/finance/api.py` | Design-Impl Gap | **ACTIVE** |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
 
 ---
@@ -38,7 +38,6 @@
 
 | ID | Date | Description | Solution | Impact | Status |
 |---|---|---|---|---|---|
-| TD-101 | 2026-01-23 | Shadow Economy (Direct Mutation) | SettlementSystem (WO-112) | Zero-sum violation | **RESOLVED** |
 | TD-102 | 2026-01-23 | Residual Evaporation (Inheritance Leak) | Residual Catch-all (WO-112) | Systemic Deflation / Float Leak | **RESOLVED** |
 | TD-104 | 2026-01-23 | Bank Interface Ghosting | Formalize `IBankService` Protocol (WO-113) | Design-Impl Gap | **RESOLVED** |
 | TD-085 | 2026-01-22 | Firm Decision Mutual Exclusivity | Sequential processing in Firm Engine | GDP Ceiling | **RESOLVED** |
@@ -53,8 +52,6 @@
 | TD-119 | 2026-01-26 | Implicit IBankService | Formalize IBankService Protocol (WO-120) | Interface Consistency | **RESOLVED** |
 | TD-111 | 2026-01-24 | Reflux Alchemy (M2 Inflation) | Exclude `RefluxSystem` balance from M2 calculation | Monetary Integrity | **RESOLVED** |
 | TD-116 | 2026-01-26 | Inheritance Residual Evaporation | Integer Distribution (Core Track) | Zero-Sum Integrity | **RESOLVED** |
-| TD-117 | 2026-01-26 | Structural Purity: DTO-Only Decisions | DTO Injection (Core Track) | Purity Gate | **RESOLVED** |
-| TD-118 | 2026-01-26 | CommerceSystem Sequence Violation | 4-Phase Integration (Core Track) | Sacred Sequence | **RESOLVED** |
 | TD-120 | 2026-01-27 | Refactor TransactionProcessor Tax Calls | TaxAgency Injection (Track Bravo) | Maintenance Risk | **RESOLVED** |
 | TD-121 | 2026-01-26 | Newborn Money Leak (DOA) | Initial Needs Config Injection (WO-121) | Agent Viability | **RESOLVED** |
 

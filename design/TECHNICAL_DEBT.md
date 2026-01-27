@@ -7,7 +7,20 @@
 
 ## 🚨 Critical (Must Fix Immediately)
 
+### [TD-123] Shadow Asset Mutations (40+ Instances)
+- **발견일**: 2026-01-27 (v2 Audit)
+- **증상**: `TransactionProcessor`, `Bank`, `HRDepartment` 등에서 `FinanceSystem`을 우회하여 `assets`를 직접 수정.
+- **위험**: 자금 추적 불가능, Zero-Sum 원칙 파괴, 시뮬레이션 데이터 불신.
+- **해결 방안**: 모든 자산 변동을 `SettlementSystem` 또는 `FinanceSystem`을 통해서만 수행하도록 강제하고, 직접 수정을 린트 에러로 처리.
+
+### [TD-124] Leaky Purity Gate (self-injection)
+- **발견일**: 2026-01-27 (v2 Audit)
+- **증상**: `DecisionContext` 초기화 시 DTO가 아닌 에이전트 인스턴스(`self`)를 주입함.
+- **위합**: `simulation/core_agents.py` (L674), `simulation/firms.py` (L326).
+- **해결 방안**: 레거시 Rule-Based 엔진을 DTO 기반으로 전환 완료하고 `self` 주입 경로 차단.
+
 ### [TD-105] The Positive Drift Mystery (+320.0000)
+
 - **등록일**: 2026-01-24
 - **발견자**: Antigravity & User
 - **증상**: 
@@ -36,7 +49,18 @@
 
 ## ⚠️ Major (Plan to Fix)
 
+### [TD-125] God Class Infestation (`Household`, `TransactionProcessor`)
+- **내용**: `Household`는 840라인 돌파, `TransactionProcessor`는 세금/물류/결제를 모두 관리.
+- **위험**: 유지보수 불가, 단위 테스트 작성의 어려움.
+- **조치**: 클래스 쪼개기(Decomposition) 수행. `TaxAgency`, `Registry` 등으로 책임 분산.
+
+### [TD-126] Non-atomic Transaction Sequences
+- **내용**: `TransactionProcessor`의 송금 절차 중 실패 시 롤백 로직 부재.
+- **위험**: 거래 중 통화 소멸 또는 복사 발생 가능.
+- **조치**: `try-finally` 또는 트랜잭션 매니저 도입.
+
 ### [TD-104] Legacy Async Bond Fallback Removal
+
 - **등록일**: 2026-01-24
 - **내용**: `government.py` 등에 `issue_treasury_bonds_synchronous`가 실패할 경우를 대비한 옛날 비동기 코드(`transaction` 방식)가 남아있음.
 - **조치**: 시스템 안정화 확인 후 해당 `else` 블록 삭제하여 코드 복잡도 감소.
