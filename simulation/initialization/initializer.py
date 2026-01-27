@@ -42,6 +42,11 @@ from simulation.systems.bootstrapper import Bootstrapper
 from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.systems.transaction_processor import TransactionProcessor
+from simulation.systems.transaction_manager import TransactionManager
+from simulation.systems.registry import Registry
+from simulation.systems.accounting import AccountingSystem
+from simulation.systems.central_bank_system import CentralBankSystem
+from simulation.systems.handlers import InheritanceHandler
 from modules.finance.system import FinanceSystem
 from simulation.db.repository import SimulationRepository
 from simulation.systems.lifecycle_manager import AgentLifecycleManager
@@ -241,7 +246,31 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)
-        sim.transaction_processor = TransactionProcessor(self.config)
+
+        # WO-124: Initialize Transaction Manager Components
+        sim.registry = Registry(logger=self.logger)
+        sim.accounting_system = AccountingSystem(logger=self.logger)
+        sim.central_bank_system = CentralBankSystem(
+            central_bank_agent=sim.central_bank,
+            settlement_system=sim.settlement_system,
+            logger=self.logger
+        )
+        sim.handlers = {
+            "inheritance_distribution": InheritanceHandler(
+                settlement_system=sim.settlement_system,
+                logger=self.logger
+            )
+        }
+
+        sim.transaction_processor = TransactionManager(
+            registry=sim.registry,
+            accounting_system=sim.accounting_system,
+            settlement_system=sim.settlement_system,
+            central_bank_system=sim.central_bank_system,
+            config=self.config,
+            handlers=sim.handlers,
+            logger=self.logger
+        )
 
         # AgentLifecycleManager is created here and injected into the simulation
         sim.lifecycle_manager = AgentLifecycleManager(

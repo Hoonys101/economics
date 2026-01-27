@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
     from simulation.models import Transaction
     from modules.household.dtos import LifecycleDTO
+    from modules.finance.api import IFinancialEntity
 
 
 # ===================================================================
@@ -216,5 +217,53 @@ class ILearningAgent(Protocol):
 class AgentLifecycleManagerInterface(SystemInterface, Protocol):
     """
     Interface for AgentLifecycleManager to ensure contract compliance.
+    """
+    pass
+
+# ===================================================================
+# 5. Transaction Processor Decomposition Interfaces (TD-124)
+# ===================================================================
+
+class IMintingAuthority(Protocol):
+    """
+    Authority capable of creating or destroying money (Non-Zero-Sum).
+    Typically the Central Bank system.
+    """
+    def mint_and_transfer(self, target_agent: Any, amount: float, memo: str) -> bool:
+        """Creates money and transfers it to the target agent."""
+        ...
+
+    def transfer_and_burn(self, source_agent: Any, amount: float, memo: str) -> bool:
+        """Transfers money from the source agent and destroys it."""
+        ...
+
+class IAccountingSystem(Protocol):
+    """
+    Responsible for updating internal financial ledgers (Revenue, Expenses, etc.).
+    Does NOT move assets.
+    """
+    def record_transaction(self, transaction: Transaction, buyer: Any, seller: Any, amount: float, tax_amount: float = 0.0) -> None:
+        """Updates internal ledgers based on the transaction details."""
+        ...
+
+class IRegistry(Protocol):
+    """
+    Responsible for updating non-financial state (Ownership, Inventory, Employment).
+    """
+    def update_ownership(self, transaction: Transaction, buyer: Any, seller: Any, state: SimulationState) -> None:
+        """Updates ownership records (stock, real estate, inventory, jobs)."""
+        ...
+
+class ISpecializedTransactionHandler(Protocol):
+    """
+    Handler for complex transaction sagas (e.g. Inheritance).
+    """
+    def handle(self, transaction: Transaction, buyer: Any, seller: Any, state: SimulationState) -> bool:
+        """Executes the specialized transaction logic."""
+        ...
+
+class ITransactionManager(SystemInterface, Protocol):
+    """
+    Orchestrator for the transaction processing pipeline.
     """
     pass

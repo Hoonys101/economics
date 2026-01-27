@@ -11,6 +11,11 @@ class SettlementSystem(ISettlementSystem):
     """
     Centralized system for handling all financial transfers between entities.
     Enforces atomicity and zero-sum integrity.
+
+    ZERO-SUM PRINCIPLE:
+    Every transfer MUST result in a net change of 0.0 across the system.
+    Asset deduction from one agent must exactly equal asset addition to another.
+    Money creation/destruction is ONLY allowed via the CentralBank (Minting Authority).
     """
 
     def __init__(self, logger: Optional[logging.Logger] = None):
@@ -53,17 +58,36 @@ class SettlementSystem(ISettlementSystem):
             return True # Or False, based on desired strictness. Let's say True.
 
         # 1. ATOMIC CHECK: Verify funds BEFORE any modification
-        if debit_agent.assets < amount:
-            self.logger.error(
-                f"SETTLEMENT_FAIL | Insufficient funds for {debit_agent.id} to transfer {amount:.2f} to {credit_agent.id}. "
-                f"Assets: {debit_agent.assets:.2f}. Memo: {memo}",
-                extra={"tags": ["settlement", "insufficient_funds"]}
-            )
-            return False
+        # Special Case: Central Bank (Minting Authority) can have negative assets (Fiat Issuer).
+        # We skip the check if the debit agent is the Central Bank.
+        is_central_bank = getattr(debit_agent, "id", None) == "CENTRAL_BANK"
+
+        if not is_central_bank:
+            if hasattr(debit_agent, 'assets'):
+                # Safe access if it's a property returning float
+                # Note: IFinancialEntity guarantees .assets is float
+                try:
+                    current_assets = float(debit_agent.assets)
+                    if current_assets < amount:
+                        self.logger.error(
+                            f"SETTLEMENT_FAIL | Insufficient funds for {debit_agent.id} to transfer {amount:.2f} to {credit_agent.id}. "
+                            f"Assets: {current_assets:.2f}. Memo: {memo}",
+                            extra={"tags": ["settlement", "insufficient_funds"]}
+                        )
+                        return False
+                except (TypeError, ValueError):
+                    # Fallback for agents like CentralBank if they don't conform but passed is_central_bank check?
+                    # If we are here, it's NOT Central Bank.
+                    self.logger.warning(
+                        f"SettlementSystem warning: Agent {debit_agent.id} assets property is not float compatible."
+                    )
+            else:
+                 self.logger.warning(f"SettlementSystem warning: Agent {debit_agent.id} has no assets property.")
 
         # 2. EXECUTE: Perform the debit and credit
         try:
             # These should be calls to the IFinancialEntity interface methods
+            # Zero-Sum Verification (Implicit): We withdraw X and deposit X.
             debit_agent.withdraw(amount)
             credit_agent.deposit(amount)
 
