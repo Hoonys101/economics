@@ -33,7 +33,13 @@ Manage these documents in every session to maintain the "Handover Chain":
 ---
 
 ## 🛠️ Phase 2: Operations (The One-Shot Workflow)
-We use **SCR (Structured Command Registry)** to control agents. **DO NOT edit JSON directly.** Use `cmd_ops.py` to "arm" the tools.
+> **🚨 CRITICAL: MASTER `cmd_ops.py` OR FAIL.**
+> 본 프로젝트의 모든 에이전트 제어는 **SCR (Structured Command Registry)**을 통해 이루어집니다. 
+> `cmd_ops.py` 사용법을 숙지하지 않는 것은 오케스트라 지휘자가 지휘봉 없이 무대에 서는 것과 같습니다.
+> **반드시 이 섹션의 사용법을 읽고 익히십시오.** 
+
+우리는 에이전트를 제어하기 위해 `cmd_ops.py` 유틸리티를 사용합니다. **절대로 `command_registry.json`을 직접 수정하지 마십시오.** 
+모든 도구의 '장착(Arming)'은 이 스크립트를 통해서만 수행됩니다.
 
 ### 1. Arm Gemini (Analysis & Spec)
 ```powershell

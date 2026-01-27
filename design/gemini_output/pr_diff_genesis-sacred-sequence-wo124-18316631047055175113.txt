@@ -1,0 +1,327 @@
+diff --git a/main.py b/main.py
+index 0ffae3b..5935121 100644
+--- a/main.py
++++ b/main.py
+@@ -100,6 +100,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+         for good_name, good_attrs in config.GOODS.items()
+     ]
+     households = []
++    initial_balances: Dict[int, float] = {}  # WO-124: Collect intended initial balances
++
+     for i in range(num_households):
+         initial_assets = config.INITIAL_HOUSEHOLD_ASSETS_MEAN * (
+             1
+@@ -108,6 +110,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+                 config.INITIAL_HOUSEHOLD_ASSETS_RANGE,
+             )
+         )
++        initial_balances[i] = initial_assets  # Record intended balance
++
+         initial_liquidity_need = config.INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN * (
+             1
+             + random.uniform(
+@@ -183,7 +187,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+             id=i,
+             talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
+             goods_data=goods_data,
+-            initial_assets=initial_assets,
++            initial_assets=0.0,  # WO-124: Start empty (Genesis Protocol)
++            initial_assets_record=initial_assets, # Record "birthright" for history
+             initial_needs=initial_needs,
+             decision_engine=household_decision_engine,
+             value_orientation=value_orientation,
+@@ -207,6 +212,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+                 -config.INITIAL_FIRM_CAPITAL_RANGE, config.INITIAL_FIRM_CAPITAL_RANGE
+             )
+         )
++        initial_balances[firm_id] = initial_capital  # Record intended capital
++
+         initial_liquidity_need = config.INITIAL_FIRM_LIQUIDITY_NEED_MEAN * (
+             1
+             + random.uniform(
+@@ -241,7 +248,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+         # Create the Firm instance with specialization instead of production_targets
+         firm = Firm(
+             id=firm_id,
+-            initial_capital=initial_capital,
++            initial_capital=0.0,  # WO-124: Start empty (Genesis Protocol)
+             initial_liquidity_need=initial_liquidity_need,
+             specialization=specialization,
+             productivity_factor=config.FIRM_PRODUCTIVITY_FACTOR,
+@@ -316,6 +323,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
+         households=households,
+         firms=firms,
+         ai_trainer=ai_trainer,
++        initial_balances=initial_balances, # WO-124: Pass Genesis distribution map
+     )
+     sim = initializer.build_simulation()
+ 
+diff --git a/simulation/agents/central_bank.py b/simulation/agents/central_bank.py
+index 6d3caa5..322b259 100644
+--- a/simulation/agents/central_bank.py
++++ b/simulation/agents/central_bank.py
+@@ -170,6 +170,13 @@ class CentralBank:
+         if amount > 0:
+             self.assets['cash'] = self.assets.get('cash', 0) + amount
+ 
++    def mint(self, amount: float) -> None:
++        """
++        Mints new currency (adds to cash reserves).
++        Alias for deposit but semantically distinct for Genesis Protocol.
++        """
++        self.deposit(amount)
++
+     def withdraw(self, amount: float) -> None:
+         """
+         Withdraws a given amount from the central bank's cash reserves.
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 6b89492..c74e70e 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -63,6 +63,7 @@ class Household(BaseAgent, ILearningAgent):
+         gender: Optional[str] = None,
+         parent_id: Optional[int] = None,
+         generation: Optional[int] = None,
++        initial_assets_record: Optional[float] = None,  # WO-124: Explicit record of intended assets
+         **kwargs,
+     ) -> None:
+         self.config_module = config_module
+@@ -160,7 +161,7 @@ class Household(BaseAgent, ILearningAgent):
+             adaptation_rate=adaptation_rate,
+             labor_income_this_tick=0.0,
+             capital_income_this_tick=0.0,
+-            initial_assets_record=initial_assets
++            initial_assets_record=initial_assets_record if initial_assets_record is not None else initial_assets
+         )
+ 
+         # Social State
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index e7d5d01..cb64845 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -74,7 +74,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+                  logger: logging.Logger,
+                  households: List[Household],
+                  firms: List[Firm],
+-                 ai_trainer: AIEngineRegistry):
++                 ai_trainer: AIEngineRegistry,
++                 initial_balances: Optional[Dict[int, float]] = None):
+         self.config_manager = config_manager
+         self.config = config_module
+         self.goods_data = goods_data
+@@ -83,6 +84,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         self.households = households
+         self.firms = firms
+         self.ai_trainer = ai_trainer
++        self.initial_balances = initial_balances or {}
+ 
+     def build_simulation(self) -> Simulation:
+         """
+@@ -100,6 +102,17 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # 2. Populate the shell with all its components
+         sim.settlement_system = SettlementSystem(logger=self.logger)
+ 
++        sim.tracker = EconomicIndicatorTracker(config_module=self.config)
++
++        # WO-124: Initialize CentralBank EARLY for Genesis Protocol
++        sim.central_bank = CentralBank(
++            tracker=sim.tracker,
++            config_module=self.config
++        )
++        # Genesis Step 1: Fiat Lux (Minting M0)
++        sim.central_bank.deposit(self.config.INITIAL_MONEY_SUPPLY)
++        self.logger.info(f"GENESIS | Central Bank minted M0: {self.config.INITIAL_MONEY_SUPPLY:,.2f}")
++
+         sim.households = self.households
+         sim.firms = self.firms
+         sim.goods_data = self.goods_data
+@@ -118,13 +131,16 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # WO-078: Initialize CreditScoringService
+         credit_scoring_service = CreditScoringService(config_module=self.config)
+ 
++        # WO-124: Initialize Bank with 0.0 assets
+         sim.bank = Bank(
+             id=sim.next_agent_id,
+-            initial_assets=self.config.INITIAL_BANK_ASSETS,
++            initial_assets=0.0, # Will be funded via Genesis Grant
+             config_manager=self.config_manager,
+             settlement_system=sim.settlement_system,
+             credit_scoring_service=credit_scoring_service
+         )
++        self.initial_balances[sim.bank.id] = self.config.INITIAL_BANK_ASSETS # Record for distribution
++
+         sim.bank.settlement_system = sim.settlement_system
+         sim.agents[sim.bank.id] = sim.bank
+         sim.next_agent_id += 1
+@@ -141,13 +157,6 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # Inject government into bank for monetary tracking
+         sim.bank.set_government(sim.government)
+ 
+-        sim.tracker = EconomicIndicatorTracker(config_module=self.config)
+-
+-        sim.central_bank = CentralBank(
+-            tracker=sim.tracker,
+-            config_module=self.config
+-        )
+-
+         sim.finance_system = FinanceSystem(
+             government=sim.government,
+             central_bank=sim.central_bank,
+@@ -211,12 +220,32 @@ class SimulationInitializer(SimulationInitializerInterface):
+                 if "housing" in sim.markets:
+                     sim.markets["housing"].place_order(sell_order, sim.time)
+ 
++        # WO-124: Genesis Step 3 - Distribution (Atomic Transfer)
++        self.logger.info("GENESIS | Starting initial wealth distribution...")
++        distributed_count = 0
++        for agent_id, amount in self.initial_balances.items():
++            if agent_id in sim.agents and amount > 0:
++                Bootstrapper.distribute_initial_wealth(
++                    central_bank=sim.central_bank,
++                    target_agent=sim.agents[agent_id],
++                    amount=amount,
++                    settlement_system=sim.settlement_system
++                )
++                distributed_count += 1
++        self.logger.info(f"GENESIS | Distributed wealth to {distributed_count} agents.")
++
+         # Phase 22.5 & WO-058: Bootstrap firms BEFORE first update_needs call
+-        # This prevents Tick 1 liquidation due to 0 assets/employees
+-        Bootstrapper.inject_initial_liquidity(sim.firms, self.config)
++        # WO-124: Updated to use SettlementSystem
++        Bootstrapper.inject_initial_liquidity(
++            firms=sim.firms,
++            config=self.config,
++            settlement_system=sim.settlement_system,
++            central_bank=sim.central_bank
++        )
+ 
+         # TD-115: Establish baseline money supply AFTER all liquidity injection
+         # but BEFORE any agent-level activities (hiring, update_needs) begin.
++        sim.world_state.central_bank = sim.central_bank # Ensure WorldState has CB ref
+         sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
+         self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
+ 
+diff --git a/simulation/systems/bootstrapper.py b/simulation/systems/bootstrapper.py
+index 0ffbd57..956fb25 100644
+--- a/simulation/systems/bootstrapper.py
++++ b/simulation/systems/bootstrapper.py
+@@ -17,6 +17,16 @@ class Bootstrapper:
+     MIN_CAPITAL = 100_000.0  # Increased from 2000
+     INITIAL_INVENTORY = 50.0  # New constant
+ 
++    @staticmethod
++    def distribute_initial_wealth(central_bank: Any, target_agent: Any, amount: float, settlement_system: Any) -> None:
++        """
++        Transfers initial wealth from Central Bank to target agent.
++        Ensures zero-sum integrity via SettlementSystem.
++        """
++        if amount > 0:
++             settlement_system.transfer(central_bank, target_agent, amount, "GENESIS_GRANT")
++             logger.debug(f"GENESIS_GRANT | Transferred {amount:.2f} to Agent {target_agent.id}")
++
+     @staticmethod
+     def force_assign_workers(firms: List['Firm'], households: List['Household']) -> int:
+         MAX_FORCED_WORKERS = 5
+@@ -43,13 +53,15 @@ class Bootstrapper:
+         return assigned_count
+ 
+     @staticmethod
+-    def inject_initial_liquidity(firms: List['Firm'], config: Any) -> None:
++    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: Any = None, central_bank: Any = None) -> None:
+         """
+         Injects a 30-tick buffer of raw materials and minimum capital.
+ 
+         Args:
+             firms: List of Firm agents.
+             config: Configuration module (contains GOODS definition).
++            settlement_system: System for financial transfers (WO-124).
++            central_bank: Source of liquidity (WO-124).
+         """
+         BUFFER_DAYS = 30.0
+ 
+@@ -82,6 +94,12 @@ class Bootstrapper:
+             # 2. Capital Injection (Demand Side)
+             if firm.assets < Bootstrapper.MIN_CAPITAL:
+                 diff = Bootstrapper.MIN_CAPITAL - firm.assets
+-                firm._add_assets(diff)
++                if settlement_system and central_bank:
++                    settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
++                    logger.info(f"BOOTSTRAPPER | Injected {diff:.2f} capital to Firm {firm.id} via Settlement.")
++                else:
++                    # Fallback (Should not be used in Genesis mode, but keeps compatibility)
++                    firm._add_assets(diff)
++                    logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff:.2f} to Firm {firm.id} (No SettlementSystem).")
+ 
+         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index a03b6a6..168b990 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -58,6 +58,14 @@ class SettlementSystem(ISettlementSystem):
+             return True # Or False, based on desired strictness. Let's say True.
+ 
+         # 1. ATOMIC CHECK: Verify funds BEFORE any modification
++        if debit_agent is None:
++            self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
++            return False
++
++        if credit_agent is None:
++            self.logger.error(f"SETTLEMENT_FAIL | Credit agent is None. Memo: {memo}")
++            return False
++
+         # Special Case: Central Bank (Minting Authority) can have negative assets (Fiat Issuer).
+         # We skip the check if the debit agent is the Central Bank.
+         is_central_bank = getattr(debit_agent, "id", None) == "CENTRAL_BANK"
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 0ec2b3a..87f391d 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -157,6 +157,11 @@ class WorldState:
+         if self.government:
+             total += self.government.assets
+ 
++        # 6. Central Bank Assets (WO-124: Include Central Bank for Genesis Protocol Integrity)
++        # Central Bank holds negative cash if it distributed more than it had, or positive if it minted but hasn't distributed.
++        if self.central_bank:
++            total += self.central_bank.assets.get('cash', 0.0)
++
+         return total
+ 
+     def get_all_agents(self) -> List[Any]:
+diff --git a/tests/test_engine.py b/tests/test_engine.py
+index 201cfce..fd84cf4 100644
+--- a/tests/test_engine.py
++++ b/tests/test_engine.py
+@@ -77,6 +77,7 @@ def mock_config_module():
+     mock_config.CB_INFLATION_TARGET = 0.02
+     mock_config.CB_TAYLOR_ALPHA = 1.5
+     mock_config.CB_TAYLOR_BETA = 0.5
++    mock_config.INITIAL_MONEY_SUPPLY = 100000.0  # WO-124
+ 
+     # Inflation Psychology
+     mock_config.INFLATION_MEMORY_WINDOW = 10
+@@ -96,6 +97,7 @@ def mock_config_module():
+         "luxury_food": {"initial_price": 20.0},
+         "basic_food": {"initial_price": 10.0},
+     }
++    mock_config.GOODS_INITIAL_PRICE = {} # WO-124 Fix for Mock vs Float
+ 
+     mock_config.TAX_BRACKETS = [
+         (0.5, 0.0),   # Tax Free
+@@ -144,6 +146,7 @@ def mock_households(mock_config_module):
+     hh1 = Mock(spec=Household)
+     hh1.id = 1
+     hh1._assets = 100.0
++    hh1.assets = 100.0 # WO-124: Explicitly set assets for property access
+     hh1.is_active = True
+     hh1.value_orientation = "wealth_and_needs"
+     hh1.decision_engine = Mock()
+@@ -166,6 +169,7 @@ def mock_households(mock_config_module):
+     hh2 = Mock(spec=Household)
+     hh2.id = 2
+     hh2._assets = 150.0
++    hh2.assets = 150.0 # WO-124: Explicitly set assets for property access
+     hh2.is_active = True
+     hh2.value_orientation = "needs_and_growth"
+     hh2.decision_engine = Mock()

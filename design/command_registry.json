@@ -4,10 +4,9 @@
     "updated": "2026-01-27",
     "author": "Antigravity"
   },
-  "genesis-fix": {
+  "hotfix-crash": {
     "command": "create",
-    "instruction": "Sacred Sequence Implementation",
-    "title": "Genesis Fix",
-    "file": "design/work_orders/WO-124_JULES_GO.md"
+    "instruction": "Fix AttributeError: 'Household' object has no attribute 'update_political_opinion' in core_agents.py or trace_leak.py",
+    "title": "Hotfix: Household Impact"
   }
 }
