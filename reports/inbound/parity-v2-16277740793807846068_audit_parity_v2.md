@@ -1,0 +1,53 @@
+# [AUDIT-PARITY-V2] 제품 정합성 진단 보고서
+
+**Date:** 2026-01-27
+**Auditor:** Jules
+
+## 1. 진단 개요
+본 보고서는 `project_status.md`에 완료로 표시된 주요 기능의 실제 구현 여부를 진단합니다.
+특히 "Phase 23: Industrial Revolution" 및 기술 부채(TD-085, TD-086) 항목을 집중 점검했습니다.
+
+## 2. 진단 결과 요약 (Executive Summary)
+
+| 항목 | 구현 상태 | Parity Score | 비고 |
+|---|---|---|---|
+| **Chemical Fertilizer** | ✅ **Verified** | 1/1 | `TechnologyManager` 및 TFP x3.0 로직 확인됨 |
+| **TD-085 (Mutual Exclusivity)** | ✅ **Verified** | 1/1 | 생산/고용 파이프라인 분리 및 순차 실행 확인됨 |
+| **TD-086 (Newborn Engine)** | ✅ **Verified** | 1/1 | `NEWBORN_ENGINE_TYPE` 기반 분기 처리 확인됨 |
+
+### 📊 Parity Score: 100% (3/3)
+
+---
+
+## 3. 상세 진단 내용
+
+### A. Chemical Fertilizer (TFP x3.0)
+- **Status:** ✅ **Implemented**
+- **Location:** `simulation/systems/technology_manager.py`, `simulation/engine.py`
+- **Findings:**
+    - `TechnologyManager._initialize_tech_tree`에 `TECH_AGRI_CHEM_01` (Chemical Fertilizer)가 정의되어 있으며, `multiplier=3.0`으로 설정됨.
+    - `get_productivity_multiplier` 메서드가 `multiplier`를 올바르게 계산함.
+    - `simulation/engine.py`의 `orchestrate_production_and_tech` 메서드에서 `technology_manager.update` 호출 및 `firm.produce` 주입이 수행됨.
+    - **결론:** 기획 의도대로 정확히 구현됨.
+
+### B. TD-085 (Mutual Exclusivity / Pipeline)
+- **Status:** ✅ **Implemented** (Sequential Pipeline)
+- **Location:** `simulation/decisions/standalone_rule_based_firm_engine.py`
+- **Findings:**
+    - 생산(`_adjust_production`)과 고용(`_adjust_wages`) 로직이 `make_decisions` 메서드 내에서 별도의 블록으로 분리되어 있음.
+    - 두 로직은 순차적으로 실행되며(Sequential Execution), `needed_labor_for_production`을 공유하여 논리적 정합성을 유지함.
+    - "Mutual Exclusivity"는 엄격한 배타적 실행(Exclusive OR)이 아닌, **파이프라인 분리 및 순차적 처리**를 통해 충돌을 방지하는 형태로 구현됨.
+    - **결론:** "분리된 파이프라인으로 작동하는가?"라는 질문에 대해 **YES**.
+
+### C. TD-086 (Newborn Engine)
+- **Status:** ✅ **Implemented**
+- **Location:** `simulation/systems/demographic_manager.py`
+- **Findings:**
+    - `process_births` 메서드 내에서 `NEWBORN_ENGINE_TYPE` 설정값을 참조함.
+    - 설정값에 따라 `RuleBasedHouseholdDecisionEngine` 또는 `AIDrivenHouseholdDecisionEngine`을 조건부로 인스턴스화함.
+    - **결론:** 구성 기반 엔진 선택 로직이 정확히 구현됨.
+
+---
+
+## 4. Ghost List (미구현/미비 항목)
+- **없음 (None)**: 점검 대상 3건 모두 코드상에 실체 로직이 존재함을 확인했습니다.

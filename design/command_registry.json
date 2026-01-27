@@ -9,22 +9,6 @@
     "instruction": "Fix AttributeError: 'Household' object has no attribute 'update_political_opinion' in core_agents.py or trace_leak.py",
     "title": "Hotfix: Household Impact"
   },
-  "td-111-spec": {
-    "worker": "spec",
-    "instruction": "Create a detailed technical specification for TD-111 (Reflux M2 Calculation) based on the plan in design/specs/D_TRACK_ALPHA_REMEDIATION.md. The goal is to implement 'get_m2_money_supply' in EconomicIndicatorTracker and ensure it excludes 'reflux_system.balance' while maintaining zero-sum integrity in WorldState. Output the spec to design/specs/TD-111_REFLUX_M2_SPEC.md.",
-    "context": [
-      "design/specs/D_TRACK_ALPHA_REMEDIATION.md",
-      "simulation/world_state.py",
-      "simulation/metrics/economic_tracker.py"
-    ],
-    "output": "design/specs/TD-111_REFLUX_M2_SPEC.md"
-  },
-  "mission-td-111": {
-    "command": "create",
-    "instruction": "Implement get_m2_money_supply in tracker as per spec. Correct consumers.",
-    "title": "Fix: M2 Money Supply Measurement",
-    "file": "design/specs/TD-111_REFLUX_M2_SPEC.md"
-  },
   "mission-wo-053": {
     "command": "send-message",
     "instruction": "PR for mission-wo-053 Request Changes: Please update 'tests/systems/test_technology_manager.py' to use 'FirmTechInfoDTO' objects instead of raw dicts in 'test_unlock_and_visionary_adoption', to maintain consistency with the actual application usage in 'main.py'."
@@ -33,5 +17,17 @@
     "command": "create",
     "instruction": "Perform a comprehensive verification of the current main branch. 1. Run scripts/verify_td_111.py and scripts/trace_leak.py. 2. Confirm Zero Leak status and M2 reporting accuracy. 3. Summarize the initial economic state including HCI and productivity gains from WO-053. 4. Save the final report to communications/insights/2026-01-27_Final_Verification_Report.md.",
     "title": "Final Verification: Integrated Core & P23"
+  },
+  "mission-holy-ledger": {
+    "command": "create",
+    "instruction": "Remediate TD-127/128/129/130 by enforcing SettlementSystem for all cash moves. MANDATORY: Remove RefluxSystem entirely and migrate its 'money capture' logic into SettlementSystem's zero-sum tracking as per HOLY_LEDGER_REMEDIATION_SPEC.md.",
+    "title": "Track A: Holy Ledger & Reflux Deprecation",
+    "file": "design/specs/HOLY_LEDGER_REMEDIATION_SPEC.md"
+  },
+  "mission-scheduler-refactor": {
+    "command": "create",
+    "instruction": "Decompose TickScheduler and re-align Firm lifecycle sequence as per SCHEDULER_DECOMPOSITION_SPEC.md.",
+    "title": "Track B: Scheduler Decomposition",
+    "file": "design/specs/SCHEDULER_DECOMPOSITION_SPEC.md"
   }
 }

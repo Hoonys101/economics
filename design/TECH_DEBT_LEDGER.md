@@ -16,10 +16,13 @@
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
-| **TD-123** | 2026-01-27 | **God Class: `Household` (840 lines)** | Decompose into Bio/Social/Econ components | Maintenance Overhead | **RESOLVED** (WO-123) |
-| **TD-124** | 2026-01-27 | **God Class: `TransactionProcessor`** | Split into Tax/Settlement/Registry | Scalability Risk | **RESOLVED** (WO-124) |
-| **TD-126** | 2026-01-27 | **Implicit `IBankService` Protocol** | Formalize API in `modules/finance/api.py` | Design-Impl Gap | **RESOLVED** (TD-126) |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
+| **TD-127** | 2026-01-28 | **Shadow Economy (EventSystem)** | Use `SettlementSystem` for shock injections/reductions | Zero-Sum Violation | **ECONOMIC_LEAK** |
+| **TD-128** | 2026-01-28 | **Deflationary Leak (Liquidation)** | Escheat liquidation dust to Gov/Reflux | Monetary Evaporation | **ECONOMIC_LEAK** |
+| **TD-129** | 2026-01-28 | **Untracked Immigration Grant** | Use `SettlementSystem` for Gov->Agent grants | Audit Trail Loss | **INTEGRITY_RISK** |
+| **TD-130** | 2026-01-28 | **Legacy Fallback Risk (M&A)** | Remove direct asset modification fallbacks | Dead Code / Bug Masking | **STRUCTURAL_RISK** |
+| **TD-131** | 2026-01-28 | **God Class: `TickScheduler`** | Decompose into Phase Strategy classes | Orchestration Overload | **MAINTAINABILITY** |
+| **TD-132** | 2026-01-28 | **Phase Integrity (Firm Needs)** | Move `update_needs` to Phase 4 (Lifecycle) | Sequence Violation | **STRUCTURAL_RISK** |
 
 ---
 
