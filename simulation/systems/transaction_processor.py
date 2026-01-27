@@ -55,6 +55,9 @@ class TransactionProcessor(SystemInterface):
             # 1. Financial Settlement (Asset Transfer & Taxes)
             # ==================================================================
             settlement = getattr(state, 'settlement_system', None)
+            if not settlement:
+                raise RuntimeError("SettlementSystem is required for TransactionProcessor but is missing in SimulationState.")
+
             success = False
 
             if tx.transaction_type == "lender_of_last_resort":
@@ -81,12 +84,7 @@ class TransactionProcessor(SystemInterface):
 
             elif tx.transaction_type == "asset_transfer":
                  # Standard Transfer (Zero-Sum)
-                 if settlement:
-                     success = settlement.transfer(buyer, seller, trade_value, f"asset_transfer:{tx.item_id}")
-                 else:
-                     buyer.withdraw(trade_value)
-                     seller.deposit(trade_value)
-                     success = True
+                 success = settlement.transfer(buyer, seller, trade_value, f"asset_transfer:{tx.item_id}")
 
                  # Asset Transfer Logic
                  if success:
@@ -97,14 +95,9 @@ class TransactionProcessor(SystemInterface):
 
             elif tx.transaction_type == "escheatment":
                  # Buyer: Agent (Deceased/Closed), Seller: Government
-                 if settlement:
-                     # Atomic Collection via Government (handles transfer and confirmed recording)
-                     result = government.collect_tax(trade_value, "escheatment", buyer, current_time)
-                     success = result['success']
-                 else:
-                     buyer.withdraw(trade_value)
-                     government.deposit(trade_value)
-                     success = True
+                 # Atomic Collection via Government (handles transfer and confirmed recording)
+                 result = government.collect_tax(trade_value, "escheatment", buyer, current_time)
+                 success = result['success']
 
             elif tx.transaction_type == "inheritance_distribution":
                 heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
@@ -123,15 +116,10 @@ class TransactionProcessor(SystemInterface):
                         h_id = heir_ids[i]
                         heir = agents.get(h_id)
                         if heir:
-                            if settlement:
-                                if settlement.transfer(buyer, heir, base_amount, "inheritance_distribution"):
-                                    distributed_sum += base_amount
-                                else:
-                                    all_success = False
-                            else:
-                                buyer.withdraw(base_amount)
-                                heir.deposit(base_amount)
+                            if settlement.transfer(buyer, heir, base_amount, "inheritance_distribution"):
                                 distributed_sum += base_amount
+                            else:
+                                all_success = False
 
                     # Last heir gets the remainder to ensure zero-sum
                     last_heir_id = heir_ids[-1]
@@ -140,12 +128,8 @@ class TransactionProcessor(SystemInterface):
                         remaining_amount = total_cash - distributed_sum
                         # Ensure we don't transfer negative amounts or dust if something went wrong
                         if remaining_amount > 0:
-                            if settlement:
-                                if not settlement.transfer(buyer, last_heir, remaining_amount, "inheritance_distribution_final"):
-                                    all_success = False
-                            else:
-                                buyer.withdraw(remaining_amount)
-                                last_heir.deposit(remaining_amount)
+                            if not settlement.transfer(buyer, last_heir, remaining_amount, "inheritance_distribution_final"):
+                                all_success = False
 
                     success = all_success
 
@@ -158,25 +142,14 @@ class TransactionProcessor(SystemInterface):
                     if buyer.assets < (trade_value + tax_amount):
                         buyer.check_solvency(government)
 
-                if settlement:
-                    success = settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
-                    if success and tax_amount > 0:
-                        # Atomic collection from buyer
-                        government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
-                else:
-                    buyer.withdraw(trade_value + tax_amount)
-                    seller.deposit(trade_value)
-                    government.deposit(tax_amount)
-                    success = True
+                success = settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+                if success and tax_amount > 0:
+                    # Atomic collection from buyer
+                    government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
 
             elif tx.transaction_type == "stock":
                 # Stock: NO Sales Tax
-                if settlement:
-                    success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
-                else:
-                    buyer.withdraw(trade_value)
-                    seller.deposit(trade_value)
-                    success = True
+                success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
             
             elif tx.transaction_type in ["labor", "research_labor"]:
                 # Labor: Apply Income Tax
@@ -193,91 +166,48 @@ class TransactionProcessor(SystemInterface):
                 tax_amount = government.calculate_income_tax(trade_value, survival_cost)
                 
                 if tax_payer == "FIRM":
-                    if settlement:
-                        success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
-                        if success and tax_amount > 0:
-                            # Atomic collection from Firm
-                            government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
-                    else:
-                        buyer.withdraw(trade_value + tax_amount)
-                        seller.deposit(trade_value)
-                        government.deposit(tax_amount)
-                        success = True
+                    success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
+                    if success and tax_amount > 0:
+                        # Atomic collection from Firm
+                        government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
                 else:
                     # Household pays tax
-                    if settlement:
-                        # Pay GROSS wage to household, then collect tax from household
-                        success = settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
-                        if success and tax_amount > 0:
-                            # Atomic collection from Household (Withholding model)
-                            government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
-                    else:
-                        net_wage = trade_value - tax_amount
-                        buyer.withdraw(trade_value)
-                        seller.deposit(net_wage)
-                        government.deposit(tax_amount)
-                        success = True
+                    # Pay GROSS wage to household, then collect tax from household
+                    success = settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
+                    if success and tax_amount > 0:
+                        # Atomic collection from Household (Withholding model)
+                        government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
             
             elif tx.item_id == "interest_payment":
-                if settlement:
-                    success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
-                else:
-                    buyer.withdraw(trade_value)
-                    seller.deposit(trade_value)
-                    success = True
+                success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
 
                 if success and isinstance(buyer, Firm):
                     buyer.finance.record_expense(trade_value)
 
             elif tx.transaction_type == "dividend":
-                if settlement:
-                    success = settlement.transfer(seller, buyer, trade_value, "dividend_payment")
-                else:
-                    seller.withdraw(trade_value)
-                    buyer.deposit(trade_value)
-                    success = True
+                success = settlement.transfer(seller, buyer, trade_value, "dividend_payment")
 
                 if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
                     buyer.capital_income_this_tick += trade_value
             elif tx.transaction_type == "tax":
                 # Atomic Collection via Government
-                if settlement:
-                    result = government.collect_tax(trade_value, tx.item_id, buyer, current_time)
-                    success = result['success']
-                else:
-                    buyer.withdraw(trade_value)
-                    government.deposit(trade_value)
-                    success = True
+                result = government.collect_tax(trade_value, tx.item_id, buyer, current_time)
+                success = result['success']
             elif tx.transaction_type == "infrastructure_spending":
                 # Standard Transfer (Gov -> Reflux)
-                if settlement:
-                    success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
-                else:
-                    buyer.withdraw(trade_value)
-                    seller.deposit(trade_value)
-                    success = True
+                success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
 
             elif tx.transaction_type == "emergency_buy":
                 # Fast Purchase (Buyer -> Reflux/System)
                 # No Sales Tax, Immediate Inventory Update
-                if settlement:
-                    success = settlement.transfer(buyer, seller, trade_value, "emergency_buy")
-                else:
-                    buyer.withdraw(trade_value)
-                    seller.deposit(trade_value)
-                    success = True
+                success = settlement.transfer(buyer, seller, trade_value, "emergency_buy")
 
                 if success:
                     buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
 
             else:
                 # Default / Other
-                if settlement:
-                    success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
-                else:
-                    buyer.withdraw(trade_value)
-                    seller.deposit(trade_value)
-                    success = True
+                success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
 
             # WO-109: Apply Deferred Effects only on Success
             if success and tx.metadata and tx.metadata.get("triggers_effect"):
