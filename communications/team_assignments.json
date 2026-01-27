@@ -81,6 +81,10 @@
       "10556833407348293024": {
         "title": "WO-124: TransactionProcessor God Class Decomposition (Refined)",
         "initial_mission": "Implement the decomposition of the TransactionProcessor. Follow the REFINED 6-layer architecture in ..."
+      },
+      "95074296476804115": {
+        "title": "TD-126: Formalize IBankService Protocol",
+        "initial_mission": "현재 Bank 클래스에 흩어져 있는 대출, 예금 관련 로직을 modules/finance/api.py의 IBankService 인터페이스로 공식화하세요. Household와 Fir..."
       }
     },
     "completed_sessions": {
