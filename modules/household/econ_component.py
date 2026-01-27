@@ -326,8 +326,7 @@ class EconComponent(IEconComponent):
             new_state.shadow_reservation_wage = (new_state.shadow_reservation_wage * 0.95) + (target * 0.05)
         else:
             new_state.shadow_reservation_wage *= (1.0 - 0.02)
-            # min_wage from config?
-            min_wage = 6.0
+            min_wage = getattr(config, "HOUSEHOLD_MIN_WAGE_DEMAND", 6.0)
             if new_state.shadow_reservation_wage < min_wage:
                 new_state.shadow_reservation_wage = min_wage
 
@@ -362,7 +361,7 @@ class EconComponent(IEconComponent):
 
         # 4. Panic Selling
         if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
-             threshold = 500.0 # Default
+             threshold = getattr(config, "PANIC_SELLING_ASSET_THRESHOLD", 500.0)
              if new_state.assets < threshold:
                  # Sell stocks
                  for firm_id, share in new_state.portfolio.holdings.items():

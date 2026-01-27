@@ -890,10 +890,7 @@ class Household(BaseAgent, ILearningAgent):
             config_module=self.config_module,
             loan_market=self.decision_engine.loan_market,
             risk_aversion=self.risk_aversion,
-            logger=self.logger, # Reuse logger or let it create new?
-            # Household init creates new logger if None passed, using ID.
-            # Passing self.logger is wrong ID.
-            # Pass None.
+            logger=None,
 
             # Demographics from Bio
             initial_age=offspring_demo["initial_age"],
