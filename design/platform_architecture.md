@@ -119,6 +119,26 @@ Direct state modification (e.g., `agent_a.assets -= 100; agent_b.assets += 100`)
     - `DecisionContext` 객체는 `markets`, `government` 등 라이브 객체 참조가 모두 제거되었습니다.
     - 모든 외부 정보는 `MarketSnapshotDTO`, `GovernmentPolicyDTO` 와 같은 DTO 형태로만 제공됩니다.
 
+### 4.7 에이전트 아키텍처: Facade-컴포넌트 패턴 (Facade-Component Pattern)
+
+에이전트의 복잡성을 관리하고 테스트 용이성을 극대화하기 위해, `Household`와 같은 거대 에이전트는 반드시 Facade-컴포넌트 패턴을 준수해야 합니다.
+
+**1. 핵심 원칙 (Principles)**:
+- **상태와 행위의 분리**: 에이전트의 데이터(State)와 비즈니스 로직(Behavior)을 엄격히 분리합니다.
+- **상태 없는 컴포넌트 (Stateless Components)**: 로직은 `BioComponent`, `EconComponent` 등의 컴포넌트 클래스에 구현됩니다. 이들은 인스턴스 멤버 변수를 가지지 않으며, 오직 입력받은 데이터에만 의존하는 순수 함수적 구조를 가집니다.
+- **상태 DTO (State DTOs)**: 에이전트의 모든 데이터는 `EconStateDTO`와 같은 전용 DTO 객체에 담깁니다.
+- **Facade 클래스**: 기존의 에이전트 클래스(예: `Household`)는 Facade 역할을 수행합니다. 내부적으로 상태 DTO를 소유하고 컴포넌트를 호출하여 상태를 갱신합니다.
+
+**2. 상태 갱신 흐름 (State Transition Flow)**:
+에이전트의 상태 변화는 항상 명시적이고 함수적이어야 합니다. Facade는 컴포넌트가 반환한 새로운 DTO를 자신의 내부 변수에 다시 할당(Re-assignment)하여 상태를 확정합니다.
+
+```python
+# 올바른 예시: 반환된 DTO를 변수에 재할당하여 상태 확정
+self._econ_state = self.econ_component.update_skills(self._econ_state, context)
+```
+
+이 패턴을 통해 에이전트의 내부 로직은 외부 환경(Simulation 객체 등)으로부터 완전히 독립되어 개별적으로 테스트 및 디버깅이 가능해집니다.
+
 
 ---
 

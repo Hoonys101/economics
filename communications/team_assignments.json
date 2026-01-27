@@ -73,6 +73,10 @@
       "589046413435236203": {
         "title": "WO-125: Purity Finalization (Retake)",
         "initial_mission": "Finalize economic purity by enforcing SettlementSystem and removing legacy mutation paths. Follow th..."
+      },
+      "13146871308952315629": {
+        "title": "WO-123: Household God Class Decomposition (Refined)",
+        "initial_mission": "Implement the decomposition of the Household god class. Follow the REFINED technical specification i..."
       }
     },
     "completed_sessions": {

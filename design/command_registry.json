@@ -4,32 +4,10 @@
     "updated": "2026-01-27",
     "author": "Antigravity"
   },
-  "wo-123-impl": {
-    "command": "create",
-    "instruction": "Implement the decomposition of the Household god class. Follow the REFINED technical specification in 'design/specs/TD-123_Household_Decomposition.md', specifically implementing the Adapter Pattern for AI compatibility and migrating all cloning logic to components.",
-    "title": "WO-123: Household God Class Decomposition (Refined)",
-    "file": "design/specs/TD-123_Household_Decomposition.md"
-  },
   "wo-124-impl": {
     "command": "create",
     "instruction": "Implement the decomposition of the TransactionProcessor. Follow the REFINED 6-layer architecture in 'design/specs/TD-124_TransactionProcessor_Decomposition.md', including the CentralBank for minting and AccountingSystem for ledgers.",
     "title": "WO-124: TransactionProcessor God Class Decomposition (Refined)",
     "file": "design/specs/TD-124_TransactionProcessor_Decomposition.md"
-  },
-  "td-123-spec": {
-    "worker": "spec",
-    "instruction": "Draft a technical specification for TD-123: Decomposing the Household God Class into Bio/Social/Econ components, enforcing pure DTO usage.",
-    "context": [
-      "simulation/core_agents.py"
-    ],
-    "output": "design/specs/TD-123_Household_Decomposition.md"
-  },
-  "td-124-spec": {
-    "worker": "spec",
-    "instruction": "Draft a technical specification for TD-124: Decomposing the TransactionProcessor God Class into separate agencies (TaxAgency, SettlementSystem, Registry), enforcing zero-sum integrity.",
-    "context": [
-      "simulation/systems/transaction_processor.py"
-    ],
-    "output": "design/specs/TD-124_TransactionProcessor_Decomposition.md"
   }
 }

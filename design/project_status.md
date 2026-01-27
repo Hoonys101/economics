@@ -31,7 +31,9 @@
 
 - **현재 단계:** `Step 4: Structural Reset (God Class Decomposition)` 🏗️
     - **Goal**: Split `Household` and `TransactionProcessor` into modular components.
-    - **Status**: Specs generated (`TD-123_Household_Decomposition.md`, `TD-124_TransactionProcessor_Decomposition.md`).
+    - **Status**: 
+        - **WO-123**: Household Decomposition (Bio/Econ/Social/Facade) ✅ (2026-01-27)
+        - **WO-124**: TransactionProcessor Decomposition (Tax/Settlement/Registry) 🏗️ (Spec Ready)
     - **Previous**: Step 3 (Purity Finalization) ✅ (Merged 2026-01-27)
 
 ---
