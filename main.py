@@ -359,6 +359,9 @@ def run_simulation(
     simulation_ticks = config.SIMULATION_TICKS
 
     for i in range(simulation_ticks):
+        # WO-053: Orchestrate production and tech update
+        sim.orchestrate_production_and_tech(i)
+
         # Pass the repository to the run_tick method
         sim.run_tick()
 

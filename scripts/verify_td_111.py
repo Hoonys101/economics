@@ -15,6 +15,7 @@ def verify_td_111():
     # Run a few ticks to generate some economic activity and potential reflux
     print("Running simulation for 10 ticks...")
     for i in range(10):
+        sim.orchestrate_production_and_tech(i)
         sim.run_tick()
 
     world_state = sim.world_state

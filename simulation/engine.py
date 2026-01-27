@@ -6,6 +6,7 @@ from modules.common.config_manager.api import ConfigManager
 from simulation.db.repository import SimulationRepository
 from simulation.dtos import GovernmentStateDTO
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
 
 from simulation.world_state import WorldState
 from simulation.tick_scheduler import TickScheduler
@@ -64,6 +65,41 @@ class Simulation:
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
         self.tick_scheduler.run_tick(injectable_sensory_dto)
+
+    def orchestrate_production_and_tech(self, tick: int) -> None:
+        """
+        Orchestrates the technology update and firm production for the given tick.
+        This handles:
+        1. Calculating aggregate human capital stats.
+        2. Updating the TechnologyManager with DTOs.
+        3. Executing production for all active firms, injecting the TechnologyManager.
+        """
+        # 1. Calculate aggregate stats (human_capital_index)
+        active_households_dto = [
+            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
+            for h in self.world_state.households
+        ]
+
+        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])
+        active_count = sum(1 for h in active_households_dto if h['is_active'])
+        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
+
+        # 2. Update technology system state
+        active_firms_dto = [
+            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
+            for f in self.world_state.firms if f.is_active
+        ]
+
+        # Ensure TechnologyManager exists
+        if hasattr(self.world_state, 'technology_manager') and self.world_state.technology_manager:
+            self.world_state.technology_manager.update(tick, active_firms_dto, human_capital_index)
+        else:
+            self.world_state.logger.warning("TechnologyManager not found in WorldState.")
+
+        # 3. Firm Production (State Update: Inventory)
+        for firm in self.world_state.firms:
+            if firm.is_active:
+                firm.produce(tick, technology_manager=self.world_state.technology_manager)
 
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
