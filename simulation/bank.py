@@ -3,7 +3,14 @@ from dataclasses import dataclass
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import math
 from modules.common.config_manager.api import ConfigManager
-from modules.finance.api import InsufficientFundsError, IBankService
+from modules.finance.api import (
+    InsufficientFundsError,
+    IBankService,
+    LoanInfoDTO,
+    DebtStatusDTO,
+    LoanNotFoundError,
+    LoanRepaymentError
+)
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
 
@@ -24,6 +31,7 @@ class Loan:
     annual_interest_rate: float
     term_ticks: int
     start_tick: int
+    origination_tick: int = 0
 
     @property
     def tick_interest_rate(self) -> float:
@@ -63,6 +71,9 @@ class Bank(IBankService):
         self.value_orientation = "N/A"
         self.needs: Dict[str, float] = {}
 
+        # Current tick tracker (updated via run_tick usually, but need it for grant_loan defaults if available)
+        self.current_tick_tracker = 0
+
         logger.info(f"Bank {self.id} initialized. Assets: {self.assets:.2f}")
 
     @property
@@ -98,16 +109,20 @@ class Bank(IBankService):
         self.base_rate = new_rate
         logger.info(f"MONETARY_POLICY | Base Rate updated: {self.base_rate:.2%}")
 
-    def grant_loan(self, borrower_id: int, amount: float, term_ticks: Optional[int] = None, interest_rate: Optional[float] = None) -> Optional[str]:
-        if not term_ticks:
-            term_ticks = self._get_config("loan.default_term", 50)
+    # --- IBankService Implementation ---
 
-        if interest_rate is not None:
-            annual_rate = interest_rate
-        else:
-            credit_spread = self._get_config("bank_defaults.credit_spread_base", 0.02)
-            annual_rate = self.base_rate + credit_spread
+    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None) -> Optional[LoanInfoDTO]:
+        """
+        Grants a loan to a borrower.
+        Implements IBankService.grant_loan.
+        """
+        try:
+            bid_int = int(borrower_id)
+        except ValueError:
+            logger.error(f"Bank.grant_loan: Invalid borrower_id {borrower_id}, expected int-convertible string.")
+            return None
 
+        # Check reserves/assets logic
         gold_standard_mode = self._get_config("gold_standard_mode", False)
         if gold_standard_mode:
             if self.assets < amount:
@@ -128,16 +143,107 @@ class Bank(IBankService):
         loan_id = f"loan_{self.next_loan_id}"
         self.next_loan_id += 1
 
+        start_tick = self.current_tick_tracker
+        term_ticks = 50 # Default
+        if due_tick is not None:
+             term_ticks = max(1, due_tick - start_tick)
+        else:
+             term_ticks = self._get_config("loan.default_term", 50)
+             due_tick = start_tick + term_ticks
+
         new_loan = Loan(
-            borrower_id=borrower_id,
+            borrower_id=bid_int,
             principal=amount,
             remaining_balance=amount,
-            annual_interest_rate=annual_rate,
+            annual_interest_rate=interest_rate,
             term_ticks=term_ticks,
-            start_tick=0
+            start_tick=start_tick,
+            origination_tick=start_tick
         )
         self.loans[loan_id] = new_loan
-        return loan_id
+
+        return LoanInfoDTO(
+            loan_id=loan_id,
+            borrower_id=borrower_id,
+            original_amount=amount,
+            outstanding_balance=amount,
+            interest_rate=interest_rate,
+            origination_tick=start_tick,
+            due_tick=due_tick
+        )
+
+    def repay_loan(self, loan_id: str, amount: float) -> bool:
+        """
+        Repays a portion or the full amount of a specific loan.
+        Implements IBankService.repay_loan.
+        """
+        if loan_id not in self.loans:
+            raise LoanNotFoundError(f"Loan {loan_id} not found.")
+
+        if amount < 0:
+            raise LoanRepaymentError("Repayment amount must be positive.")
+
+        loan = self.loans[loan_id]
+
+        # Check if amount exceeds balance?
+        # The spec says "Repays a portion or the full amount".
+        # If amount > balance, we cap it? Or raise error?
+        # Let's cap it to be safe, or allow overpayment?
+        # Typically we cap.
+        actual_amount = min(amount, loan.remaining_balance)
+        loan.remaining_balance -= actual_amount
+
+        return True
+
+    def get_balance(self, account_id: str) -> float:
+        """
+        Retrieves the current balance for a given account.
+        Implements IBankService.get_balance.
+        """
+        try:
+            aid_int = int(account_id)
+            return self.get_deposit_balance(aid_int)
+        except ValueError:
+            return 0.0
+
+    def get_debt_status(self, borrower_id: str) -> DebtStatusDTO:
+        """
+        Retrieves the comprehensive debt status for a given borrower.
+        Implements IBankService.get_debt_status.
+        """
+        try:
+            bid_int = int(borrower_id)
+        except ValueError:
+            bid_int = -1
+
+        loans_dto_list: List[LoanInfoDTO] = []
+        total_debt = 0.0
+
+        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+
+        for lid, loan in self.loans.items():
+            if loan.borrower_id == bid_int and loan.remaining_balance > 0:
+                total_debt += loan.remaining_balance
+                loans_dto_list.append(LoanInfoDTO(
+                    loan_id=lid,
+                    borrower_id=borrower_id,
+                    original_amount=loan.principal,
+                    outstanding_balance=loan.remaining_balance,
+                    interest_rate=loan.annual_interest_rate,
+                    origination_tick=loan.origination_tick,
+                    due_tick=loan.start_tick + loan.term_ticks
+                ))
+
+        return DebtStatusDTO(
+            borrower_id=borrower_id,
+            total_outstanding_debt=total_debt,
+            loans=loans_dto_list,
+            is_insolvent=False, # Basic check, more logic could be added
+            next_payment_due=None, # Needs logic if we track payment schedule
+            next_payment_due_tick=None
+        )
+
+    # --- Legacy / Internal Methods ---
 
     def deposit_from_customer(self, depositor_id: int, amount: float) -> Optional[str]:
         margin = self._get_config("bank_defaults.bank_margin", 0.02)
@@ -182,6 +288,9 @@ class Bank(IBankService):
             self._assets -= amount
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+        """Legacy method used by TickScheduler etc. until refactored."""
+        # Forward to new method if possible, or keep separate?
+        # Keeping separate implementation for safety, but logic is same.
         total_principal = 0.0
         daily_interest_burden = 0.0
         ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
@@ -199,6 +308,7 @@ class Bank(IBankService):
         return total_deposit
 
     def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None) -> List[Transaction]:
+        self.current_tick_tracker = current_tick
         generated_transactions: List[Transaction] = []
         ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
         gov_agent = None
@@ -336,6 +446,10 @@ class Bank(IBankService):
             }
             for l in self.loans.values() if l.borrower_id == agent_id
         ]
+
     def process_repayment(self, loan_id: str, amount: float):
-        if loan_id in self.loans:
-            self.loans[loan_id].remaining_balance -= amount
+        """Legacy wrapper for repay_loan."""
+        try:
+            self.repay_loan(loan_id, amount)
+        except (LoanNotFoundError, LoanRepaymentError):
+            pass

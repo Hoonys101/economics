@@ -833,8 +833,27 @@ class TickScheduler:
         deposit_data_map = {}
         for agent_id in state.agents:
             if isinstance(state.agents[agent_id], Household) or isinstance(state.agents[agent_id], Firm):
-                debt_data_map[agent_id] = state.bank.get_debt_summary(agent_id)
-                deposit_data_map[agent_id] = state.bank.get_deposit_balance(agent_id)
+                if state.bank:
+                    # Use IBankService methods with compatibility injection
+                    debt_status = state.bank.get_debt_status(str(agent_id))
+
+                    # Calculate daily_interest_burden for consumers
+                    total_burden = 0.0
+                    # Robustly get ticks_per_year
+                    ticks_per_year = 100
+                    if hasattr(state.bank, "_get_config"):
+                         ticks_per_year = state.bank._get_config("bank_defaults.ticks_per_year", 100)
+
+                    for loan in debt_status.get("loans", []):
+                        total_burden += (loan["outstanding_balance"] * loan["interest_rate"]) / ticks_per_year
+
+                    # Construct extended dict for consumers
+                    debt_data_entry = dict(debt_status)
+                    debt_data_entry["daily_interest_burden"] = total_burden
+                    debt_data_entry["total_principal"] = debt_status["total_outstanding_debt"]
+
+                    debt_data_map[agent_id] = debt_data_entry
+                    deposit_data_map[agent_id] = state.bank.get_balance(str(agent_id))
 
         for good_name in state.config_module.GOODS:
             market = state.markets.get(good_name)

@@ -1,3 +1,45 @@
+# [Refactor Request] modules/finance/api.py - IBankService
+
+## 1. Problem Statement
+The existing `IBankService` interface in `modules/finance/api.py` is incomplete and does not fully define the necessary banking operations for Household and Firm agents. This leads to tight coupling with concrete `Bank` implementations and hinders clear API contracts.
+
+## 2. Objective
+To formally define the `IBankService` interface to support deposit/withdraw, grant_loan/repay_loan, and get_balance/get_debt_status operations. This will ensure proper decoupling of agents from the `Bank` implementation and establish clear type-hinted contracts.
+
+## 3. Target Metrics
+- Clear, type-hinted methods in `IBankService`.
+- Use of DTOs for complex data structures (loans, debt status).
+- Adherence to `abc.ABC` for abstract methods.
+
+## 4. Implementation Plan
+### Track A: Define DTOs in `modules/finance/api.py`
+- Create `LoanInfoDTO` (TypedDict) for individual loan details.
+- Create `DebtStatusDTO` (TypedDict) for comprehensive borrower debt status.
+- Add `LoanNotFoundError` and `LoanRepaymentError` custom exceptions.
+
+### Track B: Update `IBankService` in `modules/finance/api.py`
+- Ensure `IBankService` inherits from `IFinancialEntity` (which provides deposit/withdraw).
+- Add `grant_loan` method with `borrower_id`, `amount`, `interest_rate`, `due_tick` parameters, returning `Optional[LoanInfoDTO]`.
+- Add `repay_loan` method with `loan_id`, `amount` parameters, returning `bool`, and raising `LoanNotFoundError`, `LoanRepaymentError`.
+- Add `get_balance` method with `account_id` parameter, returning `float`.
+- Add `get_debt_status` method with `borrower_id` parameter, returning `DebtStatusDTO`.
+
+## 5. Verification
+- **Code Review**: Ensure `modules/finance/api.py` matches the provided content in this spec (especially the DTOs and `IBankService` methods).
+- **Static Analysis**: Run `mypy modules/finance/api.py` to ensure all type hints are correct and consistent.
+- **Unit Tests**:
+    - New tests will be created in `tests/finance/test_bank_service_interface.py` to verify that a mock implementation of `IBankService` can correctly satisfy the interface and that all methods have the correct signatures.
+
+## 6. Jules Assignment
+| Track | Task | 파일 |
+|---|---|---|
+| A, B | Implement DTOs and `IBankService` in `modules/finance/api.py` | `modules/finance/api.py` |
+
+---
+
+## API Definition for `modules/finance/api.py` (Intended Content)
+
+```python
 from typing import Protocol, Dict, List, Any, Optional, TypedDict
 from dataclasses import dataclass
 import abc
@@ -197,3 +239,4 @@ class IFinanceSystem(Protocol):
     def service_debt(self, current_tick: int) -> None:
         """Manages the servicing of outstanding government debt."""
         ...
+```

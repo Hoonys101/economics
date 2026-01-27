@@ -424,8 +424,8 @@ class FinanceDepartment:
         try:
             loan_market = getattr(self.firm.decision_engine, 'loan_market', None)
             if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
-                debt_summary = loan_market.bank.get_debt_summary(self.firm.id)
-                liabilities = debt_summary.get('total_principal', 0.0)
+                debt_status = loan_market.bank.get_debt_status(str(self.firm.id))
+                liabilities = debt_status.get('total_outstanding_debt', 0.0)
         except Exception:
             pass
 
