@@ -203,15 +203,22 @@ class HousingSystem:
                         success = simulation.bank.withdraw_for_customer(buyer.id, loan_amount)
                         if success:
                             buyer._add_assets(loan_amount)
+                            unit.mortgage_id = loan_id
                         else:
-                            # Withdrawal failed (Liquidity Crisis?), rollback loan?
-                            # For simplicity in this iteration, we assume success or log error.
-                            logger.error(f"LOAN_WITHDRAW_FAIL | Could not withdraw loan proceeds for {buyer.id}")
+                            # Withdrawal failed (Liquidity Crisis). Rollback loan.
+                            logger.error(f"LOAN_WITHDRAW_FAIL | Could not withdraw loan proceeds for {buyer.id}. Rolling back loan {loan_id}.")
+
+                            # Attempt rollback
+                            if hasattr(simulation.bank, "void_loan"):
+                                simulation.bank.void_loan(loan_id)
+
+                            # Do NOT update ownership or unit.mortgage_id
+                            # Return early to abort transaction
+                            return
                     else:
                         # Fallback for mock/interface testing without withdraw_for_customer
                         buyer._add_assets(loan_amount)
-
-                    unit.mortgage_id = loan_id
+                        unit.mortgage_id = loan_id
                 else:
                     unit.mortgage_id = None
             else:
