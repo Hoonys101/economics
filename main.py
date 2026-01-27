@@ -23,6 +23,7 @@ from simulation.decisions.ai_driven_household_engine import (
 from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI  # Added import
 from simulation.db.repository import SimulationRepository
+from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
 
 main_logger = logging.getLogger(__name__)
 
@@ -359,6 +360,31 @@ def run_simulation(
     simulation_ticks = config.SIMULATION_TICKS
 
     for i in range(simulation_ticks):
+        # WO-053: Tech & Production Orchestration
+        # Since run_tick increments time at start, we prepare for next_tick
+        current_tick = sim.time
+        next_tick = current_tick + 1
+
+        # 1. Tech Update
+        active_households_dto = [
+            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
+            for h in sim.households
+        ]
+        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])
+        active_count = sum(1 for h in active_households_dto if h['is_active'])
+        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
+
+        active_firms_dto = [
+            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
+            for f in sim.firms if f.is_active
+        ]
+        sim.technology_manager.update(next_tick, active_firms_dto, human_capital_index)
+
+        # 2. Production
+        for firm in sim.firms:
+            if firm.is_active:
+                firm.production.produce(next_tick, sim.technology_manager)
+
         # Pass the repository to the run_tick method
         sim.run_tick()
 

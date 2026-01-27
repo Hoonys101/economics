@@ -91,9 +91,7 @@ class TickScheduler:
         state.inter_tick_queue.clear()
 
         # 0. Firm Production (State Update: Inventory)
-        for firm in state.firms:
-             if firm.is_active:
-                 firm.produce(state.time, technology_manager=state.technology_manager)
+        # Moved to main.py (WO-053 Orchestration)
 
         # 1. Bank Tick (Interest)
         if hasattr(state.bank, "run_tick"):
@@ -357,25 +355,6 @@ class TickScheduler:
         else:
             state.logger.error("CommerceSystem not initialized! Skipping consumption cycle.")
             household_leisure_effects = {}
-
-        # --- Phase 23: Technology Manager Update ---
-        # WO-053: Orchestrate Technology Update with DTOs
-        # 1. Calculate Human Capital Index
-        active_households_dto = [
-            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
-            for h in state.households
-        ]
-        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])
-        active_count = sum(1 for h in active_households_dto if h['is_active'])
-        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
-
-        # 2. Prepare Firm DTOs
-        active_firms_dto = [
-            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
-            for f in state.firms if f.is_active
-        ]
-
-        state.technology_manager.update(state.time, active_firms_dto, human_capital_index)
 
         # Phase 17-3B: Process Housing (Logic that didn't fit in matching/lifecycle)
         # Housing matching happened in _phase_matching.
