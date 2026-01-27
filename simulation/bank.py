@@ -34,6 +34,7 @@ class Loan:
     term_ticks: int
     start_tick: int
     origination_tick: int = 0
+    created_deposit_id: Optional[str] = None # Link to the deposit created by this loan
 
     @property
     def tick_interest_rate(self) -> float:
@@ -159,6 +160,9 @@ class Bank(IBankService):
              term_ticks = self._get_config("loan.default_term", 50)
              due_tick = start_tick + term_ticks
 
+        # Create the new deposit (Money Creation)
+        deposit_id = self.deposit_from_customer(bid_int, amount)
+
         new_loan = Loan(
             borrower_id=bid_int,
             principal=amount,
@@ -166,12 +170,10 @@ class Bank(IBankService):
             annual_interest_rate=interest_rate,
             term_ticks=term_ticks,
             start_tick=start_tick,
-            origination_tick=start_tick
+            origination_tick=start_tick,
+            created_deposit_id=deposit_id
         )
         self.loans[loan_id] = new_loan
-
-        # Create the new deposit (Money Creation)
-        self.deposit_from_customer(bid_int, amount)
 
         # Log Money Creation for System Accounting
         if self.government and hasattr(self.government, "total_money_issued"):
@@ -478,32 +480,34 @@ class Bank(IBankService):
             return False
 
         loan = self.loans[loan_id]
-        borrower_id = loan.borrower_id
         amount = loan.principal
 
         # 1. Reverse Deposit (Liability)
-        # Find the deposit for this borrower with matching amount?
-        # Or just decrease balance? Since deposits are fungible, decrease balance.
-        # But we need to find the specific deposit ID if we want to delete it cleanly,
-        # or just subtract from an existing one.
-        # `deposit_from_customer` creates a new distinct deposit. We should try to remove it.
-        target_dep_id = None
-        for dep_id, deposit in self.deposits.items():
-            if deposit.depositor_id == borrower_id and abs(deposit.amount - amount) < 1e-9:
-                target_dep_id = dep_id
-                break
+        # Use the robust link if available
+        target_dep_id = loan.created_deposit_id
 
-        if target_dep_id:
+        if target_dep_id and target_dep_id in self.deposits:
             del self.deposits[target_dep_id]
         else:
-            # Fallback: Just subtract from any deposit of that user
-            # If they withdrew it already, this void_loan shouldn't be called (logic in HousingSystem calls it only if withdraw fails)
-            # So the funds MUST be there.
-            logger.warning(f"VOID_LOAN | Could not find exact deposit for rollback. Loan: {loan_id}")
-            # We assume the caller knows what they are doing. If withdrawal failed, the money is still in the bank.
-            # But wait, if withdrawal failed, it might mean bank didn't have assets (insolvent), but the DEPOSIT exists.
-            # We must destroy the liability.
-            pass
+            # Fallback for legacy or lost link: Find matching deposit
+            # This is brittle but necessary as a last resort
+            borrower_id = loan.borrower_id
+            found = False
+            for dep_id, deposit in self.deposits.items():
+                if deposit.depositor_id == borrower_id and abs(deposit.amount - amount) < 1e-9:
+                    del self.deposits[dep_id]
+                    found = True
+                    break
+
+            if not found:
+                logger.critical(f"VOID_LOAN_FAIL | Could not find deposit for loan {loan_id}. Money leak risk!")
+                # We cannot safely void the loan if we can't reverse the liability.
+                # However, void_loan is typically called when the money hasn't left the bank.
+                # If we raise here, the caller handles it?
+                # Ideally we want atomic failure. If we can't delete deposit, we shouldn't delete loan?
+                # But then the transaction failed, so the user expects rollback.
+                # Let's return False to signal failure.
+                return False
 
         # 2. Destroy Loan (Asset)
         del self.loans[loan_id]
