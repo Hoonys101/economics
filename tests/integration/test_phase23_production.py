@@ -1,77 +1,101 @@
 import pytest
+import logging
 from unittest.mock import MagicMock
-from simulation.components.production_department import ProductionDepartment
-from simulation.systems.technology_manager import TechnologyManager
 from simulation.firms import Firm
+from simulation.systems.technology_manager import TechnologyManager
+from simulation.systems.technology_manager import TechNode
+from simulation.components.production_department import ProductionDepartment
 
-class TestPhase23Production:
-    @pytest.fixture
-    def config(self):
-        mock_config = MagicMock()
-        mock_config.LABOR_ALPHA = 0.5
-        mock_config.LABOR_ELASTICITY_MIN = 0.1
-        mock_config.AUTOMATION_LABOR_REDUCTION = 0.0
-        mock_config.CAPITAL_DEPRECIATION_RATE = 0.0
-        # Mock GOODS structure
-        mock_config.GOODS = {"food": {"sector": "FOOD"}}
-        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 0
-        mock_config.TECH_DIFFUSION_RATE = 0.0
-        return mock_config
+class MockConfig:
+    # Firm Defaults
+    FIRM_MIN_PRODUCTION_TARGET = 10.0
+    FIRM_PRODUCTIVITY_FACTOR = 1.0
+    INITIAL_FIRM_LIQUIDITY_NEED = 100.0
 
-    @pytest.fixture
-    def firm_setup(self, config):
-        def _create_firm(firm_id):
-            firm = MagicMock(spec=Firm)
-            firm.id = firm_id
-            firm.sector = "FOOD"
-            firm.specialization = "food"
-            firm.is_visionary = False
-            firm.productivity_factor = 1.0
-            firm.capital_stock = 100.0
-            firm.automation_level = 0.0
-            firm.base_quality = 1.0
-            firm.inventory = {}
-            firm.input_inventory = {}
-            firm.hr = MagicMock()
-            firm.hr.employees = [MagicMock()] # At least one employee
-            firm.hr.get_total_labor_skill.return_value = 100.0
-            firm.hr.get_avg_skill.return_value = 1.0
+    # Production
+    LABOR_ALPHA = 0.5 # Simplified
+    LABOR_ELASTICITY_MIN = 0.3
+    AUTOMATION_LABOR_REDUCTION = 0.5
+    CAPITAL_DEPRECIATION_RATE = 0.0
+    GOODS = {
+        "basic_food": {
+            "id": "basic_food",
+            "quality_sensitivity": 0.0,
+            "inputs": {}
+        }
+    }
 
-            # Create real ProductionDepartment for the mock firm
-            firm.production_department = ProductionDepartment(firm, config)
-            # Inject production department back into firm.production if needed by other components,
-            # but here we test production_department directly or via produce
+    # Tech
+    TECH_FERTILIZER_UNLOCK_TICK = 50
+    TECH_DIFFUSION_RATE = 0.05
 
-            # Add inventory method
-            firm.add_inventory = MagicMock()
+    # Others
+    IPO_INITIAL_SHARES = 1000.0
+    DIVIDEND_RATE = 0.3
+    BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD = 5
+    ASSETS_CLOSURE_THRESHOLD = -1000.0
+    FIRM_CLOSURE_TURNS_THRESHOLD = 10
+    PROFIT_HISTORY_TICKS = 50
 
-            return firm, firm.production_department
-        return _create_firm
+def create_test_firm(id, config):
+    firm = Firm(
+        id=id,
+        initial_capital=1000.0,
+        initial_liquidity_need=100.0,
+        specialization="basic_food",
+        productivity_factor=1.0,
+        decision_engine=MagicMock(),
+        value_orientation="wealth",
+        config_module=config,
+        initial_inventory={},
+        logger=logging.getLogger(f"firm_{id}"),
+        sector="FOOD",
+        is_visionary=False
+    )
+    # Setup for production
+    firm.hr = MagicMock()
+    firm.hr.employees = [MagicMock()] # 1 employee
+    firm.hr.get_total_labor_skill.return_value = 10.0
+    firm.hr.get_avg_skill.return_value = 1.0
 
-    def test_production_boost_from_fertilizer_tech(self, config, firm_setup):
-        # 1. Create two identical firms
-        firm_A, prod_A = firm_setup(1)
-        firm_B, prod_B = firm_setup(2)
+    firm.capital_stock = 100.0
+    firm.automation_level = 0.0
 
-        # 2. Create TechnologyManager and unlock Tech
-        tech_manager = TechnologyManager(config, MagicMock())
-        tech_node = tech_manager.tech_tree["TECH_AGRI_CHEM_01"]
-        tech_node.is_unlocked = True
-        tech_manager.active_techs.append(tech_node.id)
+    return firm
 
-        # 3. Manually have firm_A adopt the tech
-        tech_manager._adopt(firm_A.id, tech_node)
+def test_production_boost_from_fertilizer_tech():
+    config = MockConfig()
+    logger = logging.getLogger("test_integration")
 
-        # 4. Run produce
-        # Note: ProductionDepartment.produce returns quantity
+    tech_manager = TechnologyManager(config, logger)
 
-        qty_A = prod_A.produce(10, tech_manager)
-        qty_B = prod_B.produce(10, tech_manager)
+    firm_A = create_test_firm(1, config)
+    firm_B = create_test_firm(2, config)
 
-        # 5. Assert production_A is approx 3.0 * production_B
-        assert qty_B > 0
-        ratio = qty_A / qty_B
-        print(f"Production A: {qty_A}, Production B: {qty_B}, Ratio: {ratio}")
+    # Ensure identical initial state
+    assert firm_A.productivity_factor == firm_B.productivity_factor
 
-        # Tech multiplier is 3.0.
-        assert abs(ratio - 3.0) < 0.01
+    # Unlock tech
+    tech_node = tech_manager.tech_tree["TECH_AGRI_CHEM_01"]
+    tech_node.is_unlocked = True
+    tech_manager.active_techs.append(tech_node.id)
+
+    # Adopt for Firm A
+    tech_manager._adopt(firm_A.id, tech_node)
+
+    # Produce
+    # Tick doesn't matter much for this logic unless depreciation is high
+    tick = 100
+
+    # Firm A Production
+    prod_A = firm_A.production.produce(tick, tech_manager)
+
+    # Firm B Production
+    prod_B = firm_B.production.produce(tick, tech_manager)
+
+    print(f"Production A: {prod_A}")
+    print(f"Production B: {prod_B}")
+
+    # Assertions
+    assert prod_B > 0
+    assert prod_A == pytest.approx(prod_B * 3.0, rel=0.01)
