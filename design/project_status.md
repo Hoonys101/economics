@@ -29,11 +29,11 @@
     - **Phase 2**: Guaranteed Execution Sequence ✅ (Merged 2026-01-21)
     - **Phase 3**: DTO Decoupling & Data Flow Purity ✅ (Merged 2026-01-21)
 
-- **현재 단계:** `Step 4: Structural Reset (God Class Decomposition)` 🏗️
+- **현재 단계:** `Step 4: Structural Reset (God Class Decomposition)` ✅ (2026-01-27)
     - **Goal**: Split `Household` and `TransactionProcessor` into modular components.
     - **Status**: 
         - **WO-123**: Household Decomposition (Bio/Econ/Social/Facade) ✅ (2026-01-27)
-        - **WO-124**: TransactionProcessor Decomposition (Tax/Settlement/Registry) 🏗️ (Spec Ready)
+        - **WO-124**: TransactionProcessor Decomposition (6-Layer Architecture) ✅ (2026-01-27)
     - **Previous**: Step 3 (Purity Finalization) ✅ (Merged 2026-01-27)
 
 ---

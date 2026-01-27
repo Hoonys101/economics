@@ -139,6 +139,26 @@ self._econ_state = self.econ_component.update_skills(self._econ_state, context)
 
 이 패턴을 통해 에이전트의 내부 로직은 외부 환경(Simulation 객체 등)으로부터 완전히 독립되어 개별적으로 테스트 및 디버깅이 가능해집니다.
 
+### 4.8 트랜잭션 처리 아키텍처 (Transaction Processing Architecture)
+
+기존의 단일 `TransactionProcessor`는 명확한 역할 분담을 가진 6개의 독립적인 시스템으로 구성된 파이프라인 아키텍처로 대체되었습니다.
+
+**1. 오케스트레이션 계층 (`TransactionManager`)**:
+- 전체 트랜잭션 처리 흐름을 관장하며, 트랜잭션 타입에 따라 적절한 시스템으로 작업을 라우팅합니다.
+
+**2. 금융 처리 계층 (Financial Layer)**:
+- **`SettlementSystem`**: 일반적인 모든 자산(현금, 주식 등)의 이동을 처리하며, **제로섬(Zero-Sum) 원칙**을 강제합니다. (A의 자산 감소 = B의 자산 증가)
+- **`CentralBankSystem`**: 중앙은행 전용 시스템으로, 화폐 발행(Minting) 및 소각(Burning)과 같은 **논제로섬(Non-Zero-Sum)** 트랜잭션을 독점적으로 처리합니다.
+
+**3. 상태 확정 계층 (State Commitment Layer)**:
+금융 처리가 성공적으로 완료된 후에만 데이터가 갱신됩니다.
+- **`Registry`**: 자산의 소유권, 재고, 고용 계약 등 **비금융적 상태** 변경을 원자적으로 기록합니다.
+- **`AccountingSystem`**: 기업의 수익, 비용, 가계의 소득 등 **금융 원장**을 업데이트합니다. 이 시스템은 자산을 직접 이동시키지 않고 오직 기록만 담당합니다.
+
+**4. 특수 요건 핸들러**:
+- **`InheritanceHandler`**: 상속과 같이 복잡한 자산 분배 로직이 필요한 경우 `TransactionManager`에 의해 호출됩니다.
+
+이 구조를 통해 시뮬레이션은 대규모 트랜잭션 환경에서도 데이터의 실시간 무결성과 아키텍처의 확장성을 동시에 확보합니다.
 
 ---
 

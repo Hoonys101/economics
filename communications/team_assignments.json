@@ -77,6 +77,10 @@
       "13146871308952315629": {
         "title": "WO-123: Household God Class Decomposition (Refined)",
         "initial_mission": "Implement the decomposition of the Household god class. Follow the REFINED technical specification i..."
+      },
+      "10556833407348293024": {
+        "title": "WO-124: TransactionProcessor God Class Decomposition (Refined)",
+        "initial_mission": "Implement the decomposition of the TransactionProcessor. Follow the REFINED 6-layer architecture in ..."
       }
     },
     "completed_sessions": {
