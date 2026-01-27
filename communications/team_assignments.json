@@ -9,6 +9,10 @@
       "18316631047055175113": {
         "title": "Genesis Fix",
         "initial_mission": "Sacred Sequence Implementation\n\n[File Content: design/work_orders/WO-124_JULES_GO.md]\n```\n# Work Ord..."
+      },
+      "16830608555715890075": {
+        "title": "Hotfix: Household Impact",
+        "initial_mission": "Fix AttributeError: 'Household' object has no attribute 'update_political_opinion' in core_agents.py or trace_leak.py"
       }
     },
     "completed_sessions": {

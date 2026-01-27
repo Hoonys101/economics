@@ -8,5 +8,27 @@
     "command": "create",
     "instruction": "Fix AttributeError: 'Household' object has no attribute 'update_political_opinion' in core_agents.py or trace_leak.py",
     "title": "Hotfix: Household Impact"
+  },
+  "td-111-spec": {
+    "worker": "spec",
+    "instruction": "Create a detailed technical specification for TD-111 (Reflux M2 Calculation) based on the plan in design/specs/D_TRACK_ALPHA_REMEDIATION.md. The goal is to implement 'get_m2_money_supply' in EconomicIndicatorTracker and ensure it excludes 'reflux_system.balance' while maintaining zero-sum integrity in WorldState. Output the spec to design/specs/TD-111_REFLUX_M2_SPEC.md.",
+    "context": [
+      "design/specs/D_TRACK_ALPHA_REMEDIATION.md",
+      "simulation/world_state.py",
+      "simulation/metrics/economic_tracker.py"
+    ],
+    "output": "design/specs/TD-111_REFLUX_M2_SPEC.md"
+  },
+  "mission-td-111": {
+    "command": "create",
+    "instruction": "Implement get_m2_money_supply in tracker as per spec. Correct consumers.",
+    "title": "Fix: M2 Money Supply Measurement",
+    "file": "design/specs/TD-111_REFLUX_M2_SPEC.md"
+  },
+  "mission-wo-053": {
+    "command": "create",
+    "instruction": "Integrate TechnologyManager with ProductionDepartment as per spec.",
+    "title": "Feature: Industrial Revolution P23",
+    "file": "design/specs/WO-053-Phase23-Industrial-Rev.md"
   }
 }
