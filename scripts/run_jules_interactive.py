@@ -270,15 +270,19 @@ def main():
         print("1. 🚀 NEW MISSION (Create Session)")
         print("2. 💬 COMMUNICATE (Reply from Registry)")
         print("3. 📊 DASHBOARD (List All)")
+        print("4. 🔄 REFRESH (Sync Local Registry)")
         print("0. Exit")
         
-        choice = input("\nSelect (0-3): ").strip()
+        choice = input("\nSelect (0-4): ").strip()
         
         if choice == '0': break
         elif choice == '1': run_create_menu(registry, bridge)
         elif choice == '2': run_reply_menu(bridge, registry)
         elif choice == '3':
             os.system(f"python {BASE_DIR}/scripts/jules_bridge.py dashboard")
+            input("\nPress Enter...")
+        elif choice == '4':
+            os.system(f"python {BASE_DIR}/scripts/sync_sessions.py")
             input("\nPress Enter...")
         else:
             pass

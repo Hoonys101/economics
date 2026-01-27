@@ -101,16 +101,28 @@
     - [x] WO-074: Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period) ✅
     - [x] WO-075: National Debt Auction & Yield Curve Mechanism ✅
 
-### Phase 27: Credit Creation Recovery ⭐ **[IN PROGRESS]**
+### Phase 27: Credit Creation Recovery ⭐ **[COMPLETED]**
 - **Goal**: Implement "Fractional Reserve Banking" on top of the SettlementSystem. Reactivate credit growth while maintaining zero-sum integrity.
 - **Key Objectives**:
-    - **TD-105**: Resolve the +320 Drift Mystery (Unknown Minting).
-    - **TD-106**: Link Bankruptcy Liquidation to `Total Money Destroyed` ledger.
-    - **M2 Multiplier**: Enable Banks to create credit (loans) as an asset expansion, not magic money.
+    - **TD-105**: Resolve the +320 Drift Mystery (Unknown Minting). ✅
+    - **TD-106**: Link Bankruptcy Liquidation to `Total Money Destroyed` ledger. ✅
+    - **M2 Multiplier**: Enable Banks to create credit (loans) as an asset expansion, not magic money. ✅
 - **Tasks**:
-    - [ ] WO-076: Forensic Detective (TD-105 Solution)
-    - [ ] WO-077: Bankruptcy Ledger Linking (TD-106 Solution)
-    - [ ] WO-078: Fractional Reserve Logic & LTV/DTI Reliability
+    - [x] WO-076: Forensic Detective (TD-105 Solution)
+    - [x] WO-077: Bankruptcy Ledger Linking (TD-106 Solution)
+    - [x] WO-078: Fractional Reserve Logic & LTV/DTI Reliability (2026-01-27)
+
+### Phase 28: Structural Stabilization & Verification ⭐ **[NEXT]**
+- **Goal**: Clean up technical debt from rapid architectural changes and verify the new economic engine.
+- **Tasks**:
+    - [ ] **WO-122: Test Suite Cleanroom (TD-122)**
+        - Reorganize `tests/` into `unit` (fast, mock) vs `integration` (slow, real DB).
+        - Remove legacy/duplicate tests.
+    - [ ] **WO-079: Monetary Dynamics Verification**
+        - Verify Inflation/Deflation spirals under Fractional Reserve Banking.
+        - Tune `RESERVE_REQUIREMENT` to prevent infinite money glitches.
+    - [ ] **WO-080: Financial Parameter Externalization**
+        - Move hardcoded assumptions in `HousingSystem` (e.g., `8.0` work hours, `0.01` payment rate) to `economy_params.yaml`.
 
 ### Phase 22: The Awakening (Adaptive AI) **[COMPLETED]**
 - **Goal**: Wake up the Agents (System 2 Activation).

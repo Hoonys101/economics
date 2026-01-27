@@ -16,7 +16,7 @@
     - `Phase 25: The Financial Superstructure (Stock Market)` ✅
     - **WO-037**: Simulation Cockpit (Streamlit Dashboard) ✅
     - **WO-073**: Finance System Double-Entry & Atomicity Refactor ✅
-    - **WO-078**: The Great Refactoring (Simulation Engine SoC) ✅
+    - **WO-078**: Fractional Reserve Banking (Credit Creation & Scoring) ✅ (2026-01-27)
     
 - **완료된 단계(Recent):** `Phase 29: The Great Depression & Crisis Monitor` ✅ (2026-01-21)
     - **TD-008**: Advanced Finance System (Altman Z-Score) ✅

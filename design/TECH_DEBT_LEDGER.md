@@ -67,5 +67,5 @@
 | **Step 1: Purity Guard** | TD-101, TD-102 | Create `SettlementSystem` to centralize all asset movements. | ✅ **DONE** (WO-112) |
 | **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | `gemini:verify` |
 | **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
-| **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | **PLANNED** (Specs Ready) |
+| **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | ✅ **DONE** (WO-123, WO-124) |
 | **Step 5: Normalize Sequence** | TD-106, TD-109 | Normalize Tick Sequence. | **PLANNED** (Phase 26) |

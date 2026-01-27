@@ -4,10 +4,10 @@
     "updated": "2026-01-27",
     "author": "Antigravity"
   },
-  "wo-078-impl": {
+  "genesis-fix": {
     "command": "create",
-    "instruction": "Implement the Fractional Reserve Banking system following 'design/specs/WO-078_Fractional_Reserve_Logic_Spec.md'. Tracks: A. ICreditScoringService & implementation. B. Bank.grant_loan credit creation logic. C. Refactor agent tests to use dependency injection for IBankService.",
-    "title": "WO-078: Fractional Reserve Banking Implementation",
-    "file": "design/specs/WO-078_Fractional_Reserve_Logic_Spec.md"
+    "instruction": "Sacred Sequence Implementation",
+    "title": "Genesis Fix",
+    "file": "design/work_orders/WO-124_JULES_GO.md"
   }
 }
