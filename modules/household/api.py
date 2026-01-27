@@ -1,82 +1,168 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Deque
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from simulation.core_agents import Household
-    from simulation.dtos import LeisureEffectDTO, StressScenarioConfig
-    from modules.household.dtos import CloningRequestDTO, EconContextDTO, SocialContextDTO, HouseholdStateDTO
+    from simulation.dtos import LeisureEffectDTO, ConsumptionResult, LaborResult, StressScenarioConfig
+    from simulation.models import Order
+    from modules.household.dtos import (
+        BioStateDTO, EconStateDTO, SocialStateDTO,
+        CloningRequestDTO, EconContextDTO
+    )
 
 class IBioComponent(ABC):
-    """Interface for Biological Component."""
-
-    @property
-    @abstractmethod
-    def age(self) -> float: ...
-
-    @property
-    @abstractmethod
-    def gender(self) -> str: ...
+    """Interface for stateless Biological Component."""
 
     @abstractmethod
-    def clone(self, request: CloningRequestDTO) -> Household: ...
+    def age_one_tick(self, state: BioStateDTO, config: Any, current_tick: int) -> BioStateDTO:
+        """Ages the agent and checks for natural death."""
+        pass
 
     @abstractmethod
-    def run_lifecycle(self, context: Dict[str, Any]): ...
+    def create_offspring_demographics(self, state: BioStateDTO, new_id: int, current_tick: int, config: Any) -> Dict[str, Any]:
+        """Creates demographic data for a new agent (mitosis)."""
+        pass
 
 class IEconComponent(ABC):
-    """Interface for Economic Component."""
-
-    @property
-    @abstractmethod
-    def assets(self) -> float: ...
+    """Interface for stateless Economic Component."""
 
     @abstractmethod
-    def adjust_assets(self, delta: float) -> None: ...
+    def consume(
+        self,
+        state: EconStateDTO,
+        needs: Dict[str, float],
+        item_id: str,
+        quantity: float,
+        current_time: int,
+        goods_info: Dict[str, Any],
+        config: Any
+    ) -> Tuple[EconStateDTO, Dict[str, float], ConsumptionResult]:
+        """
+        Consumes an item.
+        Returns: (Updated Econ State, Updated Needs (dict), Consumption Result)
+        """
+        pass
 
     @abstractmethod
-    def consume(self, item_id: str, quantity: float, current_time: int) -> Any: ...
+    def decide_and_consume(
+        self,
+        state: EconStateDTO,
+        needs: Dict[str, float],
+        current_time: int,
+        goods_info_map: Dict[str, Any],
+        config: Any
+    ) -> Tuple[EconStateDTO, Dict[str, float], Dict[str, float]]:
+        """
+        Decides what to consume from inventory based on needs and executes consumption.
+        Returns: (Updated Econ State, Updated Needs, Consumed Items Dict)
+        """
+        pass
 
     @abstractmethod
-    def orchestrate_economic_decisions(self, context: EconContextDTO, orders: List[Any], stress_scenario_config: Optional[StressScenarioConfig] = None): ...
+    def work(
+        self,
+        state: EconStateDTO,
+        hours: float,
+        config: Any
+    ) -> Tuple[EconStateDTO, LaborResult]:
+        """Executes work logic (non-financial)."""
+        pass
 
-    # --- Phase 23: Inflation Expectation & Price Memory ---
-    @property
     @abstractmethod
-    def expected_inflation(self) -> Dict[str, float]: ...
+    def update_skills(self, state: EconStateDTO, config: Any) -> EconStateDTO:
+        """Updates labor skills based on experience."""
+        pass
 
-    @property
     @abstractmethod
-    def perceived_avg_prices(self) -> Dict[str, float]: ...
-
-    @property
-    @abstractmethod
-    def price_history(self) -> Dict[str, Deque[float]]: ...
-
-    @property
-    @abstractmethod
-    def adaptation_rate(self) -> float: ...
+    def orchestrate_economic_decisions(
+        self,
+        state: EconStateDTO,
+        context: EconContextDTO,
+        orders: List[Order],
+        stress_scenario_config: Optional[StressScenarioConfig] = None,
+        config: Any = None
+    ) -> Tuple[EconStateDTO, List[Order]]:
+        """Refines orders and updates internal economic state (e.g. shadow wages)."""
+        pass
 
     @abstractmethod
     def update_perceived_prices(
         self,
+        state: EconStateDTO,
         market_data: Dict[str, Any],
-        stress_scenario_config: Optional[StressScenarioConfig] = None
-    ) -> None:
+        goods_info_map: Dict[str, Any],
+        stress_scenario_config: Optional[StressScenarioConfig],
+        config: Any
+    ) -> EconStateDTO:
+        """Updates inflation expectations and price memory."""
+        pass
+
+    @abstractmethod
+    def prepare_clone_state(
+        self,
+        parent_state: EconStateDTO,
+        parent_skills: Dict[str, Any],
+        config: Any
+    ) -> Dict[str, Any]:
         """
-        Calculates and updates the agent's inflation expectation and
-        perceived average prices based on market data.
+        Prepares initial economic state for a clone (inheritance logic).
+        Returns a dictionary of kwargs for Household initialization or EconState values.
         """
-        ...
+        pass
 
 class ISocialComponent(ABC):
-    """Interface for Social Component."""
+    """Interface for stateless Social Component."""
 
     @abstractmethod
-    def calculate_social_status(self) -> None: ...
+    def calculate_social_status(
+        self,
+        state: SocialStateDTO,
+        assets: float,
+        luxury_inventory: Dict[str, float],
+        config: Any
+    ) -> SocialStateDTO:
+        """Calculates social status."""
+        pass
 
     @abstractmethod
-    def update_political_opinion(self) -> None: ...
+    def update_political_opinion(
+        self,
+        state: SocialStateDTO,
+        survival_need: float
+    ) -> SocialStateDTO:
+        """Updates political approval based on needs."""
+        pass
 
     @abstractmethod
-    def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffectDTO: ...
+    def apply_leisure_effect(
+        self,
+        state: SocialStateDTO,
+        labor_skill: float,
+        children_count: int,
+        leisure_hours: float,
+        consumed_items: Dict[str, float],
+        config: Any
+    ) -> Tuple[SocialStateDTO, float, LeisureEffectDTO]:
+        """
+        Applies leisure effects.
+        Returns: (Updated Social State, Updated Labor Skill (value), Result DTO)
+        """
+        pass
+
+    @abstractmethod
+    def update_psychology(
+        self,
+        state: SocialStateDTO,
+        bio_needs: Dict[str, float],
+        assets: float,
+        durable_assets: List[Dict[str, Any]],
+        goods_info_map: Dict[str, Any],
+        config: Any,
+        current_tick: int,
+        market_data: Optional[Dict[str, Any]]
+    ) -> Tuple[SocialStateDTO, Dict[str, float], List[Dict[str, Any]], bool]:
+        """
+        Updates psychological state and needs.
+        Returns: (Updated Social State, Updated Needs, Updated Durable Assets, Is Active (bool))
+        """
+        pass
