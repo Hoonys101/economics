@@ -232,7 +232,7 @@ class EconomicIndicatorTracker:
         # 2. Velocity of Money = Nominal GDP / Money Supply (M1)
         # M1 = Household Assets + Firm Assets (excluding Bank/Govt)
         money_supply_m1 = total_household_assets + total_firm_assets
-        record["money_supply"] = money_supply_m1
+        # record["money_supply"] = money_supply_m1  # WO-043: Removed overwrite. Uses passed M2.
 
         if money_supply_m1 > 0:
             record["velocity_of_money"] = nominal_gdp / money_supply_m1
@@ -284,9 +284,13 @@ class EconomicIndicatorTracker:
     def get_m2_money_supply(self, world_state: 'WorldState') -> float:
         """
         Calculates the M2 money supply for economic reporting.
+
         M2 = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
-        This calculation EXCLUDES the RefluxSystem balance, as it represents
-        money in transit not yet realized by economic agents.
+
+        This calculation INTENTIONALLY EXCLUDES the EconomicRefluxSystem balance,
+        as it represents money in transit not yet realized by economic agents,
+        and also excludes the Central Bank's balance which is used for
+        system-level integrity checks.
         """
         total = 0.0
 
@@ -309,5 +313,6 @@ class EconomicIndicatorTracker:
             total += world_state.government.assets
 
         # NOTE: world_state.reflux_system.balance is INTENTIONALLY EXCLUDED.
+        # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.
 
         return total
