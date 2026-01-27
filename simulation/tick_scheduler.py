@@ -165,10 +165,7 @@ class TickScheduler:
             market_data["reference_standard"] = ref_std
 
         # Phase 17-5: Leviathan Logic Integration
-        # 1. Update Household Political Opinions
-        for h in state.households:
-            if h.is_active:
-                h.update_political_opinion()
+        # 1. Update Household Political Opinions (Handled in Lifecycle/update_needs)
 
         # 2. Government Gathers Opinion
         state.government.update_public_opinion(state.households)

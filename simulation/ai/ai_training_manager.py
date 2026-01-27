@@ -70,7 +70,19 @@ class AITrainingManager:
 
         # Recalculate desire weights based on (possibly new) personality
         # Phase 22.5: Psychology Component update
-        child_agent.psychology.desire_weights = child_agent.psychology._initialize_desire_weights(child_agent.personality)
+        # child_agent.psychology.desire_weights = child_agent.psychology._initialize_desire_weights(child_agent.personality)
+
+        personality = child_agent.personality
+        weights = {"survival": 1.0, "asset": 1.0, "social": 1.0, "improvement": 1.0, "quality": 1.0}
+
+        if personality in [Personality.MISER, Personality.CONSERVATIVE]:
+            weights = {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5, "quality": 1.0}
+        elif personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+            weights = {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5, "quality": 1.0}
+        elif personality == Personality.GROWTH_ORIENTED:
+            weights = {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5, "quality": 1.0}
+
+        child_agent.desire_weights = weights
 
         # 2. Q-Table Cloning
         self._clone_and_mutate_q_table(parent_agent, child_agent)

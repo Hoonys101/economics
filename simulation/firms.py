@@ -369,11 +369,9 @@ class Firm(BaseAgent, ILearningAgent):
         context = DecisionContext(
             state=state_dto,
             config=config_dto,
-            markets=markets,
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
-            government=government,
             reflux_system=reflux_system,
             stress_scenario_config=stress_scenario_config,
             market_snapshot=market_snapshot,

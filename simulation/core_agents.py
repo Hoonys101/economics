@@ -302,9 +302,17 @@ class Household(BaseAgent, ILearningAgent):
     def personality(self) -> Personality:
         return self._social_state.personality
 
+    @personality.setter
+    def personality(self, value: Personality) -> None:
+        self._social_state.personality = value
+
     @property
     def age(self) -> float:
         return self._bio_state.age
+
+    @age.setter
+    def age(self, value: float) -> None:
+        self._bio_state.age = value
 
     @property
     def gender(self) -> str:
@@ -314,9 +322,17 @@ class Household(BaseAgent, ILearningAgent):
     def parent_id(self) -> Optional[int]:
         return self._bio_state.parent_id
 
+    @parent_id.setter
+    def parent_id(self, value: Optional[int]) -> None:
+        self._bio_state.parent_id = value
+
     @property
     def generation(self) -> int:
         return self._bio_state.generation
+
+    @generation.setter
+    def generation(self, value: int) -> None:
+        self._bio_state.generation = value
 
     @property
     def spouse_id(self) -> Optional[int]:
@@ -494,9 +510,17 @@ class Household(BaseAgent, ILearningAgent):
     def current_consumption(self) -> float:
         return self._econ_state.current_consumption
 
+    @current_consumption.setter
+    def current_consumption(self, value: float) -> None:
+        self._econ_state.current_consumption = value
+
     @property
     def current_food_consumption(self) -> float:
         return self._econ_state.current_food_consumption
+
+    @current_food_consumption.setter
+    def current_food_consumption(self, value: float) -> None:
+        self._econ_state.current_food_consumption = value
 
     @property
     def expected_inflation(self) -> Dict[str, float]:
@@ -570,6 +594,10 @@ class Household(BaseAgent, ILearningAgent):
     @property
     def desire_weights(self) -> Dict[str, float]:
         return self._social_state.desire_weights
+
+    @desire_weights.setter
+    def desire_weights(self, value: Dict[str, float]) -> None:
+        self._social_state.desire_weights = value
 
     # Legacy attributes support
     @property
@@ -734,11 +762,9 @@ class Household(BaseAgent, ILearningAgent):
         context = DecisionContext(
             state=state_dto,
             config=config_dto,
-            markets=markets,
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
-            government=government,
             stress_scenario_config=stress_scenario_config,
             market_snapshot=market_snapshot,
             government_policy=government_policy
