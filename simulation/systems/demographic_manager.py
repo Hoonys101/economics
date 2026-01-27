@@ -176,11 +176,14 @@ class DemographicManager:
                 )
 
                 # Initialize Phase 19 Attributes
-                child.age = 0.0 # Newborn
+                child.initialize_demographics(
+                    age=0.0,
+                    gender=child.gender, # Kept from init
+                    parent_id=parent.id,
+                    generation=parent.generation + 1
+                )
                 child.education_level = 0 # Start at 0
                 child.expected_wage = self._calculate_expected_wage(child.education_level)
-                child.parent_id = parent.id
-                child.generation = parent.generation + 1
 
                 # Brain Weight Inheritance
                 if hasattr(simulation, "ai_training_manager"):

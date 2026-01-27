@@ -115,9 +115,8 @@ class Registry(IRegistry):
         # 2. Household Consumption Counters (Used for Utility/Stats)
         if isinstance(buyer, Household):
             if not is_service:
-                buyer.current_consumption += tx.quantity
-                if tx.item_id == "basic_food":
-                    buyer.current_food_consumption += tx.quantity
+                is_food = (tx.item_id == "basic_food")
+                buyer.record_consumption(tx.quantity, is_food=is_food)
 
     def _handle_stock_registry(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, current_time: int):
         """Updates share holdings and market registry."""

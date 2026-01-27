@@ -302,17 +302,9 @@ class Household(BaseAgent, ILearningAgent):
     def personality(self) -> Personality:
         return self._social_state.personality
 
-    @personality.setter
-    def personality(self, value: Personality) -> None:
-        self._social_state.personality = value
-
     @property
     def age(self) -> float:
         return self._bio_state.age
-
-    @age.setter
-    def age(self, value: float) -> None:
-        self._bio_state.age = value
 
     @property
     def gender(self) -> str:
@@ -322,25 +314,13 @@ class Household(BaseAgent, ILearningAgent):
     def parent_id(self) -> Optional[int]:
         return self._bio_state.parent_id
 
-    @parent_id.setter
-    def parent_id(self, value: Optional[int]) -> None:
-        self._bio_state.parent_id = value
-
     @property
     def generation(self) -> int:
         return self._bio_state.generation
 
-    @generation.setter
-    def generation(self, value: int) -> None:
-        self._bio_state.generation = value
-
     @property
     def spouse_id(self) -> Optional[int]:
         return self._bio_state.spouse_id
-
-    @spouse_id.setter
-    def spouse_id(self, value: Optional[int]) -> None:
-        self._bio_state.spouse_id = value
 
     @property
     def children_ids(self) -> List[int]:
@@ -510,17 +490,9 @@ class Household(BaseAgent, ILearningAgent):
     def current_consumption(self) -> float:
         return self._econ_state.current_consumption
 
-    @current_consumption.setter
-    def current_consumption(self, value: float) -> None:
-        self._econ_state.current_consumption = value
-
     @property
     def current_food_consumption(self) -> float:
         return self._econ_state.current_food_consumption
-
-    @current_food_consumption.setter
-    def current_food_consumption(self, value: float) -> None:
-        self._econ_state.current_food_consumption = value
 
     @property
     def expected_inflation(self) -> Dict[str, float]:
@@ -594,10 +566,6 @@ class Household(BaseAgent, ILearningAgent):
     @property
     def desire_weights(self) -> Dict[str, float]:
         return self._social_state.desire_weights
-
-    @desire_weights.setter
-    def desire_weights(self, value: Dict[str, float]) -> None:
-        self._social_state.desire_weights = value
 
     # Legacy attributes support
     @property
@@ -982,3 +950,48 @@ class Household(BaseAgent, ILearningAgent):
         if self.assets < self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD:
             return self.config_module.HOUSEHOLD_LOW_ASSET_WAGE
         return self.config_module.HOUSEHOLD_DEFAULT_WAGE
+
+    def initialize_demographics(
+        self,
+        age: float,
+        gender: str,
+        parent_id: Optional[int],
+        generation: int,
+        spouse_id: Optional[int] = None
+    ) -> None:
+        """
+        Explicitly initializes demographic state.
+        Used by DemographicManager during agent creation.
+        """
+        self._bio_state.age = age
+        self._bio_state.gender = gender
+        self._bio_state.parent_id = parent_id
+        self._bio_state.generation = generation
+        self._bio_state.spouse_id = spouse_id
+
+    def initialize_personality(self, personality: Personality, desire_weights: Dict[str, float]) -> None:
+        """
+        Explicitly initializes personality and desire weights.
+        Used by DemographicManager and AITrainingManager (during brain inheritance).
+        """
+        self._social_state.personality = personality
+        self._social_state.desire_weights = desire_weights
+
+    def record_consumption(self, quantity: float, is_food: bool = False) -> None:
+        """
+        Updates consumption counters.
+        Used by Registry during transaction processing.
+        """
+        self._econ_state.current_consumption += quantity
+        if is_food:
+            self._econ_state.current_food_consumption += quantity
+
+    def reset_consumption_counters(self) -> None:
+        """
+        Resets consumption counters for the new tick.
+        Used by TickScheduler.
+        """
+        self._econ_state.current_consumption = 0.0
+        self._econ_state.current_food_consumption = 0.0
+        self._econ_state.labor_income_this_tick = 0.0
+        self._econ_state.capital_income_this_tick = 0.0

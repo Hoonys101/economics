@@ -495,14 +495,15 @@ class TickScheduler:
 
         # Reset counters
         for h in state.households:
-            if hasattr(h, "current_consumption"):
-                h.current_consumption = 0.0
-            if hasattr(h, "current_food_consumption"):
-                h.current_food_consumption = 0.0
-            if hasattr(h, "labor_income_this_tick"):
-                h.labor_income_this_tick = 0.0
-            if hasattr(h, "capital_income_this_tick"):
-                h.capital_income_this_tick = 0.0
+            if hasattr(h, "reset_consumption_counters"):
+                h.reset_consumption_counters()
+            else:
+                # Fallback if reset method is missing (e.g. mock objects)
+                if hasattr(h, "current_consumption"):
+                    try:
+                        h.current_consumption = 0.0
+                    except AttributeError:
+                        pass
 
         for f in state.firms:
             f.last_daily_expenses = f.expenses_this_tick

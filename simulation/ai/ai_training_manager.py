@@ -59,30 +59,29 @@ class AITrainingManager:
         mutation_prob = getattr(self.config_module, "MITOSIS_MUTATION_PROBABILITY", 0.2)
         if random.random() < mutation_prob:
             # Randomly mutate personality
-            child_agent.personality = random.choice(list(Personality))
+            new_personality = random.choice(list(Personality))
             logger.info(
-                f"MUTATION | {child_agent.id} mutated personality to {child_agent.personality.name}",
+                f"MUTATION | {child_agent.id} mutated personality to {new_personality.name}",
                 extra={"agent_id": child_agent.id, "tags": ["mitosis", "mutation"]}
             )
         else:
             # Inherit parent personality
-            child_agent.personality = parent_agent.personality
+            new_personality = parent_agent.personality
 
         # Recalculate desire weights based on (possibly new) personality
         # Phase 22.5: Psychology Component update
-        # child_agent.psychology.desire_weights = child_agent.psychology._initialize_desire_weights(child_agent.personality)
+        # Use initialize_personality to set both personality and weights atomically
 
-        personality = child_agent.personality
         weights = {"survival": 1.0, "asset": 1.0, "social": 1.0, "improvement": 1.0, "quality": 1.0}
 
-        if personality in [Personality.MISER, Personality.CONSERVATIVE]:
+        if new_personality in [Personality.MISER, Personality.CONSERVATIVE]:
             weights = {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5, "quality": 1.0}
-        elif personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+        elif new_personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
             weights = {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5, "quality": 1.0}
-        elif personality == Personality.GROWTH_ORIENTED:
+        elif new_personality == Personality.GROWTH_ORIENTED:
             weights = {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5, "quality": 1.0}
 
-        child_agent.desire_weights = weights
+        child_agent.initialize_personality(new_personality, weights)
 
         # 2. Q-Table Cloning
         self._clone_and_mutate_q_table(parent_agent, child_agent)
