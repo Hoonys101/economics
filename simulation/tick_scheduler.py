@@ -143,7 +143,8 @@ class TickScheduler:
                 market.clear_orders()
 
         # WO-057-Fix: Update tracker with the latest data before government decisions
-        money_supply = state.calculate_total_money()
+        # Use M2 Money Supply (excluding reflux/central bank integrity buffer)
+        money_supply = state.tracker.get_m2_money_supply(state)
         state.tracker.track(state.time, state.households, state.firms, state.markets, money_supply=money_supply)
 
         # [WO-060] Update stock market reference prices at the start of the tick
