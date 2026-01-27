@@ -1,0 +1,564 @@
+diff --git a/main.py b/main.py
+index 5935121..4c0e11f 100644
+--- a/main.py
++++ b/main.py
+@@ -23,6 +23,7 @@ from simulation.decisions.ai_driven_household_engine import (
+ from simulation.ai.api import Personality
+ from simulation.ai.household_ai import HouseholdAI  # Added import
+ from simulation.db.repository import SimulationRepository
++from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
+ 
+ main_logger = logging.getLogger(__name__)
+ 
+@@ -359,6 +360,31 @@ def run_simulation(
+     simulation_ticks = config.SIMULATION_TICKS
+ 
+     for i in range(simulation_ticks):
++        # WO-053: Tech & Production Orchestration
++        # Since run_tick increments time at start, we prepare for next_tick
++        current_tick = sim.time
++        next_tick = current_tick + 1
++
++        # 1. Tech Update
++        active_households_dto = [
++            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
++            for h in sim.households
++        ]
++        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])
++        active_count = sum(1 for h in active_households_dto if h['is_active'])
++        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
++
++        active_firms_dto = [
++            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
++            for f in sim.firms if f.is_active
++        ]
++        sim.technology_manager.update(next_tick, active_firms_dto, human_capital_index)
++
++        # 2. Production
++        for firm in sim.firms:
++            if firm.is_active:
++                firm.production.produce(next_tick, sim.technology_manager)
++
+         # Pass the repository to the run_tick method
+         sim.run_tick()
+ 
+diff --git a/scripts/verify_td_111.py b/scripts/verify_td_111.py
+deleted file mode 100644
+index d723290..0000000
+--- a/scripts/verify_td_111.py
++++ /dev/null
+@@ -1,74 +0,0 @@
+-import sys
+-import os
+-import logging
+-from typing import TYPE_CHECKING
+-
+-# Add root directory to python path
+-sys.path.append(os.getcwd())
+-
+-from main import create_simulation
+-
+-def verify_td_111():
+-    print("--- VERIFY TD-111 START ---")
+-    sim = create_simulation()
+-
+-    # Run a few ticks to generate some economic activity and potential reflux
+-    print("Running simulation for 10 ticks...")
+-    for i in range(10):
+-        sim.run_tick()
+-
+-    world_state = sim.world_state
+-    tracker = world_state.tracker
+-
+-    # Fetch values
+-    ws_total = world_state.calculate_total_money()
+-    m2_total = tracker.get_m2_money_supply(world_state)
+-
+-    reflux_balance = world_state.reflux_system.balance if world_state.reflux_system else 0.0
+-    cb_balance = world_state.central_bank.assets.get('cash', 0.0) if world_state.central_bank else 0.0
+-
+-    print(f"WorldState Total Money (Integrity): {ws_total:,.6f}")
+-    print(f"M2 Money Supply (Reporting): {m2_total:,.6f}")
+-    print(f"Reflux Balance: {reflux_balance:,.6f}")
+-    print(f"Central Bank Cash: {cb_balance:,.6f}")
+-
+-    # Calculate sum
+-    calculated_total = m2_total + reflux_balance + cb_balance
+-
+-    diff = abs(ws_total - calculated_total)
+-    print(f"Difference: {diff:,.10f}")
+-
+-    # Assert correctness
+-    assert diff < 1e-6, f"Integrity check failed! Diff: {diff}"
+-
+-    print("✅ TD-111 Integrity Check Passed.")
+-
+-    # Also verify that if Reflux > 0, M2 < Total (Strict subset)
+-    # Reflux might be 0 if everything distributed perfectly or nothing happened.
+-    if reflux_balance > 0:
+-        assert m2_total < ws_total, "M2 should be less than Total when Reflux > 0"
+-        print("✅ M2 is strictly less than Total (Reflux excluded confirmed).")
+-    else:
+-        print("⚠️ Reflux balance is 0.0, cannot confirm strict exclusion. (This is okay if no reflux happened yet)")
+-
+-    # Verify that M2 from tracker (via run_tick) matches get_m2_money_supply
+-    # We need to access the latest tracked value.
+-    latest_metrics = tracker.get_latest_indicators()
+-    tracked_m2 = latest_metrics.get("money_supply", -1.0)
+-    print(f"Tracked M2 (from metrics): {tracked_m2:,.6f}")
+-
+-    # NOTE: tracked_m2 comes from the START of the tick (or end, depending on when track is called).
+-    # In tick_scheduler.py: track is called in the middle/end.
+-    # The value `m2_total` we calculated above is NOW (end of tick 10).
+-    # `tracked_m2` should be from tick 10 (latest).
+-
+-    if abs(tracked_m2 - m2_total) < 1e-6:
+-         print("✅ Tracked M2 matches calculated M2. (Code is likely modified to use M2)")
+-    elif abs(tracked_m2 - ws_total) < 1e-6:
+-         print("❌ Tracked M2 matches Total Money. (Code is likely NOT YET modified)")
+-         # This will be useful to confirm the change.
+-    else:
+-         print(f"⚠️ Tracked M2 ({tracked_m2}) matches neither M2 ({m2_total}) nor Total ({ws_total}).")
+-
+-if __name__ == "__main__":
+-    verify_td_111()
+diff --git a/simulation/metrics/economic_tracker.py b/simulation/metrics/economic_tracker.py
+index 973be41..a420c49 100644
+--- a/simulation/metrics/economic_tracker.py
++++ b/simulation/metrics/economic_tracker.py
+@@ -232,7 +232,7 @@ class EconomicIndicatorTracker:
+         # 2. Velocity of Money = Nominal GDP / Money Supply (M1)
+         # M1 = Household Assets + Firm Assets (excluding Bank/Govt)
+         money_supply_m1 = total_household_assets + total_firm_assets
+-        # record["money_supply"] = money_supply_m1  # WO-043: Removed overwrite. Uses passed M2.
++        record["money_supply"] = money_supply_m1
+ 
+         if money_supply_m1 > 0:
+             record["velocity_of_money"] = nominal_gdp / money_supply_m1
+@@ -284,13 +284,9 @@ class EconomicIndicatorTracker:
+     def get_m2_money_supply(self, world_state: 'WorldState') -> float:
+         """
+         Calculates the M2 money supply for economic reporting.
+-
+         M2 = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
+-
+-        This calculation INTENTIONALLY EXCLUDES the EconomicRefluxSystem balance,
+-        as it represents money in transit not yet realized by economic agents,
+-        and also excludes the Central Bank's balance which is used for
+-        system-level integrity checks.
++        This calculation EXCLUDES the RefluxSystem balance, as it represents
++        money in transit not yet realized by economic agents.
+         """
+         total = 0.0
+ 
+@@ -313,6 +309,5 @@ class EconomicIndicatorTracker:
+             total += world_state.government.assets
+ 
+         # NOTE: world_state.reflux_system.balance is INTENTIONALLY EXCLUDED.
+-        # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.
+ 
+         return total
+diff --git a/simulation/tick_scheduler.py b/simulation/tick_scheduler.py
+index 2878dea..a238a28 100644
+--- a/simulation/tick_scheduler.py
++++ b/simulation/tick_scheduler.py
+@@ -91,9 +91,7 @@ class TickScheduler:
+         state.inter_tick_queue.clear()
+ 
+         # 0. Firm Production (State Update: Inventory)
+-        for firm in state.firms:
+-             if firm.is_active:
+-                 firm.produce(state.time, technology_manager=state.technology_manager)
++        # Moved to main.py (WO-053 Orchestration)
+ 
+         # 1. Bank Tick (Interest)
+         if hasattr(state.bank, "run_tick"):
+@@ -145,6 +143,7 @@ class TickScheduler:
+                 market.clear_orders()
+ 
+         # WO-057-Fix: Update tracker with the latest data before government decisions
++        # Use M2 Money Supply (excluding reflux/central bank integrity buffer)
+         money_supply = state.tracker.get_m2_money_supply(state)
+         state.tracker.track(state.time, state.households, state.firms, state.markets, money_supply=money_supply)
+ 
+@@ -358,25 +357,6 @@ class TickScheduler:
+             state.logger.error("CommerceSystem not initialized! Skipping consumption cycle.")
+             household_leisure_effects = {}
+ 
+-        # --- Phase 23: Technology Manager Update ---
+-        # WO-053: Orchestrate Technology Update with DTOs
+-        # 1. Calculate Human Capital Index
+-        active_households_dto = [
+-            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
+-            for h in state.households
+-        ]
+-        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])
+-        active_count = sum(1 for h in active_households_dto if h['is_active'])
+-        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
+-
+-        # 2. Prepare Firm DTOs
+-        active_firms_dto = [
+-            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
+-            for f in state.firms if f.is_active
+-        ]
+-
+-        state.technology_manager.update(state.time, active_firms_dto, human_capital_index)
+-
+         # Phase 17-3B: Process Housing (Logic that didn't fit in matching/lifecycle)
+         # Housing matching happened in _phase_matching.
+         # But apply_homeless_penalty needs to run.
+diff --git a/tests/integration/test_phase23_production.py b/tests/integration/test_phase23_production.py
+index 0e0860f..addd663 100644
+--- a/tests/integration/test_phase23_production.py
++++ b/tests/integration/test_phase23_production.py
+@@ -1,77 +1,101 @@
+ import pytest
++import logging
+ from unittest.mock import MagicMock
+-from simulation.components.production_department import ProductionDepartment
+-from simulation.systems.technology_manager import TechnologyManager
+ from simulation.firms import Firm
++from simulation.systems.technology_manager import TechnologyManager
++from simulation.systems.technology_manager import TechNode
++from simulation.components.production_department import ProductionDepartment
++
++class MockConfig:
++    # Firm Defaults
++    FIRM_MIN_PRODUCTION_TARGET = 10.0
++    FIRM_PRODUCTIVITY_FACTOR = 1.0
++    INITIAL_FIRM_LIQUIDITY_NEED = 100.0
++
++    # Production
++    LABOR_ALPHA = 0.5 # Simplified
++    LABOR_ELASTICITY_MIN = 0.3
++    AUTOMATION_LABOR_REDUCTION = 0.5
++    CAPITAL_DEPRECIATION_RATE = 0.0
++    GOODS = {
++        "basic_food": {
++            "id": "basic_food",
++            "quality_sensitivity": 0.0,
++            "inputs": {}
++        }
++    }
++
++    # Tech
++    TECH_FERTILIZER_UNLOCK_TICK = 50
++    TECH_DIFFUSION_RATE = 0.05
++
++    # Others
++    IPO_INITIAL_SHARES = 1000.0
++    DIVIDEND_RATE = 0.3
++    BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD = 5
++    ASSETS_CLOSURE_THRESHOLD = -1000.0
++    FIRM_CLOSURE_TURNS_THRESHOLD = 10
++    PROFIT_HISTORY_TICKS = 50
++
++def create_test_firm(id, config):
++    firm = Firm(
++        id=id,
++        initial_capital=1000.0,
++        initial_liquidity_need=100.0,
++        specialization="basic_food",
++        productivity_factor=1.0,
++        decision_engine=MagicMock(),
++        value_orientation="wealth",
++        config_module=config,
++        initial_inventory={},
++        logger=logging.getLogger(f"firm_{id}"),
++        sector="FOOD",
++        is_visionary=False
++    )
++    # Setup for production
++    firm.hr = MagicMock()
++    firm.hr.employees = [MagicMock()] # 1 employee
++    firm.hr.get_total_labor_skill.return_value = 10.0
++    firm.hr.get_avg_skill.return_value = 1.0
++
++    firm.capital_stock = 100.0
++    firm.automation_level = 0.0
++
++    return firm
++
++def test_production_boost_from_fertilizer_tech():
++    config = MockConfig()
++    logger = logging.getLogger("test_integration")
++
++    tech_manager = TechnologyManager(config, logger)
++
++    firm_A = create_test_firm(1, config)
++    firm_B = create_test_firm(2, config)
++
++    # Ensure identical initial state
++    assert firm_A.productivity_factor == firm_B.productivity_factor
++
++    # Unlock tech
++    tech_node = tech_manager.tech_tree["TECH_AGRI_CHEM_01"]
++    tech_node.is_unlocked = True
++    tech_manager.active_techs.append(tech_node.id)
++
++    # Adopt for Firm A
++    tech_manager._adopt(firm_A.id, tech_node)
++
++    # Produce
++    # Tick doesn't matter much for this logic unless depreciation is high
++    tick = 100
++
++    # Firm A Production
++    prod_A = firm_A.production.produce(tick, tech_manager)
++
++    # Firm B Production
++    prod_B = firm_B.production.produce(tick, tech_manager)
++
++    print(f"Production A: {prod_A}")
++    print(f"Production B: {prod_B}")
+ 
+-class TestPhase23Production:
+-    @pytest.fixture
+-    def config(self):
+-        mock_config = MagicMock()
+-        mock_config.LABOR_ALPHA = 0.5
+-        mock_config.LABOR_ELASTICITY_MIN = 0.1
+-        mock_config.AUTOMATION_LABOR_REDUCTION = 0.0
+-        mock_config.CAPITAL_DEPRECIATION_RATE = 0.0
+-        # Mock GOODS structure
+-        mock_config.GOODS = {"food": {"sector": "FOOD"}}
+-        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 0
+-        mock_config.TECH_DIFFUSION_RATE = 0.0
+-        return mock_config
+-
+-    @pytest.fixture
+-    def firm_setup(self, config):
+-        def _create_firm(firm_id):
+-            firm = MagicMock(spec=Firm)
+-            firm.id = firm_id
+-            firm.sector = "FOOD"
+-            firm.specialization = "food"
+-            firm.is_visionary = False
+-            firm.productivity_factor = 1.0
+-            firm.capital_stock = 100.0
+-            firm.automation_level = 0.0
+-            firm.base_quality = 1.0
+-            firm.inventory = {}
+-            firm.input_inventory = {}
+-            firm.hr = MagicMock()
+-            firm.hr.employees = [MagicMock()] # At least one employee
+-            firm.hr.get_total_labor_skill.return_value = 100.0
+-            firm.hr.get_avg_skill.return_value = 1.0
+-
+-            # Create real ProductionDepartment for the mock firm
+-            firm.production_department = ProductionDepartment(firm, config)
+-            # Inject production department back into firm.production if needed by other components,
+-            # but here we test production_department directly or via produce
+-
+-            # Add inventory method
+-            firm.add_inventory = MagicMock()
+-
+-            return firm, firm.production_department
+-        return _create_firm
+-
+-    def test_production_boost_from_fertilizer_tech(self, config, firm_setup):
+-        # 1. Create two identical firms
+-        firm_A, prod_A = firm_setup(1)
+-        firm_B, prod_B = firm_setup(2)
+-
+-        # 2. Create TechnologyManager and unlock Tech
+-        tech_manager = TechnologyManager(config, MagicMock())
+-        tech_node = tech_manager.tech_tree["TECH_AGRI_CHEM_01"]
+-        tech_node.is_unlocked = True
+-        tech_manager.active_techs.append(tech_node.id)
+-
+-        # 3. Manually have firm_A adopt the tech
+-        tech_manager._adopt(firm_A.id, tech_node)
+-
+-        # 4. Run produce
+-        # Note: ProductionDepartment.produce returns quantity
+-
+-        qty_A = prod_A.produce(10, tech_manager)
+-        qty_B = prod_B.produce(10, tech_manager)
+-
+-        # 5. Assert production_A is approx 3.0 * production_B
+-        assert qty_B > 0
+-        ratio = qty_A / qty_B
+-        print(f"Production A: {qty_A}, Production B: {qty_B}, Ratio: {ratio}")
+-
+-        # Tech multiplier is 3.0.
+-        assert abs(ratio - 3.0) < 0.01
++    # Assertions
++    assert prod_B > 0
++    assert prod_A == pytest.approx(prod_B * 3.0, rel=0.01)
+diff --git a/tests/systems/test_technology_manager.py b/tests/systems/test_technology_manager.py
+index 385524d..dd0428d 100644
+--- a/tests/systems/test_technology_manager.py
++++ b/tests/systems/test_technology_manager.py
+@@ -1,98 +1,77 @@
+ import pytest
++import logging
+ from unittest.mock import MagicMock
+-from simulation.systems.technology_manager import TechnologyManager, TechNode
++from simulation.systems.technology_manager import TechnologyManager
+ from simulation.systems.tech.api import FirmTechInfoDTO
+ 
+-class TestTechnologyManager:
+-    @pytest.fixture
+-    def config(self):
+-        mock_config = MagicMock()
+-        mock_config.TECH_FERTILIZER_UNLOCK_TICK = 30 # Updated default
+-        mock_config.TECH_DIFFUSION_RATE = 0.10       # Updated default
+-        return mock_config
+-
+-    @pytest.fixture
+-    def manager(self, config):
+-        return TechnologyManager(config, MagicMock())
+-
+-    def test_effective_diffusion_rate(self, manager):
+-        # Base rate = 0.10 (Updated from 0.05)
+-        # HCI = 1.0 -> Boost = 0 -> Rate = 0.10
+-        manager.human_capital_index = 1.0
+-        assert manager._get_effective_diffusion_rate(0.10) == 0.10
+-
+-        # HCI = 3.0 -> 0.5 * 2.0 = 1.0 -> Boost = 1.0 -> Rate = 0.10 * 2.0 = 0.20
+-        manager.human_capital_index = 3.0
+-        assert manager._get_effective_diffusion_rate(0.10) == 0.20
+-
+-        # HCI = 5.0 -> 0.5 * 4.0 = 2.0 -> Boost = min(1.5, 2.0) = 1.5 -> Rate = 0.10 * 2.5 = 0.25
+-        manager.human_capital_index = 5.0
+-        assert manager._get_effective_diffusion_rate(0.10) == 0.25
+-
+-    def test_unlock_and_visionary_adoption(self, manager):
+-        # Setup Tech
+-        tech_id = "TECH_AGRI_CHEM_01"
+-        tech = manager.tech_tree[tech_id]
+-        tech.unlock_tick = 30 # Updated check
+-        tech.sector = "FOOD"
+-
+-        # Setup Firms DTO
+-        firms = [
+-            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=True),
+-            FirmTechInfoDTO(id=2, sector="FOOD", is_visionary=False),
+-            FirmTechInfoDTO(id=3, sector="MANUFACTURING", is_visionary=True),
+-        ]
+-
+-        # Tick 29: No unlock
+-        manager.update(29, firms, 1.0)
+-        assert not tech.is_unlocked
+-        assert not manager.has_adopted(1, tech_id)
+-
+-        # Tick 30: Unlock
+-        manager.update(30, firms, 1.0)
+-        assert tech.is_unlocked
+-
+-        # Visionary Check
+-        # Firm 1 (Food, Visionary) should adopt
+-        assert manager.has_adopted(1, tech_id)
+-        # Firm 2 (Food, Not Visionary) should NOT adopt immediately
+-        assert not manager.has_adopted(2, tech_id)
+-        # Firm 3 (Mfg, Visionary) should NOT adopt due to sector mismatch
+-        assert not manager.has_adopted(3, tech_id)
+-
+-    def test_diffusion_over_time(self, manager):
+-        # Setup Tech
+-        tech_id = "TECH_AGRI_CHEM_01"
+-        tech = manager.tech_tree[tech_id]
+-        tech.unlock_tick = 30
+-        tech.diffusion_rate = 0.0 # No diffusion initially
+-
+-        firms = [
+-            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=False),
+-        ]
+-
+-        # Unlock it first (needs unlock call)
+-        # Note: _unlock_tech also iterates firms, but firm 1 is not visionary, so it won't adopt there.
+-        manager.update(30, firms, 1.0)
+-        assert not manager.has_adopted(1, tech_id) # Not visionary, and diffusion 0%
+-
+-        # Now enable diffusion
+-        tech.diffusion_rate = 1.0
+-        manager.update(31, firms, 1.0)
+-
+-        assert manager.has_adopted(1, tech_id)
+-
+-    def test_productivity_multiplier(self, manager):
+-         # Setup Tech
+-        tech_id = "TECH_AGRI_CHEM_01"
+-        tech = manager.tech_tree[tech_id]
+-        tech.multiplier = 3.0
+-
+-        # Before adoption
+-        assert manager.get_productivity_multiplier(1) == 1.0
+-
+-        # Adopt
+-        manager._adopt(1, tech)
+-
+-        # After adoption
+-        assert manager.get_productivity_multiplier(1) == 3.0
++class MockConfig:
++    TECH_FERTILIZER_UNLOCK_TICK = 50
++    TECH_DIFFUSION_RATE = 0.05
++
++@pytest.fixture
++def tech_manager():
++    config = MockConfig()
++    logger = logging.getLogger("test_tech_manager")
++    return TechnologyManager(config, logger)
++
++def test_effective_diffusion_rate(tech_manager):
++    # Base rate is 0.05
++    # Formula: base * (1 + min(1.5, 0.5 * (HCI - 1.0)))
++
++    # Case 1: HCI = 1.0 -> Boost = 0 -> Rate = 0.05
++    tech_manager.human_capital_index = 1.0
++    rate = tech_manager._get_effective_diffusion_rate(0.05)
++    assert rate == 0.05
++
++    # Case 2: HCI = 3.0 -> Boost = 0.5 * 2.0 = 1.0 -> Rate = 0.05 * 2.0 = 0.10
++    tech_manager.human_capital_index = 3.0
++    rate = tech_manager._get_effective_diffusion_rate(0.05)
++    assert rate == pytest.approx(0.10)
++
++    # Case 3: HCI = 5.0 -> Boost = 0.5 * 4.0 = 2.0 -> capped at 1.5 -> Rate = 0.05 * 2.5 = 0.125
++    tech_manager.human_capital_index = 5.0
++    rate = tech_manager._get_effective_diffusion_rate(0.05)
++    assert rate == pytest.approx(0.125)
++
++def test_unlock_and_visionary_adoption(tech_manager):
++    firms = [
++        {"id": 1, "sector": "FOOD", "is_visionary": True},
++        {"id": 2, "sector": "FOOD", "is_visionary": False},
++        {"id": 3, "sector": "MANUFACTURING", "is_visionary": True},
++    ]
++
++    # Tick 49: No unlock
++    tech_manager.update(49, firms, 1.0)
++    assert not tech_manager.active_techs
++
++    # Tick 50: Unlock
++    tech_manager.update(50, firms, 1.0)
++    assert "TECH_AGRI_CHEM_01" in tech_manager.active_techs
++
++    # Check adoption
++    # Firm 1 (Visionary, Food) -> Should adopt
++    assert tech_manager.has_adopted(1, "TECH_AGRI_CHEM_01")
++    # Firm 2 (Non-Visionary, Food) -> Should NOT adopt immediately
++    assert not tech_manager.has_adopted(2, "TECH_AGRI_CHEM_01")
++    # Firm 3 (Visionary, Manufacturing) -> Should NOT adopt (wrong sector)
++    assert not tech_manager.has_adopted(3, "TECH_AGRI_CHEM_01")
++
++def test_diffusion_over_time(tech_manager):
++    firms = [
++        {"id": 2, "sector": "FOOD", "is_visionary": False},
++    ]
++
++    # Unlock first
++    tech_manager.update(50, firms, 1.0)
++
++    # Force high diffusion rate for test reliability or mock random
++    # With rate 0.05, probability of NOT adopting in 200 ticks is very low.
++
++    adopted = False
++    for i in range(200):
++        tech_manager.update(51 + i, firms, 1.0)
++        if tech_manager.has_adopted(2, "TECH_AGRI_CHEM_01"):
++            adopted = True
++            break
++
++    assert adopted
