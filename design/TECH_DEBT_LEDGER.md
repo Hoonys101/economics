@@ -18,7 +18,6 @@
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
 | **TD-123** | 2026-01-27 | **God Class: `Household` (840 lines)** | Decompose into Bio/Social/Econ components | Maintenance Overhead | **PLANNED** (Spec Ready) |
 | **TD-124** | 2026-01-27 | **God Class: `TransactionProcessor`** | Split into Tax/Settlement/Registry | Scalability Risk | **PLANNED** (Spec Ready) |
-| **TD-125** | 2026-01-27 | **Non-atomic Transfer Sequences** | Implement atomic bank/transaction blocks | Monetary Integrity | **ACTIVE** |
 | **TD-126** | 2026-01-27 | **Implicit `IBankService` Protocol** | Formalize API in `modules/finance/api.py` | Design-Impl Gap | **ACTIVE** |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
 
@@ -54,6 +53,7 @@
 | TD-121 | 2026-01-26 | Newborn Money Leak (DOA) | Initial Needs Config Injection (WO-121) | Agent Viability | **RESOLVED** |
 | TD-101 | 2026-01-27 | Shadow Economy (Direct Mutation) | Enforce `SettlementSystem` usage (WO-125) | Zero-sum violation | **RESOLVED** |
 | TD-117 | 2026-01-27 | DTO-Only Decisions (Regression) | Enforce Purity Gate (WO-125) | Purity Gate Violation | **RESOLVED** |
+| TD-125 | 2026-01-27 | Non-atomic Transfer Sequences | Implement atomic bank/transaction blocks (WO-125) | Monetary Integrity | **RESOLVED** |
 
 ---
 

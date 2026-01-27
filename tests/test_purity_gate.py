@@ -18,7 +18,7 @@ def test_decision_context_purity():
 
     try:
         DecisionContext(
-            markets={}, goods_data=[], market_data={}, current_time=0,
+            goods_data=[], market_data={}, current_time=0,
             state=MagicMock(), config=MagicMock(),
             household=MagicMock() # Should fail
         )
@@ -60,7 +60,6 @@ def test_standalone_firm_engine_uses_dto():
 
     context = MagicMock(spec=DecisionContext)
     context.state = firm_dto
-    context.markets = {}
     context.goods_data = []
     context.market_data = {}
     context.current_time = 1
@@ -159,7 +158,6 @@ def test_household_engine_uses_dto():
     context.state = household_dto
     context.config = config_dto
 
-    context.markets = {}
     context.market_data = {"loan_market": {"interest_rate": 0.05}}
     context.current_time = 1
 

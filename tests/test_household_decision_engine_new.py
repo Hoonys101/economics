@@ -170,7 +170,6 @@ class TestAIDrivenHouseholdDecisionEngine:
         context = DecisionContext(
             state=mock_household_dto,
             config=mock_config,
-            markets={},
             goods_data=[],
             market_data={},
             current_time=1,
@@ -189,7 +188,6 @@ class TestAIDrivenHouseholdDecisionEngine:
         context = DecisionContext(
             state=mock_household_dto,
             config=mock_config,
-            markets={},
             goods_data=[],
             market_data={},
             current_time=1,
@@ -201,21 +199,22 @@ class TestAIDrivenHouseholdDecisionEngine:
     def test_consumption_buy_basic_food_sufficient_assets(
         self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
-        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
-        mock_goods_market.get_best_ask.return_value = 10.0
-        mock_markets = {"goods_market": mock_goods_market}
-        
         # High Aggressiveness for basic_food
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
              consumption_aggressiveness={"basic_food": 0.8}
         )
 
+        market_data = {
+            "goods_market": {
+                "basic_food_current_sell_price": 10.0,
+            }
+        }
+
         context = DecisionContext(
             state=mock_household_dto,
             config=mock_config,
-            markets=mock_markets,
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
@@ -226,10 +225,6 @@ class TestAIDrivenHouseholdDecisionEngine:
     def test_consumption_buy_luxury_food_insufficient_assets(
         self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
-        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
-        mock_goods_market.get_best_ask.return_value = 1000.0
-        mock_markets = {"goods_market": mock_goods_market}
-        
         mock_household_dto._assets = 100.0 # DTO assets
 
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
@@ -247,7 +242,6 @@ class TestAIDrivenHouseholdDecisionEngine:
         context = DecisionContext(
             state=mock_household_dto,
             config=mock_config,
-            markets=mock_markets,
             goods_data=[],
             market_data=market_data,
             current_time=1,
@@ -261,22 +255,23 @@ class TestAIDrivenHouseholdDecisionEngine:
     def test_consumption_evaluate_options_chooses_best_utility(
         self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
-        mock_goods_market = Mock(spec=OrderBookMarket, id="goods_market")
-        mock_goods_market.get_best_ask.side_effect = lambda item_id: 10.0 if item_id == "basic_food" else (20.0 if item_id == "luxury_food" else None)
-        
-        mock_markets = {"goods_market": mock_goods_market}
-        
         # Equal aggressiveness
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
              consumption_aggressiveness={"basic_food": 0.5, "luxury_food": 0.5}
         )
 
+        market_data = {
+            "goods_market": {
+                "basic_food_current_sell_price": 10.0,
+                "luxury_food_current_sell_price": 20.0
+            }
+        }
+
         context = DecisionContext(
             state=mock_household_dto,
             config=mock_config,
-            markets=mock_markets,
             goods_data=[],
-            market_data={},
+            market_data=market_data,
             current_time=1,
         )
         orders, _ = decision_engine.make_decisions(context)
@@ -286,12 +281,6 @@ class TestAIDrivenHouseholdDecisionEngine:
     def test_labor_market_participation_aggressive(
         self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
-        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
-        mock_labor_market.get_all_bids = Mock(
-            return_value=[Order(2, "BUY", "labor", 1, 45.0, "labor_market")]
-        )
-        mock_markets = {"labor": mock_labor_market}
-
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
              work_aggressiveness=0.9
         )
@@ -313,7 +302,6 @@ class TestAIDrivenHouseholdDecisionEngine:
         context = DecisionContext(
             state=mock_household_dto,
             config=mock_config,
-            markets=mock_markets,
             goods_data=[],
             market_data=market_data,
             current_time=1,
@@ -331,12 +319,6 @@ class TestAIDrivenHouseholdDecisionEngine:
     def test_labor_market_participation_passive_no_offer(
         self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
-        mock_labor_market = Mock(spec=OrderBookMarket, id="labor_market")
-        mock_labor_market.get_all_bids = Mock(
-            return_value=[Order(2, "BUY", "labor", 1, 55.0, "labor_market")]
-        )
-        mock_markets = {"labor": mock_labor_market}
-
         # Passive = Low Work Agg
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
              work_aggressiveness=0.1
@@ -358,7 +340,6 @@ class TestAIDrivenHouseholdDecisionEngine:
         context = DecisionContext(
             state=mock_household_dto,
             config=mock_config,
-            markets=mock_markets,
             goods_data=[],
             market_data=market_data,
             current_time=1,

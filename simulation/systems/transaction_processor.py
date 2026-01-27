@@ -54,33 +54,33 @@ class TransactionProcessor(SystemInterface):
             # ==================================================================
             # 1. Financial Settlement (Asset Transfer & Taxes)
             # ==================================================================
-            settlement = getattr(state, 'settlement_system', None)
+            # WO-125: Enforce SettlementSystem presence (TD-101)
+            settlement = state.settlement_system
             if not settlement:
                 raise RuntimeError("SettlementSystem is required for TransactionProcessor but is missing in SimulationState.")
 
             success = False
 
             if tx.transaction_type == "lender_of_last_resort":
-                # Special Minting Logic
-                # Buyer (Gov) -> Seller (Bank). No Debit.
-                seller.deposit(trade_value)
-                if hasattr(buyer, "total_money_issued"):
+                # Special Minting Logic (Handled via Settlement)
+                # Buyer (Gov) -> Seller (Bank).
+                success = settlement.transfer(buyer, seller, trade_value, "lender_of_last_resort")
+                if success and hasattr(buyer, "total_money_issued"):
                     buyer.total_money_issued += trade_value
-                success = True
 
             elif tx.transaction_type == "asset_liquidation":
                 # Special Minting Logic + Asset Transfer
-                # Buyer (Gov) -> Seller (Agent). No Debit.
-                seller.deposit(trade_value)
-                if hasattr(buyer, "total_money_issued"):
-                    buyer.total_money_issued += trade_value
+                # Buyer (Gov) -> Seller (Agent).
+                success = settlement.transfer(buyer, seller, trade_value, "asset_liquidation")
+                if success:
+                    if hasattr(buyer, "total_money_issued"):
+                        buyer.total_money_issued += trade_value
 
-                # Asset Transfer
-                if tx.item_id.startswith("stock_"):
-                    self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
-                elif tx.item_id.startswith("real_estate_"):
-                    self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
-                success = True
+                    # Asset Transfer
+                    if tx.item_id.startswith("stock_"):
+                        self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+                    elif tx.item_id.startswith("real_estate_"):
+                        self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
 
             elif tx.transaction_type == "asset_transfer":
                  # Standard Transfer (Zero-Sum)

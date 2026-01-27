@@ -111,13 +111,7 @@ def context_mock(firm_dto, firm_config_dto):
         "debt_data": {1: {"total_principal": 0.0}}
     }
     context.goods_data = [{"id": "food", "production_cost": 10.0, "inputs": {}}]
-    context.markets = {
-        "food": MagicMock(),
-        "labor": MagicMock(),
-        "stock_market": MagicMock()
-    }
     context.reflux_system = MagicMock()
-    context.government = MagicMock()
     return context
 
 def test_rd_logic(firm_dto, context_mock):
