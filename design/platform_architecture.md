@@ -160,6 +160,18 @@ self._econ_state = self.econ_component.update_skills(self._econ_state, context)
 
 이 구조를 통해 시뮬레이션은 대규모 트랜잭션 환경에서도 데이터의 실시간 무결성과 아키텍처의 확장성을 동시에 확보합니다.
 
+### 4.9 시스템 인터페이스와 프로토콜 (Protocols and API-Driven Development)
+
+모듈 간의 결합도를 낮추고 유지보수성을 높이기 위해, 핵심 시스템은 인터페이스(Protocol)를 통한 추상화와 DTO기반의 데이터 교환을 원칙으로 합니다.
+
+**1. 추상화 원칙 (Dependency Inversion)**:
+- **추상화 의존**: 모듈(예: 가계, 기업)은 다른 시스템의 구체 클래스(Bank)가 아닌, `modules/<name>/api.py`에 정의된 인터페이스(`IBankService`)에 의존해야 합니다.
+- **Protocol 사용**: Python의 `typing.Protocol`을 사용하여 구조적 서브타이핑을 구현함으로써, 구현체와 공통 인터페이스 간의 명시적인 상속 관계 없이도 코드의 일관성을 검증합니다.
+
+**2. 데이터 계약 (Data Contracts)**:
+- **DTO 중심**: 인터페이스 메서드는 원격 객체나 복잡한 클래스 인스턴스 대신, 명확하게 정의된 DTO(TypedDict 또는 Dataclass)를 인자로 받고 반환해야 합니다.
+- **독립성**: 이 패턴을 통해 내부 로직의 변경이 외부 인터페이스에 미치는 영향을 최소화하며, 특정 시스템(예: 은행)의 목(Mock) 객체를 생성하여 독립적인 단위 테스트가 가능해집니다.
+
 ---
 
 ## 5. 웹 인터페이스 (`app.py`, `static/`)

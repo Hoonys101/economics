@@ -4,18 +4,10 @@
     "updated": "2026-01-27",
     "author": "Antigravity"
   },
-  "spec-wo-078-logic": {
-    "worker": "spec",
-    "instruction": "Draft the detailed logic for Fractional Reserve Banking (WO-078). This spec MUST reference and align with the IBankService defined in the attached context. Focus on: 1. Credit Creation flow. 2. LTV/DTI constraints for agents. 3. Bank solvency management.",
-    "context": [
-      "design/specs/TD-126_Bank_Interface_Spec.md"
-    ],
-    "output": "design/specs/WO-078_Fractional_Reserve_Logic_Spec.md"
-  },
-  "td-126-impl": {
+  "wo-078-impl": {
     "command": "create",
-    "instruction": "공식 승인된 'design/specs/TD-126_Bank_Interface_Spec.md' 명세에 따라 IBankService 인터페이스를 구축하세요. Household와 Firm이 기존의 구체 클래스(Bank) 대신 이 인터페이스를 통해 상호작용하도록 리팩토링하여 시스템 결합도를 낮추어야 합니다.",
-    "title": "TD-126: Formalize IBankService Protocol (Implementation)",
-    "file": "design/specs/TD-126_Bank_Interface_Spec.md"
+    "instruction": "Implement the Fractional Reserve Banking system following 'design/specs/WO-078_Fractional_Reserve_Logic_Spec.md'. Tracks: A. ICreditScoringService & implementation. B. Bank.grant_loan credit creation logic. C. Refactor agent tests to use dependency injection for IBankService.",
+    "title": "WO-078: Fractional Reserve Banking Implementation",
+    "file": "design/specs/WO-078_Fractional_Reserve_Logic_Spec.md"
   }
 }

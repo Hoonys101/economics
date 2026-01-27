@@ -85,6 +85,10 @@
       "95074296476804115": {
         "title": "TD-126: Formalize IBankService Protocol",
         "initial_mission": "현재 Bank 클래스에 흩어져 있는 대출, 예금 관련 로직을 modules/finance/api.py의 IBankService 인터페이스로 공식화하세요. Household와 Fir..."
+      },
+      "1345960297064323413": {
+        "title": "TD-126: Formalize IBankService Protocol (Implementation)",
+        "initial_mission": "공식 승인된 'design/specs/TD-126_Bank_Interface_Spec.md' 명세에 따라 IBankService 인터페이스를 구축하세요. Household와 Fir..."
       }
     },
     "completed_sessions": {

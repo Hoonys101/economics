@@ -34,6 +34,7 @@
     - **Status**: 
         - **WO-123**: Household Decomposition (Bio/Econ/Social/Facade) ✅ (2026-01-27)
         - **WO-124**: TransactionProcessor Decomposition (6-Layer Architecture) ✅ (2026-01-27)
+        - **TD-126**: Bank Interface Formalization (Protocols & DTOs) ✅ (2026-01-27)
     - **Previous**: Step 3 (Purity Finalization) ✅ (Merged 2026-01-27)
 
 ---
