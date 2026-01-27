@@ -29,16 +29,10 @@
     - **Phase 2**: Guaranteed Execution Sequence ✅ (Merged 2026-01-21)
     - **Phase 3**: DTO Decoupling & Data Flow Purity ✅ (Merged 2026-01-21)
 
-- **현재 단계:** `Step 2: Abstraction Wall (The Great Reset)` 🧱
-    - **Goal**: Full DTO decoupling for AI Decision Engines.
-    - **Status**: Spec generated (`DTO_PURITY_GATE_SPEC.md`).
-    - **Target**: Resolve **TD-103** (Leaky AI Abstraction).
-    - **Note**: WO-122 (Test Cleanup) & Track Alpha (Leak Hunt) **DEFERRED**.
-
-- **긴급 작업 (Execution Delegated)**: `Step 3: Purity Finalization`
-    - **Assignee**: **Jules** (WO-125 Dispatch)
-    - **Task**: Liquidate legacy asset mutations (TD-101) & Secure Purity Gate (TD-117).
-    - **Status**: **IN_PROGRESS** (Agent Dispatched)
+- **현재 단계:** `Step 4: Structural Reset (God Class Decomposition)` 🏗️
+    - **Goal**: Split `Household` and `TransactionProcessor` into modular components.
+    - **Status**: Specs generated (`TD-123_Household_Decomposition.md`, `TD-124_TransactionProcessor_Decomposition.md`).
+    - **Previous**: Step 3 (Purity Finalization) ✅ (Merged 2026-01-27)
 
 ---
 

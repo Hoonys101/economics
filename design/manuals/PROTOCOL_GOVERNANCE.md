@@ -34,4 +34,5 @@ At the end of every work session, the Architect MUST:
 2.  **Manage Debt**: Record all deferred items in `design/TECH_DEBT_LEDGER.md`.
 3.  **Handover**: Draft a `design/handovers/HANDOVER_YYYY-MM-DD.md` with the next session's "First Task".
 4.  **Sync**: Ensure `design/SESSION_LEDGER.md` reflects all active/completed sessions.
-5.  **Commit**: Push all documentation changes to `main`.
+5.  **Artifact Cleanup**: Empty the `design/gemini_output/` directory (delete all reviews, temporary specs, and diff files generated during the session).
+6.  **Commit**: Push all documentation changes to `main`.

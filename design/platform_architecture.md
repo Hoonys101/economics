@@ -107,11 +107,18 @@ Direct state modification (e.g., `agent_a.assets -= 100; agent_b.assets += 100`)
 2.  **Centralized Auditing:** A single point of settlement provides a clear, auditable ledger for all economic activity, simplifying debugging and analysis.
 3.  **System Stability:** Enforcing this pattern at runtime (e.g., via `RuntimeError` if the system is absent) prevents the simulation from running in a corruptible state.
 
-### 4.6 의사결정 엔진의 순수성 (Purity of Decision Engines)
-- **현상:** 의사결정 로직(예: `AIDrivenHouseholdDecisionEngine`)이 `market`과 같은 live 서비스 객체를 직접 참조하면서, 테스트가 복잡해지고 서비스 간 결합도가 높아지는 문제가 발생했습니다.
-- **원인:** 엔진이 외부 상태(live object)에 직접 의존하여, 동일 입력에 대해 다른 결과를 낼 수 있는 비결정적 특성을 가집니다.
-- **해결:** 의사결정 엔진은 반드시 `DecisionContext`를 통해 전달되는 정적 데이터(State DTO, Market Data, Config)에만 의존해야 합니다. 엔진 내부에서 live 서비스 객체의 메서드를 직접 호출해서는 안 됩니다. 필요한 모든 외부 상태 정보는 호출하는 쪽에서 `market_data`와 같은 직렬화 가능한 데이터 구조로 변환하여 `Context`에 담아 전달해야 합니다.
-- **교훈:** 이 원칙은 의사결정 로직을 외부 서비스로부터 완전히 분리(decoupling)하여, 행위를 예측 가능하게 만들고 테스트 용이성을 극대화합니다. 엔진은 입력 데이터에 대해서만 작동하는 순수 함수(pure function)처럼 동작하게 됩니다.
+### 4.6 아키텍처 원칙: 정보 순수성 게이트 (Purity Gate)
+
+- **현상 (Phenomenon)**: 과거 AI 에이전트는 의사결정 시 `markets`, `government`와 같은 라이브(live) 시스템 객체에 직접 접근할 수 있었습니다. 이는 에이전트가 의도치 않게 시스템 상태를 변경(side-effect)하거나, 일관되지 않은 데이터를 참조하여 예측 불가능한 버그(TD-117)를 유발하는 원인이 되었습니다.
+
+- **원칙 (Principle)**: **에이전트의 의사결정 로직은 반드시 순수 함수(Pure Function)여야 한다.** 즉, 의사결정은 특정 시점의 월드 상태가 담긴 불변의 데이터 스냅샷(DTOs)만을 입력으로 받고, 의도하는 행동(Orders) 목록을 출력으로 반환해야 합니다. 이 과정에서 시스템의 다른 어떤 부분에도 영향을 주어서는 안 됩니다.
+
+- **결과 (Implication)**: 이 원칙은 '의사결정(Decision)'과 '실행(Execution)'의 책임을 명확히 분리합니다. 에이전트 로직은 테스트가 매우 용이해지고, 상태 변경이 시스템(예: `TransactionProcessor`)을 통해서만 일어나도록 보장하므로 전체 시스템의 예측 가능성과 안정성이 크게 향상됩니다.
+
+- **구현 (Implementation)**:
+    - `DecisionContext` 객체는 `markets`, `government` 등 라이브 객체 참조가 모두 제거되었습니다.
+    - 모든 외부 정보는 `MarketSnapshotDTO`, `GovernmentPolicyDTO` 와 같은 DTO 형태로만 제공됩니다.
+
 
 ---
 
