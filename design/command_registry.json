@@ -3,5 +3,18 @@
     "session": "Phase 23 Reactivation",
     "updated": "2026-01-28",
     "author": "Antigravity"
+  },
+  "mission-strategy-generalization": {
+    "command": "create",
+    "title": "Strategy Generalization Refactor",
+    "instruction": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'config pollution' by replacing `setattr` injection in `initializer.py` with a proper `ScenarioStrategy` DTO and Dependency Injection. Ensure backward compatibility with existing scenario files.",
+    "file": "design/work_orders/WO-136-Strategy-Generalization.md"
+  },
+  "mission-doc-restructure": {
+    "worker": "spec",
+    "instruction": "Analyze 'design/drafts/CURRENT_STRUCTURE_SUMMARY.md' and the current file system structure. Propose a new, consolidated directory structure following 'Abstract -> Concrete' principle. Output your plan to 'design/drafts/DOC_RESTRUCTURE_PLAN.md'. Include a PowerShell script section in your MD response to move the files.",
+    "context": [
+      "design/drafts/CURRENT_STRUCTURE_SUMMARY.md"
+    ]
   }
 }
