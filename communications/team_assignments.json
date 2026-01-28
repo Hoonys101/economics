@@ -45,6 +45,10 @@
       "13470412953645097966": {
         "title": "WO-135: Operation Abstraction Wall",
         "initial_mission": "Implement the Abstraction Wall as per design/work_orders/WO-135-Abstraction-Wall.md. Key tasks: 1) C..."
+      },
+      "13008461923123755310": {
+        "title": "WO-135.1: Config Factory & Test Infrastructure",
+        "initial_mission": "Implement the ConfigFactory and establish the test infrastructure (Golden Samples, Parity Test) as p..."
       }
     },
     "completed_sessions": {
