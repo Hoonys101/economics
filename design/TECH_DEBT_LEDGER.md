@@ -17,12 +17,6 @@
 |---|---|---|---|---|---|
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
-| **TD-127** | 2026-01-28 | **Shadow Economy (EventSystem)** | Use `SettlementSystem` for shock injections/reductions | Zero-Sum Violation | **ECONOMIC_LEAK** |
-| **TD-128** | 2026-01-28 | **Deflationary Leak (Liquidation)** | Escheat liquidation dust to Gov/Reflux | Monetary Evaporation | **ECONOMIC_LEAK** |
-| **TD-129** | 2026-01-28 | **Untracked Immigration Grant** | Use `SettlementSystem` for Gov->Agent grants | Audit Trail Loss | **INTEGRITY_RISK** |
-| **TD-130** | 2026-01-28 | **Legacy Fallback Risk (M&A)** | Remove direct asset modification fallbacks | Dead Code / Bug Masking | **STRUCTURAL_RISK** |
-| **TD-131** | 2026-01-28 | **God Class: `TickScheduler`** | Decompose into Phase Strategy classes | Orchestration Overload | **MAINTAINABILITY** |
-| **TD-132** | 2026-01-28 | **Phase Integrity (Firm Needs)** | Move `update_needs` to Phase 4 (Lifecycle) | Sequence Violation | **STRUCTURAL_RISK** |
 
 ---
 

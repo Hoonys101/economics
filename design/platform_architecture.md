@@ -30,7 +30,15 @@
 
 ## 3. 아키텍처 원칙: 신성한 시퀀스 (The Sacred Sequence)
 
-본 시뮬레이션의 모든 상태 변경은 "신성한 시퀀스"라 불리는 4단계 프로세스를 엄격히 준수한다. 이는 상태 변경의 예측 가능성을 보장하고, 제로섬(Zero-Sum) 오류와 타이밍 버그를 방지하기 위함이다.
+본 시뮬레이션의 모든 상태 변경은 "오케스트레이션 단계(Phased Orchestration)"라 불리는 8단계 프로세스를 엄격히 준수한다. 이는 상태 변경의 예측 가능성을 보장하고, 제로섬(Zero-Sum) 오류와 타이밍 버그를 방지하기 위함이다.
+
+### Phase 0: 전처리 (Preprocessing)
+- **Action**: 시스템 안정화, 이벤트 실행, 초기 상태 스냅샷 저장(학습용).
+
+### Phase 0.5: 생산 (Production)
+- **Actor**: `Phase_Production`
+- **Action**: 인적 자본 지수(HCI) 계산, 신기술 도입 결정, **실물 재화 생산**.
+- **Rationale**: 의사결정(Phase 1) 이전에 시장에 공급될 재화가 확정되어야 함.
 
 ### Phase 1: 결정 (Decisions)
 - **Actor**: `Agent` (Household, Firm) 및 `System` (Education, Infrastructure)
@@ -46,10 +54,14 @@
 - **Action**: 모든 `Transaction`들을 실행하여 자산 이동 및 세금을 정산한다. 
 - **Rule**: 모든 가치 이동은 반드시 이 단계에서 **원자적(Atomic)**으로 일어나야 한다.
 
-### Phase 4: 라이프사이클 및 효과 (Lifecycle & Effects)
-- **Actor**: `DemographicManager`, `SystemEffectsManager`
-- **Action**: 행위자의 노화/사멸 처리 및 트랜잭션의 부수 효과(e.g., TFP 증가, 노화)를 적용한다.
-- **Rule**: 지연 실행(Deferred Execution)을 통해 가치 정산 후의 효과만을 적용하여 타이밍 오류를 방지한다.
+### Phase 4: 라이프사이클 (Lifecycle)
+- **Actor**: `AgentLifecycleManager`
+- **Action**: 에이전트 생성, 파산, 사망, 상속 처리.
+- **Rule**: 금융 처리가 끝난 후 구조적 변경을 수행한다.
+
+### Phase 5: 후처리 (Post-Sequence)
+- **Actor**: `SystemEffectsManager`, `LearningUpdate`
+- **Action**: 학습 보상 계산, 지표 집계, 버퍼 플러시.
 
 ---
 
@@ -171,6 +183,16 @@ self._econ_state = self.econ_component.update_skills(self._econ_state, context)
 **2. 데이터 계약 (Data Contracts)**:
 - **DTO 중심**: 인터페이스 메서드는 원격 객체나 복잡한 클래스 인스턴스 대신, 명확하게 정의된 DTO(TypedDict 또는 Dataclass)를 인자로 받고 반환해야 합니다.
 - **독립성**: 이 패턴을 통해 내부 로직의 변경이 외부 인터페이스에 미치는 영향을 최소화하며, 특정 시스템(예: 은행)의 목(Mock) 객체를 생성하여 독립적인 단위 테스트가 가능해집니다.
+
+### 4.10 Anti-Pattern: The Reflux Sink (No Mysterious Funds)
+
+- **Phenomenon**: Funds from fees, bankruptcy, or leaks collecting in a temporary "sink" (e.g., `EconomicRefluxSystem`) before valid redistribution.
+- **Problem**: Breaks zero-sum auditability. Money "disappears" into the sink and "reappears" later, often leaking or violating conservation laws.
+- **Principle**: **Automatic Escheatment**. Any asset without a clear owner (e.g., unowned firm assets, homeless penalties) MUST be immediately transferred to a rigorous sovereign entity (Government) via `SettlementSystem`.
+- **Implementation**:
+    - `RefluxSystem` is strictly **forbidden**.
+    - All penalties/fees -> Transfer to `Government`.
+    - Bankrupt assets -> Liquidate to `Government` (if no shareholders).
 
 ---
 
