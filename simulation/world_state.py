@@ -128,7 +128,7 @@ class WorldState:
     def calculate_total_money(self) -> float:
         """
         Calculates the total money supply in the system.
-        Money_Total = Household_Assets + Firm_Assets + Bank_Reserves + Reflux_Balance + Government_Assets
+        Money_Total = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
         (Government assets are INCLUDED to ensure zero-sum integrity during transfers)
         """
         total = 0.0

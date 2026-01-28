@@ -325,7 +325,7 @@ class Bank(IBankService):
                 total_deposit += deposit.amount
         return total_deposit
 
-    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0, reflux_system: Optional[Any] = None) -> List[Transaction]:
+    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0) -> List[Transaction]:
         self.current_tick_tracker = current_tick
         generated_transactions: List[Transaction] = []
         ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
@@ -405,7 +405,7 @@ class Bank(IBankService):
                  quantity=1.0,
                  price=net_profit,
                  market_id="financial",
-                 transaction_type="reflux_capture",
+                 transaction_type="bank_profit_remittance",
                  time=current_tick
              )
              generated_transactions.append(tx)

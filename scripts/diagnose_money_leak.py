@@ -47,10 +47,9 @@ def diagnose():
         
         gov = sim.government.assets
         bank = sim.bank.assets
-        reflux = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
         
         # M2 통계
-        total = h_sum + f_sum + gov + bank + reflux + h_inactive + f_inactive
+        total = h_sum + f_sum + gov + bank + h_inactive + f_inactive
         return {
             "total": total,
             "h_active": h_sum,
@@ -59,7 +58,6 @@ def diagnose():
             "f_ghost": f_inactive,
             "gov": gov,
             "bank": bank,
-            "reflux": reflux,
             "issued": getattr(sim.government, "total_money_issued", 0.0),
             "destroyed": getattr(sim.government, "total_money_destroyed", 0.0)
         }

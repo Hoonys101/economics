@@ -50,10 +50,8 @@ def verify_great_reset_stability():
         f_assets = sum(f.assets for f in sim.firms if f.is_active)
         gov_assets = sim.government.assets
         bank_assets = sim.bank.assets
-        # Reflux balance (Sunk costs)
-        reflux_bal = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
         
-        return h_assets + f_assets + gov_assets + bank_assets + reflux_bal
+        return h_assets + f_assets + gov_assets + bank_assets
 
     m2_start = get_total_m2()
     logger.info(f"Initial M2: {m2_start:,.2f}")

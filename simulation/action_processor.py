@@ -49,6 +49,7 @@ class ActionProcessor:
                 bank=self.world_state.bank,
                 central_bank=self.world_state.central_bank,
                 stock_market=self.world_state.stock_market,
+                stock_tracker=self.world_state.stock_tracker,
                 goods_data=self.world_state.goods_data,
                 market_data=market_data,
                 config_module=self.world_state.config_module,

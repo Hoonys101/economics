@@ -515,7 +515,7 @@ class Phase3_Transaction(IPhaseStrategy):
             welfare_txs = state.government.run_welfare_check(list(state.agents.values()), market_data_prev, state.time)
             system_transactions.extend(welfare_txs)
 
-            infra_txs = state.government.invest_infrastructure(state.time)
+            infra_txs = state.government.invest_infrastructure(state.time, state.households)
             if infra_txs:
                 system_transactions.extend(infra_txs)
 

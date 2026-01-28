@@ -753,6 +753,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         bank=sim.bank,
         central_bank=sim.central_bank if hasattr(sim, 'central_bank') else None,
         stock_market=sim.stock_market if hasattr(sim, 'stock_market') else None,
+        stock_tracker=sim.stock_tracker if hasattr(sim, 'stock_tracker') else None,
         goods_data=sim.goods_data,
         market_data={},
         config_module=sim.config_module,

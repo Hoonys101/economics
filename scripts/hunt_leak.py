@@ -22,8 +22,6 @@ def hunt_leak():
             snapshot["BANK"] = state.bank.assets
         if state.government:
             snapshot["GOVT"] = state.government.assets
-        if state.reflux_system:
-            snapshot["REFLUX"] = state.reflux_system.balance
         return snapshot
 
     print("--- LEAK HUNT START ---")

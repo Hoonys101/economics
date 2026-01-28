@@ -114,7 +114,7 @@ class ServiceFirm(Firm):
             extra={**log_extra, "capacity": capacity}
         )
 
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None) -> None:
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, technology_manager: Optional[Any] = None) -> None:
         """
         서비스 기업 비용 처리.
         Holding Cost(보관비)는 0으로 처리 (서비스는 재고가 없으므로).
@@ -138,7 +138,7 @@ class ServiceFirm(Firm):
         # So paying holding cost on Capacity seems acceptable/desirable!
         # It simulates the cost of maintaining the readiness of the service.
 
-        super().update_needs(current_time, government, market_data, reflux_system)
+        super().update_needs(current_time, government, market_data, technology_manager)
 
     @override
     def get_agent_data(self) -> Dict[str, Any]:

@@ -69,15 +69,18 @@ class HousingSystem:
                 owner = simulation.agents.get(unit.owner_id)
                 if owner:
                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
-                    if owner.assets >= cost:
-                        owner._sub_assets(cost)
-                        if simulation.reflux_system:
-                            simulation.reflux_system.capture(cost, f"{owner.id}", "housing_maintenance")
-                    else:
-                        taken = owner.assets
-                        owner._sub_assets(taken)
-                        if simulation.reflux_system:
-                            simulation.reflux_system.capture(taken, f"{owner.id}", "housing_maintenance")
+                    payable = min(cost, owner.assets)
+                    if payable > 0:
+                        # Use SettlementSystem for zero-sum transfer to Government
+                        if hasattr(simulation, 'settlement_system') and simulation.settlement_system and simulation.government:
+                            # Note: simulation.time might be needed if transfer requires it,
+                            # but SettlementSystem.transfer usually takes current_tick.
+                            # Checking SettlementSystem.transfer signature: transfer(payer, payee, amount, category, tick=None)
+                            # We can pass simulation.time if accessible.
+                            simulation.settlement_system.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time)
+                        else:
+                            # Fallback (should not happen in full sim)
+                            owner._sub_assets(payable)
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:
