@@ -27,6 +27,9 @@ class CentralBank:
 
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
+        # WO-136: Check Strategy for Initial Rate
+        if self.strategy and self.strategy.initial_base_interest_rate is not None:
+            self.base_rate = self.strategy.initial_base_interest_rate
 
         # Configuration
         self.update_interval = getattr(config_module, "CB_UPDATE_INTERVAL", 10)

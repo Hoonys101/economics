@@ -71,6 +71,13 @@ class Government:
         self.income_tax_rate: float = getattr(config_module, "INCOME_TAX_RATE", 0.1)
         self.corporate_tax_rate: float = getattr(config_module, "CORPORATE_TAX_RATE", 0.2)
 
+        # WO-136: Strategy Initialization Overrides (Legacy Support)
+        if strategy:
+             if strategy.initial_income_tax_rate is not None:
+                 self.income_tax_rate = strategy.initial_income_tax_rate
+             if strategy.initial_corporate_tax_rate is not None:
+                 self.corporate_tax_rate = strategy.initial_corporate_tax_rate
+
         # WO-136: Apply Strategy Overrides
         if strategy and strategy.is_active:
              if strategy.fiscal_shock_tax_rate is not None:

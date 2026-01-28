@@ -19,8 +19,9 @@ class FirmSystem:
     Handles firm creation (entrepreneurship) and lifecycle management.
     """
 
-    def __init__(self, config_module: Any):
+    def __init__(self, config_module: Any, strategy: Optional["ScenarioStrategy"] = None):
         self.config = config_module
+        self.strategy = strategy
 
     def spawn_firm(self, simulation: "Simulation", founder_household: "Household") -> Optional["Firm"]:
         """
@@ -68,6 +69,7 @@ class FirmSystem:
         from simulation.ai.firm_ai import FirmAI
         from simulation.ai.service_firm_ai import ServiceFirmAI
         from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+        from simulation.decisions.rule_based_firm_engine import RuleBasedFirmDecisionEngine
         from simulation.firms import Firm
         from simulation.service_firms import ServiceFirm
 
@@ -84,7 +86,22 @@ class FirmSystem:
         else:
             firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
 
-        firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config, simulation.logger)
+        # WO-136: Determine Decision Engine using Strategy or Config
+        engine_type = "AIDriven"
+        if self.strategy:
+             if self.strategy.firm_decision_engine:
+                 engine_type = self.strategy.firm_decision_engine
+             elif self.strategy.firm_decision_mode == "SEQUENTIAL":
+                 engine_type = "RULE_BASED"
+
+        # Fallback to config if not set by strategy
+        if engine_type == "AIDriven":
+             engine_type = getattr(self.config, "FIRM_DECISION_ENGINE", "AI_DRIVEN")
+
+        if engine_type in ["RULE_BASED", "RuleBased", "SEQUENTIAL"]:
+             firm_decision_engine = RuleBasedFirmDecisionEngine(config_module=self.config, logger=simulation.logger)
+        else:
+             firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config, simulation.logger)
 
         # 5. Create Firm (Initial Capital = 0.0, will transfer)
         instance_class = ServiceFirm if is_service else Firm

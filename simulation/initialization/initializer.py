@@ -143,7 +143,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                          demand_shock_multiplier=params.get("demand_shock_multiplier"),
 
                          # Config Injection Replacements
-                         tfp_multiplier=params.get("TFP_MULTIPLIER", 3.0),
+                         tfp_multiplier=params.get("TFP_MULTIPLIER") or params.get("food_tfp_multiplier") or 3.0,
                          tech_fertilizer_unlock_tick=params.get("TECH_FERTILIZER_UNLOCK_TICK", 50),
                          tech_diffusion_rate=params.get("TECH_DIFFUSION_RATE", 0.05),
                          food_sector_config=params.get("FOOD_SECTOR_CONFIG", {}),
@@ -152,6 +152,14 @@ class SimulationInitializer(SimulationInitializerInterface):
                          limits=params.get("LIMITS", {}),
                          firm_decision_engine=params.get("FIRM_DECISION_ENGINE"),
                          household_decision_engine=params.get("HOUSEHOLD_DECISION_ENGINE"),
+
+                         # --- Initialization Parameters (Golden Era & Legacy) ---
+                         initial_base_interest_rate=params.get("base_interest_rate") or params.get("INITIAL_BASE_ANNUAL_RATE"),
+                         initial_corporate_tax_rate=params.get("tax_rate_corporate") or params.get("CORPORATE_TAX_RATE"),
+                         initial_income_tax_rate=params.get("tax_rate_income") or params.get("INCOME_TAX_RATE"),
+                         newborn_engine_type=params.get("newborn_engine_type") or params.get("NEWBORN_ENGINE_TYPE"),
+                         firm_decision_mode=params.get("firm_decision_mode"),
+                         innovation_weight=params.get("innovation_weight"),
 
                          parameters=params # Store raw params just in case
                      )
@@ -326,7 +334,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Note: New agents must be explicitly added to this list by lifecycle managers.
         sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
         sim.ma_manager = MAManager(sim, self.config, settlement_system=sim.settlement_system)
-        sim.demographic_manager = DemographicManager(config_module=self.config)
+        sim.demographic_manager = DemographicManager(config_module=self.config, strategy=sim.strategy)
         sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
         sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
@@ -336,7 +344,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             config_module=self.config,
             repository=self.repository
         )
-        sim.firm_system = FirmSystem(config_module=self.config)
+        sim.firm_system = FirmSystem(config_module=self.config, strategy=sim.strategy)
         sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger, strategy=sim.strategy)
 
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
