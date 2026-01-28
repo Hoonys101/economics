@@ -166,6 +166,19 @@ def mock_households(mock_config_module):
     hh1.talent.base_learning_rate = 0.1
     hh1.inventory_quality = {}
 
+    # Configure side effects for asset updates
+    def withdraw_side_effect(amount):
+        hh1.assets -= amount
+    def deposit_side_effect(amount):
+        hh1.assets += amount
+    def record_consumption_side_effect(quantity, is_food=False):
+        hh1.current_consumption += quantity
+        if is_food:
+            hh1.current_food_consumption += quantity
+    hh1.withdraw.side_effect = withdraw_side_effect
+    hh1.deposit.side_effect = deposit_side_effect
+    hh1.record_consumption.side_effect = record_consumption_side_effect
+
     hh2 = Mock(spec=Household)
     hh2.id = 2
     hh2._assets = 150.0
@@ -186,6 +199,11 @@ def mock_households(mock_config_module):
     hh2.talent = Mock(spec=Talent)
     hh2.talent.base_learning_rate = 0.1
     hh2.inventory_quality = {}
+
+    # Reuse side effects
+    hh2.withdraw.side_effect = withdraw_side_effect
+    hh2.deposit.side_effect = deposit_side_effect
+
     return [hh1, hh2]
 
 
@@ -725,6 +743,10 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         next_agent_id=getattr(sim, 'next_agent_id', 0),
         real_estate_units=getattr(sim, 'real_estate_units', [])
     )
+
+    # Force inactive state as SimulationInitializer.build_simulation -> update_needs resets it
+    household_inactive.is_active = False
+    firm_inactive.is_active = False
 
     sim.lifecycle_manager._handle_agent_liquidation(state)
 

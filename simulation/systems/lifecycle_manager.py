@@ -41,19 +41,57 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         # 1. Aging (and internal lifecycle update)
         self.demographic_manager.process_aging(state.households, state.time, state.market_data)
 
-        # 2. Births
+        # 2. NEW: Firm Lifecycle (Aging & Bankruptcy Checks)
+        self._process_firm_lifecycle(state)
+
+        # 3. Births
         new_children = self._process_births(state)
         self._register_new_agents(state, new_children)
 
-        # 3. Immigration
+        # 4. Immigration
         new_immigrants = self.immigration_manager.process_immigration(state)
         self._register_new_agents(state, new_immigrants)
 
-        # 4. Entrepreneurship
+        # 5. Entrepreneurship
         self.firm_system.check_entrepreneurship(state)
 
-        # 5. Death & Liquidation
+        # 6. Death & Liquidation
         return self._handle_agent_liquidation(state)
+
+    def _process_firm_lifecycle(self, state: SimulationState) -> None:
+        """
+        Handles lifecycle updates for all active firms, formerly in Firm.update_needs.
+        """
+        assets_threshold = getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0)
+        closure_turns_threshold = getattr(self.config, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)
+        liquidity_inc_rate = getattr(self.config, "LIQUIDITY_NEED_INCREASE_RATE", 1.0)
+
+        for firm in state.firms:
+            if not firm.is_active:
+                continue
+
+            firm.age += 1
+
+            # Liquidity Need Increase
+            firm.needs["liquidity_need"] = min(100.0, firm.needs["liquidity_need"] + liquidity_inc_rate)
+
+            # Check bankruptcy status (logic from FinanceDepartment)
+            firm.finance.check_bankruptcy()
+
+            # Check for closure based on assets or consecutive losses
+            if (firm.assets <= assets_threshold or
+                    firm.finance.consecutive_loss_turns >= closure_turns_threshold):
+                firm.is_active = False
+                self.logger.warning(
+                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {firm.assets:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
+                    extra={
+                        "tick": state.time,
+                        "agent_id": firm.id,
+                        "assets": firm.assets,
+                        "consecutive_loss_turns": firm.finance.consecutive_loss_turns,
+                        "tags": ["firm_closure"],
+                    }
+                )
 
     def _process_births(self, state: SimulationState) -> List[Household]:
         birth_requests = []
