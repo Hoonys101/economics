@@ -764,6 +764,10 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         real_estate_units=getattr(sim, 'real_estate_units', [])
     )
 
+    # Force inactive state as SimulationInitializer.build_simulation -> update_needs resets it
+    household_inactive.is_active = False
+    firm_inactive.is_active = False
+
     sim.lifecycle_manager._handle_agent_liquidation(state)
 
     assert len(sim.households) == 2

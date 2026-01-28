@@ -566,32 +566,10 @@ class Firm(BaseAgent, ILearningAgent):
     @override
     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, technology_manager: Optional[Any] = None) -> None:
         """
-        Lifecycle updates (Age, Bankruptcy Check).
-        Financial transactions are now in generate_transactions.
-        Production is in produce.
+        [DEPRECATED] This logic has been moved to AgentLifecycleManager._process_firm_lifecycle.
+        Kept for BaseAgent interface compliance.
         """
-        if not self.is_active:
-            return
-
-        self.age += 1
-
-        # --- Final State Updates & Checks ---
-        self.needs["liquidity_need"] = min(100.0, self.needs["liquidity_need"] + self.config_module.LIQUIDITY_NEED_INCREASE_RATE)
-        self.finance.check_bankruptcy()
-
-        # SoC Refactor
-        if self.assets <= self.config_module.ASSETS_CLOSURE_THRESHOLD or self.finance.consecutive_loss_turns >= self.config_module.FIRM_CLOSURE_TURNS_THRESHOLD:
-            self.is_active = False
-            self.logger.warning(
-                f"FIRM_INACTIVE | Firm {self.id} closed down. Assets: {self.assets:.2f}, Consecutive Loss Turns: {self.finance.consecutive_loss_turns}",
-                extra={
-                    "tick": current_time,
-                    "agent_id": self.id,
-                    "assets": self.assets,
-                    "consecutive_loss_turns": self.finance.consecutive_loss_turns,
-                    "tags": ["firm_closure"],
-                },
-            )
+        pass
 
     # Legacy: _pay_maintenance and _pay_taxes removed as they are now in FinanceDepartment
 

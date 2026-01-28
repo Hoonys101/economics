@@ -9,7 +9,7 @@ from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
 
 from simulation.world_state import WorldState
-from simulation.tick_scheduler import TickScheduler
+from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
 
@@ -37,14 +37,14 @@ class Simulation:
             repository=repository
         )
         self.action_processor = ActionProcessor(self.world_state)
-        self.tick_scheduler = TickScheduler(self.world_state, self.action_processor)
+        self.tick_orchestrator = TickOrchestrator(self.world_state, self.action_processor)
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.world_state, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         # Avoid infinite recursion for internal components
-        if name in ["world_state", "tick_scheduler", "action_processor"]:
+        if name in ["world_state", "tick_orchestrator", "action_processor"]:
             super().__setattr__(name, value)
             return
 
@@ -64,7 +64,7 @@ class Simulation:
         self.world_state.logger.info("Simulation finalized and Repository connection closed.")
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
-        self.tick_scheduler.run_tick(injectable_sensory_dto)
+        self.tick_orchestrator.run_tick(injectable_sensory_dto)
 
     def orchestrate_production_and_tech(self, tick: int) -> None:
         """
@@ -108,8 +108,9 @@ class Simulation:
     # --- Backward Compatibility Methods ---
 
     def _prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
-        """Legacy wrapper for TickScheduler.prepare_market_data"""
-        return self.tick_scheduler.prepare_market_data(tracker)
+        """Legacy wrapper for TickOrchestrator.prepare_market_data"""
+        # Note: Tracker argument is ignored as orchestrator uses internal state
+        return self.tick_orchestrator.prepare_market_data()
 
     def _calculate_total_money(self) -> float:
         """Legacy wrapper for WorldState.calculate_total_money"""

@@ -239,19 +239,44 @@ class SimulationState:
     real_estate_units: List[Any] = field(default_factory=list) # Added for WO-103
     # Mutable state for the tick
     transactions: List[Any] = None # List[Transaction]
+    inter_tick_queue: List[Any] = None # List[Transaction]
     effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
     inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
+
+    # --- NEW TRANSIENT FIELDS ---
+    # From Phase 1 (Decisions)
+    firm_pre_states: Dict[int, Any] = None
+    household_pre_states: Dict[int, Any] = None
+    household_time_allocation: Dict[int, float] = None
+
+    # From Commerce System (planned in Phase 1, used in PostSequence)
     planned_consumption: Optional[Dict[int, Dict[str, Any]]] = None # TD-118
+
+    # From Lifecycle (used in PostSequence for Learning)
+    household_leisure_effects: Dict[int, float] = None
+
+    # Injection
+    injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
 
     def __post_init__(self):
         if self.transactions is None:
             self.transactions = []
+        if self.inter_tick_queue is None:
+            self.inter_tick_queue = []
         if self.effects_queue is None:
             self.effects_queue = []
         if self.inactive_agents is None:
             self.inactive_agents = {}
+        if self.firm_pre_states is None:
+            self.firm_pre_states = {}
+        if self.household_pre_states is None:
+            self.household_pre_states = {}
+        if self.household_time_allocation is None:
+            self.household_time_allocation = {}
         if self.planned_consumption is None:
             self.planned_consumption = {}
+        if self.household_leisure_effects is None:
+            self.household_leisure_effects = {}
 
 
 # ------------------------------------------------------------------------------
