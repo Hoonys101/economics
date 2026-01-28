@@ -97,18 +97,21 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
         min_wage = getattr(self.config_module, "LABOR_MARKET_MIN_WAGE", 5.0)
 
-        for emp_id in candidates:
-            # Note: FirmStateDTO only has list of employee IDs, not full objects with wage data easily accessible?
-            # FirmStateDTO has employees: List[int].
-            # It does NOT have wage info for each employee directly in a convenient dict?
-            # Wait, `get_agent_data` in Firm puts `employees: [emp.id for ...]`
-            # But FirmStateDTO might not carry individual wage data.
-            # BaseDecisionEngine doesn't have access to Firm object.
-            # I need `firm.employees_data` map or something.
-            # If unavailable, I assume market min wage for severance estimate.
-            # Order price is "severance_pay".
+        # Access employee details via DTO if available, else use defaults.
+        # Assuming FirmStateDTO could be extended or we assume standard wage for RuleBased.
+        # However, for robustness, we should try to use actual data if possible.
+        # Since BaseDecisionEngine operates on DTOs, and DTOs might not have deep employee data,
+        # we will use a conservative estimate or look for 'employees_data' if it exists.
 
-            severance_pay = min_wage * severance_weeks
+        employees_data = getattr(firm, "employees_data", {})
+
+        for emp_id in candidates:
+            emp_info = employees_data.get(emp_id, {})
+            current_wage = emp_info.get("wage", min_wage)
+            # Skill multiplier? RuleBased usually assumes standard skill 1.0 or stored in DTO
+            skill = emp_info.get("skill", 1.0)
+
+            severance_pay = current_wage * severance_weeks * skill
 
             orders.append(Order(
                 firm.id,

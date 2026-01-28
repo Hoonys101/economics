@@ -74,7 +74,8 @@ class CommerceSystem(ICommerceSystem):
                         # Bid at reference price to ensure survival and volume, relying on Glut to drive price down
                         bid_price = ref_price
 
-                        SYSTEM_MARKET_MAKER_ID = 999999
+                        # Use a proper constant for the system seller ID
+                        from simulation.constants import SYSTEM_MARKET_MAKER_ID
 
                         tx = Transaction(
                             buyer_id=household.id,

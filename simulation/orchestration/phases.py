@@ -408,9 +408,12 @@ class Phase1_Decision(IPhaseStrategy):
                 for order in household_orders:
                     # WO-053: Force deflationary pressure on basic_food
                     if order.item_id == "basic_food" and order.order_type == "BUY":
-                         if stress_config and stress_config.scenario_name == "phase23_industrial_rev" and stress_config.is_active:
+                         # Check for generic scenario parameter via config injection
+                         deflationary_multiplier = getattr(state.config_module, "DEFLATIONARY_PRESSURE_MULTIPLIER", None)
+
+                         if deflationary_multiplier is not None:
                              current_price = market_data.get("basic_food_current_sell_price", 5.0)
-                             order.price = min(order.price, max(0.1, current_price * 0.8))
+                             order.price = min(order.price, max(0.1, current_price * float(deflationary_multiplier)))
 
                     if order.order_type == "INVEST" and order.market_id == "admin":
                         if self.world_state.firm_system:
