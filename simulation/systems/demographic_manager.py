@@ -149,7 +149,7 @@ class DemographicManager:
                 if self.strategy and self.strategy.newborn_engine_type:
                     newborn_engine_type = self.strategy.newborn_engine_type
 
-                if newborn_engine_type == "RuleBased" or newborn_engine_type == "RULE_BASED":
+                if str(newborn_engine_type).upper() == "RULE_BASED":
                     from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
                     new_decision_engine = RuleBasedHouseholdDecisionEngine(
                         config_module=self.config_module,

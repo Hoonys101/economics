@@ -87,7 +87,7 @@ class FirmSystem:
             firm_ai = FirmAI(agent_id=str(new_firm_id), ai_decision_engine=ai_decision_engine)
 
         # WO-136: Determine Decision Engine using Strategy or Config
-        engine_type = "AIDriven"
+        engine_type = None
         if self.strategy:
              if self.strategy.firm_decision_engine:
                  engine_type = self.strategy.firm_decision_engine
@@ -95,10 +95,11 @@ class FirmSystem:
                  engine_type = "RULE_BASED"
 
         # Fallback to config if not set by strategy
-        if engine_type == "AIDriven":
+        if engine_type is None:
              engine_type = getattr(self.config, "FIRM_DECISION_ENGINE", "AI_DRIVEN")
 
-        if engine_type in ["RULE_BASED", "RuleBased", "SEQUENTIAL"]:
+        # Normalize and compare
+        if str(engine_type).upper() in ["RULE_BASED", "SEQUENTIAL"]:
              firm_decision_engine = RuleBasedFirmDecisionEngine(config_module=self.config, logger=simulation.logger)
         else:
              firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config, simulation.logger)
