@@ -34,9 +34,12 @@
 - **현재 단계:** `Phase 28: Structural Stabilization & Debt Repayment` 🏦 (2026-01-28)
     - **Goal**: Liquidate TD-103 (Abstraction Wall) and cleanup Phase 23 technical debt.
     - **Status**: 
-        - **WO-135**: Abstraction Wall (Purity Gate Enforcement) 🏗️
-        - **WO-136**: Strategy Generalization (Branching Cleanup) 🏗️
-        - **WO-137**: Test Cleanroom (TD-122 Reorganization) 🏗️
+        - **WO-135-Reboot**: Abstraction Wall (Decomposed Implementation) 🏗️
+            - WO-135.1: Infrastructure (ConfigFactory) [PLANNED]
+            - WO-135.2: DTO Schema Alignment [PLANNED]
+            - WO-135.3: Core Refactor [PLANNED]
+        - **WO-136**: Strategy Generalization (Branching Cleanup) [PLANNED]
+        - **WO-137**: Test Cleanroom (TD-122 Reorganization) [PLANNED]
     - **Previous**: Step 4: God Class Decomposition ✅ (Merged 2026-01-27)
 
 ---

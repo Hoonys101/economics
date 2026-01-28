@@ -15,7 +15,7 @@
 
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
-| **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
+| **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | [REBOOTED] WO-135-Reboot (Decomposed Track) | Encapsulation Break / Side-effects | **ABORTED_v1 / REBOOTING** |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
 | **TD-132** | 2026-01-28 | **Hardcoded Government ID** | Dynamically resolve Government ID from WorldState | Registry Inconsistency Risk | **ACTIVE** |
 | **TD-133** | 2026-01-28 | **Global Config Pollution** | Namespace scenario parameters under `config.scenario` | Config Conflict Risk | **ACTIVE** |
@@ -28,6 +28,7 @@
 | ID | Date | Description | Reason for Abort | Impact |
 |---|---|---|---|---|
 | TD-105 | 2026-01-23 | DLL Loading Failure (C++ Agent) | System environment constraints / Strategy change | Abandoning C++ Native path for now |
+| TD-135-v1 | 2026-01-28 | Operation Abstraction Wall (Initial) | Attempted monolithic refactor; failed due to 'Mock-Magic' and context leaks. | Architectural Bloat / Testing Failure |
 
 ---
 

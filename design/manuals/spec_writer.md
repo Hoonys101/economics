@@ -10,13 +10,13 @@
 ### 1. 상세 설계 초안 작성 (Spec Writer)
 - 수석 아키텍트의 개념 기획을 수령하여 `spec.md` 및 `api.py` 초안 작성.
 - 반드시 DTO 필드 정의, DAO 인터페이스, 예외 처리 로직(Pseudo-code) 포함.
-- **[Routine] Mandatory Reporting**: 모든 명세 하단에 Jules가 작업 중 발견한 인사이트와 기술 부채를 `communications/insights/` 폴더에 보고하도록 하는 지침을 반드시 포함합니다.
+- **[Routine] Mandatory Reporting**: 모든 명세 하단에 Jules가 작업 중 발견한 인사이트와 기술 부채를 `communications/insights/[Mission_Key].md` 파일에 독립적으로 기록하도록 강제합니다. 이는 공용 파일 충돌을 방지하기 위함입니다.
 - **[Audit] Pre-Implementation Risk Analysis**: 모든 설계 초안 작성 시, 코드 구현 전 발생할 수 있는 '아키텍처적 지뢰'를 분석하여 보고하는 섹션을 포함해야 합니다. (순환 참조, 테스트 모킹 파괴, 설정값 누락 등)
 - **[Test] Golden Data & Mock Strategy**: 새 모듈/컴포넌트 설계 시, 실제 데이터 샘플(Golden Data)을 정의하고 이를 기반으로 한 전용 Mock 클래스 또는 Fixture 가이드를 설계에 포함합니다. 이는 `MagicMock` 사용으로 인한 타입 오류를 방지하고 테스트 안정성을 높이기 위함입니다.
 
-### 2. 인사이트 및 사후 리포트 정리 (Insight Aggregator)
-- Jules의 구현 로그나 PR 코멘트를 분석하여 `communications/insights/` 및 `TECH_DEBT_LEDGER.md` 업데이트 초안 작성.
-- 에이전트가 발견한 기술적 부채나 개선 아이디어를 구조화된 양식으로 정리.
+### 2. 인사이트 수집 및 관리 (Insight Manager)
+- 세션 종료 시, 각 Jules들이 작성한 `communications/insights/` 폴더의 개별 리포트들을 취합하여 `TECH_DEBT_LEDGER.md` 및 사후 리포트(Handover)를 업데이트합니다.
+- 에이전트 간의 인사이트 충돌을 조정하고 구조화된 대장으로 통합하는 최종 책임은 팀장(Antigravity)에게 있습니다.
 
 ### 3. 프로토콜 준수 검사 및 단순 파일 수정 (Protocol Scribe)
 - 지정된 템플릿(CHANGELOG, TODO 등) 업데이트.
@@ -59,6 +59,7 @@
   - **사용법**: `def test_my_feature(golden_firms):` 형태로 픽스처 주입.
   - **금지**: 새로운 `MagicMock()`으로 에이전트를 수동 생성하지 말 것 (타입 불일치 위험).
   - **커스텀 필요시**: `scripts/fixture_harvester.py`의 `GoldenLoader`를 사용하여 특정 시나리오 로드.
+  - **🚨 Schema Change Notice**: DTO 스키마가 변경될 경우, 반드시 기존 Golden Samples(`design/snapshots/`)를 업데이트하는 'Harvesting' 단계를 검증 계획에 포함해야 함.
 - **🚨 Risk & Impact Audit (기술적 위험 분석)**:
     - **순환 참조 위험**: 새 모듈이 기존 모듈과 임포트 루프를 형성할 가능성 분석.
     - **테스트 영향도**: 기존 유닛 테스트의 Mock 객체가 수정된 클래스/필드에 의존하고 있지는 않은가?
@@ -86,6 +87,7 @@
 별도의 Context 파일이 제공되지 않더라도, 기본적으로 다음 문서를 참고하여 의사결정의 맥락을 파악하십시오.
 1. `design/ROADMAP.md`: 현재 Phase의 목표와 일치하는가?
 2. `design/TECH_DEBT_LEDGER.md`: 기존 부채를 악화시키지 않는가?
+3. `design/manuals/PROTOCOL_ENGINEERING.md`: 아키텍처 원칙(Zero-Sum, DTO Purity, No Mock-Magic)을 준수하는가?
 
 ---
 

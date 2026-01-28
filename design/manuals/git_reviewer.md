@@ -17,9 +17,9 @@
 - **Spec 준수**: 커밋 의도와 실제 구현이 일치하는지, 누락된 요구사항(Covenants, 예외처리 등)이 있는지 확인하십시오.
 
 ### 4. 지식 및 매뉴얼화 (Knowledge & Manualization)
-- **Insight Extraction**: 이번 변경 사항에서 핵심 원칙이나 도메인 지식이 발견되었는지 확인하십시오.
-- **Manualization (Existing Only)**: 새 문서를 만들지 말고, 반드시 **기존 매뉴얼(`ECONOMIC_INSIGHTS.md`, `TROUBLESHOOTING.md` 등)** 중 가장 적합한 곳을 찾아 업데이트할 내용을 정리하십시오.
-- **Template Match**: 타겟 문서의 기존 형식(예: `현상/원인/해결/교훈`)을 분석하여 그에 맞게 작성하십시오.
+- **Insight Reporting Check**: 이번 구현 과정에서 발견된 기술 부채나 인사이트가 `communications/insights/[Mission_Key].md` 파일에 기록되었는지 확인하십시오.
+- **Decentralized Protocol**: 공용 매뉴얼(`TECH_DEBT_LEDGER.md` 등)을 직접 수정하는 대신, 미션별 독립 로그 파일이 생성되었는지 검토하십시오.
+- **Template Match**: 기록된 인사이트가 `현상/원인/해결/교훈` 형식을 준수하고 실제 코드 기반의 구체적인 정보를 담고 있는지 확인하십시오.
 
 ---
 

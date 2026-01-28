@@ -31,11 +31,12 @@ PRs are reviewed by the **Git Reviewer** worker.
 ## 🏁 4. Session Conclusion & Cleanup
 At the end of every work session, the Architect MUST:
 1.  **Update Status**: Update `design/project_status.md` and `task.md`.
-2.  **Manage Debt**: Record all deferred items in `design/TECH_DEBT_LEDGER.md`.
-3.  **Handover**: Draft a `design/handovers/HANDOVER_YYYY-MM-DD.md` with the next session's "First Task".
-4.  **Sync**: Ensure `design/SESSION_LEDGER.md` reflects all active/completed sessions.
-5.  **Artifact Cleanup**: Empty the `design/gemini_output/` directory (delete all reviews, temporary specs, and diff files generated during the session).
-6.  **Commit**: Push all documentation changes to `main`.
+2.  **Insight Merging**: Collect all mission-specific logs from `communications/insights/[Mission_Key].md` and aggregate them into `design/TECH_DEBT_LEDGER.md`.
+3.  **Manage Debt**: Record all deferred items in `design/TECH_DEBT_LEDGER.md`.
+4.  **Handover**: Draft a `design/handovers/HANDOVER_YYYY-MM-DD.md` with the next session's "First Task".
+5.  **Sync**: Ensure `design/SESSION_LEDGER.md` reflects all active/completed sessions.
+6.  **Artifact Cleanup**: Empty the `design/gemini_output/` directory (delete all reviews, temporary specs, and diff files generated during the session).
+7.  **Commit**: Push all documentation changes to `main`.
 
 ---
 

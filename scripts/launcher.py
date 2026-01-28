@@ -136,14 +136,22 @@ def run_git_review(args, registry):
     commit_hash = res.stdout.strip().split('\n')[-1] # Take the last line
     print(f"📍 Target Commit: {commit_hash}")
 
-    # 2. Generate Diff
+    # 2. Fetch and Generate Diff
+    print(f"📡 [Step 2] Fetching latest changes from origin/{branch}...")
+    run_command(["git", "fetch", "origin", branch])
+    
+    # HITL 2.0: Integrity Check Message (Step 4 in user logic)
+    print("🔍 [Step 3] Integrity Check: Comparing FETCH_HEAD with main branch.")
+    print("💡 Note: If new files appear as 'MISSING', it is normal as we are comparing with the local main branch.")
+
     short_name = branch.split('/')[-1]
     diff_file = BASE_DIR / "design" / "gemini_output" / f"pr_diff_{short_name}.txt"
     diff_file.parent.mkdir(parents=True, exist_ok=True)
     
-    print(f"📝 Generating diff for {branch}...")
+    print(f"📝 Generating 3-dot diff: main...FETCH_HEAD -> {diff_file.name}")
     with open(diff_file, "w", encoding="utf-8") as f:
-        subprocess.run(["git", "diff", f"main..{commit_hash}"], cwd=BASE_DIR, stdout=f, shell=True)
+        # Use three-dot diff for PR standard (Merge Base to Tip)
+        subprocess.run(["git", "diff", "main...FETCH_HEAD"], cwd=BASE_DIR, stdout=f, shell=True)
 
     # 3. Gemini Review
     review_output = BASE_DIR / "design" / "gemini_output" / f"pr_review_{short_name}.md"

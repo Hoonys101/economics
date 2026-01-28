@@ -4,10 +4,20 @@
     "updated": "2026-01-28",
     "author": "Antigravity"
   },
-  "implement-wo-135": {
+  "wo-135-1-infra": {
     "command": "create",
-    "instruction": "Implement the Abstraction Wall as per design/work_orders/WO-135-Abstraction-Wall.md. Key tasks: 1) Create ConfigFactory, 2) Define TypedDicts in api.py, 3) Update DecisionContext, 4) Implement PurityGate v2, 5) Refactor Agent make_decision methods. Ensure existing tests are updated to match new DTO structures.",
-    "title": "WO-135: Operation Abstraction Wall",
-    "file": "design/work_orders/WO-135-Abstraction-Wall.md"
+    "instruction": "Implement the ConfigFactory and establish the test infrastructure (Golden Samples, Parity Test) as per design/work_orders/WO-135.1-Infrastructure.md. Mandatory: 1) Create simulation/utils/config_factory.py, 2) Create tests/utils/test_config_factory.py, 3) Create tests/test_config_parity.py, 4) Update/Harvest Golden Samples via scripts/fixture_harvester.py. Strictly follow the No Mock-Magic rule.",
+    "title": "WO-135.1: Config Factory & Test Infrastructure",
+    "file": "design/work_orders/WO-135.1-Infrastructure.md"
+  },
+  "wo-135-split-remainder": {
+    "worker": "spec",
+    "instruction": "Generate the remaining work orders for the Abstraction Wall Reboot: WO-135.2 (DTO Schema Alignment in api.py), WO-135.3 (Core Agent/Engine Refactor), and WO-135.4 (Purity Gate v2 Enforcement). Ensure they follow the sequential order and refer to WO-135.1 and PROTOCOL_ENGINEERING.md. Output each to separate files in design/work_orders/.",
+    "context": [
+      "design/work_orders/WO-135.1-Infrastructure.md",
+      "design/manuals/PROTOCOL_ENGINEERING.md",
+      "design/manuals/spec_writer.md"
+    ],
+    "output": "design/work_orders/reboot_plan_remainder.md"
   }
 }
