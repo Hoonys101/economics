@@ -17,6 +17,8 @@ from simulation.ai_model import AIEngineRegistry
 from simulation.ai.state_builder import StateBuilder
 from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+from simulation.decisions.rule_based_firm_engine import RuleBasedFirmDecisionEngine
+from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
 from simulation.decisions.ai_driven_household_engine import (
     AIDrivenHouseholdDecisionEngine,
 )
@@ -177,9 +179,14 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         household_ai_instance = HouseholdAI(agent_id=i, ai_decision_engine=ai_decision_engine_instance)
 
         # Instantiate HouseholdDecisionEngine with the HouseholdAI instance and config_module
-        household_decision_engine = AIDrivenHouseholdDecisionEngine(
-            ai_engine=household_ai_instance, config_module=config_manager
-        )
+        # Check config for decision engine preference
+        hh_engine_type = getattr(config, "HOUSEHOLD_DECISION_ENGINE", "AI_DRIVEN")
+        if hh_engine_type == "RULE_BASED":
+             household_decision_engine = RuleBasedHouseholdDecisionEngine(config_module=config_manager, logger=main_logger)
+        else:
+             household_decision_engine = AIDrivenHouseholdDecisionEngine(
+                ai_engine=household_ai_instance, config_module=config_manager
+             )
 
         # Generate Risk Aversion (0.1 ~ 10.0)
         # Assuming Normal Distribution centered at 1.0, or Uniform as per spec "Random Gaussian or Uniform"
@@ -245,9 +252,15 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             base_alpha=config.AI_BASE_ALPHA,
             learning_focus=config.AI_LEARNING_FOCUS,
         )
-        firm_decision_engine = AIDrivenFirmDecisionEngine(
-            ai_engine=firm_ai_instance, config_module=config_manager
-        )
+
+        # Check config for decision engine preference
+        engine_type = getattr(config, "FIRM_DECISION_ENGINE", "AI_DRIVEN")
+        if engine_type == "RULE_BASED":
+             firm_decision_engine = RuleBasedFirmDecisionEngine(config_module=config_manager, logger=main_logger)
+        else:
+             firm_decision_engine = AIDrivenFirmDecisionEngine(
+                ai_engine=firm_ai_instance, config_module=config_manager
+             )
 
         # Create the Firm instance with specialization instead of production_targets
         firm = Firm(

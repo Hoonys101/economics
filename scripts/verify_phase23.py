@@ -14,7 +14,7 @@ def verify_phase23():
         "SIMULATION_TICKS": 150, # Enough to see effect
         "INITIAL_FIRM_CAPITAL_MEAN": 500000.0, # Give firms more runway
         "INITIAL_HOUSEHOLD_ASSETS_MEAN": 50000.0, # Give households buying power
-        "MAX_CONSECUTIVE_LOSS_TURNS": 50, # Prevent early bankruptcy
+        "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD": 100, # Prevent early bankruptcy (Correct Key)
         # Force competition in basic_food
         "FIRM_SPECIALIZATIONS": {
             0: "basic_food", 1: "basic_food", 2: "basic_food", 3: "basic_food", 4: "basic_food",

@@ -17,6 +17,8 @@
     "LIMITS": {
        "MAX_AGENTS": 2000,
        "MAX_TICK_LATENCY_SEC": 1.0
-    }
+    },
+    "FIRM_DECISION_ENGINE": "RULE_BASED",
+    "HOUSEHOLD_DECISION_ENGINE": "RULE_BASED"
   }
 }

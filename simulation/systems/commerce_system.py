@@ -74,9 +74,11 @@ class CommerceSystem(ICommerceSystem):
                         # Bid at reference price to ensure survival and volume, relying on Glut to drive price down
                         bid_price = ref_price
 
+                        SYSTEM_MARKET_MAKER_ID = 999999
+
                         tx = Transaction(
                             buyer_id=household.id,
-                            seller_id=999999, # Placeholder
+                            seller_id=SYSTEM_MARKET_MAKER_ID,
                             item_id="basic_food",
                             quantity=b_amt,
                             price=bid_price,
