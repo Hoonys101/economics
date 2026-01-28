@@ -325,7 +325,7 @@ class Firm(BaseAgent, ILearningAgent):
     @override
     def make_decision(
         self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
-        market_snapshot: Optional[Any] = None, government_policy: Optional[Any] = None
+        market_snapshot: Optional[Any] = None, government_policy: Optional[Any] = None, agent_registry: Optional[Dict[str, int]] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
@@ -351,7 +351,8 @@ class Firm(BaseAgent, ILearningAgent):
             current_time=current_time,
             stress_scenario_config=stress_scenario_config,
             market_snapshot=market_snapshot,
-            government_policy=government_policy
+            government_policy=government_policy,
+            agent_registry=agent_registry or {}
         )
         decisions, tactic = self.decision_engine.make_decisions(context)
 
@@ -503,7 +504,7 @@ class Firm(BaseAgent, ILearningAgent):
             details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
         )
 
-    def generate_transactions(self, government: Optional[Government], market_data: Dict[str, Any], all_households: List[Household], current_time: int) -> List[Transaction]:
+    def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], all_households: List[Household], current_time: int) -> List[Transaction]:
         """
         Generates all financial transactions for the tick (Wages, Taxes, Dividends, etc.).
         Phase 3 Architecture.

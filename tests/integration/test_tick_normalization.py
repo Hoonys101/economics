@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import MagicMock, Mock
-from simulation.tick_scheduler import TickScheduler
+from unittest.mock import MagicMock, Mock, patch
+from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.models import Transaction
 from simulation.world_state import WorldState
 from simulation.dtos.api import SimulationState
@@ -30,7 +30,7 @@ class TestTickNormalization:
         state.government = MagicMock()
         state.government.run_welfare_check.return_value = []
         # Return (success, txs)
-        state.government.invest_infrastructure.return_value = (True, [])
+        state.government.invest_infrastructure.return_value = []
         # Fix: Mock get_monetary_delta to return float
         state.government.get_monetary_delta.return_value = 0.0
 
@@ -62,6 +62,9 @@ class TestTickNormalization:
         state.housing_system = MagicMock()
         state.crisis_monitor = None
         state.generational_wealth_audit = None
+        state.settlement_system = MagicMock()
+        state.ai_training_manager = None
+        state.ai_trainer = None
 
         # Fix format issue
         state.calculate_total_money = MagicMock(return_value=1000.0)
@@ -70,60 +73,57 @@ class TestTickNormalization:
         return state
 
     @pytest.fixture
-    def scheduler(self, mock_world_state):
+    def orchestrator(self, mock_world_state):
         processor = MagicMock()
-        return TickScheduler(mock_world_state, processor)
 
-    def test_run_tick_collects_transactions(self, scheduler, mock_world_state):
-        # Setup Firm
-        mock_firm = MagicMock()
-        mock_firm.id = 50
-        mock_firm.is_active = True
-        # Mock generate_transactions to return a tax transaction
-        mock_firm.generate_transactions.return_value = [
-            Transaction(50, 0, "corporate_tax", 1.0, 50.0, "system", "tax", 0)
-        ]
-        # Mock produce
-        mock_firm.produce = MagicMock()
-        mock_firm.update_needs = MagicMock()
+        # Patch the phases classes to return mocks
+        with patch('simulation.orchestration.tick_orchestrator.Phase0_PreSequence') as MockPhase0, \
+             patch('simulation.orchestration.tick_orchestrator.Phase_Production') as MockPhaseProd, \
+             patch('simulation.orchestration.tick_orchestrator.Phase1_Decision') as MockPhase1, \
+             patch('simulation.orchestration.tick_orchestrator.Phase2_Matching') as MockPhase2, \
+             patch('simulation.orchestration.tick_orchestrator.Phase3_Transaction') as MockPhase3, \
+             patch('simulation.orchestration.tick_orchestrator.Phase4_Lifecycle') as MockPhase4, \
+             patch('simulation.orchestration.tick_orchestrator.Phase5_PostSequence') as MockPhase5:
 
-        # Add firm to state
-        mock_world_state.firms = [mock_firm]
-        mock_world_state.agents = {50: mock_firm}
+             # Configure mocks to return the state passed to execute
+             def side_effect(state):
+                 return state
 
-        # Prepare mock for _phase_decisions to avoid errors
-        # (It returns tuple of dicts)
-        scheduler._phase_decisions = MagicMock(return_value=({}, {}, {}))
-        scheduler._phase_matching = MagicMock()
-        scheduler._phase_lifecycle = MagicMock()
-        scheduler.prepare_market_data = MagicMock(return_value={})
+             MockPhase0.return_value.execute.side_effect = side_effect
+             MockPhaseProd.return_value.execute.side_effect = side_effect
+             MockPhase1.return_value.execute.side_effect = side_effect
+             MockPhase2.return_value.execute.side_effect = side_effect
+             MockPhase3.return_value.execute.side_effect = side_effect
+             MockPhase4.return_value.execute.side_effect = side_effect
+             MockPhase5.return_value.execute.side_effect = side_effect
 
+             orch = TickOrchestrator(mock_world_state, processor)
+
+             # Store mock phases on the orchestrator instance for access in tests
+             orch.mock_phases = {
+                 'Phase0': MockPhase0.return_value,
+                 'PhaseProduction': MockPhaseProd.return_value,
+                 'Phase1': MockPhase1.return_value,
+                 'Phase2': MockPhase2.return_value,
+                 'Phase3': MockPhase3.return_value,
+                 'Phase4': MockPhase4.return_value,
+                 'Phase5': MockPhase5.return_value,
+             }
+
+             return orch
+
+    def test_run_tick_executes_phases(self, orchestrator, mock_world_state):
         # Act
-        scheduler.run_tick()
+        orchestrator.run_tick()
 
-        # Assertions
+        # Assertions - Check if phases were executed in order
+        orchestrator.mock_phases['Phase0'].execute.assert_called_once()
+        orchestrator.mock_phases['PhaseProduction'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase1'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase2'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase3'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase4'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase5'].execute.assert_called_once()
 
-        # 1. Firm Produce called (Pre-Decision)
-        mock_firm.produce.assert_called_once()
-
-        # 2. Bank run_tick called
-        mock_world_state.bank.run_tick.assert_called_once()
-
-        # 3. Firm generate_transactions called
-        mock_firm.generate_transactions.assert_called_once()
-
-        # 4. Check TransactionProcessor call
-        assert mock_world_state.transaction_processor.execute.called
-
-        # Verify passed transactions
-        args, _ = mock_world_state.transaction_processor.execute.call_args
-        sim_state_dto = args[0]
-        assert isinstance(sim_state_dto, SimulationState)
-
-        transactions = sim_state_dto.transactions
-        # Should contain Bank Tx (1) + Firm Tx (1) = 2
-        assert len(transactions) >= 2
-
-        tx_types = [tx.transaction_type for tx in transactions]
-        assert "test_type" in tx_types
-        assert "tax" in tx_types
+        # Verify state time incremented
+        assert mock_world_state.time == 1

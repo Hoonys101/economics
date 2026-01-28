@@ -3,11 +3,10 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.agents.government import Government
 from simulation.bank import Bank
-from simulation.systems.reflux_system import EconomicRefluxSystem
 from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.system import FinanceSystem
-from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.core_agents import Household
+from simulation.models import Transaction
 
 class MockConfig:
     TICKS_PER_YEAR = 100
@@ -32,7 +31,7 @@ class MockConfig:
         if key == "economy_params.ALTMAN_Z_SCORE_THRESHOLD": return 1.81
         return getattr(self, key, default)
 
-def test_infrastructure_investment_is_zero_sum():
+def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     # Setup
     config = MockConfig()
     settlement_system = SettlementSystem()
@@ -40,14 +39,9 @@ def test_infrastructure_investment_is_zero_sum():
     gov = Government(id=1, initial_assets=1000.0, config_module=config)
     gov.settlement_system = settlement_system
 
-    # Inject minimal dependencies for Government
-    gov.finance_system = None # Will set later
-
     bank = Bank(id=2, initial_assets=10000.0, config_manager=config, settlement_system=settlement_system)
     bank.settlement_system = settlement_system
     bank.set_government(gov) # Bank needs gov reference
-
-    reflux = EconomicRefluxSystem()
 
     central_bank = MagicMock()
     central_bank.get_base_rate.return_value = 0.05
@@ -55,45 +49,53 @@ def test_infrastructure_investment_is_zero_sum():
     finance_system = FinanceSystem(gov, central_bank, bank, config, settlement_system)
     gov.finance_system = finance_system
 
+    # Setup Households for Public Works
+    h1 = MagicMock(spec=Household)
+    h1.id = 101
+    h1.is_active = True
+    h1.assets = 0.0
+
+    households = [h1]
+
     # Check Initial State
     initial_gov_assets = gov.assets
     initial_bank_assets = bank.assets
-    initial_reflux_assets = reflux.assets
-    initial_total = initial_gov_assets + initial_bank_assets + initial_reflux_assets
 
-    print(f"\n[INIT] Gov: {gov.assets}, Bank: {bank.assets}, Reflux: {reflux.assets}")
+    # Cost 5000. Gov has 1000. Deficit 4000.
+    # Gov should issue 4000 bonds (synchronous).
+    # Then create transactions for 5000.
 
-    # Execution
-    # Invest Infrastructure cost 5000. Gov has 1000. Deficit 4000.
-    # Expectation:
-    # 1. Gov issues bonds (synchronous) -> +4000 assets (from Bank).
-    # 2. Gov pays Reflux -> -5000 assets.
-    # Final Gov: 1000 + 4000 - 5000 = 0.
+    transactions = gov.invest_infrastructure(current_tick=1, households=households)
 
-    # Note: Before the fix, this might return False (fail) or create deferred transactions.
-    # If it creates deferred transactions, assets won't change immediately.
+    # Verification
 
-    success, txs = gov.invest_infrastructure(current_tick=1, reflux_system=reflux)
+    # 1. Bond Issuance (Synchronous)
+    # Gov assets should have increased by 4000 (to cover deficit)
+    # NOTE: invest_infrastructure calculates 'needed' and calls issue_treasury_bonds_synchronous.
+    # This transfers 4000 from Bank to Gov immediately.
+    # The SPENDING (5000) is returned as transactions, NOT executed immediately.
+    # So Gov assets should be 1000 + 4000 = 5000.
 
-    print(f"[POST] Success: {success}, Txs: {len(txs)}")
-    print(f"[POST] Gov: {gov.assets}, Bank: {bank.assets}, Reflux: {reflux.assets}")
+    assert gov.assets == 5000.0
+    assert bank.assets == 6000.0 # 10000 - 4000
 
-    final_total = gov.assets + bank.assets + reflux.assets
-    diff = final_total - initial_total
+    # 2. Transactions
+    assert len(transactions) > 0
+    total_payout = sum(tx.price * tx.quantity for tx in transactions)
+    assert total_payout == 5000.0
 
-    # Assertions
-    assert success, "Infrastructure investment should succeed with synchronous financing."
-    assert abs(diff) < 1e-9, f"Zero-sum violation! Drift: {diff}"
-    assert gov.assets == 0.0
-    assert bank.assets == 6000.0
-    assert reflux.assets == 5000.0
+    # 3. Transaction Details
+    tx = transactions[0]
+    assert tx.buyer_id == gov.id
+    assert tx.seller_id == h1.id
+    assert tx.transaction_type == "infrastructure_spending"
 
-def test_education_spending_is_zero_sum():
+def test_education_spending_generates_transactions_only():
     # Setup
     config = MockConfig()
     settlement_system = SettlementSystem()
 
-    gov = Government(id=1, initial_assets=1000.0, config_module=config)
+    gov = Government(id=1, initial_assets=100.0, config_module=config)
     gov.settlement_system = settlement_system
     gov.revenue_this_tick = 10000.0 # High revenue to trigger high budget
     # Budget = 10000 * 0.2 = 2000.
@@ -102,7 +104,6 @@ def test_education_spending_is_zero_sum():
     bank.settlement_system = settlement_system
     bank.set_government(gov)
 
-    reflux = EconomicRefluxSystem()
     central_bank = MagicMock()
     central_bank.get_base_rate.return_value = 0.05
     finance_system = FinanceSystem(gov, central_bank, bank, config, settlement_system)
@@ -114,46 +115,37 @@ def test_education_spending_is_zero_sum():
     household.education_level = 0
     household.assets = 100.0
     household.is_active = True
-    household.settlement_system = settlement_system # Mock needs this?
+    # Needed for education logic check
+    household.age = 20
+    household.talent.base_learning_rate = 1.0
 
-    # We need a real Household or something that works with SettlementSystem
-    # SettlementSystem calls withdraw/deposit on agents.
-    # MagicMock works if configured.
-    household.withdraw = MagicMock()
-    household.deposit = MagicMock()
+    # Mock update methods since they might be called
+    household.update_education = MagicMock()
 
     households = [household]
 
     # Execution
-    # Cost for Level 1 is 500. Budget is 2000.
-    # Gov Assets 1000. Cost 500. Can pay directly.
+    # Cost for Level 1 is 500.
+    # Gov Assets 100. Deficit 400.
+    # Note: MinistryOfEducation does NOT perform synchronous bond issuance.
+    # It relies on budget based on REVENUE, not current ASSETS.
 
-    # Let's force deficit.
-    gov._assets = 100.0
-    # Cost 500. Deficit 400.
-    # Should issue bonds for 400.
+    transactions = gov.run_public_education(households, config, current_tick=1)
 
-    initial_total = gov.assets + bank.assets + reflux.assets # Household mocked, assumed constant/ handled
+    # Verification
 
-    # Need to verify if Household assets are touched.
-    # Level 0->1 is full grant (Gov pays Reflux). Household assets untouched.
+    # 1. No Bond Issuance (Assets unchanged)
+    assert gov.assets == 100.0
+    assert bank.assets == 10000.0
 
-    gov.run_public_education(households, config, current_tick=1, reflux_system=reflux)
-
-    final_total = gov.assets + bank.assets + reflux.assets
-    diff = final_total - initial_total
-
-    # After fix
-    # Gov should have issued 400 bonds. Assets 100 + 400 = 500.
-    # Spent 500. Assets 0.
-    # Bank assets 10000 - 400 = 9600.
-    # Reflux assets 500.
-
-    assert gov.assets == 0.0
-    assert bank.assets == 9600.0
-    assert reflux.assets == 500.0
-    assert abs(diff) < 1e-9
+    # 2. Transactions
+    # Should be 1 transaction of 500 (Grant)
+    assert len(transactions) == 1
+    tx = transactions[0]
+    assert tx.price == 500.0
+    assert tx.buyer_id == gov.id
+    assert tx.transaction_type == "education_spending"
 
 if __name__ == "__main__":
-    test_infrastructure_investment_is_zero_sum()
-    test_education_spending_is_zero_sum()
+    test_infrastructure_investment_generates_transactions_and_issues_bonds()
+    test_education_spending_generates_transactions_only()

@@ -340,6 +340,15 @@ class Phase1_Decision(IPhaseStrategy):
                 interest_rate_trend=interest_rate_trend
             )
 
+        # Prepare Agent Registry (WO-138)
+        agent_registry = {}
+        if state.government:
+            agent_registry["GOVERNMENT"] = state.government.id
+        if state.central_bank:
+            agent_registry["CENTRAL_BANK"] = state.central_bank.id
+        if state.bank:
+             agent_registry["BANK"] = state.bank.id
+
         # 1. Firms
         for firm in state.firms:
             if firm.is_active:
@@ -366,7 +375,8 @@ class Phase1_Decision(IPhaseStrategy):
                 firm_orders, action_vector = firm.make_decision(
                     state.markets, state.goods_data, market_data, state.time,
                     state.government, stress_config,
-                    market_snapshot=market_snapshot, government_policy=gov_policy
+                    market_snapshot=market_snapshot, government_policy=gov_policy,
+                    agent_registry=agent_registry
                 )
 
                 for order in firm_orders:
@@ -390,7 +400,8 @@ class Phase1_Decision(IPhaseStrategy):
                 stress_config = self.world_state.stress_scenario_config
                 household_orders, action_vector = household.make_decision(
                     state.markets, state.goods_data, market_data, state.time, state.government, macro_financial_context, stress_config,
-                    market_snapshot=market_snapshot, government_policy=gov_policy
+                    market_snapshot=market_snapshot, government_policy=gov_policy,
+                    agent_registry=agent_registry
                 )
 
                 if hasattr(action_vector, 'work_aggressiveness'):

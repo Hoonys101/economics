@@ -161,6 +161,9 @@ class DecisionContext:
 
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
 
+    # Agent Discovery Registry (WO-138)
+    agent_registry: Dict[str, int] = field(default_factory=dict)
+
 
 @dataclass
 class SimulationState:
