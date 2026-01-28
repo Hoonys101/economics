@@ -41,7 +41,7 @@
             - WO-135.4: Purity Gate Automated (verify_purity.py) ✅
         - **WO-136**: Strategy Generalization (Branching Cleanup) ✅ (2026-01-28)
         - **Documentation Restructuring**: Formal 4-Layer Hierarchy (Governance/Ops/Artifacts/Archive) ✅ (2026-01-28)
-        - **WO-137**: Test Cleanroom (TD-122 Reorganization) [PLANNED]
+        - **WO-137/138**: Test Cleanroom (TD-122 Reorganization) ✅ (2026-01-28)
     - **Previous**: Step 4: God Class Decomposition ✅ (Merged 2026-01-27)
 
 ---

@@ -77,6 +77,10 @@
       "7171574708710867264": {
         "title": "Quickstart: Root Fragmentation Cleanup",
         "initial_mission": "Clean up loose files in the root directory (temporary logs, restored txt files, db files). Move arti..."
+      },
+      "17224919797912930620": {
+        "title": "WO-138: Purity Gate Hardening",
+        "initial_mission": "Externalize rules from verify_purity.py to pyproject.toml as defined in the spec.\n\n[File Content: de..."
       }
     },
     "completed_sessions": {

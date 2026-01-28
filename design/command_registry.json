@@ -15,11 +15,5 @@
     "instruction": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test suite into unit/integration/scenarios categories.",
     "title": "WO-138: Sacred Hygiene",
     "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
-  },
-  "mission-purity-hardening": {
-    "command": "create",
-    "instruction": "Externalize rules from verify_purity.py to pyproject.toml as defined in the spec.",
-    "title": "WO-138: Purity Gate Hardening",
-    "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
   }
 }
