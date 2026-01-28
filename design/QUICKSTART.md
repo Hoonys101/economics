@@ -61,6 +61,6 @@ python scripts/cmd_ops.py set-jules <mission_key> --command create -t "<title>" 
 1.  **Verify**: Ensure all tasks are complete.
 2.  **Archive**: Move session logs/reports to `3_work_artifacts/reports/`.
 3.  **Handover**: Create a new `HANDOVER_YYYY-MM-DD.md` in `_archive/handovers/`.
-4.  **Clean**: Delete temporary `gemini_output` or `drafts` that are no longer needed.
+4.  **Clean**: Run **`.\cleanup-session.bat`** to automate the removal of temporary artifacts and logs.
 
 > **"Arm the tool, do not be the tool."** - Standard Operating Procedure v2.1

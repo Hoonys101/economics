@@ -18,6 +18,10 @@
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
 | **TD-132** | 2026-01-28 | **Hardcoded Government ID** | Dynamically resolve Government ID from WorldState | Registry Inconsistency Risk | **ACTIVE** |
 | **TD-136** | 2026-01-28 | **Purity Gate Hardening** | Externalize rules from `verify_purity.py` to `pyproject.toml` | Maintainability | **ACTIVE** |
+| **TD-140** | 2026-01-29 | **God File: `db/repository.py`** | Refactor database operations into specialized DAO/Repository mixins | 745+ LOC complexity | **ACTIVE** |
+| **TD-141** | 2026-01-29 | **God File: `ai_driven_household_engine.py`** | Split logic into Sensory/Planning/Execution modules | 636+ LOC complexity | **ACTIVE** |
+| **TD-142** | 2026-01-29 | **God File: `corporate_manager.py`** | Use Departmental Delegation (similar to WO-123) | 629+ LOC complexity | **ACTIVE** |
+| **TD-143** | 2026-01-29 | **Hardcoded Placeholders (WO-XXX)** | Replace all `WO-XXX` tags in manuals with template variables or specific links | Documentation Debt | **ACTIVE** |
 
 ---
 

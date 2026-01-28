@@ -1,19 +1,26 @@
 {
   "_meta": {
-    "session": "Phase 23 Reactivation",
-    "updated": "2026-01-28",
+    "session": "Clean Room Era",
+    "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-perf-optimization": {
+  "mission-clean-sweep": {
     "command": "create",
-    "instruction": "Scale the simulation to 2,000+ agents and generalize technology logic. Implement NumPy vectorization for bottlenecks and a probability-based tech diffusion engine.",
-    "title": "WO-137: Performance & Vectorization",
-    "file": "design/3_work_artifacts/work_orders/WO-137-Performance-Optimization.md"
+    "instruction": "Execute technology generalization, NumPy optimization, and dynamic circuit breakers as specified.",
+    "title": "WO-136: Operation Clean Sweep",
+    "file": "design/3_work_artifacts/work_orders/WO-136-Clean-Sweep.md"
   },
   "mission-sacred-hygiene": {
     "command": "create",
     "instruction": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test suite into unit/integration/scenarios categories.",
     "title": "WO-138: Sacred Hygiene",
     "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
+  },
+  "mission-god-file-audit": {
+    "worker": "audit",
+    "instruction": "Audit the identified God Files (db/repository.py, ai_driven_household_engine.py, corporate_manager.py) against SoC principles. Provide a detailed refactoring plan into specialized modules.",
+    "context": [
+      "simulation/db/repository.py,simulation/decisions/ai_driven_household_engine.py,simulation/decisions/corporate_manager.py"
+    ]
   }
 }

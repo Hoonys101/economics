@@ -42,3 +42,23 @@
 - **audit_parity_v2.md** (from `audit-parity-v2-16277740793807846068`) -> `parity-v2-16277740793807846068_audit_parity_v2.md`
 - **audit_economic_v2.md** (from `audit-economic-v2-2091464166105737717`) -> `economic-v2-2091464166105737717_audit_economic_v2.md`
 - **audit_structural_v2.md** (from `audit-structural-v2-14969676416776817658`) -> `structural-v2-14969676416776817658_audit_structural_v2.md`
+
+## Harvested on 2026-01-29 07:10:34
+- **2026-01-16_refactoring_proposal_soc.md** (from `refactor-proposal-soc-17235630755841768159`) -> `refactor-proposal-soc-17235630755841768159_2026-01-16_refactoring_proposal_soc.md`
+- **daily_action_plan_20260119.md** (from `observer-daily-plan-20260119-14898370987513280755`) -> `observer-daily-plan-20260119-14898370987513280755_daily_action_plan_20260119.md`
+- **observer_scan.md** (from `observer-daily-plan-20260119-14898370987513280755`) -> `observer-daily-plan-20260119-14898370987513280755_observer_scan.md`
+- **daily_action_plan_20260120.md** (from `observer-report-20260120-13801012752368297420`) -> `observer-report-20260120-13801012752368297420_daily_action_plan_20260120.md`
+- **observer_scan.md** (from `observer-report-20260120-13801012752368297420`) -> `observer-report-20260120-13801012752368297420_observer_scan.md`
+- **2026-01-20_refactoring_proposal_soc.md** (from `refactor-proposal-soc-7859283963638157903`) -> `refactor-proposal-soc-7859283963638157903_2026-01-20_refactoring_proposal_soc.md`
+- **2026-01-19_refactoring_proposal_soc.md** (from `refactor-proposal-soc-14876576136625405681`) -> `refactor-proposal-soc-14876576136625405681_2026-01-19_refactoring_proposal_soc.md`
+- **2026-01-17_refactoring_proposal_soc.md** (from `refactor/soc-proposal-2460652686838241933`) -> `refactor_soc-proposal-2460652686838241933_2026-01-17_refactoring_proposal_soc.md`
+- **daily_action_plan_20260118.md** (from `observer/daily-plan-20260118-1701822753497062536`) -> `observer_daily-plan-20260118-1701822753497062536_daily_action_plan_20260118.md`
+- **observer_scan.md** (from `observer/daily-plan-20260118-1701822753497062536`) -> `observer_daily-plan-20260118-1701822753497062536_observer_scan.md`
+- **daily_action_plan_20260117.md** (from `observer-action-plan-01-3668774630791999408`) -> `observer-action-plan-01-3668774630791999408_daily_action_plan_20260117.md`
+- **observer_scan.md** (from `observer-action-plan-01-3668774630791999408`) -> `observer-action-plan-01-3668774630791999408_observer_scan.md`
+- **observer-action-plan-01-3668774630791999408_daily_action_plan_20260117.md** (from `refactor-god-classes-v2-17210430308583135228`) -> `refactor-god-classes-v2-17210430308583135228_observer-action-plan-01-3668774630791999408_daily_action_plan_20260117.md`
+- **observer-action-plan-01-3668774630791999408_observer_scan.md** (from `refactor-god-classes-v2-17210430308583135228`) -> `refactor-god-classes-v2-17210430308583135228_observer-action-plan-01-3668774630791999408_observer_scan.md`
+- **refactor-proposal-soc-5999814637010019604_2026-01-16_refactoring_proposal_soc.md** (from `refactor-god-classes-v2-17210430308583135228`) -> `refactor-god-classes-v2-17210430308583135228_refactor-proposal-soc-5999814637010019604_2026-01-16_refactoring_proposal_soc.md`
+- **daily_action_plan_20260116.md** (from `observer/daily-action-plan-20260116-7819994186068401645`) -> `observer_daily-action-plan-20260116-7819994186068401645_daily_action_plan_20260116.md`
+- **observer_scan.md** (from `observer/daily-action-plan-20260116-7819994186068401645`) -> `observer_daily-action-plan-20260116-7819994186068401645_observer_scan.md`
+- **2026-01-16_refactoring_proposal_soc.md** (from `refactor-proposal-soc-5999814637010019604`) -> `refactor-proposal-soc-5999814637010019604_2026-01-16_refactoring_proposal_soc.md`
