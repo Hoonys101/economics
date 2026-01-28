@@ -1104,5 +1104,7 @@
     "WAGE_RECOVERY_RATE": 0.01,
     "WEALTH_NEED_THRESHOLD": 70.0,
     "WEALTH_TAX_THRESHOLD": 50000.0
-  }
+  },
+  "goods_data": [],
+  "market_data": {}
 }

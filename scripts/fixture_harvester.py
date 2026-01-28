@@ -84,6 +84,8 @@ class GoldenFixture:
     households: List[HouseholdSnapshot]
     firms: List[FirmSnapshot]
     config_snapshot: Dict[str, Any]
+    goods_data: List[Dict[str, Any]] = None
+    market_data: Dict[str, Any] = None
 
 
 class FixtureHarvester:
@@ -94,6 +96,7 @@ class FixtureHarvester:
         harvester = FixtureHarvester(output_dir="tests/goldens")
         harvester.capture_agents(sim.households, sim.firms, tick=100)
         harvester.capture_config(sim.config_module)
+        harvester.capture_environment(sim.goods_data, sim.market_data)
         harvester.save_all()
     """
     
@@ -104,6 +107,8 @@ class FixtureHarvester:
         self.households: List[HouseholdSnapshot] = []
         self.firms: List[FirmSnapshot] = []
         self.config_snapshot: Dict[str, Any] = {}
+        self.goods_data: List[Dict[str, Any]] = []
+        self.market_data: Dict[str, Any] = {}
         self.metadata: Dict[str, Any] = {
             "captured_at": datetime.now().isoformat(),
             "tick": 0
@@ -167,6 +172,11 @@ class FixtureHarvester:
                 value = getattr(config_module, attr)
                 if isinstance(value, (int, float, str, bool, list, dict)):
                     self.config_snapshot[attr] = value
+
+    def capture_environment(self, goods_data: List[Dict[str, Any]], market_data: Dict[str, Any]):
+        """Capture environment data (GoodsDTO, MarketHistoryDTO)."""
+        self.goods_data = goods_data
+        self.market_data = market_data
     
     def save_all(self, filename: Optional[str] = None) -> Path:
         """Save all captured data to a JSON file."""
@@ -179,7 +189,9 @@ class FixtureHarvester:
             metadata=self.metadata,
             households=self.households,
             firms=self.firms,
-            config_snapshot=self.config_snapshot
+            config_snapshot=self.config_snapshot,
+            goods_data=self.goods_data,
+            market_data=self.market_data
         )
         
         # Convert dataclasses to dicts for JSON serialization
@@ -187,7 +199,9 @@ class FixtureHarvester:
             "metadata": fixture.metadata,
             "households": [asdict(h) for h in fixture.households],
             "firms": [asdict(f) for f in fixture.firms],
-            "config_snapshot": fixture.config_snapshot
+            "config_snapshot": fixture.config_snapshot,
+            "goods_data": fixture.goods_data,
+            "market_data": fixture.market_data
         }
         
         with open(filepath, 'w', encoding='utf-8') as f:
@@ -212,6 +226,8 @@ class GoldenLoader:
         self.households_data = data.get("households", [])
         self.firms_data = data.get("firms", [])
         self.config_snapshot = data.get("config_snapshot", {})
+        self.goods_data = data.get("goods_data", [])
+        self.market_data = data.get("market_data", {})
     
     @classmethod
     def load(cls, filepath: str) -> "GoldenLoader":
@@ -415,6 +431,11 @@ if __name__ == "__main__":
     
     harvester = FixtureHarvester(output_dir="tests/goldens")
     harvester.capture_agents(households, firms, tick=0)
+    # Add dummy environment data
+    goods_data = [{"id": "food", "name": "Food", "initial_price": 10.0, "category": "consumable", "is_durable": False, "is_essential": True, "base_need_satisfaction": 10.0, "quality_modifier": 1.0}]
+    market_data = {"food": {"avg_price": 10.0, "trade_volume": 100.0}}
+    harvester.capture_environment(goods_data, market_data)
+
     filepath = harvester.save_all("demo_fixture.json")
     
     # Load and verify
@@ -426,6 +447,8 @@ if __name__ == "__main__":
     
     print(f"✅ Created {len(mock_households)} household mocks")
     print(f"✅ Created {len(mock_firms)} firm mocks")
+    print(f"✅ Loaded {len(loader.goods_data)} goods")
+    print(f"✅ Loaded market data for {len(loader.market_data)} items")
     print(f"\n🔍 Sample Household Mock:")
     print(f"   ID: {mock_households[0].id}")
     print(f"   Assets: {mock_households[0].assets}")

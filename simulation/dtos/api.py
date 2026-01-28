@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union
+from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, TypedDict
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.models import Order
 
@@ -91,12 +91,41 @@ class AIDecisionData:
     predicted_reward: Optional[float] = None
     actual_reward: Optional[float] = None
 
-@dataclass
-class MarketSnapshotDTO:
+class GoodsDTO(TypedDict, total=False):
+    id: str
+    name: str
+    category: str
+    is_durable: bool
+    is_essential: bool
+    initial_price: float
+    base_need_satisfaction: float
+    quality_modifier: float
+    # Fields from goods.json
+    type: str
+    satiety: float
+    decay_rate: float
+
+class MarketHistoryDTO(TypedDict, total=False):
+    avg_price: float
+    trade_volume: float
+    best_ask: float
+    best_bid: float
+    avg_ask: float
+    avg_bid: float
+    worst_ask: float
+    worst_bid: float
+
+class OrderDTO(TypedDict):
+    agent_id: int
+    item_id: str
+    quantity: float
+    price: float
+
+class MarketSnapshotDTO(TypedDict):
     """A pure-data snapshot of the state of all markets at a point in time."""
     prices: Dict[str, float]
     volumes: Dict[str, float]
-    asks: Dict[str, List[Order]]
+    asks: Dict[str, List[OrderDTO]]
     best_asks: Dict[str, float]
 
 @dataclass
@@ -195,8 +224,8 @@ class DecisionContext:
     A pure data container for decision-making.
     Direct agent instance access is strictly forbidden (Enforced by Purity Gate).
     """
-    goods_data: List[Dict[str, Any]]
-    market_data: Dict[str, Any]
+    goods_data: List[GoodsDTO]
+    market_data: Dict[str, MarketHistoryDTO]
     current_time: int
     
     # State DTO representing the agent's current condition

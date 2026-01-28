@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "captured_at": "2026-01-21T12:01:37.689440",
+    "captured_at": "2026-01-28T05:30:38.080697",
     "tick": 0,
     "household_count": 5,
     "firm_count": 3
@@ -129,5 +129,23 @@
       "consecutive_loss_turns": 0
     }
   ],
-  "config_snapshot": {}
+  "config_snapshot": {},
+  "goods_data": [
+    {
+      "id": "food",
+      "name": "Food",
+      "initial_price": 10.0,
+      "category": "consumable",
+      "is_durable": false,
+      "is_essential": true,
+      "base_need_satisfaction": 10.0,
+      "quality_modifier": 1.0
+    }
+  ],
+  "market_data": {
+    "food": {
+      "avg_price": 10.0,
+      "trade_volume": 100.0
+    }
+  }
 }
