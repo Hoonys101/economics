@@ -32,6 +32,22 @@
 
 본 시뮬레이션의 모든 상태 변경은 "오케스트레이션 단계(Phased Orchestration)"라 불리는 8단계 프로세스를 엄격히 준수한다. 이는 상태 변경의 예측 가능성을 보장하고, 제로섬(Zero-Sum) 오류와 타이밍 버그를 방지하기 위함이다.
 
+```mermaid
+graph TD
+    subgraph TickOrchestrator [The Conductor]
+        P0[Phase 0: Pre-Sequence] -->|Events & Stabilization| P_PROD
+        P_PROD[Phase: Production] -->|Real Economy Output| P1
+        P1[Phase 1: Decision] -->|AI Logic| P2
+        P2[Phase 2: Matching] -->|Order Book| P3
+        P3[Phase 3: Transaction] -->|Settlement & Clearing| P4
+        P4[Phase 4: Lifecycle] -->|Birth, Death, Bankruptcy| P5
+        P5[Phase 5: Post-Sequence] -->|Learning & Stats| End
+    end
+
+    style P_PROD fill:#f9f,stroke:#333,stroke-width:4px
+    Note[Target of Phase 23: Phase_Production] --- P_PROD
+```
+
 ### Phase 0: 전처리 (Preprocessing)
 - **Action**: 시스템 안정화, 이벤트 실행, 초기 상태 스냅샷 저장(학습용).
 

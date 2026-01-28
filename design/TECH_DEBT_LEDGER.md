@@ -54,6 +54,8 @@
 | TD-124 | 2026-01-27 | God Class: `TransactionProcessor` | Split into 6-Layer Architecture (WO-124) | Scalability Risk | **RESOLVED** |
 | TD-126 | 2026-01-27 | Implicit Bank Protocol | Formalize `IBankService` (TD-126) | Design-Impl Gap | **RESOLVED** |
 | TD-125 | 2026-01-27 | Non-atomic Transfer Sequences | Implement atomic bank/transaction blocks (WO-125) | Monetary Integrity | **RESOLVED** |
+| TD-130 | 2026-01-28 | Reflux System (Dark Pools) | Operation Sacred Refactoring (Purge Reflux) | Monetary Integrity | **RESOLVED** |
+| TD-131 | 2026-01-28 | Monolithic TickScheduler | Operation Sacred Refactoring (Decomposition) | Architectural Clarity | **RESOLVED** |
 
 ---
 

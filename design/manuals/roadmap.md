@@ -63,7 +63,7 @@
     - Owners vote for Tax Cuts & Asset Protection.
     - Simulation of Gerontocracy (Rule of the Old) vs Youth Disenchantment.
 
-### Phase 23: The Great Expansion (Industrial Revolution) ✅
+### Phase 23: The Great Expansion (Industrial Revolution) 🔄 **[RESUMED]**
 - **Goal**: Escape the Malthusian Trap via Technology & Education.
 - **Tasks**:
     - [x] WO-053: Productivity Revolution (Chemical Fertilizer)
@@ -115,6 +115,7 @@
 ### Phase 28: Structural Stabilization & Verification ⭐ **[NEXT]**
 - **Goal**: Clean up technical debt from rapid architectural changes and verify the new economic engine.
 - **Tasks**:
+    - [x] **Operation Sacred Refactoring**: Purge Reflux System & Decompose TickScheduler.
     - [ ] **WO-122: Test Suite Cleanroom (TD-122)**
         - Reorganize `tests/` into `unit` (fast, mock) vs `integration` (slow, real DB).
         - Remove legacy/duplicate tests.

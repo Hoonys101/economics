@@ -1,12 +1,14 @@
 {
   "_meta": {
-    "session": "Structural Reset Completed",
-    "updated": "2026-01-27",
+    "session": "Phase 23 Reactivation",
+    "updated": "2026-01-28",
     "author": "Antigravity"
   },
   "mission-wo-053": {
-    "command": "send-message",
-    "instruction": "PR for mission-wo-053 Request Changes: Please update 'tests/systems/test_technology_manager.py' to use 'FirmTechInfoDTO' objects instead of raw dicts in 'test_unlock_and_visionary_adoption', to maintain consistency with the actual application usage in 'main.py'."
+    "command": "create",
+    "title": "WO-053: Phase 23 Reactivation",
+    "instruction": "Execute WO-053 to reactivate Phase 23 (Industrial Revolution). Configure the scenario for TFP 3.0, verified supply glut (ratio 2.5+), and price crash (>50%). Run verification script and report results.",
+    "file": "design/work_orders/WO-053-Reactivation.md"
   },
   "mission-purge-reflux": {
     "command": "create",
