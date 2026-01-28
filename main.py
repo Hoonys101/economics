@@ -9,6 +9,8 @@ from utils.logging_manager import (
 import config
 from pathlib import Path
 from modules.common.config_manager.impl import ConfigManagerImpl
+from simulation.utils.config_factory import create_config_dto
+from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.ai.firm_ai import FirmAI
@@ -83,6 +85,10 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     if overrides:
         if "SIMULATION_ACTIVE_SCENARIO" in overrides:
             config_manager.set_value_for_test("simulation.active_scenario", overrides["SIMULATION_ACTIVE_SCENARIO"])
+
+    # Create Config DTOs
+    hh_config_dto = create_config_dto(config, HouseholdConfigDTO)
+    firm_config_dto = create_config_dto(config, FirmConfigDTO)
 
     state_builder = StateBuilder()
     action_proposal_engine = ActionProposalEngine(config_module=config_manager)
@@ -204,7 +210,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             decision_engine=household_decision_engine,
             value_orientation=value_orientation,
             personality=personality,
-            config_module=config_manager,
+            config_dto=hh_config_dto,
             risk_aversion=risk_aversion,
             logger=main_logger,
         )
@@ -271,7 +277,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             productivity_factor=config.FIRM_PRODUCTIVITY_FACTOR,
             decision_engine=firm_decision_engine,
             value_orientation=firm_value_orientation,
-            config_module=config_manager,
+            config_dto=firm_config_dto,
             logger=main_logger,
         )
 

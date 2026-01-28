@@ -294,8 +294,6 @@ class SimulationInitializer(SimulationInitializerInterface):
             agent.update_needs(sim.time)
             agent.decision_engine.markets = sim.markets
             agent.decision_engine.goods_data = self.goods_data
-            if isinstance(agent, Firm):
-                agent.config_module = self.config
 
         sim.inequality_tracker = InequalityTracker(config_module=self.config)
         sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)

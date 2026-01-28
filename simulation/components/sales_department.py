@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
+    from simulation.dtos.config_dtos import FirmConfigDTO
     from simulation.markets.order_book_market import OrderBookMarket
 
 from simulation.models import Order
@@ -10,9 +11,9 @@ from simulation.models import Order
 class SalesDepartment:
     """Handles the sales and marketing logic for a firm."""
 
-    def __init__(self, firm: Firm, config_module: any):
+    def __init__(self, firm: Firm, config: FirmConfigDTO):
         self.firm = firm
-        self.config_module = config_module
+        self.config = config
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         """
@@ -63,11 +64,11 @@ class SalesDepartment:
         efficiency = delta_revenue / self.firm.finance.last_marketing_spend
 
         # Decision Rules
-        saturation_level = getattr(self.config_module, "BRAND_AWARENESS_SATURATION", 0.9)
-        high_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_HIGH_THRESHOLD", 1.5)
-        low_eff_threshold = getattr(self.config_module, "MARKETING_EFFICIENCY_LOW_THRESHOLD", 0.8)
-        min_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MIN", 0.01)
-        max_rate = getattr(self.config_module, "MARKETING_BUDGET_RATE_MAX", 0.20)
+        saturation_level = self.config.brand_awareness_saturation
+        high_eff_threshold = self.config.marketing_efficiency_high_threshold
+        low_eff_threshold = self.config.marketing_efficiency_low_threshold
+        min_rate = self.config.marketing_budget_rate_min
+        max_rate = self.config.marketing_budget_rate_max
 
         if self.firm.brand_manager.brand_awareness >= saturation_level:
             pass  # Maintain (Saturation)

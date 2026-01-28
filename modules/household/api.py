@@ -1,9 +1,10 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from simulation.dtos import LeisureEffectDTO, ConsumptionResult, LaborResult, StressScenarioConfig
+    from simulation.dtos.config_dtos import HouseholdConfigDTO
     from simulation.models import Order
     from modules.household.dtos import (
         BioStateDTO, EconStateDTO, SocialStateDTO,
@@ -14,12 +15,12 @@ class IBioComponent(ABC):
     """Interface for stateless Biological Component."""
 
     @abstractmethod
-    def age_one_tick(self, state: BioStateDTO, config: Any, current_tick: int) -> BioStateDTO:
+    def age_one_tick(self, state: BioStateDTO, config: HouseholdConfigDTO, current_tick: int) -> BioStateDTO:
         """Ages the agent and checks for natural death."""
         pass
 
     @abstractmethod
-    def create_offspring_demographics(self, state: BioStateDTO, new_id: int, current_tick: int, config: Any) -> Dict[str, Any]:
+    def create_offspring_demographics(self, state: BioStateDTO, new_id: int, current_tick: int, config: HouseholdConfigDTO) -> Dict[str, Any]:
         """Creates demographic data for a new agent (mitosis)."""
         pass
 
@@ -35,7 +36,7 @@ class IEconComponent(ABC):
         quantity: float,
         current_time: int,
         goods_info: Dict[str, Any],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Tuple[EconStateDTO, Dict[str, float], ConsumptionResult]:
         """
         Consumes an item.
@@ -50,7 +51,7 @@ class IEconComponent(ABC):
         needs: Dict[str, float],
         current_time: int,
         goods_info_map: Dict[str, Any],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Tuple[EconStateDTO, Dict[str, float], Dict[str, float]]:
         """
         Decides what to consume from inventory based on needs and executes consumption.
@@ -63,13 +64,13 @@ class IEconComponent(ABC):
         self,
         state: EconStateDTO,
         hours: float,
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Tuple[EconStateDTO, LaborResult]:
         """Executes work logic (non-financial)."""
         pass
 
     @abstractmethod
-    def update_skills(self, state: EconStateDTO, config: Any) -> EconStateDTO:
+    def update_skills(self, state: EconStateDTO, config: HouseholdConfigDTO) -> EconStateDTO:
         """Updates labor skills based on experience."""
         pass
 
@@ -80,7 +81,7 @@ class IEconComponent(ABC):
         context: EconContextDTO,
         orders: List[Order],
         stress_scenario_config: Optional[StressScenarioConfig] = None,
-        config: Any = None
+        config: Optional[HouseholdConfigDTO] = None
     ) -> Tuple[EconStateDTO, List[Order]]:
         """Refines orders and updates internal economic state (e.g. shadow wages)."""
         pass
@@ -92,7 +93,7 @@ class IEconComponent(ABC):
         market_data: Dict[str, Any],
         goods_info_map: Dict[str, Any],
         stress_scenario_config: Optional[StressScenarioConfig],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> EconStateDTO:
         """Updates inflation expectations and price memory."""
         pass
@@ -102,7 +103,7 @@ class IEconComponent(ABC):
         self,
         parent_state: EconStateDTO,
         parent_skills: Dict[str, Any],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Dict[str, Any]:
         """
         Prepares initial economic state for a clone (inheritance logic).
@@ -119,7 +120,7 @@ class ISocialComponent(ABC):
         state: SocialStateDTO,
         assets: float,
         luxury_inventory: Dict[str, float],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> SocialStateDTO:
         """Calculates social status."""
         pass
@@ -141,7 +142,7 @@ class ISocialComponent(ABC):
         children_count: int,
         leisure_hours: float,
         consumed_items: Dict[str, float],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Tuple[SocialStateDTO, float, LeisureEffectDTO]:
         """
         Applies leisure effects.
@@ -157,7 +158,7 @@ class ISocialComponent(ABC):
         assets: float,
         durable_assets: List[Dict[str, Any]],
         goods_info_map: Dict[str, Any],
-        config: Any,
+        config: HouseholdConfigDTO,
         current_tick: int,
         market_data: Optional[Dict[str, Any]]
     ) -> Tuple[SocialStateDTO, Dict[str, float], List[Dict[str, Any]], bool]:

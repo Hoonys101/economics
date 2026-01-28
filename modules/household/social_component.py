@@ -8,7 +8,7 @@ from simulation.dtos import LeisureEffectDTO
 from simulation.ai.api import Personality
 
 if TYPE_CHECKING:
-    pass
+    from simulation.dtos.config_dtos import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class SocialComponent(ISocialComponent):
         state: SocialStateDTO,
         assets: float,
         luxury_inventory: Dict[str, float],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> SocialStateDTO:
         """
         Calculates social status based on assets and luxury inventory.
@@ -33,8 +33,8 @@ class SocialComponent(ISocialComponent):
 
         luxury_goods_value = sum(luxury_inventory.values()) # Assuming values are quantities?
 
-        asset_weight = getattr(config, "SOCIAL_STATUS_ASSET_WEIGHT", 0.5)
-        luxury_weight = getattr(config, "SOCIAL_STATUS_LUXURY_WEIGHT", 0.5)
+        asset_weight = config.social_status_asset_weight
+        luxury_weight = config.social_status_luxury_weight
 
         new_state.social_status = (
             assets * asset_weight
@@ -69,7 +69,7 @@ class SocialComponent(ISocialComponent):
         children_count: int,
         leisure_hours: float,
         consumed_items: Dict[str, float],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Tuple[SocialStateDTO, float, LeisureEffectDTO]:
         """
         Applies leisure effects.
@@ -95,7 +95,7 @@ class SocialComponent(ISocialComponent):
         new_state.last_leisure_type = leisure_type
 
         # Get coefficients
-        leisure_coeffs = getattr(config, "LEISURE_COEFFS", {})
+        leisure_coeffs = config.leisure_coeffs
         coeffs = leisure_coeffs.get(leisure_type, {})
         utility_per_hour = coeffs.get("utility_per_hour", 0.0)
         xp_gain_per_hour = coeffs.get("xp_gain_per_hour", 0.0)
@@ -126,7 +126,7 @@ class SocialComponent(ISocialComponent):
         assets: float,
         durable_assets: List[Dict[str, Any]],
         goods_info_map: Dict[str, Any],
-        config: Any,
+        config: HouseholdConfigDTO,
         current_tick: int,
         market_data: Optional[Dict[str, Any]]
     ) -> Tuple[SocialStateDTO, Dict[str, float], List[Dict[str, Any]], bool]:
@@ -159,7 +159,7 @@ class SocialComponent(ISocialComponent):
                         new_needs[need_type] = max(0.0, new_needs[need_type] - effective_utility)
 
         # 2. Natural Growth based on Personality
-        base_growth = getattr(config, "BASE_DESIRE_GROWTH", 0.1)
+        base_growth = config.base_desire_growth
         new_needs["survival"] = new_needs.get("survival", 0.0) + base_growth
 
         for k in ["asset", "social", "improvement", "quality"]:
@@ -167,20 +167,20 @@ class SocialComponent(ISocialComponent):
             new_needs[k] = new_needs.get(k, 0.0) + (base_growth * weight)
 
         # Cap
-        max_val = getattr(config, "MAX_DESIRE_VALUE", 100.0)
+        max_val = config.max_desire_value
         for k in new_needs:
             new_needs[k] = min(max_val, new_needs[k])
 
         # 3. Check Death Conditions
-        death_threshold = getattr(config, "SURVIVAL_NEED_DEATH_THRESHOLD", 100.0)
+        death_threshold = config.survival_need_death_threshold
         if new_needs["survival"] >= death_threshold:
             new_state.survival_need_high_turns += 1
         else:
             new_state.survival_need_high_turns = 0
 
         # Assets Death Check
-        assets_death_threshold = getattr(config, "ASSETS_DEATH_THRESHOLD", -100.0)
-        turns_threshold = getattr(config, "HOUSEHOLD_DEATH_TURNS_THRESHOLD", 10)
+        assets_death_threshold = config.assets_death_threshold
+        turns_threshold = config.household_death_turns_threshold
 
         if (assets <= assets_death_threshold or
             new_state.survival_need_high_turns >= turns_threshold):

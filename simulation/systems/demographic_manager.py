@@ -3,6 +3,8 @@ from typing import List, Dict, Any, Optional
 import logging
 import random
 from simulation.core_agents import Household
+from simulation.utils.config_factory import create_config_dto
+from simulation.dtos.config_dtos import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +161,8 @@ class DemographicManager:
                 if not initial_needs_for_newborn:
                     self.logger.warning("NEWBORN_INITIAL_NEEDS not found in config. Newborns may be inactive.")
 
+                hh_config_dto = create_config_dto(self.config_module, HouseholdConfigDTO)
+
                 # WO-124: Instantiate with 0 assets. Gift is transferred via SettlementSystem.
                 child = Household(
                     id=child_id,
@@ -169,7 +173,7 @@ class DemographicManager:
                     decision_engine=new_decision_engine,
                     value_orientation=value_orientation,
                     personality=child_personality,
-                    config_module=self.config_module,
+                    config_dto=hh_config_dto,
                     loan_market=simulation.markets.get("loan_market"),
                     risk_aversion=parent.risk_aversion, # Inherit risk aversion
                     logger=simulation.logger

@@ -13,7 +13,7 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.ai.household_system2 import HousingDecisionInputs
 
 if TYPE_CHECKING:
-    pass
+    from simulation.dtos.config_dtos import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +23,15 @@ class EconComponent(IEconComponent):
     Operates on EconStateDTO.
     """
 
-    def update_wage_dynamics(self, state: EconStateDTO, config: Any, is_employed: bool) -> EconStateDTO:
+    def update_wage_dynamics(self, state: EconStateDTO, config: HouseholdConfigDTO, is_employed: bool) -> EconStateDTO:
         new_state = state.copy()
 
         if is_employed:
-            recovery_rate = getattr(config, "WAGE_RECOVERY_RATE", 0.01)
+            recovery_rate = config.wage_recovery_rate
             new_state.wage_modifier = min(1.0, new_state.wage_modifier * (1.0 + recovery_rate))
         else:
-            decay_rate = getattr(config, "WAGE_DECAY_RATE", 0.02)
-            floor_mod = getattr(config, "RESERVATION_WAGE_FLOOR", 0.3)
+            decay_rate = config.wage_decay_rate
+            floor_mod = config.reservation_wage_floor
             new_state.wage_modifier = max(floor_mod, new_state.wage_modifier * (1.0 - decay_rate))
 
         return new_state
@@ -44,7 +44,7 @@ class EconComponent(IEconComponent):
         quantity: float,
         current_time: int,
         goods_info: Dict[str, Any],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Tuple[EconStateDTO, Dict[str, float], ConsumptionResult]:
         """
         Consumes an item, updating inventory, consumption tracking, and needs.
@@ -76,12 +76,12 @@ class EconComponent(IEconComponent):
 
             # Education XP logic
             if item_id == "education_service":
-                learning_efficiency = getattr(config, "LEARNING_EFFICIENCY", 0.1)
+                learning_efficiency = config.learning_efficiency
                 xp_gain = quantity * learning_efficiency
                 new_state.education_xp += xp_gain
 
             # Consumption Value
-            fallback_price = getattr(config, "DEFAULT_FALLBACK_PRICE", 5.0)
+            fallback_price = config.default_fallback_price
             price = new_state.perceived_avg_prices.get(item_id, fallback_price)
             consumption_value = quantity * price
 
@@ -111,7 +111,7 @@ class EconComponent(IEconComponent):
         needs: Dict[str, float],
         current_time: int,
         goods_info_map: Dict[str, Any],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Tuple[EconStateDTO, Dict[str, float], Dict[str, float]]:
         """
         Decides what to consume from inventory based on needs and executes consumption.
@@ -145,9 +145,9 @@ class EconComponent(IEconComponent):
                 current_need = final_needs.get(need_key, 0.0)
 
                 # Consumption Threshold
-                threshold = getattr(config, "NEED_MEDIUM_THRESHOLD", 50.0)
+                threshold = config.need_medium_threshold
                 if need_key == "survival":
-                    threshold = getattr(config, "SURVIVAL_NEED_CONSUMPTION_THRESHOLD", 20.0)
+                    threshold = config.survival_need_consumption_threshold
 
                 if current_need > threshold:
                     should_consume = True
@@ -179,7 +179,7 @@ class EconComponent(IEconComponent):
 
         return new_state, final_needs, consumed_items
 
-    def work(self, state: EconStateDTO, hours: float, config: Any) -> Tuple[EconStateDTO, LaborResult]:
+    def work(self, state: EconStateDTO, hours: float, config: HouseholdConfigDTO) -> Tuple[EconStateDTO, LaborResult]:
         """
         Executes work logic (non-financial).
         Logic migrated from LaborManager.work.
@@ -194,7 +194,7 @@ class EconComponent(IEconComponent):
 
         return new_state, LaborResult(hours_worked=hours, income_earned=income)
 
-    def update_skills(self, state: EconStateDTO, config: Any) -> EconStateDTO:
+    def update_skills(self, state: EconStateDTO, config: HouseholdConfigDTO) -> EconStateDTO:
         """
         Updates labor skills based on experience.
         Logic migrated from LaborManager.update_skills.
@@ -215,7 +215,7 @@ class EconComponent(IEconComponent):
         context: EconContextDTO,
         orders: List[Order],
         stress_scenario_config: Optional[StressScenarioConfig] = None,
-        config: Any = None
+        config: Optional[HouseholdConfigDTO] = None
     ) -> Tuple[EconStateDTO, List[Order]]:
         """
         Refines orders and updates internal economic state.
@@ -248,7 +248,7 @@ class EconComponent(IEconComponent):
                 if start_price > 0:
                     price_growth = (end_price - start_price) / start_price
 
-            ticks_per_year = getattr(config, "TICKS_PER_YEAR", 100)
+            ticks_per_year = config.ticks_per_year
 
             income = new_state.current_wage * ticks_per_year if new_state.is_employed else new_state.expected_wage * ticks_per_year
 
@@ -282,7 +282,7 @@ class EconComponent(IEconComponent):
                  U_shelter = inputs.market_rent_monthly
                  Cost_own = (P_initial * 0.01) / 12.0
 
-                 cap = getattr(config, "HOUSING_EXPECTATION_CAP", 0.05)
+                 cap = config.housing_expectation_cap
                  g_annual = min(inputs.price_growth_expectation, cap)
                  P_future = P_initial * ((1.0 + g_annual) ** T_years)
 
@@ -326,7 +326,7 @@ class EconComponent(IEconComponent):
             new_state.shadow_reservation_wage = (new_state.shadow_reservation_wage * 0.95) + (target * 0.05)
         else:
             new_state.shadow_reservation_wage *= (1.0 - 0.02)
-            min_wage = getattr(config, "HOUSEHOLD_MIN_WAGE_DEMAND", 6.0)
+            min_wage = config.household_min_wage_demand
             if new_state.shadow_reservation_wage < min_wage:
                 new_state.shadow_reservation_wage = min_wage
 
@@ -361,7 +361,7 @@ class EconComponent(IEconComponent):
 
         # 4. Panic Selling
         if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
-             threshold = getattr(config, "PANIC_SELLING_ASSET_THRESHOLD", 500.0)
+             threshold = config.panic_selling_asset_threshold
              if new_state.assets < threshold:
                  # Sell stocks
                  for firm_id, share in new_state.portfolio.holdings.items():
@@ -398,7 +398,7 @@ class EconComponent(IEconComponent):
         market_data: Dict[str, Any],
         goods_info_map: Dict[str, Any],
         stress_scenario_config: Optional[StressScenarioConfig],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> EconStateDTO:
         """
         Updates inflation expectations and price memory.
@@ -433,7 +433,7 @@ class EconComponent(IEconComponent):
                 old_perceived_price = new_state.perceived_avg_prices.get(
                     item_id, actual_price
                 )
-                update_factor = getattr(config, "PERCEIVED_PRICE_UPDATE_FACTOR", 0.1)
+                update_factor = config.perceived_price_update_factor
                 new_perceived_price = (
                     update_factor * actual_price
                 ) + (
@@ -448,7 +448,7 @@ class EconComponent(IEconComponent):
         self,
         parent_state: EconStateDTO,
         parent_skills: Dict[str, Any],
-        config: Any
+        config: HouseholdConfigDTO
     ) -> Dict[str, Any]:
         """
         Prepares initial economic state for a clone (inheritance logic).

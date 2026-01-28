@@ -8,6 +8,8 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.ai_model import AIEngineRegistry
 from simulation.finance.api import ISettlementSystem
+from simulation.utils.config_factory import create_config_dto
+from simulation.dtos.config_dtos import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,8 @@ class ImmigrationManager:
     def _create_immigrants(self, engine: Any, count: int) -> List[Household]:
         """Generates a batch of new immigrant households."""
         new_households = []
+
+        hh_config_dto = create_config_dto(self.config, HouseholdConfigDTO)
 
         # Determine Value Orientations (same distribution as main.py)
         all_value_orientations = [
@@ -119,15 +123,19 @@ class ImmigrationManager:
                 decision_engine=household_decision_engine,
                 value_orientation=value_orientation,
                 personality=personality,
-                config_module=self.config,
+                config_dto=hh_config_dto,
                 risk_aversion=risk_aversion,
                 logger=logger
             )
 
             # Set specific immigrant traits
             household.education_level = education_level
-            household.gender = random.choice(["M", "F"])
-            household.age = random.randint(20, 35) # Young workforce
+            household.initialize_demographics(
+                age=float(random.randint(20, 35)),
+                gender=random.choice(["M", "F"]),
+                parent_id=None,
+                generation=0
+            )
 
             # Initial Inventory (Survival Kit)
             household.inventory["basic_food"] = 5.0

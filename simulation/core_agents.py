@@ -15,7 +15,8 @@ from simulation.ai.api import (
     Aggressiveness,
 )
 from simulation.core_markets import Market
-from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, HouseholdConfigDTO, ConsumptionResult
+from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, ConsumptionResult
+from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
 
 from simulation.ai.household_ai import HouseholdAI
@@ -54,7 +55,7 @@ class Household(BaseAgent, ILearningAgent):
         decision_engine: BaseDecisionEngine,
         value_orientation: str,
         personality: Personality,
-        config_module: Any,
+        config_dto: HouseholdConfigDTO,
         loan_market: Optional[LoanMarket] = None,
         risk_aversion: float = 1.0,
         logger: Optional[Logger] = None,
@@ -66,10 +67,10 @@ class Household(BaseAgent, ILearningAgent):
         initial_assets_record: Optional[float] = None,  # WO-124: Explicit record of intended assets
         **kwargs,
     ) -> None:
-        self.config_module = config_module
+        self.config = config_dto
 
         # --- Value Orientation (3 Pillars) ---
-        mapping = getattr(config_module, "VALUE_ORIENTATION_MAPPING", {})
+        mapping = self.config.value_orientation_mapping
         prefs = mapping.get(
             value_orientation,
             {"preference_asset": 1.0, "preference_social": 1.0, "preference_growth": 1.0}
@@ -100,13 +101,9 @@ class Household(BaseAgent, ILearningAgent):
         )
 
         # Econ State
-        # WO-095: Robust config access
-        raw_price_len = getattr(self.config_module, "PRICE_MEMORY_LENGTH", 10)
-        price_memory_len = int(raw_price_len) if isinstance(raw_price_len, (int, float)) else 10
-        raw_wage_len = getattr(self.config_module, "WAGE_MEMORY_LENGTH", 30)
-        wage_memory_len = int(raw_wage_len) if isinstance(raw_wage_len, (int, float)) else 30
-        raw_ticks = getattr(config_module, "TICKS_PER_YEAR", 100)
-        ticks_per_year = int(raw_ticks) if isinstance(raw_ticks, (int, float)) else 100
+        price_memory_len = int(self.config.price_memory_length)
+        wage_memory_len = int(self.config.wage_memory_length)
+        ticks_per_year = int(self.config.ticks_per_year)
 
         # Initial Perceived Prices
         perceived_prices = {}
@@ -114,11 +111,11 @@ class Household(BaseAgent, ILearningAgent):
              perceived_prices[g["id"]] = g.get("initial_price", 10.0)
 
         # Adaptation Rate
-        adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_NORMAL", 0.2)
+        adaptation_rate = self.config.adaptation_rate_normal
         if personality == Personality.IMPULSIVE:
-             adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_IMPULSIVE", 0.5)
+             adaptation_rate = self.config.adaptation_rate_impulsive
         elif personality == Personality.CONSERVATIVE:
-             adaptation_rate = getattr(self.config_module, "ADAPTATION_RATE_CONSERVATIVE", 0.1)
+             adaptation_rate = self.config.adaptation_rate_conservative
 
         # WO-054: Aptitude
         raw_aptitude = random.gauss(0.5, 0.15)
@@ -166,24 +163,24 @@ class Household(BaseAgent, ILearningAgent):
 
         # Social State
         # Conformity
-        conformity_ranges = getattr(config_module, "CONFORMITY_RANGES", {})
+        conformity_ranges = self.config.conformity_ranges
         c_min, c_max = conformity_ranges.get(personality.name, conformity_ranges.get(None, (0.3, 0.7)))
         conformity = random.uniform(c_min, c_max)
 
         # Quality Preference
-        mean_assets = getattr(config_module, "INITIAL_HOUSEHOLD_ASSETS_MEAN", 1000.0)
+        mean_assets = self.config.initial_household_assets_mean
         is_wealthy = initial_assets > mean_assets * 1.5
         is_poor = initial_assets < mean_assets * 0.5
 
         if personality == Personality.STATUS_SEEKER or is_wealthy:
-            min_pref = getattr(config_module, "QUALITY_PREF_SNOB_MIN", 0.7)
+            min_pref = self.config.quality_pref_snob_min
             q_pref = random.uniform(min_pref, 1.0)
         elif personality == Personality.MISER or is_poor:
-            max_pref = getattr(config_module, "QUALITY_PREF_MISER_MAX", 0.3)
+            max_pref = self.config.quality_pref_miser_max
             q_pref = random.uniform(0.0, max_pref)
         else:
-            min_snob = getattr(config_module, "QUALITY_PREF_SNOB_MIN", 0.7)
-            max_miser = getattr(config_module, "QUALITY_PREF_MISER_MAX", 0.3)
+            min_snob = self.config.quality_pref_snob_min
+            max_miser = self.config.quality_pref_miser_max
             q_pref = random.uniform(max_miser, min_snob)
 
         self._social_state = SocialStateDTO(
@@ -664,68 +661,20 @@ class Household(BaseAgent, ILearningAgent):
             self._social_state,
             self._econ_state.assets,
             self._econ_state.inventory,
-            self.config_module
+            self.config
         )
 
         # WO-103: Purity Guard - Update Wage Dynamics
         self._econ_state = self.econ_component.update_wage_dynamics(
-            self._econ_state, self.config_module, self._econ_state.is_employed
+            self._econ_state, self.config, self._econ_state.is_employed
         )
 
         # 1. Prepare DTOs
         state_dto = self.create_state_dto()
         
         # WO-103: Purity Guard - Prepare Config DTO
-        config_dto = HouseholdConfigDTO(
-            survival_need_consumption_threshold=self.config_module.SURVIVAL_NEED_CONSUMPTION_THRESHOLD,
-            target_food_buffer_quantity=getattr(self.config_module, "TARGET_FOOD_BUFFER_QUANTITY", 5.0),
-            food_purchase_max_per_tick=self.config_module.FOOD_PURCHASE_MAX_PER_TICK,
-            assets_threshold_for_other_actions=self.config_module.ASSETS_THRESHOLD_FOR_OTHER_ACTIONS,
-            wage_decay_rate=getattr(self.config_module, "WAGE_DECAY_RATE", 0.02),
-            reservation_wage_floor=getattr(self.config_module, "RESERVATION_WAGE_FLOOR", 0.3),
-            survival_critical_turns=getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5),
-            labor_market_min_wage=self.config_module.LABOR_MARKET_MIN_WAGE,
-            household_low_asset_threshold=self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD,
-            household_low_asset_wage=self.config_module.HOUSEHOLD_LOW_ASSET_WAGE,
-            household_default_wage=self.config_module.HOUSEHOLD_DEFAULT_WAGE,
-            
-            # AI Engine requirements
-            market_price_fallback=self.config_module.MARKET_PRICE_FALLBACK,
-            need_factor_base=self.config_module.NEED_FACTOR_BASE,
-            need_factor_scale=self.config_module.NEED_FACTOR_SCALE,
-            valuation_modifier_base=self.config_module.VALUATION_MODIFIER_BASE,
-            valuation_modifier_range=self.config_module.VALUATION_MODIFIER_RANGE,
-            household_max_purchase_quantity=self.config_module.HOUSEHOLD_MAX_PURCHASE_QUANTITY,
-            bulk_buy_need_threshold=self.config_module.BULK_BUY_NEED_THRESHOLD,
-            bulk_buy_agg_threshold=self.config_module.BULK_BUY_AGG_THRESHOLD,
-            bulk_buy_moderate_ratio=self.config_module.BULK_BUY_MODERATE_RATIO,
-            panic_buying_threshold=getattr(self.config_module, "PANIC_BUYING_THRESHOLD", 0.05),
-            hoarding_factor=getattr(self.config_module, "HOARDING_FACTOR", 0.5),
-            deflation_wait_threshold=getattr(self.config_module, "DEFLATION_WAIT_THRESHOLD", -0.05),
-            delay_factor=getattr(self.config_module, "DELAY_FACTOR", 0.5),
-            dsr_critical_threshold=self.config_module.DSR_CRITICAL_THRESHOLD,
-            budget_limit_normal_ratio=self.config_module.BUDGET_LIMIT_NORMAL_RATIO,
-            budget_limit_urgent_need=self.config_module.BUDGET_LIMIT_URGENT_NEED,
-            budget_limit_urgent_ratio=self.config_module.BUDGET_LIMIT_URGENT_RATIO,
-            min_purchase_quantity=self.config_module.MIN_PURCHASE_QUANTITY,
-            job_quit_threshold_base=self.config_module.JOB_QUIT_THRESHOLD_BASE,
-            job_quit_prob_base=self.config_module.JOB_QUIT_PROB_BASE,
-            job_quit_prob_scale=self.config_module.JOB_QUIT_PROB_SCALE,
-            stock_market_enabled=getattr(self.config_module, "STOCK_MARKET_ENABLED", False),
-            household_min_assets_for_investment=self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT,
-            stock_investment_equity_delta_threshold=self.config_module.STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD,
-            stock_investment_diversification_count=self.config_module.STOCK_INVESTMENT_DIVERSIFICATION_COUNT,
-            expected_startup_roi=getattr(self.config_module, "EXPECTED_STARTUP_ROI", 0.15),
-            startup_cost=getattr(self.config_module, "STARTUP_COST", 30000.0),
-            debt_repayment_ratio=self.config_module.DEBT_REPAYMENT_RATIO,
-            debt_repayment_cap=self.config_module.DEBT_REPAYMENT_CAP,
-            debt_liquidity_ratio=self.config_module.DEBT_LIQUIDITY_RATIO,
-            initial_rent_price=self.config_module.INITIAL_RENT_PRICE,
-            default_mortgage_rate=getattr(self.config_module, "DEFAULT_MORTGAGE_RATE", 0.05),
-            enable_vanity_system=getattr(self.config_module, "ENABLE_VANITY_SYSTEM", False),
-            mimicry_factor=getattr(self.config_module, "MIMICRY_FACTOR", 0.5),
-            maintenance_rate_per_tick=self.config_module.MAINTENANCE_RATE_PER_TICK
-        )
+        # self.config is already the DTO.
+        config_dto = self.config
 
         context = DecisionContext(
             state=state_dto,
@@ -742,7 +691,7 @@ class Household(BaseAgent, ILearningAgent):
 
         econ_context = EconContextDTO(markets, market_data, current_time)
         self._econ_state, refined_orders = self.econ_component.orchestrate_economic_decisions(
-            self._econ_state, econ_context, orders, stress_scenario_config, self.config_module
+            self._econ_state, econ_context, orders, stress_scenario_config, self.config
         )
 
         return refined_orders, chosen_tactic_tuple
@@ -771,7 +720,7 @@ class Household(BaseAgent, ILearningAgent):
             self._bio_state.needs,
             current_time,
             self.goods_info_map,
-            self.config_module
+            self.config
         )
         self._bio_state.needs = new_needs
         self.update_needs(current_time, market_data)
@@ -786,7 +735,7 @@ class Household(BaseAgent, ILearningAgent):
             quantity,
             current_time,
             self.goods_info_map.get(item_id, {}),
-            self.config_module
+            self.config
         )
         self._bio_state.needs = new_needs
         return result
@@ -803,7 +752,7 @@ class Household(BaseAgent, ILearningAgent):
         # 1. Work (Econ)
         if self._econ_state.is_employed:
             self._econ_state, labor_res = self.econ_component.work(
-                self._econ_state, 8.0, self.config_module
+                self._econ_state, 8.0, self.config
             )
             # We could log labor_res if needed
 
@@ -814,7 +763,7 @@ class Household(BaseAgent, ILearningAgent):
             self._econ_state.assets,
             self._econ_state.durable_assets,
             self.goods_info_map,
-            self.config_module,
+            self.config,
             current_tick,
             market_data
         )
@@ -829,11 +778,11 @@ class Household(BaseAgent, ILearningAgent):
 
         # 4. Aging (Bio) - Also checks natural death
         self._bio_state = self.bio_component.age_one_tick(
-            self._bio_state, self.config_module, current_tick
+            self._bio_state, self.config, current_tick
         )
 
         # 5. Skill Updates
-        self._econ_state = self.econ_component.update_skills(self._econ_state, self.config_module)
+        self._econ_state = self.econ_component.update_skills(self._econ_state, self.config)
 
     def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffectDTO:
         self._social_state, self._econ_state.labor_skill, result = self.social_component.apply_leisure_effect(
@@ -842,14 +791,14 @@ class Household(BaseAgent, ILearningAgent):
             len(self._bio_state.children_ids),
             leisure_hours,
             consumed_items,
-            self.config_module
+            self.config
         )
         return result
 
     @override
     def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional["StressScenarioConfig"] = None) -> None:
         self._econ_state = self.econ_component.update_perceived_prices(
-            self._econ_state, market_data, self.goods_info_map, stress_scenario_config, self.config_module
+            self._econ_state, market_data, self.goods_info_map, stress_scenario_config, self.config
         )
 
     @override
@@ -859,13 +808,13 @@ class Household(BaseAgent, ILearningAgent):
         """
         # 1. Bio Cloning (Demographics)
         offspring_demo = self.bio_component.create_offspring_demographics(
-            self._bio_state, new_id, current_tick, self.config_module
+            self._bio_state, new_id, current_tick, self.config
         )
 
         # 2. Econ Cloning (Inheritance)
         # We need parent skills.
         econ_inheritance = self.econ_component.prepare_clone_state(
-            self._econ_state, self.skills, self.config_module
+            self._econ_state, self.skills, self.config
         )
 
         # 3. Create Decision Engine
@@ -885,7 +834,7 @@ class Household(BaseAgent, ILearningAgent):
             decision_engine=new_decision_engine,
             value_orientation=self.value_orientation,
             personality=self.personality, # Inherit personality
-            config_module=self.config_module,
+            config_dto=self.config,
             loan_market=self.decision_engine.loan_market,
             risk_aversion=self.risk_aversion,
             logger=None,
@@ -919,7 +868,7 @@ class Household(BaseAgent, ILearningAgent):
         )
         return AIDrivenHouseholdDecisionEngine(
             ai_engine=new_ai_engine,
-            config_module=self.config_module,
+            config_module=self.config,
             logger=self.logger
         )
 
@@ -950,9 +899,9 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.labor_income_this_tick += income
 
     def get_desired_wage(self) -> float:
-        if self.assets < self.config_module.HOUSEHOLD_LOW_ASSET_THRESHOLD:
-            return self.config_module.HOUSEHOLD_LOW_ASSET_WAGE
-        return self.config_module.HOUSEHOLD_DEFAULT_WAGE
+        if self.assets < self.config.household_low_asset_threshold:
+            return self.config.household_low_asset_wage
+        return self.config.household_default_wage
 
     def initialize_demographics(
         self,

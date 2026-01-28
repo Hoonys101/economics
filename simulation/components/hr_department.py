@@ -29,7 +29,7 @@ class HRDepartment:
 
         # WO-Sociologist: Halo Effect (Credential Premium)
         education_level = getattr(employee, 'education_level', 0)
-        halo_modifier = 1.0 + (education_level * getattr(self.firm.config_module, "HALO_EFFECT", 0.0))
+        halo_modifier = 1.0 + (education_level * self.firm.config.halo_effect)
 
         return base_wage * actual_skill * halo_modifier
 
@@ -60,7 +60,7 @@ class HRDepartment:
                     del self.employee_wages[employee.id]
                 continue
 
-            base_wage = self.employee_wages.get(employee.id, self.firm.config_module.LABOR_MARKET_MIN_WAGE)
+            base_wage = self.employee_wages.get(employee.id, self.firm.config.labor_market_min_wage)
             wage = self.calculate_wage(employee, base_wage)
 
             # Affordability Check (Optimistic)
@@ -116,7 +116,7 @@ class HRDepartment:
         """
         from simulation.models import Transaction
 
-        severance_weeks = getattr(self.firm.config_module, "SEVERANCE_PAY_WEEKS", 4)
+        severance_weeks = self.firm.config.severance_pay_weeks
         severance_pay = wage * severance_weeks
 
         if self.firm.assets >= severance_pay:

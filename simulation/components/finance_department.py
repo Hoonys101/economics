@@ -7,6 +7,7 @@ from modules.finance.api import InsufficientFundsError
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
+    from simulation.dtos.config_dtos import FirmConfigDTO
     from simulation.core_agents import Household
     from simulation.agents.government import Government
 
@@ -17,9 +18,9 @@ class FinanceDepartment:
     Manages assets, maintenance fees, corporate taxes, dividend distribution, and tracks financial metrics.
     Centralized Asset Management (WO-103 Phase 1).
     """
-    def __init__(self, firm: Firm, config_module: Any, initial_capital: float = 0.0):
+    def __init__(self, firm: Firm, config: FirmConfigDTO, initial_capital: float = 0.0):
         self.firm = firm
-        self.config_module = config_module
+        self.config = config
 
         # Centralized Assets (WO-103 Phase 1)
         self._cash: float = initial_capital
@@ -37,7 +38,7 @@ class FinanceDepartment:
         self.expenses_this_tick: float = 0.0
 
         # History
-        self.profit_history: deque[float] = deque(maxlen=self.config_module.PROFIT_HISTORY_TICKS)
+        self.profit_history: deque[float] = deque(maxlen=self.config.profit_history_ticks)
         self.last_revenue: float = 0.0
         self.last_marketing_spend: float = 0.0
 
@@ -73,7 +74,7 @@ class FinanceDepartment:
     def generate_holding_cost_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
         """Generates inventory holding cost transaction."""
         inventory_value = self.get_inventory_value()
-        holding_cost = inventory_value * self.config_module.INVENTORY_HOLDING_COST_RATE
+        holding_cost = inventory_value * self.config.inventory_holding_cost_rate
 
         if holding_cost > 0:
             # We record expense so Profit calc later in tick is correct
@@ -93,7 +94,7 @@ class FinanceDepartment:
 
     def generate_maintenance_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
         """Generates maintenance fee transaction."""
-        fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 50.0)
+        fee = self.config.firm_maintenance_fee
 
         # Optimistic check
         payment = min(self._cash, fee)
@@ -121,7 +122,7 @@ class FinanceDepartment:
         net_profit = self.revenue_this_turn - self.cost_this_turn
 
         if net_profit > 0:
-            tax_rate = getattr(self.config_module, "CORPORATE_TAX_RATE", 0.2)
+            tax_rate = self.config.corporate_tax_rate
             tax_amount = net_profit * tax_rate
 
             # Optimistic check
@@ -173,7 +174,7 @@ class FinanceDepartment:
 
         # 1. Bailout Repayment
         if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
-            repayment_ratio = getattr(self.config_module, "BAILOUT_REPAYMENT_RATIO", 0.5)
+            repayment_ratio = self.config.bailout_repayment_ratio
             repayment = self.current_profit * repayment_ratio
 
             # Optimistic update of debt state (assuming tx succeeds)
@@ -246,7 +247,7 @@ class FinanceDepartment:
         if owner is None:
             return []
 
-        maintenance_fee = getattr(self.config_module, "FIRM_MAINTENANCE_FEE", 0.0)
+        maintenance_fee = self.config.firm_maintenance_fee
 
         # Query HR for wage data
         avg_wage = 0.0
@@ -351,7 +352,7 @@ class FinanceDepartment:
         if len(self.profit_history) > 0:
             avg_profit = sum(self.profit_history) / len(self.profit_history)
 
-        profit_premium = max(0.0, avg_profit) * getattr(self.config_module, "VALUATION_PER_MULTIPLIER", 10.0)
+        profit_premium = max(0.0, avg_profit) * self.config.valuation_per_multiplier
 
         self.firm.valuation = net_assets + profit_premium
         return self.firm.valuation
@@ -362,8 +363,8 @@ class FinanceDepartment:
         for good, qty in self.firm.inventory.items():
              price = self.firm.last_prices.get(good, 0.0)
              if price == 0.0:
-                 if self.config_module and hasattr(self.config_module, 'GOODS'):
-                     price = self.config_module.GOODS.get(good, {}).get('initial_price', 10.0)
+                 if self.config and self.config.goods:
+                     price = self.config.goods.get(good, {}).get('initial_price', 10.0)
                  else:
                      price = 10.0
              total_val += qty * price

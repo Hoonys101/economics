@@ -5,15 +5,16 @@ import math
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
+    from simulation.dtos.config_dtos import FirmConfigDTO
 
 logger = logging.getLogger(__name__)
 
 class ProductionDepartment:
     """Handles the production logic for a firm."""
 
-    def __init__(self, firm: Firm, config_module: any):
+    def __init__(self, firm: Firm, config: FirmConfigDTO):
         self.firm = firm
-        self.config_module = config_module
+        self.config = config
 
     def produce(self, current_time: int, technology_manager: any = None) -> float:
         """
@@ -28,7 +29,7 @@ class ProductionDepartment:
             log_extra = {"tick": current_time, "agent_id": self.firm.id, "tags": ["production"]}
 
             # 1. 감가상각 처리
-            depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
+            depreciation_rate = self.config.capital_depreciation_rate
             self.firm.capital_stock *= (1.0 - depreciation_rate)
 
             # Phase 21: Automation Decay
@@ -40,14 +41,14 @@ class ProductionDepartment:
             total_labor_skill = self.firm.hr.get_total_labor_skill()
 
             # 3. Cobb-Douglas Parameters
-            base_alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
-            automation_reduction = getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5)
+            base_alpha = self.config.labor_alpha
+            automation_reduction = self.config.automation_labor_reduction
 
             # Phase 21: Adjusted Alpha
             # alpha_adjusted = base_alpha * (1 - automation_level * 0.5)
             # If Automation = 1.0, Alpha = 0.7 * 0.5 = 0.35 (Capital dependent)
             alpha_raw = base_alpha * (1.0 - (self.firm.automation_level * automation_reduction))
-            alpha_adjusted = max(getattr(self.config_module, "LABOR_ELASTICITY_MIN", 0.3), alpha_raw)
+            alpha_adjusted = max(self.config.labor_elasticity_min, alpha_raw)
             beta_adjusted = 1.0 - alpha_adjusted
 
             # Effective Labor & Capital
@@ -62,7 +63,7 @@ class ProductionDepartment:
             # Phase 15: Quality Calculation
             avg_skill = self.firm.hr.get_avg_skill()
 
-            item_config = self.config_module.GOODS.get(self.firm.specialization, {})
+            item_config = self.config.goods.get(self.firm.specialization, {})
             quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
             actual_quality = self.firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
 
@@ -73,7 +74,7 @@ class ProductionDepartment:
             actual_produced = 0.0
             if produced_quantity > 0:
                 # WO-030: Input Constraints Logic
-                input_config = self.config_module.GOODS.get(self.firm.specialization, {}).get("inputs", {})
+                input_config = self.config.goods.get(self.firm.specialization, {}).get("inputs", {})
 
                 if input_config:
                     max_by_inputs = float('inf')

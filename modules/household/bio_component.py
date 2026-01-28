@@ -7,7 +7,7 @@ from modules.household.api import IBioComponent
 from modules.household.dtos import BioStateDTO
 
 if TYPE_CHECKING:
-    pass
+    from simulation.dtos.config_dtos import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +17,14 @@ class BioComponent(IBioComponent):
     Operates on BioStateDTO.
     """
 
-    def age_one_tick(self, state: BioStateDTO, config: Any, current_tick: int) -> BioStateDTO:
+    def age_one_tick(self, state: BioStateDTO, config: HouseholdConfigDTO, current_tick: int) -> BioStateDTO:
         """
         Ages the agent and checks for natural death.
         Returns a new (or modified copy) BioStateDTO.
         """
         new_state = state.copy()
 
-        ticks_per_year = getattr(config, "TICKS_PER_YEAR", 100)
-        # Assuming config might be an object or module
+        ticks_per_year = config.ticks_per_year
 
         new_state.age += 1.0 / ticks_per_year
 
@@ -51,7 +50,7 @@ class BioComponent(IBioComponent):
 
         return new_state
 
-    def create_offspring_demographics(self, state: BioStateDTO, new_id: int, current_tick: int, config: Any) -> Dict[str, Any]:
+    def create_offspring_demographics(self, state: BioStateDTO, new_id: int, current_tick: int, config: HouseholdConfigDTO) -> Dict[str, Any]:
         """
         Creates demographic data for a new agent (mitosis).
         Logic migrated from DemographicsComponent.

@@ -1,13 +1,17 @@
-from typing import Dict, Any, Optional
+from __future__ import annotations
+from typing import Dict, Any, Optional, TYPE_CHECKING
 import math
 import logging
+
+if TYPE_CHECKING:
+    from simulation.dtos.config_dtos import FirmConfigDTO
 
 class BrandManager:
     """
     Manages a firm's intangible assets: Adstock, Brand Awareness, and Perceived Quality.
     Based on Phase 6 Spec.
     """
-    def __init__(self, firm_id: int, config: Any, logger: Optional[logging.Logger] = None):
+    def __init__(self, firm_id: int, config: FirmConfigDTO, logger: Optional[logging.Logger] = None):
         self.firm_id = firm_id
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
@@ -22,8 +26,8 @@ class BrandManager:
         """
         # 1. Adstock Update
         # Decay old adstock, add new spend (converted to adstock units)
-        decay_rate = getattr(self.config, "MARKETING_DECAY_RATE", 0.8)
-        efficiency = getattr(self.config, "MARKETING_EFFICIENCY", 0.01)
+        decay_rate = self.config.marketing_decay_rate
+        efficiency = self.config.marketing_efficiency
         
         # Adstock = (Previous * Decay) + (Spend * Efficiency)
         self.adstock = (self.adstock * decay_rate) + (marketing_spend * efficiency)
@@ -35,7 +39,7 @@ class BrandManager:
 
         # 3. Perceived Quality Update (EMA)
         # Q_perc_t = (Q_actual * alpha) + (Q_perc_t-1 * (1-alpha))
-        alpha = getattr(self.config, "PERCEIVED_QUALITY_ALPHA", 0.2)
+        alpha = self.config.perceived_quality_alpha
         
         # Ensure actual_quality is float
         if actual_quality is None:

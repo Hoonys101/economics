@@ -13,15 +13,19 @@ class TestFirmBookValue:
 
     @pytest.fixture
     def mock_config(self):
-        config = Mock()
-        config.FIRM_MIN_PRODUCTION_TARGET = 10.0
-        config.IPO_INITIAL_SHARES = 100.0
-        config.PROFIT_HISTORY_TICKS = 10
-        config.INITIAL_FIRM_LIQUIDITY_NEED = 100.0
-        config.LABOR_ALPHA = 0.7
-        config.CAPITAL_DEPRECIATION_RATE = 0.05
-        config.GOODS = {"test": {}}
-        return config
+        from simulation.dtos.config_dtos import FirmConfigDTO
+        import config
+        from simulation.utils.config_factory import create_config_dto
+
+        dto = create_config_dto(config, FirmConfigDTO)
+        dto.firm_min_production_target = 10.0
+        dto.ipo_initial_shares = 100.0
+        dto.profit_history_ticks = 10
+        dto.initial_firm_liquidity_need = 100.0
+        dto.labor_alpha = 0.7
+        dto.capital_depreciation_rate = 0.05
+        dto.goods = {"test": {"quality_sensitivity": 0.5}}
+        return dto
 
     @pytest.fixture
     def firm(self, mock_decision_engine, mock_config):
@@ -33,7 +37,7 @@ class TestFirmBookValue:
             productivity_factor=1.0,
             decision_engine=mock_decision_engine,
             value_orientation="PROFIT",
-            config_module=mock_config
+            config_dto=mock_config
         )
 
     def test_book_value_no_liabilities(self, firm):
@@ -86,13 +90,17 @@ class TestFirmBookValue:
 class TestProductionDepartment:
     @pytest.fixture
     def mock_config(self):
-        config = Mock()
-        config.LABOR_ALPHA = 0.7
-        config.AUTOMATION_LABOR_REDUCTION = 0.5
-        config.LABOR_ELASTICITY_MIN = 0.3
-        config.CAPITAL_DEPRECIATION_RATE = 0.05
-        config.GOODS = {"test": {"quality_sensitivity": 0.5}}
-        return config
+        from simulation.dtos.config_dtos import FirmConfigDTO
+        import config
+        from simulation.utils.config_factory import create_config_dto
+
+        dto = create_config_dto(config, FirmConfigDTO)
+        dto.labor_alpha = 0.7
+        dto.automation_labor_reduction = 0.5
+        dto.labor_elasticity_min = 0.3
+        dto.capital_depreciation_rate = 0.05
+        dto.goods = {"test": {"quality_sensitivity": 0.5}}
+        return dto
 
     @pytest.fixture
     def firm(self, mock_config):
@@ -121,7 +129,7 @@ class TestProductionDepartment:
 
         # Replicate the quality calculation to get the expected value
         avg_skill = firm.hr.get_avg_skill.return_value
-        quality_sensitivity = mock_config.GOODS["test"]["quality_sensitivity"]
+        quality_sensitivity = mock_config.goods["test"]["quality_sensitivity"]
         expected_quality = firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
 
         firm.add_inventory.assert_called_once_with("test", produced_quantity, expected_quality)
@@ -129,13 +137,17 @@ class TestProductionDepartment:
 class TestSalesDepartment:
     @pytest.fixture
     def mock_config(self):
-        config = Mock()
-        config.BRAND_AWARENESS_SATURATION = 0.9
-        config.MARKETING_EFFICIENCY_HIGH_THRESHOLD = 1.5
-        config.MARKETING_EFFICIENCY_LOW_THRESHOLD = 0.8
-        config.MARKETING_BUDGET_RATE_MIN = 0.01
-        config.MARKETING_BUDGET_RATE_MAX = 0.20
-        return config
+        from simulation.dtos.config_dtos import FirmConfigDTO
+        import config
+        from simulation.utils.config_factory import create_config_dto
+
+        dto = create_config_dto(config, FirmConfigDTO)
+        dto.brand_awareness_saturation = 0.9
+        dto.marketing_efficiency_high_threshold = 1.5
+        dto.marketing_efficiency_low_threshold = 0.8
+        dto.marketing_budget_rate_min = 0.01
+        dto.marketing_budget_rate_max = 0.20
+        return dto
 
     @pytest.fixture
     def firm(self, mock_config):

@@ -19,6 +19,8 @@ from simulation.decisions.action_proposal import ActionProposalEngine
 from simulation.ai.state_builder import StateBuilder
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.ai.household_ai import HouseholdAI
+from simulation.utils.config_factory import create_config_dto
+from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.ai.enums import Tactic
 
 @pytest.fixture
@@ -67,6 +69,7 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         ai_engine=household_ai_instance, config_module=config
     )
 
+    hh_config = create_config_dto(config, HouseholdConfigDTO)
     talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
     household = Household(
         id=2,
@@ -77,7 +80,7 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         value_orientation=value_orientation,
         decision_engine=household_decision_engine,
         personality=Personality.MISER,
-        config_module=config,
+        config_dto=hh_config,
     )
 
     market_data = {
@@ -118,6 +121,7 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         ai_engine=household_ai_instance, config_module=config
     )
 
+    hh_config = create_config_dto(config, HouseholdConfigDTO)
     talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
     household = Household(
         id=3,
@@ -128,7 +132,7 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         value_orientation=value_orientation,
         decision_engine=household_decision_engine,
         personality=Personality.STATUS_SEEKER,
-        config_module=config,
+        config_dto=hh_config,
     )
 
     market_data = {

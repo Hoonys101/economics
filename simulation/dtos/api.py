@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.household.dtos import HouseholdStateDTO
+    from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 
 @dataclass
 class TransactionData:
@@ -115,13 +116,15 @@ class MarketHistoryDTO(TypedDict, total=False):
     worst_ask: float
     worst_bid: float
 
-class OrderDTO(TypedDict):
+@dataclass
+class OrderDTO:
     agent_id: int
     item_id: str
     quantity: float
     price: float
 
-class MarketSnapshotDTO(TypedDict):
+@dataclass
+class MarketSnapshotDTO:
     """A pure-data snapshot of the state of all markets at a point in time."""
     prices: Dict[str, float]
     volumes: Dict[str, float]
@@ -135,88 +138,6 @@ class GovernmentPolicyDTO:
     sales_tax_rate: float
     corporate_tax_rate: float
     base_interest_rate: float
-
-@dataclass
-class HouseholdConfigDTO:
-    """Static configuration values relevant to household decisions."""
-    survival_need_consumption_threshold: float
-    target_food_buffer_quantity: float
-    food_purchase_max_per_tick: float
-    assets_threshold_for_other_actions: float
-    wage_decay_rate: float
-    reservation_wage_floor: float
-    survival_critical_turns: float
-    labor_market_min_wage: float
-    # New from Household.make_decision refactoring
-    household_low_asset_threshold: float
-    household_low_asset_wage: float
-    household_default_wage: float
-    
-    # AI Engine requirements
-    market_price_fallback: float
-    need_factor_base: float
-    need_factor_scale: float
-    valuation_modifier_base: float
-    valuation_modifier_range: float
-    household_max_purchase_quantity: float
-    bulk_buy_need_threshold: float
-    bulk_buy_agg_threshold: float
-    bulk_buy_moderate_ratio: float
-    panic_buying_threshold: float
-    hoarding_factor: float
-    deflation_wait_threshold: float
-    delay_factor: float
-    dsr_critical_threshold: float
-    budget_limit_normal_ratio: float
-    budget_limit_urgent_need: float
-    budget_limit_urgent_ratio: float
-    min_purchase_quantity: float
-    job_quit_threshold_base: float
-    job_quit_prob_base: float
-    job_quit_prob_scale: float
-    stock_market_enabled: bool
-    household_min_assets_for_investment: float
-    stock_investment_equity_delta_threshold: float
-    stock_investment_diversification_count: int
-    expected_startup_roi: float
-    startup_cost: float
-    debt_repayment_ratio: float
-    debt_repayment_cap: float
-    debt_liquidity_ratio: float
-    # Added for parity
-    initial_rent_price: float
-    # Added for AI Engine Purity
-    default_mortgage_rate: float
-    # Housing Manager
-    enable_vanity_system: bool
-    mimicry_factor: float
-    maintenance_rate_per_tick: float
-
-@dataclass
-class FirmConfigDTO:
-    """Static configuration values relevant to firm decisions."""
-    firm_min_production_target: float
-    firm_max_production_target: float
-    startup_cost: float
-    seo_trigger_ratio: float
-    seo_max_sell_ratio: float
-    automation_cost_per_pct: float
-    firm_safety_margin: float
-    automation_tax_rate: float
-    altman_z_score_threshold: float
-    dividend_suspension_loss_ticks: int
-    dividend_rate_min: float
-    dividend_rate_max: float
-    labor_alpha: float
-    automation_labor_reduction: float
-    severance_pay_weeks: float
-    labor_market_min_wage: float
-    overstock_threshold: float
-    understock_threshold: float
-    production_adjustment_factor: float
-    max_sell_quantity: float
-    invisible_hand_sensitivity: float
-    capital_to_output_ratio: float
 
 @dataclass
 class DecisionContext:

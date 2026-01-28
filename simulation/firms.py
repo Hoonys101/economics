@@ -11,7 +11,8 @@ from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext, FirmConfigDTO
+from simulation.dtos import DecisionContext
+from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 
@@ -46,7 +47,7 @@ class Firm(BaseAgent, ILearningAgent):
         productivity_factor: float,
         decision_engine: BaseDecisionEngine,
         value_orientation: str,
-        config_module: Any,
+        config_dto: FirmConfigDTO,
         initial_inventory: Optional[Dict[str, float]] = None,
         loan_market: Optional[LoanMarket] = None,
         logger: Optional[logging.Logger] = None,
@@ -69,7 +70,7 @@ class Firm(BaseAgent, ILearningAgent):
             logger=logger,
         )
         self.settlement_system: Optional["ISettlementSystem"] = None
-        self.config_module = config_module  # Store config_module
+        self.config = config_dto
         if initial_inventory is not None:
             self.inventory.update(initial_inventory)
         self.specialization = specialization
@@ -94,25 +95,25 @@ class Firm(BaseAgent, ILearningAgent):
         self.hr = HRDepartment(self)
         # WO-103 Phase 1: Initialize Finance with buffered assets
         # Fix: Use initial_capital passed to constructor, or self._assets from BaseAgent
-        self.finance = FinanceDepartment(self, config_module, initial_capital=initial_capital)
+        self.finance = FinanceDepartment(self, self.config, initial_capital=initial_capital)
 
-        self.production = ProductionDepartment(self, config_module)
-        self.sales = SalesDepartment(self, config_module)
+        self.production = ProductionDepartment(self, self.config)
+        self.sales = SalesDepartment(self, self.config)
 
         # Set bankruptcy threshold based on visionary status
-        base_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD", 5)
+        base_threshold = self.config.bankruptcy_consecutive_loss_threshold
         if self.is_visionary:
             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold * 2
         else:
              self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
 
         self.production_target: float = (
-            config_module.FIRM_MIN_PRODUCTION_TARGET
+            self.config.firm_min_production_target
         )  # Initialize production target
 
         self.current_production: float = 0.0
         self.productivity_factor: float = productivity_factor
-        self.total_shares: float = getattr(config_module, "IPO_INITIAL_SHARES", 1000.0)
+        self.total_shares: float = self.config.ipo_initial_shares
         self.last_prices: Dict[str, float] = {}
         self.hires_last_tick: int = 0 # Handled in HR but maybe exposed here?
         
@@ -122,7 +123,7 @@ class Firm(BaseAgent, ILearningAgent):
         self.consecutive_loss_ticks_for_bankruptcy: int = 0 # Track separately strictly for rule
         
         # --- Phase 6: Brand Engine ---
-        self.brand_manager = BrandManager(self.id, config_module, logger)
+        self.brand_manager = BrandManager(self.id, self.config, logger)
         self.marketing_budget: float = 0.0 # Decision variable
         self.prev_awareness: float = 0.0  # For AI Reward Calculation
         # ROI Optimization
@@ -131,9 +132,7 @@ class Firm(BaseAgent, ILearningAgent):
         # --- 주식 시장 관련 속성 ---
         self.founder_id: Optional[int] = None  # 창업자 가계 ID
         self.is_publicly_traded: bool = True   # 상장 여부
-        self.dividend_rate: float = getattr(
-            config_module, "DIVIDEND_RATE", 0.3
-        )  # 기업별 배당률 (기본값: config)
+        self.dividend_rate: float = self.config.dividend_rate  # 기업별 배당률 (기본값: config)
         self.treasury_shares: float = self.total_shares  # 자사주 보유량
         self.capital_stock: float = 100.0   # 실물 자본재 (초기값: 100)
 
@@ -263,12 +262,12 @@ class Firm(BaseAgent, ILearningAgent):
         new_firm = Firm(
             id=new_id,
             initial_capital=initial_assets_from_parent,  # 현재 자산을 초기 자본으로 설정
-            initial_liquidity_need=self.config_module.INITIAL_FIRM_LIQUIDITY_NEED,  # 초기 유동성 필요는 설정값으로 리셋
+            initial_liquidity_need=self.config.initial_firm_liquidity_need,  # 초기 유동성 필요는 설정값으로 리셋
             specialization=self.specialization,
             productivity_factor=self.productivity_factor,
             decision_engine=cloned_decision_engine,
             value_orientation=self.value_orientation,
-            config_module=self.config_module,
+            config_dto=self.config,
             initial_inventory=copy.deepcopy(self.inventory),
             loan_market=self.decision_engine.loan_market,  # loan_market은 공유
             logger=self.logger,
@@ -339,30 +338,9 @@ class Firm(BaseAgent, ILearningAgent):
                 "is_active_before": self.is_active,
             },
         )
-        config_dto = FirmConfigDTO(
-            firm_min_production_target=self.config_module.FIRM_MIN_PRODUCTION_TARGET,
-            firm_max_production_target=getattr(self.config_module, "FIRM_MAX_PRODUCTION_TARGET", 500.0),
-            startup_cost=getattr(self.config_module, "STARTUP_COST", 30000.0),
-            seo_trigger_ratio=getattr(self.config_module, "SEO_TRIGGER_RATIO", 0.5),
-            seo_max_sell_ratio=getattr(self.config_module, "SEO_MAX_SELL_RATIO", 0.10),
-            automation_cost_per_pct=getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0),
-            firm_safety_margin=getattr(self.config_module, "FIRM_SAFETY_MARGIN", 2000.0),
-            automation_tax_rate=getattr(self.config_module, "AUTOMATION_TAX_RATE", 0.05),
-            altman_z_score_threshold=getattr(self.config_module, "ALTMAN_Z_SCORE_THRESHOLD", 1.81),
-            dividend_suspension_loss_ticks=getattr(self.config_module, "DIVIDEND_SUSPENSION_LOSS_TICKS", 3),
-            dividend_rate_min=getattr(self.config_module, "DIVIDEND_RATE_MIN", 0.1),
-            dividend_rate_max=getattr(self.config_module, "DIVIDEND_RATE_MAX", 0.5),
-            labor_alpha=getattr(self.config_module, "LABOR_ALPHA", 0.7),
-            automation_labor_reduction=getattr(self.config_module, "AUTOMATION_LABOR_REDUCTION", 0.5),
-            severance_pay_weeks=getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4),
-            labor_market_min_wage=self.config_module.LABOR_MARKET_MIN_WAGE,
-            overstock_threshold=getattr(self.config_module, "OVERSTOCK_THRESHOLD", 1.2),
-            understock_threshold=getattr(self.config_module, "UNDERSTOCK_THRESHOLD", 0.8),
-            production_adjustment_factor=getattr(self.config_module, "PRODUCTION_ADJUSTMENT_FACTOR", 0.1),
-            max_sell_quantity=self.config_module.MAX_SELL_QUANTITY,
-            invisible_hand_sensitivity=getattr(self.config_module, "INVISIBLE_HAND_SENSITIVITY", 0.1),
-            capital_to_output_ratio=getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
-        )
+
+        # Config DTO is already available
+        config_dto = self.config
         state_dto = self.get_state_dto()
 
         context = DecisionContext(
@@ -410,7 +388,7 @@ class Firm(BaseAgent, ILearningAgent):
         elif order.order_type == "INVEST_AUTOMATION":
             spend = order.quantity
             if self.finance.invest_in_automation(spend, government):
-                cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
+                cost_per_pct = self.config.automation_cost_per_pct
                 if cost_per_pct > 0:
                     gained_a = (spend / cost_per_pct) / 100.0
                     self.production.set_automation_level(self.automation_level + gained_a)
@@ -430,7 +408,7 @@ class Firm(BaseAgent, ILearningAgent):
         elif order.order_type == "INVEST_CAPEX":
             budget = order.quantity
             if self.finance.invest_in_capex(budget, government):
-                efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
+                efficiency = 1.0 / self.config.capital_to_output_ratio
                 added_capital = budget * efficiency
                 self.production.add_capital(added_capital)
                 self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {budget:.1f} in CAPEX.")
@@ -503,7 +481,7 @@ class Firm(BaseAgent, ILearningAgent):
 
         # 3. Calculate Candidate Price
         # Sensitivity: Default 0.1 if not configured
-        sensitivity = getattr(self.config_module, "INVISIBLE_HAND_SENSITIVITY", 0.1)
+        sensitivity = self.config.invisible_hand_sensitivity
 
         # Current Price: Use firm's last price or market avg fallback
         current_price = self.last_prices.get(self.specialization, 10.0)

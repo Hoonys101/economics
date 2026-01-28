@@ -12,6 +12,8 @@ from simulation.decisions.ai_driven_household_engine import (
 )
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 import config
+from simulation.utils.config_factory import create_config_dto
+from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 
 # 프로젝트 루트 디렉토리를 sys.path에 추가
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -85,6 +87,7 @@ def test_household_clone():
     decision_engine = MockHouseholdDecisionEngine()
     mock_logger = Mock()
 
+    hh_config = create_config_dto(config, HouseholdConfigDTO)
     household = Household(
         id=1,
         talent=talent,
@@ -95,7 +98,7 @@ def test_household_clone():
         value_orientation=Mock(),
         logger=mock_logger,
         personality=Personality.MISER,
-        config_module=config,
+        config_dto=hh_config,
     )
 
     clone = household.clone(2, 50.0, 1)
@@ -118,9 +121,9 @@ def test_firm_inheritance_and_init():
     productivity_factor = 1.0
     decision_engine = MockFirmDecisionEngine()
     mock_logger = Mock()
-    mock_config = Mock(spec=config)
-    mock_config.PROFIT_HISTORY_TICKS = 10
-    mock_config.FIRM_MIN_PRODUCTION_TARGET = 10.0
+    firm_config = create_config_dto(config, FirmConfigDTO)
+    firm_config.profit_history_ticks = 10
+    firm_config.firm_min_production_target = 10.0
 
     firm = Firm(
         id=101,
@@ -131,7 +134,7 @@ def test_firm_inheritance_and_init():
         decision_engine=decision_engine,
         value_orientation=Mock(),
         logger=mock_logger,
-        config_module=mock_config,
+        config_dto=firm_config,
     )
 
     assert isinstance(firm, BaseAgent)
