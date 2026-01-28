@@ -62,35 +62,55 @@ class CommerceSystem(ICommerceSystem):
             }
 
             # 2b. Fast Purchase (Emergency Buy) -> Generate Transaction
+            # WO-053: Disable Emergency Buy for Industrial Revolution to force market clearing
+            is_phase23 = scenario_config and scenario_config.scenario_name == 'phase23_industrial_rev' and scenario_config.is_active
+
             if i < len(buy_list):
                 b_amt = buy_list[i]
                 if b_amt > 0:
-                    cost = b_amt * food_price
-                    # Optimistic check (actual balance check in TransactionProcessor)
-                    if household.assets >= cost:
-                        planned_consumptions[household.id]["buy_amount"] = b_amt
+                    if is_phase23:
+                        # WO-053: Force market interaction via OrderBook
+                        ref_price = market_data.get("basic_food_current_sell_price", 5.0)
+                        # Bid at reference price to ensure survival and volume, relying on Glut to drive price down
+                        bid_price = ref_price
 
-                        # Use Government as Seller for Emergency Buy (Import/Reserve)
-                        government = context.get("government")
-                        seller_id = government.id if government else 999999
-
-                        # Generate Emergency Buy Transaction
                         tx = Transaction(
                             buyer_id=household.id,
-                            seller_id=seller_id,
+                            seller_id=999999, # Placeholder
                             item_id="basic_food",
                             quantity=b_amt,
-                            price=food_price, # Unit Price
-                            market_id="system",
-                            transaction_type="emergency_buy",
+                            price=bid_price,
+                            market_id="basic_food",
+                            transaction_type="PHASE23_MARKET_ORDER",
                             time=current_time
                         )
                         transactions.append(tx)
+                        planned_consumptions[household.id]["buy_amount"] = b_amt
 
-                        logger.debug(
-                            f"VECTOR_BUY_PLAN | Household {household.id} planning to buy {b_amt:.1f} food (Fast Track)",
-                            extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
-                        )
+                    else:
+                        # Legacy Emergency Buy
+                        cost = b_amt * food_price
+                        if household.assets >= cost:
+                            planned_consumptions[household.id]["buy_amount"] = b_amt
+                            government = context.get("government")
+                            seller_id = government.id if government else 999999
+
+                            tx = Transaction(
+                                buyer_id=household.id,
+                                seller_id=seller_id,
+                                item_id="basic_food",
+                                quantity=b_amt,
+                                price=food_price,
+                                market_id="system",
+                                transaction_type="emergency_buy",
+                                time=current_time
+                            )
+                            transactions.append(tx)
+
+                            logger.debug(
+                                f"VECTOR_BUY_PLAN | Household {household.id} planning to buy {b_amt:.1f} food (Fast Track)",
+                                extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
+                            )
 
         return planned_consumptions, transactions
 

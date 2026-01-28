@@ -1,10 +1,22 @@
 {
-  "scenario_name": "phase23_industrial_rev",
-  "start_tick": 5,
+  "SCENARIO_ID": "PHASE_23_INDUSTRIAL_REV",
+  "DESCRIPTION": "The Great Expansion: Fertilizer & Population Boom",
   "is_active": true,
+  "start_tick": 50,
   "parameters": {
-    "food_tfp_multiplier": 3.0,
-    "base_interest_rate_multiplier": 0.5,
-    "innovation_weight": 2.0
+    "TFP_MULTIPLIER": 3.0,
+    "TECH_FERTILIZER_UNLOCK_TICK": 50,
+    "TECH_DIFFUSION_RATE": 0.1,
+    "FOOD_SECTOR_CONFIG": {
+       "base_productivity": 10,
+       "technology_bonus": 2.0
+    },
+    "MARKET_CONFIG": {
+       "PRICE_VOLATILITY_LIMIT": 0.5
+    },
+    "LIMITS": {
+       "MAX_AGENTS": 2000,
+       "MAX_TICK_LATENCY_SEC": 1.0
+    }
   }
 }

@@ -32,6 +32,9 @@ class OrderBookMarket(Market):
         self.cached_best_bid: Dict[str, float] = {}
         self.cached_best_ask: Dict[str, float] = {}
         
+        self.last_tick_supply: float = 0.0
+        self.last_tick_demand: float = 0.0
+
         self.logger.info(
             f"OrderBookMarket {self.id} initialized.",
             extra={"tick": 0, "market_id": self.id, "tags": ["init", "market"]},
@@ -40,6 +43,10 @@ class OrderBookMarket(Market):
 
     def clear_orders(self) -> None:
         """현재 틱의 모든 주문을 초기화합니다. 초기화 전 Best Bid/Ask를 캐싱합니다."""
+        # WO-053: Capture stats before clearing
+        self.last_tick_supply = self.get_total_supply()
+        self.last_tick_demand = self.get_total_demand()
+
         # Cache best prices for signal persistence
         for item_id in set(list(self.buy_orders.keys()) + list(self.sell_orders.keys())):
             bid = self.get_best_bid(item_id)

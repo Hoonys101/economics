@@ -17,7 +17,7 @@ from simulation.systems.api import (
     EventContext, SocialMobilityContext, SensoryContext,
     CommerceContext, LearningUpdateContext
 )
-from simulation.models import Transaction
+from simulation.models import Transaction, Order
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -406,6 +406,12 @@ class Phase1_Decision(IPhaseStrategy):
                 household_time_allocation[household.id] = leisure_hours
 
                 for order in household_orders:
+                    # WO-053: Force deflationary pressure on basic_food
+                    if order.item_id == "basic_food" and order.order_type == "BUY":
+                         if stress_config and stress_config.scenario_name == "phase23_industrial_rev" and stress_config.is_active:
+                             current_price = market_data.get("basic_food_current_sell_price", 5.0)
+                             order.price = min(order.price, max(0.1, current_price * 0.8))
+
                     if order.order_type == "INVEST" and order.market_id == "admin":
                         if self.world_state.firm_system:
                             self.world_state.firm_system.spawn_firm(state, household)
@@ -446,7 +452,8 @@ class Phase1_Decision(IPhaseStrategy):
             "household_time_allocation": household_time_allocation,
             "market_data": consumption_market_data,
             "config": state.config_module,
-            "time": state.time
+            "time": state.time,
+            "government": state.government
         }
 
         if self.world_state.commerce_system:
@@ -454,7 +461,23 @@ class Phase1_Decision(IPhaseStrategy):
                 commerce_context, self.world_state.stress_scenario_config
             )
             state.planned_consumption = planned_cons
-            state.transactions.extend(commerce_txs)
+
+            for tx in commerce_txs:
+                if tx.transaction_type == "PHASE23_MARKET_ORDER":
+                     # WO-053: Convert special transaction to Order
+                     order = Order(
+                         agent_id=tx.buyer_id,
+                         item_id=tx.item_id,
+                         quantity=tx.quantity,
+                         price=tx.price,
+                         order_type="BUY",
+                         market_id=tx.item_id
+                     )
+                     market = state.markets.get(tx.item_id)
+                     if market:
+                         market.place_order(order, state.time)
+                else:
+                     state.transactions.append(tx)
 
         return state
 

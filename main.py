@@ -78,6 +78,10 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     # Initialize ConfigManager
     config_manager = ConfigManagerImpl(Path("config"), legacy_config=config)
 
+    if overrides:
+        if "SIMULATION_ACTIVE_SCENARIO" in overrides:
+            config_manager.set_value_for_test("simulation.active_scenario", overrides["SIMULATION_ACTIVE_SCENARIO"])
+
     state_builder = StateBuilder()
     action_proposal_engine = ActionProposalEngine(config_module=config_manager)
     ai_trainer = AIEngineRegistry(

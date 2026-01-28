@@ -103,6 +103,46 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 
+        # Phase 28: Initialize Stress Scenario Config
+        from simulation.dtos.scenario import StressScenarioConfig
+        sim.stress_scenario_config = StressScenarioConfig()
+
+        # Load Scenario from JSON if directed by config
+        active_scenario_name = self.config_manager.get("simulation.active_scenario")
+        if active_scenario_name:
+            scenario_path = f"config/scenarios/{active_scenario_name}.json"
+            if os.path.exists(scenario_path):
+                 try:
+                     with open(scenario_path, 'r') as f:
+                         scenario_data = json.load(f)
+
+                     sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
+                     sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", active_scenario_name)
+                     sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
+
+                     params = scenario_data.get("parameters", {})
+                     sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
+                     sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
+                     sim.stress_scenario_config.base_interest_rate_multiplier = params.get("base_interest_rate_multiplier")
+                     sim.stress_scenario_config.corporate_tax_rate_delta = params.get("corporate_tax_rate_delta")
+                     sim.stress_scenario_config.demand_shock_multiplier = params.get("demand_shock_multiplier")
+
+                     # WO-053: Inject generic scenario parameters into config
+                     for key, value in params.items():
+                         # Map specific keys if needed, or just inject
+                         if key == "TFP_MULTIPLIER":
+                             setattr(self.config, "TECH_FERTILIZER_MULTIPLIER", value)
+                             self.logger.info(f"SCENARIO_INJECT | Set TECH_FERTILIZER_MULTIPLIER = {value}")
+                         else:
+                             setattr(self.config, key, value)
+                             self.logger.info(f"SCENARIO_INJECT | Set {key} = {value}")
+
+                     self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
+                 except Exception as e:
+                     self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
+            else:
+                self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
+
         # WO-124: Initialize CentralBank EARLY for Genesis Protocol
         sim.central_bank = CentralBank(
             tracker=sim.tracker,
@@ -324,36 +364,6 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # Phase 29: Crisis Monitor
         sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
-
-        # Phase 28: Initialize Stress Scenario Config
-        from simulation.dtos.scenario import StressScenarioConfig
-        sim.stress_scenario_config = StressScenarioConfig()
-
-        # Load Scenario from JSON if directed by config
-        active_scenario_name = self.config_manager.get("simulation.active_scenario")
-        if active_scenario_name:
-            scenario_path = f"config/scenarios/{active_scenario_name}.json"
-            if os.path.exists(scenario_path):
-                 try:
-                     with open(scenario_path, 'r') as f:
-                         scenario_data = json.load(f)
-
-                     sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
-                     sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", active_scenario_name)
-                     sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
-
-                     params = scenario_data.get("parameters", {})
-                     sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
-                     sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
-                     sim.stress_scenario_config.base_interest_rate_multiplier = params.get("base_interest_rate_multiplier")
-                     sim.stress_scenario_config.corporate_tax_rate_delta = params.get("corporate_tax_rate_delta")
-                     sim.stress_scenario_config.demand_shock_multiplier = params.get("demand_shock_multiplier")
-
-                     self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
-                 except Exception as e:
-                     self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
-            else:
-                self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
 
         sim.household_time_allocation: Dict[int, float] = {}
         sim.inflation_buffer = deque(maxlen=10)
