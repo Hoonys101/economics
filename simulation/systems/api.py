@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.agents.government import Government
     from simulation.config import SimulationConfig
-    from simulation.systems.reflux_system import EconomicRefluxSystem
     from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
     from simulation.metrics.economic_tracker import EconomicIndicatorTracker
     from simulation.dtos import GovernmentStateDTO, LeisureEffectDTO
@@ -57,7 +56,7 @@ class CommerceContext(TypedDict):
     agents: Dict[int, Any] # For O(1) lookup
     breeding_planner: 'VectorizedHouseholdPlanner'
     household_time_allocation: Dict[int, float]
-    reflux_system: 'EconomicRefluxSystem'
+    government: Optional['Government']
     market_data: Dict[str, Any]
     config: Any
     time: int
@@ -134,7 +133,7 @@ class ISensorySystem(Protocol):
 
 class ICommerceSystem(Protocol):
     """틱의 소비 및 여가 부분을 관리하는 시스템의 인터페이스입니다."""
-    def __init__(self, config: Any, reflux_system: 'EconomicRefluxSystem'): ...
+    def __init__(self, config: Any): ...
 
     def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional[StressScenarioConfig] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
         """

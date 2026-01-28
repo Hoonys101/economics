@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from simulation.ai_model import AIEngineRegistry
     from simulation.ai.ai_training_manager import AITrainingManager
     from simulation.systems.ma_manager import MAManager
-    from simulation.systems.reflux_system import EconomicRefluxSystem
     from simulation.systems.demographic_manager import DemographicManager
     from simulation.systems.immigration_manager import ImmigrationManager
     from simulation.systems.inheritance_manager import InheritanceManager
@@ -79,7 +78,6 @@ class WorldState:
         self.personality_tracker: Optional[PersonalityStatisticsTracker] = None
         self.ai_training_manager: Optional[AITrainingManager] = None
         self.ma_manager: Optional[MAManager] = None
-        self.reflux_system: Optional[EconomicRefluxSystem] = None
         self.demographic_manager: Optional[DemographicManager] = None
         self.immigration_manager: Optional[ImmigrationManager] = None
         self.inheritance_manager: Optional[InheritanceManager] = None
@@ -149,11 +147,7 @@ class WorldState:
         if self.bank:
             total += self.bank.assets
 
-        # 4. Reflux System Balance (Undistributed)
-        if self.reflux_system:
-            total += self.reflux_system.balance
-
-        # 5. Government Assets (WO-Fix: Include Government in M2 to prevent leaks)
+        # 4. Government Assets (WO-Fix: Include Government in M2 to prevent leaks)
         if self.government:
             total += self.government.assets
 

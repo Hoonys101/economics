@@ -54,7 +54,6 @@ class ActionProcessor:
                 config_module=self.world_state.config_module,
                 tracker=self.world_state.tracker,
                 logger=self.world_state.logger,
-                reflux_system=self.world_state.reflux_system,
                 ai_training_manager=getattr(self.world_state, "ai_training_manager", None),
                 ai_trainer=getattr(self.world_state, "ai_trainer", None),
                 next_agent_id=self.world_state.next_agent_id,

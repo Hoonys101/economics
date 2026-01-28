@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import List, Any, Optional, TYPE_CHECKING
 from simulation.models import Transaction
 
@@ -11,7 +12,7 @@ class MinistryOfEducation:
     def __init__(self, config_module: Any):
         self.config_module = config_module
 
-    def run_public_education(self, households: List[Any], government: Any, current_tick: int, reflux_system: Any = None, settlement_system: Any = None) -> List[Transaction]:
+    def run_public_education(self, households: List[Any], government: Any, current_tick: int) -> List[Transaction]:
         """
         WO-054: Public Education System Implementation.
         Returns a list of Transactions.
@@ -25,6 +26,12 @@ class MinistryOfEducation:
         if not active_households:
             return []
 
+        # Identify Potential Teachers (Households with Education > 0)
+        teachers = [h for h in active_households if getattr(h, "education_level", 0) > 0]
+        # Fallback if no educated households (Generation 0)
+        if not teachers:
+            teachers = active_households
+
         active_households.sort(key=lambda x: x.assets)
         cutoff_idx = int(len(active_households) * getattr(self.config_module, "SCHOLARSHIP_WEALTH_PERCENTILE", 0.20))
         poor_households = set(h.id for h in active_households[:cutoff_idx])
@@ -37,13 +44,16 @@ class MinistryOfEducation:
             next_level = current_level + 1
             cost = costs.get(next_level, 100000.0)
 
+            # Select Teacher for this student
+            teacher = random.choice(teachers)
+
             if current_level == 0:
                 if edu_budget >= cost:
                     # Sync Financing check in Processor (handled by Bond txs if assets low)
                     # For Education, we just generate the tx.
                     tx = Transaction(
                         buyer_id=government.id,
-                        seller_id=reflux_system.id if reflux_system else 999999,
+                        seller_id=teacher.id,
                         item_id="education_level_1",
                         quantity=1.0,
                         price=cost,
@@ -68,10 +78,10 @@ class MinistryOfEducation:
                     student_share = cost * 0.2
 
                     if edu_budget >= subsidy and agent.assets >= student_share:
-                        # 1. Government Subsidy Tx
+                        # 1. Government Subsidy Tx (Gov -> Teacher)
                         tx_subsidy = Transaction(
                             buyer_id=government.id,
-                            seller_id=reflux_system.id if reflux_system else 999999,
+                            seller_id=teacher.id,
                             item_id=f"education_level_{next_level}_subsidy",
                             quantity=1.0,
                             price=subsidy,
@@ -83,10 +93,10 @@ class MinistryOfEducation:
                                 "target_agent_id": agent.id
                             }
                         )
-                        # 2. Student Share Tx
+                        # 2. Student Share Tx (Student -> Teacher)
                         tx_student = Transaction(
                             buyer_id=agent.id,
-                            seller_id=reflux_system.id if reflux_system else 999999,
+                            seller_id=teacher.id,
                             item_id=f"education_level_{next_level}_tuition",
                             quantity=1.0,
                             price=student_share,

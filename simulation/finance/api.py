@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Optional, Dict, Any
+from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union
 from abc import ABC, abstractmethod
 
 @runtime_checkable
@@ -29,6 +29,20 @@ class IFinancialEntity(Protocol):
         """
         ...
 
+class ITransaction(TypedDict):
+    """
+    Represents a financial transaction result.
+    Compatible with simulation.models.Transaction fields.
+    """
+    buyer_id: int
+    seller_id: int
+    item_id: str
+    quantity: float
+    price: float
+    market_id: str
+    transaction_type: str
+    time: int
+    metadata: Optional[Dict[str, Any]]
 
 class ISettlementSystem(ABC):
     """
@@ -44,8 +58,9 @@ class ISettlementSystem(ABC):
         amount: float,
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
-        credit_context: Optional[Dict[str, Any]] = None
-    ) -> bool:
+        credit_context: Optional[Dict[str, Any]] = None,
+        tick: int = 0
+    ) -> Optional[ITransaction]:
         """
         Atomically transfers an amount from one financial entity to another.
 
@@ -60,8 +75,56 @@ class ISettlementSystem(ABC):
             memo: A description of the transaction.
             debit_context: Optional metadata for the debit side logic.
             credit_context: Optional metadata for the credit side logic.
+            tick: The current simulation tick.
 
         Returns:
-            True if the transfer was successful, False otherwise.
+            Transaction object if successful, None otherwise.
+        """
+        ...
+
+    @abstractmethod
+    def create_and_transfer(
+        self,
+        source_authority: IFinancialEntity,
+        destination: IFinancialEntity,
+        amount: float,
+        reason: str,
+        tick: int
+    ) -> Optional[ITransaction]:
+        """
+        Creates new money (or grants) and transfers it to an agent.
+        Typically used for Government grants or Central Bank injections.
+        """
+        ...
+
+    @abstractmethod
+    def transfer_and_destroy(
+        self,
+        source: IFinancialEntity,
+        sink_authority: IFinancialEntity,
+        amount: float,
+        reason: str,
+        tick: int
+    ) -> Optional[ITransaction]:
+        """
+        Transfers money from an agent to an authority to be destroyed (or sequestered).
+        Typically used for taxes or deflationary shocks.
+        """
+        ...
+
+    @abstractmethod
+    def record_liquidation(
+        self,
+        agent: IFinancialEntity,
+        inventory_value: float,
+        capital_value: float,
+        recovered_cash: float,
+        reason: str,
+        tick: int
+    ) -> None:
+        """
+        Records the outcome of an asset liquidation.
+        The system calculates the net asset destruction (inventory_value + capital_value - recovered_cash)
+        and logs it to the money supply ledger.
         """
         ...
