@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from simulation.ai.firm_system2_planner import FirmSystem2Planner
     from simulation.markets.stock_market import StockMarket
     from simulation.agents.government import Government
-    from simulation.systems.reflux_system import EconomicRefluxSystem
     from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)

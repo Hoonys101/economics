@@ -32,7 +32,7 @@ def trace_tick():
     
     # Bank
     if hasattr(state.bank, "run_tick"):
-         bank_txs = state.bank.run_tick(state.agents, state.time, reflux_system=state.reflux_system)
+         bank_txs = state.bank.run_tick(state.agents, state.time)
          system_transactions.extend(bank_txs)
     report("Post-Bank-Tick")
     
@@ -52,12 +52,12 @@ def trace_tick():
     report("Post-Welfare-Gen")
     
     # Infrastructure
-    infra = state.government.invest_infrastructure(state.time, state.reflux_system)
+    infra = state.government.invest_infrastructure(state.time, state.households)
     if infra: system_transactions.extend(infra)
     report("Post-Infra-Gen")
     
     # Education
-    edu = state.government.run_public_education(state.households, state.config_module, state.time, state.reflux_system)
+    edu = state.government.run_public_education(state.households, state.config_module, state.time)
     if edu: system_transactions.extend(edu)
     report("Post-Edu-Gen")
     
@@ -68,11 +68,16 @@ def trace_tick():
         sim_state = SimulationState(
             time=state.time, households=state.households, firms=state.firms,
             agents=state.agents, markets=state.markets, government=state.government,
-            bank=state.bank, central_bank=state.central_bank, reflux_system=state.reflux_system,
+            bank=state.bank, central_bank=state.central_bank,
             transactions=system_transactions, config_module=state.config_module,
             tracker=state.tracker, logger=state.logger, goods_data=state.goods_data,
             next_agent_id=state.next_agent_id, real_estate_units=state.real_estate_units,
-            settlement_system=state.settlement_system, inactive_agents=state.inactive_agents
+            settlement_system=state.settlement_system, inactive_agents=state.inactive_agents,
+            ai_training_manager=state.ai_training_manager,
+            ai_trainer=state.ai_trainer,
+            stock_market=state.stock_market,
+            stock_tracker=state.stock_tracker,
+            market_data={}
         )
         state.transaction_processor.execute(sim_state)
     report("Post-Execution")
@@ -88,18 +93,20 @@ def trace_tick():
         sim_state = SimulationState(
             time=state.time, households=state.households, firms=state.firms,
             agents=state.agents, markets=state.markets, government=state.government,
-            bank=state.bank, central_bank=state.central_bank, reflux_system=state.reflux_system,
+            bank=state.bank, central_bank=state.central_bank,
             transactions=[], config_module=state.config_module,
             tracker=state.tracker, logger=state.logger, goods_data=state.goods_data,
             next_agent_id=state.next_agent_id, real_estate_units=state.real_estate_units,
-            settlement_system=state.settlement_system, inactive_agents=state.inactive_agents
+            settlement_system=state.settlement_system, inactive_agents=state.inactive_agents,
+            ai_training_manager=state.ai_training_manager,
+            ai_trainer=state.ai_trainer,
+            stock_market=state.stock_market,
+            stock_tracker=state.stock_tracker,
+            market_data={}
         )
         state.lifecycle_manager.execute(sim_state)
     report("Post-Lifecycle")
     
-    # Reflux Distribute
-    state.reflux_system.distribute(state.households)
-    report("Post-Distribute")
 
 if __name__ == "__main__":
     trace_tick()

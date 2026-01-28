@@ -35,10 +35,7 @@ def audit_integrity():
                        for f in sim.firms)
         gov_assets = sim.government.assets
 
-        # WO-106: Include Reflux Balance as it holds captured value before distribution
-        reflux_balance = sim.reflux_system.balance if hasattr(sim, 'reflux_system') else 0.0
-
-        return h_assets + f_assets + gov_assets + reflux_balance
+        return h_assets + f_assets + gov_assets
 
     # Snapshot T0 state for detailed accounting
     # Use config default price if dynamic price is missing
@@ -183,40 +180,6 @@ def audit_integrity():
             logger.error(f"FAILED: Government did not pay enough. Paid: {paid_amount}")
     else:
         logger.warning("No immigrants created (unexpected)")
-
-    # 4. Check Reflux Capture (Liquidation)
-    # ------------------------------------------------------------------
-    logger.info("Checking Reflux System Capture...")
-    # Create a dummy firm to kill or use existing
-    victim = sim.firms[0]
-    victim.inventory['basic_food'] = 10.0
-    victim.capital_stock = 500.0
-    diff = 100.0 - victim.assets
-    if hasattr(victim, '_add_assets'):
-        victim._add_assets(diff)
-    else:
-        victim.assets = 100.0
-
-    # Ensure market exists for basic_food for pricing
-    if 'basic_food' not in sim.markets:
-         sim.markets['basic_food'] = type('MockMarket', (), {'avg_price': 10.0, 'current_price': 10.0})()
-
-    victim.is_active = False # Mark for death
-
-    initial_reflux = sim.reflux_system.balance
-    logger.info(f"Reflux Balance Before: {initial_reflux}")
-
-    # Run lifecycle manager
-    sim.lifecycle_manager._handle_agent_liquidation(sim)
-
-    final_reflux = sim.reflux_system.balance
-    captured = final_reflux - initial_reflux
-    logger.info(f"Reflux Balance After: {final_reflux} (Captured: {captured})")
-
-    if captured > 0:
-        logger.info(f"PASSED: Reflux System captured liquidation value.")
-    else:
-        logger.error("FAILED: Reflux System captured nothing.")
 
 if __name__ == "__main__":
     audit_integrity()

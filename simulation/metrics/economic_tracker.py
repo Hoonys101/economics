@@ -287,9 +287,7 @@ class EconomicIndicatorTracker:
 
         M2 = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
 
-        This calculation INTENTIONALLY EXCLUDES the EconomicRefluxSystem balance,
-        as it represents money in transit not yet realized by economic agents,
-        and also excludes the Central Bank's balance which is used for
+        This calculation excludes the Central Bank's balance which is used for
         system-level integrity checks.
         """
         total = 0.0
@@ -312,7 +310,6 @@ class EconomicIndicatorTracker:
         if world_state.government:
             total += world_state.government.assets
 
-        # NOTE: world_state.reflux_system.balance is INTENTIONALLY EXCLUDED.
         # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.
 
         return total

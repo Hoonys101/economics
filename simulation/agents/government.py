@@ -659,13 +659,6 @@ class Government:
         """
         Delegates public education logic to the Ministry of Education.
         Returns transactions.
-        REMOVED RefluxSystem arg.
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
-        # Removed reflux_system and settlement_system args (MinistryOfEducation shouldn't need settlement_system to CREATE transaction DTOs)
-        # But my previous read showed MinistryOfEducation taking settlement_system?
-        # Let's check.
-        # `def run_public_education(self, households: List[Any], government: Any, current_tick: int, reflux_system: Any = None, settlement_system: Any = None) -> List[Transaction]:`
-        # It was taking them.
-        # I'll update call to remove them.
         return self.ministry_of_education.run_public_education(households, self, current_tick)

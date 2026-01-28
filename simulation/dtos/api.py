@@ -227,6 +227,7 @@ class SimulationState:
     bank: Any        # Bank
     central_bank: Any # CentralBank
     stock_market: Optional[Any] # StockMarket
+    stock_tracker: Optional[Any] # Added for WO-133 Fix
     goods_data: Dict[str, Any]
     market_data: Dict[str, Any] # Added for WO-103
     config_module: Any
