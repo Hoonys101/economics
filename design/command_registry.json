@@ -10,12 +10,6 @@
     "title": "WO-136: Operation Clean Sweep",
     "file": "design/3_work_artifacts/work_orders/WO-136-Clean-Sweep.md"
   },
-  "mission-sacred-hygiene": {
-    "command": "create",
-    "instruction": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test suite into unit/integration/scenarios categories.",
-    "title": "WO-138: Sacred Hygiene",
-    "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
-  },
   "mission-god-file-audit": {
     "worker": "audit",
     "instruction": "Audit the identified God Files (db/repository.py, ai_driven_household_engine.py, corporate_manager.py) against SoC principles. Provide a detailed refactoring plan into specialized modules.",

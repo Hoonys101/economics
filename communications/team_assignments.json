@@ -81,6 +81,10 @@
       "17224919797912930620": {
         "title": "WO-138: Purity Gate Hardening",
         "initial_mission": "Externalize rules from verify_purity.py to pyproject.toml as defined in the spec.\n\n[File Content: de..."
+      },
+      "17696464705028160742": {
+        "title": "WO-138: Sacred Hygiene",
+        "initial_mission": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test sui..."
       }
     },
     "completed_sessions": {
