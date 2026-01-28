@@ -57,6 +57,10 @@
       "11958276689455530290": {
         "title": "WO-135.3: Core Agent/Engine Refactor",
         "initial_mission": "Refactor Household and Firm agents to use ConfigFactory and DecisionContext as per design/work_order..."
+      },
+      "17807327233823685384": {
+        "title": "WO-135.4: Purity Gate v2 Enforcement",
+        "initial_mission": "Finalize the Abstraction Wall by integrating the Purity Gate into the standard workflow. Mandatory: ..."
       }
     },
     "completed_sessions": {

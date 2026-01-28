@@ -4,10 +4,10 @@
     "updated": "2026-01-28",
     "author": "Antigravity"
   },
-  "wo-135-4-final": {
+  "wo-053-reactivation": {
     "command": "create",
-    "instruction": "Finalize the Abstraction Wall by integrating the Purity Gate into the standard workflow. Mandatory: 1) Modify scripts/checkpoint.py to execute 'python scripts/verify_purity.py' as part of the validation step, 2) Expand verify_purity.py to optionally walk through all files in modules/ to ensure no leaky imports, 3) Update PROTOCOL_ENGINEERING.md to document this automated enforcement.",
-    "title": "WO-135.4: Purity Gate v2 Enforcement",
-    "file": "design/work_orders/reboot_plan_remainder.md"
+    "instruction": "Reactivate and verify Phase 23 as per Architect Prime's instructions. 1) Update scripts/verify_phase23.py to be compatible with DTO-based agents (from WO-135). 2) Enforce metrics: Supply/Demand Ratio >= 2.5, Price Crash > 50% within 20 ticks, Pop Boom limit 2,000. 3) Set TECH_FERTILIZER_MULTIPLIER to 3.0 and Price Volatility Limit to 0.5. 4) Run the simulation and generate a success/fail report based on these metrics. Reference: Handover 2026-01-28.",
+    "title": "WO-053: Phase 23 Reactivation (The Great Expansion)",
+    "file": "design/handovers/HANDOVER_2026-01-28.md"
   }
 }
