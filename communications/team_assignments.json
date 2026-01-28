@@ -53,6 +53,10 @@
       "18248760901683562553": {
         "title": "WO-135.2: DTO Schema Alignment",
         "initial_mission": "Define canonical DTO schemas in simulation/api.py as per design/work_orders/reboot_plan_remainder.md..."
+      },
+      "11958276689455530290": {
+        "title": "WO-135.3: Core Agent/Engine Refactor",
+        "initial_mission": "Refactor Household and Firm agents to use ConfigFactory and DecisionContext as per design/work_order..."
       }
     },
     "completed_sessions": {
