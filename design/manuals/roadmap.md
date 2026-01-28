@@ -112,10 +112,15 @@
     - [x] WO-077: Bankruptcy Ledger Linking (TD-106 Solution)
     - [x] WO-078: Fractional Reserve Logic & LTV/DTI Reliability (2026-01-27)
 
-### Phase 28: Structural Stabilization & Verification ⭐ **[NEXT]**
+### Phase 28: Structural Stabilization & Verification ⭐ **[CURRENT]**
 - **Goal**: Clean up technical debt from rapid architectural changes and verify the new economic engine.
 - **Tasks**:
-    - [x] **Operation Sacred Refactoring**: Purge Reflux System & Decompose TickScheduler.
+    - [x] **Operation Sacred Refactoring**: Purge Reflux System & Decompose TickScheduler. ✅ (2026-01-28)
+    - [x] **Operation Abstraction Wall**: DTO-only Agents & Purity Gate. ✅ (2026-01-28)
+    - [ ] **WO-136: Operation Clean Sweep (Tactical Sanitation)**
+        - Replace hardcoded scenarios with generalized strategy flags.
+        - Harden Purity Gate (externalize rules).
+        - Documentation Consolidation (Fix file location chaos).
     - [ ] **WO-122: Test Suite Cleanroom (TD-122)**
         - Reorganize `tests/` into `unit` (fast, mock) vs `integration` (slow, real DB).
         - Remove legacy/duplicate tests.
