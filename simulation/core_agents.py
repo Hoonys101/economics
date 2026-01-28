@@ -655,6 +655,7 @@ class Household(BaseAgent, ILearningAgent):
         stress_scenario_config: Optional["StressScenarioConfig"] = None,
         market_snapshot: Optional[Any] = None,
         government_policy: Optional[Any] = None,
+        agent_registry: Optional[Dict[str, int]] = None,
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
 
         # 0. Update Social Status (Before Decision)
@@ -685,7 +686,8 @@ class Household(BaseAgent, ILearningAgent):
             current_time=current_time,
             stress_scenario_config=stress_scenario_config,
             market_snapshot=market_snapshot,
-            government_policy=government_policy
+            government_policy=government_policy,
+            agent_registry=agent_registry or {}
         )
 
         orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)

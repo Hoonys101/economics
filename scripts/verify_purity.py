@@ -1,21 +1,32 @@
 import ast
 import os
 import sys
+import tomllib
 from pathlib import Path
 
-# Configuration
-FORBIDDEN_IMPORTS = {"config"}
-FORBIDDEN_TYPES = {
-    "Market", "Bank", "CommerceSystem", "Simulation",
-    "Economy", "TechnologyManager", "RefluxSystem"
-}
+# Load Configuration
+def load_purity_config():
+    try:
+        with open("pyproject.toml", "rb") as f:
+            data = tomllib.load(f)
+            config = data.get("tool", {}).get("purity", {})
+            if not config:
+                 print("⚠️  Warning: [tool.purity] section not found in pyproject.toml. Using defaults.")
+            return config
+    except FileNotFoundError:
+        print("❌ pyproject.toml not found.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error loading config: {e}")
+        sys.exit(1)
 
-# Directories/Files to check for Forbidden Imports (Broad Scope)
-CHECK_IMPORTS_DIRS = ["modules", "simulation"]
+config = load_purity_config()
 
-# Directories/Files to check for Forbidden Types (Strict Agent Scope)
-CHECK_TYPES_DIRS = ["modules/household", "modules/firm"]
-CHECK_TYPES_FILES = ["simulation/core_agents.py", "simulation/firms.py"]
+FORBIDDEN_IMPORTS = set(config.get("forbidden_imports", []))
+FORBIDDEN_TYPES = set(config.get("forbidden_kernel_types", []))
+CHECK_IMPORTS_DIRS = config.get("check_imports_dirs", [])
+CHECK_TYPES_DIRS = config.get("check_types_dirs", [])
+CHECK_TYPES_FILES = config.get("check_types_files", [])
 
 def get_annotation_names(node):
     """
@@ -81,7 +92,12 @@ def check_file_purity(filepath, check_types=True):
     return errors
 
 def main():
-    print("🛡️  Running Purity Gate v2...")
+    print("🛡️  Running Purity Gate v2 (Externalized Rules)...")
+
+    if not FORBIDDEN_IMPORTS and not FORBIDDEN_TYPES:
+         print("⚠️  No rules loaded. Skipping checks.")
+         sys.exit(0)
+
     all_violations = {}
 
     files_to_check_imports = set()

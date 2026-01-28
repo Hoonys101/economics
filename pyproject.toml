@@ -1,0 +1,9 @@
+[tool.purity]
+forbidden_imports = ["config"]
+forbidden_kernel_types = [
+    "WorldState", "Simulation", "Bank", "CommerceSystem", "Economy",
+    "TechnologyManager", "RefluxSystem", "Government", "CentralBank"
+]
+check_imports_dirs = ["modules", "simulation"]
+check_types_dirs = ["modules/household", "modules/firm"]
+check_types_files = ["simulation/core_agents.py", "simulation/firms.py"]

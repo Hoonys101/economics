@@ -158,6 +158,17 @@ class WorldState:
 
         return total
 
+    def resolve_agent_id(self, role: str) -> Optional[int]:
+        """
+        Dynamically resolves specific agent IDs by role (e.g. GOVERNMENT, CENTRAL_BANK).
+        Used to eliminate hardcoded ID constants.
+        """
+        if role == "GOVERNMENT":
+            return self.government.id if self.government else None
+        elif role == "CENTRAL_BANK":
+            return self.central_bank.id if self.central_bank else None
+        return None
+
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
         all_agents = []
