@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 import random
+import numpy as np
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional, Set, TYPE_CHECKING
 
@@ -17,7 +18,7 @@ class TechNode:
     name: str
     sector: str  # e.g., "FOOD", "MANUFACTURING"
     multiplier: float  # e.g., 3.0 (+200%)
-    unlock_tick: int
+    cost_threshold: float # WO-136: Cost threshold for probabilistic unlock
     diffusion_rate: float  # Probability of adoption per tick for non-visionaries
     is_unlocked: bool = False
 
@@ -48,7 +49,10 @@ class TechnologyManager:
         # WO-053: Chemical Fertilizer
         # WO-136: Use Strategy DTO if available
         tfp_mult = self.strategy.tfp_multiplier if self.strategy else getattr(self.config, "TECH_FERTILIZER_MULTIPLIER", 3.0)
-        unlock_tick = self.strategy.tech_fertilizer_unlock_tick if self.strategy else getattr(self.config, "TECH_FERTILIZER_UNLOCK_TICK", 50)
+        # WO-136: Replaced unlock_tick with cost_threshold
+        # unlock_tick was 50. Approx R&D per tick per firm is ~2-5. 10 firms -> 20-50 per tick. 50 ticks -> 1000-2500.
+        # We'll set a safe default of 5000.0
+        cost_threshold = 5000.0
         diff_rate = self.strategy.tech_diffusion_rate if self.strategy else getattr(self.config, "TECH_DIFFUSION_RATE", 0.05)
 
         fertilizer = TechNode(
@@ -56,7 +60,7 @@ class TechnologyManager:
             name="Chemical Fertilizer (Haber-Bosch)",
             sector="FOOD",
             multiplier=tfp_mult,
-            unlock_tick=unlock_tick,
+            cost_threshold=cost_threshold,
             diffusion_rate=diff_rate
         )
         self.tech_tree[fertilizer.id] = fertilizer
@@ -70,13 +74,43 @@ class TechnologyManager:
         # WO-054: Update Human Capital Index from parameter
         self.human_capital_index = human_capital_index
 
-        # 1. Unlock Check
-        for tech in self.tech_tree.values():
-            if not tech.is_unlocked and current_tick >= tech.unlock_tick:
-                self._unlock_tech(tech, firms, current_tick)
+        # WO-136: Aggregate R&D by sector
+        current_rd_by_sector: Dict[str, float] = {}
+        for firm in firms:
+            sector = firm["sector"]
+            rd = firm.get("current_rd_investment", 0.0)
+            current_rd_by_sector[sector] = current_rd_by_sector.get(sector, 0.0) + rd
+
+        # 1. Unlock Check (Probabilistic)
+        self._check_probabilistic_unlocks(current_rd_by_sector, firms, current_tick)
 
         # 2. Diffusion Process (S-Curve)
         self._process_diffusion(firms, current_tick)
+
+    def _check_probabilistic_unlocks(self, current_rd_by_sector: Dict[str, float], firms: List[FirmTechInfoDTO], current_tick: int):
+        """
+        WO-136: Probabilistic unlock based on accumulated R&D.
+        P = min(0.1, (Sector_Accumulated_RD / Tech_Cost_Threshold)^2)
+        """
+        for tech in self.tech_tree.values():
+            if tech.is_unlocked:
+                continue
+
+            sector_rd = current_rd_by_sector.get(tech.sector, 0.0)
+            if tech.sector == "ALL":
+                # Sum all sectors if tech is universal
+                sector_rd = sum(current_rd_by_sector.values())
+
+            if sector_rd <= 0:
+                continue
+
+            # Calculate probability
+            ratio = sector_rd / tech.cost_threshold
+            prob = min(0.1, ratio ** 2)
+
+            # Roll dice
+            if random.random() < prob:
+                self._unlock_tech(tech, firms, current_tick)
 
     def _unlock_tech(self, tech: TechNode, firms: List[FirmTechInfoDTO], current_tick: int):
         """Unlock technology and assign to Early Adopters (Visionaries)."""
@@ -117,30 +151,66 @@ class TechnologyManager:
     def _process_diffusion(self, firms: List[FirmTechInfoDTO], current_tick: int):
         """
         Simulate the spread of technology to non-adopters.
+        WO-136: Vectorized implementation for 2,000+ agents.
         """
+        if not firms:
+            return
+
+        # Pre-process firms into arrays for vectorized operations
+        # Note: In a real persistent vector engine, these would be maintained as state.
+        # Here we convert on the fly, which is still faster for large N than looping python objects.
+        firm_ids = np.array([f["id"] for f in firms])
+        sectors = np.array([f["sector"] for f in firms])
+
+        # We need a way to check adoption efficiently.
+        # Construct a boolean mask of who has adopted what.
+        # But adoption_registry is Dict[int, Set[str]].
+        # For each tech, we can build a mask of "already_adopted".
+
         for tech_id in self.active_techs:
             tech = self.tech_tree[tech_id]
             
             # WO-054: Calculate effective rate
             effective_rate = self._get_effective_diffusion_rate(tech.diffusion_rate)
 
-            # Potential Adopters: Firms in relevant sector who haven't adopted yet
-            for firm_dto in firms:
-                # Sector match check (if tech is sector-specific)
-                if firm_dto["sector"] != tech.sector and tech.sector != "ALL":
-                    continue
+            # 1. Sector Mask
+            if tech.sector == "ALL":
+                sector_mask = np.ones(len(firms), dtype=bool)
+            else:
+                sector_mask = (sectors == tech.sector)
 
-                # Check if already adopted
-                if self.has_adopted(firm_dto["id"], tech_id):
-                    continue
-                
-                # Diffusion Chance
-                if random.random() < effective_rate:
-                    self._adopt(firm_dto["id"], tech)
-                    self.logger.info(
-                        f"TECH_DIFFUSION | Firm {firm_dto['id']} adopted {tech.name}. Rate: {effective_rate:.4f} (Base: {tech.diffusion_rate})",
-                        extra={"tick": current_tick, "agent_id": firm_dto['id'], "tech_id": tech.id}
-                    )
+            if not np.any(sector_mask):
+                continue
+
+            # 2. Adoption Mask (True if already adopted)
+            # This part involves dictionary lookups, can be optimized if adoption_registry was a matrix.
+            # For now, we use a list comprehension which is fast enough for <10k agents.
+            already_adopted_mask = np.array([
+                self.has_adopted(fid, tech_id) for fid in firm_ids
+            ], dtype=bool)
+
+            # 3. Candidates: In Sector AND Not Adopted
+            candidate_mask = sector_mask & (~already_adopted_mask)
+
+            candidate_indices = np.where(candidate_mask)[0]
+            if len(candidate_indices) == 0:
+                continue
+
+            # 4. Roll Dice (Vectorized)
+            # Create random numbers for all candidates
+            random_rolls = np.random.rand(len(candidate_indices))
+
+            # 5. Determine Adopters
+            adopter_indices = candidate_indices[random_rolls < effective_rate]
+
+            # 6. Apply Adoption
+            for idx in adopter_indices:
+                firm_id = int(firm_ids[idx]) # Convert numpy int to python int
+                self._adopt(firm_id, tech)
+                self.logger.info(
+                    f"TECH_DIFFUSION | Firm {firm_id} adopted {tech.name}. Rate: {effective_rate:.4f} (Base: {tech.diffusion_rate})",
+                    extra={"tick": current_tick, "agent_id": firm_id, "tech_id": tech.id}
+                )
 
     def _adopt(self, firm_id: int, tech: TechNode):
         """Register adoption."""

@@ -11,6 +11,7 @@ class FirmTechInfoDTO(TypedDict):
     id: int
     sector: str
     is_visionary: bool
+    current_rd_investment: float
 
 class HouseholdEducationDTO(TypedDict):
     """Minimal household data required for human capital calculation."""
