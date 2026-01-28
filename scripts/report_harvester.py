@@ -5,9 +5,9 @@ from typing import List, Set
 
 # Configuration
 BRANCH_PATTERNS = ["refactor-*", "observer-*", "audit-*", "structural-*", "parity-*", "economic-*", "*-action-plan-*", "*-proposal-*", "wo-*"]
-REPORT_DIRS = ["reports/", "design/gemini_output/"]
-LOCAL_STORAGE_DIR = "reports/inbound/"
-LOG_FILE = "design/INBOUND_REPORTS.md"
+REPORT_DIRS = ["design/3_work_artifacts/reports/", "design/_archive/gemini_output/", "reports/"]
+LOCAL_STORAGE_DIR = "design/3_work_artifacts/reports/inbound/"
+LOG_FILE = "design/2_operations/ledgers/INBOUND_REPORTS.md"
 
 def run_command(cmd: List[str]) -> str:
     try:

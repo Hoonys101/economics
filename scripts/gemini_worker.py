@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 # Configuration
 BASE_DIR = Path(__file__).parent.parent
-MANUALS_DIR = BASE_DIR / "design" / "manuals"
+MANUALS_DIR = BASE_DIR / "design" / "2_operations" / "manuals"
 
 class BaseGeminiWorker(ABC):
     """
@@ -167,7 +167,7 @@ class SpecDrafter(BaseGeminiWorker):
         if kwargs.get('output_file'):
             output_file_path = Path(kwargs['output_file'])
         else:
-            output_dir = BASE_DIR / "design" / "drafts"
+            output_dir = BASE_DIR / "design" / "3_work_artifacts" / "drafts"
             output_dir.mkdir(exist_ok=True, parents=True)
             
             safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:30] if c.isalnum() or c == ' ']).strip().replace(" ", "_")[:30]
@@ -201,7 +201,7 @@ class GitReviewer(BaseGeminiWorker):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_name = "".join([c if c.isalnum() else "_" for c in instruction[:20]]).strip("_")
         
-        output_dir = BASE_DIR / "design" / "gemini_output" 
+        output_dir = BASE_DIR / "design" / "_archive" / "gemini_output" 
         output_dir.mkdir(exist_ok=True, parents=True)
         
         print("\n📝 [Review Report]")
@@ -320,7 +320,7 @@ class ContextManager(BaseGeminiWorker):
         print(f"🧠 Distilling Context: '{instruction}'...")
         result = self.run_gemini(instruction, context_files)
         
-        target_file = Path(output_file) if output_file else BASE_DIR / "design" / "snapshots" / "latest_snapshot.md"
+        target_file = Path(output_file) if output_file else BASE_DIR / "design" / "_archive" / "snapshots" / "latest_snapshot.md"
         target_file.parent.mkdir(exist_ok=True, parents=True)
         
         with open(target_file, "w", encoding="utf-8") as f:

@@ -24,26 +24,26 @@ def main():
 
     # 1.5 Consistency Guard (New)
     print("\n🛡️ Step 1.5: Consistency Guard (Roadmap vs Task)...")
-    run_worker("verify", "Check if 'task.md' active tasks align with 'design/ROADMAP.md' phases. Output a warning if there is a mismatch.", context_files=["task.md", "design/ROADMAP.md"])
+    run_worker("verify", "Check if 'task.md' active tasks align with 'design/1_governance/roadmap.md' phases. Output a warning if there is a mismatch.", context_files=["task.md", "design/1_governance/roadmap.md"])
 
     # 2. Context Distillation & Routine Sync
     print("\n🧠 Step 2: Distilling context & Checking Registry...")
     context_files = [
-        "design/project_status.md",
-        "design/TECH_DEBT_LEDGER.md",
+        "design/1_governance/project_status.md",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
         "CHANGELOG.md",
         "task.md",
         "GEMINI.md"
     ]
     # Add implementation plan if exists
-    if (BASE_DIR / "design" / "implementation_plan.md").exists():
-        context_files.append("design/implementation_plan.md")
+    if (BASE_DIR / "design" / "3_work_artifacts" / "drafts" / "implementation_plan.md").exists():
+        context_files.append("design/3_work_artifacts/drafts/implementation_plan.md")
     
     run_worker("context", "Audit the Document Registry, synchronize project status, and generate a 20-line Warm Boot prompt for the next session.", context_files=context_files)
 
     # 3. Insight Accumulation
     print("\n🧐 Step 3: Accumulating Insights & Tech Debt...")
-    drafts_dir = BASE_DIR / "design" / "drafts"
+    drafts_dir = BASE_DIR / "design" / "3_work_artifacts" / "drafts"
     reports_dir = BASE_DIR / "reports"
     
     # helper to get recent files
@@ -56,7 +56,7 @@ def main():
     
     if recent_docs:
         print(f"   Found {len(recent_docs)} recent documents (Drafts/Reports). Merging into Ledger...")
-        ledger_path = "design/TECH_DEBT_LEDGER.md"
+        ledger_path = "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
         context_for_merge = [str(p.relative_to(BASE_DIR)) for p in recent_docs]
         context_for_merge.append(ledger_path)
         
@@ -83,7 +83,7 @@ def main():
         "and any new Tech Debt recorded. format as a professional handover document."
     )
     # Using 'context' worker to generate this report
-    cmd = ["python", str(WORKER_SCRIPT), "context", handover_instruction, "--output", handover_path, "--context", "task.md", "CHANGELOG.md", "design/TECH_DEBT_LEDGER.md"]
+    cmd = ["python", str(WORKER_SCRIPT), "context", handover_instruction, "--output", handover_path, "--context", "task.md", "CHANGELOG.md", "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"]
     subprocess.run(cmd, text=True)
 
     # 4. Protocol Validation
@@ -95,7 +95,7 @@ def main():
 
     run_worker("verify", "Perform a strict SoC and DTO compliance check on all recent changes.")
 
-    print("\n✅ Checkpoint Complete. Warm Boot prompt generated in design/snapshots/latest_snapshot.md.")
+    print("\n✅ Checkpoint Complete. Warm Boot prompt generated in design/_archive/snapshots/latest_snapshot.md.")
 
 if __name__ == "__main__":
     main()

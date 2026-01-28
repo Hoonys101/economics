@@ -145,7 +145,7 @@ def run_git_review(args, registry):
     print("💡 Note: If new files appear as 'MISSING', it is normal as we are comparing with the local main branch.")
 
     short_name = branch.split('/')[-1]
-    diff_file = BASE_DIR / "design" / "gemini_output" / f"pr_diff_{short_name}.txt"
+    diff_file = BASE_DIR / "design" / "_archive" / "gemini_output" / f"pr_diff_{short_name}.txt"
     diff_file.parent.mkdir(parents=True, exist_ok=True)
     
     print(f"📝 Generating 3-dot diff: main...FETCH_HEAD -> {diff_file.name}")
@@ -154,7 +154,7 @@ def run_git_review(args, registry):
         subprocess.run(["git", "diff", "main...FETCH_HEAD"], cwd=BASE_DIR, stdout=f, shell=True)
 
     # 3. Gemini Review
-    review_output = BASE_DIR / "design" / "gemini_output" / f"pr_review_{short_name}.md"
+    review_output = BASE_DIR / "design" / "_archive" / "gemini_output" / f"pr_review_{short_name}.md"
     gemini_cmd = [
         sys.executable, 
         str(BASE_DIR / "scripts" / "gemini_worker.py"), 
@@ -198,7 +198,7 @@ def run_merge(args, registry):
             return
             
     # Cleanup PR Review Artifacts
-    output_dir = BASE_DIR / "design" / "gemini_output"
+    output_dir = BASE_DIR / "design" / "_archive" / "gemini_output"
     review_file = output_dir / f"pr_review_{branch}.md"
     diff_file = output_dir / f"pr_diff_{branch}.txt"
     

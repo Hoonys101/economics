@@ -6,15 +6,20 @@
   },
   "mission-strategy-generalization": {
     "command": "create",
-    "title": "Strategy Generalization Refactor",
-    "instruction": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'config pollution' by replacing `setattr` injection in `initializer.py` with a proper `ScenarioStrategy` DTO and Dependency Injection. Ensure backward compatibility with existing scenario files.",
-    "file": "design/work_orders/WO-136-Strategy-Generalization.md"
+    "instruction": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'config pollution' by replacing setattr injection in initializer.py with a proper ScenarioStrategy DTO and Dependency Injection. Ensure backward compatibility with existing scenario files.",
+    "title": "WO-136: Strategy Generalization",
+    "file": "design/3_work_artifacts/work_orders/WO-136-Strategy-Generalization.md"
   },
-  "mission-doc-restructure": {
-    "worker": "spec",
-    "instruction": "Analyze 'design/drafts/CURRENT_STRUCTURE_SUMMARY.md' and the current file system structure. Propose a new, consolidated directory structure following 'Abstract -> Concrete' principle. Output your plan to 'design/drafts/DOC_RESTRUCTURE_PLAN.md'. Include a PowerShell script section in your MD response to move the files.",
-    "context": [
-      "design/drafts/CURRENT_STRUCTURE_SUMMARY.md"
-    ]
+  "mission-perf-optimization": {
+    "command": "create",
+    "instruction": "Scale the simulation to 2,000+ agents and generalize technology logic. Implement NumPy vectorization for bottlenecks and a probability-based tech diffusion engine.",
+    "title": "WO-137: Performance & Vectorization",
+    "file": "design/3_work_artifacts/work_orders/WO-137-Performance-Optimization.md"
+  },
+  "mission-sacred-hygiene": {
+    "command": "create",
+    "instruction": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test suite into unit/integration/scenarios categories.",
+    "title": "WO-138: Sacred Hygiene",
+    "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
   }
 }

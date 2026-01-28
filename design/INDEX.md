@@ -1,44 +1,48 @@
 # Documentation Index
 
-Welcome to the Economics Simulation Project. This index maps our documentation into three main categories: **Protocols**, **Status/Roadmaps**, and **Worker Manuals**.
+Welcome to the **Economics Simulation Project**.
+This directory is structured to guide you from high-level abstract principles to concrete work artifacts.
 
 ---
 
-## 🚀 1. Start Here
-- **[QUICKSTART.md](QUICKSTART.md)**: **The entry point**. If you are lost, start here.
+## 🚀 Entry Points
+Start here to understand the project.
+- **[QUICKSTART.md](QUICKSTART.md)**: ⚡ **The primary onboarding guide.**
+- **[Governance](1_governance/INDEX.md)**: Architecture, Principles, and Project Status.
+- **[Operations](2_operations/INDEX.md)**: Manuals, Roles, and Ledgers (How we work).
+- **[Work Artifacts](3_work_artifacts/INDEX.md)**: Work Orders, Specs, and Reports (What we built).
 
 ---
 
-## 🚦 2. Status & Roadmaps
-Current progress and the technical context of the simulation.
-- **[PROJECT_STATUS.md](../project_status.md)**: Current build status and next tasks.
-- **[ROADMAP.md](../roadmap.md)**: The long-term architectural vision.
-- **[TECH_DEBT_LEDGER.md](TECH_DEBT_LEDGER.md)**: Unresolved debts and remediation plans.
-- **[DEBT_REPAYMENT_PLAN_v2.md](DEBT_REPAYMENT_PLAN_v2.md)**: **Current priority** (Abstraction Wall & Cleanup).
-- **[Handover Documents](../handovers/)**: Context from previous work sessions.
+## 📂 1. Governance & Architecture (`1_governance/`)
+*The "Constitution" of the simulation.*
+- **[Project Status](1_governance/project_status.md)**: Current build status and roadmap.
+- **[Platform Architecture](1_governance/platform_architecture.md)**: System design and core graphs.
+- **[Project Structure](1_governance/project_structure.md)**: Folder layout and key modules.
+- **[Protocols](1_governance/protocols/)**: Engineering standards and tooling rules.
 
 ---
 
-## 🏛️ 3. Core Protocols
-Universal rules for all agents and contributors.
-- **[PROTOCOL_TOOLING.md](PROTOCOL_TOOLING.md)**: How to use the SCR tools (Gemini, Jules, etc.).
-- **[PROTOCOL_ENGINEERING.md](PROTOCOL_ENGINEERING.md)**: Architectural standards (SoC, DTO, Sacred Sequence).
-- **[PROTOCOL_GOVERNANCE.md](PROTOCOL_GOVERNANCE.md)**: Roles, PR reviews, and session cleanup.
+## ⚙️ 2. Operations (`2_operations/`)
+*The "Manual" for agents and developers.*
+- **[Command Registry](command_registry.json)**: The database of AI missions.
+- **[Manuals](2_operations/manuals/)**: Detailed guides for Spec Writers, Git Reviewers, etc.
+- **[Ledgers](2_operations/ledgers/)**:
+    - **[Technical Debt](2_operations/ledgers/TECH_DEBT_LEDGER.md)**: List of debts and repayment plans.
+    - **[Session Ledger](2_operations/ledgers/SESSION_LEDGER.md)**: Record of daily activities.
 
 ---
 
-## 🤖 4. Specialized Worker Manuals
-Deep-dive instructions for specific AI workers and specialized tasks.
-- **[SPEC_WRITER.md](spec_writer.md)**: How to write high-quality technical specs.
-- **[GIT_REVIEWER.md](git_reviewer.md)**: Security and integrity audit pillars for PRs.
-- **[REPORTER.md](reporter.md)**: Summarizing session results and leaks.
-- **[VALIDATOR.md](validator.md)**: Strict rule-checking for architecture.
-- **[JULES_DOC_GUIDE.md](JULES_DOCUMENTATION_GUIDE.md)**: Populating empty specs from code analysis.
+## 🔨 3. Work Artifacts (`3_work_artifacts/`)
+*The "Output" of our sessions.*
+- **[Work Orders](3_work_artifacts/work_orders/)**: Defines WHAT to build (`WO-xxx`).
+- **[Specs](3_work_artifacts/specs/)**: Defines HOW to build it (`SPEC-xxx`).
+- **[Audits](3_work_artifacts/audits/)**: System health checks and code reviews.
+- **[Reports](3_work_artifacts/reports/)**: Verification logs and verification results.
 
 ---
 
-## 🆘 5. Knowledge Base
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**: Common errors and solutions.
-- **[COMMAND_REGISTRY_REFERENCE.md](COMMAND_REGISTRY_REFERENCE.md)**: Deep dive into the SCR JSON schema.
-- **[ECONOMIC_INSIGHTS.md](ECONOMIC_INSIGHTS.md)**: Domain knowledge discovered during runtime.
-- **[RELIABILITY_LEDGER.md](RELIABILITY_LEDGER.md)**: System stability metrics.
+## 📦 Archives (`_archive/`)
+*Historical data and previous handovers.*
+- **[Handovers](_archive/handovers/)**: Past session reports.
+- **[Gemini Output](_archive/gemini_output/)**: Raw analysis logs.

@@ -65,6 +65,10 @@
       "13779352872685089906": {
         "title": "WO-053: Phase 23 Reactivation (The Great Expansion)",
         "initial_mission": "Reactivate and verify Phase 23 as per Architect Prime's instructions. 1) Update scripts/verify_phase..."
+      },
+      "13994625140349182457": {
+        "title": "Strategy Generalization Refactor",
+        "initial_mission": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'conf..."
       }
     },
     "completed_sessions": {
