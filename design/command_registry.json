@@ -4,16 +4,10 @@
     "updated": "2026-01-28",
     "author": "Antigravity"
   },
-  "mission-wo-053": {
+  "implement-wo-135": {
     "command": "create",
-    "title": "WO-053: Phase 23 Reactivation",
-    "instruction": "Execute WO-053 to reactivate Phase 23 (Industrial Revolution). Configure the scenario for TFP 3.0, verified supply glut (ratio 2.5+), and price crash (>50%). Run verification script and report results.",
-    "file": "design/work_orders/WO-053-Reactivation.md"
-  },
-  "mission-purge-reflux": {
-    "command": "create",
-    "instruction": "Perform an exhaustive codebase-wide search and removal of all RefluxSystem references as specified in WO-133. Ensure system stability and verify with trace_leak.py.",
-    "title": "Execute WO-133: Total Purge of RefluxSystem",
-    "file": "design/work_orders/WO-133-Purge-Reflux-Ghost.md"
+    "instruction": "Implement the Abstraction Wall as per design/work_orders/WO-135-Abstraction-Wall.md. Key tasks: 1) Create ConfigFactory, 2) Define TypedDicts in api.py, 3) Update DecisionContext, 4) Implement PurityGate v2, 5) Refactor Agent make_decision methods. Ensure existing tests are updated to match new DTO structures.",
+    "title": "WO-135: Operation Abstraction Wall",
+    "file": "design/work_orders/WO-135-Abstraction-Wall.md"
   }
 }

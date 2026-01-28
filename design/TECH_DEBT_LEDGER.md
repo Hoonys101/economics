@@ -17,6 +17,9 @@
 |---|---|---|---|---|---|
 | **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | Refactor `DecisionContext` to accept DTOs strictly | Encapsulation Break / Side-effects | **STRUCTURAL_RISK** |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
+| **TD-132** | 2026-01-28 | **Hardcoded Government ID** | Dynamically resolve Government ID from WorldState | Registry Inconsistency Risk | **ACTIVE** |
+| **TD-133** | 2026-01-28 | **Global Config Pollution** | Namespace scenario parameters under `config.scenario` | Config Conflict Risk | **ACTIVE** |
+| **TD-134** | 2026-01-28 | **Scenario-Specific Branching** | Replace `is_phase23` checks with generic strategy flags | Code Complexity / Technical Debt | **ACTIVE** |
 
 ---
 

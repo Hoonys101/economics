@@ -14,6 +14,7 @@ Current progress and the technical context of the simulation.
 - **[PROJECT_STATUS.md](../project_status.md)**: Current build status and next tasks.
 - **[ROADMAP.md](../roadmap.md)**: The long-term architectural vision.
 - **[TECH_DEBT_LEDGER.md](TECH_DEBT_LEDGER.md)**: Unresolved debts and remediation plans.
+- **[DEBT_REPAYMENT_PLAN_v2.md](DEBT_REPAYMENT_PLAN_v2.md)**: **Current priority** (Abstraction Wall & Cleanup).
 - **[Handover Documents](../handovers/)**: Context from previous work sessions.
 
 ---
