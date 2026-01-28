@@ -3,6 +3,9 @@ import logging
 import random
 from typing import TYPE_CHECKING, Optional, Dict, Any
 
+from simulation.dtos.config_dtos import FirmConfigDTO
+from simulation.utils.config_factory import create_config_dto
+
 if TYPE_CHECKING:
     from simulation.engine import Simulation
     from simulation.core_agents import Household
@@ -85,6 +88,10 @@ class FirmSystem:
 
         # 5. Create Firm (Initial Capital = 0.0, will transfer)
         instance_class = ServiceFirm if is_service else Firm
+
+        # Create Config DTO
+        firm_config_dto = create_config_dto(self.config, FirmConfigDTO)
+
         new_firm = instance_class(
             id=new_firm_id,
             initial_capital=0.0, # WO-116: Start with 0, transfer later
@@ -93,7 +100,7 @@ class FirmSystem:
             productivity_factor=random.uniform(8.0, 12.0),
             decision_engine=firm_decision_engine,
             value_orientation=value_orientation,
-            config_module=self.config,
+            config_dto=firm_config_dto,
             logger=simulation.logger,
             sector=sector,
             is_visionary=is_visionary,
@@ -108,6 +115,9 @@ class FirmSystem:
         settlement_system = getattr(simulation, "settlement_system", None)
         success = False
         if settlement_system:
+            # Inject SettlementSystem into new firm
+            new_firm.settlement_system = settlement_system
+
             success = settlement_system.transfer(
                 founder_household, new_firm, final_startup_cost, f"Startup Capital for Firm {new_firm.id}"
             )
