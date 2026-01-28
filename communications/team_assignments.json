@@ -73,6 +73,10 @@
       "3564236937217873449": {
         "title": "WO-136: Strategy Generalization",
         "initial_mission": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'conf..."
+      },
+      "7171574708710867264": {
+        "title": "Quickstart: Root Fragmentation Cleanup",
+        "initial_mission": "Clean up loose files in the root directory (temporary logs, restored txt files, db files). Move arti..."
       }
     },
     "completed_sessions": {

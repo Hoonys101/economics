@@ -16,11 +16,6 @@
     "title": "WO-138: Sacred Hygiene",
     "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
   },
-  "mission-doc-restructure": {
-    "command": "create",
-    "instruction": "Clean up loose files in the root directory (temporary logs, restored txt files, db files). Move artifacts to 3_work_artifacts/ and logs to _archive/ or logs/ as per project structure.",
-    "title": "Quickstart: Root Fragmentation Cleanup"
-  },
   "mission-purity-hardening": {
     "command": "create",
     "instruction": "Externalize rules from verify_purity.py to pyproject.toml as defined in the spec.",
