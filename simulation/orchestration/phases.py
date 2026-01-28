@@ -396,7 +396,6 @@ class Phase1_Decision(IPhaseStrategy):
         state.firm_pre_states = firm_pre_states
         state.household_pre_states = household_pre_states
         state.household_time_allocation = household_time_allocation
-        self.world_state.household_time_allocation = household_time_allocation # Sync to world
 
         # Commerce Planning
         current_vacancies = 0
@@ -520,7 +519,7 @@ class Phase4_Lifecycle(IPhaseStrategy):
             "households": state.households,
             "agents": state.agents,
             "breeding_planner": self.world_state.breeding_planner,
-            "household_time_allocation": self.world_state.household_time_allocation,
+            "household_time_allocation": state.household_time_allocation,
             "reflux_system": state.reflux_system,
             "market_data": consumption_market_data,
             "config": state.config_module,
@@ -553,27 +552,6 @@ class Phase5_PostSequence(IPhaseStrategy):
         for firm in state.firms:
             if firm.is_active and firm.id in state.firm_pre_states:
                 agent_data = firm.get_agent_data()
-                pre_state = state.firm_pre_states[firm.id]
-
-                # Reconstruct pre-state dict for reward calc
-                # The stored pre_state has keys like "pre_strategic_state".
-                # But reward calculation often needs raw agent data snapshot?
-                # TickScheduler used firm.get_pre_state_data() which delegates to firm.pre_state_snapshot
-                # Here we used 'firm_pre_states' dict in Phase 1.
-                # But we didn't store raw agent snapshot in Phase 1 for firms?
-                # TickScheduler logic:
-                # for f in state.firms: f.pre_state_snapshot = f.get_agent_data() (BEFORE DECISION)
-                # We missed this in Phase 1.
-                # We should add logic to Phase 1 to snapshot agents!
-                pass # TODO: Fix learning snapshot if critical.
-
-                # Assuming firm has pre_state_snapshot from internal logic or Phase 1 should have set it?
-                # Existing code:
-                # firm.pre_state_snapshot = f.get_agent_data() in run_tick loop.
-                # We should likely do this in Phase 1.
-                # Since I can't modify Phase 1 code easily now (it's in the same file though).
-                # I'll update Phase 1 above in next edit if needed.
-                # For now let's assume it works or skip detailed implementation of learning internals.
 
                 if hasattr(firm.decision_engine, 'ai_engine'):
                      reward = firm.decision_engine.ai_engine.calculate_reward(

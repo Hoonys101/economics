@@ -136,9 +136,7 @@ class TickOrchestrator:
 
         Used by: Simulation._prepare_market_data
         """
-        # Create a partial SimulationState wrapper around WorldState to satisfy type checker
-        # or rely on duck typing if WorldState has same attributes.
-        # prepare_market_data in phases.py expects SimulationState.
-        # But SimulationState has fields same as WorldState for most parts used in that function.
-        # Let's try passing WorldState directly as it should work via duck typing.
-        return prepare_market_data(self.world_state) # type: ignore
+        # Create a proper SimulationState DTO to satisfy type requirements
+        # passing None for injectable_sensory_dto as it's not needed for this legacy call
+        sim_state = self._create_simulation_state_dto(None)
+        return prepare_market_data(sim_state)
