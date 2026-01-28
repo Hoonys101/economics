@@ -1,0 +1,129 @@
+import pytest
+from unittest.mock import MagicMock, Mock, patch
+from simulation.orchestration.tick_orchestrator import TickOrchestrator
+from simulation.models import Transaction
+from simulation.world_state import WorldState
+from simulation.dtos.api import SimulationState
+
+class TestTickNormalization:
+    @pytest.fixture
+    def mock_world_state(self):
+        # Remove spec=WorldState to avoid AttributeError on missing attributes like social_system
+        state = MagicMock()
+        state.time = 0
+        state.agents = {}
+        state.firms = []
+        state.households = []
+        state.markets = {}
+        state.transactions = []
+
+        # Components
+        state.bank = MagicMock()
+        # Mock run_tick to return a test transaction
+        state.bank.run_tick.return_value = [
+            Transaction(0, 1, "test_item", 1.0, 10.0, "financial", "test_type", 0)
+        ]
+
+        state.finance_system = MagicMock()
+        state.finance_system.service_debt.return_value = []
+
+        state.government = MagicMock()
+        state.government.run_welfare_check.return_value = []
+        # Return (success, txs)
+        state.government.invest_infrastructure.return_value = []
+        # Fix: Mock get_monetary_delta to return float
+        state.government.get_monetary_delta.return_value = 0.0
+
+        state.tracker = MagicMock()
+        state.tracker.get_latest_indicators.return_value = {}
+
+        state.transaction_processor = MagicMock()
+
+        # Mocks needed for sim_state construction
+        state.config_module = MagicMock()
+        state.config_module.INFRASTRUCTURE_TFP_BOOST = 0.05
+        state.config_module.IMITATION_LEARNING_INTERVAL = 100 # Avoid modulo error if any
+
+        state.logger = MagicMock()
+        state.reflux_system = MagicMock()
+        state.central_bank = MagicMock()
+        state.stock_market = None
+        state.goods_data = []
+        state.next_agent_id = 100
+        state.real_estate_units = []
+
+        # Tech manager
+        state.technology_manager = MagicMock()
+
+        # Systems
+        state.ma_manager = MagicMock()
+        state.event_system = None
+        state.commerce_system = None
+        state.housing_system = MagicMock()
+        state.crisis_monitor = None
+        state.generational_wealth_audit = None
+        state.settlement_system = MagicMock()
+        state.ai_training_manager = None
+        state.ai_trainer = None
+
+        # Fix format issue
+        state.calculate_total_money = MagicMock(return_value=1000.0)
+        state.baseline_money_supply = 1000.0
+
+        return state
+
+    @pytest.fixture
+    def orchestrator(self, mock_world_state):
+        processor = MagicMock()
+
+        # Patch the phases classes to return mocks
+        with patch('simulation.orchestration.tick_orchestrator.Phase0_PreSequence') as MockPhase0, \
+             patch('simulation.orchestration.tick_orchestrator.Phase_Production') as MockPhaseProd, \
+             patch('simulation.orchestration.tick_orchestrator.Phase1_Decision') as MockPhase1, \
+             patch('simulation.orchestration.tick_orchestrator.Phase2_Matching') as MockPhase2, \
+             patch('simulation.orchestration.tick_orchestrator.Phase3_Transaction') as MockPhase3, \
+             patch('simulation.orchestration.tick_orchestrator.Phase4_Lifecycle') as MockPhase4, \
+             patch('simulation.orchestration.tick_orchestrator.Phase5_PostSequence') as MockPhase5:
+
+             # Configure mocks to return the state passed to execute
+             def side_effect(state):
+                 return state
+
+             MockPhase0.return_value.execute.side_effect = side_effect
+             MockPhaseProd.return_value.execute.side_effect = side_effect
+             MockPhase1.return_value.execute.side_effect = side_effect
+             MockPhase2.return_value.execute.side_effect = side_effect
+             MockPhase3.return_value.execute.side_effect = side_effect
+             MockPhase4.return_value.execute.side_effect = side_effect
+             MockPhase5.return_value.execute.side_effect = side_effect
+
+             orch = TickOrchestrator(mock_world_state, processor)
+
+             # Store mock phases on the orchestrator instance for access in tests
+             orch.mock_phases = {
+                 'Phase0': MockPhase0.return_value,
+                 'PhaseProduction': MockPhaseProd.return_value,
+                 'Phase1': MockPhase1.return_value,
+                 'Phase2': MockPhase2.return_value,
+                 'Phase3': MockPhase3.return_value,
+                 'Phase4': MockPhase4.return_value,
+                 'Phase5': MockPhase5.return_value,
+             }
+
+             return orch
+
+    def test_run_tick_executes_phases(self, orchestrator, mock_world_state):
+        # Act
+        orchestrator.run_tick()
+
+        # Assertions - Check if phases were executed in order
+        orchestrator.mock_phases['Phase0'].execute.assert_called_once()
+        orchestrator.mock_phases['PhaseProduction'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase1'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase2'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase3'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase4'].execute.assert_called_once()
+        orchestrator.mock_phases['Phase5'].execute.assert_called_once()
+
+        # Verify state time incremented
+        assert mock_world_state.time == 1
