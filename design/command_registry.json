@@ -3,11 +3,5 @@
     "session": "Phase 23 Reactivation",
     "updated": "2026-01-28",
     "author": "Antigravity"
-  },
-  "wo-053-reactivation": {
-    "command": "create",
-    "instruction": "Reactivate and verify Phase 23 as per Architect Prime's instructions. 1) Update scripts/verify_phase23.py to be compatible with DTO-based agents (from WO-135). 2) Enforce metrics: Supply/Demand Ratio >= 2.5, Price Crash > 50% within 20 ticks, Pop Boom limit 2,000. 3) Set TECH_FERTILIZER_MULTIPLIER to 3.0 and Price Volatility Limit to 0.5. 4) Run the simulation and generate a success/fail report based on these metrics. Reference: Handover 2026-01-28.",
-    "title": "WO-053: Phase 23 Reactivation (The Great Expansion)",
-    "file": "design/handovers/HANDOVER_2026-01-28.md"
   }
 }

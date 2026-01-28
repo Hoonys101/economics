@@ -15,11 +15,11 @@
 
 | ID | Date | Description | Remediation Plan | Impact | Status |
 |---|---|---|---|---|---|
-| **TD-103** | 2026-01-23 | **Leaky AI Abstraction (self-sharing)** | [REBOOTED] WO-135-Reboot (Decomposed Track) | Encapsulation Break / Side-effects | **ABORTED_v1 / REBOOTING** |
 | **TD-122** | 2026-01-26 | **Test Directory Organization** | Structure tests into unit/api/stress | Maintenance overhead | **DEFERRED** |
 | **TD-132** | 2026-01-28 | **Hardcoded Government ID** | Dynamically resolve Government ID from WorldState | Registry Inconsistency Risk | **ACTIVE** |
 | **TD-133** | 2026-01-28 | **Global Config Pollution** | Namespace scenario parameters under `config.scenario` | Config Conflict Risk | **ACTIVE** |
 | **TD-134** | 2026-01-28 | **Scenario-Specific Branching** | Replace `is_phase23` checks with generic strategy flags | Code Complexity / Technical Debt | **ACTIVE** |
+| **TD-136** | 2026-01-28 | **Purity Gate Hardening** | Externalize rules from `verify_purity.py` to `pyproject.toml` | Maintainability | **ACTIVE** |
 
 ---
 
@@ -57,9 +57,31 @@
 | TD-123 | 2026-01-27 | God Class: `Household` | Decompose into Stateless Components (WO-123) | Maintenance Overhead | **RESOLVED** |
 | TD-124 | 2026-01-27 | God Class: `TransactionProcessor` | Split into 6-Layer Architecture (WO-124) | Scalability Risk | **RESOLVED** |
 | TD-126 | 2026-01-27 | Implicit Bank Protocol | Formalize `IBankService` (TD-126) | Design-Impl Gap | **RESOLVED** |
-| TD-125 | 2026-01-27 | Non-atomic Transfer Sequences | Implement atomic bank/transaction blocks (WO-125) | Monetary Integrity | **RESOLVED** |
 | TD-130 | 2026-01-28 | Reflux System (Dark Pools) | Operation Sacred Refactoring (Purge Reflux) | Monetary Integrity | **RESOLVED** |
 | TD-131 | 2026-01-28 | Monolithic TickScheduler | Operation Sacred Refactoring (Decomposition) | Architectural Clarity | **RESOLVED** |
+| TD-103 | 2026-01-28 | Leaky AI Abstraction (Abstraction Wall) | Implemented DTO-only DecisionContext & Purity Gate (WO-135) | Encapsulation Purity | **RESOLVED** |
+| TD-135 | 2026-01-28 | DTO Schema Inconsistency | Centralized DTOs in `simulation/api.py` (WO-135.2) | Interface Clarity | **RESOLVED** |
+
+---
+
+## 🧐 SESSION INSIGHTS (2026-01-28)
+
+### 1. Operation Abstraction Wall (WO-135)
+- **현상**: 에이전트가 전역 `config` 및 라이브 객체에 직접 의존하여 결합도 위험 및 테스트 복잡성 증가.
+- **해결**: `ConfigFactory` 도입, `DecisionContext`를 통한 DTO 주입, `verify_purity.py` 정적 분석 도구 통합.
+- **교훈**: 아키텍처 원칙은 반드시 자동화된 도구(Linter/Purity Gate)로 강제해야 하며, DTO 기반 설계가 병렬 개발의 토대가 됨.
+
+### 2. Operation Sacred Refactoring
+- **현상**: `EconomicRefluxSystem`이라는 모호한 자금 싱크 존재 및 생산 단계 누락으로 인한 경제 왜곡.
+- **해결**: `Reflux` 완전 삭제 및 국고 귀속(`Esheatment`) 로직 구현. `TickScheduler`를 7단계 `IPhaseStrategy`로 분해.
+- **교훈**: "물리적 시간의 선후 관계"를 명시적인 오케스트레이션 페이즈로 관리하는 것이 경제 시스템의 인과 관계 증명에 필수적임.
+
+### 3. Phase 23 Reactivation (WO-053)
+- **현상**: 산업 혁명 시나리오가 아키텍처 변경으로 작동 불능 상태였음.
+- **해결**: DTO 호환형 `verify_phase23.py` 수리 및 대규모 생산성 향상(`TFP=3.0`) 적용.
+- **인사이트**: 풍요의 시대(Abundance)는 가격 수준의 급격한 하락을 동반하며, 이는 생존율을 높여 인구 폭증의 임계점(Critical Point)을 돌파하게 만듦.
+
+---
 
 ---
 
@@ -68,7 +90,7 @@
 | Milestone | Target Debts | Objective | Tooling |
 | :--- | :--- | :--- | :--- |
 | **Step 1: Purity Guard** | TD-101, TD-102 | Create `SettlementSystem` to centralize all asset movements. | ✅ **DONE** (WO-112) |
-| **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | `gemini:verify` |
+| **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | ✅ **DONE** (WO-135) |
 | **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
 | **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | ✅ **DONE** (WO-123, WO-124) |
 | **Step 5: Normalize Sequence** | TD-106, TD-109 | Normalize Tick Sequence. | **PLANNED** (Phase 26) |

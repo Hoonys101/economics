@@ -61,6 +61,10 @@
       "17807327233823685384": {
         "title": "WO-135.4: Purity Gate v2 Enforcement",
         "initial_mission": "Finalize the Abstraction Wall by integrating the Purity Gate into the standard workflow. Mandatory: ..."
+      },
+      "13779352872685089906": {
+        "title": "WO-053: Phase 23 Reactivation (The Great Expansion)",
+        "initial_mission": "Reactivate and verify Phase 23 as per Architect Prime's instructions. 1) Update scripts/verify_phase..."
       }
     },
     "completed_sessions": {

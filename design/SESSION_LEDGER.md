@@ -30,3 +30,8 @@
 | 2026-01-21 | 2863466737400943142 | WO-103 Phase 3: DTO Conversion | [COMPLETED] Merged. Completed DTO migration (HouseholdStateDTO/FirmStateDTO), removed legacy agent references from DecisionContext. |
 | 2026-01-22 | 7991854182599200102 | WO-111: Final Harvest Verification | [COMPLETED] Merged. Proved Malthusian Trap escape, fixed firm mutual exclusivity bug (TD-085), and normalized infant survival architecture (TD-086). |
 | 2026-01-28 | 10567199579679930269 | Operation Sacred Refactoring & Phase 23 Reactivation | [COMPLETED] Merged. Purged Reflux, Decomposed TickScheduler, and resumed Industrial Revolution scenario. |
+| 2026-01-28 | 13008461923123755310 | WO-135.1: Abstraction Wall Infrastructure | [COMPLETED] Merged. Introduced ConfigFactory and test_config_parity. |
+| 2026-01-28 | 18248760901683562553 | WO-135.2: DTO Schema Alignment | [COMPLETED] Merged. Centralized DTOs in simulation/api.py. |
+| 2026-01-28 | 11958276689455530290 | WO-135.3: Core Agent Refactor | [COMPLETED] Merged. Disconnected Agents from config/Market live objects. |
+| 2026-01-28 | 17807327233823685384 | WO-135.4: Purity Gate v2 | [COMPLETED] Merged. verify_purity.py integrated into checkpoint.py. |
+| 2026-01-28 | 13779352872685089906 | WO-053: Phase 23 Reactivation | [COMPLETED] Merged. Verified Malthusian Trap escape on refactored engine. |
