@@ -166,6 +166,20 @@ def mock_households(mock_config_module):
     hh1.talent.base_learning_rate = 0.1
     hh1.inventory_quality = {}
 
+    def withdraw_side_effect_hh1(amount):
+        hh1.assets -= amount
+    hh1.withdraw = Mock(side_effect=withdraw_side_effect_hh1)
+
+    def deposit_side_effect_hh1(amount):
+        hh1.assets += amount
+    hh1.deposit = Mock(side_effect=deposit_side_effect_hh1)
+
+    def record_consumption_side_effect_hh1(quantity, is_food=False):
+        hh1.current_consumption += quantity
+        if is_food:
+            hh1.current_food_consumption += quantity
+    hh1.record_consumption = Mock(side_effect=record_consumption_side_effect_hh1)
+
     hh2 = Mock(spec=Household)
     hh2.id = 2
     hh2._assets = 150.0
@@ -186,6 +200,21 @@ def mock_households(mock_config_module):
     hh2.talent = Mock(spec=Talent)
     hh2.talent.base_learning_rate = 0.1
     hh2.inventory_quality = {}
+
+    def withdraw_side_effect_hh2(amount):
+        hh2.assets -= amount
+    hh2.withdraw = Mock(side_effect=withdraw_side_effect_hh2)
+
+    def deposit_side_effect_hh2(amount):
+        hh2.assets += amount
+    hh2.deposit = Mock(side_effect=deposit_side_effect_hh2)
+
+    def record_consumption_side_effect_hh2(quantity, is_food=False):
+        hh2.current_consumption += quantity
+        if is_food:
+            hh2.current_food_consumption += quantity
+    hh2.record_consumption = Mock(side_effect=record_consumption_side_effect_hh2)
+
     return [hh1, hh2]
 
 
@@ -206,6 +235,16 @@ def mock_firms(mock_config_module):
     f1.total_shares = 1000.0
     f1.treasury_shares = 0.0
     f1.age = 25 # Set age for testing
+
+    # Firm uses FinanceDepartment which handles assets.
+    # But SettlementSystem calls firm.withdraw() if firm is passed.
+    # Firm.withdraw delegates to finance.debit.
+    # BaseAgent.withdraw/deposit are implemented.
+    # Firm is instantiated as REAL object here (not Mock), so it should work?
+    # Yes, f1 is Firm(...).
+    # But check if f1.finance is initialized correctly?
+    # Firm.__init__ initializes FinanceDepartment.
+    # So f1.withdraw should work.
 
     f2 = Firm(
         id=102,
@@ -719,7 +758,6 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         config_module=sim.config_module,
         tracker=sim.tracker,
         logger=sim.logger,
-        reflux_system=getattr(sim, 'reflux_system', None),
         ai_training_manager=getattr(sim, 'ai_training_manager', None),
         ai_trainer=getattr(sim, 'ai_trainer', None),
         next_agent_id=getattr(sim, 'next_agent_id', 0),

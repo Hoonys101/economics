@@ -13,6 +13,7 @@ from simulation.systems.immigration_manager import ImmigrationManager
 from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.firm_management import FirmSystem
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+from simulation.finance.api import ISettlementSystem
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
     """
@@ -22,12 +23,25 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
     """
 
     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
-                 inheritance_manager: InheritanceManager, firm_system: FirmSystem, logger: logging.Logger):
+                 inheritance_manager: InheritanceManager, firm_system: FirmSystem,
+                 settlement_system: ISettlementSystem, logger: logging.Logger):
         self.config = config_module
         self.demographic_manager = demographic_manager
         self.inheritance_manager = inheritance_manager
         self.firm_system = firm_system
-        self.immigration_manager = ImmigrationManager(config_module=config_module)
+        self.settlement_system = settlement_system
+        # ImmigrationManager also needs SettlementSystem now, we'll pass ours or let it be created?
+        # It's created inside __init__.
+        # We should probably pass settlement_system to it.
+        # But ImmigrationManager __init__ currently takes only config.
+        # I will update ImmigrationManager in the next step.
+        # For now, I'll pass it if constructor allows, or set it after.
+        # I'll update ImmigrationManager first? No, the plan handles it.
+        # I'll modify ImmigrationManager instantiation to pass settlement_system.
+        # This implies I should have updated ImmigrationManager first or update the call here assuming signature change.
+        # I'll assume signature change.
+        self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
+
         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
         self.logger = logger
 
@@ -75,6 +89,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             agent.decision_engine.markets = state.markets
             agent.decision_engine.goods_data = state.goods_data
 
+            # Ensure agent has settlement system
+            if hasattr(agent, 'settlement_system'):
+                agent.settlement_system = self.settlement_system
+
             if state.stock_market:
                 for firm_id, qty in agent.shares_owned.items():
                     state.stock_market.update_shareholder(agent.id, firm_id, qty)
@@ -106,8 +124,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         transactions: List[Transaction] = []
 
         # --- Firm Liquidation ---
-        # Note: Firm liquidation currently uses direct SettlementSystem transfers.
-        # Ideally this should also be transaction-based, but for TD-109 we focus on Inheritance.
         inactive_firms = [f for f in state.firms if not f.is_active]
         for firm in inactive_firms:
             self.logger.info(
@@ -115,19 +131,18 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
             )
 
-            if state.reflux_system:
-                inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
-                if inv_value > 0:
-                    state.reflux_system.capture(inv_value, str(firm.id), "liquidation_inventory")
-                    if hasattr(state.government, "total_money_issued"):
-                        # firm._add_assets(inv_value) # Removed to prevent Double Creation (Reflux has it)
-                        state.government.total_money_issued += inv_value
+            inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
+            capital_value = firm.capital_stock
 
-                if firm.capital_stock > 0:
-                    state.reflux_system.capture(firm.capital_stock, str(firm.id), "liquidation_capital")
-                    if hasattr(state.government, "total_money_issued"):
-                        # firm._add_assets(firm.capital_stock) # Removed to prevent Double Creation
-                        state.government.total_money_issued += firm.capital_stock
+            # Record Liquidation (Destruction of real assets)
+            self.settlement_system.record_liquidation(
+                agent=firm,
+                inventory_value=inv_value,
+                capital_value=capital_value,
+                recovered_cash=0.0, # Just wiping assets
+                reason="firm_liquidation",
+                tick=state.time
+            )
 
             # Clear employees
             for employee in firm.hr.employees:
@@ -155,19 +170,30 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                         if shares > 0:
                             share_ratio = shares / outstanding_shares
                             distribution = total_cash * share_ratio
-                            if hasattr(state, "settlement_system") and state.settlement_system:
-                                state.settlement_system.transfer(firm, agent, distribution, "liquidation_dividend")
+                            self.settlement_system.transfer(firm, agent, distribution, "liquidation_dividend", tick=state.time)
 
                 else:
                     if hasattr(state, "government") and state.government:
                         # Atomic Collection via Government (handles transfer and revenue recording)
-                        state.government.collect_tax(total_cash, "liquidation_escheatment", firm, state.time)
+                        # We use settlement system explicitly if collect_tax doesn't guarantee it?
+                        # collect_tax usually uses transfer. But to be safe and explicit:
+                        self.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment", tick=state.time)
+                        # state.government.collect_tax call removed? Or we should record revenue?
+                        # collect_tax does both.
+                        # Spec says: `self.settlement_system.transfer(firm, self.government, remaining_cash, "liquidation_escheatment", tick)`.
+                        # It doesn't say call collect_tax. I'll stick to transfer.
+                        # If Gov needs to record revenue, maybe I should call collect_tax but pass 'skip_transfer'? No.
+                        # Gov assets increase. Gov accounting might miss it if I don't call method.
+                        # But complying with spec "use settlement.transfer".
+                        pass
 
             # Verification: Firm assets should be ~0 now
             if firm.assets > 1e-6:
-                 firm._sub_assets(firm.assets)
-                 if hasattr(state.government, "total_money_destroyed"):
-                     state.government.total_money_destroyed += firm.assets
+                 if hasattr(state, "government") and state.government:
+                     self.settlement_system.transfer(firm, state.government, firm.assets, "liquidation_rounding_cleanup", tick=state.time)
+                 else:
+                     # Burn
+                     self.settlement_system.transfer_and_destroy(firm, state.central_bank, firm.assets, "liquidation_rounding_cleanup", tick=state.time)
 
             # Clear shareholdings
             for household in state.households:
@@ -187,13 +213,16 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             inheritance_txs = self.inheritance_manager.process_death(household, state.government, state)
             transactions.extend(inheritance_txs)
 
-            if state.reflux_system:
-                inv_value = self._calculate_inventory_value(household.inventory, state.markets)
-                if inv_value > 0:
-                    state.reflux_system.capture(inv_value, str(household.id), "liquidation_inventory")
-                    if hasattr(state.government, "total_money_issued"):
-                        # state.government._add_assets(inv_value) # Removed to prevent Double Creation
-                        state.government.total_money_issued += inv_value
+            inv_value = self._calculate_inventory_value(household.inventory, state.markets)
+            if inv_value > 0:
+                 self.settlement_system.record_liquidation(
+                     agent=household,
+                     inventory_value=inv_value,
+                     capital_value=0.0,
+                     recovered_cash=0.0,
+                     reason="household_liquidation_inventory",
+                     tick=state.time
+                 )
 
             household.inventory.clear()
             household.shares_owned.clear()

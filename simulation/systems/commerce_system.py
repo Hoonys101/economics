@@ -1,11 +1,13 @@
 """
 Implements the CommerceSystem which orchestrates consumption, purchases, and leisure.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 import logging
 from simulation.systems.api import ICommerceSystem, CommerceContext
-from simulation.systems.reflux_system import EconomicRefluxSystem
 from simulation.models import Transaction
+
+if TYPE_CHECKING:
+    from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +16,8 @@ class CommerceSystem(ICommerceSystem):
     Orchestrates the consumption and leisure phase of the tick.
     """
 
-    def __init__(self, config: Any, reflux_system: EconomicRefluxSystem):
+    def __init__(self, config: Any):
         self.config = config
-        self.reflux_system = reflux_system
 
     def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
         """
@@ -69,36 +70,27 @@ class CommerceSystem(ICommerceSystem):
                     if household.assets >= cost:
                         planned_consumptions[household.id]["buy_amount"] = b_amt
 
+                        # Use Government as Seller for Emergency Buy (Import/Reserve)
+                        government = context.get("government")
+                        seller_id = government.id if government else 999999
+
                         # Generate Emergency Buy Transaction
                         tx = Transaction(
                             buyer_id=household.id,
-                            seller_id=self.reflux_system.id if hasattr(self.reflux_system, 'id') else 0, # Assuming Reflux has ID or use 0/System
+                            seller_id=seller_id,
                             item_id="basic_food",
                             quantity=b_amt,
-                            price=cost, # Total price as trade_value? No, Transaction takes unit price usually?
-                            # Transaction: trade_value = quantity * price.
-                            # Here price should be unit price.
-                            # But cost = b_amt * food_price. So price = food_price.
+                            price=food_price, # Unit Price
                             market_id="system",
                             transaction_type="emergency_buy",
                             time=current_time
                         )
-                        # Fix: Transaction takes UNIT PRICE.
-                        tx.price = food_price
-
                         transactions.append(tx)
 
                         logger.debug(
                             f"VECTOR_BUY_PLAN | Household {household.id} planning to buy {b_amt:.1f} food (Fast Track)",
                             extra={"agent_id": household.id, "tags": ["consumption", "vector_buy"]}
                         )
-
-                        # Immediate consumption if needed (Logic Logic: If planned consumption > inventory, assume some came from buy)
-                        # But we execute transactions later.
-                        # So inventory update happens in Phase 3.
-                        # Consumption happens in Phase 4 (Finalize).
-                        # So finalize will see updated inventory.
-                        pass
 
         return planned_consumptions, transactions
 
@@ -130,9 +122,6 @@ class CommerceSystem(ICommerceSystem):
             effect_dto = household.apply_leisure_effect(leisure_hours, consumed_items)
 
             household_leisure_effects[household.id] = effect_dto.utility_gained
-
-            # 4. Lifecycle Update (update_needs) REMOVED
-            # Moved to DemographicManager/LifecycleManager
 
             # 5. Parenting XP Transfer
             if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:

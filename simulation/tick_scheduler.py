@@ -97,7 +97,7 @@ class TickScheduler:
 
         # 1. Bank Tick (Interest)
         if hasattr(state.bank, "run_tick"):
-             bank_txs = state.bank.run_tick(state.agents, state.time, reflux_system=state.reflux_system)
+             bank_txs = state.bank.run_tick(state.agents, state.time)
              system_transactions.extend(bank_txs)
 
         # 2. Firm Financials (Wages, Taxes, Dividends) - Requires Market Data (T-1)
@@ -121,12 +121,12 @@ class TickScheduler:
         system_transactions.extend(welfare_txs)
 
         # 5. Infrastructure
-        infra_txs = state.government.invest_infrastructure(state.time, state.reflux_system)
+        infra_txs = state.government.invest_infrastructure(state.time, state.households)
         if infra_txs:
             system_transactions.extend(infra_txs)
 
         # 6. Education (WO-054 Refactor)
-        edu_txs = state.government.run_public_education(state.households, state.config_module, state.time, state.reflux_system)
+        edu_txs = state.government.run_public_education(state.households, state.config_module, state.time)
         if edu_txs:
             system_transactions.extend(edu_txs)
 
@@ -225,18 +225,6 @@ class TickScheduler:
         # 4. Election Check
         state.government.check_election(state.time)
 
-        # Age firms (moved to Lifecycle/UpdateNeeds but kept partly here?)
-        # We handle 'age += 1' in firm.update_needs called in Lifecycle.
-        # So we can remove this loop.
-        # for firm in state.firms:
-        #    firm.age += 1
-
-        # Service national debt -> Moved to Transaction Gen
-        # state.finance_system.service_debt(state.time)
-
-        # Phase 4: Welfare Check -> Moved to Transaction Gen
-        # state.government.run_welfare_check(list(state.agents.values()), market_data, state.time)
-
         # Snapshot agents for learning (Pre-state)
         for f in state.firms:
             if f.is_active: f.pre_state_snapshot = f.get_agent_data()
@@ -263,7 +251,6 @@ class TickScheduler:
             config_module=state.config_module,
             tracker=state.tracker,
             logger=state.logger,
-            reflux_system=state.reflux_system,
             ai_training_manager=getattr(state, "ai_training_manager", None),
             ai_trainer=getattr(state, "ai_trainer", None),
             next_agent_id=state.next_agent_id,
@@ -295,7 +282,7 @@ class TickScheduler:
             "agents": state.agents,
             "breeding_planner": state.breeding_planner,
             "household_time_allocation": household_time_allocation,
-            "reflux_system": state.reflux_system,
+            "government": state.government,
             "market_data": consumption_market_data,
             "config": state.config_module,
             "time": state.time
@@ -346,7 +333,7 @@ class TickScheduler:
             "agents": state.agents,
             "breeding_planner": state.breeding_planner,
             "household_time_allocation": household_time_allocation,
-            "reflux_system": state.reflux_system,
+            "government": state.government,
             "market_data": consumption_market_data,
             "config": state.config_module,
             "time": state.time
@@ -359,8 +346,6 @@ class TickScheduler:
             household_leisure_effects = {}
 
         # Phase 17-3B: Process Housing (Logic that didn't fit in matching/lifecycle)
-        # Housing matching happened in _phase_matching.
-        # But apply_homeless_penalty needs to run.
         current_pre_housing = state.calculate_total_money()
         print(f"DEBUG_MONEY | Pre-Housing Process. Money: {current_pre_housing:,.2f}")
 
@@ -377,11 +362,7 @@ class TickScheduler:
              if firm.is_active:
                  # firm.produce -> Moved to Pre-Decision
                  # firm.update_needs -> Refactored to only do Lifecycle state updates (not financial)
-                 firm.update_needs(state.time, state.government, market_data, state.reflux_system)
-
-                 # Corporate Tax -> Removed (Handled in Transaction Generation)
-
-                 # Gov Infra -> Removed (Handled in Pre-Decision)
+                 firm.update_needs(state.time, state.government, market_data)
 
         # --- AI Learning Update (Unified) ---
         market_data_for_learning = self.prepare_market_data(state.tracker)
@@ -462,13 +443,7 @@ class TickScheduler:
         # Phase 5: Finalize Government Stats
         state.government.finalize_tick(state.time)
 
-        # Phase 8-B: Distribute Reflux
-        state.reflux_system.distribute(state.households)
-
         # Save all state
-        # Persistence manager needs ALL transactions?
-        # state.persistence_manager.buffer_tick_state(state, all_transactions)
-        # sim_state.transactions contains all processed transactions.
         state.persistence_manager.buffer_tick_state(state, sim_state.transactions)
 
         if state.time % state.batch_save_interval == 0:
@@ -495,8 +470,6 @@ class TickScheduler:
 
         # --- Gold Standard / Money Supply Verification ---
         if state.time >= 1:
-            # Solvency check moved to start of tick (Phase 0A)
-
             current_money = state.calculate_total_money()
             expected_money = getattr(state, "baseline_money_supply", 0.0)
             if hasattr(state.government, "get_monetary_delta"):
@@ -564,10 +537,6 @@ class TickScheduler:
                         else:
                             best_asks[item_id] = orders[0].price if orders else 0.0
             elif hasattr(market, "get_best_ask"):
-                # Fallback for markets without exposed sell_orders but with get_best_ask (e.g. StockMarket?)
-                # We iterate known items or catch on demand?
-                # Stock market uses firm_id as item_id.
-                # For now we rely on explicit loops if needed, or assume OrderBookMarket structure.
                 pass
 
         # Stock Market Prices
@@ -638,7 +607,7 @@ class TickScheduler:
 
                 firm_orders, action_vector = firm.make_decision(
                     state.markets, state.goods_data, market_data, state.time,
-                    state.government, state.reflux_system, stress_config,
+                    state.government, stress_config,
                     market_snapshot=market_snapshot, government_policy=gov_policy
                 )
 
@@ -755,36 +724,15 @@ class TickScheduler:
             state.logger.error("LifecycleManager not initialized.")
 
         # 2. Commerce Finalization (Consumption & Leisure Effects) - TD-118
-        # Re-construct context or pass relevant data?
-        # Ideally we reuse context but it's local to run_tick.
-        # We'll reconstruct minimal context here or rely on state.
-        # Actually, finalized consumption needs time_allocation which is in state (updated in run_tick).
-
-        # We need to reconstruct CommerceContext.
-        # Since _phase_lifecycle is a method, we can't easily pass the local commerce_context from run_tick
-        # without changing signature.
-        # We'll reconstruct it. It's cheap.
 
         consumption_market_data = state.market_data # Use existing
-
-        # Household time allocation is needed.
-        # state.households is available.
-        # We need to know who is active.
-        # We need 'household_time_allocation' which IS NOT in SimulationState DTO explicitly?
-        # Check SimulationState definition in api.py.
-        # I didn't add it.
-        # But 'household_time_allocation' is returned by _phase_decisions and stored in WorldState (self.world_state.household_time_allocation).
-        # We can access it via self.world_state if needed, but 'state' arg here is SimulationState DTO.
-        # SimulationState doesn't have it.
-        # But we updated WorldState in run_tick: `state.household_time_allocation = household_time_allocation`.
-        # So we can access self.world_state.household_time_allocation.
 
         commerce_context: CommerceContext = {
             "households": state.households,
             "agents": state.agents,
             "breeding_planner": self.world_state.breeding_planner,
             "household_time_allocation": getattr(self.world_state, "household_time_allocation", {}),
-            "reflux_system": state.reflux_system,
+            "government": state.government,
             "market_data": state.market_data,
             "config": state.config_module,
             "time": state.time
@@ -794,13 +742,6 @@ class TickScheduler:
             leisure_effects = self.world_state.commerce_system.finalize_consumption_and_leisure(
                 commerce_context, state.planned_consumption
             )
-            # Store effects for learning?
-            # Learning update happens in Post-Tick.
-            # We should probably store this somewhere.
-            # The original code returned it from execute_consumption_and_leisure and used it in Learning Update.
-            # In run_tick, we need `household_leisure_effects` variable.
-            # We should store it in SimulationState or WorldState?
-            # WorldState seems appropriate for transient tick data.
             self.world_state.household_leisure_effects = leisure_effects
 
     def prepare_market_data(self, tracker: EconomicIndicatorTracker) -> Dict[str, Any]:
@@ -931,7 +872,6 @@ class TickScheduler:
                     config_module=state.config_module,
                     tracker=state.tracker,
                     logger=state.logger,
-                    reflux_system=state.reflux_system,
                     ai_training_manager=state.ai_training_manager,
                     ai_trainer=state.ai_trainer,
                     settlement_system=state.settlement_system,

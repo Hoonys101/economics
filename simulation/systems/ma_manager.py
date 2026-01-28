@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, TYPE_CHECKING
 import logging
 import random
+from simulation.finance.api import ISettlementSystem
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -14,12 +15,21 @@ class MAManager:
     Runs periodically within the simulation engine.
     Phase 21: Added Hostile Takeover Logic.
     """
-    def __init__(self, simulation: "Simulation", config_module: Any):
+    def __init__(self, simulation: "Simulation", config_module: Any, settlement_system: ISettlementSystem = None):
         self.simulation = simulation
         self.config = config_module
         self.logger = logging.getLogger("MAManager")
         self.ma_enabled = getattr(config_module, "MA_ENABLED", True)
         self.bankruptcy_loss_threshold = getattr(config_module, "BANKRUPTCY_CONSECUTIVE_LOSS_TICKS", 20)
+
+        # Inject or fallback
+        if settlement_system:
+             self.settlement_system = settlement_system
+        elif hasattr(simulation, "settlement_system"):
+             self.settlement_system = simulation.settlement_system
+        else:
+             self.logger.warning("MAManager: SettlementSystem not provided!")
+             self.settlement_system = None
 
     def process_market_exits_and_entries(self, current_tick: int):
         """
@@ -53,46 +63,25 @@ class MAManager:
                 continue
             
             # Standard Distress (Friendly M&A)
-            # SoC Refactor: use finance.consecutive_loss_turns
             if firm.finance.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
                  preys.append(firm)
             elif firm.assets < avg_assets * 0.2:
                 preys.append(firm)
             
             # Phase 21: Hostile Takeover Criteria
-            # Target if Market Cap < Intrinsic Value * Threshold
-            intrinsic_value = firm.valuation # Based on calculate_valuation (Net Assets + Profit Premium)
-            # Spec says: Market Cap < Intrinsic * 0.7
-            # Note: firm.valuation might ALREADY be intrinsic value.
-            # Market Cap is different. Market Cap = Stock Price * Shares.
-            # Firm.get_market_cap uses book value if no stock price.
-            # But let's assume we use 'stock_price' if available.
-            # If firm is public.
-
+            intrinsic_value = firm.valuation
             market_cap = firm.get_market_cap()
-            # If market cap is low relative to assets...
-            # Note: calculate_valuation uses profit premium.
-            # Intrinsic Value here roughly equals 'valuation'.
-
             threshold = getattr(self.config, "HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD", 0.7)
 
             if market_cap < intrinsic_value * threshold:
                 hostile_targets.append(firm)
 
             # Predator Criteria
-            # Must have System 2 Planner and expansion mode == 'MA'?
-            # Or just be rich.
-            # Phase 21 Spec: Predator Assets > Target Market Cap * 1.5.
-            # Let's filter later. Just identify rich firms.
-            # SoC Refactor: use finance.current_profit
             if firm.assets > avg_assets * 1.5 and firm.finance.current_profit > 0:
                 predators.append(firm)
 
         # 2. M&A Matching Loop
         random.shuffle(predators)
-        
-        # Merge lists, prioritize Hostile Targets for Predators who are GROWTH_HACKERs?
-        # Let's process Hostile first, then Friendly.
         
         # --- Hostile Takeover Loop ---
         for predator in list(predators): # Copy list to iterate
@@ -102,13 +91,10 @@ class MAManager:
                 guidance = predator.system2_planner.cached_guidance
                 expansion_mode = guidance.get("expansion_mode", "ORGANIC")
 
-            # Only Aggressive predators do Hostile Takeovers?
-            # Or rich ones. Spec: "Predator Assets > Target Market Cap * 1.5"
-
             target_found = False
             for target in hostile_targets:
                 if target.id == predator.id: continue
-                if target in bankrupts: continue # Don't hostile takeover a bankrupt firm (waste)
+                if target in bankrupts: continue
 
                 # Check Capacity
                 target_mcap = target.get_market_cap()
@@ -148,7 +134,7 @@ class MAManager:
             
         # 3. Process Bankruptcies (Liquidation)
         for firm in bankrupts:
-            if firm.is_active: # Check if not acquired already (though unlikely in loop structure)
+            if firm.is_active:
                 self._execute_bankruptcy(firm, current_tick)
 
     def _attempt_hostile_takeover(self, predator: "Firm", target: "Firm", market_cap: float, tick: int) -> bool:
@@ -159,7 +145,6 @@ class MAManager:
         offer_price = market_cap * 1.2 # 20% Premium over market price
 
         # Success Probability
-        # Base 60%
         success_prob = 0.6
 
         # Roll
@@ -177,37 +162,19 @@ class MAManager:
         self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price:,.2f}.")
         
         # 1. Payment
-        # predator.assets -= price
-
-        # Pay Shareholders (Households)
-        # Assuming 100% buyout.
-        # Ideally iterate shareholders.
-        # For simplicity, pay founder or distribute generally?
-        # Let's stick to paying founder as proxy for 'Shareholders'
+        # Replaced direct withdrawal with settlement transfer
         if prey.founder_id is not None and prey.founder_id in self.simulation.agents:
              target_agent = self.simulation.agents[prey.founder_id]
-             if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
-                 self.simulation.settlement_system.transfer(predator, target_agent, price, f"M&A Acquisition {prey.id}")
-             else:
-                 predator.withdraw(price)
-                 target_agent.deposit(price)
+             if self.settlement_system:
+                 self.settlement_system.transfer(predator, target_agent, price, f"M&A Acquisition {prey.id}", tick=tick)
         else:
-             # If no owner found, transfer to government (state capture)
-             # This policy (State Capture) ensures zero-sum integrity when owner is missing.
-             if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
-                 self.simulation.settlement_system.transfer(predator, self.simulation.government, price, f"M&A Acquisition {prey.id} (State)")
-             else:
-                 predator.withdraw(price)
-                 self.simulation.government.deposit(price)
+             # State Capture
+             if self.settlement_system:
+                 self.settlement_system.transfer(predator, self.simulation.government, price, f"M&A Acquisition {prey.id} (State)", tick=tick)
         
         # 2. Asset Transfer
-        # SoC Refactor: use production.add_capital
         predator.production.add_capital(prey.capital_stock)
         
-        # Phase 21: Transfer Automation Tech?
-        # If prey has higher automation, predator learns?
-        # Or just average?
-        # Let's say Predator keeps their own logic, maybe slight boost if Prey was advanced.
         if hasattr(prey, "automation_level") and hasattr(predator, "automation_level"):
             if prey.automation_level > predator.automation_level:
                 new_level = (predator.automation_level + prey.automation_level) / 2.0
@@ -221,10 +188,8 @@ class MAManager:
         retained_count = 0
         fired_count = 0
 
-        # Hostile Takeovers often have deeper cuts
         retention_rate = 0.3 if is_hostile else 0.5
 
-        # SoC Refactor: use hr.employees and hr.hire
         for emp in list(prey.hr.employees):
             if random.random() > retention_rate:
                 # Fire
@@ -244,22 +209,43 @@ class MAManager:
         prey.is_active = False 
 
     def _execute_bankruptcy(self, firm: "Firm", tick: int):
-        recovered = firm.liquidate_assets(current_tick=tick)
-        self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Recovered Cash: {recovered:,.2f}.")
+        # 1. Calculate values of real assets before they are wiped
+        inv_value = 0.0
+        # Simple estimation: default price if no market data, or look up market
+        default_price = 10.0
+        if self.simulation.markets:
+             for item, qty in firm.inventory.items():
+                 price = default_price
+                 if item in self.simulation.markets:
+                     m = self.simulation.markets[item]
+                     if hasattr(m, "avg_price"): price = m.avg_price
+                 inv_value += qty * price
 
-        # 2. [NEW] Record the asset destruction in the central ledger.
-        # This is the core change to fix the money leak.
-        if hasattr(self.simulation, 'settlement_system') and self.simulation.settlement_system:
-            self.simulation.settlement_system.record_liquidation_loss(
-                firm=firm,
-                amount=recovered,
+        capital_value = firm.capital_stock
+
+        # 2. Liquidate (Wipe assets, return cash)
+        recovered_cash = firm.liquidate_assets(current_tick=tick)
+
+        self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Cash Remaining: {recovered_cash:,.2f}.")
+
+        # 3. Record Liquidation of Real Assets
+        if self.settlement_system:
+            self.settlement_system.record_liquidation(
+                agent=firm,
+                inventory_value=inv_value,
+                capital_value=capital_value,
+                recovered_cash=0.0, # WO-018: Real assets written off, not sold
+                reason="bankruptcy_real_assets",
                 tick=tick
             )
         else:
-            # Fallback or error if the settlement system is missing
-            self.logger.error(f"CRITICAL: SettlementSystem not found. Liquidation loss of {recovered} for Firm {firm.id} is NOT RECORDED.")
+            self.logger.error(f"CRITICAL: SettlementSystem not found. Liquidation loss for Firm {firm.id} is NOT RECORDED.")
+
+        # 4. Escheat Cash to Government (State Capture)
+        if recovered_cash > 0 and self.settlement_system and hasattr(self.simulation, "government"):
+             self.settlement_system.transfer(firm, self.simulation.government, recovered_cash, "bankruptcy_escheatment", tick=tick)
         
-        # SoC Refactor: use hr.employees
+        # 5. Clear Employees
         for emp in list(firm.hr.employees):
             emp.quit()
             

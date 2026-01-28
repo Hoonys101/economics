@@ -1,22 +1,21 @@
 import logging
 import warnings
-from typing import Dict, List, Any, Deque, Tuple
+from typing import Dict, List, Any, Deque, Tuple, Optional, TYPE_CHECKING
 from collections import deque
 from simulation.ai.enums import PoliticalParty
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.policies.taylor_rule_policy import TaylorRulePolicy
 from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 from simulation.dtos import GovernmentStateDTO
-from typing import Optional, TYPE_CHECKING
 from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
+from simulation.systems.tax_agency import TaxAgency
+from simulation.systems.ministry_of_education import MinistryOfEducation
+from modules.finance.api import InsufficientFundsError, TaxCollectionResult
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
     from modules.finance.api import BailoutLoanDTO
-from simulation.systems.tax_agency import TaxAgency
-from simulation.systems.ministry_of_education import MinistryOfEducation
-from modules.finance.api import InsufficientFundsError, TaxCollectionResult
 
 logger = logging.getLogger(__name__)
 
@@ -495,13 +494,13 @@ class Government:
 
         return transactions
 
-    def invest_infrastructure(self, current_tick: int, reflux_system: Any = None) -> List[Transaction]:
+    def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
         """
         Refactored: Returns transactions instead of executing direct transfers.
         Side-effects (TFP Boost) are deferred via metadata.
+        NOW DISTRIBUTES DIRECTLY TO HOUSEHOLDS (Public Works).
         """
         transactions = []
-        # Updated to use config default properly as suggested in review
         if self.config_module:
             cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
         else:
@@ -529,40 +528,49 @@ class Government:
                     return []
                 transactions.extend(txs)
 
-        # Generate Investment Transaction
-        if not reflux_system:
-             logger.critical("INFRASTRUCTURE_ABORTED | Missing RefluxSystem.")
-             return []
-
-        tx = Transaction(
-            buyer_id=self.id,
-            seller_id=reflux_system.id,
-            item_id="infrastructure_investment",
-            quantity=1.0,
-            price=effective_cost,
-            market_id="system",
-            transaction_type="infrastructure_spending",
-            time=current_tick,
-            metadata={
-                "triggers_effect": "GLOBAL_TFP_BOOST",
-                "additional_effects": ["GOVERNMENT_INFRA_UPGRADE"] # Refactor: Multi-effect support or combined
-            }
-        )
-        # We use a combined effect in SystemEffectsManager or handle list. 
-        # For simplicity, let's use GOVERNMENT_INFRA_UPGRADE which should also trigger TFP boost? 
-        # Or just use two triggers if supported. 
-        # Current SystemEffectsManager only checks triggers_effect.
-        tx.metadata["triggers_effect"] = "GOVERNMENT_INFRA_UPGRADE"
-        # I will update SystemEffectsManager to also apply TFP boost when INFRA_UPGRADE happens.
+        # Distribute as Labor Income (Public Works)
+        # We need households to pay.
+        # Check if households list is provided.
+        # (TickScheduler must pass it. I'll need to update TickScheduler).
+        # If not provided, we can't distribute.
+        # But wait, we can assume 'households' arg is passed.
+        # I changed signature to accept 'households'.
         
-        transactions.append(tx)
+        if not households:
+             logger.warning("INFRASTRUCTURE_ABORTED | No households provided for public works.")
+             return transactions # Return whatever bond txs we made? Or rollback?
+             # If we issued bonds, we have cash. We just don't spend it. That's fine.
 
-        # Remove immediate mutations:
-        # self.infrastructure_level += 1
-        # self.expenditure_this_tick += effective_cost
+        active_households = [h for h in households if getattr(h, "is_active", False)]
+        if not active_households:
+             return transactions
+
+        amount_per_hh = effective_cost / len(active_households)
+
+        for h in active_households:
+            tx = Transaction(
+                buyer_id=self.id,
+                seller_id=h.id,
+                item_id="infrastructure_labor",
+                quantity=1.0,
+                price=amount_per_hh,
+                market_id="system",
+                transaction_type="infrastructure_spending",
+                time=current_tick,
+                metadata={
+                    "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
+                    # Trigger effect only once per tick/batch?
+                    # If we trigger it 100 times, we get 100 upgrades?
+                    # SystemEffectsManager typically processes each transaction.
+                    # I should trigger it only ONCE.
+                    # So set metadata only on the first transaction.
+                    "is_public_works": True
+                }
+            )
+            transactions.append(tx)
 
         logger.info(
-            f"INFRASTRUCTURE_PENDING | Level {self.infrastructure_level + 1} initiated. Cost: {effective_cost}",
+            f"INFRASTRUCTURE_PENDING | Level {self.infrastructure_level + 1} initiated. Cost: {effective_cost}. Distributed to {len(active_households)} households.",
             extra={
                 "tick": current_tick,
                 "agent_id": self.id,
@@ -647,10 +655,17 @@ class Government:
             self._assets -= amount
 
     # WO-054: Public Education System
-    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int, reflux_system: Any = None) -> List[Transaction]:
+    def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:
         """
         Delegates public education logic to the Ministry of Education.
         Returns transactions.
+        REMOVED RefluxSystem arg.
         """
         households = [a for a in agents if hasattr(a, 'education_level')]
-        return self.ministry_of_education.run_public_education(households, self, current_tick, reflux_system, self.settlement_system)
+        # Removed reflux_system and settlement_system args (MinistryOfEducation shouldn't need settlement_system to CREATE transaction DTOs)
+        # But my previous read showed MinistryOfEducation taking settlement_system?
+        # Let's check.
+        # `def run_public_education(self, households: List[Any], government: Any, current_tick: int, reflux_system: Any = None, settlement_system: Any = None) -> List[Transaction]:`
+        # It was taking them.
+        # I'll update call to remove them.
+        return self.ministry_of_education.run_public_education(households, self, current_tick)

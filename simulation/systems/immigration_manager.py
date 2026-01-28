@@ -1,3 +1,4 @@
+from __future__ import annotations
 import random
 import logging
 from typing import List, Any
@@ -6,6 +7,7 @@ from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.ai_model import AIEngineRegistry
+from simulation.finance.api import ISettlementSystem
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +17,9 @@ class ImmigrationManager:
     Responsible for injecting new households based on labor and population metrics.
     """
 
-    def __init__(self, config_module: Any):
+    def __init__(self, config_module: Any, settlement_system: ISettlementSystem):
         self.config = config_module
+        self.settlement_system = settlement_system
 
     def process_immigration(self, engine: Any) -> List[Household]:
         """
@@ -76,20 +79,6 @@ class ImmigrationManager:
             # Random Attributes
             initial_assets = random.uniform(3000.0, 5000.0)
 
-            # WO-106: Immigration Funding from Government
-            # Explicitly source immigrant funds from the Government budget.
-            if hasattr(engine, "government") and engine.government:
-                try:
-                    # Use withdraw to ensure funds exist (raises InsufficientFundsError if not)
-                    engine.government.withdraw(initial_assets)
-                except Exception:
-                    # If government funds are insufficient, immigration is restricted.
-                    logger.warning(
-                        f"IMMIGRATION_RESTRICTED | Government lacks funds for immigrant grant {initial_assets:.2f}",
-                        extra={"tick": engine.time, "tags": ["immigration", "funding_fail"]}
-                    )
-                    break # Stop creating immigrants in this batch
-
             personality = random.choice(list(Personality))
             value_orientation = random.choice(all_value_orientations)
             risk_aversion = random.uniform(0.1, 10.0)
@@ -125,7 +114,7 @@ class ImmigrationManager:
                 id=agent_id,
                 talent=talent,
                 goods_data=goods_data,
-                initial_assets=initial_assets,
+                initial_assets=0.0, # Start with 0, grant applied below
                 initial_needs=initial_needs,
                 decision_engine=household_decision_engine,
                 value_orientation=value_orientation,
@@ -142,6 +131,22 @@ class ImmigrationManager:
 
             # Initial Inventory (Survival Kit)
             household.inventory["basic_food"] = 5.0
+
+            # WO-106: Immigration Funding from Government
+            if hasattr(engine, "government") and engine.government:
+                tx = self.settlement_system.create_and_transfer(
+                    source_authority=engine.government,
+                    destination=household,
+                    amount=initial_assets,
+                    reason="immigration_grant",
+                    tick=engine.time
+                )
+                if not tx:
+                    logger.warning(
+                        f"IMMIGRATION_RESTRICTED | Government lacks funds or settlement failed for immigrant grant {initial_assets:.2f}",
+                        extra={"tick": engine.time, "tags": ["immigration", "funding_fail"]}
+                    )
+                    break # Stop creating immigrants
 
             new_households.append(household)
 

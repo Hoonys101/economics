@@ -30,7 +30,6 @@ from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStat
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.systems.ma_manager import MAManager
-from simulation.systems.reflux_system import EconomicRefluxSystem
 from simulation.systems.demographic_manager import DemographicManager
 from simulation.systems.immigration_manager import ImmigrationManager
 from simulation.systems.inheritance_manager import InheritanceManager
@@ -263,11 +262,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Initialize with a combined list copy to prevent aliasing sim.households
         # Note: New agents must be explicitly added to this list by lifecycle managers.
         sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
-        sim.ma_manager = MAManager(sim, self.config)
-        sim.reflux_system = EconomicRefluxSystem()
+        sim.ma_manager = MAManager(sim, self.config, settlement_system=sim.settlement_system)
         sim.demographic_manager = DemographicManager(config_module=self.config)
         sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
-        sim.immigration_manager = ImmigrationManager(config_module=self.config)
+        sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
         sim.housing_system = HousingSystem(config_module=self.config)
         sim.persistence_manager = PersistenceManager(
@@ -312,15 +310,16 @@ class SimulationInitializer(SimulationInitializerInterface):
             demographic_manager=sim.demographic_manager,
             inheritance_manager=sim.inheritance_manager,
             firm_system=sim.firm_system,
+            settlement_system=sim.settlement_system,
             logger=self.logger
         )
 
         # Initialize New Systems (Social, Event, Sensory, Commerce, Labor)
         sim.social_system = SocialSystem(self.config)
-        sim.event_system = EventSystem(self.config)
+        sim.event_system = EventSystem(self.config, settlement_system=sim.settlement_system)
         sim.sensory_system = SensorySystem(self.config)
         # sim.settlement_system initialized early
-        sim.commerce_system = CommerceSystem(self.config, sim.reflux_system)
+        sim.commerce_system = CommerceSystem(self.config)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
 
         # Phase 29: Crisis Monitor

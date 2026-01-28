@@ -326,7 +326,7 @@ class Firm(BaseAgent, ILearningAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, reflux_system: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
+        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
         market_snapshot: Optional[Any] = None, government_policy: Optional[Any] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
@@ -372,7 +372,6 @@ class Firm(BaseAgent, ILearningAgent):
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
-            reflux_system=reflux_system,
             stress_scenario_config=stress_scenario_config,
             market_snapshot=market_snapshot,
             government_policy=government_policy
@@ -383,7 +382,7 @@ class Firm(BaseAgent, ILearningAgent):
         external_orders = []
         for order in decisions:
             if order.market_id == "internal":
-                self._execute_internal_order(order, government, current_time, reflux_system)
+                self._execute_internal_order(order, government, current_time)
             else:
                 external_orders.append(order)
 
@@ -403,7 +402,7 @@ class Firm(BaseAgent, ILearningAgent):
         )
         return external_orders, tactic
 
-    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int, reflux_system: Optional[Any] = None) -> None:
+    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int) -> None:
         """Executes internal orders (state modifications) received from the Decision Engine."""
         if order.order_type == "SET_TARGET":
             self.production_target = order.quantity
@@ -411,7 +410,7 @@ class Firm(BaseAgent, ILearningAgent):
 
         elif order.order_type == "INVEST_AUTOMATION":
             spend = order.quantity
-            if self.finance.invest_in_automation(spend, reflux_system):
+            if self.finance.invest_in_automation(spend, government):
                 cost_per_pct = getattr(self.config_module, "AUTOMATION_COST_PER_PCT", 1000.0)
                 if cost_per_pct > 0:
                     gained_a = (spend / cost_per_pct) / 100.0
@@ -426,12 +425,12 @@ class Firm(BaseAgent, ILearningAgent):
 
         elif order.order_type == "INVEST_RD":
             budget = order.quantity
-            if self.finance.invest_in_rd(budget, reflux_system):
+            if self.finance.invest_in_rd(budget, government):
                 self._execute_rd_outcome(budget, current_time)
 
         elif order.order_type == "INVEST_CAPEX":
             budget = order.quantity
-            if self.finance.invest_in_capex(budget, reflux_system):
+            if self.finance.invest_in_capex(budget, government):
                 efficiency = 1.0 / getattr(self.config_module, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
                 added_capital = budget * efficiency
                 self.production.add_capital(added_capital)
@@ -565,12 +564,15 @@ class Firm(BaseAgent, ILearningAgent):
         return transactions
 
     @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, reflux_system: Optional[Any] = None, technology_manager: Optional[Any] = None) -> None:
+    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, technology_manager: Optional[Any] = None) -> None:
         """
         Lifecycle updates (Age, Bankruptcy Check).
         Financial transactions are now in generate_transactions.
         Production is in produce.
         """
+        if not self.is_active:
+            return
+
         self.age += 1
 
         # --- Final State Updates & Checks ---

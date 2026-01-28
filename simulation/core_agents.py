@@ -797,6 +797,9 @@ class Household(BaseAgent, ILearningAgent):
         Updates agent needs and lifecycle (Bio, Social, Econ-Work).
         Replaces legacy AgentLifecycleComponent.
         """
+        if not self.is_active:
+            return
+
         # 1. Work (Econ)
         if self._econ_state.is_employed:
             self._econ_state, labor_res = self.econ_component.work(

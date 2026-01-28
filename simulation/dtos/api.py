@@ -209,7 +209,6 @@ class DecisionContext:
     market_snapshot: Optional[MarketSnapshotDTO] = None
     government_policy: Optional[GovernmentPolicyDTO] = None
 
-    reflux_system: Optional[Any] = None # Phase 8-B: Reflux System
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
 
 
@@ -233,7 +232,6 @@ class SimulationState:
     config_module: Any
     tracker: Any
     logger: Any # logging.Logger
-    reflux_system: Any
     ai_training_manager: Optional[Any]
     ai_trainer: Optional[Any] # Added for WO-103
     settlement_system: Optional[Any] = None # WO-112: Settlement System
