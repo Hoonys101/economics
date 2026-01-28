@@ -3,8 +3,8 @@ import os
 from modules.memory.V2.memory_manager import MemoryManager
 from modules.memory.V2.storage.file_storage import FileStorage
 from modules.memory.V2.dtos import QueryDTO
-from tests.helpers.dto_factory import DTOFactory
-from tests.mocks.mock_config import MockSimulationConfig
+from tests.unit.helpers.dto_factory import DTOFactory
+from tests.unit.mocks.mock_config import MockSimulationConfig
 
 @pytest.fixture
 def mock_config():

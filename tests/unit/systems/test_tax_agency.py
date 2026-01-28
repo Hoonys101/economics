@@ -53,12 +53,28 @@ class TestTaxAgency(unittest.TestCase):
 
     def test_collect_tax(self):
         mock_gov = MagicMock()
+        mock_gov.id = 1
         mock_gov._assets = 10000
         mock_gov.total_collected_tax = 0
-        # ... other attributes ...
 
-        self.tax_agency.collect_tax(mock_gov, 100, "income", 1, 1)
-        self.assertEqual(mock_gov.assets, 10100)
+        mock_payer = MagicMock()
+        mock_payer.id = 101
+
+        mock_settlement = MagicMock()
+        mock_settlement.transfer.return_value = True # Simulate success
+
+        # Signature: collect_tax(payer, payee, amount, tax_type, settlement_system, current_tick)
+        result = self.tax_agency.collect_tax(mock_payer, mock_gov, 100, "income", mock_settlement, 1)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(result['amount_collected'], 100)
+
+        mock_settlement.transfer.assert_called_once_with(
+            debit_agent=mock_payer,
+            credit_agent=mock_gov,
+            amount=100,
+            memo="income collection"
+        )
 
 if __name__ == '__main__':
     unittest.main()
