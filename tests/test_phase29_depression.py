@@ -35,6 +35,7 @@ class TestPhase29Depression(unittest.TestCase):
         self.config_module.configure_mock(
             GOODS={"food": {"initial_price": 10}, "electronics": {"initial_price": 50}},
             INITIAL_BANK_ASSETS=1000000,
+            INITIAL_MONEY_SUPPLY=1000000, # Explicitly set here too, but will enforce below
             INITIAL_PROPERTY_VALUE=10000,
             INITIAL_RENT_PRICE=100,
             NUM_HOUSING_UNITS=10,
@@ -100,7 +101,10 @@ class TestPhase29Depression(unittest.TestCase):
             INITIAL_HOUSEHOLD_ASSETS_MEAN=1000.0,
             EDUCATION_COST_PER_LEVEL={1: 500},
             SCHOLARSHIP_WEALTH_PERCENTILE=0.20,
-            SCHOLARSHIP_POTENTIAL_THRESHOLD=0.7
+            SCHOLARSHIP_POTENTIAL_THRESHOLD=0.7,
+            LIQUIDITY_NEED_INCREASE_RATE=1.0,
+            ASSETS_CLOSURE_THRESHOLD=0.0,
+            FIRM_CLOSURE_TURNS_THRESHOLD=5
         )
 
         # Create dummy agents
@@ -121,6 +125,7 @@ class TestPhase29Depression(unittest.TestCase):
             h.children_ids = []
             h.needs = {"survival": 0.5}
             h._assets = 1000
+            h.assets = 1000 # Explicitly set property for sorting
             h.decision_engine = MagicMock()
             h.decision_engine.ai_engine = MagicMock()
             # make_decision must return (orders, action_vector)
@@ -140,6 +145,7 @@ class TestPhase29Depression(unittest.TestCase):
             f.is_active = True
             f.age = 0
             f._assets = 5000
+            f.assets = 5000 # Explicitly set property
             f.current_profit = 100
             f.consecutive_loss_turns = 0
             f.valuation = 5000.0
@@ -154,6 +160,7 @@ class TestPhase29Depression(unittest.TestCase):
             # make_decision must return (orders, action_vector)
             f.make_decision.return_value = ([], MagicMock())
             f.inventory = {f.specialization: 10}
+            f.needs = {"liquidity_need": 0.0} # Needs initialization
             f.price = 10
             f.productivity_factor = 1.0
             f.hr = MagicMock()
@@ -205,6 +212,7 @@ class TestPhase29Depression(unittest.TestCase):
         # Mock CommerceSystem to avoid VectorizedHouseholdPlanner issues in mock environment
         self.sim.commerce_system = MagicMock()
         self.sim.commerce_system.execute_consumption_and_leisure.return_value = {}
+        self.sim.commerce_system.plan_consumption_and_leisure.return_value = ({}, [])
 
         # Manually fix MAManager config issue
         if self.sim.ma_manager:

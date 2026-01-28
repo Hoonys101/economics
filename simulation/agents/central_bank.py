@@ -5,6 +5,7 @@ from modules.finance.api import InsufficientFundsError
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
+    from simulation.dtos.strategy import ScenarioStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +15,12 @@ class CentralBank:
     Implements Taylor Rule to dynamically adjust interest rates.
     """
 
-    def __init__(self, tracker: Any, config_module: Any, memory_interface: Optional["MemoryV2Interface"] = None):
+    def __init__(self, tracker: Any, config_module: Any, memory_interface: Optional["MemoryV2Interface"] = None, strategy: Optional["ScenarioStrategy"] = None):
         self.id = "CENTRAL_BANK" # Identifier for SettlementSystem
         self.tracker = tracker
         self.config_module = config_module
         self.memory_v2 = memory_interface
+        self.strategy = strategy
 
         # Balance Sheet
         self.assets: Dict[str, Any] = {"bonds": [], "cash": 0.0}
@@ -133,7 +135,17 @@ class CentralBank:
                       self.alpha * (inflation_rate - self.inflation_target) + \
                       self.beta * output_gap
 
-        # D. Zero Lower Bound (ZLB) and Smoothing
+        # D. Apply Strategy Overrides (WO-136)
+        if self.strategy and self.strategy.is_active:
+             # Scenario 4: Fixed Target Rate
+             if self.strategy.monetary_shock_target_rate is not None:
+                 taylor_rate = self.strategy.monetary_shock_target_rate
+
+             # Multiplier
+             if self.strategy.base_interest_rate_multiplier is not None:
+                 taylor_rate *= self.strategy.base_interest_rate_multiplier
+
+        # E. Zero Lower Bound (ZLB) and Smoothing
         # ZLB
         target_rate = max(0.0, taylor_rate)
 

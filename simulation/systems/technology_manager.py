@@ -2,7 +2,10 @@ from __future__ import annotations
 import logging
 import random
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional, Set, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from simulation.dtos.strategy import ScenarioStrategy
 
 from simulation.systems.tech.api import FirmTechInfoDTO
 
@@ -24,9 +27,10 @@ class TechnologyManager:
     Handles the invention and diffusion of new technologies (The S-Curve).
     """
 
-    def __init__(self, config_module: Any, logger: logging.Logger):
+    def __init__(self, config_module: Any, logger: logging.Logger, strategy: Optional["ScenarioStrategy"] = None):
         self.config = config_module
         self.logger = logger
+        self.strategy = strategy
         
         # Tech Registry
         self.tech_tree: Dict[str, TechNode] = {}
@@ -42,13 +46,18 @@ class TechnologyManager:
     def _initialize_tech_tree(self):
         """Define the initial tech tree."""
         # WO-053: Chemical Fertilizer
+        # WO-136: Use Strategy DTO if available
+        tfp_mult = self.strategy.tfp_multiplier if self.strategy else getattr(self.config, "TECH_FERTILIZER_MULTIPLIER", 3.0)
+        unlock_tick = self.strategy.tech_fertilizer_unlock_tick if self.strategy else getattr(self.config, "TECH_FERTILIZER_UNLOCK_TICK", 50)
+        diff_rate = self.strategy.tech_diffusion_rate if self.strategy else getattr(self.config, "TECH_DIFFUSION_RATE", 0.05)
+
         fertilizer = TechNode(
             id="TECH_AGRI_CHEM_01",
             name="Chemical Fertilizer (Haber-Bosch)",
             sector="FOOD",
-            multiplier=getattr(self.config, "TECH_FERTILIZER_MULTIPLIER", 3.0), # 300% TFP
-            unlock_tick=getattr(self.config, "TECH_FERTILIZER_UNLOCK_TICK", 50), # Early unlock for test
-            diffusion_rate=getattr(self.config, "TECH_DIFFUSION_RATE", 0.05)
+            multiplier=tfp_mult,
+            unlock_tick=unlock_tick,
+            diffusion_rate=diff_rate
         )
         self.tech_tree[fertilizer.id] = fertilizer
 

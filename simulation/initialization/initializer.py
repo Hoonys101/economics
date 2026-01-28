@@ -103,12 +103,13 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 
-        # Phase 28: Initialize Stress Scenario Config
-        from simulation.dtos.scenario import StressScenarioConfig
-        sim.stress_scenario_config = StressScenarioConfig()
+        # WO-136: Initialize Scenario Strategy (Replacing StressScenarioConfig & Config Injection)
+        from simulation.dtos.strategy import ScenarioStrategy
 
         # Load Scenario from JSON if directed by config
         active_scenario_name = self.config_manager.get("simulation.active_scenario")
+        strategy = ScenarioStrategy()
+
         if active_scenario_name:
             scenario_path = f"config/scenarios/{active_scenario_name}.json"
             if os.path.exists(scenario_path):
@@ -116,37 +117,60 @@ class SimulationInitializer(SimulationInitializerInterface):
                      with open(scenario_path, 'r') as f:
                          scenario_data = json.load(f)
 
-                     sim.stress_scenario_config.is_active = scenario_data.get("is_active", False)
-                     sim.stress_scenario_config.scenario_name = scenario_data.get("scenario_name", active_scenario_name)
-                     sim.stress_scenario_config.start_tick = scenario_data.get("start_tick", 50)
-
+                     # Extract parameters
                      params = scenario_data.get("parameters", {})
-                     sim.stress_scenario_config.monetary_shock_target_rate = params.get("MONETARY_SHOCK_TARGET_RATE")
-                     sim.stress_scenario_config.fiscal_shock_tax_rate = params.get("FISCAL_SHOCK_TAX_RATE")
-                     sim.stress_scenario_config.base_interest_rate_multiplier = params.get("base_interest_rate_multiplier")
-                     sim.stress_scenario_config.corporate_tax_rate_delta = params.get("corporate_tax_rate_delta")
-                     sim.stress_scenario_config.demand_shock_multiplier = params.get("demand_shock_multiplier")
 
-                     # WO-053: Inject generic scenario parameters into config
-                     for key, value in params.items():
-                         # Map specific keys if needed, or just inject
-                         if key == "TFP_MULTIPLIER":
-                             setattr(self.config, "TECH_FERTILIZER_MULTIPLIER", value)
-                             self.logger.info(f"SCENARIO_INJECT | Set TECH_FERTILIZER_MULTIPLIER = {value}")
-                         else:
-                             setattr(self.config, key, value)
-                             self.logger.info(f"SCENARIO_INJECT | Set {key} = {value}")
+                     # Map parameters to Strategy DTO
+                     strategy = ScenarioStrategy(
+                         name=active_scenario_name,
+                         is_active=scenario_data.get("is_active", False),
+                         start_tick=scenario_data.get("start_tick", 50),
+                         scenario_name=scenario_data.get("scenario_name", active_scenario_name),
 
-                     self.logger.info(f"Loaded Stress Scenario: {sim.stress_scenario_config.scenario_name} (Active: {sim.stress_scenario_config.is_active})")
+                         # Stress Params
+                         inflation_expectation_multiplier=params.get("inflation_expectation_multiplier", 1.0),
+                         hoarding_propensity_factor=params.get("hoarding_propensity_factor", 0.0),
+                         demand_shock_cash_injection=params.get("demand_shock_cash_injection", 0.0),
+                         panic_selling_enabled=params.get("panic_selling_enabled", False),
+                         debt_aversion_multiplier=params.get("debt_aversion_multiplier", 1.0),
+                         consumption_pessimism_factor=params.get("consumption_pessimism_factor", 0.0),
+                         asset_shock_reduction=params.get("asset_shock_reduction", 0.0),
+                         exogenous_productivity_shock=params.get("exogenous_productivity_shock", {}),
+                         monetary_shock_target_rate=params.get("monetary_shock_target_rate") or params.get("MONETARY_SHOCK_TARGET_RATE"),
+                         fiscal_shock_tax_rate=params.get("fiscal_shock_tax_rate") or params.get("FISCAL_SHOCK_TAX_RATE"),
+                         base_interest_rate_multiplier=params.get("base_interest_rate_multiplier"),
+                         corporate_tax_rate_delta=params.get("corporate_tax_rate_delta"),
+                         demand_shock_multiplier=params.get("demand_shock_multiplier"),
+
+                         # Config Injection Replacements
+                         tfp_multiplier=params.get("TFP_MULTIPLIER", 3.0),
+                         tech_fertilizer_unlock_tick=params.get("TECH_FERTILIZER_UNLOCK_TICK", 50),
+                         tech_diffusion_rate=params.get("TECH_DIFFUSION_RATE", 0.05),
+                         food_sector_config=params.get("FOOD_SECTOR_CONFIG", {}),
+                         market_config=params.get("MARKET_CONFIG", {}),
+                         deflationary_pressure_multiplier=params.get("DEFLATIONARY_PRESSURE_MULTIPLIER", 1.0),
+                         limits=params.get("LIMITS", {}),
+                         firm_decision_engine=params.get("FIRM_DECISION_ENGINE"),
+                         household_decision_engine=params.get("HOUSEHOLD_DECISION_ENGINE"),
+
+                         parameters=params # Store raw params just in case
+                     )
+
+                     self.logger.info(f"Loaded Scenario Strategy: {strategy.name} (Active: {strategy.is_active})")
                  except Exception as e:
                      self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
             else:
                 self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
 
+        sim.strategy = strategy
+        # Alias for backward compatibility (DecisionContext uses this name)
+        sim.stress_scenario_config = strategy
+
         # WO-124: Initialize CentralBank EARLY for Genesis Protocol
         sim.central_bank = CentralBank(
             tracker=sim.tracker,
-            config_module=self.config
+            config_module=self.config,
+            strategy=sim.strategy
         )
         # Genesis Step 1: Fiat Lux (Minting M0)
         sim.central_bank.deposit(self.config.INITIAL_MONEY_SUPPLY)
@@ -187,7 +211,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.government = Government(
             id=sim.next_agent_id,
             initial_assets=0.0,
-            config_module=self.config
+            config_module=self.config,
+            strategy=sim.strategy
         )
         sim.government.settlement_system = sim.settlement_system
         sim.agents[sim.government.id] = sim.government
@@ -312,7 +337,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             repository=self.repository
         )
         sim.firm_system = FirmSystem(config_module=self.config)
-        sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger)
+        sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger, strategy=sim.strategy)
 
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)

@@ -16,6 +16,7 @@ from modules.finance.api import InsufficientFundsError, TaxCollectionResult
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
     from modules.finance.api import BailoutLoanDTO
+    from simulation.dtos.strategy import ScenarioStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class Government:
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
     """
 
-    def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None):
+    def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None):
         self.id = id
         self._assets = initial_assets
         self.config_module = config_module
@@ -69,6 +70,14 @@ class Government:
         # Policy Levers (Tax Rates)
         self.income_tax_rate: float = getattr(config_module, "INCOME_TAX_RATE", 0.1)
         self.corporate_tax_rate: float = getattr(config_module, "CORPORATE_TAX_RATE", 0.2)
+
+        # WO-136: Apply Strategy Overrides
+        if strategy and strategy.is_active:
+             if strategy.fiscal_shock_tax_rate is not None:
+                 self.corporate_tax_rate = strategy.fiscal_shock_tax_rate
+
+             if strategy.corporate_tax_rate_delta is not None:
+                 self.corporate_tax_rate += strategy.corporate_tax_rate_delta
 
         # Spending Multipliers (AI Controlled)
         # 1.0 = Normal (Budget Neutral-ish), >1.0 = Stimulus, <1.0 = Austerity
