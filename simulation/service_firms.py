@@ -6,6 +6,7 @@ from simulation.firms import Firm
 from simulation.ai.enums import Personality
 from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
+from simulation.dtos.config_dtos import FirmConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class ServiceFirm(Firm):
         productivity_factor: float,
         decision_engine: Any,
         value_orientation: str,
-        config_module: Any,
+        config_dto: FirmConfigDTO,
         initial_inventory: Optional[Dict[str, float]] = None,
         loan_market: Optional[Any] = None,
         logger: Optional[logging.Logger] = None,
@@ -40,7 +41,7 @@ class ServiceFirm(Firm):
             productivity_factor,
             decision_engine,
             value_orientation,
-            config_module,
+            config_dto,
             initial_inventory,
             loan_market,
             logger,
@@ -52,7 +53,7 @@ class ServiceFirm(Firm):
         self.capacity_this_tick: float = 0.0
         self.waste_this_tick: float = 0.0
 
-    def produce(self, current_time: int) -> None:
+    def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         """
         서비스 생산 로직.
         1. Cobb-Douglas로 용량(Capacity) 계산.
@@ -62,7 +63,7 @@ class ServiceFirm(Firm):
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["production", "service"]}
 
         # 1. 감가상각 (Goods와 동일)
-        depreciation_rate = getattr(self.config_module, "CAPITAL_DEPRECIATION_RATE", 0.05)
+        depreciation_rate = self.config.capital_depreciation_rate
         self.capital_stock *= (1.0 - depreciation_rate)
 
         # 2. 생산 용량 계산 (Cobb-Douglas)
@@ -71,8 +72,12 @@ class ServiceFirm(Firm):
             total_labor_skill = 1.0
         capital = max(self.capital_stock, 0.01)
 
-        alpha = getattr(self.config_module, "LABOR_ALPHA", 0.7)
+        alpha = self.config.labor_alpha
         tfp = self.productivity_factor
+
+        # Apply Technology Multiplier (WO-053)
+        if technology_manager:
+            tfp *= technology_manager.get_productivity_multiplier(self.id)
 
         if total_labor_skill > 0 and capital > 0:
             capacity = tfp * (total_labor_skill ** alpha) * (capital ** (1 - alpha))
@@ -85,7 +90,7 @@ class ServiceFirm(Firm):
             total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
             avg_skill = total_skill / len(self.employees)
 
-        item_config = self.config_module.GOODS.get(self.specialization, {})
+        item_config = self.config.goods.get(self.specialization, {})
         quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
         actual_quality = self.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
 

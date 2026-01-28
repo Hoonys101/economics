@@ -46,7 +46,10 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 market_price = market_data["goods_market"].get(f"{specialization}_current_sell_price", 10.0)
 
             # Simple Undercut Strategy to ensure liquidity
-            sell_price = max(0.1, market_price * 0.98)
+            # Use PRICE_VOLATILITY_LIMIT (default 0.02 if not set, or 0.5 in experiment)
+            undercut_rate = getattr(self.config_module, "PRICE_VOLATILITY_LIMIT", 0.02)
+
+            sell_price = max(0.1, market_price * (1.0 - undercut_rate))
 
             orders.append(Order(
                 agent_id=firm_state.id,
@@ -76,7 +79,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
              fire_orders = self._fire_excess_labor(firm_state, needed_labor)
              orders.extend(fire_orders)
 
-        return orders, Tactic.MAINTAIN_STATUS_QUO
+        return orders, Tactic.NO_ACTION
 
     def _fire_excess_labor(self, firm: FirmStateDTO, needed_labor: float) -> List[Order]:
         """
