@@ -4,10 +4,10 @@
     "updated": "2026-01-28",
     "author": "Antigravity"
   },
-  "wo-135-2-schema": {
+  "wo-135-3-refactor": {
     "command": "create",
-    "instruction": "Define canonical DTO schemas in simulation/api.py as per design/work_orders/reboot_plan_remainder.md. Ensure HouseholdConfigDTO, FirmConfigDTO, and GoodsDTO are strictly typed and synchronized with config.py via tests/test_config_parity.py. No logic changes yet.",
-    "title": "WO-135.2: DTO Schema Alignment",
+    "instruction": "Refactor Household and Firm agents to use ConfigFactory and DecisionContext as per design/work_orders/reboot_plan_remainder.md. Mandatory: 1) Remove 'import config' from agents, 2) Use ConfigDTOs in __init__, 3) Refactor decision methods to use DecisionContext, 4) Verify against Golden Samples. Strictly follow Data-Driven Purity.",
+    "title": "WO-135.3: Core Agent/Engine Refactor",
     "file": "design/work_orders/reboot_plan_remainder.md"
   }
 }
