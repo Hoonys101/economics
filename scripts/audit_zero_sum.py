@@ -9,6 +9,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
 from simulation.firms import Firm
+from simulation.dtos.api import SimulationState
 
 def audit_integrity():
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -85,29 +86,10 @@ def audit_integrity():
         gross_production_value += f.current_production * price
 
     # 2. Consumption (Value Destroyed)
-    # Households don't expose 'consumed value' directly easily, but we know Consumption = Wealth Loss.
-    # Firms consume Inputs.
-    # We can infer Consumption + Input Usage by checking Inventory changes vs Production.
-    # But simpler: We assume Unexplained Diff is Consumption + Depreciation.
+    household_consumption_value = sum(h.current_consumption for h in sim.households)
 
     # 3. Depreciation (Capital Stock Loss)
     depreciation_loss = cap_stock_t0 - cap_stock_t1
-
-    # 4. Input Consumption (Firm)
-    # Hard to track exact input usage without snapshotting input_inventory.
-    # Let's assume input_inventory change is mostly consumption.
-    # But firms might buy inputs? (Trade). Trade is wealth transfer, not loss.
-    # So Input Consumption = (Input_Inv_T0 - Input_Inv_T1) + Inputs_Bought.
-    # If no trade (Tick 1 usually no trade?), then Delta Input Inv is Consumption.
-
-    # 5. Household Consumption
-    # sim.households[i].current_consumption (Value)
-    household_consumption_value = sum(h.current_consumption for h in sim.households)
-
-    # Predict Delta
-    # Delta Wealth = Gross Production - HH Consumption - Depreciation - Input Consumption
-    # If Input Consumption is not tracked, we might fail.
-    # Let's see if Gross Production - HH Consumption - Depreciation aligns.
 
     predicted_diff = gross_production_value - household_consumption_value - depreciation_loss
     unexplained_diff = diff - predicted_diff
@@ -120,30 +102,8 @@ def audit_integrity():
     # PR Review: Tolerance tightened to 0.1%
     tolerance = 0.001 # 0.1%
 
-    # We accept Variance if it likely Input Consumption (Negative Unexplained).
-    # If Unexplained is Negative, it means we predicted MORE wealth than actual -> Something consumed it.
-    # Input Consumption is the missing sink.
-    # If Unexplained is Positive, we have Created Money from nowhere. That is BAD.
-
-    # We enforce STRICT no-creation (Positive Unexplained <= tolerance).
-    # We allow Sinks (Negative Unexplained) to be larger IF we attribute it to inputs.
-    # But the user asked for "Tolerance 0.1%".
-    # I should assume "Net Change" should be explained.
-
-    if abs(unexplained_diff) > wealth_t0 * tolerance:
-         # If variance is negative, check if it fits Input Consumption profile?
-         # For now, log error but provide context.
-         logger.error(f"FAILED: Initial Sink detected! (>0.1% unexplained variance). Unexplained: {unexplained_diff:.2f}")
-    else:
-         logger.info("PASSED: Initial Sink check (Unexplained variance < 0.1%).")
-
-    # PR Review: Tolerance tightened to 0.1%
-    tolerance = 0.001 # 0.1%
-
-    # We check if unexplained variance is within tolerance
     if abs(unexplained_diff) > wealth_t0 * tolerance:
          logger.error(f"FAILED: Initial Sink detected! (>0.1% unexplained variance). Unexplained: {unexplained_diff:.2f}")
-         # Also fail if the raw diff is huge and we can't explain it, but here we try to explain it.
     else:
          logger.info("PASSED: Initial Sink check (Unexplained variance < 0.1%).")
 
@@ -180,6 +140,64 @@ def audit_integrity():
             logger.error(f"FAILED: Government did not pay enough. Paid: {paid_amount}")
     else:
         logger.warning("No immigrants created (unexpected)")
+
+    # 4. Check Liquidation Escheatment (Government Capture)
+    # ------------------------------------------------------------------
+    logger.info("Checking Liquidation Escheatment (to Government)...")
+    # Create victim firm (orphan, no shareholders)
+    victim = sim.firms[0]
+    victim.inventory['basic_food'] = 10.0
+    victim.capital_stock = 500.0
+    victim.total_shares = 1000.0
+    victim.treasury_shares = 1000.0 # 100% Treasury -> No external shareholders -> Escheat to Gov
+
+    # Ensure it has cash
+    victim_cash = 1000.0
+    if hasattr(victim, '_add_assets'):
+         victim._add_assets(victim_cash - victim.assets)
+    else:
+         victim.assets = victim_cash
+
+    victim.is_active = False # Mark for death
+
+    initial_gov = sim.government.assets
+
+    # Create SimulationState DTO for lifecycle manager
+    sim_state = SimulationState(
+        time=sim.time,
+        households=sim.households,
+        firms=sim.firms,
+        agents=sim.agents,
+        markets=sim.markets,
+        government=sim.government,
+        bank=sim.bank,
+        central_bank=sim.central_bank,
+        stock_market=sim.stock_market,
+        stock_tracker=sim.stock_tracker if hasattr(sim, 'stock_tracker') else None,
+        goods_data=sim.goods_data,
+        market_data={},
+        config_module=sim.config_module,
+        tracker=sim.tracker,
+        logger=sim.logger,
+        ai_training_manager=sim.ai_training_manager,
+        ai_trainer=sim.ai_trainer,
+        next_agent_id=sim.next_agent_id,
+        real_estate_units=sim.real_estate_units,
+        settlement_system=sim.world_state.settlement_system
+    )
+
+    # Run lifecycle manager
+    sim.lifecycle_manager._handle_agent_liquidation(sim_state)
+
+    final_gov = sim.government.assets
+    captured = final_gov - initial_gov
+    logger.info(f"Gov Assets Before: {initial_gov:.2f} | After: {final_gov:.2f} | Captured: {captured:.2f}")
+
+    # We expect Government to capture the Cash (1000.0). Real assets (inventory/capital) are destroyed.
+    if abs(captured - victim_cash) < 1.0:
+        logger.info(f"PASSED: Government captured liquidation cash.")
+    else:
+        logger.error(f"FAILED: Government capture mismatch. Expected ~{victim_cash}, got {captured}")
 
 if __name__ == "__main__":
     audit_integrity()
