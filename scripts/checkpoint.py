@@ -88,6 +88,11 @@ def main():
 
     # 4. Protocol Validation
     print("\n⚖️ Step 4: Running protocol validation for all changes...")
+
+    # Purity Gate Enforcement
+    print("   🛡️ Running Purity Gate...")
+    subprocess.run(["python", "scripts/verify_purity.py"], check=True)
+
     run_worker("verify", "Perform a strict SoC and DTO compliance check on all recent changes.")
 
     print("\n✅ Checkpoint Complete. Warm Boot prompt generated in design/snapshots/latest_snapshot.md.")

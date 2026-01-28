@@ -15,6 +15,7 @@ from simulation.ai.api import (
     Aggressiveness,
 )
 from simulation.core_markets import Market
+from simulation.interfaces.market_interface import IMarket
 from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, ConsumptionResult
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
@@ -645,7 +646,7 @@ class Household(BaseAgent, ILearningAgent):
     @override
     def make_decision(
         self,
-        markets: Dict[str, "Market"],
+        markets: Dict[str, IMarket],
         goods_data: List[Dict[str, Any]],
         market_data: Dict[str, Any],
         current_time: int,

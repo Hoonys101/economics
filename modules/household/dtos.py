@@ -10,6 +10,7 @@ from simulation.portfolio import Portfolio
 
 if TYPE_CHECKING:
     from simulation.core_markets import Market
+    from simulation.interfaces.market_interface import IMarket
     from simulation.dtos import LeisureType
 
 @dataclass
@@ -195,7 +196,7 @@ class CloningRequestDTO:
 @dataclass
 class EconContextDTO:
     """Context for economic operations."""
-    markets: Dict[str, "Market"]
+    markets: Dict[str, "IMarket"]
     market_data: Dict[str, Any]
     current_time: int
 

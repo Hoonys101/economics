@@ -8,12 +8,11 @@ from simulation.components.api import IDemographicsComponent
 if TYPE_CHECKING:
     from simulation.core_agents import Household, Talent
     # from config import YourConfigModule # TBD: 실제 설정 모듈 경로로 변경
-import config
 
 class DemographicsComponent:
     """Handles the demographic data and lifecycle logic for a Household."""
 
-    def __init__(self, owner: "Household", initial_age: float, gender: str, generation: int = 0, parent_id: Optional[int] = None, config_module: Any = config):
+    def __init__(self, owner: "Household", initial_age: float, gender: str, generation: int = 0, parent_id: Optional[int] = None, config_module: Any = None):
         self._owner = owner
         self._age = initial_age
         self._gender = gender
