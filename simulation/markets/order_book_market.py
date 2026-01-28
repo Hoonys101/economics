@@ -71,7 +71,8 @@ class OrderBookMarket(Market):
         std_dev = math.sqrt(variance)
 
         volatility_adj = 1.0 + (std_dev / mean_price)
-        base_limit = 0.15 # 15% base limit
+        # WO-136: Use config for base limit
+        base_limit = getattr(self.config_module, "MARKET_CIRCUIT_BREAKER_BASE_LIMIT", 0.15)
 
         lower_bound = mean_price * (1.0 - (base_limit * volatility_adj))
         upper_bound = mean_price * (1.0 + (base_limit * volatility_adj))

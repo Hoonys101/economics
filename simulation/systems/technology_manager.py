@@ -50,9 +50,8 @@ class TechnologyManager:
         # WO-136: Use Strategy DTO if available
         tfp_mult = self.strategy.tfp_multiplier if self.strategy else getattr(self.config, "TECH_FERTILIZER_MULTIPLIER", 3.0)
         # WO-136: Replaced unlock_tick with cost_threshold
-        # unlock_tick was 50. Approx R&D per tick per firm is ~2-5. 10 firms -> 20-50 per tick. 50 ticks -> 1000-2500.
-        # We'll set a safe default of 5000.0
-        cost_threshold = 5000.0
+        # cost_threshold is now configurable via TECH_UNLOCK_COST_THRESHOLD
+        cost_threshold = getattr(self.config, "TECH_UNLOCK_COST_THRESHOLD", 5000.0)
         diff_rate = self.strategy.tech_diffusion_rate if self.strategy else getattr(self.config, "TECH_DIFFUSION_RATE", 0.05)
 
         fertilizer = TechNode(
@@ -106,7 +105,9 @@ class TechnologyManager:
 
             # Calculate probability
             ratio = sector_rd / tech.cost_threshold
-            prob = min(0.1, ratio ** 2)
+            # WO-136: Probability cap is configurable
+            prob_cap = getattr(self.config, "TECH_UNLOCK_PROB_CAP", 0.1)
+            prob = min(prob_cap, ratio ** 2)
 
             # Roll dice
             if random.random() < prob:
