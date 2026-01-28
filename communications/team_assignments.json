@@ -29,6 +29,10 @@
       "13308199924265800073": {
         "title": "Track A: Holy Ledger & Reflux Deprecation",
         "initial_mission": "Remediate TD-127/128/129/130 by enforcing SettlementSystem for all cash moves. MANDATORY: Remove Ref..."
+      },
+      "6109245729062383587": {
+        "title": "Track B: Scheduler Decomposition",
+        "initial_mission": "Decompose TickScheduler and re-align Firm lifecycle sequence as per SCHEDULER_DECOMPOSITION_SPEC.md...."
       }
     },
     "completed_sessions": {

@@ -4,24 +4,14 @@
     "updated": "2026-01-27",
     "author": "Antigravity"
   },
-  "hotfix-crash": {
-    "command": "create",
-    "instruction": "Fix AttributeError: 'Household' object has no attribute 'update_political_opinion' in core_agents.py or trace_leak.py",
-    "title": "Hotfix: Household Impact"
-  },
   "mission-wo-053": {
     "command": "send-message",
     "instruction": "PR for mission-wo-053 Request Changes: Please update 'tests/systems/test_technology_manager.py' to use 'FirmTechInfoDTO' objects instead of raw dicts in 'test_unlock_and_visionary_adoption', to maintain consistency with the actual application usage in 'main.py'."
   },
-  "final-verify-p23": {
+  "mission-purge-reflux": {
     "command": "create",
-    "instruction": "Perform a comprehensive verification of the current main branch. 1. Run scripts/verify_td_111.py and scripts/trace_leak.py. 2. Confirm Zero Leak status and M2 reporting accuracy. 3. Summarize the initial economic state including HCI and productivity gains from WO-053. 4. Save the final report to communications/insights/2026-01-27_Final_Verification_Report.md.",
-    "title": "Final Verification: Integrated Core & P23"
-  },
-  "mission-scheduler-refactor": {
-    "command": "create",
-    "instruction": "Decompose TickScheduler and re-align Firm lifecycle sequence as per SCHEDULER_DECOMPOSITION_SPEC.md.",
-    "title": "Track B: Scheduler Decomposition",
-    "file": "design/specs/SCHEDULER_DECOMPOSITION_SPEC.md"
+    "instruction": "Perform an exhaustive codebase-wide search and removal of all RefluxSystem references as specified in WO-133. Ensure system stability and verify with trace_leak.py.",
+    "title": "Execute WO-133: Total Purge of RefluxSystem",
+    "file": "design/work_orders/WO-133-Purge-Reflux-Ghost.md"
   }
 }

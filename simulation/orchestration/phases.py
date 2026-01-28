@@ -221,11 +221,42 @@ class Phase0_PreSequence(IPhaseStrategy):
 
             state.government.check_election(state.time)
 
-        # Central Bank
-        if state.central_bank and state.bank:
-             state.central_bank.step(state.time)
-             new_base_rate = state.central_bank.get_base_rate()
-             state.bank.update_base_rate(new_base_rate)
+        return state
+
+
+class Phase_Production(IPhaseStrategy):
+    """
+    Phase 0.5: Technology update and firm production.
+    Ensures firms have updated inventory before the Decision phase.
+    """
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
+
+    def execute(self, state: SimulationState) -> SimulationState:
+        from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
+
+        # 1. Calculate Human Capital Index
+        active_households_dto = [
+            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
+            for h in state.households if h.is_active
+        ]
+        
+        total_edu = sum(h['education_level'] for h in active_households_dto)
+        active_count = len(active_households_dto)
+        human_capital_index = total_edu / active_count if active_count > 0 else 1.0
+
+        # 2. Update Technology System
+        if self.world_state.technology_manager:
+            active_firms_dto = [
+                FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
+                for f in state.firms if f.is_active
+            ]
+            self.world_state.technology_manager.update(state.time, active_firms_dto, human_capital_index)
+
+        # 3. Trigger Firm Production
+        for firm in state.firms:
+            if firm.is_active:
+                firm.produce(state.time, technology_manager=self.world_state.technology_manager)
 
         return state
 
@@ -556,12 +587,12 @@ class Phase5_PostSequence(IPhaseStrategy):
                         firm, firm.get_pre_state_data(), agent_data
                      )
 
-                     context: LearningUpdateContext = {
+                     firm_context: LearningUpdateContext = {
                         "reward": reward,
                         "next_agent_data": agent_data,
                         "next_market_data": market_data_for_learning
                      }
-                     firm.update_learning(context)
+                     firm.update_learning(firm_context)
 
                      decision_data = AIDecisionData(
                         run_id=state.agents.get(firm.id).run_id if hasattr(state.agents.get(firm.id), 'run_id') else 0,
@@ -589,12 +620,12 @@ class Phase5_PostSequence(IPhaseStrategy):
                          market_data_for_learning
                      )
 
-                     context: LearningUpdateContext = {
+                     hh_context: LearningUpdateContext = {
                         "reward": reward,
                         "next_agent_data": agent_data,
                         "next_market_data": market_data_for_learning
                      }
-                     household.update_learning(context)
+                     household.update_learning(hh_context)
 
                      decision_data = AIDecisionData(
                         run_id=state.agents.get(household.id).run_id if hasattr(state.agents.get(household.id), 'run_id') else 0,

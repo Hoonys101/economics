@@ -4,7 +4,7 @@ import logging
 
 from simulation.dtos.api import SimulationState, GovernmentStateDTO
 from simulation.orchestration.phases import (
-    Phase0_PreSequence, Phase1_Decision, Phase2_Matching,
+    Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
     Phase3_Transaction, Phase4_Lifecycle, Phase5_PostSequence,
     prepare_market_data
 )
@@ -24,6 +24,7 @@ class TickOrchestrator:
         # Initialize phases with dependencies
         self.phases: List[IPhaseStrategy] = [
             Phase0_PreSequence(world_state),
+            Phase_Production(world_state),
             Phase1_Decision(world_state),
             Phase2_Matching(world_state),
             Phase3_Transaction(world_state, action_processor),
