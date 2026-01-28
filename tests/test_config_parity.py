@@ -1,6 +1,6 @@
 import pytest
 import config
-from simulation.dtos.api import HouseholdConfigDTO, FirmConfigDTO
+from simulation.api import HouseholdConfigDTO, FirmConfigDTO
 from simulation.utils.config_factory import create_config_dto
 
 def test_household_config_parity():
