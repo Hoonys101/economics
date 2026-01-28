@@ -43,5 +43,13 @@ class ScenarioStrategy:
     firm_decision_engine: Optional[str] = None
     household_decision_engine: Optional[str] = None
 
+    # --- Initialization Parameters (Golden Era & Legacy) ---
+    initial_base_interest_rate: Optional[float] = None
+    initial_corporate_tax_rate: Optional[float] = None
+    initial_income_tax_rate: Optional[float] = None
+    newborn_engine_type: Optional[str] = None
+    firm_decision_mode: Optional[str] = None
+    innovation_weight: Optional[float] = None
+
     # Generic
     parameters: Dict[str, Any] = field(default_factory=dict) # Catch-all for unmapped params if any

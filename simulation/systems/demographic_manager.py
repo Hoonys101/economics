@@ -1,10 +1,13 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 import random
 from simulation.core_agents import Household
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
+
+if TYPE_CHECKING:
+    from simulation.dtos.strategy import ScenarioStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +24,12 @@ class DemographicManager:
             cls._instance = super(DemographicManager, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, config_module: Any = None):
+    def __init__(self, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None):
         if hasattr(self, "initialized") and self.initialized:
             return
 
         self.config_module = config_module
+        self.strategy = strategy
         self.logger = logging.getLogger("simulation.systems.demographic_manager")
         self.settlement_system: Optional[Any] = None # Injected via Initializer
         self.initialized = True
@@ -140,9 +144,12 @@ class DemographicManager:
 
                 # Create Decision Engine
                 # WO-110: Allow selecting engine type for newborns (AIDriven vs RuleBased)
+                # WO-136: Use Strategy DTO if available
                 newborn_engine_type = getattr(self.config_module, "NEWBORN_ENGINE_TYPE", "AIDriven")
+                if self.strategy and self.strategy.newborn_engine_type:
+                    newborn_engine_type = self.strategy.newborn_engine_type
 
-                if newborn_engine_type == "RuleBased":
+                if str(newborn_engine_type).upper() == "RULE_BASED":
                     from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
                     new_decision_engine = RuleBasedHouseholdDecisionEngine(
                         config_module=self.config_module,

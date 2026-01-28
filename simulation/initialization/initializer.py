@@ -120,6 +120,13 @@ class SimulationInitializer(SimulationInitializerInterface):
                      # Extract parameters
                      params = scenario_data.get("parameters", {})
 
+                     # Helper to resolve params with priority and proper zero-handling
+                     def resolve(keys, default=None):
+                         for k in keys:
+                             if k in params and params[k] is not None:
+                                 return params[k]
+                         return default
+
                      # Map parameters to Strategy DTO
                      strategy = ScenarioStrategy(
                          name=active_scenario_name,
@@ -128,35 +135,50 @@ class SimulationInitializer(SimulationInitializerInterface):
                          scenario_name=scenario_data.get("scenario_name", active_scenario_name),
 
                          # Stress Params
-                         inflation_expectation_multiplier=params.get("inflation_expectation_multiplier", 1.0),
-                         hoarding_propensity_factor=params.get("hoarding_propensity_factor", 0.0),
-                         demand_shock_cash_injection=params.get("demand_shock_cash_injection", 0.0),
-                         panic_selling_enabled=params.get("panic_selling_enabled", False),
-                         debt_aversion_multiplier=params.get("debt_aversion_multiplier", 1.0),
-                         consumption_pessimism_factor=params.get("consumption_pessimism_factor", 0.0),
-                         asset_shock_reduction=params.get("asset_shock_reduction", 0.0),
-                         exogenous_productivity_shock=params.get("exogenous_productivity_shock", {}),
-                         monetary_shock_target_rate=params.get("monetary_shock_target_rate") or params.get("MONETARY_SHOCK_TARGET_RATE"),
-                         fiscal_shock_tax_rate=params.get("fiscal_shock_tax_rate") or params.get("FISCAL_SHOCK_TAX_RATE"),
-                         base_interest_rate_multiplier=params.get("base_interest_rate_multiplier"),
-                         corporate_tax_rate_delta=params.get("corporate_tax_rate_delta"),
-                         demand_shock_multiplier=params.get("demand_shock_multiplier"),
+                         inflation_expectation_multiplier=resolve(["inflation_expectation_multiplier"], 1.0),
+                         hoarding_propensity_factor=resolve(["hoarding_propensity_factor"], 0.0),
+                         demand_shock_cash_injection=resolve(["demand_shock_cash_injection"], 0.0),
+                         panic_selling_enabled=resolve(["panic_selling_enabled"], False),
+                         debt_aversion_multiplier=resolve(["debt_aversion_multiplier"], 1.0),
+                         consumption_pessimism_factor=resolve(["consumption_pessimism_factor"], 0.0),
+                         asset_shock_reduction=resolve(["asset_shock_reduction"], 0.0),
+                         exogenous_productivity_shock=resolve(["exogenous_productivity_shock"], {}),
+                         monetary_shock_target_rate=resolve(["monetary_shock_target_rate", "MONETARY_SHOCK_TARGET_RATE"]),
+                         fiscal_shock_tax_rate=resolve(["fiscal_shock_tax_rate", "FISCAL_SHOCK_TAX_RATE"]),
+                         base_interest_rate_multiplier=resolve(["base_interest_rate_multiplier"]),
+                         corporate_tax_rate_delta=resolve(["corporate_tax_rate_delta"]),
+                         demand_shock_multiplier=resolve(["demand_shock_multiplier"]),
 
                          # Config Injection Replacements
-                         tfp_multiplier=params.get("TFP_MULTIPLIER", 3.0),
-                         tech_fertilizer_unlock_tick=params.get("TECH_FERTILIZER_UNLOCK_TICK", 50),
-                         tech_diffusion_rate=params.get("TECH_DIFFUSION_RATE", 0.05),
-                         food_sector_config=params.get("FOOD_SECTOR_CONFIG", {}),
-                         market_config=params.get("MARKET_CONFIG", {}),
-                         deflationary_pressure_multiplier=params.get("DEFLATIONARY_PRESSURE_MULTIPLIER", 1.0),
-                         limits=params.get("LIMITS", {}),
-                         firm_decision_engine=params.get("FIRM_DECISION_ENGINE"),
-                         household_decision_engine=params.get("HOUSEHOLD_DECISION_ENGINE"),
+                         tfp_multiplier=resolve(["TFP_MULTIPLIER", "food_tfp_multiplier"], 3.0),
+                         tech_fertilizer_unlock_tick=resolve(["TECH_FERTILIZER_UNLOCK_TICK"], 50),
+                         tech_diffusion_rate=resolve(["TECH_DIFFUSION_RATE"], 0.05),
+                         food_sector_config=resolve(["FOOD_SECTOR_CONFIG"], {}),
+                         market_config=resolve(["MARKET_CONFIG"], {}),
+                         deflationary_pressure_multiplier=resolve(["DEFLATIONARY_PRESSURE_MULTIPLIER"], 1.0),
+                         limits=resolve(["LIMITS"], {}),
+                         firm_decision_engine=resolve(["FIRM_DECISION_ENGINE"]),
+                         household_decision_engine=resolve(["HOUSEHOLD_DECISION_ENGINE"]),
+
+                         # --- Initialization Parameters (Golden Era & Legacy) ---
+                         initial_base_interest_rate=resolve(["base_interest_rate", "INITIAL_BASE_ANNUAL_RATE"]),
+                         initial_corporate_tax_rate=resolve(["tax_rate_corporate", "CORPORATE_TAX_RATE"]),
+                         initial_income_tax_rate=resolve(["tax_rate_income", "INCOME_TAX_RATE"]),
+                         newborn_engine_type=resolve(["newborn_engine_type", "NEWBORN_ENGINE_TYPE"]),
+                         firm_decision_mode=resolve(["firm_decision_mode"]),
+                         innovation_weight=resolve(["innovation_weight"]),
 
                          parameters=params # Store raw params just in case
                      )
 
                      self.logger.info(f"Loaded Scenario Strategy: {strategy.name} (Active: {strategy.is_active})")
+
+                     # Legacy Parameter Logging
+                     if strategy.initial_corporate_tax_rate:
+                         self.logger.debug(f"Initial Corporate Tax Rate set to {strategy.initial_corporate_tax_rate} via strategy.")
+                     if strategy.tfp_multiplier:
+                         self.logger.debug(f"TFP Multiplier set to {strategy.tfp_multiplier} via strategy.")
+
                  except Exception as e:
                      self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
             else:
@@ -326,7 +348,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Note: New agents must be explicitly added to this list by lifecycle managers.
         sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
         sim.ma_manager = MAManager(sim, self.config, settlement_system=sim.settlement_system)
-        sim.demographic_manager = DemographicManager(config_module=self.config)
+        sim.demographic_manager = DemographicManager(config_module=self.config, strategy=sim.strategy)
         sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
         sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
@@ -336,7 +358,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             config_module=self.config,
             repository=self.repository
         )
-        sim.firm_system = FirmSystem(config_module=self.config)
+        sim.firm_system = FirmSystem(config_module=self.config, strategy=sim.strategy)
         sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger, strategy=sim.strategy)
 
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
