@@ -2,7 +2,6 @@ from typing import Dict, Any, Optional
 import logging
 from simulation.engine import Simulation
 import main as simulation_main
-import config
 
 logger = logging.getLogger("dashboard_connector")
 

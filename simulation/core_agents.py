@@ -645,7 +645,7 @@ class Household(BaseAgent, ILearningAgent):
     @override
     def make_decision(
         self,
-        markets: Dict[str, "Market"],
+        markets: Dict[str, Any],
         goods_data: List[Dict[str, Any]],
         market_data: Dict[str, Any],
         current_time: int,

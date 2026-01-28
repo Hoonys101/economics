@@ -52,4 +52,5 @@ All simulation logic MUST occur within these 4 phases:
 - **No Mock-Magic**: Do not use `MagicMock` for agents. Use `GoldenLoader` fixtures.
 - **Clean Imports**: No circular dependencies.
 - **Type Safety**: Mandatory Type Hints and Google Style Docstrings for all new methods.
+- **Purity Gate**: Automated enforcement (`scripts/verify_purity.py`) ensuring no direct `config` imports and DTO-only agent signatures.
 - **Zero-Sum Check**: Mandatory `scripts/trace_leak.py` verification for every PR.
