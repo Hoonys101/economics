@@ -4,12 +4,6 @@
     "updated": "2026-01-28",
     "author": "Antigravity"
   },
-  "mission-strategy-generalization": {
-    "command": "create",
-    "instruction": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'config pollution' by replacing setattr injection in initializer.py with a proper ScenarioStrategy DTO and Dependency Injection. Ensure backward compatibility with existing scenario files.",
-    "title": "WO-136: Strategy Generalization",
-    "file": "design/3_work_artifacts/work_orders/WO-136-Strategy-Generalization.md"
-  },
   "mission-perf-optimization": {
     "command": "create",
     "instruction": "Scale the simulation to 2,000+ agents and generalize technology logic. Implement NumPy vectorization for bottlenecks and a probability-based tech diffusion engine.",
@@ -20,6 +14,17 @@
     "command": "create",
     "instruction": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test suite into unit/integration/scenarios categories.",
     "title": "WO-138: Sacred Hygiene",
+    "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
+  },
+  "mission-doc-restructure": {
+    "command": "create",
+    "instruction": "Clean up loose files in the root directory (temporary logs, restored txt files, db files). Move artifacts to 3_work_artifacts/ and logs to _archive/ or logs/ as per project structure.",
+    "title": "Quickstart: Root Fragmentation Cleanup"
+  },
+  "mission-purity-hardening": {
+    "command": "create",
+    "instruction": "Externalize rules from verify_purity.py to pyproject.toml as defined in the spec.",
+    "title": "WO-138: Purity Gate Hardening",
     "file": "design/3_work_artifacts/work_orders/WO-138-Sacred-Hygiene.md"
   }
 }

@@ -69,6 +69,10 @@
       "13994625140349182457": {
         "title": "Strategy Generalization Refactor",
         "initial_mission": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'conf..."
+      },
+      "3564236937217873449": {
+        "title": "WO-136: Strategy Generalization",
+        "initial_mission": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'conf..."
       }
     },
     "completed_sessions": {
