@@ -248,7 +248,12 @@ class Phase_Production(IPhaseStrategy):
         # 2. Update Technology System
         if self.world_state.technology_manager:
             active_firms_dto = [
-                FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))
+                FirmTechInfoDTO(
+                    id=f.id,
+                    sector=f.sector,
+                    is_visionary=getattr(f, 'is_visionary', False),
+                    current_rd_investment=f.research_history.get("total_spent", 0.0) if hasattr(f, "research_history") else 0.0
+                )
                 for f in state.firms if f.is_active
             ]
             self.world_state.technology_manager.update(state.time, active_firms_dto, human_capital_index)

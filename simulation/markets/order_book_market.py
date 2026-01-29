@@ -1,5 +1,7 @@
-from typing import List, Dict, Any, Optional, override
+from typing import List, Dict, Any, Optional, override, Tuple
 import logging
+from collections import deque
+import math
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
@@ -35,10 +37,47 @@ class OrderBookMarket(Market):
         self.last_tick_supply: float = 0.0
         self.last_tick_demand: float = 0.0
 
+        # WO-136: Dynamic Circuit Breakers (Price History)
+        # Store last 20 trade prices per item for volatility calculation
+        self.price_history: Dict[str, deque] = {}
+
         self.logger.info(
             f"OrderBookMarket {self.id} initialized.",
             extra={"tick": 0, "market_id": self.id, "tags": ["init", "market"]},
         )
+
+    def _update_price_history(self, item_id: str, price: float):
+        """Update the sliding window of price history."""
+        if item_id not in self.price_history:
+            self.price_history[item_id] = deque(maxlen=20)
+        self.price_history[item_id].append(price)
+
+    def get_dynamic_price_bounds(self, item_id: str) -> Tuple[float, float]:
+        """
+        Calculate adaptive price bounds based on volatility.
+        Formula: Bounds = Mean * (1 ± (Base_Limit * Volatility_Adj))
+        Volatility_Adj = 1 + (StdDev / Mean)
+        """
+        if item_id not in self.price_history or len(self.price_history[item_id]) < 2:
+            return 0.0, float('inf') # No bounds yet
+
+        history = list(self.price_history[item_id])
+        mean_price = sum(history) / len(history)
+
+        if mean_price <= 0:
+            return 0.0, float('inf')
+
+        variance = sum((p - mean_price) ** 2 for p in history) / len(history)
+        std_dev = math.sqrt(variance)
+
+        volatility_adj = 1.0 + (std_dev / mean_price)
+        # WO-136: Use config for base limit
+        base_limit = getattr(self.config_module, "MARKET_CIRCUIT_BREAKER_BASE_LIMIT", 0.15)
+
+        lower_bound = mean_price * (1.0 - (base_limit * volatility_adj))
+        upper_bound = mean_price * (1.0 + (base_limit * volatility_adj))
+
+        return max(0.0, lower_bound), upper_bound
 
 
     def clear_orders(self) -> None:
@@ -66,11 +105,30 @@ class OrderBookMarket(Market):
 
     def place_order(self, order: Order, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
+        WO-136: Checks dynamic circuit breakers before accepting.
 
         Args:
             order (Order): 제출할 주문 객체.
             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
+        # WO-136: Circuit Breaker Check
+        min_price, max_price = self.get_dynamic_price_bounds(order.item_id)
+        if order.price < min_price or order.price > max_price:
+            # Check if bounds are active (max_price < inf)
+            if max_price < float('inf'):
+                self.logger.warning(
+                    f"CIRCUIT_BREAKER | Order rejected. Price {order.price:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
+                    extra={
+                        "tick": current_time,
+                        "market_id": self.id,
+                        "agent_id": order.agent_id,
+                        "item_id": order.item_id,
+                        "price": order.price,
+                        "bounds": (min_price, max_price)
+                    }
+                )
+                return # Reject order
+
         log_extra = {
             "tick": current_time,
             "market_id": self.id,
@@ -213,6 +271,8 @@ class OrderBookMarket(Market):
                          quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
                      )
                      self.last_traded_prices[item_id] = trade_price
+                     # WO-136: Update Price History
+                     self._update_price_history(item_id, trade_price)
                      transactions.append(transaction)
                      
                      self.logger.info(
@@ -290,6 +350,8 @@ class OrderBookMarket(Market):
                     quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
                 )
                 self.last_traded_prices[item_id] = trade_price
+                # WO-136: Update Price History
+                self._update_price_history(item_id, trade_price)
                 transactions.append(transaction)
                 
                 self.logger.info(

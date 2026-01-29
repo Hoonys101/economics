@@ -807,3 +807,10 @@ CAPITAL_DEPRECIATION_RATE = 0.05
 INITIAL_FIRM_LIQUIDITY_NEED = 200.0
 BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD = 20
 HOUSING_EXPECTATION_CAP = 0.05
+
+# ==============================================================================
+# WO-136: Tech Generalization & Market Safety
+# ==============================================================================
+MARKET_CIRCUIT_BREAKER_BASE_LIMIT = 0.15  # Base limit for market circuit breakers
+TECH_UNLOCK_COST_THRESHOLD = 5000.0       # R&D Investment threshold for tech unlock
+TECH_UNLOCK_PROB_CAP = 0.1                # Maximum probability per tick for tech unlock
