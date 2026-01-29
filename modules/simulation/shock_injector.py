@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import Any, Dict, Optional
 import logging
-from modules.simulation.api import ShockConfigDTO
+from modules.simulation.api import ShockConfigDTO, ISimulationState
 
 logger = logging.getLogger(__name__)
 
 class ShockInjector:
-    def __init__(self, config: ShockConfigDTO, simulation: Any):
+    def __init__(self, config: ShockConfigDTO, simulation: ISimulationState):
         self._config = config
         self._simulation = simulation
         self._original_tfp_values: Dict[int, float] = {}
@@ -17,8 +17,7 @@ class ShockInjector:
         if is_shock_active:
             # 1. Capture original values if not already done
             if not self._original_tfp_values:
-                # We access firms via world_state delegation on simulation
-                # simulation.firms is List[Firm]
+                # simulation.firms is guaranteed by ISimulationState
                 for firm in self._simulation.firms:
                     self._original_tfp_values[firm.id] = firm.productivity_factor
 
@@ -32,7 +31,7 @@ class ShockInjector:
             # 2. Apply shock (Force set every tick to override drift/R&D)
             new_tfp = self._config["baseline_tfp"] * self._config["tfp_multiplier"]
             for firm in self._simulation.firms:
-                # Direct attribute assignment as confirmed in Firm class
+                # Direct attribute assignment via IFirm protocol
                 firm.productivity_factor = new_tfp
 
         else:

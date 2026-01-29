@@ -2,9 +2,10 @@ from __future__ import annotations
 from typing import Any, Dict
 from modules.analysis.api import VerificationConfigDTO, StormReportDTO
 from simulation.dtos.api import MarketSnapshotDTO
+from modules.simulation.api import ISimulationState
 
 class StormVerifier:
-    def __init__(self, config: VerificationConfigDTO, simulation: Any):
+    def __init__(self, config: VerificationConfigDTO, simulation: ISimulationState):
         self._config = config
         self._simulation = simulation
         self._metrics = {
@@ -17,13 +18,13 @@ class StormVerifier:
 
     def update(self, current_tick: int, market_snapshot: MarketSnapshotDTO):
         # 1. ZLB Check (Monetary Policy)
-        # Access Central Bank base_rate
+        # Access Central Bank base_rate via Protocol
         if self._simulation.central_bank:
              if self._simulation.central_bank.base_rate < 0.001:
                  self._metrics["zlb_hit"] = True
 
         # 2. Deficit Spending Check (Fiscal Policy)
-        # Access Government spending/revenue
+        # Access Government spending/revenue via Protocol
         if self._simulation.government:
             spending = self._simulation.government.expenditure_this_tick
             revenue = self._simulation.government.revenue_this_tick
@@ -45,14 +46,11 @@ class StormVerifier:
         all_households = self._simulation.households
         active_households = [h for h in all_households if h.is_active]
 
-        # Hardcoded threshold from draft context "config.STARVATION_THRESHOLD"
-        # I'll read from simulation config or default to 1.0
-        starvation_threshold = 1.0
-        if hasattr(self._simulation.config_module, "STARVATION_THRESHOLD"):
-             starvation_threshold = self._simulation.config_module.STARVATION_THRESHOLD
+        # Load starvation threshold from config, defaulting to 1.0 if not found
+        starvation_threshold = getattr(self._simulation.config_module, "STARVATION_THRESHOLD", 1.0)
 
         for hh in active_households:
-            # TD-118 compliance
+            # TD-118 compliance: inventory is Dict[str, float] via IHousehold protocol
             food_inventory = hh.inventory.get("basic_food", 0.0)
             if food_inventory < starvation_threshold:
                 starving_count += 1
