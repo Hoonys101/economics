@@ -93,6 +93,10 @@
       "328417402776115895": {
         "title": "WO-140: Repository Decomposition",
         "initial_mission": "Decompose SimulationRepository into specialized Agent, Market, Analytics, and Run repositories as pe..."
+      },
+      "14948798225821006866": {
+        "title": "WO-142: Corporate Departmentalization",
+        "initial_mission": "Refactor CorporateManager into a departmental orchestrator (HR, Finance, Ops, Sales) as per the spec..."
       }
     },
     "completed_sessions": {
