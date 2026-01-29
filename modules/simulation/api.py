@@ -41,6 +41,12 @@ class ISimulationState(Protocol):
     government: IGovernment
     config_module: Any
 
+    def get_market_snapshot(self) -> Any:
+        """
+        Retrieves the current market snapshot containing economic indicators like GDP.
+        """
+        ...
+
 class IShockInjector(Protocol):
     """
     An interface for a component that can inject economic shocks into the simulation.

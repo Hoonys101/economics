@@ -43,6 +43,7 @@ def main():
         baseline_tfp=3.0
     )
 
+    # Sim satisfies ISimulationState protocol
     injector = ShockInjector(shock_config, sim)
 
     verification_config = VerificationConfigDTO(
@@ -67,16 +68,9 @@ def main():
         sim.run_tick()
 
         # Verify
-        # Get GDP from simulation tracker/market data
-        market_data = sim._prepare_market_data(sim.tracker)
-        gdp = market_data.get("total_production", 0.0)
-
-        # Simple Mock for MarketSnapshotDTO to satisfy Verifier
-        class SimpleSnapshot:
-            def __init__(self, gdp):
-                self.gdp = gdp
-
-        verifier.update(tick, SimpleSnapshot(gdp))
+        # Use public interface via ISimulationState protocol
+        snapshot = sim.get_market_snapshot()
+        verifier.update(tick, snapshot)
 
     # 5. Generate Report
     report = verifier.generate_report()
