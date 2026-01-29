@@ -4,10 +4,28 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-soft-landing-verify": {
+  "mission-soft-landing-repair": {
     "command": "create",
-    "instruction": "Create the soft landing verification suite and report generation as per WO-147.",
-    "title": "WO-147: Soft Landing Verification Suite",
+    "instruction": "Address code review issues for WO-147: 1) Remove auto-pip install of matplotlib in verify_soft_landing.py, 2) Use getattr with defaults instead of hasattr, 3) Document TD-028 (Order object inconsistency) in TECH_DEBT_LEDGER.md.",
+    "title": "Repair WO-147: Soft Landing Suite",
     "file": "design/3_work_artifacts/work_orders/WO-147-Soft-Landing-Verification.md"
+  },
+  "mission-shock-injector": {
+    "command": "create",
+    "instruction": "Implement the ShockInjector component in modules/simulation to handle TFP drops as per draft_124655.",
+    "title": "WO-148 Phase 1: Shock Injector",
+    "file": "design/3_work_artifacts/drafts/draft_124655_Draft_a_detailed_Implementatio.md"
+  },
+  "mission-storm-verifier": {
+    "command": "create",
+    "instruction": "Implement the StormVerifier component in modules/analysis to track ZLB, starvation, and debt-to-GDP during shocks, as per draft_124655.",
+    "title": "WO-148 Phase 2: Storm Verifier",
+    "file": "design/3_work_artifacts/drafts/draft_124655_Draft_a_detailed_Implementatio.md"
+  },
+  "mission-perfect-storm-run": {
+    "command": "create",
+    "instruction": "Create the standalone execution script scripts/stress_test_perfect_storm.py and generate the final report comparing Phase 23 vs 28.",
+    "title": "WO-148 Phase 3: Perfect Storm Execution",
+    "file": "design/3_work_artifacts/drafts/draft_124655_Draft_a_detailed_Implementatio.md"
   }
 }
