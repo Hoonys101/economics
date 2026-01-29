@@ -89,9 +89,13 @@ class FinanceManager:
 
                 # WO-146: Use market rate + spread instead of hardcoded 0.10
                 base_rate = 0.05
-                loan_market_data = market_data.get("loan_market", {})
-                if loan_market_data and "interest_rate" in loan_market_data:
-                    base_rate = loan_market_data["interest_rate"]
+
+                # Prioritize Government Policy Rate (Official Base Rate)
+                if context.government_policy:
+                    base_rate = context.government_policy.base_interest_rate
+                # Fallback to Market Data (if available)
+                elif "loan_market" in market_data and "interest_rate" in market_data["loan_market"]:
+                    base_rate = market_data["loan_market"]["interest_rate"]
 
                 # Willingness to pay: base_rate + risk spread
                 # Firms usually accept slightly higher than base rate

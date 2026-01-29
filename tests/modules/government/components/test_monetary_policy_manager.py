@@ -78,3 +78,26 @@ class TestMonetaryPolicyManager(unittest.TestCase):
         # i = 0.02 - 0.01 = 0.01
         policy = self.manager.determine_monetary_stance(snapshot)
         self.assertAlmostEqual(policy.target_interest_rate, 0.01)
+
+    def test_gdp_zero_or_negative(self):
+        # Test 1: GDP 0 -> output_gap should be 0 (log(0) handled)
+        snapshot = MagicMock(spec=MarketSnapshotDTO)
+        snapshot.inflation_rate = 0.02
+        snapshot.nominal_gdp = 0.0
+        snapshot.potential_gdp = 1000.0
+
+        # i = 0.02 + 0.02 + 0 + 0 = 0.04
+        policy = self.manager.determine_monetary_stance(snapshot)
+        self.assertAlmostEqual(policy.target_interest_rate, 0.04)
+
+        # Test 2: Potential GDP 0 -> output_gap should be 0
+        snapshot.nominal_gdp = 1000.0
+        snapshot.potential_gdp = 0.0
+        policy = self.manager.determine_monetary_stance(snapshot)
+        self.assertAlmostEqual(policy.target_interest_rate, 0.04)
+
+        # Test 3: Negative GDP (Impossible but robust check)
+        snapshot.nominal_gdp = -100.0
+        snapshot.potential_gdp = 1000.0
+        policy = self.manager.determine_monetary_stance(snapshot)
+        self.assertAlmostEqual(policy.target_interest_rate, 0.04)
