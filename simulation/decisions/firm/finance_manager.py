@@ -7,6 +7,8 @@ from simulation.decisions.firm.api import FinancialPlanDTO
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_LOAN_SPREAD = 0.05
+
 class FinanceManager:
     def formulate_plan(self, context: DecisionContext, dividend_aggressiveness: float, debt_aggressiveness: float) -> FinancialPlanDTO:
         firm = context.state
@@ -93,7 +95,7 @@ class FinanceManager:
 
                 # Willingness to pay: base_rate + risk spread
                 # Firms usually accept slightly higher than base rate
-                wtp_rate = base_rate + 0.05
+                wtp_rate = base_rate + DEFAULT_LOAN_SPREAD
 
                 order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, wtp_rate, "loan")
                 order.metadata = {"borrower_profile": borrower_profile}

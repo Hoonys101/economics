@@ -142,6 +142,8 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
 class Phase0_PreSequence(IPhaseStrategy):
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
+        from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
+        self.mp_manager = MonetaryPolicyManager(world_state.config_module)
 
     def execute(self, state: SimulationState) -> SimulationState:
         # WO-109: Pre-Sequence Stabilization
@@ -240,13 +242,11 @@ class Phase0_PreSequence(IPhaseStrategy):
              best_asks={},
              inflation_rate=latest_indicators.get("inflation_rate", 0.0),
              unemployment_rate=latest_indicators.get("unemployment_rate", 0.0),
-             nominal_gdp=latest_gdp if 'latest_gdp' in locals() else 0.0,
+             nominal_gdp=latest_indicators.get("total_production", 0.0),
              potential_gdp=potential_gdp
         )
 
-        from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
-        mp_manager = MonetaryPolicyManager(state.config_module)
-        mp_policy = mp_manager.determine_monetary_stance(macro_snapshot)
+        mp_policy = self.mp_manager.determine_monetary_stance(macro_snapshot)
 
         if state.central_bank:
              # Overwrite rate with MonetaryPolicyManager's result
