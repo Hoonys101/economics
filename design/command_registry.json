@@ -4,10 +4,28 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-doc-hygiene": {
+  "mission-gov-refactor": {
     "command": "create",
-    "instruction": "Search and replace all WO-XXX placeholders with specific links or IDs as per WO-143.",
-    "title": "WO-143: Documentation Hygiene",
-    "file": "design/3_work_artifacts/work_orders/WO-143-Documentation-Hygiene.md"
+    "instruction": "Decompose the monolithic government entity into a Facade/Component structure as per WO-144.",
+    "title": "WO-144: Government Structure Refactor",
+    "file": "design/3_work_artifacts/work_orders/WO-144-Government-Refactor.md"
+  },
+  "mission-fiscal-policy": {
+    "command": "create",
+    "instruction": "Implement a progressive tax system with FiscalPolicyManager as an automatic stabilizer as per WO-145.",
+    "title": "WO-145: Progressive Tax System",
+    "file": "design/3_work_artifacts/work_orders/WO-145-Progressive-Tax.md"
+  },
+  "mission-monetary-policy": {
+    "command": "create",
+    "instruction": "Implement Taylor Rule-based monetary policy with MonetaryPolicyManager as per WO-146.",
+    "title": "WO-146: Monetary Policy & Taylor Rule",
+    "file": "design/3_work_artifacts/work_orders/WO-146-Monetary-Policy.md"
+  },
+  "mission-soft-landing-verify": {
+    "command": "create",
+    "instruction": "Create the soft landing verification suite and report generation as per WO-147.",
+    "title": "WO-147: Soft Landing Verification Suite",
+    "file": "design/3_work_artifacts/work_orders/WO-147-Soft-Landing-Verification.md"
   }
 }

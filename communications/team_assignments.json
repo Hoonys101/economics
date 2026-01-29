@@ -101,6 +101,10 @@
       "9922557421414767710": {
         "title": "WO-141: Household Engine Modularization",
         "initial_mission": "Refactor Household Engine into Coordinator-Delegate pattern as per Spec and WO-141.\n\n[File Content: ..."
+      },
+      "6568939817573477863": {
+        "title": "WO-143: Documentation Hygiene",
+        "initial_mission": "Search and replace all WO-XXX placeholders with specific links or IDs as per WO-143.\n\n[File Content:..."
       }
     },
     "completed_sessions": {
