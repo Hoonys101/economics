@@ -26,22 +26,34 @@ This is the definitive entry point for all contributors. **Read this first.**
 
 ## 🛠️ Phase 2: Operations (The One-Shot Workflow)
 > **🚨 CRITICAL: MASTER `cmd_ops.py` OR FAIL.**
-> All agent control is done via **SCR (Structured Command Registry)** using `scripts/cmd_ops.py`.
-> **DO NOT** edit `command_registry.json` manually unless absolutely necessary.
+> Use **SCR (Structured Command Registry)** via `scripts/cmd_ops.py`.
 
-### 1. Arm Gemini (Analysis & Spec)
+### 1. Analysis & Spec (Gemini)
+**Generic Pattern**:
 ```powershell
-python scripts/cmd_ops.py set-gemini <mission_key> --worker [audit|spec|git-review] -i "<instruction>" -c <files>
+python scripts/cmd_ops.py set-gemini <key> --worker <type> -i "<prompt>" -c <file1> <file2>
 ```
--> Execute with: **`.\gemini-go.bat`**
+*Worker Types: `audit`, `spec`, `git-review`, `verify`, `reporter`, `git`*
 
-### 2. Arm Jules (Implementation)
+**Example (Draft Spec)**:
 ```powershell
-python scripts/cmd_ops.py set-jules <mission_key> --command create -t "<title>" -i "<instruction>" -f <work_order_path>
+python scripts/cmd_ops.py set-gemini mission-spec-v1 --worker spec -i "Draft a spec for the Bank module." -c design/manuals/BANKING.md
 ```
--> Execute with: **`.\jules-go.bat`**
+-> **Run**: `.\gemini-go.bat`
 
-*See **[Protocol: Tooling](1_governance/protocols/PROTOCOL_TOOLING.md)** for advanced details.*
+### 2. Implementation (Jules)
+**Generic Pattern**:
+```powershell
+python scripts/cmd_ops.py set-jules <key> --command create -t "<title>" -i "<prompt>"
+```
+
+**Example (New Code)**:
+```powershell
+python scripts/cmd_ops.py set-jules mission-code-v1 --command create -t "Bank Impl" -i "Implement the Bank class based on the spec." -f design/specs/BANK_SPEC.md
+```
+-> **Run**: `.\jules-go.bat`
+
+*See **[Protocol: Tooling](1_governance/protocols/PROTOCOL_TOOLING.md)** for deep dives.*
 
 ---
 

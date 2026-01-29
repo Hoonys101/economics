@@ -4,16 +4,15 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-storm-verifier": {
-    "command": "create",
-    "instruction": "Implement the StormVerifier component in modules/analysis to track ZLB, starvation, and debt-to-GDP during shocks, as per draft_124655.",
-    "title": "WO-148 Phase 2: Storm Verifier",
-    "file": "design/3_work_artifacts/drafts/draft_124655_Draft_a_detailed_Implementatio.md"
-  },
   "mission-perfect-storm-run": {
+    "command": "send-message",
+    "instruction": "수석 아키텍트의 전략적 지침입니다. 우리는 단순히 '성공/실패'를 판가름하는 유닛 테스트를 만드는 것이 아니라, 거시경제적 충격에 대한 시스템의 반응을 관찰하고 분석하는 '시뮬레이션(Simulation)'을 구축하고 있습니다. 다음 사항을 즉시 반영하십시오.\n\n1. [분석 중심 리포팅]: scripts/stress_test_perfect_storm.py를 '현상 결과 보고(Phenomena Report)' 중심으로 전면 개편하십시오. 'PASSED/FAILED' 판정 로직을 제거하고 '정책 시너지 효과(Policy Effectiveness)' 분석 섹션을 추가하십시오.\n2. [현상 디버깅]: 현재 시뮬레이션 로그에 나타나는 'CIRCUIT_BREAKER' 거부 및 'SETTLEMENT_FAIL' 현상이 코드상의 '버그'인지, 아니면 유동성 부족 및 가격 폭락으로 인한 '경제적 붕괴 현상'인지를 구분하여 보고서에 명시하십시오.\n3. [데이터로 증명]: 억지로 시뮬레이션을 성공시키기 위해 파라미터를 조작하지 마십시오. 우리의 목표는 'The Great Moderator(안정 장치)'가 충격을 얼마나 완화하는지, 그리고 그 대가로 시스템이 어떤 비용(부채, 인플레이션 등)을 치르는지를 데이터로 투명하게 보여주는 것입니다.\n4. [시각화 확장]: reports/perfect_storm_visual_comparison.png에 '회복 탄력성(Recovery Phase)'이 잘 보이도록 시뮬레이션 틱수를 충분히 확보하고, 충격 전/중/후의 대조를 명확히 하십시오.",
+    "file": "scripts/stress_test_perfect_storm.py"
+  },
+  "mission-storm-implementation": {
     "command": "create",
-    "instruction": "Create the standalone execution script scripts/stress_test_perfect_storm.py and generate the final report comparing Phase 23 vs 28.",
-    "title": "WO-148 Phase 3: Perfect Storm Execution",
-    "file": "design/3_work_artifacts/drafts/draft_124655_Draft_a_detailed_Implementatio.md"
+    "instruction": "Implement the Phenomena Reporting architecture as defined in SPEC_STORM_PHENOMENA_REPORTING.md. 1. Create the PhenomenaAnalyzer and IDetector interface. 2. Implement the specialized detectors (Liquidity, CircuitBreaker, etc.). 3. Update the stress test script to use this new system. THIS IS A COMPLEX REFACTORING. Follow the spec strictly.",
+    "title": "Implement Perfect Storm Phenomena Reporting",
+    "file": "design/3_work_artifacts/specs/SPEC_STORM_PHENOMENA_REPORTING.md"
   }
 }

@@ -29,6 +29,7 @@
 | **TD-151** | 2026-01-29 | **Partial DTO Adoption in Engine** | `Simulation.get_market_snapshot` returns `MarketSnapshotDTO`, but internal `_prepare_market_data` still returns generic Dict | Inconsistent Internal/External API | **ACTIVE** |
 | **TD-152** | 2026-01-29 | **Hardcoded thresholds in StormVerifier** | Externalize ZLB, Deficit Spending thresholds, and `basic_food` string into `VerificationConfigDTO` | Configuration Flexibility / Maintainability | **RESOLVED** |
 | **TD-153** | 2026-01-29 | **Hardcoded Stress Test Parameters** | Externalize stress test parameters in `scripts/run_stress_test_wo148.py` to a config file | Limited Reusability | **RESOLVED** |
+| **TD-154** | 2026-01-29 | **Perfect Storm: Binary Outcome Bias** | Refactor `stress_test_perfect_storm.py` to focus on "Phenomena Reporting" (Resilience, Policy Synergy) rather than Pass/Fail verdicts | Loss of Economic Insight | **ACTIVE** |
 
 ---
 
@@ -111,3 +112,17 @@
 | **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
 | **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | ✅ **DONE** (WO-123, WO-124) |
 | **Step 5: Normalize Sequence** | TD-106, TD-109 | Normalize Tick Sequence. | **PLANNED** (Phase 26) |
+
+---
+
+## 🧐 SESSION INSIGHTS (2026-01-29)
+
+### 1. The Perfect Storm: Simulation vs. Test
+- **현상**: `stress_test_perfect_storm.py`가 단순 유닛 테스트 방식으로 구현되어, 임계점(Critical Point)에서의 경제적 붕괴 현상을 '실패'로만 처리함.
+- **해결**: 일단 머지 후 **TD-154**로 등록. 차후 "현상 분석 보고서(Phenomena Report)" 기능을 강화하여 시스템의 탄력성과 정책 시너지를 데이터로 증명하도록 개선 예정.
+- **교훈**: 시뮬레이션은 '성공'을 비는 도구가 아니라, '어디서 무너지는지'를 투명하게 보여주는 거울이어야 함. CIRCUIT_BREAKER 등의 현상을 '버그'와 '현상'으로 분리하여 분석하는 안목이 필수적임.
+
+### 2. Jules Bridge Refactoring (UX Improvement)
+- **현상**: `team_assignments.json` 기반의 세션 관리가 로컬 환경에 의존하여 유연성이 떨어짐.
+- **해결**: API 실시간 조회를 통한 프로젝트 중심 필터링 시스템 구현. `jules-go`의 Communicate 기능을 대화 중심에서 미션(Preset) 전송 중심으로 개편.
+- **교훈**: 보조 에이전트(Jules)와의 협업 UX는 단순할수록 강력하며, 로컬 상태보다는 서버의 실시간 데이터(Source of Truth)에 기반해야 함.

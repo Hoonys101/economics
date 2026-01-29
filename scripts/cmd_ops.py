@@ -78,7 +78,7 @@ def main():
     # 1. Set Gemini Mission
     p_gem = subparsers.add_parser("set-gemini", help="Add/Update Gemini Mission")
     p_gem.add_argument("key", help="Mission Key (Menu Title)")
-    p_gem.add_argument("--worker", required=True, choices=["audit", "spec", "git-review", "context", "verify"], help="Worker Type")
+    p_gem.add_argument("--worker", required=True, choices=["audit", "spec", "git-review", "context", "verify", "git", "reporter"], help="Worker Type")
     p_gem.add_argument("--instruction", "-i", required=True, help="Instruction Prompt")
     p_gem.add_argument("--context", "-c", nargs="+", help="Context Files")
     p_gem.add_argument("--output", "-o", help="Output File Path")

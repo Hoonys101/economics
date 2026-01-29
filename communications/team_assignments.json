@@ -21,6 +21,10 @@
       "5753268364437778674": {
         "title": "WO-148 Phase 1: Shock Injector",
         "initial_mission": "Implement the ShockInjector component in modules/simulation to handle TFP drops as per draft_124655...."
+      },
+      "6713397545440068300": {
+        "title": "WO-148 Phase 3: Perfect Storm Execution",
+        "initial_mission": "Create the standalone execution script scripts/stress_test_perfect_storm.py and generate the final r..."
       }
     },
     "completed_sessions": {

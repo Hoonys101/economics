@@ -10,12 +10,11 @@ sys.path.append(str(BASE_DIR / "scripts"))
 
 try:
     from jules_bridge import (
-        JulesBridge, get_my_sessions, register_session, 
-        AutomationMode, check_jules_status, DEFAULT_SOURCE
+        JulesBridge, AutomationMode, check_jules_status, DEFAULT_SOURCE
     )
     from launcher import load_registry
 except ImportError:
-    print("❌ Critical: Could not import jules_bridge module.")
+    print("❌ Critical: Could not import jules_bridge or launcher module.")
     sys.exit(1)
 
 def clear_screen():
@@ -99,7 +98,6 @@ def run_create_menu(registry, bridge):
                 title=title,
                 automation_mode=AutomationMode.AUTO_CREATE_PR
             )
-            register_session(session.id, title, instruction[:100] + "...")
             print(f"\n✅ Session Created! ID: {session.id}")
             input("Press Enter...")
         except Exception as e:
@@ -131,7 +129,6 @@ def run_create_menu(registry, bridge):
                     title=title,
                     automation_mode=AutomationMode.AUTO_CREATE_PR
                 )
-                register_session(session.id, title, instruction[:100] + "...")
                 print(f"\n✅ Session Created! ID: {session.id}")
                 
                 # CLEANUP
@@ -150,76 +147,68 @@ def run_reply_menu(bridge, registry):
     print("   💬 JULES: COMMUNICATE")
     print("==========================================")
     
-    sessions = get_my_sessions()
-    if not sessions:
-        print("⚠️ No active sessions found.")
+    # 1. Fetch sessions from API
+    print("Fetching active project sessions from server...")
+    try:
+        sessions = bridge.list_sessions(page_size=30)
+    except Exception as e:
+        print(f"❌ API Error: {e}")
         input("Press Enter...")
         return
-        
-    valid_sessions = []
-    idx = 1
+
+    from jules_bridge import DEFAULT_SOURCE
     current_proj = DEFAULT_SOURCE.split('/')[-1]
+    valid_sessions = []
     
-    for sid, data in sessions.items():
-        title = data if isinstance(data, str) else data.get("title", "Unknown")
+    idx = 1
+    for s in sessions:
+        # Check source for project matching
+        source_raw = s.get("sourceContext", {}).get("source", "")
+        if current_proj not in source_raw:
+            continue
+            
+        sid = s.get("id")
+        title = s.get("title", "Untitled")
+        state = s.get("state", "UNKNOWN")
         
-        # Simple filter: If the registry has a project defined, only show if it matches.
-        # Since currently we only store one project per team_assignments.json, 
-        # this might show all if not careful. 
-        # But we can check if "(COMPLETED)" is in the title to deprioritize.
+        status_marker = "✅" if state == "COMPLETED" else "🔄"
+        if state == "FAILED": status_marker = "❌"
         
-        status_marker = "✅" if "(COMPLETED)" in title else "🔄"
-        print(f"{idx}. {status_marker} {title} ({sid})")
-        valid_sessions.append(sid)
+        print(f"{idx}. {status_marker} {title} ({sid}) [{state}]")
+        valid_sessions.append(s)
         idx += 1
         
-    print("\nA. Archive a session")
-    print("0. Back")
-    
-    sel = input("\nSelect Session: ").strip().upper()
-    if sel == '0': return
-    
-    if sel == 'A':
-        sid_to_archive = input("Enter Session ID to Archive (or index): ").strip()
-        if sid_to_archive.isdigit() and 1 <= int(sid_to_archive) <= len(valid_sessions):
-            sid_to_archive = valid_sessions[int(sid_to_archive)-1]
-        
-        from jules_bridge import archive_session
-        archive_session(sid_to_archive)
-        print(f"✅ Session {sid_to_archive} archived.")
+    if not valid_sessions:
+        print(f"⚠️ No active sessions found for project: {current_proj}")
         input("Press Enter...")
         return
+        
+    print("\n0. Back")
+    
+    sel = input("\nSelect Target Session: ").strip()
+    if sel == '0' or not sel: return
     
     if sel.isdigit() and 1 <= int(sel) <= len(valid_sessions):
-        sid = valid_sessions[int(sel)-1]
+        selected_session = valid_sessions[int(sel)-1]
+        sid = selected_session.get("id")
         
-        # Show recent history
-        print("\nfetching recent activity...")
-        try:
-            acts = bridge.list_activities(sid, page_size=2)
-            for act in reversed(acts):
-                 desc = act.get("description", "")[:100]
-                 print(f"   [{act.get('type')}] {desc}...")
-        except Exception as e:
-            print(f"⚠️ Failed to fetch history: {e}")
-
-        # Pre-loaded Only
+        # 2. Select Reply Template from Registry
         reply_tasks = {k: v for k, v in registry.items() if v.get("command") == "send-message"}
         
         if not reply_tasks:
-            print("\n⚠️ No 'send-message' tasks found in registry.")
+            print("\n⚠️ No 'send-message' missions found in registry.")
             input("Press Enter...")
             return
 
-        print("\n--- Select Reply Template ---")
+        print("\n--- Select Mission to Send ---")
         r_keys = list(reply_tasks.keys())
         for i, rk in enumerate(r_keys):
             task = reply_tasks[rk]
-            preview = task.get("instruction", "")[:40].replace("\n", " ")
+            preview = task.get("instruction", "")[:50].replace("\n", " ")
             file_hint = f" (File: {task.get('file')})" if task.get("file") else ""
-            print(f"{i+1}. {rk}{file_hint} -> \"{preview}...\"")
+            print(f"{i+1}. {rk}{file_hint}\n   └─ \"{preview}...\"")
             
-        r_sel = input("\nSelect Reply (1-{}): ".format(len(r_keys))).strip()
+        r_sel = input("\nSelect Mission (1-{}): ".format(len(r_keys))).strip()
         
         if r_sel.isdigit():
             r_idx = int(r_sel) - 1
@@ -232,21 +221,19 @@ def run_reply_menu(bridge, registry):
                     f_content = get_file_content(task["file"])
                     if f_content:
                          message += f"\n\n[File Content: {task['file']}]\n```\n{f_content}\n```"
-                    else:
-                        print(f"⚠️ Warning: Could not read file {task['file']}, sending instruction only.")
                 
-                print(f"\n🚀 Sending Message ({len(message)} chars)...")
+                print(f"\n🚀 Sending to Session {sid}...")
                 try:
                     bridge.send_message(sid, message)
-                    print("✅ Sent.")
+                    print("✅ Mission Dispatched.")
                     
                     # CLEANUP
                     cleanup_key(key)
                     
-                    if input("Wait for reply? (y/n): ").lower() == 'y':
+                    if input("\nWait for confirmation reply? (y/n): ").lower() == 'y':
                         resp = bridge.wait_for_agent_response(sid)
                         if resp:
-                            print(f"\n🤖 Jules: {resp.get('description', '')}")
+                             print(f"\n🤖 Jules: {resp.get('description', 'Action complete.')}")
                     input("Press Enter...")
                 except Exception as e:
                     print(f"❌ Error: {e}")
@@ -258,6 +245,8 @@ def run_reply_menu(bridge, registry):
 
 def main():
     bridge = JulesBridge()
+    from jules_bridge import DEFAULT_SOURCE
+    current_proj = DEFAULT_SOURCE.split('/')[-1]
     
     while True:
         # Re-load registry every loop to reflect cleanups
@@ -265,24 +254,20 @@ def main():
         
         clear_screen()
         print("==========================================")
-        print("   ⚡ JULES COMMAND CENTER")
+        print(f"   ⚡ JULES COMMAND CENTER | {current_proj}")
         print("==========================================")
         print("1. 🚀 NEW MISSION (Create Session)")
-        print("2. 💬 COMMUNICATE (Reply from Registry)")
-        print("3. 📊 DASHBOARD (List All)")
-        print("4. 🔄 REFRESH (Sync Local Registry)")
+        print("2. 💬 COMMUNICATE (Send Preset to Session)")
+        print("3. 📊 DASHBOARD (Real-time Fleet View)")
         print("0. Exit")
         
-        choice = input("\nSelect (0-4): ").strip()
+        choice = input("\nSelect (0-3): ").strip()
         
         if choice == '0': break
         elif choice == '1': run_create_menu(registry, bridge)
         elif choice == '2': run_reply_menu(bridge, registry)
         elif choice == '3':
             os.system(f"python {BASE_DIR}/scripts/jules_bridge.py dashboard")
-            input("\nPress Enter...")
-        elif choice == '4':
-            os.system(f"python {BASE_DIR}/scripts/sync_sessions.py")
             input("\nPress Enter...")
         else:
             pass

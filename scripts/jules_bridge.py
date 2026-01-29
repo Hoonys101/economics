@@ -285,76 +285,6 @@ class JulesBridge:
 
 
 # =============================================================================
-# Session Registry (team_assignments.json 자동 관리)
-# =============================================================================
-
-REGISTRY_PATH = BASE_DIR / "communications" / "team_assignments.json"
-
-def _load_registry() -> Dict:
-    if REGISTRY_PATH.exists():
-        with open(REGISTRY_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {"antigravity": {"project": DEFAULT_SOURCE.split('/')[-1], "active_sessions": {}}}
-
-def _save_registry(data: Dict):
-    REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(REGISTRY_PATH, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-def register_session(session_id: str, title: str, prompt: str = ""):
-    """새 세션을 레지스트리에 등록 (초기 미션 포함)"""
-    registry = _load_registry()
-    registry.setdefault("antigravity", {}).setdefault("active_sessions", {})
-    registry["antigravity"]["active_sessions"][session_id] = {
-        "title": title,
-        "initial_mission": prompt
-    }
-    _save_registry(registry)
-    logger.info(f"Session registered: {session_id} - {title}")
-
-def complete_session(session_id: str):
-    """세션을 완료 상태로 마킹"""
-    registry = _load_registry()
-    sessions = registry.get("antigravity", {}).get("active_sessions", {})
-    if session_id in sessions:
-        entry = sessions[session_id]
-        if isinstance(entry, dict):
-            current_title = entry["title"]
-            if "(COMPLETED)" not in current_title:
-                entry["title"] = f"{current_title} (COMPLETED)"
-        else:
-            # Legacy support
-            if "(COMPLETED)" not in entry:
-                sessions[session_id] = f"{entry} (COMPLETED)"
-        _save_registry(registry)
-        logger.info(f"Session completed: {session_id}")
-
-def get_my_sessions(project_filter: Optional[str] = None) -> Dict[str, Any]:
-    """
-    현재 담당 세션 목록 반환 (프로젝트 필터링 지원).
-    """
-    registry = _load_registry()
-    sessions = registry.get("antigravity", {}).get("active_sessions", {})
-    
-    # If project_filter is provided (e.g., 'economics'), and the registry 
-    # belongs to a different project, we return empty to stay isolated.
-    reg_project = registry.get("antigravity", {}).get("project", "")
-    if project_filter and reg_project != project_filter:
-         return {}
-
-    return sessions
-
-def archive_session(session_id: str):
-    """완료된 세션을 레지스트리에서 제거"""
-    registry = _load_registry()
-    sessions = registry.get("antigravity", {}).get("active_sessions", {})
-    if session_id in sessions:
-        del sessions[session_id]
-        _save_registry(registry)
-        logger.info(f"Session archived: {session_id}")
-
-
-# =============================================================================
 # Convenience Functions for Antigravity
 # =============================================================================
 
@@ -426,7 +356,6 @@ if __name__ == "__main__":
         print("  python jules_bridge.py list-sessions --summary")
         print("  python jules_bridge.py dashboard")
         print("  python jules_bridge.py create <title> <prompt>")
-        print("  python jules_bridge.py sync-git <title>")
         print("  python jules_bridge.py status <session_id>")
         sys.exit(1)
     
@@ -464,10 +393,8 @@ if __name__ == "__main__":
         bridge.sync_git(title)
         
         session = bridge.create_session(prompt=prompt, title=title)
-        register_session(session.id, title, prompt)  # 자동 등록 (Prompt 포함)
         print(f"✅ Session created: {session.id}")
         print(f"✅ Name: {session.name}")
-        print(f"✅ Registered to team_assignments.json with initial mission")
 
     elif command == "sync-git" and len(sys.argv) >= 3:
         title = sys.argv[2]
@@ -519,12 +446,6 @@ if __name__ == "__main__":
                 print(f"❌ Error: File not found: {file_path}")
                 sys.exit(1)
         
-        # Safety Check: Ensure we are not messaging a session from another project
-        registry = _load_registry()
-        my_sessions = registry.get("antigravity", {}).get("active_sessions", {})
-        if session_id not in my_sessions:
-            print(f"⚠️ Warning: Session {session_id} is not in your local active registry. Proceeding anyway...")
-
         activities = bridge.list_activities(session_id, page_size=1)
         last_id = activities[0].get("id") if activities else None
         
@@ -565,38 +486,9 @@ if __name__ == "__main__":
         success = bridge.approve_plan(session_id)
         print(f"Plan approved for {session_id}: {success}")
     
-    elif command == "my-sessions":
-        my_sessions_dict = get_my_sessions()
-        print(f"\n🗂️ Active Sessions ({len(my_sessions_dict)}):")
-        for sid, entry in my_sessions_dict.items():
-            title = entry["title"] if isinstance(entry, dict) else entry
-            if "(COMPLETED)" in title:
-                print(f"   ✅ {sid}: {title}")
-            else:
-                # Minimal info fetch
-                try:
-                    info = bridge.get_session(sid, compact=True)
-                    state = info.get("state", "UNKNOWN")
-                    pr = info.get("pr_url", "")
-                    print(f"   🔄 {sid}: {title} [{state}]" + (f" -> PR: {pr}" if pr else ""))
-                except Exception:
-                    print(f"   ❓ {sid}: {title} [Fetch Failed]")
-
-    elif command == "complete" and len(sys.argv) >= 3:
-        session_id = sys.argv[2]
-        complete_session(session_id)
-        print(f"Session {session_id} marked as COMPLETED")
-
-    elif command == "archive" and len(sys.argv) >= 3:
-        session_id = sys.argv[2]
-        archive_session(session_id)
-        print(f"Session {session_id} archived")
-    
     elif command == "dashboard":
         limit = 20
         sessions = bridge.list_sessions(page_size=limit)
-        registry = _load_registry()
-        local_sessions = registry.get("antigravity", {}).get("active_sessions", {})
         current_project_name = DEFAULT_SOURCE.split('/')[-1]
 
         # Group sessions by project
@@ -622,22 +514,13 @@ if __name__ == "__main__":
                 title = s.get("title", "Untitled Task")
                 state = s.get("state", "UNKNOWN")
                 
-                # Check status in local registry
-                registry_status = ""
-                if sid in local_sessions:
-                    registry_status = " [TRACKED]"
-                    entry = local_sessions[sid]
-                    entry_title = entry.get("title", "") if isinstance(entry, dict) else str(entry)
-                    if "(COMPLETED)" in entry_title:
-                        registry_status = " [DONE]"
-                
                 icon = "   "
                 if state == "COMPLETED": icon = "✅ "
                 elif state == "IN_PROGRESS": icon = "🔄 "
                 elif state == "PLANNING": icon = "📋 "
                 elif state == "FAILED": icon = "❌ "
                 
-                print(f"{icon}{sid:<20} | {title[:40]:<40} [{state}]{registry_status}")
+                print(f"{icon}{sid:<20} | {title[:40]:<40} [{state}]")
 
         # 2. Show Other Projects (Summary)
         other_projects = [p for p in projects_map.keys() if p != current_project_name]
@@ -647,23 +530,7 @@ if __name__ == "__main__":
                 count = len(projects_map[p])
                 print(f"   - {p:<20} | {count} active/recent sessions")
 
-        # 3. Orphaned/Stale Local Sessions
-        stale_sessions = [sid for sid in local_sessions if sid not in [s.get("id") for s in sessions]]
-        if stale_sessions:
-             print(f"\n⚠️ Other Tracked Sessions (Not in recent top {limit}):")
-             for sid in stale_sessions:
-                  entry = local_sessions[sid]
-                  # Ensure entry_title is a string even if entry is None or dict.get returns None
-                  entry_title = ""
-                  if isinstance(entry, dict):
-                      entry_title = str(entry.get("title", "Untitled"))
-                  else:
-                      entry_title = str(entry) if entry else "Untitled"
-                  
-                  print(f"   - {sid:<20} | {entry_title[:40]}")
-
         print("\n" + "=" * 70)
-        print("Tip: Use 'python scripts/jules_bridge.py archive <id>' to clean up stale entries.")
 
     else:
         print("Usage:")
@@ -674,5 +541,5 @@ if __name__ == "__main__":
         print("  python jules_bridge.py status <session_id> [--verbose]")
         print("  python jules_bridge.py send-message <session_id> <message> [--wait]")
         print("  python jules_bridge.py activities <session_id> [limit] [--verbose]")
-        print("  python jules_bridge.py my-sessions")
         sys.exit(1)
+
