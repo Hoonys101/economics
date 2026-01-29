@@ -27,6 +27,8 @@ class MockConfig:
     INVISIBLE_HAND_SENSITIVITY = 0.1
     ALTMAN_Z_SCORE_THRESHOLD = 1.81
     DIVIDEND_SUSPENSION_LOSS_TICKS = 3
+    INITIAL_BASE_ANNUAL_RATE = 0.05
+    DEFAULT_LOAN_SPREAD = 0.02
 
     # New fields
     INITIAL_FIRM_LIQUIDITY_NEED = 1000.0
@@ -99,8 +101,8 @@ def firm_config_dto():
         marketing_efficiency_low_threshold=c.MARKETING_EFFICIENCY_LOW_THRESHOLD,
         marketing_budget_rate_min=c.MARKETING_BUDGET_RATE_MIN,
             marketing_budget_rate_max=c.MARKETING_BUDGET_RATE_MAX,
-            initial_base_annual_rate=0.05,
-            default_loan_spread=0.02
+            initial_base_annual_rate=c.INITIAL_BASE_ANNUAL_RATE,
+            default_loan_spread=c.DEFAULT_LOAN_SPREAD
     )
 
 @pytest.fixture

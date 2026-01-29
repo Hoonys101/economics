@@ -382,7 +382,7 @@ INITIAL_BASE_ANNUAL_RATE = 0.05 # 연 5% (틱당 금리가 아님!)
 DEFAULT_MORTGAGE_RATE = 0.05    # Default mortgage rate
 LOAN_DEFAULT_TERM = 50          # 6개월 (50틱)
 CREDIT_SPREAD_BASE = 0.02       # 연 2% 가산금리
-DEFAULT_LOAN_SPREAD = 0.02      # WO-146 Alias for CREDIT_SPREAD_BASE
+DEFAULT_LOAN_SPREAD = CREDIT_SPREAD_BASE      # WO-146 Alias for CREDIT_SPREAD_BASE
 BANK_MARGIN = 0.02              # 예대마진 (연 2%)
 
 
