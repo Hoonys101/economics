@@ -56,16 +56,13 @@ class AssetManager:
 
         # Logic for Portfolio Management vs Emergency Liquidity
         if current_time % 30 == 0:
-            # Modify DTO locally for simulation (Simulation logic kept for parity)
-            temp_assets = household.assets
+            # Immutability Fix: Calculate effective cash instead of modifying DTO
+            effective_cash = household.assets
             if is_debt_aversion_mode and repay_amount > 0:
-                household.assets -= repay_amount
+                effective_cash -= repay_amount
 
-            try:
-                portfolio_orders = self._manage_portfolio(context)
-                orders.extend(portfolio_orders)
-            finally:
-                household.assets = temp_assets
+            portfolio_orders = self._manage_portfolio(context, effective_cash)
+            orders.extend(portfolio_orders)
         else:
             emergency_orders = self._check_emergency_liquidity(context)
             orders.extend(emergency_orders)
@@ -74,8 +71,11 @@ class AssetManager:
 
     def get_savings_roi(self, household: Any, market_data: Dict[str, Any], config: Optional[Any] = None) -> float:
         """가계의 저축 ROI(미래 효용)를 계산합니다."""
+        if config is None:
+            raise ValueError("Config module is required for get_savings_roi")
+
         loan_market_data = market_data.get("loan_market", {})
-        default_rate = config.default_mortgage_rate if config else 0.05
+        default_rate = getattr(config, "default_mortgage_rate", 0.05)
         nominal_rate = loan_market_data.get("interest_rate", default_rate)
 
         if household.expected_inflation:
@@ -104,14 +104,15 @@ class AssetManager:
             debt_penalty = 0.5 # 50% reduction in aggressiveness due to liquidity panic
         return debt_penalty
 
-    def _manage_portfolio(self, context: AssetManagementContext) -> List[Order]:
+    def _manage_portfolio(self, context: AssetManagementContext, available_cash: float) -> List[Order]:
         orders = []
         household = context.household
         config = context.config
         market_data = context.market_data
         macro_context = context.macro_context
 
-        cash = household.assets
+        # Use available_cash (effective assets)
+        cash = available_cash
         deposit_data = market_data.get("deposit_data", {})
         deposit_balance = deposit_data.get(household.id, 0.0)
         total_liquid = cash + deposit_balance

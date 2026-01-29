@@ -22,6 +22,7 @@
 | **TD-141** | 2026-01-29 | **God File: `ai_driven_household_engine.py`** | Split logic into Sensory/Planning/Execution modules | 636+ LOC complexity | **ACTIVE** |
 | **TD-142** | 2026-01-29 | **God File: `corporate_manager.py`** | Use Departmental Delegation (similar to WO-123) | 629+ LOC complexity | **ACTIVE** |
 | **TD-143** | 2026-01-29 | **Hardcoded Placeholders (WO-XXX)** | Replace all `WO-XXX` tags in manuals with template variables or specific links | Documentation Debt | **ACTIVE** |
+| **TD-118** | 2026-01-29 | **DTO Contract-Implementation Mismatch** | Refactor `HouseholdStateDTO.inventory` usage to respect List type or update DTO to Dict | Potential Runtime Errors / Confusion | **ACTIVE** |
 
 ---
 
@@ -84,6 +85,12 @@
 - **현상**: 산업 혁명 시나리오가 아키텍처 변경으로 작동 불능 상태였음.
 - **해결**: DTO 호환형 `verify_phase23.py` 수리 및 대규모 생산성 향상(`TFP=3.0`) 적용.
 - **인사이트**: 풍요의 시대(Abundance)는 가격 수준의 급격한 하락을 동반하며, 이는 생존율을 높여 인구 폭증의 임계점(Critical Point)을 돌파하게 만듦.
+
+### 4. Household Modularization (WO-141)
+- **현상**: `HouseholdStateDTO.inventory` 필드는 공식적으로 `List[GoodsDTO]`로 정의될 수 있으나, 실제 의사결정 로직에서는 `household.inventory.get("basic_food")`와 같이 `Dict[str, float]`처럼 사용되고 있습니다.
+- **원인**: 레거시 구현이 딕셔너리 형태의 접근에 의존하고 있었으며, 이번 리팩토링에서 동작 동등성을 유지하기 위해 해당 사용법을 그대로 유지했습니다. 이로 인해 공식 DTO 계약과 실제 구현 간의 불일치가 발생했습니다.
+- **해결**: `HouseholdStateDTO`의 `inventory` 타입을 `Dict[str, float]`으로 명확히 확정하거나, 모든 관련 코드를 `List[GoodsDTO]`를 순회하여 사용하도록 리팩토링해야 합니다. 이 불일치는 향후 혼란과 잠재적 런타임 오류를 방지하기 위해 반드시 해결되어야 합니다.
+- **교훈**: 대규모 리팩토링은 공식 데이터 계약(DTO)과 실제 구현 간의 숨겨진 불일치를 발견하는 계기가 될 수 있습니다. 동작 동등성 테스트는 기존의 코드 스멜을 유지하도록 강제할 수 있으며, 이러한 부분은 명시적인 기술 부채로 기록하고 추적해야 합니다.
 
 ---
 

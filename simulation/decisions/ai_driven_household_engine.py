@@ -40,7 +40,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         self.consumption_manager = ConsumptionManager()
         self.labor_manager = LaborManager()
         self.asset_manager = AssetManager()
-        self.housing_manager = HousingManager(config=config_module) # Config is passed but logic mostly uses Context
+        self.housing_manager = HousingManager(logger=self.logger)
 
         self.logger.info(
             "AIDrivenHouseholdDecisionEngine initialized (Modularized).",

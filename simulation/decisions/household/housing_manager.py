@@ -23,24 +23,22 @@ class HousingManager:
     Refactored for DTO Purity Gate.
     """
 
-    def __init__(self, agent: "HouseholdStateDTO" = None, config: Union[Any, HouseholdConfigDTO] = None):
-        self.agent = agent  # HouseholdStateDTO
-        self.config = config
+    def __init__(self, logger: Optional[Any] = None):
+        self.logger = logger
 
     def decide_housing(self, context: HousingContext) -> List[Order]:
         orders = []
-        # Update state from context
-        self.agent = context.household
-        self.config = context.config
+        agent = context.household
+        config = context.config
         market_data = context.market_data
 
         if not context.market_snapshot:
             return orders
 
         reference_standard = market_data.get("reference_standard", {})
-        mimicry_intent = self.decide_mimicry_purchase(reference_standard)
+        mimicry_intent = self.decide_mimicry_purchase(agent, config, reference_standard)
 
-        is_owner_occupier = self.agent.residing_property_id in self.agent.owned_properties
+        is_owner_occupier = agent.residing_property_id in agent.owned_properties
         should_search = (not is_owner_occupier) or (mimicry_intent is not None)
 
         if should_search:
@@ -63,7 +61,7 @@ class HousingManager:
 
              if best_offer:
                  # Use market_data instead of live loan_market object (IBankService formalization)
-                 default_rate = getattr(self.config, 'default_mortgage_rate', 0.05)
+                 default_rate = getattr(config, 'default_mortgage_rate', 0.05)
                  mortgage_rate = market_data.get("loan_market", {}).get("interest_rate", default_rate)
 
                  should_buy = False
@@ -71,8 +69,10 @@ class HousingManager:
                  if mimicry_intent:
                      should_buy = True
                  elif not is_owner_occupier:
-                     initial_rent_price = getattr(self.config, 'initial_rent_price', 100.0)
+                     initial_rent_price = getattr(config, 'initial_rent_price', 100.0)
                      should_buy = self.should_buy(
+                         agent,
+                         config,
                          best_offer.price,
                          initial_rent_price,
                          mortgage_rate
@@ -80,14 +80,14 @@ class HousingManager:
 
                  if should_buy:
                      buy_order = Order(
-                         self.agent.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
+                         agent.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
                      )
                      orders.append(buy_order)
 
                      if mimicry_intent and context.logger:
                          context.logger.info(
-                             f"MIMICRY_BUY | Household {self.agent.id} panic buying housing due to relative deprivation.",
-                             extra={"tick": context.current_time, "agent_id": self.agent.id}
+                             f"MIMICRY_BUY | Household {agent.id} panic buying housing due to relative deprivation.",
+                             extra={"tick": context.current_time, "agent_id": agent.id}
                          )
         return orders
 
@@ -99,18 +99,18 @@ class HousingManager:
             return 0.0
         return 1.0 # Default Tier 1
 
-    def decide_mimicry_purchase(self, reference_standard: Dict[str, float]) -> Optional[PurchaseIntent]:
+    def decide_mimicry_purchase(self, agent: "HouseholdStateDTO", config: Union[Any, HouseholdConfigDTO], reference_standard: Dict[str, float]) -> Optional[PurchaseIntent]:
         """
         Phase 17-4: Mimicry Consumption Logic.
         """
         # Use DTO attribute if available, otherwise legacy getattr
-        enable_vanity = self.config.enable_vanity_system if hasattr(self.config, 'enable_vanity_system') else getattr(self.config, "ENABLE_VANITY_SYSTEM", False)
+        enable_vanity = config.enable_vanity_system if hasattr(config, 'enable_vanity_system') else getattr(config, "ENABLE_VANITY_SYSTEM", False)
 
         if not enable_vanity:
             return None
 
         # 1. Calculate Gap
-        my_tier = self.get_housing_tier(self.agent)
+        my_tier = self.get_housing_tier(agent)
         ref_tier = reference_standard.get("avg_housing_tier", 1.0)
 
         gap = ref_tier - my_tier
@@ -118,9 +118,9 @@ class HousingManager:
             return None
 
         # 2. Calculate Urgency
-        conformity = getattr(self.agent, "conformity", 0.5)
+        conformity = getattr(agent, "conformity", 0.5)
 
-        mimicry_factor = self.config.mimicry_factor if hasattr(self.config, 'mimicry_factor') else getattr(self.config, "MIMICRY_FACTOR", 0.5)
+        mimicry_factor = config.mimicry_factor if hasattr(config, 'mimicry_factor') else getattr(config, "MIMICRY_FACTOR", 0.5)
 
         urgency = conformity * gap * mimicry_factor
 
@@ -133,7 +133,7 @@ class HousingManager:
              )
         return None
 
-    def should_buy(self, property_value: float, rent_price: float, interest_rate: float = 0.05) -> bool:
+    def should_buy(self, agent: "HouseholdStateDTO", config: Union[Any, HouseholdConfigDTO], property_value: float, rent_price: float, interest_rate: float = 0.05) -> bool:
         """
         Determines whether to buy a property based on NPV calculation biased by personality.
         """
@@ -141,17 +141,17 @@ class HousingManager:
         horizon = 120
         discount_rate = 0.005
         # Access safely
-        maintenance_rate = self.config.maintenance_rate_per_tick if hasattr(self.config, 'maintenance_rate_per_tick') else getattr(self.config, 'MAINTENANCE_RATE_PER_TICK', 0.001)
+        maintenance_rate = config.maintenance_rate_per_tick if hasattr(config, 'maintenance_rate_per_tick') else getattr(config, 'MAINTENANCE_RATE_PER_TICK', 0.001)
 
         # 2. Personality-Biased Parameters
 
         # Optimism Bias
         base_appreciation = 0.002
-        perceived_appreciation_rate = base_appreciation * (0.5 + getattr(self.agent, 'optimism', 0.5))
+        perceived_appreciation_rate = base_appreciation * (0.5 + getattr(agent, 'optimism', 0.5))
 
         # Ambition Bias
         prestige_bonus = 0.0
-        ambition = getattr(self.agent, 'ambition', 0.5)
+        ambition = getattr(agent, 'ambition', 0.5)
         prestige_bonus = property_value * 0.1 * ambition
 
         # 3. NPV Calculation
