@@ -10,6 +10,12 @@ class ShockConfigDTO(TypedDict):
     tfp_multiplier: float  # The factor to multiply the baseline TFP by (e.g., 0.5 for a 50% drop)
     baseline_tfp: float   # The normal TFP value to restore to
 
+class MarketSnapshotDTO(TypedDict):
+    """
+    Snapshot of key market indicators for analysis modules.
+    """
+    gdp: float
+
 # --- Protocols ---
 
 class IAgent(Protocol):
@@ -30,6 +36,9 @@ class IGovernment(Protocol):
     revenue_this_tick: float
     total_debt: float
 
+class IConfig(Protocol):
+    STARVATION_THRESHOLD: float
+
 class ISimulationState(Protocol):
     """
     Protocol defining the subset of simulation state required by observers and injectors.
@@ -39,9 +48,9 @@ class ISimulationState(Protocol):
     households: List[IHousehold]
     central_bank: ICentralBank
     government: IGovernment
-    config_module: Any
+    config_module: IConfig
 
-    def get_market_snapshot(self) -> Any:
+    def get_market_snapshot(self) -> MarketSnapshotDTO:
         """
         Retrieves the current market snapshot containing economic indicators like GDP.
         """

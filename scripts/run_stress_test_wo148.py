@@ -48,7 +48,10 @@ def main():
 
     verification_config = VerificationConfigDTO(
         max_starvation_rate=0.01, # < 1.0%
-        max_debt_to_gdp=2.0       # < 200%
+        max_debt_to_gdp=2.0,      # < 200%
+        zlb_threshold=0.001,
+        deficit_spending_threshold=1.0,
+        basic_food_key="basic_food"
     )
 
     verifier = StormVerifier(verification_config, sim)

@@ -26,6 +26,8 @@
 | **TDL-028** | 2026-01-29 | **Inconsistent Order Object Structure** | Unify `Order` DTO interface or use ABC for `MarketOrder`/`StockOrder` separation | High Cognitive Load / Runtime Errors | **ACTIVE** |
 | **TD-149** | 2026-01-29 | **Tight Coupling in Analysis Modules** | Implement `ISimulationState` protocol for observer modules | Reduced modularity | **ACTIVE** |
 | **TD-150** | 2026-01-29 | **Ledger Management Process** | Document ledger format changes and historical data migration strategy | Loss of context | **ACTIVE** |
+| **TD-151** | 2026-01-29 | **Anonymous DTO in Simulation Engine** | Replace inner `MarketSnapshot` class in `simulation/engine.py` with formal `MarketSnapshotDTO` for better type safety and consistency. | Reduced Type Safety / Readability | **ACTIVE** |
+| **TD-152** | 2026-01-29 | **Hardcoded thresholds in StormVerifier** | Externalize ZLB, Deficit Spending thresholds, and `basic_food` string into `VerificationConfigDTO` or a central goods definition for configurability. | Configuration Flexibility / Maintainability | **ACTIVE** |
 
 ---
 

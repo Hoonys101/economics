@@ -12,6 +12,7 @@ from simulation.world_state import WorldState
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
+from modules.simulation.api import MarketSnapshotDTO
 
 logger = logging.getLogger(__name__)
 
@@ -70,22 +71,18 @@ class Simulation:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
         return self.world_state.get_all_agents()
 
-    def get_market_snapshot(self) -> Any:
+    def get_market_snapshot(self) -> MarketSnapshotDTO:
         """
         Retrieves the current market snapshot containing economic indicators.
         Exposes a public interface for observers (satisfies ISimulationState).
         """
-        # We can reuse the logic from TickOrchestrator or return a simple object.
-        # Ideally, we should return a MarketSnapshotDTO, but we need to construct it.
-        # For now, we'll return a simple object that wraps the necessary data from market_data.
+        # Retrieve raw data from orchestrator
         market_data = self.tick_orchestrator.prepare_market_data()
 
-        class MarketSnapshot:
-            def __init__(self, data):
-                self.gdp = data.get("total_production", 0.0)
-                # Add other fields if needed by ISimulationState consumers
-
-        return MarketSnapshot(market_data)
+        # Construct and return formal DTO
+        return MarketSnapshotDTO(
+            gdp=market_data.get("total_production", 0.0)
+        )
 
     # --- Backward Compatibility Methods ---
 

@@ -5,6 +5,9 @@ class VerificationConfigDTO(TypedDict):
     """Configuration for the verification component."""
     max_starvation_rate: float
     max_debt_to_gdp: float
+    zlb_threshold: float
+    deficit_spending_threshold: float
+    basic_food_key: str
     # TBD: Define volatility reduction target
 
 class StormReportDTO(TypedDict):
