@@ -7,11 +7,14 @@ from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.policies.taylor_rule_policy import TaylorRulePolicy
 from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 from simulation.dtos import GovernmentStateDTO
+from simulation.dtos.api import MarketSnapshotDTO
 from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.tax_agency import TaxAgency
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from modules.finance.api import InsufficientFundsError, TaxCollectionResult
+from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
+from modules.government.dtos import FiscalPolicyDTO
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -32,7 +35,13 @@ class Government:
         self.settlement_system: Optional["ISettlementSystem"] = None
         
         self.tax_agency = TaxAgency(config_module)
+        self.fiscal_policy_manager = FiscalPolicyManager(config_module)
         self.ministry_of_education = MinistryOfEducation(config_module)
+
+        # Initialize default fiscal policy
+        self.fiscal_policy: FiscalPolicyDTO = self.fiscal_policy_manager.determine_fiscal_stance(
+            MarketSnapshotDTO(prices={}, volumes={}, asks={}, best_asks={})
+        )
 
         self.total_collected_tax: float = 0.0
         self.total_spent_subsidies: float = 0.0
@@ -166,7 +175,13 @@ class Government:
             )
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
-        """Delegates income tax calculation to the TaxAgency."""
+        """
+        Calculates income tax using the FiscalPolicyManager and current policy.
+        """
+        if self.fiscal_policy:
+            return self.fiscal_policy_manager.calculate_tax_liability(self.fiscal_policy, income)
+
+        # Fallback (should not happen if initialized correctly)
         tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
         return self.tax_agency.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
 
@@ -297,6 +312,18 @@ class Government:
         정책 엔진에게 의사결정을 위임하고 결과를 반영합니다.
         (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
+        # 0. Update Fiscal Policy (WO-145)
+        # Convert market_data dict to MarketSnapshotDTO for FiscalPolicyManager
+        prices = {}
+        if "goods_market" in market_data:
+            for key, value in market_data["goods_market"].items():
+                if key.endswith("_current_sell_price"):
+                    item_id = key.replace("_current_sell_price", "")
+                    prices[item_id] = value
+
+        snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
+        self.fiscal_policy = self.fiscal_policy_manager.determine_fiscal_stance(snapshot)
+
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
         decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)
         
