@@ -85,6 +85,10 @@
       "17696464705028160742": {
         "title": "WO-138: Sacred Hygiene",
         "initial_mission": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test sui..."
+      },
+      "11881482222288115245": {
+        "title": "WO-136: Operation Clean Sweep",
+        "initial_mission": "Execute technology generalization, NumPy optimization, and dynamic circuit breakers as specified.\n\n[..."
       }
     },
     "completed_sessions": {

@@ -4,17 +4,10 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-clean-sweep": {
+  "mission-repository-decomp": {
     "command": "create",
-    "instruction": "Execute technology generalization, NumPy optimization, and dynamic circuit breakers as specified.",
-    "title": "WO-136: Operation Clean Sweep",
-    "file": "design/3_work_artifacts/work_orders/WO-136-Clean-Sweep.md"
-  },
-  "mission-god-file-audit": {
-    "worker": "audit",
-    "instruction": "Audit the identified God Files (db/repository.py, ai_driven_household_engine.py, corporate_manager.py) against SoC principles. Provide a detailed refactoring plan into specialized modules.",
-    "context": [
-      "simulation/db/repository.py,simulation/decisions/ai_driven_household_engine.py,simulation/decisions/corporate_manager.py"
-    ]
+    "instruction": "Decompose SimulationRepository into specialized Agent, Market, Analytics, and Run repositories as per the spec.",
+    "title": "WO-140: Repository Decomposition",
+    "file": "design/3_work_artifacts/work_orders/WO-140-Repository-Decomposition.md"
   }
 }
