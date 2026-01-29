@@ -4,12 +4,6 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-gov-refactor": {
-    "command": "create",
-    "instruction": "Decompose the monolithic government entity into a Facade/Component structure as per WO-144.",
-    "title": "WO-144: Government Structure Refactor",
-    "file": "design/3_work_artifacts/work_orders/WO-144-Government-Refactor.md"
-  },
   "mission-fiscal-policy": {
     "command": "create",
     "instruction": "Implement a progressive tax system with FiscalPolicyManager as an automatic stabilizer as per WO-145.",

@@ -105,6 +105,10 @@
       "6568939817573477863": {
         "title": "WO-143: Documentation Hygiene",
         "initial_mission": "Search and replace all WO-XXX placeholders with specific links or IDs as per WO-143.\n\n[File Content:..."
+      },
+      "10761768022444749737": {
+        "title": "WO-144: Government Structure Refactor",
+        "initial_mission": "Decompose the monolithic government entity into a Facade/Component structure as per WO-144.\n\n[File C..."
       }
     },
     "completed_sessions": {
