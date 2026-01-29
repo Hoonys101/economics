@@ -24,10 +24,11 @@ def mock_logger_fixture():
 @pytest.fixture
 def mock_config():
     config = Mock()
-    config.GOODS = {
+    config.goods = {
         "basic_food": {"utility_effects": {"survival": 10}},
         "luxury_food": {"utility_effects": {"leisure": 10}},
     }
+    config.GOODS = config.goods
     # Phase 4.5 Constants
     config.NEUTRAL_REAL_RATE = 0.02
     config.DSR_CRITICAL_THRESHOLD = 0.4
@@ -110,6 +111,7 @@ def mock_config():
 
     # Missing DTO fields
     config.initial_rent_price = 100.0
+    config.household_consumable_goods = ["basic_food", "luxury_food"]
     config.survival_need_consumption_threshold = 50.0
     config.target_food_buffer_quantity = 5.0
     config.food_purchase_max_per_tick = 10.0
@@ -225,7 +227,7 @@ class TestAIDrivenHouseholdDecisionEngine:
     def test_consumption_buy_luxury_food_insufficient_assets(
         self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
-        mock_household_dto._assets = 100.0 # DTO assets
+        mock_household_dto.assets = 100.0 # DTO assets
 
         mock_ai_engine.decide_action_vector.return_value = HouseholdActionVector(
              consumption_aggressiveness={"luxury_food": 0.9}

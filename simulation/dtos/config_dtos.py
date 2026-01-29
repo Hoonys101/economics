@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 @dataclass
 class HouseholdConfigDTO:
@@ -56,6 +56,8 @@ class HouseholdConfigDTO:
     enable_vanity_system: bool
     mimicry_factor: float
     maintenance_rate_per_tick: float
+    goods: Dict[str, Any]
+    household_consumable_goods: List[str]
 
     # Expanded Fields for DTO Parity
     value_orientation_mapping: Dict[str, Any]
