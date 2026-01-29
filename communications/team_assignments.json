@@ -89,6 +89,10 @@
       "11881482222288115245": {
         "title": "WO-136: Operation Clean Sweep",
         "initial_mission": "Execute technology generalization, NumPy optimization, and dynamic circuit breakers as specified.\n\n[..."
+      },
+      "328417402776115895": {
+        "title": "WO-140: Repository Decomposition",
+        "initial_mission": "Decompose SimulationRepository into specialized Agent, Market, Analytics, and Run repositories as pe..."
       }
     },
     "completed_sessions": {
