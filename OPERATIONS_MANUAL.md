@@ -48,7 +48,7 @@ economics/
 ├── tests/                      # 테스트 코드
 ├── design/                     # 설계 문서
 │   ├── specs/                 # W-1 명세서
-│   ├── work_orders/           # Jules 업무 지시서 (WO-XXX)
+│   ├── work_orders/           # Jules 업무 지시서 (WO-{ID})
 │   ├── ECONOMIC_INSIGHTS.md   # 경제적 인사이트 기록
 │   └── project_status.md      # 프로젝트 현황
 ├── reports/                    # 분석 보고서 (Jules 제출)
@@ -95,7 +95,7 @@ economics/
 ### 4.1 Work Order 작성
 
 ```markdown
-# WO-XXX: [제목]
+# WO-{ID}: [제목]
 
 ## 1. 개요
 목표, 배경 설명
@@ -113,7 +113,7 @@ economics/
 ### 4.2 Jules 명령어 형식
 
 ```
-Jules, 'design/work_orders/WO-XXX-Name.md'를 읽고 [작업 요약]을 수행하라.
+Jules, 'design/work_orders/WO-{ID}-Name.md'를 읽고 [작업 요약]을 수행하라.
 완료 후 'reports/[REPORT_NAME].md'에 인사이트를 보고하라. (W-3.3 완료 보고의 필수 항목)
 ```
 

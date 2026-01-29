@@ -79,7 +79,7 @@ logger.info(
 ## 4. 작업 워크플로우
 
 ### 4.1 Work Order 구조
-모든 작업은 `design/work_orders/WO-XXX-*.md` 형식의 지시서를 따릅니다.
+모든 작업은 `design/work_orders/WO-{ID}-*.md` 형식의 지시서를 따릅니다.
 
 ### 4.2 테스트 요구사항
 - 모든 새 기능은 `tests/` 디렉토리에 테스트 코드 포함 필수

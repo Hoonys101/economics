@@ -191,5 +191,5 @@ This design explicitly addresses the risks identified in the pre-flight audit.
 
 ## 8. Mandatory Reporting
 
-**Jules's Implementation Directive**: During implementation, any unforeseen complexities, deviations from this specification, or potential improvements discovered must be documented. Create a new markdown file in `communications/insights/` named `WO-XXX-phase26-5-finance-insights.md` to log these findings for the team lead's review. All identified technical debt must be proposed for inclusion in `TECH_DEBT_LEDGER.md`.
+**Jules's Implementation Directive**: During implementation, any unforeseen complexities, deviations from this specification, or potential improvements discovered must be documented. Create a new markdown file in `communications/insights/` named `WO-{ID}-phase26-5-finance-insights.md` to log these findings for the team lead's review. All identified technical debt must be proposed for inclusion in `TECH_DEBT_LEDGER.md`.
 ```
