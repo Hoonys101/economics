@@ -4,12 +4,6 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-soft-landing-repair": {
-    "command": "create",
-    "instruction": "Address code review issues for WO-147: 1) Remove auto-pip install of matplotlib in verify_soft_landing.py, 2) Use getattr with defaults instead of hasattr, 3) Document TD-028 (Order object inconsistency) in TECH_DEBT_LEDGER.md.",
-    "title": "Repair WO-147: Soft Landing Suite",
-    "file": "design/3_work_artifacts/work_orders/WO-147-Soft-Landing-Verification.md"
-  },
   "mission-shock-injector": {
     "command": "create",
     "instruction": "Implement the ShockInjector component in modules/simulation to handle TFP drops as per draft_124655.",

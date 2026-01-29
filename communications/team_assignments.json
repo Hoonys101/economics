@@ -13,6 +13,10 @@
       "15843561608130792476": {
         "title": "WO-147: Soft Landing Verification Suite",
         "initial_mission": "Create the soft landing verification suite and report generation as per WO-147.\n\n[File Content: desi..."
+      },
+      "11871705678872039394": {
+        "title": "Repair WO-147: Soft Landing Suite",
+        "initial_mission": "Address code review issues for WO-147: 1) Remove auto-pip install of matplotlib in verify_soft_landi..."
       }
     },
     "completed_sessions": {
