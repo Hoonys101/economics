@@ -12,7 +12,7 @@ from simulation.world_state import WorldState
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
-from modules.simulation.api import MarketSnapshotDTO
+from modules.simulation.api import MarketSnapshotDTO, SystemStateDTO
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,42 @@ class Simulation:
         return MarketSnapshotDTO(
             gdp=market_data.get("total_production", 0.0),
             cpi=cpi
+        )
+
+    def get_system_state(self) -> SystemStateDTO:
+        """
+        Retrieves internal system state for phenomena analysis.
+        Implements ISimulationState.get_system_state.
+        """
+        bank_reserves = 0.0
+        bank_deposits = 0.0
+
+        # Access Bank via world_state
+        if self.world_state.bank:
+            bank_reserves = self.world_state.bank.assets
+            # Bank deposits are stored in 'deposits' dict
+            if hasattr(self.world_state.bank, "deposits"):
+                bank_deposits = sum(d.amount for d in self.world_state.bank.deposits.values())
+
+        last_fiscal_tick = -1
+        if self.world_state.government:
+            last_fiscal_tick = getattr(self.world_state.government, "last_fiscal_activation_tick", -1)
+
+        circuit_breaker = False
+        if self.world_state.stock_market:
+            # Placeholder until StockMarket implements explicit circuit breaker state
+            circuit_breaker = getattr(self.world_state.stock_market, "is_circuit_breaker_active", False)
+
+        base_rate = 0.05
+        if self.world_state.central_bank:
+            base_rate = getattr(self.world_state.central_bank, "base_rate", 0.05)
+
+        return SystemStateDTO(
+            is_circuit_breaker_active=circuit_breaker,
+            bank_total_reserves=bank_reserves,
+            bank_total_deposits=bank_deposits,
+            fiscal_policy_last_activation_tick=last_fiscal_tick,
+            central_bank_base_rate=base_rate
         )
 
     # --- Backward Compatibility Methods ---

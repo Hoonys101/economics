@@ -1,0 +1,63 @@
+# config/scenarios/stress_test_phenomena.yaml
+
+SIMULATION_TICKS: 200
+NUM_HOUSEHOLDS: 50
+NUM_FIRMS: 10
+
+# Shock Config (for generating phenomena)
+shock_start_tick: 50
+shock_end_tick: 70
+tfp_multiplier: 0.5
+baseline_tfp: 1.0
+
+# Legacy Verification Config (for reference)
+max_starvation_rate: 0.20
+max_debt_to_gdp: 2.0
+zlb_threshold: 0.005
+deficit_spending_threshold: 1000.0
+basic_food_key: 'basic_food'
+starvation_threshold: 1.0
+
+# Configuration for the Phenomena Analyzer
+analysis_config:
+  resilience_weights:
+    volatility_weight: 0.3
+    recovery_time_weight: 0.4
+    crisis_severity_weight: 0.3
+    policy_bonus_factor: 1.1
+
+  detectors:
+    liquidity_crisis:
+      enabled: true
+      module: 'modules.analysis.detectors.LiquidityCrisisDetector'
+      thresholds:
+        # Bank reserves below this % of deposits triggers alert
+        bank_reserve_ratio_min: 0.05
+        # More than this many consecutive ticks of credit rationing
+        credit_rationing_duration: 5
+
+    circuit_breaker:
+      enabled: true
+      module: 'modules.analysis.detectors.CircuitBreakerDetector'
+      thresholds: {} # Simple event detection, no thresholds needed
+
+    solvency:
+      enabled: true
+      module: 'modules.analysis.detectors.SolvencyDetector'
+      thresholds:
+        # If bankruptcy rate exceeds this % per tick
+        bankruptcy_rate_max: 0.10
+
+    economic_health:
+       enabled: true
+       module: 'modules.analysis.detectors.EconomicHealthDetector'
+       thresholds:
+         # Acceptable inflation range
+         inflation_target: 0.02
+         inflation_upper_bound: 0.05
+         inflation_lower_bound: -0.01
+
+    policy_effectiveness:
+       enabled: true
+       module: 'modules.analysis.detectors.PolicyEffectivenessDetector'
+       thresholds: {}

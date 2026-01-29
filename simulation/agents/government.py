@@ -138,6 +138,9 @@ class Government:
         self.sensory_data: Optional[GovernmentStateDTO] = None
         self.finance_system = None
 
+        # Analysis Hook for Phenomena Reporting (TD-154)
+        self.last_fiscal_activation_tick: int = -1
+
         logger.info(
             f"Government {self.id} initialized with assets: {self.assets}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
@@ -534,6 +537,7 @@ class Government:
                          total_stimulus += tx.price
 
              if total_stimulus > 0:
+                 self.last_fiscal_activation_tick = current_tick
                  logger.warning(
                      f"STIMULUS_TRIGGERED | GDP Drop Detected. Generated stimulus txs total {total_stimulus:.2f}.",
                      extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}

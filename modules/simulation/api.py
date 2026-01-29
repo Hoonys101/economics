@@ -17,6 +17,16 @@ class MarketSnapshotDTO(TypedDict):
     gdp: float
     cpi: float
 
+class SystemStateDTO(TypedDict):
+    """
+    Internal system flags and states not meant for agent decision-making but essential for observation.
+    """
+    is_circuit_breaker_active: bool
+    bank_total_reserves: float
+    bank_total_deposits: float
+    fiscal_policy_last_activation_tick: int
+    central_bank_base_rate: float
+
 # --- Protocols ---
 
 class IAgent(Protocol):
@@ -54,6 +64,12 @@ class ISimulationState(Protocol):
     def get_market_snapshot(self) -> MarketSnapshotDTO:
         """
         Retrieves the current market snapshot containing economic indicators like GDP.
+        """
+        ...
+
+    def get_system_state(self) -> SystemStateDTO:
+        """
+        Retrieves internal system state for phenomena analysis.
         """
         ...
 
