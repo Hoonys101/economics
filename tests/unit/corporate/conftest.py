@@ -1,14 +1,10 @@
-
 import pytest
 from unittest.mock import MagicMock
-from simulation.decisions.corporate_manager import CorporateManager
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
-from simulation.schemas import FirmActionVector
-from simulation.models import Order
-from simulation.ai.enums import Personality
 
 class MockConfig:
     CAPITAL_TO_OUTPUT_RATIO = 2.0
+    DIVIDEND_RATE = 0.1
     DIVIDEND_RATE_MIN = 0.1
     DIVIDEND_RATE_MAX = 0.5
     MAX_SELL_QUANTITY = 100
@@ -32,6 +28,28 @@ class MockConfig:
     ALTMAN_Z_SCORE_THRESHOLD = 1.81
     DIVIDEND_SUSPENSION_LOSS_TICKS = 3
 
+    # New fields
+    INITIAL_FIRM_LIQUIDITY_NEED = 1000.0
+    BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD = 5
+    PROFIT_HISTORY_TICKS = 10
+    IPO_INITIAL_SHARES = 1000
+    INVENTORY_HOLDING_COST_RATE = 0.01
+    FIRM_MAINTENANCE_FEE = 10.0
+    CORPORATE_TAX_RATE = 0.2
+    BAILOUT_REPAYMENT_RATIO = 0.1
+    VALUATION_PER_MULTIPLIER = 10.0
+    CAPITAL_DEPRECIATION_RATE = 0.01
+    LABOR_ELASTICITY_MIN = 0.1
+    HALO_EFFECT = 0.1
+    MARKETING_DECAY_RATE = 0.1
+    MARKETING_EFFICIENCY = 1.0
+    PERCEIVED_QUALITY_ALPHA = 0.5
+    BRAND_AWARENESS_SATURATION = 100.0
+    MARKETING_EFFICIENCY_HIGH_THRESHOLD = 0.8
+    MARKETING_EFFICIENCY_LOW_THRESHOLD = 0.2
+    MARKETING_BUDGET_RATE_MIN = 0.01
+    MARKETING_BUDGET_RATE_MAX = 0.1
+
 @pytest.fixture
 def firm_config_dto():
     c = MockConfig()
@@ -46,6 +64,7 @@ def firm_config_dto():
         automation_tax_rate=c.AUTOMATION_TAX_RATE,
         altman_z_score_threshold=c.ALTMAN_Z_SCORE_THRESHOLD,
         dividend_suspension_loss_ticks=c.DIVIDEND_SUSPENSION_LOSS_TICKS,
+        dividend_rate=c.DIVIDEND_RATE,
         dividend_rate_min=c.DIVIDEND_RATE_MIN,
         dividend_rate_max=c.DIVIDEND_RATE_MAX,
         labor_alpha=c.LABOR_ALPHA,
@@ -57,7 +76,29 @@ def firm_config_dto():
         production_adjustment_factor=c.PRODUCTION_ADJUSTMENT_FACTOR,
         max_sell_quantity=float(c.MAX_SELL_QUANTITY),
         invisible_hand_sensitivity=c.INVISIBLE_HAND_SENSITIVITY,
-        capital_to_output_ratio=c.CAPITAL_TO_OUTPUT_RATIO
+        capital_to_output_ratio=c.CAPITAL_TO_OUTPUT_RATIO,
+        # New fields
+        initial_firm_liquidity_need=c.INITIAL_FIRM_LIQUIDITY_NEED,
+        bankruptcy_consecutive_loss_threshold=c.BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD,
+        profit_history_ticks=c.PROFIT_HISTORY_TICKS,
+        ipo_initial_shares=float(c.IPO_INITIAL_SHARES),
+        inventory_holding_cost_rate=c.INVENTORY_HOLDING_COST_RATE,
+        firm_maintenance_fee=c.FIRM_MAINTENANCE_FEE,
+        corporate_tax_rate=c.CORPORATE_TAX_RATE,
+        bailout_repayment_ratio=c.BAILOUT_REPAYMENT_RATIO,
+        valuation_per_multiplier=c.VALUATION_PER_MULTIPLIER,
+        capital_depreciation_rate=c.CAPITAL_DEPRECIATION_RATE,
+        labor_elasticity_min=c.LABOR_ELASTICITY_MIN,
+        goods=c.GOODS,
+        halo_effect=c.HALO_EFFECT,
+        marketing_decay_rate=c.MARKETING_DECAY_RATE,
+        marketing_efficiency=c.MARKETING_EFFICIENCY,
+        perceived_quality_alpha=c.PERCEIVED_QUALITY_ALPHA,
+        brand_awareness_saturation=c.BRAND_AWARENESS_SATURATION,
+        marketing_efficiency_high_threshold=c.MARKETING_EFFICIENCY_HIGH_THRESHOLD,
+        marketing_efficiency_low_threshold=c.MARKETING_EFFICIENCY_LOW_THRESHOLD,
+        marketing_budget_rate_min=c.MARKETING_BUDGET_RATE_MIN,
+        marketing_budget_rate_max=c.MARKETING_BUDGET_RATE_MAX
     )
 
 @pytest.fixture
@@ -113,92 +154,3 @@ def context_mock(firm_dto, firm_config_dto):
     context.goods_data = [{"id": "food", "production_cost": 10.0, "inputs": {}}]
     context.reflux_system = MagicMock()
     return context
-
-def test_rd_logic(firm_dto, context_mock):
-    manager = CorporateManager(MockConfig())
-    # Aggressiveness 1.0 -> 20% of Revenue
-    vector = FirmActionVector(
-        rd_aggressiveness=1.0,
-        capital_aggressiveness=0.0,
-        dividend_aggressiveness=0.0,
-        debt_aggressiveness=0.0,
-        hiring_aggressiveness=0.0,
-        sales_aggressiveness=0.0
-    )
-
-    firm_dto.assets = 10000.0
-    firm_dto.revenue_this_turn = 1000.0
-    expected_budget = 1000.0 * 0.2 # 200
-
-    orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
-
-    rd_orders = [o for o in orders if o.order_type == "INVEST_RD"]
-    assert len(rd_orders) == 1
-    assert rd_orders[0].quantity == expected_budget
-    assert rd_orders[0].market_id == "internal"
-
-def test_dividend_logic(firm_dto, context_mock):
-    manager = CorporateManager(MockConfig())
-    vector = FirmActionVector(dividend_aggressiveness=1.0) # Max rate 0.5
-
-    orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
-
-    div_orders = [o for o in orders if o.order_type == "SET_DIVIDEND"]
-    assert len(div_orders) == 1
-    assert div_orders[0].quantity == 0.5
-
-def test_hiring_logic(firm_dto, context_mock):
-    manager = CorporateManager(MockConfig())
-    firm_dto.production_target = 100
-    firm_dto.inventory["food"] = 80 # Gap 20
-    firm_dto.productivity_factor = 10.0 # Need 2 workers (approx)
-
-    # Adjust mock to return empty list of employees so we hire
-    firm_dto.employees = []
-
-    vector = FirmActionVector(hiring_aggressiveness=0.5)
-
-    orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
-
-    hiring_orders = [o for o in orders if o.order_type == "BUY" and o.item_id == "labor"]
-    assert len(hiring_orders) > 0
-    assert hiring_orders[0].price >= 10.0
-
-def test_debt_logic_borrow(firm_dto, context_mock):
-    manager = CorporateManager(MockConfig())
-    firm_dto.assets = 1000.0
-
-    # Mock debt data
-    context_mock.market_data["debt_data"] = {firm_dto.id: {"total_principal": 0.0}}
-
-    vector = FirmActionVector(debt_aggressiveness=0.5)
-
-    orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
-
-    loan_reqs = [o for o in orders if o.order_type == "LOAN_REQUEST"]
-    assert len(loan_reqs) > 0
-    assert loan_reqs[0].quantity > 0
-
-def test_automation_investment(firm_dto, context_mock):
-    config = MockConfig()
-    config.AUTOMATION_COST_PER_PCT = 10.0 # Make it cheap
-    # Update config DTO
-    context_mock.config.automation_cost_per_pct = 10.0
-
-    manager = CorporateManager(config)
-    # Ensure automation is profitable so System 2 recommends it
-    # High wages so automation saves money
-    firm_dto.employees_data = {
-        1: {"wage": 2000.0, "skill": 1.0, "id": 1, "age": 20, "education_level": 1}
-    }
-    firm_dto.revenue_this_turn = 5000.0
-
-    firm_dto.assets = 50000.0 # Plenty of cash
-
-    vector = FirmActionVector(capital_aggressiveness=1.0)
-
-    orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
-
-    auto_orders = [o for o in orders if o.order_type == "INVEST_AUTOMATION"]
-    assert len(auto_orders) > 0
-    assert auto_orders[0].quantity > 0
