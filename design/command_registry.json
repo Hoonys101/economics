@@ -4,12 +4,6 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-household-modularization": {
-    "command": "create",
-    "instruction": "Refactor Household Engine into Coordinator-Delegate pattern as per Spec and WO-141.",
-    "title": "WO-141: Household Engine Modularization",
-    "file": "design/3_work_artifacts/work_orders/WO-141-Household-Modularization.md"
-  },
   "mission-doc-hygiene": {
     "command": "create",
     "instruction": "Search and replace all WO-XXX placeholders with specific links or IDs as per WO-143.",
