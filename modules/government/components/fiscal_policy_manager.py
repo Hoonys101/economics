@@ -1,0 +1,1 @@
+"""Fiscal Policy Manager Component."""
