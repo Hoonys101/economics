@@ -2,120 +2,43 @@
   "antigravity": {
     "project": "economics",
     "active_sessions": {
-      "6165549041784259430": {
-        "title": "WO-078: Fractional Reserve Banking Implementation",
-        "initial_mission": "Synchronized from server"
-      },
-      "18316631047055175113": {
-        "title": "Genesis Fix",
-        "initial_mission": "Sacred Sequence Implementation\n\n[File Content: design/work_orders/WO-124_JULES_GO.md]\n```\n# Work Ord..."
-      },
-      "16830608555715890075": {
-        "title": "Hotfix: Household Impact",
-        "initial_mission": "Fix AttributeError: 'Household' object has no attribute 'update_political_opinion' in core_agents.py or trace_leak.py"
-      },
-      "616186118116580814": {
-        "title": "Fix: M2 Money Supply Measurement",
-        "initial_mission": "# Spec: TD-111 (Reflux M2 Calculation)\n\n## 1. Objectives\n\nThis document provides the detailed technical specification for remediating **TD-111 (ECONOMIC_RISK)**. The goal is to create an accurate M2 money supply metric for economic reporting that correctly excludes funds in transit within the `EconomicRefluxSystem`.\n\nThis will be achieved by creating a new, dedicated function for M2 calculation, while preserving the existing `WorldState.calculate_total_money` method as a critical zero-sum system integrity check.\n\n## 2. 🚨 Risk & Impact Audit (Pre-flight Analysis)\n\nThe implementation must mitigate the following critical risks identified during the pre-flight audit:\n\n-   **Conflicting Function Responsibility (CRITICAL):** The function `simulation.world_state.py:calculate_total_money` serves a dual purpose: a zero-sum asset integrity check and an economic metric. Its primary, non-negotiable role is the integrity check. **This function must not be modified.**\n-   **Risk of Masking Asset Leaks:** Any change to `calculate_total_money` (e.g., by excluding the reflux balance) will break the system's only reliable leak detection mechanism. It would create constant false positives, masking future, real asset leaks.\n-   **Circular Dependency:** `WorldState` and `EconomicIndicatorTracker` have a mutual dependency. The implementation must preserve the existing `typing.TYPE_CHECKING` block to prevent a `CircularImport` error at runtime.\n-   **Implicit API Contract Breach:** Failure to update all downstream consumers (reporting scripts, dashboards) to use the new M2 calculation method will result in continued, silent use of the incorrect metric.\n\n## 3. Implementation Plan\n\n### 3.1. Task: Create Dedicated M2 Money Supply Method\n\nA new method, `get_m2_money_supply`, will be implemented in the `EconomicIndicatorTracker` class. This method will be solely responsible for calculating the M2 money supply for economic reporting.\n\n1.  **Modify `economic_tracker.py`**: Add the following method to the `EconomicIndicatorTracker` class in `simulation/metrics/economic_tracker.py`.\n\n    ```python\n    # simulation/metrics/economic_tracker.py\n    from __future__ import annotations\n    from typing import TYPE_CHECKING\n\n    if TYPE_CHECKING:\n        from simulation.world_state import WorldState\n    \n    class EconomicIndicatorTracker:\n        # ... existing methods ...\n\n        def get_m2_money_supply(self, world_state: 'WorldState') -> float:\n            \"\"\"\n            Calculates the M2 money supply for economic reporting.\n            \n            M2 = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets\n            \n            This calculation INTENTIONALLY EXCLUDES the EconomicRefluxSystem balance, \n            as it represents money in transit not yet realized by economic agents,\n            and also excludes the Central Bank's balance which is used for\n            system-level integrity checks.\n            \"\"\"\n            total = 0.0\n\n            # 1. Households\n            for h in world_state.households:\n                if h.is_active:\n                    total += h.assets\n\n            # 2. Firms\n            for f in world_state.firms:\n                if f.is_active:\n                    total += f.assets\n\n            # 3. Bank Reserves\n            if world_state.bank:\n                total += world_state.bank.assets\n\n            # 4. Government Assets\n            if world_state.government:\n                total += world_state.government.assets\n\n            # NOTE: world_state.reflux_system.balance is INTENTIONALLY EXCLUDED.\n            # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.\n\n            return total\n    ```\n\n### 3.2. Task: Audit and Update Consumers\n\nIdentify all codebase locations that currently use `world_state.calculate_total_money()` for economic reporting and update them to use the new `tracker.get_m2_money_supply(world_state)` method.\n\n**Known Consumers (Incomplete List):**\n-   `scripts/generate_phase1_report.py`\n-   `scripts/analyze_history.py`\n-   `dashboard/app.py`\n-   Any Jupyter notebooks or analysis scripts that load and inspect `WorldState`.\n\nA full codebase search for `calculate_total_money` must be performed to ensure all instances are updated.\n\n## 4. API & Interface Changes\n\n-   **`simulation.metrics.economic_tracker.EconomicIndicatorTracker`**:\n    -   **ADD**: `get_m2_money_supply(self, world_state: 'WorldState') -> float`\n\n## 5. Verification Plan\n\nThe fix will be verified by ensuring the zero-sum integrity check remains valid while the new M2 metric provides the correct, smaller value.\n\n1.  **Run Simulation**: Execute a simulation for at least 10 ticks, or until the `reflux_system.balance` is confirmed to be greater than 0.\n2.  **Pause and Inspect**: Pause the simulation and obtain the following values:\n    -   `ws_total = world_state.calculate_total_money()`\n    -   `m2_total = world_state.tracker.get_m2_money_supply(world_state)`\n    -   `reflux_balance = world_state.reflux_system.balance`\n    -   `cb_balance = world_state.central_bank.assets.get('cash', 0.0)`\n3.  **Assert Correctness**: The following condition must be true, confirming that the total system money (for integrity checks) is the sum of the M2 supply (for reporting) and the money currently in transit or held by the central bank.\n\n    ```python\n    # Verification assertion\n    assert abs(ws_total - (m2_total + reflux_balance + cb_balance)) < 1e-6\n    ```\n\n## 6. [Routine] Mandatory Reporting\n\n-   Upon completion, document any new insights or discovered technical debt in `communications/insights/`.\n-   Update the `design/TECH_DEBT_LEDGER.md` file, changing the status of **TD-111** to `RESOLVED`.\n"
-      },
-      "2502617286500419200": {
-        "title": "Feature: Industrial Revolution P23",
-        "initial_mission": "# Work Order: WO-053 - Industrial Revolution Core Integration\n\n**Phase:** 23\n**Priority:** HIGH\n**Prerequisite:** None\n\n## 1. Problem Statement\nThe current simulation lacks a mechanism for technological breakthroughs to impact economic output directly. The `TechnologyManager` exists but is not integrated into the core production logic, making its impact zero. This prevents the simulation of key economic events like the Industrial Revolution.\n\n## 2. Objective\nIntegrate the `TechnologyManager` with the `ProductionDepartment` to enable technology-driven productivity growth. The \"Chemical Fertilizer\" technology will act as the first implementation, tripling the productivity of firms in the FOOD sector upon adoption.\n\n## 3. Target Metrics\n| Metric | Current | Target |\n|---|---|---|\n| Food Production (Post-Tech) | `tfp * labor^a * capital^b` | `(tfp * 3.0) * labor^a * capital^b` |\n| Tech Adoption by Visionaries | 0 | 100% (immediate) |\n| Tech Diffusion to others | 0% | > 0% (gradual, based on diffusion rate) |\n\n---\n\n# `industrial_revolution_spec.md`\n\n## 1. System Architecture & SoC Refactoring\nTo adhere to strict SoC and resolve the risks identified in the pre-flight audit, the integration will be orchestrated by the main simulation loop (`main.py`). This avoids creating \"God Object\" dependencies.\n\n  \n*(Diagram Placeholder: A simple diagram showing `main.py` calling `StatsService` -> passing results to `TechnologyManager` -> passing `TechnologyManager` to `Firm`)*\n\n- **`main.py` (Orchestrator):**\n    1.  Calculates aggregate statistics (`human_capital_index`).\n    2.  Calls `TechnologyManager.update()` with the necessary data.\n    3.  Injects the `TechnologyManager` instance into the `firm.produce()` call.\n- **`TechnologyManager` (System):**\n    1.  Receives data, does not fetch it.\n    2.  Manages the state of technology (unlocks, adoption).\n- **`ProductionDepartment` (Component):**\n    1.  Receives the `TechnologyManager` and uses it to get a multiplier.\n\n## 2. Interface Specification (`api.py`)\nThe following interfaces define the contract for the technology system. DTOs are used to ensure loose coupling.\n\n```python\n#\n# File: simulation/systems/tech/api.py\n#\nfrom __future__ import annotations\nfrom typing import List, Protocol, TypedDict, Set\n\n# --- Data Transfer Objects (DTOs) ---\n\nclass FirmTechInfoDTO(TypedDict):\n    \"\"\"Minimal firm data required for technology diffusion.\"\"\"\n    id: int\n    sector: str\n    is_visionary: bool\n    \nclass HouseholdEducationDTO(TypedDict):\n    \"\"\"Minimal household data required for human capital calculation.\"\"\"\n    is_active: bool\n    education_level: float\n\n# --- System Interface ---\n\nclass TechnologySystemAPI(Protocol):\n    \"\"\"\n    Defines the public contract for the TechnologyManager.\n    It operates on DTOs and primitive types, not full agent objects.\n    \"\"\"\n\n    def update(\n        self, \n        current_tick: int, \n        firms: List[FirmTechInfoDTO], \n        human_capital_index: float\n    ) -> None:\n        \"\"\"\n        Updates the state of technology diffusion.\n        - Checks for new tech unlocks.\n        - Processes the S-curve adoption for all active technologies.\n        \"\"\"\n        ...\n\n    def get_productivity_multiplier(self, firm_id: int) -> float:\n        \"\"\"\n        Returns the total productivity multiplier for a given firm\n        based on its adopted technologies.\n        \"\"\"\n        ...\n\n    def has_adopted(self, firm_id: int, tech_id: str) -> bool:\n        \"\"\"Checks if a firm has adopted a specific technology.\"\"\"\n        ...\n```\n\n## 3. Logic Steps (Pseudo-code)\n\n### 3.1. `main.py` (Simulation Loop)\n```python\n# main.py\ndef run_simulation():\n    # ... initialization of simulation, firms, households, technology_manager ...\n\n    for tick in range(SIMULATION_TICKS):\n        # 1. [ORCHESTRATION] Calculate aggregate stats\n        active_households_dto = [\n            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))\n            for h in simulation.households\n        ]\n        \n        total_edu = sum(h['education_level'] for h in active_households_dto if h['is_active'])\n        active_count = sum(1 for h in active_households_dto if h['is_active'])\n        human_capital_index = total_edu / active_count if active_count > 0 else 1.0\n\n        # 2. [ORCHESTRATION] Update technology system state\n        active_firms_dto = [\n            FirmTechInfoDTO(id=f.id, sector=f.sector, is_visionary=getattr(f, 'is_visionary', False))\n            for f in simulation.firms if f.is_active\n        ]\n        technology_manager.update(tick, active_firms_dto, human_capital_index)\n\n        # 3. [AGENT ACTIONS]\n        for firm in simulation.firms:\n            if not firm.is_active:\n                continue\n            \n            # ... other firm logic ...\n\n            # [INJECTION] Inject the tech manager into the production call\n            firm.production_department.produce(tick, technology_manager)\n```\n\n### 3.2. `TechnologyManager` Refactoring\n```python\n# simulation/systems/technology_manager.py\n\n# REMOVE _update_human_capital_index method.\n\n# MODIFY update signature\n# def update(self, current_tick: int, simulation: Any) -> None: # OLD\ndef update(self, current_tick: int, firms: List[FirmTechInfoDTO], human_capital_index: float) -> None: # NEW\n    # self._update_human_capital_index(simulation.households) # REMOVE\n    self.human_capital_index = human_capital_index # SET from parameter\n\n    # ... Unlock Check logic remains the same ...\n\n    # MODIFY to use the injected 'firms' DTO list\n    # for firm in simulation.firms: # OLD\n    for firm_dto in firms: # NEW\n        # ... logic uses firm_dto['id'], firm_dto['sector'], etc. ...\n\n# MODIFY _unlock_tech to accept the DTO list\n# def _unlock_tech(self, tech: TechNode, simulation: Any): # OLD\ndef _unlock_tech(self, tech: TechNode, firms: List[FirmTechInfoDTO]): # NEW\n    # ... logic iterates over 'firms' DTO list ...\n```\n\n### 3.3. `ProductionDepartment` Integration\n```python\n# simulation/components/production_department.py\n# No major change needed, just ensure the `if technology_manager:` block is correctly implemented.\n\ndef produce(self, current_time: int, technology_manager: TechnologySystemAPI | None = None) -> float:\n    # ... existing logic ...\n    \n    # Technology Multiplier (WO-053)\n    tech_multiplier = 1.0\n    if technology_manager:\n        # The call to get_productivity_multiplier already exists.\n        # This confirms the integration point.\n        tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id)\n\n    tfp = self.firm.productivity_factor * tech_multiplier \n    \n    # ... rest of the production logic ...\n```\n\n## 4. Verification Plan\n\n1.  **Unit Test (`test_technology_manager.py`):**\n    -   `test_effective_diffusion_rate`: Assert that `_get_effective_diffusion_rate` returns `base_rate * (1 + 0.5 * (HCI - 1.0))` for various `human_capital_index` inputs.\n    -   `test_unlock_and_visionary_adoption`: Call `update()` on the tick where \"TECH_AGRI_CHEM_01\" unlocks. Assert that all firms with `is_visionary=True` and `sector='FOOD'` have adopted the tech via `has_adopted()`.\n    -   `test_diffusion_over_time`: After the unlock tick, run `update()` for 20 more ticks. Assert that some non-visionary firms in the 'FOOD' sector have adopted the tech.\n\n2.  **Integration Test (`tests/integration/test_phase23_production.py`):**\n    -   `test_production_boost_from_fertilizer_tech`:\n        1.  Create two identical firms (`firm_A`, `firm_B`) in the 'FOOD' sector.\n        2.  Create a `TechnologyManager` and unlock \"TECH_AGRI_CHEM_01\".\n        3.  Manually have `firm_A` adopt the tech using `_adopt()`.\n        4.  Run `firm_A.produce(tech_manager)` and `firm_B.produce(tech_manager)`.\n        5.  Assert `production_A` is approximately `3.0 * production_B`.\n\n## 5. Mocking Guide\n-   For integration tests, use `pytest` fixtures. Create a `technology_manager_fixture` that yields a configured `TechnologyManager`.\n-   **DO NOT** use `MagicMock` for the `TechnologyManager` in `test_production_boost_from_fertilizer_tech`. Instantiate a real `TechnologyManager` to ensure the internal logic of `get_productivity_multiplier` is also tested.\n-   Use `golden_firms` and `golden_households` fixtures from `conftest.py` to create realistic agent populations for testing the `update` method.\n\n## 6. 🚨 Risk & Impact Audit (Resolution Plan)\n\n-   **High Coupling via \"God Object\"**: **RESOLVED**. The design mandates that `TechnologyManager.update` receives only DTOs and primitive types (`firms: List[FirmTechInfoDTO]`, `human_capital_index: float`), not the `simulation` object. The main loop is responsible for data preparation and injection.\n-   **SRP Violation**: **RESOLVED**. The responsibility of calculating `human_capital_index` has been removed from `TechnologyManager` and moved to the orchestrator (`main.py`). The manager now receives this value as a parameter, adhering to SRP.\n-   **Test Coverage Gap**: **ADDRESSED**. The \"Verification Plan\" explicitly requires a new integration test (`test_production_boost_from_fertilizer_tech`) to validate that the `tech_multiplier` correctly impacts the output of the `ProductionDepartment.produce` method.\n-   **Technical Debt Contradiction**: **ALIGNED**. The proposed design strictly follows the established precedent of decomposing dependencies (TD-065, TD-066), preventing the re-introduction of architectural debt.\n\n---\n\n### **[Routine] Mandatory Reporting**\n*Jules, during implementation, you are required to log any unforeseen complexities, suggested improvements, or potential technical debt. Create a new markdown file in `communications/insights/` named `YYYY-MM-DD_WO-053_insights.md` to document your findings.*\n"
-      },
-      "3766449108417837215": {
-        "title": "Final Verification: Integrated Core & P23",
-        "initial_mission": "Perform a comprehensive verification of the current main branch. 1. Run scripts/verify_td_111.py and scripts/trace_leak.py. 2. Confirm Zero Leak status and M2 reporting accuracy. 3. Summarize the initial economic state including HCI and productivity gains from WO-053. 4. Save the final report to communications/insights/2026-01-27_Final_Verification_Report.md."
-      },
-      "13308199924265800073": {
-        "title": "Track A: Holy Ledger & Reflux Deprecation",
-        "initial_mission": "Remediate TD-127/128/129/130 by enforcing SettlementSystem for all cash moves. MANDATORY: Remove Ref..."
-      },
-      "6109245729062383587": {
-        "title": "Track B: Scheduler Decomposition",
-        "initial_mission": "Decompose TickScheduler and re-align Firm lifecycle sequence as per SCHEDULER_DECOMPOSITION_SPEC.md...."
-      },
-      "17069073777519936527": {
-        "title": "Execute WO-133: Total Purge of RefluxSystem",
-        "initial_mission": "# Work Order: WO-133 - Purge the Reflux Ghost\n\n## 1. Context & Objective\nFollowing the merge of \"Holy Ledger\" (Track A) and \"Scheduler Decomposition\" (Track B), the `EconomicRefluxSystem` has been deprecated and its core logic removed. However, lingering references (ghosts) in the new orchestration phases and agent classes are causing `AttributeError` during runtime because `SimulationState` and `DecisionContext` no longer carry the `reflux_system` field.\n\nThe objective is a **total purge** of `reflux_system` from the codebase, ensuring zero runtime errors and 100% adherence to the new centralized `FinanceSystem` / `SettlementSystem` architecture.\n\n## 2. Exhaustive Search List\nPerform a case-sensitive search and remove/replace matches:\n- `.reflux_system` (Object attribute)\n- `reflux_system` (Variable/Argument/Key)\n- `EconomicRefluxSystem` (Class reference)\n- `reflux` (Generic search - check for leftovers)\n\n## 3. High-Priority Sectors\n- **Orchestration**: `simulation/orchestration/phases.py`, `simulation/orchestration/tick_orchestrator.py`\n- **Agents**: `simulation/firms.py`, `simulation/agents/government.py`, `simulation/bank.py`, `simulation/core_agents.py`\n- **Systems**: `simulation/systems/housing_system.py`, `simulation/systems/ma_manager.py`\n- **DTOs**: `simulation/dtos/api.py`\n\n## 4. Specific Instructions\n1.  **Remove References**: In methods where `reflux_system` was passed as an argument (e.g., `make_decision`, `invest_infrastructure`), remove the argument from both the call site and the definition.\n2.  **Replace Logic**: If `reflux_system.distribute()` or similar was used for monetary tracking, ensure the logic is either handled by `SettlementSystem.transfer` or explicitly removed if it's part of the old \"shadow economy\" mechanics.\n3.  **Clean up SimulationState**: Confirm `SimulationState` in `simulation/dtos/api.py` does not have `reflux_system`.\n4.  **Verification**: \n    - Run `python scripts/trace_leak.py` and ensure it completes without `AttributeError` and shows `delta: 0.00`.\n    - Run `python scripts/verify_td_111.py` to confirm M2 reporting is accurate.\n    - Run `pytest tests/test_engine.py` to ensure core engine integrity.\n\n## 5. Success Criteria\n- Codebase is 100% free of `reflux_system` references.\n- `trace_leak.py` runs successfully (Tick 0 to Tick 1).\n- No `AttributeError` related to missing attributes in `SimulationState`.\n"
-      },
-      "10567199579679930269": {
-        "title": "WO-053: Phase 23 Reactivation",
-        "initial_mission": "Execute WO-053 to reactivate Phase 23 (Industrial Revolution). Configure the scenario for TFP 3.0, v..."
-      },
-      "13470412953645097966": {
-        "title": "WO-135: Operation Abstraction Wall",
-        "initial_mission": "Implement the Abstraction Wall as per design/work_orders/WO-135-Abstraction-Wall.md. Key tasks: 1) C..."
-      },
-      "13008461923123755310": {
-        "title": "WO-135.1: Config Factory & Test Infrastructure",
-        "initial_mission": "Implement the ConfigFactory and establish the test infrastructure (Golden Samples, Parity Test) as p..."
-      },
-      "18248760901683562553": {
-        "title": "WO-135.2: DTO Schema Alignment",
-        "initial_mission": "Define canonical DTO schemas in simulation/api.py as per design/work_orders/reboot_plan_remainder.md..."
-      },
-      "11958276689455530290": {
-        "title": "WO-135.3: Core Agent/Engine Refactor",
-        "initial_mission": "Refactor Household and Firm agents to use ConfigFactory and DecisionContext as per design/work_order..."
-      },
-      "17807327233823685384": {
-        "title": "WO-135.4: Purity Gate v2 Enforcement",
-        "initial_mission": "Finalize the Abstraction Wall by integrating the Purity Gate into the standard workflow. Mandatory: ..."
-      },
-      "13779352872685089906": {
-        "title": "WO-053: Phase 23 Reactivation (The Great Expansion)",
-        "initial_mission": "Reactivate and verify Phase 23 as per Architect Prime's instructions. 1) Update scripts/verify_phase..."
-      },
-      "13994625140349182457": {
-        "title": "Strategy Generalization Refactor",
-        "initial_mission": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'conf..."
-      },
-      "3564236937217873449": {
-        "title": "WO-136: Strategy Generalization",
-        "initial_mission": "Implement the Strategy Generalization refactor as defined in WO-136. Your goal is to eliminate 'conf..."
-      },
-      "7171574708710867264": {
-        "title": "Quickstart: Root Fragmentation Cleanup",
-        "initial_mission": "Clean up loose files in the root directory (temporary logs, restored txt files, db files). Move arti..."
-      },
-      "17224919797912930620": {
-        "title": "WO-138: Purity Gate Hardening",
-        "initial_mission": "Externalize rules from verify_purity.py to pyproject.toml as defined in the spec.\n\n[File Content: de..."
-      },
-      "17696464705028160742": {
-        "title": "WO-138: Sacred Hygiene",
-        "initial_mission": "Harden the architecture (Purity Gate), resolve hardcoded Government IDs, and reorganize the test sui..."
-      },
-      "11881482222288115245": {
-        "title": "WO-136: Operation Clean Sweep",
-        "initial_mission": "Execute technology generalization, NumPy optimization, and dynamic circuit breakers as specified.\n\n[..."
-      },
-      "328417402776115895": {
-        "title": "WO-140: Repository Decomposition",
-        "initial_mission": "Decompose SimulationRepository into specialized Agent, Market, Analytics, and Run repositories as pe..."
-      },
-      "14948798225821006866": {
-        "title": "WO-142: Corporate Departmentalization",
-        "initial_mission": "Refactor CorporateManager into a departmental orchestrator (HR, Finance, Ops, Sales) as per the spec..."
-      },
-      "9922557421414767710": {
-        "title": "WO-141: Household Engine Modularization",
-        "initial_mission": "Refactor Household Engine into Coordinator-Delegate pattern as per Spec and WO-141.\n\n[File Content: ..."
-      },
-      "6568939817573477863": {
-        "title": "WO-143: Documentation Hygiene",
-        "initial_mission": "Search and replace all WO-XXX placeholders with specific links or IDs as per WO-143.\n\n[File Content:..."
-      },
-      "10761768022444749737": {
-        "title": "WO-144: Government Structure Refactor",
-        "initial_mission": "Decompose the monolithic government entity into a Facade/Component structure as per WO-144.\n\n[File C..."
-      },
       "13085380600727378547": {
         "title": "WO-145: Progressive Tax System",
         "initial_mission": "Implement a progressive tax system with FiscalPolicyManager as an automatic stabilizer as per WO-145..."
+      },
+      "12160405053549611726": {
+        "title": "WO-146: Monetary Policy & Taylor Rule",
+        "initial_mission": "Implement Taylor Rule-based monetary policy with MonetaryPolicyManager as per WO-146.\n\n[File Content..."
       }
     },
     "completed_sessions": {
+      "6165549041784259430": "WO-078: Fractional Reserve Banking Implementation - ARCHIVED_OR_OTHERS",
+      "18316631047055175113": "Genesis Fix - ARCHIVED_OR_OTHERS",
+      "16830608555715890075": "Hotfix: Household Impact - ARCHIVED_OR_OTHERS",
+      "616186118116580814": "Fix: M2 Money Supply Measurement - ARCHIVED_OR_OTHERS",
+      "2502617286500419200": "Feature: Industrial Revolution P23 - ARCHIVED_OR_OTHERS",
+      "3766449108417837215": "Final Verification: Integrated Core & P23 - ARCHIVED_OR_OTHERS",
+      "13308199924265800073": "Track A: Holy Ledger & Reflux Deprecation - ARCHIVED_OR_OTHERS",
+      "6109245729062383587": "Track B: Scheduler Decomposition - ARCHIVED_OR_OTHERS",
+      "17069073777519936527": "Execute WO-133: Total Purge of RefluxSystem - ARCHIVED_OR_OTHERS",
+      "10567199579679930269": "WO-053: Phase 23 Reactivation - ARCHIVED_OR_OTHERS",
+      "13470412953645097966": "WO-135: Operation Abstraction Wall - ARCHIVED_OR_OTHERS",
+      "13008461923123755310": "WO-135.1: Config Factory & Test Infrastructure - ARCHIVED_OR_OTHERS",
+      "18248760901683562553": "WO-135.2: DTO Schema Alignment - ARCHIVED_OR_OTHERS",
+      "11958276689455530290": "WO-135.3: Core Agent/Engine Refactor - ARCHIVED_OR_OTHERS",
+      "17807327233823685384": "WO-135.4: Purity Gate v2 Enforcement - ARCHIVED_OR_OTHERS",
+      "13779352872685089906": "WO-053: Phase 23 Reactivation (The Great Expansion) - ARCHIVED_OR_OTHERS",
+      "13994625140349182457": "Strategy Generalization Refactor - ARCHIVED_OR_OTHERS",
+      "3564236937217873449": "WO-136: Strategy Generalization - ARCHIVED_OR_OTHERS",
+      "7171574708710867264": "Quickstart: Root Fragmentation Cleanup - ARCHIVED_OR_OTHERS",
+      "17224919797912930620": "WO-138: Purity Gate Hardening - ARCHIVED_OR_OTHERS",
+      "17696464705028160742": "WO-138: Sacred Hygiene - ARCHIVED_OR_OTHERS",
+      "11881482222288115245": "WO-136: Operation Clean Sweep - ARCHIVED_OR_OTHERS",
+      "328417402776115895": "WO-140: Repository Decomposition - ARCHIVED_OR_OTHERS",
+      "14948798225821006866": "WO-142: Corporate Departmentalization - ARCHIVED_OR_OTHERS",
+      "9922557421414767710": "WO-141: Household Engine Modularization - ARCHIVED_OR_OTHERS",
+      "6568939817573477863": "WO-143: Documentation Hygiene - ARCHIVED_OR_OTHERS",
+      "10761768022444749737": "WO-144: Government Structure Refactor - ARCHIVED_OR_OTHERS",
       "10062983030902175423": "WO-121-R2: Newborn Initialization Fix (Config Externalization) - MERGED 2026-01-26",
       "7991854182599200102": "WO-111: Final Harvest Verification - COMPLETED 2026-01-22",
       "7404681051157828171": "WO-110: Firm Logic Sequential Fix - COMPLETED 2026-01-22",

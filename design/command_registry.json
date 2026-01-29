@@ -4,12 +4,6 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-monetary-policy": {
-    "command": "create",
-    "instruction": "Implement Taylor Rule-based monetary policy with MonetaryPolicyManager as per WO-146.",
-    "title": "WO-146: Monetary Policy & Taylor Rule",
-    "file": "design/3_work_artifacts/work_orders/WO-146-Monetary-Policy.md"
-  },
   "mission-soft-landing-verify": {
     "command": "create",
     "instruction": "Create the soft landing verification suite and report generation as per WO-147.",
