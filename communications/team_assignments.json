@@ -17,6 +17,10 @@
       "11871705678872039394": {
         "title": "Repair WO-147: Soft Landing Suite",
         "initial_mission": "Address code review issues for WO-147: 1) Remove auto-pip install of matplotlib in verify_soft_landi..."
+      },
+      "5753268364437778674": {
+        "title": "WO-148 Phase 1: Shock Injector",
+        "initial_mission": "Implement the ShockInjector component in modules/simulation to handle TFP drops as per draft_124655...."
       }
     },
     "completed_sessions": {

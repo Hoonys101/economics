@@ -4,12 +4,6 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-shock-injector": {
-    "command": "create",
-    "instruction": "Implement the ShockInjector component in modules/simulation to handle TFP drops as per draft_124655.",
-    "title": "WO-148 Phase 1: Shock Injector",
-    "file": "design/3_work_artifacts/drafts/draft_124655_Draft_a_detailed_Implementatio.md"
-  },
   "mission-storm-verifier": {
     "command": "create",
     "instruction": "Implement the StormVerifier component in modules/analysis to track ZLB, starvation, and debt-to-GDP during shocks, as per draft_124655.",
