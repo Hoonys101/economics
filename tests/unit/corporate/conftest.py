@@ -98,7 +98,9 @@ def firm_config_dto():
         marketing_efficiency_high_threshold=c.MARKETING_EFFICIENCY_HIGH_THRESHOLD,
         marketing_efficiency_low_threshold=c.MARKETING_EFFICIENCY_LOW_THRESHOLD,
         marketing_budget_rate_min=c.MARKETING_BUDGET_RATE_MIN,
-        marketing_budget_rate_max=c.MARKETING_BUDGET_RATE_MAX
+            marketing_budget_rate_max=c.MARKETING_BUDGET_RATE_MAX,
+            initial_base_annual_rate=0.05,
+            default_loan_spread=0.02
     )
 
 @pytest.fixture

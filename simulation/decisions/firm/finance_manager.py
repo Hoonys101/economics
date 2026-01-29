@@ -21,7 +21,7 @@ class FinanceManager:
             orders.append(div_order)
 
         # 2. Debt
-        debt_orders = self._manage_debt(firm, debt_aggressiveness, market_data)
+        debt_orders = self._manage_debt(firm, debt_aggressiveness, context)
         orders.extend(debt_orders)
 
         # 3. Secondary Offering (SEO)
@@ -50,10 +50,11 @@ class FinanceManager:
 
         return Order(firm.id, "SET_DIVIDEND", "internal", new_rate, 0.0, "internal")
 
-    def _manage_debt(self, firm: FirmStateDTO, aggressiveness: float, market_data: Dict) -> List[Order]:
+    def _manage_debt(self, firm: FirmStateDTO, aggressiveness: float, context: DecisionContext) -> List[Order]:
         """
         Leverage Management.
         """
+        market_data = context.market_data
         orders = []
         target_leverage = aggressiveness * 2.0
 

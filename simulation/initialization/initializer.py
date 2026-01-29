@@ -271,10 +271,10 @@ class SimulationInitializer(SimulationInitializerInterface):
                 hh.is_homeless = False
 
         sim.markets: Dict[str, Market] = {
-            good_name: OrderBookMarket(market_id=good_name)
+            good_name: OrderBookMarket(market_id=good_name, config_module=self.config)
             for good_name in self.config.GOODS
         }
-        sim.markets["labor"] = OrderBookMarket(market_id="labor")
+        sim.markets["labor"] = OrderBookMarket(market_id="labor", config_module=self.config)
         sim.markets["loan_market"] = LoanMarket(
             market_id="loan_market", bank=sim.bank, config_module=self.config
         )
@@ -291,7 +291,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             sim.stock_market = None
             sim.stock_tracker = None
 
-        sim.markets["housing"] = OrderBookMarket(market_id="housing")
+        sim.markets["housing"] = OrderBookMarket(market_id="housing", config_module=self.config)
 
         for unit in sim.real_estate_units:
             if unit.owner_id is None:

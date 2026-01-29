@@ -460,7 +460,7 @@ class Phase1_Decision(IPhaseStrategy):
 
                 for order in household_orders:
                     # WO-053: Force deflationary pressure on basic_food
-                    if order.item_id == "basic_food" and order.order_type == "BUY":
+                    if hasattr(order, "item_id") and order.item_id == "basic_food" and order.order_type == "BUY":
                          # Check for generic scenario parameter via config injection
                          deflationary_multiplier = getattr(state.config_module, "DEFLATIONARY_PRESSURE_MULTIPLIER", None)
 
@@ -478,7 +478,7 @@ class Phase1_Decision(IPhaseStrategy):
                     target_market_id = order.market_id
                     if order.order_type in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
                         target_market_id = "loan_market"
-                    elif order.item_id in ["deposit", "currency"]:
+                    elif hasattr(order, "item_id") and order.item_id in ["deposit", "currency"]:
                         target_market_id = "loan_market"
 
                     household_target_market = state.markets.get(target_market_id)

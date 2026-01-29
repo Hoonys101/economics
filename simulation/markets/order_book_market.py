@@ -15,15 +15,17 @@ class OrderBookMarket(Market):
     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
     """
 
-    def __init__(self, market_id: str, logger: Optional[logging.Logger] = None):
+    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None):
         """OrderBookMarket을 초기화합니다.
 
         Args:
             market_id (str): 시장의 고유 ID (예: 'goods_market', 'labor_market').
+            config_module (Any, optional): 시뮬레이션 설정 모듈.
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
         """
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
+        self.config_module = config_module
         self.buy_orders: Dict[str, List[Order]] = {}
         self.sell_orders: Dict[str, List[Order]] = {}
         self.daily_avg_price: Dict[str, float] = {}

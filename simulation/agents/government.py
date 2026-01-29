@@ -315,16 +315,18 @@ class Government:
         (전략 패턴 적용: Taylor Rule 또는 AI Adaptive)
         """
         # 0. Update Fiscal Policy (WO-145)
-        # Convert market_data dict to MarketSnapshotDTO for FiscalPolicyManager
-        prices = {}
-        if "goods_market" in market_data:
-            for key, value in market_data["goods_market"].items():
-                if key.endswith("_current_sell_price"):
-                    item_id = key.replace("_current_sell_price", "")
-                    prices[item_id] = value
+        # WO-147: Check if fiscal stabilizer is enabled (default True)
+        if getattr(self.config_module, "ENABLE_FISCAL_STABILIZER", True):
+            # Convert market_data dict to MarketSnapshotDTO for FiscalPolicyManager
+            prices = {}
+            if "goods_market" in market_data:
+                for key, value in market_data["goods_market"].items():
+                    if key.endswith("_current_sell_price"):
+                        item_id = key.replace("_current_sell_price", "")
+                        prices[item_id] = value
 
-        snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
-        self.fiscal_policy = self.fiscal_policy_manager.determine_fiscal_stance(snapshot)
+            snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
+            self.fiscal_policy = self.fiscal_policy_manager.determine_fiscal_stance(snapshot)
 
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
         decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)

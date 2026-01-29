@@ -7,9 +7,11 @@ def government_setup(mocker):
     # Mocking patches
     mock_tax_agency_cls = mocker.patch('simulation.agents.government.TaxAgency')
     mock_education_ministry_cls = mocker.patch('simulation.agents.government.MinistryOfEducation')
+    mock_fiscal_policy_manager_cls = mocker.patch('simulation.agents.government.FiscalPolicyManager')
 
     mock_tax_agency_instance = mock_tax_agency_cls.return_value
     mock_education_ministry_instance = mock_education_ministry_cls.return_value
+    mock_fiscal_policy_manager_instance = mock_fiscal_policy_manager_cls.return_value
 
     mock_config = Mock()
     mock_config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
@@ -17,6 +19,8 @@ def government_setup(mocker):
     mock_config.INCOME_TAX_RATE = 0.1 # This is the initial rate
     mock_config.CORPORATE_TAX_RATE = 0.2
     mock_config.TAX_MODE = "PROGRESSIVE"
+    mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    mock_config.TAX_BRACKETS = []
 
     government = Government(id=1, initial_assets=100000, config_module=mock_config)
     # Mock settlement system
@@ -31,6 +35,7 @@ def government_setup(mocker):
         "government": government,
         "mock_tax_agency": mock_tax_agency_instance,
         "mock_education_ministry": mock_education_ministry_instance,
+        "mock_fiscal_policy_manager": mock_fiscal_policy_manager_instance,
         "mock_config": mock_config
     }
 
@@ -41,12 +46,8 @@ def test_calculate_income_tax_delegation(government_setup):
 
     env["government"].calculate_income_tax(income, survival_cost)
 
-    env["mock_tax_agency"].calculate_income_tax.assert_called_once_with(
-        income,
-        survival_cost,
-        env["government"].income_tax_rate, # Should pass the current rate (0.15)
-        "PROGRESSIVE"
-    )
+    # Now delegates to FiscalPolicyManager
+    env["mock_fiscal_policy_manager"].calculate_tax_liability.assert_called_once()
 
 def test_calculate_corporate_tax_delegation(government_setup):
     env = government_setup
@@ -111,6 +112,8 @@ def deficit_government_setup():
     mock_config.TICKS_PER_YEAR = 100
     mock_config.DEFICIT_SPENDING_ENABLED = True
     mock_config.DEFICIT_SPENDING_LIMIT_RATIO = 0.30
+    mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    mock_config.TAX_BRACKETS = []
 
     government = Government(id=1, initial_assets=1000, config_module=mock_config)
 

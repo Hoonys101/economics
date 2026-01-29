@@ -165,6 +165,8 @@ simulation_results/
 # design/JULES_DOCUMENTATION_GUIDE.md
 .agent/
 reports/*.csv
+reports/*.json
+reports/*.png
 test_out*.txt
 test_error.txt
 

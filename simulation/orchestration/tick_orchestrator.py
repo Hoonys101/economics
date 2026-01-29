@@ -113,6 +113,16 @@ class TickOrchestrator:
     def _finalize_tick(self, sim_state: SimulationState):
         state = self.world_state
 
+        # Track Economics
+        if state.tracker:
+             state.tracker.track(
+                 time=state.time,
+                 households=state.households,
+                 firms=state.firms,
+                 markets=state.markets,
+                 money_supply=state.calculate_total_money()
+             )
+
         # Money Supply Verification (Post-Tick)
         if state.time >= 1:
             current_money = state.calculate_total_money()

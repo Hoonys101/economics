@@ -381,13 +381,13 @@ class EconComponent(IEconComponent):
              multiplier = stress_scenario_config.demand_shock_multiplier
              if multiplier is not None:
                  for order in refined_orders:
-                     if order.order_type == "BUY" and order.item_id not in ["labor", "loan"]:
+                     if order.order_type == "BUY" and hasattr(order, "item_id") and order.item_id not in ["labor", "loan"]:
                          if not order.item_id.startswith("stock_"):
                             order.quantity *= multiplier
 
         # 6. Forensics (Shadow Wage Update)
         for order in refined_orders:
-             if order.order_type == "SELL" and (order.item_id == "labor" or order.market_id == "labor"):
+             if order.order_type == "SELL" and (getattr(order, "item_id", "") == "labor" or order.market_id == "labor"):
                 new_state.last_labor_offer_tick = current_time
 
         return new_state, refined_orders
