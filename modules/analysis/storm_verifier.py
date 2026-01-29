@@ -18,14 +18,15 @@ class StormVerifier:
     def update(self, current_tick: int, market_snapshot: MarketSnapshotDTO):
         # 1. ZLB Check (Monetary Policy)
         # Access Central Bank base_rate via Protocol
-        zlb_threshold = self._config.get("zlb_threshold", 0.001)
+        # Strict config access without defaults
+        zlb_threshold = self._config["zlb_threshold"]
         if self._simulation.central_bank:
              if self._simulation.central_bank.base_rate < zlb_threshold:
                  self._metrics["zlb_hit"] = True
 
         # 2. Deficit Spending Check (Fiscal Policy)
         # Access Government spending/revenue via Protocol
-        deficit_threshold = self._config.get("deficit_spending_threshold", 1.0)
+        deficit_threshold = self._config["deficit_spending_threshold"]
         if self._simulation.government:
             spending = self._simulation.government.expenditure_this_tick
             revenue = self._simulation.government.revenue_this_tick
@@ -47,10 +48,10 @@ class StormVerifier:
         all_households = self._simulation.households
         active_households = [h for h in all_households if h.is_active]
 
-        # Load starvation threshold from config via Protocol
-        starvation_threshold = getattr(self._simulation.config_module, "STARVATION_THRESHOLD", 1.0)
+        # Load starvation threshold from config via Protocol without default
+        starvation_threshold = self._simulation.config_module.STARVATION_THRESHOLD
 
-        basic_food_key = self._config.get("basic_food_key", "basic_food")
+        basic_food_key = self._config["basic_food_key"]
 
         for hh in active_households:
             # TD-118 compliance: inventory is Dict[str, float] via IHousehold protocol

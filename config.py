@@ -815,3 +815,8 @@ HOUSING_EXPECTATION_CAP = 0.05
 MARKET_CIRCUIT_BREAKER_BASE_LIMIT = 0.15  # Base limit for market circuit breakers
 TECH_UNLOCK_COST_THRESHOLD = 5000.0       # R&D Investment threshold for tech unlock
 TECH_UNLOCK_PROB_CAP = 0.1                # Maximum probability per tick for tech unlock
+
+# ==============================================================================
+# WO-148: Stress Test Parameters
+# ==============================================================================
+STARVATION_THRESHOLD = 1.0  # Food inventory threshold for starvation metrics

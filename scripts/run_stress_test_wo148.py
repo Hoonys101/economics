@@ -6,15 +6,13 @@ import logging
 sys.path.append(os.getcwd())
 
 import config
-# Attempt to import create_simulation. If main.py has side effects, we might need to be careful.
-# main.py runs setup_logging() at module level.
-from main import create_simulation
+from utils.simulation_builder import create_simulation
 from modules.simulation.api import ShockConfigDTO
 from modules.simulation.shock_injector import ShockInjector
 from modules.analysis.api import VerificationConfigDTO
 from modules.analysis.storm_verifier import StormVerifier
 
-# Setup logging (might be overridden by main.py)
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("StressTestWO148")
 
