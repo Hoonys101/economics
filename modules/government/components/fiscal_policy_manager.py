@@ -27,7 +27,9 @@ class FiscalPolicyManager(IFiscalPolicyManager):
 
         # Ensure non-zero survival cost to prevent issues
         if survival_cost <= 0:
-            survival_cost = 5.0 # Fallback
+            # Fallback to config default or hardcoded safe value
+            default_price = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
+            survival_cost = default_price
 
         # 2. Get Tax Brackets Configuration
         # Format: List of (multiple_of_survival_cost, tax_rate)

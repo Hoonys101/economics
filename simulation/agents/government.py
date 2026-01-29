@@ -39,6 +39,8 @@ class Government:
         self.ministry_of_education = MinistryOfEducation(config_module)
 
         # Initialize default fiscal policy
+        # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
+        # via make_policy_decision() before any tax collection occurs.
         self.fiscal_policy: FiscalPolicyDTO = self.fiscal_policy_manager.determine_fiscal_stance(
             MarketSnapshotDTO(prices={}, volumes={}, asks={}, best_asks={})
         )
