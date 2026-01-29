@@ -85,7 +85,17 @@ class FinanceManager:
                     existing_assets=firm.assets
                 )
 
-                order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, 0.10, "loan")
+                # WO-146: Use market rate + spread instead of hardcoded 0.10
+                base_rate = 0.05
+                loan_market_data = market_data.get("loan_market", {})
+                if loan_market_data and "interest_rate" in loan_market_data:
+                    base_rate = loan_market_data["interest_rate"]
+
+                # Willingness to pay: base_rate + risk spread
+                # Firms usually accept slightly higher than base rate
+                wtp_rate = base_rate + 0.05
+
+                order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, wtp_rate, "loan")
                 order.metadata = {"borrower_profile": borrower_profile}
                 orders.append(order)
 

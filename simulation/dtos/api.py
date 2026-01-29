@@ -130,6 +130,11 @@ class MarketSnapshotDTO:
     volumes: Dict[str, float]
     asks: Dict[str, List[OrderDTO]]
     best_asks: Dict[str, float]
+    # WO-146: Macro indicators for Monetary Policy
+    inflation_rate: Optional[float] = 0.0
+    unemployment_rate: Optional[float] = 0.0
+    nominal_gdp: Optional[float] = 0.0
+    potential_gdp: Optional[float] = 0.0
 
 @dataclass
 class GovernmentPolicyDTO:

@@ -221,6 +221,46 @@ class Phase0_PreSequence(IPhaseStrategy):
 
             state.government.check_election(state.time)
 
+        # WO-146: Monetary Policy Manager Integration
+        # Ensure Central Bank updates its internal state (Potential GDP)
+        if state.central_bank and hasattr(state.central_bank, "step"):
+             state.central_bank.step(state.time)
+
+        # Create MarketSnapshotDTO with macro indicators
+        latest_indicators = state.tracker.get_latest_indicators()
+        # Retrieve potential GDP from Central Bank if available
+        potential_gdp = 0.0
+        if state.central_bank and hasattr(state.central_bank, "potential_gdp"):
+             potential_gdp = state.central_bank.potential_gdp
+
+        macro_snapshot = MarketSnapshotDTO(
+             prices={}, # Not used by monetary policy
+             volumes={},
+             asks={},
+             best_asks={},
+             inflation_rate=latest_indicators.get("inflation_rate", 0.0),
+             unemployment_rate=latest_indicators.get("unemployment_rate", 0.0),
+             nominal_gdp=latest_gdp if 'latest_gdp' in locals() else 0.0,
+             potential_gdp=potential_gdp
+        )
+
+        from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
+        mp_manager = MonetaryPolicyManager(state.config_module)
+        mp_policy = mp_manager.determine_monetary_stance(macro_snapshot)
+
+        if state.central_bank:
+             # Overwrite rate with MonetaryPolicyManager's result
+             # We assume Manager runs every tick or logic inside handles interval (Manager is stateless though)
+             # But CentralBank.step only updates every interval.
+             # If we overwrite every tick, we might cause instability if Manager result fluctuates?
+             # But Taylor Rule formula is continuous.
+             # However, we should probably only update if needed.
+             # For now, let's update every tick to ensure responsiveness.
+             state.central_bank.base_rate = mp_policy.target_interest_rate
+
+        if state.bank and hasattr(state.bank, "update_base_rate"):
+             state.bank.update_base_rate(mp_policy.target_interest_rate)
+
         return state
 
 
