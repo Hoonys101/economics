@@ -88,7 +88,8 @@ class FinanceManager:
                 )
 
                 # WO-146: Use market rate + spread instead of hardcoded 0.10
-                base_rate = 0.05
+                # Fallback: Configured Initial Rate
+                base_rate = context.config.initial_base_annual_rate
 
                 # Prioritize Government Policy Rate (Official Base Rate)
                 if context.government_policy:

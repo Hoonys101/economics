@@ -116,6 +116,7 @@ class FirmConfigDTO:
     max_sell_quantity: float
     invisible_hand_sensitivity: float
     capital_to_output_ratio: float
+    initial_base_annual_rate: float # WO-146 Fallback
 
     # Expanded Fields for DTO Parity
     initial_firm_liquidity_need: float
