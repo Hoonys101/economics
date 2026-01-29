@@ -151,10 +151,6 @@ class AgentRepository(BaseRepository):
         query_suffix = ""
         if run_id:
             query_suffix = " AND run_id = ?"
-            # For the subquery
-            # params.append(run_id)
-            # wait, how many run_ids?
-            # firm_query has run_id in WHERE and subquery WHERE.
 
         # Bankruptcy (Firms)
         firm_query = f"""
