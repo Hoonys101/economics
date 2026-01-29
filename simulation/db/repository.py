@@ -5,6 +5,11 @@ from datetime import datetime
 import json
 
 from simulation.db.database import get_db_connection, close_db_connection
+from simulation.db.agent_repository import AgentRepository
+from simulation.db.market_repository import MarketRepository
+from simulation.db.analytics_repository import AnalyticsRepository
+from simulation.db.run_repository import RunRepository
+
 if TYPE_CHECKING:
     from simulation.dtos import (
         TransactionData,
@@ -20,86 +25,45 @@ logger = logging.getLogger(__name__)
 class SimulationRepository:
     """
     시뮬레이션 데이터를 SQLite3 데이터베이스에 저장하고 조회하는 Repository 클래스입니다.
+    Now acts as a facade for specialized repositories.
     """
 
     def __init__(self):
         self.conn = get_db_connection()
         self.cursor = self.conn.cursor()
 
+        # Initialize sub-repositories sharing the same connection
+        self.agent_repo = AgentRepository(self.conn)
+        self.market_repo = MarketRepository(self.conn)
+        self.analytics_repo = AnalyticsRepository(self.conn)
+        self.run_repo = RunRepository(self.conn)
+
     def save_simulation_run(self, config_hash: str, description: str) -> int:
         """
         새로운 시뮬레이션 실행 정보를 저장하고 실행 ID를 반환합니다.
         """
-        try:
-            start_time = datetime.now().isoformat()
-            self.cursor.execute(
-                "INSERT INTO simulation_runs (start_time, description, config_hash) VALUES (?, ?, ?)",
-                (start_time, description, config_hash),
-            )
-            self.conn.commit()
-            run_id = self.cursor.lastrowid
-            logger.info(f"Started new simulation run with ID: {run_id}")
-            return run_id
-        except sqlite3.Error as e:
-            logger.error(f"Error creating simulation run: {e}")
-            self.conn.rollback()
-            raise
+        return self.run_repo.save_simulation_run(config_hash, description)
 
     def update_simulation_run_end_time(self, run_id: int):
         """
         시뮬레이션 실행의 종료 시간을 업데이트합니다.
         """
-        try:
-            end_time = datetime.now().isoformat()
-            self.cursor.execute(
-                "UPDATE simulation_runs SET end_time = ? WHERE run_id = ?",
-                (end_time, run_id),
-            )
-            self.conn.commit()
-            logger.info(f"Finalized simulation run with ID: {run_id}")
-        except sqlite3.Error as e:
-            logger.error(f"Error finalizing simulation run {run_id}: {e}")
-            self.conn.rollback()
-            raise
+        self.run_repo.update_simulation_run_end_time(run_id)
 
     def save_ai_decision(self, data: "AIDecisionData"):
         """
         AI 에이전트의 의사결정 데이터를 데이터베이스에 저장합니다.
         """
-        try:
-            self.cursor.execute(
-                """
-                INSERT INTO ai_decisions_history (
-                    run_id, tick, agent_id, decision_type, decision_details, predicted_reward, actual_reward
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    data.run_id,
-                    data.tick,
-                    data.agent_id,
-                    data.decision_type,
-                    json.dumps(data.decision_details) if data.decision_details else None,
-                    data.predicted_reward,
-                    data.actual_reward,
-                ),
-            )
-            self.conn.commit()
-        except sqlite3.Error as e:
-            logger.error(f"Error saving AI decision: {e}")
-            self.conn.rollback()
-            raise
+        self.analytics_repo.save_ai_decision(data)
 
     def clear_all_data(self):
         """
         모든 시뮬레이션 관련 테이블의 데이터를 삭제합니다.
         """
         try:
-            self.cursor.execute("DELETE FROM transactions")
-            self.cursor.execute("DELETE FROM agent_states")
-            self.cursor.execute("DELETE FROM market_history")
-            self.cursor.execute("DELETE FROM economic_indicators")
-            self.cursor.execute("DELETE FROM ai_decisions_history")
-            self.conn.commit()
+            self.market_repo.clear_data()
+            self.agent_repo.clear_data()
+            self.analytics_repo.clear_data()
             
             # Reclaim disk space
             self.cursor.execute("VACUUM")
@@ -112,314 +76,49 @@ class SimulationRepository:
         """
         단일 거래 데이터를 데이터베이스에 저장합니다.
         """
-        logger.debug(f"Attempting to save transaction: {data}")
-        try:
-            self.cursor.execute(
-                """
-                INSERT INTO transactions (run_id, time, buyer_id, seller_id, item_id, quantity, price, market_id, transaction_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    data.run_id,
-                    data.time,
-                    data.buyer_id,
-                    data.seller_id,
-                    data.item_id,
-                    data.quantity,
-                    data.price,
-                    data.market_id,
-                    data.transaction_type,
-                ),
-            )
-            logger.debug("Transaction executed. Committing...")
-            self.conn.commit()
-            logger.debug("Transaction committed successfully.")
-        except sqlite3.Error as e:
-            logger.error(f"Error saving transaction: {e}")
-            self.conn.rollback()
+        self.market_repo.save_transaction(data)
 
     def save_agent_state(self, data: "AgentStateData"):
         """
         단일 에이전트 상태 데이터를 데이터베이스에 저장합니다.
         """
-        try:
-            self.cursor.execute(
-                """
-                INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
-                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    data.run_id,
-                    data.time,
-                    data.agent_id,
-                    data.agent_type,
-                    data.assets,
-                    data.is_active,
-                    data.is_employed,
-                    data.employer_id,
-                    data.needs_survival,
-                    data.needs_labor,
-                    data.inventory_food,
-                    data.current_production,
-                    data.num_employees,
-                    data.education_xp,
-                    data.generation,
-                ),
-            )
-            self.conn.commit()
-        except sqlite3.Error as e:
-            logger.error(f"Error saving agent state: {e}")
-            self.conn.rollback()
+        self.agent_repo.save_agent_state(data)
 
     def save_market_history(self, data: "MarketHistoryData"):
         """
         단일 시장 이력 데이터를 데이터베이스에 저장합니다.
         """
-        try:
-            self.cursor.execute(
-                """
-                INSERT INTO market_history (time, market_id, item_id, avg_price, trade_volume, best_ask, best_bid, avg_ask, avg_bid, worst_ask, worst_bid)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    data.time,
-                    data.market_id,
-                    data.item_id,
-                    data.avg_price,
-                    data.trade_volume,
-                    data.best_ask,
-                    data.best_bid,
-                    data.avg_ask,
-                    data.avg_bid,
-                    data.worst_ask,
-                    data.worst_bid,
-                ),
-            )
-            self.conn.commit()
-        except sqlite3.Error as e:
-            logger.error(f"Error saving market history: {e}")
-            self.conn.rollback()
+        self.market_repo.save_market_history(data)
 
     def save_economic_indicator(self, data: "EconomicIndicatorData"):
         """
         단일 경제 지표 데이터를 데이터베이스에 저장합니다.
         """
-        try:
-            self.cursor.execute(
-                """
-                INSERT INTO economic_indicators (run_id, time, unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price,
-                                                 total_production, total_consumption, total_household_assets,
-                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need,
-                                                 total_labor_income, total_capital_income)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    data.run_id,
-                    data.time,
-                    data.unemployment_rate,
-                    data.avg_wage,
-                    data.food_avg_price,
-                    data.food_trade_volume,
-                    data.avg_goods_price,
-                    data.total_production,
-                    data.total_consumption,
-                    data.total_household_assets,
-                    data.total_firm_assets,
-                    data.total_food_consumption,
-                    data.total_inventory,
-                    data.avg_survival_need,
-                    data.total_labor_income,
-                    data.total_capital_income,
-                ),
-            )
-            self.conn.commit()
-        except sqlite3.Error as e:
-            logger.error(f"Error saving economic indicator: {e}")
-            self.conn.rollback()
+        self.analytics_repo.save_economic_indicator(data)
 
     def save_agent_states_batch(self, agent_states_data: List["AgentStateData"]):
         """
         여러 에이전트 상태 데이터를 데이터베이스에 일괄 저장합니다.
         """
-        if not agent_states_data:
-            return
-        try:
-            # Prepare data for batch insertion
-            data_to_insert = []
-            for state_data in agent_states_data:
-                data_to_insert.append(
-                    (
-                        state_data.run_id,
-                        state_data.time,
-                        state_data.agent_id,
-                        state_data.agent_type,
-                        state_data.assets,
-                        state_data.is_active,
-                        state_data.is_employed,
-                        state_data.employer_id,
-                        state_data.needs_survival,
-                        state_data.needs_labor,
-                        state_data.inventory_food,
-                        state_data.current_production,
-                        state_data.num_employees,
-                        state_data.education_xp,
-                        state_data.generation,
-                    )
-                )
-            self.cursor.executemany(
-                """
-                INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
-                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                data_to_insert,
-            )
-            self.conn.commit()
-            logger.debug(f"Saved {len(agent_states_data)} agent states in batch")
-        except sqlite3.Error as e:
-            logger.error(f"Error saving agent states batch: {e}")
-            self.conn.rollback()
-            raise
+        self.agent_repo.save_agent_states_batch(agent_states_data)
 
     def save_transactions_batch(self, transactions_data: List["TransactionData"]):
         """
         여러 거래 데이터를 데이터베이스에 일괄 저장합니다.
         """
-        if not transactions_data:
-            return
-        try:
-            data_to_insert = []
-            for tx_data in transactions_data:
-                data_to_insert.append(
-                    (
-                        tx_data.run_id,
-                        tx_data.time,
-                        tx_data.buyer_id,
-                        tx_data.seller_id,
-                        tx_data.item_id,
-                        tx_data.quantity,
-                        tx_data.price,
-                        tx_data.market_id,
-                        tx_data.transaction_type,
-                    )
-                )
-            self.cursor.executemany(
-                """
-                INSERT INTO transactions (run_id, time, buyer_id, seller_id, item_id, quantity, price, market_id, transaction_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                data_to_insert,
-            )
-            self.conn.commit()
-            logger.debug(f"Saved {len(transactions_data)} transactions in batch")
-        except sqlite3.Error as e:
-            logger.error(f"Error saving transactions batch: {e}")
-            self.conn.rollback()
-            raise
+        self.market_repo.save_transactions_batch(transactions_data)
 
     def save_economic_indicators_batch(self, indicators_data: List["EconomicIndicatorData"]):
         """
         여러 경제 지표 데이터를 데이터베이스에 일괄 저장합니다.
         """
-        if not indicators_data:
-            return
-        try:
-            data_to_insert = []
-            for indicator_data in indicators_data:
-                data_to_insert.append(
-                    (
-                        indicator_data.run_id,
-                        indicator_data.time,
-                        indicator_data.unemployment_rate,
-                        indicator_data.avg_wage,
-                        indicator_data.food_avg_price,
-                        indicator_data.food_trade_volume,
-                        indicator_data.avg_goods_price,
-                        indicator_data.total_production,
-                        indicator_data.total_consumption,
-                        indicator_data.total_household_assets,
-                        indicator_data.total_firm_assets,
-                        indicator_data.total_food_consumption,
-                        indicator_data.total_inventory,
-                    )
-                )
-            data_to_insert = []
-            for indicator_data in indicators_data:
-                data_to_insert.append(
-                    (
-                        indicator_data.run_id,
-                        indicator_data.time,
-                        indicator_data.unemployment_rate,
-                        indicator_data.avg_wage,
-                        indicator_data.food_avg_price,
-                        indicator_data.food_trade_volume,
-                        indicator_data.avg_goods_price,
-                        indicator_data.total_production,
-                        indicator_data.total_consumption,
-                        indicator_data.total_household_assets,
-                        indicator_data.total_firm_assets,
-                        indicator_data.total_food_consumption,
-                        indicator_data.total_inventory,
-                        indicator_data.avg_survival_need,
-                        indicator_data.total_labor_income,
-                        indicator_data.total_capital_income,
-                    )
-                )
-            self.cursor.executemany(
-                """
-                INSERT INTO economic_indicators (run_id, time, unemployment_rate, avg_wage, food_avg_price, food_trade_volume, avg_goods_price,
-                                                 total_production, total_consumption, total_household_assets,
-                                                 total_firm_assets, total_food_consumption, total_inventory, avg_survival_need,
-                                                 total_labor_income, total_capital_income)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                data_to_insert,
-            )
-            self.conn.commit()
-            logger.debug(f"Saved {len(indicators_data)} economic indicators in batch")
-        except sqlite3.Error as e:
-            logger.error(f"Error saving economic indicators batch: {e}")
-            self.conn.rollback()
-            raise
+        self.analytics_repo.save_economic_indicators_batch(indicators_data)
 
     def save_market_history_batch(self, market_history_data: List["MarketHistoryData"]):
         """
         여러 시장 이력 데이터를 데이터베이스에 일괄 저장합니다.
         """
-        if not market_history_data:
-            return
-        try:
-            data_to_insert = []
-            for data in market_history_data:
-                data_to_insert.append(
-                    (
-                        data.time,
-                        data.market_id,
-                        data.item_id,
-                        data.avg_price,
-                        data.trade_volume,
-                        data.best_ask,
-                        data.best_bid,
-                        data.avg_ask,
-                        data.avg_bid,
-                        data.worst_ask,
-                        data.worst_bid,
-                    )
-                )
-            self.cursor.executemany(
-                """
-                INSERT INTO market_history (time, market_id, item_id, avg_price, trade_volume, best_ask, best_bid, avg_ask, avg_bid, worst_ask, worst_bid)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                data_to_insert,
-            )
-            self.conn.commit()
-            logger.debug(f"Saved {len(market_history_data)} market history records in batch")
-        except sqlite3.Error as e:
-            logger.error(f"Error saving market history batch: {e}")
-            self.conn.rollback()
-            raise
+        self.market_repo.save_market_history_batch(market_history_data)
 
     def get_economic_indicators(
         self, start_tick: Optional[int] = None, end_tick: Optional[int] = None, run_id: Optional[int] = None
@@ -427,39 +126,13 @@ class SimulationRepository:
         """
         경제 지표 데이터를 조회합니다.
         """
-        query = "SELECT * FROM economic_indicators"
-        params: List[Any] = []
-        conditions = []
-
-        if run_id is not None:
-            conditions.append("run_id = ?")
-            params.append(run_id)
-
-        if start_tick is not None:
-            conditions.append("time >= ?")
-            params.append(start_tick)
-        if end_tick is not None:
-            conditions.append("time <= ?")
-            params.append(end_tick)
-
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-
-        # Sort by time to ensure history is ordered
-        query += " ORDER BY time ASC"
-
-        self.cursor.execute(query, params)
-        columns = [description[0] for description in self.cursor.description]
-        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        return self.analytics_repo.get_economic_indicators(start_tick, end_tick, run_id)
 
     def get_latest_economic_indicator(self, indicator_name: str) -> Optional[float]:
         """
         특정 경제 지표의 최신 값을 조회합니다.
         """
-        query = f"SELECT {indicator_name} FROM economic_indicators ORDER BY time DESC LIMIT 1"
-        self.cursor.execute(query)
-        result = self.cursor.fetchone()
-        return result[0] if result else None
+        return self.analytics_repo.get_latest_economic_indicator(indicator_name)
 
     def get_market_history(
         self,
@@ -471,24 +144,7 @@ class SimulationRepository:
         """
         특정 시장의 이력 데이터를 조회합니다.
         """
-        query = "SELECT * FROM market_history WHERE market_id = ?"
-        params: List[Any] = [market_id]
-        if start_tick is not None and end_tick is not None:
-            query += " AND time BETWEEN ? AND ?"
-            params.extend([start_tick, end_tick])
-        elif start_tick is not None:
-            query += " AND time >= ?"
-            params.append(start_tick)
-        elif end_tick is not None:
-            query += " AND time <= ?"
-            params.append(end_tick)
-        if item_id is not None:
-            query += " AND item_id = ?"
-            params.append(item_id)
-
-        self.cursor.execute(query, params)
-        columns = [description[0] for description in self.cursor.description]
-        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        return self.market_repo.get_market_history(market_id, start_tick, end_tick, item_id)
 
     def get_agent_states(
         self,
@@ -499,21 +155,7 @@ class SimulationRepository:
         """
         특정 에이전트의 상태 변화 이력을 조회합니다.
         """
-        query = "SELECT * FROM agent_states WHERE agent_id = ?"
-        params: List[Any] = [agent_id]
-        if start_tick is not None and end_tick is not None:
-            query += " AND time BETWEEN ? AND ?"
-            params.extend([start_tick, end_tick])
-        elif start_tick is not None:
-            query += " AND time >= ?"
-            params.append(start_tick)
-        elif end_tick is not None:
-            query += " AND time <= ?"
-            params.append(end_tick)
-
-        self.cursor.execute(query, params)
-        columns = [description[0] for description in self.cursor.description]
-        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        return self.agent_repo.get_agent_states(agent_id, start_tick, end_tick)
 
     def get_transactions(
         self,
@@ -524,26 +166,7 @@ class SimulationRepository:
         """
         거래 데이터를 조회합니다.
         """
-        query = "SELECT * FROM transactions"
-        params: List[Any] = []
-        conditions = []
-
-        if start_tick is not None:
-            conditions.append("time >= ?")
-            params.append(start_tick)
-        if end_tick is not None:
-            conditions.append("time <= ?")
-            params.append(end_tick)
-        if market_id is not None:
-            conditions.append("market_id = ?")
-            params.append(market_id)
-
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-
-        self.cursor.execute(query, params)
-        columns = [description[0] for description in self.cursor.description]
-        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        return self.market_repo.get_transactions(start_tick, end_tick, market_id)
 
     def close(self):
         """
@@ -555,108 +178,13 @@ class SimulationRepository:
         """
         특정 틱의 세대별 인구 및 자산 통계를 조회합니다.
         """
-        query = """
-            SELECT generation as gen, COUNT(*) as count, AVG(assets) as avg_assets
-            FROM agent_states
-            WHERE time = ? AND agent_type = 'household'
-        """
-        params = [tick]
-        if run_id:
-            query += " AND run_id = ?"
-            params.append(run_id)
-        query += " GROUP BY generation"
-        
-        self.cursor.execute(query, params)
-        columns = [description[0] for description in self.cursor.description]
-        return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        return self.agent_repo.get_generation_stats(tick, run_id)
 
     def get_attrition_counts(self, start_tick: int, end_tick: int, run_id: Optional[int] = None) -> Dict[str, int]:
         """
         Calculates the number of agents that became inactive (bankruptcy/death) between start_tick and end_tick.
-
-        Args:
-            start_tick: The starting tick of the window (inclusive).
-            end_tick: The ending tick of the window (inclusive).
-            run_id: The simulation run ID.
-
-        Returns:
-            Dict with keys "bankruptcy_count" and "death_count".
         """
-        # We need to find agents who were active at start_tick (or before) and inactive at end_tick.
-        # However, agent_states is a snapshot.
-        # A simpler approach: Count unique agents whose `is_active` state transitions from 1 to 0 within the window.
-        # Or simply count distinct agents where `is_active`=0 AND `time` BETWEEN start and end AND `is_active` was 1 previously?
-        # Since we might not have every tick saved, we can just check:
-        # Agents who are inactive at `end_tick` but were active at `start_tick`.
-
-        # 1. Get active agents at start_tick (or closest previous tick)
-        # 2. Get inactive agents at end_tick
-        # Intersection is the attrition.
-
-        # Optimization: Just count agents where `is_active`=0 in the latest state within window, who were active before?
-        # The accurate way requested: "changes in agent_states".
-
-        # SQL Strategy:
-        # Find agents where (time = end_tick AND is_active = 0)
-        # AND agent_id IN (SELECT agent_id FROM agent_states WHERE time = start_tick AND is_active = 1)
-
-        # Note: This relies on snapshots existing exactly at start_tick and end_tick.
-        # If BATCH_SAVE_INTERVAL > 1, exact ticks might be missing.
-        # But for this task, let's assume availability or use range.
-
-        params = [end_tick, start_tick]
-        query_suffix = ""
-        if run_id:
-            query_suffix = " AND run_id = ?"
-            params.append(run_id)
-            params.append(run_id) # For the subquery
-
-        # Bankruptcy (Firms)
-        firm_query = f"""
-            SELECT COUNT(DISTINCT agent_id)
-            FROM agent_states
-            WHERE time = ? AND is_active = 0 AND agent_type = 'firm'
-            AND agent_id IN (
-                SELECT agent_id FROM agent_states
-                WHERE time = ? AND is_active = 1 AND agent_type = 'firm' {query_suffix}
-            )
-            {query_suffix}
-        """
-
-        # Death (Households)
-        household_query = f"""
-            SELECT COUNT(DISTINCT agent_id)
-            FROM agent_states
-            WHERE time = ? AND is_active = 0 AND agent_type = 'household'
-            AND agent_id IN (
-                SELECT agent_id FROM agent_states
-                WHERE time = ? AND is_active = 1 AND agent_type = 'household' {query_suffix}
-            )
-            {query_suffix}
-        """
-
-        # Construct params for each query (end_tick, start_tick, [run_id], [run_id])
-        # Wait, the params list needs to be duplicated for two executions or I execute separately.
-
-        result = {}
-
-        # Execute Firm Query
-        p_firm = [end_tick, start_tick]
-        if run_id:
-            p_firm.extend([run_id, run_id])
-
-        self.cursor.execute(firm_query, p_firm)
-        result["bankruptcy_count"] = self.cursor.fetchone()[0]
-
-        # Execute Household Query
-        p_household = [end_tick, start_tick]
-        if run_id:
-            p_household.extend([run_id, run_id])
-
-        self.cursor.execute(household_query, p_household)
-        result["death_count"] = self.cursor.fetchone()[0]
-
-        return result
+        return self.agent_repo.get_attrition_counts(start_tick, end_tick, run_id)
 
 
 if __name__ == "__main__":
