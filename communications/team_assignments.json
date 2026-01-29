@@ -109,6 +109,10 @@
       "10761768022444749737": {
         "title": "WO-144: Government Structure Refactor",
         "initial_mission": "Decompose the monolithic government entity into a Facade/Component structure as per WO-144.\n\n[File C..."
+      },
+      "13085380600727378547": {
+        "title": "WO-145: Progressive Tax System",
+        "initial_mission": "Implement a progressive tax system with FiscalPolicyManager as an automatic stabilizer as per WO-145..."
       }
     },
     "completed_sessions": {

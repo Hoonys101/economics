@@ -4,12 +4,6 @@
     "updated": "2026-01-29",
     "author": "Antigravity"
   },
-  "mission-fiscal-policy": {
-    "command": "create",
-    "instruction": "Implement a progressive tax system with FiscalPolicyManager as an automatic stabilizer as per WO-145.",
-    "title": "WO-145: Progressive Tax System",
-    "file": "design/3_work_artifacts/work_orders/WO-145-Progressive-Tax.md"
-  },
   "mission-monetary-policy": {
     "command": "create",
     "instruction": "Implement Taylor Rule-based monetary policy with MonetaryPolicyManager as per WO-146.",
