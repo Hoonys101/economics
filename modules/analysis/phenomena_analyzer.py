@@ -1,6 +1,8 @@
 from typing import List, Dict, Any, Type
 import importlib
 import re
+import math
+import statistics
 from collections import defaultdict
 from modules.analysis.api import (
     IAnalyzer, IDetector, AnalysisConfigDTO, PhenomenaReportDTO,
@@ -23,37 +25,33 @@ class PhenomenaAnalyzer(IAnalyzer):
                 continue
 
             module_path_str = det_conf['module']
+
+            # SECURITY CHECK: Prevent RCE by enforcing whitelist
+            if not module_path_str.startswith("modules.analysis.detectors."):
+                raise ValueError(f"Security violation: Detector {name} uses unsafe module path '{module_path_str}'. Must start with 'modules.analysis.detectors.'")
+
+            # Dynamic import logic
+            # Expecting 'package.subpackage.ClassName'
+            parts = module_path_str.split('.')
+            class_name = parts[-1]
+            package_path = ".".join(parts[:-1])
+
+            # Convert CamelCase to snake_case for file import
+            module_name = re.sub(r'(?<!^)(?=[A-Z])', '_', class_name).lower()
+
+            full_module_name = f"{package_path}.{module_name}"
+
             try:
-                # Dynamic import logic
-                # Expecting 'package.subpackage.ClassName'
-                # Convert ClassName to snake_case module name
-
-                parts = module_path_str.split('.')
-                class_name = parts[-1]
-                package_path = ".".join(parts[:-1])
-
-                # Convert CamelCase to snake_case
-                module_name = re.sub(r'(?<!^)(?=[A-Z])', '_', class_name).lower()
-
-                full_module_name = f"{package_path}.{module_name}"
-
                 module = importlib.import_module(full_module_name)
                 detector_class = getattr(module, class_name)
 
                 detector_instance = detector_class(det_conf)
                 self.detectors.append(detector_instance)
 
-            except (ImportError, AttributeError, ValueError) as e:
-                # Fallback: Try importing directly if the user provided the module path instead of class path
-                # or if the file structure doesn't match snake_case convention exactly.
-                try:
-                    # Try assuming the last part is the module, and we need to find the class?
-                    # Or maybe the path provided IS the module path, and we guess the class?
-                    # Spec says: 'modules.analysis.detectors.LiquidityCrisisDetector'
-                    # My implementation handles this specific case.
-                    print(f"Failed to load detector {name} with inferred path {full_module_name}: {e}")
-                except Exception:
-                    pass
+            except (ImportError, AttributeError) as e:
+                # TD-154: Fail fast on configuration errors instead of silent failure
+                raise ValueError(f"Failed to load detector {name} from {full_module_name}: {e}") from e
+
 
     def run_tick(self, tick: int, sim_state: ISimulationState) -> None:
         self.simulation_ticks = max(self.simulation_ticks, tick)
@@ -70,8 +68,8 @@ class PhenomenaAnalyzer(IAnalyzer):
         for detector in self.detectors:
             all_events.extend(detector.analyze())
 
-        resilience_index = self._calculate_resilience(all_events)
         policy_metrics = self._calculate_policy_synergy(all_events)
+        resilience_index = self._calculate_resilience(all_events, policy_metrics)
 
         return {
             'simulation_ticks': self.simulation_ticks,
@@ -81,26 +79,49 @@ class PhenomenaAnalyzer(IAnalyzer):
             'key_timeseries': dict(self.history)
         }
 
-    def _calculate_resilience(self, events: List[PhenomenonEventDTO]) -> ResilienceIndexDTO:
+    def _calculate_resilience(self, events: List[PhenomenonEventDTO], policy_metrics: PolicySynergyMetrics) -> ResilienceIndexDTO:
         weights = self.config.get('resilience_weights', {})
         base_score = 100.0
 
+        # 1. Crisis Penalty
         crisis_penalty = 0.0
         severity_weight = weights.get('crisis_severity_weight', 0.3)
-
         for event in events:
             severity = event.get('severity', 0.0)
-            # Simple scoring model
             crisis_penalty += severity * severity_weight * 5.0
 
-        final_score = max(0.0, base_score - crisis_penalty)
+        # 2. Volatility Score (Stability)
+        volatility_score = 0.0
+        if len(self.history['gdp']) > 2:
+            try:
+                # Calculate Coefficient of Variation (CV) = Stdev / Mean
+                gdp_data = self.history['gdp']
+                mean_gdp = statistics.mean(gdp_data)
+                stdev_gdp = statistics.stdev(gdp_data)
+
+                if mean_gdp > 0:
+                    cv = stdev_gdp / mean_gdp
+                    # Map CV to score: 0 CV -> 100 score, >0.1 CV -> 0 score
+                    volatility_score = max(0.0, 100.0 * (1.0 - (cv * 10.0)))
+            except statistics.StatisticsError:
+                pass
+
+        # 3. Policy Bonus
+        policy_bonus_factor = weights.get('policy_bonus_factor', 1.1)
+        total_activations = policy_metrics['fiscal_stabilizer_activations'] + policy_metrics['monetary_stabilizer_activations']
+        policy_bonus = total_activations * 2.0 * policy_bonus_factor # 2 points per activation
+
+        # 4. Recovery Score (Placeholder / TODO)
+        recovery_score = 0.0
+
+        final_score = max(0.0, min(100.0, base_score - crisis_penalty + policy_bonus + (volatility_score * 0.1)))
 
         return {
             'final_score': final_score,
-            'volatility_score': 0.0, # Placeholder
-            'recovery_score': 0.0,   # Placeholder
+            'volatility_score': volatility_score,
+            'recovery_score': recovery_score,
             'crisis_penalty': crisis_penalty,
-            'policy_bonus': 0.0      # Placeholder
+            'policy_bonus': policy_bonus
         }
 
     def _calculate_policy_synergy(self, events: List[PhenomenonEventDTO]) -> PolicySynergyMetrics:

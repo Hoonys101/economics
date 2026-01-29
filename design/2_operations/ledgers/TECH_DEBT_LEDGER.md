@@ -29,7 +29,8 @@
 | **TD-151** | 2026-01-29 | **Partial DTO Adoption in Engine** | `Simulation.get_market_snapshot` returns `MarketSnapshotDTO`, but internal `_prepare_market_data` still returns generic Dict | Inconsistent Internal/External API | **ACTIVE** |
 | **TD-152** | 2026-01-29 | **Hardcoded thresholds in StormVerifier** | Externalize ZLB, Deficit Spending thresholds, and `basic_food` string into `VerificationConfigDTO` | Configuration Flexibility / Maintainability | **RESOLVED** |
 | **TD-153** | 2026-01-29 | **Hardcoded Stress Test Parameters** | Externalize stress test parameters in `scripts/run_stress_test_wo148.py` to a config file | Limited Reusability | **RESOLVED** |
-| **TD-154** | 2026-01-29 | **Perfect Storm: Binary Outcome Bias** | Refactor `stress_test_perfect_storm.py` to focus on "Phenomena Reporting" (Resilience, Policy Synergy) rather than Pass/Fail verdicts | Loss of Economic Insight | **ACTIVE** |
+| **TD-154** | 2026-01-29 | **Perfect Storm: Binary Outcome Bias** | Refactor `stress_test_perfect_storm.py` to focus on "Phenomena Reporting" (Resilience, Policy Synergy) rather than Pass/Fail verdicts | Loss of Economic Insight | **RESOLVED** |
+| **TD-155** | 2026-01-29 | **Unsafe Dynamic Module Import from Configuration** | Restrict `importlib` in `PhenomenaAnalyzer` to `modules.analysis.detectors` package and enforce whitelist | Security Risk (RCE) | **ACTIVE** |
 
 ---
 
@@ -101,20 +102,6 @@
 
 ---
 
----
-
-## 📅 REPAYMENT PLAN: "THE GREAT RESET" (Phase 24-26)
-
-| Milestone | Target Debts | Objective | Tooling |
-| :--- | :--- | :--- | :--- |
-| **Step 1: Purity Guard** | TD-101, TD-102 | Create `SettlementSystem` to centralize all asset movements. | ✅ **DONE** (WO-112) |
-| **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | ✅ **DONE** (WO-135) |
-| **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
-| **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | ✅ **DONE** (WO-123, WO-124) |
-| **Step 5: Normalize Sequence** | TD-106, TD-109 | Normalize Tick Sequence. | **PLANNED** (Phase 26) |
-
----
-
 ## 🧐 SESSION INSIGHTS (2026-01-29)
 
 ### 1. The Perfect Storm: Simulation vs. Test
@@ -126,3 +113,34 @@
 - **현상**: `team_assignments.json` 기반의 세션 관리가 로컬 환경에 의존하여 유연성이 떨어짐.
 - **해결**: API 실시간 조회를 통한 프로젝트 중심 필터링 시스템 구현. `jules-go`의 Communicate 기능을 대화 중심에서 미션(Preset) 전송 중심으로 개편.
 - **교훈**: 보조 에이전트(Jules)와의 협업 UX는 단순할수록 강력하며, 로컬 상태보다는 서버의 실시간 데이터(Source of Truth)에 기반해야 함.
+
+## [TD-155] Unsafe Dynamic Module Import from Configuration
+
+*   **현상 (Phenomenon)**
+    - `PhenomenaAnalyzer`가 외부 YAML 설정 파일에 명시된 모듈 경로를 기반으로 `importlib`를 사용하여 Detector 모듈을 동적으로 로드함.
+
+*   **원인 (Cause)**
+    - 새로운 Detector를 코드 수정 없이 추가할 수 있도록 유연성을 극대화하기 위해 채택된 설계.
+
+*   **부채/위험 (Debt/Risk)**
+    - 설정 파일을 수정할 수 있는 공격자가 악의적인 코드를 시스템 컨텍스트에서 실행할 수 있는 **원격 코드 실행(RCE) 취약점**이 발생함.
+    - 또한, 임포트 실패 시 조용히 넘어가므로(silent failure), 설정 오류를 인지하기 어려워 디버깅을 방해하고 시스템의 신뢰성을 저하 시킴.
+
+*   **해결책 (Solution)**
+    - 임포트 가능한 기본 경로를 `modules.analysis.detectors`로 하드코딩하여, 해당 디렉토리 외부의 모듈은 로드할 수 없도록 제한해야 함.
+    - 모듈 로드에 실패할 경우, `pass`가 아닌 명시적인 예외(e.g., `ImportError`, `ConfigurationError`)를 발생시켜 시스템을 즉시 중단시키고 오류를 알리도록 수정해야 함.
+
+*   **교훈 (Lesson Learned)**
+    - 설정 기반의 동적 코드 로드는 강력하지만, 항상 신뢰할 수 없는 입력으로 간주하고 '허용 목록(allow-list)' 기반으로 범위를 엄격히 제한해야 보안을 확보할 수 있다.
+
+---
+
+## 📅 REPAYMENT PLAN: "THE GREAT RESET" (Phase 24-26)
+
+| Milestone | Target Debts | Objective | Tooling |
+| :--- | :--- | :--- | :--- |
+| **Step 1: Purity Guard** | TD-101, TD-102 | Create `SettlementSystem` to centralize all asset movements. | ✅ **DONE** (WO-112) |
+| **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | ✅ **DONE** (WO-135) |
+| **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
+| **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | ✅ **DONE** (WO-123, WO-124) |
+| **Step 5: Normalize Sequence** | TD-106, TD-109 | Normalize Tick Sequence. | **PLANNED** (Phase 26) |
