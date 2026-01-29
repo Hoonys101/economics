@@ -117,6 +117,7 @@ class FirmConfigDTO:
     invisible_hand_sensitivity: float
     capital_to_output_ratio: float
     initial_base_annual_rate: float # WO-146 Fallback
+    default_loan_spread: float      # WO-146 Configurable Spread
 
     # Expanded Fields for DTO Parity
     initial_firm_liquidity_need: float

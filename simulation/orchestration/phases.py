@@ -18,6 +18,7 @@ from simulation.systems.api import (
     CommerceContext, LearningUpdateContext
 )
 from simulation.models import Transaction, Order
+from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -142,7 +143,6 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
 class Phase0_PreSequence(IPhaseStrategy):
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
-        from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
         self.mp_manager = MonetaryPolicyManager(world_state.config_module)
 
     def execute(self, state: SimulationState) -> SimulationState:
@@ -228,38 +228,35 @@ class Phase0_PreSequence(IPhaseStrategy):
         if state.central_bank and hasattr(state.central_bank, "step"):
              state.central_bank.step(state.time)
 
-        # Create MarketSnapshotDTO with macro indicators
-        latest_indicators = state.tracker.get_latest_indicators()
-        # Retrieve potential GDP from Central Bank if available
-        potential_gdp = 0.0
-        if state.central_bank and hasattr(state.central_bank, "potential_gdp"):
-             potential_gdp = state.central_bank.potential_gdp
+        # Apply Monetary Policy periodically to ensure stability (WO-146 Insight)
+        update_interval = getattr(state.config_module, "CB_UPDATE_INTERVAL", 10)
 
-        macro_snapshot = MarketSnapshotDTO(
-             prices={}, # Not used by monetary policy
-             volumes={},
-             asks={},
-             best_asks={},
-             inflation_rate=latest_indicators.get("inflation_rate", 0.0),
-             unemployment_rate=latest_indicators.get("unemployment_rate", 0.0),
-             nominal_gdp=latest_indicators.get("total_production", 0.0),
-             potential_gdp=potential_gdp
-        )
+        if state.time > 0 and state.time % update_interval == 0:
+            # Create MarketSnapshotDTO with macro indicators
+            latest_indicators = state.tracker.get_latest_indicators()
+            # Retrieve potential GDP from Central Bank if available
+            potential_gdp = 0.0
+            if state.central_bank and hasattr(state.central_bank, "potential_gdp"):
+                 potential_gdp = state.central_bank.potential_gdp
 
-        mp_policy = self.mp_manager.determine_monetary_stance(macro_snapshot)
+            macro_snapshot = MarketSnapshotDTO(
+                 prices={}, # Not used by monetary policy
+                 volumes={},
+                 asks={},
+                 best_asks={},
+                 inflation_rate=latest_indicators.get("inflation_rate", 0.0),
+                 unemployment_rate=latest_indicators.get("unemployment_rate", 0.0),
+                 nominal_gdp=latest_indicators.get("total_production", 0.0),
+                 potential_gdp=potential_gdp
+            )
 
-        if state.central_bank:
-             # Overwrite rate with MonetaryPolicyManager's result
-             # We assume Manager runs every tick or logic inside handles interval (Manager is stateless though)
-             # But CentralBank.step only updates every interval.
-             # If we overwrite every tick, we might cause instability if Manager result fluctuates?
-             # But Taylor Rule formula is continuous.
-             # However, we should probably only update if needed.
-             # For now, let's update every tick to ensure responsiveness.
-             state.central_bank.base_rate = mp_policy.target_interest_rate
+            mp_policy = self.mp_manager.determine_monetary_stance(macro_snapshot)
 
-        if state.bank and hasattr(state.bank, "update_base_rate"):
-             state.bank.update_base_rate(mp_policy.target_interest_rate)
+            if state.central_bank:
+                 state.central_bank.base_rate = mp_policy.target_interest_rate
+
+            if state.bank and hasattr(state.bank, "update_base_rate"):
+                 state.bank.update_base_rate(mp_policy.target_interest_rate)
 
         return state
 

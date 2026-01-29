@@ -7,8 +7,6 @@ from simulation.decisions.firm.api import FinancialPlanDTO
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_LOAN_SPREAD = 0.05
-
 class FinanceManager:
     def formulate_plan(self, context: DecisionContext, dividend_aggressiveness: float, debt_aggressiveness: float) -> FinancialPlanDTO:
         firm = context.state
@@ -97,10 +95,13 @@ class FinanceManager:
                 # Fallback to Market Data (if available)
                 elif "loan_market" in market_data and "interest_rate" in market_data["loan_market"]:
                     base_rate = market_data["loan_market"]["interest_rate"]
+                else:
+                    logger.warning(f"FINANCE_WARNING | Missing policy/market rate for firm {firm.id}. Used default fallback.")
 
                 # Willingness to pay: base_rate + risk spread
                 # Firms usually accept slightly higher than base rate
-                wtp_rate = base_rate + DEFAULT_LOAN_SPREAD
+                spread = context.config.default_loan_spread
+                wtp_rate = base_rate + spread
 
                 order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, wtp_rate, "loan")
                 order.metadata = {"borrower_profile": borrower_profile}
