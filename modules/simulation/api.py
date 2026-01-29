@@ -15,6 +15,7 @@ class MarketSnapshotDTO(TypedDict):
     Snapshot of key market indicators for analysis modules.
     """
     gdp: float
+    cpi: float
 
 # --- Protocols ---
 

@@ -79,9 +79,22 @@ class Simulation:
         # Retrieve raw data from orchestrator
         market_data = self.tick_orchestrator.prepare_market_data()
 
+        # Calculate CPI (Average Price Level)
+        total_price = 0.0
+        count = 0
+        goods_market = market_data.get("goods_market", {})
+
+        for key, value in goods_market.items():
+            if key.endswith("_current_sell_price") and isinstance(value, (int, float)) and value > 0:
+                total_price += value
+                count += 1
+
+        cpi = total_price / count if count > 0 else 0.0
+
         # Construct and return formal DTO
         return MarketSnapshotDTO(
-            gdp=market_data.get("total_production", 0.0)
+            gdp=market_data.get("total_production", 0.0),
+            cpi=cpi
         )
 
     # --- Backward Compatibility Methods ---
