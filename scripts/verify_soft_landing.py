@@ -14,10 +14,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 try:
     import matplotlib.pyplot as plt
 except ImportError:
-    print("⚠️ Matplotlib not found. Attempting to install...")
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib"])
-    import matplotlib.pyplot as plt
+    print("⚠️ Matplotlib not found. Visualization skipped.")
+    # Fallback to no-op or just warn
+    plt = None
 
 # Patch Database to use Memory
 import simulation.db.database
@@ -166,6 +165,10 @@ def analyze_results(baseline: SimulationResults, stabilized: SimulationResults):
     }
 
 def plot_comparisons(baseline: SimulationResults, stabilized: SimulationResults):
+    if plt is None:
+        print("⚠️ Matplotlib not installed. Skipping plots.")
+        return
+
     os.makedirs("reports", exist_ok=True)
 
     # GDP

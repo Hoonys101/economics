@@ -23,6 +23,7 @@
 | **TD-142** | 2026-01-29 | **God File: `corporate_manager.py`** | Use Departmental Delegation (similar to WO-123) | 629+ LOC complexity | **ACTIVE** |
 | **TD-143** | 2026-01-29 | **Hardcoded Placeholders (WO-XXX)** | Replace all `WO-XXX` tags in manuals with template variables or specific links | Documentation Debt | **ACTIVE** |
 | **TD-118** | 2026-01-29 | **DTO Contract-Implementation Mismatch** | Refactor `HouseholdStateDTO.inventory` usage to respect List type or update DTO to Dict | Potential Runtime Errors / Confusion | **ACTIVE** |
+| **TDL-028** | 2026-01-29 | **Inconsistent Order Object Structure** | Unify `Order` DTO interface or use ABC for `MarketOrder`/`StockOrder` separation | High Cognitive Load / Runtime Errors | **ACTIVE** |
 
 ---
 
