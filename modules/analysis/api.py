@@ -8,6 +8,7 @@ class VerificationConfigDTO(TypedDict):
     zlb_threshold: float
     deficit_spending_threshold: float
     basic_food_key: str
+    starvation_threshold: float
     # TBD: Define volatility reduction target
 
 class StormReportDTO(TypedDict):

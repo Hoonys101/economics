@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import yaml
 
 # Ensure modules are importable
 sys.path.append(os.getcwd())
@@ -16,17 +17,23 @@ from modules.analysis.storm_verifier import StormVerifier
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("StressTestWO148")
 
+def load_config(config_path: str) -> dict:
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
+
 def main():
     logger.info("Starting WO-148: The Perfect Storm Stress Test")
 
+    # Load configuration
+    scenario_config = load_config("config/scenarios/stress_test_wo148.yaml")
+
     # 1. Setup Config overrides
     overrides = {
-        "ENABLE_MONETARY_STABILIZER": True,
-        "ENABLE_FISCAL_STABILIZER": True,
-        "SIMULATION_TICKS": 200,
-        # Ensure we have enough agents for meaningful stats
-        "NUM_HOUSEHOLDS": 50, # Example, adjust if needed
-        "NUM_FIRMS": 10
+        "ENABLE_MONETARY_STABILIZER": scenario_config.get("ENABLE_MONETARY_STABILIZER", True),
+        "ENABLE_FISCAL_STABILIZER": scenario_config.get("ENABLE_FISCAL_STABILIZER", True),
+        "SIMULATION_TICKS": scenario_config.get("SIMULATION_TICKS", 200),
+        "NUM_HOUSEHOLDS": scenario_config.get("NUM_HOUSEHOLDS", 50),
+        "NUM_FIRMS": scenario_config.get("NUM_FIRMS", 10),
     }
 
     # 2. Create Simulation
@@ -35,21 +42,22 @@ def main():
 
     # 3. Setup Shock and Verifier
     shock_config = ShockConfigDTO(
-        shock_start_tick=100,
-        shock_end_tick=130,
-        tfp_multiplier=0.5,
-        baseline_tfp=3.0
+        shock_start_tick=scenario_config["shock_start_tick"],
+        shock_end_tick=scenario_config["shock_end_tick"],
+        tfp_multiplier=scenario_config["tfp_multiplier"],
+        baseline_tfp=scenario_config["baseline_tfp"]
     )
 
     # Sim satisfies ISimulationState protocol
     injector = ShockInjector(shock_config, sim)
 
     verification_config = VerificationConfigDTO(
-        max_starvation_rate=0.01, # < 1.0%
-        max_debt_to_gdp=2.0,      # < 200%
-        zlb_threshold=0.001,
-        deficit_spending_threshold=1.0,
-        basic_food_key="basic_food"
+        max_starvation_rate=scenario_config["max_starvation_rate"],
+        max_debt_to_gdp=scenario_config["max_debt_to_gdp"],
+        zlb_threshold=scenario_config["zlb_threshold"],
+        deficit_spending_threshold=scenario_config["deficit_spending_threshold"],
+        basic_food_key=scenario_config["basic_food_key"],
+        starvation_threshold=scenario_config["starvation_threshold"]
     )
 
     verifier = StormVerifier(verification_config, sim)

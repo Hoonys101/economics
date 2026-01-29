@@ -1,0 +1,24 @@
+# WO-148: The Perfect Storm Stress Test Configuration
+
+# Simulation Parameters
+NUM_HOUSEHOLDS: 50
+NUM_FIRMS: 10
+SIMULATION_TICKS: 200
+
+# Shock Injector Configuration
+shock_start_tick: 100
+shock_end_tick: 130
+tfp_multiplier: 0.5
+baseline_tfp: 3.0
+
+# Storm Verifier Configuration
+max_starvation_rate: 0.01
+max_debt_to_gdp: 2.0
+zlb_threshold: 0.001
+deficit_spending_threshold: 1.0
+starvation_threshold: 1.0
+basic_food_key: "basic_food"
+
+# Config Overrides for Stability
+ENABLE_MONETARY_STABILIZER: true
+ENABLE_FISCAL_STABILIZER: true

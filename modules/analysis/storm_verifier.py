@@ -48,8 +48,8 @@ class StormVerifier:
         all_households = self._simulation.households
         active_households = [h for h in all_households if h.is_active]
 
-        # Load starvation threshold from config via Protocol without default
-        starvation_threshold = self._simulation.config_module.STARVATION_THRESHOLD
+        # Load starvation threshold from VerificationConfigDTO (Fully Resolved TD-152)
+        starvation_threshold = self._config["starvation_threshold"]
 
         basic_food_key = self._config["basic_food_key"]
 
