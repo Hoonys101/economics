@@ -18,6 +18,7 @@ from simulation.systems.api import (
     CommerceContext, LearningUpdateContext
 )
 from simulation.models import Transaction, Order
+from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -142,6 +143,7 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
 class Phase0_PreSequence(IPhaseStrategy):
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
+        self.mp_manager = MonetaryPolicyManager(world_state.config_module)
 
     def execute(self, state: SimulationState) -> SimulationState:
         # WO-109: Pre-Sequence Stabilization
@@ -220,6 +222,41 @@ class Phase0_PreSequence(IPhaseStrategy):
             state.government.make_policy_decision(market_data, state.time, state.central_bank)
 
             state.government.check_election(state.time)
+
+        # WO-146: Monetary Policy Manager Integration
+        # Ensure Central Bank updates its internal state (Potential GDP)
+        if state.central_bank and hasattr(state.central_bank, "step"):
+             state.central_bank.step(state.time)
+
+        # Apply Monetary Policy periodically to ensure stability (WO-146 Insight)
+        update_interval = getattr(state.config_module, "CB_UPDATE_INTERVAL", 10)
+
+        if state.time > 0 and state.time % update_interval == 0:
+            # Create MarketSnapshotDTO with macro indicators
+            latest_indicators = state.tracker.get_latest_indicators()
+            # Retrieve potential GDP from Central Bank if available
+            potential_gdp = 0.0
+            if state.central_bank and hasattr(state.central_bank, "potential_gdp"):
+                 potential_gdp = state.central_bank.potential_gdp
+
+            macro_snapshot = MarketSnapshotDTO(
+                 prices={}, # Not used by monetary policy
+                 volumes={},
+                 asks={},
+                 best_asks={},
+                 inflation_rate=latest_indicators.get("inflation_rate", 0.0),
+                 unemployment_rate=latest_indicators.get("unemployment_rate", 0.0),
+                 nominal_gdp=latest_indicators.get("total_production", 0.0),
+                 potential_gdp=potential_gdp
+            )
+
+            mp_policy = self.mp_manager.determine_monetary_stance(macro_snapshot)
+
+            if state.central_bank:
+                 state.central_bank.base_rate = mp_policy.target_interest_rate
+
+            if state.bank and hasattr(state.bank, "update_base_rate"):
+                 state.bank.update_base_rate(mp_policy.target_interest_rate)
 
         return state
 

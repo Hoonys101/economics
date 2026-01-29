@@ -85,7 +85,25 @@ class FinanceManager:
                     existing_assets=firm.assets
                 )
 
-                order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, 0.10, "loan")
+                # WO-146: Use market rate + spread instead of hardcoded 0.10
+                # Fallback: Configured Initial Rate
+                base_rate = context.config.initial_base_annual_rate
+
+                # Prioritize Government Policy Rate (Official Base Rate)
+                if context.government_policy:
+                    base_rate = context.government_policy.base_interest_rate
+                # Fallback to Market Data (if available)
+                elif "loan_market" in market_data and "interest_rate" in market_data["loan_market"]:
+                    base_rate = market_data["loan_market"]["interest_rate"]
+                else:
+                    logger.warning(f"FINANCE_WARNING | Missing policy/market rate for firm {firm.id}. Used default fallback.")
+
+                # Willingness to pay: base_rate + risk spread
+                # Firms usually accept slightly higher than base rate
+                spread = context.config.default_loan_spread
+                wtp_rate = base_rate + spread
+
+                order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, wtp_rate, "loan")
                 order.metadata = {"borrower_profile": borrower_profile}
                 orders.append(order)
 
