@@ -109,15 +109,8 @@ class SettlementSystem(ISettlementSystem):
 
         # 2. EXECUTE: Perform the debit and credit
         try:
+            # Phase 1: Debit
             debit_agent.withdraw(amount)
-            credit_agent.deposit(amount)
-
-            self.logger.debug(
-                f"SETTLEMENT_SUCCESS | Transferred {amount:.2f} from {debit_agent.id} to {credit_agent.id}. Memo: {memo}",
-                extra={"tags": ["settlement"], "tick": tick}
-            )
-            return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
-
         except InsufficientFundsError as e:
             self.logger.critical(
                 f"SETTLEMENT_CRITICAL | Race condition or logic error. InsufficientFundsError during transfer. "
@@ -127,9 +120,35 @@ class SettlementSystem(ISettlementSystem):
             return None
         except Exception as e:
             self.logger.exception(
-                 f"SETTLEMENT_UNHANDLED_FAIL | An unexpected error occurred during transfer. Details: {e}"
+                 f"SETTLEMENT_UNHANDLED_FAIL | An unexpected error occurred during withdrawal. Details: {e}"
             )
             return None
+
+        try:
+            # Phase 2: Credit
+            credit_agent.deposit(amount)
+        except Exception as e:
+            # ROLLBACK: Credit failed, must reverse debit
+            self.logger.error(
+                f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount:.2f} from {debit_agent.id}. Error: {e}"
+            )
+            try:
+                debit_agent.deposit(amount)
+                self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount:.2f} to {debit_agent.id}.")
+            except Exception as rollback_error:
+                self.logger.critical(
+                    f"SETTLEMENT_FATAL | Rollback failed! Money {amount:.2f} lost from {debit_agent.id}. "
+                    f"Original Error: {e}. Rollback Error: {rollback_error}",
+                    extra={"tags": ["settlement", "fatal", "money_leak"]}
+                )
+            return None
+
+        # Success
+        self.logger.debug(
+            f"SETTLEMENT_SUCCESS | Transferred {amount:.2f} from {debit_agent.id} to {credit_agent.id}. Memo: {memo}",
+            extra={"tags": ["settlement"], "tick": tick}
+        )
+        return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
 
     def create_and_transfer(
         self,

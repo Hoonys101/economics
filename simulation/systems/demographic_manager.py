@@ -298,31 +298,34 @@ class DemographicManager:
         heirs = [simulation.agents[cid] for cid in deceased_agent.children_ids if cid in simulation.agents and simulation.agents[cid].is_active]
 
         if heirs:
-            # Floor to 2 decimals to prevent evaporation/creation
-            share = math.floor((net_estate / len(heirs)) * 100) / 100.0
-            distributed = 0.0
+            # FIX: Use integer arithmetic (cents) to prevent floating point rounding errors and leaks
+            net_estate_cents = int(round(net_estate * 100))
+            num_heirs = len(heirs)
+            share_cents = net_estate_cents // num_heirs
+            remainder_cents = net_estate_cents % num_heirs
 
             # Distribute shares
             for i, heir in enumerate(heirs):
-                # Last heir gets the remainder to ensure sum(shares) == net_estate
-                if i == len(heirs) - 1:
-                    amount_to_send = net_estate - distributed
-                else:
-                    amount_to_send = share
+                amount_cents = share_cents
+                # Add remainder to the last heir to ensure sum equals net_estate
+                if i == num_heirs - 1:
+                    amount_cents += remainder_cents
 
-                simulation.settlement_system.transfer(
-                    deceased_agent,
-                    heir,
-                    amount_to_send,
-                    "inheritance_distribution",
-                    tick=simulation.time
-                )
-                distributed += amount_to_send
+                amount_to_send = amount_cents / 100.0
 
-                self.logger.info(
-                    f"INHERITANCE | Heir {heir.id} received {amount_to_send:.2f} from {deceased_agent.id}.",
-                    extra={"heir_id": heir.id, "deceased_id": deceased_agent.id, "amount": amount_to_send}
-                )
+                if amount_to_send > 0:
+                    simulation.settlement_system.transfer(
+                        deceased_agent,
+                        heir,
+                        amount_to_send,
+                        "inheritance_distribution",
+                        tick=simulation.time
+                    )
+
+                    self.logger.info(
+                        f"INHERITANCE | Heir {heir.id} received {amount_to_send:.2f} from {deceased_agent.id}.",
+                        extra={"heir_id": heir.id, "deceased_id": deceased_agent.id, "amount": amount_to_send}
+                    )
         else:
             # No heirs: Escheatment to State
             simulation.settlement_system.transfer(
