@@ -4,43 +4,9 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-session-handover": {
-    "worker": "reporter",
-    "instruction": "## 🏗️ Architectural Handover Report Generation\n당신은 수석 설계자에게 보고할 핸드오버 문서를 작성하는 리포터입니다.\n제공된 인사이트 문서들을 바탕으로 다음 사항을 요약하여 기록하십시오:\n1. **Accomplishments**: 이번 세션에서 완성된 핵심 기능 및 아키텍처 변화 (Animal Spirits 등).\n2. **Economic Insights**: 시뮬레이션 중 발견된 주요 경제적 통찰.\n3. **Pending Tasks & Tech Debt**: 다음 세션에서 즉시 해결해야 할 기술 부채 및 미완성 과제.\n4. **Verification Status**: `main.py` 및 `trace_leak.py` 등의 검증 결과 요약.\n\n결과물은 '설계도_계약들/HANDOVER.md' 형식을 따르되, 우리 프로젝트의 'design/HANDOVER.md' 위치에 저장될 예정입니다.",
-    "context": [
-      "communications\\insights\\20240422_pytest_fix_log.md",
-      "communications\\insights\\2026-01-24_TD106_bankruptcy_ledger_findings.md",
-      "communications\\insights\\2026-01-27_Final_Verification_Report.md",
-      "communications\\insights\\2026-01-27_tax_remediation_findings.md",
-      "communications\\insights\\2026-01-28_Sacred_Refactoring_Report.md",
-      "communications\\insights\\audit_phase21_24_alignment.md",
-      "communications\\insights\\DTO-Schema-Alignment.md",
-      "communications\\insights\\insight_WO-092_interface_implementation.md",
-      "communications\\insights\\macro_sensitivity_tuning_insights.md",
-      "communications\\insights\\purity-gate-enforcement.md",
-      "communications\\insights\\SPEC_ANIMAL_PHASE1_MARKET.md",
-      "communications\\insights\\TD-008_Debt_Report.md",
-      "communications\\insights\\TD-122_Test_Directory_Organization.md",
-      "communications\\insights\\TD110-Fix-Insights-Jules.md",
-      "communications\\insights\\TD124-refined-20241029.md",
-      "communications\\insights\\THOUGHTSTREAM-INSTRUMENTATION.md",
-      "communications\\insights\\thoughtstream_infra.md",
-      "communications\\insights\\WO-103-Phase1-Log.md",
-      "communications\\insights\\WO-103-Phase2-Log.md",
-      "communications\\insights\\WO-112-settlement-insights.md",
-      "communications\\insights\\WO-113-sovereign-debt-insights.md",
-      "communications\\insights\\WO-117-Sync-Settlement-Feedback.md",
-      "communications\\insights\\WO-121-newborn-initialization.md",
-      "communications\\insights\\WO-136-Strategy-Driven-Initialization.md",
-      "communications\\insights\\WO-138-agent-purity.md",
-      "communications\\insights\\WO-138-Architectural-Shift-To-Settlement.md",
-      "communications\\insights\\WO-140-Repository-Decomposition.md",
-      "communications\\insights\\WO-145_Progressive_Tax.md",
-      "communications\\insights\\WO-146-Monetary-Policy-Stability.md",
-      "communications\\insights\\WO-148_Phase3_Recovery.md",
-      "communications\\insights\\WO-AnimalSpirits-Phase2.md",
-      "communications\\insights\\WO-Fix-Main-AttributeError.md",
-      "communications\\insights\\WO-XXX-ThoughtStream-Instrumentation.md"
-    ]
+  "mission-green-light-exec": {
+    "command": "create",
+    "instruction": "Implement the test restoration plan defined in design/3_work_artifacts/reports/REPORT_TEST_RESTORATION_PLAN.md. Fix all failing tests in test_failures_audit.txt by addressing DTO mismatches, constructor errors (missing config_dto), and MagicMock type errors. Ensure the test suite reaches a 100% pass rate. Document all technical debt and insights in communications/insights/mission-green-light-exec.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Operation Green Light: Test Suite Restoration"
   }
 }

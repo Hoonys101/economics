@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-01-29 (Audit Sync 완료)
+**최종 업데이트**: 2026-01-30 (ThoughtStream Implementation Sync)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -11,6 +11,7 @@
 - **완료된 단계(Recent)**:
     - **WO-053**: Phase 23 Reactivation (Industrial Revolution) ✅ (2026-01-28)
     - **Operation Sacred Refactoring**: Purge Reflux System & Phased Tick Orchestration ✅ (2026-01-28)
+    - **ThoughtStream (W-0/W-1)**: Observability Infrastructure & Cognitive Probes ✅ (2026-01-30)
     - `Phase 26.5: Sovereign Debt & Corporate Credit` ✅ (2026-01-23)
     - **WO-121**: Newborn Agent Initialization Fix (Config Externalization) ✅
     - **WO-112**: Economic Purity (SettlementSystem Implementation) ✅
@@ -32,17 +33,14 @@
     - **Phase 3**: DTO Decoupling & Data Flow Purity ✅ (Merged 2026-01-21)
 
 - **현재 단계:** `Phase 28: Structural Stabilization & Tactical Cleanup` 🏦 (2026-01-28)
-    - **Goal**: Sanitize hardcoded scenarios and reorganize the test suite.
+    - **Goal**: Sanitize hardcoded scenarios, restore test suite integrity, and diagnose economic deadlocks.
     - **Status**: 
         - **WO-135-Reboot**: Abstraction Wall (Decomposed Implementation) ✅ (2026-01-28)
-            - WO-135.1: Infrastructure (ConfigFactory) ✅
-            - WO-135.2: DTO Schema Alignment ✅
-            - WO-135.3: Core Refactor (Agent Purity) ✅
-            - WO-135.4: Purity Gate Automated (verify_purity.py) ✅
         - **WO-136**: Strategy Generalization (Branching Cleanup) ✅ (2026-01-28)
-        - **Documentation Restructuring**: Formal 4-Layer Hierarchy (Governance/Ops/Artifacts/Archive) ✅ (2026-01-28)
-        - **WO-137/138**: Test Cleanroom (TD-122 Reorganization) ✅ (2026-01-28)
-    - **Previous**: Step 4: God Class Decomposition ✅ (Merged 2026-01-27)
+        - **ThoughtStream Implementation**: Observability Infrastructure ✅ (2026-01-30)
+        - **Operation Green Light**: Test Suite Restoration (Fixing ~85 Failures) 🚨 **CRITICAL**
+        - **Operation Code Blue**: GDP 0 Diagnosis (Diagnostic Focus) 🏥 **ACTIVE**
+    - **Next Phase**: `Phase 30: Fractional Reserve & Credit Expansion` (WO-024)
 
 ---
 
@@ -105,7 +103,7 @@
 | Diagnosis | ✅ | Deadlock Found (No Capital/Inventory) |
 | Bootstrap Fix | ✅ |- **Operation Animal Spirits**: ✅ COMPLETED (Phases 1-3). Self-sustaining market behaviors and asset recovery are active.
 - **Sacred Refactoring**: ✅ COMPLETED. Mandatory Settlement System and Purity Gate are enforced.
-- **Current Focus**: 🚨 CRITICAL - Test Suite Restoration & Implementation of Fractional Reserve Banking (WO-024).
+- **Current Focus**: 🚨 CRITICAL - Operation Code Blue (GDP 0 Diagnosis) using ThoughtStream logs. Resolve TD-163 (Test Suite Degradation).
 | **System Check** | ✅ | **Simulation Alive**, CPR Successful |
 
 ### WO-060: The Stock Exchange (Activation) ✅
@@ -157,12 +155,8 @@
 
 ---
 
-## 5. Technical Debt & Backlog
+## 5. Technical Debt Management
 
-### TD-024: Test Path Correction ✅
-- **Type**: CI/CD, Testing
-- **Status**: **Resolved** (2026-01-15)
-- **Description**: `pytest` 실행 시 테스트 경로 오류 수정 완료 (`pytest.ini` created).
-- **Action**: None. Closed.
+Technical debt is now managed via the [Technical Debt Ledger](./ledgers/TECH_DEBT_LEDGER.md), categorized by architectural domain. Resolved items are purged to `design/archive/ledgers/`.
 
 ... (Following legacy phases omitted for brevity / check structure.md)
