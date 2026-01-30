@@ -15,3 +15,19 @@ This ledger records key economic insights and architectural decisions derived fr
 
 - **Lesson Learned (Lesson Learned):**
   Key simulation events (like technological innovation) should be driven by **Endogenous Variables**—that is, the activities of agents (e.g., R&D investment). This enhances the realism of the system, gives meaning to agents' strategic behaviors, and serves as a foundation for generating unpredictable and dynamic outcomes.
+
+---
+## [Insight] Attribute Error due to Data Contract Mismatch
+
+- **Phenomenon (Phenomenon)**
+  - `Simulation.get_market_snapshot` returned a `TypedDict` (dictionary), but calling code attempted to access it via object attributes (`result.gdp`), causing `AttributeError: 'dict' object has no attribute 'gdp'`.
+
+- **Cause (Cause)**
+  - Lack of strict adherence to Data Contracts between modules. The API returned a dictionary, but the consumer expected an object.
+
+- **Solution (Solution)**
+  - Updated consumers to use key-based access (`result['gdp']`) to align with the dictionary return type.
+
+- **Lesson Learned (Lesson Learned)**
+  - **Adhere to Contracts**: If a function returns a specific structure (like `TypedDict`), consumers must respect that structure.
+  - **Defensive Coding**: Employ `try-except` blocks and detailed logging to catch such integration issues early.
