@@ -73,7 +73,8 @@ class CommerceSystem(ICommerceSystem):
                 food_inventory = household.inventory.get("basic_food", 0.0)
                 if food_inventory <= 0:
                     # Stock Out. Could we afford it?
-                    price = batch_decisions.get('price', 5.0)
+                    default_price = getattr(self.config, 'DEFAULT_FALLBACK_PRICE', 5.0)
+                    price = batch_decisions.get('price', default_price)
                     if household.assets < price:
                         reason = "INSOLVENT"
                         context_data = {"cash": household.assets, "price": price, "need": survival_need}
