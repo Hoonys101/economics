@@ -22,3 +22,18 @@ NEWBORN_INITIAL_NEEDS:
   imitation_need: 15.0
   labor_need: 0.0
   liquidity_need: 50.0
+
+# WO-157: Code Blue - Demand Elasticity
+elasticity_mapping:
+  MISER: 2.0
+  IMPULSIVE: 0.5
+  STATUS_SEEKER: 1.0
+  GROWTH_ORIENTED: 0.8
+  CONSERVATIVE: 1.5
+  DEFAULT: 1.0
+
+max_willingness_to_pay_multiplier: 2.5
+
+# WO-157: Code Blue - Dynamic Pricing
+sale_timeout_ticks: 20
+dynamic_price_reduction_factor: 0.95

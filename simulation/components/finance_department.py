@@ -335,6 +335,18 @@ class FinanceDepartment:
         z_score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3
         return z_score
 
+    def get_estimated_unit_cost(self, item_id: str) -> float:
+        """
+        Estimates the unit cost of production/operation for a given item.
+        Used as a price floor for dynamic pricing.
+        WO-157: Use Production Target as denominator to avoid Death Spiral (Low Sales -> High Cost -> High Price).
+        """
+        target = getattr(self.firm, 'production_target', 10.0)
+        denominator = max(1.0, target)
+
+        # Use last daily expenses as proxy for total cost
+        return self.last_daily_expenses / denominator
+
     def check_bankruptcy(self):
         if self.current_profit < 0:
             self.consecutive_loss_turns += 1

@@ -831,3 +831,18 @@ FIRE_SALE_INVENTORY_THRESHOLD = 0.5 # Threshold to start fire sale
 FIRE_SALE_DISCOUNT = 0.2 # Discount for fire sale
 FIRE_SALE_COST_DISCOUNT = 0.5 # Discount below cost for fire sale
 FIRE_SALE_ASSET_THRESHOLD = 500.0 # Asset threshold for fire sale
+
+# ==============================================================================
+# WO-157: Code Blue Implementation
+# ==============================================================================
+ELASTICITY_MAPPING = {
+    "MISER": 2.0,
+    "IMPULSIVE": 0.5,
+    "STATUS_SEEKER": 1.0,
+    "GROWTH_ORIENTED": 0.8,
+    "CONSERVATIVE": 1.5,
+    "DEFAULT": 1.0
+}
+MAX_WILLINGNESS_TO_PAY_MULTIPLIER = 2.5
+SALE_TIMEOUT_TICKS = 20
+DYNAMIC_PRICE_REDUCTION_FACTOR = 0.95

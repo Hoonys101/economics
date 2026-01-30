@@ -284,6 +284,10 @@ class TransactionProcessor(SystemInterface):
             # SoC Refactor: Use FinanceDepartment
             seller.finance.record_revenue(trade_value)
             seller.finance.sales_volume_this_tick += tx.quantity
+
+            # WO-157: Record Sale for Velocity Tracking
+            if hasattr(seller, 'record_sale'):
+                seller.record_sale(tx.item_id, tx.quantity, current_time)
         
         if isinstance(buyer, Household):
             if not is_service:

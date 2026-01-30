@@ -42,7 +42,8 @@ def create_household_dto(
         perceived_prices=perceived_prices or {},
         conformity=kwargs.get("conformity", 0.5),
         social_rank=kwargs.get("social_rank", 0.5),
-        approval_rating=kwargs.get("approval_rating", 1)
+        approval_rating=kwargs.get("approval_rating", 1),
+        demand_elasticity=kwargs.get("demand_elasticity", 1.0)
     )
 
 def create_firm_dto(
@@ -66,6 +67,7 @@ def create_firm_dto(
         inventory=inventory or {},
         inventory_quality=kwargs.get("inventory_quality", {}),
         input_inventory=kwargs.get("input_inventory", {}),
+        inventory_last_sale_tick=kwargs.get("inventory_last_sale_tick", {}),
         current_production=current_production,
         productivity_factor=productivity_factor,
         production_target=production_target,

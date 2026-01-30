@@ -95,6 +95,10 @@ class HouseholdConfigDTO:
     primary_survival_good_id: str
     survival_bid_premium: float
 
+    # WO-157: Demand Elasticity
+    elasticity_mapping: Dict[str, float]
+    max_willingness_to_pay_multiplier: float
+
 @dataclass
 class FirmConfigDTO:
     """Static configuration values relevant to firm decisions."""
@@ -155,3 +159,7 @@ class FirmConfigDTO:
     fire_sale_inventory_target: float
     fire_sale_discount: float
     fire_sale_cost_discount: float
+
+    # WO-157: Dynamic Pricing
+    sale_timeout_ticks: int
+    dynamic_price_reduction_factor: float

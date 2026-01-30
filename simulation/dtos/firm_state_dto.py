@@ -14,6 +14,9 @@ class FirmStateDTO:
     inventory_quality: Dict[str, float]
     input_inventory: Dict[str, float]
 
+    # WO-157: Sales Tracking
+    inventory_last_sale_tick: Dict[str, int]
+
     # Production & Tech
     current_production: float
     productivity_factor: float
@@ -105,6 +108,7 @@ class FirmStateDTO:
             inventory=firm.inventory.copy(),
             inventory_quality=firm.inventory_quality.copy(),
             input_inventory=firm.input_inventory.copy() if hasattr(firm, 'input_inventory') else {},
+            inventory_last_sale_tick=firm.inventory_last_sale_tick.copy() if hasattr(firm, 'inventory_last_sale_tick') else {},
             current_production=firm.current_production,
             productivity_factor=firm.productivity_factor,
             production_target=firm.production_target,

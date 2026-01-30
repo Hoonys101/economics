@@ -145,6 +145,9 @@ class Firm(BaseAgent, ILearningAgent):
         self.automation_level: float = 0.0 # 0.0 to 1.0
         self.system2_planner: Optional[FirmSystem2Planner] = None # Initialized later
 
+        # WO-157: Sales Velocity Tracking
+        self.inventory_last_sale_tick: Dict[str, int] = {}
+
         self.age = 0
         # WO-103 Phase 1: Removed self.cash_reserve redundancy. Using FinanceDepartment.
         self.has_bailout_loan = False
@@ -179,6 +182,12 @@ class Firm(BaseAgent, ILearningAgent):
             f"IPO | Firm {self.id} initialized IPO with {self.total_shares} shares. Par value: {par_value:.2f}",
             extra={"agent_id": self.id, "tags": ["ipo", "stock_market"]}
         )
+
+    def record_sale(self, item_id: str, quantity: float, current_tick: int) -> None:
+        """
+        WO-157: Records a sale event to track inventory velocity.
+        """
+        self.inventory_last_sale_tick[item_id] = current_tick
 
     def liquidate_assets(self, current_tick: int = -1) -> float:
         """
@@ -363,6 +372,9 @@ class Firm(BaseAgent, ILearningAgent):
                 self._execute_internal_order(order, government, current_time)
             else:
                 external_orders.append(order)
+
+        # WO-157: Dynamic Pricing Override
+        self.sales.check_and_apply_dynamic_pricing(external_orders, current_time)
 
         # WO-056: Shadow Mode Calculation
         self._calculate_invisible_hand_price(markets, current_time)

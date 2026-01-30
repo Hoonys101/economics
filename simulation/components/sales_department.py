@@ -84,3 +84,37 @@ class SalesDepartment:
     def set_price(self, item_id: str, price: float) -> None:
         """Sets the price for a specific item."""
         self.firm.last_prices[item_id] = price
+
+    def check_and_apply_dynamic_pricing(self, orders: List[Order], current_tick: int) -> None:
+        """
+        WO-157: Applies dynamic pricing discounts to stale inventory.
+        Modifies orders in-place.
+        """
+        sale_timeout = getattr(self.config, 'sale_timeout_ticks', 20)
+        reduction_factor = getattr(self.config, 'dynamic_price_reduction_factor', 0.95)
+
+        for order in orders:
+            if order.order_type == "SELL":
+                item_id = order.item_id
+                last_sale = self.firm.inventory_last_sale_tick.get(item_id, 0)
+
+                # Check Staleness
+                if (current_tick - last_sale) > sale_timeout:
+                    # Apply Discount
+                    original_price = order.price
+                    discounted_price = original_price * reduction_factor
+
+                    # Check Cost Floor
+                    unit_cost = self.firm.finance.get_estimated_unit_cost(item_id)
+                    final_price = max(discounted_price, unit_cost)
+
+                    # Apply if lower
+                    if final_price < original_price:
+                        order.price = final_price
+                        # Update Firm's price memory
+                        self.firm.last_prices[item_id] = final_price
+
+                        self.firm.logger.info(
+                            f"DYNAMIC_PRICING | Stale inventory {item_id}. "
+                            f"Reduced price from {original_price:.2f} to {final_price:.2f} (Cost: {unit_cost:.2f})"
+                        )

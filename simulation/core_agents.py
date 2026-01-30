@@ -198,7 +198,11 @@ class Household(BaseAgent, ILearningAgent):
             patience=max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3))),
             optimism=max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3))),
             ambition=max(0.0, min(1.0, 0.5 + random.uniform(-0.3, 0.3))),
-            last_leisure_type="IDLE"
+            last_leisure_type="IDLE",
+            demand_elasticity=getattr(self.config, 'elasticity_mapping', {}).get(
+                personality.name,
+                getattr(self.config, 'elasticity_mapping', {}).get("DEFAULT", 1.0)
+            )
         )
 
         # Initialize Desire Weights in SocialState
@@ -614,7 +618,8 @@ class Household(BaseAgent, ILearningAgent):
             ambition=self._social_state.ambition,
             perceived_fair_price=self._econ_state.perceived_avg_prices.copy(),
             sentiment_index=self._social_state.optimism,
-            perceived_prices=self._econ_state.perceived_avg_prices.copy()
+            perceived_prices=self._econ_state.perceived_avg_prices.copy(),
+            demand_elasticity=getattr(self._social_state, 'demand_elasticity', 1.0)
         )
 
     def get_agent_data(self) -> Dict[str, Any]:

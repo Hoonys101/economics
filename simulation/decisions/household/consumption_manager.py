@@ -48,15 +48,14 @@ class ConsumptionManager:
                  agg_buy = 0.5
 
 
-            # --- Organic Substitution Effect: Saving vs Consumption ROI ---
+            # --- WO-157: Continuous Demand Curve Implementation ---
             avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", config.market_price_fallback)
             if not avg_price or avg_price <= 0:
                 avg_price = config.market_price_fallback
 
             good_info = config.goods.get(item_id, {})
-            is_luxury = good_info.get("is_luxury", False)
 
-            # Need Value (UC)
+            # 1. Need Urgency (Demand Ceiling)
             max_need_value = 0.0
             utility_effects = good_info.get("utility_effects", {})
             for need_type in utility_effects.keys():
@@ -64,108 +63,65 @@ class ConsumptionManager:
                 if nv > max_need_value:
                     max_need_value = nv
 
-            # --- 3-Pillars ROI Calculation ---
-            preference_weight = household.preference_social if is_luxury else household.preference_growth
-            consumption_roi = (max_need_value / (avg_price + 1e-9)) * preference_weight
+            # 2. Demand Elasticity & WTP Multiplier
+            demand_elasticity = getattr(household, 'demand_elasticity', 1.0)
+            mwtp_multiplier = getattr(config, 'max_willingness_to_pay_multiplier', 2.5)
 
-            # If Saving is more attractive, attenuate aggressiveness
-            if savings_roi > consumption_roi:
-                attenuation = consumption_roi / (savings_roi + 1e-9)
-                if max_need_value > 40:
-                    attenuation = max(0.5, attenuation)
-                else:
-                    attenuation = max(0.1, attenuation)
-                agg_buy *= attenuation
+            # 3. Max Affordable Price (Reservation Price)
+            # Use perceived price as baseline for WTP calculation
+            perceived_price = household.perceived_prices.get(item_id, avg_price)
+            max_affordable_price = mwtp_multiplier * perceived_price
 
-            if random.random() < 0.05:
-                if logger:
-                    logger.info(
-                        f"MONETARY_TRANS | HH {household.id} | {item_id} | Need: {max_need_value:.1f} | "
-                        f"ConsROI: {consumption_roi:.2f} vs SavROI: {savings_roi:.4f} | AggBuy: {agg_buy:.2f}"
-                    )
+            quantity_to_buy = 0.0
 
-            agg_buy *= debt_penalty
-            agg_buy = max(0.0, agg_buy)
+            # 4. Demand Curve Calculation
+            if avg_price >= max_affordable_price:
+                 quantity_to_buy = 0.0
+            else:
+                 price_ratio = avg_price / max_affordable_price
+                 # Q = Urgency * (1 - P/P_max)^Elasticity
+                 quantity_to_buy = max_need_value * ((1.0 - price_ratio) ** demand_elasticity)
 
-            if random.random() < 0.001:
-                if logger:
-                    logger.debug(
-                        f"MONETARY_TRANS | Agent {household.id} {item_id}: "
-                        f"SavROI: {savings_roi:.4f} vs ConsROI: {consumption_roi:.4f} -> Agg: {agg_buy:.2f}"
-                    )
-
-            # Recalculate need_factor and valuation (Parity with Legacy)
-            # Legacy code re-gets avg_price and max_need_value here.
-            # It seems redundant but to ensure strict parity I should check if anything changed or if it was just bad coding.
-            # It seems just re-fetching.
-
-            avg_price = market_data.get("goods_market", {}).get(f"{item_id}_current_sell_price", config.market_price_fallback)
-            if not avg_price or avg_price <= 0:
-                avg_price = config.market_price_fallback
-
-            max_need_value = 0.0
-            for need_type in utility_effects.keys():
-                nv = household.needs.get(need_type, 0.0)
-                if nv > max_need_value:
-                    max_need_value = nv
-
-            need_factor = config.need_factor_base + (max_need_value / config.need_factor_scale)
-            valuation_modifier = config.valuation_modifier_base + (agg_buy * config.valuation_modifier_range)
-
-            willingness_to_pay = avg_price * need_factor * valuation_modifier
-
-            # --- Phase 17-4: Veblen Demand Effect ---
+            # --- Phase 17-4: Veblen Demand Effect (Integrated) ---
+            # Veblen goods have inverted or reduced elasticity for status seekers, but here we model it
+            # as a boost to quantity or WTP.
             if getattr(config, "enable_vanity_system", False) and good_info.get("is_veblen", False):
                 conformity = getattr(household, "conformity", 0.5)
-                prestige_boost = avg_price * 0.1 * conformity
-                willingness_to_pay += prestige_boost
-                agg_buy = min(1.0, agg_buy * (1.0 + 0.2 * conformity))
+                # Boost Max Affordable Price (willing to pay more)
+                max_affordable_price *= (1.0 + 0.5 * conformity)
+                # Re-calculate with boosted WTP
+                if avg_price < max_affordable_price:
+                    price_ratio = avg_price / max_affordable_price
+                    quantity_to_buy = max_need_value * ((1.0 - price_ratio) ** demand_elasticity)
+                    # Status boost to quantity
+                    quantity_to_buy *= (1.0 + 0.2 * conformity)
 
-            # 3. Execution: Multi-unit Purchase Logic (Bulk Buying)
-            max_q = config.household_max_purchase_quantity
-            target_quantity = 1.0
-
-            if max_need_value > config.bulk_buy_need_threshold:
-                target_quantity = max_q
-            elif agg_buy > config.bulk_buy_agg_threshold:
-                target_quantity = max(1.0, max_q * config.bulk_buy_moderate_ratio)
-
-            # --- Phase 8: Inflation Psychology (Hoarding & Delay) ---
-            expected_inflation = household.expected_inflation.get(item_id, 0.0)
-
-            if expected_inflation > getattr(config, "panic_buying_threshold", 0.05):
-                hoarding_factor = getattr(config, "hoarding_factor", 0.5)
-                target_quantity *= (1.0 + hoarding_factor)
-                willingness_to_pay *= (1.0 + expected_inflation)
-
-            elif expected_inflation < getattr(config, "deflation_wait_threshold", -0.05):
-                delay_factor = getattr(config, "delay_factor", 0.5)
-                target_quantity *= (1.0 - delay_factor)
-                willingness_to_pay *= (1.0 + expected_inflation)
-
-            # Phase 28: Stress Scenario - Hoarding
-            if stress_config and stress_config.is_active and stress_config.scenario_name == 'hyperinflation':
-                consumables = getattr(config, "household_consumable_goods", ["basic_food", "luxury_food"])
-                if item_id in consumables:
-                     target_quantity *= (1.0 + stress_config.hoarding_propensity_factor)
-                     willingness_to_pay *= (1.0 + stress_config.hoarding_propensity_factor * 0.5)
-                     if random.random() < 0.05 and logger:
-                         logger.info(f"HOARDING_TRIGGER | Household {household.id} hoarding {item_id} (x{target_quantity:.1f})")
-
+            # 5. Budget Constraint (Zero-Sum Integrity)
             budget_limit = household.assets * config.budget_limit_normal_ratio
             if max_need_value > config.budget_limit_urgent_need:
                 budget_limit = household.assets * config.budget_limit_urgent_ratio
 
-            if willingness_to_pay * target_quantity > budget_limit:
-                target_quantity = budget_limit / willingness_to_pay
+            # Determine Bid Price First
+            # WO-157: Bid slightly above avg_price to ensure execution if urgent, capped at max_affordable_price.
+            bid_price = avg_price * 1.05
+            if bid_price > max_affordable_price:
+                bid_price = max_affordable_price
+            # Ensure we don't bid below avg_price if we want to buy
+            bid_price = max(bid_price, avg_price)
 
-            if target_quantity >= config.min_purchase_quantity and willingness_to_pay > 0:
-                final_quantity = target_quantity
-                if good_info.get("is_durable", False):
-                    final_quantity = max(1, int(target_quantity))
+            # Apply Budget Constraint using actual Bid Price
+            cost = quantity_to_buy * bid_price
+            if cost > budget_limit:
+                 quantity_to_buy = budget_limit / bid_price
 
-                orders.append(
-                    Order(household.id, "BUY", item_id, final_quantity, willingness_to_pay, item_id)
-                )
+            # Threshold and Order Generation
+            if quantity_to_buy >= config.min_purchase_quantity:
+                 final_quantity = quantity_to_buy
+                 if good_info.get("is_durable", False):
+                     final_quantity = max(1, int(quantity_to_buy))
+
+                 orders.append(
+                    Order(household.id, "BUY", item_id, final_quantity, bid_price, item_id)
+                 )
 
         return orders

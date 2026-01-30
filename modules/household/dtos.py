@@ -51,6 +51,9 @@ class HouseholdStateDTO:
     perceived_fair_price: Dict[str, float] = field(default_factory=dict)
     sentiment_index: float = 0.5
 
+    # WO-157: Demand Elasticity
+    demand_elasticity: float = 1.0
+
 @dataclass
 class BioStateDTO:
     """Internal state for BioComponent."""
@@ -178,6 +181,9 @@ class SocialStateDTO:
     # Psychology Component State
     survival_need_high_turns: int = 0
     desire_weights: Dict[str, float] = field(default_factory=dict)
+
+    # WO-157: Demand Elasticity
+    demand_elasticity: float = 1.0
 
     def copy(self) -> "SocialStateDTO":
         new_state = copy.copy(self)
