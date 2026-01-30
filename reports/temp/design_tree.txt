@@ -1,0 +1,445 @@
+Folder PATH listing
+Volume serial number is 18BA-E669
+C:\CODING\ECONOMICS\DESIGN
+│   command_registry.json
+│   INDEX.md
+│   QUICKSTART.md
+│   
+├───1_governance
+│   │   INDEX.md
+│   │   platform_architecture.md
+│   │   project_status.md
+│   │   project_structure.md
+│   │   roadmap.md
+│   │   
+│   ├───architecture
+│   │       ARCH_AGENTS.md
+│   │       ARCH_AI_ENGINE.md
+│   │       ARCH_OBSERVABILITY_THOUGHTSTREAM.md
+│   │       ARCH_SEQUENCING.md
+│   │       ARCH_SYSTEM_DESIGN.md
+│   │       ARCH_TRANSACTIONS.md
+│   │       
+│   └───protocols
+│           PROTOCOL_ENGINEERING.md
+│           PROTOCOL_GOVERNANCE.md
+│           PROTOCOL_TOOLING.md
+│           
+├───2_operations
+│   │   INDEX.md
+│   │   
+│   ├───ledgers
+│   │       ECONOMIC_INSIGHTS.md
+│   │       INBOUND_REPORTS.md
+│   │       RELIABILITY_LEDGER.md
+│   │       SESSION_LEDGER.md
+│   │       TECHNICAL_DEBT.md
+│   │       TECH_DEBT_LEDGER.md
+│   │       
+│   ├───manuals
+│   │       COMMAND_REGISTRY_REFERENCE.md
+│   │       context_manager.md
+│   │       CURRENT_BRIEFING.md
+│   │       DEBT_LIQUIDATION_PLAN.md
+│   │       DEBT_REPAYMENT_PLAN_v2.md
+│   │       ECONOMIC_INSIGHTS.md
+│   │       future_roadmap.md
+│   │       git_operator.md
+│   │       git_reviewer.md
+│   │       HANDOVER_2026-01-24.md
+│   │       HERITAGE_ASSETS.md
+│   │       INBOUND_REPORTS.md
+│   │       INTEGRATION_GUIDE_PHASE20_STEP3.md
+│   │       JULES_DOCUMENTATION_GUIDE.md
+│   │       PHASE27_CREDIT_RECOVERY.md
+│   │       PLAYBOOK.md
+│   │       PROJ_HISTORY.md
+│   │       reporter.md
+│   │       spec_writer.md
+│   │       TROUBLESHOOTING.md
+│   │       validator.md
+│   │       
+│   ├───roles
+│   │       OBSERVER_MANUAL.md
+│   │       
+│   └───templates
+│           command_registry_template.json
+│           
+├───3_work_artifacts
+│   │   hunt_leak.py
+│   │   INDEX.md
+│   │   main_py_restored.txt
+│   │   
+│   ├───audits
+│   │       AUDIT_WO116_FEASIBILITY.md
+│   │       AUDIT_WO116_PHASE_B_READINESS.md
+│   │       FINAL_DRIFT_FIX.md
+│   │       ROOT_CAUSE_PROFILE.md
+│   │       TD105_DRIFT_FORENSICS.md
+│   │       TD109_SEQUENCE_PROFILE.md
+│   │       TD110_TAX_ANALYSIS.md
+│   │       
+│   ├───drafts
+│   ├───reports
+│   │   │   check_loop3.log
+│   │   │   final_v4_check.log
+│   │   │   FINAL_V4_VERDICT.md
+│   │   │   FINAL_VERIFICATION.md
+│   │   │   final_victory_check.log
+│   │   │   final_zero_sum_check.log
+│   │   │   LOOP2_VERIFICATION.md
+│   │   │   LOOP3_VERIFICATION.md
+│   │   │   refined_diagnosis.txt
+│   │   │   refined_diagnosis_v2.txt
+│   │   │   victory_check.log
+│   │   │   
+│   │   └───inbound
+│   │           098-fix-household-noop-15838436664993932603_report_phase23_great_harvest.md
+│   │           audit_parity-v2-report-17545820523019257913_audit_parity_v2.md
+│   │           economic-v2-4411249366187755917_audit_economic_v2.md
+│   │           fix_wo-097-economic-rebalance-1932089623817274888_WO-097_HARVEST_REPORT.md
+│   │           observer-action-plan-01-3668774630791999408_daily_action_plan_20260117.md
+│   │           observer-action-plan-01-3668774630791999408_observer_scan.md
+│   │           observer-daily-plan-20260119-14898370987513280755_daily_action_plan_20260119.md
+│   │           observer-daily-plan-20260119-14898370987513280755_observer_scan.md
+│   │           observer-report-20260120-13801012752368297420_daily_action_plan_20260120.md
+│   │           observer-report-20260120-13801012752368297420_observer_scan.md
+│   │           observer_daily-action-plan-20260116-7819994186068401645_daily_action_plan_20260116.md
+│   │           observer_daily-action-plan-20260116-7819994186068401645_observer_scan.md
+│   │           observer_daily-plan-20260118-1701822753497062536_daily_action_plan_20260118.md
+│   │           observer_daily-plan-20260118-1701822753497062536_observer_scan.md
+│   │           parity-v2-7910518704824696037_audit_parity_v2.md
+│   │           refactor-god-classes-v2-17210430308583135228_observer-action-plan-01-3668774630791999408_daily_action_plan_20260117.md
+│   │           refactor-god-classes-v2-17210430308583135228_observer-action-plan-01-3668774630791999408_observer_scan.md
+│   │           refactor-god-classes-v2-17210430308583135228_pr_review_refactor-god-classes-v2-17210430308583135228.md
+│   │           refactor-god-classes-v2-17210430308583135228_refactor-proposal-soc-5999814637010019604_2026-01-16_refactoring_proposal_soc.md
+│   │           refactor-god-classes-v2-17210430308583135228_review_backup_20260117_121742_Analyze_this_PR__Che.md
+│   │           refactor-proposal-soc-14876576136625405681_2026-01-19_refactoring_proposal_soc.md
+│   │           refactor-proposal-soc-17235630755841768159_2026-01-16_refactoring_proposal_soc.md
+│   │           refactor-proposal-soc-5999814637010019604_2026-01-16_refactoring_proposal_soc.md
+│   │           refactor-proposal-soc-7859283963638157903_2026-01-20_refactoring_proposal_soc.md
+│   │           refactor_soc-proposal-2460652686838241933_2026-01-17_refactoring_proposal_soc.md
+│   │           report-v2-6092483360933497510_audit_parity_v2.md
+│   │           structural-report-5892606066303987563_audit_structural_v2.md
+│   │           structural-v2-12802827775072199606_audit_structural_v2.md
+│   │           verify-great-reset-stability-16428660261459271791_GREAT_RESET_REPORT.md
+│   │           wo116-leak-fix-v2-3201816155918401346_GREAT_RESET_REPORT.md
+│   │           wo116-second-hunt-leaks-3932954180050094638_GREAT_RESET_REPORT.md
+│   │           wo116-second-hunt-leaks-3932954180050094638_pr_review_wo116-second-hunt-leaks-3932954180050094638.md
+│   │           wo116-second-hunt-leaks-3932954180050094638_review_backup_20260124_073353_Analyze_this_PR.md
+│   │           
+│   ├───specs
+│   │       adaptive_fiscal_policy_spec.md
+│   │       analysis_spec.md
+│   │       AssetLiquidity_Spec.md
+│   │       AUDIT_SPEC_ECONOMIC.md
+│   │       AUDIT_SPEC_PARITY.md
+│   │       AUDIT_SPEC_STRUCTURAL.md
+│   │       banking_credit_engine_spec.md
+│   │       banking_spec.md
+│   │       brand_economy_spec.md
+│   │       brand_marketing_roi_spec.md
+│   │       brand_quality_spec.md
+│   │       data_layer_spec.md
+│   │       diagnosis_autopsy_spec.md
+│   │       diagnosis_test_spec.md
+│   │       DTO_PURITY_GATE_SPEC.md
+│   │       D_REMEDIATION_TD116_117_118.md
+│   │       D_TRACK_ALPHA_REMEDIATION.md
+│   │       D_TRACK_BRAVO_REMEDIATION.md
+│   │       D_TRACK_CHARLIE_REMEDIATION.md
+│   │       ECONOMIC_PURITY_REFORMS_SPEC.md
+│   │       engine_spec.md
+│   │       finance_bank_service_spec.md
+│   │       fiscal_policy_spec.md
+│   │       god_class_refactoring_plan.md
+│   │       GOD_FILE_DECOMPOSITION_SPEC.md
+│   │       HOLY_LEDGER_REMEDIATION_SPEC.md
+│   │       interest_sensitivity_spec.md
+│   │       jules_directive_WO_056_058.md
+│   │       jules_w2_spec.md
+│   │       macro_stress_test_spec.md
+│   │       main_integration_spec.md
+│   │       maslow_education_spec.md
+│   │       MASTER_PLAN_REENTRY.md
+│   │       mitosis_inheritance_spec.md
+│   │       monetary_integrity_spec.md
+│   │       phase10_central_bank_spec.md
+│   │       phase11_backtest_migration_spec.md
+│   │       phase17-4_vanity_spec.md
+│   │       phase17-5_leviathan_spec.md
+│   │       phase17_1_service_market_spec.md
+│   │       phase17_2_raw_materials_spec.md
+│   │       phase17_3_real_estate_spec.md
+│   │       phase19_population_dynamics_spec.md
+│   │       phase20_the_matrix_v1_spec.md
+│   │       phase21_corporate_empires_spec.md
+│   │       phase24_invisible_hand_spec.md
+│   │       phase24_smart_leviathan_spec.md
+│   │       Phase26-Sovereign-Debt-Spec.md
+│   │       phase26_step1_macro_portfolio_spec.md
+│   │       phase28_stress_testing_spec.md
+│   │       phase29_depression_spec.md
+│   │       phase3_a_backend_work_order.md
+│   │       phase3_fullstack_work_order.md
+│   │       phase4_5_interest_sensitivity_spec.md
+│   │       phase4_5_responsible_government_spec.md
+│   │       phase6_brand_economy_spec.md
+│   │       phase8b_reflux_system_spec.md
+│   │       phase8_adaptive_expectations_spec.md
+│   │       phase9_ma_spec.md
+│   │       refactor_god_classes.md
+│   │       reportAndVisualize.md
+│   │       SCHEDULER_DECOMPOSITION_SPEC.md
+│   │       SOVEREIGN_DEBT_SPEC.md
+│   │       SPEC_DIAGNOSIS_CPR.md
+│   │       SPEC_FIX_DEMOGRAPHIC_LEAK.md
+│   │       SPEC_FIX_FIRM_LEAK.md
+│   │       SPEC_FIX_HOUSING_LEAK.md
+│   │       SPEC_MONEY_LEAK_FIX.md
+│   │       SPEC_STORM_PHENOMENA_REPORTING.md
+│   │       SPEC_THOUGHTSTREAM.md
+│   │       TD-008_Finance_Upgrade_Spec.md
+│   │       TD-024_pytest_path_fix_spec.md
+│   │       TD-065_Household_Refactor_Spec.md
+│   │       TD-066_Simulation_Refactor_Spec.md
+│   │       TD-067_Phase_BC_Firm_Refactor_Spec.md
+│   │       TD-075-Household-SoC-Refactor.md
+│   │       TD-111_REFLUX_M2_SPEC.md
+│   │       TD-123_Household_Decomposition.md
+│   │       TD-124_TransactionProcessor_Decomposition.md
+│   │       TD-126_Bank_Interface_Spec.md
+│   │       TD105_DRIFT_FIX_SPEC.md
+│   │       TD106_BANKRUPTCY_ALIGNED.md
+│   │       TD109_SEQUENCE_FIX_SPEC.md
+│   │       TD110_TAX_FIX_SPEC.md
+│   │       TD112_INHERITANCE_FIX_SPEC.md
+│   │       time_allocation_spec.md
+│   │       utility_maximization_spec.md
+│   │       WO-037_Simulation_Cockpit_Spec.md
+│   │       WO-053-Phase23-Industrial-Rev.md
+│   │       WO-058_Spec.md
+│   │       WO-078_Fractional_Reserve_Logic_Spec.md
+│   │       WO-078_Fractional_Reserve_Spec.md
+│   │       WO-079_Config_Automation_v2.md
+│   │       WO-101-Master-System-Audit.md
+│   │       WO-123_AI_MEMORY_V2.md
+│   │       WO-124_GENESIS_FIX_SPEC.md
+│   │       WO-136_Clean_Sweep_Spec.md
+│   │       wo067_reaction_test_spec.md
+│   │       WO116_HOTFIX_LEAK_PLUGGING.md
+│   │       WO116_LOOP2_HUNT.md
+│   │       WO116_LOOP3_5_TOOLING.md
+│   │       WO116_LOOP3_HUNT.md
+│   │       WO116_LOOP4_SHADOW_FIX.md
+│   │       WO116_PHASE_B_SPEC.md
+│   │       WO116_SECOND_HUNT_SPEC.md
+│   │       WO_056_058_stabilization_spec.md
+│   │       ZERO_SUM_FIX_SPEC.md
+│   │       _ARCHIVED_w2_dashboard_spec.md
+│   │       
+│   ├───test_plans
+│   │       TP-014-Capital-Innovation.md
+│   │       
+│   ├───test_reports
+│   │       full_test_results.txt
+│   │       
+│   ├───work_orders
+│   │       adaptive_fiscal_policy_instructions.md
+│   │       brand_marketing_roi_instructions.md
+│   │       Correction_WO-057-Active.md
+│   │       DIRECTIVE_ALPHA_OPTIMIZER.md
+│   │       DIRECTIVE_BRAVO_ARCHAEOLOGIST.md
+│   │       DIRECTIVE_CHARLIE_ROI_RECOVERY.md
+│   │       DIRECTIVE_CHARLIE_SOCIOLOGIST.md
+│   │       entrepreneurship_instructions.md
+│   │       experiment_laffer_brief.md
+│   │       hotfix_zero_division_instructions.md
+│   │       interest_sensitivity_instructions.md
+│   │       phase17-4_vanity_instructions.md
+│   │       phase17-5_leviathan_instructions.md
+│   │       phase19_population_instructions.md
+│   │       phase4_5_fiscal_instructions.md
+│   │       phase4_brief.md
+│   │       phase6_brand_economy_work_order.md
+│   │       phase6_brand_instructions.md
+│   │       phase6_demand_instructions.md
+│   │       phase6_finalization_instructions.md
+│   │       phase8_inflation_instructions.md
+│   │       reboot_plan_remainder.md
+│   │       WO-008-Cleanup.md
+│   │       WO-009-MA.md
+│   │       WO-010-CentralBank.md
+│   │       WO-011-Reflux.md
+│   │       WO-012-FireSale.md
+│   │       WO-013-InterestSensitivity.md
+│   │       WO-014-DebugMarket.md
+│   │       WO-015-3Pillars.md
+│   │       WO-016-GoldStandard.md
+│   │       WO-017-FinalValidation.md
+│   │       WO-018-CorporateTax.md
+│   │       WO-019-BacktestMigration.md
+│   │       WO-020-OperationRealism.md
+│   │       WO-021-Operation-Laissez-Faire.md
+│   │       WO-021-OperationForensics.md
+│   │       WO-022-Shareholder-Dividend.md
+│   │       WO-023-Innovation-Differentiation.md
+│   │       WO-024-Interest-Banking.md
+│   │       WO-025-Materiality-Durables.md
+│   │       WO-026-Portfolio-Manager.md
+│   │       WO-027-Corporate-CEO-Module.md
+│   │       WO-028-Stock-Exchange.md
+│   │       WO-029-D_real_estate_sales.md
+│   │       WO-029-Market-Diversity.md
+│   │       WO-034-The-Matrix-Scaffolding.md
+│   │       WO-036-Real-Estate-Integration.md
+│   │       WO-037-Dashboard-Scaffolding.md
+│   │       WO-038-God-Mode-Controls.md
+│   │       WO-039-Visual-Analytics.md
+│   │       WO-040-System2-Inspection.md
+│   │       WO-041-Iron-Test-Balancing.md
+│   │       WO-042-Genesis-Fix.md
+│   │       WO-043-Dashboard-Metrics.md
+│   │       WO-044-Parameter-Tuning.md
+│   │       WO-045-Invisible-Hand.md
+│   │       WO-045-Revision-Adaptive-Equilibrium.md
+│   │       WO-046-Adaptive-Housing.md
+│   │       WO-047-B-Competitive-Bidding-Instructions.md
+│   │       WO-048-Adaptive-Breeding.md
+│   │       WO-049-Legacy-Protocol.md
+│   │       WO-051-Engine-Optimization.md
+│   │       WO-052-Maintenance-Observer-Fixes.md
+│   │       WO-052-Social-Mobility-Analysis.md
+│   │       WO-053-Reactivation.md
+│   │       WO-056-Invisible-Hand.md
+│   │       WO-056-Stage1-Maintenance.md
+│   │       WO-057-A-Brain.md
+│   │       WO-057-Active-Prompt.md
+│   │       WO-057-Active.md
+│   │       WO-057-B-Sensory.md
+│   │       WO-057-C-Actuator.md
+│   │       WO-057-D-Awakening.md
+│   │       WO-057-Refine-ShockTherapy.md
+│   │       WO-057-Smart-Leviathan.md
+│   │       WO-060.md
+│   │       WO-062-Macro-Linked-Portfolio.md
+│   │       WO-064-Banking-Credit-Engine.md
+│   │       WO-065-Monetary-Integrity.md
+│   │       WO-067-Reaction-Test.md
+│   │       WO-073_Finance_Refactor.md
+│   │       WO-079_Config_Automation.md
+│   │       WO-079_Config_Automation_v2.md
+│   │       WO-080-Golden-Fixture-Migration.md
+│   │       WO-081-Bank-Interface.md
+│   │       WO-082-Golden-Loader-Infra.md
+│   │       WO-083A-Golden-Generation.md
+│   │       WO-083B-Test-Migration-P1.md
+│   │       WO-083C-P1-Low-Risk.md
+│   │       WO-083C-P2-Medium-Risk.md
+│   │       WO-083C-P3-High-Risk.md
+│   │       WO-083C-Spec.md
+│   │       WO-083C-Test-Migration-P2.md
+│   │       WO-094-Phase23-Simulation-Verification.md
+│   │       WO-095-Tech-Debt-Cleanup.md
+│   │       WO-097-Economic-Deadlock-Resolution.md
+│   │       WO-098-DIAG-A-Labor-Deadlock.md
+│   │       WO-098-DIAG-B-Market-IDs.md
+│   │       WO-098-DIAG-C-Tech-Adoption.md
+│   │       WO-098-DIAG-D-No-Op-Trap.md
+│   │       WO-098-FIX-No-Op-Trap.md
+│   │       WO-098-Labor-Deadlock-Resolution.md
+│   │       WO-099-Harvest-Analysis-Refinement.md
+│   │       WO-100-Fix-Market-ID-Mismatch.md
+│   │       WO-103-Architectural-Surgery.md
+│   │       WO-105-Tech-Debt-Liquidation.md
+│   │       WO-106-Economic-Integrity-Fixes.md
+│   │       WO-107-Structural-Decoupling.md
+│   │       WO-108-DTO-Parity-Alignment.md
+│   │       WO-109-Phase23-Verification.md
+│   │       WO-110-Firm-Logic-Sequential.md
+│   │       WO-112-Settlement-System-Spec.md
+│   │       WO-113-Sovereign-Debt.md
+│   │       WO-114-DTO-Purity-Gate-Completion.md
+│   │       WO-115-Great-Reset-Stress-Test.md
+│   │       WO-116-Asset-Mutation-Cleanup.md
+│   │       WO-121-R2-Fix-Newborn-Initialization.md
+│   │       WO-122-Test-Cleanup.md
+│   │       WO-124_ALPHA_PURITY_REMEDIATION.md
+│   │       WO-124_JULES_GO.md
+│   │       WO-125-Purity-Finalization.md
+│   │       WO-133-Purge-Reflux-Ghost.md
+│   │       WO-135-Abstraction-Wall.md
+│   │       WO-135.1-Infrastructure.md
+│   │       WO-136-Clean-Sweep.md
+│   │       WO-136-Strategy-Generalization.md
+│   │       WO-137-Performance-Optimization.md
+│   │       WO-137-Vectorized-Tech-And-Markets.md
+│   │       WO-138-Sacred-Hygiene.md
+│   │       WO-140-Repository-Decomposition.md
+│   │       WO-141-Household-Modularization.md
+│   │       WO-142-Corporate-Departmentalization.md
+│   │       WO-143-Documentation-Hygiene.md
+│   │       WO-144-Government-Refactor.md
+│   │       WO-145-Progressive-Tax.md
+│   │       WO-146-Monetary-Policy.md
+│   │       WO-147-Soft-Landing-Verification.md
+│   │       WO-Diag-002-Forensics.md
+│   │       WO-Diag-003-StressTest.md
+│   │       WO-Diag-004-LongTermRecon.md
+│   │       WO-Diag-005-Genesis.md
+│   │       WO-DOC-001-SpecDocumentation.md
+│   │       WO-HOTFIX-Test-Coverage.md
+│   │       
+│   └───경제 실험 보고서
+│           Malthusian_Trap_Report_v1.md
+│           
+└───_archive
+    │   command_registry_TD075.json
+    │   
+    ├───feedback
+    │       WO-080-review.md
+    │       
+    ├───gemini_output
+    │       pr_diff_demographic-manager-zero-sum-2403864880306653430.txt
+    │       pr_diff_housing-system-money-leak-996048617702047789.txt
+    │       pr_diff_thoughtstream-phase2-11324867953159101082.txt
+    │       pr_review_demographic-manager-zero-sum-2403864880306653430.md
+    │       pr_review_housing-system-money-leak-996048617702047789.md
+    │       pr_review_thoughtstream-phase2-11324867953159101082.md
+    │       review_backup_20260130_093509_Analyze_this_PR.md
+    │       review_backup_20260130_093522_Analyze_this_PR.md
+    │       review_backup_20260130_093543_Analyze_this_PR.md
+    │       review_backup_20260130_095124_Analyze_this_PR.md
+    │       review_backup_20260130_095742_Analyze_this_PR.md
+    │       review_backup_20260130_102016_Analyze_this_PR.md
+    │       
+    ├───handovers
+    │       HANDOVER_2026-01-15.md
+    │       HANDOVER_2026-01-16.md
+    │       HANDOVER_2026-01-16_Session2.md
+    │       HANDOVER_2026-01-18.md
+    │       HANDOVER_2026-01-19.md
+    │       HANDOVER_2026-01-20.md
+    │       HANDOVER_2026-01-20_archived.md
+    │       HANDOVER_2026-01-21.md
+    │       HANDOVER_2026-01-22.md
+    │       HANDOVER_2026-01-23.md
+    │       HANDOVER_2026-01-26.md
+    │       HANDOVER_2026-01-28.md
+    │       HANDOVER_2026-01-29.md
+    │       SESSION_REPORT_2026-01-20_TD-067_COMPLETE.md
+    │       SESSION_REPORT_2026-01-21_PHASE23_CONSOLIDATION.md
+    │       SESSION_REPORT_2026-01-21_PHASE23_INTEGRATION.md
+    │       SESSION_REPORT_2026-01-21_PHASE29_CONSOLIDATION.md
+    │       walkthrough_td_updates.md
+    │       
+    ├───proposals
+    │       ROADMAP_PROPOSAL_2026-01-11.md
+    │       
+    ├───requests
+    │       FIX_WO-094_REJECT_NOTICE.md
+    │       [To_AP_From_Gemini]_Clarification_WO-054.md
+    │       
+    └───snapshots
+            latest_snapshot.md
+            
