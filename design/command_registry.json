@@ -36,9 +36,5 @@
     "command": "create",
     "instruction": "Implement Phase 3 of 'Animal Spirits' based on SPEC_ANIMAL_PHASE3_RECOVERY.md. 1) Create PublicManager class implementing IAssetRecoverySystem. 2) Insert Phase 4.5 (Asset Liquidation) into Simulation.run_tick(). 3) Implement bankruptcy event handling to transfer assets instead of destroying them.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
     "file": "design/3_work_artifacts/drafts/draft_144143_제공된_거대_draft_명세를_Phase_3_Val.md"
-  },
-  "mission-refactor-tests": {
-    "command": "create",
-    "instruction": "Resolve TD-122: Organize the 'tests/' directory into 'unit', 'integration', and 'stress' subdirectories. Refer to design/2_operations/ledgers/TECH_DEBT_LEDGER.md for context. Move existing test files to appropriate locations and FIX all relative import paths in the tests to ensure they still run correctly. DO NOT modify production code.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
   }
 }
