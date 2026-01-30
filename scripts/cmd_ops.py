@@ -42,12 +42,20 @@ def op_set_gemini(args):
     data[args.key] = entry
     save_registry(data)
 
+MANDATORY_REPORTING_PROMPT = "\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
+
 def op_set_jules(args):
     data = load_registry()
     
+    instruction = args.instruction
+    if args.command == "create":
+        # Auto-append reporting protocol for new coding sessions
+        if MANDATORY_REPORTING_PROMPT not in instruction:
+            instruction += MANDATORY_REPORTING_PROMPT
+
     entry = {
         "command": args.command,
-        "instruction": args.instruction
+        "instruction": instruction
     }
     
     if args.title:

@@ -36,9 +36,11 @@
     - **Target File**: [인사이트를 추가할 기존 파일 경로 (예: `design/2_operations/ledgers/ECONOMIC_INSIGHTS.md`)]
     - **Update Content**: [해당 파일의 템플릿에 맞춘 구체적인 업데이트 내용]
 6.  **✅ Verdict**:
-    *   **APPROVE**: 문제 없음.
-    *   **REQUEST CHANGES**: 위 이슈들 수정 필요.
-    *   **REJECT**: 심각한 결함 발견.
+    *   **APPROVE**: 모든 보안 및 로직 검사를 통과했으며, 인사이트 보고서가 정상적으로 작성된 경우.
+    *   **REQUEST CHANGES (Hard-Fail)**: 
+        - 보안 위반이나 로직 오류가 발견된 경우.
+        - **🚨 인사이트 보고서(`communications/insights/*.md`)가 PR Diff에 포함되지 않은 경우 (가장 빈번한 실수이므로 엄기 체크하십시오).**
+    *   **REJECT**: 시스템을 파괴하거나 심각한 Zero-Sum 위반이 있는 경우.
 
 ---
 

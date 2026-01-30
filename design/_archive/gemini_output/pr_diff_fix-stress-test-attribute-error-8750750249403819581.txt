@@ -1,0 +1,217 @@
+diff --git a/design/2_operations/ledgers/ECONOMIC_INSIGHTS.md b/design/2_operations/ledgers/ECONOMIC_INSIGHTS.md
+index ce16892..d8c32e1 100644
+--- a/design/2_operations/ledgers/ECONOMIC_INSIGHTS.md
++++ b/design/2_operations/ledgers/ECONOMIC_INSIGHTS.md
+@@ -15,3 +15,19 @@ This ledger records key economic insights and architectural decisions derived fr
+ 
+ - **Lesson Learned (Lesson Learned):**
+   Key simulation events (like technological innovation) should be driven by **Endogenous Variables**—that is, the activities of agents (e.g., R&D investment). This enhances the realism of the system, gives meaning to agents' strategic behaviors, and serves as a foundation for generating unpredictable and dynamic outcomes.
++
++---
++## [Insight] Attribute Error due to Data Contract Mismatch
++
++- **Phenomenon (Phenomenon)**
++  - `Simulation.get_market_snapshot` returned a `TypedDict` (dictionary), but calling code attempted to access it via object attributes (`result.gdp`), causing `AttributeError: 'dict' object has no attribute 'gdp'`.
++
++- **Cause (Cause)**
++  - Lack of strict adherence to Data Contracts between modules. The API returned a dictionary, but the consumer expected an object.
++
++- **Solution (Solution)**
++  - Updated consumers to use key-based access (`result['gdp']`) to align with the dictionary return type.
++
++- **Lesson Learned (Lesson Learned)**
++  - **Adhere to Contracts**: If a function returns a specific structure (like `TypedDict`), consumers must respect that structure.
++  - **Defensive Coding**: Employ `try-except` blocks and detailed logging to catch such integration issues early.
+diff --git a/percept_storm.db b/percept_storm.db
+index 4e86411..54c4c0e 100644
+Binary files a/percept_storm.db and b/percept_storm.db differ
+diff --git a/scripts/stress_test_perfect_storm.py b/scripts/stress_test_perfect_storm.py
+index 5065858..79495e1 100644
+--- a/scripts/stress_test_perfect_storm.py
++++ b/scripts/stress_test_perfect_storm.py
+@@ -6,14 +6,19 @@ import sqlite3
+ import pandas as pd
+ import matplotlib.pyplot as plt
+ from pathlib import Path
++from dotenv import load_dotenv
+ 
+ # Ensure modules are importable
+ sys.path.append(os.getcwd())
+ 
++# Load environment variables
++load_dotenv()
++
+ import config
+ from utils.simulation_builder import create_simulation
+ from modules.simulation.api import ShockConfigDTO
+ from modules.simulation.shock_injector import ShockInjector
++from simulation.db.schema import create_tables
+ 
+ # Setup logging
+ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+@@ -35,16 +40,22 @@ def run_analysis(db_path: str):
+     print("🔬 PHENOMENA ANALYSIS: THOUGHTSTREAM AUTOPSY")
+     print("="*50)
+ 
+-    # 1. Reasoning Pareto Analysis
+-    query_pareto = """
+-    SELECT reason, COUNT(*) as frequency 
++    # 1. Failure/Skip Reasons Analysis (Combined REJECT and SKIP)
++    query_failures = """
++    SELECT decision, reason, COUNT(*) as frequency
+     FROM agent_thoughts 
+-    WHERE action_type IN ('BUY_FOOD', 'BUY_GOODS', 'CONSUME_FOOD') AND decision = 'REJECT' 
+-    GROUP BY reason ORDER BY frequency DESC;
++    WHERE decision IN ('REJECT', 'SKIP')
++       OR reason LIKE '%FAIL%'
++       OR reason LIKE '%SKIP%'
++    GROUP BY decision, reason
++    ORDER BY frequency DESC;
+     """
+-    pareto_df = pd.read_sql_query(query_pareto, conn)
+-    print("\n[TOP FAILURE MODES (REASONING)]")
+-    print(pareto_df if not pareto_df.empty else "No rejection data found.")
++    try:
++        failure_df = pd.read_sql_query(query_failures, conn)
++        print("\n[FAILURE/SKIP REASONS]")
++        print(failure_df if not failure_df.empty else "No failure/skip events found.")
++    except Exception as e:
++        print(f"\n[ANALYSIS ERROR] Could not query failure reasons: {e}")
+ 
+     # 2. Insolvency Context Check
+     query_insolvent = """
+@@ -52,14 +63,21 @@ def run_analysis(db_path: str):
+     FROM agent_thoughts 
+     WHERE reason = 'INSOLVENT' LIMIT 10;
+     """
+-    insolvent_df = pd.read_sql_query(query_insolvent, conn)
+-    print("\n[INSOLVENCY SAMPLES]")
+-    print(insolvent_df if not insolvent_df.empty else "No insolvency events found.")
++    try:
++        insolvent_df = pd.read_sql_query(query_insolvent, conn)
++        print("\n[INSOLVENCY SAMPLES]")
++        print(insolvent_df if not insolvent_df.empty else "No insolvency events found.")
++    except Exception as e:
++        print(f"\n[ANALYSIS ERROR] Could not query insolvency samples: {e}")
+ 
+     # 3. Macro Trends
+     query_macro = "SELECT tick, gdp, m2, cpi, transaction_count FROM tick_snapshots ORDER BY tick;"
+-    # Note: tick_snapshots might need to be populated by the engine or a separate probe.
+-    # If tick_snapshots is empty, we fall back to other indicators.
++    try:
++        macro_df = pd.read_sql_query(query_macro, conn)
++        print("\n[MACRO TRENDS SUMMARY]")
++        print(macro_df.describe() if not macro_df.empty else "No macro data found.")
++    except Exception as e:
++        print(f"\n[MACRO TRENDS ERROR] Could not retrieve macro data: {e}")
+     
+     conn.close()
+ 
+@@ -68,7 +86,21 @@ def main():
+ 
+     # Load configuration
+     scenario_path = "config/scenarios/stress_test_wo148.yaml"
+-    scenario_config = load_config(scenario_path)
++    # Ensure scenario config exists, or fallback/mock it if missing (for robustness)
++    if os.path.exists(scenario_path):
++        scenario_config = load_config(scenario_path)
++    else:
++        logger.warning(f"{scenario_path} not found. Using defaults.")
++        scenario_config = {
++            "shock_start_tick": 100,
++            "shock_end_tick": 200,
++            "tfp_multiplier": 0.5,
++            "baseline_tfp": 1.0,
++            "ENABLE_MONETARY_STABILIZER": True,
++            "ENABLE_FISCAL_STABILIZER": True,
++            "NUM_HOUSEHOLDS": 100,
++            "NUM_FIRMS": 20
++        }
+ 
+     # 1. Setup Config overrides (Extended Ticks for Recovery Observation)
+     overrides = {
+@@ -80,39 +112,54 @@ def main():
+         "SIMULATION_DATABASE_NAME": "percept_storm.db",
+     }
+ 
++    # Pre-initialize Database to ensure tables exist
++    db_path = overrides["SIMULATION_DATABASE_NAME"]
++    logger.info(f"Initializing database at {db_path}...")
++    try:
++        conn = sqlite3.connect(db_path)
++        create_tables(conn)
++        conn.close()
++        logger.info("Database tables created successfully.")
++    except Exception as e:
++        logger.error(f"Failed to create database tables: {e}")
++        return
++
+     # 2. Create Simulation
+     sim = create_simulation(overrides=overrides)
+-    db_path = overrides["SIMULATION_DATABASE_NAME"]
+ 
+     # 3. Setup Shock
+     shock_config = ShockConfigDTO(
+-        shock_start_tick=scenario_config["shock_start_tick"],
+-        shock_end_tick=scenario_config["shock_end_tick"],
+-        tfp_multiplier=scenario_config["tfp_multiplier"],
+-        baseline_tfp=scenario_config["baseline_tfp"]
++        shock_start_tick=scenario_config.get("shock_start_tick", 100),
++        shock_end_tick=scenario_config.get("shock_end_tick", 200),
++        tfp_multiplier=scenario_config.get("tfp_multiplier", 0.5),
++        baseline_tfp=scenario_config.get("baseline_tfp", 1.0)
+     )
+     injector = ShockInjector(shock_config, sim)
+ 
+     # 4. Run Simulation Loop
+     logger.info(f"Running simulation for {overrides['SIMULATION_TICKS']} ticks...")
+-    logger.info(f"Shock active between tick {shock_config.shock_start_tick} and {shock_config.shock_end_tick}")
++    logger.info(f"Shock active between tick {shock_config['shock_start_tick']} and {shock_config['shock_end_tick']}")
+ 
+     try:
+         for tick in range(overrides["SIMULATION_TICKS"]):
+             injector.apply(tick)
+             sim.run_tick()
+             
++            # Use get_market_snapshot() correctly as it returns a TypedDict (dict access)
+             if tick % 50 == 0:
+                 snapshot = sim.get_market_snapshot()
+-                logger.info(f"Tick {tick}: GDP={snapshot.gdp:.2f}, CPI={snapshot.cpi:.2f}")
+-                
+-            if getattr(sim, "gdp", 1.0) <= 0 and tick > shock_config.shock_start_tick:
+-                logger.warning(f"⚠️ SYSTEMIC COLLAPSE (GDP=0) detected at tick {tick}!")
+-                # We continue to log thoughts to see the 'death rattle'
++                logger.info(f"Tick {tick}: GDP={snapshot['gdp']:.2f}, CPI={snapshot['cpi']:.2f}")
++
++            # Check for collapse (using fresh snapshot to ensure accuracy)
++            if tick > shock_config['shock_start_tick']:
++                current_snapshot = sim.get_market_snapshot()
++                if current_snapshot['gdp'] <= 0:
++                    logger.warning(f"⚠️ SYSTEMIC COLLAPSE (GDP=0) detected at tick {tick}!")
++                    # We continue to log thoughts to see the 'death rattle'
+     except KeyboardInterrupt:
+         logger.info("Simulation interrupted by user.")
+     except Exception as e:
+-        logger.error(f"Simulation crashed: {e}")
++        logger.error(f"Simulation crashed: {e}", exc_info=True)
+     finally:
+         sim.finalize_simulation()
+ 
+diff --git a/simulation/engine.py b/simulation/engine.py
+index 9ed7c01..2a87439 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -84,10 +84,10 @@ class Simulation:
+         self.simulation_logger.log_snapshot(
+             tick=self.world_state.time,
+             snapshot_data={
+-                "gdp": snapshot.gdp,
++                "gdp": snapshot["gdp"],
+                 "m2": self.world_state.calculate_total_money(),
+-                "cpi": snapshot.cpi,
+-                "transaction_count": len(self.world_state.history.get(self.world_state.time, []))
++                "cpi": snapshot["cpi"],
++                "transaction_count": len(self.world_state.transactions)
+             }
+         )
+         

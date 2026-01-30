@@ -32,13 +32,19 @@
     "command": "send-message",
     "instruction": "ThoughtStream implementation and verification complete. The system is now ready for Root Cause Analysis. See design/3_work_artifacts/reports/REPORT_THOUGHTSTREAM_IMPLEMENTATION.md for details."
   },
-  "mission-diagnosis-analysis": {
-    "worker": "spec",
-    "instruction": "ThoughtStream 포렌식 데이터를 기반으로 현 시스템의 '심정지(GDP 0)' 현상을 진단하십시오. 특히 유동성 함정(Insolvency)과 가격 왜곡 중 무엇이 주원인인지 판별하고 구조적 처방전을 제시하십시오."
-  },
-  "mission-fix-cpr": {
+  "mission-animal-phase1-infra": {
     "command": "create",
-    "instruction": "수석 아키텍트가 직접 작성하여 발생한 scripts/stress_test_perfect_storm.py의 AttributeError를 수정하십시오. (shock_config['shock_start_tick'] 형태의 딕셔너리 접근 확인). 시뮬레이션 종료 후 ThoughtStream(percept_storm.db)을 분석하여 에이전트들의 행동 거부(SKIP) 원인을 통계적으로 보고하는 기능을 완결하십시오.",
-    "title": "Fix & Complete Perfect Storm Script"
+    "instruction": "Implement Phase 1 of 'Animal Spirits' based on SPEC_ANIMAL_PHASE1_MARKET.md. 1) Define MarketSignalDTO in modules/system/api.py. 2) Update MarketSnapshotDTO to include signals. 3) Modify OrderBookMarket in simulation/markets/order_book_market.py to loosen circuit breakers (infinite bounds) when price history is sparse. Strict DTO adherence required.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "design/3_work_artifacts/drafts/draft_144040_제공된_거대_draft_명세를_Phase_1_Mar.md"
+  },
+  "mission-animal-phase2-agents": {
+    "command": "create",
+    "instruction": "Implement Phase 2 of 'Animal Spirits' based on SPEC_ANIMAL_PHASE2_AGENTS.md. 1) Implement 'Survival Override' in AIDrivenHouseholdDecisionEngine. 2) Implement 'Cost-Plus' and 'Fire-Sale' logic in AIDrivenFirmDecisionEngine. 3) Ensure agents rely ONLY on the new MarketSignalDTO for pricing data.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "design/3_work_artifacts/drafts/draft_144119_제공된_거대_draft_명세를_Phase_2_Age.md"
+  },
+  "mission-animal-phase3-recovery": {
+    "command": "create",
+    "instruction": "Implement Phase 3 of 'Animal Spirits' based on SPEC_ANIMAL_PHASE3_RECOVERY.md. 1) Create PublicManager class implementing IAssetRecoverySystem. 2) Insert Phase 4.5 (Asset Liquidation) into Simulation.run_tick(). 3) Implement bankruptcy event handling to transfer assets instead of destroying them.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "design/3_work_artifacts/drafts/draft_144143_제공된_거대_draft_명세를_Phase_3_Val.md"
   }
 }
