@@ -14,6 +14,7 @@ class MarketSignalDTO(TypedDict):
     best_bid: Optional[float]
     best_ask: Optional[float]
     last_traded_price: Optional[float]
+    last_trade_tick: int  # Tick of the last trade
     price_history_7d: List[float]  # Rolling 7-tick price history
     volatility_7d: float  # Standard deviation of price_history_7d
     order_book_depth_buy: int  # Number of outstanding buy orders
