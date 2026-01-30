@@ -15,7 +15,6 @@ from simulation.models import Transaction
 from modules.simulation.api import MarketSnapshotDTO, SystemStateDTO
 
 from simulation.db.logger import SimulationLogger
-from simulation.db.database import DATABASE_NAME
 import simulation
 
 logger = logging.getLogger(__name__)
@@ -45,7 +44,8 @@ class Simulation:
         self.tick_orchestrator = TickOrchestrator(self.world_state, self.action_processor)
 
         # Initialize SimulationLogger
-        self.simulation_logger = SimulationLogger(DATABASE_NAME)
+        db_path = self.world_state.config_manager.get("simulation.database_name", "simulation_data.db")
+        self.simulation_logger = SimulationLogger(db_path)
         # Expose via global module attribute for access by agents
         simulation.logger = self.simulation_logger
 

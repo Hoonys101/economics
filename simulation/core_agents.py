@@ -746,7 +746,7 @@ class Household(BaseAgent, ILearningAgent):
 
                  if not has_food:
                      # Stock Out. Could we afford it?
-                     price = self._econ_state.perceived_avg_prices.get("food", 10.0)
+                     price = self._econ_state.perceived_avg_prices.get("food", self.config.default_fallback_price)
 
                      if self.assets < price:
                          reason = "INSOLVENT"
@@ -758,7 +758,7 @@ class Household(BaseAgent, ILearningAgent):
                      # Has food but didn't consume?
                      # This implies inventory was skipped or logic failed?
                      # Or maybe inventory is non-food items?
-                     reason = "LOW_UTILITY" # Placeholder
+                     reason = "UTILITY_CONSTRAINT"
              else:
                  reason = "SATISFIED"
 
