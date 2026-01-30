@@ -1,39 +1,46 @@
 {
   "_meta": {
     "session": "Clean Room Era",
-    "updated": "2026-01-29",
+    "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-perfect-storm-run": {
-    "command": "send-message",
-    "instruction": "수석 아키텍트의 전략적 지침입니다. 우리는 단순히 '성공/실패'를 판가름하는 유닛 테스트를 만드는 것이 아니라, 거시경제적 충격에 대한 시스템의 반응을 관찰하고 분석하는 '시뮬레이션(Simulation)'을 구축하고 있습니다. 다음 사항을 즉시 반영하십시오.\n\n1. [분석 중심 리포팅]: scripts/stress_test_perfect_storm.py를 '현상 결과 보고(Phenomena Report)' 중심으로 전면 개편하십시오. 'PASSED/FAILED' 판정 로직을 제거하고 '정책 시너지 효과(Policy Effectiveness)' 분석 섹션을 추가하십시오.\n2. [현상 디버깅]: 현재 시뮬레이션 로그에 나타나는 'CIRCUIT_BREAKER' 거부 및 'SETTLEMENT_FAIL' 현상이 코드상의 '버그'인지, 아니면 유동성 부족 및 가격 폭락으로 인한 '경제적 붕괴 현상'인지를 구분하여 보고서에 명시하십시오.\n3. [데이터로 증명]: 억지로 시뮬레이션을 성공시키기 위해 파라미터를 조작하지 마십시오. 우리의 목표는 'The Great Moderator(안정 장치)'가 충격을 얼마나 완화하는지, 그리고 그 대가로 시스템이 어떤 비용(부채, 인플레이션 등)을 치르는지를 데이터로 투명하게 보여주는 것입니다.\n4. [시각화 확장]: reports/perfect_storm_visual_comparison.png에 '회복 탄력성(Recovery Phase)'이 잘 보이도록 시뮬레이션 틱수를 충분히 확보하고, 충격 전/중/후의 대조를 명확히 하십시오.",
-    "file": "scripts/stress_test_perfect_storm.py"
-  },
-  "mission-docs-money-leak": {
+  "mission-session-handover": {
     "worker": "reporter",
-    "instruction": "Create the requested insight reports for the Money Leak fixes. 1) Create communications/insights/WO-996-Housing-System-Money-Leak-Fix.md with the content from the PR review. 2) Update design/2_operations/ledgers/ECONOMIC_INSIGHTS.md with the zero-sum ledger insight. 3) Update design/2_operations/ledgers/TECH_DEBT_LEDGER.md with the firm management fallback insight. Use the PR review reports as source.",
+    "instruction": "## 🏗️ Architectural Handover Report Generation\n당신은 수석 설계자에게 보고할 핸드오버 문서를 작성하는 리포터입니다.\n제공된 인사이트 문서들을 바탕으로 다음 사항을 요약하여 기록하십시오:\n1. **Accomplishments**: 이번 세션에서 완성된 핵심 기능 및 아키텍처 변화 (Animal Spirits 등).\n2. **Economic Insights**: 시뮬레이션 중 발견된 주요 경제적 통찰.\n3. **Pending Tasks & Tech Debt**: 다음 세션에서 즉시 해결해야 할 기술 부채 및 미완성 과제.\n4. **Verification Status**: `main.py` 및 `trace_leak.py` 등의 검증 결과 요약.\n\n결과물은 '설계도_계약들/HANDOVER.md' 형식을 따르되, 우리 프로젝트의 'design/HANDOVER.md' 위치에 저장될 예정입니다.",
     "context": [
-      "design/_archive/gemini_output/pr_review_housing-system-money-leak-996048617702047789.md",
-      "design/_archive/gemini_output/pr_review_demographic-manager-zero-sum-2403864880306653430.md",
-      "design/_archive/gemini_output/pr_review_refactor-firm-management-leak-7525459024678883987.md"
+      "communications\\insights\\20240422_pytest_fix_log.md",
+      "communications\\insights\\2026-01-24_TD106_bankruptcy_ledger_findings.md",
+      "communications\\insights\\2026-01-27_Final_Verification_Report.md",
+      "communications\\insights\\2026-01-27_tax_remediation_findings.md",
+      "communications\\insights\\2026-01-28_Sacred_Refactoring_Report.md",
+      "communications\\insights\\audit_phase21_24_alignment.md",
+      "communications\\insights\\DTO-Schema-Alignment.md",
+      "communications\\insights\\insight_WO-092_interface_implementation.md",
+      "communications\\insights\\macro_sensitivity_tuning_insights.md",
+      "communications\\insights\\purity-gate-enforcement.md",
+      "communications\\insights\\SPEC_ANIMAL_PHASE1_MARKET.md",
+      "communications\\insights\\TD-008_Debt_Report.md",
+      "communications\\insights\\TD-122_Test_Directory_Organization.md",
+      "communications\\insights\\TD110-Fix-Insights-Jules.md",
+      "communications\\insights\\TD124-refined-20241029.md",
+      "communications\\insights\\THOUGHTSTREAM-INSTRUMENTATION.md",
+      "communications\\insights\\thoughtstream_infra.md",
+      "communications\\insights\\WO-103-Phase1-Log.md",
+      "communications\\insights\\WO-103-Phase2-Log.md",
+      "communications\\insights\\WO-112-settlement-insights.md",
+      "communications\\insights\\WO-113-sovereign-debt-insights.md",
+      "communications\\insights\\WO-117-Sync-Settlement-Feedback.md",
+      "communications\\insights\\WO-121-newborn-initialization.md",
+      "communications\\insights\\WO-136-Strategy-Driven-Initialization.md",
+      "communications\\insights\\WO-138-agent-purity.md",
+      "communications\\insights\\WO-138-Architectural-Shift-To-Settlement.md",
+      "communications\\insights\\WO-140-Repository-Decomposition.md",
+      "communications\\insights\\WO-145_Progressive_Tax.md",
+      "communications\\insights\\WO-146-Monetary-Policy-Stability.md",
+      "communications\\insights\\WO-148_Phase3_Recovery.md",
+      "communications\\insights\\WO-AnimalSpirits-Phase2.md",
+      "communications\\insights\\WO-Fix-Main-AttributeError.md",
+      "communications\\insights\\WO-XXX-ThoughtStream-Instrumentation.md"
     ]
-  },
-  "mission-thoughtstream-infra": {
-    "command": "create",
-    "instruction": "Implement Phase 1 of ThoughtStream. 1) Create simulation/db/logger.py implementing SimulationLogger with batch inserts and WAL mode. 2) Update simulation/db/schema.py to include agent_thoughts and tick_snapshots tables. **CRITICAL: Use Context Manager (__enter__/__exit__) for DB connection management instead of __del__.** Refer to design/3_work_artifacts/specs/SPEC_THOUGHTSTREAM.md.",
-    "title": "ThoughtStream Infrastructure"
-  },
-  "mission-thoughtstream-probes": {
-    "command": "create",
-    "instruction": "Implement Phase 2 of ThoughtStream. 1) Modify Household.decide_consumption and Firm.decide_production in simulation/core_agents.py to log decision reasoning (Check previous view_file for context) using simulation.logger. 2) Update simulation/engine.py to initialize SimulationLogger in __init__ and call simulation.logger.flush() at the very end of run_tick(). IMPORTANT: Use 'self.world_state.logger' or 'self.logger' attributes correctly based on the codebase structure.",
-    "title": "ThoughtStream Probes"
-  },
-  "mission-thoughtstream-verify": {
-    "command": "send-message",
-    "instruction": "ThoughtStream implementation and verification complete. The system is now ready for Root Cause Analysis. See design/3_work_artifacts/reports/REPORT_THOUGHTSTREAM_IMPLEMENTATION.md for details."
-  },
-  "mission-fix-main-crash": {
-    "command": "create",
-    "instruction": "Fix the AttributeError in main.py execution post-Phase 3 merge. Likely a mismatch in WorldState attributes or Phase method signatures. Run 'python main.py --ticks 5' to reproduce and fix it.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
   }
 }

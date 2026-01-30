@@ -36,8 +36,9 @@
 | **TD-158** | 2026-01-30 | **Critical Housing System Leak** | Refactor `housing_system.py` (Rent/Loan/Trade) to use `SettlementSystem.transfer` instead of direct asset modification. | Direct Bypass of Monetary Integrity | **RESOLVED** (WO-996) |
 | **TD-159** | 2026-01-30 | **Legacy Inheritance Redundancy** | Remove direct `_add_assets` calls in `demographic_manager.py` (Lines 303, 310); defer to `TransactionProcessor`. | Potential Double-Counting/Leak | **ACTIVE** |
 | **TD-160** | 2026-01-30 | **Transaction-Tax Atomicity Failure** | Implement transaction-level atomicity in `TransactionProcessor` so taxes are always collected with the trade. | Policy Revenue Leak | **ACTIVE** |
-| **TD-161** | 2026-01-30 | **Leaky Abstraction: Raw Entity Injection** | Stop passing raw `Government` instances to `make_decision` in `phases.py`. Inject `GovernmentStateDTO` instead. | Unauthorized State Mutation Risk | **ACTIVE** |
 | **TD-162** | 2026-01-30 | **Bloated God Class: Household** | Decompose `core_agents.py` (952 LOC) into Stateless Components (Bio, Econ, Social). | Maintenance/Testing Overhead | **ACTIVE** |
+| **TD-163** | 2026-01-30 | **Test Suite Degradation (85+ Failures)** | Dedicated Test Restoration Sprint. Fix DTO mismatches in unit tests. | Zero Regression Guard | **CRITICAL** |
+| **TD-164** | 2026-01-30 | **Missing Fractional Reserve (Full-Reserve Only)** | Implement WO-024 (Fractional Reserve Banking). | Economic Stagnation / Liquidity Bottleneck | **CRITICAL** |
 
 ---
 

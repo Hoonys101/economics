@@ -75,10 +75,13 @@ python scripts/cmd_ops.py set-jules mission-code-v1 --command create -t "Bank Im
 
 ---
 
-## 🏁 Phase 4: Session Conclusion
-1.  **Verify**: Ensure all tasks are complete.
-2.  **Archive**: Move session logs/reports to `3_work_artifacts/reports/`.
-3.  **Handover**: Create a new `HANDOVER_YYYY-MM-DD.md` in `_archive/handovers/`.
-4.  **Clean**: Run **`.\cleanup-session.bat`** to automate the removal of temporary artifacts and logs.
+## 🏁 Phase 4: Session Conclusion (The Spontaneous Closure)
+1.  **Harvest**: The USER runs **`.\session-go.bat`**. This arms and executes a Gemini mission to distill all `communications/insights/` into a single Handover Report.
+2.  **Crystallize (Architect's Duty)**: 🚨 **MANDATORY**: Antigravity MUST read the generated report and reflect its findings into:
+    - **Governance**: `design/1_governance/project_status.md` (Update milestones & current focus).
+    - **Operations**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md` (Liquidate/Add debts).
+    - **Architecture**: `design/1_governance/architecture/ARCH_*.md` (Hard-code new systemic rules).
+3.  **Final Handover**: Ensure the permanent handover log is stored in `design/_archive/handovers/HANDOVER_YYYY-MM-DD.md`.
+4.  **Incinerate**: Confirm knowledge is crystallized, then execute **`.\cleanup-session.bat`** (triggered by `session-go` or manual) to purge all temporary files (PR diffs, logs, raw insights).
 
-> **"Arm the tool, do not be the tool."** - Standard Operating Procedure v2.1
+> **"Knowledge survives, artifacts perish."** - Standard Operating Procedure v2.3
