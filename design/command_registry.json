@@ -4,11 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-money-leak-fix": {
-    "command": "create",
-    "instruction": "Fix the systemic monetary leaks identified in design/3_work_artifacts/reports/REPORT_MONEY_LEAK_AUDIT.md. Specifically: 1) Refactor DemographicManager.handle_inheritance to ensure zero rounding loss. 2) Implement atomic rollbacks in SettlementSystem.transfer to prevent money from vanishing during failed deposits. Document findings in communications/insights/mission-money-leak-fix.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Fix Systemic Monetary Leaks (M2 Drift)"
-  },
   "mission-code-blue-exec": {
     "command": "create",
     "instruction": "Implement the Code Blue economic fixes defined in design/3_work_artifacts/work_orders/WO-157_CODE_BLUE_IMPLEMENTATION.md. Add demand elasticity to AI-driven household purchasing and dynamic pricing (stale inventory discounts) to Firms. Ensure all logic maintains zero-sum integrity. Document insights in communications/insights/mission-code-blue-exec.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
