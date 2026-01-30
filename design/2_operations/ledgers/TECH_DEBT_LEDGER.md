@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
 | TD-162 | 2026-01-30 | Bloated God Class: Household | Maintenance/Testing Overhead | **ACTIVE** |
-| TD-159 | 2026-01-30 | Legacy Inheritance Redundancy | Potential Double-Counting/Leak | **ACTIVE** |
+| TD-159 | 2026-01-30 | Legacy Inheritance Redundancy | Potential Double-Counting/Leak | **RESOLVED** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -30,7 +30,7 @@
 |---|---|---|---|---|
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | 비현실적 경제 상태 (무한 수요) | **PENDING** |
 | TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **ACTIVE** |
-| TD-157 | 2026-01-30 | Price-Consumption Deadlock | Economic Collapse (Static Price) | **IN_PROGRESS** |
+| TD-157 | 2026-01-30 | Price-Consumption Deadlock | Economic Collapse (Static Price) | **RESOLVED** |
 | TD-164 | 2026-01-30 | Missing Fractional Reserve (WO-024) | Economic Stagnation / Liquidity Bottleneck | **CRITICAL** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
@@ -43,16 +43,18 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-118 | 2026-01-29 | DTO Contract Mismatch (inventory) | Runtime Errors / Confusion | **ACTIVE** |
+| TD-118 | 2026-01-29 | DTO Contract Mismatch (inventory) | Runtime Errors / Confusion | **RESOLVED** |
 | TD-151 | 2026-01-29 | Partial DTO Adoption in Engine | Inconsistent Internal/External API | **ACTIVE** |
+| TD-166 | 2026-01-31 | Configuration Duality (Engine vs Agent) | Configuration Fragmentation | **ACTIVE** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-163 | 2026-01-30 | Test Suite Degradation (85+ Failures) | Zero Regression Guard | **CRITICAL** |
+| TD-163 | 2026-01-30 | Test Suite Degradation (85+ Failures) | Zero Regression Guard | **RESOLVED** |
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
 | TD-140 | 2026-01-29 | God File: `db/repository.py` | 745+ LOC complexity | **ACTIVE** |
+| TD-165 | 2026-01-31 | Legacy Test Assertion Migration | Reduced Test Validity | **CRITICAL** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 

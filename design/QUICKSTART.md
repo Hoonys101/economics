@@ -12,6 +12,11 @@ This is the definitive entry point for all contributors. **Read this first.**
 - **Jules**: The Hands (Implementation, Debugging, Execution).
 - **Antigravity**: The Orchestrator (Arming scripts, updating protocols, managing the "Handover Chain").
 
+### 2. The Concurrency Principle (Triple-Engine)
+- **병렬 수행 지향**: 단순한 순차적 중요도보다 **병렬 수행 가능성**을 우선 고려합니다.
+- **Triple-Engine Workflow**: 가급적 **인프라(Infra), 경제(Economics), 모델링(Modeling)**의 3가지 트랙이 독립된 세션에서 동시에 가동되는 것을 지향합니다.
+- **격리된 부채 해결**: 메인 개발을 방해하지 않는 자잘한 기술 부채들은 꼼꼼히 챙겨 메인 엔진과 병행 처리함으로써 개발 속도를 극대화합니다.
+
 ---
 
 ## 🚦 Phase 1: Context Loading & Strategy
