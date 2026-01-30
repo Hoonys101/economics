@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 import random
+import math
 from simulation.core_agents import Household
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
@@ -268,43 +269,68 @@ class DemographicManager:
 
     def handle_inheritance(self, deceased_agent: Household, simulation: Any):
         """
-        Distribute assets to children.
+        Distribute assets to children with Zero-Sum integrity.
         """
-        if not deceased_agent.children_ids:
-            # No heirs -> State (Tax)
-            return # Already handled by existing liquidation logic (Government collection)
+        # Ensure SettlementSystem is available
+        if not getattr(simulation, "settlement_system", None):
+            raise RuntimeError("SettlementSystem not found. Cannot execute inheritance.")
+
+        total_assets = deceased_agent.assets
+        if total_assets <= 0:
+            return
+
+        # Calculate Tax
+        tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.0)
+        tax_amount = total_assets * tax_rate
+        net_estate = total_assets - tax_amount
+
+        # Transfer Tax
+        if tax_amount > 0:
+            simulation.settlement_system.transfer(
+                deceased_agent,
+                simulation.government,
+                tax_amount,
+                "inheritance_tax",
+                tick=simulation.time
+            )
 
         # Find living heirs
         heirs = [simulation.agents[cid] for cid in deceased_agent.children_ids if cid in simulation.agents and simulation.agents[cid].is_active]
 
-        if not heirs:
-            return # No living heirs
+        if heirs:
+            # Floor to 2 decimals to prevent evaporation/creation
+            share = math.floor((net_estate / len(heirs)) * 100) / 100.0
+            distributed = 0.0
 
-        # Distribute Assets
-        # Existing logic in engine._handle_agent_lifecycle wipes assets via tax?
-        # We need to intercept or modify engine to call this BEFORE wiping.
-        # But per instructions: "HouseholdAI handles decision, DemographicManager handles execution".
-        # Inheritance logic might need to run before standard liquidation.
+            # Distribute shares
+            for i, heir in enumerate(heirs):
+                # Last heir gets the remainder to ensure sum(shares) == net_estate
+                if i == len(heirs) - 1:
+                    amount_to_send = net_estate - distributed
+                else:
+                    amount_to_send = share
 
-        amount = deceased_agent.assets
-        if amount <= 0: return
+                simulation.settlement_system.transfer(
+                    deceased_agent,
+                    heir,
+                    amount_to_send,
+                    "inheritance_distribution",
+                    tick=simulation.time
+                )
+                distributed += amount_to_send
 
-        # Tax
-        tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.0)
-        tax = amount * tax_rate
-        net_amount = amount - tax
-
-        # Send Tax
-        simulation.government.collect_tax(tax, "inheritance_tax", deceased_agent.id, simulation.time)
-
-        # Distribute
-        share = net_amount / len(heirs)
-        for heir in heirs:
-            heir._add_assets(share)
-            self.logger.info(
-                f"INHERITANCE | Heir {heir.id} received {share:.2f} from {deceased_agent.id}.",
-                extra={"heir_id": heir.id, "deceased_id": deceased_agent.id}
+                self.logger.info(
+                    f"INHERITANCE | Heir {heir.id} received {amount_to_send:.2f} from {deceased_agent.id}.",
+                    extra={"heir_id": heir.id, "deceased_id": deceased_agent.id, "amount": amount_to_send}
+                )
+        else:
+            # No heirs: Escheatment to State
+            simulation.settlement_system.transfer(
+                deceased_agent,
+                simulation.government,
+                net_estate,
+                "escheatment",
+                tick=simulation.time
             )
 
-        # Clear deceased assets so engine doesn't double count or tax again
-        deceased_agent._sub_assets(deceased_agent.assets)
+        # No explicit `_sub_assets`: The transfers will naturally drain the `deceased_agent`'s balance to near zero (or exactly zero).
