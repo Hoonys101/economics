@@ -3,6 +3,7 @@ Implements the CommerceSystem which orchestrates consumption, purchases, and lei
 """
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 import logging
+import simulation
 from simulation.systems.api import ICommerceSystem, CommerceContext
 from simulation.models import Transaction
 
@@ -60,6 +61,37 @@ class CommerceSystem(ICommerceSystem):
                 "buy_amount": 0.0,
                 "consumed_immediately_from_buy": 0.0
             }
+
+            # ThoughtStream: Instrument non-consumption
+            survival_need = household.needs.get("survival", 0.0)
+            threshold = getattr(breeding_planner, "survival_threshold", 50.0)
+
+            if c_amt <= 0 and survival_need > threshold:
+                reason = "UNKNOWN"
+                context_data = {}
+
+                food_inventory = household.inventory.get("basic_food", 0.0)
+                if food_inventory <= 0:
+                    # Stock Out. Could we afford it?
+                    price = batch_decisions.get('price', 5.0)
+                    if household.assets < price:
+                        reason = "INSOLVENT"
+                        context_data = {"cash": household.assets, "price": price, "need": survival_need}
+                    else:
+                        reason = "STOCK_OUT"
+                        context_data = {"inventory": household.inventory.copy(), "cash": household.assets}
+                else:
+                     reason = "UTILITY_CONSTRAINT"
+
+                if simulation.logger:
+                    simulation.logger.log_thought(
+                        tick=current_time,
+                        agent_id=str(household.id),
+                        action="CONSUME_FOOD",
+                        decision="REJECT",
+                        reason=reason,
+                        context=context_data
+                    )
 
             # 2b. Fast Purchase (Emergency Buy) -> Generate Transaction
             # WO-053: Disable Emergency Buy for Industrial Revolution to force market clearing
