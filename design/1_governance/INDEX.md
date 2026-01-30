@@ -17,3 +17,4 @@ This section contains the fundamental rules, architecture, and long-term plannin
 - **[Agent Dual-Structure & Value Systems](architecture/ARCH_AGENTS.md)**
 - **[AI Intelligence Layer](architecture/ARCH_AI_ENGINE.md)**
 - **[System Infrastructure](architecture/ARCH_SYSTEM_DESIGN.md)**
+- **[Observability (ThoughtStream)](architecture/ARCH_OBSERVABILITY_THOUGHTSTREAM.md)**: Agent cognition logging and system-wide tracing.

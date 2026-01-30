@@ -46,6 +46,7 @@ class Simulation:
         # Initialize SimulationLogger
         db_path = self.world_state.config_manager.get("simulation.database_name", "simulation_data.db")
         self.simulation_logger = SimulationLogger(db_path)
+        self.simulation_logger.run_id = self.world_state.run_id
         # Expose via global module attribute for access by agents
         simulation.logger = self.simulation_logger
 
@@ -76,6 +77,20 @@ class Simulation:
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
         self.tick_orchestrator.run_tick(injectable_sensory_dto)
+        
+        # Log macro snapshot for ThoughtStream analysis
+        snapshot = self.get_market_snapshot()
+        system_state = self.get_system_state()
+        self.simulation_logger.log_snapshot(
+            tick=self.world_state.time,
+            snapshot_data={
+                "gdp": snapshot.gdp,
+                "m2": self.world_state.calculate_total_money(),
+                "cpi": snapshot.cpi,
+                "transaction_count": len(self.world_state.history.get(self.world_state.time, []))
+            }
+        )
+        
         self.simulation_logger.flush()
 
     def get_all_agents(self) -> List[Any]:

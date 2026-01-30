@@ -28,7 +28,7 @@ Start here to understand the project.
 - **[Command Registry](command_registry.json)**: The database of AI missions.
 - **[Manuals](2_operations/manuals/)**: Detailed guides for Spec Writers, Git Reviewers, etc.
 - **[Ledgers](2_operations/ledgers/)**:
-    - **[Technical Debt](2_operations/ledgers/TECH_DEBT_LEDGER.md)**: List of debts and repayment plans.
+    - **[Technical Debt Ledger](2_operations/ledgers/TECH_DEBT_LEDGER.md)**: The authoritative register of all technical debts and repayment plans.
     - **[Session Ledger](2_operations/ledgers/SESSION_LEDGER.md)**: Record of daily activities.
 
 ---
