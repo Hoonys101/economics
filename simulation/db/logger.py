@@ -18,6 +18,12 @@ class SimulationLogger:
         self.snapshot_buffer: List[tuple] = []
         self.run_id: Optional[int] = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def log_thought(self, tick: int, agent_id: str, action: str, decision: str, reason: str, context: Dict[str, Any]):
         """
         Logs an agent's thought process.
@@ -93,6 +99,3 @@ class SimulationLogger:
             self.flush()
             self.conn.close()
             self.conn = None
-
-    def __del__(self):
-        self.close()

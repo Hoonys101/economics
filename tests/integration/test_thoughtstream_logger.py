@@ -1,90 +1,75 @@
 import pytest
 import sqlite3
-import os
 import json
+import os
 from simulation.db.logger import SimulationLogger
 from simulation.db.schema import create_tables
 
-DB_PATH = "test_thoughtstream.db"
-
 @pytest.fixture
-def db_connection():
-    # Setup
-    if os.path.exists(DB_PATH):
-        try:
-            os.remove(DB_PATH)
-        except PermissionError:
-            pass # Handle potential file lock issues if previous run failed
+def db_connection(tmp_path):
+    # Setup using tmp_path
+    db_file = tmp_path / "test_thoughtstream.db"
+    db_path = str(db_file)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
     create_tables(conn)
     conn.close()
 
-    yield DB_PATH
+    yield db_path
 
-    # Teardown
-    if os.path.exists(DB_PATH):
-        try:
-            os.remove(DB_PATH)
-            # Also remove WAL and SHM files if they exist
-            if os.path.exists(f"{DB_PATH}-wal"):
-                os.remove(f"{DB_PATH}-wal")
-            if os.path.exists(f"{DB_PATH}-shm"):
-                os.remove(f"{DB_PATH}-shm")
-        except PermissionError:
-            pass
+    # Teardown handled by tmp_path cleanup automatically,
+    # but specific file cleanup can be implicit.
 
 def test_logger_functionality(db_connection):
     db_path = db_connection
 
-    # Initialize Logger
-    logger = SimulationLogger(db_path)
-    logger.run_id = 999
+    # Use Context Manager
+    with SimulationLogger(db_path) as logger:
+        logger.run_id = 999
 
-    # Log Thoughts
-    context1 = {"cash": 100, "price": 50}
-    logger.log_thought(
-        tick=1,
-        agent_id="agent_001",
-        action="BUY_FOOD",
-        decision="APPROVE",
-        reason="HUNGRY",
-        context=context1
-    )
+        # Log Thoughts
+        context1 = {"cash": 100, "price": 50}
+        logger.log_thought(
+            tick=1,
+            agent_id="agent_001",
+            action="BUY_FOOD",
+            decision="APPROVE",
+            reason="HUNGRY",
+            context=context1
+        )
 
-    context2 = {"cash": 10, "price": 50}
-    logger.log_thought(
-        tick=1,
-        agent_id="agent_002",
-        action="BUY_FOOD",
-        decision="REJECT",
-        reason="INSOLVENT",
-        context=context2
-    )
+        context2 = {"cash": 10, "price": 50}
+        logger.log_thought(
+            tick=1,
+            agent_id="agent_002",
+            action="BUY_FOOD",
+            decision="REJECT",
+            reason="INSOLVENT",
+            context=context2
+        )
 
-    # Log Snapshot (using dict)
-    snapshot_dict = {
-        "gdp": 1000.0,
-        "m2": 500.0,
-        "cpi": 1.2,
-        "transaction_count": 15
-    }
-    logger.log_snapshot(tick=1, snapshot_data=snapshot_dict)
+        # Log Snapshot (using dict)
+        snapshot_dict = {
+            "gdp": 1000.0,
+            "m2": 500.0,
+            "cpi": 1.2,
+            "transaction_count": 15
+        }
+        logger.log_snapshot(tick=1, snapshot_data=snapshot_dict)
 
-    # Log Snapshot (using object)
-    class SnapshotDTO:
-        def __init__(self, gdp, m2, cpi, transaction_count):
-            self.gdp = gdp
-            self.m2 = m2
-            self.cpi = cpi
-            self.transaction_count = transaction_count
+        # Log Snapshot (using object)
+        class SnapshotDTO:
+            def __init__(self, gdp, m2, cpi, transaction_count):
+                self.gdp = gdp
+                self.m2 = m2
+                self.cpi = cpi
+                self.transaction_count = transaction_count
 
-    snapshot_obj = SnapshotDTO(1050.0, 510.0, 1.25, 20)
-    logger.log_snapshot(tick=2, snapshot_data=snapshot_obj)
+        snapshot_obj = SnapshotDTO(1050.0, 510.0, 1.25, 20)
+        logger.log_snapshot(tick=2, snapshot_data=snapshot_obj)
 
-    # Flush to DB
-    logger.flush()
-    logger.close()
+        # Force flush (optional as __exit__ calls close() which calls flush())
+        logger.flush()
 
     # Verify Data
     conn = sqlite3.connect(db_path)
