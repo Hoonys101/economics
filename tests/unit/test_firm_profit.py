@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 from simulation.firms import Firm
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+from tests.utils.factories import create_firm_config_dto
 # No need to import config here, as it's passed as a mock
 
 
@@ -27,7 +28,7 @@ def mock_firm():
         productivity_factor=1.0,
         decision_engine=mock_decision_engine,
         value_orientation="profit",
-        config_module=mock_config_module,  # Pass the mock config_module
+        config_dto=create_firm_config_dto(),
         logger=Mock(),
     )
     firm.production_target = 100.0  # Initialize production_target

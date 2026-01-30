@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
+from tests.utils.factories import create_firm_config_dto
 
 class MockConfig:
     CAPITAL_TO_OUTPUT_RATIO = 2.0
@@ -53,7 +54,9 @@ class MockConfig:
 @pytest.fixture
 def firm_config_dto():
     c = MockConfig()
-    return FirmConfigDTO(
+    # Use factory with overrides from MockConfig if needed, but factory defaults should suffice for general tests
+    # We pass values from MockConfig to ensure tests that rely on specific values (like LABOR_ALPHA) still pass.
+    return create_firm_config_dto(
         firm_min_production_target=c.FIRM_MIN_PRODUCTION_TARGET,
         firm_max_production_target=c.FIRM_MAX_PRODUCTION_TARGET,
         startup_cost=c.STARTUP_COST,
@@ -77,7 +80,6 @@ def firm_config_dto():
         max_sell_quantity=float(c.MAX_SELL_QUANTITY),
         invisible_hand_sensitivity=c.INVISIBLE_HAND_SENSITIVITY,
         capital_to_output_ratio=c.CAPITAL_TO_OUTPUT_RATIO,
-        # New fields
         initial_firm_liquidity_need=c.INITIAL_FIRM_LIQUIDITY_NEED,
         bankruptcy_consecutive_loss_threshold=c.BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD,
         profit_history_ticks=c.PROFIT_HISTORY_TICKS,
@@ -98,9 +100,9 @@ def firm_config_dto():
         marketing_efficiency_high_threshold=c.MARKETING_EFFICIENCY_HIGH_THRESHOLD,
         marketing_efficiency_low_threshold=c.MARKETING_EFFICIENCY_LOW_THRESHOLD,
         marketing_budget_rate_min=c.MARKETING_BUDGET_RATE_MIN,
-            marketing_budget_rate_max=c.MARKETING_BUDGET_RATE_MAX,
-            initial_base_annual_rate=0.05,
-            default_loan_spread=0.02
+        marketing_budget_rate_max=c.MARKETING_BUDGET_RATE_MAX,
+        initial_base_annual_rate=0.05,
+        default_loan_spread=0.02
     )
 
 @pytest.fixture

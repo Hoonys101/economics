@@ -5,7 +5,9 @@ from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDec
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.enums import Tactic, Aggressiveness
 from simulation.dtos import DecisionContext
+from modules.household.dtos import HouseholdStateDTO
 from simulation.models import Order
+from tests.utils.factories import create_household_config_dto
 import config
 
 class TestHouseholdAIConsumption:
@@ -53,13 +55,28 @@ class TestHouseholdAIConsumption:
         current_time = 1
         
         # Run make_decisions
+        state = MagicMock(spec=HouseholdStateDTO)
+        state.needs = household.needs
+        state.inventory = household.inventory
+        state.assets = household.assets
+        state.perceived_prices = household.perceived_avg_prices
+
         context = DecisionContext(
-            household=household,
-            markets=markets,
+            state=state,
+            config=create_household_config_dto(),
             goods_data=goods_data,
             market_data=market_data,
             current_time=current_time,
         )
+        # Hack: Pass markets via side channel or ensure Manager uses context.market_data
+        # AIDrivenHouseholdDecisionEngine uses managers.
+        # Managers generally use context.market_data OR they might need IMarket interface if they call methods.
+        # ConsumptionManager typically calls market.get_price().
+        # But DecisionContext doesn't hold markets.
+        # It holds market_data (history/snapshot).
+        # If engine needs execution access (to query order book depth), it might fail if not provided.
+        # But make_decisions only PLANS.
+
         orders, (tactic, aggressiveness) = engine.make_decisions(context)
         
         # Verify Tactic

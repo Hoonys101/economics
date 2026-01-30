@@ -1,4 +1,5 @@
 import pytest
+from tests.utils.factories import create_firm_config_dto, create_household_config_dto
 from unittest.mock import Mock, MagicMock
 from modules.finance.system import FinanceSystem
 from modules.finance.api import InsufficientFundsError

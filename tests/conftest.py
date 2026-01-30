@@ -85,6 +85,18 @@ def government(mock_config, mock_tracker, finance_system):
 
     return gov
 
+@pytest.fixture
+def settlement_system():
+    """Provides a SettlementSystem instance."""
+    from simulation.systems.settlement_system import SettlementSystem
+    return SettlementSystem()
+
+@pytest.fixture
+def config_manager(mock_config, tmp_path):
+    """Provides a ConfigManager instance."""
+    from modules.common.config_manager.impl import ConfigManagerImpl
+    return ConfigManagerImpl(config_dir=tmp_path, legacy_config=mock_config)
+
 
 # ============================================================================
 # 🌟 Golden Fixture Support (Auto-Generated Mocks from Real Data)

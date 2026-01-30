@@ -4,6 +4,7 @@ from simulation.firms import Firm
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from simulation.ai.enums import Personality
 import config # Import from root
+from tests.utils.factories import create_firm_config_dto
 
 @pytest.fixture
 def firm_mock():
@@ -20,7 +21,7 @@ def firm_mock():
         productivity_factor=10.0,
         decision_engine=decision_engine,
         value_orientation="growth",
-        config_module=config
+        config_dto=create_firm_config_dto()
     )
     return firm
 
@@ -35,11 +36,11 @@ def test_production_function_with_automation(firm_mock):
     firm_mock.employees = [Mock(labor_skill=1.0)] # 1 Employee
     firm_mock.capital_stock = 100.0
     firm_mock.productivity_factor = 10.0
-    firm_mock.config_module.LABOR_ALPHA = 0.5
-    firm_mock.config_module.AUTOMATION_LABOR_REDUCTION = 0.5
+    firm_mock.config.labor_alpha = 0.5
+    firm_mock.config.automation_labor_reduction = 0.5
 
     # Disable depreciation for precise calc
-    firm_mock.config_module.CAPITAL_DEPRECIATION_RATE = 0.0
+    firm_mock.config.capital_depreciation_rate = 0.0
 
     # Case 1: Automation 0.0
     # Alpha = 0.5 * (1 - 0) = 0.5
@@ -64,9 +65,9 @@ def test_production_function_with_automation(firm_mock):
 def test_system2_planner_guidance(firm_mock):
     """Test System 2 Planner logic."""
     # Override config for this test to make automation cheaper
-    firm_mock.config_module.AUTOMATION_COST_PER_PCT = 100.0 # Was 1000.0
+    firm_mock.config.automation_cost_per_pct = 100.0 # Was 1000.0
 
-    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, firm_mock.config_module)
+    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, config) # Pass config module for Planner if needed?
 
     # Mock Data
     market_data = {}

@@ -14,6 +14,7 @@ from simulation.decisions.ai_driven_household_engine import (
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 import config
 from simulation.dtos.api import SimulationState
+from tests.utils.factories import create_household_config_dto, create_firm_config_dto
 
 # Mock Logger to prevent actual file writes during tests
 @pytest.fixture(autouse=True)
@@ -159,7 +160,7 @@ def mock_households(mock_config_module):
     hh1.is_employed = False
     hh1.employer_id = None
     hh1.skills = {}
-    hh1.config_module = mock_config_module # Attach config
+    # hh1.config_module = mock_config_module # Attach config - removed as not standard
     # Mock update_needs to avoid key error if called during simulation init
     hh1.update_needs = Mock()
     hh1.talent = Mock(spec=Talent)
@@ -195,7 +196,7 @@ def mock_households(mock_config_module):
     hh2.capital_income_this_tick = 0.0
     hh2.is_employed = False
     hh2.employer_id = None
-    hh2.config_module = mock_config_module
+    # hh2.config_module = mock_config_module
     hh2.update_needs = Mock()
     hh2.talent = Mock(spec=Talent)
     hh2.talent.base_learning_rate = 0.1
@@ -228,7 +229,7 @@ def mock_firms(mock_config_module):
         productivity_factor=1.0,
         decision_engine=Mock(),
         value_orientation="test",
-        config_module=mock_config_module,
+        config_dto=create_firm_config_dto(),
         initial_inventory={"basic_food": 50},
     )
     f1.is_active = True
@@ -254,7 +255,7 @@ def mock_firms(mock_config_module):
         productivity_factor=1.0,
         decision_engine=Mock(),
         value_orientation="test",
-        config_module=mock_config_module,
+        config_dto=create_firm_config_dto(),
         initial_inventory={"luxury_food": 60},
     )
     f2.is_active = False  # Inactive firm
@@ -326,7 +327,13 @@ def simulation_instance(
     # self.base_rate comes from config.
     # mock_config_manager.get() should return a float, not a Mock object.
 
-    mock_config_manager.get.return_value = 0.05
+    def config_get_side_effect(key, default=None):
+        if key == "simulation.database_name":
+            return "test_simulation.db"
+        # Return 0.05 for rate lookups or if default is None (assuming rate lookup)
+        return 0.05 if default is None else default
+
+    mock_config_manager.get.side_effect = config_get_side_effect
 
     initializer = SimulationInitializer(
         config_manager=mock_config_manager,
@@ -492,7 +499,19 @@ class TestSimulation:
         # Assets include tax considerations
         trade_value = tx.quantity * tx.price
         # Assuming HOUSEHOLD pays income tax
-        tax = trade_value * simulation_instance.config_module.INCOME_TAX_RATE
+        # Note: Government uses FiscalPolicyManager which applies Progressive Tax Brackets defined in config.
+        # With current mock config:
+        # Survival Cost = 5.0 * 2.0 = 10.0
+        # Brackets:
+        # - 0.5x (5.0): 0%
+        # - 1.0x (10.0): 5%
+        # - 3.0x (30.0): 10%
+        # Income 20.0:
+        # - 0-5: 0
+        # - 5-10: 5 * 0.05 = 0.25
+        # - 10-20: 10 * 0.10 = 1.0
+        # Total Tax = 1.25
+        tax = 1.25
 
         assert buyer_firm.assets == initial_buyer_assets - trade_value
         assert seller_hh.assets == pytest.approx(initial_seller_assets + (trade_value - tax))
@@ -609,7 +628,7 @@ def setup_simulation_for_lifecycle(
         decision_engine=mock_household_decision_engine_for_lifecycle,
         value_orientation="test",
         personality=Personality.MISER,
-        config_module=mock_config_module,
+        config_dto=create_household_config_dto(),
     )
     household_active.is_active = True
     household_active.is_employed = True
@@ -627,7 +646,7 @@ def setup_simulation_for_lifecycle(
         decision_engine=mock_household_decision_engine_for_lifecycle,
         value_orientation="test",
         personality=Personality.MISER,
-        config_module=mock_config_module,
+        config_dto=create_household_config_dto(),
     )
     household_inactive.is_active = False
     household_inactive.talent = Mock(spec=Talent)
@@ -642,7 +661,7 @@ def setup_simulation_for_lifecycle(
         decision_engine=mock_household_decision_engine_for_lifecycle,
         value_orientation="test",
         personality=Personality.MISER,
-        config_module=mock_config_module,
+        config_dto=create_household_config_dto(),
     )
     household_employed_by_inactive_firm.is_active = True
     household_employed_by_inactive_firm.is_employed = True
@@ -658,7 +677,7 @@ def setup_simulation_for_lifecycle(
         productivity_factor=1.0,
         decision_engine=mock_firm_decision_engine_for_lifecycle,
         value_orientation="test",
-        config_module=mock_config_module,
+        config_dto=create_firm_config_dto(),
     )
     firm_active.is_active = True
     firm_active.total_shares = 1000.0
@@ -673,7 +692,7 @@ def setup_simulation_for_lifecycle(
         productivity_factor=1.0,
         decision_engine=mock_firm_decision_engine_for_lifecycle,
         value_orientation="test",
-        config_module=mock_config_module,
+        config_dto=create_firm_config_dto(),
     )
     firm_inactive.is_active = False
     firm_inactive.total_shares = 1000.0
@@ -693,7 +712,13 @@ def setup_simulation_for_lifecycle(
     mock_config_manager = Mock(spec=ConfigManager)
     # Configure mock for __format__ (float)
     mock_config_manager.initial_base_annual_rate = 0.05
-    mock_config_manager.get.return_value = 0.05
+
+    def config_get_side_effect(key, default=None):
+        if key == "simulation.database_name":
+            return "test_simulation.db"
+        return 0.05 if default is None else default
+
+    mock_config_manager.get.side_effect = config_get_side_effect
 
     initializer = SimulationInitializer(
         config_manager=mock_config_manager,

@@ -2,10 +2,11 @@ import os
 import sys
 import json
 import pytest
+from tests.utils.factories import create_firm_config_dto, create_household_config_dto
 from unittest.mock import Mock
 
 # Add project root to sys.path to allow imports from other modules
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
