@@ -4,11 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-green-light-exec": {
-    "command": "create",
-    "instruction": "Implement the test restoration plan in design/3_work_artifacts/reports/REPORT_TEST_RESTORATION_PLAN.md. CRITICAL: First fix the 'ModuleNotFoundError: No module named app' by correcting import paths or PYTHONPATH in tests/integration/scenarios/test_e2e_playwright.py. Then systematically fix DTO/constructor errors to reach a 100% pass rate. Document insights in communications/insights/mission-green-light-exec.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Operation Green Light: Test Suite Restoration"
-  },
   "mission-money-leak-fix": {
     "command": "create",
     "instruction": "Fix the systemic monetary leaks identified in design/3_work_artifacts/reports/REPORT_MONEY_LEAK_AUDIT.md. Specifically: 1) Refactor DemographicManager.handle_inheritance to ensure zero rounding loss. 2) Implement atomic rollbacks in SettlementSystem.transfer to prevent money from vanishing during failed deposits. Document findings in communications/insights/mission-money-leak-fix.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
