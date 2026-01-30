@@ -123,18 +123,9 @@ class OrderDTO:
     quantity: float
     price: float
 
-@dataclass
-class MarketSnapshotDTO:
-    """A pure-data snapshot of the state of all markets at a point in time."""
-    prices: Dict[str, float]
-    volumes: Dict[str, float]
-    asks: Dict[str, List[OrderDTO]]
-    best_asks: Dict[str, float]
-    # WO-146: Macro indicators for Monetary Policy
-    inflation_rate: Optional[float] = 0.0
-    unemployment_rate: Optional[float] = 0.0
-    nominal_gdp: Optional[float] = 0.0
-    potential_gdp: Optional[float] = 0.0
+# Phase 1: MarketSnapshotDTO moved to modules.system.api and converted to TypedDict
+# This is a breaking change for existing agents.
+from modules.system.api import MarketSnapshotDTO
 
 @dataclass
 class GovernmentPolicyDTO:

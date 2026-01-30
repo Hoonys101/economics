@@ -60,7 +60,11 @@ class OrderBookMarket(Market):
         Formula: Bounds = Mean * (1 ± (Base_Limit * Volatility_Adj))
         Volatility_Adj = 1 + (StdDev / Mean)
         """
-        if item_id not in self.price_history or len(self.price_history[item_id]) < 2:
+        # Phase 1: Relax circuit breakers for price discovery
+        min_history_len = getattr(self.config_module, "CIRCUIT_BREAKER_MIN_HISTORY", 7) if self.config_module else 7
+
+        if item_id not in self.price_history or len(self.price_history[item_id]) < min_history_len:
+            self.logger.debug(f"History-Free Discovery: Widening bounds for {item_id}.")
             return 0.0, float('inf') # No bounds yet
 
         history = list(self.price_history[item_id])
