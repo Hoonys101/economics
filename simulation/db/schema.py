@@ -222,6 +222,34 @@ def create_tables(conn: sqlite3.Connection):
         )
     """)
 
+    # Agent Thoughts 테이블
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_thoughts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER,
+            tick INTEGER,
+            agent_id TEXT,
+            action_type TEXT,
+            decision TEXT,
+            reason TEXT,
+            context_data JSON
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_thoughts_tick ON agent_thoughts(tick)")
+
+    # Tick Snapshots 테이블
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tick_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tick INTEGER,
+            run_id INTEGER,
+            gdp REAL,
+            m2 REAL,
+            cpi REAL,
+            transaction_count INTEGER
+        )
+    """)
+
     # Indexes
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_economic_indicators_time ON economic_indicators(time)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_time ON transactions(time)")
