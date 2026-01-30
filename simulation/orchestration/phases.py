@@ -632,7 +632,11 @@ class Phase3_Transaction(IPhaseStrategy):
         return state
 
 
-class Phase4_Lifecycle(IPhaseStrategy):
+class Phase_Bankruptcy(IPhaseStrategy):
+    """
+    Phase 4: Agent Decisions & Lifecycle (Bankruptcy Check)
+    Agents make decisions. Bankrupt agents are identified here.
+    """
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
 
@@ -641,7 +645,17 @@ class Phase4_Lifecycle(IPhaseStrategy):
             lifecycle_txs = self.world_state.lifecycle_manager.execute(state)
             if lifecycle_txs:
                 state.inter_tick_queue.extend(lifecycle_txs)
+        return state
 
+class Phase_Consumption(IPhaseStrategy):
+    """
+    Phase: Consumption Finalization.
+    Formerly part of Phase4_Lifecycle.
+    """
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
+
+    def execute(self, state: SimulationState) -> SimulationState:
         consumption_market_data = state.market_data
 
         commerce_context: CommerceContext = {

@@ -21,7 +21,27 @@ class FiscalPolicyManager(IFiscalPolicyManager):
         """
         # 1. Calculate Survival Cost
         # Survival Cost = Basic Food Price * Daily Consumption
-        basic_food_price = market_snapshot.prices.get("basic_food", 5.0)
+        # MarketSnapshotDTO is now a TypedDict.
+        # Prioritize 'market_signals' (new) > 'market_data' (legacy)
+
+        basic_food_price = 5.0 # Default
+
+        if 'market_signals' in market_snapshot and 'basic_food' in market_snapshot['market_signals']:
+             # Use new signal
+             signal = market_snapshot['market_signals']['basic_food']
+             # MarketSignalDTO keys are str, not attributes
+             price = signal.get('best_ask')
+             if price is None or price <= 0:
+                 price = signal.get('last_traded_price')
+             if price is not None and price > 0:
+                 basic_food_price = price
+
+        elif 'market_data' in market_snapshot:
+             # Legacy fallback
+             legacy_data = market_snapshot['market_data']
+             if 'goods_market' in legacy_data:
+                 basic_food_price = legacy_data['goods_market'].get('basic_food_current_sell_price', 5.0)
+
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
         survival_cost = basic_food_price * daily_consumption
 

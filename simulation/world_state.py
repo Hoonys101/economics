@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from simulation.db.repository import SimulationRepository
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
+from modules.system.api import IAssetRecoverySystem
 
 
 class WorldState:
@@ -107,6 +108,7 @@ class WorldState:
         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
         self.crisis_monitor: Optional[CrisisMonitor] = None
         self.stress_scenario_config: Optional[StressScenarioConfig] = None
+        self.public_manager: Optional[IAssetRecoverySystem] = None
 
         # Attributes with default values
         self.batch_save_interval: int = 50
@@ -155,6 +157,10 @@ class WorldState:
         # Central Bank holds negative cash if it distributed more than it had, or positive if it minted but hasn't distributed.
         if self.central_bank:
             total += self.central_bank.assets.get('cash', 0.0)
+
+        # 7. Public Manager Treasury (Phase 3: Asset Liquidation)
+        if self.public_manager:
+            total += self.public_manager.system_treasury
 
         return total
 

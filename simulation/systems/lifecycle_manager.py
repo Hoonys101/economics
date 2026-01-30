@@ -14,6 +14,7 @@ from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.firm_management import FirmSystem
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.finance.api import ISettlementSystem
+from modules.system.api import IAssetRecoverySystem
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
     """
@@ -24,12 +25,13 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
                  inheritance_manager: InheritanceManager, firm_system: FirmSystem,
-                 settlement_system: ISettlementSystem, logger: logging.Logger):
+                 settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger):
         self.config = config_module
         self.demographic_manager = demographic_manager
         self.inheritance_manager = inheritance_manager
         self.firm_system = firm_system
         self.settlement_system = settlement_system
+        self.public_manager = public_manager
         # ImmigrationManager also needs SettlementSystem now, we'll pass ours or let it be created?
         # It's created inside __init__.
         # We should probably pass settlement_system to it.
@@ -172,12 +174,23 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
             capital_value = firm.capital_stock
 
+            # Phase 3: Asset Recovery
+            # Instead of destroying inventory, we transfer it to the PublicManager.
+            if firm.inventory:
+                 bankruptcy_event = {
+                     "agent_id": firm.id,
+                     "tick": state.time,
+                     "inventory": firm.inventory.copy()
+                 }
+                 self.public_manager.process_bankruptcy_event(bankruptcy_event)
+
             # Record Liquidation (Destruction of real assets)
+            # Only Capital Stock is destroyed now (machines, buildings), inventory is recovered.
             self.settlement_system.record_liquidation(
                 agent=firm,
-                inventory_value=inv_value,
+                inventory_value=0.0, # Inventory recovered
                 capital_value=capital_value,
-                recovered_cash=0.0, # Just wiping assets
+                recovered_cash=0.0,
                 reason="firm_liquidation",
                 tick=state.time
             )
@@ -252,7 +265,19 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             transactions.extend(inheritance_txs)
 
             inv_value = self._calculate_inventory_value(household.inventory, state.markets)
-            if inv_value > 0:
+
+            # Phase 3: Asset Recovery for Households
+            if household.inventory:
+                 bankruptcy_event = {
+                     "agent_id": household.id,
+                     "tick": state.time,
+                     "inventory": household.inventory.copy()
+                 }
+                 self.public_manager.process_bankruptcy_event(bankruptcy_event)
+
+            # Record Liquidation (Destruction)
+            # Inventory is recovered, so we record 0 destruction for inventory.
+            if False and inv_value > 0: # Logic disabled as inventory is recovered
                  self.settlement_system.record_liquidation(
                      agent=household,
                      inventory_value=inv_value,

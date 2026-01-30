@@ -60,6 +60,7 @@ from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
 
 # Phase 29: Crisis Monitor
 from modules.analysis.crisis_monitor import CrisisMonitor
+from modules.system.execution.public_manager import PublicManager
 
 
 class SimulationInitializer(SimulationInitializerInterface):
@@ -389,6 +390,10 @@ class SimulationInitializer(SimulationInitializerInterface):
             logger=self.logger
         )
 
+        # Phase 3: Public Manager
+        sim.public_manager = PublicManager(config=self.config)
+        sim.world_state.public_manager = sim.public_manager
+
         # AgentLifecycleManager is created here and injected into the simulation
         sim.lifecycle_manager = AgentLifecycleManager(
             config_module=self.config,
@@ -396,6 +401,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             inheritance_manager=sim.inheritance_manager,
             firm_system=sim.firm_system,
             settlement_system=sim.settlement_system,
+            public_manager=sim.public_manager,
             logger=self.logger
         )
 

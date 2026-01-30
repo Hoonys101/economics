@@ -56,6 +56,35 @@ class TransactionManager(SystemInterface):
         goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
 
         for tx in transactions:
+            # Phase 3: Public Manager Support
+            if tx.seller_id == "PUBLIC_MANAGER":
+                buyer = agents.get(tx.buyer_id) or inactive_agents.get(tx.buyer_id)
+                if not buyer:
+                    continue
+
+                trade_value = tx.quantity * tx.price
+
+                # Debit Buyer & Credit Public Manager
+                try:
+                    # Manually withdraw from buyer (simulating payment to system)
+                    buyer.withdraw(trade_value)
+
+                    # Credit Public Manager Treasury
+                    if hasattr(state, "public_manager") and state.public_manager:
+                        state.public_manager.deposit_revenue(trade_value)
+
+                    # Trigger state updates (Ownership, etc.)
+                    # Pass seller as None (Registry handles None seller safely by skipping seller updates)
+                    self.registry.update_ownership(tx, buyer, None, state)
+
+                    # Record for accounting (Seller=None)
+                    self.accounting.record_transaction(tx, buyer, None, trade_value, 0.0)
+
+                except Exception as e:
+                    self.logger.error(f"PUBLIC_MANAGER transaction failed: {e}")
+
+                continue
+
             buyer = agents.get(tx.buyer_id) or inactive_agents.get(tx.buyer_id)
             seller = agents.get(tx.seller_id) or inactive_agents.get(tx.seller_id)
 

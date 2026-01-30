@@ -223,9 +223,39 @@ class AssetManager:
 
         current_prices = {}
         if market_snapshot:
-            for firm_id in household.portfolio_holdings.keys():
-                price = market_snapshot.prices.get(f"stock_{firm_id}", 0.0)
-                current_prices[firm_id] = price
+            # Handle TypedDict/Legacy compatibility
+            prices = getattr(market_snapshot, "prices", None)
+            if prices is None and isinstance(market_snapshot, dict):
+                # Try new schema first
+                signals = market_snapshot.get("market_signals", {})
+
+                # Check legacy data
+                if not signals:
+                    legacy_data = market_snapshot.get("market_data", {})
+                    # Legacy market data structure for stocks was stock_market_data[firm_item_id]
+                    # We need to adapt.
+                    # Or we just iterate signals.
+                    pass
+
+                for firm_id in household.portfolio_holdings.keys():
+                    item_id = f"stock_{firm_id}"
+                    price = 0.0
+
+                    if item_id in signals:
+                        signal = signals[item_id]
+                        price = signal.get('last_traded_price') or signal.get('best_ask') or 0.0
+                    else:
+                        # Fallback to legacy price extraction logic if needed or assume 0
+                        # Usually price extraction from legacy market_data is complex.
+                        # Assuming signals are available if market_snapshot is passed.
+                        pass
+
+                    current_prices[firm_id] = price
+
+            elif prices:
+                for firm_id in household.portfolio_holdings.keys():
+                    price = prices.get(f"stock_{firm_id}", 0.0)
+                    current_prices[firm_id] = price
 
         # Calculate valuation manually for DTO
         current_equity_value = 0.0

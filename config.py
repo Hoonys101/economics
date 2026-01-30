@@ -820,3 +820,14 @@ TECH_UNLOCK_PROB_CAP = 0.1                # Maximum probability per tick for tec
 # WO-148: Stress Test Parameters
 # ==============================================================================
 STARVATION_THRESHOLD = 1.0  # Food inventory threshold for starvation metrics
+PRIMARY_SURVIVAL_GOOD_ID = "basic_food" # Required by HouseholdConfigDTO
+SURVIVAL_NEED_EMERGENCY_THRESHOLD = 80.0 # Threshold for emergency behavior
+SURVIVAL_BID_PREMIUM = 0.2 # Premium paid for survival goods
+FIRE_SALE_INVENTORY_TARGET = 0.5 # Inventory level to trigger fire sale
+FIRE_SALE_PRICE_DISCOUNT = 0.2 # Discount during fire sale
+DEFAULT_TARGET_MARGIN = 0.2 # Default target margin for firms
+MAX_PRICE_STALENESS_TICKS = 10 # Ticks before price is considered stale
+FIRE_SALE_INVENTORY_THRESHOLD = 0.5 # Threshold to start fire sale
+FIRE_SALE_DISCOUNT = 0.2 # Discount for fire sale
+FIRE_SALE_COST_DISCOUNT = 0.5 # Discount below cost for fire sale
+FIRE_SALE_ASSET_THRESHOLD = 500.0 # Asset threshold for fire sale

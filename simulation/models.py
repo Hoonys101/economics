@@ -7,7 +7,7 @@ import uuid
 class Order:
     """시장에 제출되는 개별 주문을 나타내는 데이터 클래스"""
 
-    agent_id: int
+    agent_id: int | str
     order_type: str
     item_id: str
     quantity: float
@@ -23,8 +23,8 @@ class Order:
 class Transaction:
     """체결된 거래를 나타내는 데이터 클래스"""
 
-    buyer_id: int
-    seller_id: int
+    buyer_id: int | str
+    seller_id: int | str
     item_id: str
     quantity: float
     price: float
