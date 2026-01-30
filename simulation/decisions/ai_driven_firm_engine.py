@@ -60,4 +60,112 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         # 2. Corporate Manager Execution
         orders = self.corporate_manager.realize_ceo_actions(firm_state, context, action_vector)
 
+        # 3. Phase 2: Pricing Logic Override (Cost-Plus & Fire-Sale)
+        self._apply_pricing_logic(orders, context, firm_state)
+
         return orders, action_vector
+
+    def _apply_pricing_logic(self, orders: List[Order], context: DecisionContext, firm_state: Any) -> None:
+        """
+        Applies Cost-Plus Fallback and Fire-Sale logic.
+        """
+        config = context.config
+        market_snapshot = context.market_snapshot
+
+        # Helper for Cost-Plus
+        def calculate_unit_cost(item_id: str) -> float:
+            # Estimate based on goods data and productivity
+            # Production Cost = Base Cost / Productivity
+            goods_info = next((g for g in context.goods_data if g["id"] == item_id), None)
+            base_cost = goods_info.get("production_cost", 10.0) if goods_info else 10.0
+            prod_factor = firm_state.agent_data.get("productivity_factor", 1.0)
+            if prod_factor <= 0: prod_factor = 1.0
+            return base_cost / prod_factor
+
+        # A. Cost-Plus Fallback
+        for order in orders:
+            if order.order_type in ["SELL", "SET_PRICE"]:
+                # Check signal reliability
+                is_unreliable = True
+                if market_snapshot and 'market_signals' in market_snapshot:
+                    signal = market_snapshot['market_signals'].get(order.item_id)
+                    # Check if signal exists and is fresh enough
+                    if signal and signal.get('last_trade_tick') is not None:
+                         staleness = context.current_time - signal['last_trade_tick']
+                         max_staleness = getattr(config, 'max_price_staleness_ticks', 10)
+                         if not isinstance(max_staleness, (int, float)): max_staleness = 10
+                         # If it traded recently, it's reliable
+                         if staleness <= max_staleness:
+                             is_unreliable = False
+
+                if is_unreliable:
+                    unit_cost = calculate_unit_cost(order.item_id)
+                    margin = getattr(config, 'default_target_margin', 0.2)
+                    if not isinstance(margin, (int, float)): margin = 0.2
+                    new_price = unit_cost * (1 + margin)
+
+                    if abs(order.price - new_price) > 0.01:
+                         self.logger.info(
+                             f"COST_PLUS_FALLBACK | Firm {firm_state.id} repricing {order.item_id} from {order.price:.2f} to {new_price:.2f} (Cost: {unit_cost:.2f})",
+                             extra={"tick": context.current_time, "tags": ["pricing", "cost_plus"]}
+                         )
+                         order.price = new_price
+
+        # B. Fire-Sale Logic
+        fire_sale_orders = []
+
+        # Check Distress
+        fire_sale_asset_threshold = getattr(config, 'fire_sale_asset_threshold', 50.0)
+        if not isinstance(fire_sale_asset_threshold, (int, float)): fire_sale_asset_threshold = 50.0
+
+        # Use assets from state
+        assets = firm_state.assets
+        is_distressed = assets < fire_sale_asset_threshold
+
+        if is_distressed:
+             fire_sale_inv_threshold = getattr(config, 'fire_sale_inventory_threshold', 20.0)
+             if not isinstance(fire_sale_inv_threshold, (int, float)): fire_sale_inv_threshold = 20.0
+
+             fire_sale_target = getattr(config, 'fire_sale_inventory_target', 5.0)
+             if not isinstance(fire_sale_target, (int, float)): fire_sale_target = 5.0
+
+             for item_id, quantity in firm_state.inventory.items():
+                 if quantity > fire_sale_inv_threshold:
+                     # Identify surplus
+                     surplus = quantity - fire_sale_target
+                     if surplus > 0:
+                         # Calculate Fire Sale Price
+                         # Prefer undercutting market
+                         fire_sale_price = 0.0
+                         if market_snapshot and 'market_signals' in market_snapshot:
+                             signal = market_snapshot['market_signals'].get(item_id)
+                             if signal and signal.get('best_bid') is not None:
+                                  discount = getattr(config, 'fire_sale_discount', 0.2)
+                                  if not isinstance(discount, (int, float)): discount = 0.2
+                                  fire_sale_price = signal['best_bid'] * (1.0 - discount)
+
+                         if fire_sale_price <= 0:
+                             # Fallback to cost discount
+                             unit_cost = calculate_unit_cost(item_id)
+                             cost_discount = getattr(config, 'fire_sale_cost_discount', 0.5)
+                             if not isinstance(cost_discount, (int, float)): cost_discount = 0.5
+                             fire_sale_price = unit_cost * (1.0 - cost_discount)
+
+                         fire_sale_price = max(0.01, fire_sale_price)
+
+                         # Create Order
+                         self.logger.warning(
+                             f"FIRE_SALE | Firm {firm_state.id} dumping {surplus:.1f} of {item_id} at {fire_sale_price:.2f}",
+                             extra={"tick": context.current_time, "tags": ["fire_sale"]}
+                         )
+
+                         fire_sale_orders.append(Order(
+                             agent_id=firm_state.id,
+                             order_type="SELL",
+                             item_id=item_id,
+                             quantity=surplus,
+                             price=fire_sale_price,
+                             market_id=item_id
+                         ))
+
+        orders.extend(fire_sale_orders)

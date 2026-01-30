@@ -90,6 +90,11 @@ class HouseholdConfigDTO:
     initial_wage: float
     education_cost_multipliers: Dict[int, float]
 
+    # Phase 2: Survival Override
+    survival_need_emergency_threshold: float
+    primary_survival_good_id: str
+    survival_bid_premium: float
+
 @dataclass
 class FirmConfigDTO:
     """Static configuration values relevant to firm decisions."""
@@ -141,3 +146,12 @@ class FirmConfigDTO:
     marketing_efficiency_low_threshold: float
     marketing_budget_rate_min: float
     marketing_budget_rate_max: float
+
+    # Phase 2: Pricing Logic
+    default_target_margin: float
+    max_price_staleness_ticks: int
+    fire_sale_asset_threshold: float
+    fire_sale_inventory_threshold: float
+    fire_sale_inventory_target: float
+    fire_sale_discount: float
+    fire_sale_cost_discount: float

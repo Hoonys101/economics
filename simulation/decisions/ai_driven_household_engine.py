@@ -66,6 +66,50 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         market_data = context.market_data
         current_time = context.current_time
 
+        # --- Phase 2: Survival Override ---
+        survival_need = household.needs.get('survival', 0)
+        emergency_threshold = getattr(config, 'survival_need_emergency_threshold', 0.8)
+        if not isinstance(emergency_threshold, (int, float)):
+            emergency_threshold = 0.8
+
+        if survival_need > emergency_threshold:
+            food_id = getattr(config, 'primary_survival_good_id', 'food')
+            if not isinstance(food_id, str):
+                food_id = 'food'
+
+            signal = None
+            if market_snapshot and 'market_signals' in market_snapshot:
+                 signal = market_snapshot['market_signals'].get(food_id)
+
+            # If signal exists and has sellers
+            if signal and signal.get('best_ask') is not None:
+                ask_price = signal['best_ask']
+                # Affordability Check
+                if household.assets >= ask_price:
+                     premium = getattr(config, 'survival_bid_premium', 0.1)
+                     if not isinstance(premium, (int, float)):
+                         premium = 0.1
+                     bid_price = ask_price * (1 + premium)
+
+                     self.logger.warning(
+                         f"SURVIVAL_OVERRIDE | Agent {household.id} critical need {survival_need:.2f}. Panic buying {food_id} at {bid_price:.2f}",
+                         extra={"agent_id": household.id, "tick": current_time, "tags": ["survival", "override"]}
+                     )
+
+                     survival_order = Order(
+                         agent_id=household.id,
+                         item_id=food_id,
+                         order_type="BUY",
+                         quantity=1.0,
+                         price=bid_price,
+                         market_id=food_id
+                     )
+
+                     # Return immediately, skipping other logic
+                     from simulation.schemas import HouseholdActionVector
+                     # We return a vector with high work aggressiveness as survival instinct implies working hard too
+                     return [survival_order], HouseholdActionVector(work_aggressiveness=1.0)
+
         agent_data = household.agent_data
 
         goods_list = list(config.goods.keys())

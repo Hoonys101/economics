@@ -31,6 +31,7 @@ class OrderBookMarket(Market):
         self.daily_avg_price: Dict[str, float] = {}
         self.daily_total_volume: Dict[str, float] = {}
         self.last_traded_prices: Dict[str, float] = {}
+        self.last_trade_ticks: Dict[str, int] = {} # Phase 2: Track staleness
         
         # --- GEMINI_ADDITION: Persist signals across ticks ---
         self.cached_best_bid: Dict[str, float] = {}
@@ -356,6 +357,7 @@ class OrderBookMarket(Market):
                     quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
                 )
                 self.last_traded_prices[item_id] = trade_price
+                self.last_trade_ticks[item_id] = current_tick
                 # WO-136: Update Price History
                 self._update_price_history(item_id, trade_price)
                 transactions.append(transaction)
@@ -403,6 +405,10 @@ class OrderBookMarket(Market):
     def get_last_traded_price(self, item_id: str) -> float | None:
         """주어진 아이템의 마지막 체결 가격을 반환합니다."""
         return self.last_traded_prices.get(item_id)
+
+    def get_last_trade_tick(self, item_id: str) -> int | None:
+        """Returns the tick of the last trade for the item."""
+        return self.last_trade_ticks.get(item_id)
 
     def get_spread(self, item_id: str) -> float | None:
         """주어진 아이템의 매도-매수 스프레드를 반환합니다."""

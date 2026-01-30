@@ -322,35 +322,55 @@ class Phase1_Decision(IPhaseStrategy):
         household_pre_states = {}
         household_time_allocation = {}
 
-        # Construct DTOs
-        prices = {}
-        volumes = {}
-        asks = {}
-        best_asks = {}
+        # Construct Market Signals (Phase 2)
+        from modules.system.api import MarketSignalDTO
+        market_signals: Dict[str, MarketSignalDTO] = {}
+
+        import math
 
         for m_id, market in state.markets.items():
-            if hasattr(market, "get_daily_avg_price"):
-                 prices[m_id] = market.get_daily_avg_price()
-            if hasattr(market, "get_daily_volume"):
-                 volumes[m_id] = market.get_daily_volume()
+            # Only process OrderBookMarkets that have items
+            if isinstance(market, OrderBookMarket):
+                # Identify all unique items in this market (buy or sell side)
+                all_items = set(market.buy_orders.keys()) | set(market.sell_orders.keys()) | set(market.last_traded_prices.keys())
 
-            if hasattr(market, "sell_orders"):
-                for item_id, orders in market.sell_orders.items():
-                    asks[item_id] = orders
-                    if orders:
-                        if hasattr(market, "get_best_ask"):
-                            best_asks[item_id] = market.get_best_ask(item_id)
-                        else:
-                            best_asks[item_id] = orders[0].price if orders else 0.0
+                for item_id in all_items:
+                     price_history = list(market.price_history.get(item_id, []))
+                     # Take last 7 ticks or less
+                     history_7d = price_history[-7:]
 
-        if state.stock_market:
-            for firm in state.firms:
-                if firm.is_active:
-                    price = state.stock_market.get_stock_price(firm.id)
-                    prices[f"stock_{firm.id}"] = price
+                     # Volatility Calculation
+                     volatility = 0.0
+                     if len(history_7d) > 1:
+                         mean = sum(history_7d) / len(history_7d)
+                         variance = sum((p - mean) ** 2 for p in history_7d) / len(history_7d)
+                         volatility = math.sqrt(variance)
+
+                     # Check frozen status
+                     min_p, max_p = market.get_dynamic_price_bounds(item_id)
+                     # Treat as frozen if price is inf or circuit breaker active (heuristic)
+                     # Since we don't have explicit state, we assume False unless proven otherwise.
+                     is_frozen = False
+
+                     signal = MarketSignalDTO(
+                         market_id=m_id,
+                         item_id=item_id,
+                         best_bid=market.get_best_bid(item_id),
+                         best_ask=market.get_best_ask(item_id),
+                         last_traded_price=market.get_last_traded_price(item_id),
+                         last_trade_tick=market.get_last_trade_tick(item_id) or -1,
+                         price_history_7d=history_7d,
+                         volatility_7d=volatility,
+                         order_book_depth_buy=len(market.buy_orders.get(item_id, [])),
+                         order_book_depth_sell=len(market.sell_orders.get(item_id, [])),
+                         is_frozen=is_frozen
+                     )
+                     market_signals[item_id] = signal
 
         market_snapshot = MarketSnapshotDTO(
-            prices=prices, volumes=volumes, asks=asks, best_asks=best_asks
+            tick=state.time,
+            market_signals=market_signals,
+            market_data=market_data # Legacy support
         )
 
         gov = state.government
