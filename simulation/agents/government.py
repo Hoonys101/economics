@@ -42,7 +42,7 @@ class Government:
         # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
         # via make_policy_decision() before any tax collection occurs.
         self.fiscal_policy: FiscalPolicyDTO = self.fiscal_policy_manager.determine_fiscal_stance(
-            MarketSnapshotDTO(prices={}, volumes={}, asks={}, best_asks={})
+            MarketSnapshotDTO(tick=0, market_signals={}, market_data={})
         )
 
         self.total_collected_tax: float = 0.0
@@ -321,14 +321,15 @@ class Government:
         # WO-147: Check if fiscal stabilizer is enabled (default True)
         if getattr(self.config_module, "ENABLE_FISCAL_STABILIZER", True):
             # Convert market_data dict to MarketSnapshotDTO for FiscalPolicyManager
-            prices = {}
-            if "goods_market" in market_data:
-                for key, value in market_data["goods_market"].items():
-                    if key.endswith("_current_sell_price"):
-                        item_id = key.replace("_current_sell_price", "")
-                        prices[item_id] = value
+            # We construct a snapshot using legacy 'market_data' since we don't have signals here readily available
+            # unless we passed them.
+            # However, FiscalPolicyManager.determine_fiscal_stance supports legacy market_data.
 
-            snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
+            snapshot = MarketSnapshotDTO(
+                tick=current_tick,
+                market_signals={},
+                market_data=market_data
+            )
             self.fiscal_policy = self.fiscal_policy_manager.determine_fiscal_stance(snapshot)
 
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)

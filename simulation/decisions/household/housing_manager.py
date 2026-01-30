@@ -47,8 +47,17 @@ class HousingManager:
 
              # Iterate over snapshot asks to find housing units
              # Housing units are identified by 'unit_' prefix in item_id
-             if context.market_snapshot.asks:
-                 for item_id, orders_list in context.market_snapshot.asks.items():
+             # Compatible with both legacy dict and TypedDict
+
+             snapshot = context.market_snapshot
+             legacy_asks = getattr(snapshot, "asks", None) # Check if object has attribute
+             if legacy_asks is None:
+                 # Check TypedDict keys
+                 if isinstance(snapshot, dict):
+                     legacy_asks = snapshot.get("asks", {})
+
+             if legacy_asks:
+                 for item_id, orders_list in legacy_asks.items():
                      if not item_id.startswith("unit_"):
                          continue
                      if not orders_list:

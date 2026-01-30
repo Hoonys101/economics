@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TypedDict, List, Dict, Optional, Any
+from typing import TypedDict, List, Dict, Optional, Any, Protocol
 
 # --- DTOs for Market Stability Signals ---
 
@@ -32,3 +32,51 @@ class MarketSnapshotDTO(TypedDict):
     tick: int
     market_signals: Dict[str, MarketSignalDTO]  # item_id -> signal_dto
     market_data: Dict[str, Any]  # [DEPRECATED] For legacy compatibility during transition.
+
+# --- Phase 3: Asset Recovery ---
+
+class AgentBankruptcyEventDTO(TypedDict):
+    """
+    Broadcast when an agent fails. Contains details needed for asset recovery.
+    """
+    agent_id: int
+    tick: int
+    inventory: Dict[str, float]
+
+class PublicManagerReportDTO(TypedDict):
+    """
+    Summarizes the Public Manager's activities.
+    """
+    tick: int
+    newly_recovered_assets: Dict[str, float]
+    liquidation_revenue: float
+    managed_inventory_count: int
+    system_treasury_balance: float
+
+class IAssetRecoverySystem(Protocol):
+    """
+    Interface for the system service responsible for asset recovery and liquidation.
+    """
+    def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
+        """Takes ownership of a defunct agent's inventory."""
+        ...
+
+    def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO]) -> List[Any]:
+        """Generates non-disruptive SELL orders for managed assets."""
+        # Note: Return type is List["Order"], using Any to avoid circular imports
+        ...
+
+    def deposit_revenue(self, amount: float) -> None:
+        """Deposits revenue from liquidation sales into the system treasury."""
+        ...
+
+    def confirm_sale(self, item_id: str, quantity: float) -> None:
+        """
+        Confirms a sale transaction and permanently removes assets from inventory.
+        Must be called by TransactionManager upon successful trade.
+        """
+        ...
+
+    def get_status_report(self) -> PublicManagerReportDTO:
+        """Returns a status report of the manager's state."""
+        ...
