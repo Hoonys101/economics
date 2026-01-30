@@ -70,6 +70,13 @@ class IAssetRecoverySystem(Protocol):
         """Deposits revenue from liquidation sales into the system treasury."""
         ...
 
+    def confirm_sale(self, item_id: str, quantity: float) -> None:
+        """
+        Confirms a sale transaction and permanently removes assets from inventory.
+        Must be called by TransactionManager upon successful trade.
+        """
+        ...
+
     def get_status_report(self) -> PublicManagerReportDTO:
         """Returns a status report of the manager's state."""
         ...

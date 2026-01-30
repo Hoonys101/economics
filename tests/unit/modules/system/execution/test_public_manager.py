@@ -59,8 +59,16 @@ class TestPublicManager:
         # Ask Undercut 0.1 -> 10.0 * 0.9 = 9.0
         assert order.price == 9.0
 
-        # Inventory tentatively decremented
+        # Inventory NOT tentatively decremented (Change in Logic)
+        assert public_manager.managed_inventory["apple"] == 100.0
+
+    def test_confirm_sale(self, public_manager):
+        public_manager.managed_inventory["apple"] = 100.0
+        public_manager.confirm_sale("apple", 50.0)
         assert public_manager.managed_inventory["apple"] == 50.0
+
+        public_manager.confirm_sale("apple", 60.0)
+        assert public_manager.managed_inventory["apple"] == 0.0
 
     def test_deposit_revenue(self, public_manager):
         public_manager.deposit_revenue(100.0)

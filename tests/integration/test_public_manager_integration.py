@@ -60,7 +60,7 @@ class TestPublicManagerIntegration:
         order = orders[0]
         assert order.quantity == 10.0
         assert order.price == 100.0
-        assert pm.managed_inventory["gold"] == 0.0 # Tentatively decremented
+        assert pm.managed_inventory["gold"] == 10.0 # NOT Tentatively decremented
 
         # 4. Simulate Market Matching (Phase 2/5)
         # Assume market matched it perfectly
@@ -102,6 +102,9 @@ class TestPublicManagerIntegration:
 
         # PublicManager treasury should increase
         assert pm.system_treasury == 1000.0
+
+        # PublicManager inventory should decrease (via confirm_sale)
+        assert pm.managed_inventory["gold"] == 0.0
 
         # Buyer inventory should increase (via Registry)
         assert buyer.inventory.get("gold", 0) == 10.0

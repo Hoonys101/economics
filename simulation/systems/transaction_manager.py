@@ -72,6 +72,7 @@ class TransactionManager(SystemInterface):
                     # Credit Public Manager Treasury
                     if hasattr(state, "public_manager") and state.public_manager:
                         state.public_manager.deposit_revenue(trade_value)
+                        state.public_manager.confirm_sale(tx.item_id, tx.quantity)
 
                     # Trigger state updates (Ownership, etc.)
                     # Pass seller as None (Registry handles None seller safely by skipping seller updates)

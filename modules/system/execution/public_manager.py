@@ -132,10 +132,23 @@ class PublicManager(IAssetRecoverySystem):
             # Maybe that's intended? "Orderly Liquidation" but if no buyers, it rots?
             # I will follow the spec: "Tentatively decrement inventory."
 
-            self.managed_inventory[item_id] -= sell_quantity
+            # UPDATE (Review Feedback): Tentative decrement causes asset leaks if orders expire.
+            # Removing tentative decrement. Inventory will be decremented in confirm_sale().
+            # self.managed_inventory[item_id] -= sell_quantity
             self.logger.info(f"Generated liquidation order for {sell_quantity} of {item_id} at {sell_price}.")
 
         return orders
+
+    def confirm_sale(self, item_id: str, quantity: float) -> None:
+        """
+        Confirms a sale transaction and permanently removes assets from inventory.
+        Must be called by TransactionManager upon successful trade.
+        """
+        if item_id in self.managed_inventory:
+            self.managed_inventory[item_id] = max(0.0, self.managed_inventory[item_id] - quantity)
+            self.logger.debug(f"Confirmed sale of {quantity} {item_id}. Remaining: {self.managed_inventory[item_id]}")
+        else:
+            self.logger.warning(f"Confirmed sale for {item_id} but item not in managed inventory.")
 
     def deposit_revenue(self, amount: float) -> None:
         """Deposits revenue from liquidation sales into the system treasury."""
