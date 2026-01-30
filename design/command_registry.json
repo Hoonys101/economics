@@ -32,9 +32,8 @@
     "command": "send-message",
     "instruction": "ThoughtStream implementation and verification complete. The system is now ready for Root Cause Analysis. See design/3_work_artifacts/reports/REPORT_THOUGHTSTREAM_IMPLEMENTATION.md for details."
   },
-  "mission-animal-phase3-recovery": {
+  "mission-fix-inheritance-redundancy": {
     "command": "create",
-    "instruction": "Implement Phase 3 of 'Animal Spirits' based on SPEC_ANIMAL_PHASE3_RECOVERY.md. 1) Create PublicManager class implementing IAssetRecoverySystem. 2) Insert Phase 4.5 (Asset Liquidation) into Simulation.run_tick(). 3) Implement bankruptcy event handling to transfer assets instead of destroying them.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "design/3_work_artifacts/drafts/draft_144143_제공된_거대_draft_명세를_Phase_3_Val.md"
+    "instruction": "Resolve TD-159: In 'simulation/demographic_manager.py', remove direct calls to '_add_assets' (e.g., around lines 303, 310) and ensure asset inheritance is handled purely through 'TransactionProcessor' or 'SettlementSystem' to prevent double-counting or leaks. Verify with a specific unit test. Refer to TD-159 in TECH_DEBT_LEDGER.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
   }
 }
