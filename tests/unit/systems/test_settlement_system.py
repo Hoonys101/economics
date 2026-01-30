@@ -121,3 +121,20 @@ def test_record_liquidation(settlement_system):
     # Another loss
     settlement_system.record_liquidation(agent, 10.0, 0.0, 0.0, "More Loss", tick=2)
     assert settlement_system.total_liquidation_losses == 140.0
+
+def test_transfer_rollback(settlement_system):
+    class FaultyAgent(MockAgent):
+        def deposit(self, amount):
+            raise Exception("Deposit Failed")
+
+    sender = MockAgent(1, 100.0)
+    receiver = FaultyAgent(2, 50.0)
+
+    # Transfer should fail at deposit, trigger rollback
+    tx = settlement_system.transfer(sender, receiver, 20.0, "Faulty Transfer", tick=10)
+
+    assert tx is None
+    # Sender should have 100.0 (rolled back)
+    assert sender.assets == 100.0
+    # Receiver should have 50.0 (unchanged)
+    assert receiver.assets == 50.0
