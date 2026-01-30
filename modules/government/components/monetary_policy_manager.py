@@ -2,13 +2,13 @@ from typing import Any
 import math
 
 from modules.government.api import IMonetaryPolicyManager
-from modules.government.dtos import MonetaryPolicyDTO
+from modules.government.dtos import MonetaryPolicyDTO, MacroEconomicSnapshotDTO
 from simulation.dtos.api import MarketSnapshotDTO
 
 class MonetaryPolicyManager(IMonetaryPolicyManager):
     """
     Manages monetary policy using a Taylor Rule.
-    Stateless calculation based on MarketSnapshotDTO.
+    Stateless calculation based on MacroEconomicSnapshotDTO.
     """
 
     def __init__(self, config_module: Any):
@@ -17,7 +17,7 @@ class MonetaryPolicyManager(IMonetaryPolicyManager):
         self.beta = getattr(config_module, "CB_TAYLOR_BETA", 0.5)
         self.neutral_rate = getattr(config_module, "CB_NEUTRAL_RATE", 0.02)
 
-    def determine_monetary_stance(self, market_snapshot: MarketSnapshotDTO) -> MonetaryPolicyDTO:
+    def determine_monetary_stance(self, market_snapshot: MacroEconomicSnapshotDTO) -> MonetaryPolicyDTO:
         """
         Calculates the target interest rate based on the Taylor Rule:
         i_t = max(0, r* + pi_t + alpha * (pi_t - pi*) + beta * (log Y_t - log Y*))

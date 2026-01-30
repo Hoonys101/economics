@@ -3,7 +3,8 @@ from typing import Protocol
 from modules.government.dtos import (
     FiscalPolicyDTO,
     MonetaryPolicyDTO,
-    GovernmentStateDTO
+    GovernmentStateDTO,
+    MacroEconomicSnapshotDTO
 )
 from simulation.dtos.api import MarketSnapshotDTO
 
@@ -21,7 +22,7 @@ class IFiscalPolicyManager(Protocol):
 class IMonetaryPolicyManager(Protocol):
     """Interface for managing the government's monetary policy (Central Bank)."""
 
-    def determine_monetary_stance(self, market_snapshot: "MarketSnapshotDTO") -> MonetaryPolicyDTO:
+    def determine_monetary_stance(self, market_snapshot: "MacroEconomicSnapshotDTO") -> MonetaryPolicyDTO:
         """Adjusts the target interest rate based on a Taylor-like rule."""
         ...
 

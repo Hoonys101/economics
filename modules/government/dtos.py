@@ -29,3 +29,11 @@ class GovernmentStateDTO:
     assets: float
     fiscal_policy: FiscalPolicyDTO
     monetary_policy: MonetaryPolicyDTO
+
+@dataclass
+class MacroEconomicSnapshotDTO:
+    """Snapshot of macro-economic indicators for Monetary Policy."""
+    inflation_rate: float
+    nominal_gdp: float
+    potential_gdp: float
+    unemployment_rate: float

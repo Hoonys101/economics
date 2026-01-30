@@ -7,6 +7,7 @@ from simulation.dtos.api import (
     SimulationState, MarketSnapshotDTO, GovernmentPolicyDTO,
     DecisionContext, MacroFinancialContext, AIDecisionData
 )
+from modules.government.dtos import MacroEconomicSnapshotDTO
 from simulation.dtos import (
     GovernmentStateDTO
 )
@@ -232,18 +233,14 @@ class Phase0_PreSequence(IPhaseStrategy):
         update_interval = getattr(state.config_module, "CB_UPDATE_INTERVAL", 10)
 
         if state.time > 0 and state.time % update_interval == 0:
-            # Create MarketSnapshotDTO with macro indicators
+            # Create MacroEconomicSnapshotDTO with macro indicators
             latest_indicators = state.tracker.get_latest_indicators()
             # Retrieve potential GDP from Central Bank if available
             potential_gdp = 0.0
             if state.central_bank and hasattr(state.central_bank, "potential_gdp"):
                  potential_gdp = state.central_bank.potential_gdp
 
-            macro_snapshot = MarketSnapshotDTO(
-                 prices={}, # Not used by monetary policy
-                 volumes={},
-                 asks={},
-                 best_asks={},
+            macro_snapshot = MacroEconomicSnapshotDTO(
                  inflation_rate=latest_indicators.get("inflation_rate", 0.0),
                  unemployment_rate=latest_indicators.get("unemployment_rate", 0.0),
                  nominal_gdp=latest_indicators.get("total_production", 0.0),

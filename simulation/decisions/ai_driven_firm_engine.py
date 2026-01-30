@@ -84,6 +84,9 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
 
         # A. Cost-Plus Fallback
         for order in orders:
+            if not hasattr(order, 'item_id'):
+                continue
+
             if order.order_type in ["SELL", "SET_PRICE"]:
                 # Check signal reliability
                 is_unreliable = True
