@@ -30,7 +30,14 @@
 | **TD-152** | 2026-01-29 | **Hardcoded thresholds in StormVerifier** | Externalize ZLB, Deficit Spending thresholds, and `basic_food` string into `VerificationConfigDTO` | Configuration Flexibility / Maintainability | **RESOLVED** |
 | **TD-153** | 2026-01-29 | **Hardcoded Stress Test Parameters** | Externalize stress test parameters in `scripts/run_stress_test_wo148.py` to a config file | Limited Reusability | **RESOLVED** |
 | **TD-154** | 2026-01-29 | **Perfect Storm: Binary Outcome Bias** | Refactor `stress_test_perfect_storm.py` to focus on "Phenomena Reporting" (Resilience, Policy Synergy) rather than Pass/Fail verdicts | Loss of Economic Insight | **RESOLVED** |
-| **TD-155** | 2026-01-29 | **Unsafe Dynamic Module Import from Configuration** | Restrict `importlib` in `PhenomenaAnalyzer` to `modules.analysis.detectors` package and enforce whitelist | Security Risk (RCE) | **ACTIVE** |
+| **TD-155** | 2026-01-29 | **Unsafe Dynamic Module Import** | Restrict `importlib` in `PhenomenaAnalyzer` to `modules.analysis.detectors` package and enforce whitelist | Security Risk (RCE) | **RESOLVED** |
+| **TD-156** | 2026-01-30 | **Systemic Monetary Leak (M2 Drift)** | Audit all asset transfer points in `SettlementSystem` and `TransactionProcessor` for double-accounting or roundings. | Zero-Sum Violation (~900k drift) | **ACTIVE** |
+| **TD-157** | 2026-01-30 | **Price-Consumption Deadlock** | Refactor `BasicMarket` to respond to inventory scarcity and fix Household demand elasticity. | Economic Collapse (Static Price) | **ACTIVE** |
+| **TD-158** | 2026-01-30 | **Critical Housing System Leak** | Refactor `housing_system.py` (Rent/Loan/Trade) to use `SettlementSystem.transfer` instead of direct asset modification. | Direct Bypass of Monetary Integrity | **ACTIVE** |
+| **TD-159** | 2026-01-30 | **Legacy Inheritance Redundancy** | Remove direct `_add_assets` calls in `demographic_manager.py` (Lines 303, 310); defer to `TransactionProcessor`. | Potential Double-Counting/Leak | **ACTIVE** |
+| **TD-160** | 2026-01-30 | **Transaction-Tax Atomicity Failure** | Implement transaction-level atomicity in `TransactionProcessor` so taxes are always collected with the trade. | Policy Revenue Leak | **ACTIVE** |
+| **TD-161** | 2026-01-30 | **Leaky Abstraction: Raw Entity Injection** | Stop passing raw `Government` instances to `make_decision` in `phases.py`. Inject `GovernmentStateDTO` instead. | Unauthorized State Mutation Risk | **ACTIVE** |
+| **TD-162** | 2026-01-30 | **Bloated God Class: Household** | Decompose `core_agents.py` (952 LOC) into Stateless Components (Bio, Econ, Social). | Maintenance/Testing Overhead | **ACTIVE** |
 
 ---
 
@@ -143,4 +150,20 @@
 | **Step 2: Abstraction Wall** | TD-103, TD-078 | Complete DTO-only conversion for all AI Decision Engines. | ✅ **DONE** (WO-135) |
 | **Step 3: Formal Registry** | TD-104, TD-084 | Formalize all module interfaces (Bank, Tax, Govt) as Protocols. | ✅ **DONE** (WO-113) |
 | **Step 4: Structural Reset** | TD-123, TD-124 | Split God Classes (`Household`, `TransactionProcessor`). | ✅ **DONE** (WO-123, WO-124) |
-| **Step 5: Normalize Sequence** | TD-106, TD-109 | Normalize Tick Sequence. | **PLANNED** (Phase 26) |
+---
+
+## 🧐 SESSION INSIGHTS (2026-01-30)
+
+### 1. The Ghost of Money Leaks (TD-156, TD-158)
+- **현상**: `harvest-go.bat`를 통해 수집된 'Great Reset' 관련 검증 보고서들에서 수십만 단위의 통화량 오차(Drift) 발견.
+- **원인**: **Economic Audit (Audit Triad)** 결과, `housing_system.py`에서 임대료/대출/거래 시 `SettlementSystem`을 우회하여 자산을 직접 수정하는 결정적 결함(TD-158) 발견. 이것이 900k 오차의 주범으로 판단됨.
+- **교훈**: 핵심 금융 로직(Settlement)을 우회하는 "편의적 코드"는 시스템 전체의 물리법칙을 붕괴시킴. 모든 자산 이동은 반드시 `SettlementSystem`을 통과해야 함.
+
+### 2. Market Stagnation & Structural Leaks (TD-157, TD-161)
+- **현상**: WO-097 시나리오에서 가격 고착 현상(TD-157) 및 오케스트레이션 레이어의 추상화 누출 발견.
+- **원인**: **Structural Audit** 결과, `phases.py`에서 에이전트에게 `Government` 객체 원본을 직접 주입(TD-161)하고 있음이 확인됨. 이는 에이전트가 정부 상태를 임의로 변조할 수 있는 보안 홀이자 아키텍처 위반임.
+- **교훈**: 시뮬레이션의 인과관계를 지키기 위해 에이전트는 오직 DTO(감각 데이터)만을 통해 외부 세계와 소통해야 함. 객체 원본 주입은 금기임.
+
+### 3. God Class Bloating (TD-162)
+- **현상**: `Household` 에이전트 클래스가 952라인에 도달하여 단일 책임 원칙(SRP)을 심각하게 위반.
+- **대응**: 부품화(Componentization)를 통해 생체/경제/사회 로직을 시급히 분리해야 함.

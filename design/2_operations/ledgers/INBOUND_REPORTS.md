@@ -62,3 +62,22 @@
 - **daily_action_plan_20260116.md** (from `observer/daily-action-plan-20260116-7819994186068401645`) -> `observer_daily-action-plan-20260116-7819994186068401645_daily_action_plan_20260116.md`
 - **observer_scan.md** (from `observer/daily-action-plan-20260116-7819994186068401645`) -> `observer_daily-action-plan-20260116-7819994186068401645_observer_scan.md`
 - **2026-01-16_refactoring_proposal_soc.md** (from `refactor-proposal-soc-5999814637010019604`) -> `refactor-proposal-soc-5999814637010019604_2026-01-16_refactoring_proposal_soc.md`
+
+## Harvested on 2026-01-30 07:15:10
+- **GREAT_RESET_REPORT.md** (from `wo116-leak-fix-v2-3201816155918401346`) -> `wo116-leak-fix-v2-3201816155918401346_GREAT_RESET_REPORT.md`
+- **WO-097_HARVEST_REPORT.md** (from `fix/WO-097-economic-rebalance-1932089623817274888`) -> `fix_wo-097-economic-rebalance-1932089623817274888_WO-097_HARVEST_REPORT.md`
+- **GREAT_RESET_REPORT.md** (from `wo116-second-hunt-leaks-3932954180050094638`) -> `wo116-second-hunt-leaks-3932954180050094638_GREAT_RESET_REPORT.md`
+- **GREAT_RESET_REPORT.md** (from `verify-great-reset-stability-16428660261459271791`) -> `verify-great-reset-stability-16428660261459271791_GREAT_RESET_REPORT.md`
+
+## Harvested on 2026-01-30 07:48:36
+- **report_phase23_great_harvest.md** (from `wo-098-fix-household-noop-15838436664993932603`) -> `098-fix-household-noop-15838436664993932603_report_phase23_great_harvest.md`
+- **audit_parity_v2.md** (from `audit/parity-v2-report-17545820523019257913`) -> `audit_parity-v2-report-17545820523019257913_audit_parity_v2.md`
+- **audit_parity_v2.md** (from `audit-parity-v2-7910518704824696037`) -> `parity-v2-7910518704824696037_audit_parity_v2.md`
+- **audit_structural_v2.md** (from `audit-structural-report-5892606066303987563`) -> `structural-report-5892606066303987563_audit_structural_v2.md`
+- **pr_review_refactor-god-classes-v2-17210430308583135228.md** (from `refactor-god-classes-v2-17210430308583135228`) -> `refactor-god-classes-v2-17210430308583135228_pr_review_refactor-god-classes-v2-17210430308583135228.md`
+- **review_backup_20260117_121742_Analyze_this_PR__Che.md** (from `refactor-god-classes-v2-17210430308583135228`) -> `refactor-god-classes-v2-17210430308583135228_review_backup_20260117_121742_Analyze_this_PR__Che.md`
+- **audit_economic_v2.md** (from `audit-economic-v2-4411249366187755917`) -> `economic-v2-4411249366187755917_audit_economic_v2.md`
+- **audit_structural_v2.md** (from `audit-structural-v2-12802827775072199606`) -> `structural-v2-12802827775072199606_audit_structural_v2.md`
+- **audit_parity_v2.md** (from `audit-report-v2-6092483360933497510`) -> `report-v2-6092483360933497510_audit_parity_v2.md`
+- **pr_review_wo116-second-hunt-leaks-3932954180050094638.md** (from `wo116-second-hunt-leaks-3932954180050094638`) -> `wo116-second-hunt-leaks-3932954180050094638_pr_review_wo116-second-hunt-leaks-3932954180050094638.md`
+- **review_backup_20260124_073353_Analyze_this_PR.md** (from `wo116-second-hunt-leaks-3932954180050094638`) -> `wo116-second-hunt-leaks-3932954180050094638_review_backup_20260124_073353_Analyze_this_PR.md`

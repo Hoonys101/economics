@@ -4,8 +4,12 @@ import re
 from typing import List, Set
 
 # Configuration
-BRANCH_PATTERNS = ["refactor-*", "observer-*", "audit-*", "structural-*", "parity-*", "economic-*", "*-action-plan-*", "*-proposal-*", "wo-*"]
-REPORT_DIRS = ["design/3_work_artifacts/reports/", "design/_archive/gemini_output/", "reports/"]
+BRANCH_PATTERNS = [
+    "refactor*", "observer*", "audit*", "structural*", "parity*", "economic*", 
+    "wo*", "mission*", "phenomena*", "verify*", "feat*", "fix*", "cleanup*",
+    "*-action-plan-*", "*-proposal-*", "*-audit-*", "*-report-*"
+]
+REPORT_DIRS = ["design/3_work_artifacts/reports/", "design/_archive/gemini_output/", "design/gemini_output/", "reports/"]
 LOCAL_STORAGE_DIR = "design/3_work_artifacts/reports/inbound/"
 LOG_FILE = "design/2_operations/ledgers/INBOUND_REPORTS.md"
 
@@ -24,21 +28,37 @@ def run_command(cmd: List[str]) -> str:
 def get_remote_branches() -> List[str]:
     print("[Harvester] Fetching remote branches...")
     run_command(["git", "fetch", "origin"])
-    branches_raw = run_command(["git", "branch", "-r"])
-    branches = []
+    
+    # Get all remote branches sorted by commit date (descending)
+    # Using 'git branch -r --sort=-committerdate' to get the latest first
+    branches_raw = run_command(["git", "branch", "-r", "--sort=-committerdate"])
+    
+    all_remote_branches = []
     for line in branches_raw.split("\n"):
         branch = line.strip()
         if not branch or "->" in branch:
             continue
-        # Remove 'origin/' prefix for pattern matching but keep it for git commands
+        all_remote_branches.append(branch)
+
+    # 1. Mandatory: Top 3 latest 'audit-' branches (The Audit Triad)
+    audit_branches = [b for b in all_remote_branches if b.startswith("origin/audit-")]
+    top_audit_triad = audit_branches[:3]
+    
+    # 2. Optional: Other matching branches (wo-*, phenomena-*, etc.)
+    other_matches = []
+    for branch in all_remote_branches:
+        if branch in top_audit_triad:
+            continue
         clean_name = branch.replace("origin/", "")
         for pattern in BRANCH_PATTERNS:
-            # WO-106 FIX: Support both '-' and '/' in branch names
+            if pattern.startswith("audit"): continue # Already handled separately
             regex = pattern.replace("*", ".*").replace("-", "[-/]")
-            if re.match(f"^{regex}$", clean_name):
-                branches.append(branch)
+            if re.match(f"^{regex}$", clean_name, re.IGNORECASE):
+                other_matches.append(branch)
                 break
-    return list(set(branches))
+    
+    final_list = top_audit_triad + other_matches
+    return list(set(final_list))
 
 def get_new_files_in_branch(branch: str) -> List[str]:
     # Use 'git diff origin/main...branch' to get only files changed/added in this branch relative to main
@@ -96,6 +116,20 @@ def harvest():
                     f.write(content)
                 new_files_count += 1
                 harvested_log.append(f"- **{file_name}** (from `{branch_id}`) -> `{safe_name}`")
+
+        # [HITL 2.0] Delete branch if reports were found and collected
+        if files:
+            # Check if all targeted report files from this branch are now present in LOCAL_STORAGE_DIR
+            all_collected = True
+            for fp in files:
+                expected_path = os.path.join(LOCAL_STORAGE_DIR, f"{display_name}_{os.path.basename(fp)}")
+                if not os.path.exists(expected_path):
+                    all_collected = False
+                    break
+            
+            if all_collected:
+                print(f"[Harvester] 🗑️ All reports from {branch_id} are collected. Deleting remote branch...")
+                run_command(["git", "push", "origin", "--delete", branch_id])
 
     if new_files_count > 0:
         print(f"[Harvester] Successfully harvested {new_files_count} new reports.")

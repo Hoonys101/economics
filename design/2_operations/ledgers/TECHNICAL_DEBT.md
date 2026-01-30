@@ -12,14 +12,22 @@
 - **증상**: `GOVERNMENT_ID`가 전역 상수로 하드코딩되어 멀티 인스턴스 시뮬레이션 시 위험.
 - **해결 방안**: `WorldState` 또는 `Registry`를 통해 동적 확인.
 
+### [TD-156] Systemic Monetary Leak (M2 Drift)
+- **발견일**: 2026-01-30
+- **증상**: "The Great Reset" 검증 중 +/- 900k 이상의 막대한 통화량 오차 발견.
+- **영향**: 시뮬레이션의 물리적 법칙(질량 보존) 위배.
+
+### [TD-157] Price-Consumption Deadlock
+- **발견일**: 2026-01-30
+- **증상**: WO-097 재검증 중 식료품 가격이 $5.00$에서 고정되어 변하지 않는 현상.
+- **영향**: 시장 메커니즘 마비 및 인구 붕괴 유발.
+
 ### [TD-140~142] God File Infestation (LOC > 600)
 - **대상**: `db/repository.py`, `ai_driven_household_engine.py`, `corporate_manager.py`
-- **위험**: 유지보수 불가, 단위 테스트 작성의 어려움.
 - **조치**: 클래스 쪼개기(Decomposition) 및 관심사 분리(SoC) 수행.
 
 ### [TD-143] Hardcoded Placeholders (WO-XXX)
-- **내용**: `OPERATIONS_MANUAL.md` 등 문서 내에 `WO-XXX` 형태의 자리 표시자 잔존.
-- **영향**: 문서 신뢰도 및 가독성 저하.
+- **내능**: 문서 내에 `WO-XXX` 형태의 자리 표시자 잔존.
 
 ---
 
