@@ -79,41 +79,67 @@ def op_delete(args):
     else:
         print(f"⚠️ Key not found: {args.key}")
 
+def op_reset(args):
+    """Resets the registry to a clean state using the template."""
+    import shutil
+    template_path = "design/clean_registry_template.json"
+    registry_path = "design/command_registry.json"
+    
+    try:
+        shutil.copy(template_path, registry_path)
+        print(f"🧹 Registry Reset Complete: {registry_path} is now clean.")
+    except FileNotFoundError:
+        print("❌ Template file not found. Creating a minimal one...")
+        data = {
+            "_meta": {
+                "session": "Reset Fallback",
+                "updated": "2026-01-30",
+                "author": "System"
+            }
+        }
+        save_registry(data)
+        print("🧹 Registry Reset Complete (Fallback Mode).")
+
 def main():
     parser = argparse.ArgumentParser(description="Command Registry Operations")
-    subparsers = parser.add_subparsers(dest="op", required=True)
+    subparsers = parser.add_subparsers(dest="operation", required=True)
     
-    # 1. Set Gemini Mission
-    p_gem = subparsers.add_parser("set-gemini", help="Add/Update Gemini Mission")
-    p_gem.add_argument("key", help="Mission Key (Menu Title)")
-    p_gem.add_argument("--worker", required=True, choices=["audit", "spec", "git-review", "context", "verify", "git", "reporter"], help="Worker Type")
-    p_gem.add_argument("--instruction", "-i", required=True, help="Instruction Prompt")
-    p_gem.add_argument("--context", "-c", nargs="+", help="Context Files")
-    p_gem.add_argument("--output", "-o", help="Output File Path")
-    p_gem.add_argument("--model", "-m", help="Gemini Model")
+    # Set Gemini
+    p_gemini = subparsers.add_parser("set-gemini", help="Set a Gemini mission")
+    p_gemini.add_argument("key", help="Mission Key")
+    p_gemini.add_argument("--worker", required=True, choices=["audit", "spec", "git-review", "context", "verify", "git", "reporter"], help="Worker type")
+    p_gemini.add_argument("--instruction", required=True, help="Instruction")
+    p_gemini.add_argument("--context", nargs="+", help="Context files")
+    p_gemini.add_argument("--output", help="Output file")
+    p_gemini.add_argument("--model", help="Model Override")
+    
+    # Set Jules
+    p_jules = subparsers.add_parser("set-jules", help="Set a Jules mission")
+    p_jules.add_argument("key", help="Mission Key")
+    p_jules.add_argument("--command", required=True, choices=["create", "send-message"], help="Command Type")
+    p_jules.add_argument("--instruction", "-i", required=True, help="Instruction")
+    p_jules.add_argument("--title", help="Mission Title")
+    p_jules.add_argument("--file", help="Target File")
+    p_jules.add_argument("--session_id", help="Session ID")
+    p_jules.add_argument("--wait", action="store_true", help="Wait for completion")
 
-    # 2. Set Jules Mission
-    p_jul = subparsers.add_parser("set-jules", help="Add/Update Jules Mission")
-    p_jul.add_argument("key", help="Mission Key")
-    p_jul.add_argument("--command", required=True, choices=["create", "send-message"], help="Command Type")
-    p_jul.add_argument("--instruction", "-i", required=True, help="Instruction Prompt")
-    p_jul.add_argument("--title", "-t", help="Task Title (for create)")
-    p_jul.add_argument("--file", "-f", help="Attributes File Injection")
-    p_jul.add_argument("--session_id", "-s", help="Active Session ID for send-message")
-    p_jul.add_argument("--wait", action="store_true", help="Wait for completion")
+    # Delete
+    p_del = subparsers.add_parser("del", help="Delete a mission")
+    p_del.add_argument("key", help="Mission Key")
 
-    # 3. Delete Mission
-    p_del = subparsers.add_parser("del", help="Delete Mission")
-    p_del.add_argument("key", help="Mission Key to delete")
+    # Reset (New)
+    p_reset = subparsers.add_parser("reset", help="Reset registry to clean state")
 
     args = parser.parse_args()
     
-    if args.op == "set-gemini":
+    if args.operation == "set-gemini":
         op_set_gemini(args)
-    elif args.op == "set-jules":
+    elif args.operation == "set-jules":
         op_set_jules(args)
-    elif args.op == "del":
+    elif args.operation == "del":
         op_delete(args)
+    elif args.operation == "reset":
+        op_reset(args)
 
 if __name__ == "__main__":
     main()

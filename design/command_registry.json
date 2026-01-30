@@ -32,8 +32,8 @@
     "command": "send-message",
     "instruction": "ThoughtStream implementation and verification complete. The system is now ready for Root Cause Analysis. See design/3_work_artifacts/reports/REPORT_THOUGHTSTREAM_IMPLEMENTATION.md for details."
   },
-  "mission-fix-inheritance-redundancy": {
+  "mission-fix-main-crash": {
     "command": "create",
-    "instruction": "Resolve TD-159: In 'simulation/demographic_manager.py', remove direct calls to '_add_assets' (e.g., around lines 303, 310) and ensure asset inheritance is handled purely through 'TransactionProcessor' or 'SettlementSystem' to prevent double-counting or leaks. Verify with a specific unit test. Refer to TD-159 in TECH_DEBT_LEDGER.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
+    "instruction": "Fix the AttributeError in main.py execution post-Phase 3 merge. Likely a mismatch in WorldState attributes or Phase method signatures. Run 'python main.py --ticks 5' to reproduce and fix it.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
   }
 }
