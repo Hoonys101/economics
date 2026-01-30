@@ -84,10 +84,10 @@ class Simulation:
         self.simulation_logger.log_snapshot(
             tick=self.world_state.time,
             snapshot_data={
-                "gdp": snapshot.gdp,
+                "gdp": snapshot["gdp"],
                 "m2": self.world_state.calculate_total_money(),
-                "cpi": snapshot.cpi,
-                "transaction_count": len(self.world_state.history.get(self.world_state.time, []))
+                "cpi": snapshot["cpi"],
+                "transaction_count": len(self.world_state.transactions)
             }
         )
         
