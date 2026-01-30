@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import logging
 import math
+import simulation
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -24,6 +25,15 @@ class ProductionDepartment:
         try:
             # [EARLY EXIT]
             if len(self.firm.hr.employees) == 0:
+                if simulation.logger:
+                    simulation.logger.log_thought(
+                        tick=current_time,
+                        agent_id=str(self.firm.id),
+                        action="PRODUCE",
+                        decision="HALT",
+                        reason="NO_EMPLOYEES",
+                        context={}
+                    )
                 return 0.0
 
             log_extra = {"tick": current_time, "agent_id": self.firm.id, "tags": ["production"]}
@@ -95,6 +105,51 @@ class ProductionDepartment:
 
                 if actual_produced > 0:
                     self.firm.add_inventory(self.firm.specialization, actual_produced, actual_quality)
+
+            # ThoughtStream: Instrument halted production
+            if actual_produced == 0.0 and simulation.logger:
+                 reason = "UNKNOWN"
+                 context = {}
+
+                 # 2. Check Liquidity (Wage Bill)
+                 wage_bill = 0.0
+                 for employee in self.firm.hr.employees:
+                     base = self.firm.hr.employee_wages.get(employee.id, 0.0)
+                     wage = self.firm.hr.calculate_wage(employee, base)
+                     wage_bill += wage
+
+                 if self.firm.assets < wage_bill:
+                     reason = "LIQUIDITY_CRUNCH"
+                     context = {"cash": self.firm.assets, "wage_bill": wage_bill}
+
+                 # 3. Check Input Shortage
+                 elif produced_quantity > 0:
+                     # If we theoretically could produce (labor & capital > 0) but actual is 0
+                     input_config = self.config.goods.get(self.firm.specialization, {}).get("inputs", {})
+                     if input_config:
+                         for mat, req in input_config.items():
+                             if req > 0 and self.firm.input_inventory.get(mat, 0.0) == 0:
+                                  reason = "INPUT_SHORTAGE"
+                                  context = {"input_inventory": self.firm.input_inventory.copy()}
+                                  break
+
+                 # 4. Check Overstock
+                 if reason == "UNKNOWN":
+                     target = self.firm.production_target
+                     current_inv = self.firm.inventory.get(self.firm.specialization, 0.0)
+                     if current_inv > target * 2.0:
+                          reason = "OVERSTOCK"
+                          context = {"inventory": current_inv, "target": target}
+
+                 if reason != "UNKNOWN":
+                     simulation.logger.log_thought(
+                        tick=current_time,
+                        agent_id=str(self.firm.id),
+                        action="PRODUCE",
+                        decision="HALT",
+                        reason=reason,
+                        context=context
+                     )
 
             return actual_produced
 

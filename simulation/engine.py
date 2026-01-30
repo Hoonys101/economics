@@ -14,6 +14,10 @@ from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
 from modules.simulation.api import MarketSnapshotDTO, SystemStateDTO
 
+from simulation.db.logger import SimulationLogger
+from simulation.db.database import DATABASE_NAME
+import simulation
+
 logger = logging.getLogger(__name__)
 
 
@@ -40,12 +44,17 @@ class Simulation:
         self.action_processor = ActionProcessor(self.world_state)
         self.tick_orchestrator = TickOrchestrator(self.world_state, self.action_processor)
 
+        # Initialize SimulationLogger
+        self.simulation_logger = SimulationLogger(DATABASE_NAME)
+        # Expose via global module attribute for access by agents
+        simulation.logger = self.simulation_logger
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.world_state, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         # Avoid infinite recursion for internal components
-        if name in ["world_state", "tick_orchestrator", "action_processor"]:
+        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger"]:
             super().__setattr__(name, value)
             return
 
@@ -62,10 +71,12 @@ class Simulation:
         
         self.world_state.repository.update_simulation_run_end_time(self.world_state.run_id)
         self.world_state.repository.close()
+        self.simulation_logger.close()
         self.world_state.logger.info("Simulation finalized and Repository connection closed.")
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
         self.tick_orchestrator.run_tick(injectable_sensory_dto)
+        self.simulation_logger.flush()
 
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
