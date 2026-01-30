@@ -10,7 +10,7 @@ from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.schemas import HouseholdActionVector
 from simulation.ai.api import Personality
-from tests.factories import create_household_dto
+from tests.unit.factories import create_household_dto
 
 # Mock Logger
 @pytest.fixture(autouse=True)

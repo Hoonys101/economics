@@ -97,7 +97,7 @@ def government(mock_config, mock_tracker, finance_system):
 import os
 from pathlib import Path
 
-GOLDEN_FIXTURES_DIR = Path(__file__).parent / "goldens"
+GOLDEN_FIXTURES_DIR = Path(__file__).parent / "integration" / "goldens"
 
 
 def _get_golden_loader(fixture_name: str = "demo_fixture.json"):

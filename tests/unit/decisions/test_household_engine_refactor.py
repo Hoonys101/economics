@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 import random
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
-from tests.decisions.legacy_household_engine_fixture import LegacyAIDrivenHouseholdDecisionEngine
+from tests.unit.decisions.legacy_household_engine_fixture import LegacyAIDrivenHouseholdDecisionEngine
 from simulation.dtos import DecisionContext, HouseholdConfigDTO, MarketSnapshotDTO
 from modules.household.dtos import HouseholdStateDTO
 
