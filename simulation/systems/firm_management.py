@@ -131,19 +131,19 @@ class FirmSystem:
         # 6. Execute Financial Transfer (SettlementSystem)
         # Check for settlement_system on simulation (via world_state usually)
         settlement_system = getattr(simulation, "settlement_system", None)
-        success = False
-        if settlement_system:
-            # Inject SettlementSystem into new firm
-            new_firm.settlement_system = settlement_system
+        if not settlement_system:
+            raise RuntimeError("SettlementSystem required for firm creation.")
 
-            success = settlement_system.transfer(
-                founder_household, new_firm, final_startup_cost, f"Startup Capital for Firm {new_firm.id}"
-            )
-        else:
-            # Fallback (Legacy) - But enforce correct order and logic
-            founder_household._sub_assets(final_startup_cost)
-            new_firm._add_assets(final_startup_cost)
-            success = True
+        # Inject SettlementSystem into new firm
+        new_firm.settlement_system = settlement_system
+
+        success = settlement_system.transfer(
+            founder_household,
+            new_firm,
+            final_startup_cost,
+            f"Startup Capital for Firm {new_firm.id}",
+            tick=simulation.time
+        )
 
         if not success:
             logger.warning(f"STARTUP_FAILED | Failed to transfer capital from {founder_household.id} to new firm {new_firm_id}. Aborting.")
