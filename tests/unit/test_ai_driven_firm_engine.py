@@ -55,7 +55,8 @@ def mock_firm(mock_config):
 
 def test_adjust_price_tactic(firm_decision_engine_instance, mock_firm):
     """Test that the ADJUST_PRICE tactic correctly adjusts the price."""
-    from simulation.dtos import DecisionContext
+    from simulation.dtos import DecisionContext, FirmStateDTO
+    from tests.utils.factories import create_firm_config_dto
 
     mock_firm.inventory["food"] = 200
     mock_firm.production_target = 100
@@ -63,13 +64,22 @@ def test_adjust_price_tactic(firm_decision_engine_instance, mock_firm):
         (Tactic.ADJUST_PRICE, 1.0)
     )
 
+    state_dto = Mock(spec=FirmStateDTO)
+    state_dto.inventory = mock_firm.inventory
+    state_dto.production_target = mock_firm.production_target
+    state_dto.specialization = mock_firm.specialization
+    state_dto.id = mock_firm.id
+    state_dto.last_prices = mock_firm.last_prices
+    state_dto.marketing_budget = 0.0 # Required field
+    state_dto.base_quality = 1.0
+    state_dto.inventory_quality = {mock_firm.specialization: 1.0}
+
     context = DecisionContext(
-        firm=mock_firm,
-        markets={},
-        goods_data=[],
+        state=state_dto,
+        config=create_firm_config_dto(),
         market_data={},
+        goods_data=[],
         current_time=1,
-        government=None,
     )
     orders, _ = firm_decision_engine_instance.make_decisions(context)
 

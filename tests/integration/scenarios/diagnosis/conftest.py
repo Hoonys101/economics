@@ -9,6 +9,7 @@ from simulation.core_markets import Market
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.ai.api import Personality # Import Personality enum
 import config
+from tests.utils.factories import create_household_config_dto, create_firm_config_dto
 
 # Disable logging for cleaner test output
 logging.getLogger().setLevel(logging.CRITICAL)
@@ -34,7 +35,7 @@ def simple_household(mock_config_module):
         decision_engine=mock_engine,
         value_orientation="wealth_and_needs", # Default
         personality=Personality.MISER, # Default
-        config_module=mock_config_module
+        config_dto=create_household_config_dto()
     )
     return household
 
@@ -49,7 +50,7 @@ def simple_firm(mock_config_module):
         productivity_factor=1.0,
         decision_engine=mock_engine,
         value_orientation="wealth_and_needs", # Default
-        config_module=mock_config_module
+        config_dto=create_firm_config_dto()
     )
     return firm
 

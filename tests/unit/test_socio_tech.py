@@ -4,6 +4,7 @@ from simulation.core_agents import Household, Talent
 from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 import config
+from tests.utils.factories import create_household_config_dto
 
 class TestSocioTechDynamics(unittest.TestCase):
     def setUp(self):
@@ -20,12 +21,12 @@ class TestSocioTechDynamics(unittest.TestCase):
         self.female = self._create_agent(2, "F")
 
         # Marry them
-        self.male.spouse_id = self.female.id
-        self.female.spouse_id = self.male.id
+        self.male._bio_state.spouse_id = self.female.id
+        self.female._bio_state.spouse_id = self.male.id
 
         # Add Child
-        self.male.children_ids = [100]
-        self.female.children_ids = [100]
+        self.male._bio_state.children_ids = [100]
+        self.female._bio_state.children_ids = [100]
 
     def _create_agent(self, id, gender):
         ai = HouseholdAI(f"agent_{id}", self.mock_engine)
@@ -38,11 +39,12 @@ class TestSocioTechDynamics(unittest.TestCase):
             decision_engine=MagicMock(),
             value_orientation="wealth_and_needs",
             personality=Personality.CONSERVATIVE,
-            config_module=config
+            config_dto=create_household_config_dto(),
+            gender=gender
         )
         agent.decision_engine.ai_engine = ai
         agent.decision_engine.config_module = config
-        agent.gender = gender
+        # agent.gender = gender # Passed in constructor
         agent.home_quality_score = 1.0
         return agent
 

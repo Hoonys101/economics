@@ -4,6 +4,7 @@ from simulation.ai.household_system2 import HouseholdSystem2Planner, HousingDeci
 from simulation.core_agents import Household
 from simulation.ai.api import Personality
 from collections import deque
+from tests.utils.factories import create_household_config_dto
 
 class TestHouseholdSystem2(unittest.TestCase):
     def setUp(self):
@@ -85,7 +86,7 @@ class TestHouseholdSystem2(unittest.TestCase):
             decision_engine=mock_decision_engine,
             value_orientation="wealth_and_needs",
             personality=Personality.CONSERVATIVE,
-            config_module=self.mock_config
+            config_dto=create_household_config_dto()
         )
 
         # Override planner with mock to verify call

@@ -84,7 +84,8 @@ class TestStockMarketInitialization:
         mock_firm.is_active = True
         
         # Since logic is delegated to firm.get_book_value_per_share, we just mock that return value
-        mock_firm.get_book_value_per_share.return_value = 80.0
+        # Ensure it's a mock method
+        mock_firm.get_book_value_per_share = Mock(return_value=80.0)
 
         firms = {100: mock_firm}
         stock_market.update_reference_prices(firms)
@@ -279,11 +280,12 @@ class TestMarketSummary:
 
 def test_ipo_share_count(stock_market, mock_config):
     from simulation.firms import Firm
+    from tests.utils.factories import create_firm_config_dto
     mock_config.PROFIT_HISTORY_TICKS = 10
     firm_decision_engine = MagicMock()
     firm = Firm(id=1, initial_capital=10000, initial_liquidity_need=100, specialization="food",
                 productivity_factor=1, decision_engine=firm_decision_engine, value_orientation="v",
-                config_module=mock_config)
+                config_dto=create_firm_config_dto())
 
     firm.init_ipo(stock_market)
 
@@ -314,7 +316,15 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
     context.current_time = 1
 
     with patch.object(stock_market, 'get_stock_price', return_value=10.0):
-        order = firm_decision_engine.corporate_manager._attempt_secondary_offering(firm, context)
+        # SEO logic is in FinanceManager now
+        # Use factory for config to ensure lowercase attributes
+        from tests.utils.factories import create_firm_config_dto
+        config_dto = create_firm_config_dto(
+            startup_cost=30000.0,
+            seo_trigger_ratio=0.5,
+            seo_max_sell_ratio=0.1
+        )
+        order = firm_decision_engine.corporate_manager.finance_manager._attempt_secondary_offering(firm, context, config_dto)
 
     assert order is not None
     assert order.agent_id == firm.id
@@ -355,7 +365,8 @@ def test_household_investment(stock_market, mock_config, golden_households):
     # Ensure talent is present if needed (mock usually has it as a mock, but explicit override is safer if logic depends on it)
     # household.talent is likely a Mock, which is fine unless we access specific attrs like max_potential.
     # The original test set max_potential={"labor": 10}.
-    household.talent.max_potential = {"labor": 10}
+    from types import SimpleNamespace
+    household.talent = SimpleNamespace(max_potential={"labor": 10})
 
     stock_market.last_prices = {1: 10.0}
 
@@ -372,7 +383,8 @@ def test_household_investment(stock_market, mock_config, golden_households):
         }
 
         # Directly test the order creation logic
-        orders = household_decision_engine._place_buy_orders(household, 500, stock_market, 1)
+        # Logic moved to AssetManager
+        orders = household_decision_engine.asset_manager._place_buy_orders(household, 500, stock_market, 1)
 
         assert len(orders) > 0
         assert isinstance(orders[0], StockOrder)

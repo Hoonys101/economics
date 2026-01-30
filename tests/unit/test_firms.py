@@ -13,11 +13,10 @@ class TestFirmBookValue:
 
     @pytest.fixture
     def mock_config(self):
-        from simulation.dtos.config_dtos import FirmConfigDTO
-        import config
-        from simulation.utils.config_factory import create_config_dto
+        from tests.utils.factories import create_firm_config_dto
 
-        dto = create_config_dto(config, FirmConfigDTO)
+        dto = create_firm_config_dto()
+        # Override specific fields if needed for tests
         dto.firm_min_production_target = 10.0
         dto.ipo_initial_shares = 100.0
         dto.profit_history_ticks = 10
@@ -90,11 +89,9 @@ class TestFirmBookValue:
 class TestProductionDepartment:
     @pytest.fixture
     def mock_config(self):
-        from simulation.dtos.config_dtos import FirmConfigDTO
-        import config
-        from simulation.utils.config_factory import create_config_dto
+        from tests.utils.factories import create_firm_config_dto
 
-        dto = create_config_dto(config, FirmConfigDTO)
+        dto = create_firm_config_dto()
         dto.labor_alpha = 0.7
         dto.automation_labor_reduction = 0.5
         dto.labor_elasticity_min = 0.3
@@ -137,11 +134,9 @@ class TestProductionDepartment:
 class TestSalesDepartment:
     @pytest.fixture
     def mock_config(self):
-        from simulation.dtos.config_dtos import FirmConfigDTO
-        import config
-        from simulation.utils.config_factory import create_config_dto
+        from tests.utils.factories import create_firm_config_dto
 
-        dto = create_config_dto(config, FirmConfigDTO)
+        dto = create_firm_config_dto()
         dto.brand_awareness_saturation = 0.9
         dto.marketing_efficiency_high_threshold = 1.5
         dto.marketing_efficiency_low_threshold = 0.8

@@ -4,6 +4,7 @@ from simulation.firms import Firm
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from simulation.ai.enums import Personality
 import config # Import from root
+from tests.utils.factories import create_firm_config_dto
 
 @pytest.fixture
 def firm_mock():
@@ -20,14 +21,14 @@ def firm_mock():
         productivity_factor=10.0,
         decision_engine=decision_engine,
         value_orientation="growth",
-        config_module=config
+        config_dto=create_firm_config_dto()
     )
     return firm
 
 def test_system2_planner_guidance_automation_preference(firm_mock):
     """Test that CASH_COW prefers automation when profitable."""
     # Setup cheap automation scenario
-    firm_mock.config_module.AUTOMATION_COST_PER_PCT = 100.0
+    firm_mock.config.automation_cost_per_pct = 100.0
     firm_mock.employee_wages = {1: 1000.0}
     firm_mock.revenue_this_turn = 5000.0
     firm_mock._assets = 50000.0

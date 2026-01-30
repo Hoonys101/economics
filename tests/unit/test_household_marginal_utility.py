@@ -7,6 +7,7 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.enums import Tactic, Aggressiveness, Personality
 from simulation.ai_model import AIDecisionEngine
 from simulation.models import Order
+from tests.utils.factories import create_household_config_dto
 
 class MockConfig:
     GOODS = {
@@ -62,7 +63,7 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
             decision_engine=AIDrivenHouseholdDecisionEngine(self.ai_engine, self.config),
             value_orientation="N/A",
             personality=Personality.GROWTH_ORIENTED,
-            config_module=self.config
+            config_dto=create_household_config_dto()
         )
         # Give infinite money
         self.household._assets = 1_000_000_000

@@ -8,14 +8,22 @@ class TestPhase23Production:
     @pytest.fixture
     def config(self):
         mock_config = MagicMock()
-        mock_config.LABOR_ALPHA = 0.5
-        mock_config.LABOR_ELASTICITY_MIN = 0.1
-        mock_config.AUTOMATION_LABOR_REDUCTION = 0.0
-        mock_config.CAPITAL_DEPRECIATION_RATE = 0.0
+        # Use lower-case attributes to match FirmConfigDTO usage in ProductionDepartment
+        mock_config.labor_alpha = 0.5
+        mock_config.labor_elasticity_min = 0.1
+        mock_config.automation_labor_reduction = 0.0
+        mock_config.capital_depreciation_rate = 0.0
         # Mock GOODS structure
-        mock_config.GOODS = {"food": {"sector": "FOOD"}}
+        mock_config.goods = {"food": {"sector": "FOOD"}}
+        # Tech manager might still expect upper case for global economy params if it uses config_module
+        # But ProductionDepartment uses FirmConfigDTO which is lowercase.
+        # Let's set both just in case TechManager uses this same mock object differently.
         mock_config.TECH_FERTILIZER_UNLOCK_TICK = 0
         mock_config.TECH_DIFFUSION_RATE = 0.0
+        # Fix: Ensure multiplier is a float, not a Mock, because MagicMock attributes always exist
+        mock_config.TECH_FERTILIZER_MULTIPLIER = 3.0
+        mock_config.TECH_UNLOCK_COST_THRESHOLD = 5000.0
+        mock_config.TECH_UNLOCK_PROB_CAP = 0.1
         return mock_config
 
     @pytest.fixture
