@@ -63,6 +63,8 @@ class HousingSystem:
                             simulation.markets["housing"].place_order(sell_order, simulation.time)
 
         # 2. Rent & Maintenance
+        settlement = getattr(simulation, 'settlement_system', None)
+
         for unit in simulation.real_estate_units:
             # A. Maintenance Cost (Owner pays)
             if unit.owner_id is not None and unit.owner_id != -1:
@@ -70,17 +72,8 @@ class HousingSystem:
                 if owner:
                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
                     payable = min(cost, owner.assets)
-                    if payable > 0:
-                        # Use SettlementSystem for zero-sum transfer to Government
-                        if hasattr(simulation, 'settlement_system') and simulation.settlement_system and simulation.government:
-                            # Note: simulation.time might be needed if transfer requires it,
-                            # but SettlementSystem.transfer usually takes current_tick.
-                            # Checking SettlementSystem.transfer signature: transfer(payer, payee, amount, category, tick=None)
-                            # We can pass simulation.time if accessible.
-                            simulation.settlement_system.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time)
-                        else:
-                            # Fallback (should not happen in full sim)
-                            owner._sub_assets(payable)
+                    if payable > 0 and settlement and simulation.government:
+                        settlement.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time)
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:
@@ -93,8 +86,8 @@ class HousingSystem:
                 if tenant and owner and tenant.is_active and owner.is_active:
                     rent = unit.rent_price
                     if tenant.assets >= rent:
-                        tenant._sub_assets(rent)
-                        owner._add_assets(rent)
+                        if settlement:
+                            settlement.transfer(tenant, owner, rent, "rent_payment", tick=simulation.time)
                     else:
                         # Eviction due to rent non-payment
                         logger.info(
@@ -134,6 +127,10 @@ class HousingSystem:
         Handles the logic for a housing market transaction.
         Consolidated from Simulation._process_housing_transaction (Line 1539 in engine.py).
         """
+        if not hasattr(simulation, "settlement_system") or not simulation.settlement_system:
+             logger.error("HOUSING | No SettlementSystem found. Aborting transaction.")
+             return
+
         try:
             unit_id = int(tx.item_id.split("_")[1])
             unit = next((u for u in simulation.real_estate_units if u.id == unit_id), None)
@@ -154,6 +151,8 @@ class HousingSystem:
             mortgage_rate = getattr(self.config, "MORTGAGE_INTEREST_RATE", 0.05)
             
             trade_value = tx.price * tx.quantity
+            loan_id = None
+            loan_amount = 0.0
 
             if hasattr(buyer, "owned_properties"): # Household check
                 loan_amount = trade_value * ltv_ratio
@@ -200,44 +199,67 @@ class HousingSystem:
                 if loan_info:
                     loan_id = loan_info["loan_id"]
                     # Fractional Reserve: Loan creates a Deposit.
-                    # To use these funds for the transaction (Cash Payment), we must Withdraw.
-                    # This reduces Bank Reserves and increases Agent Cash.
+
+                    # 1. DISBURSEMENT: Transfer funds from Bank (Reserves) to Buyer (Cash)
+                    # This ensures conservation of mass (Bank assets decrease, Buyer assets increase)
+                    disbursement_success = simulation.settlement_system.transfer(
+                        simulation.bank, buyer, loan_amount, "loan_disbursement", tick=simulation.time
+                    )
+
+                    if not disbursement_success:
+                         logger.error(f"LOAN_DISBURSEMENT_FAIL | Bank could not transfer {loan_amount} to {buyer.id}. Voiding loan.")
+                         simulation.bank.void_loan(loan_id)
+                         return
+
+                    # 2. DEPOSIT CLEANUP: Reduce the newly created deposit liability
+                    # Because we just 'withdrew' it as cash via the transfer above (conceptually).
                     if hasattr(simulation.bank, "withdraw_for_customer"):
-                        success = simulation.bank.withdraw_for_customer(buyer.id, loan_amount)
-                        if success:
-                            buyer._add_assets(loan_amount)
-                            unit.mortgage_id = loan_id
-                        else:
-                            # Withdrawal failed (Liquidity Crisis). Rollback loan.
-                            logger.error(f"LOAN_WITHDRAW_FAIL | Could not withdraw loan proceeds for {buyer.id}. Rolling back loan {loan_id}.")
+                        withdraw_success = simulation.bank.withdraw_for_customer(buyer.id, loan_amount)
+                        if not withdraw_success:
+                             logger.error(f"LOAN_WITHDRAW_FAIL | Could not reduce deposit for {buyer.id}. Rolling back.")
+                             # Rollback Disbursement
+                             simulation.settlement_system.transfer(buyer, simulation.bank, loan_amount, "loan_rollback", tick=simulation.time)
+                             simulation.bank.void_loan(loan_id)
+                             return
 
-                            # Attempt rollback
-                            if hasattr(simulation.bank, "void_loan"):
-                                simulation.bank.void_loan(loan_id)
-
-                            # Do NOT update ownership or unit.mortgage_id
-                            # Return early to abort transaction
-                            return
+                        unit.mortgage_id = loan_id
                     else:
-                        # Fallback for mock/interface testing without withdraw_for_customer
-                        buyer._add_assets(loan_amount)
+                        # Fallback if bank interface missing (shouldn't happen)
                         unit.mortgage_id = loan_id
                 else:
                     unit.mortgage_id = None
             else:
                 unit.mortgage_id = None
                 
-            # 2. Process Funds Transfer
-            buyer._sub_assets(trade_value)
+            # 2. Process Funds Transfer (Buyer -> Seller)
+            payment_success = False
 
             if isinstance(seller, Government):
-                # The original code called 'record_asset_sale', which doesn't exist on Government.
-                # The intent seems to be to track government income. We'll use the existing
-                # 'collect_tax' method as a sink for this revenue, flagging it appropriately.
-                # seller.collect_tax handles the transfer via SettlementSystem.
-                seller.collect_tax(trade_value, "asset_sale", buyer.id, simulation.time)
+                # Use collect_tax which uses SettlementSystem internally
+                # Pass 'buyer' object, not 'buyer.id'
+                tax_result = seller.collect_tax(trade_value, "asset_sale", buyer, simulation.time)
+                payment_success = tax_result["success"]
             else:
-                seller._add_assets(trade_value)
+                payment_success = simulation.settlement_system.transfer(
+                    buyer, seller, trade_value, f"purchase_unit_{unit.id}", tick=simulation.time
+                )
+
+            if not payment_success:
+                 logger.error(f"HOUSING_PAYMENT_FAIL | Buyer {buyer.id} could not pay {trade_value} to Seller {seller.id}. Rolling back.")
+                 # Rollback Loan if it existed
+                 if loan_id:
+                      # 1. Return Cash to Bank (Reverse Disbursement)
+                      simulation.settlement_system.transfer(buyer, simulation.bank, loan_amount, "loan_rollback", tick=simulation.time)
+
+                      # 2. Void Loan (Cleanup Loan Asset)
+                      try:
+                          simulation.bank.void_loan(loan_id)
+                      except Exception as e:
+                          logger.warning(f"ROLLBACK_WARNING | void_loan failed during rollback: {e}")
+                          if loan_id in simulation.bank.loans:
+                               del simulation.bank.loans[loan_id]
+
+                 return
 
             # 3. Transfer Title
             unit.owner_id = buyer.id
