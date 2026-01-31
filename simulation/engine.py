@@ -50,9 +50,6 @@ class Simulation:
         # Expose via global module attribute for access by agents
         simulation.logger = self.simulation_logger
 
-        # DIRECTIVE ALPHA OPTIMIZER: Hardcode batch interval
-        self.batch_save_interval = 50
-
     def __getattr__(self, name: str) -> Any:
         return getattr(self.world_state, name)
 

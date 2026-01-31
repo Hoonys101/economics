@@ -111,7 +111,7 @@ class WorldState:
         self.public_manager: Optional[IAssetRecoverySystem] = None
 
         # Attributes with default values
-        self.batch_save_interval: int = 50
+        self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)
         self.household_time_allocation: Dict[int, float] = {}
         self.last_interest_rate: float = 0.0
 

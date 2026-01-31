@@ -213,7 +213,6 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.ai_trainer = self.ai_trainer
         sim.time: int = 0
-        sim.batch_save_interval = 50
 
         # WO-078: Initialize CreditScoringService
         credit_scoring_service = CreditScoringService(config_module=self.config)

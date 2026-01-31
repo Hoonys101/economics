@@ -720,66 +720,6 @@ class Household(BaseAgent, ILearningAgent):
             self._econ_state.employer_id = None
             self._econ_state.current_wage = 0.0
 
-    def decide_and_consume(self, current_time: int, market_data: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
-        """
-        Executes System 1 consumption logic (using inventory to satisfy needs).
-        """
-        self._econ_state, new_needs, consumed_items = self.econ_component.decide_and_consume(
-            self._econ_state,
-            self._bio_state.needs,
-            current_time,
-            self.goods_info_map,
-            self.config
-        )
-        self._bio_state.needs = new_needs
-
-        # ThoughtStream: Instrument non-consumption
-        if not consumed_items and simulation.logger:
-             reason = "UNKNOWN"
-             context = {}
-
-             # 1. Check Needs (Urgency)
-             # Note: Needs represent deficit/hunger (0 = satisfied, High = hungry)
-             survival_need = self.needs.get("survival", 0.0)
-             threshold = self.config.survival_need_consumption_threshold
-
-             if survival_need > threshold:
-                 # We wanted to consume (Hungry) but didn't. Why?
-
-                 # Check Inventory for food
-                 has_food = any(self.inventory.get(f, 0) > 0 for f in ["food", "basic_food", "luxury_food"])
-
-                 if not has_food:
-                     # Stock Out. Could we afford it?
-                     price = self._econ_state.perceived_avg_prices.get("food", self.config.default_fallback_price)
-
-                     if self.assets < price:
-                         reason = "INSOLVENT"
-                         context = {"cash": self.assets, "price": price, "need": survival_need}
-                     else:
-                         reason = "STOCK_OUT"
-                         context = {"inventory": self.inventory.copy(), "cash": self.assets}
-                 else:
-                     # Has food but didn't consume?
-                     # This implies inventory was skipped or logic failed?
-                     # Or maybe inventory is non-food items?
-                     reason = "UTILITY_CONSTRAINT"
-             else:
-                 reason = "SATISFIED"
-
-             if reason != "SATISFIED":
-                 simulation.logger.log_thought(
-                    tick=current_time,
-                    agent_id=str(self.id),
-                    action="CONSUME_FOOD",
-                    decision="REJECT",
-                    reason=reason,
-                    context=context
-                 )
-
-        self.update_needs(current_time, market_data)
-        return consumed_items
-
     def consume(self, item_id: str, quantity: float, current_time: int) -> "ConsumptionResult":
         # Delegate to EconComponent
         self._econ_state, new_needs, result = self.econ_component.consume(
