@@ -12,6 +12,10 @@
 | TD-174 | 2026-01-31 | Hardcoded Const: `batch_save_interval` (50) | Inflexible Performance Tuning |
 | TD-163 | 2026-01-30 | Test Suite Degradation (85+ Failures) | Zero Regression Guard |
 | TD-143 | 2026-01-29 | Hardcoded Placeholders (WO-XXX) | Documentation Debt |
+| **TD-165** | 2026-01-31 | Legacy Test Assertion Migration | M2 Integrity Tests Implemented |
+| **TD-167** | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Grace Protocol Implemented |\r
+| **TD-178** | 2026-01-31 | Phantom Liquidity Bug in `LoanMarket` | Seamless Payment Protocol + M2 Accounting Fixed |\r
+| **TD-179** | 2026-01-31 | Ambiguous Asset Definition (Cash vs Deposits) | ARCH_TRANSACTIONS.md Updated (M0/M2 Clarity) |
 
 ---
 *Archived by Antigravity during Operation Solid Ground.*

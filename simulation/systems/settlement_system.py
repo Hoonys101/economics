@@ -18,8 +18,9 @@ class SettlementSystem(ISettlementSystem):
     Money creation/destruction is ONLY allowed via the CentralBank (Minting Authority).
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[Any] = None):
         self.logger = logger if logger else logging.getLogger(__name__)
+        self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.total_liquidation_losses: float = 0.0
 
     def record_liquidation(
@@ -92,14 +93,29 @@ class SettlementSystem(ISettlementSystem):
         if not is_central_bank:
             if hasattr(debit_agent, 'assets'):
                 try:
-                    current_assets = float(debit_agent.assets)
-                    if current_assets < amount:
-                        self.logger.error(
-                            f"SETTLEMENT_FAIL | Insufficient funds for {debit_agent.id} to transfer {amount:.2f} to {credit_agent.id}. "
-                            f"Assets: {current_assets:.2f}. Memo: {memo}",
-                            extra={"tags": ["settlement", "insufficient_funds"]}
-                        )
-                        return None
+                    current_cash = float(debit_agent.assets)
+                    if current_cash < amount:
+                        # TD-179: Seamless Payment (Auto-Withdrawal from Bank)
+                        if self.bank:
+                            needed_from_bank = amount - current_cash
+                            bank_balance = self.bank.get_balance(str(debit_agent.id))
+                            
+                            if (current_cash + bank_balance) < amount:
+                                self.logger.error(
+                                    f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {debit_agent.id}. "
+                                    f"Cash: {current_cash:.2f}, Bank: {bank_balance:.2f}, Total: {(current_cash + bank_balance):.2f}. "
+                                    f"Required: {amount:.2f}. Memo: {memo}",
+                                    extra={"tags": ["settlement", "insufficient_funds"]}
+                                )
+                                return None
+                            # Success: Will be handled in Phase 2 (Withdrawal)
+                        else:
+                            self.logger.error(
+                                f"SETTLEMENT_FAIL | Insufficient cash for {debit_agent.id} AND Bank service is missing. "
+                                f"Cash: {current_cash:.2f}, Required: {amount:.2f}. Memo: {memo}",
+                                extra={"tags": ["settlement", "insufficient_funds"]}
+                            )
+                            return None
                 except (TypeError, ValueError):
                     self.logger.warning(
                         f"SettlementSystem warning: Agent {debit_agent.id} assets property is not float compatible."
@@ -109,8 +125,36 @@ class SettlementSystem(ISettlementSystem):
 
         # 2. EXECUTE: Perform the debit and credit
         try:
-            # Phase 1: Debit
-            debit_agent.withdraw(amount)
+            # Phase 1: Debit (Seamless Support)
+            if is_central_bank:
+                # Central Bank has infinite fiat capacity or uses a dict for assets
+                debit_agent.withdraw(amount)
+            else:
+                current_cash = float(debit_agent.assets)
+                if current_cash >= amount:
+                    # Standard cash withdrawal
+                    debit_agent.withdraw(amount)
+                else:
+                    # Seamless Payment (TD-179)
+                    needed_from_bank = amount - current_cash
+                    
+                    # 1. Exhaust all cash
+                    if current_cash > 0:
+                        debit_agent.withdraw(current_cash)
+                    
+                    # 2. Take the rest from the bank
+                    success = self.bank.withdraw_for_customer(int(debit_agent.id), needed_from_bank)
+                    if not success:
+                        # This shouldn't happen if Phase 1 check passed, but for safety:
+                        if current_cash > 0:
+                            debit_agent.deposit(current_cash)
+                        raise InsufficientFundsError(f"Bank withdrawal failed for {debit_agent.id} despite check.")
+                    
+                    self.logger.info(
+                        f"SEAMLESS_PAYMENT | Agent {debit_agent.id} paid {amount:.2f} using {current_cash:.2f} cash and {needed_from_bank:.2f} from bank.",
+                        extra={"tick": tick, "agent_id": debit_agent.id, "tags": ["settlement", "bank"]}
+                    )
+
         except InsufficientFundsError as e:
             self.logger.critical(
                 f"SETTLEMENT_CRITICAL | Race condition or logic error. InsufficientFundsError during transfer. "

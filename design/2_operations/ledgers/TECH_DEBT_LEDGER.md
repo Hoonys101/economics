@@ -29,17 +29,16 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | 비현실적 경제 상태 (무한 수요) | **PENDING** |
-| TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **ACTIVE** |
-| TD-167 | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Bankruptcy without Transaction Opportunity | **RESOLVED** |
+| TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **SPECCED** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-160 | 2026-01-30 | Transaction-Tax Atomicity Failure | Policy Revenue Leak | **ACTIVE** |
-| TD-171 | 2026-01-31 | Liquidation Dust Leak (Household) | Escheatment missing, assets vanish | **SPECCED** |
-| TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **SPECCED** |
-| TD-176 | 2026-01-31 | Tight Coupling: TxManager & Govt | High Architectural dependency | **ACTIVE** |
+| TD-160 | 2026-01-30 | Transaction-Tax Atomicity Failure | Policy Revenue Leak | **READY** |
+| TD-171 | 2026-01-31 | Liquidation Dust Leak (Household) | Escheatment missing, assets vanish | **READY** |
+| TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **READY** |
+| TD-176 | 2026-01-31 | Tight Coupling: TxManager & Govt | High Architectural dependency | **READY** |
 | TD-177 | 2026-01-31 | HousingSystem Bypassing Markets | Economic purity violation | **ACTIVE** |
 
 
@@ -57,7 +56,6 @@
 |---|---|---|---|---|
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
 | TD-140 | 2026-01-29 | God File: `db/repository.py` | 745+ LOC complexity | **ACTIVE** |
-| TD-165 | 2026-01-31 | Legacy Test Assertion Migration | Reduced Test Validity | **IMPLEMENTING** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
