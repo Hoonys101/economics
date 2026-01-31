@@ -11,17 +11,17 @@ def test_order_book_matching(simple_market):
     buy_order = Order(
         agent_id=1,
         item_id="basic_food",
-        price=10.0,
+        price_limit=10.0,
         quantity=1.0,
-        order_type="BUY",
+        side="BUY",
         market_id="basic_food"
     )
     sell_order = Order(
         agent_id=101,
         item_id="basic_food",
-        price=9.0, # Sell for less than buy -> Match expected
+        price_limit=9.0, # Sell for less than buy -> Match expected
         quantity=1.0,
-        order_type="SELL",
+        side="SELL",
         market_id="basic_food"
     )
 

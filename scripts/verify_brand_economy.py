@@ -97,8 +97,8 @@ def verify_brand_economy():
         "brand_awareness": firm_b.brand_manager.brand_awareness,
         "perceived_quality": firm_b.brand_manager.perceived_quality
     }
-    order_a = Order(1, "SELL", "widget", 10.0, 15.0, "goods_market", brand_info=brand_info_a)
-    order_b = Order(2, "SELL", "widget", 10.0, 10.0, "goods_market", brand_info=brand_info_b)
+    order_a = Order(agent_id=1, side="SELL", item_id="widget", quantity=10.0, price_limit=15.0, market_id="goods_market", brand_info=brand_info_a)
+    order_b = Order(agent_id=2, side="SELL", item_id="widget", quantity=10.0, price_limit=10.0, market_id="goods_market", brand_info=brand_info_b)
     
     market.place_order(order_a, 1)
     market.place_order(order_b, 1)
@@ -144,8 +144,8 @@ def verify_brand_economy():
     logger.info("--- Step D: Execution (Targeted Orders) ---")
     
     # Place targeted buy orders
-    buy_snob = Order(101, "BUY", "widget", 1.0, 20.0, "goods_market", target_agent_id=target_snob)
-    buy_miser = Order(102, "BUY", "widget", 1.0, 20.0, "goods_market", target_agent_id=target_miser)
+    buy_snob = Order(agent_id=101, side="BUY", item_id="widget", quantity=1.0, price_limit=20.0, market_id="goods_market", target_agent_id=target_snob)
+    buy_miser = Order(agent_id=102, side="BUY", item_id="widget", quantity=1.0, price_limit=20.0, market_id="goods_market", target_agent_id=target_miser)
     
     market.place_order(buy_snob, 1)
     market.place_order(buy_miser, 1)

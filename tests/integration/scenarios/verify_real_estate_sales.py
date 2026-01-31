@@ -145,9 +145,9 @@ class TestRealEstateSales(unittest.TestCase):
         # Since we initialized Engine with mock config, it creates a government agent.
         gov_id = engine.government.id
 
-        buy_order = Order(agent_id=engine.households[0].id, item_id="unit_0", price=10000.0, quantity=1, order_type="BUY", market_id="housing")
+        buy_order = Order(agent_id=engine.households[0].id, item_id="unit_0", price_limit=10000.0, quantity=1, side="BUY", market_id="housing")
         # Use valid government ID for Sell Order
-        sell_order = Order(agent_id=gov_id, item_id="unit_0", price=10000.0, quantity=1, order_type="SELL", market_id="housing")
+        sell_order = Order(agent_id=gov_id, item_id="unit_0", price_limit=10000.0, quantity=1, side="SELL", market_id="housing")
         
         # Inject orders directly for matching simulation
         engine.markets["housing"].place_order(buy_order, 0)

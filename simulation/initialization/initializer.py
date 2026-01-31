@@ -302,10 +302,10 @@ class SimulationInitializer(SimulationInitializerInterface):
                 sell_order = Order(
                     agent_id=sim.government.id,
                     item_id=f"unit_{unit.id}",
-                    price=unit.estimated_value,
+                    price_limit=unit.estimated_value,
                     quantity=1.0,
                     market_id="housing",
-                    order_type="SELL"
+                    side="SELL"
                 )
                 if "housing" in sim.markets:
                     sim.markets["housing"].place_order(sell_order, sim.time)

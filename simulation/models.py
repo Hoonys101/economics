@@ -1,23 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List
 import uuid
+from modules.market.api import OrderDTO
 
-
-@dataclass
-class Order:
-    """시장에 제출되는 개별 주문을 나타내는 데이터 클래스"""
-
-    agent_id: int | str
-    order_type: str
-    item_id: str
-    quantity: float
-    price: float
-    market_id: str
-    target_agent_id: Optional[int] = None  # Phase 6: Targeted Orders (Brand Loyalty)
-    brand_info: Optional[Dict[str, Any]] = None # Phase 6: Brand Metadata (awareness, quality)
-    metadata: Optional[Dict[str, Any]] = None # WO-078: Metadata for side-effects (e.g. BorrowerProfile)
-    id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
-
+# Alias for backward compatibility and migration
+Order = OrderDTO
 
 @dataclass
 class Transaction:

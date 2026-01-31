@@ -155,10 +155,10 @@ class TestDecisionEngineIntegration:
             [
                 Order(
                     agent_id=firm.id,
-                    order_type="SELL",
+                    side="SELL",
                     item_id="food",
                     quantity=10.0,
-                    price=15.0,
+                    price_limit=15.0,
                     market_id="goods_market",
                 )
             ],
@@ -190,10 +190,10 @@ class TestDecisionEngineIntegration:
             [
                 Order(
                     agent_id=household.id,
-                    order_type="BUY",
+                    side="BUY",
                     item_id="food",
                     quantity=1.0,
-                    price=1.6,
+                    price_limit=1.6,
                     market_id="goods_market",
                 )
             ],
@@ -228,10 +228,10 @@ class TestDecisionEngineIntegration:
             [
                 Order(
                     agent_id=household.id,
-                    order_type="SELL",
+                    side="SELL",
                     item_id="labor",
                     quantity=1,
-                    price=10,
+                    price_limit=10,
                     market_id="labor_market",
                 )
             ],
@@ -262,10 +262,10 @@ class TestDecisionEngineIntegration:
             [
                 Order(
                     agent_id=firm.id,
-                    order_type="BUY",
+                    side="BUY",
                     item_id="labor",
                     quantity=1,
-                    price=10,
+                    price_limit=10,
                     market_id="labor_market",
                 )
             ],
@@ -291,10 +291,10 @@ class TestDecisionEngineIntegration:
         """가계와 기업의 주문이 상품 시장에서 올바르게 매칭되는지 통합 테스트합니다."""
         firm_sell_order = Order(
             agent_id=firm.id,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=5.0,
-            price=10.0,
+            price_limit=10.0,
             market_id="goods_market",
         )
         goods_market.place_order(firm_sell_order, current_time=1)
@@ -305,10 +305,10 @@ class TestDecisionEngineIntegration:
 
         household_buy_order = Order(
             agent_id=household.id,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=5.0,
-            price=10.0,
+            price_limit=10.0,
             market_id="goods_market",
         )
         goods_market.place_order(household_buy_order, current_time=1)
@@ -334,10 +334,10 @@ class TestDecisionEngineIntegration:
         household.needs["survival_need"] = 10.0
         household_sell_order = Order(
             agent_id=household.id,
-            order_type="SELL",
+            side="SELL",
             item_id="labor",
             quantity=1,
-            price=10,
+            price_limit=10,
             market_id="labor_market",
         )
         labor_market.place_order(household_sell_order, current_time=1)
@@ -346,10 +346,10 @@ class TestDecisionEngineIntegration:
         firm.employees = []
         firm_buy_order = Order(
             agent_id=firm.id,
-            order_type="BUY",
+            side="BUY",
             item_id="labor",
             quantity=1,
-            price=10,
+            price_limit=10,
             market_id="labor_market",
         )
         labor_market.place_order(firm_buy_order, current_time=1)

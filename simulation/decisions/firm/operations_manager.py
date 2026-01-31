@@ -79,7 +79,7 @@ class OperationsManager:
                      last_price = mat_info.get("initial_price", 10.0)
 
                 bid_price = last_price * 1.05
-                orders.append(Order(firm.id, "BUY", mat, deficit, bid_price, mat))
+                orders.append(Order(agent_id=firm.id, side="BUY", item_id=mat, quantity=deficit, price_limit=bid_price, market_id=mat))
 
         return orders
 
@@ -108,14 +108,14 @@ class OperationsManager:
             return orders
 
         # Generate Internal Order
-        orders.append(Order(firm.id, "INVEST_AUTOMATION", "internal", actual_spend, 0.0, "internal"))
+        orders.append(Order(agent_id=firm.id, side="INVEST_AUTOMATION", item_id="internal", quantity=actual_spend, price_limit=0.0, market_id="internal"))
 
         # WO-044-Track-B: Automation Tax
         automation_tax_rate = config.automation_tax_rate
         tax_amount = actual_spend * automation_tax_rate
 
         if tax_amount > 0:
-            orders.append(Order(firm.id, "PAY_TAX", "automation_tax", tax_amount, 0.0, "internal"))
+            orders.append(Order(agent_id=firm.id, side="PAY_TAX", item_id="automation_tax", quantity=tax_amount, price_limit=0.0, market_id="internal"))
 
         return orders
 
@@ -139,7 +139,7 @@ class OperationsManager:
         if budget < 10.0:
             return None
 
-        return Order(firm.id, "INVEST_RD", "internal", budget, 0.0, "internal")
+        return Order(agent_id=firm.id, side="INVEST_RD", item_id="internal", quantity=budget, price_limit=0.0, market_id="internal")
 
     def _manage_capex(self, firm: FirmStateDTO, aggressiveness: float, current_time: int, config: FirmConfigDTO) -> Optional[Order]:
         """
@@ -156,7 +156,7 @@ class OperationsManager:
         if budget < 100.0:
             return None
 
-        return Order(firm.id, "INVEST_CAPEX", "internal", budget, 0.0, "internal")
+        return Order(agent_id=firm.id, side="INVEST_CAPEX", item_id="internal", quantity=budget, price_limit=0.0, market_id="internal")
 
     def _manage_production_target(self, firm: FirmStateDTO, config: FirmConfigDTO) -> Optional[Order]:
         """
@@ -181,6 +181,6 @@ class OperationsManager:
             new_target = min(max_target, new_target)
 
         if new_target != target:
-            return Order(firm.id, "SET_TARGET", "internal", new_target, 0.0, "internal")
+            return Order(agent_id=firm.id, side="SET_TARGET", item_id="internal", quantity=new_target, price_limit=0.0, market_id="internal")
 
         return None
