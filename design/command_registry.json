@@ -4,28 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-order-dto": {
-    "command": "create",
-    "instruction": "Refactor the Market Order system to use the standardized 'OrderDTO'. Replace raw dictionary usage in decisions and market submissions. Ensure Phase 6/7 compatibility.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Standardize Order DTO Contracts (TDL-028)",
-    "file": "design/3_work_artifacts/reports/DEBT_SETTLEMENT_REPORT.md"
-  },
   "mission-tax-decoupling": {
     "command": "create",
     "instruction": "Implement the TaxationSystem and Atomic Settlement logic as per the specification. Ensure strict decoupling from TransactionProcessor and robust rollback in SettlementSystem.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
     "title": "Tax Decoupling & Atomic Saga",
-    "file": "design/3_work_artifacts/specs/SPEC_TAX_DECOUPLING_SAGA.md"
-  },
-  "mission-tax-decoupling-spec": {
-    "worker": "spec",
-    "instruction": "Draft a comprehensive technical specification for Decoupling Taxation (TD-176) and implementing a Saga-like Atomic Settlement (TD-175). Objectives: 1. Extract all tax calculation/recording logic from TransactionProcessor and Government. 2. Design a new TaxationSystem module in modules/government/taxation/. 3. Define the interface for 'TaxIntents' that TransactionProcessor will request. 4. Refactor SettlementSystem to support atomic multi-credit transfers (1 Debit -> N Credits) with robust rollback. 5. Consult ARCH_TRANSACTIONS.md to ensure zero-sum integrity and precision rules are respected.",
-    "context": [
-      "simulation/systems/transaction_processor.py",
-      "simulation/systems/settlement_system.py",
-      "simulation/agents/government.py",
-      "design/1_governance/architecture/ARCH_TRANSACTIONS.md",
-      "design/3_work_artifacts/reports/DEBT_SETTLEMENT_REPORT.md"
-    ],
-    "output": "design/3_work_artifacts/specs/SPEC_TAX_DECOUPLING_SAGA_V2.md"
+    "file": "design/3_work_artifacts/specs/SPEC_TAX_DECOUPLING_SAGA_V2.md"
   }
 }

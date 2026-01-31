@@ -1,0 +1,936 @@
+diff --git a/communications/insights/TD-176.md b/communications/insights/TD-176.md
+new file mode 100644
+index 0000000..65bbb01
+--- /dev/null
++++ b/communications/insights/TD-176.md
+@@ -0,0 +1,23 @@
++# Insight Report: TD-176 Taxation Mechanism Decoupling & Atomic Settlement
++
++## 1. Phenomenon
++The `TransactionProcessor` was tightly coupled with `Government` and `TaxAgency` logic, directly invoking tax calculations and collection methods. Furthermore, the settlement process for transactions involving taxes (Trade + Tax) was non-atomic; if the tax collection failed after the trade transfer, the trade remained valid, leading to inconsistencies and potential "free lunch" scenarios.
++
++## 2. Cause
++The initial implementation prioritized getting features working over strict Separation of Concerns (SoC). `TransactionProcessor` handled too much business logic regarding tax policies. `SettlementSystem` lacked a batch/atomic transfer mechanism.
++
++## 3. Solution
++We implemented a Saga-like pattern with Atomic Settlement:
++1.  **TaxationSystem**: A new pure-logic module (`modules.government.taxation.system`) responsible for calculating `TaxIntent` (who pays, how much, why).
++2.  **Atomic Settlement**: `SettlementSystem.settle_atomic` now accepts a batch of credits. It sums the total debit, withdraws once, and distributes credits. If any credit fails, it rolls back all previous credits in the batch and refunds the debit agent.
++3.  **Refactoring**: `TransactionProcessor` now consults `TaxationSystem` for intents, bundles them with the main trade, and executes a single `settle_atomic` call.
++
++## 4. Impact
++- **Decoupling**: `TransactionProcessor` no longer needs to know tax rates or formulas. It just executes intents.
++- **Data Integrity**: Trades and Taxes are now all-or-nothing. No partial failures.
++- **Extensibility**: New tax types can be added to `TaxationSystem` without modifying `TransactionProcessor`'s core loop, provided they fit the "intent" model.
++
++## 5. Lessons Learned
++- **Legacy Deprecation**: Transitioning from `government.collect_tax` (which did transfer + recording) to `settle_atomic` (transfer) + `government.record_revenue` (recording) required careful manual construction of result objects to maintain compatible logging/stats.
++- **Rollback Complexity**: Implementing rollback logic requires ensuring that the reversal operations (withdrawals) don't fail. In our case, since we just deposited, immediate withdrawal is safe unless concurrent processes interfere (which is not the case in this sequential tick model).
++- **Testing**: Mocking agents and simulating failures (e.g., Frozen Bank) was crucial to verify the rollback mechanism.
+diff --git a/modules/government/taxation/__init__.py b/modules/government/taxation/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/modules/government/taxation/system.py b/modules/government/taxation/system.py
+new file mode 100644
+index 0000000..c9af0ac
+--- /dev/null
++++ b/modules/government/taxation/system.py
+@@ -0,0 +1,139 @@
++from dataclasses import dataclass
++from typing import List, Any, Dict, Optional
++import logging
++
++logger = logging.getLogger(__name__)
++
++@dataclass
++class TaxIntent:
++    payer_id: int
++    payee_id: int # Usually Government ID
++    amount: float
++    reason: str
++
++class TaxationSystem:
++    """
++    Pure logic component for tax calculations.
++    Decoupled from Government agent state (policies are passed in) and Settlement execution.
++    """
++    def __init__(self, config_module: Any):
++        self.config_module = config_module
++
++    def calculate_income_tax(self, income: float, survival_cost: float, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> float:
++        """
++        Calculates income tax based on the provided parameters.
++        Logic moved from TaxAgency.
++        """
++        if income <= 0:
++            return 0.0
++
++        if tax_mode == "FLAT":
++            return income * current_income_tax_rate
++
++        tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
++        if not tax_brackets:
++            taxable = max(0, income - survival_cost)
++            return taxable * current_income_tax_rate
++
++        raw_tax = 0.0
++        previous_limit_abs = 0.0
++        for multiple, rate in tax_brackets:
++            limit_abs = multiple * survival_cost
++            upper_bound = min(income, limit_abs)
++            lower_bound = max(0, previous_limit_abs)
++            taxable_amount = max(0.0, upper_bound - lower_bound)
++
++            if taxable_amount > 0:
++                raw_tax += taxable_amount * rate
++
++            if income <= limit_abs:
++                break
++            previous_limit_abs = limit_abs
++
++        base_rate_config = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
++        if base_rate_config > 0:
++            adjustment_factor = current_income_tax_rate / base_rate_config
++            return raw_tax * adjustment_factor
++
++        return raw_tax
++
++    def calculate_corporate_tax(self, profit: float, current_corporate_tax_rate: float) -> float:
++        """Calculates corporate tax."""
++        return profit * current_corporate_tax_rate if profit > 0 else 0.0
++
++    def calculate_tax_intents(
++        self,
++        transaction: Any, # Transaction model
++        buyer: Any,
++        seller: Any,
++        government: Any,
++        market_data: Optional[Dict[str, Any]] = None
++    ) -> List[TaxIntent]:
++        """
++        Determines applicable taxes for a transaction and returns TaxIntents.
++        Does NOT execute any transfer.
++        """
++        intents: List[TaxIntent] = []
++        trade_value = transaction.quantity * transaction.price
++
++        # 1. Sales Tax (Goods)
++        if transaction.transaction_type == "goods":
++            sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
++            tax_amount = trade_value * sales_tax_rate
++
++            if tax_amount > 0:
++                intents.append(TaxIntent(
++                    payer_id=buyer.id,
++                    payee_id=government.id,
++                    amount=tax_amount,
++                    reason=f"sales_tax_{transaction.transaction_type}"
++                ))
++
++        # 2. Income Tax (Labor)
++        elif transaction.transaction_type in ["labor", "research_labor"]:
++            # Determine Survival Cost
++            avg_food_price = 5.0 # Default
++            if market_data:
++                goods_market = market_data.get("goods_market", {})
++                if "basic_food_current_sell_price" in goods_market:
++                    avg_food_price = goods_market["basic_food_current_sell_price"]
++                else:
++                    # Fallback to config initial price
++                    avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
++
++            daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
++            survival_cost = max(avg_food_price * daily_food_need, 10.0)
++
++            # Get Tax Rate from Government
++            # Assuming government object has income_tax_rate attribute
++            current_rate = getattr(government, "income_tax_rate", 0.1)
++            tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
++
++            tax_amount = self.calculate_income_tax(trade_value, survival_cost, current_rate, tax_mode)
++
++            if tax_amount > 0:
++                tax_payer_type = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
++
++                payer_id = buyer.id if tax_payer_type == "FIRM" else seller.id
++                reason = "income_tax_firm" if tax_payer_type == "FIRM" else "income_tax_household"
++
++                intents.append(TaxIntent(
++                    payer_id=payer_id,
++                    payee_id=government.id,
++                    amount=tax_amount,
++                    reason=reason
++                ))
++
++        # 3. Escheatment (If handled here, though it's usually 100% transfer)
++        # TransactionProcessor handled 'escheatment' as "collect_tax(trade_value)".
++        # This implies it's a transfer to Government.
++        # If we handle it here:
++        elif transaction.transaction_type == "escheatment":
++             intents.append(TaxIntent(
++                payer_id=buyer.id, # Agent
++                payee_id=government.id,
++                amount=trade_value,
++                reason="escheatment"
++            ))
++
++        return intents
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 9b53405..1499925 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -10,8 +10,8 @@ from simulation.dtos import GovernmentStateDTO
+ from simulation.dtos.api import MarketSnapshotDTO
+ from simulation.utils.shadow_logger import log_shadow
+ from simulation.models import Transaction
+-from simulation.systems.tax_agency import TaxAgency
+ from simulation.systems.ministry_of_education import MinistryOfEducation
++from modules.government.taxation.system import TaxationSystem
+ from modules.finance.api import InsufficientFundsError, TaxCollectionResult
+ from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
+ from modules.government.dtos import FiscalPolicyDTO
+@@ -34,7 +34,8 @@ class Government:
+         self.config_module = config_module
+         self.settlement_system: Optional["ISettlementSystem"] = None
+         
+-        self.tax_agency = TaxAgency(config_module)
++        self.taxation_system = TaxationSystem(config_module)
++        # self.tax_agency = TaxAgency(config_module) # Deprecated/Removed
+         self.fiscal_policy_manager = FiscalPolicyManager(config_module)
+         self.ministry_of_education = MinistryOfEducation(config_module)
+ 
+@@ -192,11 +193,11 @@ class Government:
+ 
+         # Fallback (should not happen if initialized correctly)
+         tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
+-        return self.tax_agency.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
++        return self.taxation_system.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
+ 
+     def calculate_corporate_tax(self, profit: float) -> float:
+-        """Delegates corporate tax calculation to the TaxAgency."""
+-        return self.tax_agency.calculate_corporate_tax(profit, self.corporate_tax_rate)
++        """Delegates corporate tax calculation to the TaxationSystem."""
++        return self.taxation_system.calculate_corporate_tax(profit, self.corporate_tax_rate)
+ 
+     def reset_tick_flow(self):
+         """
+@@ -233,37 +234,40 @@ class Government:
+     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
+         """
+         Legacy adapter method used by TransactionProcessor.
+-        Now delegates to the new atomic collect_tax and records revenue.
+ 
+         DEPRECATED: Direct usage of this method is discouraged.
+-        Use tax_agency.collect_tax() followed by government.record_revenue().
+         """
+         warnings.warn(
+-            "Government.collect_tax is deprecated. Use tax_agency.collect_tax() and government.record_revenue() instead.",
++            "Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.",
+             DeprecationWarning,
+             stacklevel=2
+         )
+ 
++        payer_id = payer.id if hasattr(payer, 'id') else str(payer)
++
+         if not self.settlement_system:
+             logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
+             return {
+                 "success": False,
+                 "amount_collected": 0.0,
+                 "tax_type": tax_type,
+-                "payer_id": payer.id if hasattr(payer, 'id') else str(payer),
++                "payer_id": payer_id,
+                 "payee_id": self.id,
+                 "error_message": "No SettlementSystem linked"
+             }
+ 
+-        # Execute atomic transfer
+-        result = self.tax_agency.collect_tax(
+-            payer=payer,
+-            payee=self,
+-            amount=amount,
+-            tax_type=tax_type,
+-            settlement_system=self.settlement_system,
+-            current_tick=current_tick
+-        )
++        # Execute atomic transfer directly via SettlementSystem (Internal logic)
++        # Using transfer() for single payment
++        success = self.settlement_system.transfer(payer, self, amount, f"{tax_type} collection")
++
++        result = {
++            "success": bool(success),
++            "amount_collected": amount if success else 0.0,
++            "tax_type": tax_type,
++            "payer_id": payer_id,
++            "payee_id": self.id,
++            "error_message": None if success else "Transfer failed"
++        }
+ 
+         # Record stats
+         self.record_revenue(result)
+@@ -512,15 +516,10 @@ class Government:
+                     tax_amount = min(tax_amount, agent.assets)
+ 
+                     if tax_amount > 0 and self.settlement_system:
+-                        result = self.tax_agency.collect_tax(
+-                            payer=agent,
+-                            payee=self,
+-                            amount=tax_amount,
+-                            tax_type="wealth_tax",
+-                            settlement_system=self.settlement_system,
+-                            current_tick=current_tick
+-                        )
+-                        self.record_revenue(result)
++                        # Replaced TaxAgency call with internal collect_tax or direct transfer
++                        # Using collect_tax (even if deprecated for external) is fine for internal shortcut
++                        # to handle recording.
++                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
+                         if result['success']:
+                              total_wealth_tax += result['amount_collected']
+ 
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index d870ade..c65f85c 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -1,4 +1,4 @@
+-from typing import Optional, Dict, Any, cast, TYPE_CHECKING
++from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List
+ import logging
+ 
+ from simulation.finance.api import ISettlementSystem, ITransaction
+@@ -51,6 +51,153 @@ class SettlementSystem(ISettlementSystem):
+             extra={"tick": tick, "tags": ["liquidation", "bankruptcy", "ledger"]}
+         )
+ 
++    def _execute_withdrawal(self, agent: IFinancialEntity, amount: float, memo: str, tick: int) -> bool:
++        """
++        Executes withdrawal with checks and seamless payment (Bank) support.
++        Returns True on success, False on failure.
++        """
++        # 1. Checks
++        if agent is None:
++            self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
++            return False
++
++        is_central_bank = False
++        if hasattr(agent, "id") and str(agent.id) == "CENTRAL_BANK":
++             is_central_bank = True
++        elif hasattr(agent, "__class__") and agent.__class__.__name__ == "CentralBank":
++             is_central_bank = True
++
++        if is_central_bank:
++             try:
++                 agent.withdraw(amount)
++                 return True
++             except Exception as e:
++                 self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
++                 return False
++
++        # 2. Standard Agent Checks
++        if not hasattr(agent, 'assets'):
++             self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")
++             # Attempt withdraw anyway if interface expects it
++             pass
++
++        try:
++            current_cash = float(agent.assets)
++        except (TypeError, ValueError):
++             current_cash = 0.0
++
++        if current_cash < amount:
++            # Seamless Check
++            if self.bank:
++                needed_from_bank = amount - current_cash
++                bank_balance = self.bank.get_balance(str(agent.id))
++                if (current_cash + bank_balance) < amount:
++                    self.logger.error(
++                        f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {agent.id}. "
++                        f"Cash: {current_cash:.2f}, Bank: {bank_balance:.2f}, Total: {(current_cash + bank_balance):.2f}. "
++                        f"Required: {amount:.2f}. Memo: {memo}",
++                        extra={"tags": ["settlement", "insufficient_funds"]}
++                    )
++                    return False
++            else:
++                self.logger.error(
++                    f"SETTLEMENT_FAIL | Insufficient cash for {agent.id} AND Bank service is missing. "
++                    f"Cash: {current_cash:.2f}, Required: {amount:.2f}. Memo: {memo}",
++                    extra={"tags": ["settlement", "insufficient_funds"]}
++                )
++                return False
++
++        # 3. Execution
++        try:
++            if current_cash >= amount:
++                agent.withdraw(amount)
++            else:
++                # Seamless
++                needed_from_bank = amount - current_cash
++                if current_cash > 0:
++                    agent.withdraw(current_cash)
++
++                success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
++                if not success:
++                    # Rollback cash
++                    if current_cash > 0:
++                         agent.deposit(current_cash)
++                    raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
++
++                self.logger.info(
++                    f"SEAMLESS_PAYMENT | Agent {agent.id} paid {amount:.2f} using {current_cash:.2f} cash and {needed_from_bank:.2f} from bank.",
++                    extra={"tick": tick, "agent_id": agent.id, "tags": ["settlement", "bank"]}
++                )
++            return True
++        except InsufficientFundsError as e:
++             self.logger.critical(f"SETTLEMENT_CRITICAL | InsufficientFundsError. {e}")
++             return False
++        except Exception as e:
++             self.logger.exception(f"SETTLEMENT_UNHANDLED_FAIL | {e}")
++             return False
++
++    def settle_atomic(
++        self,
++        debit_agent: IFinancialEntity,
++        credits_list: List[Tuple[IFinancialEntity, float, str]],
++        tick: int
++    ) -> bool:
++        """
++        Executes a one-to-many atomic settlement.
++        All credits are summed to determine the total debit amount.
++        If the debit fails, the entire transaction is aborted.
++        If any credit fails, previous credits in this batch are rolled back.
++        """
++        if not credits_list:
++            return True
++
++        # 0. Validate Credits (No negative transfers allowed in this atomic mode)
++        for _, amount, memo in credits_list:
++             if amount < 0:
++                 self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {memo}")
++                 return False
++
++        # 1. Calculate Total Debit
++        total_debit = sum(amount for _, amount, _ in credits_list)
++        if total_debit <= 0:
++             return True
++
++        # 2. Debit Check & Withdrawal
++        memo = f"atomic_batch_{len(credits_list)}_txs"
++        success = self._execute_withdrawal(debit_agent, total_debit, memo, tick)
++        if not success:
++            return False
++
++        # 3. Execute Credits
++        completed_credits = []
++        for credit_agent, amount, credit_memo in credits_list:
++            if amount <= 0:
++                continue
++            try:
++                credit_agent.deposit(amount)
++                completed_credits.append((credit_agent, amount))
++            except Exception as e:
++                self.logger.error(
++                    f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back atomic batch. Error: {e}"
++                )
++                # ROLLBACK
++                # 1. Reverse completed credits
++                for ca, amt in completed_credits:
++                    try:
++                        ca.withdraw(amt)
++                    except Exception as rb_err:
++                        self.logger.critical(f"SETTLEMENT_FATAL | Credit Rollback failed for {ca.id}. {rb_err}")
++
++                # 2. Refund debit agent
++                try:
++                    debit_agent.deposit(total_debit)
++                except Exception as rb_err:
++                    self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {debit_agent.id}. {rb_err}")
++
++                return False
++
++        return True
++
+     def transfer(
+         self,
+         debit_agent: IFinancialEntity,
+@@ -74,102 +221,16 @@ class SettlementSystem(ISettlementSystem):
+                 amount, memo, tick
+             )
+ 
+-        # 1. ATOMIC CHECK: Verify funds BEFORE any modification
+-        if debit_agent is None:
+-            self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
+-            return None
+-
+-        if credit_agent is None:
+-            self.logger.error(f"SETTLEMENT_FAIL | Credit agent is None. Memo: {memo}")
+-            return None
++        if debit_agent is None or credit_agent is None:
++             self.logger.error(f"SETTLEMENT_FAIL | Debit or Credit agent is None. Memo: {memo}")
++             return None
+ 
+-        # Special Case: Central Bank (Minting Authority) can have negative assets (Fiat Issuer).
+-        is_central_bank = False
+-        if hasattr(debit_agent, "id") and str(debit_agent.id) == "CENTRAL_BANK":
+-             is_central_bank = True
+-        elif hasattr(debit_agent, "__class__") and debit_agent.__class__.__name__ == "CentralBank":
+-             is_central_bank = True
+-
+-        if not is_central_bank:
+-            if hasattr(debit_agent, 'assets'):
+-                try:
+-                    current_cash = float(debit_agent.assets)
+-                    if current_cash < amount:
+-                        # TD-179: Seamless Payment (Auto-Withdrawal from Bank)
+-                        if self.bank:
+-                            needed_from_bank = amount - current_cash
+-                            bank_balance = self.bank.get_balance(str(debit_agent.id))
+-                            
+-                            if (current_cash + bank_balance) < amount:
+-                                self.logger.error(
+-                                    f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {debit_agent.id}. "
+-                                    f"Cash: {current_cash:.2f}, Bank: {bank_balance:.2f}, Total: {(current_cash + bank_balance):.2f}. "
+-                                    f"Required: {amount:.2f}. Memo: {memo}",
+-                                    extra={"tags": ["settlement", "insufficient_funds"]}
+-                                )
+-                                return None
+-                            # Success: Will be handled in Phase 2 (Withdrawal)
+-                        else:
+-                            self.logger.error(
+-                                f"SETTLEMENT_FAIL | Insufficient cash for {debit_agent.id} AND Bank service is missing. "
+-                                f"Cash: {current_cash:.2f}, Required: {amount:.2f}. Memo: {memo}",
+-                                extra={"tags": ["settlement", "insufficient_funds"]}
+-                            )
+-                            return None
+-                except (TypeError, ValueError):
+-                    self.logger.warning(
+-                        f"SettlementSystem warning: Agent {debit_agent.id} assets property is not float compatible."
+-                    )
+-            else:
+-                 self.logger.warning(f"SettlementSystem warning: Agent {debit_agent.id} has no assets property.")
+-
+-        # 2. EXECUTE: Perform the debit and credit
+-        try:
+-            # Phase 1: Debit (Seamless Support)
+-            if is_central_bank:
+-                # Central Bank has infinite fiat capacity or uses a dict for assets
+-                debit_agent.withdraw(amount)
+-            else:
+-                current_cash = float(debit_agent.assets)
+-                if current_cash >= amount:
+-                    # Standard cash withdrawal
+-                    debit_agent.withdraw(amount)
+-                else:
+-                    # Seamless Payment (TD-179)
+-                    needed_from_bank = amount - current_cash
+-                    
+-                    # 1. Exhaust all cash
+-                    if current_cash > 0:
+-                        debit_agent.withdraw(current_cash)
+-                    
+-                    # 2. Take the rest from the bank
+-                    success = self.bank.withdraw_for_customer(int(debit_agent.id), needed_from_bank)
+-                    if not success:
+-                        # This shouldn't happen if Phase 1 check passed, but for safety:
+-                        if current_cash > 0:
+-                            debit_agent.deposit(current_cash)
+-                        raise InsufficientFundsError(f"Bank withdrawal failed for {debit_agent.id} despite check.")
+-                    
+-                    self.logger.info(
+-                        f"SEAMLESS_PAYMENT | Agent {debit_agent.id} paid {amount:.2f} using {current_cash:.2f} cash and {needed_from_bank:.2f} from bank.",
+-                        extra={"tick": tick, "agent_id": debit_agent.id, "tags": ["settlement", "bank"]}
+-                    )
+-
+-        except InsufficientFundsError as e:
+-            self.logger.critical(
+-                f"SETTLEMENT_CRITICAL | Race condition or logic error. InsufficientFundsError during transfer. "
+-                f"Initial check passed but withdrawal failed. Details: {e}",
+-                extra={"tags": ["settlement", "error"]}
+-            )
+-            return None
+-        except Exception as e:
+-            self.logger.exception(
+-                 f"SETTLEMENT_UNHANDLED_FAIL | An unexpected error occurred during withdrawal. Details: {e}"
+-            )
++        # EXECUTE
++        success = self._execute_withdrawal(debit_agent, amount, memo, tick)
++        if not success:
+             return None
+ 
+         try:
+-            # Phase 2: Credit
+             credit_agent.deposit(amount)
+         except Exception as e:
+             # ROLLBACK: Credit failed, must reverse debit
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index cd0bcc0..985c9a1 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -6,6 +6,7 @@ from simulation.models import Transaction
+ from simulation.core_agents import Household, Skill
+ from simulation.firms import Firm
+ from simulation.systems.api import SystemInterface
++from modules.government.taxation.system import TaxationSystem, TaxIntent
+ 
+ if TYPE_CHECKING:
+     from simulation.agents.government import Government
+@@ -22,6 +23,7 @@ class TransactionProcessor(SystemInterface):
+ 
+     def __init__(self, config_module: Any):
+         self.config_module = config_module
++        self.taxation_system = TaxationSystem(config_module)
+ 
+     def execute(self, state: SimulationState) -> None:
+         """
+@@ -95,9 +97,17 @@ class TransactionProcessor(SystemInterface):
+ 
+             elif tx.transaction_type == "escheatment":
+                  # Buyer: Agent (Deceased/Closed), Seller: Government
+-                 # Atomic Collection via Government (handles transfer and confirmed recording)
+-                 result = government.collect_tax(trade_value, "escheatment", buyer, current_time)
+-                 success = result['success']
++                 # Direct atomic settlement to government
++                 success = settlement.settle_atomic(buyer, [(government, trade_value, "escheatment")], current_time)
++                 if success:
++                      government.record_revenue({
++                             "success": True,
++                             "amount_collected": trade_value,
++                             "tax_type": "escheatment",
++                             "payer_id": buyer.id,
++                             "payee_id": government.id,
++                             "error_message": None
++                         })
+ 
+             elif tx.transaction_type == "inheritance_distribution":
+                 heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
+@@ -156,49 +166,85 @@ class TransactionProcessor(SystemInterface):
+                         government.total_money_destroyed += trade_value
+ 
+             elif tx.transaction_type == "goods":
+-                # Goods: Apply Sales Tax
+-                tax_amount = trade_value * sales_tax_rate
++                # Goods: Apply Sales Tax (Decoupled & Atomic)
++                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
++
++                credits = []
++                # 1. Main Trade Credit (Seller)
++                credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
++
++                # 2. Tax Credits (Government)
++                total_cost = trade_value
++                for intent in intents:
++                    credits.append((government, intent.amount, intent.reason))
++                    if intent.payer_id == buyer.id:
++                        total_cost += intent.amount
+                 
+                 # Solvency Check
+                 if hasattr(buyer, 'check_solvency'):
+-                    if buyer.assets < (trade_value + tax_amount):
++                    if buyer.assets < total_cost:
+                         buyer.check_solvency(government)
+ 
+-                success = settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+-                if success and tax_amount > 0:
+-                    # Atomic collection from buyer
+-                    government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
++                success = settlement.settle_atomic(buyer, credits, current_time)
++
++                if success:
++                    # Record Revenue
++                    for intent in intents:
++                        government.record_revenue({
++                             "success": True,
++                             "amount_collected": intent.amount,
++                             "tax_type": intent.reason,
++                             "payer_id": intent.payer_id,
++                             "payee_id": intent.payee_id,
++                             "error_message": None
++                        })
+ 
+             elif tx.transaction_type == "stock":
+                 # Stock: NO Sales Tax
+                 success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
+             
+             elif tx.transaction_type in ["labor", "research_labor"]:
+-                # Labor: Apply Income Tax
+-                tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
+-
+-                if "basic_food_current_sell_price" in goods_market_data:
+-                    avg_food_price = goods_market_data["basic_food_current_sell_price"]
+-                else:
+-                    avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
++                # Labor: Apply Income Tax (Decoupled & Atomic)
++                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
+                 
+-                daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+-                survival_cost = max(avg_food_price * daily_food_need, 10.0)
+-
+-                tax_amount = government.calculate_income_tax(trade_value, survival_cost)
++                credits = []
++                seller_net_amount = trade_value
++
++                for intent in intents:
++                    credits.append((government, intent.amount, intent.reason))
++                    if intent.payer_id == seller.id:
++                        # If Seller (Worker) pays, deduct from their receipt (Withholding)
++                        seller_net_amount -= intent.amount
++                        tax_amount = intent.amount
++                    elif intent.payer_id == buyer.id:
++                        # If Buyer (Firm) pays, it's extra cost
++                        pass
+                 
+-                if tax_payer == "FIRM":
+-                    success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
+-                    if success and tax_amount > 0:
+-                        # Atomic collection from Firm
+-                        government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
++                # Update tax_amount for later side-effects logic (Step 2)
++                # If no intents, tax_amount remains 0.0 (from scope start) or we should set it?
++                # The original code relied on tax_amount being set here.
++                # If intents exist, we sum them up or pick specific one?
++                # Usually only one income tax intent.
++                if intents:
++                    tax_amount = sum(i.amount for i in intents)
+                 else:
+-                    # Household pays tax
+-                    # Pay GROSS wage to household, then collect tax from household
+-                    success = settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
+-                    if success and tax_amount > 0:
+-                        # Atomic collection from Household (Withholding model)
+-                        government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
++                    tax_amount = 0.0
++
++                credits.append((seller, seller_net_amount, f"labor_wage:{tx.transaction_type}"))
++
++                success = settlement.settle_atomic(buyer, credits, current_time)
++
++                if success:
++                    # Record Revenue
++                    for intent in intents:
++                        government.record_revenue({
++                             "success": True,
++                             "amount_collected": intent.amount,
++                             "tax_type": intent.reason,
++                             "payer_id": intent.payer_id,
++                             "payee_id": intent.payee_id,
++                             "error_message": None
++                        })
+             
+             elif tx.item_id == "interest_payment":
+                 success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
+@@ -212,9 +258,17 @@ class TransactionProcessor(SystemInterface):
+                 if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+                     buyer.capital_income_this_tick += trade_value
+             elif tx.transaction_type == "tax":
+-                # Atomic Collection via Government
+-                result = government.collect_tax(trade_value, tx.item_id, buyer, current_time)
+-                success = result['success']
++                # Direct atomic settlement to government
++                success = settlement.settle_atomic(buyer, [(government, trade_value, tx.item_id)], current_time)
++                if success:
++                      government.record_revenue({
++                             "success": True,
++                             "amount_collected": trade_value,
++                             "tax_type": tx.item_id,
++                             "payer_id": buyer.id,
++                             "payee_id": government.id,
++                             "error_message": None
++                         })
+             elif tx.transaction_type == "infrastructure_spending":
+                 # Standard Transfer (Gov -> Reflux)
+                 success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
+diff --git a/tests/integration/test_atomic_settlement.py b/tests/integration/test_atomic_settlement.py
+new file mode 100644
+index 0000000..3fcedb3
+--- /dev/null
++++ b/tests/integration/test_atomic_settlement.py
+@@ -0,0 +1,63 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.systems.settlement_system import SettlementSystem
++
++class MockAgent:
++    def __init__(self, id, assets=100.0):
++        self.id = id
++        self.assets = assets
++
++    def deposit(self, amount):
++        if amount < 0: raise ValueError("Negative deposit")
++        self.assets += amount
++
++    def withdraw(self, amount):
++        if amount < 0: raise ValueError("Negative withdraw")
++        # SettlementSystem checks assets property manually before calling withdraw,
++        # but pure withdraw should also work.
++        if self.assets < amount:
++             # In simulation context, withdraw might raise InsufficientFundsError
++             # but here we just decrement or let it go negative if not checked strictly by method.
++             pass
++        self.assets -= amount
++
++def test_settle_atomic_success():
++    settlement = SettlementSystem()
++    debit_agent = MockAgent(1, 100.0)
++    credit_agent1 = MockAgent(2, 0.0)
++    credit_agent2 = MockAgent(3, 0.0)
++
++    credits = [
++        (credit_agent1, 30.0, "c1"),
++        (credit_agent2, 20.0, "c2")
++    ]
++
++    success = settlement.settle_atomic(debit_agent, credits, tick=1)
++
++    assert success is True
++    assert debit_agent.assets == 50.0
++    assert credit_agent1.assets == 30.0
++    assert credit_agent2.assets == 20.0
++
++def test_settle_atomic_rollback():
++    settlement = SettlementSystem()
++    debit_agent = MockAgent(1, 100.0)
++    credit_agent1 = MockAgent(2, 0.0)
++    credit_agent2 = MockAgent(3, 0.0)
++
++    # Mock credit_agent2 to fail on deposit
++    credit_agent2.deposit = MagicMock(side_effect=Exception("Bank Frozen"))
++
++    credits = [
++        (credit_agent1, 30.0, "c1"),
++        (credit_agent2, 20.0, "c2")
++    ]
++
++    success = settlement.settle_atomic(debit_agent, credits, tick=1)
++
++    assert success is False
++    assert debit_agent.assets == 100.0 # Full refund (100 - 50 + 50)
++    assert credit_agent1.assets == 0.0 # Rolled back (0 + 30 - 30)
++
++    # Verify that credit_agent2.deposit was called
++    credit_agent2.deposit.assert_called_once()
+diff --git a/tests/unit/test_taxation_system.py b/tests/unit/test_taxation_system.py
+new file mode 100644
+index 0000000..107f5b3
+--- /dev/null
++++ b/tests/unit/test_taxation_system.py
+@@ -0,0 +1,121 @@
++import pytest
++from unittest.mock import MagicMock, Mock
++from modules.government.taxation.system import TaxationSystem, TaxIntent
++
++@pytest.fixture
++def config_module():
++    mock = MagicMock()
++    mock.SALES_TAX_RATE = 0.05
++    mock.INCOME_TAX_PAYER = "HOUSEHOLD"
++    mock.TAX_MODE = "FLAT"
++    mock.TAX_BRACKETS = []
++    mock.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
++    mock.GOODS_INITIAL_PRICE = {"basic_food": 5.0}
++    mock.TAX_RATE_BASE = 0.1
++    return mock
++
++@pytest.fixture
++def taxation_system(config_module):
++    return TaxationSystem(config_module)
++
++def test_sales_tax_calculation(taxation_system, config_module):
++    # Setup
++    tx = Mock()
++    tx.transaction_type = "goods"
++    tx.quantity = 10
++    tx.price = 10.0 # Trade Value = 100
++
++    buyer = Mock()
++    buyer.id = 1
++    seller = Mock()
++    seller.id = 2
++    government = Mock()
++    government.id = 99
++
++    # Execute
++    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
++
++    # Verify
++    assert len(intents) == 1
++    intent = intents[0]
++    assert intent.payer_id == buyer.id
++    assert intent.payee_id == government.id
++    assert intent.amount == 100 * 0.05 # 5.0
++    assert "sales_tax" in intent.reason
++
++def test_income_tax_household_payer(taxation_system, config_module):
++    # Setup
++    config_module.INCOME_TAX_PAYER = "HOUSEHOLD"
++
++    tx = Mock()
++    tx.transaction_type = "labor"
++    tx.quantity = 1
++    tx.price = 100.0
++
++    buyer = Mock()
++    buyer.id = 10 # Firm
++    seller = Mock()
++    seller.id = 20 # Household (Worker)
++
++    government = Mock()
++    government.id = 99
++    government.income_tax_rate = 0.1
++
++    # Execute
++    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
++
++    # Verify
++    assert len(intents) == 1
++    intent = intents[0]
++    assert intent.payer_id == seller.id # Household pays
++    assert intent.amount == 100.0 * 0.1 # 10.0 (Flat rate mocked)
++    assert intent.reason == "income_tax_household"
++
++def test_income_tax_firm_payer(taxation_system, config_module):
++    # Setup
++    config_module.INCOME_TAX_PAYER = "FIRM"
++
++    tx = Mock()
++    tx.transaction_type = "labor"
++    tx.quantity = 1
++    tx.price = 100.0
++
++    buyer = Mock()
++    buyer.id = 10
++    seller = Mock()
++    seller.id = 20
++
++    government = Mock()
++    government.id = 99
++    government.income_tax_rate = 0.1
++
++    # Execute
++    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
++
++    # Verify
++    assert len(intents) == 1
++    intent = intents[0]
++    assert intent.payer_id == buyer.id # Firm pays
++    assert intent.amount == 100.0 * 0.1
++    assert intent.reason == "income_tax_firm"
++
++def test_escheatment(taxation_system):
++    tx = Mock()
++    tx.transaction_type = "escheatment"
++    tx.quantity = 1
++    tx.price = 500.0
++
++    buyer = Mock()
++    buyer.id = 666 # Deceased
++    seller = Mock() # Gov
++    government = Mock()
++    government.id = 99
++
++    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
++
++    assert len(intents) == 1
++    intent = intents[0]
++    assert intent.payer_id == buyer.id
++    assert intent.payee_id == government.id
++    assert intent.amount == 500.0
++    assert intent.reason == "escheatment"
