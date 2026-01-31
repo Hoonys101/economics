@@ -5,13 +5,20 @@ from simulation.agents.government import Government
 @pytest.fixture
 def government_setup(mocker):
     # Mocking patches
-    mock_tax_agency_cls = mocker.patch('simulation.agents.government.TaxAgency')
+    # TaxAgency is removed, use TaxationSystem
+    mock_taxation_system_cls = mocker.patch('simulation.agents.government.TaxationSystem')
     mock_education_ministry_cls = mocker.patch('simulation.agents.government.MinistryOfEducation')
     mock_fiscal_policy_manager_cls = mocker.patch('simulation.agents.government.FiscalPolicyManager')
 
-    mock_tax_agency_instance = mock_tax_agency_cls.return_value
+    # Mock new components
+    mock_welfare_manager_cls = mocker.patch('simulation.agents.government.WelfareManager')
+    mock_infra_manager_cls = mocker.patch('simulation.agents.government.InfrastructureManager')
+
+    mock_taxation_system_instance = mock_taxation_system_cls.return_value
     mock_education_ministry_instance = mock_education_ministry_cls.return_value
     mock_fiscal_policy_manager_instance = mock_fiscal_policy_manager_cls.return_value
+    mock_welfare_manager_instance = mock_welfare_manager_cls.return_value
+    mock_infra_manager_instance = mock_infra_manager_cls.return_value
 
     mock_config = Mock()
     mock_config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
@@ -33,9 +40,11 @@ def government_setup(mocker):
 
     return {
         "government": government,
-        "mock_tax_agency": mock_tax_agency_instance,
+        "mock_taxation_system": mock_taxation_system_instance,
         "mock_education_ministry": mock_education_ministry_instance,
         "mock_fiscal_policy_manager": mock_fiscal_policy_manager_instance,
+        "mock_welfare_manager": mock_welfare_manager_instance,
+        "mock_infra_manager": mock_infra_manager_instance,
         "mock_config": mock_config
     }
 
@@ -55,13 +64,13 @@ def test_calculate_corporate_tax_delegation(government_setup):
 
     env["government"].calculate_corporate_tax(profit)
 
-    env["mock_tax_agency"].calculate_corporate_tax.assert_called_once_with(
+    env["mock_taxation_system"].calculate_corporate_tax.assert_called_once_with(
         profit,
         env["government"].corporate_tax_rate # Should pass the current rate (0.25)
     )
 
 def test_collect_tax_delegation(government_setup):
-    """Test if collect_tax delegates to TaxAgency."""
+    """Test if collect_tax uses SettlementSystem."""
     env = government_setup
     amount = 1000
     tax_type = 'income'
@@ -70,27 +79,16 @@ def test_collect_tax_delegation(government_setup):
 
     # Ensure settlement_system is present
     env["government"].settlement_system = Mock()
-
-    # Configure mock return value to satisfy record_revenue
-    env["mock_tax_agency"].collect_tax.return_value = {
-        "success": True,
-        "amount_collected": amount,
-        "tax_type": tax_type,
-        "payer_id": source_id,
-        "payee_id": env["government"].id,
-        "error_message": None
-    }
+    env["government"].settlement_system.transfer.return_value = True
 
     env["government"].collect_tax(amount, tax_type, source_id, current_tick)
 
-    # Note: Government.collect_tax calls agency.collect_tax(payer=source, payee=self, ...)
-    env["mock_tax_agency"].collect_tax.assert_called_once_with(
-        payer=source_id,
-        payee=env["government"],
-        amount=amount,
-        tax_type=tax_type,
-        settlement_system=env["government"].settlement_system,
-        current_tick=current_tick
+    # Note: Government.collect_tax calls settlement_system.transfer(payer, self, amount, memo)
+    env["government"].settlement_system.transfer.assert_called_once_with(
+        source_id,
+        env["government"],
+        amount,
+        f"{tax_type} collection"
     )
 
 def test_run_public_education_delegation(government_setup):
@@ -131,6 +129,16 @@ def deficit_government_setup():
     # Mock settlement system to handle transfer
     government.settlement_system = Mock()
 
+    # For this test, we want real WelfareManager logic or mock it?
+    # The original tests tested logic inside provide_household_support.
+    # Since we moved logic to WelfareManager, we should check if Government delegates correctly.
+    # OR if we want to test the logic, we should use real WelfareManager.
+    # The deficit_government_setup in original test was implicit.
+    # Now Government initializes `self.welfare_manager = WelfareManager(self)`.
+    # So it uses real WelfareManager unless mocked.
+    # `government_setup` fixture mocks it. `deficit_government_setup` does NOT mock it explicitly.
+    # So it uses the real one (which is what we want for integration-like testing of logic).
+
     return government
 
 def test_deficit_spending_allowed_within_limit(deficit_government_setup):
@@ -138,23 +146,9 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
     government = deficit_government_setup
     government._assets = 100
     target_agent = Mock()
+    target_agent.id = "target_1"
     target_agent._assets = 0
 
-    # Mock provide_household_support relies on assets being updated?
-    # Actually provide_household_support logic:
-    # 1. Check if assets < amount
-    # 2. Issue bonds
-    # 3. Create welfare transaction (no direct transfer in this method, it returns transaction)
-    # Wait, the original method returns List[Transaction].
-    # But the test asserts `amount_paid == 500`?
-    # Original test code: `amount_paid = government.provide_household_support(...)`
-    # And asserts `government.assets == -400`.
-    # `provide_household_support` does NOT update assets for the welfare payment itself!
-    # It just returns transactions to be executed by TransactionProcessor.
-    # EXCEPT for `issue_treasury_bonds` which calls FinanceSystem.
-    # If FinanceSystem is mocked, assets won't change unless mock does it.
-
-    # Let's fix expectations. The method returns transactions.
     txs = government.provide_household_support(target_agent, 500, current_tick=1)
 
     # It should return at least 1 welfare tx + bond txs.
@@ -162,14 +156,12 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
     welfare_tx = [tx for tx in txs if tx.transaction_type == 'welfare'][0]
     assert welfare_tx.price == 500
 
-    # government.assets won't change here because we mocked finance system and provide_household_support doesn't do transfer.
-    # So we remove asset assertions that depended on real logic or side effects.
-
 def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
     """Test that spending is blocked when it would exceed the debt/GDP limit."""
     government = deficit_government_setup
     government._assets = -2900
     target_agent = Mock()
+    target_agent.id = "target_1"
 
     # Simulate FinanceSystem denying the bond issuance
     government.finance_system.issue_treasury_bonds.return_value = (None, [])

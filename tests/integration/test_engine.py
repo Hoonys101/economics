@@ -384,6 +384,9 @@ class TestSimulation:
             + [simulation_instance.bank.id]
             + [simulation_instance.government.id]
         )
+        if hasattr(simulation_instance, "escrow_agent") and simulation_instance.escrow_agent:
+            expected_agent_ids.append(simulation_instance.escrow_agent.id)
+
         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
 
         for hh in mock_households:
