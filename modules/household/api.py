@@ -24,8 +24,8 @@ class IBioComponent(ABC):
         """Creates demographic data for a new agent (mitosis)."""
         pass
 
-class IEconComponent(ABC):
-    """Interface for stateless Economic Component."""
+class IConsumptionManager(ABC):
+    """Interface for Consumption Manager (Stateless)."""
 
     @abstractmethod
     def consume(
@@ -59,6 +59,41 @@ class IEconComponent(ABC):
         """
         pass
 
+class IDecisionUnit(ABC):
+    """Interface for Decision Unit (Stateless)."""
+
+    @abstractmethod
+    def orchestrate_economic_decisions(
+        self,
+        state: EconStateDTO,
+        context: EconContextDTO,
+        orders: List[Order],
+        stress_scenario_config: Optional[StressScenarioConfig] = None,
+        config: Optional[HouseholdConfigDTO] = None
+    ) -> Tuple[EconStateDTO, List[Order]]:
+        """Refines orders and updates internal economic state (e.g. shadow wages)."""
+        pass
+
+    @abstractmethod
+    def make_decision(
+        self,
+        state: EconStateDTO,
+        decision_engine: Any, # BaseDecisionEngine
+        context: Any, # DecisionContext
+        macro_context: Any, # MacroFinancialContext
+        markets: Dict[str, Any], # IMarket
+        market_data: Dict[str, Any],
+        config: HouseholdConfigDTO
+    ) -> Tuple[EconStateDTO, List[Order], Any]: # Any is (Tactic, Aggressiveness)
+        """
+        Coordinated decision making process.
+        Returns: (Updated Econ State, Refined Orders, (Tactic, Aggressiveness))
+        """
+        pass
+
+class IEconComponent(ABC):
+    """Interface for stateless Economic Component."""
+
     @abstractmethod
     def work(
         self,
@@ -72,18 +107,6 @@ class IEconComponent(ABC):
     @abstractmethod
     def update_skills(self, state: EconStateDTO, config: HouseholdConfigDTO) -> EconStateDTO:
         """Updates labor skills based on experience."""
-        pass
-
-    @abstractmethod
-    def orchestrate_economic_decisions(
-        self,
-        state: EconStateDTO,
-        context: EconContextDTO,
-        orders: List[Order],
-        stress_scenario_config: Optional[StressScenarioConfig] = None,
-        config: Optional[HouseholdConfigDTO] = None
-    ) -> Tuple[EconStateDTO, List[Order]]:
-        """Refines orders and updates internal economic state (e.g. shadow wages)."""
         pass
 
     @abstractmethod
