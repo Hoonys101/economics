@@ -22,7 +22,7 @@ class MarketHistoryViewModel:
         """
         특정 시장의 이력 데이터를 조회하여 반환합니다.
         """
-        history = self.repository.get_market_history(
+        history = self.repository.markets.get_market_history(
             market_id, start_tick, end_tick, item_id
         )
         return history

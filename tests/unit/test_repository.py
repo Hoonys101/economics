@@ -42,7 +42,7 @@ def test_save_and_get_simulation_run(test_repo: SimulationRepository):
     description = "Test Run"
     config_hash = "testhash123"
 
-    run_id = test_repo.save_simulation_run(config_hash, description)
+    run_id = test_repo.runs.save_simulation_run(config_hash, description)
     assert run_id is not None
     assert run_id > 0
 
@@ -74,9 +74,9 @@ def test_save_and_get_agent_state(test_repo: SimulationRepository):
         current_production=None,
         num_employees=None,
     )
-    test_repo.save_agent_state(agent_state_data)
+    test_repo.agents.save_agent_state(agent_state_data)
 
-    retrieved_states = test_repo.get_agent_states(
+    retrieved_states = test_repo.agents.get_agent_states(
         agent_id=101, start_tick=1, end_tick=1
     )
     assert len(retrieved_states) == 1
@@ -100,9 +100,9 @@ def test_save_and_get_transaction(test_repo: SimulationRepository):
         transaction_type="Goods",
         market_id="goods_market",
     )
-    test_repo.save_transaction(transaction_data)
+    test_repo.markets.save_transaction(transaction_data)
 
-    retrieved_txs = test_repo.get_transactions(
+    retrieved_txs = test_repo.markets.get_transactions(
         start_tick=1, end_tick=1, market_id="goods_market"
     )
     assert len(retrieved_txs) == 1
@@ -130,9 +130,9 @@ def test_save_and_get_economic_indicators(test_repo: SimulationRepository):
         total_food_consumption=200.0,
         total_inventory=1000.0,
     )
-    test_repo.save_economic_indicator(indicator_data)
+    test_repo.analytics.save_economic_indicator(indicator_data)
 
-    retrieved_indicators = test_repo.get_economic_indicators(start_tick=1, end_tick=1)
+    retrieved_indicators = test_repo.analytics.get_economic_indicators(start_tick=1, end_tick=1)
     assert len(retrieved_indicators) == 1
 
     retrieved_indicator = retrieved_indicators[0]

@@ -21,7 +21,7 @@ class EconomicIndicatorsViewModel:
         """
         Retrieves and returns economic indicator data.
         """
-        indicators = self.repository.get_economic_indicators(start_tick, end_tick, run_id=run_id)
+        indicators = self.repository.analytics.get_economic_indicators(start_tick, end_tick, run_id=run_id)
         return indicators
 
     def get_wealth_distribution(self, households: List[Any], firms: List[Any]) -> Dict[str, Any]:

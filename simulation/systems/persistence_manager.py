@@ -138,19 +138,19 @@ class PersistenceManager:
         )
 
         if self.agent_state_buffer:
-            self.repository.save_agent_states_batch(self.agent_state_buffer)
+            self.repository.agents.save_agent_states_batch(self.agent_state_buffer)
             self.agent_state_buffer.clear()
 
         if self.transaction_buffer:
-            self.repository.save_transactions_batch(self.transaction_buffer)
+            self.repository.markets.save_transactions_batch(self.transaction_buffer)
             self.transaction_buffer.clear()
 
         if self.economic_indicator_buffer:
-            self.repository.save_economic_indicators_batch(self.economic_indicator_buffer)
+            self.repository.analytics.save_economic_indicators_batch(self.economic_indicator_buffer)
             self.economic_indicator_buffer.clear()
 
         if self.market_history_buffer:
-            self.repository.save_market_history_batch(self.market_history_buffer)
+            self.repository.markets.save_market_history_batch(self.market_history_buffer)
             self.market_history_buffer.clear()
 
         logger.info(

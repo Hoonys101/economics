@@ -89,7 +89,7 @@ class SnapshotViewModel:
 
         # Attrition Rates
         start_tick = max(0, current_tick - 5)
-        attrition_counts = self.repository.get_attrition_counts(start_tick, current_tick, run_id=simulation.run_id)
+        attrition_counts = self.repository.agents.get_attrition_counts(start_tick, current_tick, run_id=simulation.run_id)
 
         bankruptcy_count = attrition_counts.get("bankruptcy_count", 0)
         death_count = attrition_counts.get("death_count", 0)
@@ -151,7 +151,7 @@ class SnapshotViewModel:
 
     def _get_society_data(self, simulation: Simulation, current_tick: int) -> SocietyTabDataDTO:
         # Generation Stats
-        gen_stats_raw = self.repository.get_generation_stats(current_tick, run_id=simulation.run_id)
+        gen_stats_raw = self.repository.agents.get_generation_stats(current_tick, run_id=simulation.run_id)
         generations = [
             GenerationStatDTO(
                 gen=row["gen"],
@@ -278,7 +278,7 @@ class SnapshotViewModel:
         WINDOW_SIZE = 50
         start_tick = max(0, current_tick - WINDOW_SIZE)
 
-        history_data = self.repository.get_economic_indicators(start_tick, current_tick, run_id=simulation.run_id)
+        history_data = self.repository.analytics.get_economic_indicators(start_tick, current_tick, run_id=simulation.run_id)
 
         # CPI: Weighted Average of Goods Prices
         # In `EconomicIndicatorData`, we have `avg_goods_price` (which is weighted avg of goods).

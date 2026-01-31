@@ -438,7 +438,7 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         config_content = str(self.config.__dict__)
         config_hash = hashlib.sha256(config_content.encode()).hexdigest()
-        sim.run_id = self.repository.save_simulation_run(
+        sim.run_id = self.repository.runs.save_simulation_run(
             config_hash=config_hash,
             description="Economic simulation run with DB storage",
         )

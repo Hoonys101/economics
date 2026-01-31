@@ -725,7 +725,7 @@ class Phase5_PostSequence(IPhaseStrategy):
                         predicted_reward=None,
                         actual_reward=reward,
                      )
-                     self.world_state.repository.save_ai_decision(decision_data)
+                     self.world_state.repository.analytics.save_ai_decision(decision_data)
 
         # Households
         for household in state.households:
@@ -758,7 +758,7 @@ class Phase5_PostSequence(IPhaseStrategy):
                         predicted_reward=None,
                         actual_reward=reward,
                      )
-                     self.world_state.repository.save_ai_decision(decision_data)
+                     self.world_state.repository.analytics.save_ai_decision(decision_data)
 
         if self.world_state.ma_manager:
             self.world_state.ma_manager.process_market_exits_and_entries(state.time)

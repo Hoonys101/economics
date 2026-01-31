@@ -21,7 +21,7 @@ class AgentStateViewModel:
         """
         특정 에이전트의 상태 변화 데이터를 조회하여 반환합니다.
         """
-        states = self.repository.get_agent_states(agent_id, start_tick, end_tick)
+        states = self.repository.agents.get_agent_states(agent_id, start_tick, end_tick)
         return states
 
     def get_agent_assets_data(

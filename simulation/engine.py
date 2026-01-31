@@ -70,7 +70,7 @@ class Simulation:
         if self.world_state.persistence_manager:
             self.world_state.persistence_manager.flush_buffers(self.world_state.time)
         
-        self.world_state.repository.update_simulation_run_end_time(self.world_state.run_id)
+        self.world_state.repository.runs.update_simulation_run_end_time(self.world_state.run_id)
         self.world_state.repository.close()
         self.simulation_logger.close()
         self.world_state.logger.info("Simulation finalized and Repository connection closed.")
