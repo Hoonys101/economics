@@ -32,5 +32,9 @@ The method `decide_and_consume` was migrated to `ConsumptionManager` but appears
 -   **Insight**: It might be dead code.
 -   **Action**: Verify if any other system uses `decide_and_consume`. If not, remove it to reduce bloat.
 
+### 5. Hardcoded Magic Numbers in Decision Logic
+-   **Insight**: The `DecisionUnit`'s housing NPV calculation and shadow wage update logic contain numerous hardcoded numerical values (e.g., decision frequency, price-to-rent ratios, decay rates, risk premiums). This reduces the configurability and adaptability of the economic model.
+-   **Action**: Refactor these magic numbers into the `HouseholdConfigDTO` to allow for easier experimentation and tuning from the central configuration files.
+
 ## Conclusion
 The refactoring successfully reduced the complexity of `Household` and `EconComponent`, distributing responsibilities to focused managers. The system is now more modular and easier to test, though some logic consolidation (Housing) remains as future work.
