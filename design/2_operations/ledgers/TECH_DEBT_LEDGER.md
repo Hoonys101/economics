@@ -38,7 +38,7 @@
 | TD-164 | 2026-01-30 | Missing Fractional Reserve (WO-024) | Economic Stagnation / Liquidity Bottleneck | **RESOLVED** |
 
 
-| TD-167 | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Bankruptcy without Transaction Opportunity | **HIGH** |
+| TD-167 | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Bankruptcy without Transaction Opportunity | **IMPLEMENTING** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
@@ -73,7 +73,7 @@
 | TD-163 | 2026-01-30 | Test Suite Degradation (85+ Failures) | Zero Regression Guard | **RESOLVED** |
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
 | TD-140 | 2026-01-29 | God File: `db/repository.py` | 745+ LOC complexity | **ACTIVE** |
-| TD-165 | 2026-01-31 | Legacy Test Assertion Migration | Reduced Test Validity | **CRITICAL** |
+| TD-165 | 2026-01-31 | Legacy Test Assertion Migration | Reduced Test Validity | **IMPLEMENTING** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
