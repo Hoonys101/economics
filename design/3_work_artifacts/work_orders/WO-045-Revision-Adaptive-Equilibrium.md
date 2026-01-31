@@ -1,4 +1,4 @@
-# Work Order: WO-045-Revision - Adaptive Equilibrium (The Invisible Hand v2)
+# Work Order: - Adaptive Equilibrium (The Invisible Hand v2)
 
 **Phase:** 21.6
 **Priority:** CRITICAL
@@ -26,10 +26,10 @@ Track A (Reservation Wage 0.7)가 너무 강력하여 **"노동의 독재(84.88%
 
 ```python
 # config.py - Phase 21.6 Revision
-WAGE_DECAY_RATE = 0.02           # 실업 1틱당 희망임금 하락률 (2%)
-WAGE_RECOVERY_RATE = 0.01        # 취업 시 희망임금 상승률 (1%)
-RESERVATION_WAGE_FLOOR = 0.3     # 최저 희망임금 (시장 평균의 30%)
-SURVIVAL_CRITICAL_TURNS = 5      # 생존 가능 잔여 기간 임계값
+WAGE_DECAY_RATE = 0.02 # 실업 1틱당 희망임금 하락률 (2%)
+WAGE_RECOVERY_RATE = 0.01 # 취업 시 희망임금 상승률 (1%)
+RESERVATION_WAGE_FLOOR = 0.3 # 최저 희망임금 (시장 평균의 30%)
+SURVIVAL_CRITICAL_TURNS = 5 # 생존 가능 잔여 기간 임계값
 ```
 
 ---
@@ -47,8 +47,8 @@ food_price = market_data.get("basic_food", {}).get("avg_price", 10.0)
 survival_days = food_inventory + (household.assets / food_price)
 
 if survival_days < SURVIVAL_CRITICAL_TURNS:
-    # Panic Mode: 어떤 임금이든 수락
-    reservation_wage = 0  # Disable floor
+ # Panic Mode: 어떤 임금이든 수락
+ reservation_wage = 0 # Disable floor
 ```
 
 **결과:** 자산가는 버티고, 빈곤층은 즉시 반응.
@@ -62,12 +62,12 @@ if survival_days < SURVIVAL_CRITICAL_TURNS:
 ```python
 # 매 틱 실업 상태일 때
 if not household.is_employed:
-    household.wage_modifier *= (1.0 - WAGE_DECAY_RATE)
-    household.wage_modifier = max(RESERVATION_WAGE_FLOOR, household.wage_modifier)
+ household.wage_modifier *= (1.0 - WAGE_DECAY_RATE)
+ household.wage_modifier = max(RESERVATION_WAGE_FLOOR, household.wage_modifier)
 else:
-    # 취업 중이면 소폭 상승
-    household.wage_modifier *= (1.0 + WAGE_RECOVERY_RATE)
-    household.wage_modifier = min(1.0, household.wage_modifier)  # Cap at 100%
+ # 취업 중이면 소폭 상승
+ household.wage_modifier *= (1.0 + WAGE_RECOVERY_RATE)
+ household.wage_modifier = min(1.0, household.wage_modifier) # Cap at 100%
 ```
 
 **Final Reservation Wage:**
@@ -83,7 +83,7 @@ final_reservation = market_avg_wage * household.wage_modifier
 ```python
 # Firm.update_needs 임금 지급 전
 if firm.assets < wage:
-    # Cannot pay - Zombie or Fire with severance
+ # Cannot pay - Zombie or Fire with severance
 ```
 
 ---

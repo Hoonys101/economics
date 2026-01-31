@@ -1,4 +1,4 @@
-# [To Jules] WO-031: 허영의 사회 & 제어 시스템 구현
+# [To Jules] 허영의 사회 & 제어 시스템 구현
 
 ## Context
 Phase 17-3B 완료. Phase 17-4는 **허영심 모듈**과 **SimulationConfig 제어 시스템**을 통합 구현합니다.
@@ -16,25 +16,25 @@ Phase 17-3B 완료. Phase 17-4는 **허영심 모듈**과 **SimulationConfig 제
 
 ```python
 class SimulationConfig:
-    _instance = None
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            # 통화/금융
-            cls._instance.base_interest_rate = 0.05
-            cls._instance.mortgage_ltv_ratio = 0.8
-            cls._instance.enable_mortgage = True
-            # 재정/분배
-            cls._instance.tax_rate_income = 0.10
-            cls._instance.corporate_tax_rate = 0.0
-            cls._instance.government_mode = "ACTIVE"
-            # 심리/행동
-            cls._instance.enable_vanity_system = True
-            cls._instance.vanity_weight = 1.0
-            cls._instance.mimicry_factor = 0.5
-            cls._instance.reference_group_percentile = 0.20
-            cls._instance.enable_psychology = True
-        return cls._instance
+ _instance = None
+ def __new__(cls):
+ if cls._instance is None:
+ cls._instance = super().__new__(cls)
+ # 통화/금융
+ cls._instance.base_interest_rate = 0.05
+ cls._instance.mortgage_ltv_ratio = 0.8
+ cls._instance.enable_mortgage = True
+ # 재정/분배
+ cls._instance.tax_rate_income = 0.10
+ cls._instance.corporate_tax_rate = 0.0
+ cls._instance.government_mode = "ACTIVE"
+ # 심리/행동
+ cls._instance.enable_vanity_system = True
+ cls._instance.vanity_weight = 1.0
+ cls._instance.mimicry_factor = 0.5
+ cls._instance.reference_group_percentile = 0.20
+ cls._instance.enable_psychology = True
+ return cls._instance
 ```
 
 ### Task 2: Refactoring Pass 1
@@ -48,9 +48,9 @@ class SimulationConfig:
 ### Task 3: Household 확장 + 랭킹 로직
 **파일**: `simulation/core_agents.py`
 - `Household.__init__`에 추가:
-  - `self.conformity = random.uniform(0.3, 0.8)`
-  - `self.social_rank = 0.5`
-  - `self.patience = random.uniform(0.3, 0.7)`
+ - `self.conformity = random.uniform(0.3, 0.8)`
+ - `self.social_rank = 0.5`
+ - `self.patience = random.uniform(0.3, 0.7)`
 
 **파일**: `simulation/engine.py`
 - `run_tick()` 시작부에 `self._update_social_ranks()` 호출
@@ -61,9 +61,9 @@ class SimulationConfig:
 ```python
 cfg = SimulationConfig()
 if cfg.enable_vanity_system:
-    gap = household.social_rank - cfg.reference_group_percentile
-    u_social = gap * household.conformity * cfg.vanity_weight
-    total_utility = u_intrinsic + (u_social * 100)
+ gap = household.social_rank - cfg.reference_group_percentile
+ u_social = gap * household.conformity * cfg.vanity_weight
+ total_utility = u_intrinsic + (u_social * 100)
 ```
 
 ### Task 5: 베블런재 + 모방 소비

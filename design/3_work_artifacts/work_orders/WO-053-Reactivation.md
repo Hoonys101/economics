@@ -1,12 +1,12 @@
 # Work Order: Phase 23 Reactivation (The Great Expansion)
 
 ## 1. Overview
-**Mission**: WO-053 Reactivation
+**Mission**: Reactivation
 **Objective**: Escape the Malthusian Trap by successfully introducing Chemical Fertilizer (Haber-Bosch) and triggering a population boom via food surplus.
 **Target Metrics**:
-1.  **Supply/Demand Ratio >= 2.5** (Verification of Glut)
-2.  **Price Crash > 50%** within 20 ticks of introduction.
-3.  **Population Boom** leading to max agents limit (2000).
+1. **Supply/Demand Ratio >= 2.5** (Verification of Glut)
+2. **Price Crash > 50%** within 20 ticks of introduction.
+3. **Population Boom** leading to max agents limit (2000).
 
 ---
 
@@ -17,22 +17,22 @@ Ensure the configuration is set to the following values to force "Radical Change
 
 ```json
 {
-  "SCENARIO_ID": "PHASE_23_INDUSTRIAL_REV",
-  "DESCRIPTION": "The Great Expansion: Fertilizer & Population Boom",
-  "PARAMETERS": {
-    "TFP_MULTIPLIER": 3.0,
-    "FOOD_SECTOR_CONFIG": {
-       "base_productivity": 10,
-       "technology_bonus": 2.0
-    },
-    "MARKET_CONFIG": {
-       "PRICE_VOLATILITY_LIMIT": 0.5
-    },
-    "LIMITS": {
-       "MAX_AGENTS": 2000,
-       "MAX_TICK_LATENCY_SEC": 1.0
-    }
-  }
+ "SCENARIO_ID": "PHASE_23_INDUSTRIAL_REV",
+ "DESCRIPTION": "The Great Expansion: Fertilizer & Population Boom",
+ "PARAMETERS": {
+ "TFP_MULTIPLIER": 3.0,
+ "FOOD_SECTOR_CONFIG": {
+ "base_productivity": 10,
+ "technology_bonus": 2.0
+ },
+ "MARKET_CONFIG": {
+ "PRICE_VOLATILITY_LIMIT": 0.5
+ },
+ "LIMITS": {
+ "MAX_AGENTS": 2000,
+ "MAX_TICK_LATENCY_SEC": 1.0
+ }
+ }
 }
 ```
 
@@ -53,24 +53,24 @@ Ensure the configuration is set to the following values to force "Radical Change
 ### Step 3: Verification Script (`scripts/verify_phase23.py`)
 - The script must run the simulation for at least 100 ticks (or until limits are hit).
 - It must log and analyze:
-    - **Global Food Supply vs Demand** (Ask Qty / Bid Qty).
-    - **Average Food Price**.
-    - **Total Population**.
+ - **Global Food Supply vs Demand** (Ask Qty / Bid Qty).
+ - **Average Food Price**.
+ - **Total Population**.
 - **Success Criteria**:
-    - `Max(Supply/Demand) >= 2.5`
-    - `Price(Tick + 20) <= Price(Tick) * 0.5` (50% crash)
-    - `Population(End) > Population(Start) + 200` (Significant growth)
+ - `Max(Supply/Demand) >= 2.5`
+ - `Price(Tick + 20) <= Price(Tick) * 0.5` (50% crash)
+ - `Population(End) > Population(Start) + 200` (Significant growth)
 
 ---
 
 ## 4. Execution & Reporting
 - Run the verification.
 - Output a report summarizing:
-    - Tick of Fertilizer Introduction.
-    - Tick of Price Crash.
-    - Peak Supply/Demand Ratio.
-    - Final Population count.
-    - Pass/Fail verdict based on metrics.
+ - Tick of Fertilizer Introduction.
+ - Tick of Price Crash.
+ - Peak Supply/Demand Ratio.
+ - Final Population count.
+ - Pass/Fail verdict based on metrics.
 
 **Constraint**: If `Tick Latency > 1.0s`, abort and report "Performance Fail".
 **Constraint**: If `Population > 2000`, stop and report "Success (Boom Limit Reached)".

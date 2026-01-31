@@ -1,9 +1,9 @@
-# WO-082: Golden Loader Infrastructure
+# Golden Loader Infrastructure
 
 ## 🎯 Objective
 Develop a robust **Golden Loader Utility** that converts simple JSON data into powerful `MagicMock` objects for testing. This infrastructure will be used to load the fixtures generated later.
 
-> **Warning**: Do NOT modify `simulation/` code. Work ONLY in `scripts/` or `tests/utils/`. This task must be parallel-safe with `WO-081`.
+> **Warning**: Do NOT modify `simulation/` code. Work ONLY in `scripts/` or `tests/utils/`. This task must be parallel-safe with ``.
 
 ---
 
@@ -14,9 +14,9 @@ Implement a `GoldenLoader` class with the following features:
 
 - **`load_json(path: str) -> Dict`**: Safely loads JSON files from `tests/goldens/`.
 - **`dict_to_mock(data: Dict, spec: Type = None) -> MagicMock`**:
-  - Recursively converts nested dictionaries into nested `MagicMock` objects.
-  - If `spec` is provided (e.g., `Household` class), ensures the Mock respects the class interface (`spec=class`).
-  - Handles lists of objects correctly (returns list of Mocks).
+ - Recursively converts nested dictionaries into nested `MagicMock` objects.
+ - If `spec` is provided (e.g., `Household` class), ensures the Mock respects the class interface (`spec=class`).
+ - Handles lists of objects correctly (returns list of Mocks).
 
 ### 2. Unit Testing for Loader
 Create `tests/utils/test_golden_loader.py`:

@@ -1,4 +1,4 @@
-# Work Order: WO-041 - Iron Test Balancing
+# Work Order: - Iron Test Balancing
 
 **Phase:** 21.5 (Stabilization)
 **Date:** 2026-01-10

@@ -1,6 +1,6 @@
 # AUDIT_SPEC_STRUCTURAL: Structural Integrity Audit (v2.0)
 
-**목표**: WO-103 이후 확립된 'DTO 기반 디커플링' 및 'Component SoC' 아키텍처가 실제 코드베이스에서 엄격히 준수되고 있는지 기술적으로 검증한다.
+**목표**: 이후 확립된 'DTO 기반 디커플링' 및 'Component SoC' 아키텍처가 실제 코드베이스에서 엄격히 준수되고 있는지 기술적으로 검증한다.
 
 ## 1. 용어 정의 (Terminology)
 - **God Class**: 단일 클래스가 800라인 이상의 물리적 코드를 소유하거나, 분리 가능한 도메인 책임(예: 가계의 생존 로직과 주식 포트폴리오 로직)을 3개 이상 혼합하여 소유한 상태.
@@ -16,16 +16,16 @@
 
 ## 3. 구체적 방법 예시 (Concrete Examples)
 - **위반 예시 (SoC Violation)**:
-  ```python
-  # BAD: DecisionContext에 household 객체 자체를 넘김
-  context = DecisionContext(household=self, market_data=md)
-  ```
+ ```python
+ # BAD: DecisionContext에 household 객체 자체를 넘김
+ context = DecisionContext(household=self, market_data=md)
+ ```
 - **준수 예시 (DTO Pattern)**:
-  ```python
-  # GOOD: snapshot(DTO)을 생성하여 전달
-  dto = self.get_state_dto()
-  context = DecisionContext(household_state=dto, market_data=md)
-  ```
+ ```python
+ # GOOD: snapshot(DTO)을 생성하여 전달
+ dto = self.get_state_dto()
+ context = DecisionContext(household_state=dto, market_data=md)
+ ```
 - **God Class 탐지**: `Firm` 클래스 내에 생산 로직, 마케팅 로직, 재무 로직이 모두 구현되어 있다면 이를 `ProductionDepartment`, `SalesDepartment` 등으로 분리할 것을 권고한다.
 
 ## 4. 구조적 모듈 현황 진단

@@ -1,4 +1,4 @@
-# WO-107: Operation Clean Interface (Structural Decoupling)
+# Operation Clean Interface (Structural Decoupling)
 
 **Date**: 2026-01-22
 **Priority**: MEDIUM

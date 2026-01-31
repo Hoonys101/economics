@@ -1,4 +1,4 @@
-# WO-034: Phase 20 "The Matrix" Scaffolding
+# Phase 20 "The Matrix" Scaffolding
 
 ## 1. 개요
 Phase 20 "The Matrix"의 기초 인프라를 구축합니다. 에이전트의 성별(Gender), 가사 노동의 질(Home Quality), 그리고 장기 계획 엔진(System 2)의 뼈대를 생성하는 것을 목표로 합니다.
@@ -23,11 +23,11 @@ Phase 20 "The Matrix"의 기초 인프라를 구축합니다. 에이전트의 �
 `System2Planner`의 `project_future` 로직을 다음과 같이 스캐폴딩하십시오.
 1. **Inputs**: `agent_data`, `market_data` (Current Market Price Averages).
 2. **Logic**:
-   - `Daily_Net_CashFlow = (Expected_Wage * 8) - (Average_Price * Survival_Threshold)`.
-   - `Future_Wealth(t) = Current_Wealth + (Daily_Net_CashFlow * t)`.
-   - `Survival_Check(t)`: `Future_Wealth(t) < 0` 이면 사망(Dead)으로 간주.
+ - `Daily_Net_CashFlow = (Expected_Wage * 8) - (Average_Price * Survival_Threshold)`.
+ - `Future_Wealth(t) = Current_Wealth + (Daily_Net_CashFlow * t)`.
+ - `Survival_Check(t)`: `Future_Wealth(t) < 0` 이면 사망(Dead)으로 간주.
 3. **NPV Calculation**:
-   - `NPV_Wealth = Sum over t [ Future_Wealth(t) * (SYSTEM2_DISCOUNT_RATE ^ t) ]`.
+ - `NPV_Wealth = Sum over t [ Future_Wealth(t) * (SYSTEM2_DISCOUNT_RATE ^ t) ]`.
 4. **Output**: `NPV_Wealth`, `Estimated_Bankruptcy_Tick`.
 
 ## 3. 검증 계획

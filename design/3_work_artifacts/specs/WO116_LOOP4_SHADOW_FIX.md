@@ -1,4 +1,4 @@
-# MISSION: WO-116 Loop 4 (Erasing Shadow Mutations)
+# MISSION: Loop 4 (Erasing Shadow Mutations)
 
 ## 1. SITUATION
 - Our forensic tool (Loop 3.5) proves that **massive leaks** occur when Transactions are zero.
@@ -10,16 +10,16 @@ You must refactor the following files to ensure **every single asset change** is
 
 ### Target Files & Tasks:
 1. **`simulation/systems/lifecycle_manager.py`**:
-   - Locate `_add_assets` and `_sub_assets` calls in `_handle_agent_liquidation`.
-   - Ensure liquidation distributions to shareholders use `SettlementSystem.transfer`.
+ - Locate `_add_assets` and `_sub_assets` calls in `_handle_agent_liquidation`.
+ - Ensure liquidation distributions to shareholders use `SettlementSystem.transfer`.
 2. **`simulation/systems/inheritance_manager.py`**:
-   - Audit all `_add_assets` calls during estate distribution. Replace with `SettlementSystem`.
+ - Audit all `_add_assets` calls during estate distribution. Replace with `SettlementSystem`.
 3. **`simulation/bank.py`**:
-   - Review `process_default` and `grant_loan`. Ensure every "creation" or "forgiveness" event is perfectly balanced with Government counters.
+ - Review `process_default` and `grant_loan`. Ensure every "creation" or "forgiveness" event is perfectly balanced with Government counters.
 4. **`simulation/agents/government.py`**:
-   - Ensure the internal `_assets` management doesn't leak during treasury operations.
+ - Ensure the internal `_assets` management doesn't leak during treasury operations.
 5. **`simulation/base_agent.py`**:
-   - Verify if these methods should be `protected` or if we can add a "Safety Toggle" that throws an error if called outside a system context.
+ - Verify if these methods should be `protected` or if we can add a "Safety Toggle" that throws an error if called outside a system context.
 
 ## 3. MANDATORY: Forensic Proof
 - After refactoring, run `scripts/diagnose_money_leak.py`.

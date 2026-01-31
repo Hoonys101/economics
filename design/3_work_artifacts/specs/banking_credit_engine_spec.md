@@ -1,4 +1,4 @@
-# W-1 Specification: WO-064 - Banking Credit Engine (Credit Creation)
+# W-1 Specification: - Banking Credit Engine (Credit Creation)
 
 **모듈**: Financial System (Bank)
 **상태**: 🟢 Approved (Ready for Implementation)
@@ -13,24 +13,24 @@
 ## 2. 핵심 로직 (Pseudo-code)
 
 ### 2.1 신용 창출 대출 승인 (`grant_loan`)
-1.  **입력**: `borrower_id`, `amount`, `term_ticks`, `interest_rate`
-2.  **지급준비율 검증 (Reserve Requirement Check)**:
-    - `required_reserves` = (`current_total_deposits` + `amount`) * `RESERVE_REQ_RATIO`
-    - 만약 `self.assets` < `required_reserves` 이면 대출 거절 (유동성 방어).
-    - 단, `GOLD_STANDARD_MODE`가 `True`인 경우 기존처럼 `self.assets < amount`를 체크함.
-3.  **신용 창출 실행**:
-    - 은행의 `assets`가 `amount`보다 적더라도 위 조건을 만족하면 대출 승인.
-    - `CREDIT_CREATION` 로그 출력: `[CREDIT_CREATION] Bank {id} created {amount} credit. Reserves: {assets}`
-4.  **반환**: `loan_id`
+1. **입력**: `borrower_id`, `amount`, `term_ticks`, `interest_rate`
+2. **지급준비율 검증 (Reserve Requirement Check)**:
+ - `required_reserves` = (`current_total_deposits` + `amount`) * `RESERVE_REQ_RATIO`
+ - 만약 `self.assets` < `required_reserves` 이면 대출 거절 (유동성 방어).
+ - 단, `GOLD_STANDARD_MODE`가 `True`인 경우 기존처럼 `self.assets < amount`를 체크함.
+3. **신용 창출 실행**:
+ - 은행의 `assets`가 `amount`보다 적더라도 위 조건을 만족하면 대출 승인.
+ - `CREDIT_CREATION` 로그 출력: `[CREDIT_CREATION] Bank {id} created {amount} credit. Reserves: {assets}`
+4. **반환**: `loan_id`
 
 ### 2.2 중앙은행 보전 로직 (`check_solvency`)
-1.  **목적**: 대출 실행으로 인해 은행의 실물 자산(`assets`)이 마이너스가 된 경우, 중앙은행이 화폐를 발행하여 보전함.
-2.  **수행**:
-    - 만약 `self.assets < 0`:
-        - `injection_amount = abs(self.assets) + 1000.0` (여유 자금 포함)
-        - `self.assets += injection_amount`
-        - `government.total_money_issued += injection_amount`
-        - `LENDER_OF_LAST_RESORT` 경고 로그 출력.
+1. **목적**: 대출 실행으로 인해 은행의 실물 자산(`assets`)이 마이너스가 된 경우, 중앙은행이 화폐를 발행하여 보전함.
+2. **수행**:
+ - 만약 `self.assets < 0`:
+ - `injection_amount = abs(self.assets) + 1000.0` (여유 자금 포함)
+ - `self.assets += injection_amount`
+ - `government.total_money_issued += injection_amount`
+ - `LENDER_OF_LAST_RESORT` 경고 로그 출력.
 
 ---
 

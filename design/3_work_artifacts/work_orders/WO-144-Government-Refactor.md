@@ -1,4 +1,4 @@
-# Work Order: WO-144 - Government Structure Refactor
+# Work Order: - Government Structure Refactor
 
 **Phase:** 28 (Structural Stabilization)
 **Priority:** HIGH
@@ -10,32 +10,32 @@ Decompose the monolithic government entity into a modern Facade/Component struct
 ## 2. Implementation Plan
 
 ### Task A: Create New Module Structure
-1.  Create the directory structure for the new `government` module:
-    ```
-    modules/
-    └── government/
-        ├── api.py
-        ├── government_agent.py
-        ├── dtos.py
-        └── components/
-            ├── __init__.py
-            ├── fiscal_policy_manager.py
-            └── monetary_policy_manager.py
-    ```
+1. Create the directory structure for the new `government` module:
+ ```
+ modules/
+ └── government/
+ ├── api.py
+ ├── government_agent.py
+ ├── dtos.py
+ └── components/
+ ├── __init__.py
+ ├── fiscal_policy_manager.py
+ └── monetary_policy_manager.py
+ ```
 
 ### Task B: Define Data Transfer Objects (DTOs)
-1.  In `modules/government/dtos.py`, define the core data structures for the module. These will be imported by `api.py`.
-    - `TaxBracketDTO`
-    - `FiscalPolicyDTO`
-    - `MonetaryPolicyDTO`
-    - `GovernmentStateDTO`
+1. In `modules/government/dtos.py`, define the core data structures for the module. These will be imported by `api.py`.
+ - `TaxBracketDTO`
+ - `FiscalPolicyDTO`
+ - `MonetaryPolicyDTO`
+ - `GovernmentStateDTO`
 
 ### Task C: Define Public API and Interfaces
-1.  In `modules/government/api.py`, define the public contract for the module:
-    - Import all DTOs from `dtos.py`.
-    - Define the `IFiscalPolicyManager` protocol.
-    - Define the `IMonetaryPolicyManager` protocol.
-    - Define the `Government` facade protocol for type hinting purposes.
+1. In `modules/government/api.py`, define the public contract for the module:
+ - Import all DTOs from `dtos.py`.
+ - Define the `IFiscalPolicyManager` protocol.
+ - Define the `IMonetaryPolicyManager` protocol.
+ - Define the `Government` facade protocol for type hinting purposes.
 
 ## 3. Technical Constraints
 

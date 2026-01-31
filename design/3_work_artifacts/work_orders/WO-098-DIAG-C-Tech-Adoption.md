@@ -1,4 +1,4 @@
-# WO-098-DIAG-C: Tech Adoption Barriers Analysis
+# -C: Tech Adoption Barriers Analysis
 
 **Objective**: Verify why `TECH_AGRI_CHEM_01` is not being adopted despite being unlocked.
 

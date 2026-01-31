@@ -1,4 +1,4 @@
-# Work Order: WO-057-Refine (Operation Shock Therapy)
+# Work Order: (Operation Shock Therapy)
 
 ## 🏢 Context
 1차 Awakening Run에서 Smart Leviathan이 "아무것도 하지 않는 것이 최선"이라는 **국소 최적해(Local Minimum)**에 빠졌습니다. 이를 해결하기 위해 **충격 요법(Shock Therapy)**을 시행합니다.
@@ -18,15 +18,15 @@
 
 ```python
 def get_epsilon(self, current_tick: int) -> float:
-    """Linear Decay: 0.5 → 0.05 over 700 ticks."""
-    initial = 0.5
-    final = 0.05
-    decay_steps = 700
-    
-    if current_tick >= decay_steps:
-        return final
-    
-    return initial - (initial - final) * (current_tick / decay_steps)
+ """Linear Decay: 0.5 → 0.05 over 700 ticks."""
+ initial = 0.5
+ final = 0.05
+ decay_steps = 700
+
+ if current_tick >= decay_steps:
+ return final
+
+ return initial - (initial - final) * (current_tick / decay_steps)
 ```
 
 **파일**: `simulation/ai/government_ai.py`
@@ -37,10 +37,10 @@ def get_epsilon(self, current_tick: int) -> float:
 
 ```python
 def calculate_reward(self, market_data: Dict[str, Any]) -> float:
-    # ... 기존 로직 ...
-    loss = (0.5 * (inf_gap ** 2)) + (0.4 * (unemp_gap ** 2)) + (0.1 * (debt_gap ** 2))
-    reward = -loss * 100.0  # ×100 스케일링 적용
-    return reward
+ # ... 기존 로직 ...
+ loss = (0.5 * (inf_gap ** 2)) + (0.4 * (unemp_gap ** 2)) + (0.1 * (debt_gap ** 2))
+ reward = -loss * 100.0 # ×100 스케일링 적용
+ return reward
 ```
 
 ### 3. Chaos Injection 구현
@@ -49,17 +49,17 @@ def calculate_reward(self, market_data: Dict[str, Any]) -> float:
 ```python
 # ===== Chaos Injection Events =====
 if self.time == 200:
-    self.logger.warning("🔥 CHAOS: Inflation Shock at Tick 200!")
-    for market_name, market in getattr(self, 'goods_markets', {}).items():
-        if hasattr(market, 'current_price'):
-            market.current_price *= 1.5
-        if hasattr(market, 'avg_price'):
-            market.avg_price *= 1.5
+ self.logger.warning("🔥 CHAOS: Inflation Shock at Tick 200!")
+ for market_name, market in getattr(self, 'goods_markets', {}).items():
+ if hasattr(market, 'current_price'):
+ market.current_price *= 1.5
+ if hasattr(market, 'avg_price'):
+ market.avg_price *= 1.5
 
 if self.time == 600:
-    self.logger.warning("🔥 CHAOS: Recession Shock at Tick 600!")
-    for household in self.households:
-        household.assets *= 0.5
+ self.logger.warning("🔥 CHAOS: Recession Shock at Tick 600!")
+ for household in self.households:
+ household.assets *= 0.5
 ```
 
 ---

@@ -1,4 +1,4 @@
-# Master System Audit Plan: WO-101
+# Master System Audit Plan:
 
 ## Objective
 Verify the consistency between the intended architecture (described in design docs) and the actual implementation (code). Identify architectural drift, hidden coupling, and logic bottlenecks causing simulation failure.

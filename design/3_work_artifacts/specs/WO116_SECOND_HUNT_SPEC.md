@@ -1,4 +1,4 @@
-# WO-116: Second Hunt for Money Leaks (2차 사냥)
+# Second Hunt for Money Leaks (2차 사냥)
 
 ## 1. Objectives
 Plugging the remaining Money Supply leaks after the initial limited merge. The goal is to investigate deeper structural issues and verify specific hypotheses.

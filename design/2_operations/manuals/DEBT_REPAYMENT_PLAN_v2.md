@@ -23,30 +23,30 @@ The "Sacred Refactoring" and "Phase 23 Reactivation" have introduced high-impact
 ### 🛤️ Track X: The Abstraction Wall (TD-103)
 - **Objective**: Total decoupling of Agents from World Objects.
 - **Action**:
-    - Audit `DecisionContext` construction.
-    - Ensure `goods_data` and `market_data` are converted to immutable TypedDicts/DTOs.
-    - Implement a decorator-based `PurityGate` that blocks live object access during decision phase.
+ - Audit `DecisionContext` construction.
+ - Ensure `goods_data` and `market_data` are converted to immutable TypedDicts/DTOs.
+ - Implement a decorator-based `PurityGate` that blocks live object access during decision phase.
 
 ### 🛤️ Track Y: Infrastructure Dynamics (TD-132, TD-133)
 - **Objective**: Remove hardcoded dependencies and namespace config.
 - **Action**:
-    - Refactor `SimulationInitializer` to search for `Government` agent by type rather than ID.
-    - Move scenario parameter injection into a dedicated `config.scenario` dictionary.
+ - Refactor `SimulationInitializer` to search for `Government` agent by type rather than ID.
+ - Move scenario parameter injection into a dedicated `config.scenario` dictionary.
 
 ### 🛤️ Track Z: Strategy Generalization (TD-134)
 - **Objective**: Formalize the "Phase 23" logic into generic market behaviors.
 - **Action**:
-    - Replace `if is_phase23:` with `if market.model == "DIRECT_CONSUMPTION":`.
-    - This allows future "Great Depression" or "Socialist" scenarios to use the same toggleable mechanisms.
+ - Replace `if is_phase23:` with `if market.model == "DIRECT_CONSUMPTION":`.
+ - This allows future "Great Depression" or "Socialist" scenarios to use the same toggleable mechanisms.
 
 ---
 
 ## 3. Execution Sequence
 
-1.  **Merge Phase 23 (WO-053)**: Force merge despite minor debts to unblock the main track.
-2.  **Assign WO-135 (TD-103)**: Handled by Architect (Antigravity) + Gemini for spec, Jules for code.
-3.  **Assign WO-136 (TD-133/134)**: Clean up the configuration and branching mess.
-4.  **Assign WO-137 (TD-122)**: Final reorganization of the `tests/` directory (Cleanroom).
+1. **Merge Phase 23 ()**: Force merge despite minor debts to unblock the main track.
+2. **Assign (TD-103)**: Handled by Architect (Antigravity) + Gemini for spec, Jules for code.
+3. **Assign (TD-133/134)**: Clean up the configuration and branching mess.
+4. **Assign (TD-122)**: Final reorganization of the `tests/` directory (Cleanroom).
 
 ---
 > [!NOTE]

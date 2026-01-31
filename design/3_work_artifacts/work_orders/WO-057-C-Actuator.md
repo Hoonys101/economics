@@ -1,4 +1,4 @@
-# WORK ORDER: WO-057-C (The Actuator)
+# WORK ORDER: (The Actuator)
 
 **To:** Jules Charlie
 **Role:** Actuator Module Developer & Safety Engineer

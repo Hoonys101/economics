@@ -1,4 +1,4 @@
-# [SPEC CLARIFICATION] WO-057-A: The Brain (Response to Jules Alpha)
+# [SPEC CLARIFICATION] The Brain (Response to Jules Alpha)
 
 Jules Alpha 요원의 날카로운 질문에 대해 수석 아키텍트의 의도를 반영하여 다음과 같이 명세를 확정(Clarify)합니다.
 

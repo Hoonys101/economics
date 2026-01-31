@@ -1,4 +1,4 @@
-# WO-016: 금본위 모드 (Full Reserve Banking) 구현
+# 금본위 모드 (Full Reserve Banking) 구현
 
 ## 1. 개요
 **목표**: 은행의 신용 창출을 제거하고, 정부만 화폐를 발행/소각할 수 있도록 시스템 변경.
@@ -12,47 +12,47 @@
 ### 2.1 config.py
 ```python
 # 금본위 모드 설정
-GOLD_STANDARD_MODE = True  # True: 금본위, False: 현대 금융
-INITIAL_MONEY_SUPPLY = 100_000.0  # 초기 화폐 총량
+GOLD_STANDARD_MODE = True # True: 금본위, False: 현대 금융
+INITIAL_MONEY_SUPPLY = 100_000.0 # 초기 화폐 총량
 ```
 
 ### 2.2 simulation/bank.py
 **대출 함수 수정**:
 ```python
 def issue_loan(self, borrower, amount, ...):
-    if getattr(config, 'GOLD_STANDARD_MODE', False):
-        # 금본위: reserves에서만 대출
-        if self.reserves >= amount:
-            self.reserves -= amount
-            borrower.assets += amount
-            # 화폐 총량 불변
-        else:
-            self.logger.warning(f"LOAN_REJECTED | Insufficient reserves. Requested: {amount}, Available: {self.reserves}")
-            return False
-    else:
-        # 현대 금융: 신용 창출 (기존 로직 유지)
-        borrower.assets += amount
-        borrower.debt += amount
+ if getattr(config, 'GOLD_STANDARD_MODE', False):
+ # 금본위: reserves에서만 대출
+ if self.reserves >= amount:
+ self.reserves -= amount
+ borrower.assets += amount
+ # 화폐 총량 불변
+ else:
+ self.logger.warning(f"LOAN_REJECTED | Insufficient reserves. Requested: {amount}, Available: {self.reserves}")
+ return False
+ else:
+ # 현대 금융: 신용 창출 (기존 로직 유지)
+ borrower.assets += amount
+ borrower.debt += amount
 ```
 
 ### 2.3 simulation/agents/government.py
 **화폐 발행/소각 추적 로직 추가**:
 ```python
 class Government:
-    def __init__(self, ...):
-        self.total_money_issued = 0.0  # 누적 발행량
-        self.total_money_destroyed = 0.0  # 누적 소각량 (세금)
-    
-    def provide_subsidy(self, amount, ...):
-        # 기존 로직 + 추적
-        self.total_money_issued += amount
-    
-    def collect_tax(self, amount, ...):
-        # 기존 로직 + 추적
-        self.total_money_destroyed += amount
-    
-    def get_net_money_supply_change(self):
-        return self.total_money_issued - self.total_money_destroyed
+ def __init__(self, ...):
+ self.total_money_issued = 0.0 # 누적 발행량
+ self.total_money_destroyed = 0.0 # 누적 소각량 (세금)
+
+ def provide_subsidy(self, amount, ...):
+ # 기존 로직 + 추적
+ self.total_money_issued += amount
+
+ def collect_tax(self, amount, ...):
+ # 기존 로직 + 추적
+ self.total_money_destroyed += amount
+
+ def get_net_money_supply_change(self):
+ return self.total_money_issued - self.total_money_destroyed
 ```
 
 ## 3. 검증 계획

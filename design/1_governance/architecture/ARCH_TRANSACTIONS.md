@@ -9,7 +9,13 @@
 - 모든 에이전트 간 자산 이동은 반드시 중앙 `SettlementSystem`을 거쳐야 합니다.
 - 직접적으로 에이전트의 balance를 수정하는 행위는 엄격히 금지됩니다.
 - **원자적 강제(Atomic Force)**: 모든 자금 인출(Withdraw)과 입금(Deposit)은 원자적으로 처리되어야 하며, 입금 실패 시 반드시 인출된 자금을 롤백(Rollback)하여 화폐가 증발하지 않도록 보장합니다.
+- **Atomic Escrow Pattern**: 복합적인 다자간 정산(예: 상품 거래 + 판매세) 시, 모든 참여자의 조건이 충족될 때까지 자금을 에스크로에 예치한 후 일괄 분배합니다. 이는 개별 에이전트의 잔액 부족으로 인한 "부분적 성공(Partial Success)" 누출을 방지합니다.
 - **효과**: 원자성(Atomicity) 보장 및 전 시스템적 감사 추적(Audit Trail) 가능.
+
+### 2.4 Settle-then-Record (결제 후 기록 원칙)
+- 통계 업데이트(Money Issued, GDP 등) 및 원장 Commit은 반드시 `SettlementSystem`의 금융 결제가 성공한 **후**에만 수행되어야 합니다.
+- 낙관적 업데이트(Optimistic Update)는 경제 내의 데이터 드리프트(Data Drift)와 제로섬 위반의 주요 원인이므로 금지됩니다.
+
 
 ### 2.2 Zero-Sum Distribution & Precision (제로섬 분배 및 정밀도)
 - **정수 산술 기반**: 화폐 분배 시 부동 소수점 오차 누적을 원천 차단하기 위해, 내부적으로 정수(Cents 단위) 연산을 우선하거나 분배 후 잔액을 철저히 마지막 대상에게 귀속시킵니다.

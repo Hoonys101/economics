@@ -1,4 +1,4 @@
-# WO-095: Technical Debt Cleanup (Pure Refactoring)
+# Technical Debt Cleanup (Pure Refactoring)
 
 **Date**: 2026-01-21
 **Author**: Antigravity (Team Leader)
@@ -26,14 +26,14 @@
 
 **해결:**
 1. `config.py`에 다음 상수 추가:
-   ```python
-   PRICE_MEMORY_LENGTH = 10
-   WAGE_MEMORY_LENGTH = 30
-   ```
+ ```python
+ PRICE_MEMORY_LENGTH = 10
+ WAGE_MEMORY_LENGTH = 30
+ ```
 2. `EconComponent.__init__`에서 위 Config 값을 참조하여 `deque` 초기화.
-   ```python
-   maxlen = getattr(config_module, 'PRICE_MEMORY_LENGTH', 10)
-   ```
+ ```python
+ maxlen = getattr(config_module, 'PRICE_MEMORY_LENGTH', 10)
+ ```
 
 ### Task 2: [TD-076] TFP 계산 중복 제거 (ProductionDepartment)
 
@@ -46,19 +46,19 @@
 **해결:**
 - 로직을 단순화하여 중복 변수 할당 제거.
 - **AS-IS:**
-  ```python
-  tech_multiplier = 1.0
-  tfp = self.firm.productivity_factor * tech_multiplier
-  if technology_manager:
-      tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id)
-      tfp *= tech_multiplier
-  ```
+ ```python
+ tech_multiplier = 1.0
+ tfp = self.firm.productivity_factor * tech_multiplier
+ if technology_manager:
+ tech_multiplier = technology_manager.get_productivity_multiplier(self.firm.id)
+ tfp *= tech_multiplier
+ ```
 - **TO-BE (Equivalent but Cleaner):**
-  ```python
-  tfp = self.firm.productivity_factor
-  if technology_manager:
-      tfp *= technology_manager.get_productivity_multiplier(self.firm.id)
-  ```
+ ```python
+ tfp = self.firm.productivity_factor
+ if technology_manager:
+ tfp *= technology_manager.get_productivity_multiplier(self.firm.id)
+ ```
 
 ---
 

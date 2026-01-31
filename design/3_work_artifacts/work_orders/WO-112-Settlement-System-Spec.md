@@ -1,4 +1,4 @@
-# Work Order: WO-112 - Settlement System & Economic Purity
+# Work Order: - Settlement System & Economic Purity
 
 **Phase:** Phase 24 (Engine Repair)
 **Priority:** CRITICAL
@@ -20,22 +20,22 @@ Implement a centralized, atomic `SettlementSystem` to handle all asset movements
 ## 4. Implementation Plan
 
 ### Track A: Foundation (`simulation/finance/`)
-1.  **API Definition**: Create `simulation/finance/api.py` with `IFinancialEntity` (Protocol) and `ISettlementSystem` (Interface) as per spec.
-2.  **SettlementSystem Implementation**: Create `simulation/systems/settlement_system.py`. Implement `transfer` with debit/credit atomicity and comprehensive logging.
-3.  **BaseAgent Refactor**: 
-    - Rename `assets` to `_assets` in `BaseAgent`.
-    - Provide `@property assets` (Read-only).
-    - Implement `_add_assets` and `_sub_assets` (Protected).
+1. **API Definition**: Create `simulation/finance/api.py` with `IFinancialEntity` (Protocol) and `ISettlementSystem` (Interface) as per spec.
+2. **SettlementSystem Implementation**: Create `simulation/systems/settlement_system.py`. Implement `transfer` with debit/credit atomicity and comprehensive logging.
+3. **BaseAgent Refactor**:
+ - Rename `assets` to `_assets` in `BaseAgent`.
+ - Provide `@property assets` (Read-only).
+ - Implement `_add_assets` and `_sub_assets` (Protected).
 
 ### Track B: Integration & Refactoring
-1.  **TransactionProcessor**: Replace all direct asset modifications with `settlement_system.transfer()` calls. Ensure tax collection also routes through this system.
-2.  **InheritanceManager**: Implement "Residual Catch-all" logic. Calculate `remainder = total_cash - total_distributed` and transfer it to the government or reflux system.
-3.  **Government & Bank**: Refactor all spending (`provide_household_support`, `invest_infrastructure`) and reserve updates to use the new system.
+1. **TransactionProcessor**: Replace all direct asset modifications with `settlement_system.transfer()` calls. Ensure tax collection also routes through this system.
+2. **InheritanceManager**: Implement "Residual Catch-all" logic. Calculate `remainder = total_cash - total_distributed` and transfer it to the government or reflux system.
+3. **Government & Bank**: Refactor all spending (`provide_household_support`, `invest_infrastructure`) and reserve updates to use the new system.
 
 ### Track C: Cleanup & Verification
-1.  **Global Audit**: Grep for any remaining `assets +=` or `assets -=` and replace them.
-2.  **Zero-Sum Verification**: Create or update `scripts/verify_zero_sum.py` to prove that total money supply is conserved across transfers and deaths.
-3.  **Legacy Compatibility**: If any system cannot be moved immediately, register it in `TECH_DEBT_LEDGER.md`.
+1. **Global Audit**: Grep for any remaining `assets +=` or `assets -=` and replace them.
+2. **Zero-Sum Verification**: Create or update `scripts/verify_zero_sum.py` to prove that total money supply is conserved across transfers and deaths.
+3. **Legacy Compatibility**: If any system cannot be moved immediately, register it in `TECH_DEBT_LEDGER.md`.
 
 ## 5. Verification
 - Run `pytest tests/` (Expect fix-up tasks for existing tests).

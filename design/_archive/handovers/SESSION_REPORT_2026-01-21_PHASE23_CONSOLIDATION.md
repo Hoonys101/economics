@@ -9,12 +9,12 @@ Phase 23 시뮬레이션의 기술적 기반을 공고히 하고, 통합 과정�
 
 ## 🛠️ Completed Work Orders
 
-### WO-094: Phase 23 Simulation Verification
+### Phase 23 Simulation Verification
 - **Core Fixes**: `EconomyManager` 소비 가치 계산식 수정, `RuleBasedEngine` 시장 라우팅 로직 정교화.
 - **Verification**: `verify_phase23_harvest.py`를 통한 시나리오 검증 체계 구축.
 - **Result**: 엔진 버그는 해소되었으나, 경제 파라미터 튜닝이 추가로 필요함을 식별 (Population Boom 실패 분석 보고서 제출).
 
-### WO-095: Technical Debt Cleanup
+### Technical Debt Cleanup
 - **TD-076**: `ProductionDepartment` 생산성 계산 로직 단순화.
 - **TD-077**: `EconComponent` 내 하드코딩된 메모리 파라미터(`maxlen`)의 Config 이관.
 - **TD-078**: `Config.DEFAULT_FALLBACK_PRICE` 도입을 통한 매직 넘버 제거.

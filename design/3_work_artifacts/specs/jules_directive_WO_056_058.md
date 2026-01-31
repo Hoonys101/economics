@@ -4,22 +4,22 @@ Jules, you are assigned to fix critical system failures. Follow the instructions
 
 ## 1. Stabilization Tasks
 
-### Task 1: Fix Money Leak (WO-056)
+### Task 1: Fix Money Leak ()
 **Target:** `simulation/systems/housing_system.py`, `simulation/systems/reflux_system.py`
 **Logic:**
 - In `housing_system.py`: Within `process_transaction`, check if `isinstance(seller, Government)`.
 - If true, call `seller.collect_tax(trade_value, "housing_sale", buyer.id, simulation.time)`. This ensures money leaving M1 is recorded as "withdrawn" in the Government's ledger.
 - In `reflux_system.py`: Change `self.balance = 0.0` at the end of `distribute` to `self.balance -= (amount_per_household * len(active_households))` to preserve the remainder.
 
-### Task 2: Inventory Glut Safeguard (WO-058.1)
+### Task 2: Inventory Glut Safeguard (.1)
 **Target:** `simulation/firms.py`, `simulation/decisions/ai_driven_firm_engine.py`
 **Logic:**
 - In `firms.py`:
-  - Implement `get_optimal_inventory_level()`: returns `max(10.0, self.finance.last_sales_volume * 10.0)`.
-  - In `produce()`, if `planned_quantity + current_stock > 2.0 * optimal_level`, cap `planned_quantity` to the allowed space.
+ - Implement `get_optimal_inventory_level()`: returns `max(10.0, self.finance.last_sales_volume * 10.0)`.
+ - In `produce()`, if `planned_quantity + current_stock > 2.0 * optimal_level`, cap `planned_quantity` to the allowed space.
 - In `ai_driven_firm_engine.py`: 
-  - In `make_decisions`, calculate `inventory_pressure = current_stock / optimal_level`.
-  - If `pressure > 3.0`, force `production_target = 0` (Heuristic Override).
+ - In `make_decisions`, calculate `inventory_pressure = current_stock / optimal_level`.
+ - If `pressure > 3.0`, force `production_target = 0` (Heuristic Override).
 
 ### Task 3: Test Stability
 **Target:** `scripts/iron_test.py`

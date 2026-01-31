@@ -1,8 +1,8 @@
-# Work Order: WO-079 Config Automation
+# Work Order: Config Automation
 
 **Target**: `simulation` module (Config & Refactoring)
 **Context**: TD-007 (Hardcoded Constants) & TD-046 (Firm Constants)
-**Pre-condition**: WO-078 (Engine SoC) is COMPLETED. `SimulationInitializer` is active.
+**Pre-condition**: (Engine SoC) is COMPLETED. `SimulationInitializer` is active.
 
 ## 0. Executive Summary
 This work order focuses on **Phase 2: Configuration Automation**.
@@ -24,38 +24,38 @@ import os
 
 @dataclass
 class EconomyConfig:
-    # Macroeconomic Parameters
-    TAX_RATE: float = 0.2
-    BASE_INTEREST_RATE: float = 0.05
-    GOV_BUDGET_BOND_RATIO: float = 0.3  # Ratio of budget funded by bonds
-    BAILOUT_THRESHOLD_RATIO: float = 0.5 # Equity ratio threshold for bailout
+ # Macroeconomic Parameters
+ TAX_RATE: float = 0.2
+ BASE_INTEREST_RATE: float = 0.05
+ GOV_BUDGET_BOND_RATIO: float = 0.3 # Ratio of budget funded by bonds
+ BAILOUT_THRESHOLD_RATIO: float = 0.5 # Equity ratio threshold for bailout
 
 @dataclass
 class AgentConfig:
-    # Agent Behaviors
-    LABOR_ELASTICITY_MIN: float = 0.3
-    CONSUMPTION_SMOOTHING: float = 0.8
-    INVENTORY_BUFFER: float = 2.0  # Target inventory coverage in months
-    
+ # Agent Behaviors
+ LABOR_ELASTICITY_MIN: float = 0.3
+ CONSUMPTION_SMOOTHING: float = 0.8
+ INVENTORY_BUFFER: float = 2.0 # Target inventory coverage in months
+
 @dataclass
 class SimulationConfig:
-    economy: EconomyConfig = field(default_factory=EconomyConfig)
-    agent: AgentConfig = field(default_factory=AgentConfig)
-    # Simulation Settings
-    MAX_TICKS: int = 1000
-    TICKS_PER_YEAR: int = 100
+ economy: EconomyConfig = field(default_factory=EconomyConfig)
+ agent: AgentConfig = field(default_factory=AgentConfig)
+ # Simulation Settings
+ MAX_TICKS: int = 1000
+ TICKS_PER_YEAR: int = 100
 
-    @classmethod
-    def load(cls, profile_path: Optional[str] = None) -> "SimulationConfig":
-        """
-        Load config from a JSON file.
-        1. Create default config.
-        2. If profile_path exists, load JSON.
-        3. Recursively update fields (Override).
-        4. Return instance.
-        """
-        # Implementation required
-        pass
+ @classmethod
+ def load(cls, profile_path: Optional[str] = None) -> "SimulationConfig":
+ """
+ Load config from a JSON file.
+ 1. Create default config.
+ 2. If profile_path exists, load JSON.
+ 3. Recursively update fields (Override).
+ 4. Return instance.
+ """
+ # Implementation required
+ pass
 ```
 
 ## 2. Implementation Steps
@@ -67,20 +67,20 @@ class SimulationConfig:
 
 ### Step 2: Create JSON Profiles
 Create directory `profiles/` and add:
-1.  `profiles/default.json` (Empty object `{}` or explicit defaults)
-2.  `profiles/industrial_revolution.json`:
-    ```json
-    {
-        "economy": {
-            "TAX_RATE": 0.1, 
-            "BASE_INTEREST_RATE": 0.02 
-        },
-        "agent": {
-            "LABOR_ELASTICITY_MIN": 0.1,
-            "INVENTORY_BUFFER": 5.0
-        }
-    }
-    ```
+1. `profiles/default.json` (Empty object `{}` or explicit defaults)
+2. `profiles/industrial_revolution.json`:
+ ```json
+ {
+ "economy": {
+ "TAX_RATE": 0.1,
+ "BASE_INTEREST_RATE": 0.02
+ },
+ "agent": {
+ "LABOR_ELASTICITY_MIN": 0.1,
+ "INVENTORY_BUFFER": 5.0
+ }
+ }
+ ```
 
 ### Step 3: Refactor `SimulationInitializer`
 Modify `simulation/initialization/initializer.py`:
@@ -90,13 +90,13 @@ Modify `simulation/initialization/initializer.py`:
 
 ### Step 4: Inject & Migrate (The Big Refactor)
 Modify `simulation/engine.py`, `simulation/firms.py`, `simulation/core_agents.py`:
-1.  **Inject**: Ensure `Simulation` class stores `self.config`.
-2.  Pass `config` (or sub-configs like `config.economy`) to `Firm`, `Household`, `Government` when they are created.
-3.  **Replace**:
-    - `TAX_RATE` (global const) -> `self.config.economy.TAX_RATE`
-    - `LABOR_MARKET_FLEXIBILITY` -> `self.config.agent.LABOR_ELASTICITY_MIN`
-    - `INVENTORY_TARGET` -> `self.config.agent.INVENTORY_BUFFER`
-    - And any other identified constants.
+1. **Inject**: Ensure `Simulation` class stores `self.config`.
+2. Pass `config` (or sub-configs like `config.economy`) to `Firm`, `Household`, `Government` when they are created.
+3. **Replace**:
+ - `TAX_RATE` (global const) -> `self.config.economy.TAX_RATE`
+ - `LABOR_MARKET_FLEXIBILITY` -> `self.config.agent.LABOR_ELASTICITY_MIN`
+ - `INVENTORY_TARGET` -> `self.config.agent.INVENTORY_BUFFER`
+ - And any other identified constants.
 
 **Migration Table**:
 | Legacy Constant | Location | New Config Path |

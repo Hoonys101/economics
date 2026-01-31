@@ -133,6 +133,28 @@ class TransactionProcessor(SystemInterface):
 
                     success = all_success
 
+            elif tx.transaction_type == "bond_purchase":
+                # Buyer: Bank or Central Bank, Seller: Government
+                success = settlement.transfer(buyer, seller, trade_value, "bond_purchase")
+
+                # QE Check: If Buyer is Central Bank, it's money creation
+                if success and state.central_bank and buyer.id == state.central_bank.id:
+                    if hasattr(government, "total_money_issued"):
+                        government.total_money_issued += trade_value
+                        state.logger.info(
+                            f"QUANTITATIVE_EASING | Central Bank purchased bond {trade_value:.2f}. Total Money Issued updated.",
+                            extra={"tick": current_time, "tag": "QE"}
+                        )
+
+            elif tx.transaction_type == "bond_repayment":
+                # Buyer: Government (Payer), Seller: Bank or Central Bank (Payee/Holder)
+                success = settlement.transfer(buyer, seller, trade_value, "bond_repayment")
+
+                # QE Reversal Check: If Seller (Recipient) is Central Bank, it's money destruction
+                if success and state.central_bank and seller.id == state.central_bank.id:
+                    if hasattr(government, "total_money_destroyed"):
+                        government.total_money_destroyed += trade_value
+
             elif tx.transaction_type == "goods":
                 # Goods: Apply Sales Tax
                 tax_amount = trade_value * sales_tax_rate

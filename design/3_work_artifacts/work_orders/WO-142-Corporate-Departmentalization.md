@@ -1,4 +1,4 @@
-# Work Order: WO-142 - CorporateManager Departmentalization
+# Work Order: - CorporateManager Departmentalization
 
 ## 🎯 Objective
 Refactor the monolithic `CorporateManager` (629+ LOC) in `simulation/decisions/corporate_manager.py` into a set of specialized, departmental managers (HR, Finance, Operations, Sales). This transition will transform the `CorporateManager` from a "God Class" that does everything into an "Orchestrator" that coordinates specialized agents.
@@ -16,16 +16,16 @@ Refactor the monolithic `CorporateManager` (629+ LOC) in `simulation/decisions/c
 Create the following specialized modules in `simulation/decisions/firm/`:
 - `finance_manager.py`: Handles budgets, debt, and dividends.
 - `hr_manager.py`: Handles hiring, firing, and wage setting.
-- `operations_manager.py`: Handles production targets and **R&D investment (Preserve WO-136 logic)**.
+- `operations_manager.py`: Handles production targets and **R&D investment (Preserve logic)**.
 - `sales_manager.py`: Handles pricing strategy and marketing.
 
 ### 3. Refactor CorporateManager (The Orchestrator)
 - Update `simulation/decisions/corporate_manager.py`:
-    - Inject departmental managers into `__init__`.
-    - Refactor `realize_ceo_actions` (or the main decision loop) to:
-        1. Gather state into `DecisionContextDTO`.
-        2. Call managers in the specified sequence (Finance -> HR -> Operations -> Sales).
-        3. Apply the resulting plans to the simulation state.
+ - Inject departmental managers into `__init__`.
+ - Refactor `realize_ceo_actions` (or the main decision loop) to:
+ 1. Gather state into `DecisionContextDTO`.
+ 2. Call managers in the specified sequence (Finance -> HR -> Operations -> Sales).
+ 3. Apply the resulting plans to the simulation state.
 - Strictly adhere to the **Unidirectional Data Flow** (Orchestrator -> Departments).
 
 ### 4. Test Suite Reconstruction
@@ -36,7 +36,7 @@ Create the following specialized modules in `simulation/decisions/firm/`:
 ---
 
 ## 🏗️ Technical Constraints
-- **Preservation of WO-136**: The new Endogenous R&D logic must be correctly migrated to `OperationsManager`.
+- **Preservation of **: The new Endogenous R&D logic must be correctly migrated to `OperationsManager`.
 - **DTO Purity**: No manager should have direct access to `WorldState` or `Firm` objects; only DTOs.
 - **No Circular Dependencies**: Departments must not know about each other; only the Orchestrator knows all.
 
@@ -46,4 +46,4 @@ Create the following specialized modules in `simulation/decisions/firm/`:
 - [ ] `CorporateManager` LOC reduced significantly (target < 200 lines for the orchestrator).
 - [ ] All corporate logic successfully delegated to specialized modules.
 - [ ] New test suite passes with 100% coverage for departmental logic.
-- [ ] Endogenous R&D (WO-136) remains functional in the Industrial Revolution scenario.
+- [ ] Endogenous R&D () remains functional in the Industrial Revolution scenario.

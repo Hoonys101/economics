@@ -1,4 +1,4 @@
-# Work Order: WO-140 - Repository Decomposition
+# Work Order: - Repository Decomposition
 
 ## 🎯 Objective
 Decompose the monolithic `SimulationRepository` (745+ LOC) in `simulation/db/repository.py` into specialized, entity-focused repositories. This will improve maintainability, reduce cognitive load, and align with the Separation of Concerns (SoC) principle.

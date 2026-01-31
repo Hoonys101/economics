@@ -1,8 +1,8 @@
-# Work Order: WO-146 - Monetary Policy & Taylor Rule
+# Work Order: - Monetary Policy & Taylor Rule
 
 **Phase:** 28 (Structural Stabilization)
 **Priority:** HIGH
-**Prerequisite:** WO-144
+**Prerequisite:**
 
 ## 1. Objective
 Implement a Taylor Rule-based monetary policy to allow the government (acting as a central bank) to manage inflation and employment by adjusting a target interest rate.
@@ -10,12 +10,12 @@ Implement a Taylor Rule-based monetary policy to allow the government (acting as
 ## 2. Implementation Plan
 
 ### Task A: Implement Monetary Policy Manager
-1.  In `modules/government/components/monetary_policy_manager.py`, create the `MonetaryPolicyManager` class that implements the `IMonetaryPolicyManager` protocol.
-2.  Implement the `determine_monetary_stance` method. This method will calculate the new `target_interest_rate` based on the Taylor Rule formula and pseudo-code provided in the implementation specification.
+1. In `modules/government/components/monetary_policy_manager.py`, create the `MonetaryPolicyManager` class that implements the `IMonetaryPolicyManager` protocol.
+2. Implement the `determine_monetary_stance` method. This method will calculate the new `target_interest_rate` based on the Taylor Rule formula and pseudo-code provided in the implementation specification.
 
 ### Task B: Integration with Financial Markets
-1.  The `target_interest_rate` from the resulting `MonetaryPolicyDTO` must be made available to the financial system.
-2.  The new `finance_manager.py` (from `TD-142`) and the `LoanMarket` will use this rate as the base for setting their own interest rates. The `GOVERNMENT_POLICY` phase must run before agents make financial decisions.
+1. The `target_interest_rate` from the resulting `MonetaryPolicyDTO` must be made available to the financial system.
+2. The new `finance_manager.py` (from `TD-142`) and the `LoanMarket` will use this rate as the base for setting their own interest rates. The `GOVERNMENT_POLICY` phase must run before agents make financial decisions.
 
 ## 3. Technical Constraints
 

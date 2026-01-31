@@ -1,4 +1,4 @@
-# [SPEC] WO-057: The Smart Leviathan (Adaptive Policy AI)
+# [SPEC] The Smart Leviathan (Adaptive Policy AI)
 
 ## 1. 아키텍처 개요 (Architecture Overview)
 

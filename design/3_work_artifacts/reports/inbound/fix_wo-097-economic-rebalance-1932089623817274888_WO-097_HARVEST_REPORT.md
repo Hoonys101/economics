@@ -1,4 +1,4 @@
-# WO-097: Phase 23 The Great Harvest Verification Report
+# Phase 23 The Great Harvest Verification Report
 
 **Date**: 2026-01-21
 **Verdict**: FAILED

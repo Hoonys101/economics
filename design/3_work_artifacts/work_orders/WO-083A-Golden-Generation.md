@@ -14,7 +14,7 @@ Run the existing simulation engine to generate **"Golden Fixtures"** (verified c
 
 ### 1. Fix `scripts/generate_golden_fixtures.py`
 - Ensure it imports `Simulation` correctly (handle `sys.path` issue if needed).
-- Update logic to handle any API changes from `WO-081` (Bank Refactor), although the Simulation engine should already handle this.
+- Update logic to handle any API changes from `` (Bank Refactor), although the Simulation engine should already handle this.
 - Add robust error handling to print logs if generation fails.
 
 ### 2. Generate Files
@@ -25,10 +25,10 @@ Run the script to produce the following in `tests/goldens/`:
 
 ### 3. Verify `conftest.py` Integration
 - Create a temporary verification script `verify_golden_load.py` that:
-  - Uses `tests.utils.golden_loader.GoldenLoader`.
-  - Loads `tests/goldens/stable_economy.json`.
-  - Asserts that loaded objects are `MagicMock` instances.
-  - Asserts that `mock_agent.demographics.age` exists and matches the JSON.
+ - Uses `tests.utils.golden_loader.GoldenLoader`.
+ - Loads `tests/goldens/stable_economy.json`.
+ - Asserts that loaded objects are `MagicMock` instances.
+ - Asserts that `mock_agent.demographics.age` exists and matches the JSON.
 
 ---
 

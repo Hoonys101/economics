@@ -1,4 +1,4 @@
-# Work Order: WO-141 - Household Engine Modularization
+# Work Order: - Household Engine Modularization
 
 ## 🎯 Objective
 Refactor the monolithic `AIDrivenHouseholdDecisionEngine` (600+ LOC) in `simulation/decisions/ai_driven_household_engine.py` into a modularized coordinator-delegate pattern. This will separate concerns into specialized managers: Consumption, Labor, Asset, and Housing.
@@ -22,8 +22,8 @@ Create the following modules in `simulation/decisions/household/`:
 
 ### 3. Refactor HouseholdDecisionEngine (The Coordinator)
 - Update `AIDrivenHouseholdDecisionEngine`:
-    - Remove all direct decision logic.
-    - Implement the coordinator pattern: fetch action vector -> shard context -> delegate to managers -> collect orders.
+ - Remove all direct decision logic.
+ - Implement the coordinator pattern: fetch action vector -> shard context -> delegate to managers -> collect orders.
 - Maintain the exact same external `ai_engine` interface.
 
 ### 4. Implementation of Behavioral Equivalence Test

@@ -1,4 +1,4 @@
-# WO-017: Phase 1 Final Validation - The Crucible Test
+# Phase 1 Final Validation - The Crucible Test
 
 ## 1. 개요
 **목표**: 금본위 모드(Gold Standard), 3-Pillars 모델, 투매(Fire Sale) 메커니즘이 통합된 환경에서 1000틱 장기 시뮬레이션을 수행하여 **경제의 안정성 및 자정 능력**을 검증한다.
@@ -26,16 +26,16 @@
 Jules는 다음 결과물을 `reports/PHASE1_FINAL_REPORT.md` 및 첨부 파일로 제출해야 한다.
 
 1. **시뮬레이션 요약 보고서 (`reports/PHASE1_FINAL_REPORT.md`)**
-   - 기업 수 변화 추이 (시작 vs 끝)
-   - 파산 및 청산 건수
-   - 최종 인플레이션/디플레이션 여부 (가격 추이)
-   - 화폐 보존 검증 결과
+ - 기업 수 변화 추이 (시작 vs 끝)
+ - 파산 및 청산 건수
+ - 최종 인플레이션/디플레이션 여부 (가격 추이)
+ - 화폐 보존 검증 결과
 
 2. **주요 로그 발췌 (`reports/crucible_logs.txt`)**
-   - `LOAN_REJECTED` (대출 거절) 샘플
-   - `FIRE_SALE` (투매) 샘플
-   - `FIRM_LIQUIDATION` (청산) 샘플
-   - `MONEY_SUPPLY_CHECK` (화폐 보존 확인) 샘플
+ - `LOAN_REJECTED` (대출 거절) 샘플
+ - `FIRE_SALE` (투매) 샘플
+ - `FIRM_LIQUIDATION` (청산) 샘플
+ - `MONEY_SUPPLY_CHECK` (화폐 보존 확인) 샘플
 
 ## 5. 실행 명령
 ```bash

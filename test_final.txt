@@ -1,0 +1,19 @@
+
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_pass PASSED [ 10%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_fail PASSED [ 20%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_pass PASSED [ 30%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_fail PASSED [ 40%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_market PASSED [ 50%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_qe PASSED [ 60%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_fail
+-------------------------------- live log call ---------------------------------
+WARNING  modules.finance.system:system.py:116 BOND_ISSUANCE_FAILED | No buyer found (Bank insufficient funds).
+PASSED                                                                   [ 70%]
+tests/unit/modules/finance/test_system.py::test_bailout_fails_with_insufficient_government_funds
+-------------------------------- live log call ---------------------------------
+WARNING  modules.finance.system:system.py:258 BAILOUT_DENIED | Government insufficient funds: 100.00 < 500.00
+PASSED                                                                   [ 80%]
+tests/unit/modules/finance/test_system.py::test_grant_bailout_loan PASSED [ 90%]
+tests/unit/modules/finance/test_system.py::test_service_debt_central_bank_repayment PASSED [100%]
+
+============================== 10 passed in 0.08s ==============================

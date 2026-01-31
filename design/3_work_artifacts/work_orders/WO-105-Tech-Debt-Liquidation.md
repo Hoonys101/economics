@@ -1,4 +1,4 @@
-# WO-105: Tech Debt Liquidation (P-1)
+# Tech Debt Liquidation (P-1)
 
 **Date**: 2026-01-22
 **Priority**: MEDIUM

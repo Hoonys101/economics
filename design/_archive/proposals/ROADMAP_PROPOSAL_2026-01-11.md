@@ -23,7 +23,7 @@
 
 | Work Order | 내용 | 상태 |
 |---|---|---|
-| **WO-045-Revision** | Adaptive Equilibrium (Survival Override + Adaptive Wage) | Jules 진행 중 |
+| **** | Adaptive Equilibrium (Survival Override + Adaptive Wage) | Jules 진행 중 |
 
 ### 📊 주요 성과
 
@@ -67,23 +67,23 @@
 ### 권장 순서
 
 ```
-1. WO-045-Revision 완료 (현재)
-   └─ Adaptive Equilibrium 달성
+1. 완료 (현재)
+ └─ Adaptive Equilibrium 달성
 
 2. Phase 21.6 완료 (Track B/C 필요 시)
-   └─ Market-Based Labor Share 검증
+ └─ Market-Based Labor Share 검증
 
 3. [선택 1] Rule-Based → Adaptive AI 착수
-   └─ 우선순위: HousingManager > DemographicManager > Government
-   └─ 이유: 기존 NPV 로직 확장으로 복잡도 낮음
+ └─ 우선순위: HousingManager > DemographicManager > Government
+ └─ 이유: 기존 NPV 로직 확장으로 복잡도 낮음
 
 4. [선택 2] Mitosis/Social Inheritance 완료
-   └─ 인구 동역학 완결성
-   └─ 이후 Phase 확장의 기반
+ └─ 인구 동역학 완결성
+ └─ 이후 Phase 확장의 기반
 
 5. [선택 3] Vision A: Politics
-   └─ 투표, 세대 갈등
-   └─ 복잡도 높음, 장기 목표
+ └─ 투표, 세대 갈등
+ └─ 복잡도 높음, 장기 목표
 ```
 
 ### 나의 견해

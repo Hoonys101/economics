@@ -1,4 +1,4 @@
-# Work Order: WO-039 - Visual Analytics (The Pulse)
+# Work Order: - Visual Analytics (The Pulse)
 
 ## Phase: 20.5 Step 3 (Parallel Track B)
 

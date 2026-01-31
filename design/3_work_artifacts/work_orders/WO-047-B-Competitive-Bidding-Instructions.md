@@ -1,4 +1,4 @@
-# Jules 작업 지시서: WO-047-B Competitive Bidding
+# Jules 작업 지시서: Competitive Bidding
 
 **Phase:** 21.7
 **Priority:** HIGH
@@ -31,31 +31,31 @@
 
 ```python
 def _adjust_wage_for_vacancies(self, firm, market_data: dict) -> float:
-    """
-    구인난 발생 시 임금 인상 로직.
-    
-    ⚠️ CRITICAL CONSTRAINT (Architect Prime):
-    재무 건전성(Solvency)이 1.5 이상일 때만 임금 인상 허용.
-    그렇지 않으면 '승자의 저주'로 파산 위험.
-    """
-    # 1. 재무 건전성 체크 (필수!)
-    solvency = firm.assets / max(1.0, firm.total_liabilities) if hasattr(firm, 'total_liabilities') else firm.assets / max(1.0, firm.wage_bill * 10)
-    
-    if solvency < 1.5:
-        return firm.offered_wage  # 재무 건전성 부족: 인상 불가
-    
-    # 2. 미충원 인원 확인
-    current_employees = len([e for e in firm.employees if e.is_active]) if hasattr(firm, 'employees') else firm.labor_count
-    target_employees = getattr(firm, 'target_labor', current_employees + 1)
-    unfilled_vacancies = max(0, target_employees - current_employees)
-    
-    # 3. 임금 인상 (구인난 심각도에 비례, 최대 5%)
-    if unfilled_vacancies > 0:
-        adjustment_rate = min(0.05, 0.01 * unfilled_vacancies)
-        new_wage = firm.offered_wage * (1.0 + adjustment_rate)
-        return new_wage
-    
-    return firm.offered_wage
+ """
+ 구인난 발생 시 임금 인상 로직.
+
+ ⚠️ CRITICAL CONSTRAINT (Architect Prime):
+ 재무 건전성(Solvency)이 1.5 이상일 때만 임금 인상 허용.
+ 그렇지 않으면 '승자의 저주'로 파산 위험.
+ """
+ # 1. 재무 건전성 체크 (필수!)
+ solvency = firm.assets / max(1.0, firm.total_liabilities) if hasattr(firm, 'total_liabilities') else firm.assets / max(1.0, firm.wage_bill * 10)
+
+ if solvency < 1.5:
+ return firm.offered_wage # 재무 건전성 부족: 인상 불가
+
+ # 2. 미충원 인원 확인
+ current_employees = len([e for e in firm.employees if e.is_active]) if hasattr(firm, 'employees') else firm.labor_count
+ target_employees = getattr(firm, 'target_labor', current_employees + 1)
+ unfilled_vacancies = max(0, target_employees - current_employees)
+
+ # 3. 임금 인상 (구인난 심각도에 비례, 최대 5%)
+ if unfilled_vacancies > 0:
+ adjustment_rate = min(0.05, 0.01 * unfilled_vacancies)
+ new_wage = firm.offered_wage * (1.0 + adjustment_rate)
+ return new_wage
+
+ return firm.offered_wage
 ```
 
 ### 3.3 통합 방법
@@ -66,7 +66,7 @@ def _adjust_wage_for_vacancies(self, firm, market_data: dict) -> float:
 # 기존: offer_wage = market_wage * (1.0 + adjustment)
 # 변경: 구인난 반영
 offer_wage = market_wage * (1.0 + adjustment)
-offer_wage = self._adjust_wage_for_vacancies(firm, market_data)  # 추가
+offer_wage = self._adjust_wage_for_vacancies(firm, market_data) # 추가
 offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
 ```
 
@@ -85,22 +85,22 @@ offer_wage = max(self.config_module.LABOR_MARKET_MIN_WAGE, offer_wage)
 ```python
 # tests/test_competitive_bidding.py
 def test_wage_increase_on_vacancy():
-    """구인난 시 임금 인상 확인"""
-    firm = Firm(assets=100000, offered_wage=100)
-    firm.target_labor = 10
-    firm.labor_count = 5  # 5명 미충원
-    
-    new_wage = manager._adjust_wage_for_vacancies(firm, {})
-    assert new_wage > 100  # 인상되어야 함
+ """구인난 시 임금 인상 확인"""
+ firm = Firm(assets=100000, offered_wage=100)
+ firm.target_labor = 10
+ firm.labor_count = 5 # 5명 미충원
+
+ new_wage = manager._adjust_wage_for_vacancies(firm, {})
+ assert new_wage > 100 # 인상되어야 함
 
 def test_no_increase_when_insolvent():
-    """재무 불건전 시 인상 불가"""
-    firm = Firm(assets=1000, total_liabilities=2000)  # Solvency < 1.5
-    firm.target_labor = 10
-    firm.labor_count = 5
-    
-    new_wage = manager._adjust_wage_for_vacancies(firm, {})
-    assert new_wage == firm.offered_wage  # 인상 없어야 함
+ """재무 불건전 시 인상 불가"""
+ firm = Firm(assets=1000, total_liabilities=2000) # Solvency < 1.5
+ firm.target_labor = 10
+ firm.labor_count = 5
+
+ new_wage = manager._adjust_wage_for_vacancies(firm, {})
+ assert new_wage == firm.offered_wage # 인상 없어야 함
 ```
 
 ---

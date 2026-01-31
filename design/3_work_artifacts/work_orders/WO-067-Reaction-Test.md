@@ -1,7 +1,7 @@
-# Work Order: WO-067 - High-Fidelity Reaction Test
+# Work Order: - High-Fidelity Reaction Test
 
 **Phase:** 26 (Debt Liquidation)
-**Priority:** **MEDIUM** (Verify WO-066)
+**Priority:** **MEDIUM** (Verify )
 **Assignee:** (Open)
 
 ## 1. Objective
@@ -11,8 +11,8 @@ WO-066에서 구현된 정부 AI의 신경망(Sensory System)이 제대로 동�
 ## 2. Implementation Tasks
 - **Verification Script 작성**: `scripts/verify_policy_reaction.py`를 작성하십시오.
 - **Scenario Implementation**:
-    - Tick 100: Inflation 15% 강제 주입.
-    - Tick 101: `CentralBank.base_rate` 상승 확인.
+ - Tick 100: Inflation 15% 강제 주입.
+ - Tick 101: `CentralBank.base_rate` 상승 확인.
 
 ## 3. Success Criteria
 - 스크립트 실행 시 `PASS: Interest Rate Increased` 메시지가 출력되어야 합니다.

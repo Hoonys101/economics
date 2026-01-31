@@ -1,7 +1,7 @@
-# WO-021: Operation "Forensics" - 사망 원인 정밀 분석
+# Operation "Forensics" - 사망 원인 정밀 분석
 
 ## 1. Background
-Operation Darwin (WO-020) 결과, **GDP=0**으로 경제가 정지했습니다.
+Operation Darwin () 결과, **GDP=0**으로 경제가 정지했습니다.
 파라미터 튜닝(초기 자금 증가 등)은 **"부자 아빠 효과"**일 뿐, 근본 해결이 아닙니다.
 
 **목표**: "왜" 에이전트가 죽었는지 **법의학적 부검(Autopsy)**을 수행합니다.
@@ -36,18 +36,18 @@ Operation Darwin (WO-020) 결과, **GDP=0**으로 경제가 정지했습니다.
 
 ```python
 logger.warning(
-    f"AGENT_DEATH | ID: {self.id}",
-    extra={
-        "tick": current_tick,
-        "agent_id": self.id,
-        "cause": "starvation",  # or "bankruptcy" for firms
-        "cash_at_death": self.assets,
-        "food_inventory": self.inventory.get("basic_food", 0),
-        "market_food_price": market_data.get("basic_food_price", None),
-        "last_labor_offer_tick": self.last_labor_offer_tick,  # 새 속성 추가 필요
-        "job_vacancies_available": market_data.get("job_vacancies", 0),
-        "tags": ["death", "autopsy"]
-    }
+ f"AGENT_DEATH | ID: {self.id}",
+ extra={
+ "tick": current_tick,
+ "agent_id": self.id,
+ "cause": "starvation", # or "bankruptcy" for firms
+ "cash_at_death": self.assets,
+ "food_inventory": self.inventory.get("basic_food", 0),
+ "market_food_price": market_data.get("basic_food_price", None),
+ "last_labor_offer_tick": self.last_labor_offer_tick, # 새 속성 추가 필요
+ "job_vacancies_available": market_data.get("job_vacancies", 0),
+ "tags": ["death", "autopsy"]
+ }
 )
 ```
 

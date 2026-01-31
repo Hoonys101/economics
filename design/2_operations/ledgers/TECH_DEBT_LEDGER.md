@@ -37,6 +37,7 @@
 | TD-157 | 2026-01-30 | Price-Consumption Deadlock | Economic Collapse (Static Price) | **RESOLVED** |
 | TD-164 | 2026-01-30 | Missing Fractional Reserve (WO-024) | Economic Stagnation / Liquidity Bottleneck | **RESOLVED** |
 
+
 | TD-167 | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Bankruptcy without Transaction Opportunity | **HIGH** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
@@ -47,7 +48,11 @@
 | TD-170 | 2026-01-31 | Sales Tax Atomicity Violation | Post-Trade Solvency Leak (High) | **RESOLVED** |
 
 | TD-171 | 2026-01-31 | Liquidation Dust Leak (Household) | Escheatment missing, assets vanish | **ACTIVE** |
-| TD-172 | 2026-01-31 | Bond Issuance Stat Unification | Monetary Tracking Inaccuracy | **ACTIVE** |
+| TD-172 | 2026-01-31 | Bond Issuance Stat Unification | Monetary Tracking Inaccuracy | **RESOLVED** |
+| TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **ACTIVE** |
+| TD-176 | 2026-01-31 | Tight Coupling: TxManager & Govt | High Architectural dependency | **ACTIVE** |
+| TD-177 | 2026-01-31 | HousingSystem Bypassing Markets | Economic purity violation | **ACTIVE** |
+
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -75,7 +80,8 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-150 | 2026-01-29 | Ledger Management Process | Loss of context | **ACTIVE** |
-| TD-143 | 2026-01-29 | Hardcoded Placeholders (WO-XXX) | Documentation Debt | **ACTIVE** |
+| TD-143 | 2026-01-29 | Hardcoded Placeholders (WO-XXX) | Documentation Debt | **RESOLVED** |
+
 
 ---
 

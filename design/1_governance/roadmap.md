@@ -21,140 +21,140 @@
 
 ## 🔴 Pending / Future
 - [x] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
-    - [x] 17-1: Service Market (Completed)
-    - [x] 17-2: Raw Materials (Completed)
-    - [x] 17-3a: Real Estate Rental (Completed)
-    - [x] 17-3b: Real Estate Sales & Mortgage (Completed)
-    - [x] 17-4: The Society of Vanity & Control (Completed)
-    - [x] 17-5: The Leviathan (Completed)
+ - [x] 17-1: Service Market (Completed)
+ - [x] 17-2: Raw Materials (Completed)
+ - [x] 17-3a: Real Estate Rental (Completed)
+ - [x] 17-3b: Real Estate Sales & Mortgage (Completed)
+ - [x] 17-4: The Society of Vanity & Control (Completed)
+ - [x] 17-5: The Leviathan (Completed)
 - [x] 15. **Phase 19: Population Dynamics** (Birth Strike, Extinction Scenario)
-    - [x] Task 1: Demographic Manager (Birth/Aging/Death System)
-    - [x] Task 2: Evolutionary Decision Engine (r/K Strategy, Time Allocation)
-    - [x] Task 3: Household Extensions (Education, Time Budget, Children)
-    - [x] Task 4: Verification (The Rat Race Experiment Success)
+ - [x] Task 1: Demographic Manager (Birth/Aging/Death System)
+ - [x] Task 2: Evolutionary Decision Engine (r/K Strategy, Time Allocation)
+ - [x] Task 3: Household Extensions (Education, Time Budget, Children)
+ - [x] Task 4: Verification (The Rat Race Experiment Success)
 - [x] 16. **Phase 20: The Matrix & Advanced Dynamics** (Completed)
-    - [x] **Step 1: Cognitive Architecture (The Matrix Core)**
-        - [x] Task 1.1: System 1 (Fast/RL) & System 2 (Slow/Planner) Integrated
-        - [x] Task 1.2: Internal World Model (NPV Projection)
-    - [x] **Step 2: Socio-Tech Dynamics**
-        - [x] Task 2.1: Lactation & Appliance Dependency
-        - [x] Task 2.2: Gender-Specific Education & Market Access
-    - [x] **Step 3: Real Estate & Integration**
-        - [x] Task 3.1: Supply Dynamics & Immigration Model
-        - [x] Task 3.2: Scenario Verification (Housing Costs Impact)
+ - [x] **Step 1: Cognitive Architecture (The Matrix Core)**
+ - [x] Task 1.1: System 1 (Fast/RL) & System 2 (Slow/Planner) Integrated
+ - [x] Task 1.2: Internal World Model (NPV Projection)
+ - [x] **Step 2: Socio-Tech Dynamics**
+ - [x] Task 2.1: Lactation & Appliance Dependency
+ - [x] Task 2.2: Gender-Specific Education & Market Access
+ - [x] **Step 3: Real Estate & Integration**
+ - [x] Task 3.1: Supply Dynamics & Immigration Model
+ - [x] Task 3.2: Scenario Verification (Housing Costs Impact)
 
 - [x] **Step 3: Real Estate & Integration**
-        - [x] Task 3.1: Supply Dynamics & Immigration Model
-        - [x] Task 3.2: Scenario Verification (Housing Costs Impact)
+ - [x] Task 3.1: Supply Dynamics & Immigration Model
+ - [x] Task 3.2: Scenario Verification (Housing Costs Impact)
 
 ## 🔭 Phase 20.5: The Simulation Cockpit (Stabilization)
 - **Goal**: Visibility & God-Mode Control (UI).
 - **Tech**: Streamlit.
-- [ ] WO-037: Dashboard Scaffolding (Setup & Engine Bridge).
-- [ ] WO-038: God Mode Controls (Sliders for Macro/Social/Tech).
-- [ ] WO-039: Deep Dive Analytics (System 2 Logs & Heatmaps).
+- [ ] Dashboard Scaffolding (Setup & Engine Bridge).
+- [ ] God Mode Controls (Sliders for Macro/Social/Tech).
+- [ ] Deep Dive Analytics (System 2 Logs & Heatmaps).
 
 ## 🔮 Phase 21+: The Future Visions (Long-Term)
 
 ### Vision A: The Political Animal (Politics & Democracy)
 - **Goal**: Introduce Voting Power and Democracy.
 - **Scenario**: 
-    - Renters vote for Rent Control & Subsidies.
-    - Owners vote for Tax Cuts & Asset Protection.
-    - Simulation of Gerontocracy (Rule of the Old) vs Youth Disenchantment.
+ - Renters vote for Rent Control & Subsidies.
+ - Owners vote for Tax Cuts & Asset Protection.
+ - Simulation of Gerontocracy (Rule of the Old) vs Youth Disenchantment.
 
 ### Phase 23: The Great Expansion (Industrial Revolution) 🔄 **[RESUMED]**
 - **Goal**: Escape the Malthusian Trap via Technology & Education.
 - **Tasks**:
-    - [x] WO-053: Productivity Revolution (Chemical Fertilizer)
-    - [x] WO-054: Public Education System (Social Mobility)
-    - [x] WO-055: The Baby Boom (Golden Age Stabilization)
+ - [x] Productivity Revolution (Chemical Fertilizer)
+ - [x] Public Education System (Social Mobility)
+ - [x] The Baby Boom (Golden Age Stabilization)
 
 ### Phase 24: Adaptive Evolution (The Invisible Hand) ✅
 - **Goal**: Transition from manual guardrails to automated market equilibrium.
 - **Tasks**:
-    - [x] WO-056: The Invisible Hand (Market Auto-Balancer)
-    - [x] WO-057: Adaptive Policy Evolution (RL Government)
-    - [x] WO-058: Economic CPR (Bootstrap Logic)
+ - [x] The Invisible Hand (Market Auto-Balancer)
+ - [x] Adaptive Policy Evolution (RL Government)
+ - [x] Economic CPR (Bootstrap Logic)
 
 ### Phase 25: The Financial Superstructure (Stock Market) ✅
 - **Goal**: Realistic capital markets and wealth-biased investment.
 - **Tasks**:
-    - [x] WO-060: Stock Exchange High-Fidelity Activation
-    - [x] WO-061: Portfolio Manager with Wealth Bias
+ - [x] Stock Exchange High-Fidelity Activation
+ - [x] Portfolio Manager with Wealth Bias
 
 ### Phase 26: Financial Strategy Integration ⭐ **[CURRENT]**
 - **Goal**: Link macro environment to retail/institutional strategy.
 - **Pre-requisite**:
-    - [x] **TD-024**: Test Path Correction (Pytest 경로 오류 해결) **[RESOLVED]**
+ - [x] **TD-024**: Test Path Correction (Pytest 경로 오류 해결) **[RESOLVED]**
 - **Tasks**:
-    - [x] WO-068: Macro-Linked Portfolio (Dynamic Risk Aversion)
-    - [ ] WO-069: Signal Intelligence Engine (Judge & Sentinel)
-    - [ ] WO-070: Inverse ETF & Hedging Mechanism
-    - [ ] WO-071: Strategy Backtest Framework
+ - [x] Macro-Linked Portfolio (Dynamic Risk Aversion)
+ - [ ] Signal Intelligence Engine (Judge & Sentinel)
+ - [ ] Inverse ETF & Hedging Mechanism
+ - [ ] Strategy Backtest Framework
 
 ### Phase 26.5: Sovereign Debt & Corporate Credit ⭐ **[COMPLETED]**
 - **Goal**: Transition to debt-based financing and market-driven interest rates.
 - **Tasks**:
-    - [x] WO-072: Finance System Scaffolding (api.py & DTOs) ✅ **[MERGED 2026-01-16]**
-    - [x] WO-073: Finance System Double-Entry Refactor (Zero-Question Spec) ✅ **[MERGED 2026-01-24]**
-    - [x] WO-074: Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period) ✅
-    - [x] WO-075: National Debt Auction & Yield Curve Mechanism ✅
+ - [x] Finance System Scaffolding (api.py & DTOs) ✅ **[MERGED 2026-01-16]**
+ - [x] Finance System Double-Entry Refactor (Zero-Question Spec) ✅ **[MERGED 2026-01-24]**
+ - [x] Altman Z-Score & Corporate Debt Refactor (with Startup Grace Period) ✅
+ - [x] National Debt Auction & Yield Curve Mechanism ✅
 
 ### Phase 27: Credit Creation Recovery ⭐ **[COMPLETED]**
 - **Goal**: Implement "Fractional Reserve Banking" on top of the SettlementSystem. Reactivate credit growth while maintaining zero-sum integrity.
 - **Key Objectives**:
-    - **TD-105**: Resolve the +320 Drift Mystery (Unknown Minting). ✅
-    - **TD-106**: Link Bankruptcy Liquidation to `Total Money Destroyed` ledger. ✅
-    - **M2 Multiplier**: Enable Banks to create credit (loans) as an asset expansion, not magic money. ✅
+ - **TD-105**: Resolve the +320 Drift Mystery (Unknown Minting). ✅
+ - **TD-106**: Link Bankruptcy Liquidation to `Total Money Destroyed` ledger. ✅
+ - **M2 Multiplier**: Enable Banks to create credit (loans) as an asset expansion, not magic money. ✅
 - **Tasks**:
-    - [x] WO-076: Forensic Detective (TD-105 Solution)
-    - [x] WO-077: Bankruptcy Ledger Linking (TD-106 Solution)
-    - [x] WO-078: Fractional Reserve Logic & LTV/DTI Reliability (2026-01-27)
+ - [x] Forensic Detective (TD-105 Solution)
+ - [x] Bankruptcy Ledger Linking (TD-106 Solution)
+ - [x] Fractional Reserve Logic & LTV/DTI Reliability (2026-01-27)
 
 ### Phase 28: Structural Stabilization & Verification ⭐ **[CURRENT]**
 - **Goal**: Clean up technical debt from rapid architectural changes and verify the new economic engine.
 - **Tasks**:
-    - [x] **Operation Sacred Refactoring**: Purge Reflux System & Decompose TickScheduler. ✅ (2026-01-28)
-    - [x] **Operation Abstraction Wall**: DTO-only Agents & Purity Gate. ✅ (2026-01-28)
-    - [ ] **WO-136: Operation Clean Sweep (Tactical Sanitation)**
-        - Replace hardcoded scenarios with generalized strategy flags.
-        - Harden Purity Gate (externalize rules).
-        - Documentation Consolidation (Fix file location chaos).
-    - [ ] **WO-122: Test Suite Cleanroom (TD-122)**
-        - Reorganize `tests/` into `unit` (fast, mock) vs `integration` (slow, real DB).
-        - Remove legacy/duplicate tests.
-    - [ ] **WO-079: Monetary Dynamics Verification**
-        - Verify Inflation/Deflation spirals under Fractional Reserve Banking.
-        - Tune `RESERVE_REQUIREMENT` to prevent infinite money glitches.
-    - [ ] **WO-080: Financial Parameter Externalization**
-        - Move hardcoded assumptions in `HousingSystem` (e.g., `8.0` work hours, `0.01` payment rate) to `economy_params.yaml`.
+ - [x] **Operation Sacred Refactoring**: Purge Reflux System & Decompose TickScheduler. ✅ (2026-01-28)
+ - [x] **Operation Abstraction Wall**: DTO-only Agents & Purity Gate. ✅ (2026-01-28)
+ - [ ] **Operation Clean Sweep (Tactical Sanitation)**
+ - Replace hardcoded scenarios with generalized strategy flags.
+ - Harden Purity Gate (externalize rules).
+ - Documentation Consolidation (Fix file location chaos).
+ - [ ] **Test Suite Cleanroom (TD-122)**
+ - Reorganize `tests/` into `unit` (fast, mock) vs `integration` (slow, real DB).
+ - Remove legacy/duplicate tests.
+ - [ ] **Monetary Dynamics Verification**
+ - Verify Inflation/Deflation spirals under Fractional Reserve Banking.
+ - Tune `RESERVE_REQUIREMENT` to prevent infinite money glitches.
+ - [ ] **Financial Parameter Externalization**
+ - Move hardcoded assumptions in `HousingSystem` (e.g., `8.0` work hours, `0.01` payment rate) to `economy_params.yaml`.
 
 ### Phase 22: The Awakening (Adaptive AI) **[COMPLETED]**
 - **Goal**: Wake up the Agents (System 2 Activation).
 - **Tasks**:
-    - [x] WO-047: Liquidity Crisis Resolution (Capital Injection & Bidding)
-    - [x] WO-048: Adaptive Breeding (System 2 NPV Mode)
-    - [x] WO-051: Engine Vectorization (NPV Matrix Optimization)
-    - [x] WO-046: Adaptive Housing (Buy vs Rent Logic) **[COMPLETED]**
-    - [x] WO-049: Inheritance (Zero Leak) **[COMPLETED]**
-    - [x] WO-050: Real Estate Liquidity **[COMPLETED]**
-    - [ ] WO-052: The Dynasty Report (Social Mobility Analysis) **[DEFERRED to P23]**
+ - [x] Liquidity Crisis Resolution (Capital Injection & Bidding)
+ - [x] Adaptive Breeding (System 2 NPV Mode)
+ - [x] Engine Vectorization (NPV Matrix Optimization)
+ - [x] Adaptive Housing (Buy vs Rent Logic) **[COMPLETED]**
+ - [x] Inheritance (Zero Leak) **[COMPLETED]**
+ - [x] Real Estate Liquidity **[COMPLETED]**
+ - [ ] The Dynasty Report (Social Mobility Analysis) **[DEFERRED to P23]**
 
 ### Vision B: Corporate Empires (Corporate AI Adoption)
 - **Goal**: Upgrade Firms to Active AI Agents.
 - **Scenario**:
-    - Firms invest in Automation to combat Labor Scarcity (Phase 20 result).
-    - Resulting Unemployment vs Productivity Gains.
-    - Rise of Monopolies and "Too Big To Fail".
+ - Firms invest in Automation to combat Labor Scarcity (Phase 20 result).
+ - Resulting Unemployment vs Productivity Gains.
+ - Rise of Monopolies and "Too Big To Fail".
 - **Status**: 🏗️ Planning
 
 ### Vision C: The Central Bank (Macro Control Tower)
 - **Goal**: User-in-the-loop Macroeconomic Control.
 - **Scenario**:
-    - User (President/Governor) sets Interest Rates & Tax Policy.
-    - AI-based Policy Optimization (RL Government).
-    - Crisis Management Mode (Great Depression/Hyperinflation).
+ - User (President/Governor) sets Interest Rates & Tax Policy.
+ - AI-based Policy Optimization (RL Government).
+ - Crisis Management Mode (Great Depression/Hyperinflation).
 - [ ] 17. Commercial Bank Deepening (Lender of Last Resort)
 - [ ] 18. Time Machine (Backtester)
 
@@ -185,14 +185,14 @@
 ### Migration Strategy (3-Phase)
 ```
 Phase A (Current): Rule-Based 가드레일로 AI 폭주 통제
-                   └─ LABOR_ELASTICITY_MIN, AUTOMATION_TAX 등 하드 제약
-Phase B (Next):    학습된 정책이 규칙을 점진적 대체
-                   └─ RL Government가 세율/규제를 동적 조정
-Phase C (Target):  규칙 완전 제거 (Pure AI Ecosystem)
-                   └─ 모든 에이전트가 학습 기반
+ └─ LABOR_ELASTICITY_MIN, AUTOMATION_TAX 등 하드 제약
+Phase B (Next): 학습된 정책이 규칙을 점진적 대체
+ └─ RL Government가 세율/규제를 동적 조정
+Phase C (Target): 규칙 완전 제거 (Pure AI Ecosystem)
+ └─ 모든 에이전트가 학습 기반
 ```
 
-### Phase A 가드레일 (WO-043/044)
+### Phase A 가드레일 (/044)
 | Guardrail | 기능 | 파라미터 |
 |---|---|---|
 | **노동 분배율 하한** | AI가 α < X% 만들지 못함 | `LABOR_ELASTICITY_MIN = 0.3` |
@@ -229,18 +229,18 @@ Phase C (Target):  규칙 완전 제거 (Pure AI Ecosystem)
 #### Stage 2: Profiling & Vectorized Decisions (The "Think" Layer)
 - **Action**: Profile via `cProfile` to find bottlenecks.
 - **Action**: Convert agent decision logic (Labor, Consumption) to **Vectorized Operations** using NumPy/Pandas.
-    ```python
-    # Example: Vectorized Labor Decision
-    labor_supply = np.where(assets > threshold, 0, 8)
-    ```
+ ```python
+ # Example: Vectorized Labor Decision
+ labor_supply = np.where(assets > threshold, 0, 8)
+ ```
 - **Benefit**: 100x speedup for decision phase (Parallelizable).
 
 #### Stage 3: Batch Transaction Matching (The "Act" Layer)
 - **Problem**: Sequential transactions handling resource contention.
 - **Solution**: **Batch Matching** via Matrix Operations.
-    - Construct `Demand Matrix` and `Supply Matrix`.
-    - Use Linear Algebra (MatMul) to calculate utility scores.
-    - Resolve contention via Pro-rata or Random Vectorized choices.
+ - Construct `Demand Matrix` and `Supply Matrix`.
+ - Use Linear Algebra (MatMul) to calculate utility scores.
+ - Resolve contention via Pro-rata or Random Vectorized choices.
 
 #### Stage 4: Entity Component System (ECS) (Final Form)
 - **Action**: Replace Agent Classes with a monolithic **DataFrame/Database** (State Table).

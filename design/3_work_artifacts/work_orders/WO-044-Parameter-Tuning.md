@@ -1,9 +1,9 @@
-# Work Order: WO-044 - Parameter Tuning (노동분배율 정상화)
+# Work Order: - Parameter Tuning (노동분배율 정상화)
 
 **Phase:** 21.5-Revision (Stabilization)
 **Priority:** HIGH
 **Date:** 2026-01-11
-**Prerequisite:** WO-043 Complete ✅
+**Prerequisite:** Complete ✅
 
 ---
 
@@ -36,22 +36,22 @@
 
 ```python
 # config.py additions
-LABOR_ELASTICITY_MIN = 0.3          # α 하한선 (30% 노동분배 보장)
-MIN_WAGE_PRODUCTIVITY_LINK = 0.5    # 생산성 상승 시 임금 50% 연동
+LABOR_ELASTICITY_MIN = 0.3 # α 하한선 (30% 노동분배 보장)
+MIN_WAGE_PRODUCTIVITY_LINK = 0.5 # 생산성 상승 시 임금 50% 연동
 ```
 
 ### Track B: 자동화 비용 증가
 
 ```python
-AUTOMATION_TAX_RATE = 0.05          # 자동화 레벨당 5% 세금
-AUTOMATION_COST_MULTIPLIER = 5.0    # 자동화 비용 5배
+AUTOMATION_TAX_RATE = 0.05 # 자동화 레벨당 5% 세금
+AUTOMATION_COST_MULTIPLIER = 5.0 # 자동화 비용 5배
 ```
 
 ### Track C: 고용 안정성
 
 ```python
-SEVERANCE_PAY_WEEKS = 4             # 해고 시 4주 퇴직금 강제
-HIRING_FRICTION_COST = 50.0         # 채용 마찰 비용
+SEVERANCE_PAY_WEEKS = 4 # 해고 시 4주 퇴직금 강제
+HIRING_FRICTION_COST = 50.0 # 채용 마찰 비용
 ```
 
 ---

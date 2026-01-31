@@ -1,4 +1,4 @@
-# Spec: WO-124 Genesis Fix (Sacred Sequence)
+# Spec: Genesis Fix (Sacred Sequence)
 
 ## 1. Overview
 This specification addresses the critical **TD-115 (Tick 1 Asset Leak)** and **TD-117 (DTO Purity Regression)** issues by implementing the **"Sacred Sequence"** (Genesis Protocol) during simulation initialization.
@@ -22,16 +22,16 @@ All agents (Households, Firms, Government) are created with **0.0 assets**.
 All initial liquidity is distributed via the `SettlementSystem`.
 - **Action**: Refactor `Bootstrapper.inject_initial_liquidity` and `Bootstrapper.force_assign_workers`.
 - **Logic**: 
-  ```python
-  # From: target._add_assets(amount)
-  # To:
-  settlement_system.transfer(
-      debit_agent=central_bank, 
-      credit_agent=target, 
-      amount=amount, 
-      memo="GENESIS_GRANT"
-  )
-  ```
+ ```python
+ # From: target._add_assets(amount)
+ # To:
+ settlement_system.transfer(
+ debit_agent=central_bank,
+ credit_agent=target,
+ amount=amount,
+ memo="GENESIS_GRANT"
+ )
+ ```
 
 ### Step 4: Verification (Zero-Sum Baseline)
 Immediately after distribution and before the first update, record the baseline supply.
