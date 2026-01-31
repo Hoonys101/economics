@@ -145,9 +145,11 @@ class WorldState:
             if f.is_active:
                 total += f.assets
 
-        # 3. Bank Reserves
+        # 3. Bank Reserves & Deposits (M2 Accounting)
         if self.bank:
-            total += self.bank.assets
+            # WO-024: M2 = Currency + Deposits. Bank Reserves are excluded.
+            # total += self.bank.assets (Reserves excluded)
+            total += sum(d.amount for d in self.bank.deposits.values())
 
         # 4. Government Assets (WO-Fix: Include Government in M2 to prevent leaks)
         if self.government:

@@ -205,6 +205,13 @@ class TransactionProcessor(SystemInterface):
                 if success:
                     buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
 
+            elif tx.transaction_type in ["credit_creation", "credit_destruction"]:
+                # WO-024: Symbolic Monetary Policy Transactions.
+                # These are accounting records for the Government and are processed in Phase3
+                # via `government.process_monetary_transactions`.
+                # They MUST NOT be executed as real financial transfers here to avoid double counting.
+                success = True
+
             else:
                 # Default / Other
                 success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")

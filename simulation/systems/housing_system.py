@@ -48,7 +48,10 @@ class HousingSystem:
                                     old_owner_agent.residing_property_id = None
                                     old_owner_agent.is_homeless = True
                                     
-                        simulation.bank.terminate_loan(loan.id)
+                        term_tx = simulation.bank.terminate_loan(loan.id)
+                        if term_tx:
+                             if hasattr(simulation, 'world_state'):
+                                 simulation.world_state.transactions.append(term_tx)
                         
                         fire_sale_price = unit.estimated_value * 0.8
                         sell_order = Order(
@@ -188,7 +191,7 @@ class HousingSystem:
                 term_ticks = mortgage_term
                 due_tick = simulation.time + term_ticks
 
-                loan_info = simulation.bank.grant_loan(
+                grant_result = simulation.bank.grant_loan(
                     borrower_id=str(buyer.id),
                     amount=loan_amount,
                     interest_rate=mortgage_rate,
@@ -196,8 +199,14 @@ class HousingSystem:
                     borrower_profile=borrower_profile
                 )
                 
-                if loan_info:
+                if grant_result:
+                    loan_info, credit_tx = grant_result
                     loan_id = loan_info["loan_id"]
+
+                    if credit_tx:
+                        if hasattr(simulation, 'world_state'):
+                            simulation.world_state.transactions.append(credit_tx)
+
                     # Fractional Reserve: Loan creates a Deposit.
 
                     # 1. DISBURSEMENT: Transfer funds from Bank (Reserves) to Buyer (Cash)
@@ -208,7 +217,10 @@ class HousingSystem:
 
                     if not disbursement_success:
                          logger.error(f"LOAN_DISBURSEMENT_FAIL | Bank could not transfer {loan_amount} to {buyer.id}. Voiding loan.")
-                         simulation.bank.void_loan(loan_id)
+                         void_tx = simulation.bank.void_loan(loan_id)
+                         if void_tx:
+                              if hasattr(simulation, 'world_state'):
+                                  simulation.world_state.transactions.append(void_tx)
                          return
 
                     # 2. DEPOSIT CLEANUP: Reduce the newly created deposit liability
@@ -219,7 +231,10 @@ class HousingSystem:
                              logger.error(f"LOAN_WITHDRAW_FAIL | Could not reduce deposit for {buyer.id}. Rolling back.")
                              # Rollback Disbursement
                              simulation.settlement_system.transfer(buyer, simulation.bank, loan_amount, "loan_rollback", tick=simulation.time)
-                             simulation.bank.void_loan(loan_id)
+                             void_tx = simulation.bank.void_loan(loan_id)
+                             if void_tx:
+                                  if hasattr(simulation, 'world_state'):
+                                      simulation.world_state.transactions.append(void_tx)
                              return
 
                         unit.mortgage_id = loan_id
@@ -253,7 +268,10 @@ class HousingSystem:
 
                       # 2. Void Loan (Cleanup Loan Asset)
                       try:
-                          simulation.bank.void_loan(loan_id)
+                          void_tx = simulation.bank.void_loan(loan_id)
+                          if void_tx:
+                               if hasattr(simulation, 'world_state'):
+                                   simulation.world_state.transactions.append(void_tx)
                       except Exception as e:
                           logger.warning(f"ROLLBACK_WARNING | void_loan failed during rollback: {e}")
                           if loan_id in simulation.bank.loans:

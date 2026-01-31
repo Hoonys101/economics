@@ -49,9 +49,13 @@ class Government:
         self.total_spent_subsidies: float = 0.0
         self.infrastructure_level: int = 0
 
-        # Gold Standard Money Tracking
+        # Money Tracking (Gold Standard & Fractional Reserve)
         self.total_money_issued: float = 0.0
         self.total_money_destroyed: float = 0.0
+        self.start_tick_money_issued: float = 0.0
+        self.start_tick_money_destroyed: float = 0.0
+        # WO-024: Fractional Reserve Credit Tracking
+        self.credit_delta_this_tick: float = 0.0
         
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
@@ -204,7 +208,27 @@ class Government:
 
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
+        self.credit_delta_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
+
+        # Snapshot for delta calculation
+        self.start_tick_money_issued = self.total_money_issued
+        self.start_tick_money_destroyed = self.total_money_destroyed
+
+    def process_monetary_transactions(self, transactions: List[Transaction]):
+        """
+        Processes transactions related to monetary policy (Credit Creation/Destruction).
+        Called by the orchestrator or systems generating these transactions.
+        """
+        for tx in transactions:
+            if tx.transaction_type == "credit_creation":
+                self.credit_delta_this_tick += tx.price
+                self.total_money_issued += tx.price
+                logger.debug(f"MONETARY_EXPANSION | Credit created: {tx.price:.2f}")
+            elif tx.transaction_type == "credit_destruction":
+                self.credit_delta_this_tick -= tx.price
+                self.total_money_destroyed += tx.price
+                logger.debug(f"MONETARY_CONTRACTION | Credit destroyed: {tx.price:.2f}")
 
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
         """
@@ -672,7 +696,14 @@ class Government:
         }
 
     def get_monetary_delta(self) -> float:
-        return self.total_money_issued - self.total_money_destroyed
+        """
+        Returns the net change in the money supply authorized this tick.
+        This includes base money changes (mint/burn) and credit money changes.
+        """
+        # Calculate changes in totals during this tick
+        issued_delta = self.total_money_issued - self.start_tick_money_issued
+        destroyed_delta = self.total_money_destroyed - self.start_tick_money_destroyed
+        return issued_delta - destroyed_delta
 
     def get_agent_data(self) -> Dict[str, Any]:
         return {
