@@ -1,0 +1,1576 @@
+diff --git a/communications/insights/TD-065_Household_Refactor.md b/communications/insights/TD-065_Household_Refactor.md
+new file mode 100644
+index 0000000..b8254f7
+--- /dev/null
++++ b/communications/insights/TD-065_Household_Refactor.md
+@@ -0,0 +1,40 @@
++# Household Decomposition Refactor (TD-065)
++
++## Overview
++Decomposed the `Household` god-class and the bloated `EconComponent` into specialized sub-components: `ConsumptionManager` and `DecisionUnit`. This aligns with the Component-Entity-System (CES) pattern and improves separation of concerns.
++
++## Changes
++1.  **ConsumptionManager**: Created `modules/household/consumption_manager.py` to handle consumption logic (`consume`, `decide_and_consume`). Removed this logic from `EconComponent`.
++2.  **DecisionUnit**: Created `modules/household/decision_unit.py` to handle decision orchestration (`make_decision`, `orchestrate_economic_decisions`). Removed this logic from `EconComponent` and `Household`.
++3.  **Household**: Updated `Household` to delegate consumption to `ConsumptionManager` and decision-making to `DecisionUnit`.
++4.  **Tests**: Updated and created tests to verify the new components and ensure no regressions.
++
++## Technical Debt & Insights
++
++### 1. Duplicated Housing Logic
++The `DecisionUnit` contains logic for "System 2 Housing Decision" which appears to be a duplicate or inline version of logic present in `simulation/ai/household_system2.py` (`HouseholdSystem2Planner`).
++-   **Insight**: The `DecisionUnit` currently executes this logic inline. Future refactoring should consolidate this by having `DecisionUnit` use `HouseholdSystem2Planner` or moving the logic entirely to the planner, ensuring a single source of truth for housing decisions.
++-   **Action**: Investigate if `HouseholdSystem2Planner` can be integrated into `DecisionUnit` to remove code duplication.
++
++### 2. OrderDTO Construction
++The legacy code in `EconComponent` (and now `DecisionUnit`) was constructing `Order` objects using `order_type` and `price`. `Order` is now an alias for `OrderDTO`, which requires `side` and `price_limit`.
++-   **Fix**: Updated `DecisionUnit` to use the correct `OrderDTO` fields (`side`, `price_limit`).
++-   **Risk**: Other parts of the codebase might still be using legacy `Order` construction if they weren't covered by the tests I touched.
++-   **Action**: Audit codebase for legacy `Order(...)` usage.
++
++### 3. Stateless vs Stateful Tests
++The existing `test_econ_component.py` was attempting to test `EconComponent` as if it were stateful, which caused failures when running tests.
++-   **Fix**: Rewrote `test_econ_component.py` to correctly test the stateless nature of `EconComponent` by passing `EconStateDTO`.
++-   **Insight**: Transitioning to stateless components requires updating all associated unit tests to reflect the new architecture.
++
++### 4. Legacy `decide_and_consume`
++The method `decide_and_consume` was migrated to `ConsumptionManager` but appears to be unused by `Household` (which uses `consume`).
++-   **Insight**: It might be dead code.
++-   **Action**: Verify if any other system uses `decide_and_consume`. If not, remove it to reduce bloat.
++
++### 5. Hardcoded Magic Numbers in Decision Logic
++-   **Insight**: The `DecisionUnit`'s housing NPV calculation and shadow wage update logic contain numerous hardcoded numerical values (e.g., decision frequency, price-to-rent ratios, decay rates, risk premiums). This reduces the configurability and adaptability of the economic model.
++-   **Action**: Refactor these magic numbers into the `HouseholdConfigDTO` to allow for easier experimentation and tuning from the central configuration files.
++
++## Conclusion
++The refactoring successfully reduced the complexity of `Household` and `EconComponent`, distributing responsibilities to focused managers. The system is now more modular and easier to test, though some logic consolidation (Housing) remains as future work.
+diff --git a/modules/household/api.py b/modules/household/api.py
+index f1279c5..76d59e0 100644
+--- a/modules/household/api.py
++++ b/modules/household/api.py
+@@ -24,8 +24,8 @@ class IBioComponent(ABC):
+         """Creates demographic data for a new agent (mitosis)."""
+         pass
+ 
+-class IEconComponent(ABC):
+-    """Interface for stateless Economic Component."""
++class IConsumptionManager(ABC):
++    """Interface for Consumption Manager (Stateless)."""
+ 
+     @abstractmethod
+     def consume(
+@@ -59,6 +59,41 @@ class IEconComponent(ABC):
+         """
+         pass
+ 
++class IDecisionUnit(ABC):
++    """Interface for Decision Unit (Stateless)."""
++
++    @abstractmethod
++    def orchestrate_economic_decisions(
++        self,
++        state: EconStateDTO,
++        context: EconContextDTO,
++        orders: List[Order],
++        stress_scenario_config: Optional[StressScenarioConfig] = None,
++        config: Optional[HouseholdConfigDTO] = None
++    ) -> Tuple[EconStateDTO, List[Order]]:
++        """Refines orders and updates internal economic state (e.g. shadow wages)."""
++        pass
++
++    @abstractmethod
++    def make_decision(
++        self,
++        state: EconStateDTO,
++        decision_engine: Any, # BaseDecisionEngine
++        context: Any, # DecisionContext
++        macro_context: Any, # MacroFinancialContext
++        markets: Dict[str, Any], # IMarket
++        market_data: Dict[str, Any],
++        config: HouseholdConfigDTO
++    ) -> Tuple[EconStateDTO, List[Order], Any]: # Any is (Tactic, Aggressiveness)
++        """
++        Coordinated decision making process.
++        Returns: (Updated Econ State, Refined Orders, (Tactic, Aggressiveness))
++        """
++        pass
++
++class IEconComponent(ABC):
++    """Interface for stateless Economic Component."""
++
+     @abstractmethod
+     def work(
+         self,
+@@ -74,18 +109,6 @@ class IEconComponent(ABC):
+         """Updates labor skills based on experience."""
+         pass
+ 
+-    @abstractmethod
+-    def orchestrate_economic_decisions(
+-        self,
+-        state: EconStateDTO,
+-        context: EconContextDTO,
+-        orders: List[Order],
+-        stress_scenario_config: Optional[StressScenarioConfig] = None,
+-        config: Optional[HouseholdConfigDTO] = None
+-    ) -> Tuple[EconStateDTO, List[Order]]:
+-        """Refines orders and updates internal economic state (e.g. shadow wages)."""
+-        pass
+-
+     @abstractmethod
+     def update_perceived_prices(
+         self,
+diff --git a/modules/household/consumption_manager.py b/modules/household/consumption_manager.py
+new file mode 100644
+index 0000000..6d378b4
+--- /dev/null
++++ b/modules/household/consumption_manager.py
+@@ -0,0 +1,151 @@
++from __future__ import annotations
++from typing import Any, Dict, List, Optional, Tuple
++
++from modules.household.api import IConsumptionManager
++from modules.household.dtos import EconStateDTO
++from simulation.dtos import ConsumptionResult
++from simulation.dtos.config_dtos import HouseholdConfigDTO
++
++class ConsumptionManager(IConsumptionManager):
++    """
++    Stateless manager responsible for consumption logic.
++    """
++
++    def consume(
++        self,
++        state: EconStateDTO,
++        needs: Dict[str, float],
++        item_id: str,
++        quantity: float,
++        current_time: int,
++        goods_info: Dict[str, Any],
++        config: HouseholdConfigDTO
++    ) -> Tuple[EconStateDTO, Dict[str, float], ConsumptionResult]:
++        """
++        Consumes an item, updating inventory, consumption tracking, and needs.
++        Logic migrated from EconComponent.consume.
++        """
++        new_state = state.copy()
++        new_needs = needs.copy()
++
++        is_service = goods_info.get("is_service", False)
++        inventory_qty = new_state.inventory.get(item_id, 0.0)
++
++        if is_service or inventory_qty >= quantity:
++            if not is_service:
++                new_state.inventory[item_id] = max(0.0, inventory_qty - quantity)
++
++            # Durable goods logic
++            is_durable = goods_info.get("is_durable", False)
++            if is_durable and not is_service:
++                base_lifespan = goods_info.get("base_lifespan", 50)
++                quality = new_state.inventory_quality.get(item_id, 1.0)
++                num_assets = int(round(quantity))
++                for _ in range(num_assets):
++                    asset = {
++                        "item_id": item_id,
++                        "quality": quality,
++                        "remaining_life": base_lifespan,
++                    }
++                    new_state.durable_assets.append(asset)
++
++            # Education XP logic
++            if item_id == "education_service":
++                learning_efficiency = config.learning_efficiency
++                xp_gain = quantity * learning_efficiency
++                new_state.education_xp += xp_gain
++
++            # Consumption Value
++            fallback_price = config.default_fallback_price
++            price = new_state.perceived_avg_prices.get(item_id, fallback_price)
++            consumption_value = quantity * price
++
++            new_state.current_consumption += consumption_value
++
++            # Food tracking
++            if item_id in ["food", "basic_food", "luxury_food"]:
++                new_state.current_food_consumption += consumption_value
++
++            # Utility / Needs
++            total_utility = 0.0
++            utility_map = goods_info.get("utility_effects") or goods_info.get("utility_per_need")
++            if utility_map:
++                for need_type, utility_value in utility_map.items():
++                    if need_type in new_needs:
++                        satisfaction_gain = utility_value * quantity
++                        total_utility += satisfaction_gain
++                        new_needs[need_type] = max(0.0, new_needs.get(need_type, 0.0) - satisfaction_gain)
++
++            return new_state, new_needs, ConsumptionResult(items_consumed={item_id: quantity}, satisfaction=total_utility)
++
++        return new_state, new_needs, ConsumptionResult(items_consumed={}, satisfaction=0.0)
++
++    def decide_and_consume(
++        self,
++        state: EconStateDTO,
++        needs: Dict[str, float],
++        current_time: int,
++        goods_info_map: Dict[str, Any],
++        config: HouseholdConfigDTO
++    ) -> Tuple[EconStateDTO, Dict[str, float], Dict[str, float]]:
++        """
++        Decides what to consume from inventory based on needs and executes consumption.
++        Logic migrated from EconComponent.decide_and_consume.
++        """
++        new_state = state # We will update state iteratively via consume, which returns new state
++
++        final_needs = needs.copy()
++        consumed_items: Dict[str, float] = {}
++
++        # Iterate over inventory items
++        inventory_items = list(state.inventory.items())
++
++        for item_id, inventory_quantity in inventory_items:
++            if inventory_quantity <= 0:
++                continue
++
++            good_info = goods_info_map.get(item_id)
++            if not good_info:
++                continue
++
++            utility_effects = good_info.get("utility_effects", {})
++            if not utility_effects:
++                continue
++
++            should_consume = False
++            for need_key, effect in utility_effects.items():
++                current_need = final_needs.get(need_key, 0.0)
++
++                # Consumption Threshold
++                threshold = config.need_medium_threshold
++                if need_key == "survival":
++                    threshold = config.survival_need_consumption_threshold
++
++                if current_need > threshold:
++                    should_consume = True
++                    break
++
++            if should_consume:
++                is_durable = good_info.get("is_durable", False)
++                if is_durable:
++                    if inventory_quantity < 1.0:
++                        continue
++                    quantity_to_consume = 1.0
++                else:
++                    quantity_to_consume = min(inventory_quantity, 1.0)
++
++                if quantity_to_consume > 0:
++                    # Call self.consume
++                    new_state, updated_needs, _ = self.consume(
++                        new_state,
++                        final_needs,
++                        item_id,
++                        quantity_to_consume,
++                        current_time,
++                        good_info,
++                        config
++                    )
++                    final_needs = updated_needs
++                    consumed_items[item_id] = consumed_items.get(item_id, 0.0) + quantity_to_consume
++
++        return new_state, final_needs, consumed_items
+diff --git a/modules/household/decision_unit.py b/modules/household/decision_unit.py
+new file mode 100644
+index 0000000..d148c66
+--- /dev/null
++++ b/modules/household/decision_unit.py
+@@ -0,0 +1,231 @@
++from __future__ import annotations
++from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
++import logging
++
++from modules.household.api import IDecisionUnit
++from modules.household.dtos import EconStateDTO, EconContextDTO
++from simulation.dtos import StressScenarioConfig, DecisionContext, MacroFinancialContext
++from simulation.models import Order
++from simulation.ai.household_system2 import HousingDecisionInputs
++
++if TYPE_CHECKING:
++    from simulation.dtos.config_dtos import HouseholdConfigDTO
++    from simulation.decisions.base_decision_engine import BaseDecisionEngine
++    from simulation.interfaces.market_interface import IMarket
++    from simulation.ai.api import Tactic, Aggressiveness
++
++logger = logging.getLogger(__name__)
++
++class DecisionUnit(IDecisionUnit):
++    """
++    Stateless unit responsible for coordinating decision making.
++    Wraps DecisionEngine and System 2 logic (Orchestration).
++    """
++
++    def make_decision(
++        self,
++        state: EconStateDTO,
++        decision_engine: BaseDecisionEngine,
++        context: DecisionContext,
++        macro_context: Optional[MacroFinancialContext],
++        markets: Dict[str, IMarket],
++        market_data: Dict[str, Any],
++        config: HouseholdConfigDTO
++    ) -> Tuple[EconStateDTO, List[Order], Tuple[Tactic, Aggressiveness]]:
++
++        # 1. Run Decision Engine
++        orders, chosen_tactic_tuple = decision_engine.make_decisions(context, macro_context)
++
++        # 2. Orchestrate / Refine Orders (System 2 Logic)
++        econ_context = EconContextDTO(markets, market_data, context.current_time)
++        stress_scenario_config = context.stress_scenario_config
++
++        new_state, refined_orders = self.orchestrate_economic_decisions(
++            state, econ_context, orders, stress_scenario_config, config
++        )
++
++        return new_state, refined_orders, chosen_tactic_tuple
++
++    def orchestrate_economic_decisions(
++        self,
++        state: EconStateDTO,
++        context: EconContextDTO,
++        orders: List[Order],
++        stress_scenario_config: Optional[StressScenarioConfig] = None,
++        config: Optional[HouseholdConfigDTO] = None
++    ) -> Tuple[EconStateDTO, List[Order]]:
++        """
++        Refines orders and updates internal economic state.
++        Includes System 2 Housing Logic and Shadow Wage Logic.
++        Logic migrated from EconComponent.orchestrate_economic_decisions.
++        """
++        new_state = state.copy()
++        refined_orders = list(orders) # Copy list
++
++        market_data = context.market_data
++        current_time = context.current_time
++        markets = context.markets
++
++        # 1. System 2 Housing Decision Logic (Ported from HouseholdSystem2Planner)
++        if new_state.is_homeless or current_time % 30 == 0:
++            housing_market = market_data.get("housing_market", {})
++            loan_market = market_data.get("loan_market", {})
++
++            market_rent = housing_market.get("avg_rent_price", 100.0)
++            market_price = housing_market.get("avg_sale_price")
++            if not market_price:
++                 market_price = market_rent * 12 * 20.0
++
++            new_state.housing_price_history.append(market_price)
++            risk_free_rate = loan_market.get("interest_rate", 0.05)
++
++            price_growth = 0.0
++            if len(new_state.housing_price_history) >= 2:
++                start_price = new_state.housing_price_history[0]
++                end_price = new_state.housing_price_history[-1]
++                if start_price > 0:
++                    price_growth = (end_price - start_price) / start_price
++
++            ticks_per_year = config.ticks_per_year
++
++            income = new_state.current_wage * ticks_per_year if new_state.is_employed else new_state.expected_wage * ticks_per_year
++
++            inputs = HousingDecisionInputs(
++                current_wealth=new_state.assets,
++                annual_income=income,
++                market_rent_monthly=market_rent,
++                market_price=market_price,
++                risk_free_rate=risk_free_rate,
++                price_growth_expectation=price_growth
++            )
++
++            # Decide BUY vs RENT
++            # Logic: Calculate NPV
++            # Ported logic from HouseholdSystem2Planner.decide
++
++            # 1. Safety Guardrail (DTI)
++            loan_amount = inputs.market_price * 0.8
++            annual_mortgage_cost = loan_amount * inputs.risk_free_rate
++            dti_threshold = inputs.annual_income * 0.4
++
++            decision = "RENT" # Default
++            if annual_mortgage_cost <= dti_threshold:
++                 # 2. Rational Choice (Simplified NPV logic or full calculation)
++                 # Full calculation logic:
++                 T_years = 10
++                 T_months = T_years * 12
++                 r_monthly = (inputs.risk_free_rate + 0.02) / 12.0
++
++                 P_initial = inputs.market_price
++                 U_shelter = inputs.market_rent_monthly
++                 Cost_own = (P_initial * 0.01) / 12.0
++
++                 cap = config.housing_expectation_cap
++                 g_annual = min(inputs.price_growth_expectation, cap)
++                 P_future = P_initial * ((1.0 + g_annual) ** T_years)
++
++                 Principal = P_initial * 0.2
++                 Income_invest = Principal * (inputs.risk_free_rate / 12.0)
++                 Cost_rent = inputs.market_rent_monthly
++
++                 npv_buy_flow = 0.0
++                 npv_rent_flow = 0.0
++
++                 for t in range(1, T_months + 1):
++                     discount_factor = (1.0 + r_monthly) ** t
++                     npv_buy_flow += (U_shelter - Cost_own) / discount_factor
++                     npv_rent_flow += (Income_invest - Cost_rent) / discount_factor
++
++                 terminal_discount = (1.0 + r_monthly) ** T_months
++                 term_val_buy = P_future / terminal_discount
++                 npv_buy = npv_buy_flow + term_val_buy - P_initial
++
++                 term_val_rent = Principal / terminal_discount
++                 npv_rent = npv_rent_flow + term_val_rent
++
++                 if npv_buy > npv_rent:
++                     decision = "BUY"
++
++            new_state.housing_target_mode = decision
++
++        # 2. Shadow Labor Market Logic
++        avg_market_wage = 0.0
++        if market_data and "labor" in market_data:
++             avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
++
++        if avg_market_wage > 0:
++            new_state.market_wage_history.append(avg_market_wage)
++
++        if new_state.shadow_reservation_wage <= 0.0:
++            new_state.shadow_reservation_wage = new_state.current_wage if new_state.is_employed else new_state.expected_wage
++
++        if new_state.is_employed:
++            target = max(new_state.current_wage, new_state.shadow_reservation_wage)
++            new_state.shadow_reservation_wage = (new_state.shadow_reservation_wage * 0.95) + (target * 0.05)
++        else:
++            new_state.shadow_reservation_wage *= (1.0 - 0.02)
++            min_wage = config.household_min_wage_demand
++            if new_state.shadow_reservation_wage < min_wage:
++                new_state.shadow_reservation_wage = min_wage
++
++        # 3. Generate Housing Orders
++        if new_state.housing_target_mode == "BUY" and new_state.is_homeless:
++            housing_market_obj = markets.get("housing")
++            if housing_market_obj:
++                target_unit_id = None
++                best_price = float('inf')
++
++                # Check for available units (Assuming generic access to sell_orders)
++                if hasattr(housing_market_obj, "sell_orders"):
++                    for item_id, sell_orders in housing_market_obj.sell_orders.items():
++                        if item_id.startswith("unit_") and sell_orders:
++                            ask_price = sell_orders[0].price
++                            if ask_price < best_price:
++                                best_price = ask_price
++                                target_unit_id = item_id
++
++                if target_unit_id:
++                     down_payment = best_price * 0.2
++                     if new_state.assets >= down_payment:
++                         buy_order = Order(
++                             agent_id=state.portfolio.owner_id, # Using owner_id from portfolio as proxy for ID
++                             item_id=target_unit_id,
++                             price_limit=best_price,
++                             quantity=1.0,
++                             market_id="housing",
++                             side="BUY"
++                         )
++                         refined_orders.append(buy_order)
++
++        # 4. Panic Selling
++        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
++             threshold = config.panic_selling_asset_threshold
++             if new_state.assets < threshold:
++                 # Sell stocks
++                 for firm_id, share in new_state.portfolio.holdings.items():
++                     if share.quantity > 0:
++                         stock_order = Order(
++                             agent_id=state.portfolio.owner_id,
++                             side="SELL",
++                             item_id=f"stock_{firm_id}",
++                             quantity=share.quantity,
++                             price_limit=0.0,
++                             market_id="stock_market"
++                         )
++                         refined_orders.append(stock_order)
++
++        # 5. Targeted Order Refinement (Logic from original)
++        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'phase29_depression':
++             multiplier = stress_scenario_config.demand_shock_multiplier
++             if multiplier is not None:
++                 for order in refined_orders:
++                     if order.side == "BUY" and hasattr(order, "item_id") and order.item_id not in ["labor", "loan"]:
++                         if not order.item_id.startswith("stock_"):
++                            order.quantity *= multiplier
++
++        # 6. Forensics (Shadow Wage Update)
++        for order in refined_orders:
++             if order.side == "SELL" and (getattr(order, "item_id", "") == "labor" or order.market_id == "labor"):
++                new_state.last_labor_offer_tick = current_time
++
++        return new_state, refined_orders
+diff --git a/modules/household/econ_component.py b/modules/household/econ_component.py
+index a75ff0b..34e1962 100644
+--- a/modules/household/econ_component.py
++++ b/modules/household/econ_component.py
+@@ -6,11 +6,9 @@ import random
+ import logging
+ 
+ from modules.household.api import IEconComponent
+-from modules.household.dtos import EconStateDTO, EconContextDTO
+-from simulation.dtos import ConsumptionResult, LaborResult, StressScenarioConfig
+-from simulation.models import Order, Skill
+-from simulation.utils.shadow_logger import log_shadow
+-from simulation.ai.household_system2 import HousingDecisionInputs
++from modules.household.dtos import EconStateDTO
++from simulation.dtos import LaborResult, StressScenarioConfig
++from simulation.models import Skill
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.config_dtos import HouseholdConfigDTO
+@@ -36,149 +34,6 @@ class EconComponent(IEconComponent):
+ 
+         return new_state
+ 
+-    def consume(
+-        self,
+-        state: EconStateDTO,
+-        needs: Dict[str, float],
+-        item_id: str,
+-        quantity: float,
+-        current_time: int,
+-        goods_info: Dict[str, Any],
+-        config: HouseholdConfigDTO
+-    ) -> Tuple[EconStateDTO, Dict[str, float], ConsumptionResult]:
+-        """
+-        Consumes an item, updating inventory, consumption tracking, and needs.
+-        Logic migrated from EconomyManager.consume.
+-        """
+-        new_state = state.copy()
+-        new_needs = needs.copy()
+-
+-        is_service = goods_info.get("is_service", False)
+-        inventory_qty = new_state.inventory.get(item_id, 0.0)
+-
+-        if is_service or inventory_qty >= quantity:
+-            if not is_service:
+-                new_state.inventory[item_id] = max(0.0, inventory_qty - quantity)
+-
+-            # Durable goods logic
+-            is_durable = goods_info.get("is_durable", False)
+-            if is_durable and not is_service:
+-                base_lifespan = goods_info.get("base_lifespan", 50)
+-                quality = new_state.inventory_quality.get(item_id, 1.0)
+-                num_assets = int(round(quantity))
+-                for _ in range(num_assets):
+-                    asset = {
+-                        "item_id": item_id,
+-                        "quality": quality,
+-                        "remaining_life": base_lifespan,
+-                    }
+-                    new_state.durable_assets.append(asset)
+-
+-            # Education XP logic
+-            if item_id == "education_service":
+-                learning_efficiency = config.learning_efficiency
+-                xp_gain = quantity * learning_efficiency
+-                new_state.education_xp += xp_gain
+-
+-            # Consumption Value
+-            fallback_price = config.default_fallback_price
+-            price = new_state.perceived_avg_prices.get(item_id, fallback_price)
+-            consumption_value = quantity * price
+-
+-            new_state.current_consumption += consumption_value
+-
+-            # Food tracking
+-            if item_id in ["food", "basic_food", "luxury_food"]:
+-                new_state.current_food_consumption += consumption_value
+-
+-            # Utility / Needs
+-            total_utility = 0.0
+-            utility_map = goods_info.get("utility_effects") or goods_info.get("utility_per_need")
+-            if utility_map:
+-                for need_type, utility_value in utility_map.items():
+-                    if need_type in new_needs:
+-                        satisfaction_gain = utility_value * quantity
+-                        total_utility += satisfaction_gain
+-                        new_needs[need_type] = max(0.0, new_needs.get(need_type, 0.0) - satisfaction_gain)
+-
+-            return new_state, new_needs, ConsumptionResult(items_consumed={item_id: quantity}, satisfaction=total_utility)
+-
+-        return new_state, new_needs, ConsumptionResult(items_consumed={}, satisfaction=0.0)
+-
+-    def decide_and_consume(
+-        self,
+-        state: EconStateDTO,
+-        needs: Dict[str, float],
+-        current_time: int,
+-        goods_info_map: Dict[str, Any],
+-        config: HouseholdConfigDTO
+-    ) -> Tuple[EconStateDTO, Dict[str, float], Dict[str, float]]:
+-        """
+-        Decides what to consume from inventory based on needs and executes consumption.
+-        Logic ported from ConsumptionBehavior.
+-        """
+-        new_state = state # We will update state iteratively via consume, which returns new state
+-        # But wait, consume returns new state every time.
+-        # If we loop, we must chain updates.
+-
+-        final_needs = needs.copy()
+-        consumed_items: Dict[str, float] = {}
+-
+-        # Iterate over inventory items
+-        # We need to copy inventory keys to iterate safely while potentially modifying
+-        inventory_items = list(state.inventory.items())
+-
+-        for item_id, inventory_quantity in inventory_items:
+-            if inventory_quantity <= 0:
+-                continue
+-
+-            good_info = goods_info_map.get(item_id)
+-            if not good_info:
+-                continue
+-
+-            utility_effects = good_info.get("utility_effects", {})
+-            if not utility_effects:
+-                continue
+-
+-            should_consume = False
+-            for need_key, effect in utility_effects.items():
+-                current_need = final_needs.get(need_key, 0.0)
+-
+-                # Consumption Threshold
+-                threshold = config.need_medium_threshold
+-                if need_key == "survival":
+-                    threshold = config.survival_need_consumption_threshold
+-
+-                if current_need > threshold:
+-                    should_consume = True
+-                    break
+-
+-            if should_consume:
+-                is_durable = good_info.get("is_durable", False)
+-                if is_durable:
+-                    if inventory_quantity < 1.0:
+-                        continue
+-                    quantity_to_consume = 1.0
+-                else:
+-                    quantity_to_consume = min(inventory_quantity, 1.0)
+-
+-                if quantity_to_consume > 0:
+-                    # Call consume logic
+-                    # We call self.consume but we must pass the *current* updated state
+-                    new_state, updated_needs, _ = self.consume(
+-                        new_state,
+-                        final_needs,
+-                        item_id,
+-                        quantity_to_consume,
+-                        current_time,
+-                        good_info,
+-                        config
+-                    )
+-                    final_needs = updated_needs
+-                    consumed_items[item_id] = consumed_items.get(item_id, 0.0) + quantity_to_consume
+-
+-        return new_state, final_needs, consumed_items
+-
+     def work(self, state: EconStateDTO, hours: float, config: HouseholdConfigDTO) -> Tuple[EconStateDTO, LaborResult]:
+         """
+         Executes work logic (non-financial).
+@@ -209,189 +64,6 @@ class EconComponent(IEconComponent):
+ 
+         return new_state
+ 
+-    def orchestrate_economic_decisions(
+-        self,
+-        state: EconStateDTO,
+-        context: EconContextDTO,
+-        orders: List[Order],
+-        stress_scenario_config: Optional[StressScenarioConfig] = None,
+-        config: Optional[HouseholdConfigDTO] = None
+-    ) -> Tuple[EconStateDTO, List[Order]]:
+-        """
+-        Refines orders and updates internal economic state.
+-        Includes System 2 Housing Logic and Shadow Wage Logic.
+-        """
+-        new_state = state.copy()
+-        refined_orders = list(orders) # Copy list
+-
+-        market_data = context.market_data
+-        current_time = context.current_time
+-        markets = context.markets
+-
+-        # 1. System 2 Housing Decision Logic (Ported from HouseholdSystem2Planner)
+-        if new_state.is_homeless or current_time % 30 == 0:
+-            housing_market = market_data.get("housing_market", {})
+-            loan_market = market_data.get("loan_market", {})
+-
+-            market_rent = housing_market.get("avg_rent_price", 100.0)
+-            market_price = housing_market.get("avg_sale_price")
+-            if not market_price:
+-                 market_price = market_rent * 12 * 20.0
+-
+-            new_state.housing_price_history.append(market_price)
+-            risk_free_rate = loan_market.get("interest_rate", 0.05)
+-
+-            price_growth = 0.0
+-            if len(new_state.housing_price_history) >= 2:
+-                start_price = new_state.housing_price_history[0]
+-                end_price = new_state.housing_price_history[-1]
+-                if start_price > 0:
+-                    price_growth = (end_price - start_price) / start_price
+-
+-            ticks_per_year = config.ticks_per_year
+-
+-            income = new_state.current_wage * ticks_per_year if new_state.is_employed else new_state.expected_wage * ticks_per_year
+-
+-            inputs = HousingDecisionInputs(
+-                current_wealth=new_state.assets,
+-                annual_income=income,
+-                market_rent_monthly=market_rent,
+-                market_price=market_price,
+-                risk_free_rate=risk_free_rate,
+-                price_growth_expectation=price_growth
+-            )
+-
+-            # Decide BUY vs RENT
+-            # Logic: Calculate NPV
+-            # Ported logic from HouseholdSystem2Planner.decide
+-
+-            # 1. Safety Guardrail (DTI)
+-            loan_amount = inputs.market_price * 0.8
+-            annual_mortgage_cost = loan_amount * inputs.risk_free_rate
+-            dti_threshold = inputs.annual_income * 0.4
+-
+-            decision = "RENT" # Default
+-            if annual_mortgage_cost <= dti_threshold:
+-                 # 2. Rational Choice (Simplified NPV logic or full calculation)
+-                 # Full calculation logic:
+-                 T_years = 10
+-                 T_months = T_years * 12
+-                 r_monthly = (inputs.risk_free_rate + 0.02) / 12.0
+-
+-                 P_initial = inputs.market_price
+-                 U_shelter = inputs.market_rent_monthly
+-                 Cost_own = (P_initial * 0.01) / 12.0
+-
+-                 cap = config.housing_expectation_cap
+-                 g_annual = min(inputs.price_growth_expectation, cap)
+-                 P_future = P_initial * ((1.0 + g_annual) ** T_years)
+-
+-                 Principal = P_initial * 0.2
+-                 Income_invest = Principal * (inputs.risk_free_rate / 12.0)
+-                 Cost_rent = inputs.market_rent_monthly
+-
+-                 npv_buy_flow = 0.0
+-                 npv_rent_flow = 0.0
+-
+-                 for t in range(1, T_months + 1):
+-                     discount_factor = (1.0 + r_monthly) ** t
+-                     npv_buy_flow += (U_shelter - Cost_own) / discount_factor
+-                     npv_rent_flow += (Income_invest - Cost_rent) / discount_factor
+-
+-                 terminal_discount = (1.0 + r_monthly) ** T_months
+-                 term_val_buy = P_future / terminal_discount
+-                 npv_buy = npv_buy_flow + term_val_buy - P_initial
+-
+-                 term_val_rent = Principal / terminal_discount
+-                 npv_rent = npv_rent_flow + term_val_rent
+-
+-                 if npv_buy > npv_rent:
+-                     decision = "BUY"
+-
+-            new_state.housing_target_mode = decision
+-
+-        # 2. Shadow Labor Market Logic
+-        avg_market_wage = 0.0
+-        if market_data and "labor" in market_data:
+-             avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
+-
+-        if avg_market_wage > 0:
+-            new_state.market_wage_history.append(avg_market_wage)
+-
+-        if new_state.shadow_reservation_wage <= 0.0:
+-            new_state.shadow_reservation_wage = new_state.current_wage if new_state.is_employed else new_state.expected_wage
+-
+-        if new_state.is_employed:
+-            target = max(new_state.current_wage, new_state.shadow_reservation_wage)
+-            new_state.shadow_reservation_wage = (new_state.shadow_reservation_wage * 0.95) + (target * 0.05)
+-        else:
+-            new_state.shadow_reservation_wage *= (1.0 - 0.02)
+-            min_wage = config.household_min_wage_demand
+-            if new_state.shadow_reservation_wage < min_wage:
+-                new_state.shadow_reservation_wage = min_wage
+-
+-        # 3. Generate Housing Orders
+-        if new_state.housing_target_mode == "BUY" and new_state.is_homeless:
+-            housing_market_obj = markets.get("housing")
+-            if housing_market_obj:
+-                target_unit_id = None
+-                best_price = float('inf')
+-
+-                # Check for available units (Assuming generic access to sell_orders)
+-                if hasattr(housing_market_obj, "sell_orders"):
+-                    for item_id, sell_orders in housing_market_obj.sell_orders.items():
+-                        if item_id.startswith("unit_") and sell_orders:
+-                            ask_price = sell_orders[0].price
+-                            if ask_price < best_price:
+-                                best_price = ask_price
+-                                target_unit_id = item_id
+-
+-                if target_unit_id:
+-                     down_payment = best_price * 0.2
+-                     if new_state.assets >= down_payment:
+-                         buy_order = Order(
+-                             agent_id=state.portfolio.owner_id, # Using owner_id from portfolio as proxy for ID
+-                             item_id=target_unit_id,
+-                             price=best_price,
+-                             quantity=1.0,
+-                             market_id="housing",
+-                             order_type="BUY"
+-                         )
+-                         refined_orders.append(buy_order)
+-
+-        # 4. Panic Selling
+-        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
+-             threshold = config.panic_selling_asset_threshold
+-             if new_state.assets < threshold:
+-                 # Sell stocks
+-                 for firm_id, share in new_state.portfolio.holdings.items():
+-                     if share.quantity > 0:
+-                         stock_order = Order(
+-                             agent_id=state.portfolio.owner_id,
+-                             order_type="SELL",
+-                             item_id=f"stock_{firm_id}",
+-                             quantity=share.quantity,
+-                             price=0.0,
+-                             market_id="stock_market"
+-                         )
+-                         refined_orders.append(stock_order)
+-
+-        # 5. Targeted Order Refinement (Logic from original)
+-        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'phase29_depression':
+-             multiplier = stress_scenario_config.demand_shock_multiplier
+-             if multiplier is not None:
+-                 for order in refined_orders:
+-                     if order.order_type == "BUY" and hasattr(order, "item_id") and order.item_id not in ["labor", "loan"]:
+-                         if not order.item_id.startswith("stock_"):
+-                            order.quantity *= multiplier
+-
+-        # 6. Forensics (Shadow Wage Update)
+-        for order in refined_orders:
+-             if order.order_type == "SELL" and (getattr(order, "item_id", "") == "labor" or order.market_id == "labor"):
+-                new_state.last_labor_offer_tick = current_time
+-
+-        return new_state, refined_orders
+-
+     def update_perceived_prices(
+         self,
+         state: EconStateDTO,
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 5c25a59..588892b 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -29,6 +29,8 @@ import simulation
+ from modules.household.bio_component import BioComponent
+ from modules.household.econ_component import EconComponent
+ from modules.household.social_component import SocialComponent
++from modules.household.consumption_manager import ConsumptionManager
++from modules.household.decision_unit import DecisionUnit
+ from modules.household.dtos import (
+     HouseholdStateDTO, CloningRequestDTO, EconContextDTO,
+     BioStateDTO, EconStateDTO, SocialStateDTO
+@@ -88,6 +90,8 @@ class Household(BaseAgent, ILearningAgent):
+         self.bio_component = BioComponent()
+         self.econ_component = EconComponent()
+         self.social_component = SocialComponent()
++        self.consumption_manager = ConsumptionManager()
++        self.decision_unit = DecisionUnit()
+ 
+         # --- Initialize Internal State DTOs ---
+ 
+@@ -699,11 +703,15 @@ class Household(BaseAgent, ILearningAgent):
+             agent_registry=agent_registry or {}
+         )
+ 
+-        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
+-
+-        econ_context = EconContextDTO(markets, market_data, current_time)
+-        self._econ_state, refined_orders = self.econ_component.orchestrate_economic_decisions(
+-            self._econ_state, econ_context, orders, stress_scenario_config, self.config
++        # Delegate to DecisionUnit
++        self._econ_state, refined_orders, chosen_tactic_tuple = self.decision_unit.make_decision(
++            state=self._econ_state,
++            decision_engine=self.decision_engine,
++            context=context,
++            macro_context=macro_context,
++            markets=markets,
++            market_data=market_data,
++            config=self.config
+         )
+ 
+         return refined_orders, chosen_tactic_tuple
+@@ -724,8 +732,8 @@ class Household(BaseAgent, ILearningAgent):
+             self._econ_state.current_wage = 0.0
+ 
+     def consume(self, item_id: str, quantity: float, current_time: int) -> "ConsumptionResult":
+-        # Delegate to EconComponent
+-        self._econ_state, new_needs, result = self.econ_component.consume(
++        # Delegate to ConsumptionManager
++        self._econ_state, new_needs, result = self.consumption_manager.consume(
+             self._econ_state,
+             self._bio_state.needs,
+             item_id,
+diff --git a/tests/unit/decisions/test_household_integration_new.py b/tests/unit/decisions/test_household_integration_new.py
+new file mode 100644
+index 0000000..feef2f4
+--- /dev/null
++++ b/tests/unit/decisions/test_household_integration_new.py
+@@ -0,0 +1,73 @@
++import unittest
++from unittest.mock import MagicMock
++from simulation.core_agents import Household
++from simulation.ai.api import Personality
++from tests.utils.factories import create_household_config_dto
++from simulation.models import Talent
++
++class TestHouseholdIntegrationNew(unittest.TestCase):
++    def test_make_decision_integration(self):
++        # Create real household with mocked dependencies
++        mock_decision_engine = MagicMock()
++        mock_decision_engine.ai_engine = MagicMock()
++
++        # Mock engine to return some orders
++        mock_order = MagicMock()
++        mock_order.side = "BUY"
++        mock_order.item_id = "food"
++        mock_order.quantity = 1.0
++        mock_order.price_limit = 10.0
++        mock_order.market_id = "goods"
++        mock_order.order_type = "BUY" # Legacy compat if needed
++        mock_order.price = 10.0 # Legacy compat if needed
++
++        mock_orders = [mock_order]
++        mock_decision_engine.make_decisions.return_value = (mock_orders, ("TACTIC", "AGGRESSIVE"))
++
++        config = create_household_config_dto()
++
++        household = Household(
++            id=1,
++            talent=Talent(base_learning_rate=0.5, max_potential=1.0),
++            goods_data=[{"id": "food", "initial_price": 10.0}],
++            initial_assets=1000.0,
++            initial_needs={},
++            decision_engine=mock_decision_engine,
++            value_orientation="wealth_and_needs",
++            personality=Personality.CONSERVATIVE,
++            config_dto=config
++        )
++
++        # Verify components are initialized
++        self.assertIsNotNone(household.consumption_manager)
++        self.assertIsNotNone(household.decision_unit)
++
++        # Call make_decision
++        markets = {"goods": MagicMock()}
++        market_data = {"housing_market": {"avg_rent_price": 50.0}, "loan_market": {"interest_rate": 0.05}}
++        current_time = 100
++
++        refined_orders, tactic = household.make_decision(
++            markets=markets,
++            goods_data=[],
++            market_data=market_data,
++            current_time=current_time
++        )
++
++        # Verify DecisionUnit was used (indirectly via result)
++        # The orders should be passed through (or modified)
++        self.assertEqual(len(refined_orders), 1)
++        self.assertEqual(refined_orders[0].item_id, "food")
++
++        # Verify state update (e.g. shadow wage logic in DecisionUnit)
++        # Initial shadow wage is 0.0 (from init) or calculated.
++        # Household init sets shadow_reservation_wage = 0.0?
++        # Let's check init.
++        # It sets shadow_reservation_wage = 0.0.
++        # DecisionUnit logic: if 0, sets to expected_wage (10.0).
++        # Then applies decay if unemployed.
++        # So it should be > 0.0 after update.
++        self.assertGreater(household._econ_state.shadow_reservation_wage, 0.0)
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/tests/unit/modules/household/test_consumption_manager.py b/tests/unit/modules/household/test_consumption_manager.py
+new file mode 100644
+index 0000000..5b3c467
+--- /dev/null
++++ b/tests/unit/modules/household/test_consumption_manager.py
+@@ -0,0 +1,151 @@
++import pytest
++from unittest.mock import MagicMock
++from collections import deque, defaultdict
++from modules.household.consumption_manager import ConsumptionManager
++from modules.household.dtos import EconStateDTO
++from simulation.models import Talent
++from simulation.portfolio import Portfolio
++from tests.utils.factories import create_household_config_dto
++
++class TestConsumptionManager:
++    @pytest.fixture
++    def mock_config(self):
++        return create_household_config_dto(
++            learning_efficiency=0.5,
++            default_fallback_price=10.0,
++            need_medium_threshold=50.0,
++            survival_need_consumption_threshold=50.0
++        )
++
++    @pytest.fixture
++    def econ_state(self):
++        return EconStateDTO(
++            assets=1000.0,
++            inventory={"food": 10.0, "water": 5.0},
++            inventory_quality={"food": 1.0, "water": 1.0},
++            durable_assets=[],
++            portfolio=Portfolio(1),
++            is_employed=False,
++            employer_id=None,
++            current_wage=0.0,
++            wage_modifier=1.0,
++            labor_skill=1.0,
++            education_xp=0.0,
++            education_level=0,
++            expected_wage=10.0,
++            talent=Talent(base_learning_rate=0.5, max_potential=1.0),
++            skills={},
++            aptitude=0.5,
++            owned_properties=[],
++            residing_property_id=None,
++            is_homeless=True,
++            home_quality_score=1.0,
++            housing_target_mode="RENT",
++            housing_price_history=deque(),
++            market_wage_history=deque(),
++            shadow_reservation_wage=10.0,
++            last_labor_offer_tick=0,
++            last_fired_tick=-1,
++            job_search_patience=0,
++            current_consumption=0.0,
++            current_food_consumption=0.0,
++            expected_inflation=defaultdict(float),
++            perceived_avg_prices={"food": 10.0, "water": 5.0},
++            price_history=defaultdict(lambda: deque(maxlen=10)),
++            price_memory_length=10,
++            adaptation_rate=0.1,
++            labor_income_this_tick=0.0,
++            capital_income_this_tick=0.0
++        )
++
++    def test_consume_basic(self, econ_state, mock_config):
++        manager = ConsumptionManager()
++        needs = {"survival": 60.0} # Above threshold, but consume takes explicit quantity
++
++        item_id = "food"
++        quantity = 2.0
++        current_time = 100
++        goods_info = {
++            "id": "food",
++            "is_service": False,
++            "utility_effects": {"survival": 5.0}
++        }
++
++        new_state, new_needs, result = manager.consume(
++            econ_state, needs, item_id, quantity, current_time, goods_info, mock_config
++        )
++
++        # Inventory check
++        assert new_state.inventory["food"] == 8.0 # 10 - 2
++
++        # Needs check
++        # Utility gained = 5.0 * 2.0 = 10.0
++        # New need = 60.0 - 10.0 = 50.0
++        assert new_needs["survival"] == 50.0
++
++        # Consumption Result
++        assert result.items_consumed["food"] == 2.0
++        assert result.satisfaction == 10.0
++
++        # Consumption tracking
++        # Value = 2.0 * 10.0 = 20.0
++        assert new_state.current_consumption == 20.0
++        assert new_state.current_food_consumption == 20.0
++
++    def test_consume_service(self, econ_state, mock_config):
++        manager = ConsumptionManager()
++        needs = {"learning": 100.0}
++
++        item_id = "education_service"
++        quantity = 1.0
++        current_time = 100
++        goods_info = {
++            "id": "education_service",
++            "is_service": True,
++            "utility_effects": {"learning": 10.0}
++        }
++
++        new_state, new_needs, result = manager.consume(
++            econ_state, needs, item_id, quantity, current_time, goods_info, mock_config
++        )
++
++        # Inventory should NOT change for service (it's not in inventory usually, or doesn't deplete if is_service=True)
++        # But we didn't have it in inventory anyway.
++        assert "education_service" not in new_state.inventory
++
++        # XP check
++        # Gain = 1.0 * 0.5 (efficiency) = 0.5
++        assert new_state.education_xp == 0.5
++
++    def test_decide_and_consume(self, econ_state, mock_config):
++        manager = ConsumptionManager()
++        needs = {"survival": 60.0} # Threshold is 50.0
++
++        current_time = 100
++        goods_info_map = {
++            "food": {
++                "id": "food",
++                "is_service": False,
++                "utility_effects": {"survival": 5.0}
++            },
++            "water": {
++                "id": "water",
++                "is_service": False,
++                "utility_effects": {"survival": 2.0}
++            }
++        }
++
++        # Should consume food (first in inventory iteration usually, or both?)
++        # Logic iterates all inventory items.
++        # Food: need 60 > 50 -> consume 1.0 (min(qty, 1.0))
++        # After food: need = 60 - 5 = 55.
++        # Water: need 55 > 50 -> consume 1.0.
++        # After water: need = 55 - 2 = 53.
++
++        new_state, final_needs, consumed = manager.decide_and_consume(
++            econ_state, needs, current_time, goods_info_map, mock_config
++        )
++
++        assert consumed.get("food", 0.0) == 1.0
++        assert consumed.get("water", 0.0) == 1.0
++        assert final_needs["survival"] == 53.0
+diff --git a/tests/unit/modules/household/test_decision_unit.py b/tests/unit/modules/household/test_decision_unit.py
+new file mode 100644
+index 0000000..39ff55f
+--- /dev/null
++++ b/tests/unit/modules/household/test_decision_unit.py
+@@ -0,0 +1,162 @@
++import pytest
++from unittest.mock import MagicMock, call
++from collections import deque, defaultdict
++from modules.household.decision_unit import DecisionUnit
++from modules.household.dtos import EconStateDTO
++from simulation.models import Talent, Order
++from simulation.portfolio import Portfolio
++from simulation.dtos import DecisionContext
++from tests.utils.factories import create_household_config_dto
++
++class TestDecisionUnit:
++    @pytest.fixture
++    def mock_config(self):
++        return create_household_config_dto(
++            ticks_per_year=365,
++            housing_expectation_cap=0.1,
++            household_min_wage_demand=7.0
++        )
++
++    @pytest.fixture
++    def econ_state(self):
++        return EconStateDTO(
++            assets=1000.0,
++            inventory={},
++            inventory_quality={},
++            durable_assets=[],
++            portfolio=Portfolio(1),
++            is_employed=False,
++            employer_id=None,
++            current_wage=0.0,
++            wage_modifier=1.0,
++            labor_skill=1.0,
++            education_xp=0.0,
++            education_level=0,
++            expected_wage=10.0,
++            talent=Talent(base_learning_rate=0.5, max_potential=1.0),
++            skills={},
++            aptitude=0.5,
++            owned_properties=[],
++            residing_property_id=None,
++            is_homeless=True,
++            home_quality_score=1.0,
++            housing_target_mode="RENT",
++            housing_price_history=deque([100.0, 110.0]), # Some history for growth calc
++            market_wage_history=deque(),
++            shadow_reservation_wage=10.0,
++            last_labor_offer_tick=0,
++            last_fired_tick=-1,
++            job_search_patience=0,
++            current_consumption=0.0,
++            current_food_consumption=0.0,
++            expected_inflation=defaultdict(float),
++            perceived_avg_prices=defaultdict(float),
++            price_history=defaultdict(lambda: deque(maxlen=10)),
++            price_memory_length=10,
++            adaptation_rate=0.1,
++            labor_income_this_tick=0.0,
++            capital_income_this_tick=0.0
++        )
++
++    def test_make_decision_flow(self, econ_state, mock_config):
++        decision_unit = DecisionUnit()
++
++        # Mocks
++        mock_engine = MagicMock()
++        initial_orders = [Order(agent_id=1, side="BUY", item_id="food", quantity=1.0, price_limit=10.0, market_id="goods")]
++        mock_engine.make_decisions.return_value = (initial_orders, ("TACTIC", "AGGRESSIVE"))
++
++        mock_context = MagicMock(spec=DecisionContext)
++        mock_context.current_time = 100
++        mock_context.market_data = {
++            "housing_market": {"avg_rent_price": 50.0, "avg_sale_price": 10000.0},
++            "loan_market": {"interest_rate": 0.05}
++        }
++        mock_context.stress_scenario_config = None
++
++        mock_macro_context = MagicMock()
++        mock_markets = {"housing": MagicMock()}
++
++        # Call
++        new_state, refined_orders, tactic = decision_unit.make_decision(
++            econ_state,
++            mock_engine,
++            mock_context,
++            mock_macro_context,
++            mock_markets,
++            mock_context.market_data,
++            mock_config
++        )
++
++        # Verification
++        mock_engine.make_decisions.assert_called_once()
++
++        # Check if orders are preserved
++        assert len(refined_orders) >= 1
++        assert refined_orders[0].item_id == "food"
++
++        # Check if state updated (e.g. shadow wage logic)
++        # Shadow wage logic runs:
++        # if not employed: shadow_wage *= 0.98. min demand 7.0.
++        # 10.0 * 0.98 = 9.8
++        assert new_state.shadow_reservation_wage == 9.8
++
++    def test_orchestrate_housing_buy(self, econ_state, mock_config):
++        decision_unit = DecisionUnit()
++
++        # Setup state for BUY decision
++        # Needs plenty of assets for down payment (20% of 10000 = 2000)
++        econ_state.assets = 5000.0
++        econ_state.is_homeless = True
++
++        # Mock Markets
++        mock_housing_market = MagicMock()
++        # Mock sell orders: item_id -> list of Orders
++        mock_housing_market.sell_orders = {
++            "unit_1": [Order(agent_id=99, side="SELL", item_id="unit_1", quantity=1.0, price_limit=10000.0, market_id="housing")]
++        }
++
++        markets = {"housing": mock_housing_market}
++
++        # Mock Context Data
++        # Ensure NPV favors BUY.
++        # High rent (income flow), Low price.
++        # Rent 500/mo. Price 10000. Yield = 6000/10000 = 60%. Risk free 5%. Definitely BUY.
++        market_data = {
++            "housing_market": {"avg_rent_price": 500.0, "avg_sale_price": 10000.0},
++            "loan_market": {"interest_rate": 0.05}
++        }
++
++        # Mock Context DTO
++        # We need EconContextDTO, but make_decision takes DecisionContext and creates EconContextDTO internally.
++        # But we can test make_decision which calls orchestrate.
++
++        mock_engine = MagicMock()
++        mock_engine.make_decisions.return_value = ([], ("TACTIC", "AGGRESSIVE"))
++
++        mock_context = MagicMock(spec=DecisionContext)
++        mock_context.current_time = 30 # Trigger tick
++        mock_context.market_data = market_data
++        mock_context.stress_scenario_config = None
++
++        new_state, refined_orders, _ = decision_unit.make_decision(
++            econ_state,
++            mock_engine,
++            mock_context,
++            None,
++            markets,
++            market_data,
++            mock_config
++        )
++
++        # Check if BUY order generated
++        # Logic:
++        # 1. System 2 decides BUY (due to high rent vs price)
++        # 2. Finds unit_1 at 10000
++        # 3. Checks assets >= 2000 (True, 5000)
++        # 4. Appends BUY order
++
++        assert new_state.housing_target_mode == "BUY"
++        assert len(refined_orders) == 1
++        assert refined_orders[0].item_id == "unit_1"
++        assert refined_orders[0].price_limit == 10000.0
+diff --git a/tests/unit/modules/household/test_econ_component.py b/tests/unit/modules/household/test_econ_component.py
+index 7c70d54..905674f 100644
+--- a/tests/unit/modules/household/test_econ_component.py
++++ b/tests/unit/modules/household/test_econ_component.py
+@@ -1,37 +1,73 @@
+ import pytest
+ from unittest.mock import MagicMock
+-from collections import deque
++from collections import deque, defaultdict
+ from modules.household.econ_component import EconComponent
++from modules.household.dtos import EconStateDTO
+ from simulation.ai.api import Personality
++from simulation.models import Talent
++from simulation.portfolio import Portfolio
++from tests.utils.factories import create_household_config_dto
+ 
+ class TestEconComponent:
+-    @pytest.fixture
+-    def mock_owner(self):
+-        owner = MagicMock()
+-        owner.goods_info_map = {
+-            "food": {"id": "food", "initial_price": 10.0},
+-            "water": {"id": "water", "initial_price": 5.0}
+-        }
+-        owner.personality = Personality.CONSERVATIVE
+-        owner.logger = MagicMock()
+-        return owner
+-
+     @pytest.fixture
+     def mock_config(self):
+-        config = MagicMock()
+-        config.ADAPTATION_RATE_NORMAL = 0.2
+-        config.ADAPTATION_RATE_IMPULSIVE = 0.5
+-        config.ADAPTATION_RATE_CONSERVATIVE = 0.1
+-        config.PERCEIVED_PRICE_UPDATE_FACTOR = 0.1
+-        return config
++        return create_household_config_dto(
++            perceived_price_update_factor=0.1,
++            adaptation_rate_normal=0.1,
++            adaptation_rate_impulsive=0.2,
++            adaptation_rate_conservative=0.05
++        )
+ 
+-    def test_update_perceived_prices_basic(self, mock_owner, mock_config):
+-        econ = EconComponent(mock_owner, mock_config)
++    @pytest.fixture
++    def econ_state(self):
++        # Create a basic EconStateDTO
++        return EconStateDTO(
++            assets=1000.0,
++            inventory={},
++            inventory_quality={},
++            durable_assets=[],
++            portfolio=Portfolio(1),
++            is_employed=False,
++            employer_id=None,
++            current_wage=0.0,
++            wage_modifier=1.0,
++            labor_skill=1.0,
++            education_xp=0.0,
++            education_level=0,
++            expected_wage=10.0,
++            talent=Talent(base_learning_rate=0.5, max_potential=1.0),
++            skills={},
++            aptitude=0.5,
++            owned_properties=[],
++            residing_property_id=None,
++            is_homeless=True,
++            home_quality_score=1.0,
++            housing_target_mode="RENT",
++            housing_price_history=deque(),
++            market_wage_history=deque(),
++            shadow_reservation_wage=10.0,
++            last_labor_offer_tick=0,
++            last_fired_tick=-1,
++            job_search_patience=0,
++            current_consumption=0.0,
++            current_food_consumption=0.0,
++            expected_inflation=defaultdict(float),
++            perceived_avg_prices=defaultdict(float),
++            price_history=defaultdict(lambda: deque(maxlen=10)),
++            price_memory_length=10,
++            adaptation_rate=0.1,
++            labor_income_this_tick=0.0,
++            capital_income_this_tick=0.0
++        )
++
++    def test_update_perceived_prices_basic(self, econ_state, mock_config):
++        econ = EconComponent()
+ 
+         # Setup initial state
+-        econ.price_history["food"].append(10.0)
+-        econ.expected_inflation["food"] = 0.0
+-        econ.perceived_avg_prices["food"] = 10.0
++        econ_state.price_history["food"].append(10.0)
++        econ_state.expected_inflation["food"] = 0.0
++        econ_state.perceived_avg_prices["food"] = 10.0
++        econ_state.adaptation_rate = 0.1 # Conservative/Normal
+ 
+         market_data = {
+             "goods_market": {
+@@ -39,33 +75,32 @@ class TestEconComponent:
+             }
+         }
+ 
+-        econ.update_perceived_prices(market_data)
++        goods_info_map = {
++            "food": {"id": "food"}
++        }
++
++        new_state = econ.update_perceived_prices(econ_state, market_data, goods_info_map, None, mock_config)
+ 
+         # Verify Price History
+-        assert len(econ.price_history["food"]) == 2
+-        assert econ.price_history["food"][-1] == 11.0
++        assert len(new_state.price_history["food"]) == 2
++        assert new_state.price_history["food"][-1] == 11.0
+ 
+         # Verify Expected Inflation
+         # Inflation = (11 - 10) / 10 = 0.1
+-        # New Expectation = 0.0 + 0.1 * (0.1 - 0.0) = 0.01 (Conservative adaptation rate 0.1)
+-        assert econ.expected_inflation["food"] == pytest.approx(0.01)
++        # New Expectation = 0.0 + 0.1 * (0.1 - 0.0) = 0.01
++        assert new_state.expected_inflation["food"] == pytest.approx(0.01)
+ 
+         # Verify Perceived Price
+         # New Perceived = 0.1 * 11 + 0.9 * 10 = 1.1 + 9.0 = 10.1
+-        assert econ.perceived_avg_prices["food"] == pytest.approx(10.1)
+-
+-    def test_update_perceived_prices_hyperinflation(self, mock_owner, mock_config):
+-        econ = EconComponent(mock_owner, mock_config)
+-        econ.adaptation_rate = 0.2 # Force a rate override just to be sure, or rely on init
++        assert new_state.perceived_avg_prices["food"] == pytest.approx(10.1)
+ 
+-        # Override adaptation rate logic for test isolation or rely on mock_owner having CONSERVATIVE (0.1)
+-        # But here let's assume we want to test the multiplier logic.
+-        # Econ initialized with CONSERVATIVE -> 0.1
+-        # To match the calculation in comment (0.2), I should set adaptation_rate to 0.2
+-        econ.adaptation_rate = 0.2
++    def test_update_perceived_prices_hyperinflation(self, econ_state, mock_config):
++        econ = EconComponent()
+ 
+-        econ.price_history["food"].append(100.0)
+-        econ.expected_inflation["food"] = 0.05
++        econ_state.adaptation_rate = 0.2
++        econ_state.price_history["food"].append(100.0)
++        econ_state.expected_inflation["food"] = 0.05
++        econ_state.perceived_avg_prices["food"] = 100.0
+ 
+         market_data = {
+             "goods_market": {
+@@ -73,14 +108,18 @@ class TestEconComponent:
+             }
+         }
+ 
++        goods_info_map = {
++            "food": {"id": "food"}
++        }
++
+         stress_config = MagicMock()
+         stress_config.is_active = True
+         stress_config.scenario_name = 'hyperinflation'
+         stress_config.inflation_expectation_multiplier = 2.0
+ 
+-        econ.update_perceived_prices(market_data, stress_scenario_config=stress_config)
++        new_state = econ.update_perceived_prices(econ_state, market_data, goods_info_map, stress_config, mock_config)
+ 
+         # Inflation = (120 - 100) / 100 = 0.2
+         # Adaptive Rate = 0.2 * 2.0 = 0.4
+         # New Expectation = 0.05 + 0.4 * (0.2 - 0.05) = 0.05 + 0.4 * 0.15 = 0.05 + 0.06 = 0.11
+-        assert econ.expected_inflation["food"] == pytest.approx(0.11)
++        assert new_state.expected_inflation["food"] == pytest.approx(0.11)
+diff --git a/tests/unit/test_household_system2.py b/tests/unit/test_household_system2.py
+index 146a52f..0d243d5 100644
+--- a/tests/unit/test_household_system2.py
++++ b/tests/unit/test_household_system2.py
+@@ -62,66 +62,5 @@ class TestHouseholdSystem2(unittest.TestCase):
+          decision = self.planner.decide(inputs)
+          self.assertEqual(decision, "BUY")
+ 
+-    def test_household_integration(self):
+-        # Create real household (mocked config/decision engine)
+-        mock_decision_engine = MagicMock()
+-        mock_decision_engine.ai_engine = MagicMock() # Mock nested ai_engine
+-
+-        # Configure Config Mock for Household Init
+-        self.mock_config.EDUCATION_LEVEL_DISTRIBUTION = [1.0]
+-        self.mock_config.VALUE_ORIENTATION_MAPPING = {
+-            "wealth_and_needs": {"preference_asset": 1.0, "preference_social": 1.0, "preference_growth": 1.0}
+-        }
+-        self.mock_config.CONFORMITY_RANGES = {}
+-        self.mock_config.INFLATION_MEMORY_WINDOW = 10
+-        self.mock_config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 10000.0
+-        self.mock_config.TICKS_PER_YEAR = 100
+-
+-        household = Household(
+-            id=1,
+-            talent=MagicMock(),
+-            goods_data=[],
+-            initial_assets=50000.0,
+-            initial_needs={},
+-            decision_engine=mock_decision_engine,
+-            value_orientation="wealth_and_needs",
+-            personality=Personality.CONSERVATIVE,
+-            config_dto=create_household_config_dto()
+-        )
+-
+-        # Override planner with mock to verify call
+-        household.housing_planner = MagicMock()
+-        household.housing_planner.decide.return_value = "BUY" # Force BUY decision
+-
+-        # Trigger Condition: tick 30
+-        market_data = {
+-            "housing_market": {"avg_rent_price": 100.0, "avg_sale_price": 20000.0},
+-            "loan_market": {"interest_rate": 0.05}
+-        }
+-
+-        # 1. Verify Trigger
+-        household.decide_housing(market_data, 30)
+-        household.housing_planner.decide.assert_called_once()
+-        self.assertEqual(household.housing_target_mode, "BUY")
+-        self.assertEqual(len(household.housing_price_history), 1)
+-
+-        # 2. Verify Execution (BUY -> Order)
+-        # Mock decision engine to return empty list
+-        mock_decision_engine.make_decisions.return_value = ([], (MagicMock(), MagicMock()))
+-
+-        # Set up a fake housing market with a sell order
+-        mock_market = MagicMock()
+-        mock_order = MagicMock()
+-        mock_order.price = 10000.0
+-        mock_market.sell_orders = {"unit_1": [mock_order]}
+-        markets = {"housing": mock_market}
+-
+-        household.is_homeless = True # Trigger Execution logic
+-        orders, _ = household.make_decision(markets, [], market_data, 30, None)
+-
+-        # Check if BUY order was appended
+-        found_housing_buy = any(o.market_id == "housing" and o.order_type == "BUY" and o.item_id == "unit_1" for o in orders)
+-        self.assertTrue(found_housing_buy, "Should generate BUY order for housing when mode is BUY and homeless")
+-
+ if __name__ == '__main__':
+     unittest.main()

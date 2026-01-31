@@ -4,9 +4,34 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-db-god-file": {
+  "mission-corp-manager": {
     "command": "create",
-    "instruction": "Refactor 'simulation/db/repository.py' to separate concerns. Split the monolithic file into smaller, domain-specific repositories (e.g., AgentRepository, MarketRepository).\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Refactor Database Repository (TD-140)"
+    "instruction": "Decompose the bloated 'corporate_manager.py' god file into smaller strategic modules following the Component pattern. Extraction targets: FinancialStrategy, ProductionStrategy, HRStrategy.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Refactor Corporate Manager (TD-142)"
+  },
+  "mission-household-ai-refactor": {
+    "command": "create",
+    "instruction": "Decompose 'simulation/decisions/household/ai_driven_household_engine.py'. Extract specialized decision modules for Consumption, Labor, and Investment to reduce file complexity (636+ LOC).\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Refactor Household AI Engine (TD-141)"
+  },
+  "mission-decision-abstraction": {
+    "command": "create",
+    "instruction": "Refactor the 'make_decision' interface. Replace raw Agent objects with localized context or DTOs to improve encapsulation and prevent agents from having full access to each other's internals.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Fix Decision Abstraction Leak (TD-168)"
+  },
+  "mission-config-unification": {
+    "worker": "audit",
+    "instruction": "Analyze 'TD-166: Configuration Duality (Engine vs Agent)'. Currently, configuration is fragmented between engine-level settings and agent-level attributes. Propose a unified Configuration Management pattern that respects the ECS architecture.",
+    "output": "design/3_work_artifacts/specs/SPEC_CONFIG_UNIFICATION.md"
+  },
+  "mission-dto-adoption": {
+    "command": "create",
+    "instruction": "Finalize the transition to DTOs for internal engine communication. Replace residual raw dictionary/tuple passing with the standardized DTOs (including the new OrderDTO) in 'simulation/engine.py' and 'simulation/decisions/'.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Complete DTO Adoption in Engine (TD-151)"
+  },
+  "mission-bloat-cleanup": {
+    "command": "create",
+    "instruction": "Refactor 'simulation/phases.py' and 'simulation/agents/government.py' to reduce bloating. Extract utility functions and configuration constants to dedicated modules. Focus on improving readability and reducing file size.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Clean Up Bloated Modules (TD-169)"
   }
 }
