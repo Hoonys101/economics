@@ -363,7 +363,13 @@ class Firm(BaseAgent, ILearningAgent):
             government_policy=government_policy,
             agent_registry=agent_registry or {}
         )
-        decisions, tactic = self.decision_engine.make_decisions(context)
+        decision_output = self.decision_engine.make_decisions(context)
+        
+        if hasattr(decision_output, "orders"):
+            decisions = decision_output.orders
+            tactic = decision_output.metadata
+        else:
+            decisions, tactic = decision_output
 
         # WO-114: Internal Order Interceptor (Purity Gate execution)
         external_orders = []

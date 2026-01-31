@@ -41,15 +41,17 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
             extra={"tick": 0, "tags": ["init"]},
         )
 
-    def make_decisions(
+    def _make_decisions_internal(
         self,
         context: DecisionContext,
-    ) -> Tuple[List[Order], Any]: # Returns FirmActionVector
+        macro_context: Optional[Any] = None,
+    ) -> DecisionOutputDTO:
         """
         Main Decision Loop.
         1. AI decides Strategy (Vector).
         2. CorporateManager executes Strategy (Orders/Actions).
         """
+        from simulation.dtos import DecisionOutputDTO
         firm_state = context.state
 
         # 1. AI Strategy Decision (Vector Output)
@@ -64,7 +66,7 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         # 3. Phase 2: Pricing Logic Override (Cost-Plus & Fire-Sale)
         self._apply_pricing_logic(orders, context, firm_state)
 
-        return orders, action_vector
+        return DecisionOutputDTO(orders=orders, metadata=action_vector)
 
     def _apply_pricing_logic(self, orders: List[Order], context: DecisionContext, firm_state: Any) -> None:
         """
@@ -94,16 +96,19 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
             if side in ["SELL", "SET_PRICE"]:
                 # Check signal reliability
                 is_unreliable = True
-                if market_snapshot and 'market_signals' in market_snapshot:
-                    signal = market_snapshot['market_signals'].get(order.item_id)
-                    # Check if signal exists and is fresh enough
-                    if signal and signal.get('last_trade_tick') is not None:
-                         staleness = context.current_time - signal['last_trade_tick']
-                         max_staleness = getattr(config, 'max_price_staleness_ticks', 10)
-                         if not isinstance(max_staleness, (int, float)): max_staleness = 10
-                         # If it traded recently, it's reliable
-                         if staleness <= max_staleness:
-                             is_unreliable = False
+                if market_snapshot:
+                    signals = getattr(market_snapshot, 'market_signals', None)
+                    if isinstance(signals, dict):
+                        signal = signals.get(order.item_id)
+                        # Check if signal exists and is fresh enough
+                        last_trade_tick = getattr(signal, 'last_trade_tick', None)
+                        if last_trade_tick is not None:
+                             staleness = context.current_time - last_trade_tick
+                             max_staleness = getattr(config, 'max_price_staleness_ticks', 10)
+                             if not isinstance(max_staleness, (int, float)): max_staleness = 10
+                             # If it traded recently, it's reliable
+                             if staleness <= max_staleness:
+                                 is_unreliable = False
 
                 if is_unreliable:
                     unit_cost = calculate_unit_cost(order.item_id)
@@ -148,12 +153,15 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                          # Calculate Fire Sale Price
                          # Prefer undercutting market
                          fire_sale_price = 0.0
-                         if market_snapshot and 'market_signals' in market_snapshot:
-                             signal = market_snapshot['market_signals'].get(item_id)
-                             if signal and signal.get('best_bid') is not None:
-                                  discount = getattr(config, 'fire_sale_discount', 0.2)
-                                  if not isinstance(discount, (int, float)): discount = 0.2
-                                  fire_sale_price = signal['best_bid'] * (1.0 - discount)
+                         if market_snapshot:
+                             signals = getattr(market_snapshot, 'market_signals', None)
+                             if isinstance(signals, dict):
+                                 signal = signals.get(item_id)
+                                 best_bid = getattr(signal, 'best_bid', None)
+                                 if best_bid is not None:
+                                      discount = getattr(config, 'fire_sale_discount', 0.2)
+                                      if not isinstance(discount, (int, float)): discount = 0.2
+                                      fire_sale_price = best_bid * (1.0 - discount)
 
                          if fire_sale_price <= 0:
                              # Fallback to cost discount

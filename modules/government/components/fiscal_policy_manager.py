@@ -26,21 +26,21 @@ class FiscalPolicyManager(IFiscalPolicyManager):
 
         basic_food_price = 5.0 # Default
 
-        if 'market_signals' in market_snapshot and 'basic_food' in market_snapshot['market_signals']:
+        signals = getattr(market_snapshot, 'market_signals', {})
+        if isinstance(signals, dict) and 'basic_food' in signals:
              # Use new signal
-             signal = market_snapshot['market_signals']['basic_food']
-             # MarketSignalDTO keys are str, not attributes
-             price = signal.get('best_ask')
+             signal = signals['basic_food']
+             # MarketSignalDTO keys are attributes, not dict keys if it's a dataclass
+             price = getattr(signal, 'best_ask', None)
              if price is None or price <= 0:
-                 price = signal.get('last_traded_price')
+                 price = getattr(signal, 'last_traded_price', None)
              if price is not None and price > 0:
                  basic_food_price = price
 
-        elif 'market_data' in market_snapshot:
-             # Legacy fallback
-             legacy_data = market_snapshot['market_data']
-             if 'goods_market' in legacy_data:
-                 basic_food_price = legacy_data['goods_market'].get('basic_food_current_sell_price', 5.0)
+        else:
+             m_data = getattr(market_snapshot, 'market_data', {})
+             if isinstance(m_data, dict) and 'goods_market' in m_data:
+                 basic_food_price = m_data['goods_market'].get('basic_food_current_sell_price', 5.0)
 
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
         survival_cost = basic_food_price * daily_consumption

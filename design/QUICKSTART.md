@@ -12,6 +12,13 @@ This is the definitive entry point for all contributors. **Read this first.**
 - **Jules**: The Hands (Implementation, Debugging, Execution).
 - **Antigravity**: The Orchestrator (Arming scripts, updating protocols, managing the "Handover Chain").
 
+### 2. The Confidence-Driven Coding Rule (Antigravity's Exception)
+**Antigravity가 상황에 따라 직접 코딩(수정)을 수행할 경우, 반드시 다음 절차를 엄수해야 합니다.**
+1.  **Branch Isolation**: 절대로 `main` 브랜치에서 직접 수정하지 않습니다. `feature/` 브랜치를 생성하여 작업합니다.
+2.  **AI Review Verification**: 변경 사항을 커밋한 후, **`gemini-go git-review`를 실행하여 객관적인 리뷰 보고서를 생성**해야 합니다.
+3.  **Confidence Report**: 생성된 리뷰 보고서를 사용자에게 제시하여 코드의 안전성에 대한 **확신(Confidence)**을 드린 후 머지 승인을 요청합니다.
+4.  **No Blind Merges**: 주관적인 판단으로 머지하지 마십시오. 데이터(리뷰 결과, 테스트 통과 여부)로 증명하십시오.
+
 ### 2. The Concurrency Principle (Triple-Engine)
 - **병렬 수행 지향**: 단순한 순차적 중요도보다 **병렬 수행 가능성**을 우선 고려합니다.
 - **Triple-Engine Workflow**: 가급적 **인프라(Infra), 경제(Economics), 모델링(Modeling)**의 3가지 트랙이 독립된 세션에서 동시에 가동되는 것을 지향합니다.

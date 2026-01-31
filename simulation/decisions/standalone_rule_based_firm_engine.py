@@ -35,14 +35,16 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
             extra={"tick": 0, "tags": ["init"]},
         )
 
-    def make_decisions(
+    def _make_decisions_internal(
         self,
         context: DecisionContext,
-    ) -> Tuple[List[Order], Tuple[Tactic, Aggressiveness]]:
+        macro_context: Optional[Any] = None,
+    ) -> DecisionOutputDTO:
         """
         규칙 기반 로직을 사용하여 기업의 의사결정을 수행한다.
         생산 조정, 임금 조정, 가격 조정에 집중한다.
         """
+        from simulation.dtos import DecisionOutputDTO
         firm = context.state # FirmStateDTO
         # markets = context.markets # Removed for DTO purity
         goods_data = context.goods_data
@@ -141,7 +143,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 extra={"tick": current_time, "agent_id": firm.id, "tactic": Tactic.ADJUST_PRICE.name}
             )
 
-        return orders, (chosen_tactic, chosen_aggressiveness)
+        return DecisionOutputDTO(orders=orders, metadata=(chosen_tactic, chosen_aggressiveness))
     
     def _adjust_price_based_on_inventory(self, firm: FirmStateDTO, current_tick: int) -> List[Order]:
         """

@@ -28,7 +28,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | 비현실적 경제 상태 (무한 수요) | **PENDING** |
+| **TD-007** | Malthusian Trap (Stagnation) | LOW | 2026-01-31 | **RESOLVED** | Long-term growth stagnation logic. |
 | TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **RESOLVED** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
@@ -40,7 +40,8 @@
 | TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **RESOLVED** |
 | TD-176 | 2026-01-31 | Tight Coupling: TxManager & Govt | High Architectural dependency | **RESOLVED** |
 | TD-177 | 2026-01-31 | HousingSystem Bypassing Markets | Economic purity violation | **RESOLVED** |
-
+| **TD-178** | LoanMarket Phantom Liquidity Bug | HIGH | 2026-01-31 | **RESOLVED** | Double-counting in M2 due to redundant cash transfers. |
+| **TD-179** | Ambiguous Asset Definition (Cash vs Deposit) | MED | 2026-01-31 | **RESOLVED** | Explicit accounting for M0/M1/M2 assets in DTOs. |
 
 ## 📦 6. DATA & DTO CONTRACTS
 

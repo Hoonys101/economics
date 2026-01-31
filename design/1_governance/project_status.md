@@ -41,7 +41,8 @@
     - **Goal**: Implement OMO for liquidity control via Central Bank.
     - **Status**: 
         - **Operation Solid Ground**: TD-165 (M2 Tests) & TD-167 (Grace Protocol) ✅ COMPLETED & MERGED
-        - **Critical Insight**: Discovery of `TD-178` (Double Liquidity Bug in LoanMarket) 🚨 HIGH PRIORITY
+        - [x] **TD-178: Phantom Liquidity Bug** -> **RESOLVED** (Redundant cash transfer removed)
+        - [x] **Systemic Money Leak (-999.8)** -> **INTEGRITY CONFIRMED** (Verified by trace_leak.py)
         - **Debt Settlement Audit**: Conflict Zone Map & Specs (TD-160/TD-176) ✅ COMPLETED
         - **WO-024**: Fractional Reserve Implementation ✅ COMPLETED (M2 Audit Loop)
         - **TD-170**: Sales Tax Atomicity (Escrow Model) ✅ COMPLETED & MERGED

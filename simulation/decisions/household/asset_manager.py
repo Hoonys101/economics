@@ -264,17 +264,18 @@ class AssetManager:
         if market_snapshot:
             # Handle TypedDict/Legacy compatibility
             prices = getattr(market_snapshot, "prices", None)
-            if prices is None and isinstance(market_snapshot, dict):
+            if prices is None:
                 # Try new schema first
-                signals = market_snapshot.get("market_signals", {})
+                signals = getattr(market_snapshot, "market_signals", {})
+                if not isinstance(signals, dict):
+                    signals = {}
 
                 # Check legacy data
                 if not signals:
-                    legacy_data = market_snapshot.get("market_data", {})
-                    # Legacy market data structure for stocks was stock_market_data[firm_item_id]
-                    # We need to adapt.
-                    # Or we just iterate signals.
-                    pass
+                    legacy_data = getattr(market_snapshot, "market_data", {})
+                    if not isinstance(legacy_data, dict):
+                        legacy_data = {}
+                    # ...
 
                 for firm_id in household.portfolio_holdings.keys():
                     item_id = f"stock_{firm_id}"

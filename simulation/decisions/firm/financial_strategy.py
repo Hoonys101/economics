@@ -148,16 +148,18 @@ class FinancialStrategy:
         # Determine price (Market Price or Book Value)
         price = 0.0
         if market_snapshot:
-             # Try market_signals first (Phase 2 schema)
-             if "market_signals" in market_snapshot:
-                 signal = market_snapshot["market_signals"].get(f"stock_{firm.id}")
+             signals = getattr(market_snapshot, "market_signals", None)
+             if isinstance(signals, dict):
+                 signal = signals.get(f"stock_{firm.id}")
                  if signal:
-                     price = signal.get("last_traded_price") or signal.get("best_bid") or 0.0
+                     price = getattr(signal, "last_traded_price", 0.0) or getattr(signal, "best_bid", 0.0) or 0.0
 
              # Fallback to legacy market_data if signals failed
-             if price <= 0 and "market_data" in market_snapshot:
-                 stock_data = market_snapshot["market_data"].get("stock_market", {}).get(f"stock_{firm.id}", {})
-                 price = stock_data.get("avg_price", 0.0)
+             if price <= 0:
+                 m_data = getattr(market_snapshot, "market_data", None)
+                 if isinstance(m_data, dict):
+                     stock_data = m_data.get("stock_market", {}).get(f"stock_{firm.id}", {})
+                     price = stock_data.get("avg_price", 0.0)
 
         if price is None or price <= 0:
             # Fallback to Book Value

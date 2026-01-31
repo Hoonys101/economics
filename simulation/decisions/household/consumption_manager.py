@@ -32,15 +32,23 @@ class ConsumptionManager:
             if not isinstance(food_id, str):
                 food_id = 'food'
 
-            signal = None
-            if market_snapshot and isinstance(market_snapshot, dict) and 'market_signals' in market_snapshot:
-                 signal = market_snapshot['market_signals'].get(food_id)
-            # Handle object-based market_snapshot if necessary (though engine used dict access logic)
-            # Assuming consistency with engine logic for now.
+            ask_price = None
+            if market_snapshot:
+                # Handle both dict (legacy) and DTO (new) for market_signals
+                signals = getattr(market_snapshot, "market_signals", None)
+                if isinstance(signals, dict):
+                    # Try to get signal for the specific item from dict
+                    signal = signals.get(food_id)
+                    if signal and signal.get('best_ask') is not None:
+                        ask_price = signal['best_ask']
+                elif signals: # Assume it's a DTO if not dict and not None
+                    # Access DTO attributes directly or via getattr
+                    signal_dto = getattr(signals, food_id, None)
+                    if signal_dto and getattr(signal_dto, 'best_ask', None) is not None:
+                        ask_price = getattr(signal_dto, 'best_ask')
 
-            # If signal exists and has sellers
-            if signal and signal.get('best_ask') is not None:
-                ask_price = signal['best_ask']
+            # If ask_price was found and is valid
+            if ask_price is not None:
                 # Affordability Check
                 if household.assets >= ask_price:
                      premium = getattr(config, 'survival_bid_premium', 0.1)

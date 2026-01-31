@@ -12,32 +12,42 @@ class StockTrader:
         key = f"stock_{firm_id}"
         price = 0.0
 
+        if not market_snapshot:
+            return 0.0
+
         # Try market_signals first
-        if "market_signals" in market_snapshot:
-             signal = market_snapshot["market_signals"].get(key)
+        signals = getattr(market_snapshot, "market_signals", None)
+        if isinstance(signals, dict):
+             signal = signals.get(key)
              if signal:
-                 price = signal.get("last_traded_price") or signal.get("best_bid") or 0.0
+                 price = getattr(signal, "last_traded_price", 0.0) or getattr(signal, "best_bid", 0.0) or 0.0
 
         # Fallback to market_data
-        if price <= 0 and "market_data" in market_snapshot:
-             stock_data = market_snapshot["market_data"].get("stock_market", {}).get(key, {})
-             price = stock_data.get("avg_price", 0.0)
+        if price <= 0:
+             m_data = getattr(market_snapshot, "market_data", None)
+             if isinstance(m_data, dict):
+                 stock_data = m_data.get("stock_market", {}).get(key, {})
+                 price = stock_data.get("avg_price", 0.0)
 
         return price
 
     def place_buy_orders(self, household: Any, amount_to_invest: float, market_snapshot: Any, config: Any, logger: Optional[Any] = None) -> List[StockOrder]:
         orders = []
 
+        if not market_snapshot:
+            return orders
+
         # Identify available stocks
         available_stocks = []
-        # Scan market_data for stocks (as iterating signals might miss some if not traded?)
-        # Actually, let's look at market_data["stock_market"]
         stock_keys = []
-        if "market_data" in market_snapshot and "stock_market" in market_snapshot["market_data"]:
-             stock_keys.extend(market_snapshot["market_data"]["stock_market"].keys())
+        
+        m_data = getattr(market_snapshot, "market_data", None)
+        if isinstance(m_data, dict) and "stock_market" in m_data:
+             stock_keys.extend(m_data["stock_market"].keys())
 
-        if "market_signals" in market_snapshot:
-             stock_keys.extend([k for k in market_snapshot["market_signals"].keys() if k.startswith("stock_")])
+        signals = getattr(market_snapshot, "market_signals", None)
+        if isinstance(signals, dict):
+             stock_keys.extend([k for k in signals.keys() if k.startswith("stock_")])
 
         stock_keys = list(set(stock_keys))
 

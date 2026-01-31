@@ -34,7 +34,14 @@ class DecisionUnit(IDecisionUnit):
     ) -> Tuple[EconStateDTO, List[Order], Tuple[Tactic, Aggressiveness]]:
 
         # 1. Run Decision Engine
-        orders, chosen_tactic_tuple = decision_engine.make_decisions(context, macro_context)
+        decision_output = decision_engine.make_decisions(context, macro_context)
+        
+        # Handle both DTO and legacy Tuple
+        if hasattr(decision_output, "orders"):
+            orders = decision_output.orders
+            chosen_tactic_tuple = decision_output.metadata
+        else:
+            orders, chosen_tactic_tuple = decision_output
 
         # 2. Orchestrate / Refine Orders (System 2 Logic)
         econ_context = EconContextDTO(markets, market_data, context.current_time)
