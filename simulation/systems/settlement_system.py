@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, cast, TYPE_CHECKING
+from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List
 import logging
 
 from simulation.finance.api import ISettlementSystem, ITransaction
@@ -51,6 +51,153 @@ class SettlementSystem(ISettlementSystem):
             extra={"tick": tick, "tags": ["liquidation", "bankruptcy", "ledger"]}
         )
 
+    def _execute_withdrawal(self, agent: IFinancialEntity, amount: float, memo: str, tick: int) -> bool:
+        """
+        Executes withdrawal with checks and seamless payment (Bank) support.
+        Returns True on success, False on failure.
+        """
+        # 1. Checks
+        if agent is None:
+            self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
+            return False
+
+        is_central_bank = False
+        if hasattr(agent, "id") and str(agent.id) == "CENTRAL_BANK":
+             is_central_bank = True
+        elif hasattr(agent, "__class__") and agent.__class__.__name__ == "CentralBank":
+             is_central_bank = True
+
+        if is_central_bank:
+             try:
+                 agent.withdraw(amount)
+                 return True
+             except Exception as e:
+                 self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
+                 return False
+
+        # 2. Standard Agent Checks
+        if not hasattr(agent, 'assets'):
+             self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")
+             # Attempt withdraw anyway if interface expects it
+             pass
+
+        try:
+            current_cash = float(agent.assets)
+        except (TypeError, ValueError):
+             current_cash = 0.0
+
+        if current_cash < amount:
+            # Seamless Check
+            if self.bank:
+                needed_from_bank = amount - current_cash
+                bank_balance = self.bank.get_balance(str(agent.id))
+                if (current_cash + bank_balance) < amount:
+                    self.logger.error(
+                        f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {agent.id}. "
+                        f"Cash: {current_cash:.2f}, Bank: {bank_balance:.2f}, Total: {(current_cash + bank_balance):.2f}. "
+                        f"Required: {amount:.2f}. Memo: {memo}",
+                        extra={"tags": ["settlement", "insufficient_funds"]}
+                    )
+                    return False
+            else:
+                self.logger.error(
+                    f"SETTLEMENT_FAIL | Insufficient cash for {agent.id} AND Bank service is missing. "
+                    f"Cash: {current_cash:.2f}, Required: {amount:.2f}. Memo: {memo}",
+                    extra={"tags": ["settlement", "insufficient_funds"]}
+                )
+                return False
+
+        # 3. Execution
+        try:
+            if current_cash >= amount:
+                agent.withdraw(amount)
+            else:
+                # Seamless
+                needed_from_bank = amount - current_cash
+                if current_cash > 0:
+                    agent.withdraw(current_cash)
+
+                success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
+                if not success:
+                    # Rollback cash
+                    if current_cash > 0:
+                         agent.deposit(current_cash)
+                    raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
+
+                self.logger.info(
+                    f"SEAMLESS_PAYMENT | Agent {agent.id} paid {amount:.2f} using {current_cash:.2f} cash and {needed_from_bank:.2f} from bank.",
+                    extra={"tick": tick, "agent_id": agent.id, "tags": ["settlement", "bank"]}
+                )
+            return True
+        except InsufficientFundsError as e:
+             self.logger.critical(f"SETTLEMENT_CRITICAL | InsufficientFundsError. {e}")
+             return False
+        except Exception as e:
+             self.logger.exception(f"SETTLEMENT_UNHANDLED_FAIL | {e}")
+             return False
+
+    def settle_atomic(
+        self,
+        debit_agent: IFinancialEntity,
+        credits_list: List[Tuple[IFinancialEntity, float, str]],
+        tick: int
+    ) -> bool:
+        """
+        Executes a one-to-many atomic settlement.
+        All credits are summed to determine the total debit amount.
+        If the debit fails, the entire transaction is aborted.
+        If any credit fails, previous credits in this batch are rolled back.
+        """
+        if not credits_list:
+            return True
+
+        # 0. Validate Credits (No negative transfers allowed in this atomic mode)
+        for _, amount, memo in credits_list:
+             if amount < 0:
+                 self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {memo}")
+                 return False
+
+        # 1. Calculate Total Debit
+        total_debit = sum(amount for _, amount, _ in credits_list)
+        if total_debit <= 0:
+             return True
+
+        # 2. Debit Check & Withdrawal
+        memo = f"atomic_batch_{len(credits_list)}_txs"
+        success = self._execute_withdrawal(debit_agent, total_debit, memo, tick)
+        if not success:
+            return False
+
+        # 3. Execute Credits
+        completed_credits = []
+        for credit_agent, amount, credit_memo in credits_list:
+            if amount <= 0:
+                continue
+            try:
+                credit_agent.deposit(amount)
+                completed_credits.append((credit_agent, amount))
+            except Exception as e:
+                self.logger.error(
+                    f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back atomic batch. Error: {e}"
+                )
+                # ROLLBACK
+                # 1. Reverse completed credits
+                for ca, amt in completed_credits:
+                    try:
+                        ca.withdraw(amt)
+                    except Exception as rb_err:
+                        self.logger.critical(f"SETTLEMENT_FATAL | Credit Rollback failed for {ca.id}. {rb_err}")
+
+                # 2. Refund debit agent
+                try:
+                    debit_agent.deposit(total_debit)
+                except Exception as rb_err:
+                    self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {debit_agent.id}. {rb_err}")
+
+                return False
+
+        return True
+
     def transfer(
         self,
         debit_agent: IFinancialEntity,
@@ -74,102 +221,16 @@ class SettlementSystem(ISettlementSystem):
                 amount, memo, tick
             )
 
-        # 1. ATOMIC CHECK: Verify funds BEFORE any modification
-        if debit_agent is None:
-            self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
-            return None
+        if debit_agent is None or credit_agent is None:
+             self.logger.error(f"SETTLEMENT_FAIL | Debit or Credit agent is None. Memo: {memo}")
+             return None
 
-        if credit_agent is None:
-            self.logger.error(f"SETTLEMENT_FAIL | Credit agent is None. Memo: {memo}")
-            return None
-
-        # Special Case: Central Bank (Minting Authority) can have negative assets (Fiat Issuer).
-        is_central_bank = False
-        if hasattr(debit_agent, "id") and str(debit_agent.id) == "CENTRAL_BANK":
-             is_central_bank = True
-        elif hasattr(debit_agent, "__class__") and debit_agent.__class__.__name__ == "CentralBank":
-             is_central_bank = True
-
-        if not is_central_bank:
-            if hasattr(debit_agent, 'assets'):
-                try:
-                    current_cash = float(debit_agent.assets)
-                    if current_cash < amount:
-                        # TD-179: Seamless Payment (Auto-Withdrawal from Bank)
-                        if self.bank:
-                            needed_from_bank = amount - current_cash
-                            bank_balance = self.bank.get_balance(str(debit_agent.id))
-                            
-                            if (current_cash + bank_balance) < amount:
-                                self.logger.error(
-                                    f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {debit_agent.id}. "
-                                    f"Cash: {current_cash:.2f}, Bank: {bank_balance:.2f}, Total: {(current_cash + bank_balance):.2f}. "
-                                    f"Required: {amount:.2f}. Memo: {memo}",
-                                    extra={"tags": ["settlement", "insufficient_funds"]}
-                                )
-                                return None
-                            # Success: Will be handled in Phase 2 (Withdrawal)
-                        else:
-                            self.logger.error(
-                                f"SETTLEMENT_FAIL | Insufficient cash for {debit_agent.id} AND Bank service is missing. "
-                                f"Cash: {current_cash:.2f}, Required: {amount:.2f}. Memo: {memo}",
-                                extra={"tags": ["settlement", "insufficient_funds"]}
-                            )
-                            return None
-                except (TypeError, ValueError):
-                    self.logger.warning(
-                        f"SettlementSystem warning: Agent {debit_agent.id} assets property is not float compatible."
-                    )
-            else:
-                 self.logger.warning(f"SettlementSystem warning: Agent {debit_agent.id} has no assets property.")
-
-        # 2. EXECUTE: Perform the debit and credit
-        try:
-            # Phase 1: Debit (Seamless Support)
-            if is_central_bank:
-                # Central Bank has infinite fiat capacity or uses a dict for assets
-                debit_agent.withdraw(amount)
-            else:
-                current_cash = float(debit_agent.assets)
-                if current_cash >= amount:
-                    # Standard cash withdrawal
-                    debit_agent.withdraw(amount)
-                else:
-                    # Seamless Payment (TD-179)
-                    needed_from_bank = amount - current_cash
-                    
-                    # 1. Exhaust all cash
-                    if current_cash > 0:
-                        debit_agent.withdraw(current_cash)
-                    
-                    # 2. Take the rest from the bank
-                    success = self.bank.withdraw_for_customer(int(debit_agent.id), needed_from_bank)
-                    if not success:
-                        # This shouldn't happen if Phase 1 check passed, but for safety:
-                        if current_cash > 0:
-                            debit_agent.deposit(current_cash)
-                        raise InsufficientFundsError(f"Bank withdrawal failed for {debit_agent.id} despite check.")
-                    
-                    self.logger.info(
-                        f"SEAMLESS_PAYMENT | Agent {debit_agent.id} paid {amount:.2f} using {current_cash:.2f} cash and {needed_from_bank:.2f} from bank.",
-                        extra={"tick": tick, "agent_id": debit_agent.id, "tags": ["settlement", "bank"]}
-                    )
-
-        except InsufficientFundsError as e:
-            self.logger.critical(
-                f"SETTLEMENT_CRITICAL | Race condition or logic error. InsufficientFundsError during transfer. "
-                f"Initial check passed but withdrawal failed. Details: {e}",
-                extra={"tags": ["settlement", "error"]}
-            )
-            return None
-        except Exception as e:
-            self.logger.exception(
-                 f"SETTLEMENT_UNHANDLED_FAIL | An unexpected error occurred during withdrawal. Details: {e}"
-            )
+        # EXECUTE
+        success = self._execute_withdrawal(debit_agent, amount, memo, tick)
+        if not success:
             return None
 
         try:
-            # Phase 2: Credit
             credit_agent.deposit(amount)
         except Exception as e:
             # ROLLBACK: Credit failed, must reverse debit
