@@ -29,6 +29,8 @@ import simulation
 from modules.household.bio_component import BioComponent
 from modules.household.econ_component import EconComponent
 from modules.household.social_component import SocialComponent
+from modules.household.consumption_manager import ConsumptionManager
+from modules.household.decision_unit import DecisionUnit
 from modules.household.dtos import (
     HouseholdStateDTO, CloningRequestDTO, EconContextDTO,
     BioStateDTO, EconStateDTO, SocialStateDTO
@@ -88,6 +90,8 @@ class Household(BaseAgent, ILearningAgent):
         self.bio_component = BioComponent()
         self.econ_component = EconComponent()
         self.social_component = SocialComponent()
+        self.consumption_manager = ConsumptionManager()
+        self.decision_unit = DecisionUnit()
 
         # --- Initialize Internal State DTOs ---
 
@@ -699,11 +703,15 @@ class Household(BaseAgent, ILearningAgent):
             agent_registry=agent_registry or {}
         )
 
-        orders, chosen_tactic_tuple = self.decision_engine.make_decisions(context, macro_context)
-
-        econ_context = EconContextDTO(markets, market_data, current_time)
-        self._econ_state, refined_orders = self.econ_component.orchestrate_economic_decisions(
-            self._econ_state, econ_context, orders, stress_scenario_config, self.config
+        # Delegate to DecisionUnit
+        self._econ_state, refined_orders, chosen_tactic_tuple = self.decision_unit.make_decision(
+            state=self._econ_state,
+            decision_engine=self.decision_engine,
+            context=context,
+            macro_context=macro_context,
+            markets=markets,
+            market_data=market_data,
+            config=self.config
         )
 
         return refined_orders, chosen_tactic_tuple
@@ -724,8 +732,8 @@ class Household(BaseAgent, ILearningAgent):
             self._econ_state.current_wage = 0.0
 
     def consume(self, item_id: str, quantity: float, current_time: int) -> "ConsumptionResult":
-        # Delegate to EconComponent
-        self._econ_state, new_needs, result = self.econ_component.consume(
+        # Delegate to ConsumptionManager
+        self._econ_state, new_needs, result = self.consumption_manager.consume(
             self._econ_state,
             self._bio_state.needs,
             item_id,

@@ -1,37 +1,73 @@
 import pytest
 from unittest.mock import MagicMock
-from collections import deque
+from collections import deque, defaultdict
 from modules.household.econ_component import EconComponent
+from modules.household.dtos import EconStateDTO
 from simulation.ai.api import Personality
+from simulation.models import Talent
+from simulation.portfolio import Portfolio
+from tests.utils.factories import create_household_config_dto
 
 class TestEconComponent:
     @pytest.fixture
-    def mock_owner(self):
-        owner = MagicMock()
-        owner.goods_info_map = {
-            "food": {"id": "food", "initial_price": 10.0},
-            "water": {"id": "water", "initial_price": 5.0}
-        }
-        owner.personality = Personality.CONSERVATIVE
-        owner.logger = MagicMock()
-        return owner
+    def mock_config(self):
+        return create_household_config_dto(
+            perceived_price_update_factor=0.1,
+            adaptation_rate_normal=0.1,
+            adaptation_rate_impulsive=0.2,
+            adaptation_rate_conservative=0.05
+        )
 
     @pytest.fixture
-    def mock_config(self):
-        config = MagicMock()
-        config.ADAPTATION_RATE_NORMAL = 0.2
-        config.ADAPTATION_RATE_IMPULSIVE = 0.5
-        config.ADAPTATION_RATE_CONSERVATIVE = 0.1
-        config.PERCEIVED_PRICE_UPDATE_FACTOR = 0.1
-        return config
+    def econ_state(self):
+        # Create a basic EconStateDTO
+        return EconStateDTO(
+            assets=1000.0,
+            inventory={},
+            inventory_quality={},
+            durable_assets=[],
+            portfolio=Portfolio(1),
+            is_employed=False,
+            employer_id=None,
+            current_wage=0.0,
+            wage_modifier=1.0,
+            labor_skill=1.0,
+            education_xp=0.0,
+            education_level=0,
+            expected_wage=10.0,
+            talent=Talent(base_learning_rate=0.5, max_potential=1.0),
+            skills={},
+            aptitude=0.5,
+            owned_properties=[],
+            residing_property_id=None,
+            is_homeless=True,
+            home_quality_score=1.0,
+            housing_target_mode="RENT",
+            housing_price_history=deque(),
+            market_wage_history=deque(),
+            shadow_reservation_wage=10.0,
+            last_labor_offer_tick=0,
+            last_fired_tick=-1,
+            job_search_patience=0,
+            current_consumption=0.0,
+            current_food_consumption=0.0,
+            expected_inflation=defaultdict(float),
+            perceived_avg_prices=defaultdict(float),
+            price_history=defaultdict(lambda: deque(maxlen=10)),
+            price_memory_length=10,
+            adaptation_rate=0.1,
+            labor_income_this_tick=0.0,
+            capital_income_this_tick=0.0
+        )
 
-    def test_update_perceived_prices_basic(self, mock_owner, mock_config):
-        econ = EconComponent(mock_owner, mock_config)
+    def test_update_perceived_prices_basic(self, econ_state, mock_config):
+        econ = EconComponent()
 
         # Setup initial state
-        econ.price_history["food"].append(10.0)
-        econ.expected_inflation["food"] = 0.0
-        econ.perceived_avg_prices["food"] = 10.0
+        econ_state.price_history["food"].append(10.0)
+        econ_state.expected_inflation["food"] = 0.0
+        econ_state.perceived_avg_prices["food"] = 10.0
+        econ_state.adaptation_rate = 0.1 # Conservative/Normal
 
         market_data = {
             "goods_market": {
@@ -39,33 +75,32 @@ class TestEconComponent:
             }
         }
 
-        econ.update_perceived_prices(market_data)
+        goods_info_map = {
+            "food": {"id": "food"}
+        }
+
+        new_state = econ.update_perceived_prices(econ_state, market_data, goods_info_map, None, mock_config)
 
         # Verify Price History
-        assert len(econ.price_history["food"]) == 2
-        assert econ.price_history["food"][-1] == 11.0
+        assert len(new_state.price_history["food"]) == 2
+        assert new_state.price_history["food"][-1] == 11.0
 
         # Verify Expected Inflation
         # Inflation = (11 - 10) / 10 = 0.1
-        # New Expectation = 0.0 + 0.1 * (0.1 - 0.0) = 0.01 (Conservative adaptation rate 0.1)
-        assert econ.expected_inflation["food"] == pytest.approx(0.01)
+        # New Expectation = 0.0 + 0.1 * (0.1 - 0.0) = 0.01
+        assert new_state.expected_inflation["food"] == pytest.approx(0.01)
 
         # Verify Perceived Price
         # New Perceived = 0.1 * 11 + 0.9 * 10 = 1.1 + 9.0 = 10.1
-        assert econ.perceived_avg_prices["food"] == pytest.approx(10.1)
+        assert new_state.perceived_avg_prices["food"] == pytest.approx(10.1)
 
-    def test_update_perceived_prices_hyperinflation(self, mock_owner, mock_config):
-        econ = EconComponent(mock_owner, mock_config)
-        econ.adaptation_rate = 0.2 # Force a rate override just to be sure, or rely on init
+    def test_update_perceived_prices_hyperinflation(self, econ_state, mock_config):
+        econ = EconComponent()
 
-        # Override adaptation rate logic for test isolation or rely on mock_owner having CONSERVATIVE (0.1)
-        # But here let's assume we want to test the multiplier logic.
-        # Econ initialized with CONSERVATIVE -> 0.1
-        # To match the calculation in comment (0.2), I should set adaptation_rate to 0.2
-        econ.adaptation_rate = 0.2
-
-        econ.price_history["food"].append(100.0)
-        econ.expected_inflation["food"] = 0.05
+        econ_state.adaptation_rate = 0.2
+        econ_state.price_history["food"].append(100.0)
+        econ_state.expected_inflation["food"] = 0.05
+        econ_state.perceived_avg_prices["food"] = 100.0
 
         market_data = {
             "goods_market": {
@@ -73,14 +108,18 @@ class TestEconComponent:
             }
         }
 
+        goods_info_map = {
+            "food": {"id": "food"}
+        }
+
         stress_config = MagicMock()
         stress_config.is_active = True
         stress_config.scenario_name = 'hyperinflation'
         stress_config.inflation_expectation_multiplier = 2.0
 
-        econ.update_perceived_prices(market_data, stress_scenario_config=stress_config)
+        new_state = econ.update_perceived_prices(econ_state, market_data, goods_info_map, stress_config, mock_config)
 
         # Inflation = (120 - 100) / 100 = 0.2
         # Adaptive Rate = 0.2 * 2.0 = 0.4
         # New Expectation = 0.05 + 0.4 * (0.2 - 0.05) = 0.05 + 0.4 * 0.15 = 0.05 + 0.06 = 0.11
-        assert econ.expected_inflation["food"] == pytest.approx(0.11)
+        assert new_state.expected_inflation["food"] == pytest.approx(0.11)
