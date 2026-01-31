@@ -5,7 +5,7 @@ import logging
 from simulation.models import Order
 from simulation.ai.enums import Tactic, Aggressiveness
 from .base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext
+from simulation.dtos import DecisionContext, DecisionOutputDTO
 
 if TYPE_CHECKING:
     from simulation.dtos import MacroFinancialContext
@@ -36,7 +36,7 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
         self,
         context: DecisionContext,
         macro_context: Optional[MacroFinancialContext] = None,
-    ) -> Tuple[List[Order], Tuple[Tactic, Aggressiveness]]:
+    ) -> DecisionOutputDTO:
         """
         규칙 기반 로직을 사용하여 가계의 의사결정을 수행한다.
         """
@@ -68,8 +68,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                 needed_quantity = target_buffer - food_in_inventory
                 market_id = food_item_id 
 
-                # TD-117: Use MarketSnapshotDTO
-                best_ask = market_snapshot.best_asks.get(food_item_id) if market_snapshot else None
+                # TD-117: Use MarketSnapshotDTO (Standardized)
+                best_ask = None
+                if market_snapshot and market_snapshot.market_signals:
+                    signal = market_snapshot.market_signals.get(food_item_id)
+                    if signal:
+                        best_ask = signal.best_ask
 
                 if best_ask is None or best_ask == 0:
                     best_ask = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
@@ -81,12 +85,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                     if quantity_to_buy > 0.1:
                         orders.append(
                             Order(
-                                state.id,
-                                "BUY",
-                                food_item_id,
-                                quantity_to_buy,
-                                best_ask,
-                                market_id,
+                                agent_id=state.id,
+                                side="BUY",
+                                item_id=food_item_id,
+                                quantity=quantity_to_buy,
+                                price_limit=best_ask,
+                                market_id=market_id,
                             )
                         )
                         self.logger.info(
@@ -102,7 +106,19 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
 
             # 2. Survival Trigger (Panic Mode)
             food_inventory = state.inventory.get("basic_food", 0.0)
-            food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+
+            # Use market_snapshot for price if available, else fallback
+            food_price = 10.0
+            if market_snapshot and market_snapshot.market_signals:
+                 signal = market_snapshot.market_signals.get("basic_food")
+                 if signal and signal.last_traded_price:
+                     food_price = signal.last_traded_price
+                 elif signal and signal.best_ask:
+                     food_price = signal.best_ask
+
+            if food_price <= 0:
+                food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+
             if food_price <= 0: food_price = 10.0
 
             survival_days = food_inventory + (state.assets / food_price)
@@ -139,12 +155,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
             else:
                 orders.append(
                     Order(
-                        state.id,
-                        "SELL",
-                        "labor",
-                        1.0,  # 1 unit of labor
-                        desired_wage,
-                        "labor",
+                        agent_id=state.id,
+                        side="SELL",
+                        item_id="labor",
+                        quantity=1.0,  # 1 unit of labor
+                        price_limit=desired_wage,
+                        market_id="labor",
                     )
                 )
                 self.logger.info(
@@ -152,4 +168,4 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                     extra={"tick": current_time, "agent_id": state.id, "tactic": chosen_tactic.name}
                 )
 
-        return orders, (chosen_tactic, chosen_aggressiveness)
+        return DecisionOutputDTO(orders=orders, metadata=(chosen_tactic, chosen_aggressiveness))

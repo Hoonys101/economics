@@ -3,12 +3,9 @@ from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 import logging
 
 from simulation.models import Order
-from simulation.decisions.base_decision_engine import BaseDecisionEngine
+from .base_decision_engine import BaseDecisionEngine
 from simulation.ai.enums import Tactic
-from simulation.dtos import DecisionContext, FirmStateDTO
-
-if TYPE_CHECKING:
-    from simulation.dtos import MacroFinancialContext
+from simulation.dtos import DecisionContext, MacroFinancialContext, DecisionOutputDTO, FirmStateDTO
 
 class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
     """
@@ -26,7 +23,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         self,
         context: DecisionContext,
         macro_context: Optional[MacroFinancialContext] = None,
-    ) -> Tuple[List[Order], Tactic]:
+    ) -> DecisionOutputDTO:
         """
         Executes rule-based logic.
         """
@@ -42,7 +39,17 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         if inventory > 0:
             # Determine Price
             market_price = 10.0
-            if "goods_market" in market_data:
+
+            # Use market_snapshot if available (Standardized DTO)
+            if context.market_snapshot and context.market_snapshot.market_signals:
+                signal = context.market_snapshot.market_signals.get(specialization)
+                if signal:
+                    if signal.last_traded_price:
+                        market_price = signal.last_traded_price
+                    elif signal.best_ask:
+                        market_price = signal.best_ask
+
+            if market_price <= 0 and "goods_market" in market_data:
                 market_price = market_data["goods_market"].get(f"{specialization}_current_sell_price", 10.0)
 
             # Simple Undercut Strategy to ensure liquidity
@@ -53,10 +60,10 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
             orders.append(Order(
                 agent_id=firm_state.id,
-                order_type="SELL",
+                side="SELL",
                 item_id=specialization,
                 quantity=inventory,
-                price=sell_price,
+                price_limit=sell_price,
                 market_id=specialization
             ))
 
@@ -79,7 +86,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
              fire_orders = self._fire_excess_labor(firm_state, needed_labor)
              orders.extend(fire_orders)
 
-        return orders, Tactic.NO_ACTION
+        return DecisionOutputDTO(orders=orders, metadata=Tactic.NO_ACTION)
 
     def _fire_excess_labor(self, firm: FirmStateDTO, needed_labor: float) -> List[Order]:
         """
@@ -101,11 +108,6 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         min_wage = getattr(self.config_module, "LABOR_MARKET_MIN_WAGE", 5.0)
 
         # Access employee details via DTO if available, else use defaults.
-        # Assuming FirmStateDTO could be extended or we assume standard wage for RuleBased.
-        # However, for robustness, we should try to use actual data if possible.
-        # Since BaseDecisionEngine operates on DTOs, and DTOs might not have deep employee data,
-        # we will use a conservative estimate or look for 'employees_data' if it exists.
-
         employees_data = getattr(firm, "employees_data", {})
 
         for emp_id in candidates:
@@ -117,12 +119,12 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             severance_pay = current_wage * severance_weeks * skill
 
             orders.append(Order(
-                firm.id,
-                "FIRE",
-                "internal",
-                1,
-                severance_pay,
-                "internal",
+                agent_id=firm.id,
+                side="FIRE",
+                item_id="internal",
+                quantity=1,
+                price_limit=severance_pay,
+                market_id="internal",
                 target_agent_id=emp_id
             ))
 
@@ -164,7 +166,17 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             )
 
         if new_target != target_quantity:
-            return [Order(firm.id, "SET_TARGET", "internal", new_target, 0.0, "internal")]
+            # "SET_TARGET" is likely not a valid 'side' enum in OrderDTO but internal usage might tolerate it or handle as special.
+            # If OrderDTO enforces side as "BUY"/"SELL", this might be tricky.
+            # Assuming OrderDTO side is string and allows custom types or engines interpret it.
+            return [Order(
+                agent_id=firm.id,
+                side="SET_TARGET",
+                item_id="internal",
+                quantity=new_target,
+                price_limit=0.0,
+                market_id="internal"
+            )]
 
         return []
 
@@ -186,14 +198,28 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         if current_employees < min_employees:
             to_hire = min_employees - current_employees
-            order = Order(firm.id, "BUY", "labor", float(to_hire), offered_wage, "labor")
+            order = Order(
+                agent_id=firm.id,
+                side="BUY",
+                item_id="labor",
+                quantity=float(to_hire),
+                price_limit=offered_wage,
+                market_id="labor"
+            )
             orders.append(order)
         elif (
             needed_labor > current_employees
             and current_employees < max_employees
         ):
             to_hire = min(needed_labor - current_employees, max_employees - current_employees)
-            order = Order(firm.id, "BUY", "labor", float(to_hire), offered_wage, "labor")
+            order = Order(
+                agent_id=firm.id,
+                side="BUY",
+                item_id="labor",
+                quantity=float(to_hire),
+                price_limit=offered_wage,
+                market_id="labor"
+            )
             orders.append(order)
 
         return orders

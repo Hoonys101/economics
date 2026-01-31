@@ -321,12 +321,21 @@ class Phase1_Decision(IPhaseStrategy):
 
                 stress_config = self.world_state.stress_scenario_config
 
-                firm_orders, action_vector = firm.make_decision(
+                # DTO Refactor: Expect DecisionOutputDTO
+                decision_output = firm.make_decision(
                     state.markets, state.goods_data, market_data, state.time,
                     state.government, stress_config,
                     market_snapshot=market_snapshot, government_policy=gov_policy,
                     agent_registry=agent_registry
                 )
+
+                # Check if it's new DTO or legacy tuple
+                if hasattr(decision_output, 'orders'):
+                    firm_orders = decision_output.orders
+                    # metadata ignored or used if needed
+                else:
+                    # Fallback for unmigrated code (Tuple)
+                    firm_orders, action_vector = decision_output
 
                 for order in firm_orders:
                     target_market = state.markets.get(order.market_id)
@@ -350,16 +359,35 @@ class Phase1_Decision(IPhaseStrategy):
                     }
 
                 stress_config = self.world_state.stress_scenario_config
-                household_orders, action_vector = household.make_decision(
+
+                # DTO Refactor: Expect DecisionOutputDTO
+                decision_output = household.make_decision(
                     state.markets, state.goods_data, market_data, state.time, state.government, macro_financial_context, stress_config,
                     market_snapshot=market_snapshot, government_policy=gov_policy,
                     agent_registry=agent_registry
                 )
 
-                if hasattr(action_vector, 'work_aggressiveness'):
-                    work_aggressiveness = action_vector.work_aggressiveness
+                if hasattr(decision_output, 'orders'):
+                    household_orders = decision_output.orders
+                    metadata = decision_output.metadata
+
+                    # Assume metadata contains action_vector if needed, or handle if it is the vector itself
+                    # Since AIDrivenHouseholdDecisionEngine returns vector as second element,
+                    # metadata should be that vector.
+
+                    if hasattr(metadata, 'work_aggressiveness'):
+                        action_vector = metadata
+                        work_aggressiveness = action_vector.work_aggressiveness
+                    else:
+                         work_aggressiveness = 0.5
                 else:
-                    work_aggressiveness = 0.5
+                    # Legacy Tuple
+                    household_orders, action_vector = decision_output
+                    if hasattr(action_vector, 'work_aggressiveness'):
+                        work_aggressiveness = action_vector.work_aggressiveness
+                    else:
+                        work_aggressiveness = 0.5
+
                 max_work_hours = state.config_module.MAX_WORK_HOURS
                 shopping_hours = getattr(state.config_module, "SHOPPING_HOURS", 2.0)
                 hours_per_tick = getattr(state.config_module, "HOURS_PER_TICK", 24.0)
@@ -370,15 +398,24 @@ class Phase1_Decision(IPhaseStrategy):
 
                 for order in household_orders:
                     # WO-053: Force deflationary pressure on basic_food
-                    if hasattr(order, "item_id") and order.item_id == "basic_food" and order.order_type == "BUY":
+                    if hasattr(order, "item_id") and order.item_id == "basic_food" and order.side == "BUY": # Update order_type -> side
                          # Check for generic scenario parameter via config injection
                          deflationary_multiplier = getattr(state.config_module, "DEFLATIONARY_PRESSURE_MULTIPLIER", None)
 
                          if deflationary_multiplier is not None:
                              current_price = market_data.get("basic_food_current_sell_price", 5.0)
-                             order.price = min(order.price, max(0.1, current_price * float(deflationary_multiplier)))
+                             # Update price -> price_limit (OrderDTO) or use alias
+                             # OrderDTO has 'price' property alias
+                             # But Order dataclass (alias) might not if it's just OrderDTO
+                             # OrderDTO has price property.
+                             # But we might need to construct a new order if it's frozen?
+                             # OrderDTO is frozen=True.
+                             # So we must replace.
+                             from dataclasses import replace
+                             new_price = min(order.price, max(0.1, current_price * float(deflationary_multiplier)))
+                             order = replace(order, price_limit=new_price)
 
-                    if order.order_type == "INVEST" and order.market_id == "admin":
+                    if order.side == "INVEST" and order.market_id == "admin": # Update order_type -> side
                         if self.world_state.firm_system:
                             self.world_state.firm_system.spawn_firm(state, household)
                         else:
@@ -386,7 +423,7 @@ class Phase1_Decision(IPhaseStrategy):
                         continue
 
                     target_market_id = order.market_id
-                    if order.order_type in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
+                    if order.side in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]: # Update order_type -> side
                         target_market_id = "loan_market"
                     elif hasattr(order, "item_id") and order.item_id in ["deposit", "currency"]:
                         target_market_id = "loan_market"
@@ -434,12 +471,13 @@ class Phase1_Decision(IPhaseStrategy):
             for tx in commerce_txs:
                 if tx.transaction_type == "PHASE23_MARKET_ORDER":
                      # WO-053: Convert special transaction to Order
+                     # Use new OrderDTO fields: side, price_limit
                      order = Order(
                          agent_id=tx.buyer_id,
                          item_id=tx.item_id,
                          quantity=tx.quantity,
-                         price=tx.price,
-                         order_type="BUY",
+                         price_limit=tx.price,
+                         side="BUY",
                          market_id=tx.item_id
                      )
                      market = state.markets.get(tx.item_id)

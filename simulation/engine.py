@@ -12,7 +12,7 @@ from simulation.world_state import WorldState
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
-from modules.simulation.api import MarketSnapshotDTO, SystemStateDTO
+from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -79,14 +79,14 @@ class Simulation:
         self.tick_orchestrator.run_tick(injectable_sensory_dto)
         
         # Log macro snapshot for ThoughtStream analysis
-        snapshot = self.get_market_snapshot()
+        snapshot = self.get_economic_indicators()
         system_state = self.get_system_state()
         self.simulation_logger.log_snapshot(
             tick=self.world_state.time,
             snapshot_data={
-                "gdp": snapshot["gdp"],
+                "gdp": snapshot.gdp,
                 "m2": self.world_state.calculate_total_money(),
-                "cpi": snapshot["cpi"],
+                "cpi": snapshot.cpi,
                 "transaction_count": len(self.world_state.transactions)
             }
         )
@@ -99,10 +99,11 @@ class Simulation:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
         return self.world_state.get_all_agents()
 
-    def get_market_snapshot(self) -> MarketSnapshotDTO:
+    def get_economic_indicators(self) -> EconomicIndicatorsDTO:
         """
         Retrieves the current market snapshot containing economic indicators.
         Exposes a public interface for observers (satisfies ISimulationState).
+        Formerly get_market_snapshot.
         """
         # Retrieve raw data from orchestrator
         market_data = self.tick_orchestrator.prepare_market_data()
@@ -120,7 +121,7 @@ class Simulation:
         cpi = total_price / count if count > 0 else 0.0
 
         # Construct and return formal DTO
-        return MarketSnapshotDTO(
+        return EconomicIndicatorsDTO(
             gdp=market_data.get("total_production", 0.0),
             cpi=cpi
         )

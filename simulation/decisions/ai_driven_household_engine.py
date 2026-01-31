@@ -4,7 +4,7 @@ import logging
 
 from simulation.models import Order
 from .base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext, MacroFinancialContext
+from simulation.dtos import DecisionContext, MacroFinancialContext, DecisionOutputDTO
 
 # Modular Managers
 from simulation.decisions.household.api import (
@@ -51,7 +51,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         self,
         context: DecisionContext,
         macro_context: Optional[MacroFinancialContext] = None,
-    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+    ) -> DecisionOutputDTO:
         """
         AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
         """
@@ -60,7 +60,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         if household is None:
             from simulation.schemas import HouseholdActionVector
-            return [], HouseholdActionVector()
+            return DecisionOutputDTO(orders=[], metadata=HouseholdActionVector())
 
         market_snapshot = context.market_snapshot
         market_data = context.market_data
@@ -73,7 +73,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         )
 
         if survival_override_result:
-            return survival_override_result
+            res_orders, res_vector = survival_override_result
+            return DecisionOutputDTO(orders=res_orders, metadata=res_vector)
+
 
         agent_data = household.agent_data
 
@@ -127,7 +129,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         )
         orders.extend(self.housing_manager.decide_housing(housing_ctx))
         
-        return orders, action_vector
+        return DecisionOutputDTO(orders=orders, metadata=action_vector)
 
     def decide_reproduction(self, context: DecisionContext) -> bool:
         """
