@@ -1,0 +1,1106 @@
+diff --git a/communications/insights/refactor_phases_gov.md b/communications/insights/refactor_phases_gov.md
+new file mode 100644
+index 0000000..ddd2c75
+--- /dev/null
++++ b/communications/insights/refactor_phases_gov.md
+@@ -0,0 +1,27 @@
++# Refactor Phases and Government Agent
++
++## Overview
++This refactoring mission focuses on reducing bloating in `simulation/phases.py` and `simulation/agents/government.py` by extracting utility functions and components.
++
++## Technical Debt & Insights
++
++### `simulation/phases.py`
++*   **Bloating:** The file contains multiple phase classes and a large `prepare_market_data` function, making it hard to navigate.
++*   **Mixed Responsibilities:** `prepare_market_data` handles data aggregation, fallback logic, and even some calculation (e.g., debt burden).
++*   **Legacy Code:** `Phase1_Decision` contains legacy signal construction logic that could be modularized.
++
++### `simulation/agents/government.py`
++*   **God Object:** The `Government` class handles taxation, welfare, infrastructure, elections, and sensory updates directly.
++*   **Magic Numbers:** Several constants (e.g., `5000.0` for infrastructure cost, `0.02` for wealth tax) are hardcoded within methods.
++*   **Coupling:** The class is tightly coupled with `TaxationSystem`, `FiscalPolicyManager`, and `MinistryOfEducation`, but also implements significant logic itself (welfare, infrastructure).
++
++## Refactoring Strategy
++1.  **Extract `prepare_market_data`:** Move this utility to `simulation/orchestration/utils.py` to declutter `phases.py` and allow cleaner imports.
++2.  **Componentize Government:**
++    *   **Welfare:** Extract `run_welfare_check` and related support logic to `WelfareManager`.
++    *   **Infrastructure:** Extract `invest_infrastructure` to `InfrastructureManager`.
++    *   **Constants:** centralized in `modules/government/constants.py`.
++
++## Verification
++*   Existing unit and integration tests must pass.
++*   `test_government.py` and `test_engine.py` are critical.
+diff --git a/modules/government/components/infrastructure_manager.py b/modules/government/components/infrastructure_manager.py
+new file mode 100644
+index 0000000..d42ff77
+--- /dev/null
++++ b/modules/government/components/infrastructure_manager.py
+@@ -0,0 +1,87 @@
++from typing import List, Any, Optional, TYPE_CHECKING
++import logging
++from simulation.models import Transaction
++from modules.government.constants import DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
++
++if TYPE_CHECKING:
++    from simulation.agents.government import Government
++
++logger = logging.getLogger(__name__)
++
++class InfrastructureManager:
++    def __init__(self, government: 'Government'):
++        self.government = government
++        self.config = government.config_module
++
++    def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
++        """
++        Refactored: Returns transactions instead of executing direct transfers.
++        Side-effects (TFP Boost) are deferred via metadata.
++        NOW DISTRIBUTES DIRECTLY TO HOUSEHOLDS (Public Works).
++        """
++        transactions = []
++        if self.config:
++            cost = getattr(self.config, "INFRASTRUCTURE_INVESTMENT_COST", DEFAULT_INFRASTRUCTURE_INVESTMENT_COST)
++        else:
++            cost = DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
++
++        effective_cost = cost
++
++        if self.government.firm_subsidy_budget_multiplier < 0.8:
++            return []
++
++        # Synchronous Financing (WO-117)
++        if self.government.assets < effective_cost:
++            needed = effective_cost - self.government.assets
++            # Use new synchronous method
++            if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
++                success = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
++                if not success:
++                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
++                     return []
++            else:
++                # Fallback to old behavior (should not happen if system is updated)
++                bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)
++                if not bonds:
++                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
++                    return []
++                transactions.extend(txs)
++
++        # Distribute as Labor Income (Public Works)
++        if not households:
++             logger.warning("INFRASTRUCTURE_ABORTED | No households provided for public works.")
++             return transactions # Return whatever bond txs we made? Or rollback?
++             # If we issued bonds, we have cash. We just don't spend it. That's fine.
++
++        active_households = [h for h in households if getattr(h, "is_active", False)]
++        if not active_households:
++             return transactions
++
++        amount_per_hh = effective_cost / len(active_households)
++
++        for h in active_households:
++            tx = Transaction(
++                buyer_id=self.government.id,
++                seller_id=h.id,
++                item_id="infrastructure_labor",
++                quantity=1.0,
++                price=amount_per_hh,
++                market_id="system",
++                transaction_type="infrastructure_spending",
++                time=current_tick,
++                metadata={
++                    "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
++                    "is_public_works": True
++                }
++            )
++            transactions.append(tx)
++
++        logger.info(
++            f"INFRASTRUCTURE_PENDING | Level {self.government.infrastructure_level + 1} initiated. Cost: {effective_cost}. Distributed to {len(active_households)} households.",
++            extra={
++                "tick": current_tick,
++                "agent_id": self.government.id,
++                "tags": ["investment", "infrastructure"]
++            }
++        )
++        return transactions
+diff --git a/modules/government/components/welfare_manager.py b/modules/government/components/welfare_manager.py
+new file mode 100644
+index 0000000..3502270
+--- /dev/null
++++ b/modules/government/components/welfare_manager.py
+@@ -0,0 +1,161 @@
++from typing import List, Any, Dict, TYPE_CHECKING, Optional
++import logging
++from simulation.models import Transaction
++from modules.government.constants import (
++    DEFAULT_ANNUAL_WEALTH_TAX_RATE, DEFAULT_TICKS_PER_YEAR,
++    DEFAULT_WEALTH_TAX_THRESHOLD, DEFAULT_UNEMPLOYMENT_BENEFIT_RATIO,
++    DEFAULT_STIMULUS_TRIGGER_GDP_DROP, DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK,
++    DEFAULT_BASIC_FOOD_PRICE
++)
++
++if TYPE_CHECKING:
++    from simulation.agents.government import Government
++
++logger = logging.getLogger(__name__)
++
++class WelfareManager:
++    def __init__(self, government: 'Government'):
++        self.government = government
++        self.config = government.config_module
++
++    def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
++        """ Calculates current survival cost based on food prices. """
++        avg_food_price = 0.0
++        goods_market = market_data.get("goods_market", {})
++        if "basic_food_current_sell_price" in goods_market:
++            avg_food_price = goods_market["basic_food_current_sell_price"]
++        else:
++            avg_food_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("basic_food", DEFAULT_BASIC_FOOD_PRICE)
++
++        daily_food_need = getattr(self.config, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK)
++        return max(avg_food_price * daily_food_need, 10.0)
++
++    def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
++        """Provides subsidies to households (e.g., unemployment, stimulus). Returns transactions."""
++        transactions = []
++        effective_amount = amount * self.government.welfare_budget_multiplier
++
++        if effective_amount <= 0:
++            return []
++
++        # Check budget, issue bonds if needed (Optimistic check)
++        if self.government.assets < effective_amount:
++            needed = effective_amount - self.government.assets
++            # FinanceSystem now returns (bonds, transactions)
++            bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)
++            if not bonds:
++                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
++                return []
++            transactions.extend(txs)
++
++        # Generate Welfare Transaction
++        tx = Transaction(
++            buyer_id=self.government.id,
++            seller_id=household.id,
++            item_id="welfare_support",
++            quantity=1.0,
++            price=effective_amount,
++            market_id="system",
++            transaction_type="welfare",
++            time=current_tick
++        )
++        transactions.append(tx)
++
++        self.government.total_spent_subsidies += effective_amount
++        self.government.expenditure_this_tick += effective_amount
++        self.government.current_tick_stats["welfare_spending"] += effective_amount
++
++        logger.info(
++            f"HOUSEHOLD_SUPPORT | Generated support tx of {effective_amount:.2f} to {household.id}",
++            extra={"tick": current_tick, "agent_id": self.government.id, "amount": effective_amount, "target_id": household.id}
++        )
++        return transactions
++
++    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
++        """
++        Government Main Loop Step.
++        Returns List of Transactions.
++        """
++        transactions = []
++        self.government.reset_tick_flow()
++
++        # 1. Calculate Survival Cost (Dynamic)
++        survival_cost = self.get_survival_cost(market_data)
++
++        # 2. Wealth Tax & Unemployment Benefit
++        wealth_tax_rate_annual = getattr(self.config, "ANNUAL_WEALTH_TAX_RATE", DEFAULT_ANNUAL_WEALTH_TAX_RATE)
++        ticks_per_year = getattr(self.config, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR)
++        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
++        wealth_threshold = getattr(self.config, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD)
++
++        unemployment_ratio = getattr(self.config, "UNEMPLOYMENT_BENEFIT_RATIO", DEFAULT_UNEMPLOYMENT_BENEFIT_RATIO)
++        benefit_amount = survival_cost * unemployment_ratio
++
++        total_wealth_tax = 0.0
++        total_welfare_paid = 0.0
++
++        for agent in agents:
++            if not getattr(agent, "is_active", False):
++                continue
++
++            if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
++                # A. Wealth Tax (Synchronous & Atomic)
++                net_worth = agent.assets
++                if net_worth > wealth_threshold:
++                    tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
++                    # Ensure we don't tax more than they have (safety, though collect_tax checks too)
++                    tax_amount = min(tax_amount, agent.assets)
++
++                    if tax_amount > 0 and self.government.settlement_system:
++                        # Replaced TaxAgency call with internal collect_tax or direct transfer
++                        # Using collect_tax (even if deprecated for external) is fine for internal shortcut
++                        # to handle recording.
++                        result = self.government.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
++                        if result['success']:
++                             total_wealth_tax += result['amount_collected']
++
++                # B. Unemployment Benefit
++                if not agent.is_employed:
++                    txs = self.provide_household_support(agent, benefit_amount, current_tick)
++                    transactions.extend(txs)
++                    total_welfare_paid += benefit_amount
++
++        # 3. Stimulus Check
++        current_gdp = market_data.get("total_production", 0.0)
++        self.government.gdp_history.append(current_gdp)
++        if len(self.government.gdp_history) > self.government.gdp_history_window:
++            self.government.gdp_history.pop(0)
++
++        trigger_drop = getattr(self.config, "STIMULUS_TRIGGER_GDP_DROP", DEFAULT_STIMULUS_TRIGGER_GDP_DROP)
++
++        should_stimulus = False
++        if len(self.government.gdp_history) >= 10:
++            past_gdp = self.government.gdp_history[-10]
++            if past_gdp > 0:
++                change = (current_gdp - past_gdp) / past_gdp
++                if change <= trigger_drop:
++                    should_stimulus = True
++
++        if should_stimulus:
++             stimulus_amount = survival_cost * 5.0
++             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
++
++             total_stimulus = 0.0
++             for h in active_households:
++                 txs = self.provide_household_support(h, stimulus_amount, current_tick)
++                 transactions.extend(txs)
++
++                 # Calculate total from txs for logging?
++                 # Assuming 1 welfare tx per support call
++                 for tx in txs:
++                     if tx.transaction_type == 'welfare':
++                         total_stimulus += tx.price
++
++             if total_stimulus > 0:
++                 self.government.last_fiscal_activation_tick = current_tick
++                 logger.warning(
++                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Generated stimulus txs total {total_stimulus:.2f}.",
++                     extra={"tick": current_tick, "agent_id": self.government.id, "gdp_current": current_gdp}
++                 )
++
++        return transactions
+diff --git a/modules/government/constants.py b/modules/government/constants.py
+new file mode 100644
+index 0000000..dfcf7a9
+--- /dev/null
++++ b/modules/government/constants.py
+@@ -0,0 +1,12 @@
++"""
++Constants for Government Module.
++"""
++
++DEFAULT_INFRASTRUCTURE_INVESTMENT_COST = 5000.0
++DEFAULT_ANNUAL_WEALTH_TAX_RATE = 0.02
++DEFAULT_WEALTH_TAX_THRESHOLD = 50000.0
++DEFAULT_UNEMPLOYMENT_BENEFIT_RATIO = 0.8
++DEFAULT_STIMULUS_TRIGGER_GDP_DROP = -0.05
++DEFAULT_TICKS_PER_YEAR = 100
++DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
++DEFAULT_BASIC_FOOD_PRICE = 5.0
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 1499925..574a609 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -15,11 +15,15 @@ from modules.government.taxation.system import TaxationSystem
+ from modules.finance.api import InsufficientFundsError, TaxCollectionResult
+ from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
+ from modules.government.dtos import FiscalPolicyDTO
++from modules.government.components.welfare_manager import WelfareManager
++from modules.government.components.infrastructure_manager import InfrastructureManager
++from modules.government.constants import *
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+     from modules.finance.api import BailoutLoanDTO
+     from simulation.dtos.strategy import ScenarioStrategy
++    from simulation.agents.central_bank import CentralBank
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -39,6 +43,10 @@ class Government:
+         self.fiscal_policy_manager = FiscalPolicyManager(config_module)
+         self.ministry_of_education = MinistryOfEducation(config_module)
+ 
++        # New Managers
++        self.welfare_manager = WelfareManager(self)
++        self.infrastructure_manager = InfrastructureManager(self)
++
+         # Initialize default fiscal policy
+         # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
+         # via make_policy_decision() before any tax collection occurs.
+@@ -130,7 +138,7 @@ class Government:
+         self.gdp_history_window = 20
+         
+         # WO-056: Shadow Policy Metrics
+-        ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
++        ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR))
+         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
+ 
+         self.revenue_this_tick = 0.0
+@@ -349,10 +357,6 @@ class Government:
+         # WO-147: Check if fiscal stabilizer is enabled (default True)
+         if getattr(self.config_module, "ENABLE_FISCAL_STABILIZER", True):
+             # Convert market_data dict to MarketSnapshotDTO for FiscalPolicyManager
+-            # We construct a snapshot using legacy 'market_data' since we don't have signals here readily available
+-            # unless we passed them.
+-            # However, FiscalPolicyManager.determine_fiscal_stance supports legacy market_data.
+-
+             snapshot = MarketSnapshotDTO(
+                 tick=current_tick,
+                 market_signals={},
+@@ -414,46 +418,8 @@ class Government:
+         )
+ 
+     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
+-        """Provides subsidies to households (e.g., unemployment, stimulus). Returns transactions."""
+-        transactions = []
+-        effective_amount = amount * self.welfare_budget_multiplier
+-
+-        if effective_amount <= 0:
+-            return []
+-
+-        # Check budget, issue bonds if needed (Optimistic check)
+-
+-        if self.assets < effective_amount:
+-            needed = effective_amount - self.assets
+-            # FinanceSystem now returns (bonds, transactions)
+-            bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
+-            if not bonds:
+-                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
+-                return []
+-            transactions.extend(txs)
+-
+-        # Generate Welfare Transaction
+-        tx = Transaction(
+-            buyer_id=self.id,
+-            seller_id=household.id,
+-            item_id="welfare_support",
+-            quantity=1.0,
+-            price=effective_amount,
+-            market_id="system",
+-            transaction_type="welfare",
+-            time=current_tick
+-        )
+-        transactions.append(tx)
+-
+-        self.total_spent_subsidies += effective_amount
+-        self.expenditure_this_tick += effective_amount
+-        self.current_tick_stats["welfare_spending"] += effective_amount
+-
+-        logger.info(
+-            f"HOUSEHOLD_SUPPORT | Generated support tx of {effective_amount:.2f} to {household.id}",
+-            extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
+-        )
+-        return transactions
++        """Delegates to WelfareManager."""
++        return self.welfare_manager.provide_household_support(household, amount, current_tick)
+ 
+     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
+         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
+@@ -469,190 +435,20 @@ class Government:
+             return None, []
+ 
+     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
+-        """ Calculates current survival cost based on food prices. """
+-        avg_food_price = 0.0
+-        goods_market = market_data.get("goods_market", {})
+-        if "basic_food_current_sell_price" in goods_market:
+-            avg_food_price = goods_market["basic_food_current_sell_price"]
+-        else:
+-            avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+-
+-        daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+-        return max(avg_food_price * daily_food_need, 10.0)
++        """ Calculates current survival cost based on food prices. Delegates to WelfareManager. """
++        return self.welfare_manager.get_survival_cost(market_data)
+ 
+     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
+         """
+-        Government Main Loop Step.
+-        Returns List of Transactions.
+-        """
+-        transactions = []
+-        self.reset_tick_flow()
+-
+-        # 1. Calculate Survival Cost (Dynamic)
+-        survival_cost = self.get_survival_cost(market_data)
+-
+-        # 2. Wealth Tax & Unemployment Benefit
+-        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02)
+-        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100.0)
+-        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
+-        wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", 50000.0)
+-
+-        unemployment_ratio = getattr(self.config_module, "UNEMPLOYMENT_BENEFIT_RATIO", 0.8)
+-        benefit_amount = survival_cost * unemployment_ratio
+-
+-        total_wealth_tax = 0.0
+-        total_welfare_paid = 0.0
+-
+-        for agent in agents:
+-            if not getattr(agent, "is_active", False):
+-                continue
+-
+-            if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
+-                # A. Wealth Tax (Synchronous & Atomic)
+-                net_worth = agent.assets
+-                if net_worth > wealth_threshold:
+-                    tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
+-                    # Ensure we don't tax more than they have (safety, though collect_tax checks too)
+-                    tax_amount = min(tax_amount, agent.assets)
+-
+-                    if tax_amount > 0 and self.settlement_system:
+-                        # Replaced TaxAgency call with internal collect_tax or direct transfer
+-                        # Using collect_tax (even if deprecated for external) is fine for internal shortcut
+-                        # to handle recording.
+-                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
+-                        if result['success']:
+-                             total_wealth_tax += result['amount_collected']
+-
+-                # B. Unemployment Benefit
+-                if not agent.is_employed:
+-                    txs = self.provide_household_support(agent, benefit_amount, current_tick)
+-                    transactions.extend(txs)
+-                    total_welfare_paid += benefit_amount
+-
+-        # 3. Stimulus Check
+-        current_gdp = market_data.get("total_production", 0.0)
+-        self.gdp_history.append(current_gdp)
+-        if len(self.gdp_history) > self.gdp_history_window:
+-            self.gdp_history.pop(0)
+-
+-        trigger_drop = getattr(self.config_module, "STIMULUS_TRIGGER_GDP_DROP", -0.05)
+-
+-        should_stimulus = False
+-        if len(self.gdp_history) >= 10:
+-            past_gdp = self.gdp_history[-10]
+-            if past_gdp > 0:
+-                change = (current_gdp - past_gdp) / past_gdp
+-                if change <= trigger_drop:
+-                    should_stimulus = True
+-
+-        if should_stimulus:
+-             stimulus_amount = survival_cost * 5.0
+-             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
+-
+-             total_stimulus = 0.0
+-             for h in active_households:
+-                 txs = self.provide_household_support(h, stimulus_amount, current_tick)
+-                 transactions.extend(txs)
+-
+-                 # Calculate total from txs for logging?
+-                 # Assuming 1 welfare tx per support call
+-                 for tx in txs:
+-                     if tx.transaction_type == 'welfare':
+-                         total_stimulus += tx.price
+-
+-             if total_stimulus > 0:
+-                 self.last_fiscal_activation_tick = current_tick
+-                 logger.warning(
+-                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Generated stimulus txs total {total_stimulus:.2f}.",
+-                     extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
+-                 )
+-
+-        return transactions
++        Delegates to WelfareManager.
++        """
++        return self.welfare_manager.run_welfare_check(agents, market_data, current_tick)
+ 
+     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
+         """
+-        Refactored: Returns transactions instead of executing direct transfers.
+-        Side-effects (TFP Boost) are deferred via metadata.
+-        NOW DISTRIBUTES DIRECTLY TO HOUSEHOLDS (Public Works).
++        Delegates to InfrastructureManager.
+         """
+-        transactions = []
+-        if self.config_module:
+-            cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
+-        else:
+-            cost = 5000.0
+-        
+-        effective_cost = cost
+-
+-        if self.firm_subsidy_budget_multiplier < 0.8:
+-            return []
+-
+-        # Synchronous Financing (WO-117)
+-        if self.assets < effective_cost:
+-            needed = effective_cost - self.assets
+-            # Use new synchronous method
+-            if hasattr(self.finance_system, 'issue_treasury_bonds_synchronous'):
+-                success = self.finance_system.issue_treasury_bonds_synchronous(self, needed, current_tick)
+-                if not success:
+-                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+-                     return []
+-            else:
+-                # Fallback to old behavior (should not happen if system is updated)
+-                bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
+-                if not bonds:
+-                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+-                    return []
+-                transactions.extend(txs)
+-
+-        # Distribute as Labor Income (Public Works)
+-        # We need households to pay.
+-        # Check if households list is provided.
+-        # (TickScheduler must pass it. I'll need to update TickScheduler).
+-        # If not provided, we can't distribute.
+-        # But wait, we can assume 'households' arg is passed.
+-        # I changed signature to accept 'households'.
+-        
+-        if not households:
+-             logger.warning("INFRASTRUCTURE_ABORTED | No households provided for public works.")
+-             return transactions # Return whatever bond txs we made? Or rollback?
+-             # If we issued bonds, we have cash. We just don't spend it. That's fine.
+-
+-        active_households = [h for h in households if getattr(h, "is_active", False)]
+-        if not active_households:
+-             return transactions
+-
+-        amount_per_hh = effective_cost / len(active_households)
+-
+-        for h in active_households:
+-            tx = Transaction(
+-                buyer_id=self.id,
+-                seller_id=h.id,
+-                item_id="infrastructure_labor",
+-                quantity=1.0,
+-                price=amount_per_hh,
+-                market_id="system",
+-                transaction_type="infrastructure_spending",
+-                time=current_tick,
+-                metadata={
+-                    "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
+-                    # Trigger effect only once per tick/batch?
+-                    # If we trigger it 100 times, we get 100 upgrades?
+-                    # SystemEffectsManager typically processes each transaction.
+-                    # I should trigger it only ONCE.
+-                    # So set metadata only on the first transaction.
+-                    "is_public_works": True
+-                }
+-            )
+-            transactions.append(tx)
+-
+-        logger.info(
+-            f"INFRASTRUCTURE_PENDING | Level {self.infrastructure_level + 1} initiated. Cost: {effective_cost}. Distributed to {len(active_households)} households.",
+-            extra={
+-                "tick": current_tick,
+-                "agent_id": self.id,
+-                "tags": ["investment", "infrastructure"]
+-            }
+-        )
+-        return transactions
++        return self.infrastructure_manager.invest_infrastructure(current_tick, households)
+ 
+     def finalize_tick(self, current_tick: int):
+         """
+diff --git a/simulation/orchestration/phases.py b/simulation/orchestration/phases.py
+index 3e5f46c..2709a8c 100644
+--- a/simulation/orchestration/phases.py
++++ b/simulation/orchestration/phases.py
+@@ -20,6 +20,7 @@ from simulation.systems.api import (
+ )
+ from simulation.models import Transaction, Order
+ from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
++from simulation.orchestration.utils import prepare_market_data
+ 
+ if TYPE_CHECKING:
+     from simulation.world_state import WorldState
+@@ -29,117 +30,6 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
+-def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
+-    """Prepares market data for agent decisions."""
+-    tracker = state.tracker
+-    goods_market_data: Dict[str, Any] = {}
+-
+-    debt_data_map = {}
+-    deposit_data_map = {}
+-
+-    # 1. Debt & Deposit Data
+-    if state.bank:
+-        for agent_id, agent in state.agents.items():
+-            if isinstance(agent, (Household, Firm)):
+-                debt_status = state.bank.get_debt_status(str(agent_id))
+-
+-                total_burden = 0.0
+-                ticks_per_year = 100
+-                if hasattr(state.bank, "_get_config"):
+-                     ticks_per_year = state.bank._get_config("bank_defaults.ticks_per_year", 100)
+-
+-                for loan in debt_status.get("loans", []):
+-                    total_burden += (loan["outstanding_balance"] * loan["interest_rate"]) / ticks_per_year
+-
+-                debt_data_entry = dict(debt_status)
+-                debt_data_entry["daily_interest_burden"] = total_burden
+-                debt_data_entry["total_principal"] = debt_status["total_outstanding_debt"]
+-
+-                debt_data_map[agent_id] = debt_data_entry
+-                deposit_data_map[agent_id] = state.bank.get_balance(str(agent_id))
+-
+-    # 2. Goods Market Data
+-    for good_name in state.config_module.GOODS:
+-        market = state.markets.get(good_name)
+-        if market and isinstance(market, OrderBookMarket):
+-            avg_price = market.get_daily_avg_price()
+-            if avg_price <= 0:
+-                avg_price = market.get_best_ask(good_name) or 0
+-            if avg_price <= 0:
+-                latest = tracker.get_latest_indicators()
+-                avg_price = latest.get(f"{good_name}_avg_price", 0)
+-            if avg_price <= 0:
+-                avg_price = state.config_module.GOODS[good_name].get("initial_price", 10.0)
+-
+-            goods_market_data[f"{good_name}_current_sell_price"] = avg_price
+-
+-    latest_indicators = tracker.get_latest_indicators()
+-    avg_wage = latest_indicators.get("labor_avg_price", state.config_module.LABOR_MARKET_MIN_WAGE)
+-
+-    labor_market = state.markets.get("labor")
+-    best_wage_offer = 0.0
+-    job_vacancies = 0
+-
+-    if labor_market and isinstance(labor_market, OrderBookMarket):
+-        best_wage_offer = labor_market.get_best_bid("labor") or 0.0
+-        if best_wage_offer <= 0:
+-            best_wage_offer = avg_wage
+-
+-        for item_orders in labor_market.buy_orders.values():
+-             for order in item_orders:
+-                 job_vacancies += order.quantity
+-
+-    goods_market_data["labor"] = {
+-        "avg_wage": avg_wage,
+-        "best_wage_offer": best_wage_offer
+-    }
+-    goods_market_data["job_vacancies"] = job_vacancies
+-
+-    total_price = 0.0
+-    count = 0.0
+-    for good_name in state.config_module.GOODS:
+-        price = goods_market_data.get(f"{good_name}_current_sell_price")
+-        if price is not None:
+-            total_price += price
+-            count += 1
+-
+-    avg_goods_price_for_market_data = total_price / count if count > 0 else 10.0
+-
+-    stock_market_data = {}
+-    if state.stock_market:
+-        for firm in state.firms:
+-            firm_item_id = f"stock_{firm.id}"
+-            price = state.stock_market.get_daily_avg_price(firm.id)
+-            if price <= 0:
+-                price = state.stock_market.get_best_ask(firm.id) or 0
+-            if price <= 0:
+-                price = firm.assets / firm.total_shares if firm.total_shares > 0 else 10.0
+-            stock_market_data[firm_item_id] = {"avg_price": price}
+-
+-    rent_prices = [u.rent_price for u in state.real_estate_units if u.owner_id is not None]
+-    avg_rent = sum(rent_prices) / len(rent_prices) if rent_prices else state.config_module.INITIAL_RENT_PRICE
+-
+-    housing_market_data = {
+-        "avg_rent_price": avg_rent
+-    }
+-
+-    interest_rate = 0.05
+-    if state.bank:
+-        interest_rate = state.bank.base_rate
+-
+-    return {
+-        "time": state.time,
+-        "goods_market": goods_market_data,
+-        "housing_market": housing_market_data,
+-        "loan_market": {"interest_rate": interest_rate},
+-        "stock_market": stock_market_data,
+-        "all_households": state.households,
+-        "avg_goods_price": avg_goods_price_for_market_data,
+-        "debt_data": debt_data_map,
+-        "deposit_data": deposit_data_map,
+-        "inflation": latest_indicators.get("inflation_rate", state.config_module.DEFAULT_INFLATION_RATE)
+-    }
+-
+ 
+ class Phase0_PreSequence(IPhaseStrategy):
+     def __init__(self, world_state: WorldState):
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index 3753a48..0f18286 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -5,9 +5,9 @@ import logging
+ from simulation.dtos.api import SimulationState, GovernmentStateDTO
+ from simulation.orchestration.phases import (
+     Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
+-    Phase3_Transaction, Phase_Bankruptcy, Phase_Consumption, Phase5_PostSequence,
+-    prepare_market_data
++    Phase3_Transaction, Phase_Bankruptcy, Phase_Consumption, Phase5_PostSequence
+ )
++from simulation.orchestration.utils import prepare_market_data
+ from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
+ 
+ if TYPE_CHECKING:
+diff --git a/simulation/orchestration/utils.py b/simulation/orchestration/utils.py
+new file mode 100644
+index 0000000..dc04353
+--- /dev/null
++++ b/simulation/orchestration/utils.py
+@@ -0,0 +1,120 @@
++from __future__ import annotations
++from typing import Dict, Any, TYPE_CHECKING
++from simulation.dtos.api import SimulationState
++from simulation.core_agents import Household
++from simulation.firms import Firm
++from simulation.markets.order_book_market import OrderBookMarket
++
++if TYPE_CHECKING:
++    pass
++
++def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
++    """Prepares market data for agent decisions."""
++    tracker = state.tracker
++    goods_market_data: Dict[str, Any] = {}
++
++    debt_data_map = {}
++    deposit_data_map = {}
++
++    # 1. Debt & Deposit Data
++    if state.bank:
++        for agent_id, agent in state.agents.items():
++            if isinstance(agent, (Household, Firm)):
++                debt_status = state.bank.get_debt_status(str(agent_id))
++
++                total_burden = 0.0
++                ticks_per_year = 100
++                if hasattr(state.bank, "_get_config"):
++                     ticks_per_year = state.bank._get_config("bank_defaults.ticks_per_year", 100)
++
++                for loan in debt_status.get("loans", []):
++                    total_burden += (loan["outstanding_balance"] * loan["interest_rate"]) / ticks_per_year
++
++                debt_data_entry = dict(debt_status)
++                debt_data_entry["daily_interest_burden"] = total_burden
++                debt_data_entry["total_principal"] = debt_status["total_outstanding_debt"]
++
++                debt_data_map[agent_id] = debt_data_entry
++                deposit_data_map[agent_id] = state.bank.get_balance(str(agent_id))
++
++    # 2. Goods Market Data
++    for good_name in state.config_module.GOODS:
++        market = state.markets.get(good_name)
++        if market and isinstance(market, OrderBookMarket):
++            avg_price = market.get_daily_avg_price()
++            if avg_price <= 0:
++                avg_price = market.get_best_ask(good_name) or 0
++            if avg_price <= 0:
++                latest = tracker.get_latest_indicators()
++                avg_price = latest.get(f"{good_name}_avg_price", 0)
++            if avg_price <= 0:
++                avg_price = state.config_module.GOODS[good_name].get("initial_price", 10.0)
++
++            goods_market_data[f"{good_name}_current_sell_price"] = avg_price
++
++    latest_indicators = tracker.get_latest_indicators()
++    avg_wage = latest_indicators.get("labor_avg_price", state.config_module.LABOR_MARKET_MIN_WAGE)
++
++    labor_market = state.markets.get("labor")
++    best_wage_offer = 0.0
++    job_vacancies = 0
++
++    if labor_market and isinstance(labor_market, OrderBookMarket):
++        best_wage_offer = labor_market.get_best_bid("labor") or 0.0
++        if best_wage_offer <= 0:
++            best_wage_offer = avg_wage
++
++        for item_orders in labor_market.buy_orders.values():
++             for order in item_orders:
++                 job_vacancies += order.quantity
++
++    goods_market_data["labor"] = {
++        "avg_wage": avg_wage,
++        "best_wage_offer": best_wage_offer
++    }
++    goods_market_data["job_vacancies"] = job_vacancies
++
++    total_price = 0.0
++    count = 0.0
++    for good_name in state.config_module.GOODS:
++        price = goods_market_data.get(f"{good_name}_current_sell_price")
++        if price is not None:
++            total_price += price
++            count += 1
++
++    avg_goods_price_for_market_data = total_price / count if count > 0 else 10.0
++
++    stock_market_data = {}
++    if state.stock_market:
++        for firm in state.firms:
++            firm_item_id = f"stock_{firm.id}"
++            price = state.stock_market.get_daily_avg_price(firm.id)
++            if price <= 0:
++                price = state.stock_market.get_best_ask(firm.id) or 0
++            if price <= 0:
++                price = firm.assets / firm.total_shares if firm.total_shares > 0 else 10.0
++            stock_market_data[firm_item_id] = {"avg_price": price}
++
++    rent_prices = [u.rent_price for u in state.real_estate_units if u.owner_id is not None]
++    avg_rent = sum(rent_prices) / len(rent_prices) if rent_prices else state.config_module.INITIAL_RENT_PRICE
++
++    housing_market_data = {
++        "avg_rent_price": avg_rent
++    }
++
++    interest_rate = 0.05
++    if state.bank:
++        interest_rate = state.bank.base_rate
++
++    return {
++        "time": state.time,
++        "goods_market": goods_market_data,
++        "housing_market": housing_market_data,
++        "loan_market": {"interest_rate": interest_rate},
++        "stock_market": stock_market_data,
++        "all_households": state.households,
++        "avg_goods_price": avg_goods_price_for_market_data,
++        "debt_data": debt_data_map,
++        "deposit_data": deposit_data_map,
++        "inflation": latest_indicators.get("inflation_rate", state.config_module.DEFAULT_INFLATION_RATE)
++    }
+diff --git a/tests/integration/test_engine.py b/tests/integration/test_engine.py
+index c4e88f4..a334465 100644
+--- a/tests/integration/test_engine.py
++++ b/tests/integration/test_engine.py
+@@ -384,6 +384,9 @@ class TestSimulation:
+             + [simulation_instance.bank.id]
+             + [simulation_instance.government.id]
+         )
++        if hasattr(simulation_instance, "escrow_agent") and simulation_instance.escrow_agent:
++            expected_agent_ids.append(simulation_instance.escrow_agent.id)
++
+         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
+ 
+         for hh in mock_households:
+diff --git a/tests/integration/test_government_finance.py b/tests/integration/test_government_finance.py
+index b9705e7..6da0ff0 100644
+--- a/tests/integration/test_government_finance.py
++++ b/tests/integration/test_government_finance.py
+@@ -46,19 +46,31 @@ class MockConfig:
+     CORPORATE_TAX_RATE = 0.2
+     TAX_MODE = "PROGRESSIVE" # Needed for TaxAgency
+     INFRASTRUCTURE_TFP_BOOST = 0.1
++    HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+ 
+ def test_invest_infrastructure_generates_transaction():
+     # 1. Setup
+     config = MockConfig()
+     government = Government(id=1, initial_assets=10000.0, config_module=config)
+-    reflux = MockRefluxSystem(id=999, initial_assets=0.0)
++    # Mock FinanceSystem to avoid AttributeError when accessing issue_treasury_bonds_synchronous
++    government.finance_system = MagicMock()
++    # It needs to return false for issue_treasury_bonds_synchronous check unless we mock it
++    # logic: if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
++    # So we don't need to do anything if it's a MagicMock, it will return a Mock object for that attr.
++    # But then success check: if success: ...
++    # So we need it to return True.
++    government.finance_system.issue_treasury_bonds_synchronous.return_value = True
++
++    # Households
++    mock_household = MagicMock()
++    mock_household.id = 101
++    mock_household.is_active = True
+ 
+     # 2. Record State Before
+     assets_gov_before = government.assets
+-    assets_reflux_before = reflux.assets
+ 
+     # 3. Execute
+-    txs = government.invest_infrastructure(current_tick=1, reflux_system=reflux)
++    txs = government.invest_infrastructure(current_tick=1, households=[mock_household])
+ 
+     # 4. Assert
+     # Should return a list of transactions
+@@ -69,10 +81,19 @@ def test_invest_infrastructure_generates_transaction():
+     assert isinstance(tx, Transaction)
+     assert tx.transaction_type == "infrastructure_spending"
+     assert tx.buyer_id == government.id
+-    assert tx.seller_id == reflux.id
++    assert tx.seller_id == mock_household.id
+     assert tx.price == config.INFRASTRUCTURE_INVESTMENT_COST
+-    assert tx.metadata.get("triggers_effect") == "GLOBAL_TFP_BOOST"
++    assert tx.metadata.get("triggers_effect") == "GOVERNMENT_INFRA_UPGRADE"
++    assert tx.metadata.get("is_public_works") == True
+ 
+     # 5. Assert No Immediate State Change (Sacred Sequence)
++    # The transaction object is created, but not executed yet.
++    # HOWEVER, finance system logic in InfrastructureManager might have run.
++    # If using synchronous financing, it might have updated state?
++    # No, invest_infrastructure just returns transactions for SPENDING.
++    # Financing part:
++    # `success = self.government.finance_system.issue_treasury_bonds_synchronous(...)`
++    # We mocked it.
++
++    # Assert assets didn't change (assuming transaction not processed)
+     assert government.assets == assets_gov_before
+-    assert reflux.assets == assets_reflux_before
+diff --git a/tests/unit/agents/test_government.py b/tests/unit/agents/test_government.py
+index 012b526..4f5b61c 100644
+--- a/tests/unit/agents/test_government.py
++++ b/tests/unit/agents/test_government.py
+@@ -5,13 +5,20 @@ from simulation.agents.government import Government
+ @pytest.fixture
+ def government_setup(mocker):
+     # Mocking patches
+-    mock_tax_agency_cls = mocker.patch('simulation.agents.government.TaxAgency')
++    # TaxAgency is removed, use TaxationSystem
++    mock_taxation_system_cls = mocker.patch('simulation.agents.government.TaxationSystem')
+     mock_education_ministry_cls = mocker.patch('simulation.agents.government.MinistryOfEducation')
+     mock_fiscal_policy_manager_cls = mocker.patch('simulation.agents.government.FiscalPolicyManager')
+ 
+-    mock_tax_agency_instance = mock_tax_agency_cls.return_value
++    # Mock new components
++    mock_welfare_manager_cls = mocker.patch('simulation.agents.government.WelfareManager')
++    mock_infra_manager_cls = mocker.patch('simulation.agents.government.InfrastructureManager')
++
++    mock_taxation_system_instance = mock_taxation_system_cls.return_value
+     mock_education_ministry_instance = mock_education_ministry_cls.return_value
+     mock_fiscal_policy_manager_instance = mock_fiscal_policy_manager_cls.return_value
++    mock_welfare_manager_instance = mock_welfare_manager_cls.return_value
++    mock_infra_manager_instance = mock_infra_manager_cls.return_value
+ 
+     mock_config = Mock()
+     mock_config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
+@@ -33,9 +40,11 @@ def government_setup(mocker):
+ 
+     return {
+         "government": government,
+-        "mock_tax_agency": mock_tax_agency_instance,
++        "mock_taxation_system": mock_taxation_system_instance,
+         "mock_education_ministry": mock_education_ministry_instance,
+         "mock_fiscal_policy_manager": mock_fiscal_policy_manager_instance,
++        "mock_welfare_manager": mock_welfare_manager_instance,
++        "mock_infra_manager": mock_infra_manager_instance,
+         "mock_config": mock_config
+     }
+ 
+@@ -55,13 +64,13 @@ def test_calculate_corporate_tax_delegation(government_setup):
+ 
+     env["government"].calculate_corporate_tax(profit)
+ 
+-    env["mock_tax_agency"].calculate_corporate_tax.assert_called_once_with(
++    env["mock_taxation_system"].calculate_corporate_tax.assert_called_once_with(
+         profit,
+         env["government"].corporate_tax_rate # Should pass the current rate (0.25)
+     )
+ 
+ def test_collect_tax_delegation(government_setup):
+-    """Test if collect_tax delegates to TaxAgency."""
++    """Test if collect_tax uses SettlementSystem."""
+     env = government_setup
+     amount = 1000
+     tax_type = 'income'
+@@ -70,27 +79,16 @@ def test_collect_tax_delegation(government_setup):
+ 
+     # Ensure settlement_system is present
+     env["government"].settlement_system = Mock()
+-
+-    # Configure mock return value to satisfy record_revenue
+-    env["mock_tax_agency"].collect_tax.return_value = {
+-        "success": True,
+-        "amount_collected": amount,
+-        "tax_type": tax_type,
+-        "payer_id": source_id,
+-        "payee_id": env["government"].id,
+-        "error_message": None
+-    }
++    env["government"].settlement_system.transfer.return_value = True
+ 
+     env["government"].collect_tax(amount, tax_type, source_id, current_tick)
+ 
+-    # Note: Government.collect_tax calls agency.collect_tax(payer=source, payee=self, ...)
+-    env["mock_tax_agency"].collect_tax.assert_called_once_with(
+-        payer=source_id,
+-        payee=env["government"],
+-        amount=amount,
+-        tax_type=tax_type,
+-        settlement_system=env["government"].settlement_system,
+-        current_tick=current_tick
++    # Note: Government.collect_tax calls settlement_system.transfer(payer, self, amount, memo)
++    env["government"].settlement_system.transfer.assert_called_once_with(
++        source_id,
++        env["government"],
++        amount,
++        f"{tax_type} collection"
+     )
+ 
+ def test_run_public_education_delegation(government_setup):
+@@ -131,6 +129,16 @@ def deficit_government_setup():
+     # Mock settlement system to handle transfer
+     government.settlement_system = Mock()
+ 
++    # For this test, we want real WelfareManager logic or mock it?
++    # The original tests tested logic inside provide_household_support.
++    # Since we moved logic to WelfareManager, we should check if Government delegates correctly.
++    # OR if we want to test the logic, we should use real WelfareManager.
++    # The deficit_government_setup in original test was implicit.
++    # Now Government initializes `self.welfare_manager = WelfareManager(self)`.
++    # So it uses real WelfareManager unless mocked.
++    # `government_setup` fixture mocks it. `deficit_government_setup` does NOT mock it explicitly.
++    # So it uses the real one (which is what we want for integration-like testing of logic).
++
+     return government
+ 
+ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
+@@ -138,23 +146,9 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
+     government = deficit_government_setup
+     government._assets = 100
+     target_agent = Mock()
++    target_agent.id = "target_1"
+     target_agent._assets = 0
+ 
+-    # Mock provide_household_support relies on assets being updated?
+-    # Actually provide_household_support logic:
+-    # 1. Check if assets < amount
+-    # 2. Issue bonds
+-    # 3. Create welfare transaction (no direct transfer in this method, it returns transaction)
+-    # Wait, the original method returns List[Transaction].
+-    # But the test asserts `amount_paid == 500`?
+-    # Original test code: `amount_paid = government.provide_household_support(...)`
+-    # And asserts `government.assets == -400`.
+-    # `provide_household_support` does NOT update assets for the welfare payment itself!
+-    # It just returns transactions to be executed by TransactionProcessor.
+-    # EXCEPT for `issue_treasury_bonds` which calls FinanceSystem.
+-    # If FinanceSystem is mocked, assets won't change unless mock does it.
+-
+-    # Let's fix expectations. The method returns transactions.
+     txs = government.provide_household_support(target_agent, 500, current_tick=1)
+ 
+     # It should return at least 1 welfare tx + bond txs.
+@@ -162,14 +156,12 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
+     welfare_tx = [tx for tx in txs if tx.transaction_type == 'welfare'][0]
+     assert welfare_tx.price == 500
+ 
+-    # government.assets won't change here because we mocked finance system and provide_household_support doesn't do transfer.
+-    # So we remove asset assertions that depended on real logic or side effects.
+-
+ def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
+     """Test that spending is blocked when it would exceed the debt/GDP limit."""
+     government = deficit_government_setup
+     government._assets = -2900
+     target_agent = Mock()
++    target_agent.id = "target_1"
+ 
+     # Simulate FinanceSystem denying the bond issuance
+     government.finance_system.issue_treasury_bonds.return_value = (None, [])

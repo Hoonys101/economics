@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
 | TD-162 | 2026-01-30 | Bloated God Class: Household | Maintenance/Testing Overhead | **RESOLVED** |
-| TD-169 | 2026-01-31 | Bloat Risk: `phases.py`, `government.py` | Emerging Maintenance Debt | **READY** |
+| TD-169 | 2026-01-31 | Bloat Risk: `phases.py`, `government.py` | Emerging Maintenance Debt | **RESOLVED** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -16,13 +16,13 @@
 |---|---|---|---|---|
 | TD-005 | 2026-01-12 | Hardcoded Halo Effect in `firms.py` | Marginal Product of Labor 이론 위배 | **DEFERRED** |
 | TD-073 | 2026-01-20 | Firm Component State Ownership | Architectural purity | **DEFERRED** |
-| TD-142 | 2026-01-29 | God File: `corporate_manager.py` | 629+ LOC complexity | **READY** |
+| TD-142 | 2026-01-29 | God File: `corporate_manager.py` | 629+ LOC complexity | **RESOLVED** |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-141 | 2026-01-29 | God File: `ai_driven_household_engine.py` | 636+ LOC complexity | **READY** |
+| TD-141 | 2026-01-29 | God File: `ai_driven_household_engine.py` | 636+ LOC complexity | **RESOLVED** |
 
 ## 💹 4. MARKETS & ECONOMICS
 
@@ -46,7 +46,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-151 | 2026-01-29 | Partial DTO Adoption in Engine | Inconsistent Internal/External API | **READY** |
+| TD-151 | 2026-01-29 | Partial DTO Adoption in Engine | Inconsistent Internal/External API | **RESOLVED** |
 | TD-166 | 2026-01-31 | Configuration Duality (Engine vs Agent) | Configuration Fragmentation | **SPECCED** |
 | TD-168 | 2026-01-31 | `make_decision` Abstraction Leak | Raw Agent objects in method signature | **READY** |
 

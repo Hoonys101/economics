@@ -1,0 +1,342 @@
+diff --git a/communications/insights/WO-171-Corporate-Strategy-Refactor.md b/communications/insights/WO-171-Corporate-Strategy-Refactor.md
+new file mode 100644
+index 0000000..9b40b82
+--- /dev/null
++++ b/communications/insights/WO-171-Corporate-Strategy-Refactor.md
+@@ -0,0 +1,21 @@
++# WO-171: Corporate Strategy Refactor
++
++## 1. Context
++The user requested the decomposition of `corporate_manager.py` into strategic modules: `FinancialStrategy`, `ProductionStrategy`, and `HRStrategy`.
++Upon inspection, `CorporateManager` was already delegating logic to `FinanceManager`, `OperationsManager`, and `HRManager`.
++This task primarily involves refactoring these components to match the requested naming convention ("Strategy") and ensuring the "Component Pattern" is strictly followed.
++
++## 2. Changes
++- **FinanceManager** -> **FinancialStrategy**: Direct rename.
++- **HRManager** -> **HRStrategy**: Direct rename.
++- **OperationsManager** -> **ProductionStrategy**: Renamed to satisfy the user request.
++  - *Insight*: `OperationsManager` handled Production, Procurement, Automation, R&D, and Capex. Renaming it to `ProductionStrategy` might imply a narrower scope, but we retained the full scope to preserve functionality. In the future, R&D and Capex might deserve their own strategies (e.g., `InnovationStrategy`, `InvestmentStrategy`).
++
++## 3. Technical Debt & Observations
++- **Scope of ProductionStrategy**: The name `ProductionStrategy` is slightly misleading as it covers all non-Sales/HR/Finance operations, including R&D and Capex. This was done to match the user's explicit extraction targets without over-fragmenting the codebase abruptly.
++- **CorporateManager**: Remains as the Orchestrator (Facade) for the firm's decision-making process.
++- **SalesManager**: Left as `SalesManager` as it was not in the extraction list, though for consistency it could be `SalesStrategy`.
++
++## 4. Verification
++- Verified that all logic remains intact after renaming.
++- Updated unit tests to reflect new class names.
+diff --git a/simulation/decisions/corporate_manager.py b/simulation/decisions/corporate_manager.py
+index d6314f1..75af20b 100644
+--- a/simulation/decisions/corporate_manager.py
++++ b/simulation/decisions/corporate_manager.py
+@@ -7,10 +7,10 @@ from simulation.schemas import FirmActionVector
+ from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
+ from simulation.ai.firm_system2_planner import FirmSystem2Planner
+ 
+-# Import new managers
+-from simulation.decisions.firm.finance_manager import FinanceManager
+-from simulation.decisions.firm.hr_manager import HRManager
+-from simulation.decisions.firm.operations_manager import OperationsManager
++# Import new strategies
++from simulation.decisions.firm.financial_strategy import FinancialStrategy
++from simulation.decisions.firm.hr_strategy import HRStrategy
++from simulation.decisions.firm.production_strategy import ProductionStrategy
+ from simulation.decisions.firm.sales_manager import SalesManager
+ 
+ logger = logging.getLogger(__name__)
+@@ -19,7 +19,7 @@ class CorporateManager:
+     """
+     CEO Module (WO-027).
+     Refactored for WO-142 Departmentalization.
+-    Orchestrates specialized managers (HR, Finance, Ops, Sales).
++    Orchestrates specialized strategies (HR, Finance, Production, Sales).
+     """
+ 
+     def __init__(self, config_module: Any, logger: Optional[logging.Logger] = None):
+@@ -27,10 +27,10 @@ class CorporateManager:
+         self.logger = logger if logger else logging.getLogger(__name__)
+         self.system2_planner: Optional[FirmSystem2Planner] = None
+ 
+-        # Instantiate managers
+-        self.finance_manager = FinanceManager()
+-        self.hr_manager = HRManager()
+-        self.operations_manager = OperationsManager()
++        # Instantiate strategies
++        self.financial_strategy = FinancialStrategy()
++        self.hr_strategy = HRStrategy()
++        self.production_strategy = ProductionStrategy()
+         self.sales_manager = SalesManager()
+ 
+     def realize_ceo_actions(
+@@ -52,7 +52,7 @@ class CorporateManager:
+         guidance = self.system2_planner.project_future(context.current_time, context.market_data, firm)
+ 
+         # 1. Finance (Dividends, Debt)
+-        financial_plan = self.finance_manager.formulate_plan(
++        financial_plan = self.financial_strategy.formulate_plan(
+             context,
+             dividend_aggressiveness=action_vector.dividend_aggressiveness,
+             debt_aggressiveness=action_vector.debt_aggressiveness
+@@ -60,14 +60,15 @@ class CorporateManager:
+         orders.extend(financial_plan.orders)
+ 
+         # 2. HR (Hiring)
+-        hr_plan = self.hr_manager.formulate_plan(
++        hr_plan = self.hr_strategy.formulate_plan(
+             context,
+             hiring_aggressiveness=action_vector.hiring_aggressiveness
+         )
+         orders.extend(hr_plan.orders)
+ 
+-        # 3. Operations (Production, Procurement, Automation, R&D, Capex)
+-        ops_plan = self.operations_manager.formulate_plan(
++        # 3. Production (Production, Procurement, Automation, R&D, Capex)
++        # Note: ProductionStrategy currently handles all operations including R&D and Capex.
++        ops_plan = self.production_strategy.formulate_plan(
+             context,
+             capital_aggressiveness=action_vector.capital_aggressiveness,
+             rd_aggressiveness=action_vector.rd_aggressiveness,
+diff --git a/simulation/decisions/firm/api.py b/simulation/decisions/firm/api.py
+index 2775448..282031b 100644
+--- a/simulation/decisions/firm/api.py
++++ b/simulation/decisions/firm/api.py
+@@ -20,15 +20,15 @@ class OperationsPlanDTO:
+ class SalesPlanDTO:
+     orders: List[Order] = field(default_factory=list)
+ 
+-class FinanceManagerProtocol(Protocol):
++class FinancialStrategyProtocol(Protocol):
+     def formulate_plan(self, context: DecisionContext, dividend_aggressiveness: float, debt_aggressiveness: float) -> FinancialPlanDTO:
+         ...
+ 
+-class HRManagerProtocol(Protocol):
++class HRStrategyProtocol(Protocol):
+     def formulate_plan(self, context: DecisionContext, hiring_aggressiveness: float) -> HRPlanDTO:
+         ...
+ 
+-class OperationsManagerProtocol(Protocol):
++class ProductionStrategyProtocol(Protocol):
+     def formulate_plan(self, context: DecisionContext, capital_aggressiveness: float, rd_aggressiveness: float, guidance: Dict[str, Any]) -> OperationsPlanDTO:
+         ...
+ 
+diff --git a/simulation/decisions/firm/finance_manager.py b/simulation/decisions/firm/financial_strategy.py
+similarity index 99%
+rename from simulation/decisions/firm/finance_manager.py
+rename to simulation/decisions/firm/financial_strategy.py
+index ea6f01f..cf2667a 100644
+--- a/simulation/decisions/firm/finance_manager.py
++++ b/simulation/decisions/firm/financial_strategy.py
+@@ -7,7 +7,7 @@ from simulation.decisions.firm.api import FinancialPlanDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class FinanceManager:
++class FinancialStrategy:
+     def formulate_plan(self, context: DecisionContext, dividend_aggressiveness: float, debt_aggressiveness: float) -> FinancialPlanDTO:
+         firm = context.state
+         config = context.config
+diff --git a/simulation/decisions/firm/hr_manager.py b/simulation/decisions/firm/hr_strategy.py
+similarity index 99%
+rename from simulation/decisions/firm/hr_manager.py
+rename to simulation/decisions/firm/hr_strategy.py
+index 8b532ad..7957026 100644
+--- a/simulation/decisions/firm/hr_manager.py
++++ b/simulation/decisions/firm/hr_strategy.py
+@@ -6,7 +6,7 @@ from simulation.decisions.firm.api import HRPlanDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class HRManager:
++class HRStrategy:
+     def formulate_plan(self, context: DecisionContext, hiring_aggressiveness: float) -> HRPlanDTO:
+         firm = context.state
+         config = context.config
+diff --git a/simulation/decisions/firm/operations_manager.py b/simulation/decisions/firm/production_strategy.py
+similarity index 99%
+rename from simulation/decisions/firm/operations_manager.py
+rename to simulation/decisions/firm/production_strategy.py
+index 536b222..491afe4 100644
+--- a/simulation/decisions/firm/operations_manager.py
++++ b/simulation/decisions/firm/production_strategy.py
+@@ -6,7 +6,7 @@ from simulation.decisions.firm.api import OperationsPlanDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class OperationsManager:
++class ProductionStrategy:
+     def formulate_plan(self, context: DecisionContext, capital_aggressiveness: float, rd_aggressiveness: float, guidance: Dict[str, Any]) -> OperationsPlanDTO:
+         firm = context.state
+         config = context.config
+diff --git a/tests/integration/scenarios/verify_automation_tax.py b/tests/integration/scenarios/verify_automation_tax.py
+index 2edbb99..93abafe 100644
+--- a/tests/integration/scenarios/verify_automation_tax.py
++++ b/tests/integration/scenarios/verify_automation_tax.py
+@@ -1,6 +1,6 @@
+ import unittest
+ from unittest.mock import Mock, MagicMock
+-from simulation.decisions.firm.operations_manager import OperationsManager
++from simulation.decisions.firm.production_strategy import ProductionStrategy
+ from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
+ from simulation.models import Order
+ 
+@@ -11,7 +11,7 @@ class TestAutomationTax(unittest.TestCase):
+         config.automation_cost_per_pct = 1000.0
+         config.firm_safety_margin = 2000.0
+         config.automation_tax_rate = 0.05
+-        # Add defaults for other calls in OperationsManager
++        # Add defaults for other calls in ProductionStrategy
+         config.overstock_threshold = 1.2
+         config.understock_threshold = 0.8
+         config.production_adjustment_factor = 0.1
+@@ -38,7 +38,7 @@ class TestAutomationTax(unittest.TestCase):
+         guidance = {"target_automation": 0.6}
+         aggressiveness = 1.0
+ 
+-        manager = OperationsManager()
++        manager = ProductionStrategy()
+ 
+         # Invoke via formulate_plan
+         plan = manager.formulate_plan(context, capital_aggressiveness=aggressiveness, rd_aggressiveness=0.0, guidance=guidance)
+diff --git a/tests/unit/corporate/conftest.py b/tests/unit/corporate/conftest.py
+index 166b686..9297fff 100644
+--- a/tests/unit/corporate/conftest.py
++++ b/tests/unit/corporate/conftest.py
+@@ -139,7 +139,8 @@ def firm_dto():
+         employees_data={},
+         agent_data={"personality": "BALANCED"},
+         system2_guidance={},
+-        sentiment_index=1.0
++        sentiment_index=1.0,
++        inventory_last_sale_tick={}
+     )
+ 
+ @pytest.fixture
+diff --git a/tests/unit/corporate/test_finance_manager.py b/tests/unit/corporate/test_financial_strategy.py
+similarity index 83%
+rename from tests/unit/corporate/test_finance_manager.py
+rename to tests/unit/corporate/test_financial_strategy.py
+index 08ab44b..4c9f15a 100644
+--- a/tests/unit/corporate/test_finance_manager.py
++++ b/tests/unit/corporate/test_financial_strategy.py
+@@ -1,8 +1,8 @@
+ import pytest
+-from simulation.decisions.firm.finance_manager import FinanceManager
++from simulation.decisions.firm.financial_strategy import FinancialStrategy
+ 
+ def test_dividend_logic(firm_dto, context_mock):
+-    manager = FinanceManager()
++    manager = FinancialStrategy()
+ 
+     plan = manager.formulate_plan(context_mock, dividend_aggressiveness=1.0, debt_aggressiveness=0.0)
+ 
+@@ -11,7 +11,7 @@ def test_dividend_logic(firm_dto, context_mock):
+     assert div_orders[0].quantity == 0.5
+ 
+ def test_debt_logic_borrow(firm_dto, context_mock):
+-    manager = FinanceManager()
++    manager = FinancialStrategy()
+     firm_dto.assets = 1000.0
+     context_mock.market_data["debt_data"] = {firm_dto.id: {"total_principal": 0.0}}
+ 
+diff --git a/tests/unit/corporate/test_hr_manager.py b/tests/unit/corporate/test_hr_strategy.py
+similarity index 86%
+rename from tests/unit/corporate/test_hr_manager.py
+rename to tests/unit/corporate/test_hr_strategy.py
+index 5508c53..8856698 100644
+--- a/tests/unit/corporate/test_hr_manager.py
++++ b/tests/unit/corporate/test_hr_strategy.py
+@@ -1,8 +1,8 @@
+ import pytest
+-from simulation.decisions.firm.hr_manager import HRManager
++from simulation.decisions.firm.hr_strategy import HRStrategy
+ 
+ def test_hiring_logic(firm_dto, context_mock):
+-    manager = HRManager()
++    manager = HRStrategy()
+     firm_dto.production_target = 100
+     firm_dto.inventory["food"] = 80 # Gap 20
+     firm_dto.productivity_factor = 10.0 # Need 2 workers (approx)
+diff --git a/tests/unit/corporate/test_operations_manager.py b/tests/unit/corporate/test_production_strategy.py
+similarity index 90%
+rename from tests/unit/corporate/test_operations_manager.py
+rename to tests/unit/corporate/test_production_strategy.py
+index 322daad..66880a8 100644
+--- a/tests/unit/corporate/test_operations_manager.py
++++ b/tests/unit/corporate/test_production_strategy.py
+@@ -1,8 +1,8 @@
+ import pytest
+-from simulation.decisions.firm.operations_manager import OperationsManager
++from simulation.decisions.firm.production_strategy import ProductionStrategy
+ 
+ def test_rd_logic(firm_dto, context_mock):
+-    manager = OperationsManager()
++    manager = ProductionStrategy()
+ 
+     firm_dto.assets = 10000.0
+     firm_dto.revenue_this_turn = 1000.0
+@@ -19,7 +19,7 @@ def test_automation_investment(firm_dto, context_mock):
+     # Update config DTO
+     context_mock.config.automation_cost_per_pct = 10.0
+ 
+-    manager = OperationsManager()
++    manager = ProductionStrategy()
+ 
+     # High wages so automation saves money (for guidance simulation, but here guidance is passed in)
+     firm_dto.employees_data = {
+diff --git a/tests/unit/test_stock_market.py b/tests/unit/test_stock_market.py
+index 60204c5..c69eb2c 100644
+--- a/tests/unit/test_stock_market.py
++++ b/tests/unit/test_stock_market.py
+@@ -306,7 +306,7 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
+     firm.specialization = "food"
+ 
+     # State Override
+-    firm._assets = mock_config.STARTUP_COST * 0.4  # Below threshold
++    firm.assets = mock_config.STARTUP_COST * 0.4  # Below threshold
+     firm.treasury_shares = 500
+     firm.total_shares = 1000.0
+ 
+@@ -324,7 +324,7 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
+             seo_trigger_ratio=0.5,
+             seo_max_sell_ratio=0.1
+         )
+-        order = firm_decision_engine.corporate_manager.finance_manager._attempt_secondary_offering(firm, context, config_dto)
++        order = firm_decision_engine.corporate_manager.financial_strategy._attempt_secondary_offering(firm, context, config_dto)
+ 
+     assert order is not None
+     assert order.agent_id == firm.id
+@@ -372,6 +372,9 @@ def test_household_investment(stock_market, mock_config, golden_households):
+ 
+     stock_market.reference_prices = {1: 10.0, 2: 20.0, 3: 30.0, 4: 40.0}
+ 
++    # Set config value for StockTrader
++    mock_config.stock_investment_diversification_count = 3
++
+     with patch('simulation.decisions.portfolio_manager.PortfolioManager.optimize_portfolio', return_value=(100, 400, 500)) as mock_optimize:
+ 
+         # We need a market_data structure for the test
+@@ -382,9 +385,22 @@ def test_household_investment(stock_market, mock_config, golden_households):
+             "goods_market": {"basic_food_current_sell_price": 5.0}
+         }
+ 
++        # Create a mock market_snapshot dict that StockTrader expects
++        market_snapshot = {
++            "market_data": {
++                "stock_market": {
++                    f"stock_{fid}": {"avg_price": price}
++                    for fid, price in stock_market.reference_prices.items()
++                }
++            },
++            "prices": {f"stock_{fid}": price for fid, price in stock_market.reference_prices.items()}
++        }
++
+         # Directly test the order creation logic
+-        # Logic moved to AssetManager
+-        orders = household_decision_engine.asset_manager._place_buy_orders(household, 500, stock_market, 1)
++        # Logic moved to AssetManager -> StockTrader
++        orders = household_decision_engine.asset_manager.stock_trader.place_buy_orders(
++            household, 500, market_snapshot, mock_config, None
++        )
+ 
+         assert len(orders) > 0
+         assert isinstance(orders[0], StockOrder)
