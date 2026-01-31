@@ -277,6 +277,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             for good_name in self.config.GOODS
         }
         sim.markets["labor"] = OrderBookMarket(market_id="labor", config_module=self.config)
+        # WO-075 / Phase 31: Security Market for OMO
+        sim.markets["security_market"] = OrderBookMarket(market_id="security_market", config_module=self.config)
         sim.markets["loan_market"] = LoanMarket(
             market_id="loan_market", bank=sim.bank, config_module=self.config
         )

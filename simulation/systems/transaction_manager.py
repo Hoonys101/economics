@@ -114,6 +114,26 @@ class TransactionManager(SystemInterface):
                 if success and hasattr(buyer, "total_money_issued"):
                     buyer.total_money_issued += trade_value
 
+            elif tx.transaction_type == "omo_purchase":
+                 # OMO Purchase: CB buys from Agent. Minting.
+                 # Buyer: CentralBank (ID=-2), Seller: Agent
+                 success = self.central_bank.mint_and_transfer(seller, trade_value, "omo_purchase")
+                 if success:
+                     if hasattr(government, "total_money_issued"):
+                         government.total_money_issued += trade_value
+                     # Notify CentralBankSystem for logging
+                     self.central_bank.process_omo_settlement(tx)
+
+            elif tx.transaction_type == "omo_sale":
+                 # OMO Sale: Agent buys from CB. Burning.
+                 # Buyer: Agent, Seller: CentralBank
+                 success = self.central_bank.transfer_and_burn(buyer, trade_value, "omo_sale")
+                 if success:
+                     if hasattr(government, "total_money_destroyed"):
+                         government.total_money_destroyed += trade_value
+                     # Notify CentralBankSystem for logging
+                     self.central_bank.process_omo_settlement(tx)
+
             elif tx.transaction_type == "asset_liquidation":
                 # Minting: Central Bank -> Agent (Liquidation)
                 success = self.central_bank.mint_and_transfer(seller, trade_value, "asset_liquidation")
