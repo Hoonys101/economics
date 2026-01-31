@@ -4,14 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-config-unification": {
-    "worker": "audit",
-    "instruction": "Analyze 'TD-166: Configuration Duality (Engine vs Agent)'. Currently, configuration is fragmented between engine-level settings and agent-level attributes. Propose a unified Configuration Management pattern that respects the ECS architecture.",
-    "output": "design/3_work_artifacts/specs/SPEC_CONFIG_UNIFICATION.md"
-  },
-  "mission-bloat-cleanup": {
+  "mission-config-unification-impl": {
     "command": "create",
-    "instruction": "Refactor 'simulation/phases.py' and 'simulation/agents/government.py' to reduce bloating. Extract utility functions and configuration constants to dedicated modules. Focus on improving readability and reducing file size.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Clean Up Bloated Modules (TD-169)"
+    "instruction": "Implement the Unified ECS Configuration Pattern as specified in 'SPEC_CONFIG_UNIFICATION.md'. Replace the fragmented config.py/YAML system with a Pydantic-based layered loader and ECS Configuration components.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Unified Configuration Management (TD-166)",
+    "file": "design/3_work_artifacts/specs/SPEC_CONFIG_UNIFICATION.md"
   }
 }
