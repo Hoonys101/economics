@@ -7,10 +7,10 @@ from simulation.schemas import FirmActionVector
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
 
-# Import new managers
-from simulation.decisions.firm.finance_manager import FinanceManager
-from simulation.decisions.firm.hr_manager import HRManager
-from simulation.decisions.firm.operations_manager import OperationsManager
+# Import new strategies
+from simulation.decisions.firm.financial_strategy import FinancialStrategy
+from simulation.decisions.firm.hr_strategy import HRStrategy
+from simulation.decisions.firm.production_strategy import ProductionStrategy
 from simulation.decisions.firm.sales_manager import SalesManager
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class CorporateManager:
     """
     CEO Module (WO-027).
     Refactored for WO-142 Departmentalization.
-    Orchestrates specialized managers (HR, Finance, Ops, Sales).
+    Orchestrates specialized strategies (HR, Finance, Production, Sales).
     """
 
     def __init__(self, config_module: Any, logger: Optional[logging.Logger] = None):
@@ -27,10 +27,10 @@ class CorporateManager:
         self.logger = logger if logger else logging.getLogger(__name__)
         self.system2_planner: Optional[FirmSystem2Planner] = None
 
-        # Instantiate managers
-        self.finance_manager = FinanceManager()
-        self.hr_manager = HRManager()
-        self.operations_manager = OperationsManager()
+        # Instantiate strategies
+        self.financial_strategy = FinancialStrategy()
+        self.hr_strategy = HRStrategy()
+        self.production_strategy = ProductionStrategy()
         self.sales_manager = SalesManager()
 
     def realize_ceo_actions(
@@ -52,7 +52,7 @@ class CorporateManager:
         guidance = self.system2_planner.project_future(context.current_time, context.market_data, firm)
 
         # 1. Finance (Dividends, Debt)
-        financial_plan = self.finance_manager.formulate_plan(
+        financial_plan = self.financial_strategy.formulate_plan(
             context,
             dividend_aggressiveness=action_vector.dividend_aggressiveness,
             debt_aggressiveness=action_vector.debt_aggressiveness
@@ -60,14 +60,15 @@ class CorporateManager:
         orders.extend(financial_plan.orders)
 
         # 2. HR (Hiring)
-        hr_plan = self.hr_manager.formulate_plan(
+        hr_plan = self.hr_strategy.formulate_plan(
             context,
             hiring_aggressiveness=action_vector.hiring_aggressiveness
         )
         orders.extend(hr_plan.orders)
 
-        # 3. Operations (Production, Procurement, Automation, R&D, Capex)
-        ops_plan = self.operations_manager.formulate_plan(
+        # 3. Production (Production, Procurement, Automation, R&D, Capex)
+        # Note: ProductionStrategy currently handles all operations including R&D and Capex.
+        ops_plan = self.production_strategy.formulate_plan(
             context,
             capital_aggressiveness=action_vector.capital_aggressiveness,
             rd_aggressiveness=action_vector.rd_aggressiveness,

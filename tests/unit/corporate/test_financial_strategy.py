@@ -1,8 +1,8 @@
 import pytest
-from simulation.decisions.firm.finance_manager import FinanceManager
+from simulation.decisions.firm.financial_strategy import FinancialStrategy
 
 def test_dividend_logic(firm_dto, context_mock):
-    manager = FinanceManager()
+    manager = FinancialStrategy()
 
     plan = manager.formulate_plan(context_mock, dividend_aggressiveness=1.0, debt_aggressiveness=0.0)
 
@@ -11,7 +11,7 @@ def test_dividend_logic(firm_dto, context_mock):
     assert div_orders[0].quantity == 0.5
 
 def test_debt_logic_borrow(firm_dto, context_mock):
-    manager = FinanceManager()
+    manager = FinancialStrategy()
     firm_dto.assets = 1000.0
     context_mock.market_data["debt_data"] = {firm_dto.id: {"total_principal": 0.0}}
 

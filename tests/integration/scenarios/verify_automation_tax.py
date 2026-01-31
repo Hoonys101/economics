@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock, MagicMock
-from simulation.decisions.firm.operations_manager import OperationsManager
+from simulation.decisions.firm.production_strategy import ProductionStrategy
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from simulation.models import Order
 
@@ -11,7 +11,7 @@ class TestAutomationTax(unittest.TestCase):
         config.automation_cost_per_pct = 1000.0
         config.firm_safety_margin = 2000.0
         config.automation_tax_rate = 0.05
-        # Add defaults for other calls in OperationsManager
+        # Add defaults for other calls in ProductionStrategy
         config.overstock_threshold = 1.2
         config.understock_threshold = 0.8
         config.production_adjustment_factor = 0.1
@@ -38,7 +38,7 @@ class TestAutomationTax(unittest.TestCase):
         guidance = {"target_automation": 0.6}
         aggressiveness = 1.0
 
-        manager = OperationsManager()
+        manager = ProductionStrategy()
 
         # Invoke via formulate_plan
         plan = manager.formulate_plan(context, capital_aggressiveness=aggressiveness, rd_aggressiveness=0.0, guidance=guidance)
