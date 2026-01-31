@@ -127,11 +127,46 @@ class WorldState:
 
         self.baseline_money_supply: float = 0.0
 
+    def calculate_base_money(self) -> float:
+        """
+        Calculates M0 (Base Money).
+        M0 = Currency in Circulation + Bank Reserves.
+        Currency in Circulation = Assets of Non-Bank Agents (Households, Firms, Government, Public Manager).
+        """
+        total = 0.0
+
+        # 1. Households
+        for h in self.households:
+            if h.is_active:
+                total += h.assets
+
+        # 2. Firms
+        for f in self.firms:
+            if f.is_active:
+                total += f.assets
+
+        # 3. Government
+        if self.government:
+            total += self.government.assets
+
+        # 4. Public Manager
+        if self.public_manager:
+            total += self.public_manager.system_treasury
+
+        # 5. Bank Reserves
+        if self.bank:
+            total += self.bank.assets
+
+        return total
+
     def calculate_total_money(self) -> float:
         """
-        Calculates the total money supply in the system.
-        Money_Total = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
-        (Government assets are INCLUDED to ensure zero-sum integrity during transfers)
+        Calculates M2 (Total Money Supply).
+        M2 = Currency in Circulation + Deposits.
+        Currency in Circulation = Assets of Non-Bank Agents (Households, Firms, Government, Public Manager).
+
+        Note: Central Bank assets (negative cash liability or undistributed mint) are EXCLUDED
+        to properly track Money Supply (M2) rather than net system wealth.
         """
         total = 0.0
 
@@ -155,12 +190,7 @@ class WorldState:
         if self.government:
             total += self.government.assets
 
-        # 6. Central Bank Assets (WO-124: Include Central Bank for Genesis Protocol Integrity)
-        # Central Bank holds negative cash if it distributed more than it had, or positive if it minted but hasn't distributed.
-        if self.central_bank:
-            total += self.central_bank.assets.get('cash', 0.0)
-
-        # 7. Public Manager Treasury (Phase 3: Asset Liquidation)
+        # 5. Public Manager Treasury (Phase 3: Asset Liquidation)
         if self.public_manager:
             total += self.public_manager.system_treasury
 

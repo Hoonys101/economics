@@ -41,7 +41,7 @@ class TestPhase20Integration:
         """Test if immigration is triggered under correct conditions."""
 
         # Setup ImmigrationManager
-        manager = ImmigrationManager(mock_config)
+        manager = ImmigrationManager(mock_config, settlement_system=MagicMock())
 
         # Mock Engine
         engine = MagicMock()
@@ -52,6 +52,7 @@ class TestPhase20Integration:
         for i in range(50):
             h = MagicMock()
             h.is_active = True # Boolean, not Mock
+            h.assets = 5000.0
             engine.households.append(h)
         engine.goods_data = []
         engine.ai_trainer = MagicMock()
@@ -66,6 +67,11 @@ class TestPhase20Integration:
             "job_vacancies": 10 # > 0
         }
 
+        # Mock Engine Markets
+        labor_market = MagicMock()
+        labor_market.get_total_demand.return_value = 10
+        engine.markets = {"labor": labor_market}
+
         # Execute
         new_immigrants = manager.process_immigration(engine)
 
@@ -74,18 +80,24 @@ class TestPhase20Integration:
         assert engine.next_agent_id == 105
 
     def test_immigration_conditions_not_met(self, mock_config):
-        manager = ImmigrationManager(mock_config)
+        manager = ImmigrationManager(mock_config, settlement_system=MagicMock())
         engine = MagicMock()
         engine.households = [MagicMock() for _ in range(50)]
         for h in engine.households: h.is_active = True
 
+        # Mock Engine Markets
+        labor_market = MagicMock()
+        engine.markets = {"labor": labor_market}
+
         # Case 1: High Unemployment
         engine.tracker.get_latest_indicators.return_value = {"unemployment_rate": 0.10}
+        labor_market.get_total_demand.return_value = 10
         engine._prepare_market_data.return_value = {"job_vacancies": 10}
         assert len(manager.process_immigration(engine)) == 0
 
         # Case 2: No Vacancies
         engine.tracker.get_latest_indicators.return_value = {"unemployment_rate": 0.01}
+        labor_market.get_total_demand.return_value = 0
         engine._prepare_market_data.return_value = {"job_vacancies": 0}
         assert len(manager.process_immigration(engine)) == 0
 
@@ -96,7 +108,7 @@ class TestPhase20Integration:
     def test_system2_housing_cost_renter(self, mock_config):
         """Test System2Planner deducting rent for non-owners."""
         agent = MagicMock()
-        agent._assets = 1000.0
+        agent.assets = 1000.0
         agent.expected_wage = 10.0 # Make sure this is float
         agent.residing_property_id = None # Homeless/Renter
         agent.owned_properties = []
@@ -138,7 +150,7 @@ class TestPhase20Integration:
     def test_system2_housing_cost_owner(self, mock_config):
         """Test System2Planner deducting mortgage interest for owners."""
         agent = MagicMock()
-        agent._assets = 1000.0
+        agent.assets = 1000.0
         agent.expected_wage = 10.0 # Make sure this is float
         agent.residing_property_id = 1
         agent.owned_properties = [1]

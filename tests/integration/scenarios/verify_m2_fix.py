@@ -7,6 +7,7 @@ import logging
 def test_m2_fix():
     logger = logging.getLogger("test")
     config = MagicMock()
+    config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
     repo = MagicMock()
 
     state = WorldState(config, config, logger, repo)
