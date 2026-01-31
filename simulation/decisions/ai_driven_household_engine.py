@@ -77,6 +77,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             return DecisionOutputDTO(orders=res_orders, metadata=res_vector)
 
 
+
         agent_data = household.agent_data
 
         goods_list = list(config.goods.keys())

@@ -95,6 +95,7 @@ class HousingManager:
                          quantity=1.0,
                          price_limit=best_offer.price,
                          market_id="housing"
+
                      )
                      orders.append(buy_order)
 

@@ -105,7 +105,7 @@ class ActionProposalEngine:
                     self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
                 )
                 orders.append(
-                    Order(agent.id, "SELL", "labor", 1, desired_wage, "labor_market")
+                    Order(agent_id=agent.id, side="SELL", item_id="labor", quantity=1, price_limit=desired_wage, market_id="labor_market")
                 )
             else:
                 # 상품 시장에서 상품 구매 주문
@@ -152,12 +152,12 @@ class ActionProposalEngine:
                         )  # 가격 약간 변동시켜 제안
                         orders.append(
                             Order(
-                                agent.id,
-                                "BUY",
-                                good_to_trade,
-                                quantity,
-                                order_price,
-                                "goods_market",
+                                agent_id=agent.id,
+                                side="BUY",
+                                item_id=good_to_trade,
+                                quantity=quantity,
+                                price_limit=order_price,
+                                market_id="goods_market",
                             )
                         )
 
@@ -183,7 +183,7 @@ class ActionProposalEngine:
                     * random.uniform(0.9, 1.1)
                 )
                 orders.append(
-                    Order(agent.id, "BUY", "labor", 1, offer_wage, "labor_market")
+                    Order(agent_id=agent.id, side="BUY", item_id="labor", quantity=1, price_limit=offer_wage, market_id="labor_market")
                 )
             else:
                 # 상품 시장에 상품 판매 주문
@@ -199,12 +199,12 @@ class ActionProposalEngine:
                     )
                     orders.append(
                         Order(
-                            agent.id,
-                            "SELL",
-                            good_to_trade,
-                            quantity,
-                            price,
-                            "goods_market",
+                            agent_id=agent.id,
+                            side="SELL",
+                            item_id=good_to_trade,
+                            quantity=quantity,
+                            price_limit=price,
+                            market_id="goods_market",
                         )
                     )
 
@@ -225,4 +225,4 @@ class ActionProposalEngine:
             * random.uniform(0.9, 1.3)
             * wage_factor
         )
-        return Order(household.id, "SELL", "labor", 1, desired_wage, "labor_market")
+        return Order(agent_id=household.id, side="SELL", item_id="labor", quantity=1, price_limit=desired_wage, market_id="labor_market")

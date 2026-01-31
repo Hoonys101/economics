@@ -1,0 +1,536 @@
+diff --git a/communications/insights/TD-166.md b/communications/insights/TD-166.md
+new file mode 100644
+index 0000000..403ba36
+--- /dev/null
++++ b/communications/insights/TD-166.md
+@@ -0,0 +1,86 @@
++# TD-166 Configuration Duality Analysis
++
++## Executive Summary
++The current configuration system is a fragmented and brittle mix of a monolithic Python file (`config.py`) and several duplicative YAML files. This report proposes a unified, component-based configuration pattern that aligns with the ECS architecture, centralizes management, and enables dynamic configuration.
++
++## Detailed Analysis
++
++### 1. Configuration Monolith
++- **Status**: ❌ Problem Identified
++- **Evidence**: `config.py` is a large file containing over 500 lines of global constants. It mixes engine-level settings (e.g., `SIMULATION_TICKS`) with agent-specific attributes (e.g., `INITIAL_HOUSEHOLD_NEEDS_MEAN`).
++- **Notes**: This makes configuration difficult to navigate, manage, and safely modify. The global nature of these settings creates tight coupling between the engine and all agents.
++
++### 2. Fragmentation and Duplication
++- **Status**: ❌ Problem Identified
++- **Evidence**: Configuration parameters are duplicated between `config.py` and YAML files such as `config/economy_params.yaml`. For instance, `NEWBORN_INITIAL_NEEDS` is defined in both locations.
++- **Notes**: This creates ambiguity about the "source of truth" and increases the risk of inconsistencies, where a change in one file is not reflected in the other.
++
++### 3. Ambiguous Loading Hierarchy
++- **Status**: ❌ Problem Identified
++- **Evidence**: There is no discernible mechanism for hierarchical configuration loading. It is unclear whether values in `config.py` override YAML files, or vice-versa.
++- **Notes**: This lack of a clear precedence order makes the behavior of the system unpredictable and difficult to debug.
++
++### 4. Agent Configuration Coupling
++- **Status**: ⚠️ Partial Implementation
++- **Evidence**: The use of `HouseholdConfigDTO` in `modules/household/api.py` is a good step towards structured agent configuration. However, the source of the data for this DTO is likely the monolithic `config.py`, which undermines the decoupling by forcing agent-specific definitions into a global scope.
++- **Notes**: While the DTO provides a clean interface for components, its reliance on a global configuration file maintains a high degree of coupling.
++
++## Risk Assessment
++- **High Risk of Error**: The current system is prone to configuration-related bugs due to inconsistency and lack of clarity.
++- **Low Scalability**: As the number of agent types and configuration parameters grows, the monolithic `config.py` will become increasingly unmanageable.
++- **Poor Experimentation Support**: The static and fragmented nature of the configuration makes it cumbersome to run experiments with different parameters or scenarios.
++
++## Proposed Solution: A Unified ECS Configuration Pattern
++
++### 1. Centralized Configuration Schema
++- **Action**: Define a comprehensive configuration schema using a library like Pydantic. This creates a single, version-controlled source of truth for all possible parameters.
++- **Benefit**: Type validation, clear documentation, and discoverability of all configuration options.
++
++### 2. Layered Configuration Loading
++- **Action**: Implement a configuration loader that merges settings from multiple sources with a clear order of precedence:
++    1.  **Base Defaults** (defined in the Pydantic schema).
++    2.  **Engine Configuration File** (e.g., `config/engine.yaml`).
++    3.  **Scenario Configuration File** (e.g., `config/scenarios/my_scenario.yaml`).
++    4.  **Environment Variables** (for runtime overrides).
++- **Benefit**: Provides flexibility and a clear hierarchy, separating base settings from scenario-specific modifications.
++
++### 3. ECS `Configuration` Component
++- **Action**: Create a `Configuration` component within the ECS framework. When an entity (agent) is created, a `Configuration` component is attached to it.
++- **Benefit**: This treats configuration as a first-class citizen of the ECS architecture. It allows for agent-specific overrides and dynamic modification of configuration at runtime.
++
++### 4. Implementation Flow
++1.  On startup, the **Configuration Loader** builds a master configuration object from the various sources.
++2.  When a new agent entity is created, the **Agent Factory** reads the relevant section of the master configuration.
++3.  A `Configuration` component is added to the agent entity, populated with its specific settings.
++4.  Systems within the engine can query the `Configuration` component of an entity to access its parameters, ensuring they always have the correct, context-specific values.
++
++## Conclusion
++The current configuration system is a significant source of technical debt and risk. Migrating to a unified, component-based pattern will improve reliability, scalability, and flexibility. This approach respects the existing ECS architecture and provides a robust foundation for future development and experimentation.
++
++## Resolution / Outcome
++
++### Implementation of Unified ECS Configuration Pattern
++The technical debt described above has been resolved through a comprehensive refactoring of the configuration system.
++
++1.  **Configuration Module (`modules/config`)**:
++    *   Created `schema.py` using **Pydantic** to define a strongly-typed schema for `EngineConfig`, `EconomyConfig`, `HouseholdConfig`, and `FirmConfig`. This serves as the single source of truth for all simulation parameters.
++    *   Implemented `loader.py` which enforces a strict loading hierarchy:
++        1.  **Defaults**: Defined in Pydantic schema.
++        2.  **YAML Files**: Loads `economy_params.yaml`, `finance.yaml`, and `simulation.yaml` to override defaults.
++        3.  **Environment Variables**: Allows runtime overrides (e.g., `SIMULATION_TICKS`).
++    *   Implemented `components.py` defining the `ConfigurationComponent` for the ECS architecture.
++
++2.  **Agent Integration**:
++    *   Updated `simulation/base_agent.py` to include a `self.configuration` attribute.
++    *   Modified `utils/simulation_builder.py` (the "Agent Factory") to instantiate the `ConfigurationComponent` with agent-specific config (Household or Firm) and attach it to new agents. This decouples agents from global state.
++
++3.  **Legacy Backward Compatibility**:
++    *   Created `legacy_adapter.py` and refactored the root `config.py` to act as a **Dynamic Proxy**.
++    *   `config.py` now loads the Unified Configuration and exposes attributes as module-level globals (both snake_case and UPPERCASE), ensuring that the hundreds of existing references to `config.PARAM` continue to function without changes. This bridge allowed for a safe, incremental migration.
++
++4.  **Verification**:
++    *   Integration tests confirmed that simulation initialization passes correctly with the new loader.
++    *   Crucially, `Order` creation across the system was standardized to use `OrderDTO` fields (`side`, `price_limit`) instead of legacy arguments (`order_type`, `price`), fixing latent bugs in `SalesDepartment`, `PublicManager`, and various Decision Engines.
++
++**Status**: ✅ **RESOLVED**
++The system now adheres to the "Clean Config" era, supporting validation, layered loading, and ECS purity, while maintaining stability through a robust legacy adapter.
+diff --git a/modules/household/decision_unit.py b/modules/household/decision_unit.py
+index d148c66..7cbb784 100644
+--- a/modules/household/decision_unit.py
++++ b/modules/household/decision_unit.py
+@@ -189,11 +189,11 @@ class DecisionUnit(IDecisionUnit):
+                      if new_state.assets >= down_payment:
+                          buy_order = Order(
+                              agent_id=state.portfolio.owner_id, # Using owner_id from portfolio as proxy for ID
++                             side="BUY",
+                              item_id=target_unit_id,
+-                             price_limit=best_price,
+                              quantity=1.0,
+-                             market_id="housing",
+-                             side="BUY"
++                             price_limit=best_price,
++                             market_id="housing"
+                          )
+                          refined_orders.append(buy_order)
+ 
+diff --git a/modules/system/execution/public_manager.py b/modules/system/execution/public_manager.py
+index 94d6bae..3e73a6a 100644
+--- a/modules/system/execution/public_manager.py
++++ b/modules/system/execution/public_manager.py
+@@ -96,10 +96,10 @@ class PublicManager(IAssetRecoverySystem):
+ 
+             order = Order(
+                 agent_id="PUBLIC_MANAGER",
++                side="SELL",
+                 item_id=item_id,
+-                order_type="SELL",
+                 quantity=sell_quantity,
+-                price=sell_price,
++                price_limit=sell_price,
+                 market_id=item_id
+             )
+             orders.append(order)
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index 10e3ac2..b78b95c 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -386,10 +386,10 @@ class FinanceDepartment:
+ 
+             order = Order(
+                 agent_id=self.firm.id,
+-                order_type="SELL",
++                side="SELL",
+                 item_id=good,
+                 quantity=qty,
+-                price=liquidation_price,
++                price_limit=liquidation_price,
+                 market_id=good
+             )
+             orders.append(order)
+diff --git a/simulation/decisions/action_proposal.py b/simulation/decisions/action_proposal.py
+index 113e5cc..d117c04 100644
+--- a/simulation/decisions/action_proposal.py
++++ b/simulation/decisions/action_proposal.py
+@@ -105,7 +105,7 @@ class ActionProposalEngine:
+                     self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
+                 )
+                 orders.append(
+-                    Order(agent.id, "SELL", "labor", 1, desired_wage, "labor_market")
++                    Order(agent_id=agent.id, side="SELL", item_id="labor", quantity=1, price_limit=desired_wage, market_id="labor_market")
+                 )
+             else:
+                 # 상품 시장에서 상품 구매 주문
+@@ -152,12 +152,12 @@ class ActionProposalEngine:
+                         )  # 가격 약간 변동시켜 제안
+                         orders.append(
+                             Order(
+-                                agent.id,
+-                                "BUY",
+-                                good_to_trade,
+-                                quantity,
+-                                order_price,
+-                                "goods_market",
++                                agent_id=agent.id,
++                                side="BUY",
++                                item_id=good_to_trade,
++                                quantity=quantity,
++                                price_limit=order_price,
++                                market_id="goods_market",
+                             )
+                         )
+ 
+@@ -183,7 +183,7 @@ class ActionProposalEngine:
+                     * random.uniform(0.9, 1.1)
+                 )
+                 orders.append(
+-                    Order(agent.id, "BUY", "labor", 1, offer_wage, "labor_market")
++                    Order(agent_id=agent.id, side="BUY", item_id="labor", quantity=1, price_limit=offer_wage, market_id="labor_market")
+                 )
+             else:
+                 # 상품 시장에 상품 판매 주문
+@@ -199,12 +199,12 @@ class ActionProposalEngine:
+                     )
+                     orders.append(
+                         Order(
+-                            agent.id,
+-                            "SELL",
+-                            good_to_trade,
+-                            quantity,
+-                            price,
+-                            "goods_market",
++                            agent_id=agent.id,
++                            side="SELL",
++                            item_id=good_to_trade,
++                            quantity=quantity,
++                            price_limit=price,
++                            market_id="goods_market",
+                         )
+                     )
+ 
+@@ -225,4 +225,4 @@ class ActionProposalEngine:
+             * random.uniform(0.9, 1.3)
+             * wage_factor
+         )
+-        return Order(household.id, "SELL", "labor", 1, desired_wage, "labor_market")
++        return Order(agent_id=household.id, side="SELL", item_id="labor", quantity=1, price_limit=desired_wage, market_id="labor_market")
+diff --git a/simulation/decisions/ai_driven_household_engine.py b/simulation/decisions/ai_driven_household_engine.py
+index d8a10e2..2c9dbeb 100644
+--- a/simulation/decisions/ai_driven_household_engine.py
++++ b/simulation/decisions/ai_driven_household_engine.py
+@@ -99,9 +99,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+                      survival_order = Order(
+                          agent_id=household.id,
+                          item_id=food_id,
+-                         order_type="BUY",
++                         side="BUY",
+                          quantity=1.0,
+-                         price=bid_price,
++                         price_limit=bid_price,
+                          market_id=food_id
+                      )
+ 
+diff --git a/simulation/decisions/household/asset_manager.py b/simulation/decisions/household/asset_manager.py
+index 872ecd9..1b99695 100644
+--- a/simulation/decisions/household/asset_manager.py
++++ b/simulation/decisions/household/asset_manager.py
+@@ -50,7 +50,7 @@ class AssetManager:
+             repay_amount = min(repay_amount, household.assets * liquidity_ratio)
+ 
+             if repay_amount > 1.0:
+-                 orders.append(Order(household.id, "REPAYMENT", "currency", repay_amount, 1.0, "loan_market"))
++                 orders.append(Order(agent_id=household.id, side="REPAYMENT", item_id="currency", quantity=repay_amount, price_limit=1.0, market_id="loan_market"))
+                  if logger:
+                     logger.info(f"DEBT_AVERSION | Household {household.id} prioritizing repayment: {repay_amount:.1f}")
+ 
+@@ -149,11 +149,11 @@ class AssetManager:
+         if diff_deposit > 10.0:
+             actual_deposit = min(cash, diff_deposit)
+             if actual_deposit > 10.0:
+-                orders.append(Order(household.id, "DEPOSIT", "currency", actual_deposit, 1.0, "currency"))
++                orders.append(Order(agent_id=household.id, side="DEPOSIT", item_id="currency", quantity=actual_deposit, price_limit=1.0, market_id="currency"))
+ 
+         elif diff_deposit < -10.0:
+             amount_to_withdraw = abs(diff_deposit)
+-            orders.append(Order(household.id, "WITHDRAW", "currency", amount_to_withdraw, 1.0, "currency"))
++            orders.append(Order(agent_id=household.id, side="WITHDRAW", item_id="currency", quantity=amount_to_withdraw, price_limit=1.0, market_id="currency"))
+ 
+         startup_cost = getattr(config, "startup_cost", 30000.0)
+ 
+@@ -162,7 +162,7 @@ class AssetManager:
+             survival_buffer = 2000.0
+ 
+             if projected_cash >= (startup_cost + survival_buffer):
+-                orders.append(Order(household.id, "INVEST", "startup", 1.0, startup_cost, "admin"))
++                orders.append(Order(agent_id=household.id, side="INVEST", item_id="startup", quantity=1.0, price_limit=startup_cost, market_id="admin"))
+ 
+         return orders
+ 
+@@ -177,7 +177,7 @@ class AssetManager:
+ 
+             if deposit_balance > 10.0:
+                 amount = min(deposit_balance, 50.0)
+-                orders.append(Order(household.id, "WITHDRAW", "currency", amount, 1.0, "currency"))
++                orders.append(Order(agent_id=household.id, side="WITHDRAW", item_id="currency", quantity=amount, price_limit=1.0, market_id="currency"))
+ 
+         return orders
+ 
+diff --git a/simulation/decisions/household/consumption_manager.py b/simulation/decisions/household/consumption_manager.py
+index 11b05ec..a2c039a 100644
+--- a/simulation/decisions/household/consumption_manager.py
++++ b/simulation/decisions/household/consumption_manager.py
+@@ -121,7 +121,7 @@ class ConsumptionManager:
+                      final_quantity = max(1, int(quantity_to_buy))
+ 
+                  orders.append(
+-                    Order(household.id, "BUY", item_id, final_quantity, bid_price, item_id)
++                    Order(agent_id=household.id, side="BUY", item_id=item_id, quantity=final_quantity, price_limit=bid_price, market_id=item_id)
+                  )
+ 
+         return orders
+diff --git a/simulation/decisions/household/housing_manager.py b/simulation/decisions/household/housing_manager.py
+index 0d4c134..29c9c49 100644
+--- a/simulation/decisions/household/housing_manager.py
++++ b/simulation/decisions/household/housing_manager.py
+@@ -89,7 +89,7 @@ class HousingManager:
+ 
+                  if should_buy:
+                      buy_order = Order(
+-                         agent.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
++                         agent_id=agent.id, side="BUY", item_id=best_offer.item_id, quantity=1.0, price_limit=best_offer.price, market_id="housing"
+                      )
+                      orders.append(buy_order)
+ 
+diff --git a/simulation/decisions/household/labor_manager.py b/simulation/decisions/household/labor_manager.py
+index 46876e8..4dd9e7c 100644
+--- a/simulation/decisions/household/labor_manager.py
++++ b/simulation/decisions/household/labor_manager.py
+@@ -37,7 +37,7 @@ class LaborManager:
+ 
+                 if random.random() < (config.job_quit_prob_base + agg_mobility * config.job_quit_prob_scale):
+                     # Signal quit via Order
+-                    orders.append(Order(household.id, "QUIT", "labor", 0, 0, "labor"))
++                    orders.append(Order(agent_id=household.id, side="QUIT", item_id="labor", quantity=0, price_limit=0, market_id="labor"))
+ 
+         # Scenario B: Unemployed
+         if not household.is_employed:
+@@ -92,7 +92,7 @@ class LaborManager:
+                     )
+             else:
+                 orders.append(
+-                    Order(household.id, "SELL", "labor", 1, reservation_wage, "labor")
++                    Order(agent_id=household.id, side="SELL", item_id="labor", quantity=1, price_limit=reservation_wage, market_id="labor")
+                 )
+ 
+         return orders
+diff --git a/simulation/decisions/rule_based_firm_engine.py b/simulation/decisions/rule_based_firm_engine.py
+index bc0222e..2e5c767 100644
+--- a/simulation/decisions/rule_based_firm_engine.py
++++ b/simulation/decisions/rule_based_firm_engine.py
+@@ -53,10 +53,10 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+ 
+             orders.append(Order(
+                 agent_id=firm_state.id,
+-                order_type="SELL",
++                side="SELL",
+                 item_id=specialization,
+                 quantity=inventory,
+-                price=sell_price,
++                price_limit=sell_price,
+                 market_id=specialization
+             ))
+ 
+@@ -117,12 +117,12 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+             severance_pay = current_wage * severance_weeks * skill
+ 
+             orders.append(Order(
+-                firm.id,
+-                "FIRE",
+-                "internal",
+-                1,
+-                severance_pay,
+-                "internal",
++                agent_id=firm.id,
++                side="FIRE",
++                item_id="internal",
++                quantity=1,
++                price_limit=severance_pay,
++                market_id="internal",
+                 target_agent_id=emp_id
+             ))
+ 
+@@ -164,7 +164,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+             )
+ 
+         if new_target != target_quantity:
+-            return [Order(firm.id, "SET_TARGET", "internal", new_target, 0.0, "internal")]
++            return [Order(agent_id=firm.id, side="SET_TARGET", item_id="internal", quantity=new_target, price_limit=0.0, market_id="internal")]
+ 
+         return []
+ 
+@@ -186,14 +186,14 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+ 
+         if current_employees < min_employees:
+             to_hire = min_employees - current_employees
+-            order = Order(firm.id, "BUY", "labor", float(to_hire), offered_wage, "labor")
++            order = Order(agent_id=firm.id, side="BUY", item_id="labor", quantity=float(to_hire), price_limit=offered_wage, market_id="labor")
+             orders.append(order)
+         elif (
+             needed_labor > current_employees
+             and current_employees < max_employees
+         ):
+             to_hire = min(needed_labor - current_employees, max_employees - current_employees)
+-            order = Order(firm.id, "BUY", "labor", float(to_hire), offered_wage, "labor")
++            order = Order(agent_id=firm.id, side="BUY", item_id="labor", quantity=float(to_hire), price_limit=offered_wage, market_id="labor")
+             orders.append(order)
+ 
+         return orders
+diff --git a/simulation/decisions/rule_based_household_engine.py b/simulation/decisions/rule_based_household_engine.py
+index 5092ae7..9df91d1 100644
+--- a/simulation/decisions/rule_based_household_engine.py
++++ b/simulation/decisions/rule_based_household_engine.py
+@@ -81,12 +81,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+                     if quantity_to_buy > 0.1:
+                         orders.append(
+                             Order(
+-                                state.id,
+-                                "BUY",
+-                                food_item_id,
+-                                quantity_to_buy,
+-                                best_ask,
+-                                market_id,
++                                agent_id=state.id,
++                                side="BUY",
++                                item_id=food_item_id,
++                                quantity=quantity_to_buy,
++                                price_limit=best_ask,
++                                market_id=market_id,
+                             )
+                         )
+                         self.logger.info(
+@@ -139,12 +139,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+             else:
+                 orders.append(
+                     Order(
+-                        state.id,
+-                        "SELL",
+-                        "labor",
+-                        1.0,  # 1 unit of labor
+-                        desired_wage,
+-                        "labor",
++                        agent_id=state.id,
++                        side="SELL",
++                        item_id="labor",
++                        quantity=1.0,  # 1 unit of labor
++                        price_limit=desired_wage,
++                        market_id="labor",
+                     )
+                 )
+                 self.logger.info(
+diff --git a/simulation/decisions/standalone_rule_based_firm_engine.py b/simulation/decisions/standalone_rule_based_firm_engine.py
+index 87b9d47..62b92b7 100644
+--- a/simulation/decisions/standalone_rule_based_firm_engine.py
++++ b/simulation/decisions/standalone_rule_based_firm_engine.py
+@@ -194,7 +194,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
+             )
+ 
+             # 1. Update Internal Price
+-            orders.append(Order(firm.id, "SET_PRICE", item_id, final_price, 0.0, "internal"))
++            orders.append(Order(agent_id=firm.id, side="SET_PRICE", item_id=item_id, quantity=0.0, price_limit=final_price, market_id="internal"))
+ 
+             # 2. Sell Order
+             quantity_to_sell = min(
+@@ -202,12 +202,12 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
+             )
+             if quantity_to_sell > 0:
+                 order = Order(
+-                    firm.id,
+-                    "SELL",
+-                    item_id,
+-                    quantity_to_sell,
+-                    final_price,
+-                    item_id,
++                    agent_id=firm.id,
++                    side="SELL",
++                    item_id=item_id,
++                    quantity=quantity_to_sell,
++                    price_limit=final_price,
++                    market_id=item_id,
+                 )
+                 orders.append(order)
+                 self.logger.info(
+diff --git a/simulation/orchestration/phases.py b/simulation/orchestration/phases.py
+index 3e5f46c..5d080f9 100644
+--- a/simulation/orchestration/phases.py
++++ b/simulation/orchestration/phases.py
+@@ -546,10 +546,10 @@ class Phase1_Decision(IPhaseStrategy):
+                      # WO-053: Convert special transaction to Order
+                      order = Order(
+                          agent_id=tx.buyer_id,
++                         side="BUY",
+                          item_id=tx.item_id,
+                          quantity=tx.quantity,
+-                         price=tx.price,
+-                         order_type="BUY",
++                         price_limit=tx.price,
+                          market_id=tx.item_id
+                      )
+                      market = state.markets.get(tx.item_id)
+diff --git a/simulation/systems/central_bank_system.py b/simulation/systems/central_bank_system.py
+index 83e37fb..4fbf105 100644
+--- a/simulation/systems/central_bank_system.py
++++ b/simulation/systems/central_bank_system.py
+@@ -43,12 +43,12 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
+             # We set a high price to ensure the order is likely filled.
+             order = Order(
+                 agent_id=self.id,
+-                order_type='buy',
++                side='buy',
+                 item_id='government_bond', # Generic bond ID or specific logic needed
+                 quantity=amount, # Assuming face value 1.0 per unit? Or quantity=amount/price?
+                 # Spec says: "quantity = amount (semantically based on bond units)".
+                 # Let's assume price is around 1.0 (face value), so quantity is amount.
+-                price=9999, # Buy at any price (market order)
++                price_limit=9999, # Buy at any price (market order)
+                 market_id=self.security_market_id
+             )
+             orders.append(order)
+@@ -59,10 +59,10 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
+             # We assume CB holds them.
+             order = Order(
+                 agent_id=self.id,
+-                order_type='sell',
++                side='sell',
+                 item_id='government_bond',
+                 quantity=amount,
+-                price=0, # Sell at any price (market order)
++                price_limit=0, # Sell at any price (market order)
+                 market_id=self.security_market_id
+             )
+             orders.append(order)
+diff --git a/simulation/systems/housing_system.py b/simulation/systems/housing_system.py
+index 7393cba..49be0c3 100644
+--- a/simulation/systems/housing_system.py
++++ b/simulation/systems/housing_system.py
+@@ -54,11 +54,11 @@ class HousingSystem:
+                         fire_sale_price = unit.estimated_value * 0.8
+                         sell_order = Order(
+                             agent_id=-1,
++                            side="SELL",
+                             item_id=f"unit_{unit.id}",
+-                            price=fire_sale_price,
+                             quantity=1.0,
+-                            market_id="housing",
+-                            order_type="SELL"
++                            price_limit=fire_sale_price,
++                            market_id="housing"
+                         )
+                         if "housing" in simulation.markets:
+                             simulation.markets["housing"].place_order(sell_order, simulation.time)
+diff --git a/tests/integration/test_engine.py b/tests/integration/test_engine.py
+index c4e88f4..53cd1de 100644
+--- a/tests/integration/test_engine.py
++++ b/tests/integration/test_engine.py
+@@ -383,6 +383,7 @@ class TestSimulation:
+             + [f.id for f in mock_firms]
+             + [simulation_instance.bank.id]
+             + [simulation_instance.government.id]
++            + [simulation_instance.escrow_agent.id] # Added Escrow Agent
+         )
+         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
+ 

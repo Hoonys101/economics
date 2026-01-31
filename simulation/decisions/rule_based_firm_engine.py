@@ -178,6 +178,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 market_id="internal"
             )]
 
+
         return []
 
     def _adjust_wages(
@@ -206,6 +207,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 price_limit=offered_wage,
                 market_id="labor"
             )
+
             orders.append(order)
         elif (
             needed_labor > current_employees
@@ -220,6 +222,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
                 price_limit=offered_wage,
                 market_id="labor"
             )
+
             orders.append(order)
 
         return orders

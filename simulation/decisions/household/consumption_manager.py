@@ -188,6 +188,7 @@ class ConsumptionManager:
                         price_limit=bid_price,
                         market_id=item_id
                     )
+
                  )
 
         return orders

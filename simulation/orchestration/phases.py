@@ -480,10 +480,10 @@ class Phase1_Decision(IPhaseStrategy):
                      # Use new OrderDTO fields: side, price_limit
                      order = Order(
                          agent_id=tx.buyer_id,
+                         side="BUY",
                          item_id=tx.item_id,
                          quantity=tx.quantity,
                          price_limit=tx.price,
-                         side="BUY",
                          market_id=tx.item_id
                      )
                      market = state.markets.get(tx.item_id)

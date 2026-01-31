@@ -58,6 +58,7 @@ class AssetManager:
                      price_limit=1.0,
                      market_id="loan_market"
                  ))
+
                  if logger:
                     logger.info(f"DEBT_AVERSION | Household {household.id} prioritizing repayment: {repay_amount:.1f}")
 
@@ -176,6 +177,7 @@ class AssetManager:
                 market_id="currency"
             ))
 
+
         startup_cost = getattr(config, "startup_cost", 30000.0)
 
         if target_equity >= startup_cost * 0.8:
@@ -191,6 +193,7 @@ class AssetManager:
                     price_limit=startup_cost,
                     market_id="admin"
                 ))
+
 
         return orders
 
@@ -213,6 +216,7 @@ class AssetManager:
                     price_limit=1.0,
                     market_id="currency"
                 ))
+
 
         return orders
 

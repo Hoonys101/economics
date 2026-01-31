@@ -46,6 +46,7 @@ class LaborManager:
                         market_id="labor"
                     ))
 
+
         # Scenario B: Unemployed
         if not household.is_employed:
             # Note: Legacy code accessed `basic_food` from inventory. DTO has `inventory: List[GoodsDTO]` usually,
@@ -107,6 +108,7 @@ class LaborManager:
                         price_limit=reservation_wage,
                         market_id="labor"
                     )
+
                 )
 
         return orders

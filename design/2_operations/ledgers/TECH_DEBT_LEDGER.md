@@ -48,7 +48,7 @@
 |---|---|---|---|---|
 | TD-151 | 2026-01-29 | Partial DTO Adoption in Engine | Inconsistent Internal/External API | **RESOLVED** |
 | TD-166 | 2026-01-31 | Configuration Duality (Engine vs Agent) | Configuration Fragmentation | **SPECCED** |
-| TD-168 | 2026-01-31 | `make_decision` Abstraction Leak | Raw Agent objects in method signature | **READY** |
+| TD-168 | 2026-01-31 | `make_decision` Abstraction Leak | Raw Agent objects in method signature | **RESOLVED** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 

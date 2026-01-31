@@ -54,11 +54,11 @@ class HousingSystem:
                         fire_sale_price = unit.estimated_value * 0.8
                         sell_order = Order(
                             agent_id=-1,
+                            side="SELL",
                             item_id=f"unit_{unit.id}",
-                            price=fire_sale_price,
                             quantity=1.0,
-                            market_id="housing",
-                            order_type="SELL"
+                            price_limit=fire_sale_price,
+                            market_id="housing"
                         )
                         if "housing" in simulation.markets:
                             simulation.markets["housing"].place_order(sell_order, simulation.time)
