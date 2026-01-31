@@ -82,6 +82,8 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
         "survival_need_emergency_threshold": 80.0,
         "primary_survival_good_id": "food",
         "survival_bid_premium": 0.2,
+        "elasticity_mapping": {"DEFAULT": 1.0},
+        "max_willingness_to_pay_multiplier": 1.5,
     }
     defaults.update(kwargs)
     return HouseholdConfigDTO(**defaults)
@@ -141,6 +143,8 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
         "fire_sale_inventory_target": 10.0,
         "fire_sale_discount": 0.5,
         "fire_sale_cost_discount": 0.8,
+        "sale_timeout_ticks": 10,
+        "dynamic_price_reduction_factor": 0.05,
     }
     defaults.update(kwargs)
     return FirmConfigDTO(**defaults)

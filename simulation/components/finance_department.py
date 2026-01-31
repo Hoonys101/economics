@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 from collections import deque
-from simulation.models import Transaction
+from simulation.models import Transaction, Order
 from modules.finance.api import InsufficientFundsError
 
 if TYPE_CHECKING:
@@ -46,6 +46,10 @@ class FinanceDepartment:
         self.last_daily_expenses: float = 10.0
         self.last_sales_volume: float = 1.0
         self.sales_volume_this_tick: float = 0.0
+
+        # WO-167: Grace Protocol (Distress Mode)
+        self.is_distressed: bool = False
+        self.distress_tick_counter: int = 0
 
     @property
     def balance(self) -> float:
@@ -352,6 +356,50 @@ class FinanceDepartment:
             self.consecutive_loss_turns += 1
         else:
             self.consecutive_loss_turns = 0
+
+    def check_cash_crunch(self) -> bool:
+        """
+        WO-167: Evaluates if the firm is in a 'Cash Crunch'.
+        Defined as Cash < 0 or Cash < 10% of expected expenses.
+        """
+        threshold = 0.1 * self.last_daily_expenses
+        return self._cash < 0 or self._cash < threshold
+
+    def trigger_emergency_liquidation(self) -> List[Order]:
+        """
+        WO-167: Generates emergency sell orders for all inventory items at 80% market price.
+        """
+        orders = []
+        for good, qty in self.firm.inventory.items():
+            if qty <= 0:
+                continue
+
+            # Determine price: 80% of market average, or last known price, or initial price
+            price = self.firm.last_prices.get(good, 0.0)
+            if price == 0.0:
+                if self.config and self.config.goods:
+                    price = self.config.goods.get(good, {}).get('initial_price', 10.0)
+                else:
+                    price = 10.0
+
+            liquidation_price = price * 0.8
+
+            order = Order(
+                agent_id=self.firm.id,
+                order_type="SELL",
+                item_id=good,
+                quantity=qty,
+                price=liquidation_price,
+                market_id=good
+            )
+            orders.append(order)
+
+            self.firm.logger.warning(
+                f"GRACE_PROTOCOL | Firm {self.firm.id} triggering emergency liquidation for {good}. Qty: {qty}, Price: {liquidation_price:.2f}",
+                extra={"agent_id": self.firm.id, "tags": ["grace_protocol", "liquidation"]}
+            )
+
+        return orders
 
     def calculate_valuation(self) -> float:
         """

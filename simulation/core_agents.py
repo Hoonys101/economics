@@ -8,7 +8,7 @@ import copy
 
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
-from simulation.models import Order, Skill, Talent
+from simulation.models import Order, StockOrder, Skill, Talent
 from simulation.ai.api import (
     Personality,
     Tactic,
@@ -217,6 +217,9 @@ class Household(BaseAgent, ILearningAgent):
 
         self.goods_info_map = {g["id"]: g for g in goods_data}
         self.risk_aversion = risk_aversion
+
+        # WO-167: Grace Protocol (Distress Mode)
+        self.distress_tick_counter: int = 0
 
         # Setup Decision Engine
         decision_engine.loan_market = loan_market
@@ -734,6 +737,64 @@ class Household(BaseAgent, ILearningAgent):
         self._bio_state.needs = new_needs
         return result
 
+    def trigger_emergency_liquidation(self) -> List[Any]:
+        """
+        WO-167: Generates emergency sell orders for all inventory items and stocks.
+        Returns mixed list of Order and StockOrder.
+        """
+        orders = []
+
+        # 1. Liquidate Inventory
+        for good, qty in self.inventory.items():
+            if qty <= 0:
+                continue
+
+            price = self.perceived_avg_prices.get(good, 10.0)
+            liquidation_price = price * 0.8
+
+            order = Order(
+                agent_id=self.id,
+                order_type="SELL",
+                item_id=good,
+                quantity=qty,
+                price=liquidation_price,
+                market_id=good
+            )
+            orders.append(order)
+
+        # 2. Liquidate Stocks
+        for firm_id, shares in self.shares_owned.items():
+            if shares <= 0:
+                continue
+
+            # Heuristic price for stock: we don't have access to stock market price here easily
+            # without checking markets. We'll use a very low price to ensure sale (market order effectively)
+            # or rely on the market to match.
+            # Ideally we check market data if passed, but here we assume desperation.
+            # We will use 1.0 or 0.1 as a "market sell" signal if the market supports it,
+            # but OrderBookMarket matches based on price.
+            # If we set price too low, we might crash the market.
+            # Let's try to be somewhat reasonable: 10.0 (default fallback) * 0.8 = 8.0
+            price = 8.0
+
+            order = StockOrder(
+                agent_id=self.id,
+                order_type="SELL",
+                firm_id=firm_id,
+                quantity=shares,
+                price=price,
+                market_id="stock_market"
+            )
+            orders.append(order)
+
+        if orders:
+            self.logger.warning(
+                f"GRACE_PROTOCOL | Household {self.id} triggering emergency liquidation. Generated {len(orders)} orders.",
+                extra={"agent_id": self.id, "tags": ["grace_protocol", "liquidation"]}
+            )
+
+        return orders
+
     @override
     def update_needs(self, current_tick: int, market_data: Optional[Dict[str, Any]] = None):
         """
@@ -763,6 +824,15 @@ class Household(BaseAgent, ILearningAgent):
         )
         self._bio_state.needs = new_needs
         self._econ_state.durable_assets = new_durable_assets
+
+        # WO-167: Grace Protocol - Override death if in distress grace period
+        if not is_active and 0 < self.distress_tick_counter <= 5:
+            is_active = True
+            self.logger.info(
+                f"GRACE_PROTOCOL_SAVE | Household {self.id} saved from death. Distress tick {self.distress_tick_counter}",
+                extra={"agent_id": self.id, "tags": ["grace_protocol", "survival"]}
+            )
+
         self._bio_state.is_active = is_active
 
         # 3. Update Political Opinion

@@ -60,6 +60,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         # 2. NEW: Firm Lifecycle (Aging & Bankruptcy Checks)
         self._process_firm_lifecycle(state)
 
+        # 2a. Household Lifecycle (Distress Checks)
+        self._process_household_lifecycle(state)
+
         # 3. Births
         new_children = self._process_births(state)
         self._register_new_agents(state, new_children)
@@ -77,6 +80,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
     def _process_firm_lifecycle(self, state: SimulationState) -> None:
         """
         Handles lifecycle updates for all active firms, formerly in Firm.update_needs.
+        Includes WO-167 Grace Protocol for distressed firms.
         """
         assets_threshold = getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0)
         closure_turns_threshold = getattr(self.config, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)
@@ -94,9 +98,44 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             # Check bankruptcy status (logic from FinanceDepartment)
             firm.finance.check_bankruptcy()
 
-            # Check for closure based on assets or consecutive losses
+            # WO-167: Grace Protocol
+            # Check for Cash Crunch
+            is_crunch = firm.finance.check_cash_crunch()
+            inventory_val = firm.finance.get_inventory_value()
+
+            if is_crunch and inventory_val > 0:
+                # Enter or Continue Distress
+                firm.finance.is_distressed = True
+                firm.finance.distress_tick_counter += 1
+
+                # If within grace period (5 ticks)
+                if firm.finance.distress_tick_counter <= 5:
+                    # Trigger Emergency Liquidation
+                    emergency_orders = firm.finance.trigger_emergency_liquidation()
+
+                    # Inject orders into markets
+                    for order in emergency_orders:
+                        market = state.markets.get(order.market_id)
+                        if market:
+                            market.place_order(order, state.time)
+
+                    # SKIP standard closure check
+                    continue
+            else:
+                # Recovery or No Crunch
+                firm.finance.is_distressed = False
+                firm.finance.distress_tick_counter = 0
+
+            # Standard Closure Check
             if (firm.assets <= assets_threshold or
                     firm.finance.consecutive_loss_turns >= closure_turns_threshold):
+
+                # Double check grace period (if we fell through but counter is high)
+                if firm.finance.distress_tick_counter > 5:
+                    pass # Allow closure
+                elif firm.finance.is_distressed:
+                    continue # Should have been caught above, but safety check
+
                 firm.is_active = False
                 self.logger.warning(
                     f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {firm.assets:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
@@ -108,6 +147,49 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                         "tags": ["firm_closure"],
                     }
                 )
+
+    def _process_household_lifecycle(self, state: SimulationState) -> None:
+        """
+        WO-167: Handles distress checks for households.
+        Triggers emergency liquidation if starving but solvent.
+        """
+        survival_threshold = getattr(self.config, "SURVIVAL_NEED_DEATH_THRESHOLD", 100.0)
+        # We intervene before they hit the threshold perfectly, or if they are close.
+        # Let's say 90% of threshold.
+        distress_threshold = survival_threshold * 0.9
+
+        for household in state.households:
+            if not household.is_active:
+                continue
+
+            survival_need = household.needs.get("survival", 0.0)
+
+            # Check for Distress (High Survival Need or Low Assets but High Real Assets)
+            # Simplification: If survival need is high, we check if they have things to sell.
+            if survival_need > distress_threshold:
+                has_inventory = any(qty > 0 for qty in household.inventory.values())
+                has_stocks = any(qty > 0 for qty in household.shares_owned.values())
+
+                if has_inventory or has_stocks:
+                    household.distress_tick_counter += 1
+
+                    if household.distress_tick_counter <= 5:
+                         emergency_orders = household.trigger_emergency_liquidation()
+
+                         for order in emergency_orders:
+                             market = state.markets.get(order.market_id)
+                             if market:
+                                 market.place_order(order, state.time)
+                             else:
+                                 # Fallback for stocks if market_id="stock_market" is not in dict keys directly?
+                                 if order.market_id == "stock_market" and hasattr(state, "stock_market") and state.stock_market:
+                                     state.stock_market.place_order(order, state.time)
+
+                else:
+                    # No assets to sell, nature takes its course
+                    pass
+            else:
+                household.distress_tick_counter = 0
 
     def _process_births(self, state: SimulationState) -> List[Household]:
         birth_requests = []
