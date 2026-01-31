@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-liquidation-leak": {
-    "command": "create",
-    "instruction": "Implement 'escheatment' logic in 'SettlementSystem.record_liquidation' to transfer residual assets to Government instead of vanishing. Ensure zero-sum integrity.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Liquidation Dust Leak Fix (TD-171)",
-    "file": "design/3_work_artifacts/reports/DEBT_SETTLEMENT_REPORT.md"
-  },
   "mission-order-dto": {
     "command": "create",
     "instruction": "Refactor the Market Order system to use the standardized 'OrderDTO'. Replace raw dictionary usage in decisions and market submissions. Ensure Phase 6/7 compatibility.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
