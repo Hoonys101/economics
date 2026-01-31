@@ -4,10 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-tax-decoupling": {
+  "mission-order-dto": {
     "command": "create",
-    "instruction": "Implement the TaxationSystem and Atomic Settlement logic as per the specification. Ensure strict decoupling from TransactionProcessor and robust rollback in SettlementSystem.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Tax Decoupling & Atomic Saga",
-    "file": "design/3_work_artifacts/specs/SPEC_TAX_DECOUPLING_SAGA.md"
+    "instruction": "Refactor the Market Order system to use the standardized 'OrderDTO'. Replace raw dictionary usage in decisions and market submissions. Ensure Phase 6/7 compatibility.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Standardize Order DTO Contracts (TDL-028)",
+    "file": "design/3_work_artifacts/reports/DEBT_SETTLEMENT_REPORT.md"
   }
 }

@@ -29,7 +29,7 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | 비현실적 경제 상태 (무한 수요) | **PENDING** |
-| TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **SPECCED** |
+| TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **READY** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
