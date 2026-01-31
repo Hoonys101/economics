@@ -4,10 +4,15 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-impl-phase31": {
-    "command": "create",
-    "instruction": "SPEC_PHASE31_OMO.md에 따라 공개시장운영(OMO) 시스템을 구현하십시오. 1. OMOInstructionDTO 정의 2. CentralBankSystem 구현 (Government/Bank 분리) 3. SettlementSystem에 omo_purchase/sale 트랜잭션 처리 로직 추가 (화폐 발행/소각)\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "[Phase 31] Open Market Operations Implementation",
-    "file": "design/3_work_artifacts/specs/SPEC_PHASE31_OMO.md"
+  "mission-session-handover": {
+    "worker": "reporter",
+    "instruction": "## 🏗️ Architectural Handover Report Generation\n당신은 수석 설계자에게 보고할 핸드오버 문서를 작성하는 리포터입니다.\n제공된 인사이트 문서들을 바탕으로 다음 사항을 요약하여 기록하십시오:\n1. **Accomplishments**: 이번 세션에서 완성된 핵심 기능 및 아키텍처 변화 (Animal Spirits 등).\n2. **Economic Insights**: 시뮬레이션 중 발견된 주요 경제적 통찰.\n3. **Pending Tasks & Tech Debt**: 다음 세션에서 즉시 해결해야 할 기술 부채 및 미완성 과제.\n4. **Verification Status**: `main.py` 및 `trace_leak.py` 등의 검증 결과 요약.\n\n결과물은 '설계도_계약들/HANDOVER.md' 형식을 따르되, 우리 프로젝트의 'design/HANDOVER.md' 위치에 저장될 예정입니다.",
+    "context": [
+      "communications\\insights\\DIRECTIVE_ALPHA_OPTIMIZER.md",
+      "communications\\insights\\PHASE31_OMO_Insight.md",
+      "communications\\insights\\TD-170_Escrow_Atomic_Tax.md",
+      "communications\\insights\\TD-173_TD-174_Cleanup.md",
+      "communications\\insights\\WO_024_Fractional_Reserve.md"
+    ]
   }
 }

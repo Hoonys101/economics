@@ -10,7 +10,8 @@
 | TD-162 | 2026-01-30 | Bloated God Class: Household | Maintenance/Testing Overhead | **ACTIVE** |
 | TD-159 | 2026-01-30 | Legacy Inheritance Redundancy | Potential Double-Counting/Leak | **RESOLVED** |
 | TD-169 | 2026-01-31 | Bloat Risk: `phases.py`, `government.py` | Emerging Maintenance Debt | **ACTIVE** |
-| TD-173 | 2026-01-31 | Redundant Logic: `Household.decide_and_consume` | Maintenance Complexity (Post-Alpha) | **ACTIVE** |
+| TD-173 | 2026-01-31 | Redundant Logic: `Household.decide_and_consume` | Maintenance Complexity (Post-Alpha) | **RESOLVED** |
+
 
 
 ## 🏭 2. FIRMS & CORPORATE
@@ -55,7 +56,8 @@
 | TD-118 | 2026-01-29 | DTO Contract Mismatch (inventory) | Runtime Errors / Confusion | **RESOLVED** |
 | TD-151 | 2026-01-29 | Partial DTO Adoption in Engine | Inconsistent Internal/External API | **ACTIVE** |
 | TD-166 | 2026-01-31 | Configuration Duality (Engine vs Agent) | Configuration Fragmentation | **ACTIVE** |
-| TD-174 | 2026-01-31 | Hardcoded Const: `batch_save_interval` (50) | Inflexible Performance Tuning | **ACTIVE** |
+| TD-174 | 2026-01-31 | Hardcoded Const: `batch_save_interval` (50) | Inflexible Performance Tuning | **RESOLVED** |
+
 
 | TD-168 | 2026-01-31 | `make_decision` Abstraction Leak | Raw Agent objects in method signature | **ACTIVE** |
 

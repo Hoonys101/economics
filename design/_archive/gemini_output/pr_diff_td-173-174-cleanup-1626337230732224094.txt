@@ -1,0 +1,142 @@
+diff --git a/communications/insights/TD-173_TD-174_Cleanup.md b/communications/insights/TD-173_TD-174_Cleanup.md
+new file mode 100644
+index 0000000..a769dfb
+--- /dev/null
++++ b/communications/insights/TD-173_TD-174_Cleanup.md
+@@ -0,0 +1,26 @@
++# Insight Report: TD-173 & TD-174 Cleanup
++
++## Preamble
++- **Mission Key**: TD-173, TD-174
++- **Date**: 2026-02-04
++- **Author**: Jules (AI Agent)
++- **Status**: IN_PROGRESS
++
++## Phenomenon (The "What")
++Two distinct technical debt items were identified for cleanup:
++1.  **TD-173**: The `Household` class in `simulation/core_agents.py` contains a legacy method `decide_and_consume` which implements System 1 consumption logic. This logic has been superseded by `VectorizedHouseholdPlanner` and `CommerceSystem`.
++2.  **TD-174**: The simulation engine (`simulation/engine.py` and related files) has a hardcoded `batch_save_interval` of 50. This limits the ability to tune performance and I/O frequency via configuration.
++
++## Analysis (The "Why")
++1.  **Redundant Logic**: The `decide_and_consume` method performs inventory checks and consumption updates that are now handled by `CommerceSystem.plan_consumption_and_leisure` and `CommerceSystem.finalize_consumption_and_leisure`. Retaining this method creates confusion about the actual flow of consumption logic and increases maintenance burden.
++2.  **Hardcoded Constants**: Hardcoding `batch_save_interval` prevents users from adjusting the logging frequency without modifying source code. This is particularly problematic for long-running simulations where disk I/O optimization is crucial. The value was duplicated in `simulation/engine.py`, `simulation/world_state.py`, and `simulation/initialization/initializer.py`.
++
++## Solution (The "How")
++1.  **Remove Legacy Code**: Delete `decide_and_consume` from `simulation/core_agents.py`. The `consume` method is retained as it is used by `CommerceSystem` to execute the actual consumption.
++2.  **Externalize Config**:
++    -   Update `WorldState` to read `batch_save_interval` from `ConfigManager` (defaulting to 50 if missing).
++    -   Remove hardcoded assignments in `Simulation` and `SimulationInitializer`, allowing them to rely on the centralized `WorldState` value.
++
++## Lessons Learned
++-   **Code Evolution**: As systems evolve (e.g., introduction of Vectorized Planner), legacy methods often remain as "dead code". Regular cleanup is essential to prevent "rot".
++-   **Configuration Management**: Centralizing configuration access (e.g., in `WorldState` via `ConfigManager`) is more robust than scattered hardcoded values or manual property injection.
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 0549db2..61d7e5b 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -720,66 +720,6 @@ class Household(BaseAgent, ILearningAgent):
+             self._econ_state.employer_id = None
+             self._econ_state.current_wage = 0.0
+ 
+-    def decide_and_consume(self, current_time: int, market_data: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+-        """
+-        Executes System 1 consumption logic (using inventory to satisfy needs).
+-        """
+-        self._econ_state, new_needs, consumed_items = self.econ_component.decide_and_consume(
+-            self._econ_state,
+-            self._bio_state.needs,
+-            current_time,
+-            self.goods_info_map,
+-            self.config
+-        )
+-        self._bio_state.needs = new_needs
+-
+-        # ThoughtStream: Instrument non-consumption
+-        if not consumed_items and simulation.logger:
+-             reason = "UNKNOWN"
+-             context = {}
+-
+-             # 1. Check Needs (Urgency)
+-             # Note: Needs represent deficit/hunger (0 = satisfied, High = hungry)
+-             survival_need = self.needs.get("survival", 0.0)
+-             threshold = self.config.survival_need_consumption_threshold
+-
+-             if survival_need > threshold:
+-                 # We wanted to consume (Hungry) but didn't. Why?
+-
+-                 # Check Inventory for food
+-                 has_food = any(self.inventory.get(f, 0) > 0 for f in ["food", "basic_food", "luxury_food"])
+-
+-                 if not has_food:
+-                     # Stock Out. Could we afford it?
+-                     price = self._econ_state.perceived_avg_prices.get("food", self.config.default_fallback_price)
+-
+-                     if self.assets < price:
+-                         reason = "INSOLVENT"
+-                         context = {"cash": self.assets, "price": price, "need": survival_need}
+-                     else:
+-                         reason = "STOCK_OUT"
+-                         context = {"inventory": self.inventory.copy(), "cash": self.assets}
+-                 else:
+-                     # Has food but didn't consume?
+-                     # This implies inventory was skipped or logic failed?
+-                     # Or maybe inventory is non-food items?
+-                     reason = "UTILITY_CONSTRAINT"
+-             else:
+-                 reason = "SATISFIED"
+-
+-             if reason != "SATISFIED":
+-                 simulation.logger.log_thought(
+-                    tick=current_time,
+-                    agent_id=str(self.id),
+-                    action="CONSUME_FOOD",
+-                    decision="REJECT",
+-                    reason=reason,
+-                    context=context
+-                 )
+-
+-        self.update_needs(current_time, market_data)
+-        return consumed_items
+-
+     def consume(self, item_id: str, quantity: float, current_time: int) -> "ConsumptionResult":
+         # Delegate to EconComponent
+         self._econ_state, new_needs, result = self.econ_component.consume(
+diff --git a/simulation/engine.py b/simulation/engine.py
+index ea0a8d5..6e29037 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -50,9 +50,6 @@ class Simulation:
+         # Expose via global module attribute for access by agents
+         simulation.logger = self.simulation_logger
+ 
+-        # DIRECTIVE ALPHA OPTIMIZER: Hardcode batch interval
+-        self.batch_save_interval = 50
+-
+     def __getattr__(self, name: str) -> Any:
+         return getattr(self.world_state, name)
+ 
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index a7b9dde..ac02c30 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -213,7 +213,6 @@ class SimulationInitializer(SimulationInitializerInterface):
+ 
+         sim.ai_trainer = self.ai_trainer
+         sim.time: int = 0
+-        sim.batch_save_interval = 50
+ 
+         # WO-078: Initialize CreditScoringService
+         credit_scoring_service = CreditScoringService(config_module=self.config)
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 6c89a07..83990e7 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -111,7 +111,7 @@ class WorldState:
+         self.public_manager: Optional[IAssetRecoverySystem] = None
+ 
+         # Attributes with default values
+-        self.batch_save_interval: int = 50
++        self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)
+         self.household_time_allocation: Dict[int, float] = {}
+         self.last_interest_rate: float = 0.0
+ 

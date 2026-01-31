@@ -48,7 +48,14 @@
 
 
 
-    - **Next Phase**: `Phase 31: Open Market Operations & Fiscal/Monetary Coordination`
+
+    - **Next Phase**: `Phase 31: Open Market Operations & Fiscal/Monetary Coordination` ✅ (2026-01-31)
+        - **Goal**: Implement OMO for liquidity control via Central Bank.
+        - **Status**:
+            - **Specs**: `SPEC_PHASE31_OMO.md` ✅ COMPLETED
+            - **Impl**: `CentralBankSystem`, `SecurityMarket` ✅ COMPLETED & MERGED
+            - **Verification**: Integration Tests ✅ PASSED
+
 
 ---
 
