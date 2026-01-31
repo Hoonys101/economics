@@ -4,11 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-household-ai-refactor": {
-    "command": "create",
-    "instruction": "Decompose 'simulation/decisions/household/ai_driven_household_engine.py'. Extract specialized decision modules for Consumption, Labor, and Investment to reduce file complexity (636+ LOC).\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Refactor Household AI Engine (TD-141)"
-  },
   "mission-decision-abstraction": {
     "command": "create",
     "instruction": "Refactor the 'make_decision' interface. Replace raw Agent objects with localized context or DTOs to improve encapsulation and prevent agents from having full access to each other's internals.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
