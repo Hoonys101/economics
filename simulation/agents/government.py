@@ -15,11 +15,15 @@ from modules.government.taxation.system import TaxationSystem
 from modules.finance.api import InsufficientFundsError, TaxCollectionResult
 from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
 from modules.government.dtos import FiscalPolicyDTO
+from modules.government.components.welfare_manager import WelfareManager
+from modules.government.components.infrastructure_manager import InfrastructureManager
+from modules.government.constants import *
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
     from modules.finance.api import BailoutLoanDTO
     from simulation.dtos.strategy import ScenarioStrategy
+    from simulation.agents.central_bank import CentralBank
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +42,10 @@ class Government:
         # self.tax_agency = TaxAgency(config_module) # Deprecated/Removed
         self.fiscal_policy_manager = FiscalPolicyManager(config_module)
         self.ministry_of_education = MinistryOfEducation(config_module)
+
+        # New Managers
+        self.welfare_manager = WelfareManager(self)
+        self.infrastructure_manager = InfrastructureManager(self)
 
         # Initialize default fiscal policy
         # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
@@ -130,7 +138,7 @@ class Government:
         self.gdp_history_window = 20
         
         # WO-056: Shadow Policy Metrics
-        ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", 100))
+        ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR))
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
 
         self.revenue_this_tick = 0.0
@@ -349,10 +357,6 @@ class Government:
         # WO-147: Check if fiscal stabilizer is enabled (default True)
         if getattr(self.config_module, "ENABLE_FISCAL_STABILIZER", True):
             # Convert market_data dict to MarketSnapshotDTO for FiscalPolicyManager
-            # We construct a snapshot using legacy 'market_data' since we don't have signals here readily available
-            # unless we passed them.
-            # However, FiscalPolicyManager.determine_fiscal_stance supports legacy market_data.
-
             snapshot = MarketSnapshotDTO(
                 tick=current_tick,
                 market_signals={},
@@ -414,46 +418,8 @@ class Government:
         )
 
     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
-        """Provides subsidies to households (e.g., unemployment, stimulus). Returns transactions."""
-        transactions = []
-        effective_amount = amount * self.welfare_budget_multiplier
-
-        if effective_amount <= 0:
-            return []
-
-        # Check budget, issue bonds if needed (Optimistic check)
-
-        if self.assets < effective_amount:
-            needed = effective_amount - self.assets
-            # FinanceSystem now returns (bonds, transactions)
-            bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
-            if not bonds:
-                logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for household support.")
-                return []
-            transactions.extend(txs)
-
-        # Generate Welfare Transaction
-        tx = Transaction(
-            buyer_id=self.id,
-            seller_id=household.id,
-            item_id="welfare_support",
-            quantity=1.0,
-            price=effective_amount,
-            market_id="system",
-            transaction_type="welfare",
-            time=current_tick
-        )
-        transactions.append(tx)
-
-        self.total_spent_subsidies += effective_amount
-        self.expenditure_this_tick += effective_amount
-        self.current_tick_stats["welfare_spending"] += effective_amount
-
-        logger.info(
-            f"HOUSEHOLD_SUPPORT | Generated support tx of {effective_amount:.2f} to {household.id}",
-            extra={"tick": current_tick, "agent_id": self.id, "amount": effective_amount, "target_id": household.id}
-        )
-        return transactions
+        """Delegates to WelfareManager."""
+        return self.welfare_manager.provide_household_support(household, amount, current_tick)
 
     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
@@ -469,190 +435,20 @@ class Government:
             return None, []
 
     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
-        """ Calculates current survival cost based on food prices. """
-        avg_food_price = 0.0
-        goods_market = market_data.get("goods_market", {})
-        if "basic_food_current_sell_price" in goods_market:
-            avg_food_price = goods_market["basic_food_current_sell_price"]
-        else:
-            avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
-
-        daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
-        return max(avg_food_price * daily_food_need, 10.0)
+        """ Calculates current survival cost based on food prices. Delegates to WelfareManager. """
+        return self.welfare_manager.get_survival_cost(market_data)
 
     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
         """
-        Government Main Loop Step.
-        Returns List of Transactions.
+        Delegates to WelfareManager.
         """
-        transactions = []
-        self.reset_tick_flow()
-
-        # 1. Calculate Survival Cost (Dynamic)
-        survival_cost = self.get_survival_cost(market_data)
-
-        # 2. Wealth Tax & Unemployment Benefit
-        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", 0.02)
-        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100.0)
-        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
-        wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", 50000.0)
-
-        unemployment_ratio = getattr(self.config_module, "UNEMPLOYMENT_BENEFIT_RATIO", 0.8)
-        benefit_amount = survival_cost * unemployment_ratio
-
-        total_wealth_tax = 0.0
-        total_welfare_paid = 0.0
-
-        for agent in agents:
-            if not getattr(agent, "is_active", False):
-                continue
-
-            if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
-                # A. Wealth Tax (Synchronous & Atomic)
-                net_worth = agent.assets
-                if net_worth > wealth_threshold:
-                    tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
-                    # Ensure we don't tax more than they have (safety, though collect_tax checks too)
-                    tax_amount = min(tax_amount, agent.assets)
-
-                    if tax_amount > 0 and self.settlement_system:
-                        # Replaced TaxAgency call with internal collect_tax or direct transfer
-                        # Using collect_tax (even if deprecated for external) is fine for internal shortcut
-                        # to handle recording.
-                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
-                        if result['success']:
-                             total_wealth_tax += result['amount_collected']
-
-                # B. Unemployment Benefit
-                if not agent.is_employed:
-                    txs = self.provide_household_support(agent, benefit_amount, current_tick)
-                    transactions.extend(txs)
-                    total_welfare_paid += benefit_amount
-
-        # 3. Stimulus Check
-        current_gdp = market_data.get("total_production", 0.0)
-        self.gdp_history.append(current_gdp)
-        if len(self.gdp_history) > self.gdp_history_window:
-            self.gdp_history.pop(0)
-
-        trigger_drop = getattr(self.config_module, "STIMULUS_TRIGGER_GDP_DROP", -0.05)
-
-        should_stimulus = False
-        if len(self.gdp_history) >= 10:
-            past_gdp = self.gdp_history[-10]
-            if past_gdp > 0:
-                change = (current_gdp - past_gdp) / past_gdp
-                if change <= trigger_drop:
-                    should_stimulus = True
-
-        if should_stimulus:
-             stimulus_amount = survival_cost * 5.0
-             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
-
-             total_stimulus = 0.0
-             for h in active_households:
-                 txs = self.provide_household_support(h, stimulus_amount, current_tick)
-                 transactions.extend(txs)
-
-                 # Calculate total from txs for logging?
-                 # Assuming 1 welfare tx per support call
-                 for tx in txs:
-                     if tx.transaction_type == 'welfare':
-                         total_stimulus += tx.price
-
-             if total_stimulus > 0:
-                 self.last_fiscal_activation_tick = current_tick
-                 logger.warning(
-                     f"STIMULUS_TRIGGERED | GDP Drop Detected. Generated stimulus txs total {total_stimulus:.2f}.",
-                     extra={"tick": current_tick, "agent_id": self.id, "gdp_current": current_gdp}
-                 )
-
-        return transactions
+        return self.welfare_manager.run_welfare_check(agents, market_data, current_tick)
 
     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
         """
-        Refactored: Returns transactions instead of executing direct transfers.
-        Side-effects (TFP Boost) are deferred via metadata.
-        NOW DISTRIBUTES DIRECTLY TO HOUSEHOLDS (Public Works).
+        Delegates to InfrastructureManager.
         """
-        transactions = []
-        if self.config_module:
-            cost = getattr(self.config_module, "INFRASTRUCTURE_INVESTMENT_COST", 5000.0)
-        else:
-            cost = 5000.0
-        
-        effective_cost = cost
-
-        if self.firm_subsidy_budget_multiplier < 0.8:
-            return []
-
-        # Synchronous Financing (WO-117)
-        if self.assets < effective_cost:
-            needed = effective_cost - self.assets
-            # Use new synchronous method
-            if hasattr(self.finance_system, 'issue_treasury_bonds_synchronous'):
-                success = self.finance_system.issue_treasury_bonds_synchronous(self, needed, current_tick)
-                if not success:
-                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
-                     return []
-            else:
-                # Fallback to old behavior (should not happen if system is updated)
-                bonds, txs = self.finance_system.issue_treasury_bonds(needed, current_tick)
-                if not bonds:
-                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
-                    return []
-                transactions.extend(txs)
-
-        # Distribute as Labor Income (Public Works)
-        # We need households to pay.
-        # Check if households list is provided.
-        # (TickScheduler must pass it. I'll need to update TickScheduler).
-        # If not provided, we can't distribute.
-        # But wait, we can assume 'households' arg is passed.
-        # I changed signature to accept 'households'.
-        
-        if not households:
-             logger.warning("INFRASTRUCTURE_ABORTED | No households provided for public works.")
-             return transactions # Return whatever bond txs we made? Or rollback?
-             # If we issued bonds, we have cash. We just don't spend it. That's fine.
-
-        active_households = [h for h in households if getattr(h, "is_active", False)]
-        if not active_households:
-             return transactions
-
-        amount_per_hh = effective_cost / len(active_households)
-
-        for h in active_households:
-            tx = Transaction(
-                buyer_id=self.id,
-                seller_id=h.id,
-                item_id="infrastructure_labor",
-                quantity=1.0,
-                price=amount_per_hh,
-                market_id="system",
-                transaction_type="infrastructure_spending",
-                time=current_tick,
-                metadata={
-                    "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
-                    # Trigger effect only once per tick/batch?
-                    # If we trigger it 100 times, we get 100 upgrades?
-                    # SystemEffectsManager typically processes each transaction.
-                    # I should trigger it only ONCE.
-                    # So set metadata only on the first transaction.
-                    "is_public_works": True
-                }
-            )
-            transactions.append(tx)
-
-        logger.info(
-            f"INFRASTRUCTURE_PENDING | Level {self.infrastructure_level + 1} initiated. Cost: {effective_cost}. Distributed to {len(active_households)} households.",
-            extra={
-                "tick": current_tick,
-                "agent_id": self.id,
-                "tags": ["investment", "infrastructure"]
-            }
-        )
-        return transactions
+        return self.infrastructure_manager.invest_infrastructure(current_tick, households)
 
     def finalize_tick(self, current_tick: int):
         """

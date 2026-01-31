@@ -5,9 +5,9 @@ import logging
 from simulation.dtos.api import SimulationState, GovernmentStateDTO
 from simulation.orchestration.phases import (
     Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
-    Phase3_Transaction, Phase_Bankruptcy, Phase_Consumption, Phase5_PostSequence,
-    prepare_market_data
+    Phase3_Transaction, Phase_Bankruptcy, Phase_Consumption, Phase5_PostSequence
 )
+from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
 
 if TYPE_CHECKING:
