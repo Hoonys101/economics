@@ -4,11 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-corp-manager": {
-    "command": "create",
-    "instruction": "Decompose the bloated 'corporate_manager.py' god file into smaller strategic modules following the Component pattern. Extraction targets: FinancialStrategy, ProductionStrategy, HRStrategy.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Refactor Corporate Manager (TD-142)"
-  },
   "mission-household-ai-refactor": {
     "command": "create",
     "instruction": "Decompose 'simulation/decisions/household/ai_driven_household_engine.py'. Extract specialized decision modules for Consumption, Labor, and Investment to reduce file complexity (636+ LOC).\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
