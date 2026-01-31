@@ -80,21 +80,9 @@ class LoanMarket(Market):
             if grant_result:
                 loan_info, credit_tx = grant_result
 
-                # 1. Record the loan transaction (Commercial)
-                transactions.append(
-                    Transaction(
-                        item_id="loan_granted",
-                        quantity=loan_amount,
-                        price=interest_rate,
-                        buyer_id=self.bank.id,
-                        seller_id=order.agent_id,
-                        transaction_type="loan",
-                        time=current_tick,
-                        market_id=self.id,
-                    )
-                )
-
-                # 2. Record the credit creation transaction (Monetary)
+                # WO-024: Record the credit creation transaction (Monetary)
+                # This is the only transaction needed for auditable M2 tracking.
+                # The commercial 'loan' transaction (cash transfer) is removed to prevent double-counting (TD-178).
                 if credit_tx:
                     transactions.append(credit_tx)
 

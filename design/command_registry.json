@@ -4,10 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "wo-165-tests": {
+  "mission-tax-decoupling": {
     "command": "create",
-    "instruction": "Implement new financial integrity tests as per WO-165. Update tests to verify M2 = M0 + Total_Credit formula and ensure zero-sum transfers.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Modern M2 Integrity Tests",
-    "file": "design/3_work_artifacts/work_orders/WO-165-Modern-Tests.md"
+    "instruction": "Implement the TaxationSystem and Atomic Settlement logic as per the specification. Ensure strict decoupling from TransactionProcessor and robust rollback in SettlementSystem.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Tax Decoupling & Atomic Saga",
+    "file": "design/3_work_artifacts/specs/SPEC_TAX_DECOUPLING_SAGA.md"
   }
 }

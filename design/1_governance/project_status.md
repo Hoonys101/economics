@@ -40,7 +40,9 @@
 - **현재 단계:** `Phase 31: Open Market Operations & Fiscal/Monetary Coordination` ✅ (2026-01-31)
     - **Goal**: Implement OMO for liquidity control via Central Bank.
     - **Status**: 
-        - **Operation Solid Ground**: TD-165 & TD-167 Stabilization 🏗️ IMPLEMENTING (Specs & WO Done)
+        - **Operation Solid Ground**: TD-165 (M2 Tests) & TD-167 (Grace Protocol) ✅ COMPLETED & MERGED
+        - **Critical Insight**: Discovery of `TD-178` (Double Liquidity Bug in LoanMarket) 🚨 HIGH PRIORITY
+        - **Debt Settlement Audit**: Conflict Zone Map & Specs (TD-160/TD-176) ✅ COMPLETED
         - **WO-024**: Fractional Reserve Implementation ✅ COMPLETED (M2 Audit Loop)
         - **TD-170**: Sales Tax Atomicity (Escrow Model) ✅ COMPLETED & MERGED
         - **TD-165**: Legacy Test Assertion Migration 🏗️ PLANNING (Report Completed)

@@ -225,6 +225,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             settlement_system=sim.settlement_system,
             credit_scoring_service=credit_scoring_service
         )
+        sim.settlement_system.bank = sim.bank # TD-179: Enable bank-integrated seamless payments
         self.initial_balances[sim.bank.id] = self.config.INITIAL_BANK_ASSETS # Record for distribution
 
         sim.bank.settlement_system = sim.settlement_system

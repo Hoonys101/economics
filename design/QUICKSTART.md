@@ -56,6 +56,8 @@ python scripts/cmd_ops.py set-gemini <key> --worker <type> -i "<prompt>" -c <fil
 ```powershell
 python scripts/cmd_ops.py set-gemini mission-spec-v1 --worker spec -i "Draft a spec for the Bank module." -c design/manuals/BANKING.md
 ```
+> **⚠️ Responsibility Clause**: Gemini creates the **Draft**. Antigravity (You) owns the **Final Quality**. Do not blindly commit AI output. Review, refine, and ensure it aligns with the Architecture before proceeding.
+> **🚫 Prohibition Clause**: Antigravity is the Editor, NOT the Writer. You MUST NOT write specs or code from scratch. Always delegate the "First Draft" to Gemini or Jules, then Curate.
 -> **Run**: `.\gemini-go.bat`
 
 ### 2. Implementation (Jules)
