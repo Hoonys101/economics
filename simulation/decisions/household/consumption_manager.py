@@ -1,13 +1,72 @@
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Tuple
 import random
 from simulation.models import Order
 from simulation.decisions.household.api import ConsumptionContext
+from simulation.schemas import HouseholdActionVector
 
 class ConsumptionManager:
     """
     Manages consumption logic (Maslow, Utility, Veblen, Hoarding).
     Refactored from AIDrivenHouseholdDecisionEngine.
     """
+
+    def check_survival_override(
+        self,
+        household: Any,
+        config: Any,
+        market_snapshot: Any,
+        current_time: int,
+        logger: Optional[Any]
+    ) -> Optional[Tuple[List[Order], HouseholdActionVector]]:
+        """
+        Phase 2: Survival Override.
+        Checks if critical needs exceed threshold and triggers panic buying.
+        """
+        survival_need = household.needs.get('survival', 0)
+        emergency_threshold = getattr(config, 'survival_need_emergency_threshold', 0.8)
+        if not isinstance(emergency_threshold, (int, float)):
+            emergency_threshold = 0.8
+
+        if survival_need > emergency_threshold:
+            food_id = getattr(config, 'primary_survival_good_id', 'food')
+            if not isinstance(food_id, str):
+                food_id = 'food'
+
+            signal = None
+            if market_snapshot and isinstance(market_snapshot, dict) and 'market_signals' in market_snapshot:
+                 signal = market_snapshot['market_signals'].get(food_id)
+            # Handle object-based market_snapshot if necessary (though engine used dict access logic)
+            # Assuming consistency with engine logic for now.
+
+            # If signal exists and has sellers
+            if signal and signal.get('best_ask') is not None:
+                ask_price = signal['best_ask']
+                # Affordability Check
+                if household.assets >= ask_price:
+                     premium = getattr(config, 'survival_bid_premium', 0.1)
+                     if not isinstance(premium, (int, float)):
+                         premium = 0.1
+                     bid_price = ask_price * (1 + premium)
+
+                     if logger:
+                         logger.warning(
+                             f"SURVIVAL_OVERRIDE | Agent {household.id} critical need {survival_need:.2f}. Panic buying {food_id} at {bid_price:.2f}",
+                             extra={"agent_id": household.id, "tick": current_time, "tags": ["survival", "override"]}
+                         )
+
+                     survival_order = Order(
+                         agent_id=household.id,
+                         side="BUY",
+                         item_id=food_id,
+                         quantity=1.0,
+                         price_limit=bid_price,
+                         market_id=food_id
+                     )
+
+                     # Return immediately, skipping other logic
+                     # We return a vector with high work aggressiveness as survival instinct implies working hard too
+                     return [survival_order], HouseholdActionVector(work_aggressiveness=1.0)
+        return None
 
     def decide_consumption(self, context: ConsumptionContext) -> List[Order]:
         orders = []
