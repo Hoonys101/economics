@@ -554,16 +554,17 @@ class FinanceDepartment:
 
     def pay_severance(self, employee: Household, amount: float) -> bool:
         if self._cash >= amount:
+            # AUDIT-ECONOMIC: Strictly enforce SettlementSystem.
             if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
                 if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance Pay"):
                     self.record_expense(amount)
                     return True
                 return False
             else:
-                self.debit(amount, "Severance Pay")
-                employee.deposit(amount)
-                self.record_expense(amount)
-                return True
+                self.firm.logger.critical(
+                    f"PAY_SEVERANCE_FAIL | Firm {self.firm.id} missing SettlementSystem. Direct mutation blocked."
+                )
+                return False
         return False
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:

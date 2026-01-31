@@ -270,6 +270,7 @@ class DemographicManager:
     def handle_inheritance(self, deceased_agent: Household, simulation: Any):
         """
         Distribute assets to children with Zero-Sum integrity.
+        REFACTORED (AUDIT-ECONOMIC): Uses settle_atomic for compound transaction safety.
         """
         # Ensure SettlementSystem is available
         if not getattr(simulation, "settlement_system", None):
@@ -279,22 +280,17 @@ class DemographicManager:
         if total_assets <= 0:
             return
 
-        # Calculate Tax
+        credits = []
+
+        # 1. Calculate Tax
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.0)
         tax_amount = total_assets * tax_rate
         net_estate = total_assets - tax_amount
 
-        # Transfer Tax
         if tax_amount > 0:
-            simulation.settlement_system.transfer(
-                deceased_agent,
-                simulation.government,
-                tax_amount,
-                "inheritance_tax",
-                tick=simulation.time
-            )
+            credits.append((simulation.government, tax_amount, "inheritance_tax"))
 
-        # Find living heirs
+        # 2. Find living heirs
         heirs = [simulation.agents[cid] for cid in deceased_agent.children_ids if cid in simulation.agents and simulation.agents[cid].is_active]
 
         if heirs:
@@ -314,26 +310,24 @@ class DemographicManager:
                 amount_to_send = amount_cents / 100.0
 
                 if amount_to_send > 0:
-                    simulation.settlement_system.transfer(
-                        deceased_agent,
-                        heir,
-                        amount_to_send,
-                        "inheritance_distribution",
-                        tick=simulation.time
-                    )
+                    credits.append((heir, amount_to_send, "inheritance_distribution"))
 
                     self.logger.info(
-                        f"INHERITANCE | Heir {heir.id} received {amount_to_send:.2f} from {deceased_agent.id}.",
+                        f"INHERITANCE_PLAN | Heir {heir.id} to receive {amount_to_send:.2f} from {deceased_agent.id}.",
                         extra={"heir_id": heir.id, "deceased_id": deceased_agent.id, "amount": amount_to_send}
                     )
         else:
             # No heirs: Escheatment to State
-            simulation.settlement_system.transfer(
-                deceased_agent,
-                simulation.government,
-                net_estate,
-                "escheatment",
-                tick=simulation.time
-            )
+            # Note: net_estate is total_assets - tax.
+            # So Government gets tax + net_estate = total_assets.
+            if net_estate > 0:
+                 credits.append((simulation.government, net_estate, "escheatment"))
 
-        # No explicit `_sub_assets`: The transfers will naturally drain the `deceased_agent`'s balance to near zero (or exactly zero).
+        # 3. Execute Atomic Settlement
+        if credits:
+             success = simulation.settlement_system.settle_atomic(deceased_agent, credits, simulation.time)
+             if not success:
+                 self.logger.error(
+                     f"INHERITANCE_FAIL | Atomic settlement failed for {deceased_agent.id}.",
+                     extra={"deceased_id": deceased_agent.id, "credits_count": len(credits)}
+                 )

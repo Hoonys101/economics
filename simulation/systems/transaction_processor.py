@@ -97,51 +97,54 @@ class TransactionProcessor(SystemInterface):
 
             elif tx.transaction_type == "escheatment":
                  # Buyer: Agent (Deceased/Closed), Seller: Government
-                 # Direct atomic settlement to government
-                 success = settlement.settle_atomic(buyer, [(government, trade_value, "escheatment")], current_time)
-                 if success:
-                      government.record_revenue({
-                             "success": True,
-                             "amount_collected": trade_value,
-                             "tax_type": "escheatment",
-                             "payer_id": buyer.id,
-                             "payee_id": government.id,
-                             "error_message": None
-                         })
+                 # Direct atomic settlement to government.
+                 # FIX (AUDIT-ECONOMIC): Use buyer.assets dynamic check to prevent leaks if liquidation occurred prior.
+                 escheatment_amount = buyer.assets if hasattr(buyer, 'assets') else trade_value
+                 if escheatment_amount > 0:
+                     success = settlement.settle_atomic(buyer, [(government, escheatment_amount, "escheatment")], current_time)
+                     if success:
+                          government.record_revenue({
+                                 "success": True,
+                                 "amount_collected": escheatment_amount,
+                                 "tax_type": "escheatment",
+                                 "payer_id": buyer.id,
+                                 "payee_id": government.id,
+                                 "error_message": None
+                             })
 
             elif tx.transaction_type == "inheritance_distribution":
+                # FIX (AUDIT-ECONOMIC): Use settle_atomic for atomic distribution
                 heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
                 total_cash = buyer.assets
+
                 if total_cash > 0 and heir_ids:
                     import math
                     count = len(heir_ids)
-                    # Calculate amount per heir, avoiding float precision issues (floor to cent)
+                    # Calculate amount per heir (floor to cent)
                     base_amount = math.floor((total_cash / count) * 100) / 100.0
 
+                    # Prepare credits
+                    credits = []
                     distributed_sum = 0.0
-                    all_success = True
 
-                    # Distribute to all but the last heir
+                    # All heirs except last get base_amount
                     for i in range(count - 1):
                         h_id = heir_ids[i]
                         heir = agents.get(h_id)
                         if heir:
-                            if settlement.transfer(buyer, heir, base_amount, "inheritance_distribution"):
-                                distributed_sum += base_amount
-                            else:
-                                all_success = False
+                            credits.append((heir, base_amount, "inheritance_distribution"))
+                            distributed_sum += base_amount
 
-                    # Last heir gets the remainder to ensure zero-sum
+                    # Last heir gets remainder (Zero-Sum guarantee)
                     last_heir_id = heir_ids[-1]
                     last_heir = agents.get(last_heir_id)
                     if last_heir:
                         remaining_amount = total_cash - distributed_sum
-                        # Ensure we don't transfer negative amounts or dust if something went wrong
                         if remaining_amount > 0:
-                            if not settlement.transfer(buyer, last_heir, remaining_amount, "inheritance_distribution_final"):
-                                all_success = False
+                             credits.append((last_heir, remaining_amount, "inheritance_distribution"))
 
-                    success = all_success
+                    if credits:
+                         success = settlement.settle_atomic(buyer, credits, current_time)
 
             elif tx.transaction_type == "bond_purchase":
                 # Buyer: Bank or Central Bank, Seller: Government
