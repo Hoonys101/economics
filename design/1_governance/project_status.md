@@ -39,9 +39,11 @@
 - **현재 단계:** `Phase 30: Fractional Reserve & Credit Expansion` 🏦 (2026-01-31)
     - **Goal**: Implement credit money creation, interbank lending, and reserve requirement systems.
     - **Status**: 
-        - **WO-024**: Fractional Reserve Implementation 🏗️ ACTIVE
-        - **TD-164**: Global Liquidity Injection Strategy 🏗️ PLANNING
+        - **WO-024**: Fractional Reserve Implementation 🏗️ IN PROGRESS (Spec Generation)
+        - **TD-170**: Sales Tax Atomicity Violation 🏗️ IN PROGRESS (Parallel Track)
+        - **TD-164**: Global Liquidity Injection Strategy ✅ COMPLETED via WO-024
         - **TD-167**: Firm Bankruptcy Sequence Logic FIX 🏗️ PLANNING
+
     - **Next Phase**: `Phase 31: Open Market Operations & Fiscal/Monetary Coordination`
 
 ---

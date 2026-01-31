@@ -17,6 +17,11 @@ This is the definitive entry point for all contributors. **Read this first.**
 - **Triple-Engine Workflow**: 가급적 **인프라(Infra), 경제(Economics), 모델링(Modeling)**의 3가지 트랙이 독립된 세션에서 동시에 가동되는 것을 지향합니다.
 - **격리된 부채 해결**: 메인 개발을 방해하지 않는 자잘한 기술 부채들은 꼼꼼히 챙겨 메인 엔진과 병행 처리함으로써 개발 속도를 극대화합니다.
 
+### 3. 복명복창 (Acknowledgement & Execution)
+- **질문과 확인**: 지시 사항에 의문점이 있다면 즉시 질문하여 명확히 합니다.
+- **안 선행, 실행 후행**: 실행할 수 있을 만큼 구체화가 가능하다면, 먼저 실행 계획(方案)을 설명하여 승인을 얻은 후 실무(Jules/Gemini)에 착수합니다.
+
+
 ---
 
 ## 🚦 Phase 1: Context Loading & Strategy
