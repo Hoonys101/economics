@@ -5,7 +5,8 @@ import logging
 from simulation.orchestration.api import IPhaseStrategy
 from simulation.dtos.api import (
     SimulationState, MarketSnapshotDTO, GovernmentPolicyDTO,
-    DecisionContext, MacroFinancialContext, AIDecisionData
+    DecisionContext, MacroFinancialContext, AIDecisionData,
+    DecisionInputDTO
 )
 from modules.government.dtos import MacroEconomicSnapshotDTO
 from simulation.dtos import (
@@ -304,6 +305,20 @@ class Phase1_Decision(IPhaseStrategy):
         if state.bank:
              agent_registry["BANK"] = state.bank.id
 
+        # Create Common Input DTO (Base)
+        base_input_dto = DecisionInputDTO(
+             markets=state.markets,
+             goods_data=state.goods_data,
+             market_data=market_data,
+             current_time=state.time,
+             fiscal_context=fiscal_context,
+             market_snapshot=market_snapshot,
+             government_policy=gov_policy,
+             agent_registry=agent_registry
+        )
+
+        from dataclasses import replace
+
         # 1. Firms
         for firm in state.firms:
             if firm.is_active:
@@ -328,12 +343,8 @@ class Phase1_Decision(IPhaseStrategy):
                 stress_config = self.world_state.stress_scenario_config
 
                 # DTO Refactor: Expect DecisionOutputDTO
-                decision_output = firm.make_decision(
-                    state.markets, state.goods_data, market_data, state.time,
-                    fiscal_context, stress_config,
-                    market_snapshot=market_snapshot, government_policy=gov_policy,
-                    agent_registry=agent_registry
-                )
+                firm_input = replace(base_input_dto, stress_scenario_config=stress_config)
+                decision_output = firm.make_decision(firm_input)
 
                 # Check if it's new DTO or legacy tuple
                 if hasattr(decision_output, 'orders'):
@@ -366,11 +377,12 @@ class Phase1_Decision(IPhaseStrategy):
 
                 stress_config = self.world_state.stress_scenario_config
                 # DTO Refactor: Expect DecisionOutputDTO
-                decision_output = household.make_decision(
-                    state.markets, state.goods_data, market_data, state.time, fiscal_context, macro_financial_context, stress_config,
-                    market_snapshot=market_snapshot, government_policy=gov_policy,
-                    agent_registry=agent_registry
+                household_input = replace(
+                    base_input_dto,
+                    stress_scenario_config=stress_config,
+                    macro_context=macro_financial_context
                 )
+                decision_output = household.make_decision(household_input)
 
 
                 if hasattr(decision_output, 'orders'):

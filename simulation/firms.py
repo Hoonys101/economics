@@ -11,7 +11,7 @@ from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext, FiscalContext
+from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
@@ -333,9 +333,19 @@ class Firm(BaseAgent, ILearningAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, fiscal_context: Optional[FiscalContext] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
-        market_snapshot: Optional[Any] = None, government_policy: Optional[Any] = None, agent_registry: Optional[Dict[str, int]] = None
+        self, input_dto: DecisionInputDTO
     ) -> tuple[list[Order], Any]:
+        # Unpack
+        markets = input_dto.markets
+        goods_data = input_dto.goods_data
+        market_data = input_dto.market_data
+        current_time = input_dto.current_time
+        fiscal_context = input_dto.fiscal_context
+        stress_scenario_config = input_dto.stress_scenario_config
+        market_snapshot = input_dto.market_snapshot
+        government_policy = input_dto.government_policy
+        agent_registry = input_dto.agent_registry or {}
+
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
         self.logger.debug(

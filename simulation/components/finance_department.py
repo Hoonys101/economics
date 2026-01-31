@@ -560,10 +560,9 @@ class FinanceDepartment:
                     return True
                 return False
             else:
-                self.debit(amount, "Severance Pay")
-                employee.deposit(amount)
-                self.record_expense(amount)
-                return True
+                # TD-187: Enforce SettlementSystem mandate
+                self.firm.logger.error("PAY_SEVERANCE_FAIL | SettlementSystem missing.")
+                return False
         return False
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:

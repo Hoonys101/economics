@@ -16,7 +16,7 @@ from simulation.ai.api import (
 )
 from simulation.core_markets import Market
 from simulation.interfaces.market_interface import IMarket
-from simulation.dtos import DecisionContext, FiscalContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, ConsumptionResult
+from simulation.dtos import DecisionContext, FiscalContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, ConsumptionResult, DecisionInputDTO
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
 
@@ -659,17 +659,20 @@ class Household(BaseAgent, ILearningAgent):
     @override
     def make_decision(
         self,
-        markets: Dict[str, IMarket],
-        goods_data: List[Dict[str, Any]],
-        market_data: Dict[str, Any],
-        current_time: int,
-        fiscal_context: Optional[FiscalContext] = None,
-        macro_context: Optional[MacroFinancialContext] = None,
-        stress_scenario_config: Optional["StressScenarioConfig"] = None,
-        market_snapshot: Optional[Any] = None,
-        government_policy: Optional[Any] = None,
-        agent_registry: Optional[Dict[str, int]] = None,
+        input_dto: DecisionInputDTO
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
+
+        # Unpack input_dto
+        markets = input_dto.markets
+        goods_data = input_dto.goods_data
+        market_data = input_dto.market_data
+        current_time = input_dto.current_time
+        fiscal_context = input_dto.fiscal_context
+        macro_context = input_dto.macro_context
+        stress_scenario_config = input_dto.stress_scenario_config
+        market_snapshot = input_dto.market_snapshot
+        government_policy = input_dto.government_policy
+        agent_registry = input_dto.agent_registry or {}
 
         # 0. Update Social Status (Before Decision)
         self._social_state = self.social_component.calculate_social_status(

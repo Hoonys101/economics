@@ -101,7 +101,7 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
-    def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
+    def make_decision(self, input_dto: Any) -> tuple[list[Any], Any]:
         pass
 
     @abstractmethod
