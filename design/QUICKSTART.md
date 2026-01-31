@@ -87,6 +87,9 @@ python scripts/cmd_ops.py set-jules mission-code-v1 --command create -t "Bank Im
     - **Operations**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md` (Liquidate/Add debts).
     - **Architecture**: `design/1_governance/architecture/ARCH_*.md` (Hard-code new systemic rules).
 3.  **Final Handover**: Ensure the permanent handover log is stored in `design/_archive/handovers/HANDOVER_YYYY-MM-DD.md`.
-4.  **Incinerate**: Confirm knowledge is crystallized, then execute **`.\cleanup-session.bat`** (triggered by `session-go` or manual) to purge all temporary files (PR diffs, logs, raw insights).
+4.  **Incinerate & Push (Antigravity's Job)**: Once the Architect confirms knowledge crystallization, they execute **`.\cleanup-go.bat`**. This automates:
+    - `git add .` & `git commit`
+    - Purging all temporary files (PR diffs, logs, raw insights)
+    - `git push origin main`
 
 > **"Knowledge survives, artifacts perish."** - Standard Operating Procedure v2.3
