@@ -48,8 +48,10 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-151 | 2026-01-29 | Partial DTO Adoption in Engine | Inconsistent Internal/External API | **RESOLVED** |
-| TD-166 | 2026-01-31 | Configuration Duality (Engine vs Agent) | Configuration Fragmentation | **SPECCED** |
+| TD-166 | 2026-01-31 | Configuration Duality (Engine vs Agent) | Configuration Fragmentation | **RESOLVED** |
 | TD-168 | 2026-01-31 | `make_decision` Abstraction Leak | Raw Agent objects in method signature | **RESOLVED** |
+| **HousingRefactor** | 2026-01-31 | Orphaned Housing Logic (Mortgage Bypass) | **CRITICAL** | **ACTIVE** | Housing market functional failure. |
+| TD-065 | 2026-01-31 | Duplicated Housing Decision Logic | Maintenance Risk | **ACTIVE** | Consolidated housing logic pending. |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
@@ -57,6 +59,7 @@
 |---|---|---|---|---|
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
 | TD-140 | 2026-01-29 | God File: `db/repository.py` | 745+ LOC complexity | **RESOLVED** |
+| TDL-029 | 2026-01-31 | ViewModel DI Violation (Repository) | Tight Coupling | **ACTIVE** | ViewModels create own repository instances. |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 

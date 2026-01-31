@@ -46,12 +46,22 @@
         - **Debt Settlement Audit**: Conflict Zone Map & Specs (TD-160/TD-176) ✅ COMPLETED
         - **WO-024**: Fractional Reserve Implementation ✅ COMPLETED (M2 Audit Loop)
         - **TD-170**: Sales Tax Atomicity (Escrow Model) ✅ COMPLETED & MERGED
-        - **TD-165**: Legacy Test Assertion Migration 🏗️ PLANNING (Report Completed)
-        - **TD-167/171**: Bankruptcy & Liquidation Leak Audit ✅ Audit Completed, 🏗️ IMPLEMENTING
+        - **TD-165**: Legacy Test Assertion Migration ✅ COMPLETED (100% Pass)
+        - **TD-167/171**: Bankruptcy & Liquidation Leak Audit ✅ COMPLETED (Escheatment Implemented)
         - **Directive Alpha**: Engine Speed I/O Optimization ✅ COMPLETED & MERGED
         - **TD-143/172**: Documentation & Stats Clean-up ✅ COMPLETED & MERGED
         - **OMO Implementation**: `CentralBankSystem`, `SecurityMarket` ✅ COMPLETED & MERGED
         - **Phase 32 Interface Design**: `IInterbankMarket` ✅ COMPLETED
+        - **Unified Configuration (TD-166)**: `modules/config` Implementation ✅ COMPLETED
+        - **Atomic Settlements (TD-176)**: Saga Pattern & Tax Decoupling ✅ COMPLETED
+        - **Order DTO Standardization (TDL-028)**: Immutable Orders ✅ COMPLETED
+
+    - **Next Phase**: `Emergency Phase: Mortgage System Restoration`
+        - **Goal**: Fix the broken housing market and disconnected credit creation pipeline.
+        - **Tasks**:
+            - [ ] **Housing Legacy Repair**: Extract orphaned mortgage logic.
+            - [ ] **Consolidated Decisions**: Merge disparate household logic.
+
 
     - **Next Phase**: `Phase 32: Interbank Lending & Reserve Requirement Stress Tests`
 

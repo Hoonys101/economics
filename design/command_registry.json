@@ -3,5 +3,23 @@
     "session": "Clean Room Era",
     "updated": "2026-01-30",
     "author": "Antigravity"
+  },
+  "mission-session-handover": {
+    "worker": "reporter",
+    "instruction": "## 🏗️ Architectural Handover Report Generation\n당신은 수석 설계자에게 보고할 핸드오버 문서를 작성하는 리포터입니다.\n제공된 인사이트 문서들을 바탕으로 다음 사항을 요약하여 기록하십시오:\n1. **Accomplishments**: 이번 세션에서 완성된 핵심 기능 및 아키텍처 변화 (Animal Spirits 등).\n2. **Economic Insights**: 시뮬레이션 중 발견된 주요 경제적 통찰.\n3. **Pending Tasks & Tech Debt**: 다음 세션에서 즉시 해결해야 할 기술 부채 및 미완성 과제.\n4. **Verification Status**: `main.py` 및 `trace_leak.py` 등의 검증 결과 요약.\n\n결과물은 '설계도_계약들/HANDOVER.md' 형식을 따르되, 우리 프로젝트의 'design/HANDOVER.md' 위치에 저장될 예정입니다.",
+    "context": [
+      "communications\\insights\\DTO_Refactor.md",
+      "communications\\insights\\refactor_phases_gov.md",
+      "communications\\insights\\TD-065_Household_Refactor.md",
+      "communications\\insights\\TD-066_Household_Engine_Decomposition.md",
+      "communications\\insights\\TD-166.md",
+      "communications\\insights\\TD-168_Refactor_Make_Decision.md",
+      "communications\\insights\\TD-176.md",
+      "communications\\insights\\TDL-028_Market_Order_Refactor.md",
+      "communications\\insights\\TDL-029_Refactor_Repository.md",
+      "communications\\insights\\WO-171-Corporate-Strategy-Refactor.md",
+      "communications\\insights\\WO-178.md",
+      "communications\\insights\\WO-HousingRefactor.md"
+    ]
   }
 }

@@ -13,6 +13,13 @@
 - **DB**: SQLite. 시뮬레이션의 모든 거래 원장, 에이전트 상태, 거시 지표를 기록합니다.
 - **Repository Pattern**: `SimulationRepository`를 통해 비즈니스 로직과 저수준 데이터베이스 접근 코드를 분리합니다.
 
+### 2.3 Configuration Management (Unified Config)
+- **Problem**: 기존의 `config.py`와 YAML 설정 파일의 이원화로 인한 관리 복잡성 및 정합성 위협.
+- **Solution**: Pydantic 기반의 **Integrated Configuration System** (`modules/config`).
+    - **Layers**: Default -> YAML Override -> Environment Variables -> Runtime Injection.
+    - **Validation**: 로딩 시점에 엄격한 타입 검사와 범위 체크 수행.
+    - **Dependency**: `ConfigurationComponent`를 통해 ECS 구조 내에서 상태 의존성 없이 설정 주입.
+
 ## 3. 인터페이스와 프로토콜 (API-Driven)
 
 모듈 간의 통합은 구체적인 클래스가 아닌 인터페이스(Protocol)를 통해 이루어집니다.
