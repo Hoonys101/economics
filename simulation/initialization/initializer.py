@@ -46,6 +46,7 @@ from simulation.systems.registry import Registry
 from simulation.systems.accounting import AccountingSystem
 from simulation.systems.central_bank_system import CentralBankSystem
 from simulation.systems.handlers import InheritanceHandler
+from simulation.systems.handlers.housing_transaction_handler import HousingTransactionHandler
 from modules.finance.system import FinanceSystem
 from modules.finance.credit_scoring import CreditScoringService
 from simulation.db.repository import SimulationRepository
@@ -380,7 +381,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             "inheritance_distribution": InheritanceHandler(
                 settlement_system=sim.settlement_system,
                 logger=self.logger
-            )
+            ),
+            "housing": HousingTransactionHandler()
         }
 
         # Initialize Escrow Agent (TD-170)
