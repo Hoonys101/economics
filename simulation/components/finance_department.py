@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.dtos.config_dtos import FirmConfigDTO
     from simulation.core_agents import Household
-    from simulation.agents.government import Government
+    from modules.finance.api import IFinancialEntity
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ class FinanceDepartment:
         self.expenses_this_tick += amount
         self.current_profit -= amount
 
-    def generate_holding_cost_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
+    def generate_holding_cost_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
         """Generates inventory holding cost transaction."""
         inventory_value = self.get_inventory_value()
         holding_cost = inventory_value * self.config.inventory_holding_cost_rate
@@ -96,7 +96,7 @@ class FinanceDepartment:
             )
         return None
 
-    def generate_maintenance_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
+    def generate_maintenance_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
         """Generates maintenance fee transaction."""
         fee = self.config.firm_maintenance_fee
 
@@ -121,7 +121,7 @@ class FinanceDepartment:
             )
         return None
 
-    def generate_tax_transaction(self, government: Government, current_time: int) -> Optional[Transaction]:
+    def generate_tax_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
         """Generates corporate tax transaction."""
         net_profit = self.revenue_this_turn - self.cost_this_turn
 
@@ -153,7 +153,7 @@ class FinanceDepartment:
                 )
         return None
 
-    def generate_marketing_transaction(self, government: Government, current_time: int, amount: float) -> Optional[Transaction]:
+    def generate_marketing_transaction(self, government: IFinancialEntity, current_time: int, amount: float) -> Optional[Transaction]:
         """Generates marketing spend transaction."""
         if amount > 0:
             self.record_expense(amount)
@@ -169,7 +169,7 @@ class FinanceDepartment:
             )
         return None
 
-    def process_profit_distribution(self, households: List[Household], government: Government, current_time: int) -> List[Transaction]:
+    def process_profit_distribution(self, households: List[Household], government: IFinancialEntity, current_time: int) -> List[Transaction]:
         """
         Public Shareholders Dividend & Bailout Repayment.
         Returns List of Transactions.
@@ -242,7 +242,7 @@ class FinanceDepartment:
 
         return transactions
 
-    def distribute_profit_private(self, agents: Dict[int, Any], government: Government, current_time: int) -> List[Transaction]:
+    def distribute_profit_private(self, agents: Dict[int, Any], government: IFinancialEntity, current_time: int) -> List[Transaction]:
         """Phase 14-1: Private Owner Dividend Transaction Generation"""
         if self.firm.owner_id is None:
             return []
@@ -293,7 +293,7 @@ class FinanceDepartment:
 
         return transactions
 
-    def generate_financial_transactions(self, government: Government, households: List[Household], current_time: int) -> List[Transaction]:
+    def generate_financial_transactions(self, government: IFinancialEntity, households: List[Household], current_time: int) -> List[Transaction]:
         """Consolidates all financial outflow generation logic."""
         transactions = []
 
@@ -503,7 +503,7 @@ class FinanceDepartment:
         """Returns the current assets (cash) of the firm."""
         return self._cash
 
-    def invest_in_automation(self, amount: float, government: Optional[Any] = None) -> bool:
+    def invest_in_automation(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
         if self._cash < amount:
             return False
 
@@ -518,7 +518,7 @@ class FinanceDepartment:
             self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or Government for Automation.")
             return False
 
-    def invest_in_rd(self, amount: float, government: Optional[Any] = None) -> bool:
+    def invest_in_rd(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
         if self._cash < amount:
             return False
 
@@ -534,7 +534,7 @@ class FinanceDepartment:
             self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or Government for R&D.")
             return False
 
-    def invest_in_capex(self, amount: float, government: Optional[Any] = None) -> bool:
+    def invest_in_capex(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
         if self._cash < amount:
             return False
 
@@ -566,10 +566,16 @@ class FinanceDepartment:
                 return True
         return False
 
-    def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Government, current_time: int) -> bool:
+    def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:
+        """
+        Pay an ad-hoc tax (e.g. from internal order).
+        government expected to be Government or GovernmentFiscalProxy (must have collect_tax).
+        """
         if self._cash >= amount:
             # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
-            government.collect_tax(amount, tax_type, self.firm, current_time)
-            self.record_expense(amount)
-            return True
+            # Or via Proxy
+            if hasattr(government, 'collect_tax'):
+                government.collect_tax(amount, tax_type, self.firm, current_time)
+                self.record_expense(amount)
+                return True
         return False

@@ -9,7 +9,7 @@ from simulation.dtos.api import (
 )
 from modules.government.dtos import MacroEconomicSnapshotDTO
 from simulation.dtos import (
-    GovernmentStateDTO
+    GovernmentStateDTO, FiscalContext
 )
 from simulation.core_agents import Household
 from simulation.firms import Firm
@@ -20,6 +20,7 @@ from simulation.systems.api import (
 )
 from simulation.models import Transaction, Order
 from modules.government.components.monetary_policy_manager import MonetaryPolicyManager
+from modules.government.proxy import GovernmentFiscalProxy
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -379,6 +380,10 @@ class Phase1_Decision(IPhaseStrategy):
              base_interest_rate=getattr(bank, "base_rate", 0.05) if bank else 0.05
         )
 
+        # Create Fiscal Context
+        gov_proxy = GovernmentFiscalProxy(gov) if gov else None
+        fiscal_context = FiscalContext(government=gov_proxy) if gov_proxy else None
+
         macro_financial_context = None
         if getattr(state.config_module, "MACRO_PORTFOLIO_ADJUSTMENT_ENABLED", False):
             interest_rate_trend = 0.0
@@ -433,7 +438,7 @@ class Phase1_Decision(IPhaseStrategy):
 
                 firm_orders, action_vector = firm.make_decision(
                     state.markets, state.goods_data, market_data, state.time,
-                    state.government, stress_config,
+                    fiscal_context, stress_config,
                     market_snapshot=market_snapshot, government_policy=gov_policy,
                     agent_registry=agent_registry
                 )
@@ -461,7 +466,7 @@ class Phase1_Decision(IPhaseStrategy):
 
                 stress_config = self.world_state.stress_scenario_config
                 household_orders, action_vector = household.make_decision(
-                    state.markets, state.goods_data, market_data, state.time, state.government, macro_financial_context, stress_config,
+                    state.markets, state.goods_data, market_data, state.time, fiscal_context, macro_financial_context, stress_config,
                     market_snapshot=market_snapshot, government_policy=gov_policy,
                     agent_registry=agent_registry
                 )

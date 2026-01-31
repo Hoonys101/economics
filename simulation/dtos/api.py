@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, TypedDict
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.models import Order
+from modules.finance.api import IFinancialEntity
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -159,6 +160,16 @@ class DecisionContext:
 
     # Agent Discovery Registry (WO-138)
     agent_registry: Dict[str, int] = field(default_factory=dict)
+
+
+@dataclass
+class FiscalContext:
+    """
+    Context providing access to fiscal entities (Government) in a restricted manner.
+    Used by agents to interact with the government (e.g., paying taxes, receiving subsidies)
+    without direct access to the full Government agent object.
+    """
+    government: IFinancialEntity
 
 
 @dataclass

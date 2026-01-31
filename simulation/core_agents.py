@@ -16,7 +16,7 @@ from simulation.ai.api import (
 )
 from simulation.core_markets import Market
 from simulation.interfaces.market_interface import IMarket
-from simulation.dtos import DecisionContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, ConsumptionResult
+from simulation.dtos import DecisionContext, FiscalContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, ConsumptionResult
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
 
@@ -663,7 +663,7 @@ class Household(BaseAgent, ILearningAgent):
         goods_data: List[Dict[str, Any]],
         market_data: Dict[str, Any],
         current_time: int,
-        government: Optional[Any] = None,
+        fiscal_context: Optional[FiscalContext] = None,
         macro_context: Optional[MacroFinancialContext] = None,
         stress_scenario_config: Optional["StressScenarioConfig"] = None,
         market_snapshot: Optional[Any] = None,

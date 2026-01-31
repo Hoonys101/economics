@@ -166,10 +166,24 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
-            config=create_firm_config_dto(),
+            config=create_firm_config_dto(overstock_threshold=1.2),
             market_data={},
             goods_data=[],
             current_time=1,
@@ -199,7 +213,8 @@ class TestFirmDecisionEngine:
     def test_make_decisions_understock_increases_target(
         self, firm_decision_engine_instance, mock_firm, mock_config
     ):
-        mock_firm.inventory["food"] = 50.0
+        mock_firm.inventory["food"] = 20.0
+        mock_firm.production_target = 50.0  # Set lower than max (100) to allow increase
         initial_target = mock_firm.production_target
 
         state = Mock(spec=FirmStateDTO)
@@ -212,10 +227,23 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
-            config=create_firm_config_dto(),
+            config=create_firm_config_dto(understock_threshold=0.8),
             market_data={},
             goods_data=[],
             current_time=1,
@@ -248,6 +276,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
@@ -304,6 +345,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
@@ -348,6 +402,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
@@ -396,6 +463,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
@@ -425,6 +505,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
@@ -461,9 +554,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
-        state.employees = []
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
         state.capital_stock = 100.0
         state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
         state.automation_level = 0.0
 
         context = DecisionContext(
@@ -478,7 +581,7 @@ class TestFirmDecisionEngine:
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
         # 4. Verification
-        labor_orders = [o for o in orders if o.item_id == "labor" and o.order_type == "BUY"]
+        labor_orders = [o for o in orders if getattr(o, "item_id", None) == "labor" and o.order_type == "BUY"]
         assert len(labor_orders) > 0
         assert labor_orders[0].price > 10.0 # High aggressiveness bids up wage
         assert labor_orders[0].quantity > 0
@@ -508,9 +611,20 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
-        state.employees = [1] * 100 # Mock employee IDs
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
         state.capital_stock = 100.0
         state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
+        state.employees = [1] * 100 # Mock employee IDs
         state.automation_level = 0.0
         state.employees_data = {i: {"labor_skill": 1.0} for i in range(100)}
 
@@ -524,7 +638,7 @@ class TestFirmDecisionEngine:
 
         orders, _ = firm_decision_engine_instance.make_decisions(context)
 
-        labor_orders = [o for o in orders if o.item_id == "labor" and o.order_type == "BUY"]
+        labor_orders = [o for o in orders if getattr(o, "item_id", None) == "labor" and o.order_type == "BUY"]
         assert len(labor_orders) == 0
 
     @pytest.mark.skip(reason="Legacy Mutation Assertion: Needs migration to Order Verification")
@@ -562,12 +676,36 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
         state.employees = [1, 2]
         state.capital_stock = 100.0
+        state.productivity_factor = 1.0
         state.productivity_factor = 1.0
         state.automation_level = 0.0
         state.employees_data = {1: {"labor_skill": 1.0}, 2: {"labor_skill": 1.0}}
         state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
@@ -604,6 +742,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,
@@ -660,7 +811,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
-        state.assets = 100000.0
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
         state.research_history = {"total_spent": 0.0}
         # Explicitly set attributes to avoid spec issues if they arise
         state.current_production = 0.0
@@ -700,8 +863,19 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
-        state.assets = 100000.0
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
         state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
         # Explicitly set attributes
         state.current_production = 0.0
 
@@ -742,11 +916,45 @@ class TestFirmDecisionEngine:
         state.base_quality = 1.0
         state.inventory_quality = {mock_firm.specialization: 1.0}
         state.last_prices = mock_firm.last_prices
+        state.altman_z_score = 3.0
+        state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
         state.altman_z_score = 5.0
         state.consecutive_loss_turns = 0
+        state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
         state.dividend_rate = 0.05
         # Explicitly set attributes
         state.assets = 1000.0
+        state.revenue_this_turn = 0.0
+        state.expenses_this_tick = 0.0
+        state.capital_stock = 100.0
+        state.productivity_factor = 1.0
+        state.treasury_shares = 1000.0
+        state.total_shares = 1000.0
+        state.automation_level = 0.0
+        state.employees_data = {}
+        state.employees = []
+        state.price_history = {}
 
         context = DecisionContext(
             state=state,

@@ -11,7 +11,7 @@ from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext
+from simulation.dtos import DecisionContext, FiscalContext
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
@@ -333,7 +333,7 @@ class Firm(BaseAgent, ILearningAgent):
 
     @override
     def make_decision(
-        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, government: Optional[Any] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
+        self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int, fiscal_context: Optional[FiscalContext] = None, stress_scenario_config: Optional["StressScenarioConfig"] = None,
         market_snapshot: Optional[Any] = None, government_policy: Optional[Any] = None, agent_registry: Optional[Dict[str, int]] = None
     ) -> tuple[list[Order], Any]:
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
@@ -369,7 +369,8 @@ class Firm(BaseAgent, ILearningAgent):
         external_orders = []
         for order in decisions:
             if order.market_id == "internal":
-                self._execute_internal_order(order, government, current_time)
+                gov_proxy = fiscal_context.government if fiscal_context else None
+                self._execute_internal_order(order, gov_proxy, current_time)
             else:
                 external_orders.append(order)
 
