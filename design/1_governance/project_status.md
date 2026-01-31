@@ -39,10 +39,14 @@
 - **현재 단계:** `Phase 30: Fractional Reserve & Credit Expansion` 🏦 (2026-01-31)
     - **Goal**: Implement credit money creation, interbank lending, and reserve requirement systems.
     - **Status**: 
-        - **WO-024**: Fractional Reserve Implementation 🏗️ IN PROGRESS (Spec Generation)
-        - **TD-170**: Sales Tax Atomicity Violation 🏗️ IN PROGRESS (Parallel Track)
-        - **TD-164**: Global Liquidity Injection Strategy ✅ COMPLETED via WO-024
-        - **TD-167**: Firm Bankruptcy Sequence Logic FIX 🏗️ PLANNING
+        - **WO-024**: Fractional Reserve Implementation ✅ COMPLETED (M2 Audit Loop)
+        - **TD-170**: Sales Tax Atomicity (Escrow Model) ✅ COMPLETED & MERGED
+        - **TD-165**: Legacy Test Assertion Migration 🏗️ PLANNING (Report Completed)
+        - **TD-167/171**: Bankruptcy & Liquidation Leak Audit ✅ Audit Completed, 🏗️ IMPLEMENTING
+        - **Directive Alpha**: Engine Speed I/O Optimization ✅ COMPLETED & MERGED
+        - **TD-143/172**: Documentation & Stats Clean-up 🏗️ IMPLEMENTING (Jules)
+
+
 
     - **Next Phase**: `Phase 31: Open Market Operations & Fiscal/Monetary Coordination`
 

@@ -77,25 +77,35 @@ index a15f808..3c03dd5 100644
      
      # Check Integrity
 diff --git a/simulation/agents/government.py b/simulation/agents/government.py
-index 5d029fd..ee1d08a 100644
+index 5d029fd..9b53405 100644
 --- a/simulation/agents/government.py
 +++ b/simulation/agents/government.py
-@@ -52,6 +52,8 @@ class Government:
-         # Gold Standard Money Tracking
+@@ -49,9 +49,13 @@ class Government:
+         self.total_spent_subsidies: float = 0.0
+         self.infrastructure_level: int = 0
+ 
+-        # Gold Standard Money Tracking
++        # Money Tracking (Gold Standard & Fractional Reserve)
          self.total_money_issued: float = 0.0
          self.total_money_destroyed: float = 0.0
++        self.start_tick_money_issued: float = 0.0
++        self.start_tick_money_destroyed: float = 0.0
 +        # WO-024: Fractional Reserve Credit Tracking
 +        self.credit_delta_this_tick: float = 0.0
          
          # 세수 유형별 집계
          self.tax_revenue: Dict[str, float] = {}
-@@ -204,8 +206,24 @@ class Government:
+@@ -204,8 +208,28 @@ class Government:
  
          self.revenue_this_tick = 0.0
          self.expenditure_this_tick = 0.0
 +        self.credit_delta_this_tick = 0.0
          self.revenue_breakdown_this_tick = {}
  
++        # Snapshot for delta calculation
++        self.start_tick_money_issued = self.total_money_issued
++        self.start_tick_money_destroyed = self.total_money_destroyed
++
 +    def process_monetary_transactions(self, transactions: List[Transaction]):
 +        """
 +        Processes transactions related to monetary policy (Credit Creation/Destruction).
@@ -114,7 +124,7 @@ index 5d029fd..ee1d08a 100644
      def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
          """
          Legacy adapter method used by TransactionProcessor.
-@@ -672,7 +690,11 @@ class Government:
+@@ -672,7 +696,14 @@ class Government:
          }
  
      def get_monetary_delta(self) -> float:
@@ -123,7 +133,10 @@ index 5d029fd..ee1d08a 100644
 +        Returns the net change in the money supply authorized this tick.
 +        This includes base money changes (mint/burn) and credit money changes.
 +        """
-+        return self.credit_delta_this_tick
++        # Calculate changes in totals during this tick
++        issued_delta = self.total_money_issued - self.start_tick_money_issued
++        destroyed_delta = self.total_money_destroyed - self.start_tick_money_destroyed
++        return issued_delta - destroyed_delta
  
      def get_agent_data(self) -> Dict[str, Any]:
          return {
@@ -422,24 +435,22 @@ index e0035df..971d3f4 100644
              self.world_state.transaction_processor.execute(state)
          else:
 diff --git a/simulation/systems/housing_system.py b/simulation/systems/housing_system.py
-index 76c4c09..c45ea3e 100644
+index 76c4c09..6e7cc26 100644
 --- a/simulation/systems/housing_system.py
 +++ b/simulation/systems/housing_system.py
-@@ -48,7 +48,12 @@ class HousingSystem:
+@@ -48,7 +48,10 @@ class HousingSystem:
                                      old_owner_agent.residing_property_id = None
                                      old_owner_agent.is_homeless = True
                                      
 -                        simulation.bank.terminate_loan(loan.id)
 +                        term_tx = simulation.bank.terminate_loan(loan.id)
 +                        if term_tx:
-+                             if simulation.government:
-+                                 simulation.government.process_monetary_transactions([term_tx])
 +                             if hasattr(simulation, 'world_state'):
 +                                 simulation.world_state.transactions.append(term_tx)
                          
                          fire_sale_price = unit.estimated_value * 0.8
                          sell_order = Order(
-@@ -188,7 +193,7 @@ class HousingSystem:
+@@ -188,7 +191,7 @@ class HousingSystem:
                  term_ticks = mortgage_term
                  due_tick = simulation.time + term_ticks
  
@@ -448,7 +459,7 @@ index 76c4c09..c45ea3e 100644
                      borrower_id=str(buyer.id),
                      amount=loan_amount,
                      interest_rate=mortgage_rate,
-@@ -196,8 +201,16 @@ class HousingSystem:
+@@ -196,8 +199,14 @@ class HousingSystem:
                      borrower_profile=borrower_profile
                  )
                  
@@ -458,56 +469,66 @@ index 76c4c09..c45ea3e 100644
                      loan_id = loan_info["loan_id"]
 +
 +                    if credit_tx:
-+                        if simulation.government:
-+                            simulation.government.process_monetary_transactions([credit_tx])
 +                        if hasattr(simulation, 'world_state'):
 +                            simulation.world_state.transactions.append(credit_tx)
 +
                      # Fractional Reserve: Loan creates a Deposit.
  
                      # 1. DISBURSEMENT: Transfer funds from Bank (Reserves) to Buyer (Cash)
-@@ -208,7 +221,12 @@ class HousingSystem:
+@@ -208,7 +217,10 @@ class HousingSystem:
  
                      if not disbursement_success:
                           logger.error(f"LOAN_DISBURSEMENT_FAIL | Bank could not transfer {loan_amount} to {buyer.id}. Voiding loan.")
 -                         simulation.bank.void_loan(loan_id)
 +                         void_tx = simulation.bank.void_loan(loan_id)
 +                         if void_tx:
-+                              if simulation.government:
-+                                  simulation.government.process_monetary_transactions([void_tx])
 +                              if hasattr(simulation, 'world_state'):
 +                                  simulation.world_state.transactions.append(void_tx)
                           return
  
                      # 2. DEPOSIT CLEANUP: Reduce the newly created deposit liability
-@@ -219,7 +237,12 @@ class HousingSystem:
+@@ -219,7 +231,10 @@ class HousingSystem:
                               logger.error(f"LOAN_WITHDRAW_FAIL | Could not reduce deposit for {buyer.id}. Rolling back.")
                               # Rollback Disbursement
                               simulation.settlement_system.transfer(buyer, simulation.bank, loan_amount, "loan_rollback", tick=simulation.time)
 -                             simulation.bank.void_loan(loan_id)
 +                             void_tx = simulation.bank.void_loan(loan_id)
 +                             if void_tx:
-+                                  if simulation.government:
-+                                      simulation.government.process_monetary_transactions([void_tx])
 +                                  if hasattr(simulation, 'world_state'):
 +                                      simulation.world_state.transactions.append(void_tx)
                               return
  
                          unit.mortgage_id = loan_id
-@@ -253,7 +276,12 @@ class HousingSystem:
+@@ -253,7 +268,10 @@ class HousingSystem:
  
                        # 2. Void Loan (Cleanup Loan Asset)
                        try:
 -                          simulation.bank.void_loan(loan_id)
 +                          void_tx = simulation.bank.void_loan(loan_id)
 +                          if void_tx:
-+                               if simulation.government:
-+                                   simulation.government.process_monetary_transactions([void_tx])
 +                               if hasattr(simulation, 'world_state'):
 +                                   simulation.world_state.transactions.append(void_tx)
                        except Exception as e:
                            logger.warning(f"ROLLBACK_WARNING | void_loan failed during rollback: {e}")
                            if loan_id in simulation.bank.loans:
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index 6ee4271..82e7656 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -205,6 +205,13 @@ class TransactionProcessor(SystemInterface):
+                 if success:
+                     buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
+ 
++            elif tx.transaction_type in ["credit_creation", "credit_destruction"]:
++                # WO-024: Symbolic Monetary Policy Transactions.
++                # These are accounting records for the Government and are processed in Phase3
++                # via `government.process_monetary_transactions`.
++                # They MUST NOT be executed as real financial transfers here to avoid double counting.
++                success = True
++
+             else:
+                 # Default / Other
+                 success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
 diff --git a/simulation/world_state.py b/simulation/world_state.py
 index 87f60f7..6c89a07 100644
 --- a/simulation/world_state.py
