@@ -1,6 +1,6 @@
-## 🛑 Correction Required: Strict Spec Adherence (WO-057-Active)
+## 🛑 Correction Required: Strict Spec Adherence ()
 
-Your implementation of **WO-057-Active** is partially complete but missing critical components defined in the specification (`design/work_orders/WO-057-Active.md`). 
+Your implementation of **** is partially complete but missing critical components defined in the specification (`design/work_orders/WO-057-Active.md`).
 
 Please address the following omissions immediately:
 

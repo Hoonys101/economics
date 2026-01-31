@@ -4,7 +4,7 @@ This directory contains the decision-making engines for Agents (Households and F
 
 ## DTO Purity Gate & Internal Order Pattern
 
-As of **WO-114**, the simulation enforces a strict "Purity Gate" architecture to decouple decision logic (Pure Function) from state mutation (Side Effect).
+As of ****, the simulation enforces a strict "Purity Gate" architecture to decouple decision logic (Pure Function) from state mutation (Side Effect).
 
 ### 1. Purity Gate (DTOs)
 Decision Engines must **NEVER** access Agent instances (`Firm`, `Household`) directly. Instead, they receive read-only Data Transfer Objects (DTOs) via the `DecisionContext`:

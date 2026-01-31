@@ -1,4 +1,4 @@
-# Work Order: WO-045 - The Invisible Hand (Market-Based Labor Share)
+# Work Order: - The Invisible Hand (Market-Based Labor Share)
 
 **Phase:** 21.6
 **Priority:** HIGH
@@ -48,7 +48,7 @@ firm_profitability = market_data.get("avg_firm_profit", 0.0)
 
 # 시장 평균의 70% 미만이면 거부
 if offered_wage < market_avg_wage * 0.7:
-    return None  # 노동 공급 거부
+ return None # 노동 공급 거부
 ```
 
 ### Mechanism 2: Competitive Bidding (임금 경쟁)
@@ -69,9 +69,9 @@ offer_wage = base_wage * (1.0 + (labor_scarcity - 1.0) * 0.5)
 ```python
 # engine.py - 매 틱
 for employed_hh in employed_households:
-    best_offer = labor_market.get_best_bid()
-    if best_offer > employed_hh.current_wage * 1.1:
-        employed_hh.switch_employer(best_offer)
+ best_offer = labor_market.get_best_bid()
+ if best_offer > employed_hh.current_wage * 1.1:
+ employed_hh.switch_employer(best_offer)
 ```
 
 ---

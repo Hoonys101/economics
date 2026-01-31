@@ -1,4 +1,4 @@
-# WO-019: Phase 11 Backtest Engine Migration & Visualization
+# Phase 11 Backtest Engine Migration & Visualization
 
 ## 1. Objective
 Build the **Backtest Analytics Pipeline** to transform raw SQLite simulation data into actionable economic insights (Charts/Metrics). This empowers the Architect to verify long-term stability and macroeconomic trends.
@@ -12,33 +12,33 @@ Build the **Backtest Analytics Pipeline** to transform raw SQLite simulation dat
 
 ### 3.1 Data Generation (Long Run)
 - [ ] **Action**: Run `python scripts/iron_test.py --num_ticks 1000`
-    - *Note*: This will take time. Ensure it finishes successfully.
-    - *Outcome*: A populated `simulation_data.db` file (size should be several MBs).
+ - *Note*: This will take time. Ensure it finishes successfully.
+ - *Outcome*: A populated `simulation_data.db` file (size should be several MBs).
 
 ### 3.2 Analytics Loader (`modules/analytics/loader.py`)
 - [ ] **Create Module**: `modules/analytics/` package.
 - [ ] **Implement `DataLoader` class**:
-    - **Dependency**: `pandas`, `sqlite3`.
-    - **Methods**:
-        - `load_economic_indicators(run_id=latest) -> pd.DataFrame`
-        - `load_agent_states(run_id=latest) -> pd.DataFrame`
-        - `load_market_history(run_id=latest, market_id="goods_market") -> pd.DataFrame`
-    - **Features**: Convert `time` column to index if useful. Handle data types.
+ - **Dependency**: `pandas`, `sqlite3`.
+ - **Methods**:
+ - `load_economic_indicators(run_id=latest) -> pd.DataFrame`
+ - `load_agent_states(run_id=latest) -> pd.DataFrame`
+ - `load_market_history(run_id=latest, market_id="goods_market") -> pd.DataFrame`
+ - **Features**: Convert `time` column to index if useful. Handle data types.
 
 ### 3.3 Visualization Script (`scripts/visualize_economy.py`)
 - [ ] **Create Script**: `scripts/visualize_economy.py`.
 - [ ] **Dependency**: `matplotlib` or `seaborn`.
 - [ ] **Charts to Generate** (Save to `reports/figures/`):
-    1.  **`macro_overview.png`**:
-        - Subplot 1: Total Money Supply (Line)
-        - Subplot 2: GDP (Total Production) (Line)
-        - Subplot 3: Average Goods Price (Line)
-    2.  **`inequality_gini.png`**:
-        - Calculate GINI coefficient from `agent_states` (Assets) per tick.
-        - Plot GINI over time.
-    3.  **`fiscal_status.png`**:
-        - Government Assets vs Total Debt (Line).
-        - Tax Revenue vs Welfare Spending (Stacked Bar or Multi-line).
+ 1. **`macro_overview.png`**:
+ - Subplot 1: Total Money Supply (Line)
+ - Subplot 2: GDP (Total Production) (Line)
+ - Subplot 3: Average Goods Price (Line)
+ 2. **`inequality_gini.png`**:
+ - Calculate GINI coefficient from `agent_states` (Assets) per tick.
+ - Plot GINI over time.
+ 3. **`fiscal_status.png`**:
+ - Government Assets vs Total Debt (Line).
+ - Tax Revenue vs Welfare Spending (Stacked Bar or Multi-line).
 - [ ] **Console Report**: Print key stats at the end (e.g., "Final GINI: 0.35").
 
 ## 4. Technical Constraints

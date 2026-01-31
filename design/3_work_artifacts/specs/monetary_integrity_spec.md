@@ -1,4 +1,4 @@
-# Spec: WO-065 Monetary Integrity & Suture (통화 정합성 및 봉합)
+# Spec: Monetary Integrity & Suture (통화 정합성 및 봉합)
 
 ## 1. 개요 (Overview)
 - **목표**: 상속, 경제적 충격(Shock), 자산 청산 과정에서 발생하는 모든 통화의 이동과 소멸을 추적하여 `Government`의 통화 장부(`total_money_issued`, `total_money_destroyed`)와 실제 유통 통화량의 정합성을 100% 일치시킴.
@@ -8,30 +8,30 @@
 
 ### 2.1 InheritanceManager: 은행 예금 상속 (Suture 1)
 - **로직**:
-    1. **예금 조회**: `simulation.bank.get_deposit_balance(deceased.id)`를 통해 고인의 예금 총액 파악.
-    2. **가치 평가**: `total_wealth = cash + real_estate + stock + deceased_deposits`.
-    3. **상속인 존재 시**:
-        - `simulation.bank.withdraw(deceased.id, deceased_deposits)`로 고인 계좌 정리.
-        - `simulation.bank.deposit(heir.id, share_amount)`로 상속인들에게 분할 예치.
-    4. **상속인 부재 시 (Escheatment)**:
-        - `simulation.bank.withdraw(deceased.id, deceased_deposits)` 수행.
-        - `simulation.bank.assets -= deceased_deposits` (은행 지준금에서 실제 인출).
-        - `simulation.government.collect_tax(deceased_deposits, "escheatment", deceased.id, simulation.time)` 호출하여 국고 귀속 및 장부 기록.
+ 1. **예금 조회**: `simulation.bank.get_deposit_balance(deceased.id)`를 통해 고인의 예금 총액 파악.
+ 2. **가치 평가**: `total_wealth = cash + real_estate + stock + deceased_deposits`.
+ 3. **상속인 존재 시**:
+ - `simulation.bank.withdraw(deceased.id, deceased_deposits)`로 고인 계좌 정리.
+ - `simulation.bank.deposit(heir.id, share_amount)`로 상속인들에게 분할 예치.
+ 4. **상속인 부재 시 (Escheatment)**:
+ - `simulation.bank.withdraw(deceased.id, deceased_deposits)` 수행.
+ - `simulation.bank.assets -= deceased_deposits` (은행 지준금에서 실제 인출).
+ - `simulation.government.collect_tax(deceased_deposits, "escheatment", deceased.id, simulation.time)` 호출하여 국고 귀속 및 장부 기록.
 
 ### 2.2 Engine: Tick 600 자산 소멸 기록 (Suture 2)
 - **로직**:
-    - `simulation/engine.py`의 `run_tick` 내 쇼크 발생 블록 수정.
-    ```python
-    if self.time == 600:
-        total_lost = 0.0
-        for h in self.households:
-            loss = h.assets * 0.5
-            h.assets -= loss
-            total_lost += loss
-        # 장부 봉합 (Suture)
-        if hasattr(self.government, 'total_money_destroyed'):
-            self.government.total_money_destroyed += total_lost
-    ```
+ - `simulation/engine.py`의 `run_tick` 내 쇼크 발생 블록 수정.
+ ```python
+ if self.time == 600:
+ total_lost = 0.0
+ for h in self.households:
+ loss = h.assets * 0.5
+ h.assets -= loss
+ total_lost += loss
+ # 장부 봉합 (Suture)
+ if hasattr(self.government, 'total_money_destroyed'):
+ self.government.total_money_destroyed += total_lost
+ ```
 
 ### 2.3 Escheatment(국고 귀속) 프로세스 강화
 - **원칙**: 모든 연고 없는 자산(가계 사망, 기업 파산 시 남은 자산)은 반드시 `Government.collect_tax`를 통해 국고로 귀속되어야 함.

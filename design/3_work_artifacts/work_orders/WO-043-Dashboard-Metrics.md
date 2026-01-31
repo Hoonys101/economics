@@ -1,4 +1,4 @@
-# Work Order: WO-043 - Dashboard Metric Expansion
+# Work Order: - Dashboard Metric Expansion
 
 **Phase:** 21.5-Revision (Stabilization)
 **Priority:** HIGH
@@ -47,9 +47,9 @@
 
 ```python
 # config.py
-LABOR_ELASTICITY_MIN = 0.3          # α 하한선 (노동분배율 30% 보장)
-AUTOMATION_COST_MULTIPLIER = 2.0    # 자동화 비용 증가
-KICKSTART_INVENTORY = 100.0         # 초기 재고량 증가
+LABOR_ELASTICITY_MIN = 0.3 # α 하한선 (노동분배율 30% 보장)
+AUTOMATION_COST_MULTIPLIER = 2.0 # 자동화 비용 증가
+KICKSTART_INVENTORY = 100.0 # 초기 재고량 증가
 ```
 
 ---

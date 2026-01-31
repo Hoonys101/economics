@@ -22,22 +22,22 @@ Promotion requires 3 consecutive successes (Calibration Mode) to Reach Level 2, 
 
 ### [Category: Reporter]
 ... (lines 24-30 remains)
-4. ✅ **Case 4: WO-058 Crash & Glut Diagnosis** (2026-01-14)
-   - Result: PASS. Correctly identified ZeroDivisionError and Inventory Glut mechanism.
+4. ✅ **Case 4: Crash & Glut Diagnosis** (2026-01-14)
+ - Result: PASS. Correctly identified ZeroDivisionError and Inventory Glut mechanism.
 
 ### [Category: Spec Drafter]
 ... (lines 33-39 remains)
-4. ✅ **Case 4: WO-056/058 Stabilization Spec** (2026-01-14)
-   - Result: PASS. High-quality protocols and API definitions.
+4. ✅ **Case 4: /058 Stabilization Spec** (2026-01-14)
+ - Result: PASS. High-quality protocols and API definitions.
 5. ✅ **Case 5: AssetLiquiditySystem Spec (v2)** (2026-01-14)
-   - Result: PASS. Comprehensive waterfall and haircut logic.
+ - Result: PASS. Comprehensive waterfall and haircut logic.
 6. ✅ **Case 6: TD-014 Government SoC Spec** (2026-01-14)
-   - Result: PASS. Drafted TaxAgency and MinistryOfEducation specs correctly (B+).
-   - **PROMOTED TO LEVEL 3 (ANTIGRAVITY-AUTONOMOUS)**
+ - Result: PASS. Drafted TaxAgency and MinistryOfEducation specs correctly (B+).
+ - **PROMOTED TO LEVEL 3 (ANTIGRAVITY-AUTONOMOUS)**
 
 ### [Category: Validator]
 1. ✅ **Case 1: TD-014 SoC Verify** (2026-01-14)
-   - Result: PASS. Correctly verified delegation logic in Government agent.
+ - Result: PASS. Correctly verified delegation logic in Government agent.
 
 ### [Category: State Auditor]
 ... (lines 51-57 remains)
@@ -47,16 +47,16 @@ Promotion requires 3 consecutive successes (Calibration Mode) to Reach Level 2, 
 
 ### [Category: Git Operator]
 1. ✅ **Case 1: Calibration Commits** (2026-01-14)
-   - Result: PASS.
+ - Result: PASS.
 2. ✅ **Case 2: Final Push Push** (2026-01-14)
-   - Result: PASS.
+ - Result: PASS.
 3. ✅ **Case 3: Spec Promotion (mv commands)** (2026-01-14)
-   - Result: PASS.
-   - **PROMOTED TO LEVEL 2**
+ - Result: PASS.
+ - **PROMOTED TO LEVEL 2**
 
 ### [Category: Code Auditor]
-1. ✅ **Case 1: Money Leak Audit (WO-056)** (2026-01-14)
-   - Result: PASS. Identified Government Asset sale recording missing in HousingSystem.
+1. ✅ **Case 1: Money Leak Audit ()** (2026-01-14)
+ - Result: PASS. Identified Government Asset sale recording missing in HousingSystem.
 
 ---
 

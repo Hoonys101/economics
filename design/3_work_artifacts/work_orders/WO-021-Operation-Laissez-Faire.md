@@ -1,23 +1,23 @@
-# 📜 Work Order: WO-021 (Operation Laissez-Faire)
+# 📜 Work Order: (Operation Laissez-Faire)
 
-**수신**: Manager AI (Jules)  
-**참조**: All Modules  
+**수신**: Manager AI (Jules)
+**참조**: All Modules
 **목표**: "잉여 생산물에 의한 자본 축적과 자생적 시장 분화 가능성 검증"
 
 ## 1. 환경 설정 (Configuration)
 "정부의 개입을 0으로, 민간의 효율을 2배로."
 
 - **세금 폐지**:
-  - `INCOME_TAX_RATE = 0.0`
-  - `CORPORATE_TAX_RATE = 0.0`
-  - `SALES_TAX_RATE = 0.0`
+ - `INCOME_TAX_RATE = 0.0`
+ - `CORPORATE_TAX_RATE = 0.0`
+ - `SALES_TAX_RATE = 0.0`
 - **생산성 혁명**:
-  - `FIRM_PRODUCTIVITY_FACTOR = 20.0` (기존 10.0 대비 2배)
+ - `FIRM_PRODUCTIVITY_FACTOR = 20.0` (기존 10.0 대비 2배)
 - **규제 완화 (유지비 조정)**:
-  - `FIRM_MAINTENANCE_FEE = 50.0` (기존 200.0 대비 1/4 축소, 현재 0.1에서 상향 조정하여 '적정 마찰력' 테스트)
+ - `FIRM_MAINTENANCE_FEE = 50.0` (기존 200.0 대비 1/4 축소, 현재 0.1에서 상향 조정하여 '적정 마찰력' 테스트)
 - **초기 재고 제거 (Empty Warehouse 유지)**:
-  - `INITIAL_FIRM_INVENTORY_MEAN = 0.0`
-  - `HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0`
+ - `INITIAL_FIRM_INVENTORY_MEAN = 0.0`
+ - `HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0`
 
 ## 2. 검증 시나리오 (Hypothesis Verification)
 - **Step 1**: 초기 100틱 동안 기업들이 막대한 이익(Surplus)을 남기는지 확인.

@@ -1,4 +1,4 @@
-# Great Reset Stress Test Report (WO-115)
+# Great Reset Stress Test Report ()
 **Status**: PASSED
 
 ## 1. System Stability (Atomicity)

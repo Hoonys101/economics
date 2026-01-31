@@ -1,4 +1,4 @@
-# Work Order: WO-038 - God Mode Controls
+# Work Order: - God Mode Controls
 
 ## Phase: 20.5 Step 2 (Stabilization)
 
@@ -27,15 +27,15 @@ Sidebar의 슬라이더 조작을 통해 시뮬레이션 파라미터를 실시�
 ### New Method:
 ```python
 def update_params(simulation: Simulation, new_params: dict) -> None:
-    """
-    Updates simulation configuration at runtime.
-    """
-    for key, value in new_params.items():
-        if hasattr(simulation.config_module, key):
-            setattr(simulation.config_module, key, value)
-            logger.info(f"[Dashboard] Updated config: {key} -> {value}")
-        else:
-            logger.warning(f"[Dashboard] Unknown config key: {key}")
+ """
+ Updates simulation configuration at runtime.
+ """
+ for key, value in new_params.items():
+ if hasattr(simulation.config_module, key):
+ setattr(simulation.config_module, key, value)
+ logger.info(f"[Dashboard] Updated config: {key} -> {value}")
+ else:
+ logger.warning(f"[Dashboard] Unknown config key: {key}")
 ```
 
 ---

@@ -7,12 +7,12 @@
 
 ## 🚀 1. 핵심 성과 (Key Achievements)
 
-### A. Phase 23 산업 혁명 시스템 통합 (WO-053)
+### A. Phase 23 산업 혁명 시스템 통합 ()
 - **Malthusian Trap 돌파 기전 구현**: `TechnologyManager`와 `ProductionDepartment`를 DTO 기반으로 연동 완료.
 - **화학 비료(Haber-Bosch) 기술 활성화**: `FOOD` 섹션 기업이 기술 채택 시 생산성(TFP)이 **300% (3.0배)** 증가하는 로직 검증 완료.
 - **아키텍처 정제**: 시스템 간 결합도를 낮추기 위해 `main.py` 중심의 데이터 오케스트레이션 구조를 채택, `TechnologyManager`의 God Object화를 방지함.
 
-### B. 가계 파사드(Household Facade) 최적화 (WO-092 / TD-075)
+### B. 가계 파사드(Household Facade) 최적화 ( / TD-075)
 - **비대한 가계 클래스 해체**: 850라인이 넘던 `Household` 클래스의 경제 관련 로직을 `EconComponent`로 완전 위임.
 - **캡슐화 및 위임**: 인플레이션 기대치, 가격 지각 로직 등을 컴포넌트 내부로 은닉하고 파사드 패턴을 통해 기존 API 호환성을 유지(Public API 유지율 100%).
 - **기술 부채 상환**: BLOCKER급 유지보수 위험 요소였던 **TD-075**를 성공적으로 상환(RESOLVED).

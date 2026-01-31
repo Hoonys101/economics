@@ -1,6 +1,6 @@
 ## Mission: Implement Deficit Spending for Government Stimulus
 
-You are implementing **WO-057-Active** to solve the Mass Starvation crisis by enabling the Government to spend beyond its assets (Deficit Spending).
+You are implementing **** to solve the Mass Starvation crisis by enabling the Government to spend beyond its assets (Deficit Spending).
 
 ## Context Files
 | Role | File | Purpose |
@@ -24,15 +24,15 @@ Add to the Phase 7 Adaptive Fiscal Policy section:
 Modify provide_subsidy() around line 266-310:
 - After calculating effective_amount, check if assets are sufficient
 - If NOT sufficient AND DEFICIT_SPENDING_ENABLED is True:
-  - Calculate debt_limit = current_gdp * DEFICIT_SPENDING_LIMIT_RATIO
-  - Allow payment if abs(projected_assets) is less than or equal to debt_limit
-  - Log FISCAL_CLIFF_REACHED if limit exceeded
+ - Calculate debt_limit = current_gdp * DEFICIT_SPENDING_LIMIT_RATIO
+ - Allow payment if abs(projected_assets) is less than or equal to debt_limit
+ - Log FISCAL_CLIFF_REACHED if limit exceeded
 - Update self.total_debt = abs(self.assets) if self.assets is negative else 0
 
 ### 3. Smart Leviathan Policy (smart_leviathan_policy.py)
 Modify decide() around line 84-101:
 - Before applying budget limits, check for Emergency Condition:
-  - gdp_growth_sma less than -0.05 OR unemployment_sma greater than 0.10
+ - gdp_growth_sma less than -0.05 OR unemployment_sma greater than 0.10
 - If Emergency: use EMERGENCY_BUDGET_MULTIPLIER_CAP (2.0)
 - Otherwise: use NORMAL_BUDGET_MULTIPLIER_CAP (1.0)
 

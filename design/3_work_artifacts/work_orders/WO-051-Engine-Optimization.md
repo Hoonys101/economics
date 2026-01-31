@@ -1,4 +1,4 @@
-# Work Order: WO-051-Engine-Optimization (Vectorization)
+# Work Order: -Optimization (Vectorization)
 
 **Date:** 2026-01-12
 **Phase:** Phase 22 (Completion)
@@ -24,79 +24,79 @@ import numpy as np
 import logging
 
 class VectorizedHouseholdPlanner:
-    def __init__(self, config):
-        self.config = config
-        # Global Caching: 반복 계산되는 상수 미리 저장
-        # Handle cases where config might not have attributes if running in isolation, but assume config has them based on WO-048
-        self.child_monthly_cost = getattr(config, "CHILD_MONTHLY_COST", 500.0)
-        self.breeding_cost_base = self.child_monthly_cost * 12 * 20
-        self.opp_cost_factor = getattr(config, "OPPORTUNITY_COST_FACTOR", 0.3) * 12 * 20
-        self.emotional_base = getattr(config, "CHILD_EMOTIONAL_VALUE_BASE", 500000.0)
-        self.tech_enabled = getattr(config, "TECH_CONTRACEPTION_ENABLED", True)
-        self.fertility_rate = getattr(config, "BIOLOGICAL_FERTILITY_RATE", 0.15)
-        
-        self.logger = logging.getLogger(__name__)
+ def __init__(self, config):
+ self.config = config
+ # Global Caching: 반복 계산되는 상수 미리 저장
+ # Handle cases where config might not have attributes if running in isolation, but assume config has them based on
+ self.child_monthly_cost = getattr(config, "CHILD_MONTHLY_COST", 500.0)
+ self.breeding_cost_base = self.child_monthly_cost * 12 * 20
+ self.opp_cost_factor = getattr(config, "OPPORTUNITY_COST_FACTOR", 0.3) * 12 * 20
+ self.emotional_base = getattr(config, "CHILD_EMOTIONAL_VALUE_BASE", 500000.0)
+ self.tech_enabled = getattr(config, "TECH_CONTRACEPTION_ENABLED", True)
+ self.fertility_rate = getattr(config, "BIOLOGICAL_FERTILITY_RATE", 0.15)
 
-    def decide_breeding_batch(self, agents: list):
-        """
-        WO-048 Logic의 벡터화 버전
-        """
-        # 1. Extract Data (병목 지점이나 Python Loop보다 빠름)
-        count = len(agents)
-        if count == 0: return []
-        
-        # Step 1: Pre-Modern Check (Biological)
-        if not self.tech_enabled:
-            # Vectorized Random Choice
-            # P(reproduction) = fertility_rate
-            vals = np.random.random(count)
-            decisions = vals < self.fertility_rate
-            return decisions.tolist() # Return list of booleans
+ self.logger = logging.getLogger(__name__)
 
-        # Step 2: Modern Check (NPV)
-        # 속성 추출 (List Comprehension -> NumPy Array)
-        # dtype=float32 사용으로 메모리/속도 최적화
-        ages = np.array([a.age for a in agents], dtype=np.float32)
-        
-        # Estimate Monthly Income proxy: current_wage * 8 * 20
-        # If agent has 'monthly_income' attribute use it, else calc from wage
-        # Assumption: agents are Household objects.
-        # Let's extract 'current_wage' and map to monthly.
-        wages = np.array([getattr(a, "current_wage", 0.0) for a in agents], dtype=np.float32)
-        monthly_incomes = wages * 8.0 * 20.0
-        
-        children_counts = np.array([a.children_count for a in agents], dtype=np.float32)
-        
-        # 2. Vectorized Computation (핵심 최적화 구간)
-        
-        # A. Cost Matrix
-        c_direct = np.full(count, self.breeding_cost_base)
-        c_opp = monthly_incomes * self.opp_cost_factor
-        total_cost = c_direct + c_opp
+ def decide_breeding_batch(self, agents: list):
+ """
+ Logic의 벡터화 버전
+ """
+ # 1. Extract Data (병목 지점이나 Python Loop보다 빠름)
+ count = len(agents)
+ if count == 0: return []
 
-        # B. Benefit Matrix
-        # ZeroDivisionError 방지: children_counts + 1
-        u_emotional = self.emotional_base / (children_counts + 1)
-        
-        # 노후 부양: 자녀 기대 소득(부모 소득) * 0.1 * 20년
-        u_support = monthly_incomes * 0.1 * 12 * 20
-        
-        total_benefit = u_emotional + u_support
+ # Step 1: Pre-Modern Check (Biological)
+ if not self.tech_enabled:
+ # Vectorized Random Choice
+ # P(reproduction) = fertility_rate
+ vals = np.random.random(count)
+ decisions = vals < self.fertility_rate
+ return decisions.tolist() # Return list of booleans
 
-        # C. NPV & Constraints
-        npv = total_benefit - total_cost
-        
-        # Solvency Check: 소득 < 월 양육비 * 2.5 이면 포기
-        is_solvent = monthly_incomes > (self.child_monthly_cost * 2.5)
-        
-        # Fertility Check: 20 <= age <= 45
-        is_fertile = (ages >= 20) & (ages <= 45)
+ # Step 2: Modern Check (NPV)
+ # 속성 추출 (List Comprehension -> NumPy Array)
+ # dtype=float32 사용으로 메모리/속도 최적화
+ ages = np.array([a.age for a in agents], dtype=np.float32)
 
-        # 3. Final Decision Mask (Boolean Array)
-        # 모든 조건이 True여야 함
-        decisions = (npv > 0) & is_solvent & is_fertile
-        
-        return decisions.tolist()
+ # Estimate Monthly Income proxy: current_wage * 8 * 20
+ # If agent has 'monthly_income' attribute use it, else calc from wage
+ # Assumption: agents are Household objects.
+ # Let's extract 'current_wage' and map to monthly.
+ wages = np.array([getattr(a, "current_wage", 0.0) for a in agents], dtype=np.float32)
+ monthly_incomes = wages * 8.0 * 20.0
+
+ children_counts = np.array([a.children_count for a in agents], dtype=np.float32)
+
+ # 2. Vectorized Computation (핵심 최적화 구간)
+
+ # A. Cost Matrix
+ c_direct = np.full(count, self.breeding_cost_base)
+ c_opp = monthly_incomes * self.opp_cost_factor
+ total_cost = c_direct + c_opp
+
+ # B. Benefit Matrix
+ # ZeroDivisionError 방지: children_counts + 1
+ u_emotional = self.emotional_base / (children_counts + 1)
+
+ # 노후 부양: 자녀 기대 소득(부모 소득) * 0.1 * 20년
+ u_support = monthly_incomes * 0.1 * 12 * 20
+
+ total_benefit = u_emotional + u_support
+
+ # C. NPV & Constraints
+ npv = total_benefit - total_cost
+
+ # Solvency Check: 소득 < 월 양육비 * 2.5 이면 포기
+ is_solvent = monthly_incomes > (self.child_monthly_cost * 2.5)
+
+ # Fertility Check: 20 <= age <= 45
+ is_fertile = (ages >= 20) & (ages <= 45)
+
+ # 3. Final Decision Mask (Boolean Array)
+ # 모든 조건이 True여야 함
+ decisions = (npv > 0) & is_solvent & is_fertile
+
+ return decisions.tolist()
 
 ```
 
@@ -107,14 +107,14 @@ class VectorizedHouseholdPlanner:
 **Before (Legacy):**
 *Currently found in `run_tick` method ~line 582*
 ```python
-        # 2. Reproduction Decision
-        birth_requests = []
-        for household in self.households:
-             if household.is_active:
-                 # Check decision logic
-                 context = DecisionContext(...)
-                 if household.decision_engine.decide_reproduction(context):
-                     birth_requests.append(household)
+ # 2. Reproduction Decision
+ birth_requests = []
+ for household in self.households:
+ if household.is_active:
+ # Check decision logic
+ context = DecisionContext(...)
+ if household.decision_engine.decide_reproduction(context):
+ birth_requests.append(household)
 ```
 
 **After (Vectorized):**
@@ -123,21 +123,21 @@ class VectorizedHouseholdPlanner:
 3. Replace logic in `run_tick`:
 
 ```python
-        # 2. Reproduction Decision (Vectorized WO-051)
-        birth_requests = []
-        
-        # Filter Candidates: Active, Age 20-45 (Loose filter for extraction), Female? (Design says Agents are Households, Gender is attribute)
-        # Spec says "20 <= age <= 45".
-        # We can pass all active households to batch planner, and let it filter by age/solvency.
-        # But for efficiency, we pass active households.
-        
-        active_households = [h for h in self.households if h.is_active]
-        if active_households:
-            decisions = self.breeding_planner.decide_breeding_batch(active_households)
-            
-            for h, decision in zip(active_households, decisions):
-                if decision:
-                    birth_requests.append(h)
+ # 2. Reproduction Decision (Vectorized )
+ birth_requests = []
+
+ # Filter Candidates: Active, Age 20-45 (Loose filter for extraction), Female? (Design says Agents are Households, Gender is attribute)
+ # Spec says "20 <= age <= 45".
+ # We can pass all active households to batch planner, and let it filter by age/solvency.
+ # But for efficiency, we pass active households.
+
+ active_households = [h for h in self.households if h.is_active]
+ if active_households:
+ decisions = self.breeding_planner.decide_breeding_batch(active_households)
+
+ for h, decision in zip(active_households, decisions):
+ if decision:
+ birth_requests.append(h)
 ```
 
 ### C. Dependency Check
@@ -147,8 +147,8 @@ class VectorizedHouseholdPlanner:
 
 1. **Step 1: Create Class:** `simulation/ai/vectorized_planner.py` 생성 및 위 코드 복사.
 2. **Step 2: Engine Modification:** `simulation/engine.py` 수정.
-   - Import 추가.
-   - `__init__`에서 Planner 초기화.
-   - `run_tick`에서 Loop 교체.
+ - Import 추가.
+ - `__init__`에서 Planner 초기화.
+ - `run_tick`에서 Loop 교체.
 3. **Step 3: Verification:** 기존 테스트 `tests/test_wo048_breeding.py`가 여전히 통과하는지 확인 (로직은 동일해야 함). 혹은 간단한 성능 테스트 `tests/test_vectorization_speed.py` 작성 (Optional).
 

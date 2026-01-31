@@ -1,4 +1,4 @@
-# Work Order: WO-042 - Genesis Fix (Zombie Economy)
+# Work Order: - Genesis Fix (Zombie Economy)
 
 **Phase:** 21.5 (Critical Hotfix)
 **Priority:** BLOCKER

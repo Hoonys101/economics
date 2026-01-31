@@ -1,4 +1,4 @@
-# WO-108: Operation Parity (DTO & Spec Alignment)
+# Operation Parity (DTO & Spec Alignment)
 
 **Date**: 2026-01-22
 **Priority**: LOW

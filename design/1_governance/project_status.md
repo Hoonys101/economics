@@ -9,69 +9,69 @@
 ## 1. 현재 개발 단계
 
 - **완료된 단계(Recent)**:
-    - **WO-053**: Phase 23 Reactivation (Industrial Revolution) ✅ (2026-01-28)
-    - **Operation Sacred Refactoring**: Purge Reflux System & Phased Tick Orchestration ✅ (2026-01-28)
-    - **ThoughtStream (W-0/W-1)**: Observability Infrastructure & Cognitive Probes ✅ (2026-01-30)
-    - **Operation Green Light**: Test Suite Restoration (100% Pass Rate) ✅ (2026-01-31)
-    - **Operation Code Blue**: GDP 0 Diagnosis & Deadlock Resolution (Demand Elasticity) ✅ (2026-01-31)
-    - **Monetary Leak Fix**: Systemic Financial Integrity & Atomic Force Tax ✅ (2026-01-31)
-    - **Audit Specialist Framework**: 3 Reconnaissance Manuals (Structural, Economic, Parity) ✅ (2026-01-31)
-    - `Phase 26.5: Sovereign Debt & Corporate Credit` ✅ (2026-01-23)
-    - **WO-121**: Newborn Agent Initialization Fix (Config Externalization) ✅
-    - **WO-112**: Economic Purity (SettlementSystem Implementation) ✅
-    - **WO-113**: Sovereign Debt & Atomic Tax Pipeline ✅
-    - `Phase 25: The Financial Superstructure (Stock Market)` ✅
-    - **WO-037**: Simulation Cockpit (Streamlit Dashboard) ✅
-    - **WO-073**: Finance System Double-Entry & Atomicity Refactor ✅
-    - **WO-078**: Fractional Reserve Banking (Credit Creation & Scoring) ✅ (2026-01-27)
-    
-- **완료된 단계(Recent):** `Phase 29: The Great Depression & Crisis Monitor` ✅ (2026-01-21)
-    - **TD-008**: Advanced Finance System (Altman Z-Score) ✅
-    - **Phase 28**: Macro-Stability Stress Testing ✅
-    - **Phase 29**: Depression Simulation & Crisis Monitor ✅
-    - **Parallel Debt Triage**: TD-034, TD-041, TD-050, TD-051, TD-058, TD-059, TD-063 ✅
+ - ****: Phase 23 Reactivation (Industrial Revolution) ✅ (2026-01-28)
+ - **Operation Sacred Refactoring**: Purge Reflux System & Phased Tick Orchestration ✅ (2026-01-28)
+ - **ThoughtStream (W-0/W-1)**: Observability Infrastructure & Cognitive Probes ✅ (2026-01-30)
+ - **Operation Green Light**: Test Suite Restoration (100% Pass Rate) ✅ (2026-01-31)
+ - **Operation Code Blue**: GDP 0 Diagnosis & Deadlock Resolution (Demand Elasticity) ✅ (2026-01-31)
+ - **Monetary Leak Fix**: Systemic Financial Integrity & Atomic Force Tax ✅ (2026-01-31)
+ - **Audit Specialist Framework**: 3 Reconnaissance Manuals (Structural, Economic, Parity) ✅ (2026-01-31)
+ - `Phase 26.5: Sovereign Debt & Corporate Credit` ✅ (2026-01-23)
+ - ****: Newborn Agent Initialization Fix (Config Externalization) ✅
+ - ****: Economic Purity (SettlementSystem Implementation) ✅
+ - ****: Sovereign Debt & Atomic Tax Pipeline ✅
+ - `Phase 25: The Financial Superstructure (Stock Market)` ✅
+ - ****: Simulation Cockpit (Streamlit Dashboard) ✅
+ - ****: Finance System Double-Entry & Atomicity Refactor ✅
+ - ****: Fractional Reserve Banking (Credit Creation & Scoring) ✅ (2026-01-27)
 
-- **완료된 마일스톤:** `WO-103: Architectural Surgery (Sacred Sequence)` ✅ (2026-01-21)
-    - **Phase 1**: Financial Integrity & SoC ✅ (Merged 2026-01-20)
-    - **Phase 2**: Guaranteed Execution Sequence ✅ (Merged 2026-01-21)
-    - **Phase 3**: DTO Decoupling & Data Flow Purity ✅ (Merged 2026-01-21)
+- **완료된 단계(Recent):** `Phase 29: The Great Depression & Crisis Monitor` ✅ (2026-01-21)
+ - **TD-008**: Advanced Finance System (Altman Z-Score) ✅
+ - **Phase 28**: Macro-Stability Stress Testing ✅
+ - **Phase 29**: Depression Simulation & Crisis Monitor ✅
+ - **Parallel Debt Triage**: TD-034, TD-041, TD-050, TD-051, TD-058, TD-059, TD-063 ✅
+
+- **완료된 마일스톤:** `Architectural Surgery (Sacred Sequence)` ✅ (2026-01-21)
+ - **Phase 1**: Financial Integrity & SoC ✅ (Merged 2026-01-20)
+ - **Phase 2**: Guaranteed Execution Sequence ✅ (Merged 2026-01-21)
+ - **Phase 3**: DTO Decoupling & Data Flow Purity ✅ (Merged 2026-01-21)
 
 - **현재 단계:** `Phase 30: Fractional Reserve & Credit Expansion` 🏦 (2026-01-31)
-    - **Goal**: Implement credit money creation, interbank lending, and reserve requirement systems.
-    - **Status**: 
-        - **WO-024**: Fractional Reserve Implementation 🏗️ IN PROGRESS (Spec Generation)
-        - **TD-170**: Sales Tax Atomicity Violation 🏗️ IN PROGRESS (Parallel Track)
-        - **TD-164**: Global Liquidity Injection Strategy ✅ COMPLETED via WO-024
-        - **TD-167**: Firm Bankruptcy Sequence Logic FIX 🏗️ PLANNING
+ - **Goal**: Implement credit money creation, interbank lending, and reserve requirement systems.
+ - **Status**:
+ - ****: Fractional Reserve Implementation 🏗️ IN PROGRESS (Spec Generation)
+ - **TD-170**: Sales Tax Atomicity Violation 🏗️ IN PROGRESS (Parallel Track)
+ - **TD-164**: Global Liquidity Injection Strategy ✅ COMPLETED via
+ - **TD-167**: Firm Bankruptcy Sequence Logic FIX 🏗️ PLANNING
 
-    - **Next Phase**: `Phase 31: Open Market Operations & Fiscal/Monetary Coordination`
+ - **Next Phase**: `Phase 31: Open Market Operations & Fiscal/Monetary Coordination`
 
 ---
 
 ## 2. 완료된 작업 요약 (Recent)
 
-### WO-121: Newborn Initialization Fix ✅
+### Newborn Initialization Fix ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Logic Fix | ✅ | 신생아 초기 욕구(`needs`) 주입으로 행동 불능(DOA) 해결 |
 | Config | ✅ | `initial_needs` 값을 `economy_params.yaml`로 외부화 |
 | Test | ✅ | Mock 기반 단위 테스트로 리팩토링 및 검증 완료 |
 
-### WO-081: Bank Interface Segregation ✅
+### Bank Interface Segregation ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Interface | ✅ | `IBankService` vs `IFinancialEntity` 분리 완료 |
 | Refactoring | ✅ | `deposit_from_customer` 명시적 메서드 적용 |
 | Zero-Sum | ✅ | 시스템 자본금과 고객 예금 분리 확인 |
 
-### WO-082: Golden Loader Infrastructure ✅
+### Golden Loader Infrastructure ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Loader | ✅ | `GoldenLoader` class implements `load_json` |
 | Mocking | ✅ | Recursive nested dict -> MagicMock conversion |
 | Integration | ✅ | `conftest.py` fixtures integrated |
 
-### WO-072: Sovereign Debt & Financial Credit ✅
+### Sovereign Debt & Financial Credit ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Finance Module | ✅ | `modules/finance/system.py` implemented |
@@ -79,7 +79,7 @@
 | Corporate Bailout | ✅ | Grant $\to$ Loan conversion verified |
 | **Verification** | 🛑 | **Review Rejected**: Money Leak in Debt Service & QE |
 
-### WO-055: Golden Age Stabilization ✅
+### Golden Age Stabilization ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Money Supply Anti-Leak | ✅ | Fixed Inheritance, Education, and Liquidation leaks |
@@ -87,13 +87,13 @@
 | Labor Guard | ✅ | Firm creation cap (`Pop / 15`) to prevent labor dilution |
 | Starvation Fix | ✅ | Inventory threshold raised to 3.0 in VectorizedPlanner |
 
-### WO-056: The Invisible Hand (Shadow Mode) 🏗️
+### The Invisible Hand (Shadow Mode) 🏗️
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Taylor Rule Shadow | ✅ | Shadow price/wage/interest logging implemented |
 | Money Leak Hotfix | 🏗️ | -999.8 누출 잔존, Jules 디버깅 중 |
 
-### WO-057: The Smart Leviathan (AI Policy) ✅
+### The Smart Leviathan (AI Policy) ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Brain (Q-Learning) | ✅ | 81-State, Q-Table mutation implemented |
@@ -101,7 +101,7 @@
 | Actuator (Policy Exec) | ✅ | Policy translation layer implemented |
 | **Verification** | ⚠️ | **Conditional Approved** (TD-025: Data Gap accepted) |
 
-### WO-058: Economic CPR (Production Rescue) ✅
+### Economic CPR (Production Rescue) ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Diagnosis | ✅ | Deadlock Found (No Capital/Inventory) |
@@ -111,7 +111,7 @@
 - **Operation Code Blue**: ✅ COMPLETED. GDP 0 Deadlock solved via Demand Elasticity.
 | **System Check** | ✅ | **Simulation Alive**, CPR Successful |
 
-### WO-060: The Stock Exchange (Activation) ✅
+### The Stock Exchange (Activation) ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Automatic IPO | ✅ | Firms launch with 1,000 treasury shares |
@@ -124,21 +124,21 @@
 ## 📊 Milestone Traceability
 | Milestone | Status | Key Artifact |
 |---|---|---|
-| **Animal Spirits (WO-148)** | ✅ DONE | `modules/system/execution/public_manager.py` |
-| **Purity Gate (WO-138)** | ✅ DONE | `scripts/verify_purity.py` |
-| **Sacred Sequence (WO-103)** | ✅ DONE | `simulation/orchestration/tick_orchestrator.py` |
-| **Fractional Reserve** | ⏳ PENDING | WO-024 |
+| **Animal Spirits ()** | ✅ DONE | `modules/system/execution/public_manager.py` |
+| **Purity Gate ()** | ✅ DONE | `scripts/verify_purity.py` |
+| **Sacred Sequence ()** | ✅ DONE | `simulation/orchestration/tick_orchestrator.py` |
+| **Fractional Reserve** | ⏳ PENDING | |
 
 ## 3. 핵심 기술 결정사항 (2026-01-13)
 
-### WO-057 아키텍처 결정
+### 아키텍처 결정
 1. **5-Action 체계 확정**: Dovish(-IR), Hold, Hawkish(+IR), Expansion(-Tax), Contraction(+Tax)
 2. **Fiscal Dominance 모델**: 정부가 금리와 세율을 동시 통제
 3. **State Discretization**: 81개 상태 (인플레이션/실업/GDP갭/부채 각 3단계)
 4. **Policy Throttling**: 30틱 간격 (GOV_ACTION_INTERVAL)
 5. **Central Bank Link**: `market_data["central_bank"]`를 통한 금리 간접 조작
 
-### WO-060 아키텍처 결정
+### 아키텍처 결정
 1. **Shareholder Registry Sync**: `StockMarket`과 `Portfolio` 간 실시간 원장 동기화
 2. **Circuit Breaker**: 일일 변동폭 ±15% 제한 (Floor Price=$0.01$)
 3. **Wealth-biased Merton**: $RiskAversion = f(Personality, Wealth)$

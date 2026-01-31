@@ -19,7 +19,7 @@
 
 ### [TD-157] Price-Consumption Deadlock
 - **발견일**: 2026-01-30
-- **증상**: WO-097 재검증 중 식료품 가격이 $5.00$에서 고정되어 변하지 않는 현상.
+- **증상**: 재검증 중 식료품 가격이 $5.00$에서 고정되어 변하지 않는 현상.
 - **영향**: 시장 메커니즘 마비 및 인구 붕괴 유발.
 
 ### [TD-140~142] God File Infestation (LOC > 600)
@@ -35,8 +35,8 @@
 
 | ID | Title | Solution |
 |---|---|---|
-| **TD-123** | God Class: `Household` | Decomposed into Stateless Components (WO-123) |
-| **TD-124** | God Class: `TransactionProcessor` | Split into 6-Layer Architecture (WO-124) |
+| **TD-123** | God Class: `Household` | Decomposed into Stateless Components () |
+| **TD-124** | God Class: `TransactionProcessor` | Split into 6-Layer Architecture () |
 | **TD-105** | Positive Drift Mystery | Fixed via Reflux atomic transfer & closure check |
 | **TD-106** | Bankruptcy Money Leak | Linked Bankruptcy to Settlement System |
 | **TD-130** | Reflux System (Dark Pools) | Operation Sacred Refactoring (Purge Reflux) |

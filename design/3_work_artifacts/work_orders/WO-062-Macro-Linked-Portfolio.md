@@ -1,4 +1,4 @@
-# Work Order: WO-062 - Macro-Linked Portfolio Decisions
+# Work Order: - Macro-Linked Portfolio Decisions
 
 **Phase:** 26 (Strategy Engine Integration)
 **Assignee:** Jules Charlie (AI/Strategy Expert)
@@ -24,8 +24,8 @@
 
 ## 4. Verification
 - `tests/test_portfolio_macro.py`를 작성하여 다음 시나리오를 검증하십시오.
-    - **Normal**: Lambda 보정 없음.
-    - **Stagflation**: Lambda 1.5배 이상 상승 및 주식 비중 감소 확인.
+ - **Normal**: Lambda 보정 없음.
+ - **Stagflation**: Lambda 1.5배 이상 상승 및 주식 비중 감소 확인.
 - 시뮬레이션 중 'Chaos Injection' 시기에 가계의 자산 배분 변화 리포트를 출력하십시오.
 
 ---

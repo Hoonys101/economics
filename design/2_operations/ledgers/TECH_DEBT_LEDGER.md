@@ -32,7 +32,7 @@
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | 비현실적 경제 상태 (무한 수요) | **PENDING** |
 | TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **ACTIVE** |
 | TD-157 | 2026-01-30 | Price-Consumption Deadlock | Economic Collapse (Static Price) | **RESOLVED** |
-| TD-164 | 2026-01-30 | Missing Fractional Reserve (WO-024) | Economic Stagnation / Liquidity Bottleneck | **CRITICAL** |
+| TD-164 | 2026-01-30 | Missing Fractional Reserve () | Economic Stagnation / Liquidity Bottleneck | **CRITICAL** |
 | TD-167 | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Bankruptcy without Transaction Opportunity | **HIGH** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)

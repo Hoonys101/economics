@@ -1,4 +1,4 @@
-# WO-098-DIAG-B: Market ID Consistency Audit
+# -B: Market ID Consistency Audit
 
 **Objective**: Verify if buy and sell orders for labor and food are targeting the same market IDs.
 

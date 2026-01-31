@@ -1,4 +1,4 @@
-# Work Order: WO-065 - Monetary Integrity & Suture
+# Work Order: - Monetary Integrity & Suture
 
 **Phase:** 26 (Stabilization & Debt Liquidation)
 **Priority:** **BLOCKING** (TD-031 상환)

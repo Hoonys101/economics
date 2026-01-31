@@ -1,4 +1,4 @@
-# WO-080: Golden Fixture Migration
+# Golden Fixture Migration
 
 ## 🎯 Objective
 테스트 코드의 `MagicMock` 기반 에이전트 목을 **Golden Fixture** 기반으로 마이그레이션하여 타입 안전성과 테스트 신뢰도를 향상시킵니다.
@@ -16,33 +16,33 @@ from simulation.initialization.initializer import SimulationInitializer
 from scripts.fixture_harvester import FixtureHarvester
 
 def main():
-    # 기본 시뮬레이션 빌드
-    initializer = SimulationInitializer(...)
-    sim = initializer.build_simulation()
-    
-    harvester = FixtureHarvester(output_dir="tests/goldens")
-    
-    # Tick 0: 초기 상태
-    harvester.capture_agents(sim.households, sim.firms, tick=0)
-    harvester.capture_config(sim.config_module)
-    harvester.save_all("initial_state.json")
-    
-    # Tick 10: 조기 경제
-    for _ in range(10):
-        sim.run_tick()
-    harvester.capture_agents(sim.households, sim.firms, tick=10)
-    harvester.save_all("early_economy.json")
-    
-    # Tick 100: 안정화된 경제
-    for _ in range(90):
-        sim.run_tick()
-    harvester.capture_agents(sim.households, sim.firms, tick=100)
-    harvester.save_all("stable_economy.json")
-    
-    print("✅ Golden fixtures generated successfully!")
+ # 기본 시뮬레이션 빌드
+ initializer = SimulationInitializer(...)
+ sim = initializer.build_simulation()
+
+ harvester = FixtureHarvester(output_dir="tests/goldens")
+
+ # Tick 0: 초기 상태
+ harvester.capture_agents(sim.households, sim.firms, tick=0)
+ harvester.capture_config(sim.config_module)
+ harvester.save_all("initial_state.json")
+
+ # Tick 10: 조기 경제
+ for _ in range(10):
+ sim.run_tick()
+ harvester.capture_agents(sim.households, sim.firms, tick=10)
+ harvester.save_all("early_economy.json")
+
+ # Tick 100: 안정화된 경제
+ for _ in range(90):
+ sim.run_tick()
+ harvester.capture_agents(sim.households, sim.firms, tick=100)
+ harvester.save_all("stable_economy.json")
+
+ print("✅ Golden fixtures generated successfully!")
 
 if __name__ == "__main__":
-    main()
+ main()
 ```
 
 2. **실행하여 골든 파일 생성**
@@ -71,27 +71,27 @@ python scripts/generate_golden_fixtures.py
 ```python
 @pytest.fixture
 def golden_initial_households():
-    """Tick 0 초기 가구 상태"""
-    loader = _get_golden_loader("initial_state.json")
-    return loader.create_household_mocks() if loader else []
+ """Tick 0 초기 가구 상태"""
+ loader = _get_golden_loader("initial_state.json")
+ return loader.create_household_mocks() if loader else []
 
 @pytest.fixture
 def golden_initial_firms():
-    """Tick 0 초기 기업 상태"""
-    loader = _get_golden_loader("initial_state.json")
-    return loader.create_firm_mocks() if loader else []
+ """Tick 0 초기 기업 상태"""
+ loader = _get_golden_loader("initial_state.json")
+ return loader.create_firm_mocks() if loader else []
 
 @pytest.fixture
 def golden_stable_households():
-    """Tick 100 안정화된 가구"""
-    loader = _get_golden_loader("stable_economy.json")
-    return loader.create_household_mocks() if loader else []
+ """Tick 100 안정화된 가구"""
+ loader = _get_golden_loader("stable_economy.json")
+ return loader.create_household_mocks() if loader else []
 
 @pytest.fixture
 def golden_stable_firms():
-    """Tick 100 안정화된 기업"""
-    loader = _get_golden_loader("stable_economy.json")
-    return loader.create_firm_mocks() if loader else []
+ """Tick 100 안정화된 기업"""
+ loader = _get_golden_loader("stable_economy.json")
+ return loader.create_firm_mocks() if loader else []
 ```
 
 ---
@@ -113,21 +113,21 @@ def golden_stable_firms():
 **Before (MagicMock):**
 ```python
 def test_crisis_monitor():
-    firms = [MagicMock() for _ in range(5)]
-    for i, f in enumerate(firms):
-        f.id = 100 + i
-        f.is_active = True
-        f.assets = 5000
-        # ... 30줄의 수동 설정
+ firms = [MagicMock() for _ in range(5)]
+ for i, f in enumerate(firms):
+ f.id = 100 + i
+ f.is_active = True
+ f.assets = 5000
+ # ... 30줄의 수동 설정
 ```
 
 **After (Golden Fixture):**
 ```python
 def test_crisis_monitor(golden_firms):
-    # golden_firms는 자동으로 실제 데이터에서 로드됨
-    monitor = CrisisMonitor(logger, run_id=0)
-    result = monitor.monitor(tick=1, firms=golden_firms)
-    assert result["active"] == len(golden_firms)
+ # golden_firms는 자동으로 실제 데이터에서 로드됨
+ monitor = CrisisMonitor(logger, run_id=0)
+ result = monitor.monitor(tick=1, firms=golden_firms)
+ assert result["active"] == len(golden_firms)
 ```
 
 ---

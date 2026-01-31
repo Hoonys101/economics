@@ -1,4 +1,4 @@
-# WO-136: Strategy Generalization (Tactical Sanitation)
+# Strategy Generalization (Tactical Sanitation)
 
 ## 1. 🎯 Objective
 Eliminate "Config Pollution" and "Hardcoded Scenarios" by introducing a formalized **Strategy Pattern**.
@@ -15,13 +15,13 @@ Create `simulation/dtos/strategy.py`:
 ```python
 @dataclass(frozen=True)
 class ScenarioStrategy:
-    name: str
-    is_active: bool
-    # Generic Parameters (Not Scenario Specific)
-    tfp_multiplier: float = 1.0
-    monetary_shock_target: Optional[float] = None
-    fiscal_shock_tax_rate: Optional[float] = None
-    # ... add fields found in initializer.py mapping
+ name: str
+ is_active: bool
+ # Generic Parameters (Not Scenario Specific)
+ tfp_multiplier: float = 1.0
+ monetary_shock_target: Optional[float] = None
+ fiscal_shock_tax_rate: Optional[float] = None
+ # ... add fields found in initializer.py mapping
 ```
 
 ### Step 2: Refactor `SimulationInitializer`
@@ -31,9 +31,9 @@ class ScenarioStrategy:
 
 ### Step 3: Inject Strategy (Dependency Injection)
 - Pass `sim.strategy` into components that need it, specifically:
-    - `TechnologyManager` (needs TFP multiplier)
-    - `CentralBank` (needs monetary shock targets)
-    - `Government` (needs fiscal shock targets)
+ - `TechnologyManager` (needs TFP multiplier)
+ - `CentralBank` (needs monetary shock targets)
+ - `Government` (needs fiscal shock targets)
 - **Constraint**: Do NOT pass the raw `config` module if only strategy params are needed. Pass `strategy` DTO.
 
 ### Step 4: Cleanup
@@ -41,9 +41,9 @@ class ScenarioStrategy:
 - Ensure `TechnologyManager` reads `strategy.tfp_multiplier` instead of `config.TECH_FERTILIZER_MULTIPLIER`.
 
 ## 4. ✅ Acceptance Criteria
-1.  **Zero `setattr`**: Searching `setattr(self.config` in `initializer.py` returns 0 matches.
-2.  **Explicit Data Flow**: Components receive strategy params via `__init__`, not by reading modified global config.
-3.  **Backward Compatibility**: Existing scenarios (Phase 23, Phase 29) must load correctly into the new DTO structure.
+1. **Zero `setattr`**: Searching `setattr(self.config` in `initializer.py` returns 0 matches.
+2. **Explicit Data Flow**: Components receive strategy params via `__init__`, not by reading modified global config.
+3. **Backward Compatibility**: Existing scenarios (Phase 23, Phase 29) must load correctly into the new DTO structure.
 
 ## 5. 🔗 Reference
 - `simulation/initialization/initializer.py` (Lines 111-140)

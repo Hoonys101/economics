@@ -1,4 +1,4 @@
-# Work Order: WO-040 - System 2 Inspection (The Why)
+# Work Order: - System 2 Inspection (The Why)
 
 ## Phase: 20.5 Step 4 (Parallel Track C)
 
@@ -29,24 +29,24 @@
 ```python
 # dashboard_connector.py
 def get_agent_details(simulation: Simulation, agent_id: int) -> Dict[str, Any]:
-    """Returns detailed info for a specific agent."""
-    agent = simulation.agents.get(agent_id)
-    if not agent:
-        return {"error": "Agent not found"}
-    
-    system2 = getattr(agent, 'system2_planner', None)
-    projection = system2.cached_projection if system2 else {}
-    
-    return {
-        "id": agent.id,
-        "assets": agent.assets,
-        "is_active": agent.is_active,
-        "gender": getattr(agent, 'gender', 'N/A'),
-        "age": getattr(agent, 'age', 0),
-        "children_count": len(getattr(agent, 'children_ids', [])),
-        "npv_wealth": projection.get("npv_wealth", 0.0),
-        "bankruptcy_tick": projection.get("bankruptcy_tick", None),
-    }
+ """Returns detailed info for a specific agent."""
+ agent = simulation.agents.get(agent_id)
+ if not agent:
+ return {"error": "Agent not found"}
+
+ system2 = getattr(agent, 'system2_planner', None)
+ projection = system2.cached_projection if system2 else {}
+
+ return {
+ "id": agent.id,
+ "assets": agent.assets,
+ "is_active": agent.is_active,
+ "gender": getattr(agent, 'gender', 'N/A'),
+ "age": getattr(agent, 'age', 0),
+ "children_count": len(getattr(agent, 'children_ids', [])),
+ "npv_wealth": projection.get("npv_wealth", 0.0),
+ "bankruptcy_tick": projection.get("bankruptcy_tick", None),
+ }
 ```
 
 ---

@@ -1,4 +1,4 @@
-# WO-020: Operation "Darwin" - Survival of the Fittest
+# Operation "Darwin" - Survival of the Fittest
 
 ## 1. Background
 1000틱 시뮬레이션 결과, 경제가 **정체(Stagnation)** 상태에 빠졌습니다.
@@ -18,11 +18,11 @@
 
 **변경 사항**:
 - `provide_subsidy()`, `invest_infrastructure()` 등 모든 지출 메서드에:
-  ```python
-  if self.assets < amount:
-      logger.warning(f"SPENDING_REJECTED | Insufficient funds: {self.assets:.2f} < {amount:.2f}")
-      return 0.0  # Hard Stop - 허공에서 돈 창조 금지
-  ```
+ ```python
+ if self.assets < amount:
+ logger.warning(f"SPENDING_REJECTED | Insufficient funds: {self.assets:.2f} < {amount:.2f}")
+ return 0.0 # Hard Stop - 허공에서 돈 창조 금지
+ ```
 - **Success Criteria**: `Engine Delta = 0.0000` (단 1원의 오차도 허용 안 함)
 
 ---
@@ -33,10 +33,10 @@
 **변경 사항**:
 ```python
 # 기존
-UNEMPLOYMENT_BENEFIT_RATIO = 0.8  # 실업급여 = 생존비용의 80%
+UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # 실업급여 = 생존비용의 80%
 
 # 수정
-UNEMPLOYMENT_BENEFIT_RATIO = 0.0  # 실업급여 = 0 (일하지 않으면 굶는다)
+UNEMPLOYMENT_BENEFIT_RATIO = 0.0 # 실업급여 = 0 (일하지 않으면 굶는다)
 ```
 - 정부는 국방/치안(시스템 유지) 외에는 돈을 쓰지 않는다.
 - **Philosophy**: "No Free Lunch. Work or Die."
@@ -48,13 +48,13 @@ UNEMPLOYMENT_BENEFIT_RATIO = 0.0  # 실업급여 = 0 (일하지 않으면 굶는
 
 **검증 항목**:
 1. **Mitosis (세포 분열)**:
-   - `MITOSIS_THRESHOLD`를 초과한 가계가 실제로 분열하는지 로그 확인.
-   - 분열 시 자산이 정확히 반으로 나뉘는지 확인.
+ - `MITOSIS_THRESHOLD`를 초과한 가계가 실제로 분열하는지 로그 확인.
+ - 분열 시 자산이 정확히 반으로 나뉘는지 확인.
 2. **Death (기아사)**:
-   - `assets == 0 AND inventory["basic_food"] == 0` 상태가 N틱 지속되면 사망하는지 확인.
-   - 사망 시 자산이 상속 또는 정부 귀속되는지 확인 (Escheat).
+ - `assets == 0 AND inventory["basic_food"] == 0` 상태가 N틱 지속되면 사망하는지 확인.
+ - 사망 시 자산이 상속 또는 정부 귀속되는지 확인 (Escheat).
 3. **Liquidation (기업 청산)**:
-   - 파산 기업의 자산이 주주(가계)에게 정확히 돌아가는지 확인.
+ - 파산 기업의 자산이 주주(가계)에게 정확히 돌아가는지 확인.
 
 ---
 

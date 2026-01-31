@@ -37,23 +37,23 @@ We will proceed with a **"Fix -> Relax -> Stimulate"** cadence.
 ### Step 1: Stop the Bleeding (Refactor Housing)
 **Goal**: Ensure Money Conservation (Zero-Sum).
 - **Action**: Refactor `simulation/systems/housing_system.py`.
-    - Replace direct `agent.assets` modification with `simulation.settlement_system.transfer()`.
-    - Implement `transfer(buyer, seller, amount, "property_purchase")`.
-    - Implement `transfer(tenant, owner, amount, "rent")`.
-    - Ensure Mortgage Loan creation uses `bank.grant_loan` correctly without "air money" fallback.
+ - Replace direct `agent.assets` modification with `simulation.settlement_system.transfer()`.
+ - Implement `transfer(buyer, seller, amount, "property_purchase")`.
+ - Implement `transfer(tenant, owner, amount, "rent")`.
+ - Ensure Mortgage Loan creation uses `bank.grant_loan` correctly without "air money" fallback.
 
 ### Step 2: Remove the Straitjacket (Disable Breakers)
 **Goal**: Ensure Order Acceptance.
 - **Action**: Create a diagnosis config `config/scenarios/diagnosis_free_market.yaml`.
-    - Set `MARKET_CIRCUIT_BREAKER_BASE_LIMIT` to `100.0` (Effectively disabled).
-    - Or add a flag `ENABLE_CIRCUIT_BREAKER: false` to `OrderBookMarket`.
+ - Set `MARKET_CIRCUIT_BREAKER_BASE_LIMIT` to `100.0` (Effectively disabled).
+ - Or add a flag `ENABLE_CIRCUIT_BREAKER: false` to `OrderBookMarket`.
 
 ### Step 3: Jumpstart the Heart (Stimulus)
 **Goal**: Force a Trade.
 - **Action**: Update `diagnosis_free_market.yaml`.
-    - **Super Households**: `initial_cash: 50000` (High purchasing power).
-    - **Super Firms**: `initial_inventory: 1000` (High supply).
-    - **Reasoning**: If GDP remains 0 even with infinite money and supply, the **Matching Engine** itself is broken.
+ - **Super Households**: `initial_cash: 50000` (High purchasing power).
+ - **Super Firms**: `initial_inventory: 1000` (High supply).
+ - **Reasoning**: If GDP remains 0 even with infinite money and supply, the **Matching Engine** itself is broken.
 
 ---
 
@@ -67,5 +67,5 @@ python scripts/run_phenomena_analysis.py --scenario config/scenarios/diagnosis_f
 ---
 
 ## 5. Work Orders
-- **WO-156**: Fix Housing System Leak (Step 1).
-- **WO-157**: Diagnostic Config & Market Unlock (Step 2 & 3).
+- ****: Fix Housing System Leak (Step 1).
+- ****: Diagnostic Config & Market Unlock (Step 2 & 3).

@@ -1,4 +1,4 @@
-# WO-058 Technical Specification: Economic CPR
+# Technical Specification: Economic CPR
 
 ## 1. Objective
 Revive `total_production` > 0 by resolving the "Zero Production" deadlock.
@@ -10,19 +10,19 @@ Jules must implement a specific diagnosis script to confirm the root cause.
 ```python
 # Pseudo-code for diagnosis
 def diagnose():
-    for firm in firms:
-        # Check L (Labor)
-        num_employees = len(firm.employees)
-        labor_skill = firm.hr.get_total_labor_skill()
-        
-        # Check K (Liquidity)
-        cash = firm.assets
-        
-        # Check Inputs
-        inputs_needed = firm.config.BROKEN_DOWN_INPUTS
-        input_status = {k: firm.input_inventory.get(k, 0) for k in inputs_needed}
-        
-        print(f"Firm {firm.id}: Empl={num_employees}, Skill={labor_skill}, Cash={cash}, Inputs={input_status}")
+ for firm in firms:
+ # Check L (Labor)
+ num_employees = len(firm.employees)
+ labor_skill = firm.hr.get_total_labor_skill()
+
+ # Check K (Liquidity)
+ cash = firm.assets
+
+ # Check Inputs
+ inputs_needed = firm.config.BROKEN_DOWN_INPUTS
+ input_status = {k: firm.input_inventory.get(k, 0) for k in inputs_needed}
+
+ print(f"Firm {firm.id}: Empl={num_employees}, Skill={labor_skill}, Cash={cash}, Inputs={input_status}")
 ```
 
 ## 3. Fix Design: The Bootstrapping Patch
@@ -35,12 +35,12 @@ Modify `simulation/engine.py` -> `__init__` or `Firm.__init__`.
 ```python
 # simulation/firms.py (Pseudo-code)
 def __init__(...):
-    # ...
-    # Bootstrap Inputs
-    if self.specialization in GOODS_CONFIG:
-        required_inputs = GOODS_CONFIG[self.specialization].inputs
-        for mat_name, qty in required_inputs.items():
-            self.input_inventory[mat_name] = qty * 30.0 * self.production_target
+ # ...
+ # Bootstrap Inputs
+ if self.specialization in GOODS_CONFIG:
+ required_inputs = GOODS_CONFIG[self.specialization].inputs
+ for mat_name, qty in required_inputs.items():
+ self.input_inventory[mat_name] = qty * 30.0 * self.production_target
 ```
 
 ### B. Initial Labor Liquidity (Demand Side)

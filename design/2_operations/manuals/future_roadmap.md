@@ -12,10 +12,10 @@
 ## 🚀 Phase 14-1: 배당 (The Dividend) - Current Focus
 > **Concept**: "내가 투자한 기업이 번 돈을 나눠 갖는다."
 
-- **구현 문서**: `WO-022 (Operation Reflux)`
+- **구현 문서**: ` (Operation Reflux)`
 - **핵심 내용**:
-  - 기업 소유권(`owner_id`) 확립.
-  - 잉여 현금을 주주에게 지급하는 `distribute_profit` 구현.
+ - 기업 소유권(`owner_id`) 확립.
+ - 잉여 현금을 주주에게 지급하는 `distribute_profit` 구현.
 - **경제적 의의**: 가장 기초적인 자본 소득. 기업의 성과가 가계의 구매력으로 환류되는 파이프라인 연결.
 
 - **경제적 의의**: 가장 기초적인 자본 소득. 기업의 성과가 가계의 구매력으로 환류되는 파이프라인 연결.
@@ -25,11 +25,11 @@
 ## 🏭 Phase 14-2: 혁신 (The Innovation) - Completed
 > **Concept**: "새로운 욕구를 창조하여 블루오션을 개척한다."
 
-- **구현 문서**: `WO-023 (Innovation Differentiation)`
+- **구현 문서**: ` (Innovation Differentiation)`
 - **핵심 내용**:
-  - `consumer_goods` (공산품) 및 `quality` 욕구 추가.
-  - Visionary 기업의 돌연변이 탄생 및 블루오션 전략.
-  - Maslow 제약 (생존 우선 법칙) 도입.
+ - `consumer_goods` (공산품) 및 `quality` 욕구 추가.
+ - Visionary 기업의 돌연변이 탄생 및 블루오션 전략.
+ - Maslow 제약 (생존 우선 법칙) 도입.
 - **경제적 의의**: 농업 중심 경제에서 산업 경제로의 구조적 전환(Transformation).
 
 ---
@@ -39,8 +39,8 @@
 
 - **구현 예정**: 배당 시스템 안정화 후.
 - **핵심 내용**:
-  - 은행의 **부분 지급준비제도(Fractional Reserve)** 도입.
-  - 대출 이자 수익을 예금자에게 분배하는 이자율 메커니즘.
+ - 은행의 **부분 지급준비제도(Fractional Reserve)** 도입.
+ - 대출 이자 수익을 예금자에게 분배하는 이자율 메커니즘.
 - **경제적 의의**: 위험(Risk) 없이 시간을 파는 소득. 노동 외 소득원의 다각화.
 
 ---
@@ -50,8 +50,8 @@
 
 - **구현 예정**: 최종 단계.
 - **핵심 내용**:
-  - **주식 거래소(Stock Exchange)** 및 호가창(Order Book) 구현.
-  - 가계 간 주식 매매(`Trade`) 로직.
+ - **주식 거래소(Stock Exchange)** 및 호가창(Order Book) 구현.
+ - 가계 간 주식 매매(`Trade`) 로직.
 - **경제적 의의**: 노동/생산과 무관하게, 정보와 기대 심리만으로 부가 이동하는 **투기 자본(Speculative Capital)**의 완성.
 
 ---

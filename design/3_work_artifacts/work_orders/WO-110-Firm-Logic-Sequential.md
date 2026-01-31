@@ -1,6 +1,6 @@
-# WO-110: 기업 의사결정 로직 순차 실행 전환
+# 기업 의사결정 로직 순차 실행 전환
 
-**Date**: 2026-01-22  
+**Date**: 2026-01-22
 **Priority**: CRITICAL (Blocker for Great Harvest)
 
 ---
@@ -18,9 +18,9 @@
 
 1. **AS-IS**: `if...elif...else` 문을 사용하여 단 하나의 `Tactic`만 반환하고 실행함.
 2. **TO-BE**: `decide` 메서드가 **주문 리스트(List[Order])**를 반환하도록 변경하고, 다음 로직을 순차적으로 평가함.
-   - **Step A (Planning)**: 재고 상태에 따라 생산 목표(`production_target`) 조정.
-   - **Step B (Operation)**: 조정된 목표에 따라 필요한 노동력 계산 및 `HIRE/FIRE` 주문 생성.
-   - **Step C (Commerce)**: 여유 재고가 있다면 판매 가격 조정 및 마켓 등록 주문 생성.
+ - **Step A (Planning)**: 재고 상태에 따라 생산 목표(`production_target`) 조정.
+ - **Step B (Operation)**: 조정된 목표에 따라 필요한 노동력 계산 및 `HIRE/FIRE` 주문 생성.
+ - **Step C (Commerce)**: 여유 재고가 있다면 판매 가격 조정 및 마켓 등록 주문 생성.
 
 ### Task 2: 전이 효과 확인
 - 한 틱 내에서 "목표 수정 -> 고용 주문 생성 -> 가격 조정"이 연결되어 발생하는지 로그로 확인하라.

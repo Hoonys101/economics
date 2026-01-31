@@ -1,4 +1,4 @@
-# [WORK ORDER] WO-057: The Smart Leviathan (Technocrat Edition)
+# [WORK ORDER] The Smart Leviathan (Technocrat Edition)
 
 > **Status**: [!IMPORTANT]
 > **Priority**: HIGH (Adaptive Governance)

@@ -1,4 +1,4 @@
-# Work Order: WO-064 - Banking Credit Engine (Credit Creation)
+# Work Order: - Banking Credit Engine (Credit Creation)
 
 **Phase:** 26 (Stabilization & Debt Liquidation)
 **Priority:** **CRITICAL** (TD-030 상환)

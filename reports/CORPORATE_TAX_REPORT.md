@@ -1,4 +1,4 @@
-# WO-018 Implementation Report: Corporate Tax & Stability Measures
+# Implementation Report: Corporate Tax & Stability Measures
 
 ## 1. 개요
 본 문서는 WO-018에 정의된 법인세(Corporate Tax), 기업 유지비(Maintenance Fee) 도입 및 청산 과정에서의 화폐 생성 버그(Money Printing Bug) 수정 결과를 보고합니다.
@@ -14,8 +14,8 @@
 ### 2.2 Critical Bug Fix: Money Conservation (`simulation/firms.py`, `simulation/engine.py`)
 - **버그 원인**: 기업 청산 시 재고와 자본재를 매각 처리하며 구매자 없이 현금이 생성되던 문제.
 - **수정 사항**:
-    - `Firm.liquidate_assets()` 및 `Engine._handle_agent_lifecycle`에서 재고와 자본재를 **즉시 폐기(Write-off)** 처리.
-    - 오직 기업이 보유한 현금 자산(`assets`)만이 주주에게 반환됨.
+ - `Firm.liquidate_assets()` 및 `Engine._handle_agent_lifecycle`에서 재고와 자본재를 **즉시 폐기(Write-off)** 처리.
+ - 오직 기업이 보유한 현금 자산(`assets`)만이 주주에게 반환됨.
 - **결과**: 청산 전후 시스템 총 화폐량 변동 없음 (Delta = 0.0).
 
 ### 2.3 Economic Mechanisms
@@ -28,9 +28,9 @@
 ### 3.1 Unit Test Execution (`tests/verify_corporate_tax.py`)
 - **Status**: **PASSED** ✅
 - **Test Cases**:
-    1. `test_pay_maintenance`: 유지비 납부 및 정부 세수 이전 확인.
-    2. `test_pay_corporate_tax`: 이익 기반 법인세 계산 및 납부 확인.
-    3. `test_liquidation_money_conservation`: 청산 시 화폐 총량 보존 확인.
+ 1. `test_pay_maintenance`: 유지비 납부 및 정부 세수 이전 확인.
+ 2. `test_pay_corporate_tax`: 이익 기반 법인세 계산 및 납부 확인.
+ 3. `test_liquidation_money_conservation`: 청산 시 화폐 총량 보존 확인.
 
 ## 4. 결론
 WO-018의 모든 요구사항이 구현 및 검증되었습니다.
