@@ -94,6 +94,10 @@ class SalesDepartment:
         reduction_factor = getattr(self.config, 'dynamic_price_reduction_factor', 0.95)
 
         for order in orders:
+            # Check if order is a goods order (has item_id)
+            if not hasattr(order, "item_id"):
+                continue
+
             if order.order_type == "SELL":
                 item_id = order.item_id
                 last_sale = self.firm.inventory_last_sale_tick.get(item_id, 0)

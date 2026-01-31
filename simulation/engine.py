@@ -50,6 +50,9 @@ class Simulation:
         # Expose via global module attribute for access by agents
         simulation.logger = self.simulation_logger
 
+        # DIRECTIVE ALPHA OPTIMIZER: Hardcode batch interval
+        self.batch_save_interval = 50
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.world_state, name)
 
@@ -91,7 +94,9 @@ class Simulation:
             }
         )
         
-        self.simulation_logger.flush()
+        # DIRECTIVE ALPHA OPTIMIZER: Conditional Flush
+        if self.world_state.time % self.batch_save_interval == 0:
+            self.simulation_logger.flush()
 
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
