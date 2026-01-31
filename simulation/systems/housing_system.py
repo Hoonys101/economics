@@ -50,8 +50,6 @@ class HousingSystem:
                                     
                         term_tx = simulation.bank.terminate_loan(loan.id)
                         if term_tx:
-                             if simulation.government:
-                                 simulation.government.process_monetary_transactions([term_tx])
                              if hasattr(simulation, 'world_state'):
                                  simulation.world_state.transactions.append(term_tx)
                         
@@ -206,8 +204,6 @@ class HousingSystem:
                     loan_id = loan_info["loan_id"]
 
                     if credit_tx:
-                        if simulation.government:
-                            simulation.government.process_monetary_transactions([credit_tx])
                         if hasattr(simulation, 'world_state'):
                             simulation.world_state.transactions.append(credit_tx)
 
@@ -223,8 +219,6 @@ class HousingSystem:
                          logger.error(f"LOAN_DISBURSEMENT_FAIL | Bank could not transfer {loan_amount} to {buyer.id}. Voiding loan.")
                          void_tx = simulation.bank.void_loan(loan_id)
                          if void_tx:
-                              if simulation.government:
-                                  simulation.government.process_monetary_transactions([void_tx])
                               if hasattr(simulation, 'world_state'):
                                   simulation.world_state.transactions.append(void_tx)
                          return
@@ -239,8 +233,6 @@ class HousingSystem:
                              simulation.settlement_system.transfer(buyer, simulation.bank, loan_amount, "loan_rollback", tick=simulation.time)
                              void_tx = simulation.bank.void_loan(loan_id)
                              if void_tx:
-                                  if simulation.government:
-                                      simulation.government.process_monetary_transactions([void_tx])
                                   if hasattr(simulation, 'world_state'):
                                       simulation.world_state.transactions.append(void_tx)
                              return
@@ -278,8 +270,6 @@ class HousingSystem:
                       try:
                           void_tx = simulation.bank.void_loan(loan_id)
                           if void_tx:
-                               if simulation.government:
-                                   simulation.government.process_monetary_transactions([void_tx])
                                if hasattr(simulation, 'world_state'):
                                    simulation.world_state.transactions.append(void_tx)
                       except Exception as e:
