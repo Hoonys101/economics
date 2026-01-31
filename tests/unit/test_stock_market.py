@@ -306,7 +306,7 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
     firm.specialization = "food"
 
     # State Override
-    firm._assets = mock_config.STARTUP_COST * 0.4  # Below threshold
+    firm.assets = mock_config.STARTUP_COST * 0.4  # Below threshold
     firm.treasury_shares = 500
     firm.total_shares = 1000.0
 
@@ -324,7 +324,7 @@ def test_seo_triggers(stock_market, mock_config, golden_firms):
             seo_trigger_ratio=0.5,
             seo_max_sell_ratio=0.1
         )
-        order = firm_decision_engine.corporate_manager.finance_manager._attempt_secondary_offering(firm, context, config_dto)
+        order = firm_decision_engine.corporate_manager.financial_strategy._attempt_secondary_offering(firm, context, config_dto)
 
     assert order is not None
     assert order.agent_id == firm.id
@@ -372,6 +372,9 @@ def test_household_investment(stock_market, mock_config, golden_households):
 
     stock_market.reference_prices = {1: 10.0, 2: 20.0, 3: 30.0, 4: 40.0}
 
+    # Set config value for StockTrader
+    mock_config.stock_investment_diversification_count = 3
+
     with patch('simulation.decisions.portfolio_manager.PortfolioManager.optimize_portfolio', return_value=(100, 400, 500)) as mock_optimize:
 
         # We need a market_data structure for the test
@@ -382,9 +385,22 @@ def test_household_investment(stock_market, mock_config, golden_households):
             "goods_market": {"basic_food_current_sell_price": 5.0}
         }
 
+        # Create a mock market_snapshot dict that StockTrader expects
+        market_snapshot = {
+            "market_data": {
+                "stock_market": {
+                    f"stock_{fid}": {"avg_price": price}
+                    for fid, price in stock_market.reference_prices.items()
+                }
+            },
+            "prices": {f"stock_{fid}": price for fid, price in stock_market.reference_prices.items()}
+        }
+
         # Directly test the order creation logic
-        # Logic moved to AssetManager
-        orders = household_decision_engine.asset_manager._place_buy_orders(household, 500, stock_market, 1)
+        # Logic moved to AssetManager -> StockTrader
+        orders = household_decision_engine.asset_manager.stock_trader.place_buy_orders(
+            household, 500, market_snapshot, mock_config, None
+        )
 
         assert len(orders) > 0
         assert isinstance(orders[0], StockOrder)

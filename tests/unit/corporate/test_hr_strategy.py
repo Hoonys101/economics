@@ -1,8 +1,8 @@
 import pytest
-from simulation.decisions.firm.hr_manager import HRManager
+from simulation.decisions.firm.hr_strategy import HRStrategy
 
 def test_hiring_logic(firm_dto, context_mock):
-    manager = HRManager()
+    manager = HRStrategy()
     firm_dto.production_target = 100
     firm_dto.inventory["food"] = 80 # Gap 20
     firm_dto.productivity_factor = 10.0 # Need 2 workers (approx)

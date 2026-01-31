@@ -1,8 +1,8 @@
 import pytest
-from simulation.decisions.firm.operations_manager import OperationsManager
+from simulation.decisions.firm.production_strategy import ProductionStrategy
 
 def test_rd_logic(firm_dto, context_mock):
-    manager = OperationsManager()
+    manager = ProductionStrategy()
 
     firm_dto.assets = 10000.0
     firm_dto.revenue_this_turn = 1000.0
@@ -19,7 +19,7 @@ def test_automation_investment(firm_dto, context_mock):
     # Update config DTO
     context_mock.config.automation_cost_per_pct = 10.0
 
-    manager = OperationsManager()
+    manager = ProductionStrategy()
 
     # High wages so automation saves money (for guidance simulation, but here guidance is passed in)
     firm_dto.employees_data = {

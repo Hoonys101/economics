@@ -20,15 +20,15 @@ class OperationsPlanDTO:
 class SalesPlanDTO:
     orders: List[Order] = field(default_factory=list)
 
-class FinanceManagerProtocol(Protocol):
+class FinancialStrategyProtocol(Protocol):
     def formulate_plan(self, context: DecisionContext, dividend_aggressiveness: float, debt_aggressiveness: float) -> FinancialPlanDTO:
         ...
 
-class HRManagerProtocol(Protocol):
+class HRStrategyProtocol(Protocol):
     def formulate_plan(self, context: DecisionContext, hiring_aggressiveness: float) -> HRPlanDTO:
         ...
 
-class OperationsManagerProtocol(Protocol):
+class ProductionStrategyProtocol(Protocol):
     def formulate_plan(self, context: DecisionContext, capital_aggressiveness: float, rd_aggressiveness: float, guidance: Dict[str, Any]) -> OperationsPlanDTO:
         ...
 

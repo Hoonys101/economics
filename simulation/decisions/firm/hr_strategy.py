@@ -6,7 +6,7 @@ from simulation.decisions.firm.api import HRPlanDTO
 
 logger = logging.getLogger(__name__)
 
-class HRManager:
+class HRStrategy:
     def formulate_plan(self, context: DecisionContext, hiring_aggressiveness: float) -> HRPlanDTO:
         firm = context.state
         config = context.config

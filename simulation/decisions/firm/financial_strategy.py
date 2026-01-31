@@ -7,7 +7,7 @@ from simulation.decisions.firm.api import FinancialPlanDTO
 
 logger = logging.getLogger(__name__)
 
-class FinanceManager:
+class FinancialStrategy:
     def formulate_plan(self, context: DecisionContext, dividend_aggressiveness: float, debt_aggressiveness: float) -> FinancialPlanDTO:
         firm = context.state
         config = context.config

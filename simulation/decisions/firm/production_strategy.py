@@ -6,7 +6,7 @@ from simulation.decisions.firm.api import OperationsPlanDTO
 
 logger = logging.getLogger(__name__)
 
-class OperationsManager:
+class ProductionStrategy:
     def formulate_plan(self, context: DecisionContext, capital_aggressiveness: float, rd_aggressiveness: float, guidance: Dict[str, Any]) -> OperationsPlanDTO:
         firm = context.state
         config = context.config
