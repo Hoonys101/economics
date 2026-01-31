@@ -69,7 +69,7 @@ class LoanMarket(Market):
             if order.metadata and "borrower_profile" in order.metadata:
                 borrower_profile = order.metadata["borrower_profile"]
 
-            loan_info = self.bank.grant_loan(
+            grant_result = self.bank.grant_loan(
                 borrower_id=str(order.agent_id),
                 amount=loan_amount,
                 interest_rate=interest_rate,
@@ -77,7 +77,10 @@ class LoanMarket(Market):
                 borrower_profile=borrower_profile
             )
 
-            if loan_info:
+            if grant_result:
+                loan_info, credit_tx = grant_result
+
+                # 1. Record the loan transaction (Commercial)
                 transactions.append(
                     Transaction(
                         item_id="loan_granted",
@@ -90,6 +93,11 @@ class LoanMarket(Market):
                         market_id=self.id,
                     )
                 )
+
+                # 2. Record the credit creation transaction (Monetary)
+                if credit_tx:
+                    transactions.append(credit_tx)
+
                 logger.info(
                     f"Loan granted to {order.agent_id} for {loan_amount:.2f}. Loan ID: {loan_info['loan_id']}",
                     extra={**log_extra, "loan_id": loan_info['loan_id']},

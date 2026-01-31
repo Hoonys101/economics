@@ -65,7 +65,7 @@ class TestBank:
         )
 
         # Call with correct signature
-        loan_info = bank_instance.grant_loan(
+        grant_result = bank_instance.grant_loan(
             borrower_id=borrower_id,
             amount=amount,
             interest_rate=0.07,
@@ -73,9 +73,11 @@ class TestBank:
             borrower_profile=profile
         )
 
-        assert loan_info is not None
+        assert grant_result is not None
+        loan_info, tx = grant_result
         assert loan_info["borrower_id"] == borrower_id
         assert loan_info["original_amount"] == 1000.0
+        assert tx.transaction_type == "credit_creation"
 
         # Verify Credit Service called
         mock_credit_scoring_service.assess_creditworthiness.assert_called_once()
@@ -99,8 +101,8 @@ class TestBank:
 
         profile = BorrowerProfileDTO(borrower_id="101", gross_income=100.0, existing_debt_payments=100.0, collateral_value=0.0, existing_assets=0.0)
 
-        loan_info = bank_instance.grant_loan("101", 1000.0, 0.05, borrower_profile=profile)
-        assert loan_info is None
+        grant_result = bank_instance.grant_loan("101", 1000.0, 0.05, borrower_profile=profile)
+        assert grant_result is None
         assert len(bank_instance.loans) == 0
 
     def test_grant_loan_insufficient_reserves(self, bank_instance):
@@ -115,9 +117,9 @@ class TestBank:
         amount = 200000.0
         profile = BorrowerProfileDTO(borrower_id=borrower_id, gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
 
-        loan_info = bank_instance.grant_loan(borrower_id, amount, 0.05, borrower_profile=profile)
+        grant_result = bank_instance.grant_loan(borrower_id, amount, 0.05, borrower_profile=profile)
 
-        assert loan_info is None
+        assert grant_result is None
         assert len(bank_instance.loans) == 0
 
     def test_grant_loan_multiple_loans(self, bank_instance):

@@ -441,7 +441,10 @@ class Phase1_Decision(IPhaseStrategy):
                 for order in firm_orders:
                     target_market = state.markets.get(order.market_id)
                     if target_market:
-                        target_market.place_order(order, state.time)
+                        # WO-024: Capture immediate transactions (e.g. LoanMarket)
+                        new_txs = target_market.place_order(order, state.time)
+                        if new_txs:
+                            state.transactions.extend(new_txs)
 
         # 2. Households
         for household in state.households:
@@ -501,7 +504,10 @@ class Phase1_Decision(IPhaseStrategy):
                     household_target_market = state.markets.get(target_market_id)
 
                     if household_target_market:
-                        household_target_market.place_order(order, state.time)
+                        # WO-024: Capture immediate transactions (e.g. LoanMarket)
+                        new_txs = household_target_market.place_order(order, state.time)
+                        if new_txs:
+                            state.transactions.extend(new_txs)
 
         state.firm_pre_states = firm_pre_states
         state.household_pre_states = household_pre_states
@@ -548,7 +554,9 @@ class Phase1_Decision(IPhaseStrategy):
                      )
                      market = state.markets.get(tx.item_id)
                      if market:
-                         market.place_order(order, state.time)
+                         new_txs = market.place_order(order, state.time)
+                         if new_txs:
+                             state.transactions.extend(new_txs)
                 else:
                      state.transactions.append(tx)
 
@@ -620,6 +628,10 @@ class Phase3_Transaction(IPhaseStrategy):
                 system_transactions.extend(edu_txs)
 
         state.transactions.extend(system_transactions)
+
+        # WO-024: Process Monetary Transactions (Credit Creation/Destruction)
+        if state.government:
+            state.government.process_monetary_transactions(state.transactions)
 
         if self.world_state.transaction_processor:
             self.world_state.transaction_processor.execute(state)

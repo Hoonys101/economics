@@ -75,8 +75,11 @@ class TestHousingSystemRefactor(unittest.TestCase):
         self.simulation.settlement_system.transfer.return_value = True
 
         # Default Bank behavior
-        self.simulation.bank.grant_loan.return_value = {"loan_id": "loan_123"}
+        # WO-024: grant_loan returns (dto, transaction)
+        self.simulation.bank.grant_loan.return_value = ({"loan_id": "loan_123"}, MagicMock(transaction_type="credit_creation", price=100.0))
         self.simulation.bank.withdraw_for_customer.return_value = True
+        self.simulation.bank.terminate_loan.return_value = MagicMock(transaction_type="credit_destruction")
+        self.simulation.bank.void_loan.return_value = MagicMock(transaction_type="credit_destruction")
 
     def test_process_housing_rent_collection_uses_transfer(self):
         """Test that rent collection uses SettlementSystem.transfer"""

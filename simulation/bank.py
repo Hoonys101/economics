@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
+from typing import Dict, Any, List, Optional, Tuple, TYPE_CHECKING
 import math
 from modules.common.config_manager.api import ConfigManager
 from modules.finance.api import (
@@ -116,9 +116,10 @@ class Bank(IBankService):
 
     # --- IBankService Implementation ---
 
-    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
         """
         Grants a loan to a borrower.
+        Returns LoanInfoDTO and a 'credit_creation' Transaction.
         Implements IBankService.grant_loan.
         """
         try:
@@ -176,11 +177,21 @@ class Bank(IBankService):
         )
         self.loans[loan_id] = new_loan
 
-        # Log Money Creation for System Accounting
-        if self.government and hasattr(self.government, "total_money_issued"):
-             self.government.total_money_issued += amount
+        # WO-024: Transactional Credit Creation
+        # No longer modifying government state directly.
+        # Generating a symbolic transaction for M2 audit.
+        credit_creation_tx = Transaction(
+            buyer_id=self.id,
+            seller_id=self.government.id if self.government else -1,
+            item_id=f"credit_creation_{loan_id}",
+            quantity=1,
+            price=amount,
+            market_id="monetary_policy",
+            transaction_type="credit_creation",
+            time=start_tick
+        )
 
-        return LoanInfoDTO(
+        dto = LoanInfoDTO(
             loan_id=loan_id,
             borrower_id=borrower_id,
             original_amount=amount,
@@ -189,6 +200,7 @@ class Bank(IBankService):
             origination_tick=start_tick,
             due_tick=due_tick
         )
+        return dto, credit_creation_tx
 
     def repay_loan(self, loan_id: str, amount: float) -> bool:
         """
@@ -336,7 +348,8 @@ class Bank(IBankService):
                  break
 
         total_loan_interest = 0.0
-        for loan_id, loan in self.loans.items():
+        # Create a list of loans to iterate over to allow modification (process_default deletes loan)
+        for loan_id, loan in list(self.loans.items()):
             agent = agents_dict.get(loan.borrower_id)
             if not agent or not getattr(agent, 'is_active', True):
                 continue
@@ -358,7 +371,11 @@ class Bank(IBankService):
                 generated_transactions.append(tx)
                 total_loan_interest += payment
             else:
-                self.process_default(agent, loan, current_tick, government=gov_agent)
+                # Capture credit destruction tx
+                default_tx = self.process_default(agent, loan, current_tick, government=gov_agent)
+                if default_tx:
+                    generated_transactions.append(default_tx)
+
                 partial = agent.assets
                 if partial > 0:
                     tx = Transaction(
@@ -436,12 +453,25 @@ class Bank(IBankService):
 
         return []
 
-    def process_default(self, agent: Any, loan: Loan, current_tick: int, government: Optional[Any] = None):
+    def process_default(self, agent: Any, loan: Loan, current_tick: int, government: Optional[Any] = None) -> Optional[Transaction]:
         if hasattr(agent, "shares_owned") and agent.shares_owned:
             agent.shares_owned.clear()
 
-        if government and loan.remaining_balance > 0:
-            government.total_money_destroyed += loan.remaining_balance
+        destruction_tx = None
+        amount = loan.remaining_balance
+
+        if amount > 0:
+             # WO-024: Transactional Credit Destruction
+             destruction_tx = Transaction(
+                buyer_id=government.id if government else -1,
+                seller_id=self.id,
+                item_id=f"credit_destruction_default_{loan.borrower_id}",
+                quantity=1,
+                price=amount,
+                market_id="monetary_policy",
+                transaction_type="credit_destruction",
+                time=current_tick
+            )
 
         loan.remaining_balance = 0.0
 
@@ -452,6 +482,37 @@ class Bank(IBankService):
         xp_penalty = self._get_config("bankruptcy_xp_penalty", 0.2)
         if hasattr(agent, "education_xp"):
              agent.education_xp *= (1.0 - xp_penalty)
+
+        return destruction_tx
+
+    def terminate_loan(self, loan_id: str) -> Optional[Transaction]:
+        """
+        Forcefully terminates a loan (e.g. foreclosure).
+        Returns a credit_destruction transaction if balance was > 0.
+        """
+        if loan_id not in self.loans:
+            return None
+
+        loan = self.loans[loan_id]
+        amount = loan.remaining_balance
+
+        # Similar to void_loan but assumes deposit might not be reversible (spent), so just destroys credit asset.
+        # This is essentially a write-off / destruction.
+
+        del self.loans[loan_id]
+
+        if amount > 0:
+             return Transaction(
+                buyer_id=self.government.id if self.government else -1,
+                seller_id=self.id,
+                item_id=f"credit_destruction_term_{loan_id}",
+                quantity=1,
+                price=amount,
+                market_id="monetary_policy",
+                transaction_type="credit_destruction",
+                time=self.current_tick_tracker
+            )
+        return None
 
     # Legacy Stubs
     def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
@@ -472,19 +533,18 @@ class Bank(IBankService):
         except (LoanNotFoundError, LoanRepaymentError):
             pass
 
-    def void_loan(self, loan_id: str) -> bool:
+    def void_loan(self, loan_id: str) -> Optional[Transaction]:
         """
         Cancels a loan and reverses the associated deposit creation.
-        Used when a transaction funded by a loan fails immediately (e.g. withdrawal failure).
+        Returns a credit_destruction transaction.
         """
         if loan_id not in self.loans:
-            return False
+            return None
 
         loan = self.loans[loan_id]
         amount = loan.principal
 
         # 1. Reverse Deposit (Liability)
-        # Use the robust link if available
         target_dep_id = loan.created_deposit_id
         deposit_reversed = False
 
@@ -492,8 +552,6 @@ class Bank(IBankService):
             del self.deposits[target_dep_id]
             deposit_reversed = True
         else:
-            # Fallback for legacy or lost link: Find matching deposit
-            # This is brittle but necessary as a last resort
             borrower_id = loan.borrower_id
             for dep_id, deposit in self.deposits.items():
                 if deposit.depositor_id == borrower_id and abs(deposit.amount - amount) < 1e-9:
@@ -505,13 +563,21 @@ class Bank(IBankService):
                 logger.critical(f"VOID_LOAN_FAIL | Could not find deposit for loan {loan_id}. Cannot safely rollback.")
                 raise LoanRollbackError(f"Critical: Could not find deposit to reverse for loan {loan_id}")
 
-        # 2. Destroy Loan (Asset) - Only if liability reversed
+        # 2. Destroy Loan (Asset)
         if deposit_reversed:
             del self.loans[loan_id]
 
-        # 3. Reverse Money Supply Tracking
-        if self.government and hasattr(self.government, "total_money_issued"):
-             self.government.total_money_issued -= amount
+        # 3. Transactional Credit Destruction
+        tx = Transaction(
+            buyer_id=self.government.id if self.government else -1,
+            seller_id=self.id,
+            item_id=f"credit_destruction_{loan_id}",
+            quantity=1,
+            price=amount,
+            market_id="monetary_policy",
+            transaction_type="credit_destruction",
+            time=self.current_tick_tracker
+        )
 
         logger.info(f"LOAN_VOIDED | Loan {loan_id} cancelled and deposit reversed.")
-        return True
+        return tx
