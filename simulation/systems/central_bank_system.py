@@ -43,12 +43,12 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
             # We set a high price to ensure the order is likely filled.
             order = Order(
                 agent_id=self.id,
-                order_type='buy',
+                side='buy',
                 item_id='government_bond', # Generic bond ID or specific logic needed
                 quantity=amount, # Assuming face value 1.0 per unit? Or quantity=amount/price?
                 # Spec says: "quantity = amount (semantically based on bond units)".
                 # Let's assume price is around 1.0 (face value), so quantity is amount.
-                price=9999, # Buy at any price (market order)
+                price_limit=9999, # Buy at any price (market order)
                 market_id=self.security_market_id
             )
             orders.append(order)
@@ -59,10 +59,10 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
             # We assume CB holds them.
             order = Order(
                 agent_id=self.id,
-                order_type='sell',
+                side='sell',
                 item_id='government_bond',
                 quantity=amount,
-                price=0, # Sell at any price (market order)
+                price_limit=0, # Sell at any price (market order)
                 market_id=self.security_market_id
             )
             orders.append(order)

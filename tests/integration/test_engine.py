@@ -383,6 +383,7 @@ class TestSimulation:
             + [f.id for f in mock_firms]
             + [simulation_instance.bank.id]
             + [simulation_instance.government.id]
+            + [simulation_instance.escrow_agent.id] # Added Escrow Agent
         )
         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
 

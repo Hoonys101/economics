@@ -189,11 +189,11 @@ class DecisionUnit(IDecisionUnit):
                      if new_state.assets >= down_payment:
                          buy_order = Order(
                              agent_id=state.portfolio.owner_id, # Using owner_id from portfolio as proxy for ID
+                             side="BUY",
                              item_id=target_unit_id,
-                             price_limit=best_price,
                              quantity=1.0,
-                             market_id="housing",
-                             side="BUY"
+                             price_limit=best_price,
+                             market_id="housing"
                          )
                          refined_orders.append(buy_order)
 

@@ -386,10 +386,10 @@ class FinanceDepartment:
 
             order = Order(
                 agent_id=self.firm.id,
-                order_type="SELL",
+                side="SELL",
                 item_id=good,
                 quantity=qty,
-                price=liquidation_price,
+                price_limit=liquidation_price,
                 market_id=good
             )
             orders.append(order)

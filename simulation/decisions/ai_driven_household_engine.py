@@ -99,9 +99,9 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                      survival_order = Order(
                          agent_id=household.id,
                          item_id=food_id,
-                         order_type="BUY",
+                         side="BUY",
                          quantity=1.0,
-                         price=bid_price,
+                         price_limit=bid_price,
                          market_id=food_id
                      )
 

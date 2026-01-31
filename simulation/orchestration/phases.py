@@ -546,10 +546,10 @@ class Phase1_Decision(IPhaseStrategy):
                      # WO-053: Convert special transaction to Order
                      order = Order(
                          agent_id=tx.buyer_id,
+                         side="BUY",
                          item_id=tx.item_id,
                          quantity=tx.quantity,
-                         price=tx.price,
-                         order_type="BUY",
+                         price_limit=tx.price,
                          market_id=tx.item_id
                      )
                      market = state.markets.get(tx.item_id)

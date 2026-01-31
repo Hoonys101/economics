@@ -96,10 +96,10 @@ class PublicManager(IAssetRecoverySystem):
 
             order = Order(
                 agent_id="PUBLIC_MANAGER",
+                side="SELL",
                 item_id=item_id,
-                order_type="SELL",
                 quantity=sell_quantity,
-                price=sell_price,
+                price_limit=sell_price,
                 market_id=item_id
             )
             orders.append(order)

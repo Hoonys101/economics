@@ -37,7 +37,7 @@ class LaborManager:
 
                 if random.random() < (config.job_quit_prob_base + agg_mobility * config.job_quit_prob_scale):
                     # Signal quit via Order
-                    orders.append(Order(household.id, "QUIT", "labor", 0, 0, "labor"))
+                    orders.append(Order(agent_id=household.id, side="QUIT", item_id="labor", quantity=0, price_limit=0, market_id="labor"))
 
         # Scenario B: Unemployed
         if not household.is_employed:
@@ -92,7 +92,7 @@ class LaborManager:
                     )
             else:
                 orders.append(
-                    Order(household.id, "SELL", "labor", 1, reservation_wage, "labor")
+                    Order(agent_id=household.id, side="SELL", item_id="labor", quantity=1, price_limit=reservation_wage, market_id="labor")
                 )
 
         return orders

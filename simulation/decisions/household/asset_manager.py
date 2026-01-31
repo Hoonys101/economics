@@ -50,7 +50,7 @@ class AssetManager:
             repay_amount = min(repay_amount, household.assets * liquidity_ratio)
 
             if repay_amount > 1.0:
-                 orders.append(Order(household.id, "REPAYMENT", "currency", repay_amount, 1.0, "loan_market"))
+                 orders.append(Order(agent_id=household.id, side="REPAYMENT", item_id="currency", quantity=repay_amount, price_limit=1.0, market_id="loan_market"))
                  if logger:
                     logger.info(f"DEBT_AVERSION | Household {household.id} prioritizing repayment: {repay_amount:.1f}")
 
@@ -149,11 +149,11 @@ class AssetManager:
         if diff_deposit > 10.0:
             actual_deposit = min(cash, diff_deposit)
             if actual_deposit > 10.0:
-                orders.append(Order(household.id, "DEPOSIT", "currency", actual_deposit, 1.0, "currency"))
+                orders.append(Order(agent_id=household.id, side="DEPOSIT", item_id="currency", quantity=actual_deposit, price_limit=1.0, market_id="currency"))
 
         elif diff_deposit < -10.0:
             amount_to_withdraw = abs(diff_deposit)
-            orders.append(Order(household.id, "WITHDRAW", "currency", amount_to_withdraw, 1.0, "currency"))
+            orders.append(Order(agent_id=household.id, side="WITHDRAW", item_id="currency", quantity=amount_to_withdraw, price_limit=1.0, market_id="currency"))
 
         startup_cost = getattr(config, "startup_cost", 30000.0)
 
@@ -162,7 +162,7 @@ class AssetManager:
             survival_buffer = 2000.0
 
             if projected_cash >= (startup_cost + survival_buffer):
-                orders.append(Order(household.id, "INVEST", "startup", 1.0, startup_cost, "admin"))
+                orders.append(Order(agent_id=household.id, side="INVEST", item_id="startup", quantity=1.0, price_limit=startup_cost, market_id="admin"))
 
         return orders
 
@@ -177,7 +177,7 @@ class AssetManager:
 
             if deposit_balance > 10.0:
                 amount = min(deposit_balance, 50.0)
-                orders.append(Order(household.id, "WITHDRAW", "currency", amount, 1.0, "currency"))
+                orders.append(Order(agent_id=household.id, side="WITHDRAW", item_id="currency", quantity=amount, price_limit=1.0, market_id="currency"))
 
         return orders
 

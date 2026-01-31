@@ -81,12 +81,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                     if quantity_to_buy > 0.1:
                         orders.append(
                             Order(
-                                state.id,
-                                "BUY",
-                                food_item_id,
-                                quantity_to_buy,
-                                best_ask,
-                                market_id,
+                                agent_id=state.id,
+                                side="BUY",
+                                item_id=food_item_id,
+                                quantity=quantity_to_buy,
+                                price_limit=best_ask,
+                                market_id=market_id,
                             )
                         )
                         self.logger.info(
@@ -139,12 +139,12 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
             else:
                 orders.append(
                     Order(
-                        state.id,
-                        "SELL",
-                        "labor",
-                        1.0,  # 1 unit of labor
-                        desired_wage,
-                        "labor",
+                        agent_id=state.id,
+                        side="SELL",
+                        item_id="labor",
+                        quantity=1.0,  # 1 unit of labor
+                        price_limit=desired_wage,
+                        market_id="labor",
                     )
                 )
                 self.logger.info(

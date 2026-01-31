@@ -53,10 +53,10 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
             orders.append(Order(
                 agent_id=firm_state.id,
-                order_type="SELL",
+                side="SELL",
                 item_id=specialization,
                 quantity=inventory,
-                price=sell_price,
+                price_limit=sell_price,
                 market_id=specialization
             ))
 
@@ -117,12 +117,12 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             severance_pay = current_wage * severance_weeks * skill
 
             orders.append(Order(
-                firm.id,
-                "FIRE",
-                "internal",
-                1,
-                severance_pay,
-                "internal",
+                agent_id=firm.id,
+                side="FIRE",
+                item_id="internal",
+                quantity=1,
+                price_limit=severance_pay,
+                market_id="internal",
                 target_agent_id=emp_id
             ))
 
@@ -164,7 +164,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             )
 
         if new_target != target_quantity:
-            return [Order(firm.id, "SET_TARGET", "internal", new_target, 0.0, "internal")]
+            return [Order(agent_id=firm.id, side="SET_TARGET", item_id="internal", quantity=new_target, price_limit=0.0, market_id="internal")]
 
         return []
 
@@ -186,14 +186,14 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         if current_employees < min_employees:
             to_hire = min_employees - current_employees
-            order = Order(firm.id, "BUY", "labor", float(to_hire), offered_wage, "labor")
+            order = Order(agent_id=firm.id, side="BUY", item_id="labor", quantity=float(to_hire), price_limit=offered_wage, market_id="labor")
             orders.append(order)
         elif (
             needed_labor > current_employees
             and current_employees < max_employees
         ):
             to_hire = min(needed_labor - current_employees, max_employees - current_employees)
-            order = Order(firm.id, "BUY", "labor", float(to_hire), offered_wage, "labor")
+            order = Order(agent_id=firm.id, side="BUY", item_id="labor", quantity=float(to_hire), price_limit=offered_wage, market_id="labor")
             orders.append(order)
 
         return orders

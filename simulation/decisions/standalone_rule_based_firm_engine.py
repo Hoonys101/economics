@@ -194,7 +194,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
             )
 
             # 1. Update Internal Price
-            orders.append(Order(firm.id, "SET_PRICE", item_id, final_price, 0.0, "internal"))
+            orders.append(Order(agent_id=firm.id, side="SET_PRICE", item_id=item_id, quantity=0.0, price_limit=final_price, market_id="internal"))
 
             # 2. Sell Order
             quantity_to_sell = min(
@@ -202,12 +202,12 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
             )
             if quantity_to_sell > 0:
                 order = Order(
-                    firm.id,
-                    "SELL",
-                    item_id,
-                    quantity_to_sell,
-                    final_price,
-                    item_id,
+                    agent_id=firm.id,
+                    side="SELL",
+                    item_id=item_id,
+                    quantity=quantity_to_sell,
+                    price_limit=final_price,
+                    market_id=item_id,
                 )
                 orders.append(order)
                 self.logger.info(

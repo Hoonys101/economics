@@ -89,7 +89,7 @@ class HousingManager:
 
                  if should_buy:
                      buy_order = Order(
-                         agent.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
+                         agent_id=agent.id, side="BUY", item_id=best_offer.item_id, quantity=1.0, price_limit=best_offer.price, market_id="housing"
                      )
                      orders.append(buy_order)
 
