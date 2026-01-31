@@ -120,11 +120,15 @@ class ISettlementSystem(ABC):
         capital_value: float,
         recovered_cash: float,
         reason: str,
-        tick: int
+        tick: int,
+        government_agent: Optional[IFinancialEntity] = None
     ) -> None:
         """
         Records the outcome of an asset liquidation.
         The system calculates the net asset destruction (inventory_value + capital_value - recovered_cash)
         and logs it to the money supply ledger.
+
+        If `government_agent` is provided, any remaining assets (cash) in `agent` will be transferred
+        to `government_agent` (Escheatment), ensuring zero-sum integrity.
         """
         ...

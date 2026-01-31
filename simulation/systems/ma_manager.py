@@ -230,20 +230,22 @@ class MAManager:
 
         # 3. Record Liquidation of Real Assets
         if self.settlement_system:
+            # WO-178: Escheatment Logic
+            government = getattr(self.simulation, "government", None)
+
             self.settlement_system.record_liquidation(
                 agent=firm,
                 inventory_value=inv_value,
                 capital_value=capital_value,
                 recovered_cash=0.0, # WO-018: Real assets written off, not sold
                 reason="bankruptcy_real_assets",
-                tick=tick
+                tick=tick,
+                government_agent=government
             )
         else:
             self.logger.error(f"CRITICAL: SettlementSystem not found. Liquidation loss for Firm {firm.id} is NOT RECORDED.")
 
-        # 4. Escheat Cash to Government (State Capture)
-        if recovered_cash > 0 and self.settlement_system and hasattr(self.simulation, "government"):
-             self.settlement_system.transfer(firm, self.simulation.government, recovered_cash, "bankruptcy_escheatment", tick=tick)
+        # 4. Escheat Cash to Government (State Capture) - Handled by record_liquidation
         
         # 5. Clear Employees
         for emp in list(firm.hr.employees):
