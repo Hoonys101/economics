@@ -2,11 +2,41 @@ from typing import List, Dict, Any, Optional, override, Tuple
 import logging
 from collections import deque
 import math
+from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class MarketOrder:
+    """Internal mutable representation of an order in the order book."""
+    agent_id: int | str
+    side: str
+    item_id: str
+    quantity: float
+    price: float
+    original_id: str
+    target_agent_id: Optional[int] = None
+    brand_info: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def from_dto(cls, dto: Order) -> 'MarketOrder':
+        return cls(
+            agent_id=dto.agent_id,
+            side=dto.side,
+            item_id=dto.item_id,
+            quantity=dto.quantity,
+            price=dto.price_limit,
+            original_id=dto.id,
+            target_agent_id=dto.target_agent_id,
+            brand_info=dto.brand_info
+        )
+
+    @property
+    def order_type(self) -> str:
+        return self.side
 
 
 class OrderBookMarket(Market):
@@ -26,8 +56,8 @@ class OrderBookMarket(Market):
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
         self.config_module = config_module
-        self.buy_orders: Dict[str, List[Order]] = {}
-        self.sell_orders: Dict[str, List[Order]] = {}
+        self.buy_orders: Dict[str, List[MarketOrder]] = {}
+        self.sell_orders: Dict[str, List[MarketOrder]] = {}
         self.daily_avg_price: Dict[str, float] = {}
         self.daily_total_volume: Dict[str, float] = {}
         self.last_traded_prices: Dict[str, float] = {}
@@ -110,43 +140,46 @@ class OrderBookMarket(Market):
             extra={"market_id": self.id, "tags": ["market_clear"]},
         )
 
-    def place_order(self, order: Order, current_time: int):
+    def place_order(self, order_dto: Order, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
         WO-136: Checks dynamic circuit breakers before accepting.
 
         Args:
-            order (Order): 제출할 주문 객체.
+            order_dto (Order): 제출할 주문 객체 (OrderDTO).
             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
         # WO-136: Circuit Breaker Check
-        min_price, max_price = self.get_dynamic_price_bounds(order.item_id)
-        if order.price < min_price or order.price > max_price:
+        min_price, max_price = self.get_dynamic_price_bounds(order_dto.item_id)
+        if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
             # Check if bounds are active (max_price < inf)
             if max_price < float('inf'):
                 self.logger.warning(
-                    f"CIRCUIT_BREAKER | Order rejected. Price {order.price:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
+                    f"CIRCUIT_BREAKER | Order rejected. Price {order_dto.price_limit:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
                     extra={
                         "tick": current_time,
                         "market_id": self.id,
-                        "agent_id": order.agent_id,
-                        "item_id": order.item_id,
-                        "price": order.price,
+                        "agent_id": order_dto.agent_id,
+                        "item_id": order_dto.item_id,
+                        "price": order_dto.price_limit,
                         "bounds": (min_price, max_price)
                     }
                 )
                 return # Reject order
+
+        # Convert to mutable MarketOrder
+        order = MarketOrder.from_dto(order_dto)
 
         log_extra = {
             "tick": current_time,
             "market_id": self.id,
             "agent_id": order.agent_id,
             "item_id": order.item_id,
-            "order_type": order.order_type,
+            "side": order.side,
             "price": order.price,
             "quantity": order.quantity,
         }
         self.logger.debug(
-            f"Placing order: {order.order_type} {order.quantity} of {order.item_id} at {order.price} by {order.agent_id}",
+            f"Placing order: {order.side} {order.quantity} of {order.item_id} at {order.price} by {order.agent_id}",
             extra=log_extra,
         )
         self._add_order(order, log_extra)
@@ -188,15 +221,15 @@ class OrderBookMarket(Market):
 
         return all_transactions
 
-    def _add_order(self, order: Order, log_extra: Dict[str, Any]):
-        # Determine which order book to use based on order type
-        if order.order_type == "BUY":
+    def _add_order(self, order: MarketOrder, log_extra: Dict[str, Any]):
+        # Determine which order book to use based on side
+        if order.side == "BUY":
             target_order_book = self.buy_orders
-        elif order.order_type == "SELL":
+        elif order.side == "SELL":
             target_order_book = self.sell_orders
         else:
             self.logger.warning(
-                f"Unknown order type for _add_order: {order.order_type}",
+                f"Unknown side for _add_order: {order.side}",
                 extra=log_extra,
             )
             return
@@ -205,7 +238,7 @@ class OrderBookMarket(Market):
             target_order_book[order.item_id] = []
         target_order_book[order.item_id].append(order)
         # Sort orders: BUY by price (desc), SELL by price (asc)
-        if order.order_type == "BUY":
+        if order.side == "BUY":
             target_order_book[order.item_id].sort(key=lambda o: o.price, reverse=True)
         else:
             target_order_book[order.item_id].sort(key=lambda o: o.price)
@@ -240,12 +273,8 @@ class OrderBookMarket(Market):
                 general_buys.append(order)
         
         # 2. Process Targeted Buys
-        # Targeted buys ignore price sorting? No, usually handled FIFO or by price within target.
-        # But here we just iterate list. Detailed sorting within target isn't critical for V1.
-        
-        # Create a map of Sell orders for fast lookup by AgentID
-        # Dictionary of AgentID -> List[Order]
-        sell_map: Dict[int, List[Order]] = {}
+        # Dictionary of AgentID -> List[MarketOrder]
+        sell_map: Dict[int, List[MarketOrder]] = {}
         for s_order in sell_orders_list:
              if s_order.agent_id not in sell_map:
                  sell_map[s_order.agent_id] = []
@@ -296,19 +325,15 @@ class OrderBookMarket(Market):
                          
                  else:
                      # Price mismatch (Buyer willing to pay X, Seller wants Y, X < Y)
-                     # Transaction fails. Buyer waits or enters general pool?
-                     # Spec says "Strict Targeting -> Fails".
                      pass
              else:
                  # Target sold out or not present
                  pass
              
              if b_order.quantity > 0.001:
-                 # Failed to fill completely
                  remaining_targeted_buys.append(b_order)
 
         # Fallback: Add remaining targeted buys to general pool
-        # This fixes "Starvation by Brand Loyalty" where buyers wouldn't buy from others if target failed.
         if remaining_targeted_buys:
             general_buys.extend(remaining_targeted_buys)
             # Re-sort general buys by price desc to maintain priority
@@ -375,10 +400,6 @@ class OrderBookMarket(Market):
                  break
         
         # Re-save lists to cleanup empty orders
-        # (Actually the main lists hold references, but we need to ensure self.buy_orders refers to the updated state)
-        # Simplification: Just keep non-empty orders in the main list.
-        # We need to combine remaining_targeted and remaining_general
-        
         new_buy_list = [o for o in (remaining_targeted_buys + general_buys) if o.quantity > 0.001]
         new_buy_list.sort(key=lambda o: o.price, reverse=True) # Maintain sorted invariant
         
@@ -438,11 +459,11 @@ class OrderBookMarket(Market):
             ],
         }
 
-    def get_all_bids(self, item_id: str) -> List[Order]:
+    def get_all_bids(self, item_id: str) -> List[MarketOrder]:
         """주어진 아이템의 모든 매수 주문을 반환합니다."""
         return self.buy_orders.get(item_id, [])
 
-    def get_all_asks(self, item_id: str) -> List[Order]:
+    def get_all_asks(self, item_id: str) -> List[MarketOrder]:
         """주어진 아이템의 모든 매도 주문을 반환합니다."""
         return self.sell_orders.get(item_id, [])
 

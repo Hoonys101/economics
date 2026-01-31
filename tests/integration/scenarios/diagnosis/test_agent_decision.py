@@ -11,10 +11,10 @@ def test_household_makes_decision(simple_household):
     # Mock the decision engine to return a specific action
     expected_order = Order(
         agent_id=simple_household.id,
-        order_type="BUY",
+        side="BUY",
         item_id="basic_food",
         quantity=1.0,
-        price=10.0,
+        price_limit=10.0,
         market_id="basic_food"
     )
     # make_decisions returns (orders, tactic)
@@ -30,19 +30,19 @@ def test_household_makes_decision(simple_household):
 
     # Assert
     assert len(orders) == 1
-    assert orders[0].order_type == "BUY"
+    assert orders[0].side == "BUY"
     assert orders[0].item_id == "basic_food"
-    assert orders[0].price == 10.0
+    assert orders[0].price_limit == 10.0
 
 def test_firm_makes_decision(simple_firm):
     """Spec 0: 에이전트가 주문을 생성하는지 검증 (Firm)"""
     # Arrange
     expected_order = Order(
         agent_id=simple_firm.id,
-        order_type="SELL",
+        side="SELL",
         item_id="basic_food",
         quantity=5.0,
-        price=12.0,
+        price_limit=12.0,
         market_id="basic_food"
     )
     # make_decisions returns (orders, tactic)
@@ -60,5 +60,5 @@ def test_firm_makes_decision(simple_firm):
 
     # Assert
     assert len(orders) == 1
-    assert orders[0].order_type == "SELL"
+    assert orders[0].side == "SELL"
     assert orders[0].item_id == "basic_food"

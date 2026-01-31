@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 import logging
 import random
+from dataclasses import replace
 
 from simulation.models import Order
 from simulation.ai.enums import Tactic, Aggressiveness
@@ -83,11 +84,14 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
             return base_cost / prod_factor
 
         # A. Cost-Plus Fallback
-        for order in orders:
+        for i, order in enumerate(orders):
             if not hasattr(order, 'item_id'):
                 continue
 
-            if order.order_type in ["SELL", "SET_PRICE"]:
+            # Check using aliased property or field? Use field for safety.
+            side = getattr(order, 'side', None) or getattr(order, 'order_type', None)
+
+            if side in ["SELL", "SET_PRICE"]:
                 # Check signal reliability
                 is_unreliable = True
                 if market_snapshot and 'market_signals' in market_snapshot:
@@ -107,12 +111,16 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                     if not isinstance(margin, (int, float)): margin = 0.2
                     new_price = unit_cost * (1 + margin)
 
-                    if abs(order.price - new_price) > 0.01:
+                    # Use price_limit (new field) or price (legacy alias)
+                    current_price = getattr(order, 'price_limit', order.price)
+
+                    if abs(current_price - new_price) > 0.01:
                          self.logger.info(
-                             f"COST_PLUS_FALLBACK | Firm {firm_state.id} repricing {order.item_id} from {order.price:.2f} to {new_price:.2f} (Cost: {unit_cost:.2f})",
+                             f"COST_PLUS_FALLBACK | Firm {firm_state.id} repricing {order.item_id} from {current_price:.2f} to {new_price:.2f} (Cost: {unit_cost:.2f})",
                              extra={"tick": context.current_time, "tags": ["pricing", "cost_plus"]}
                          )
-                         order.price = new_price
+                         # Replace immutable order with updated price
+                         orders[i] = replace(order, price_limit=new_price)
 
         # B. Fire-Sale Logic
         fire_sale_orders = []
@@ -164,10 +172,10 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
 
                          fire_sale_orders.append(Order(
                              agent_id=firm_state.id,
-                             order_type="SELL",
+                             side="SELL",
                              item_id=item_id,
                              quantity=surplus,
-                             price=fire_sale_price,
+                             price_limit=fire_sale_price,
                              market_id=item_id
                          ))
 

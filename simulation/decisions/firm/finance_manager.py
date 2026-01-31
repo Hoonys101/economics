@@ -42,13 +42,13 @@ class FinanceManager:
         is_distressed = (z_score < z_score_threshold) or (firm.consecutive_loss_turns >= loss_limit)
 
         if is_distressed:
-            return Order(firm.id, "SET_DIVIDEND", "internal", 0.0, 0.0, "internal")
+            return Order(agent_id=firm.id, side="SET_DIVIDEND", item_id="internal", quantity=0.0, price_limit=0.0, market_id="internal")
 
         base_rate = config.dividend_rate_min
         max_rate = config.dividend_rate_max
         new_rate = base_rate + (aggressiveness * (max_rate - base_rate))
 
-        return Order(firm.id, "SET_DIVIDEND", "internal", new_rate, 0.0, "internal")
+        return Order(agent_id=firm.id, side="SET_DIVIDEND", item_id="internal", quantity=new_rate, price_limit=0.0, market_id="internal")
 
     def _manage_debt(self, firm: FirmStateDTO, aggressiveness: float, context: DecisionContext) -> List[Order]:
         """
@@ -104,8 +104,15 @@ class FinanceManager:
                 spread = context.config.default_loan_spread
                 wtp_rate = base_rate + spread
 
-                order = Order(firm.id, "LOAN_REQUEST", "loan", borrow_amount, wtp_rate, "loan")
-                order.metadata = {"borrower_profile": borrower_profile}
+                order = Order(
+                    agent_id=firm.id,
+                    side="LOAN_REQUEST",
+                    item_id="loan",
+                    quantity=borrow_amount,
+                    price_limit=wtp_rate,
+                    market_id="loan",
+                    metadata={"borrower_profile": borrower_profile}
+                )
                 orders.append(order)
 
         elif current_leverage > target_leverage:
@@ -114,7 +121,7 @@ class FinanceManager:
 
             if repay_amount > 10.0 and current_debt > 0:
                  orders.append(
-                    Order(firm.id, "REPAYMENT", "loan", repay_amount, 1.0, "loan")
+                    Order(agent_id=firm.id, side="REPAYMENT", item_id="loan", quantity=repay_amount, price_limit=1.0, market_id="loan")
                 )
 
         return orders

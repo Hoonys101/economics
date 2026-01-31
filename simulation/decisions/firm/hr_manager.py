@@ -69,12 +69,12 @@ class HRManager:
 
                     # Generate FIRE order
                     orders.append(Order(
-                        firm.id,
-                        "FIRE",
-                        "internal",
-                        1,
-                        severance_pay,
-                        "internal",
+                        agent_id=firm.id,
+                        side="FIRE",
+                        item_id="internal",
+                        quantity=1,
+                        price_limit=severance_pay,
+                        market_id="internal",
                         target_agent_id=emp_id
                     ))
 
@@ -96,7 +96,7 @@ class HRManager:
         if to_hire > 0:
             for _ in range(to_hire):
                  orders.append(
-                     Order(firm.id, "BUY", "labor", 1, offer_wage, "labor")
+                     Order(agent_id=firm.id, side="BUY", item_id="labor", quantity=1, price_limit=offer_wage, market_id="labor")
                  )
 
         return orders

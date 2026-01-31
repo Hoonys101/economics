@@ -175,7 +175,7 @@ def run_verification():
         # Force a household to sell at a lower price to ensure match
         sell_qty = buy_order.quantity
         sim.stock_market.place_order(
-            Order(sim.households[0].id, "SELL", f"stock_{firm.id}", sell_qty, buy_order.price * 0.9, "stock"),
+            Order(agent_id=sim.households[0].id, side="SELL", item_id=f"stock_{firm.id}", quantity=sell_qty, price_limit=buy_order.price * 0.9, market_id="stock"),
             15
         )
         

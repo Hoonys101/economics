@@ -53,7 +53,7 @@ class SalesManager:
         target_price = max(target_price, 0.1)
 
         # 1. Internal Order to update price state
-        orders.append(Order(firm.id, "SET_PRICE", item_id, target_price, 0.0, "internal"))
+        orders.append(Order(agent_id=firm.id, side="SET_PRICE", item_id=item_id, quantity=0.0, price_limit=target_price, market_id="internal"))
 
         # 2. Market Order to sell
         qty = min(current_inventory, config.max_sell_quantity)
@@ -61,10 +61,10 @@ class SalesManager:
         # We generate a direct SELL order here.
         orders.append(Order(
              agent_id=firm.id,
-             order_type="SELL",
+             side="SELL",
              item_id=item_id,
              quantity=qty,
-             price=target_price,
+             price_limit=target_price,
              market_id=item_id # Assumes market_id == item_id
         ))
 
