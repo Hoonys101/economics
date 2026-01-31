@@ -29,6 +29,7 @@ class TransactionManager(SystemInterface):
         settlement_system: Any, # ISettlementSystem
         central_bank_system: IMintingAuthority,
         config: Any,
+        escrow_agent: Any, # IFinancialEntity
         handlers: Optional[Dict[str, ISpecializedTransactionHandler]] = None,
         logger: Optional[logging.Logger] = None
     ):
@@ -37,6 +38,7 @@ class TransactionManager(SystemInterface):
         self.settlement = settlement_system
         self.central_bank = central_bank_system
         self.config = config
+        self.escrow_agent = escrow_agent
         self.handlers = handlers if handlers else {}
         self.logger = logger if logger else logging.getLogger(__name__)
 
@@ -136,18 +138,81 @@ class TransactionManager(SystemInterface):
                 # Sales Tax Logic
                 sales_tax_rate = getattr(self.config, "SALES_TAX_RATE", 0.05)
                 tax_amount = trade_value * sales_tax_rate
+                total_cost = trade_value + tax_amount
 
                 # Solvency Check (Legacy compatibility)
                 if hasattr(buyer, 'check_solvency'):
-                    if buyer.assets < (trade_value + tax_amount):
+                    if buyer.assets < total_cost:
                         buyer.check_solvency(government)
 
-                # Standard Transfer
-                success = self.settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
+                # --- 3-Step Escrow Logic (Atomic) ---
+                # 1. Secure Total Amount in Escrow
+                memo_escrow = f"escrow_hold:{tx.item_id}"
+                escrow_success = self.settlement.transfer(
+                    buyer,
+                    self.escrow_agent,
+                    total_cost,
+                    memo_escrow
+                )
 
-                if success and tax_amount > 0:
-                    # Atomic Tax Collection
-                    government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
+                if not escrow_success:
+                    success = False
+                else:
+                    # 2. Distribute Funds from Escrow
+                    try:
+                        # 2a. Pay Seller
+                        memo_trade = f"goods_trade:{tx.item_id}"
+                        trade_success = self.settlement.transfer(
+                            self.escrow_agent,
+                            seller,
+                            trade_value,
+                            memo_trade
+                        )
+
+                        if not trade_success:
+                            # Critical Failure: Funds stuck in escrow. Rollback buyer.
+                            self.logger.critical(f"ESCROW_FAIL | Trade transfer to seller failed. Rolling back {total_cost} to buyer {buyer.id}.")
+                            self.settlement.transfer(self.escrow_agent, buyer, total_cost, "escrow_reversal:trade_failure")
+                            success = False
+                        else:
+                            # 2b. Pay Tax to Government
+                            if tax_amount > 0:
+                                memo_tax = f"sales_tax:{tx.item_id}"
+                                # Push tax to Government via Settlement
+                                tax_success = self.settlement.transfer(
+                                    self.escrow_agent,
+                                    government,
+                                    tax_amount,
+                                    memo_tax
+                                )
+
+                                if not tax_success:
+                                    # Critical Failure: Tax transfer failed. Rollback everything.
+                                    self.logger.critical(f"ESCROW_FAIL | Tax transfer to government failed. Rolling back trade and escrow.")
+                                    # Revert seller payment
+                                    self.settlement.transfer(seller, self.escrow_agent, trade_value, "reversal:tax_failure")
+                                    # Return all to buyer
+                                    self.settlement.transfer(self.escrow_agent, buyer, total_cost, "escrow_reversal:tax_failure")
+                                    success = False
+                                else:
+                                    success = True
+                                    # Explicitly record tax revenue since we bypassed collect_tax
+                                    # Using a mock result as record_revenue expects TaxCollectionResult
+                                    if hasattr(government, 'record_revenue'):
+                                        government.record_revenue({
+                                            "success": True,
+                                            "amount_collected": tax_amount,
+                                            "tax_type": f"sales_tax_{tx.transaction_type}",
+                                            "payer_id": buyer.id,
+                                            "payee_id": government.id,
+                                            "error_message": None
+                                        })
+                            else:
+                                success = True
+
+                    except Exception as e:
+                        self.logger.exception(f"ESCROW_EXCEPTION | Unexpected error during distribution: {e}")
+                        success = False
 
             elif tx.transaction_type in ["labor", "research_labor"]:
                 # Income Tax Logic

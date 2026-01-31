@@ -57,6 +57,7 @@ from simulation.systems.sensory_system import SensorySystem
 from simulation.systems.settlement_system import SettlementSystem
 from simulation.systems.commerce_system import CommerceSystem
 from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+from modules.system.escrow_agent import EscrowAgent
 
 # Phase 29: Crisis Monitor
 from modules.analysis.crisis_monitor import CrisisMonitor
@@ -380,12 +381,18 @@ class SimulationInitializer(SimulationInitializerInterface):
             )
         }
 
+        # Initialize Escrow Agent (TD-170)
+        sim.escrow_agent = EscrowAgent(id=sim.next_agent_id)
+        sim.agents[sim.escrow_agent.id] = sim.escrow_agent
+        sim.next_agent_id += 1
+
         sim.transaction_processor = TransactionManager(
             registry=sim.registry,
             accounting_system=sim.accounting_system,
             settlement_system=sim.settlement_system,
             central_bank_system=sim.central_bank_system,
             config=self.config,
+            escrow_agent=sim.escrow_agent,
             handlers=sim.handlers,
             logger=self.logger
         )
