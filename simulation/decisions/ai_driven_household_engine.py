@@ -4,7 +4,7 @@ import logging
 
 from simulation.models import Order
 from .base_decision_engine import BaseDecisionEngine
-from simulation.dtos import DecisionContext, MacroFinancialContext
+from simulation.dtos import DecisionContext, MacroFinancialContext, DecisionOutputDTO
 
 # Modular Managers
 from simulation.decisions.household.api import (
@@ -51,7 +51,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         self,
         context: DecisionContext,
         macro_context: Optional[MacroFinancialContext] = None,
-    ) -> Tuple[List[Order], Any]: # Returns HouseholdActionVector
+    ) -> DecisionOutputDTO:
         """
         AI 엔진을 사용하여 최적의 전술(Vector)을 결정하고, 그에 따른 주문을 생성한다.
         """
@@ -60,7 +60,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         if household is None:
             from simulation.schemas import HouseholdActionVector
-            return [], HouseholdActionVector()
+            return DecisionOutputDTO(orders=[], metadata=HouseholdActionVector())
 
         market_snapshot = context.market_snapshot
         market_data = context.market_data
@@ -78,12 +78,12 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 food_id = 'food'
 
             signal = None
-            if market_snapshot and 'market_signals' in market_snapshot:
-                 signal = market_snapshot['market_signals'].get(food_id)
+            if market_snapshot and market_snapshot.market_signals:
+                 signal = market_snapshot.market_signals.get(food_id)
 
             # If signal exists and has sellers
-            if signal and signal.get('best_ask') is not None:
-                ask_price = signal['best_ask']
+            if signal and signal.best_ask is not None:
+                ask_price = signal.best_ask
                 # Affordability Check
                 if household.assets >= ask_price:
                      premium = getattr(config, 'survival_bid_premium', 0.1)
@@ -99,16 +99,19 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                      survival_order = Order(
                          agent_id=household.id,
                          item_id=food_id,
-                         order_type="BUY",
+                         side="BUY",
                          quantity=1.0,
-                         price=bid_price,
+                         price_limit=bid_price,
                          market_id=food_id
                      )
 
                      # Return immediately, skipping other logic
                      from simulation.schemas import HouseholdActionVector
                      # We return a vector with high work aggressiveness as survival instinct implies working hard too
-                     return [survival_order], HouseholdActionVector(work_aggressiveness=1.0)
+                     return DecisionOutputDTO(
+                         orders=[survival_order],
+                         metadata=HouseholdActionVector(work_aggressiveness=1.0)
+                     )
 
         agent_data = household.agent_data
 
@@ -162,7 +165,7 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         )
         orders.extend(self.housing_manager.decide_housing(housing_ctx))
         
-        return orders, action_vector
+        return DecisionOutputDTO(orders=orders, metadata=action_vector)
 
     def decide_reproduction(self, context: DecisionContext) -> bool:
         """

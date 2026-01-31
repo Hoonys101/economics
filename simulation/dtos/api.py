@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, TypedDict
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.models import Order
+from simulation.dtos.decision_dtos import DecisionOutputDTO
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -123,9 +124,10 @@ class OrderDTO:
     quantity: float
     price: float
 
-# Phase 1: MarketSnapshotDTO moved to modules.system.api and converted to TypedDict
-# This is a breaking change for existing agents.
+# Phase 1: MarketSnapshotDTO moved to modules.system.api
 from modules.system.api import MarketSnapshotDTO
+# Phase 1: EconomicIndicatorsDTO from modules.simulation.api
+from modules.simulation.api import EconomicIndicatorsDTO
 
 @dataclass
 class GovernmentPolicyDTO:

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Protocol, TypedDict, Any, List, Dict
 
 # --- DTOs ---
@@ -10,14 +11,17 @@ class ShockConfigDTO(TypedDict):
     tfp_multiplier: float  # The factor to multiply the baseline TFP by (e.g., 0.5 for a 50% drop)
     baseline_tfp: float   # The normal TFP value to restore to
 
-class MarketSnapshotDTO(TypedDict):
+@dataclass
+class EconomicIndicatorsDTO:
     """
     Snapshot of key market indicators for analysis modules.
+    Formerly MarketSnapshotDTO.
     """
     gdp: float
     cpi: float
 
-class SystemStateDTO(TypedDict):
+@dataclass
+class SystemStateDTO:
     """
     Internal system flags and states not meant for agent decision-making but essential for observation.
     """
@@ -61,7 +65,7 @@ class ISimulationState(Protocol):
     government: IGovernment
     config_module: IConfig
 
-    def get_market_snapshot(self) -> MarketSnapshotDTO:
+    def get_economic_indicators(self) -> EconomicIndicatorsDTO:
         """
         Retrieves the current market snapshot containing economic indicators like GDP.
         """

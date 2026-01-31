@@ -121,7 +121,14 @@ class ConsumptionManager:
                      final_quantity = max(1, int(quantity_to_buy))
 
                  orders.append(
-                    Order(household.id, "BUY", item_id, final_quantity, bid_price, item_id)
+                    Order(
+                        agent_id=household.id,
+                        side="BUY",
+                        item_id=item_id,
+                        quantity=final_quantity,
+                        price_limit=bid_price,
+                        market_id=item_id
+                    )
                  )
 
         return orders
