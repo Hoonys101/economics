@@ -31,3 +31,19 @@ This ledger records key economic insights and architectural decisions derived fr
 - **Lesson Learned (Lesson Learned)**
   - **Adhere to Contracts**: If a function returns a specific structure (like `TypedDict`), consumers must respect that structure.
   - **Defensive Coding**: Employ `try-except` blocks and detailed logging to catch such integration issues early.
+
+---
+
+## [INSIGHT] Grace Protocol for Agent Solvency (WO-167)
+
+- **Phenomenon (Phenomenon):**
+  Agents with valuable non-cash assets were being prematurely liquidated due to temporary cash shortages, leading to unrealistic economic collapses.
+
+- **Cause (Cause):**
+  The system's "Sacred Sequence" for bankruptcy was too binary—immediate liquidation on zero cash at the point of fee/wage payment—preventing agents from liquidating inventory or stocks to cover liabilities.
+
+- **Solution (Solution):**
+  Implemented a **Grace Protocol** that provides a 5-tick survival window for illiquid-but-solvent agents. During this window, the system bypasses the normal decision-making cycle to forcefully generate discounted sell orders (Fire Sale), attempting to restore liquidity.
+
+- **Lesson Learned (Lesson Learned):**
+  In a complex simulation, "Fairness" requires systemic buffers (Grace Periods). The success of this implementation within the standard `Decision -> Bankruptcy -> Matching` cycle validates the robustness of our temporal phase architecture while emphasizing that **Liquidity is not Solvency**.

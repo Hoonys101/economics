@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "wo-167-grace": {
-    "command": "create",
-    "instruction": "Implement Grace Protocol as per WO-167 and GRACE_PROTOCOL_STABILIZATION spec. Prevent premature firm liquidation by adding a distress stage and fire sale mechanism.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Grace Protocol Implementation",
-    "file": "design/3_work_artifacts/work_orders/WO-167-Grace-Protocol.md"
-  },
   "wo-165-tests": {
     "command": "create",
     "instruction": "Implement new financial integrity tests as per WO-165. Update tests to verify M2 = M0 + Total_Credit formula and ensure zero-sum transfers.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",

@@ -8,11 +8,7 @@
 |---|---|---|---|---|
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
 | TD-162 | 2026-01-30 | Bloated God Class: Household | Maintenance/Testing Overhead | **ACTIVE** |
-| TD-159 | 2026-01-30 | Legacy Inheritance Redundancy | Potential Double-Counting/Leak | **RESOLVED** |
 | TD-169 | 2026-01-31 | Bloat Risk: `phases.py`, `government.py` | Emerging Maintenance Debt | **ACTIVE** |
-| TD-173 | 2026-01-31 | Redundant Logic: `Household.decide_and_consume` | Maintenance Complexity (Post-Alpha) | **RESOLVED** |
-
-
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -34,22 +30,15 @@
 |---|---|---|---|---|
 | TD-007 | 2026-01-12 | Industrial Revolution Stress Test Config | 비현실적 경제 상태 (무한 수요) | **PENDING** |
 | TDL-028 | 2026-01-29 | Inconsistent Order Object Structure | High Cognitive Load / Runtime Errors | **ACTIVE** |
-| TD-157 | 2026-01-30 | Price-Consumption Deadlock | Economic Collapse (Static Price) | **RESOLVED** |
-| TD-164 | 2026-01-30 | Missing Fractional Reserve (WO-024) | Economic Stagnation / Liquidity Bottleneck | **RESOLVED** |
-
-
-| TD-167 | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Bankruptcy without Transaction Opportunity | **IMPLEMENTING** |
+| TD-167 | 2026-01-31 | Firm Bankruptcy Sequence Flaw | Bankruptcy without Transaction Opportunity | **RESOLVED** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-160 | 2026-01-30 | Transaction-Tax Atomicity Failure | Policy Revenue Leak | **ACTIVE** |
-| TD-170 | 2026-01-31 | Sales Tax Atomicity Violation | Post-Trade Solvency Leak (High) | **RESOLVED** |
-
-| TD-171 | 2026-01-31 | Liquidation Dust Leak (Household) | Escheatment missing, assets vanish | **ACTIVE** |
-| TD-172 | 2026-01-31 | Bond Issuance Stat Unification | Monetary Tracking Inaccuracy | **RESOLVED** |
-| TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **ACTIVE** |
+| TD-171 | 2026-01-31 | Liquidation Dust Leak (Household) | Escheatment missing, assets vanish | **SPECCED** |
+| TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **SPECCED** |
 | TD-176 | 2026-01-31 | Tight Coupling: TxManager & Govt | High Architectural dependency | **ACTIVE** |
 | TD-177 | 2026-01-31 | HousingSystem Bypassing Markets | Economic purity violation | **ACTIVE** |
 
@@ -58,19 +47,14 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-118 | 2026-01-29 | DTO Contract Mismatch (inventory) | Runtime Errors / Confusion | **RESOLVED** |
 | TD-151 | 2026-01-29 | Partial DTO Adoption in Engine | Inconsistent Internal/External API | **ACTIVE** |
 | TD-166 | 2026-01-31 | Configuration Duality (Engine vs Agent) | Configuration Fragmentation | **ACTIVE** |
-| TD-174 | 2026-01-31 | Hardcoded Const: `batch_save_interval` (50) | Inflexible Performance Tuning | **RESOLVED** |
-
-
 | TD-168 | 2026-01-31 | `make_decision` Abstraction Leak | Raw Agent objects in method signature | **ACTIVE** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-163 | 2026-01-30 | Test Suite Degradation (85+ Failures) | Zero Regression Guard | **RESOLVED** |
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
 | TD-140 | 2026-01-29 | God File: `db/repository.py` | 745+ LOC complexity | **ACTIVE** |
 | TD-165 | 2026-01-31 | Legacy Test Assertion Migration | Reduced Test Validity | **IMPLEMENTING** |
@@ -80,8 +64,6 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-150 | 2026-01-29 | Ledger Management Process | Loss of context | **ACTIVE** |
-| TD-143 | 2026-01-29 | Hardcoded Placeholders (WO-XXX) | Documentation Debt | **RESOLVED** |
-
 
 ---
 

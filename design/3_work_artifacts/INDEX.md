@@ -6,6 +6,7 @@ This section stores the tangible output produced during development sessions.
 - **[Work Orders](work_orders/)**: Step-by-step implementation instructions for Jules.
 - **[Specifications](specs/)**: Detailed technical and economic designs for new features.
   - **[ThoughtStream Spec](specs/SPEC_THOUGHTSTREAM.md)**: Design for the low-latency observability system.
+  - **[Interbank Market Interface](specs/INTERBANK_MARKET_INTERFACE.md)**: Phase 32 Bank-to-Bank lending protocol.
   - **[Economic Insights](../2_operations/ledgers/ECONOMIC_INSIGHTS.md)**: Collection of key economic phenomena and lessons learned.
 
 ## 📈 Quality & Results
