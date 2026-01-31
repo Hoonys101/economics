@@ -266,17 +266,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                  }
                  self.public_manager.process_bankruptcy_event(bankruptcy_event)
 
-            # Record Liquidation (Destruction of real assets)
-            # Only Capital Stock is destroyed now (machines, buildings), inventory is recovered.
-            self.settlement_system.record_liquidation(
-                agent=firm,
-                inventory_value=0.0, # Inventory recovered
-                capital_value=capital_value,
-                recovered_cash=0.0,
-                reason="firm_liquidation",
-                tick=state.time
-            )
-
             # Clear employees
             for employee in firm.hr.employees:
                 if employee.is_active:
@@ -286,7 +275,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             firm.inventory.clear()
             firm.capital_stock = 0.0
 
-            # Distribute cash
+            # Distribute cash (Dividends)
             total_cash = firm.assets
             if total_cash > 0:
                 outstanding_shares = firm.total_shares - firm.treasury_shares
@@ -305,28 +294,20 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                             distribution = total_cash * share_ratio
                             self.settlement_system.transfer(firm, agent, distribution, "liquidation_dividend", tick=state.time)
 
-                else:
-                    if hasattr(state, "government") and state.government:
-                        # Atomic Collection via Government (handles transfer and revenue recording)
-                        # We use settlement system explicitly if collect_tax doesn't guarantee it?
-                        # collect_tax usually uses transfer. But to be safe and explicit:
-                        self.settlement_system.transfer(firm, state.government, total_cash, "liquidation_escheatment", tick=state.time)
-                        # state.government.collect_tax call removed? Or we should record revenue?
-                        # collect_tax does both.
-                        # Spec says: `self.settlement_system.transfer(firm, self.government, remaining_cash, "liquidation_escheatment", tick)`.
-                        # It doesn't say call collect_tax. I'll stick to transfer.
-                        # If Gov needs to record revenue, maybe I should call collect_tax but pass 'skip_transfer'? No.
-                        # Gov assets increase. Gov accounting might miss it if I don't call method.
-                        # But complying with spec "use settlement.transfer".
-                        pass
+            # Record Liquidation (Destruction of real assets & Escheatment)
+            # Only Capital Stock is destroyed now (machines, buildings), inventory is recovered.
+            # WO-178: record_liquidation now handles escheatment of residual assets (after dividends) to government.
+            government = getattr(state, "government", None)
 
-            # Verification: Firm assets should be ~0 now
-            if firm.assets > 1e-6:
-                 if hasattr(state, "government") and state.government:
-                     self.settlement_system.transfer(firm, state.government, firm.assets, "liquidation_rounding_cleanup", tick=state.time)
-                 else:
-                     # Burn
-                     self.settlement_system.transfer_and_destroy(firm, state.central_bank, firm.assets, "liquidation_rounding_cleanup", tick=state.time)
+            self.settlement_system.record_liquidation(
+                agent=firm,
+                inventory_value=0.0, # Inventory recovered
+                capital_value=capital_value,
+                recovered_cash=0.0,
+                reason="firm_liquidation",
+                tick=state.time,
+                government_agent=government
+            )
 
             # Clear shareholdings
             for household in state.households:

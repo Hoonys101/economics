@@ -30,11 +30,13 @@ class SettlementSystem(ISettlementSystem):
         capital_value: float,
         recovered_cash: float,
         reason: str,
-        tick: int
+        tick: int,
+        government_agent: Optional[IFinancialEntity] = None
     ) -> None:
         """
         Records the value destroyed during a firm's bankruptcy and liquidation.
         This ensures the value is accounted for in the simulation's total wealth.
+        If government_agent is provided, transfers residual assets to it (Escheatment).
         """
         loss_amount = inventory_value + capital_value - recovered_cash
         if loss_amount < 0:
@@ -50,6 +52,18 @@ class SettlementSystem(ISettlementSystem):
             f"Reason: {reason}",
             extra={"tick": tick, "tags": ["liquidation", "bankruptcy", "ledger"]}
         )
+
+        # WO-178: Escheatment Logic
+        if government_agent:
+            current_assets = agent.assets if hasattr(agent, 'assets') else 0.0
+            if current_assets > 0:
+                self.transfer(
+                    debit_agent=agent,
+                    credit_agent=government_agent,
+                    amount=current_assets,
+                    memo="liquidation_escheatment",
+                    tick=tick
+                )
 
     def transfer(
         self,

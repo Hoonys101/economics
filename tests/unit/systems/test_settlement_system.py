@@ -122,6 +122,29 @@ def test_record_liquidation(settlement_system):
     settlement_system.record_liquidation(agent, 10.0, 0.0, 0.0, "More Loss", tick=2)
     assert settlement_system.total_liquidation_losses == 140.0
 
+def test_record_liquidation_escheatment(settlement_system):
+    agent = MockAgent(1, 50.0) # Has residual cash
+    gov = MockAgent(99, 0.0)
+
+    # Record liquidation with government agent
+    settlement_system.record_liquidation(
+        agent,
+        inventory_value=10.0,
+        capital_value=10.0,
+        recovered_cash=0.0,
+        reason="Escheatment Test",
+        tick=1,
+        government_agent=gov
+    )
+
+    # Check stats
+    # Loss = 10 + 10 - 0 = 20
+    assert settlement_system.total_liquidation_losses == 20.0
+
+    # Check transfer
+    assert agent.assets == 0.0
+    assert gov.assets == 50.0
+
 def test_transfer_rollback(settlement_system):
     class FaultyAgent(MockAgent):
         def deposit(self, amount):
