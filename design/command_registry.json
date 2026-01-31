@@ -4,19 +4,23 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-fix-td-170": {
-    "worker": "spec",
-    "instruction": "AUDIT_TD_170_SALES_TAX.md에서 제안된 'Solution A: Escrow 모델'을 구현하기 위한 상세 기술 명세를 작성하십시오. TransactionProcessor에서 거래 총액을 먼저 확보하는 로직이 핵심입니다.",
-    "context": [
-      "design/3_work_artifacts/audits/AUDIT_TD_170_SALES_TAX.md",
-      "simulation/orchestration/transaction_processor.py",
-      "simulation/finance/system.py"
-    ]
-  },
-  "mission-opt-alpha": {
+  "mission-impl-td-170": {
     "command": "create",
-    "instruction": "DIRECTIVE_ALPHA_OPTIMIZER.md의 지침에 따라 DB 저장 간격 조정, 로그 억제, 그리고 vectorized_planner.py를 통한 벡터화된 소비 로직을 구현하십시오.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "[Directive Alpha] Speed Optimization",
-    "file": "design/3_work_artifacts/work_orders/DIRECTIVE_ALPHA_OPTIMIZER.md"
+    "instruction": "SPEC_TD_170_ESCROW_ATOMIC_TAX.md에 따라 TransactionProcessor에 에스크로 모델을 적용하십시오. 핵심은 거래 전 총액 선확보입니다.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "[TD-170] Sales Tax Escrow Impl",
+    "file": "design/3_work_artifacts/specs/SPEC_TD_170_ESCROW_ATOMIC_TAX.md"
+  },
+  "mission-clean-small-debts": {
+    "command": "create",
+    "instruction": "TD-143(문서 내 WO-XXX 제거) 및 TD-172(채권 발행 통계 Unification)를 해결하십시오.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "[Clean-up] Small Debts TD-143, TD-172"
+  },
+  "mission-audit-massive": {
+    "worker": "audit",
+    "instruction": "TD-167(기업 파산 시퀀스 결함) 및 TD-171(가계 파산 잔여금 누수) 문제를 조사하고 해결을 위한 Spec 초안을 작성하십시오.",
+    "context": [
+      "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+      "simulation/systems/"
+    ]
   }
 }
