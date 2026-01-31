@@ -4,20 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-spec-phase31": {
-    "worker": "spec",
-    "instruction": "Phase 31: 공개시장운영(Open Market Operations, OMO)을 위한 기술 명세를 작성하십시오. 정부/중앙은행이 SecurityMarket에서 국채를 매입/매각하여 시장 유동성을 조절하는 메커니즘을 포함해야 하며, Phase 30에서 구축된 트랜잭션 기반 금융 인프라를 활용해야 합니다.",
-    "context": [
-      "simulation/bank.py",
-      "simulation/agents/government.py",
-      "design/1_governance/architecture/ARCH_TRANSACTIONS.md",
-      "design/1_governance/roadmap.md"
-    ]
-  },
-  "mission-cleanup-core": {
+  "mission-impl-phase31": {
     "command": "create",
-    "instruction": "다음의 클린업 작업을 수행하십시오. 1. TD-173: Household 클래스(simulation/core_agents.py)에서 더 이상 사용되지 않는 레거시 소비 로직(decide_and_consume 및 하위 호출)을 제거하십시오. 2. TD-174: 시뮬레이션 엔진(simulation/engine.py)에 하드코딩된 'batch_save_interval = 50' 값을 설정 파일로 외부화하십시오. (참고: simulation/engine.py 파일도 함께 수정해야 합니다)\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "[Cleanup] TD-173 & TD-174",
-    "file": "simulation/core_agents.py"
+    "instruction": "SPEC_PHASE31_OMO.md에 따라 공개시장운영(OMO) 시스템을 구현하십시오. 1. OMOInstructionDTO 정의 2. CentralBankSystem 구현 (Government/Bank 분리) 3. SettlementSystem에 omo_purchase/sale 트랜잭션 처리 로직 추가 (화폐 발행/소각)\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "[Phase 31] Open Market Operations Implementation",
+    "file": "design/3_work_artifacts/specs/SPEC_PHASE31_OMO.md"
   }
 }
