@@ -6,6 +6,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.systems.api import SystemInterface
+from modules.government.taxation.system import TaxationSystem, TaxIntent
 
 if TYPE_CHECKING:
     from simulation.agents.government import Government
@@ -22,6 +23,7 @@ class TransactionProcessor(SystemInterface):
 
     def __init__(self, config_module: Any):
         self.config_module = config_module
+        self.taxation_system = TaxationSystem(config_module)
 
     def execute(self, state: SimulationState) -> None:
         """
@@ -95,9 +97,17 @@ class TransactionProcessor(SystemInterface):
 
             elif tx.transaction_type == "escheatment":
                  # Buyer: Agent (Deceased/Closed), Seller: Government
-                 # Atomic Collection via Government (handles transfer and confirmed recording)
-                 result = government.collect_tax(trade_value, "escheatment", buyer, current_time)
-                 success = result['success']
+                 # Direct atomic settlement to government
+                 success = settlement.settle_atomic(buyer, [(government, trade_value, "escheatment")], current_time)
+                 if success:
+                      government.record_revenue({
+                             "success": True,
+                             "amount_collected": trade_value,
+                             "tax_type": "escheatment",
+                             "payer_id": buyer.id,
+                             "payee_id": government.id,
+                             "error_message": None
+                         })
 
             elif tx.transaction_type == "inheritance_distribution":
                 heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
@@ -156,49 +166,85 @@ class TransactionProcessor(SystemInterface):
                         government.total_money_destroyed += trade_value
 
             elif tx.transaction_type == "goods":
-                # Goods: Apply Sales Tax
-                tax_amount = trade_value * sales_tax_rate
+                # Goods: Apply Sales Tax (Decoupled & Atomic)
+                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
+
+                credits = []
+                # 1. Main Trade Credit (Seller)
+                credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
+
+                # 2. Tax Credits (Government)
+                total_cost = trade_value
+                for intent in intents:
+                    credits.append((government, intent.amount, intent.reason))
+                    if intent.payer_id == buyer.id:
+                        total_cost += intent.amount
                 
                 # Solvency Check
                 if hasattr(buyer, 'check_solvency'):
-                    if buyer.assets < (trade_value + tax_amount):
+                    if buyer.assets < total_cost:
                         buyer.check_solvency(government)
 
-                success = settlement.transfer(buyer, seller, trade_value, f"goods_trade:{tx.item_id}")
-                if success and tax_amount > 0:
-                    # Atomic collection from buyer
-                    government.collect_tax(tax_amount, f"sales_tax_{tx.transaction_type}", buyer, current_time)
+                success = settlement.settle_atomic(buyer, credits, current_time)
+
+                if success:
+                    # Record Revenue
+                    for intent in intents:
+                        government.record_revenue({
+                             "success": True,
+                             "amount_collected": intent.amount,
+                             "tax_type": intent.reason,
+                             "payer_id": intent.payer_id,
+                             "payee_id": intent.payee_id,
+                             "error_message": None
+                        })
 
             elif tx.transaction_type == "stock":
                 # Stock: NO Sales Tax
                 success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
             
             elif tx.transaction_type in ["labor", "research_labor"]:
-                # Labor: Apply Income Tax
-                tax_payer = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")
-
-                if "basic_food_current_sell_price" in goods_market_data:
-                    avg_food_price = goods_market_data["basic_food_current_sell_price"]
-                else:
-                    avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+                # Labor: Apply Income Tax (Decoupled & Atomic)
+                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
                 
-                daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
-                survival_cost = max(avg_food_price * daily_food_need, 10.0)
+                credits = []
+                seller_net_amount = trade_value
 
-                tax_amount = government.calculate_income_tax(trade_value, survival_cost)
+                for intent in intents:
+                    credits.append((government, intent.amount, intent.reason))
+                    if intent.payer_id == seller.id:
+                        # If Seller (Worker) pays, deduct from their receipt (Withholding)
+                        seller_net_amount -= intent.amount
+                        tax_amount = intent.amount
+                    elif intent.payer_id == buyer.id:
+                        # If Buyer (Firm) pays, it's extra cost
+                        pass
                 
-                if tax_payer == "FIRM":
-                    success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
-                    if success and tax_amount > 0:
-                        # Atomic collection from Firm
-                        government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
+                # Update tax_amount for later side-effects logic (Step 2)
+                # If no intents, tax_amount remains 0.0 (from scope start) or we should set it?
+                # The original code relied on tax_amount being set here.
+                # If intents exist, we sum them up or pick specific one?
+                # Usually only one income tax intent.
+                if intents:
+                    tax_amount = sum(i.amount for i in intents)
                 else:
-                    # Household pays tax
-                    # Pay GROSS wage to household, then collect tax from household
-                    success = settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
-                    if success and tax_amount > 0:
-                        # Atomic collection from Household (Withholding model)
-                        government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+                    tax_amount = 0.0
+
+                credits.append((seller, seller_net_amount, f"labor_wage:{tx.transaction_type}"))
+
+                success = settlement.settle_atomic(buyer, credits, current_time)
+
+                if success:
+                    # Record Revenue
+                    for intent in intents:
+                        government.record_revenue({
+                             "success": True,
+                             "amount_collected": intent.amount,
+                             "tax_type": intent.reason,
+                             "payer_id": intent.payer_id,
+                             "payee_id": intent.payee_id,
+                             "error_message": None
+                        })
             
             elif tx.item_id == "interest_payment":
                 success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
@@ -212,9 +258,17 @@ class TransactionProcessor(SystemInterface):
                 if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
                     buyer.capital_income_this_tick += trade_value
             elif tx.transaction_type == "tax":
-                # Atomic Collection via Government
-                result = government.collect_tax(trade_value, tx.item_id, buyer, current_time)
-                success = result['success']
+                # Direct atomic settlement to government
+                success = settlement.settle_atomic(buyer, [(government, trade_value, tx.item_id)], current_time)
+                if success:
+                      government.record_revenue({
+                             "success": True,
+                             "amount_collected": trade_value,
+                             "tax_type": tx.item_id,
+                             "payer_id": buyer.id,
+                             "payee_id": government.id,
+                             "error_message": None
+                         })
             elif tx.transaction_type == "infrastructure_spending":
                 # Standard Transfer (Gov -> Reflux)
                 success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")

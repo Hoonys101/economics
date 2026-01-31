@@ -10,8 +10,8 @@ from simulation.dtos import GovernmentStateDTO
 from simulation.dtos.api import MarketSnapshotDTO
 from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
-from simulation.systems.tax_agency import TaxAgency
 from simulation.systems.ministry_of_education import MinistryOfEducation
+from modules.government.taxation.system import TaxationSystem
 from modules.finance.api import InsufficientFundsError, TaxCollectionResult
 from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
 from modules.government.dtos import FiscalPolicyDTO
@@ -34,7 +34,8 @@ class Government:
         self.config_module = config_module
         self.settlement_system: Optional["ISettlementSystem"] = None
         
-        self.tax_agency = TaxAgency(config_module)
+        self.taxation_system = TaxationSystem(config_module)
+        # self.tax_agency = TaxAgency(config_module) # Deprecated/Removed
         self.fiscal_policy_manager = FiscalPolicyManager(config_module)
         self.ministry_of_education = MinistryOfEducation(config_module)
 
@@ -192,11 +193,11 @@ class Government:
 
         # Fallback (should not happen if initialized correctly)
         tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
-        return self.tax_agency.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
+        return self.taxation_system.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
 
     def calculate_corporate_tax(self, profit: float) -> float:
-        """Delegates corporate tax calculation to the TaxAgency."""
-        return self.tax_agency.calculate_corporate_tax(profit, self.corporate_tax_rate)
+        """Delegates corporate tax calculation to the TaxationSystem."""
+        return self.taxation_system.calculate_corporate_tax(profit, self.corporate_tax_rate)
 
     def reset_tick_flow(self):
         """
@@ -233,16 +234,16 @@ class Government:
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
         """
         Legacy adapter method used by TransactionProcessor.
-        Now delegates to the new atomic collect_tax and records revenue.
 
         DEPRECATED: Direct usage of this method is discouraged.
-        Use tax_agency.collect_tax() followed by government.record_revenue().
         """
         warnings.warn(
-            "Government.collect_tax is deprecated. Use tax_agency.collect_tax() and government.record_revenue() instead.",
+            "Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.",
             DeprecationWarning,
             stacklevel=2
         )
+
+        payer_id = payer.id if hasattr(payer, 'id') else str(payer)
 
         if not self.settlement_system:
             logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
@@ -250,20 +251,23 @@ class Government:
                 "success": False,
                 "amount_collected": 0.0,
                 "tax_type": tax_type,
-                "payer_id": payer.id if hasattr(payer, 'id') else str(payer),
+                "payer_id": payer_id,
                 "payee_id": self.id,
                 "error_message": "No SettlementSystem linked"
             }
 
-        # Execute atomic transfer
-        result = self.tax_agency.collect_tax(
-            payer=payer,
-            payee=self,
-            amount=amount,
-            tax_type=tax_type,
-            settlement_system=self.settlement_system,
-            current_tick=current_tick
-        )
+        # Execute atomic transfer directly via SettlementSystem (Internal logic)
+        # Using transfer() for single payment
+        success = self.settlement_system.transfer(payer, self, amount, f"{tax_type} collection")
+
+        result = {
+            "success": bool(success),
+            "amount_collected": amount if success else 0.0,
+            "tax_type": tax_type,
+            "payer_id": payer_id,
+            "payee_id": self.id,
+            "error_message": None if success else "Transfer failed"
+        }
 
         # Record stats
         self.record_revenue(result)
@@ -512,15 +516,10 @@ class Government:
                     tax_amount = min(tax_amount, agent.assets)
 
                     if tax_amount > 0 and self.settlement_system:
-                        result = self.tax_agency.collect_tax(
-                            payer=agent,
-                            payee=self,
-                            amount=tax_amount,
-                            tax_type="wealth_tax",
-                            settlement_system=self.settlement_system,
-                            current_tick=current_tick
-                        )
-                        self.record_revenue(result)
+                        # Replaced TaxAgency call with internal collect_tax or direct transfer
+                        # Using collect_tax (even if deprecated for external) is fine for internal shortcut
+                        # to handle recording.
+                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
                         if result['success']:
                              total_wealth_tax += result['amount_collected']
 
