@@ -4,10 +4,19 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-tax-decoupling": {
+  "mission-housing-market": {
     "command": "create",
-    "instruction": "Implement the TaxationSystem and Atomic Settlement logic as per the specification. Ensure strict decoupling from TransactionProcessor and robust rollback in SettlementSystem.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Tax Decoupling & Atomic Saga",
-    "file": "design/3_work_artifacts/specs/SPEC_TAX_DECOUPLING_SAGA_V2.md"
+    "instruction": "Refactor HousingSystem to interact with RealEstateMarket instead of calling Bank methods directly. Ensure all housing transactions go through the market mechanism.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Housing System Market Integration (TD-177)"
+  },
+  "mission-household-god-class": {
+    "command": "create",
+    "instruction": "Decompose the bloated Household class. Extract logic into sub-components (e.g., ConsumptionManager, DecisionUnit) following the Component-Entity-System pattern.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Refactor Household God Class (TD-162)"
+  },
+  "mission-db-god-file": {
+    "command": "create",
+    "instruction": "Refactor 'simulation/db/repository.py' to separate concerns. Split the monolithic file into smaller, domain-specific repositories (e.g., AgentRepository, MarketRepository).\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Refactor Database Repository (TD-140)"
   }
 }

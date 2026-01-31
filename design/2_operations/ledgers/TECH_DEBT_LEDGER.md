@@ -7,7 +7,7 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
-| TD-162 | 2026-01-30 | Bloated God Class: Household | Maintenance/Testing Overhead | **ACTIVE** |
+| TD-162 | 2026-01-30 | Bloated God Class: Household | Maintenance/Testing Overhead | **READY** |
 | TD-169 | 2026-01-31 | Bloat Risk: `phases.py`, `government.py` | Emerging Maintenance Debt | **ACTIVE** |
 
 ## 🏭 2. FIRMS & CORPORATE
@@ -39,7 +39,7 @@
 | TD-171 | 2026-01-31 | Liquidation Dust Leak (Household) | Escheatment missing, assets vanish | **READY** |
 | TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **READY** |
 | TD-176 | 2026-01-31 | Tight Coupling: TxManager & Govt | High Architectural dependency | **READY** |
-| TD-177 | 2026-01-31 | HousingSystem Bypassing Markets | Economic purity violation | **ACTIVE** |
+| TD-177 | 2026-01-31 | HousingSystem Bypassing Markets | Economic purity violation | **READY** |
 
 
 ## 📦 6. DATA & DTO CONTRACTS
@@ -55,7 +55,7 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
-| TD-140 | 2026-01-29 | God File: `db/repository.py` | 745+ LOC complexity | **ACTIVE** |
+| TD-140 | 2026-01-29 | God File: `db/repository.py` | 745+ LOC complexity | **READY** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
