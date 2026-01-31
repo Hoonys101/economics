@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-impl-td-170": {
-    "command": "create",
-    "instruction": "SPEC_TD_170_ESCROW_ATOMIC_TAX.md에 따라 TransactionProcessor에 에스크로 모델을 적용하십시오. 핵심은 거래 전 총액 선확보입니다.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "[TD-170] Sales Tax Escrow Impl",
-    "file": "design/3_work_artifacts/specs/SPEC_TD_170_ESCROW_ATOMIC_TAX.md"
-  },
   "mission-clean-small-debts": {
     "command": "create",
     "instruction": "TD-143(문서 내 WO-XXX 제거) 및 TD-172(채권 발행 통계 Unification)를 해결하십시오.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
