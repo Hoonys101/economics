@@ -184,21 +184,6 @@ class Government:
                 extra={"tick": dto.tick, "agent_id": self.id, "tags": ["sensory", "wo-057-b"]}
             )
 
-    def calculate_income_tax(self, income: float, survival_cost: float) -> float:
-        """
-        Calculates income tax using the FiscalPolicyManager and current policy.
-        """
-        if self.fiscal_policy:
-            return self.fiscal_policy_manager.calculate_tax_liability(self.fiscal_policy, income)
-
-        # Fallback (should not happen if initialized correctly)
-        tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
-        return self.taxation_system.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
-
-    def calculate_corporate_tax(self, profit: float) -> float:
-        """Delegates corporate tax calculation to the TaxationSystem."""
-        return self.taxation_system.calculate_corporate_tax(profit, self.corporate_tax_rate)
-
     def reset_tick_flow(self):
         """
         매 틱 시작 시 호출되어 이번 틱의 Flow 데이터를 초기화하고,
@@ -230,71 +215,6 @@ class Government:
                 self.credit_delta_this_tick -= tx.price
                 self.total_money_destroyed += tx.price
                 logger.debug(f"MONETARY_CONTRACTION | Credit destroyed: {tx.price:.2f}")
-
-    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
-        """
-        Legacy adapter method used by TransactionProcessor.
-
-        DEPRECATED: Direct usage of this method is discouraged.
-        """
-        warnings.warn(
-            "Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-
-        payer_id = payer.id if hasattr(payer, 'id') else str(payer)
-
-        if not self.settlement_system:
-            logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
-            return {
-                "success": False,
-                "amount_collected": 0.0,
-                "tax_type": tax_type,
-                "payer_id": payer_id,
-                "payee_id": self.id,
-                "error_message": "No SettlementSystem linked"
-            }
-
-        # Execute atomic transfer directly via SettlementSystem (Internal logic)
-        # Using transfer() for single payment
-        success = self.settlement_system.transfer(payer, self, amount, f"{tax_type} collection")
-
-        result = {
-            "success": bool(success),
-            "amount_collected": amount if success else 0.0,
-            "tax_type": tax_type,
-            "payer_id": payer_id,
-            "payee_id": self.id,
-            "error_message": None if success else "Transfer failed"
-        }
-
-        # Record stats
-        self.record_revenue(result)
-
-        return result
-
-    def record_revenue(self, result: "TaxCollectionResult"):
-        """
-        [NEW] Updates the government's internal ledgers based on a verified
-        TaxCollectionResult DTO.
-        """
-        if not result['success'] or result['amount_collected'] <= 0:
-            return
-
-        amount = result['amount_collected']
-        tax_type = result['tax_type']
-        payer_id = result['payer_id']
-
-        self.total_collected_tax += amount
-        self.revenue_this_tick += amount
-        self.tax_revenue[tax_type] = (
-            self.tax_revenue.get(tax_type, 0.0) + amount
-        )
-        self.current_tick_stats["tax_revenue"][tax_type] = (
-            self.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
-        )
-        self.current_tick_stats["total_collected"] += amount
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -516,12 +436,25 @@ class Government:
                     tax_amount = min(tax_amount, agent.assets)
 
                     if tax_amount > 0 and self.settlement_system:
-                        # Replaced TaxAgency call with internal collect_tax or direct transfer
-                        # Using collect_tax (even if deprecated for external) is fine for internal shortcut
-                        # to handle recording.
-                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
-                        if result['success']:
-                             total_wealth_tax += result['amount_collected']
+                        # Direct atomic settlement using escrow
+                        intents = [{
+                            "payee": self,
+                            "amount": tax_amount,
+                            "memo": "wealth_tax"
+                        }]
+
+                        success = self.settlement_system.settle_escrow(agent, intents, current_tick)
+
+                        if success:
+                            # Record in TaxationSystem
+                            self.taxation_system.record_revenue({
+                                "payer_id": agent.id,
+                                "payee_id": self.id,
+                                "amount": tax_amount,
+                                "tax_type": "wealth_tax"
+                            }, True, current_tick)
+
+                            total_wealth_tax += tax_amount
 
                 # B. Unemployment Benefit
                 if not agent.is_employed:
@@ -658,9 +591,19 @@ class Government:
         """
         Called at the end of every tick to finalize statistics and push to history buffers.
         """
-        revenue_snapshot = self.current_tick_stats["tax_revenue"].copy()
+        # Fetch verified revenue stats from TaxationSystem
+        if hasattr(self.taxation_system, 'get_tick_revenue'):
+            revenue_data = self.taxation_system.get_tick_revenue(current_tick)
+        else:
+            revenue_data = {}
+
+        total_collected = sum(revenue_data.values())
+
+        revenue_snapshot = revenue_data.copy()
         revenue_snapshot["tick"] = current_tick
-        revenue_snapshot["total"] = self.current_tick_stats["total_collected"]
+        revenue_snapshot["total"] = total_collected
+
+        self.total_collected_tax += total_collected # Sync global total if needed
 
         # WO-057 Deficit Spending: Update total_debt based on FinanceSystem
         if self.finance_system:

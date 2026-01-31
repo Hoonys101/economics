@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union
+from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union, List
 from abc import ABC, abstractmethod
 
 @runtime_checkable
@@ -44,6 +44,15 @@ class ITransaction(TypedDict):
     time: int
     metadata: Optional[Dict[str, Any]]
 
+class PaymentIntentDTO(TypedDict):
+    """
+    A generic instruction for the SettlementSystem to transfer funds.
+    Used in atomic escrow settlement.
+    """
+    payee: IFinancialEntity
+    amount: float
+    memo: str
+
 class ISettlementSystem(ABC):
     """
     Interface for the centralized settlement system.
@@ -79,6 +88,19 @@ class ISettlementSystem(ABC):
 
         Returns:
             Transaction object if successful, None otherwise.
+        """
+        ...
+
+    @abstractmethod
+    def settle_escrow(
+        self,
+        payer: IFinancialEntity,
+        intents: List[PaymentIntentDTO],
+        tick: int
+    ) -> bool:
+        """
+        Atomically settles a multi-payment from one payer to multiple payees.
+        Returns True on success, False on failure (with full rollback).
         """
         ...
 

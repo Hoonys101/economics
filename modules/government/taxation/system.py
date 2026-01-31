@@ -1,23 +1,25 @@
-from dataclasses import dataclass
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, TYPE_CHECKING
+from modules.government.taxation.api import ITaxationSystem, TaxIntentDTO
 import logging
+from collections import defaultdict
+
+if TYPE_CHECKING:
+    from simulation.models import Transaction
+    from simulation.dtos.api import SimulationState
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class TaxIntent:
-    payer_id: int
-    payee_id: int # Usually Government ID
-    amount: float
-    reason: str
-
-class TaxationSystem:
+class TaxationSystem(ITaxationSystem):
     """
     Pure logic component for tax calculations.
     Decoupled from Government agent state (policies are passed in) and Settlement execution.
+    Maintains a ledger of collected tax revenue.
     """
     def __init__(self, config_module: Any):
         self.config_module = config_module
+        self.tax_revenue_ledger: Dict[str, float] = {}
+        # Stores revenue per tick: {tick: {tax_type: amount}}
+        self.revenue_by_tick: Dict[int, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
 
     def calculate_income_tax(self, income: float, survival_cost: float, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> float:
         """
@@ -61,20 +63,27 @@ class TaxationSystem:
         """Calculates corporate tax."""
         return profit * current_corporate_tax_rate if profit > 0 else 0.0
 
-    def calculate_tax_intents(
+    def generate_tax_intents(
         self,
-        transaction: Any, # Transaction model
-        buyer: Any,
-        seller: Any,
-        government: Any,
-        market_data: Optional[Dict[str, Any]] = None
-    ) -> List[TaxIntent]:
+        transaction: "Transaction",
+        state: "SimulationState"
+    ) -> List[TaxIntentDTO]:
         """
-        Determines applicable taxes for a transaction and returns TaxIntents.
+        Determines applicable taxes for a transaction and returns TaxIntentDTOs.
         Does NOT execute any transfer.
         """
-        intents: List[TaxIntent] = []
+        intents: List[TaxIntentDTO] = []
         trade_value = transaction.quantity * transaction.price
+
+        government = state.government
+        if not government:
+            logger.error("TaxationSystem: Government not found in state.")
+            return []
+
+        buyer = state.agents.get(transaction.buyer_id) or getattr(state, "inactive_agents", {}).get(transaction.buyer_id)
+        seller = state.agents.get(transaction.seller_id) or getattr(state, "inactive_agents", {}).get(transaction.seller_id)
+
+        market_data = state.market_data if state.market_data else {}
 
         # 1. Sales Tax (Goods)
         if transaction.transaction_type == "goods":
@@ -82,15 +91,21 @@ class TaxationSystem:
             tax_amount = trade_value * sales_tax_rate
 
             if tax_amount > 0:
-                intents.append(TaxIntent(
-                    payer_id=buyer.id,
+                intents.append(TaxIntentDTO(
+                    payer_id=transaction.buyer_id,
                     payee_id=government.id,
                     amount=tax_amount,
-                    reason=f"sales_tax_{transaction.transaction_type}"
+                    tax_type=f"sales_tax_{transaction.transaction_type}"
                 ))
 
         # 2. Income Tax (Labor)
         elif transaction.transaction_type in ["labor", "research_labor"]:
+            if not buyer or not seller:
+                 # It's possible for agents to be missing if they were just removed, but transaction remains?
+                 # Or if ids are invalid.
+                 # logger.warning(f"TaxationSystem: Missing agents for labor tax calc. Buyer: {transaction.buyer_id}, Seller: {transaction.seller_id}")
+                 return []
+
             # Determine Survival Cost
             avg_food_price = 5.0 # Default
             if market_data:
@@ -105,7 +120,6 @@ class TaxationSystem:
             survival_cost = max(avg_food_price * daily_food_need, 10.0)
 
             # Get Tax Rate from Government
-            # Assuming government object has income_tax_rate attribute
             current_rate = getattr(government, "income_tax_rate", 0.1)
             tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
 
@@ -117,23 +131,31 @@ class TaxationSystem:
                 payer_id = buyer.id if tax_payer_type == "FIRM" else seller.id
                 reason = "income_tax_firm" if tax_payer_type == "FIRM" else "income_tax_household"
 
-                intents.append(TaxIntent(
+                intents.append(TaxIntentDTO(
                     payer_id=payer_id,
                     payee_id=government.id,
                     amount=tax_amount,
-                    reason=reason
+                    tax_type=reason
                 ))
 
-        # 3. Escheatment (If handled here, though it's usually 100% transfer)
-        # TransactionProcessor handled 'escheatment' as "collect_tax(trade_value)".
-        # This implies it's a transfer to Government.
-        # If we handle it here:
+        # 3. Escheatment
         elif transaction.transaction_type == "escheatment":
-             intents.append(TaxIntent(
-                payer_id=buyer.id, # Agent
+             intents.append(TaxIntentDTO(
+                payer_id=transaction.buyer_id,
                 payee_id=government.id,
                 amount=trade_value,
-                reason="escheatment"
+                tax_type="escheatment"
             ))
 
         return intents
+
+    def record_revenue(self, intent: TaxIntentDTO, success: bool, tick: int) -> None:
+        if success:
+            tax_type = intent['tax_type']
+            amount = intent['amount']
+            self.tax_revenue_ledger[tax_type] = self.tax_revenue_ledger.get(tax_type, 0.0) + amount
+            self.revenue_by_tick[tick][tax_type] += amount
+
+    def get_tick_revenue(self, tick: int) -> Dict[str, float]:
+        """Returns the revenue breakdown for a specific tick."""
+        return dict(self.revenue_by_tick.get(tick, {}))

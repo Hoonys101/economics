@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List
 import logging
 
-from simulation.finance.api import ISettlementSystem, ITransaction
+from simulation.finance.api import ISettlementSystem, ITransaction, PaymentIntentDTO
 from modules.finance.api import IFinancialEntity, InsufficientFundsError
 
 if TYPE_CHECKING:
@@ -154,49 +154,51 @@ class SettlementSystem(ISettlementSystem):
              self.logger.exception(f"SETTLEMENT_UNHANDLED_FAIL | {e}")
              return False
 
-    def settle_atomic(
+    def settle_escrow(
         self,
-        debit_agent: IFinancialEntity,
-        credits_list: List[Tuple[IFinancialEntity, float, str]],
+        payer: IFinancialEntity,
+        intents: List[PaymentIntentDTO],
         tick: int
     ) -> bool:
         """
-        Executes a one-to-many atomic settlement.
-        All credits are summed to determine the total debit amount.
-        If the debit fails, the entire transaction is aborted.
-        If any credit fails, previous credits in this batch are rolled back.
+        Atomically settles a multi-payment from one payer to multiple payees.
+        Returns True on success, False on failure (with full rollback).
         """
-        if not credits_list:
+        if not intents:
             return True
 
-        # 0. Validate Credits (No negative transfers allowed in this atomic mode)
-        for _, amount, memo in credits_list:
+        # 0. Validate Credits
+        total_debit = 0.0
+        for intent in intents:
+             amount = intent['amount']
              if amount < 0:
-                 self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {memo}")
+                 self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {intent['memo']}")
                  return False
+             total_debit += amount
 
-        # 1. Calculate Total Debit
-        total_debit = sum(amount for _, amount, _ in credits_list)
         if total_debit <= 0:
              return True
 
-        # 2. Debit Check & Withdrawal
-        memo = f"atomic_batch_{len(credits_list)}_txs"
-        success = self._execute_withdrawal(debit_agent, total_debit, memo, tick)
+        # 1. Debit Check & Withdrawal
+        memo = f"atomic_escrow_{len(intents)}_txs"
+        success = self._execute_withdrawal(payer, total_debit, memo, tick)
         if not success:
             return False
 
-        # 3. Execute Credits
+        # 2. Execute Credits
         completed_credits = []
-        for credit_agent, amount, credit_memo in credits_list:
+        for intent in intents:
+            payee = intent['payee']
+            amount = intent['amount']
             if amount <= 0:
                 continue
+
             try:
-                credit_agent.deposit(amount)
-                completed_credits.append((credit_agent, amount))
+                payee.deposit(amount)
+                completed_credits.append((payee, amount))
             except Exception as e:
                 self.logger.error(
-                    f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back atomic batch. Error: {e}"
+                    f"SETTLEMENT_ROLLBACK | Deposit failed for {payee.id}. Rolling back atomic batch. Error: {e}"
                 )
                 # ROLLBACK
                 # 1. Reverse completed credits
@@ -208,13 +210,29 @@ class SettlementSystem(ISettlementSystem):
 
                 # 2. Refund debit agent
                 try:
-                    debit_agent.deposit(total_debit)
+                    payer.deposit(total_debit)
                 except Exception as rb_err:
-                    self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {debit_agent.id}. {rb_err}")
+                    self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {payer.id}. {rb_err}")
 
                 return False
 
+        self.logger.debug(f"ESCROW_SUCCESS | Settled {total_debit:.2f} from {payer.id} to {len(intents)} payees.")
         return True
+
+    def settle_atomic(
+        self,
+        debit_agent: IFinancialEntity,
+        credits_list: List[Tuple[IFinancialEntity, float, str]],
+        tick: int
+    ) -> bool:
+        """
+        Wrapper around settle_escrow for backward compatibility.
+        """
+        intents: List[PaymentIntentDTO] = []
+        for payee, amount, memo in credits_list:
+            intents.append({"payee": payee, "amount": amount, "memo": memo})
+
+        return self.settle_escrow(debit_agent, intents, tick)
 
     def transfer(
         self,
