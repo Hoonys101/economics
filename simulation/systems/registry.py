@@ -37,8 +37,7 @@ class Registry(IRegistry):
             if transaction.item_id.startswith("real_estate_"):
                 self._handle_real_estate_registry(transaction, buyer, seller, state.real_estate_units, state.time)
             elif tx_type == "housing":
-                # Assuming housing market transactions also use real_estate item_id
-                pass
+                self._handle_housing_registry(transaction, buyer, seller, state.real_estate_units, state.time)
 
         elif tx_type == "emergency_buy":
              self._handle_emergency_buy(transaction, buyer)
@@ -178,6 +177,44 @@ class Registry(IRegistry):
                 self.logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
         except (IndexError, ValueError) as e:
             self.logger.error(f"RE_TX_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
+
+    def _handle_housing_registry(self, tx: Transaction, buyer: Any, seller: Any, real_estate_units: List[Any], current_time: int):
+        """
+        Updates housing ownership, handling 'unit_{id}' format.
+        Also updates 'is_homeless' status and 'residing_property_id'.
+        """
+        try:
+            # item_id format: "unit_{id}"
+            unit_id = int(tx.item_id.split("_")[1])
+            unit = next((u for u in real_estate_units if u.id == unit_id), None)
+
+            if not unit:
+                self.logger.warning(f"HOUSING_REGISTRY | Unit {unit_id} not found.")
+                return
+
+            # Update Unit
+            unit.owner_id = buyer.id
+
+            # Update Seller (if not None/Govt)
+            if seller and hasattr(seller, "owned_properties"):
+                if unit_id in seller.owned_properties:
+                    seller.owned_properties.remove(unit_id)
+
+            # Update Buyer
+            if hasattr(buyer, "owned_properties"):
+                if unit_id not in buyer.owned_properties:
+                    buyer.owned_properties.append(unit_id)
+
+                # Housing System Logic: Auto-move-in if homeless
+                if getattr(buyer, "residing_property_id", None) is None:
+                    unit.occupant_id = buyer.id
+                    buyer.residing_property_id = unit_id
+                    buyer.is_homeless = False
+
+            self.logger.info(f"HOUSING_REGISTRY | Unit {unit_id} transferred from {tx.seller_id} to {buyer.id}")
+
+        except (IndexError, ValueError) as e:
+            self.logger.error(f"HOUSING_REGISTRY_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
 
     def _handle_emergency_buy(self, tx: Transaction, buyer: Any):
         """Updates inventory for emergency buys."""
