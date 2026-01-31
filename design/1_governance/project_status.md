@@ -59,8 +59,11 @@
     - **Next Phase**: `Emergency Phase: Mortgage System Restoration`
         - **Goal**: Fix the broken housing market and disconnected credit creation pipeline.
         - **Tasks**:
-            - [ ] **Housing Legacy Repair**: Extract orphaned mortgage logic.
-            - [ ] **Consolidated Decisions**: Merge disparate household logic.
+            - [ ] **Housing Legacy Repair (WO-HousingRefactor)**: Extract orphaned mortgage logic.
+            - [ ] **Consolidated Decisions (TD-065)**: Merge disparate household logic.
+            - [ ] **Critical Fix: Abstraction Leak (TD-181)**: Remove direct market access in `DecisionUnit`.
+            - [ ] **Critical Fix: Divine Atomicity (TD-160/TD-187)**: Fix Inheritance & Severance atomicity.
+            - [ ] **Structural Refactor: God Household (TD-162)**: Decompose 977-line God Class.
 
 
     - **Next Phase**: `Phase 32: Interbank Lending & Reserve Requirement Stress Tests`

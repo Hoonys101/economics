@@ -21,5 +21,11 @@
       "communications\\insights\\WO-178.md",
       "communications\\insights\\WO-HousingRefactor.md"
     ]
+  },
+  "mission-fix-integrity-v1": {
+    "command": "create",
+    "instruction": "Implement atomic fixes for systemic integrity in 'simulation/systems/transaction_processor.py', 'simulation/components/finance_department.py', and 'simulation/core_agents.py':\n1. TD-160: Refactor 'TransactionProcessor.execute' for 'inheritance_distribution' to use 'settlement_system.settle_atomic'.\n2. TD-171: Modify 'TransactionProcessor.execute' for 'escheatment' to calculate the amount dynamically from 'buyer.assets'.\n3. TD-187: Remove direct mutation fallback in 'FinanceDepartment.pay_severance'.\n4. TD-182: Cleanup 'make_decision' signatures in 'simulation/core_agents.py' (Household/Firm) to use only DTOs/Interfaces.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Fix Economic Integrity & Atomic Transactions",
+    "file": "design/3_work_artifacts/reports/inbound/economic-integrity-17706362991746798029_audit_economic_integrity.md"
   }
 }

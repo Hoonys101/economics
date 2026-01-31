@@ -7,8 +7,9 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-006 | 2026-01-12 | Deterministic Class Caste (`core_agents.py`) | Agency 상실 및 Class 고착화 강제 | **DEFERRED** |
-| TD-162 | 2026-01-30 | Bloated God Class: Household | Maintenance/Testing Overhead | **RESOLVED** |
-| TD-169 | 2026-01-31 | Bloat Risk: `phases.py`, `government.py` | Emerging Maintenance Debt | **RESOLVED** |
+| TD-162 | 2026-01-30 | Bloated God Class: Household (977 lines) | SRP violation; property delegation bloat | **ACTIVE** |
+| TD-169 | 2026-01-31 | Bloat Risk: `phases.py`, `government.py` | Emerging Maintenance Debt | **RESOLVED**|
+| TD-180 | 2026-02-01 | TestFile Bloat: `test_firm_decision_engine_new.py` | 828 lines; indicator of complex engine surface | **WARNING** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -23,6 +24,8 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-141 | 2026-01-29 | God File: `ai_driven_household_engine.py` | 636+ LOC complexity | **RESOLVED** |
+| TD-181 | 2026-02-01 | Abstraction Leak: `DecisionUnit` Direct Market Access | Tight coupling; bypasses MarketSnapshotDTO | **ACTIVE** |
+| TD-182 | 2026-02-01 | Abstraction Leak: `make_decision` signature | Passing raw market objects allows mutation risk | **ACTIVE** |
 
 ## 💹 4. MARKETS & ECONOMICS
 
@@ -35,13 +38,14 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-160 | 2026-01-30 | Transaction-Tax Atomicity Failure | Policy Revenue Leak | **RESOLVED** |
-| TD-171 | 2026-01-31 | Liquidation Dust Leak (Household) | Escheatment missing, assets vanish | **RESOLVED** |
+| TD-160 | 2026-01-30 | Transaction-Tax Atomicity (Inheritance) | Inheritance distribution is non-atomic loop | **ACTIVE** |
+| TD-171 | 2026-01-31 | Liquidation Dust Leak (Escheatment) | Escheatment uses static vs dynamic assets | **ACTIVE** |
 | TD-175 | 2026-01-31 | Manual Escrow Rollback Logic | Complex/Untested failure path (needs Saga) | **RESOLVED** |
 | TD-176 | 2026-01-31 | Tight Coupling: TxManager & Govt | High Architectural dependency | **RESOLVED** |
 | TD-177 | 2026-01-31 | HousingSystem Bypassing Markets | Economic purity violation | **RESOLVED** |
 | **TD-178** | LoanMarket Phantom Liquidity Bug | HIGH | 2026-01-31 | **RESOLVED** | Double-counting in M2 due to redundant cash transfers. |
 | **TD-179** | Ambiguous Asset Definition (Cash vs Deposit) | MED | 2026-01-31 | **RESOLVED** | Explicit accounting for M0/M1/M2 assets in DTOs. |
+| TD-187 | 2026-02-01 | Direct Mutation Bypass (`pay_severance`) | Bypasses SettlementSystem ledger | **ACTIVE** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -66,6 +70,8 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-150 | 2026-01-29 | Ledger Management Process | Loss of context | **ACTIVE** |
+| TD-183 | 2026-02-01 | Sequence Deviation Documentation | Fast-Fail Liquidation needs ARCH entry | **ACTIVE** |
+| TD-188 | 2026-02-01 | Inconsistent Config Path Doc | `PROJECT_STATUS.md` path mismatch | **ACTIVE** |
 
 ---
 
