@@ -178,7 +178,9 @@ class TransactionProcessor(SystemInterface):
                 credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
 
                 # 2. Tax Credits (Government)
+                # Initialize total_cost (from buyer perspective) with base trade value
                 total_cost = trade_value
+
                 for intent in intents:
                     credits.append((government, intent.amount, intent.reason))
                     if intent.payer_id == buyer.id:
@@ -213,26 +215,26 @@ class TransactionProcessor(SystemInterface):
                 
                 credits = []
                 seller_net_amount = trade_value
+                buyer_total_cost = trade_value
+
+                # Variables to pass to side-effect handler
+                seller_tax_paid = 0.0
+                buyer_tax_paid = 0.0
 
                 for intent in intents:
                     credits.append((government, intent.amount, intent.reason))
                     if intent.payer_id == seller.id:
                         # If Seller (Worker) pays, deduct from their receipt (Withholding)
                         seller_net_amount -= intent.amount
-                        tax_amount = intent.amount
+                        seller_tax_paid += intent.amount
                     elif intent.payer_id == buyer.id:
                         # If Buyer (Firm) pays, it's extra cost
-                        pass
+                        buyer_total_cost += intent.amount
+                        buyer_tax_paid += intent.amount
                 
-                # Update tax_amount for later side-effects logic (Step 2)
-                # If no intents, tax_amount remains 0.0 (from scope start) or we should set it?
-                # The original code relied on tax_amount being set here.
-                # If intents exist, we sum them up or pick specific one?
-                # Usually only one income tax intent.
-                if intents:
-                    tax_amount = sum(i.amount for i in intents)
-                else:
-                    tax_amount = 0.0
+                # Update tax_amount for consistency (though now split)
+                # We reuse tax_amount variable to satisfy scope but logic below uses split values
+                tax_amount = seller_tax_paid + buyer_tax_paid
 
                 credits.append((seller, seller_net_amount, f"labor_wage:{tx.transaction_type}"))
 
@@ -305,10 +307,10 @@ class TransactionProcessor(SystemInterface):
             # ==================================================================
             if success:
                 if tx.transaction_type in ["labor", "research_labor"]:
-                    self._handle_labor_transaction(tx, buyer, seller, trade_value, tax_amount, agents)
+                    self._handle_labor_transaction(tx, buyer, seller, trade_value, seller_net_amount, buyer_total_cost, agents)
 
                 elif tx.transaction_type == "goods":
-                    self._handle_goods_transaction(tx, buyer, seller, trade_value, current_time)
+                    self._handle_goods_transaction(tx, buyer, seller, trade_value, total_cost, current_time)
 
                 elif tx.transaction_type == "stock":
                     self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
@@ -316,7 +318,7 @@ class TransactionProcessor(SystemInterface):
                 elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
                     pass
 
-    def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, tax_amount: float, agents: Dict[int, Any]):
+    def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, seller_net_income: float, buyer_total_cost: float, agents: Dict[int, Any]):
         if isinstance(seller, Household):
             if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
                 previous_employer = agents.get(seller.employer_id)
@@ -329,7 +331,7 @@ class TransactionProcessor(SystemInterface):
             seller.current_wage = tx.price
             seller.needs["labor_need"] = 0.0
             if hasattr(seller, "labor_income_this_tick"):
-                seller.labor_income_this_tick += (trade_value - tax_amount)
+                seller.labor_income_this_tick += seller_net_income
 
         if isinstance(buyer, Firm):
             # SoC Refactor: Use HRDepartment and FinanceDepartment
@@ -338,13 +340,13 @@ class TransactionProcessor(SystemInterface):
             else:
                  buyer.hr.employee_wages[seller.id] = tx.price
 
-            buyer.finance.record_expense(trade_value)
+            buyer.finance.record_expense(buyer_total_cost)
 
             if tx.transaction_type == "research_labor":
                 research_skill = seller.skills.get("research", Skill("research")).value
                 buyer.productivity_factor += (research_skill * self.config_module.RND_PRODUCTIVITY_MULTIPLIER)
 
-    def _handle_goods_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, current_time: int):
+    def _handle_goods_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, buyer_total_cost: float, current_time: int):
         good_info = self.config_module.GOODS.get(tx.item_id, {})
         is_service = good_info.get("is_service", False)
 
@@ -376,6 +378,10 @@ class TransactionProcessor(SystemInterface):
             if hasattr(seller, 'record_sale'):
                 seller.record_sale(tx.item_id, tx.quantity, current_time)
         
+        # WO-124: Record expense for Firm buyers (Integrity Fix)
+        if isinstance(buyer, Firm):
+            buyer.finance.record_expense(buyer_total_cost)
+
         if isinstance(buyer, Household):
             if not is_service:
                 buyer.current_consumption += tx.quantity

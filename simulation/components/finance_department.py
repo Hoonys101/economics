@@ -558,23 +558,30 @@ class FinanceDepartment:
                 if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance Pay"):
                     self.record_expense(amount)
                     return True
-                return False
             else:
-                # TD-187: Enforce SettlementSystem mandate
-                self.firm.logger.error("PAY_SEVERANCE_FAIL | SettlementSystem missing.")
-                return False
+                self.firm.logger.error("PAY_SEVERANCE | SettlementSystem missing. Cannot pay severance.")
         return False
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:
         """
         Pay an ad-hoc tax (e.g. from internal order).
-        government expected to be Government or GovernmentFiscalProxy (must have collect_tax).
+        Refactored to use SettlementSystem directly (WO-124).
         """
         if self._cash >= amount:
-            # Debit handled by Government -> FinanceSystem -> SettlementSystem -> Firm.withdraw
-            # Or via Proxy
-            if hasattr(government, 'collect_tax'):
-                government.collect_tax(amount, tax_type, self.firm, current_time)
-                self.record_expense(amount)
-                return True
+            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
+                success = self.firm.settlement_system.transfer(self.firm, government, amount, tax_type)
+                if success:
+                    # Record revenue on government side if possible
+                    if hasattr(government, 'record_revenue'):
+                        government.record_revenue({
+                            "success": True,
+                            "amount_collected": amount,
+                            "tax_type": tax_type,
+                            "payer_id": self.firm.id,
+                            "payee_id": government.id,
+                            "error_message": None
+                        })
+
+                    self.record_expense(amount)
+                    return True
         return False
