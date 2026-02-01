@@ -4,28 +4,22 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-session-handover": {
-    "worker": "reporter",
-    "instruction": "## 🏗️ Architectural Handover Report Generation\n당신은 수석 설계자에게 보고할 핸드오버 문서를 작성하는 리포터입니다.\n제공된 인사이트 문서들을 바탕으로 다음 사항을 요약하여 기록하십시오:\n1. **Accomplishments**: 이번 세션에서 완성된 핵심 기능 및 아키텍처 변화 (Animal Spirits 등).\n2. **Economic Insights**: 시뮬레이션 중 발견된 주요 경제적 통찰.\n3. **Pending Tasks & Tech Debt**: 다음 세션에서 즉시 해결해야 할 기술 부채 및 미완성 과제.\n4. **Verification Status**: `main.py` 및 `trace_leak.py` 등의 검증 결과 요약.\n\n결과물은 '설계도_계약들/HANDOVER.md' 형식을 따르되, 우리 프로젝트의 'design/HANDOVER.md' 위치에 저장될 예정입니다.",
-    "context": [
-      "communications\\insights\\DTO_Refactor.md",
-      "communications\\insights\\refactor_phases_gov.md",
-      "communications\\insights\\TD-065_Household_Refactor.md",
-      "communications\\insights\\TD-066_Household_Engine_Decomposition.md",
-      "communications\\insights\\TD-166.md",
-      "communications\\insights\\TD-168_Refactor_Make_Decision.md",
-      "communications\\insights\\TD-176.md",
-      "communications\\insights\\TDL-028_Market_Order_Refactor.md",
-      "communications\\insights\\TDL-029_Refactor_Repository.md",
-      "communications\\insights\\WO-171-Corporate-Strategy-Refactor.md",
-      "communications\\insights\\WO-178.md",
-      "communications\\insights\\WO-HousingRefactor.md"
-    ]
-  },
-  "mission-fix-integrity-v1": {
+  "mission-liq-td191": {
     "command": "create",
-    "instruction": "Implement atomic fixes for systemic integrity in 'simulation/systems/transaction_processor.py', 'simulation/components/finance_department.py', and 'simulation/core_agents.py':\n1. TD-160: Refactor 'TransactionProcessor.execute' for 'inheritance_distribution' to use 'settlement_system.settle_atomic'.\n2. TD-171: Modify 'TransactionProcessor.execute' for 'escheatment' to calculate the amount dynamically from 'buyer.assets'.\n3. TD-187: Remove direct mutation fallback in 'FinanceDepartment.pay_severance'.\n4. TD-182: Cleanup 'make_decision' signatures in 'simulation/core_agents.py' (Household/Firm) to use only DTOs/Interfaces.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Fix Economic Integrity & Atomic Transactions",
-    "file": "design/3_work_artifacts/reports/inbound/economic-integrity-17706362991746798029_audit_economic_integrity.md"
+    "instruction": "Refactor TransactionProcessor.execute into a modular handler-based system. Follow spec_td191_tp_refactor.md strictly and ensure all recent Economic Integrity fixes are preserved.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "[LIQUIDATION] TD-191 TransactionProcessor Refactor",
+    "file": "design/3_work_artifacts/spec_td191_tp_refactor.md"
+  },
+  "mission-liq-td189": {
+    "command": "create",
+    "instruction": "Decompose Phase1_Decision.execute God Method into MarketSignalFactory and DecisionInputFactory. Follow spec_td189_phase_refactor.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "[LIQUIDATION] TD-189 Phase1_Decision Refactor",
+    "file": "design/3_work_artifacts/spec_td189_phase_refactor.md"
+  },
+  "mission-liq-td181": {
+    "command": "create",
+    "instruction": "Enforce 100% DTO flow from Household to DecisionUnit. Refactor DecisionUnit to be stateless as per spec_td181_abstraction_leak.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "[LIQUIDATION] TD-181/182 Abstraction Leak Resolution",
+    "file": "design/3_work_artifacts/spec_td181_abstraction_leak.md"
   }
 }
