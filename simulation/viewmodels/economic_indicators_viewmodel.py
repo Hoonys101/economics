@@ -12,8 +12,8 @@ class EconomicIndicatorsViewModel:
     Retrives data via SimulationRepository and processes it into the required format.
     """
 
-    def __init__(self, repository: Optional[SimulationRepository] = None):
-        self.repository = repository if repository else SimulationRepository()
+    def __init__(self, repository: SimulationRepository):
+        self.repository = repository
 
     def get_economic_indicators(
         self, start_tick: Optional[int] = None, end_tick: Optional[int] = None, run_id: Optional[int] = None
