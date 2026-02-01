@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "mission-liq-td191": {
-    "command": "create",
-    "instruction": "Refactor TransactionProcessor.execute into a modular handler-based system. Follow spec_td191_tp_refactor.md strictly and ensure all recent Economic Integrity fixes are preserved.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "[LIQUIDATION] TD-191 TransactionProcessor Refactor",
-    "file": "design/3_work_artifacts/spec_td191_tp_refactor.md"
-  },
   "mission-liq-td189": {
     "command": "create",
     "instruction": "Decompose Phase1_Decision.execute God Method into MarketSignalFactory and DecisionInputFactory. Follow spec_td189_phase_refactor.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
