@@ -1,0 +1,790 @@
+2026-02-01 17:54:46 [INFO] root: Logging setup complete with basic configuration (config file not found). Standard format applied.
+2026-02-01 17:54:46 [WARNING] root: SamplingFilter not found in logging handlers. Sampling rates not applied.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Initializing simulation.
+2026-02-01 17:54:46 [DEBUG] simulation.db.market_repository: Cleared transactions and market_history tables.
+2026-02-01 17:54:46 [DEBUG] simulation.db.agent_repository: Cleared agent_states table.
+2026-02-01 17:54:46 [DEBUG] simulation.db.analytics_repository: Cleared economic_indicators and ai_decisions_history tables.
+2026-02-01 17:54:46 [INFO] simulation.db.repository: All simulation data cleared and VACUUMed database.
+2026-02-01 17:54:46 [INFO] simulation.ai.model_wrapper: No existing model found for wealth_and_needs.
+2026-02-01 17:54:46 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_growth.
+2026-02-01 17:54:46 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_social_status.
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 0 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 1 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 2 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 3 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 4 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 5 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 6 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 7 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 8 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 9 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 10 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 11 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 12 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 13 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 14 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 15 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 16 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 17 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 18 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 19 initialized (Decomposed).
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 20 initially hired Household 6.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 20 initially hired Household 2.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 21 initially hired Household 7.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 21 initially hired Household 18.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 22 initially hired Household 19.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 22 initially hired Household 10.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 23 initially hired Household 15.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Firm 23 initially hired Household 11.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Loaded Scenario Strategy: phase29_depression (Active: False)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: TFP Multiplier set to 3.0 via strategy.
+2026-02-01 17:54:46 [INFO] simulation.agents.central_bank: CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: GENESIS | Central Bank minted M0: 100,000.00
+2026-02-01 17:54:46 [INFO] simulation.bank: Bank 24 initialized. Assets: 0.00
+2026-02-01 17:54:46 [INFO] simulation.agents.government: Government 25 initialized with assets: 0.0
+2026-02-01 17:54:46 [INFO] Market_basic_food: OrderBookMarket basic_food initialized.
+2026-02-01 17:54:46 [INFO] Market_clothing: OrderBookMarket clothing initialized.
+2026-02-01 17:54:46 [INFO] Market_luxury_food: OrderBookMarket luxury_food initialized.
+2026-02-01 17:54:46 [INFO] Market_education_service: OrderBookMarket education_service initialized.
+2026-02-01 17:54:46 [INFO] Market_iron: OrderBookMarket iron initialized.
+2026-02-01 17:54:46 [INFO] Market_consumer_goods: OrderBookMarket consumer_goods initialized.
+2026-02-01 17:54:46 [INFO] Market_luxury_bag: OrderBookMarket luxury_bag initialized.
+2026-02-01 17:54:46 [INFO] Market_labor: OrderBookMarket labor initialized.
+2026-02-01 17:54:46 [INFO] Market_security_market: OrderBookMarket security_market initialized.
+2026-02-01 17:54:46 [INFO] simulation.loan_market: LoanMarket loan_market initialized with bank service: 24
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: IPO | Firm 20 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: IPO | Firm 21 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: IPO | Firm 22 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: IPO | Firm 23 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-01 17:54:46 [INFO] Market_housing: OrderBookMarket housing initialized.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_4.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_4 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_5.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_5 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_6.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_6 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_7.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_7 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_8.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_8 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_9.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_9 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_10.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_10 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_11.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_11 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_12.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_12 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_13.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_13 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_14.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_14 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_15.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_15 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_16.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_16 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_17.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_17 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_18.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_18 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_19.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_19 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_20.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_20 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_21.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_21 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_22.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_22 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_23.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_23 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_24.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_24 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_25.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_25 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_26.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_26 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_27.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_27 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_28.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_28 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_29.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_29 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_30.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_30 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_31.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_31 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_32.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_32 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_33.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_33 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_34.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_34 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_35.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_35 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_36.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_36 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_37.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_37 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_38.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_38 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_39.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_39 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_40.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_40 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_41.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_41 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_42.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_42 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_43.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_43 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_44.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_44 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_45.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_45 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_46.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_46 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_47.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_47 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_48.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_48 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_49.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_49 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_50.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_50 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_51.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_51 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_52.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_52 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_53.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_53 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_54.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_54 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_55.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_55 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_56.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_56 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_57.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_57 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_58.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_58 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_59.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_59 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_60.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_60 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_61.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_61 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_62.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_62 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_63.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_63 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_64.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_64 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_65.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_65 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_66.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_66 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_67.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_67 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_68.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_68 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_69.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_69 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_70.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_70 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_71.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_71 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_72.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_72 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_73.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_73 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_74.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_74 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_75.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_75 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_76.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_76 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_77.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_77 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_78.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_78 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_79.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_79 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_80.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_80 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_81.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_81 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_82.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_82 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_83.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_83 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_84.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_84 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_85.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_85 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_86.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_86 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_87.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_87 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_88.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_88 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_89.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_89 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_90.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_90 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_91.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_91 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_92.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_92 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_93.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_93 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_94.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_94 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_95.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_95 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_96.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_96 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_97.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_97 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_98.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_98 at 10000.0 by 25
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_99.
+2026-02-01 17:54:46 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_99 at 10000.0 by 25
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: GENESIS | Starting initial wealth distribution...
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4109.65 from CENTRAL_BANK to 0. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4109.65 to Agent 0
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4771.02 from CENTRAL_BANK to 1. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4771.02 to Agent 1
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5810.87 from CENTRAL_BANK to 2. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5810.87 to Agent 2
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4153.67 from CENTRAL_BANK to 3. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4153.67 to Agent 3
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4061.73 from CENTRAL_BANK to 4. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4061.73 to Agent 4
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4383.89 from CENTRAL_BANK to 5. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4383.89 to Agent 5
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4782.98 from CENTRAL_BANK to 6. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4782.98 to Agent 6
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5556.97 from CENTRAL_BANK to 7. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5556.97 to Agent 7
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5362.20 from CENTRAL_BANK to 8. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5362.20 to Agent 8
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5725.48 from CENTRAL_BANK to 9. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5725.48 to Agent 9
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4409.43 from CENTRAL_BANK to 10. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4409.43 to Agent 10
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5892.72 from CENTRAL_BANK to 11. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5892.72 to Agent 11
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4296.43 from CENTRAL_BANK to 12. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4296.43 to Agent 12
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5274.62 from CENTRAL_BANK to 13. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5274.62 to Agent 13
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4694.94 from CENTRAL_BANK to 14. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4694.94 to Agent 14
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4510.39 from CENTRAL_BANK to 15. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4510.39 to Agent 15
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4440.78 from CENTRAL_BANK to 16. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4440.78 to Agent 16
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5543.11 from CENTRAL_BANK to 17. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5543.11 to Agent 17
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5249.02 from CENTRAL_BANK to 18. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5249.02 to Agent 18
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4787.25 from CENTRAL_BANK to 19. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4787.25 to Agent 19
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 55631.59 from CENTRAL_BANK to 20. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 55631.59 to Agent 20
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 49954.04 from CENTRAL_BANK to 21. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 49954.04 to Agent 21
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 54592.60 from CENTRAL_BANK to 22. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 54592.60 to Agent 22
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 48526.63 from CENTRAL_BANK to 23. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 48526.63 to Agent 23
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 1000000.00 from CENTRAL_BANK to 24. Memo: GENESIS_GRANT
+2026-02-01 17:54:46 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 1000000.00 to Agent 24
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: GENESIS | Distributed wealth to 25 agents.
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 20
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 44368.41 from CENTRAL_BANK to 20. Memo: BOOTSTRAP_INJECTION
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 44368.41 capital to Firm 20 via Settlement.
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 21
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 50045.96 from CENTRAL_BANK to 21. Memo: BOOTSTRAP_INJECTION
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50045.96 capital to Firm 21 via Settlement.
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 22
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 45407.40 from CENTRAL_BANK to 22. Memo: BOOTSTRAP_INJECTION
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 45407.40 capital to Firm 22 via Settlement.
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 23
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 51473.37 from CENTRAL_BANK to 23. Memo: BOOTSTRAP_INJECTION
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 51473.37 capital to Firm 23 via Settlement.
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected resources into 0 firms.
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Initial baseline money supply established: 497,817.15
+2026-02-01 17:54:46 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Total force-assigned workers: 0
+2026-02-01 17:54:46 [INFO] simulation.ai.ai_training_manager: AITrainingManager initialized.
+2026-02-01 17:54:46 [INFO] simulation.systems.demographic_manager: DemographicManager initialized.
+2026-02-01 17:54:46 [INFO] simulation.db.run_repository: Started new simulation run with ID: 176
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Simulation run started with run_id: 176
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Simulation fully initialized with run_id: 176
+2026-02-01 17:54:46 [DEBUG] simulation.agents.government: MONETARY_EXPANSION | Credit created: 5000.00
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: 502817.15
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: --- Starting Tick 1 ---
+2026-02-01 17:54:46 [INFO] simulation.utils.shadow_logger: ShadowLogger initialized at logs/shadow_hand_stage1.csv
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_12.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_92.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_27.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_78.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_32.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_90.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_30.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_71.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_93.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_28.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_7.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_68.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_54.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_65.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_4.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_16.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_94.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_97.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_57.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_63.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_88.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_50.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_8.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_38.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_75.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_55.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_23.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_13.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_43.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_5.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_37.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_34.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_22.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_81.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_99.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_29.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_21.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_31.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_83.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_51.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_82.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_76.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_36.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_35.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_66.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_47.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_64.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_18.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_52.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_91.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_14.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_44.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_33.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_84.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_79.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_56.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_39.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_70.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_80.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_73.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_96.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_26.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_77.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_58.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_11.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_20.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_67.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_61.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_48.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_6.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_46.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_62.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_19.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_89.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_74.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_17.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_25.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_69.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_41.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_42.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_95.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_87.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_60.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_40.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_49.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_10.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_98.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_53.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_45.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_86.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_9.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_59.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_15.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_24.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_72.
+2026-02-01 17:54:46 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_85.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_START | Firm 20 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-02-01 17:54:46 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 20 | Vector: FirmActionVector(sales_aggressiveness=0.25, hiring_aggressiveness=1.0, rd_aggressiveness=0.5, capital_aggressiveness=1.0, dividend_aggressiveness=0.5, debt_aggressiveness=1.0)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 20 repricing basic_food from 1.65 to 0.18 (Cost: 0.15)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 20 repricing basic_food from 1.65 to 0.18 (Cost: 0.15)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 40.00 from 20 to 6. Memo: Severance Pay
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Household 6 is quitting from Firm 20
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 20 fired employee 6.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 500.00 from 20 to 25. Memo: R&D Investment
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 20 R&D SUCCESS (Budget: 500.0)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 49000.00 from 20 to 25. Memo: CAPEX
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 20 invested 49000.0 in CAPEX.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_END | Firm 20 after decision: Assets=50460.00, Employees=1, is_active=True, Decisions=2
+2026-02-01 17:54:46 [DEBUG] Market_basic_food: History-Free Discovery: Widening bounds for basic_food.
+2026-02-01 17:54:46 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 0.18 by 20
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_START | Firm 21 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-02-01 17:54:46 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 21 | Vector: FirmActionVector(sales_aggressiveness=1.0, hiring_aggressiveness=0.25, rd_aggressiveness=0.75, capital_aggressiveness=0.0, dividend_aggressiveness=0.5, debt_aggressiveness=0.75)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 21 repricing basic_food from 1.20 to 0.18 (Cost: 0.15)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 21 repricing basic_food from 1.20 to 0.18 (Cost: 0.15)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 40.00 from 21 to 7. Memo: Severance Pay
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Household 7 is quitting from Firm 21
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 21 fired employee 7.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 750.00 from 21 to 25. Memo: R&D Investment
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 21 R&D SUCCESS (Budget: 750.0)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_END | Firm 21 after decision: Assets=99210.00, Employees=1, is_active=True, Decisions=2
+2026-02-01 17:54:46 [DEBUG] Market_basic_food: History-Free Discovery: Widening bounds for basic_food.
+2026-02-01 17:54:46 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 0.18 by 21
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_START | Firm 22 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-02-01 17:54:46 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 22 | Vector: FirmActionVector(sales_aggressiveness=0.0, hiring_aggressiveness=0.25, rd_aggressiveness=0.25, capital_aggressiveness=0.75, dividend_aggressiveness=0.25, debt_aggressiveness=0.25)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 22 repricing basic_food from 1.80 to 0.18 (Cost: 0.15)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 22 repricing basic_food from 1.80 to 0.18 (Cost: 0.15)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 40.00 from 22 to 19. Memo: Severance Pay
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Household 19 is quitting from Firm 22
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 22 fired employee 19.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 250.00 from 22 to 25. Memo: R&D Investment
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 22 R&D SUCCESS (Budget: 250.0)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 36750.00 from 22 to 25. Memo: CAPEX
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 22 invested 36750.0 in CAPEX.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_END | Firm 22 after decision: Assets=62960.00, Employees=1, is_active=True, Decisions=2
+2026-02-01 17:54:46 [DEBUG] Market_basic_food: History-Free Discovery: Widening bounds for basic_food.
+2026-02-01 17:54:46 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 0.18 by 22
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_START | Firm 23 before decision: Assets=100000.00, Employees=2, is_active=True
+2026-02-01 17:54:46 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 23 | Vector: FirmActionVector(sales_aggressiveness=0.75, hiring_aggressiveness=0.0, rd_aggressiveness=0.0, capital_aggressiveness=0.75, dividend_aggressiveness=1.0, debt_aggressiveness=0.5)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 23 repricing clothing from 2.25 to 0.30 (Cost: 0.25)
+2026-02-01 17:54:46 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 23 repricing clothing from 2.25 to 0.30 (Cost: 0.25)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 40.00 from 23 to 15. Memo: Severance Pay
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Household 15 is quitting from Firm 23
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 23 fired employee 15.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 36750.00 from 23 to 25. Memo: CAPEX
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: INTERNAL_EXEC | Firm 23 invested 36750.0 in CAPEX.
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: FIRM_DECISION_END | Firm 23 after decision: Assets=63210.00, Employees=1, is_active=True, Decisions=2
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: SELL 50.0 of clothing at 0.3 by 23
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 39.61840596368898 of clothing at 15.75 by 0
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 39.61840596368898 of luxury_food at 31.5 by 0
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 6.695381104696403 of education_service at 52.5 by 0
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 0
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 0.9784886633353963 of luxury_bag at 2100.0 by 0
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 0
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 33.62831219497916 of clothing at 15.75 by 1
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 33.62831219497916 of luxury_food at 31.5 by 1
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 6.36004458552123 of education_service at 52.5 by 1
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 1
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.135957534676569 of luxury_bag at 2100.0 by 1
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 1
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 21.191263193822845 of clothing at 15.75 by 2
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 21.191263193822845 of luxury_food at 31.5 by 2
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 3.4888114035754096 of education_service at 52.5 by 2
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 2
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.3835394467211124 of luxury_bag at 2100.0 by 2
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 33.56467060665237 of clothing at 15.75 by 3
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 33.56467060665237 of luxury_food at 31.5 by 3
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 7.16427625462635 of education_service at 52.5 by 3
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 3
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 0.9889687292619393 of luxury_bag at 2100.0 by 3
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 3
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 43.96302514371528 of clothing at 15.75 by 4
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 43.96302514371528 of luxury_food at 31.5 by 4
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 8.442935541934668 of education_service at 52.5 by 4
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 4
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 0.9670784847794305 of luxury_bag at 2100.0 by 4
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 4
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 29.41780953253236 of clothing at 15.75 by 5
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 29.41780953253236 of luxury_food at 31.5 by 5
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 4.922461196727795 of education_service at 52.5 by 5
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 5
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0437823548750509 of luxury_bag at 2100.0 by 5
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 5
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 42.35930899432137 of clothing at 15.75 by 6
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 42.35930899432137 of luxury_food at 31.5 by 6
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 7.21996598120091 of education_service at 52.5 by 6
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 6
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.148327474972359 of luxury_bag at 2100.0 by 6
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 6
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 36.58822896805367 of clothing at 15.75 by 7
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 36.58822896805367 of luxury_food at 31.5 by 7
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 6.83693616774896 of education_service at 52.5 by 7
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 7
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.3326122884507487 of luxury_bag at 2100.0 by 7
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 7
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 26.319711164446485 of clothing at 15.75 by 8
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 26.319711164446485 of luxury_food at 31.5 by 8
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 4.706897390673701 of education_service at 52.5 by 8
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 8
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.2767148970118707 of luxury_bag at 2100.0 by 8
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 8
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 42.810102288237104 of clothing at 15.75 by 9
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 42.810102288237104 of luxury_food at 31.5 by 9
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 7.537346036633487 of education_service at 52.5 by 9
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 9
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.3632088752831553 of luxury_bag at 2100.0 by 9
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 9
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 35.164239803446456 of clothing at 15.75 by 10
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 35.164239803446456 of luxury_food at 31.5 by 10
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 6.909261592608428 of education_service at 52.5 by 10
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 10
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0498633533130675 of luxury_bag at 2100.0 by 10
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 26.040788159197817 of clothing at 15.75 by 11
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 26.040788159197817 of luxury_food at 31.5 by 11
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 4.567104996203101 of education_service at 52.5 by 11
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 11
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.4030291090149516 of luxury_bag at 2100.0 by 11
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 23.491152074275174 of clothing at 15.75 by 12
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 23.491152074275174 of luxury_food at 31.5 by 12
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 3.871895340303741 of education_service at 52.5 by 12
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 12
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.022960623653776 of luxury_bag at 2100.0 by 12
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 12
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 28.306856371371993 of clothing at 15.75 by 13
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 28.306856371371993 of luxury_food at 31.5 by 13
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 4.702003118315684 of education_service at 52.5 by 13
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 13
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.2558630498318792 of luxury_bag at 2100.0 by 13
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 13
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 33.41567276825259 of clothing at 15.75 by 14
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 33.41567276825259 of luxury_food at 31.5 by 14
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 6.347823036889615 of education_service at 52.5 by 14
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 14
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.1178437582304523 of luxury_bag at 2100.0 by 14
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 14
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 26.263812981801856 of clothing at 15.75 by 15
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 26.263812981801856 of luxury_food at 31.5 by 15
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 4.863349686768544 of education_service at 52.5 by 15
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 15
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0834256843119525 of luxury_bag at 2100.0 by 15
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 15
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 44.97454122937569 of clothing at 15.75 by 16
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 44.97454122937569 of luxury_food at 31.5 by 16
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 8.201278574582712 of education_service at 52.5 by 16
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 16
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.0573293093129619 of luxury_bag at 2100.0 by 16
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 16
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 42.26607576214929 of clothing at 15.75 by 17
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 42.26607576214929 of luxury_food at 31.5 by 17
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 7.555160844548859 of education_service at 52.5 by 17
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 17
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.319788036627515 of luxury_bag at 2100.0 by 17
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 17
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 29.81124145059192 of clothing at 15.75 by 18
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 29.81124145059192 of luxury_food at 31.5 by 18
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 4.669783072944357 of education_service at 52.5 by 18
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 18
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.2497671453628476 of luxury_bag at 2100.0 by 18
+2026-02-01 17:54:46 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-01 17:54:46 [DEBUG] Market_clothing: Placing order: BUY 36.73813774912428 of clothing at 15.75 by 19
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: History-Free Discovery: Widening bounds for luxury_food.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_food: Placing order: BUY 36.73813774912428 of luxury_food at 31.5 by 19
+2026-02-01 17:54:46 [DEBUG] Market_education_service: History-Free Discovery: Widening bounds for education_service.
+2026-02-01 17:54:46 [DEBUG] Market_education_service: Placing order: BUY 7.177555087444148 of education_service at 52.5 by 19
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-01 17:54:46 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 15.75 by 19
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: History-Free Discovery: Widening bounds for luxury_bag.
+2026-02-01 17:54:46 [DEBUG] Market_luxury_bag: Placing order: BUY 1.1493440672325228 of luxury_bag at 2100.0 by 19
+2026-02-01 17:54:46 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-01 17:54:46 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 7.84 by 19
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 27 initialized (Decomposed).
+2026-02-01 17:54:46 [DEBUG] simulation.ai.ai_training_manager: Cloned and mutated Q-tables from 2 to 27.
+2026-02-01 17:54:46 [INFO] simulation.ai.ai_training_manager: EDUCATION_INHERITANCE | Child 27 base_alpha: 0.1000 (Bonus: 0.0000)
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: SETTLEMENT_SUCCESS | Transferred 581.09 from 2 to 27. Memo: BIRTH_GIFT
+2026-02-01 17:54:46 [INFO] simulation.systems.demographic_manager: BIRTH | Parent 2 (39.0y) -> Child 27. Assets: 581.09
+2026-02-01 17:54:46 [INFO] Market_basic_food: Starting order matching for items: ['basic_food']
+2026-02-01 17:54:46 [INFO] Market_clothing: Starting order matching for items: ['clothing']
+2026-02-01 17:54:46 [INFO] Market_clothing: MATCHED_GENERAL | 39.62 of clothing at 8.03. Buyer 0 -> Seller 23
+2026-02-01 17:54:46 [INFO] Market_clothing: MATCHED_GENERAL | 10.38 of clothing at 8.03. Buyer 1 -> Seller 23
+2026-02-01 17:54:46 [INFO] Market_luxury_food: Starting order matching for items: ['luxury_food']
+2026-02-01 17:54:46 [INFO] Market_education_service: Starting order matching for items: ['education_service']
+2026-02-01 17:54:46 [INFO] Market_iron: No items to match in market iron at tick 1
+2026-02-01 17:54:46 [INFO] Market_consumer_goods: Starting order matching for items: ['consumer_goods']
+2026-02-01 17:54:46 [INFO] Market_luxury_bag: Starting order matching for items: ['luxury_bag']
+2026-02-01 17:54:46 [INFO] Market_labor: Starting order matching for items: ['labor']
+2026-02-01 17:54:46 [INFO] Market_security_market: No items to match in market security_market at tick 1
+2026-02-01 17:54:46 [INFO] Market_housing: Starting order matching for items: ['unit_12', 'unit_92', 'unit_27', 'unit_78', 'unit_32', 'unit_90', 'unit_30', 'unit_71', 'unit_93', 'unit_28', 'unit_7', 'unit_68', 'unit_54', 'unit_65', 'unit_4', 'unit_16', 'unit_94', 'unit_97', 'unit_57', 'unit_63', 'unit_88', 'unit_50', 'unit_8', 'unit_38', 'unit_75', 'unit_55', 'unit_23', 'unit_13', 'unit_43', 'unit_5', 'unit_37', 'unit_34', 'unit_22', 'unit_81', 'unit_99', 'unit_29', 'unit_21', 'unit_31', 'unit_83', 'unit_51', 'unit_82', 'unit_76', 'unit_36', 'unit_35', 'unit_66', 'unit_47', 'unit_64', 'unit_18', 'unit_52', 'unit_91', 'unit_14', 'unit_44', 'unit_33', 'unit_84', 'unit_79', 'unit_56', 'unit_39', 'unit_70', 'unit_80', 'unit_73', 'unit_96', 'unit_26', 'unit_77', 'unit_58', 'unit_11', 'unit_20', 'unit_67', 'unit_61', 'unit_48', 'unit_6', 'unit_46', 'unit_62', 'unit_19', 'unit_89', 'unit_74', 'unit_17', 'unit_25', 'unit_69', 'unit_41', 'unit_42', 'unit_95', 'unit_87', 'unit_60', 'unit_40', 'unit_49', 'unit_10', 'unit_98', 'unit_53', 'unit_45', 'unit_86', 'unit_9', 'unit_59', 'unit_15', 'unit_24', 'unit_72', 'unit_85']
+2026-02-01 17:54:46 [INFO] Market_housing: Starting order matching for items: ['unit_12', 'unit_92', 'unit_27', 'unit_78', 'unit_32', 'unit_90', 'unit_30', 'unit_71', 'unit_93', 'unit_28', 'unit_7', 'unit_68', 'unit_54', 'unit_65', 'unit_4', 'unit_16', 'unit_94', 'unit_97', 'unit_57', 'unit_63', 'unit_88', 'unit_50', 'unit_8', 'unit_38', 'unit_75', 'unit_55', 'unit_23', 'unit_13', 'unit_43', 'unit_5', 'unit_37', 'unit_34', 'unit_22', 'unit_81', 'unit_99', 'unit_29', 'unit_21', 'unit_31', 'unit_83', 'unit_51', 'unit_82', 'unit_76', 'unit_36', 'unit_35', 'unit_66', 'unit_47', 'unit_64', 'unit_18', 'unit_52', 'unit_91', 'unit_14', 'unit_44', 'unit_33', 'unit_84', 'unit_79', 'unit_56', 'unit_39', 'unit_70', 'unit_80', 'unit_73', 'unit_96', 'unit_26', 'unit_77', 'unit_58', 'unit_11', 'unit_20', 'unit_67', 'unit_61', 'unit_48', 'unit_6', 'unit_46', 'unit_62', 'unit_19', 'unit_89', 'unit_74', 'unit_17', 'unit_25', 'unit_69', 'unit_41', 'unit_42', 'unit_95', 'unit_87', 'unit_60', 'unit_40', 'unit_49', 'unit_10', 'unit_98', 'unit_53', 'unit_45', 'unit_86', 'unit_9', 'unit_59', 'unit_15', 'unit_24', 'unit_72', 'unit_85']
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Generated maintenance fee tx: 50.00
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: BRAND_UPDATE | Firm 20: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.10, PercQ=0.42
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Generated maintenance fee tx: 50.00
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: BRAND_UPDATE | Firm 21: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.10, PercQ=0.42
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Generated maintenance fee tx: 50.00
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: BRAND_UPDATE | Firm 22: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.10, PercQ=0.42
+2026-02-01 17:54:46 [INFO] utils.simulation_builder: Generated maintenance fee tx: 50.00
+2026-02-01 17:54:46 [DEBUG] utils.simulation_builder: BRAND_UPDATE | Firm 23: Spend=10.0, Adstock=0.100, Awareness=0.095, ActQ=2.00, PercQ=0.40
+2026-02-01 17:54:46 [INFO] modules.government.components.infrastructure_manager: INFRASTRUCTURE_PENDING | Level 1 initiated. Cost: 5000.0. Distributed to 21 households.
+--- TRACE START ---
+Tick 0 (START) Total Money: 497,817.15
+Firm 20: Assets=100,000.00, Active=True
+Firm 21: Assets=100,000.00, Active=True
+Firm 22: Assets=100,000.00, Active=True
+Firm 23: Assets=100,000.00, Active=True
+Loan granted to Firm 20 for 5,000.00. Credit TX processed.
+Traceback (most recent call last):
+  File "C:\coding\economics\scripts\trace_leak.py", line 76, in <module>
+    trace()
+    ~~~~~^^
+  File "C:\coding\economics\scripts\trace_leak.py", line 41, in trace
+    sim.run_tick()
+    ~~~~~~~~~~~~^^
+  File "C:\coding\economics\simulation\engine.py", line 79, in run_tick
+    self.tick_orchestrator.run_tick(injectable_sensory_dto)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\coding\economics\simulation\orchestration\tick_orchestrator.py", line 62, in run_tick
+    sim_state = phase.execute(sim_state)
+  File "C:\coding\economics\simulation\orchestration\phases.py", line 583, in execute
+    self.world_state.transaction_processor.execute(state)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\coding\economics\simulation\systems\transaction_processor.py", line 133, in execute
+    success = handler.handle(tx, buyer, seller, context)
+  File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 60, in handle
+    self._apply_goods_effects(tx, buyer, seller, trade_value, total_cost, context)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 117, in _apply_goods_effects
+    buyer.current_consumption += tx.quantity
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: property 'current_consumption' of 'Household' object has no setter
