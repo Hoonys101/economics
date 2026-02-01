@@ -72,10 +72,10 @@ class TestEconomicIndicatorsViewModel:
         market = OrderBookMarket("test_market")
         # Manually inject orders for testing
         market.buy_orders = {
-            "apple": [Order(agent_id=1, order_type="BUY", market_id="test_market", item_id="apple", quantity=10, price=5)]
+            "apple": [Order(agent_id=1, side="BUY", market_id="test_market", item_id="apple", quantity=10, price_limit=5)]
         }
         market.sell_orders = {
-            "apple": [Order(agent_id=2, order_type="SELL", market_id="test_market", item_id="apple", quantity=5, price=6)]
+            "apple": [Order(agent_id=2, side="SELL", market_id="test_market", item_id="apple", quantity=5, price_limit=6)]
         }
 
         markets = {"test_market": market}

@@ -9,8 +9,8 @@ class MarketHistoryViewModel:
     SimulationRepository를 통해 데이터를 조회하고, 필요한 형태로 가공합니다.
     """
 
-    def __init__(self, repository: Optional[SimulationRepository] = None):
-        self.repository = repository if repository else SimulationRepository()
+    def __init__(self, repository: SimulationRepository):
+        self.repository = repository
 
     def get_market_history(
         self,
