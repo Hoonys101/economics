@@ -5,6 +5,7 @@ from modules.system.execution.public_manager import PublicManager
 from simulation.systems.transaction_manager import TransactionManager
 from simulation.systems.registry import Registry
 from simulation.systems.accounting import AccountingSystem
+from modules.system.api import MarketSignalDTO
 
 class MockAgent:
     def __init__(self, agent_id, assets=0.0):
@@ -48,12 +49,19 @@ class TestPublicManagerIntegration:
         # 3. Generate Liquidation Orders (Phase 4.5)
         # Mock Market Signals
         signals = {
-            "gold": {
-                "market_id": "gold",
-                "item_id": "gold",
-                "best_ask": 100.0,
-                # ... other fields ignored by simple logic
-            }
+            "gold": MarketSignalDTO(
+                market_id="gold",
+                item_id="gold",
+                best_ask=100.0,
+                best_bid=90.0,
+                last_traded_price=95.0,
+                last_trade_tick=1,
+                price_history_7d=[],
+                volatility_7d=0.0,
+                order_book_depth_buy=1,
+                order_book_depth_sell=1,
+                is_frozen=False
+            )
         }
         orders = pm.generate_liquidation_orders(signals)
         assert len(orders) == 1
@@ -71,7 +79,7 @@ class TestPublicManagerIntegration:
             quantity=10.0,
             price=100.0,
             buyer_id=buyer.id,
-            seller_id="PUBLIC_MANAGER",
+            seller_id=-1,
             market_id="gold",
             transaction_type="goods",
             time=1
@@ -83,7 +91,7 @@ class TestPublicManagerIntegration:
         accounting = MagicMock() # Mock accounting
         settlement = MagicMock() # Mock settlement (won't be used for PublicManager)
 
-        tm = TransactionManager(registry, accounting, settlement, MagicMock(), config)
+        tm = TransactionManager(registry, accounting, settlement, MagicMock(), config, MagicMock())
 
         # Setup State
         state = MagicMock()

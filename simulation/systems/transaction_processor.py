@@ -91,7 +91,7 @@ class TransactionProcessor(SystemInterface):
         for tx in state.transactions:
             # 1. Special Routing: Public Manager (Seller)
             # Check if seller is PUBLIC_MANAGER (String ID check or object check handled by logic)
-            if tx.seller_id == "PUBLIC_MANAGER" and self._public_manager_handler:
+            if (tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == -1) and self._public_manager_handler:
                 # Handler expects (tx, buyer, seller, context).
                 # PublicManagerHandler needs buyer. We resolve it here.
                 buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
