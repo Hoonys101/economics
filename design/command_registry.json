@@ -4,29 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "HousingRefactorAnalysis": {
-    "worker": "spec",
-    "instruction": "Analyze the orphaned mortgage logic in HousingSystem and design a HousingTransactionHandler to be registered with TransactionManager. Refer to the CRITICAL FLAW in HANDOVER.md.",
-    "context": [
-      "design/HANDOVER.md",
-      "simulation/systems/housing_system.py",
-      "simulation/systems/transaction_manager.py"
-    ]
-  },
-  "UpdateRequirements": {
+  "HousingImplementation": {
     "command": "create",
-    "instruction": "Add python-dotenv and joblib to requirements.txt as specified in TDL-029.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Update requirements.txt",
-    "file": "requirements.txt"
-  },
-  "ViewModelDIAudit": {
-    "worker": "audit",
-    "instruction": "Identify all ViewModel classes in simulation/viewmodels/ that create their own SimulationRepository instances instead of receiving them via DI. Check against TDL-029.",
-    "context": [
-      "simulation/viewmodels/agent_state_viewmodel.py",
-      "simulation/viewmodels/economic_indicators_viewmodel.py",
-      "simulation/viewmodels/market_history_viewmodel.py",
-      "simulation/viewmodels/snapshot_viewmodel.py"
-    ]
+    "instruction": "Implement the HousingTransactionHandler as specified in the draft spec. Ensure atomic settlement using the Saga pattern and register it with the TransactionManager. Use the pseudo-code in the draft as a base.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Implement HousingTransactionHandler",
+    "file": "design/3_work_artifacts/drafts/draft_194527_Analyze_the_orphaned_mortgage_.md"
   }
 }
