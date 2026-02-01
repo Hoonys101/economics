@@ -36,7 +36,8 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-191 | 2026-02-01 | God Method/Class: `TransactionProcessor.execute` | Violates SRP; excessive branching logic | **ACTIVE** |
+| TD-191 | 2026-02-01 | God Method/Class: `TransactionProcessor.execute` | Violates SRP; excessive branching logic | **RESOLVED** |
+| TD-191-B | 2026-02-01 | Public Manager Integration Gaps | PublicManager lacks full IFinancialEntity compliance; ID type mismatch (String vs Int) | **ACTIVE** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 

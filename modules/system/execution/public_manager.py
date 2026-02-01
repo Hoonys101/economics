@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 
 from modules.system.api import IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO
+from modules.finance.api import IFinancialEntity, InsufficientFundsError
 from simulation.models import Order
 
 class PublicManager(IAssetRecoverySystem):
@@ -12,7 +13,7 @@ class PublicManager(IAssetRecoverySystem):
     It acts as a 'Receiver' in bankruptcy proceedings, taking custody of assets
     and liquidating them back into the market to prevent value destruction.
 
-    Implements IAssetRecoverySystem.
+    Implements IAssetRecoverySystem and IFinancialEntity (for atomic settlement).
     """
 
     def __init__(self, config: Any):
@@ -27,6 +28,32 @@ class PublicManager(IAssetRecoverySystem):
         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
         self.last_tick_revenue: float = 0.0
         self.total_revenue_lifetime: float = 0.0
+
+    # --- IFinancialEntity Implementation ---
+    @property
+    def id(self) -> Any:
+        # Return string ID as used in Transaction system
+        return "PUBLIC_MANAGER"
+
+    @property
+    def assets(self) -> float:
+        return self.system_treasury
+
+    def deposit(self, amount: float) -> None:
+        """Deposits funds (alias for deposit_revenue)."""
+        self.deposit_revenue(amount)
+
+    def withdraw(self, amount: float) -> None:
+        """Withdraws funds from treasury."""
+        if amount < 0:
+            raise ValueError("Cannot withdraw negative amount.")
+        if self.system_treasury < amount:
+            raise InsufficientFundsError(f"PublicManager insufficient funds. Required: {amount}, Available: {self.system_treasury}")
+
+        self.system_treasury -= amount
+        # Note: withdrawals don't usually track 'revenue', so we don't update last_tick_revenue here.
+
+    # --- IAssetRecoverySystem Implementation ---
 
     def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
         """Takes ownership of a defunct agent's inventory."""

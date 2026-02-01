@@ -25,29 +25,20 @@ class PublicManagerTransactionHandler(ITransactionHandler):
             context.logger.error("PublicManagerHandler: PublicManager not found in context.")
             return False
 
-        # 1. Financial Settlement
-        # Public Manager usually doesn't participate in standard SettlementSystem ledger?
-        # TransactionManager logic used direct withdraw/deposit_revenue.
+        # 1. Financial Settlement (Atomic)
+        # Using SettlementSystem to ensure zero-sum integrity.
+        # PublicManager now implements IFinancialEntity.
 
-        try:
-            # Manually withdraw from buyer
-            # We should check if buyer has funds first or handle exception?
-            if hasattr(buyer, "withdraw"):
-                # Basic check
-                assets = getattr(buyer, "assets", 0.0)
-                if assets < trade_value:
-                     # Attempt seamless? Or fail.
-                     # TransactionManager just called withdraw, letting it fail/raise.
-                     # We'll rely on withdraw raising error if insufficient.
-                     buyer.withdraw(trade_value)
+        success = context.settlement_system.transfer(
+            buyer, pm, trade_value, f"public_sale:{tx.item_id}"
+        )
 
-            # Credit PM
-            pm.deposit_revenue(trade_value)
-            pm.confirm_sale(tx.item_id, tx.quantity)
-
-        except Exception as e:
-            context.logger.error(f"PUBLIC_MANAGER transaction failed: {e}")
+        if not success:
+            context.logger.error(f"PUBLIC_MANAGER transaction failed: Settlement refused.")
             return False
+
+        # Confirm sale (decrement inventory) on success
+        pm.confirm_sale(tx.item_id, tx.quantity)
 
         # 2. Side-Effects (Ownership/Inventory)
         # We pass seller=None to indicate no seller update is needed (system sale).
