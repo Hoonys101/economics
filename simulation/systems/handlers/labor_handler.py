@@ -89,8 +89,8 @@ class LaborTransactionHandler(ITransactionHandler):
             seller.needs["labor_need"] = 0.0
 
             # Net Income Tracking
-            if hasattr(seller, "labor_income_this_tick"):
-                seller.labor_income_this_tick += seller_net_income
+            if hasattr(seller, "add_labor_income"):
+                seller.add_labor_income(seller_net_income)
 
         # 2. Firm Logic (Buyer)
         if isinstance(buyer, Firm):

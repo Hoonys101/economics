@@ -114,11 +114,7 @@ class GoodsTransactionHandler(ITransactionHandler):
         # 4. Household Consumption Tracking
         if isinstance(buyer, Household):
             if not is_service:
-                buyer.current_consumption += tx.quantity
-                if tx.item_id == "basic_food":
-                    buyer.current_food_consumption += tx.quantity
-
-                # Registry Logic for consumption record
+                # Use encapsulated method to avoid AttributeError on read-only properties
                 is_food = (tx.item_id == "basic_food")
                 if hasattr(buyer, "record_consumption"):
                     buyer.record_consumption(tx.quantity, is_food=is_food)
