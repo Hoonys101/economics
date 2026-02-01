@@ -2,6 +2,15 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union, TypedDict
 
+# Imported from system API (Single Source of Truth)
+from modules.system.api import (
+    HousingMarketUnitDTO,
+    HousingMarketSnapshotDTO,
+    LoanMarketSnapshotDTO,
+    LaborMarketSnapshotDTO,
+    MarketSnapshotDTO
+)
+
 if TYPE_CHECKING:
     from simulation.dtos import LeisureEffectDTO, ConsumptionResult, LaborResult, StressScenarioConfig
     from simulation.dtos.config_dtos import HouseholdConfigDTO
@@ -10,38 +19,6 @@ if TYPE_CHECKING:
         BioStateDTO, EconStateDTO, SocialStateDTO,
         CloningRequestDTO, EconContextDTO
     )
-
-# --- Data Contracts for Market Snapshots (NEW) ---
-
-class HousingMarketUnitDTO(TypedDict):
-    """Represents a single, sellable housing unit in the market."""
-    unit_id: str
-    price: float
-    quality: float
-
-class HousingMarketSnapshotDTO(TypedDict):
-    """Contains a snapshot of the housing market's state."""
-    for_sale_units: List[HousingMarketUnitDTO]
-    avg_rent_price: float
-    avg_sale_price: float
-
-class LoanMarketSnapshotDTO(TypedDict):
-    """Contains a snapshot of the loan market's state."""
-    interest_rate: float
-
-class LaborMarketSnapshotDTO(TypedDict):
-    """Contains a snapshot of the labor market's state."""
-    avg_wage: float
-
-class MarketSnapshotDTO(TypedDict):
-    """
-    A comprehensive, data-only snapshot of all relevant markets.
-    This DTO replaces the need to pass live market objects and the loose 'market_data' dict.
-    """
-    housing: HousingMarketSnapshotDTO
-    loan: LoanMarketSnapshotDTO
-    labor: LaborMarketSnapshotDTO
-
 
 # --- Updated Context for Decision Making (NEW) ---
 

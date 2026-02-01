@@ -25,7 +25,7 @@ from simulation.orchestration.utils import prepare_market_data
 from modules.government.proxy import GovernmentFiscalProxy
 
 # NEW
-from simulation.orchestration.factories import MarketSignalFactory, DecisionInputFactory
+from simulation.orchestration.factories import MarketSignalFactory, DecisionInputFactory, MarketSnapshotFactory
 
 
 if TYPE_CHECKING:
@@ -201,6 +201,7 @@ class Phase1_Decision(IPhaseStrategy):
         self.world_state = world_state
         # TD-189: Use factories
         self.signal_factory = MarketSignalFactory()
+        self.snapshot_factory = MarketSnapshotFactory(self.signal_factory)
         self.input_factory = DecisionInputFactory()
 
     def execute(self, state: SimulationState) -> SimulationState:
@@ -211,13 +212,8 @@ class Phase1_Decision(IPhaseStrategy):
         market_data = prepare_market_data(state)
         state.market_data = market_data
 
-        # 1. Create Signals using the factory
-        market_signals = self.signal_factory.create_market_signals(state.markets)
-        market_snapshot = MarketSnapshotDTO(
-            tick=state.time,
-            market_signals=market_signals,
-            market_data=market_data # Legacy support
-        )
+        # 1. Create Snapshot using the factory
+        market_snapshot = self.snapshot_factory.create_snapshot(state)
 
         # 2. Create Base Input DTO using the factory
         base_input_dto = self.input_factory.create_decision_input(state, self.world_state, market_snapshot)

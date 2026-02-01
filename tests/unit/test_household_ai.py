@@ -24,6 +24,10 @@ from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.ai.enums import Tactic
 from simulation.dtos.api import DecisionInputDTO
+from modules.system.api import (
+    MarketSnapshotDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO,
+    LaborMarketSnapshotDTO, MarketSignalDTO
+)
 
 @pytest.fixture
 def setup_test_environment():
@@ -58,6 +62,20 @@ def ai_engine_setup():
         action_proposal_engine=action_proposal_engine, state_builder=state_builder
     )
     return ai_engine_registry, value_orientation
+
+def create_mock_snapshot(market_data):
+    housing_snapshot = HousingMarketSnapshotDTO(for_sale_units=[], avg_rent_price=100.0, avg_sale_price=24000.0)
+    loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
+    labor_snapshot = LaborMarketSnapshotDTO(avg_wage=0.0)
+
+    return MarketSnapshotDTO(
+        tick=market_data.get("time", 0),
+        market_signals={},
+        housing=housing_snapshot,
+        loan=loan_snapshot,
+        labor=labor_snapshot,
+        market_data=market_data
+    )
 
 def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
     """AI가 생존 욕구가 높을 때 'food' 구매 주문을 생성하는지 테스트합니다."""
@@ -95,8 +113,10 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         }
     }
 
+    snapshot = create_mock_snapshot(market_data)
+
     input_dto = DecisionInputDTO(
-        markets=markets,
+        market_snapshot=snapshot,
         goods_data=goods_data,
         market_data=market_data,
         current_time=1
@@ -148,14 +168,16 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         "time": 1,
         "goods_data": goods_data,
         "goods_market": {
-             "luxury_food_current_sell_price": 50.0,
+             "luxury_food_current_sell_price": 49.0,
              "basic_food_current_sell_price": 10.0,
              "food_current_sell_price": 10.0,
         }
     }
 
+    snapshot = create_mock_snapshot(market_data)
+
     input_dto = DecisionInputDTO(
-        markets=markets,
+        market_snapshot=snapshot,
         goods_data=goods_data,
         market_data=market_data,
         current_time=1

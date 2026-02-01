@@ -2,6 +2,24 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from simulation.orchestration.phases import Phase1_Decision
 from simulation.dtos.api import SimulationState, DecisionInputDTO
+from modules.system.api import (
+    MarketSnapshotDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO,
+    LaborMarketSnapshotDTO
+)
+
+def create_mock_snapshot(time=100):
+    housing_snapshot = HousingMarketSnapshotDTO(for_sale_units=[], avg_rent_price=100.0, avg_sale_price=24000.0)
+    loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
+    labor_snapshot = LaborMarketSnapshotDTO(avg_wage=0.0)
+
+    return MarketSnapshotDTO(
+        tick=time,
+        market_signals={},
+        housing=housing_snapshot,
+        loan=loan_snapshot,
+        labor=labor_snapshot,
+        market_data={}
+    )
 
 class TestPhase1DecisionRefactor:
     def test_execute_flow(self):
@@ -31,6 +49,7 @@ class TestPhase1DecisionRefactor:
 
         with patch('simulation.orchestration.phases.MarketSignalFactory') as MockSignalFactory, \
              patch('simulation.orchestration.phases.DecisionInputFactory') as MockInputFactory, \
+             patch('simulation.orchestration.phases.MarketSnapshotFactory') as MockSnapshotFactory, \
              patch('simulation.orchestration.phases.prepare_market_data') as mock_prepare_data:
 
             mock_prepare_data.return_value = {}
@@ -41,10 +60,14 @@ class TestPhase1DecisionRefactor:
             mock_signal_factory_instance = MockSignalFactory.return_value
             mock_signal_factory_instance.create_market_signals.return_value = {"signal": "mock"}
 
+            mock_snapshot_factory_instance = MockSnapshotFactory.return_value
+            snapshot = create_mock_snapshot(state.time)
+            mock_snapshot_factory_instance.create_snapshot.return_value = snapshot
+
             mock_input_factory_instance = MockInputFactory.return_value
             # dataclasses.replace requires a real dataclass instance
             mock_input_factory_instance.create_decision_input.return_value = DecisionInputDTO(
-                markets={},
+                market_snapshot=snapshot,
                 goods_data={},
                 market_data={},
                 current_time=100
@@ -54,7 +77,7 @@ class TestPhase1DecisionRefactor:
             phase.execute(state)
 
             # Verify Factory Calls
-            mock_signal_factory_instance.create_market_signals.assert_called_once_with(state.markets)
+            mock_snapshot_factory_instance.create_snapshot.assert_called_once_with(state)
             mock_input_factory_instance.create_decision_input.assert_called_once()
 
             # Verify market data preparation
@@ -93,14 +116,19 @@ class TestPhase1DecisionRefactor:
 
         with patch('simulation.orchestration.phases.MarketSignalFactory'), \
              patch('simulation.orchestration.phases.DecisionInputFactory') as MockInputFactory, \
+             patch('simulation.orchestration.phases.MarketSnapshotFactory') as MockSnapshotFactory, \
              patch('simulation.orchestration.phases.prepare_market_data', return_value={}):
 
             phase = Phase1_Decision(world_state)
 
+            mock_snapshot_factory_instance = MockSnapshotFactory.return_value
+            snapshot = create_mock_snapshot(state.time)
+            mock_snapshot_factory_instance.create_snapshot.return_value = snapshot
+
             # Setup factory to return real DTO
             mock_input_factory_instance = MockInputFactory.return_value
             mock_input_factory_instance.create_decision_input.return_value = DecisionInputDTO(
-                markets={},
+                market_snapshot=snapshot,
                 goods_data={},
                 market_data={},
                 current_time=100
