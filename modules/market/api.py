@@ -1,6 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from simulation.dtos.api import SimulationState
+    from simulation.models import Transaction
+    from simulation.core_agents import Household
 
 @dataclass(frozen=True)
 class OrderDTO:
@@ -32,3 +37,35 @@ class OrderDTO:
     def order_type(self) -> str:
         """Alias for legacy compatibility during migration."""
         return self.side
+
+# --- Data Transfer Objects (DTOs) ---
+
+class HousingConfigDTO(TypedDict):
+    """Configuration parameters for housing market transactions."""
+    max_ltv_ratio: float
+    mortgage_term_ticks: int
+    # Note: Interest rate is handled by the banking/lending system config
+
+# --- Interfaces ---
+
+class ISpecializedTransactionHandler(Protocol):
+    """
+    Interface for handlers that manage specific, complex transaction types.
+    This is a pre-existing interface that we will implement.
+    """
+    def handle(
+        self,
+        tx: "Transaction",
+        buyer: "Household",
+        seller: Any, # Can be Household or Firm
+        state: "SimulationState"
+    ) -> bool:
+        """
+        Executes the specialized transaction logic.
+        Returns True on success, False on failure.
+        """
+        ...
+
+class IHousingTransactionHandler(ISpecializedTransactionHandler, Protocol):
+    """Explicit protocol for the housing transaction handler."""
+    ...
