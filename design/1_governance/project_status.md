@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-01-31 (Banking & OMO Finalization)
+**최종 업데이트**: 2026-02-01 (Architectural Liquidation Phase)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -55,13 +55,17 @@
         - **Unified Configuration (TD-166)**: `modules/config` Implementation ✅ COMPLETED
         - **Atomic Settlements (TD-176)**: Saga Pattern & Tax Decoupling ✅ COMPLETED
         - **Order DTO Standardization (TDL-028)**: Immutable Orders ✅ COMPLETED
+        - **Operation Spinal Tap (TD-191)**: `TransactionProcessor` Handler-based Refactor ✅ COMPLETED
+        - **Operation Open Heart (TD-189)**: Phase Orchestration Decomposition ✅ COMPLETED
+        - **Operation Nerve Strike (TD-181)**: `DecisionUnit` ACL & DTO Purity ✅ COMPLETED
+        - **Economic Integrity**: Financial Leak Audit (0.0000 leak confirmed) ✅ COMPLETED
 
     - **Next Phase**: `Emergency Phase: Mortgage System Restoration`
         - **Goal**: Fix the broken housing market and disconnected credit creation pipeline.
         - **Tasks**:
             - [ ] **Housing Legacy Repair (WO-HousingRefactor)**: Extract orphaned mortgage logic.
             - [ ] **Consolidated Decisions (TD-065)**: Merge disparate household logic.
-            - [ ] **Critical Fix: Abstraction Leak (TD-181)**: Remove direct market access in `DecisionUnit`.
+            - [x] **Critical Fix: Abstraction Leak (TD-181)**: Remove direct market access in `DecisionUnit`. (RESOLVED)
             - [ ] **Critical Fix: Divine Atomicity (TD-160/TD-187)**: Fix Inheritance & Severance atomicity.
             - [ ] **Structural Refactor: God Household (TD-162)**: Decompose 977-line God Class.
 
@@ -185,6 +189,6 @@
 
 ## 5. Technical Debt Management
 
-Technical debt is now managed via the [Technical Debt Ledger](./ledgers/TECH_DEBT_LEDGER.md), categorized by architectural domain. Resolved items are purged to `design/archive/ledgers/`.
+Technical debt is now managed via the [Technical Debt Ledger](../2_operations/ledgers/TECH_DEBT_LEDGER.md), categorized by architectural domain. Resolved items are purged to `design/archive/ledgers/`.
 
 ... (Following legacy phases omitted for brevity / check structure.md)

@@ -737,7 +737,7 @@ class Household(BaseAgent, ILearningAgent):
 
                     for_sale_units.append(HousingMarketUnitDTO(
                         unit_id=item_id,
-                        price=order.price_limit,
+                        price=order.price,
                         quality=quality
                     ))
 

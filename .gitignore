@@ -171,3 +171,4 @@ test_out*.txt
 test_error.txt
 
 *.pyc
+design/command_registry.json
