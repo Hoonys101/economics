@@ -9,11 +9,5 @@
     "instruction": "Enforce 100% DTO flow from Household to DecisionUnit. Refactor DecisionUnit to be stateless as per spec_td181_abstraction_leak.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
     "title": "[LIQUIDATION] TD-181/182 Abstraction Leak Resolution",
     "file": "design/3_work_artifacts/spec_td181_abstraction_leak.md"
-  },
-  "fix-td191-handlers": {
-    "command": "create",
-    "instruction": "Fix AttributeError in GoodsTransactionHandler and LaborTransactionHandler. They are trying to set read-only properties (current_consumption, labor_income_this_tick) on Household.\nDirect them to use Household methods:\n- Use 'buyer.record_consumption(qty)' instead of setting current_consumption.\n- Use 'seller.add_labor_income(val)' instead of setting labor_income_this_tick.\n- Ensure all handlers respect encapsulation.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "[FIX] TD-191 Handler Encapsulation",
-    "file": "simulation/systems/handlers/goods_handler.py"
   }
 }
