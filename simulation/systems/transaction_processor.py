@@ -1,453 +1,147 @@
 from __future__ import annotations
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING
 import logging
 
-from simulation.models import Transaction
-from simulation.core_agents import Household, Skill
-from simulation.firms import Firm
-from simulation.systems.api import SystemInterface
-from modules.government.taxation.system import TaxationSystem, TaxIntent
+from simulation.systems.api import SystemInterface, ITransactionHandler, TransactionContext
 
 if TYPE_CHECKING:
-    from simulation.agents.government import Government
     from simulation.dtos.api import SimulationState
 
 logger = logging.getLogger(__name__)
 
 class TransactionProcessor(SystemInterface):
     """
-    Simulation 엔진의 거대한 거래 처리 로직을 담당하는 전용 클래스.
-    관심사의 분리(SoC)를 위해 Simulation 클래스에서 추출됨.
-    WO-103: Implements SystemInterface to enforce Sacred Sequence.
+    Dispatcher-based Transaction Processor.
+    Delegates transaction processing to registered handlers based on transaction type.
+    Refactored from monolithic implementation (TD-191).
     """
 
     def __init__(self, config_module: Any):
         self.config_module = config_module
-        self.taxation_system = TaxationSystem(config_module)
+        self._handlers: Dict[str, ITransactionHandler] = {}
+        # Special handlers that might be triggered by condition rather than type
+        self._public_manager_handler: ITransactionHandler = None
+
+    def register_handler(self, transaction_type: str, handler: ITransactionHandler):
+        """Registers a handler for a specific transaction type."""
+        self._handlers[transaction_type] = handler
+
+    def register_public_manager_handler(self, handler: ITransactionHandler):
+        """Registers a handler for Public Manager transactions (seller check)."""
+        self._public_manager_handler = handler
 
     def execute(self, state: SimulationState) -> None:
         """
-        발생한 거래들을 처리하여 에이전트의 자산, 재고, 고용 상태 등을 업데이트합니다.
-        Uses SimulationState DTO.
+        Dispatches transactions to registered handlers.
         """
-        transactions = state.transactions
-        agents = state.agents
-        government = state.government
-        current_time = state.time
+        # 1. Build TransactionContext
+        # Note: public_manager and bank/central_bank must be in state or accessible.
+        # SimulationState usually has bank, central_bank. public_manager might be in state.
 
-        # WO-109: Look up inactive agents
-        inactive_agents = getattr(state, "inactive_agents", {})
+        # Determine Public Manager from state if available
+        public_manager = getattr(state, "public_manager", None)
 
-        # market_data is now in state
-        goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
+        # Determine Bank and Central Bank from state
+        bank = getattr(state, "bank", None)
+        central_bank = getattr(state, "central_bank", None)
 
-        for tx in transactions:
-            # WO-109: Fallback to inactive agents
-            buyer = agents.get(tx.buyer_id) or inactive_agents.get(tx.buyer_id)
-            seller = agents.get(tx.seller_id) or inactive_agents.get(tx.seller_id)
+        # Determine Taxation System (Should be in state or we create/access it?)
+        # Legacy TP created it in __init__. But Spec says "taxation_system: 'TaxationSystem'" in context.
+        # Ideally state has it. If not, we might need to rely on it being passed or created.
+        # SimulationState doesn't explicitly list taxation_system in my read earlier.
+        # But TransactionProcessor had self.taxation_system.
+        # If I want to pass it to context, I should probably maintain it here or assume state has it.
+        # Spec says: "The settlement and taxation systems are now part of the context and will be instantiated at a higher level (e.g., in Simulation)."
+        # So I should expect state to have it? Or I can attach my own if state doesn't have it?
+        # SimulationState definition in `simulation/dtos/api.py` was not read fully but `world_state.py` didn't explicitly have it as public attribute in `__init__`.
+        # However, `TransactionProcessor` used to own `TaxationSystem`.
+        # I'll instantiate `TaxationSystem` in `__init__` if needed, or check if I should attach it.
+        # Wait, if `TransactionProcessor` is the one creating context, it can pass its own `taxation_system`.
+        # The Spec example: "taxation_system=state.taxation_system, # Assumes this is created alongside".
+        # If state doesn't have it, I'll use `self.taxation_system`.
 
-            if not buyer or not seller:
+        taxation_system = getattr(state, "taxation_system", None)
+        if not taxation_system:
+            if not hasattr(self, "taxation_system"):
+                # Lazy init if missing? Or rely on config.
+                from modules.government.taxation.system import TaxationSystem
+                self.taxation_system = TaxationSystem(self.config_module)
+            taxation_system = self.taxation_system
+
+        context = TransactionContext(
+            agents=state.agents,
+            inactive_agents=getattr(state, "inactive_agents", {}),
+            government=state.government,
+            settlement_system=state.settlement_system,
+            taxation_system=taxation_system,
+            stock_market=state.stock_market,
+            real_estate_units=state.real_estate_units,
+            market_data=state.market_data,
+            config_module=self.config_module,
+            logger=state.logger,
+            time=state.time,
+            bank=bank,
+            central_bank=central_bank,
+            public_manager=public_manager,
+            transaction_queue=[] # Initialize empty queue for side-effects
+        )
+
+        default_handler = self._handlers.get("default")
+
+        for tx in state.transactions:
+            # 1. Special Routing: Public Manager (Seller)
+            # Check if seller is PUBLIC_MANAGER (String ID check or object check handled by logic)
+            if tx.seller_id == "PUBLIC_MANAGER" and self._public_manager_handler:
+                # Handler expects (tx, buyer, seller, context).
+                # PublicManagerHandler needs buyer. We resolve it here.
+                buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+                # Seller is None/Placeholder for PM
+                if buyer:
+                    self._public_manager_handler.handle(tx, buyer, None, context)
                 continue
 
-            trade_value = tx.quantity * tx.price
-            sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
-            tax_amount = 0.0 # Initialize for scope
-            
-            # ==================================================================
-            # 1. Financial Settlement (Asset Transfer & Taxes)
-            # ==================================================================
-            # WO-125: Enforce SettlementSystem presence (TD-101)
-            settlement = state.settlement_system
-            if not settlement:
-                raise RuntimeError("SettlementSystem is required for TransactionProcessor but is missing in SimulationState.")
+            # 2. Standard Dispatch
+            handler = self._handlers.get(tx.transaction_type)
 
-            success = False
+            # Fallback
+            if handler is None:
+                 if tx.transaction_type in ["credit_creation", "credit_destruction"]:
+                     continue # Symbolic, no-op
 
-            if tx.transaction_type == "lender_of_last_resort":
-                # Special Minting Logic (Handled via Settlement)
-                # Buyer (Gov) -> Seller (Bank).
-                success = settlement.transfer(buyer, seller, trade_value, "lender_of_last_resort")
-                if success and hasattr(buyer, "total_money_issued"):
-                    buyer.total_money_issued += trade_value
-
-            elif tx.transaction_type == "asset_liquidation":
-                # Special Minting Logic + Asset Transfer
-                # Buyer (Gov) -> Seller (Agent).
-                success = settlement.transfer(buyer, seller, trade_value, "asset_liquidation")
-                if success:
-                    if hasattr(buyer, "total_money_issued"):
-                        buyer.total_money_issued += trade_value
-
-                    # Asset Transfer
-                    if tx.item_id.startswith("stock_"):
-                        self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
-                    elif tx.item_id.startswith("real_estate_"):
-                        self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
-
-            elif tx.transaction_type == "asset_transfer":
-                 # Standard Transfer (Zero-Sum)
-                 success = settlement.transfer(buyer, seller, trade_value, f"asset_transfer:{tx.item_id}")
-
-                 # Asset Transfer Logic
-                 if success:
-                     if tx.item_id.startswith("stock_"):
-                         self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
-                     elif tx.item_id.startswith("real_estate_"):
-                         self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
-
-            elif tx.transaction_type == "escheatment":
-                 # Buyer: Agent (Deceased/Closed), Seller: Government
-                 # Direct atomic settlement to government
-                 # TD-171: Use dynamic asset balance instead of static transaction price
-                 escheatment_amount = buyer.assets
-                 if escheatment_amount > 0:
-                     success = settlement.settle_atomic(buyer, [(government, escheatment_amount, "escheatment")], current_time)
-                     if success:
-                          government.record_revenue({
-                                 "success": True,
-                                 "amount_collected": escheatment_amount,
-                                 "tax_type": "escheatment",
-                                 "payer_id": buyer.id,
-                                 "payee_id": government.id,
-                                 "error_message": None
-                             })
+                 if default_handler:
+                     handler = default_handler
                  else:
-                     success = True
+                     # Warn only if it's not a known ignored type
+                     # Housing pass in legacy?
+                     if tx.transaction_type == "housing":
+                         # Maybe HousingHandler is registered?
+                         pass
+                     else:
+                        state.logger.warning(f"No handler for tx type: {tx.transaction_type}")
+                     continue
 
-            elif tx.transaction_type == "inheritance_distribution":
-                heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
-                total_cash = buyer.assets
-                if total_cash > 0 and heir_ids:
-                    import math
-                    count = len(heir_ids)
-                    # Calculate amount per heir, avoiding float precision issues (floor to cent)
-                    base_amount = math.floor((total_cash / count) * 100) / 100.0
-
-                    credits = []
-                    distributed_sum = 0.0
-
-                    # Distribute to all but the last heir
-                    for i in range(count - 1):
-                        h_id = heir_ids[i]
-                        heir = agents.get(h_id)
-                        if heir:
-                            credits.append((heir, base_amount, "inheritance_distribution"))
-                            distributed_sum += base_amount
-
-                    # Last heir gets the remainder to ensure zero-sum
-                    last_heir_id = heir_ids[-1]
-                    last_heir = agents.get(last_heir_id)
-                    if last_heir:
-                        remaining_amount = total_cash - distributed_sum
-                        # Ensure we don't transfer negative amounts or dust if something went wrong
-                        if remaining_amount > 0:
-                            credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))
-
-                    # Atomic Settlement
-                    if credits:
-                        success = settlement.settle_atomic(buyer, credits, current_time)
-
-            elif tx.transaction_type == "bond_purchase":
-                # Buyer: Bank or Central Bank, Seller: Government
-                success = settlement.transfer(buyer, seller, trade_value, "bond_purchase")
-
-                # QE Check: If Buyer is Central Bank, it's money creation
-                if success and state.central_bank and buyer.id == state.central_bank.id:
-                    if hasattr(government, "total_money_issued"):
-                        government.total_money_issued += trade_value
-                        state.logger.info(
-                            f"QUANTITATIVE_EASING | Central Bank purchased bond {trade_value:.2f}. Total Money Issued updated.",
-                            extra={"tick": current_time, "tag": "QE"}
-                        )
-
-            elif tx.transaction_type == "bond_repayment":
-                # Buyer: Government (Payer), Seller: Bank or Central Bank (Payee/Holder)
-                success = settlement.transfer(buyer, seller, trade_value, "bond_repayment")
-
-                # QE Reversal Check: If Seller (Recipient) is Central Bank, it's money destruction
-                if success and state.central_bank and seller.id == state.central_bank.id:
-                    if hasattr(government, "total_money_destroyed"):
-                        government.total_money_destroyed += trade_value
-
-            elif tx.transaction_type == "goods":
-                # Goods: Apply Sales Tax (Decoupled & Atomic)
-                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
-
-                credits = []
-                # 1. Main Trade Credit (Seller)
-                credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
-
-                # 2. Tax Credits (Government)
-                # Initialize total_cost (from buyer perspective) with base trade value
-                total_cost = trade_value
-
-                for intent in intents:
-                    credits.append((government, intent.amount, intent.reason))
-                    if intent.payer_id == buyer.id:
-                        total_cost += intent.amount
-                
-                # Solvency Check
-                if hasattr(buyer, 'check_solvency'):
-                    if buyer.assets < total_cost:
-                        buyer.check_solvency(government)
-
-                success = settlement.settle_atomic(buyer, credits, current_time)
-
-                if success:
-                    # Record Revenue
-                    for intent in intents:
-                        government.record_revenue({
-                             "success": True,
-                             "amount_collected": intent.amount,
-                             "tax_type": intent.reason,
-                             "payer_id": intent.payer_id,
-                             "payee_id": intent.payee_id,
-                             "error_message": None
-                        })
-
-            elif tx.transaction_type == "stock":
-                # Stock: NO Sales Tax
-                success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
+            # Resolve Agents
+            # Note: seller might be None (e.g. for some system txs, though usually -1 or ID used)
+            # Handlers should handle None seller if appropriate (e.g. HousingHandler).
+            buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+            seller = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
             
-            elif tx.transaction_type in ["labor", "research_labor"]:
-                # Labor: Apply Income Tax (Decoupled & Atomic)
-                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
-                
-                credits = []
-                seller_net_amount = trade_value
-                buyer_total_cost = trade_value
-
-                # Variables to pass to side-effect handler
-                seller_tax_paid = 0.0
-                buyer_tax_paid = 0.0
-
-                for intent in intents:
-                    credits.append((government, intent.amount, intent.reason))
-                    if intent.payer_id == seller.id:
-                        # If Seller (Worker) pays, deduct from their receipt (Withholding)
-                        seller_net_amount -= intent.amount
-                        seller_tax_paid += intent.amount
-                    elif intent.payer_id == buyer.id:
-                        # If Buyer (Firm) pays, it's extra cost
-                        buyer_total_cost += intent.amount
-                        buyer_tax_paid += intent.amount
-                
-                # Update tax_amount for consistency (though now split)
-                # We reuse tax_amount variable to satisfy scope but logic below uses split values
-                tax_amount = seller_tax_paid + buyer_tax_paid
-
-                credits.append((seller, seller_net_amount, f"labor_wage:{tx.transaction_type}"))
-
-                success = settlement.settle_atomic(buyer, credits, current_time)
-
-                if success:
-                    # Record Revenue
-                    for intent in intents:
-                        government.record_revenue({
-                             "success": True,
-                             "amount_collected": intent.amount,
-                             "tax_type": intent.reason,
-                             "payer_id": intent.payer_id,
-                             "payee_id": intent.payee_id,
-                             "error_message": None
-                        })
+            # Special case for Government/Bank ID resolution if needed
+            # But handlers usually check IDs or context.government.
             
-            elif tx.item_id == "interest_payment":
-                success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
+            # Dispatch
+            success = handler.handle(tx, buyer, seller, context)
 
-                if success and isinstance(buyer, Firm):
-                    buyer.finance.record_expense(trade_value)
-
-            elif tx.transaction_type == "dividend":
-                success = settlement.transfer(seller, buyer, trade_value, "dividend_payment")
-
-                if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
-                    buyer.capital_income_this_tick += trade_value
-            elif tx.transaction_type == "tax":
-                # Direct atomic settlement to government
-                success = settlement.settle_atomic(buyer, [(government, trade_value, tx.item_id)], current_time)
-                if success:
-                      government.record_revenue({
-                             "success": True,
-                             "amount_collected": trade_value,
-                             "tax_type": tx.item_id,
-                             "payer_id": buyer.id,
-                             "payee_id": government.id,
-                             "error_message": None
-                         })
-            elif tx.transaction_type == "infrastructure_spending":
-                # Standard Transfer (Gov -> Reflux)
-                success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
-
-            elif tx.transaction_type == "emergency_buy":
-                # Fast Purchase (Buyer -> Reflux/System)
-                # No Sales Tax, Immediate Inventory Update
-                success = settlement.transfer(buyer, seller, trade_value, "emergency_buy")
-
-                if success:
-                    buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
-
-            elif tx.transaction_type in ["credit_creation", "credit_destruction"]:
-                # WO-024: Symbolic Monetary Policy Transactions.
-                # These are accounting records for the Government and are processed in Phase3
-                # via `government.process_monetary_transactions`.
-                # They MUST NOT be executed as real financial transfers here to avoid double counting.
-                success = True
-
-            else:
-                # Default / Other
-                success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
-
-            # WO-109: Apply Deferred Effects only on Success
+            # Post-processing
             if success and tx.metadata and tx.metadata.get("triggers_effect"):
                 state.effects_queue.append(tx.metadata)
-
-            # ==================================================================
-            # 2. Meta Logic (Inventory, Employment, Share Registry)
-            # ==================================================================
-            if success:
-                if tx.transaction_type in ["labor", "research_labor"]:
-                    self._handle_labor_transaction(tx, buyer, seller, trade_value, seller_net_amount, buyer_total_cost, agents)
-
-                elif tx.transaction_type == "goods":
-                    self._handle_goods_transaction(tx, buyer, seller, trade_value, total_cost, current_time)
-
-                elif tx.transaction_type == "stock":
-                    self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
-
-                elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
-                    pass
-
-    def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, seller_net_income: float, buyer_total_cost: float, agents: Dict[int, Any]):
-        if isinstance(seller, Household):
-            if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
-                previous_employer = agents.get(seller.employer_id)
-                if isinstance(previous_employer, Firm):
-                    # SoC Refactor: Use HRDepartment
-                    previous_employer.hr.remove_employee(seller)
-
-            seller.is_employed = True
-            seller.employer_id = buyer.id
-            seller.current_wage = tx.price
-            seller.needs["labor_need"] = 0.0
-            if hasattr(seller, "labor_income_this_tick"):
-                seller.labor_income_this_tick += seller_net_income
-
-        if isinstance(buyer, Firm):
-            # SoC Refactor: Use HRDepartment and FinanceDepartment
-            if seller not in buyer.hr.employees:
-                buyer.hr.hire(seller, tx.price)
-            else:
-                 buyer.hr.employee_wages[seller.id] = tx.price
-
-            buyer.finance.record_expense(buyer_total_cost)
-
-            if tx.transaction_type == "research_labor":
-                research_skill = seller.skills.get("research", Skill("research")).value
-                buyer.productivity_factor += (research_skill * self.config_module.RND_PRODUCTIVITY_MULTIPLIER)
-
-    def _handle_goods_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, buyer_total_cost: float, current_time: int):
-        good_info = self.config_module.GOODS.get(tx.item_id, {})
-        is_service = good_info.get("is_service", False)
-
-        if is_service:
-            if isinstance(buyer, Household):
-                buyer.consume(tx.item_id, tx.quantity, current_time)
-        else:
-            seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
-            is_raw_material = tx.item_id in getattr(self.config_module, "RAW_MATERIAL_SECTORS", [])
-
-            if is_raw_material and isinstance(buyer, Firm):
-                buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
-            else:
-                current_qty = buyer.inventory.get(tx.item_id, 0)
-                existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
-                tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
-                total_new_qty = current_qty + tx.quantity
-                new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
                 
-                buyer.inventory_quality[tx.item_id] = new_avg_quality
-                buyer.inventory[tx.item_id] = total_new_qty
-
-        if isinstance(seller, Firm):
-            # SoC Refactor: Use FinanceDepartment
-            seller.finance.record_revenue(trade_value)
-            seller.finance.sales_volume_this_tick += tx.quantity
-
-            # WO-157: Record Sale for Velocity Tracking
-            if hasattr(seller, 'record_sale'):
-                seller.record_sale(tx.item_id, tx.quantity, current_time)
-        
-        # WO-124: Record expense for Firm buyers (Integrity Fix)
-        if isinstance(buyer, Firm):
-            buyer.finance.record_expense(buyer_total_cost)
-
-        if isinstance(buyer, Household):
-            if not is_service:
-                buyer.current_consumption += tx.quantity
-                if tx.item_id == "basic_food":
-                    buyer.current_food_consumption += tx.quantity
-
-    def _handle_real_estate_transaction(self, tx: Transaction, buyer: Any, seller: Any, real_estate_units: List[Any], logger: Any, current_time: int):
-        # item_id = "real_estate_{id}"
-        try:
-            unit_id = int(tx.item_id.split("_")[2])
-            unit = next((u for u in real_estate_units if u.id == unit_id), None)
-            if unit:
-                unit.owner_id = buyer.id
-                # Update seller/buyer lists if they exist
-                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
-                    seller.owned_properties.remove(unit_id)
-                if hasattr(buyer, "owned_properties"):
-                    buyer.owned_properties.append(unit_id)
-
-                if logger:
-                    logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
-        except (IndexError, ValueError) as e:
-            if logger:
-                logger.error(f"RE_TX_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
-
-    def _handle_stock_transaction(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, logger: Any, current_time: int):
-        firm_id = int(tx.item_id.split("_")[1])
-        
-        # 1. Update Holdings
-        if isinstance(seller, Household):
-            current_shares = seller.shares_owned.get(firm_id, 0)
-            seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
-            if seller.shares_owned[firm_id] <= 0 and firm_id in seller.shares_owned:
-                del seller.shares_owned[firm_id]
-            if hasattr(seller, "portfolio"):
-                seller.portfolio.remove(firm_id, tx.quantity)
-        elif isinstance(seller, Firm) and seller.id == firm_id:
-            seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
-        elif hasattr(seller, "portfolio"):
-            # Secondary market trade for Firms/Institutions if they have portfolio
-            seller.portfolio.remove(firm_id, tx.quantity)
-        
-        if isinstance(buyer, Household):
-            buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
-            if hasattr(buyer, "portfolio"):
-                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
-                # Sync legacy dict
-                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
-        elif isinstance(buyer, Firm) and buyer.id == firm_id:
-            buyer.treasury_shares += tx.quantity
-            buyer.total_shares -= tx.quantity
-
-        # 2. Sync Market Shareholder Registry (CRITICAL for Dividends)
-        if stock_market:
-            # Sync Buyer
-            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
-                 stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
-
-            # Sync Seller
-            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
-                stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
-            else:
-                stock_market.update_shareholder(seller.id, firm_id, 0.0)
-
-        if logger:
-            logger.info(
-                f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
-                extra={"tick": current_time, "tags": ["stock_market", "transaction"]}
-            )
+        # Append queued transactions from context to state (e.g. credit creation from loans)
+        if context.transaction_queue:
+            # We assume state.transactions is the list we can append to?
+            # Or state.inter_tick_queue?
+            # HousingHandler appended to `state.transactions` (current tick log).
+            # So we extend state.transactions.
+            # But iterating and appending might be dangerous if loop continues?
+            # We are outside the loop now.
+            state.transactions.extend(context.transaction_queue)

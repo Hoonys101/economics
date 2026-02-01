@@ -1,0 +1,57 @@
+from typing import Any, List, Tuple
+import logging
+from simulation.systems.api import ITransactionHandler, TransactionContext
+from simulation.models import Transaction
+from simulation.core_agents import Household
+from simulation.firms import Firm
+
+logger = logging.getLogger(__name__)
+
+class FinancialTransactionHandler(ITransactionHandler):
+    """
+    Handles financial transactions:
+    - interest_payment (Expense)
+    - dividend (Capital Income)
+    - tax (Atomic Payment)
+    """
+
+    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+        tx_type = tx.transaction_type
+        trade_value = tx.quantity * tx.price
+
+        success = False
+
+        if tx_type == "interest_payment":
+             success = context.settlement_system.transfer(buyer, seller, trade_value, "interest_payment")
+
+             if success and isinstance(buyer, Firm):
+                 buyer.finance.record_expense(trade_value)
+
+        elif tx_type == "dividend":
+             success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
+
+             if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+                 buyer.capital_income_this_tick += trade_value
+
+        elif tx_type == "tax":
+            # Atomic Settlement to Government
+            # Buyer pays, Seller is typically None or Gov (transaction target).
+            # We assume 'buyer' is the tax payer. 'seller' might be Gov or None.
+            # TransactionProcessor logic: settle_atomic(buyer, [(gov, amount, item_id)])
+
+            gov = context.government
+            credits = [(gov, trade_value, tx.item_id)]
+
+            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+
+            if success:
+                 gov.record_revenue({
+                         "success": True,
+                         "amount_collected": trade_value,
+                         "tax_type": tx.item_id,
+                         "payer_id": buyer.id,
+                         "payee_id": gov.id,
+                         "error_message": None
+                     })
+
+        return success is not None

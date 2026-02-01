@@ -6,6 +6,7 @@ God Class 리팩토링을 위한 새로운 시스템 및 컴포넌트의 계약�
 from __future__ import annotations
 from typing import List, Dict, Any, Optional, Protocol, TypedDict, Deque, Tuple
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 # 순환 참조를 피하기 위한 Forward declarations
 from typing import TYPE_CHECKING
@@ -24,6 +25,9 @@ if TYPE_CHECKING:
     from simulation.models import Transaction
     from modules.household.dtos import LifecycleDTO
     from modules.finance.api import IFinancialEntity
+    from simulation.systems.settlement_system import SettlementSystem
+    from modules.government.taxation.system import TaxationSystem
+    from logging import Logger
 
 
 # ===================================================================
@@ -266,3 +270,59 @@ class ITransactionManager(SystemInterface, Protocol):
     Orchestrator for the transaction processing pipeline.
     """
     pass
+
+@dataclass(frozen=True)
+class TransactionContext:
+    """
+    Provides all necessary simulation state to a transaction handler.
+    This is an immutable snapshot of state for a single transaction,
+    ensuring that handlers have a consistent view of the world.
+    """
+    agents: Dict[int, Any]
+    inactive_agents: Dict[int, Any]
+    government: 'Government'
+    settlement_system: 'SettlementSystem'
+    taxation_system: 'TaxationSystem'
+    stock_market: Any
+    real_estate_units: List[Any]
+    market_data: Dict[str, Any]
+    config_module: Any
+    logger: 'Logger'
+    time: int
+    bank: Optional[Any] # Bank
+    central_bank: Optional[Any] # CentralBank
+    public_manager: Optional[Any] # PublicManager
+    transaction_queue: List['Transaction'] # For appending side-effect transactions (e.g. credit creation)
+
+class ITransactionHandler(ABC):
+    """
+    Abstract Base Class defining the interface for handling a specific
+    type of transaction. Each concrete handler will implement the logic
+    for one transaction type (e.g., 'goods', 'labor', 'stock').
+    """
+    @abstractmethod
+    def handle(self, tx: 'Transaction', buyer: Any, seller: Any, context: 'TransactionContext') -> bool:
+        """
+        Processes a single transaction, enforcing the "Sacred Sequence".
+
+        The implementation of this method MUST strictly follow this order:
+        1. Perform all necessary calculations (e.g., taxes, net amounts).
+        2. Attempt the financial settlement using the context.settlement_system.
+           This is the point of no return for the financial part.
+        3. ONLY if the settlement call returns a success status, proceed to apply
+           all other stateful side-effects (e.g., updating inventories, changing
+           employment status, updating share registries).
+
+        Args:
+            tx: The Transaction object to be processed.
+            buyer: The hydrated buyer agent object.
+            seller: The hydrated seller agent object.
+            context: An immutable context object providing access to simulation state.
+
+        Returns:
+            bool: True if the transaction was successfully processed in its entirety
+                  (both settlement and side-effects), False otherwise. A False return
+                  indicates a failure at some point, and the system should consider
+                  the transaction aborted.
+        """
+        raise NotImplementedError

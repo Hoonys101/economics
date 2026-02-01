@@ -41,12 +41,25 @@ from simulation.systems.bootstrapper import Bootstrapper
 from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.systems.transaction_processor import TransactionProcessor
-from simulation.systems.transaction_manager import TransactionManager
+# TransactionManager replaced by TransactionProcessor
 from simulation.systems.registry import Registry
 from simulation.systems.accounting import AccountingSystem
 from simulation.systems.central_bank_system import CentralBankSystem
-from simulation.systems.handlers import InheritanceHandler
+
+# Handlers Imports
+from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+from simulation.systems.handlers.labor_handler import LaborTransactionHandler
+from simulation.systems.handlers.stock_handler import StockTransactionHandler
+from simulation.systems.handlers.asset_transfer_handler import AssetTransferHandler
 from simulation.systems.handlers.housing_transaction_handler import HousingTransactionHandler
+from simulation.systems.handlers.inheritance_handler import InheritanceHandler
+from simulation.systems.handlers.monetary_handler import MonetaryTransactionHandler
+from simulation.systems.handlers.financial_handler import FinancialTransactionHandler
+from simulation.systems.handlers.escheatment_handler import EscheatmentHandler
+from simulation.systems.handlers.government_spending_handler import GovernmentSpendingHandler
+from simulation.systems.handlers.emergency_handler import EmergencyTransactionHandler
+from simulation.systems.handlers.public_manager_handler import PublicManagerTransactionHandler
+
 from modules.finance.system import FinanceSystem
 from modules.finance.credit_scoring import CreditScoringService
 from simulation.db.repository import SimulationRepository
@@ -369,7 +382,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)
 
-        # WO-124: Initialize Transaction Manager Components
+        # WO-124: Initialize Legacy Components (kept for compatibility)
         sim.registry = Registry(logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
         sim.central_bank_system = CentralBankSystem(
@@ -377,33 +390,56 @@ class SimulationInitializer(SimulationInitializerInterface):
             settlement_system=sim.settlement_system,
             logger=self.logger
         )
-        sim.handlers = {
-            "inheritance_distribution": InheritanceHandler(
-                settlement_system=sim.settlement_system,
-                logger=self.logger
-            ),
-            "housing": HousingTransactionHandler()
-        }
 
         # Initialize Escrow Agent (TD-170)
         sim.escrow_agent = EscrowAgent(id=sim.next_agent_id)
         sim.agents[sim.escrow_agent.id] = sim.escrow_agent
         sim.next_agent_id += 1
 
-        sim.transaction_processor = TransactionManager(
-            registry=sim.registry,
-            accounting_system=sim.accounting_system,
-            settlement_system=sim.settlement_system,
-            central_bank_system=sim.central_bank_system,
-            config=self.config,
-            escrow_agent=sim.escrow_agent,
-            handlers=sim.handlers,
-            logger=self.logger
-        )
-
         # Phase 3: Public Manager
         sim.public_manager = PublicManager(config=self.config)
         sim.world_state.public_manager = sim.public_manager
+
+        # TD-191: TransactionProcessor (Dispatcher) + Handlers
+        sim.transaction_processor = TransactionProcessor(config_module=self.config)
+
+        # Register Handlers
+        # 1. Market
+        sim.transaction_processor.register_handler("goods", GoodsTransactionHandler())
+        sim.transaction_processor.register_handler("labor", LaborTransactionHandler())
+        sim.transaction_processor.register_handler("research_labor", LaborTransactionHandler())
+        sim.transaction_processor.register_handler("stock", StockTransactionHandler())
+
+        # 2. Asset & Housing
+        sim.transaction_processor.register_handler("asset_transfer", AssetTransferHandler())
+        sim.transaction_processor.register_handler("housing", HousingTransactionHandler())
+
+        # 3. Monetary & Financial
+        monetary_handler = MonetaryTransactionHandler()
+        sim.transaction_processor.register_handler("lender_of_last_resort", monetary_handler)
+        sim.transaction_processor.register_handler("asset_liquidation", monetary_handler)
+        sim.transaction_processor.register_handler("bond_purchase", monetary_handler)
+        sim.transaction_processor.register_handler("bond_repayment", monetary_handler)
+        sim.transaction_processor.register_handler("omo_purchase", monetary_handler)
+        sim.transaction_processor.register_handler("omo_sale", monetary_handler)
+
+        financial_handler = FinancialTransactionHandler()
+        sim.transaction_processor.register_handler("interest_payment", financial_handler)
+        sim.transaction_processor.register_handler("dividend", financial_handler)
+        sim.transaction_processor.register_handler("tax", financial_handler)
+
+        sim.transaction_processor.register_handler("escheatment", EscheatmentHandler())
+
+        # 4. Specialized
+        # Note: inheritance_handler uses settle_atomic (ported from TP)
+        sim.transaction_processor.register_handler("inheritance_distribution", InheritanceHandler())
+
+        sim.transaction_processor.register_handler("infrastructure_spending", GovernmentSpendingHandler())
+        sim.transaction_processor.register_handler("emergency_buy", EmergencyTransactionHandler())
+
+        # 5. Public Manager
+        sim.transaction_processor.register_public_manager_handler(PublicManagerTransactionHandler())
+
 
         # AgentLifecycleManager is created here and injected into the simulation
         sim.lifecycle_manager = AgentLifecycleManager(

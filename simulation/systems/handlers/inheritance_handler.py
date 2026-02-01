@@ -1,23 +1,19 @@
-from typing import Any, List, Optional
+from typing import Any, List, Tuple
 import math
 import logging
-from simulation.systems.api import ISpecializedTransactionHandler
+from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
-from simulation.dtos.api import SimulationState
 
 logger = logging.getLogger(__name__)
 
-class InheritanceHandler(ISpecializedTransactionHandler):
+class InheritanceHandler(ITransactionHandler):
     """
     Handles 'inheritance_distribution' transactions.
     Distributes deceased agent's assets to heirs using Zero-Sum integer math logic.
+    Enforces atomic settlement.
     """
 
-    def __init__(self, settlement_system: Any, logger: Optional[logging.Logger] = None):
-        self.settlement = settlement_system
-        self.logger = logger if logger else logging.getLogger(__name__)
-
-    def handle(self, transaction: Transaction, buyer: Any, seller: Any, state: SimulationState) -> bool:
+    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
         """
         Executes the inheritance distribution.
         Buyer: Deceased Agent (Estate)
@@ -26,32 +22,29 @@ class InheritanceHandler(ISpecializedTransactionHandler):
         # "buyer" is the Deceased Agent (Estate) holding the assets.
         deceased_agent = buyer
 
-        heir_ids = transaction.metadata.get("heir_ids", []) if transaction.metadata else []
+        heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
         total_cash = deceased_agent.assets
 
         if total_cash <= 0 or not heir_ids:
-            self.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")
+            context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")
             return True # Nothing to distribute, technically a success (no-op)
 
         count = len(heir_ids)
         # Calculate amount per heir, avoiding float precision issues (floor to cent)
         base_amount = math.floor((total_cash / count) * 100) / 100.0
 
+        credits: List[Tuple[Any, float, str]] = []
         distributed_sum = 0.0
-        all_success = True
 
-        agents = state.agents # SimulationState has agents dict
+        agents = context.agents # SimulationState has agents dict
 
         # Distribute to all but the last heir
         for i in range(count - 1):
             h_id = heir_ids[i]
             heir = agents.get(h_id)
             if heir:
-                if self.settlement.transfer(deceased_agent, heir, base_amount, "inheritance_distribution"):
-                    distributed_sum += base_amount
-                else:
-                    all_success = False
-                    self.logger.error(f"INHERITANCE_FAIL | Failed to transfer {base_amount} to heir {h_id}")
+                credits.append((heir, base_amount, "inheritance_distribution"))
+                distributed_sum += base_amount
 
         # Last heir gets the remainder to ensure zero-sum
         last_heir_id = heir_ids[-1]
@@ -60,14 +53,17 @@ class InheritanceHandler(ISpecializedTransactionHandler):
             remaining_amount = total_cash - distributed_sum
             # Ensure we don't transfer negative amounts or dust if something went wrong
             if remaining_amount > 0:
-                if not self.settlement.transfer(deceased_agent, last_heir, remaining_amount, "inheritance_distribution_final"):
-                    all_success = False
-                    self.logger.error(f"INHERITANCE_FAIL | Failed to transfer remainder {remaining_amount} to last heir {last_heir_id}")
-            elif remaining_amount < 0:
-                 self.logger.critical(f"INHERITANCE_ERROR | Remainder negative! Distributed: {distributed_sum}, Total: {total_cash}")
-                 all_success = False
+                credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))
 
-        if all_success:
-             self.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs.")
+        # Atomic Settlement
+        if credits:
+            success = context.settlement_system.settle_atomic(deceased_agent, credits, context.time)
 
-        return all_success
+            if success:
+                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs.")
+            else:
+                 context.logger.error(f"INHERITANCE_FAIL | Atomic settlement failed for {deceased_agent.id}.")
+
+            return success
+
+        return True

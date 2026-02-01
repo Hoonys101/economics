@@ -1,276 +1,115 @@
 import pytest
 from unittest.mock import MagicMock, call
-from simulation.systems.transaction_manager import TransactionManager
+from simulation.systems.transaction_processor import TransactionProcessor
+from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
 from simulation.models import Transaction
 
-def test_transaction_manager_uses_escrow_for_goods():
-    # Setup dependencies
-    registry = MagicMock()
-    accounting = MagicMock()
-    settlement = MagicMock()
-    central_bank = MagicMock()
+def test_transaction_processor_dispatch_to_handler():
+    # Setup
     config = MagicMock()
-    config.SALES_TAX_RATE = 0.1
-    config.GOODS = {"apple": {}}
-    escrow_agent = MagicMock()
+    tp = TransactionProcessor(config_module=config)
 
-    # Initialize Manager
-    tm = TransactionManager(
-        registry=registry,
-        accounting_system=accounting,
-        settlement_system=settlement,
-        central_bank_system=central_bank,
-        config=config,
-        escrow_agent=escrow_agent,
-        handlers={}
-    )
-
-    # Setup State
-    state = MagicMock()
-    gov = MagicMock()
-    state.government = gov
-    state.market_data = {}
-    state.time = 0
-    state.effects_queue = []
-
-    # Setup Agents
-    buyer = MagicMock()
-    buyer.id = 1
-    buyer.assets = 100.0
-    buyer.check_solvency = MagicMock()
-
-    seller = MagicMock()
-    seller.id = 2
-
-    state.agents = {1: buyer, 2: seller}
-
-    # Setup Transaction
-    tx = Transaction(
-        buyer_id=1,
-        seller_id=2,
-        item_id="apple",
-        price=10.0,
-        quantity=1.0,
-        market_id="goods",
-        transaction_type="goods",
-        time=0
-    )
-    state.transactions = [tx]
-
-    # Mock Settlement Success for all steps
-    settlement.transfer.return_value = True
-
-    # Execute
-    tm.execute(state)
-
-    # Verify 3-Step Escrow Logic
-    # 1. Buyer -> Escrow (Total Cost: 10 + 1 = 11)
-    # 2. Escrow -> Seller (Trade Value: 10)
-    # 3. Escrow -> Gov (Tax: 1)
-
-    assert settlement.transfer.call_count == 3
-    calls = settlement.transfer.call_args_list
-
-    # Step 1
-    assert calls[0][0][0] == buyer
-    assert calls[0][0][1] == escrow_agent
-    assert calls[0][0][2] == 11.0
-
-    # Step 2
-    assert calls[1][0][0] == escrow_agent
-    assert calls[1][0][1] == seller
-    assert calls[1][0][2] == 10.0
-
-    # Step 3
-    assert calls[2][0][0] == escrow_agent
-    assert calls[2][0][1] == gov
-    assert calls[2][0][2] == 1.0
-
-    # Verify State Commitment
-    registry.update_ownership.assert_called_once()
-    accounting.record_transaction.assert_called_once()
-
-    # Verify Gov Revenue Recorded
-    gov.record_revenue.assert_called_once()
-
-
-def test_transaction_manager_escrow_fails_insufficient_funds():
-    # Setup dependencies
-    registry = MagicMock()
-    accounting = MagicMock()
-    settlement = MagicMock()
-    central_bank = MagicMock()
-    config = MagicMock()
-    config.SALES_TAX_RATE = 0.1
-    config.GOODS = {"apple": {}}
-    escrow_agent = MagicMock()
-
-    # Initialize Manager
-    tm = TransactionManager(
-        registry=registry,
-        accounting_system=accounting,
-        settlement_system=settlement,
-        central_bank_system=central_bank,
-        config=config,
-        escrow_agent=escrow_agent,
-        handlers={}
-    )
-
-    # Setup State
-    state = MagicMock()
-    gov = MagicMock()
-    state.government = gov
-    state.market_data = {}
-    state.time = 0
-
-    buyer = MagicMock()
-    buyer.id = 1
-    buyer.assets = 100.0
-
-    seller = MagicMock()
-    seller.id = 2
-
-    state.agents = {1: buyer, 2: seller}
-
-    tx = Transaction(
-        buyer_id=1,
-        seller_id=2,
-        item_id="apple",
-        price=10.0,
-        quantity=1.0,
-        market_id="goods",
-        transaction_type="goods",
-        time=0
-    )
-    state.transactions = [tx]
-
-    # Mock Settlement FAILURE (Step 1)
-    settlement.transfer.side_effect = [False]
-
-    # Execute
-    tm.execute(state)
-
-    # Verify Step 1 Attempted
-    settlement.transfer.assert_called_once()
-    args = settlement.transfer.call_args
-    assert args[0][0] == buyer
-    assert args[0][1] == escrow_agent
-
-    # Verify NO further steps
-    assert settlement.transfer.call_count == 1
-
-    # Verify NO State Commitment
-    registry.update_ownership.assert_not_called()
-    accounting.record_transaction.assert_not_called()
-
-
-def test_transaction_manager_routes_to_central_bank():
-    # Setup dependencies
-    registry = MagicMock()
-    accounting = MagicMock()
-    settlement = MagicMock()
-    central_bank = MagicMock() # Minting Authority
-    config = MagicMock()
-    escrow_agent = MagicMock()
-
-    tm = TransactionManager(
-        registry=registry,
-        accounting_system=accounting,
-        settlement_system=settlement,
-        central_bank_system=central_bank,
-        config=config,
-        escrow_agent=escrow_agent
-    )
-
-    state = MagicMock()
-    state.market_data = {}
-    state.time = 0
-
-    # Buyer is usually Gov/CB for minting ops
-    buyer = MagicMock()
-    buyer.id = "CENTRAL_BANK"
-
-    seller = MagicMock() # Bank receiving funds
-    seller.id = "BANK"
-
-    state.agents = {"CENTRAL_BANK": buyer, "BANK": seller}
-
-    tx = Transaction(
-        buyer_id="CENTRAL_BANK",
-        seller_id="BANK",
-        item_id="cash",
-        price=1000.0,
-        quantity=1.0,
-        market_id="system",
-        transaction_type="lender_of_last_resort",
-        time=0
-    )
-    state.transactions = [tx]
-
-    central_bank.mint_and_transfer.return_value = True
-
-    tm.execute(state)
-
-    # Verify routed to CentralBankSystem
-    central_bank.mint_and_transfer.assert_called_once()
-
-    # Verify settlement NOT called directly by manager (it's called by CB system)
-    settlement.transfer.assert_not_called()
-
-
-def test_transaction_manager_uses_handler():
-    # Setup dependencies
-    registry = MagicMock()
-    accounting = MagicMock()
-    settlement = MagicMock()
-    central_bank = MagicMock()
-    config = MagicMock()
-    escrow_agent = MagicMock()
-
-    handler = MagicMock() # Specialized Handler
+    # Mock Handler
+    handler = MagicMock()
     handler.handle.return_value = True
+    tp.register_handler("test_type", handler)
 
-    tm = TransactionManager(
-        registry=registry,
-        accounting_system=accounting,
-        settlement_system=settlement,
-        central_bank_system=central_bank,
-        config=config,
-        escrow_agent=escrow_agent,
-        handlers={"special_saga": handler}
-    )
+    # Setup State
+    state = MagicMock()
+    state.agents = {1: MagicMock(), 2: MagicMock()}
+    state.transactions = [
+        Transaction(
+            buyer_id=1, seller_id=2, item_id="item", price=10, quantity=1,
+            market_id="m", transaction_type="test_type", time=0
+        )
+    ]
+    state.taxation_system = MagicMock() # Ensure context building works
+
+    # Execute
+    tp.execute(state)
+
+    # Verify Dispatch
+    handler.handle.assert_called_once()
+    args = handler.handle.call_args
+    assert args[0][0] == state.transactions[0] # tx
+    assert args[0][1] == state.agents[1] # buyer
+    assert args[0][2] == state.agents[2] # seller
+    # args[0][3] is context
+
+def test_transaction_processor_ignores_credit_creation():
+    config = MagicMock()
+    tp = TransactionProcessor(config_module=config)
 
     state = MagicMock()
-    state.market_data = {}
-    state.time = 0
+    state.transactions = [
+        Transaction(
+            buyer_id=1, seller_id=2, item_id="credit", price=10, quantity=1,
+            market_id="m", transaction_type="credit_creation", time=0
+        )
+    ]
+    state.agents = {1: MagicMock(), 2: MagicMock()}
+
+    # No handler registered
+    # Execute
+    tp.execute(state)
+
+    # Should not raise warning or error
+    state.logger.warning.assert_not_called()
+
+def test_goods_handler_uses_atomic_settlement():
+    # Setup Context
+    context = MagicMock()
+    context.taxation_system.calculate_tax_intents.return_value = []
+    context.settlement_system.settle_atomic.return_value = True
+    context.config_module.GOODS = {"apple": {}}
+
+    handler = GoodsTransactionHandler()
 
     buyer = MagicMock()
     buyer.id = 1
+    buyer.assets = 100.0 # Set assets for solvency check
+    buyer.inventory = {}
     seller = MagicMock()
     seller.id = 2
-    state.agents = {1: buyer, 2: seller}
+    seller.inventory = {}
 
     tx = Transaction(
-        buyer_id=1,
-        seller_id=2,
-        item_id="thing",
-        price=10.0,
-        quantity=1.0,
-        market_id="saga",
-        transaction_type="special_saga",
-        time=0
+        buyer_id=1, seller_id=2, item_id="apple", price=10.0, quantity=1.0,
+        market_id="goods", transaction_type="goods", time=0
+    )
+
+    # Execute
+    handler.handle(tx, buyer, seller, context)
+
+    # Verify settle_atomic called
+    context.settlement_system.settle_atomic.assert_called_once()
+    args = context.settlement_system.settle_atomic.call_args
+    # args: (buyer, credits, time)
+    assert args[0][0] == buyer
+    credits = args[0][1]
+    # Expect [(seller, 10.0, ...)]
+    assert len(credits) == 1
+    assert credits[0][0] == seller
+    assert credits[0][1] == 10.0
+
+def test_public_manager_routing():
+    config = MagicMock()
+    tp = TransactionProcessor(config_module=config)
+
+    pm_handler = MagicMock()
+    tp.register_public_manager_handler(pm_handler)
+
+    state = MagicMock()
+    state.public_manager = MagicMock() # Ensure PM exists
+
+    # Transaction with PM as seller
+    tx = Transaction(
+        buyer_id=1, seller_id="PUBLIC_MANAGER", item_id="item", price=10, quantity=1,
+        market_id="m", transaction_type="any_type", time=0
     )
     state.transactions = [tx]
+    state.agents = {1: MagicMock()}
 
-    tm.execute(state)
+    tp.execute(state)
 
-    # Verify Handler Called
-    handler.handle.assert_called_once_with(tx, buyer, seller, state)
-
-    # Verify standard paths skipped
-    settlement.transfer.assert_not_called()
-
-    # Verify State Commitment IS called (Phase 2)
-    # Even if Registry/Accounting do nothing for this type, they are invoked by the manager.
-    registry.update_ownership.assert_called_once()
-    accounting.record_transaction.assert_called_once()
+    pm_handler.handle.assert_called_once()
