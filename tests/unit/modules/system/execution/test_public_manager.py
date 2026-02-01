@@ -49,7 +49,7 @@ class TestPublicManager:
 
         assert len(orders) == 1
         order = orders[0]
-        assert order.agent_id == "PUBLIC_MANAGER"
+        assert order.agent_id == -1
         assert order.item_id == "apple"
         assert order.order_type == "SELL"
 

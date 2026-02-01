@@ -59,7 +59,7 @@ class TransactionManager(SystemInterface):
 
         for tx in transactions:
             # Phase 3: Public Manager Support
-            if tx.seller_id == "PUBLIC_MANAGER":
+            if tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == -1:
                 buyer = agents.get(tx.buyer_id) or inactive_agents.get(tx.buyer_id)
                 if not buyer:
                     continue

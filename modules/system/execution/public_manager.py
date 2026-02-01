@@ -18,6 +18,7 @@ class PublicManager(IAssetRecoverySystem):
 
     def __init__(self, config: Any):
         self.config = config
+        self._id: int = -1  # Unique integer ID for system entity
         self.managed_inventory: Dict[str, float] = defaultdict(float)
         self.system_treasury: float = 0.0
         self.logger = logging.getLogger("PublicManager")
@@ -31,9 +32,9 @@ class PublicManager(IAssetRecoverySystem):
 
     # --- IFinancialEntity Implementation ---
     @property
-    def id(self) -> Any:
-        # Return string ID as used in Transaction system
-        return "PUBLIC_MANAGER"
+    def id(self) -> int:
+        """Returns the unique integer ID for the PublicManager."""
+        return self._id
 
     @property
     def assets(self) -> float:
@@ -99,12 +100,12 @@ class PublicManager(IAssetRecoverySystem):
                 # No signal, maybe no market? Skip.
                 continue
 
-            best_ask = market_signal['best_ask']
+            best_ask = market_signal.best_ask
 
             # If no best_ask (no sellers), we need a reference price.
             # Using last_traded_price or config default.
             if best_ask is None or best_ask <= 0:
-                best_ask = market_signal['last_traded_price']
+                best_ask = market_signal.last_traded_price
 
             if best_ask is None or best_ask <= 0:
                 # Fallback to default goods price from config if available, or skip
@@ -122,7 +123,7 @@ class PublicManager(IAssetRecoverySystem):
                 continue
 
             order = Order(
-                agent_id="PUBLIC_MANAGER",
+                agent_id=self.id, # Use integer ID
                 side="SELL",
                 item_id=item_id,
                 quantity=sell_quantity,
@@ -132,36 +133,7 @@ class PublicManager(IAssetRecoverySystem):
             orders.append(order)
 
             # We DO NOT decrement inventory here.
-            # We decrement only when the transaction is confirmed (in update logic or if we receive notification).
-            # BUT, we must ensure we don't double-sell if matching happens partially.
-            # WAIT: The spec says "Tentatively decrement inventory. This will be confirmed upon successful transaction."
-            # If we tentatively decrement, and it DOESN'T sell, we lose it.
-            # Unless we have a mechanism to restore it.
-            # Since we don't have a callback for "Order Expired/Unfilled" easily available,
-            # Decrementing here is risky.
-            # However, if we don't decrement, next tick we might sell it again.
-            # That is correct behavior (if it didn't sell, try again).
-            # The risk is if we place order, it gets matched, AND we keep it in inventory?
-            # If we keep it in inventory, next tick we place order again. That's fine.
-            # The only issue is if the Market *assumes* we have it and decrements it from us.
-            # OrderBookMarket doesn't decrement seller's inventory. It generates a Transaction.
-            # The TransactionProcessor decrements seller's inventory.
-            # So, if TransactionProcessor processes "PUBLIC_MANAGER" as seller, it should decrement `managed_inventory`.
-            # I will implement that in `deposit_revenue` or similar, OR let TransactionManager call a method.
-            # `deposit_revenue` takes `amount` (money).
-            # I should probably add `confirm_sale(item_id, quantity)` to `IAssetRecoverySystem`?
-            # The spec only has `deposit_revenue`.
-            # If I follow spec strictly:
-            # "Tentatively decrement inventory" in `generate_liquidation_orders`.
-            # "The market matches... PublicManager.deposit_revenue(value)."
-            # If I tentatively decrement, and it fails to sell, I lose the asset.
-            # This effectively "destroys" unsold assets slowly (10% per tick attempted).
-            # Maybe that's intended? "Orderly Liquidation" but if no buyers, it rots?
-            # I will follow the spec: "Tentatively decrement inventory."
-
-            # UPDATE (Review Feedback): Tentative decrement causes asset leaks if orders expire.
-            # Removing tentative decrement. Inventory will be decremented in confirm_sale().
-            # self.managed_inventory[item_id] -= sell_quantity
+            # Inventory will be decremented in confirm_sale().
             self.logger.info(f"Generated liquidation order for {sell_quantity} of {item_id} at {sell_price}.")
 
         return orders
