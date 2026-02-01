@@ -4,10 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "HousingImplementation": {
+  "FixViewModelDI": {
     "command": "create",
-    "instruction": "Implement the HousingTransactionHandler as specified in the draft spec. Ensure atomic settlement using the Saga pattern and register it with the TransactionManager. Use the pseudo-code in the draft as a base.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Implement HousingTransactionHandler",
-    "file": "design/3_work_artifacts/drafts/draft_194527_Analyze_the_orphaned_mortgage_.md"
+    "instruction": "Refactor AgentStateViewModel, EconomicIndicatorsViewModel, and MarketHistoryViewModel to strictly require SimulationRepository via constructor injection, removing default instantiation logic. Refer to the findings in the DI Audit Report.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Refactor ViewModels for DI",
+    "file": "reports/temp/report_20260201_194625_Identify_all_ViewMod.md"
   }
 }
