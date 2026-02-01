@@ -1,0 +1,2517 @@
+diff --git a/communications/insights/TD-191.md b/communications/insights/TD-191.md
+new file mode 100644
+index 0000000..1dfbc9f
+--- /dev/null
++++ b/communications/insights/TD-191.md
+@@ -0,0 +1,64 @@
++# Technical Debt & Insights Report (TD-191)
++
++## Mission: Transaction Processor Refactoring
++
++### Overview
++Refactored `TransactionProcessor.execute` from a monolithic method into a modular, handler-based dispatch system. This resolves the "God Method" anti-pattern and improves maintainability and testability.
++
++### Changes Implemented
++1.  **API Definition**:
++    *   Defined `ITransactionHandler` interface in `simulation/systems/api.py`.
++    *   Defined `TransactionContext` DTO in `simulation/systems/api.py` (extended with `bank`, `central_bank`, `public_manager`).
++
++2.  **Handler Implementation**:
++    *   Created `simulation/systems/handlers/` directory.
++    *   Implemented handlers for all transaction types:
++        *   `GoodsTransactionHandler`: Handles goods trade + sales tax (atomic).
++        *   `LaborTransactionHandler`: Handles wage + income tax (atomic).
++        *   `StockTransactionHandler`: Handles stock trade + registry updates.
++        *   `AssetTransferHandler`: Handles `asset_transfer` for Real Estate and Stock.
++        *   `HousingTransactionHandler`: Refactored to use new interface.
++        *   `MonetaryTransactionHandler`: Handles `lender_of_last_resort`, `asset_liquidation`, `bond_purchase`, `omo_purchase`, etc.
++        *   `FinancialTransactionHandler`: Handles `interest_payment`, `dividend`, `tax`.
++        *   `EscheatmentHandler`: Handles escheatment (atomic).
++        *   `InheritanceHandler`: Refactored to use `settle_atomic` (fixed regression).
++        *   `PublicManagerTransactionHandler`: Handles `PUBLIC_MANAGER` sales.
++        *   `GovernmentSpendingHandler`, `EmergencyTransactionHandler`.
++
++3.  **Dispatcher**:
++    *   Refactored `TransactionProcessor` to act as a dispatcher.
++    *   Registers handlers via `register_handler`.
++    *   Handles `credit_creation` symbolic transactions (skip).
++    *   Handles `PUBLIC_MANAGER` seller routing.
++
++4.  **Integration**:
++    *   Updated `simulation/initialization/initializer.py` to instantiate the new `TransactionProcessor` and register all handlers.
++    *   Replaced `TransactionManager` usage.
++
++### Technical Debt / Open Items
++1.  **Registry & Accounting System Duplication**:
++    *   Logic from `Registry` and `AccountingSystem` was migrated into handlers (as per spec "Migrated from...").
++    *   `Registry` and `AccountingSystem` classes still exist and are instantiated in `Initializer` for backward compatibility/safety but are largely unused by `TransactionProcessor`. They should be audited and potentially removed in a future cleanup (TD-Cleanup).
++
++2.  **TransactionManager**:
++    *   `TransactionManager` class exists but is no longer used in `Initializer`. It should be deleted in the future.
++
++3.  **InheritanceHandler Logic**:
++    *   The previous `InheritanceHandler` implementation used iterative transfers, which was a regression from `TransactionProcessor`'s atomic logic. The new handler restores atomic behavior using `settle_atomic`.
++
++4.  **Public Manager Handler**:
++    *   Public Manager logic relies on `buyer.withdraw` which might throw exceptions outside of `SettlementSystem`'s control. It mimics previous `TransactionManager` behavior but should ideally be integrated into `SettlementSystem` if possible.
++
++5.  **Side Effect Logic Duplication**:
++    *   `AssetTransferHandler` and `MonetaryTransactionHandler` (for `asset_liquidation`) duplicate some logic for updating Stock/RE ownership. This was done to avoid complex dependencies, but could be refactored into a shared utility or service.
++
++### Verification
++*   Files created and verified.
++*   `TransactionProcessor` dispatcher logic verified by inspection.
++*   `Initializer` updated to wire everything up.
++
++### Review Feedback Integration
++*   **CRITICAL FIX**: `PublicManagerTransactionHandler` originally used manual `withdraw` + `deposit` which violated atomic principles.
++    *   Refactored `PublicManager` (`modules/system/execution/public_manager.py`) to implement `IFinancialEntity`.
++    *   Updated handler to use `context.settlement_system.transfer` for guaranteed zero-sum integrity.
++*   **Technical Debt Update**: Logged `TD-191-B` for Public Manager Integration Gaps (ID type mismatch: String vs Int).
+diff --git a/design/2_operations/ledgers/TECH_DEBT_LEDGER.md b/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
+index 50f7bfd..a5414a3 100644
+--- a/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
++++ b/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
+@@ -36,7 +36,8 @@
+ 
+ | ID | Date | Description | Impact | Status |
+ |---|---|---|---|---|
+-| TD-191 | 2026-02-01 | God Method/Class: `TransactionProcessor.execute` | Violates SRP; excessive branching logic | **ACTIVE** |
++| TD-191 | 2026-02-01 | God Method/Class: `TransactionProcessor.execute` | Violates SRP; excessive branching logic | **RESOLVED** |
++| TD-191-B | 2026-02-01 | Public Manager Integration Gaps | PublicManager lacks full IFinancialEntity compliance; ID type mismatch (String vs Int) | **ACTIVE** |
+ 
+ ## 📦 6. DATA & DTO CONTRACTS
+ 
+diff --git a/modules/system/execution/public_manager.py b/modules/system/execution/public_manager.py
+index 3e73a6a..3e23262 100644
+--- a/modules/system/execution/public_manager.py
++++ b/modules/system/execution/public_manager.py
+@@ -4,6 +4,7 @@ import logging
+ from collections import defaultdict
+ 
+ from modules.system.api import IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO
++from modules.finance.api import IFinancialEntity, InsufficientFundsError
+ from simulation.models import Order
+ 
+ class PublicManager(IAssetRecoverySystem):
+@@ -12,7 +13,7 @@ class PublicManager(IAssetRecoverySystem):
+     It acts as a 'Receiver' in bankruptcy proceedings, taking custody of assets
+     and liquidating them back into the market to prevent value destruction.
+ 
+-    Implements IAssetRecoverySystem.
++    Implements IAssetRecoverySystem and IFinancialEntity (for atomic settlement).
+     """
+ 
+     def __init__(self, config: Any):
+@@ -28,6 +29,32 @@ class PublicManager(IAssetRecoverySystem):
+         self.last_tick_revenue: float = 0.0
+         self.total_revenue_lifetime: float = 0.0
+ 
++    # --- IFinancialEntity Implementation ---
++    @property
++    def id(self) -> Any:
++        # Return string ID as used in Transaction system
++        return "PUBLIC_MANAGER"
++
++    @property
++    def assets(self) -> float:
++        return self.system_treasury
++
++    def deposit(self, amount: float) -> None:
++        """Deposits funds (alias for deposit_revenue)."""
++        self.deposit_revenue(amount)
++
++    def withdraw(self, amount: float) -> None:
++        """Withdraws funds from treasury."""
++        if amount < 0:
++            raise ValueError("Cannot withdraw negative amount.")
++        if self.system_treasury < amount:
++            raise InsufficientFundsError(f"PublicManager insufficient funds. Required: {amount}, Available: {self.system_treasury}")
++
++        self.system_treasury -= amount
++        # Note: withdrawals don't usually track 'revenue', so we don't update last_tick_revenue here.
++
++    # --- IAssetRecoverySystem Implementation ---
++
+     def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
+         """Takes ownership of a defunct agent's inventory."""
+         # Reset tracking if this is a new tick?
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index f3d8e35..f2ae7ad 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -41,12 +41,25 @@ from simulation.systems.bootstrapper import Bootstrapper
+ from simulation.systems.generational_wealth_audit import GenerationalWealthAudit
+ from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+ from simulation.systems.transaction_processor import TransactionProcessor
+-from simulation.systems.transaction_manager import TransactionManager
++# TransactionManager replaced by TransactionProcessor
+ from simulation.systems.registry import Registry
+ from simulation.systems.accounting import AccountingSystem
+ from simulation.systems.central_bank_system import CentralBankSystem
+-from simulation.systems.handlers import InheritanceHandler
++
++# Handlers Imports
++from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
++from simulation.systems.handlers.labor_handler import LaborTransactionHandler
++from simulation.systems.handlers.stock_handler import StockTransactionHandler
++from simulation.systems.handlers.asset_transfer_handler import AssetTransferHandler
+ from simulation.systems.handlers.housing_transaction_handler import HousingTransactionHandler
++from simulation.systems.handlers.inheritance_handler import InheritanceHandler
++from simulation.systems.handlers.monetary_handler import MonetaryTransactionHandler
++from simulation.systems.handlers.financial_handler import FinancialTransactionHandler
++from simulation.systems.handlers.escheatment_handler import EscheatmentHandler
++from simulation.systems.handlers.government_spending_handler import GovernmentSpendingHandler
++from simulation.systems.handlers.emergency_handler import EmergencyTransactionHandler
++from simulation.systems.handlers.public_manager_handler import PublicManagerTransactionHandler
++
+ from modules.finance.system import FinanceSystem
+ from modules.finance.credit_scoring import CreditScoringService
+ from simulation.db.repository import SimulationRepository
+@@ -369,7 +382,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
+         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)
+ 
+-        # WO-124: Initialize Transaction Manager Components
++        # WO-124: Initialize Legacy Components (kept for compatibility)
+         sim.registry = Registry(logger=self.logger)
+         sim.accounting_system = AccountingSystem(logger=self.logger)
+         sim.central_bank_system = CentralBankSystem(
+@@ -377,34 +390,57 @@ class SimulationInitializer(SimulationInitializerInterface):
+             settlement_system=sim.settlement_system,
+             logger=self.logger
+         )
+-        sim.handlers = {
+-            "inheritance_distribution": InheritanceHandler(
+-                settlement_system=sim.settlement_system,
+-                logger=self.logger
+-            ),
+-            "housing": HousingTransactionHandler()
+-        }
+ 
+         # Initialize Escrow Agent (TD-170)
+         sim.escrow_agent = EscrowAgent(id=sim.next_agent_id)
+         sim.agents[sim.escrow_agent.id] = sim.escrow_agent
+         sim.next_agent_id += 1
+ 
+-        sim.transaction_processor = TransactionManager(
+-            registry=sim.registry,
+-            accounting_system=sim.accounting_system,
+-            settlement_system=sim.settlement_system,
+-            central_bank_system=sim.central_bank_system,
+-            config=self.config,
+-            escrow_agent=sim.escrow_agent,
+-            handlers=sim.handlers,
+-            logger=self.logger
+-        )
+-
+         # Phase 3: Public Manager
+         sim.public_manager = PublicManager(config=self.config)
+         sim.world_state.public_manager = sim.public_manager
+ 
++        # TD-191: TransactionProcessor (Dispatcher) + Handlers
++        sim.transaction_processor = TransactionProcessor(config_module=self.config)
++
++        # Register Handlers
++        # 1. Market
++        sim.transaction_processor.register_handler("goods", GoodsTransactionHandler())
++        sim.transaction_processor.register_handler("labor", LaborTransactionHandler())
++        sim.transaction_processor.register_handler("research_labor", LaborTransactionHandler())
++        sim.transaction_processor.register_handler("stock", StockTransactionHandler())
++
++        # 2. Asset & Housing
++        sim.transaction_processor.register_handler("asset_transfer", AssetTransferHandler())
++        sim.transaction_processor.register_handler("housing", HousingTransactionHandler())
++
++        # 3. Monetary & Financial
++        monetary_handler = MonetaryTransactionHandler()
++        sim.transaction_processor.register_handler("lender_of_last_resort", monetary_handler)
++        sim.transaction_processor.register_handler("asset_liquidation", monetary_handler)
++        sim.transaction_processor.register_handler("bond_purchase", monetary_handler)
++        sim.transaction_processor.register_handler("bond_repayment", monetary_handler)
++        sim.transaction_processor.register_handler("omo_purchase", monetary_handler)
++        sim.transaction_processor.register_handler("omo_sale", monetary_handler)
++
++        financial_handler = FinancialTransactionHandler()
++        sim.transaction_processor.register_handler("interest_payment", financial_handler)
++        sim.transaction_processor.register_handler("dividend", financial_handler)
++        sim.transaction_processor.register_handler("tax", financial_handler)
++
++        sim.transaction_processor.register_handler("escheatment", EscheatmentHandler())
++
++        # 4. Specialized
++        # Note: inheritance_handler uses settle_atomic (ported from TP)
++        sim.transaction_processor.register_handler("inheritance_distribution", InheritanceHandler())
++
++        sim.transaction_processor.register_handler("infrastructure_spending", GovernmentSpendingHandler())
++        sim.transaction_processor.register_handler("emergency_buy", EmergencyTransactionHandler())
++
++        # 5. Public Manager
++        sim.transaction_processor.register_public_manager_handler(PublicManagerTransactionHandler())
++
++
+         # AgentLifecycleManager is created here and injected into the simulation
+         sim.lifecycle_manager = AgentLifecycleManager(
+             config_module=self.config,
+diff --git a/simulation/systems/api.py b/simulation/systems/api.py
+index 49a0b02..4b6901d 100644
+--- a/simulation/systems/api.py
++++ b/simulation/systems/api.py
+@@ -6,6 +6,7 @@ God Class 리팩토링을 위한 새로운 시스템 및 컴포넌트의 계약
+ from __future__ import annotations
+ from typing import List, Dict, Any, Optional, Protocol, TypedDict, Deque, Tuple
+ from abc import ABC, abstractmethod
++from dataclasses import dataclass
+ 
+ # 순환 참조를 피하기 위한 Forward declarations
+ from typing import TYPE_CHECKING
+@@ -24,6 +25,9 @@ if TYPE_CHECKING:
+     from simulation.models import Transaction
+     from modules.household.dtos import LifecycleDTO
+     from modules.finance.api import IFinancialEntity
++    from simulation.systems.settlement_system import SettlementSystem
++    from modules.government.taxation.system import TaxationSystem
++    from logging import Logger
+ 
+ 
+ # ===================================================================
+@@ -266,3 +270,59 @@ class ITransactionManager(SystemInterface, Protocol):
+     Orchestrator for the transaction processing pipeline.
+     """
+     pass
++
++@dataclass(frozen=True)
++class TransactionContext:
++    """
++    Provides all necessary simulation state to a transaction handler.
++    This is an immutable snapshot of state for a single transaction,
++    ensuring that handlers have a consistent view of the world.
++    """
++    agents: Dict[int, Any]
++    inactive_agents: Dict[int, Any]
++    government: 'Government'
++    settlement_system: 'SettlementSystem'
++    taxation_system: 'TaxationSystem'
++    stock_market: Any
++    real_estate_units: List[Any]
++    market_data: Dict[str, Any]
++    config_module: Any
++    logger: 'Logger'
++    time: int
++    bank: Optional[Any] # Bank
++    central_bank: Optional[Any] # CentralBank
++    public_manager: Optional[Any] # PublicManager
++    transaction_queue: List['Transaction'] # For appending side-effect transactions (e.g. credit creation)
++
++class ITransactionHandler(ABC):
++    """
++    Abstract Base Class defining the interface for handling a specific
++    type of transaction. Each concrete handler will implement the logic
++    for one transaction type (e.g., 'goods', 'labor', 'stock').
++    """
++    @abstractmethod
++    def handle(self, tx: 'Transaction', buyer: Any, seller: Any, context: 'TransactionContext') -> bool:
++        """
++        Processes a single transaction, enforcing the "Sacred Sequence".
++
++        The implementation of this method MUST strictly follow this order:
++        1. Perform all necessary calculations (e.g., taxes, net amounts).
++        2. Attempt the financial settlement using the context.settlement_system.
++           This is the point of no return for the financial part.
++        3. ONLY if the settlement call returns a success status, proceed to apply
++           all other stateful side-effects (e.g., updating inventories, changing
++           employment status, updating share registries).
++
++        Args:
++            tx: The Transaction object to be processed.
++            buyer: The hydrated buyer agent object.
++            seller: The hydrated seller agent object.
++            context: An immutable context object providing access to simulation state.
++
++        Returns:
++            bool: True if the transaction was successfully processed in its entirety
++                  (both settlement and side-effects), False otherwise. A False return
++                  indicates a failure at some point, and the system should consider
++                  the transaction aborted.
++        """
++        raise NotImplementedError
+diff --git a/simulation/systems/handlers/asset_transfer_handler.py b/simulation/systems/handlers/asset_transfer_handler.py
+new file mode 100644
+index 0000000..8214152
+--- /dev/null
++++ b/simulation/systems/handlers/asset_transfer_handler.py
+@@ -0,0 +1,96 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction, RealEstateUnit
++from simulation.firms import Firm
++from simulation.core_agents import Household
++
++logger = logging.getLogger(__name__)
++
++class AssetTransferHandler(ITransactionHandler):
++    """
++    Handles 'asset_transfer' transactions (Real Estate, Stock, etc.).
++    Updates ownership.
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        trade_value = tx.quantity * tx.price
++
++        # 1. Execute Settlement (Direct Transfer)
++        settlement_success = context.settlement_system.transfer(
++            buyer, seller, trade_value, f"asset_transfer:{tx.item_id}"
++        )
++
++        # 2. Apply Side-Effects
++        if settlement_success:
++            self._apply_asset_effects(tx, buyer, seller, context)
++
++        return settlement_success is not None
++
++    def _apply_asset_effects(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext):
++        """
++        Updates asset ownership based on item_id.
++        """
++        if tx.item_id.startswith("real_estate_"):
++            self._handle_real_estate(tx, buyer, seller, context)
++        elif tx.item_id.startswith("stock_"):
++            self._handle_stock(tx, buyer, seller, context)
++
++    def _handle_real_estate(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext):
++        try:
++            # item_id format: "real_estate_{id}"
++            unit_id_str = tx.item_id.split("_")[2]
++            unit_id = int(unit_id_str)
++            unit = next((u for u in context.real_estate_units if u.id == unit_id), None)
++
++            if unit:
++                unit.owner_id = buyer.id
++                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
++                    seller.owned_properties.remove(unit_id)
++                if hasattr(buyer, "owned_properties"):
++                    buyer.owned_properties.append(unit_id)
++
++                context.logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
++            else:
++                context.logger.warning(f"RE_TX_FAIL | Unit {unit_id} not found.")
++
++        except (IndexError, ValueError) as e:
++            context.logger.error(f"RE_TX_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
++
++    def _handle_stock(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext):
++        try:
++            firm_id = int(tx.item_id.split("_")[1])
++        except (IndexError, ValueError):
++            return
++
++        # 1. Seller Holdings
++        if isinstance(seller, Household):
++            current_shares = seller.shares_owned.get(firm_id, 0)
++            seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
++            if seller.shares_owned[firm_id] <= 0 and firm_id in seller.shares_owned:
++                del seller.shares_owned[firm_id]
++            if hasattr(seller, "portfolio"):
++                seller.portfolio.remove(firm_id, tx.quantity)
++        elif isinstance(seller, Firm) and seller.id == firm_id:
++            seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
++        elif hasattr(seller, "portfolio"):
++            seller.portfolio.remove(firm_id, tx.quantity)
++
++        # 2. Buyer Holdings
++        if isinstance(buyer, Household):
++            buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
++            if hasattr(buyer, "portfolio"):
++                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
++        elif isinstance(buyer, Firm) and buyer.id == firm_id:
++            buyer.treasury_shares += tx.quantity
++            buyer.total_shares -= tx.quantity
++
++        # 3. Market Registry
++        if context.stock_market:
++            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
++                 context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
++            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
++                context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
++            else:
++                context.stock_market.update_shareholder(seller.id, firm_id, 0.0)
+diff --git a/simulation/systems/handlers/emergency_handler.py b/simulation/systems/handlers/emergency_handler.py
+new file mode 100644
+index 0000000..bb614f9
+--- /dev/null
++++ b/simulation/systems/handlers/emergency_handler.py
+@@ -0,0 +1,28 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++
++logger = logging.getLogger(__name__)
++
++class EmergencyTransactionHandler(ITransactionHandler):
++    """
++    Handles 'emergency_buy' transactions.
++    Fast purchase logic with immediate inventory update.
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        trade_value = tx.quantity * tx.price
++
++        # 1. Execute Settlement (Transfer)
++        success = context.settlement_system.transfer(
++            buyer, seller, trade_value, "emergency_buy"
++        )
++
++        # 2. Apply Side-Effects
++        if success:
++             # Registry logic: buyer.inventory[tx.item_id] += tx.quantity
++             if hasattr(buyer, "inventory"):
++                 buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
++
++        return success is not None
+diff --git a/simulation/systems/handlers/escheatment_handler.py b/simulation/systems/handlers/escheatment_handler.py
+new file mode 100644
+index 0000000..35f8c99
+--- /dev/null
++++ b/simulation/systems/handlers/escheatment_handler.py
+@@ -0,0 +1,40 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++
++logger = logging.getLogger(__name__)
++
++class EscheatmentHandler(ITransactionHandler):
++    """
++    Handles 'escheatment' transactions.
++    Transfers all remaining assets from a deceased/liquidated agent to the Government.
++    Enforces zero-sum integrity.
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        # Buyer: Agent (Deceased/Closed)
++        # Seller: Government (usually)
++
++        # TD-171: Use dynamic asset balance instead of static transaction price
++        escheatment_amount = buyer.assets
++
++        if escheatment_amount <= 0:
++            return True # No assets to transfer, consider success
++
++        gov = context.government
++        credits = [(gov, escheatment_amount, "escheatment")]
++
++        success = context.settlement_system.settle_atomic(buyer, credits, context.time)
++
++        if success:
++              gov.record_revenue({
++                     "success": True,
++                     "amount_collected": escheatment_amount,
++                     "tax_type": "escheatment",
++                     "payer_id": buyer.id,
++                     "payee_id": gov.id,
++                     "error_message": None
++                 })
++
++        return success
+diff --git a/simulation/systems/handlers/financial_handler.py b/simulation/systems/handlers/financial_handler.py
+new file mode 100644
+index 0000000..55929df
+--- /dev/null
++++ b/simulation/systems/handlers/financial_handler.py
+@@ -0,0 +1,57 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++from simulation.core_agents import Household
++from simulation.firms import Firm
++
++logger = logging.getLogger(__name__)
++
++class FinancialTransactionHandler(ITransactionHandler):
++    """
++    Handles financial transactions:
++    - interest_payment (Expense)
++    - dividend (Capital Income)
++    - tax (Atomic Payment)
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        tx_type = tx.transaction_type
++        trade_value = tx.quantity * tx.price
++
++        success = False
++
++        if tx_type == "interest_payment":
++             success = context.settlement_system.transfer(buyer, seller, trade_value, "interest_payment")
++
++             if success and isinstance(buyer, Firm):
++                 buyer.finance.record_expense(trade_value)
++
++        elif tx_type == "dividend":
++             success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
++
++             if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
++                 buyer.capital_income_this_tick += trade_value
++
++        elif tx_type == "tax":
++            # Atomic Settlement to Government
++            # Buyer pays, Seller is typically None or Gov (transaction target).
++            # We assume 'buyer' is the tax payer. 'seller' might be Gov or None.
++            # TransactionProcessor logic: settle_atomic(buyer, [(gov, amount, item_id)])
++
++            gov = context.government
++            credits = [(gov, trade_value, tx.item_id)]
++
++            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
++
++            if success:
++                 gov.record_revenue({
++                         "success": True,
++                         "amount_collected": trade_value,
++                         "tax_type": tx.item_id,
++                         "payer_id": buyer.id,
++                         "payee_id": gov.id,
++                         "error_message": None
++                     })
++
++        return success is not None
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+new file mode 100644
+index 0000000..380d0bb
+--- /dev/null
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -0,0 +1,124 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++from simulation.core_agents import Household
++from simulation.firms import Firm
++
++logger = logging.getLogger(__name__)
++
++class GoodsTransactionHandler(ITransactionHandler):
++    """
++    Handles 'goods' transactions (Purchases & Sales).
++    Enforces atomic settlement (Trade + Sales Tax).
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        trade_value = tx.quantity * tx.price
++
++        # 1. Prepare Settlement (Calculate tax intents)
++        # Assuming taxation_system is available in context
++        intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
++
++        credits: List[Tuple[Any, float, str]] = []
++
++        # 1a. Main Trade Credit (Seller)
++        credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
++
++        # 1b. Tax Credits (Government)
++        # Initialize total_cost (from buyer perspective) with base trade value
++        total_cost = trade_value
++
++        for intent in intents:
++            credits.append((context.government, intent.amount, intent.reason))
++            if intent.payer_id == buyer.id:
++                total_cost += intent.amount
++
++        # Solvency Check (Legacy compatibility)
++        if hasattr(buyer, 'check_solvency'):
++            if buyer.assets < total_cost:
++                buyer.check_solvency(context.government)
++
++        # 2. Execute Settlement (Atomic)
++        # SettlementSystem.settle_atomic(debit_agent, credits_list, tick)
++        settlement_success = context.settlement_system.settle_atomic(buyer, credits, context.time)
++
++        # 3. Apply Side-Effects (Only on success)
++        if settlement_success:
++            # Record Revenue for Tax Purposes (Government)
++            for intent in intents:
++                context.government.record_revenue({
++                     "success": True,
++                     "amount_collected": intent.amount,
++                     "tax_type": intent.reason,
++                     "payer_id": intent.payer_id,
++                     "payee_id": intent.payee_id,
++                     "error_message": None
++                })
++
++            # Update Inventories, Consumption, etc. (Migrated from TransactionProcessor & Registry)
++            self._apply_goods_effects(tx, buyer, seller, trade_value, total_cost, context)
++
++        return settlement_success
++
++    def _apply_goods_effects(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, buyer_total_cost: float, context: TransactionContext):
++        """
++        Applies non-financial side effects after successful settlement.
++        """
++        # Retrieve Good Info
++        # context.config_module likely has GOODS dict directly or via property
++        config = context.config_module
++        good_info = getattr(config, "GOODS", {}).get(tx.item_id, {})
++        is_service = good_info.get("is_service", False)
++
++        # 1. Buyer Logic
++        if is_service:
++            if isinstance(buyer, Household):
++                buyer.consume(tx.item_id, tx.quantity, context.time)
++        else:
++            # Physical Goods: Update Inventory
++            # Seller Inventory
++            if hasattr(seller, "inventory"):
++                 seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
++
++            # Buyer Inventory
++            is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
++
++            if is_raw_material and isinstance(buyer, Firm):
++                buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
++            elif hasattr(buyer, "inventory"):
++                current_qty = buyer.inventory.get(tx.item_id, 0)
++                existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
++                tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
++                total_new_qty = current_qty + tx.quantity
++
++                if total_new_qty > 0:
++                    new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
++                    buyer.inventory_quality[tx.item_id] = new_avg_quality
++
++                buyer.inventory[tx.item_id] = total_new_qty
++
++        # 2. Seller Financial Records (Revenue)
++        if isinstance(seller, Firm):
++            seller.finance.record_revenue(trade_value)
++            seller.finance.sales_volume_this_tick += tx.quantity
++
++            # WO-157: Record Sale for Velocity Tracking
++            if hasattr(seller, 'record_sale'):
++                seller.record_sale(tx.item_id, tx.quantity, context.time)
++
++        # 3. Buyer Financial Records (Expense) - WO-124 Fix
++        if isinstance(buyer, Firm):
++            buyer.finance.record_expense(buyer_total_cost)
++
++        # 4. Household Consumption Tracking
++        if isinstance(buyer, Household):
++            if not is_service:
++                buyer.current_consumption += tx.quantity
++                if tx.item_id == "basic_food":
++                    buyer.current_food_consumption += tx.quantity
++
++                # Registry Logic for consumption record
++                is_food = (tx.item_id == "basic_food")
++                if hasattr(buyer, "record_consumption"):
++                    buyer.record_consumption(tx.quantity, is_food=is_food)
+diff --git a/simulation/systems/handlers/government_spending_handler.py b/simulation/systems/handlers/government_spending_handler.py
+new file mode 100644
+index 0000000..8371278
+--- /dev/null
++++ b/simulation/systems/handlers/government_spending_handler.py
+@@ -0,0 +1,23 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++
++logger = logging.getLogger(__name__)
++
++class GovernmentSpendingHandler(ITransactionHandler):
++    """
++    Handles 'infrastructure_spending' and other government spending transactions.
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        trade_value = tx.quantity * tx.price
++
++        # infrastructure_spending: Buyer is Government. Seller is typically System/Reflux or Agent.
++        # TransactionProcessor logic: success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
++
++        success = context.settlement_system.transfer(
++            buyer, seller, trade_value, "infrastructure_spending"
++        )
++
++        return success is not None
+diff --git a/simulation/systems/handlers/housing_transaction_handler.py b/simulation/systems/handlers/housing_transaction_handler.py
+index 3f7ac94..02d5c47 100644
+--- a/simulation/systems/handlers/housing_transaction_handler.py
++++ b/simulation/systems/handlers/housing_transaction_handler.py
+@@ -1,21 +1,20 @@
+ from typing import Any, Optional
+ import logging
+-from simulation.systems.api import ISpecializedTransactionHandler
++from simulation.systems.api import ITransactionHandler, TransactionContext
+ from simulation.models import Transaction
+-from simulation.dtos.api import SimulationState
+ from modules.finance.api import BorrowerProfileDTO
+ from simulation.agents.government import Government
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class HousingTransactionHandler(ISpecializedTransactionHandler):
++class HousingTransactionHandler(ITransactionHandler):
+     """
+     Handles 'housing' market transactions (Purchases & Mortgages).
+-    Implements ISpecializedTransactionHandler contract.
++    Implements ITransactionHandler contract.
+     Refactored from HousingSystem.process_transaction.
+     """
+ 
+-    def handle(self, transaction: Transaction, buyer: Any, seller: Any, state: SimulationState) -> bool:
++    def handle(self, transaction: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+         """
+         Executes the housing transaction:
+         1. Identifies Unit and Agents.
+@@ -28,13 +27,13 @@ class HousingTransactionHandler(ISpecializedTransactionHandler):
+         if seller is None:
+             if transaction.seller_id == -1:
+                 # Assuming -1 represents Government or Bank. HousingSystem implied Govt often acts as fallback.
+-                seller = state.government
++                seller = context.government
+             else:
+-                logger.error(f"HOUSING | Seller {transaction.seller_id} not found.")
++                context.logger.error(f"HOUSING | Seller {transaction.seller_id} not found.")
+                 return False
+ 
+         if buyer is None:
+-            logger.error(f"HOUSING | Buyer {transaction.buyer_id} not found.")
++            context.logger.error(f"HOUSING | Buyer {transaction.buyer_id} not found.")
+             return False
+ 
+         try:
+@@ -42,10 +41,10 @@ class HousingTransactionHandler(ISpecializedTransactionHandler):
+             # Transaction item_id expected format: "unit_{id}"
+             unit_id_str = transaction.item_id.split("_")[1]
+             unit_id = int(unit_id_str)
+-            unit = next((u for u in state.real_estate_units if u.id == unit_id), None)
++            unit = next((u for u in context.real_estate_units if u.id == unit_id), None)
+ 
+             if not unit:
+-                logger.warning(f"HOUSING | Unit {transaction.item_id} not found in state.")
++                context.logger.warning(f"HOUSING | Unit {transaction.item_id} not found in state.")
+                 return False
+ 
+             # 2. Mortgage Logic
+@@ -57,28 +56,28 @@ class HousingTransactionHandler(ISpecializedTransactionHandler):
+             loan_amount = 0.0
+ 
+             # Retrieve Config
+-            ltv_ratio = getattr(state.config_module, "MORTGAGE_LTV_RATIO", 0.8)
+-            mortgage_term = getattr(state.config_module, "MORTGAGE_TERM_TICKS", 300)
+-            mortgage_rate = getattr(state.config_module, "MORTGAGE_INTEREST_RATE", 0.05)
++            ltv_ratio = getattr(context.config_module, "MORTGAGE_LTV_RATIO", 0.8)
++            mortgage_term = getattr(context.config_module, "MORTGAGE_TERM_TICKS", 300)
++            mortgage_rate = getattr(context.config_module, "MORTGAGE_INTEREST_RATE", 0.05)
+ 
+             trade_value = transaction.price * transaction.quantity
+ 
+-            if is_household_buyer and state.bank:
++            if is_household_buyer and context.bank:
+                 loan_amount = trade_value * ltv_ratio
+ 
+                 # Construct BorrowerProfileDTO
+                 gross_income = 0.0
+                 if hasattr(buyer, "current_wage"):
+-                    work_hours = getattr(state.config_module, "WORK_HOURS_PER_DAY", 8.0)
+-                    ticks_per_year = getattr(state.config_module, "TICKS_PER_YEAR", 100.0)
++                    work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
++                    ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
+                     ticks_per_month = ticks_per_year / 12.0
+                     gross_income = buyer.current_wage * work_hours * ticks_per_month
+ 
+                 existing_debt_payments = 0.0
+                 try:
+-                    debt_status = state.bank.get_debt_status(buyer.id)
++                    debt_status = context.bank.get_debt_status(buyer.id)
+                     total_debt = debt_status.get("total_outstanding_debt", 0.0)
+-                    monthly_payment_rate = getattr(state.config_module, "ESTIMATED_DEBT_PAYMENT_RATIO", 0.01)
++                    monthly_payment_rate = getattr(context.config_module, "ESTIMATED_DEBT_PAYMENT_RATIO", 0.01)
+                     existing_debt_payments = total_debt * monthly_payment_rate
+                 except Exception:
+                     pass
+@@ -91,10 +90,10 @@ class HousingTransactionHandler(ISpecializedTransactionHandler):
+                     existing_assets=buyer.assets
+                 )
+ 
+-                due_tick = state.time + mortgage_term
++                due_tick = context.time + mortgage_term
+ 
+                 # Grant Loan
+-                grant_result = state.bank.grant_loan(
++                grant_result = context.bank.grant_loan(
+                     borrower_id=str(buyer.id),
+                     amount=loan_amount,
+                     interest_rate=mortgage_rate,
+@@ -106,28 +105,28 @@ class HousingTransactionHandler(ISpecializedTransactionHandler):
+                     loan_info, credit_tx = grant_result
+                     loan_id = loan_info["loan_id"]
+ 
+-                    if credit_tx:
+-                         state.transactions.append(credit_tx)
++                    if credit_tx and context.transaction_queue is not None:
++                         context.transaction_queue.append(credit_tx)
+ 
+                     # 3. Disbursement: Bank -> Buyer
+-                    disbursement_success = state.settlement_system.transfer(
+-                        state.bank, buyer, loan_amount, "loan_disbursement", tick=state.time
++                    disbursement_success = context.settlement_system.transfer(
++                        context.bank, buyer, loan_amount, "loan_disbursement", tick=context.time
+                     )
+ 
+                     if not disbursement_success:
+-                         logger.error(f"LOAN_DISBURSEMENT_FAIL | Bank could not transfer {loan_amount} to {buyer.id}. Voiding loan.")
+-                         void_tx = state.bank.void_loan(loan_id)
+-                         if void_tx: state.transactions.append(void_tx)
++                         context.logger.error(f"LOAN_DISBURSEMENT_FAIL | Bank could not transfer {loan_amount} to {buyer.id}. Voiding loan.")
++                         void_tx = context.bank.void_loan(loan_id)
++                         if void_tx and context.transaction_queue is not None: context.transaction_queue.append(void_tx)
+                          return False
+ 
+                     # Deposit Cleanup (Liability Reduction)
+-                    if hasattr(state.bank, "withdraw_for_customer"):
+-                        withdraw_success = state.bank.withdraw_for_customer(buyer.id, loan_amount)
++                    if hasattr(context.bank, "withdraw_for_customer"):
++                        withdraw_success = context.bank.withdraw_for_customer(buyer.id, loan_amount)
+                         if not withdraw_success:
+-                             logger.error(f"LOAN_WITHDRAW_FAIL | Could not reduce deposit for {buyer.id}. Rolling back.")
+-                             state.settlement_system.transfer(buyer, state.bank, loan_amount, "loan_rollback", tick=state.time)
+-                             void_tx = state.bank.void_loan(loan_id)
+-                             if void_tx: state.transactions.append(void_tx)
++                             context.logger.error(f"LOAN_WITHDRAW_FAIL | Could not reduce deposit for {buyer.id}. Rolling back.")
++                             context.settlement_system.transfer(buyer, context.bank, loan_amount, "loan_rollback", tick=context.time)
++                             void_tx = context.bank.void_loan(loan_id)
++                             if void_tx and context.transaction_queue is not None: context.transaction_queue.append(void_tx)
+                              return False
+ 
+                     # Update Unit Mortgage State (Pre-emptively, rolled back if sale fails)
+@@ -143,40 +142,106 @@ class HousingTransactionHandler(ISpecializedTransactionHandler):
+             # Check for Government Tax Collection path
+             if isinstance(seller, Government):
+                 # Use collect_tax which uses SettlementSystem internally
+-                tax_result = seller.collect_tax(trade_value, "asset_sale", buyer, state.time)
++                # Note: collect_tax handles transfer.
++                tax_result = seller.collect_tax(trade_value, "asset_sale", buyer, context.time)
+                 payment_success = tax_result["success"]
+             else:
+                 # Standard Transfer
+-                payment_success = state.settlement_system.transfer(
+-                    buyer, seller, trade_value, f"purchase_unit_{unit.id}", tick=state.time
++                payment_success = context.settlement_system.transfer(
++                    buyer, seller, trade_value, f"purchase_unit_{unit.id}", tick=context.time
+                 )
+ 
+             if not payment_success:
+-                 logger.error(f"HOUSING_PAYMENT_FAIL | Buyer {buyer.id} could not pay {trade_value} to Seller {seller.id}. Rolling back.")
++                 context.logger.error(f"HOUSING_PAYMENT_FAIL | Buyer {buyer.id} could not pay {trade_value} to Seller {seller.id}. Rolling back.")
+ 
+                  # Rollback Loan
+-                 if loan_id:
++                 if loan_id and context.bank:
+                       # Reverse Disbursement
+-                      state.settlement_system.transfer(buyer, state.bank, loan_amount, "loan_rollback", tick=state.time)
++                      context.settlement_system.transfer(buyer, context.bank, loan_amount, "loan_rollback", tick=context.time)
+ 
+                       # Void Loan
+                       try:
+-                          void_tx = state.bank.void_loan(loan_id)
+-                          if void_tx: state.transactions.append(void_tx)
++                          void_tx = context.bank.void_loan(loan_id)
++                          if void_tx and context.transaction_queue is not None: context.transaction_queue.append(void_tx)
+                       except Exception as e:
+-                          logger.warning(f"ROLLBACK_WARNING | void_loan failed during rollback: {e}")
++                          context.logger.warning(f"ROLLBACK_WARNING | void_loan failed during rollback: {e}")
+ 
+                       unit.mortgage_id = None
+ 
+                  return False
+ 
+             # Success
+-            logger.info(
++            # Side effect: Update ownership (Registry-like logic)
++            # The Registry had _handle_housing_registry logic:
++            # "unit.owner_id = buyer.id", update seller/buyer owned_properties, auto-move-in.
++            # HousingTransactionHandler here did NOT have explicit ownership update code in the try block logic I read before.
++            # Wait, let me check the previous file content again.
++
++            # The previous file content:
++            # ...
++            # 4. Process Payment ...
++            # ...
++            # return True
++
++            # It seems HousingTransactionHandler implementation I read missed the actual ownership update?!
++            # Or maybe I missed it?
++            # Let me re-read the previous file content from my context.
++            # I read it in tool output.
++            # It ends with:
++            # logger.info(f"REAL_ESTATE | Sold Unit {unit.id} to {buyer.id}. ...")
++            # return True
++
++            # It assumes caller or Registry updates ownership?
++            # But TransactionProcessor says "elif tx.transaction_type == 'housing': pass".
++            # It relied on Registry logic?
++            # Registry._handle_housing_registry does the update.
++            # BUT HousingTransactionHandler is an ISpecializedTransactionHandler.
++            # TransactionManager calls it:
++            # if tx.transaction_type in self.handlers: success = handler.handle(...)
++            # Then: "3. State Commitment (Registry & Accounting)... if success: registry.update_ownership(...)"
++
++            # Aha! TransactionManager calls registry.update_ownership AFTER handler returns success.
++            # The new TransactionProcessor (Dispatcher) in Spec has:
++            # "success = handler.handle(...)"
++            # "Post-processing (e.g., effects queue)..."
++            # It does NOT call registry.update_ownership explicitly in the loop example in Spec!
++            # The Spec for GoodsTransactionHandler puts side-effects INSIDE the handler.
++            # So I MUST put ownership update logic INSIDE HousingTransactionHandler.
++
++            self._apply_housing_effects(unit, buyer, seller, context)
++
++            context.logger.info(
+                 f"REAL_ESTATE | Sold Unit {unit.id} to {buyer.id}. Price: {trade_value:.2f} Loan: {loan_amount}",
+-                extra={"tick": state.time, "tags": ["real_estate"]}
++                extra={"tick": context.time, "tags": ["real_estate"]}
+             )
+             return True
+ 
+         except Exception as e:
+-            logger.error(f"HOUSING_ERROR | {e}", extra={"error": str(e)})
++            context.logger.error(f"HOUSING_ERROR | {e}", extra={"error": str(e)})
+             return False
++
++    def _apply_housing_effects(self, unit: Any, buyer: Any, seller: Any, context: TransactionContext):
++        """
++        Updates housing ownership and residency.
++        Migrated from Registry._handle_housing_registry.
++        """
++        unit_id = unit.id
++
++        # Update Unit
++        unit.owner_id = buyer.id
++
++        # Update Seller (if not None/Govt)
++        if seller and hasattr(seller, "owned_properties"):
++            if unit_id in seller.owned_properties:
++                seller.owned_properties.remove(unit_id)
++
++        # Update Buyer
++        if hasattr(buyer, "owned_properties"):
++            if unit_id not in buyer.owned_properties:
++                buyer.owned_properties.append(unit_id)
++
++            # Housing System Logic: Auto-move-in if homeless
++            if getattr(buyer, "residing_property_id", None) is None:
++                unit.occupant_id = buyer.id
++                buyer.residing_property_id = unit_id
++                buyer.is_homeless = False
+diff --git a/simulation/systems/handlers/inheritance_handler.py b/simulation/systems/handlers/inheritance_handler.py
+index 4bbeb99..1adecbe 100644
+--- a/simulation/systems/handlers/inheritance_handler.py
++++ b/simulation/systems/handlers/inheritance_handler.py
+@@ -1,23 +1,19 @@
+-from typing import Any, List, Optional
++from typing import Any, List, Tuple
+ import math
+ import logging
+-from simulation.systems.api import ISpecializedTransactionHandler
++from simulation.systems.api import ITransactionHandler, TransactionContext
+ from simulation.models import Transaction
+-from simulation.dtos.api import SimulationState
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class InheritanceHandler(ISpecializedTransactionHandler):
++class InheritanceHandler(ITransactionHandler):
+     """
+     Handles 'inheritance_distribution' transactions.
+     Distributes deceased agent's assets to heirs using Zero-Sum integer math logic.
++    Enforces atomic settlement.
+     """
+ 
+-    def __init__(self, settlement_system: Any, logger: Optional[logging.Logger] = None):
+-        self.settlement = settlement_system
+-        self.logger = logger if logger else logging.getLogger(__name__)
+-
+-    def handle(self, transaction: Transaction, buyer: Any, seller: Any, state: SimulationState) -> bool:
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+         """
+         Executes the inheritance distribution.
+         Buyer: Deceased Agent (Estate)
+@@ -26,32 +22,29 @@ class InheritanceHandler(ISpecializedTransactionHandler):
+         # "buyer" is the Deceased Agent (Estate) holding the assets.
+         deceased_agent = buyer
+ 
+-        heir_ids = transaction.metadata.get("heir_ids", []) if transaction.metadata else []
++        heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
+         total_cash = deceased_agent.assets
+ 
+         if total_cash <= 0 or not heir_ids:
+-            self.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")
++            context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")
+             return True # Nothing to distribute, technically a success (no-op)
+ 
+         count = len(heir_ids)
+         # Calculate amount per heir, avoiding float precision issues (floor to cent)
+         base_amount = math.floor((total_cash / count) * 100) / 100.0
+ 
++        credits: List[Tuple[Any, float, str]] = []
+         distributed_sum = 0.0
+-        all_success = True
+ 
+-        agents = state.agents # SimulationState has agents dict
++        agents = context.agents # SimulationState has agents dict
+ 
+         # Distribute to all but the last heir
+         for i in range(count - 1):
+             h_id = heir_ids[i]
+             heir = agents.get(h_id)
+             if heir:
+-                if self.settlement.transfer(deceased_agent, heir, base_amount, "inheritance_distribution"):
+-                    distributed_sum += base_amount
+-                else:
+-                    all_success = False
+-                    self.logger.error(f"INHERITANCE_FAIL | Failed to transfer {base_amount} to heir {h_id}")
++                credits.append((heir, base_amount, "inheritance_distribution"))
++                distributed_sum += base_amount
+ 
+         # Last heir gets the remainder to ensure zero-sum
+         last_heir_id = heir_ids[-1]
+@@ -60,14 +53,17 @@ class InheritanceHandler(ISpecializedTransactionHandler):
+             remaining_amount = total_cash - distributed_sum
+             # Ensure we don't transfer negative amounts or dust if something went wrong
+             if remaining_amount > 0:
+-                if not self.settlement.transfer(deceased_agent, last_heir, remaining_amount, "inheritance_distribution_final"):
+-                    all_success = False
+-                    self.logger.error(f"INHERITANCE_FAIL | Failed to transfer remainder {remaining_amount} to last heir {last_heir_id}")
+-            elif remaining_amount < 0:
+-                 self.logger.critical(f"INHERITANCE_ERROR | Remainder negative! Distributed: {distributed_sum}, Total: {total_cash}")
+-                 all_success = False
++                credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))
++
++        # Atomic Settlement
++        if credits:
++            success = context.settlement_system.settle_atomic(deceased_agent, credits, context.time)
++
++            if success:
++                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs.")
++            else:
++                 context.logger.error(f"INHERITANCE_FAIL | Atomic settlement failed for {deceased_agent.id}.")
+ 
+-        if all_success:
+-             self.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs.")
++            return success
+ 
+-        return all_success
++        return True
+diff --git a/simulation/systems/handlers/labor_handler.py b/simulation/systems/handlers/labor_handler.py
+new file mode 100644
+index 0000000..1f2e620
+--- /dev/null
++++ b/simulation/systems/handlers/labor_handler.py
+@@ -0,0 +1,110 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++from simulation.core_agents import Household, Skill
++from simulation.firms import Firm
++
++logger = logging.getLogger(__name__)
++
++class LaborTransactionHandler(ITransactionHandler):
++    """
++    Handles 'labor' and 'research_labor' transactions.
++    Enforces atomic settlement (Wage + Income Tax).
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        trade_value = tx.quantity * tx.price
++
++        # 1. Prepare Settlement (Calculate tax intents)
++        # Note: TransactionProcessor used market_data.get("goods_market")?
++        # But TaxationSystem.calculate_tax_intents signature expects 'market_data'.
++        intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
++
++        credits: List[Tuple[Any, float, str]] = []
++        seller_net_amount = trade_value
++        buyer_total_cost = trade_value
++
++        # Variables for logging or tracking
++        seller_tax_paid = 0.0
++        buyer_tax_paid = 0.0
++
++        for intent in intents:
++            credits.append((context.government, intent.amount, intent.reason))
++            if intent.payer_id == seller.id:
++                # If Seller (Worker) pays, deduct from their receipt (Withholding)
++                seller_net_amount -= intent.amount
++                seller_tax_paid += intent.amount
++            elif intent.payer_id == buyer.id:
++                # If Buyer (Firm) pays, it's extra cost
++                buyer_total_cost += intent.amount
++                buyer_tax_paid += intent.amount
++
++        # Add Net Wage Credit to Seller
++        credits.append((seller, seller_net_amount, f"labor_wage:{tx.transaction_type}"))
++
++        # 2. Execute Settlement (Atomic)
++        # Buyer pays Total Cost (Gross + Buyer Tax) implicitly by covering all credits
++        # Actually settle_atomic sums up credits.
++        # Credits = [Tax1, Tax2, SellerNet]
++        # Sum = Tax1 + Tax2 + (Trade - TaxSeller)
++        # If Buyer pays TaxBuyer (Tax1) and Seller pays TaxSeller (Tax2):
++        # Total Debit = TaxBuyer + TaxSeller + (Trade - TaxSeller) = TaxBuyer + Trade
++        # This matches buyer_total_cost. Correct.
++
++        settlement_success = context.settlement_system.settle_atomic(buyer, credits, context.time)
++
++        # 3. Apply Side-Effects
++        if settlement_success:
++            # Record Revenue for Tax Purposes
++            for intent in intents:
++                context.government.record_revenue({
++                     "success": True,
++                     "amount_collected": intent.amount,
++                     "tax_type": intent.reason,
++                     "payer_id": intent.payer_id,
++                     "payee_id": intent.payee_id,
++                     "error_message": None
++                })
++
++            self._apply_labor_effects(tx, buyer, seller, seller_net_amount, buyer_total_cost, context)
++
++        return settlement_success
++
++    def _apply_labor_effects(self, tx: Transaction, buyer: Any, seller: Any, seller_net_income: float, buyer_total_cost: float, context: TransactionContext):
++        """
++        Applies employment updates and productivity effects.
++        """
++        # 1. Household Logic (Seller)
++        if isinstance(seller, Household):
++            if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
++                # Need to remove from previous employer
++                previous_employer = context.agents.get(seller.employer_id) or context.inactive_agents.get(seller.employer_id)
++                if isinstance(previous_employer, Firm):
++                    previous_employer.hr.remove_employee(seller)
++
++            seller.is_employed = True
++            seller.employer_id = buyer.id
++            seller.current_wage = tx.price
++            seller.needs["labor_need"] = 0.0
++
++            # Net Income Tracking
++            if hasattr(seller, "labor_income_this_tick"):
++                seller.labor_income_this_tick += seller_net_income
++
++        # 2. Firm Logic (Buyer)
++        if isinstance(buyer, Firm):
++            # HR Update
++            if seller not in buyer.hr.employees:
++                buyer.hr.hire(seller, tx.price)
++            else:
++                 buyer.hr.employee_wages[seller.id] = tx.price
++
++            # Finance Update
++            buyer.finance.record_expense(buyer_total_cost)
++
++            # Research Labor Productivity Boost
++            if tx.transaction_type == "research_labor" and isinstance(seller, Household):
++                research_skill = seller.skills.get("research", Skill("research")).value
++                multiplier = getattr(context.config_module, "RND_PRODUCTIVITY_MULTIPLIER", 0.0)
++                buyer.productivity_factor += (research_skill * multiplier)
+diff --git a/simulation/systems/handlers/monetary_handler.py b/simulation/systems/handlers/monetary_handler.py
+new file mode 100644
+index 0000000..f4a03a6
+--- /dev/null
++++ b/simulation/systems/handlers/monetary_handler.py
+@@ -0,0 +1,146 @@
++from typing import Any, List, Tuple, Optional
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction, RealEstateUnit
++from simulation.firms import Firm
++from simulation.core_agents import Household
++
++logger = logging.getLogger(__name__)
++
++class MonetaryTransactionHandler(ITransactionHandler):
++    """
++    Handles monetary policy transactions:
++    - lender_of_last_resort (Minting)
++    - asset_liquidation (Minting + Asset Transfer)
++    - bond_purchase / omo_purchase (Minting / QE)
++    - bond_repayment / omo_sale (Burning / QT)
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        tx_type = tx.transaction_type
++        trade_value = tx.quantity * tx.price
++
++        # Central Bank is needed for minting/burning
++        if not context.central_bank:
++            context.logger.error("MonetaryHandler: Central Bank missing in context.")
++            return False
++
++        # Central Bank System wrapper usually handles mint/burn but context has central_bank agent.
++        # We need to access mint/burn methods if they exist on CentralBank agent or use SettlementSystem helpers.
++        # SettlementSystem has 'create_and_transfer' and 'transfer_and_destroy'.
++
++        success = False
++
++        if tx_type == "lender_of_last_resort":
++            # Minting: Central Bank (Buyer/Source) -> Bank/Agent (Seller/Target)
++            # Typically Buyer is System/Gov/CB. Seller is the one receiving money.
++            # TransactionProcessor logic: "success = settlement.transfer(buyer, seller, ...)"
++            # Wait, TP used settlement.transfer.
++            # If buyer is CentralBank, settlement.transfer should handle minting if it detects CB?
++            # SettlementSystem._execute_withdrawal checks if agent is CB and allows infinite withdraw.
++            # So simple transfer from CB works for minting.
++
++            success = context.settlement_system.transfer(
++                buyer, seller, trade_value, "lender_of_last_resort"
++            )
++            if success and hasattr(buyer, "total_money_issued"):
++                buyer.total_money_issued += trade_value
++
++        elif tx_type == "asset_liquidation":
++            # Minting: Gov/CB (Buyer) -> Agent (Seller)
++            success = context.settlement_system.transfer(
++                buyer, seller, trade_value, "asset_liquidation"
++            )
++            if success:
++                if hasattr(buyer, "total_money_issued"):
++                    buyer.total_money_issued += trade_value
++
++                # Asset Transfer Logic (Stock/RE)
++                self._apply_asset_liquidation_effects(tx, buyer, seller, context)
++
++        elif tx_type in ["bond_purchase", "omo_purchase"]:
++            # QE: CB (Buyer) -> Gov/Agent (Seller)
++            success = context.settlement_system.transfer(
++                buyer, seller, trade_value, tx_type
++            )
++            if success and context.central_bank and buyer.id == context.central_bank.id:
++                 if hasattr(context.government, "total_money_issued"):
++                     context.government.total_money_issued += trade_value
++                 context.logger.info(
++                     f"QE | Central Bank purchased bond/asset {trade_value:.2f}.",
++                     extra={"tick": context.time, "tag": "QE"}
++                 )
++
++        elif tx_type in ["bond_repayment", "omo_sale"]:
++            # QT: Agent (Buyer) -> CB (Seller)
++            # Burning: Money goes to CB and disappears.
++            success = context.settlement_system.transfer(
++                buyer, seller, trade_value, tx_type
++            )
++            if success and context.central_bank and seller.id == context.central_bank.id:
++                if hasattr(context.government, "total_money_destroyed"):
++                    context.government.total_money_destroyed += trade_value
++
++        return success is not None
++
++    def _apply_asset_liquidation_effects(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext):
++        """
++        Handles asset transfer side-effects for liquidation.
++        """
++        if tx.item_id.startswith("stock_"):
++            self._handle_stock_side_effect(tx, buyer, seller, context)
++        elif tx.item_id.startswith("real_estate_"):
++            self._handle_real_estate_side_effect(tx, buyer, seller, context)
++
++    def _handle_stock_side_effect(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext):
++        try:
++            firm_id = int(tx.item_id.split("_")[1])
++        except (IndexError, ValueError):
++            return
++
++        # 1. Seller Holdings
++        if isinstance(seller, Household):
++            current_shares = seller.shares_owned.get(firm_id, 0)
++            seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
++            if seller.shares_owned[firm_id] <= 0 and firm_id in seller.shares_owned:
++                del seller.shares_owned[firm_id]
++            if hasattr(seller, "portfolio"):
++                seller.portfolio.remove(firm_id, tx.quantity)
++        elif isinstance(seller, Firm) and seller.id == firm_id:
++            seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
++        elif hasattr(seller, "portfolio"):
++            seller.portfolio.remove(firm_id, tx.quantity)
++
++        # 2. Buyer Holdings
++        if isinstance(buyer, Household):
++            buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
++            if hasattr(buyer, "portfolio"):
++                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
++        elif isinstance(buyer, Firm) and buyer.id == firm_id:
++            buyer.treasury_shares += tx.quantity
++            buyer.total_shares -= tx.quantity
++
++        # 3. Market Registry
++        if context.stock_market:
++            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
++                 context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
++            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
++                context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
++            else:
++                context.stock_market.update_shareholder(seller.id, firm_id, 0.0)
++
++    def _handle_real_estate_side_effect(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext):
++        try:
++            unit_id_str = tx.item_id.split("_")[2]
++            unit_id = int(unit_id_str)
++            unit = next((u for u in context.real_estate_units if u.id == unit_id), None)
++
++            if unit:
++                unit.owner_id = buyer.id
++                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
++                    seller.owned_properties.remove(unit_id)
++                if hasattr(buyer, "owned_properties"):
++                    buyer.owned_properties.append(unit_id)
++        except (IndexError, ValueError):
++            pass
+diff --git a/simulation/systems/handlers/public_manager_handler.py b/simulation/systems/handlers/public_manager_handler.py
+new file mode 100644
+index 0000000..a52bd4f
+--- /dev/null
++++ b/simulation/systems/handlers/public_manager_handler.py
+@@ -0,0 +1,113 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++from simulation.core_agents import Household
++from simulation.firms import Firm
++
++logger = logging.getLogger(__name__)
++
++class PublicManagerTransactionHandler(ITransactionHandler):
++    """
++    Handles transactions where the seller is the Public Manager.
++    (Phase 3: Public Manager Support)
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        # Seller is Public Manager (passed as 'seller' but usually not in agents dict,
++        # so might be None or placeholder if accessed via context.agents["PUBLIC_MANAGER"]).
++        # TransactionProcessor dispatch logic should ensure we get here.
++
++        trade_value = tx.quantity * tx.price
++        pm = context.public_manager
++
++        if not pm:
++            context.logger.error("PublicManagerHandler: PublicManager not found in context.")
++            return False
++
++        # 1. Financial Settlement (Atomic)
++        # Using SettlementSystem to ensure zero-sum integrity.
++        # PublicManager now implements IFinancialEntity.
++
++        success = context.settlement_system.transfer(
++            buyer, pm, trade_value, f"public_sale:{tx.item_id}"
++        )
++
++        if not success:
++            context.logger.error(f"PUBLIC_MANAGER transaction failed: Settlement refused.")
++            return False
++
++        # Confirm sale (decrement inventory) on success
++        pm.confirm_sale(tx.item_id, tx.quantity)
++
++        # 2. Side-Effects (Ownership/Inventory)
++        # We pass seller=None to indicate no seller update is needed (system sale).
++        self._apply_pm_effects(tx, buyer, context)
++
++        # 3. Accounting
++        # TransactionManager called accounting.record_transaction(tx, buyer, None, trade_value, 0.0).
++        # We mimic this.
++        if isinstance(buyer, Firm):
++             # Record expense?
++             # AccountingSystem: "if isinstance(buyer, Firm): ... buyer.finance.record_expense(amount)"
++             # for labor/interest. Not strictly for goods in AccountingSystem, but TP fixed it.
++             # We should record expense if it's a purchase.
++             buyer.finance.record_expense(trade_value)
++
++        return True
++
++    def _apply_pm_effects(self, tx: Transaction, buyer: Any, context: TransactionContext):
++        """
++        Updates buyer state (Inventory/Ownership) akin to Registry.
++        """
++        tx_type = tx.transaction_type
++
++        if tx_type == "goods":
++             # Inventory / Consumption
++            config = context.config_module
++            good_info = getattr(config, "GOODS", {}).get(tx.item_id, {})
++            is_service = good_info.get("is_service", False)
++
++            if is_service:
++                if isinstance(buyer, Household):
++                    buyer.consume(tx.item_id, tx.quantity, context.time)
++            else:
++                is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
++                if is_raw_material and isinstance(buyer, Firm):
++                    buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
++                elif hasattr(buyer, "inventory"):
++                     buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
++
++            if isinstance(buyer, Household):
++                if not is_service:
++                     buyer.current_consumption += tx.quantity
++                     if tx.item_id == "basic_food":
++                         buyer.current_food_consumption += tx.quantity
++
++        elif tx.item_id.startswith("real_estate_"):
++             # RE update
++             try:
++                 unit_id = int(tx.item_id.split("_")[2])
++                 unit = next((u for u in context.real_estate_units if u.id == unit_id), None)
++                 if unit:
++                     unit.owner_id = buyer.id
++                     if hasattr(buyer, "owned_properties"):
++                         buyer.owned_properties.append(unit_id)
++             except:
++                 pass
++
++        elif tx_type == "stock" or tx.item_id.startswith("stock_"):
++             # Stock update
++             try:
++                 firm_id = int(tx.item_id.split("_")[1])
++                 if isinstance(buyer, Household):
++                    buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
++                    if hasattr(buyer, "portfolio"):
++                        buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++                        buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
++                 # Registry update
++                 if context.stock_market:
++                     if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
++                         context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
++             except:
++                 pass
+diff --git a/simulation/systems/handlers/stock_handler.py b/simulation/systems/handlers/stock_handler.py
+new file mode 100644
+index 0000000..044b4d0
+--- /dev/null
++++ b/simulation/systems/handlers/stock_handler.py
+@@ -0,0 +1,82 @@
++from typing import Any, List, Tuple
++import logging
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++from simulation.core_agents import Household
++from simulation.firms import Firm
++
++logger = logging.getLogger(__name__)
++
++class StockTransactionHandler(ITransactionHandler):
++    """
++    Handles 'stock' transactions.
++    Direct transfer and Share Registry updates.
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        trade_value = tx.quantity * tx.price
++
++        # 1. Execute Settlement (Direct Transfer)
++        # Stock trades typically don't have sales tax in this simulation model yet.
++        settlement_success = context.settlement_system.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
++
++        # 2. Apply Side-Effects
++        if settlement_success:
++            self._apply_stock_effects(tx, buyer, seller, context)
++
++        return settlement_success is not None
++
++    def _apply_stock_effects(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext):
++        """
++        Updates portfolios and shareholder registries.
++        """
++        try:
++            # item_id format: "stock_{firm_id}"
++            firm_id = int(tx.item_id.split("_")[1])
++        except (IndexError, ValueError):
++            context.logger.error(f"Invalid stock item_id: {tx.item_id}")
++            return
++
++        # 1. Seller Holdings
++        if isinstance(seller, Household):
++            current_shares = seller.shares_owned.get(firm_id, 0)
++            seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
++            if seller.shares_owned[firm_id] <= 0 and firm_id in seller.shares_owned:
++                del seller.shares_owned[firm_id]
++            if hasattr(seller, "portfolio"):
++                seller.portfolio.remove(firm_id, tx.quantity)
++        elif isinstance(seller, Firm) and seller.id == firm_id:
++            # Firm selling its own treasury shares
++            seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
++        elif hasattr(seller, "portfolio"):
++            # Secondary market trade for Firms/Institutions
++            seller.portfolio.remove(firm_id, tx.quantity)
++
++        # 2. Buyer Holdings
++        if isinstance(buyer, Household):
++            buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
++            if hasattr(buyer, "portfolio"):
++                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++                # Sync legacy dict
++                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
++        elif isinstance(buyer, Firm) and buyer.id == firm_id:
++            # Firm buying back shares (Treasury)
++            buyer.treasury_shares += tx.quantity
++            buyer.total_shares -= tx.quantity
++
++        # 3. Market Registry (Shareholder List)
++        if context.stock_market:
++            # Sync Buyer
++            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
++                 context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
++
++            # Sync Seller
++            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
++                context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
++            else:
++                context.stock_market.update_shareholder(seller.id, firm_id, 0.0)
++
++        context.logger.info(
++            f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
++            extra={"tick": context.time, "tags": ["stock_market", "transaction"]}
++        )
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index aa8e716..72ded82 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -1,453 +1,147 @@
+ from __future__ import annotations
+-from typing import List, Dict, Any, TYPE_CHECKING
++from typing import Dict, Any, TYPE_CHECKING
+ import logging
+ 
+-from simulation.models import Transaction
+-from simulation.core_agents import Household, Skill
+-from simulation.firms import Firm
+-from simulation.systems.api import SystemInterface
+-from modules.government.taxation.system import TaxationSystem, TaxIntent
++from simulation.systems.api import SystemInterface, ITransactionHandler, TransactionContext
+ 
+ if TYPE_CHECKING:
+-    from simulation.agents.government import Government
+     from simulation.dtos.api import SimulationState
+ 
+ logger = logging.getLogger(__name__)
+ 
+ class TransactionProcessor(SystemInterface):
+     """
+-    Simulation 엔진의 거대한 거래 처리 로직을 담당하는 전용 클래스.
+-    관심사의 분리(SoC)를 위해 Simulation 클래스에서 추출됨.
+-    WO-103: Implements SystemInterface to enforce Sacred Sequence.
++    Dispatcher-based Transaction Processor.
++    Delegates transaction processing to registered handlers based on transaction type.
++    Refactored from monolithic implementation (TD-191).
+     """
+ 
+     def __init__(self, config_module: Any):
+         self.config_module = config_module
+-        self.taxation_system = TaxationSystem(config_module)
++        self._handlers: Dict[str, ITransactionHandler] = {}
++        # Special handlers that might be triggered by condition rather than type
++        self._public_manager_handler: ITransactionHandler = None
++
++    def register_handler(self, transaction_type: str, handler: ITransactionHandler):
++        """Registers a handler for a specific transaction type."""
++        self._handlers[transaction_type] = handler
++
++    def register_public_manager_handler(self, handler: ITransactionHandler):
++        """Registers a handler for Public Manager transactions (seller check)."""
++        self._public_manager_handler = handler
+ 
+     def execute(self, state: SimulationState) -> None:
+         """
+-        발생한 거래들을 처리하여 에이전트의 자산, 재고, 고용 상태 등을 업데이트합니다.
+-        Uses SimulationState DTO.
++        Dispatches transactions to registered handlers.
+         """
+-        transactions = state.transactions
+-        agents = state.agents
+-        government = state.government
+-        current_time = state.time
+-
+-        # WO-109: Look up inactive agents
+-        inactive_agents = getattr(state, "inactive_agents", {})
+-
+-        # market_data is now in state
+-        goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
+-
+-        for tx in transactions:
+-            # WO-109: Fallback to inactive agents
+-            buyer = agents.get(tx.buyer_id) or inactive_agents.get(tx.buyer_id)
+-            seller = agents.get(tx.seller_id) or inactive_agents.get(tx.seller_id)
+-
+-            if not buyer or not seller:
++        # 1. Build TransactionContext
++        # Note: public_manager and bank/central_bank must be in state or accessible.
++        # SimulationState usually has bank, central_bank. public_manager might be in state.
++
++        # Determine Public Manager from state if available
++        public_manager = getattr(state, "public_manager", None)
++
++        # Determine Bank and Central Bank from state
++        bank = getattr(state, "bank", None)
++        central_bank = getattr(state, "central_bank", None)
++
++        # Determine Taxation System (Should be in state or we create/access it?)
++        # Legacy TP created it in __init__. But Spec says "taxation_system: 'TaxationSystem'" in context.
++        # Ideally state has it. If not, we might need to rely on it being passed or created.
++        # SimulationState doesn't explicitly list taxation_system in my read earlier.
++        # But TransactionProcessor had self.taxation_system.
++        # If I want to pass it to context, I should probably maintain it here or assume state has it.
++        # Spec says: "The settlement and taxation systems are now part of the context and will be instantiated at a higher level (e.g., in Simulation)."
++        # So I should expect state to have it? Or I can attach my own if state doesn't have it?
++        # SimulationState definition in `simulation/dtos/api.py` was not read fully but `world_state.py` didn't explicitly have it as public attribute in `__init__`.
++        # However, `TransactionProcessor` used to own `TaxationSystem`.
++        # I'll instantiate `TaxationSystem` in `__init__` if needed, or check if I should attach it.
++        # Wait, if `TransactionProcessor` is the one creating context, it can pass its own `taxation_system`.
++        # The Spec example: "taxation_system=state.taxation_system, # Assumes this is created alongside".
++        # If state doesn't have it, I'll use `self.taxation_system`.
++
++        taxation_system = getattr(state, "taxation_system", None)
++        if not taxation_system:
++            if not hasattr(self, "taxation_system"):
++                # Lazy init if missing? Or rely on config.
++                from modules.government.taxation.system import TaxationSystem
++                self.taxation_system = TaxationSystem(self.config_module)
++            taxation_system = self.taxation_system
++
++        context = TransactionContext(
++            agents=state.agents,
++            inactive_agents=getattr(state, "inactive_agents", {}),
++            government=state.government,
++            settlement_system=state.settlement_system,
++            taxation_system=taxation_system,
++            stock_market=state.stock_market,
++            real_estate_units=state.real_estate_units,
++            market_data=state.market_data,
++            config_module=self.config_module,
++            logger=state.logger,
++            time=state.time,
++            bank=bank,
++            central_bank=central_bank,
++            public_manager=public_manager,
++            transaction_queue=[] # Initialize empty queue for side-effects
++        )
++
++        default_handler = self._handlers.get("default")
++
++        for tx in state.transactions:
++            # 1. Special Routing: Public Manager (Seller)
++            # Check if seller is PUBLIC_MANAGER (String ID check or object check handled by logic)
++            if tx.seller_id == "PUBLIC_MANAGER" and self._public_manager_handler:
++                # Handler expects (tx, buyer, seller, context).
++                # PublicManagerHandler needs buyer. We resolve it here.
++                buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++                # Seller is None/Placeholder for PM
++                if buyer:
++                    self._public_manager_handler.handle(tx, buyer, None, context)
+                 continue
+ 
+-            trade_value = tx.quantity * tx.price
+-            sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
+-            tax_amount = 0.0 # Initialize for scope
+-            
+-            # ==================================================================
+-            # 1. Financial Settlement (Asset Transfer & Taxes)
+-            # ==================================================================
+-            # WO-125: Enforce SettlementSystem presence (TD-101)
+-            settlement = state.settlement_system
+-            if not settlement:
+-                raise RuntimeError("SettlementSystem is required for TransactionProcessor but is missing in SimulationState.")
+-
+-            success = False
++            # 2. Standard Dispatch
++            handler = self._handlers.get(tx.transaction_type)
+ 
+-            if tx.transaction_type == "lender_of_last_resort":
+-                # Special Minting Logic (Handled via Settlement)
+-                # Buyer (Gov) -> Seller (Bank).
+-                success = settlement.transfer(buyer, seller, trade_value, "lender_of_last_resort")
+-                if success and hasattr(buyer, "total_money_issued"):
+-                    buyer.total_money_issued += trade_value
++            # Fallback
++            if handler is None:
++                 if tx.transaction_type in ["credit_creation", "credit_destruction"]:
++                     continue # Symbolic, no-op
+ 
+-            elif tx.transaction_type == "asset_liquidation":
+-                # Special Minting Logic + Asset Transfer
+-                # Buyer (Gov) -> Seller (Agent).
+-                success = settlement.transfer(buyer, seller, trade_value, "asset_liquidation")
+-                if success:
+-                    if hasattr(buyer, "total_money_issued"):
+-                        buyer.total_money_issued += trade_value
+-
+-                    # Asset Transfer
+-                    if tx.item_id.startswith("stock_"):
+-                        self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+-                    elif tx.item_id.startswith("real_estate_"):
+-                        self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
+-
+-            elif tx.transaction_type == "asset_transfer":
+-                 # Standard Transfer (Zero-Sum)
+-                 success = settlement.transfer(buyer, seller, trade_value, f"asset_transfer:{tx.item_id}")
+-
+-                 # Asset Transfer Logic
+-                 if success:
+-                     if tx.item_id.startswith("stock_"):
+-                         self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+-                     elif tx.item_id.startswith("real_estate_"):
+-                         self._handle_real_estate_transaction(tx, buyer, seller, state.real_estate_units, state.logger, current_time)
+-
+-            elif tx.transaction_type == "escheatment":
+-                 # Buyer: Agent (Deceased/Closed), Seller: Government
+-                 # Direct atomic settlement to government
+-                 # TD-171: Use dynamic asset balance instead of static transaction price
+-                 escheatment_amount = buyer.assets
+-                 if escheatment_amount > 0:
+-                     success = settlement.settle_atomic(buyer, [(government, escheatment_amount, "escheatment")], current_time)
+-                     if success:
+-                          government.record_revenue({
+-                                 "success": True,
+-                                 "amount_collected": escheatment_amount,
+-                                 "tax_type": "escheatment",
+-                                 "payer_id": buyer.id,
+-                                 "payee_id": government.id,
+-                                 "error_message": None
+-                             })
++                 if default_handler:
++                     handler = default_handler
+                  else:
+-                     success = True
+-
+-            elif tx.transaction_type == "inheritance_distribution":
+-                heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
+-                total_cash = buyer.assets
+-                if total_cash > 0 and heir_ids:
+-                    import math
+-                    count = len(heir_ids)
+-                    # Calculate amount per heir, avoiding float precision issues (floor to cent)
+-                    base_amount = math.floor((total_cash / count) * 100) / 100.0
+-
+-                    credits = []
+-                    distributed_sum = 0.0
+-
+-                    # Distribute to all but the last heir
+-                    for i in range(count - 1):
+-                        h_id = heir_ids[i]
+-                        heir = agents.get(h_id)
+-                        if heir:
+-                            credits.append((heir, base_amount, "inheritance_distribution"))
+-                            distributed_sum += base_amount
+-
+-                    # Last heir gets the remainder to ensure zero-sum
+-                    last_heir_id = heir_ids[-1]
+-                    last_heir = agents.get(last_heir_id)
+-                    if last_heir:
+-                        remaining_amount = total_cash - distributed_sum
+-                        # Ensure we don't transfer negative amounts or dust if something went wrong
+-                        if remaining_amount > 0:
+-                            credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))
+-
+-                    # Atomic Settlement
+-                    if credits:
+-                        success = settlement.settle_atomic(buyer, credits, current_time)
+-
+-            elif tx.transaction_type == "bond_purchase":
+-                # Buyer: Bank or Central Bank, Seller: Government
+-                success = settlement.transfer(buyer, seller, trade_value, "bond_purchase")
+-
+-                # QE Check: If Buyer is Central Bank, it's money creation
+-                if success and state.central_bank and buyer.id == state.central_bank.id:
+-                    if hasattr(government, "total_money_issued"):
+-                        government.total_money_issued += trade_value
+-                        state.logger.info(
+-                            f"QUANTITATIVE_EASING | Central Bank purchased bond {trade_value:.2f}. Total Money Issued updated.",
+-                            extra={"tick": current_time, "tag": "QE"}
+-                        )
+-
+-            elif tx.transaction_type == "bond_repayment":
+-                # Buyer: Government (Payer), Seller: Bank or Central Bank (Payee/Holder)
+-                success = settlement.transfer(buyer, seller, trade_value, "bond_repayment")
+-
+-                # QE Reversal Check: If Seller (Recipient) is Central Bank, it's money destruction
+-                if success and state.central_bank and seller.id == state.central_bank.id:
+-                    if hasattr(government, "total_money_destroyed"):
+-                        government.total_money_destroyed += trade_value
+-
+-            elif tx.transaction_type == "goods":
+-                # Goods: Apply Sales Tax (Decoupled & Atomic)
+-                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
+-
+-                credits = []
+-                # 1. Main Trade Credit (Seller)
+-                credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
+-
+-                # 2. Tax Credits (Government)
+-                # Initialize total_cost (from buyer perspective) with base trade value
+-                total_cost = trade_value
+-
+-                for intent in intents:
+-                    credits.append((government, intent.amount, intent.reason))
+-                    if intent.payer_id == buyer.id:
+-                        total_cost += intent.amount
+-                
+-                # Solvency Check
+-                if hasattr(buyer, 'check_solvency'):
+-                    if buyer.assets < total_cost:
+-                        buyer.check_solvency(government)
+-
+-                success = settlement.settle_atomic(buyer, credits, current_time)
+-
+-                if success:
+-                    # Record Revenue
+-                    for intent in intents:
+-                        government.record_revenue({
+-                             "success": True,
+-                             "amount_collected": intent.amount,
+-                             "tax_type": intent.reason,
+-                             "payer_id": intent.payer_id,
+-                             "payee_id": intent.payee_id,
+-                             "error_message": None
+-                        })
+-
+-            elif tx.transaction_type == "stock":
+-                # Stock: NO Sales Tax
+-                success = settlement.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
++                     # Warn only if it's not a known ignored type
++                     # Housing pass in legacy?
++                     if tx.transaction_type == "housing":
++                         # Maybe HousingHandler is registered?
++                         pass
++                     else:
++                        state.logger.warning(f"No handler for tx type: {tx.transaction_type}")
++                     continue
++
++            # Resolve Agents
++            # Note: seller might be None (e.g. for some system txs, though usually -1 or ID used)
++            # Handlers should handle None seller if appropriate (e.g. HousingHandler).
++            buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++            seller = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
+             
+-            elif tx.transaction_type in ["labor", "research_labor"]:
+-                # Labor: Apply Income Tax (Decoupled & Atomic)
+-                intents = self.taxation_system.calculate_tax_intents(tx, buyer, seller, government, state.market_data)
+-                
+-                credits = []
+-                seller_net_amount = trade_value
+-                buyer_total_cost = trade_value
+-
+-                # Variables to pass to side-effect handler
+-                seller_tax_paid = 0.0
+-                buyer_tax_paid = 0.0
+-
+-                for intent in intents:
+-                    credits.append((government, intent.amount, intent.reason))
+-                    if intent.payer_id == seller.id:
+-                        # If Seller (Worker) pays, deduct from their receipt (Withholding)
+-                        seller_net_amount -= intent.amount
+-                        seller_tax_paid += intent.amount
+-                    elif intent.payer_id == buyer.id:
+-                        # If Buyer (Firm) pays, it's extra cost
+-                        buyer_total_cost += intent.amount
+-                        buyer_tax_paid += intent.amount
+-                
+-                # Update tax_amount for consistency (though now split)
+-                # We reuse tax_amount variable to satisfy scope but logic below uses split values
+-                tax_amount = seller_tax_paid + buyer_tax_paid
+-
+-                credits.append((seller, seller_net_amount, f"labor_wage:{tx.transaction_type}"))
+-
+-                success = settlement.settle_atomic(buyer, credits, current_time)
+-
+-                if success:
+-                    # Record Revenue
+-                    for intent in intents:
+-                        government.record_revenue({
+-                             "success": True,
+-                             "amount_collected": intent.amount,
+-                             "tax_type": intent.reason,
+-                             "payer_id": intent.payer_id,
+-                             "payee_id": intent.payee_id,
+-                             "error_message": None
+-                        })
++            # Special case for Government/Bank ID resolution if needed
++            # But handlers usually check IDs or context.government.
+             
+-            elif tx.item_id == "interest_payment":
+-                success = settlement.transfer(buyer, seller, trade_value, "interest_payment")
+-
+-                if success and isinstance(buyer, Firm):
+-                    buyer.finance.record_expense(trade_value)
+-
+-            elif tx.transaction_type == "dividend":
+-                success = settlement.transfer(seller, buyer, trade_value, "dividend_payment")
+-
+-                if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
+-                    buyer.capital_income_this_tick += trade_value
+-            elif tx.transaction_type == "tax":
+-                # Direct atomic settlement to government
+-                success = settlement.settle_atomic(buyer, [(government, trade_value, tx.item_id)], current_time)
+-                if success:
+-                      government.record_revenue({
+-                             "success": True,
+-                             "amount_collected": trade_value,
+-                             "tax_type": tx.item_id,
+-                             "payer_id": buyer.id,
+-                             "payee_id": government.id,
+-                             "error_message": None
+-                         })
+-            elif tx.transaction_type == "infrastructure_spending":
+-                # Standard Transfer (Gov -> Reflux)
+-                success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
+-
+-            elif tx.transaction_type == "emergency_buy":
+-                # Fast Purchase (Buyer -> Reflux/System)
+-                # No Sales Tax, Immediate Inventory Update
+-                success = settlement.transfer(buyer, seller, trade_value, "emergency_buy")
++            # Dispatch
++            success = handler.handle(tx, buyer, seller, context)
+ 
+-                if success:
+-                    buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
+-
+-            elif tx.transaction_type in ["credit_creation", "credit_destruction"]:
+-                # WO-024: Symbolic Monetary Policy Transactions.
+-                # These are accounting records for the Government and are processed in Phase3
+-                # via `government.process_monetary_transactions`.
+-                # They MUST NOT be executed as real financial transfers here to avoid double counting.
+-                success = True
+-
+-            else:
+-                # Default / Other
+-                success = settlement.transfer(buyer, seller, trade_value, f"generic:{tx.transaction_type}")
+-
+-            # WO-109: Apply Deferred Effects only on Success
++            # Post-processing
+             if success and tx.metadata and tx.metadata.get("triggers_effect"):
+                 state.effects_queue.append(tx.metadata)
+-
+-            # ==================================================================
+-            # 2. Meta Logic (Inventory, Employment, Share Registry)
+-            # ==================================================================
+-            if success:
+-                if tx.transaction_type in ["labor", "research_labor"]:
+-                    self._handle_labor_transaction(tx, buyer, seller, trade_value, seller_net_amount, buyer_total_cost, agents)
+-
+-                elif tx.transaction_type == "goods":
+-                    self._handle_goods_transaction(tx, buyer, seller, trade_value, total_cost, current_time)
+-
+-                elif tx.transaction_type == "stock":
+-                    self._handle_stock_transaction(tx, buyer, seller, state.stock_market, state.logger, current_time)
+-
+-                elif tx.transaction_type == "housing" or (hasattr(tx, "market_id") and tx.market_id == "housing"):
+-                    pass
+-
+-    def _handle_labor_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, seller_net_income: float, buyer_total_cost: float, agents: Dict[int, Any]):
+-        if isinstance(seller, Household):
+-            if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
+-                previous_employer = agents.get(seller.employer_id)
+-                if isinstance(previous_employer, Firm):
+-                    # SoC Refactor: Use HRDepartment
+-                    previous_employer.hr.remove_employee(seller)
+-
+-            seller.is_employed = True
+-            seller.employer_id = buyer.id
+-            seller.current_wage = tx.price
+-            seller.needs["labor_need"] = 0.0
+-            if hasattr(seller, "labor_income_this_tick"):
+-                seller.labor_income_this_tick += seller_net_income
+-
+-        if isinstance(buyer, Firm):
+-            # SoC Refactor: Use HRDepartment and FinanceDepartment
+-            if seller not in buyer.hr.employees:
+-                buyer.hr.hire(seller, tx.price)
+-            else:
+-                 buyer.hr.employee_wages[seller.id] = tx.price
+-
+-            buyer.finance.record_expense(buyer_total_cost)
+-
+-            if tx.transaction_type == "research_labor":
+-                research_skill = seller.skills.get("research", Skill("research")).value
+-                buyer.productivity_factor += (research_skill * self.config_module.RND_PRODUCTIVITY_MULTIPLIER)
+-
+-    def _handle_goods_transaction(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, buyer_total_cost: float, current_time: int):
+-        good_info = self.config_module.GOODS.get(tx.item_id, {})
+-        is_service = good_info.get("is_service", False)
+-
+-        if is_service:
+-            if isinstance(buyer, Household):
+-                buyer.consume(tx.item_id, tx.quantity, current_time)
+-        else:
+-            seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
+-            is_raw_material = tx.item_id in getattr(self.config_module, "RAW_MATERIAL_SECTORS", [])
+-
+-            if is_raw_material and isinstance(buyer, Firm):
+-                buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
+-            else:
+-                current_qty = buyer.inventory.get(tx.item_id, 0)
+-                existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
+-                tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
+-                total_new_qty = current_qty + tx.quantity
+-                new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
+                 
+-                buyer.inventory_quality[tx.item_id] = new_avg_quality
+-                buyer.inventory[tx.item_id] = total_new_qty
+-
+-        if isinstance(seller, Firm):
+-            # SoC Refactor: Use FinanceDepartment
+-            seller.finance.record_revenue(trade_value)
+-            seller.finance.sales_volume_this_tick += tx.quantity
+-
+-            # WO-157: Record Sale for Velocity Tracking
+-            if hasattr(seller, 'record_sale'):
+-                seller.record_sale(tx.item_id, tx.quantity, current_time)
+-        
+-        # WO-124: Record expense for Firm buyers (Integrity Fix)
+-        if isinstance(buyer, Firm):
+-            buyer.finance.record_expense(buyer_total_cost)
+-
+-        if isinstance(buyer, Household):
+-            if not is_service:
+-                buyer.current_consumption += tx.quantity
+-                if tx.item_id == "basic_food":
+-                    buyer.current_food_consumption += tx.quantity
+-
+-    def _handle_real_estate_transaction(self, tx: Transaction, buyer: Any, seller: Any, real_estate_units: List[Any], logger: Any, current_time: int):
+-        # item_id = "real_estate_{id}"
+-        try:
+-            unit_id = int(tx.item_id.split("_")[2])
+-            unit = next((u for u in real_estate_units if u.id == unit_id), None)
+-            if unit:
+-                unit.owner_id = buyer.id
+-                # Update seller/buyer lists if they exist
+-                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
+-                    seller.owned_properties.remove(unit_id)
+-                if hasattr(buyer, "owned_properties"):
+-                    buyer.owned_properties.append(unit_id)
+-
+-                if logger:
+-                    logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
+-        except (IndexError, ValueError) as e:
+-            if logger:
+-                logger.error(f"RE_TX_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
+-
+-    def _handle_stock_transaction(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, logger: Any, current_time: int):
+-        firm_id = int(tx.item_id.split("_")[1])
+-        
+-        # 1. Update Holdings
+-        if isinstance(seller, Household):
+-            current_shares = seller.shares_owned.get(firm_id, 0)
+-            seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
+-            if seller.shares_owned[firm_id] <= 0 and firm_id in seller.shares_owned:
+-                del seller.shares_owned[firm_id]
+-            if hasattr(seller, "portfolio"):
+-                seller.portfolio.remove(firm_id, tx.quantity)
+-        elif isinstance(seller, Firm) and seller.id == firm_id:
+-            seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
+-        elif hasattr(seller, "portfolio"):
+-            # Secondary market trade for Firms/Institutions if they have portfolio
+-            seller.portfolio.remove(firm_id, tx.quantity)
+-        
+-        if isinstance(buyer, Household):
+-            buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
+-            if hasattr(buyer, "portfolio"):
+-                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+-                # Sync legacy dict
+-                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
+-        elif isinstance(buyer, Firm) and buyer.id == firm_id:
+-            buyer.treasury_shares += tx.quantity
+-            buyer.total_shares -= tx.quantity
+-
+-        # 2. Sync Market Shareholder Registry (CRITICAL for Dividends)
+-        if stock_market:
+-            # Sync Buyer
+-            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
+-                 stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
+-
+-            # Sync Seller
+-            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+-                stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
+-            else:
+-                stock_market.update_shareholder(seller.id, firm_id, 0.0)
+-
+-        if logger:
+-            logger.info(
+-                f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
+-                extra={"tick": current_time, "tags": ["stock_market", "transaction"]}
+-            )
++        # Append queued transactions from context to state (e.g. credit creation from loans)
++        if context.transaction_queue:
++            # We assume state.transactions is the list we can append to?
++            # Or state.inter_tick_queue?
++            # HousingHandler appended to `state.transactions` (current tick log).
++            # So we extend state.transactions.
++            # But iterating and appending might be dangerous if loop continues?
++            # We are outside the loop now.
++            state.transactions.extend(context.transaction_queue)
+diff --git a/tests/unit/test_transaction_processor.py b/tests/unit/test_transaction_processor.py
+index 5b0ea38..8a50893 100644
+--- a/tests/unit/test_transaction_processor.py
++++ b/tests/unit/test_transaction_processor.py
+@@ -1,276 +1,115 @@
+ import pytest
+ from unittest.mock import MagicMock, call
+-from simulation.systems.transaction_manager import TransactionManager
++from simulation.systems.transaction_processor import TransactionProcessor
++from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+ from simulation.models import Transaction
+ 
+-def test_transaction_manager_uses_escrow_for_goods():
+-    # Setup dependencies
+-    registry = MagicMock()
+-    accounting = MagicMock()
+-    settlement = MagicMock()
+-    central_bank = MagicMock()
++def test_transaction_processor_dispatch_to_handler():
++    # Setup
+     config = MagicMock()
+-    config.SALES_TAX_RATE = 0.1
+-    config.GOODS = {"apple": {}}
+-    escrow_agent = MagicMock()
++    tp = TransactionProcessor(config_module=config)
+ 
+-    # Initialize Manager
+-    tm = TransactionManager(
+-        registry=registry,
+-        accounting_system=accounting,
+-        settlement_system=settlement,
+-        central_bank_system=central_bank,
+-        config=config,
+-        escrow_agent=escrow_agent,
+-        handlers={}
+-    )
++    # Mock Handler
++    handler = MagicMock()
++    handler.handle.return_value = True
++    tp.register_handler("test_type", handler)
+ 
+     # Setup State
+     state = MagicMock()
+-    gov = MagicMock()
+-    state.government = gov
+-    state.market_data = {}
+-    state.time = 0
+-    state.effects_queue = []
+-
+-    # Setup Agents
+-    buyer = MagicMock()
+-    buyer.id = 1
+-    buyer.assets = 100.0
+-    buyer.check_solvency = MagicMock()
+-
+-    seller = MagicMock()
+-    seller.id = 2
+-
+-    state.agents = {1: buyer, 2: seller}
+-
+-    # Setup Transaction
+-    tx = Transaction(
+-        buyer_id=1,
+-        seller_id=2,
+-        item_id="apple",
+-        price=10.0,
+-        quantity=1.0,
+-        market_id="goods",
+-        transaction_type="goods",
+-        time=0
+-    )
+-    state.transactions = [tx]
+-
+-    # Mock Settlement Success for all steps
+-    settlement.transfer.return_value = True
++    state.agents = {1: MagicMock(), 2: MagicMock()}
++    state.transactions = [
++        Transaction(
++            buyer_id=1, seller_id=2, item_id="item", price=10, quantity=1,
++            market_id="m", transaction_type="test_type", time=0
++        )
++    ]
++    state.taxation_system = MagicMock() # Ensure context building works
+ 
+     # Execute
+-    tm.execute(state)
+-
+-    # Verify 3-Step Escrow Logic
+-    # 1. Buyer -> Escrow (Total Cost: 10 + 1 = 11)
+-    # 2. Escrow -> Seller (Trade Value: 10)
+-    # 3. Escrow -> Gov (Tax: 1)
+-
+-    assert settlement.transfer.call_count == 3
+-    calls = settlement.transfer.call_args_list
++    tp.execute(state)
+ 
+-    # Step 1
+-    assert calls[0][0][0] == buyer
+-    assert calls[0][0][1] == escrow_agent
+-    assert calls[0][0][2] == 11.0
++    # Verify Dispatch
++    handler.handle.assert_called_once()
++    args = handler.handle.call_args
++    assert args[0][0] == state.transactions[0] # tx
++    assert args[0][1] == state.agents[1] # buyer
++    assert args[0][2] == state.agents[2] # seller
++    # args[0][3] is context
+ 
+-    # Step 2
+-    assert calls[1][0][0] == escrow_agent
+-    assert calls[1][0][1] == seller
+-    assert calls[1][0][2] == 10.0
+-
+-    # Step 3
+-    assert calls[2][0][0] == escrow_agent
+-    assert calls[2][0][1] == gov
+-    assert calls[2][0][2] == 1.0
+-
+-    # Verify State Commitment
+-    registry.update_ownership.assert_called_once()
+-    accounting.record_transaction.assert_called_once()
++def test_transaction_processor_ignores_credit_creation():
++    config = MagicMock()
++    tp = TransactionProcessor(config_module=config)
+ 
+-    # Verify Gov Revenue Recorded
+-    gov.record_revenue.assert_called_once()
++    state = MagicMock()
++    state.transactions = [
++        Transaction(
++            buyer_id=1, seller_id=2, item_id="credit", price=10, quantity=1,
++            market_id="m", transaction_type="credit_creation", time=0
++        )
++    ]
++    state.agents = {1: MagicMock(), 2: MagicMock()}
++
++    # No handler registered
++    # Execute
++    tp.execute(state)
+ 
++    # Should not raise warning or error
++    state.logger.warning.assert_not_called()
+ 
+-def test_transaction_manager_escrow_fails_insufficient_funds():
+-    # Setup dependencies
+-    registry = MagicMock()
+-    accounting = MagicMock()
+-    settlement = MagicMock()
+-    central_bank = MagicMock()
+-    config = MagicMock()
+-    config.SALES_TAX_RATE = 0.1
+-    config.GOODS = {"apple": {}}
+-    escrow_agent = MagicMock()
++def test_goods_handler_uses_atomic_settlement():
++    # Setup Context
++    context = MagicMock()
++    context.taxation_system.calculate_tax_intents.return_value = []
++    context.settlement_system.settle_atomic.return_value = True
++    context.config_module.GOODS = {"apple": {}}
+ 
+-    # Initialize Manager
+-    tm = TransactionManager(
+-        registry=registry,
+-        accounting_system=accounting,
+-        settlement_system=settlement,
+-        central_bank_system=central_bank,
+-        config=config,
+-        escrow_agent=escrow_agent,
+-        handlers={}
+-    )
+-
+-    # Setup State
+-    state = MagicMock()
+-    gov = MagicMock()
+-    state.government = gov
+-    state.market_data = {}
+-    state.time = 0
++    handler = GoodsTransactionHandler()
+ 
+     buyer = MagicMock()
+     buyer.id = 1
+-    buyer.assets = 100.0
+-
++    buyer.assets = 100.0 # Set assets for solvency check
++    buyer.inventory = {}
+     seller = MagicMock()
+     seller.id = 2
+-
+-    state.agents = {1: buyer, 2: seller}
++    seller.inventory = {}
+ 
+     tx = Transaction(
+-        buyer_id=1,
+-        seller_id=2,
+-        item_id="apple",
+-        price=10.0,
+-        quantity=1.0,
+-        market_id="goods",
+-        transaction_type="goods",
+-        time=0
++        buyer_id=1, seller_id=2, item_id="apple", price=10.0, quantity=1.0,
++        market_id="goods", transaction_type="goods", time=0
+     )
+-    state.transactions = [tx]
+-
+-    # Mock Settlement FAILURE (Step 1)
+-    settlement.transfer.side_effect = [False]
+ 
+     # Execute
+-    tm.execute(state)
++    handler.handle(tx, buyer, seller, context)
+ 
+-    # Verify Step 1 Attempted
+-    settlement.transfer.assert_called_once()
+-    args = settlement.transfer.call_args
++    # Verify settle_atomic called
++    context.settlement_system.settle_atomic.assert_called_once()
++    args = context.settlement_system.settle_atomic.call_args
++    # args: (buyer, credits, time)
+     assert args[0][0] == buyer
+-    assert args[0][1] == escrow_agent
+-
+-    # Verify NO further steps
+-    assert settlement.transfer.call_count == 1
++    credits = args[0][1]
++    # Expect [(seller, 10.0, ...)]
++    assert len(credits) == 1
++    assert credits[0][0] == seller
++    assert credits[0][1] == 10.0
+ 
+-    # Verify NO State Commitment
+-    registry.update_ownership.assert_not_called()
+-    accounting.record_transaction.assert_not_called()
+-
+-
+-def test_transaction_manager_routes_to_central_bank():
+-    # Setup dependencies
+-    registry = MagicMock()
+-    accounting = MagicMock()
+-    settlement = MagicMock()
+-    central_bank = MagicMock() # Minting Authority
++def test_public_manager_routing():
+     config = MagicMock()
+-    escrow_agent = MagicMock()
++    tp = TransactionProcessor(config_module=config)
+ 
+-    tm = TransactionManager(
+-        registry=registry,
+-        accounting_system=accounting,
+-        settlement_system=settlement,
+-        central_bank_system=central_bank,
+-        config=config,
+-        escrow_agent=escrow_agent
+-    )
++    pm_handler = MagicMock()
++    tp.register_public_manager_handler(pm_handler)
+ 
+     state = MagicMock()
+-    state.market_data = {}
+-    state.time = 0
+-
+-    # Buyer is usually Gov/CB for minting ops
+-    buyer = MagicMock()
+-    buyer.id = "CENTRAL_BANK"
+-
+-    seller = MagicMock() # Bank receiving funds
+-    seller.id = "BANK"
+-
+-    state.agents = {"CENTRAL_BANK": buyer, "BANK": seller}
++    state.public_manager = MagicMock() # Ensure PM exists
+ 
++    # Transaction with PM as seller
+     tx = Transaction(
+-        buyer_id="CENTRAL_BANK",
+-        seller_id="BANK",
+-        item_id="cash",
+-        price=1000.0,
+-        quantity=1.0,
+-        market_id="system",
+-        transaction_type="lender_of_last_resort",
+-        time=0
++        buyer_id=1, seller_id="PUBLIC_MANAGER", item_id="item", price=10, quantity=1,
++        market_id="m", transaction_type="any_type", time=0
+     )
+     state.transactions = [tx]
++    state.agents = {1: MagicMock()}
+ 
+-    central_bank.mint_and_transfer.return_value = True
+-
+-    tm.execute(state)
+-
+-    # Verify routed to CentralBankSystem
+-    central_bank.mint_and_transfer.assert_called_once()
+-
+-    # Verify settlement NOT called directly by manager (it's called by CB system)
+-    settlement.transfer.assert_not_called()
+-
+-
+-def test_transaction_manager_uses_handler():
+-    # Setup dependencies
+-    registry = MagicMock()
+-    accounting = MagicMock()
+-    settlement = MagicMock()
+-    central_bank = MagicMock()
+-    config = MagicMock()
+-    escrow_agent = MagicMock()
+-
+-    handler = MagicMock() # Specialized Handler
+-    handler.handle.return_value = True
+-
+-    tm = TransactionManager(
+-        registry=registry,
+-        accounting_system=accounting,
+-        settlement_system=settlement,
+-        central_bank_system=central_bank,
+-        config=config,
+-        escrow_agent=escrow_agent,
+-        handlers={"special_saga": handler}
+-    )
+-
+-    state = MagicMock()
+-    state.market_data = {}
+-    state.time = 0
+-
+-    buyer = MagicMock()
+-    buyer.id = 1
+-    seller = MagicMock()
+-    seller.id = 2
+-    state.agents = {1: buyer, 2: seller}
+-
+-    tx = Transaction(
+-        buyer_id=1,
+-        seller_id=2,
+-        item_id="thing",
+-        price=10.0,
+-        quantity=1.0,
+-        market_id="saga",
+-        transaction_type="special_saga",
+-        time=0
+-    )
+-    state.transactions = [tx]
+-
+-    tm.execute(state)
+-
+-    # Verify Handler Called
+-    handler.handle.assert_called_once_with(tx, buyer, seller, state)
+-
+-    # Verify standard paths skipped
+-    settlement.transfer.assert_not_called()
++    tp.execute(state)
+ 
+-    # Verify State Commitment IS called (Phase 2)
+-    # Even if Registry/Accounting do nothing for this type, they are invoked by the manager.
+-    registry.update_ownership.assert_called_once()
+-    accounting.record_transaction.assert_called_once()
++    pm_handler.handle.assert_called_once()
