@@ -12,35 +12,11 @@ if TYPE_CHECKING:
     )
 
 # --- Data Contracts for Market Snapshots (NEW) ---
-
-class HousingMarketUnitDTO(TypedDict):
-    """Represents a single, sellable housing unit in the market."""
-    unit_id: str
-    price: float
-    quality: float
-
-class HousingMarketSnapshotDTO(TypedDict):
-    """Contains a snapshot of the housing market's state."""
-    for_sale_units: List[HousingMarketUnitDTO]
-    avg_rent_price: float
-    avg_sale_price: float
-
-class LoanMarketSnapshotDTO(TypedDict):
-    """Contains a snapshot of the loan market's state."""
-    interest_rate: float
-
-class LaborMarketSnapshotDTO(TypedDict):
-    """Contains a snapshot of the labor market's state."""
-    avg_wage: float
-
-class MarketSnapshotDTO(TypedDict):
-    """
-    A comprehensive, data-only snapshot of all relevant markets.
-    This DTO replaces the need to pass live market objects and the loose 'market_data' dict.
-    """
-    housing: HousingMarketSnapshotDTO
-    loan: LoanMarketSnapshotDTO
-    labor: LaborMarketSnapshotDTO
+from modules.system.api import (
+    HousingMarketUnitDTO, HousingMarketSnapshotDTO,
+    LoanMarketSnapshotDTO, LaborMarketSnapshotDTO,
+    MarketSnapshotDTO
+)
 
 
 # --- Updated Context for Decision Making (NEW) ---

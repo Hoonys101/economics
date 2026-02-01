@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Optional, List
 import math
 import logging
 
 from simulation.markets.order_book_market import OrderBookMarket
-from modules.system.api import MarketSignalDTO, MarketSnapshotDTO
+from modules.system.api import (
+    MarketSignalDTO, MarketSnapshotDTO,
+    HousingMarketSnapshotDTO, HousingMarketUnitDTO,
+    LoanMarketSnapshotDTO, LaborMarketSnapshotDTO
+)
 from simulation.dtos.api import (
     SimulationState, DecisionInputDTO, GovernmentPolicyDTO, MacroFinancialContext,
     FiscalContext
@@ -44,6 +48,12 @@ class MarketSignalFactory:
                      # Since we don't have explicit state, we assume False unless proven otherwise.
                      is_frozen = False
 
+                     # Calculate total quantities
+                     bids = market.buy_orders.get(item_id, [])
+                     asks = market.sell_orders.get(item_id, [])
+                     total_bid_qty = sum(o.quantity for o in bids)
+                     total_ask_qty = sum(o.quantity for o in asks)
+
                      signal = MarketSignalDTO(
                          market_id=m_id,
                          item_id=item_id,
@@ -53,12 +63,77 @@ class MarketSignalFactory:
                          last_trade_tick=market.get_last_trade_tick(item_id) or -1,
                          price_history_7d=history_7d,
                          volatility_7d=volatility,
-                         order_book_depth_buy=len(market.buy_orders.get(item_id, [])),
-                         order_book_depth_sell=len(market.sell_orders.get(item_id, [])),
+                         order_book_depth_buy=len(bids),
+                         order_book_depth_sell=len(asks),
+                         total_bid_quantity=total_bid_qty,
+                         total_ask_quantity=total_ask_qty,
                          is_frozen=is_frozen
                      )
                      market_signals[item_id] = signal
         return market_signals
+
+class MarketSnapshotFactory:
+    def __init__(self):
+        self.signal_factory = MarketSignalFactory()
+
+    def create_snapshot(self, state: SimulationState) -> MarketSnapshotDTO:
+        # 1. Create Signals
+        market_signals = self.signal_factory.create_market_signals(state.markets)
+
+        # 2. Extract Housing Snapshot
+        housing_snapshot = self._create_housing_snapshot(state)
+
+        # 3. Extract Loan Snapshot
+        loan_snapshot = self._create_loan_snapshot(state)
+
+        # 4. Extract Labor Snapshot
+        labor_snapshot = self._create_labor_snapshot(state)
+
+        return MarketSnapshotDTO(
+            tick=state.time,
+            market_signals=market_signals,
+            market_data=state.market_data, # Legacy
+            housing=housing_snapshot,
+            loan=loan_snapshot,
+            labor=labor_snapshot
+        )
+
+    def _create_housing_snapshot(self, state: SimulationState) -> Optional[HousingMarketSnapshotDTO]:
+        housing_market = state.markets.get("housing")
+        housing_data = state.market_data.get("housing_market", {})
+
+        for_sale_units = []
+        if housing_market and hasattr(housing_market, "sell_orders"):
+             for item_id, sell_orders in housing_market.sell_orders.items():
+                if item_id.startswith("unit_") and sell_orders:
+                    # Taking the best price (lowest ask)
+                    order = sell_orders[0]
+                    # Quality is not on OrderDTO, assume default 1.0 or TODO: fetch from unit registry
+                    quality = 1.0
+
+                    for_sale_units.append(HousingMarketUnitDTO(
+                        unit_id=item_id,
+                        price=order.price,
+                        quality=quality
+                    ))
+
+        return HousingMarketSnapshotDTO(
+            for_sale_units=for_sale_units,
+            avg_rent_price=housing_data.get("avg_rent_price", 100.0),
+            avg_sale_price=housing_data.get("avg_sale_price", 24000.0)
+        )
+
+    def _create_loan_snapshot(self, state: SimulationState) -> Optional[LoanMarketSnapshotDTO]:
+        loan_data = state.market_data.get("loan_market", {})
+        return LoanMarketSnapshotDTO(
+            interest_rate=loan_data.get("interest_rate", 0.05)
+        )
+
+    def _create_labor_snapshot(self, state: SimulationState) -> Optional[LaborMarketSnapshotDTO]:
+        labor_data = state.market_data.get("labor", {})
+        return LaborMarketSnapshotDTO(
+            avg_wage=labor_data.get("avg_wage", 0.0)
+        )
 
 class DecisionInputFactory:
     def create_decision_input(
@@ -107,7 +182,7 @@ class DecisionInputFactory:
              agent_registry["BANK"] = state.bank.id
 
         return DecisionInputDTO(
-             markets=state.markets,
+             # markets=state.markets, # Removed TD-194
              goods_data=state.goods_data,
              market_data=state.market_data,
              current_time=state.time,

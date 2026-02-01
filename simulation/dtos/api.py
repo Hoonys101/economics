@@ -145,7 +145,7 @@ class DecisionInputDTO:
     Standardized input DTO for agent decision-making.
     Encapsulates all external system inputs passed to make_decision.
     """
-    markets: Dict[str, Any]
+    # markets: Dict[str, Any] # Removed TD-194
     goods_data: List[Dict[str, Any]]
     market_data: Dict[str, Any]
     current_time: int

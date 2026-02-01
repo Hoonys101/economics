@@ -21,7 +21,35 @@ class MarketSignalDTO:
     volatility_7d: float  # Standard deviation of price_history_7d
     order_book_depth_buy: int  # Number of outstanding buy orders
     order_book_depth_sell: int  # Number of outstanding sell orders
-    is_frozen: bool  # True if circuit breaker is active or no trades have occurred recently
+    total_bid_quantity: float = 0.0 # Total quantity demanded
+    total_ask_quantity: float = 0.0 # Total quantity supplied
+    is_frozen: bool = False # True if circuit breaker is active or no trades have occurred recently
+
+# --- Sub-Snapshot DTOs ---
+
+@dataclass
+class HousingMarketUnitDTO:
+    """Represents a single, sellable housing unit in the market."""
+    unit_id: str
+    price: float
+    quality: float
+
+@dataclass
+class HousingMarketSnapshotDTO:
+    """Contains a snapshot of the housing market's state."""
+    for_sale_units: List[HousingMarketUnitDTO]
+    avg_rent_price: float
+    avg_sale_price: float
+
+@dataclass
+class LoanMarketSnapshotDTO:
+    """Contains a snapshot of the loan market's state."""
+    interest_rate: float
+
+@dataclass
+class LaborMarketSnapshotDTO:
+    """Contains a snapshot of the labor market's state."""
+    avg_wage: float
 
 # --- Modifications to Existing Core DTOs ---
 
@@ -35,6 +63,11 @@ class MarketSnapshotDTO:
     tick: int
     market_signals: Dict[str, MarketSignalDTO]  # item_id -> signal_dto
     market_data: Dict[str, Any]  # [DEPRECATED] For legacy compatibility during transition.
+
+    # Structured snapshots for specific markets
+    housing: Optional[HousingMarketSnapshotDTO] = None
+    loan: Optional[LoanMarketSnapshotDTO] = None
+    labor: Optional[LaborMarketSnapshotDTO] = None
 
 # --- Phase 3: Asset Recovery ---
 
