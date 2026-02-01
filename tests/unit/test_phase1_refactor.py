@@ -1,0 +1,112 @@
+import pytest
+from unittest.mock import Mock, MagicMock, patch
+from simulation.orchestration.phases import Phase1_Decision
+from simulation.dtos.api import SimulationState, DecisionInputDTO
+
+class TestPhase1DecisionRefactor:
+    def test_execute_flow(self):
+        # Mock Dependencies
+        world_state = MagicMock()
+        state = MagicMock(spec=SimulationState)
+        state.time = 100
+        state.markets = {"market1": MagicMock()}
+        state.firms = []
+        state.households = []
+        state.agents = {}
+        state.government = MagicMock()
+        state.bank = MagicMock()
+        state.config_module = MagicMock()
+        state.config_module.MACRO_PORTFOLIO_ADJUSTMENT_ENABLED = False
+        state.config_module.SALES_TAX_RATE = 0.05
+        state.config_module.MAX_WORK_HOURS = 10.0
+        state.config_module.HOURS_PER_TICK = 24.0
+        state.config_module.SHOPPING_HOURS = 2.0
+
+        world_state.commerce_system = MagicMock()
+        world_state.commerce_system.plan_consumption_and_leisure.return_value = ({}, [])
+
+        # Prepare mocking factories
+        # Phase1_Decision instantiates factories in __init__
+        # We need to mock them *after* instantiation or patch the classes
+
+        with patch('simulation.orchestration.phases.MarketSignalFactory') as MockSignalFactory, \
+             patch('simulation.orchestration.phases.DecisionInputFactory') as MockInputFactory, \
+             patch('simulation.orchestration.phases.prepare_market_data') as mock_prepare_data:
+
+            mock_prepare_data.return_value = {}
+
+            phase = Phase1_Decision(world_state)
+
+            # Setup factory returns
+            mock_signal_factory_instance = MockSignalFactory.return_value
+            mock_signal_factory_instance.create_market_signals.return_value = {"signal": "mock"}
+
+            mock_input_factory_instance = MockInputFactory.return_value
+            # dataclasses.replace requires a real dataclass instance
+            mock_input_factory_instance.create_decision_input.return_value = DecisionInputDTO(
+                markets={},
+                goods_data={},
+                market_data={},
+                current_time=100
+            )
+
+            # Execute
+            phase.execute(state)
+
+            # Verify Factory Calls
+            mock_signal_factory_instance.create_market_signals.assert_called_once_with(state.markets)
+            mock_input_factory_instance.create_decision_input.assert_called_once()
+
+            # Verify market data preparation
+            mock_prepare_data.assert_called_once_with(state)
+
+    def test_dispatch_logic(self):
+        # Test that _dispatch_firm_decisions and _dispatch_household_decisions are called
+        # (Implicitly tested via execute, but we can check if agents make decisions)
+
+        world_state = MagicMock()
+        world_state.commerce_system = MagicMock()
+        world_state.commerce_system.plan_consumption_and_leisure.return_value = ({}, [])
+
+        state = MagicMock(spec=SimulationState)
+        state.time = 100
+        state.markets = {}
+        state.agents = {}
+        state.government = MagicMock()
+        state.config_module = MagicMock()
+        state.config_module.MAX_WORK_HOURS = 10.0
+        state.config_module.HOURS_PER_TICK = 24.0
+        state.config_module.SHOPPING_HOURS = 2.0
+
+        firm = MagicMock()
+        firm.is_active = True
+        firm.make_decision.return_value = ([], None) # Legacy return
+        firm.get_agent_data.return_value = {}
+
+        household = MagicMock()
+        household.is_active = True
+        household.make_decision.return_value = ([], None) # Legacy return
+        household.get_agent_data.return_value = {}
+
+        state.firms = [firm]
+        state.households = [household]
+
+        with patch('simulation.orchestration.phases.MarketSignalFactory'), \
+             patch('simulation.orchestration.phases.DecisionInputFactory') as MockInputFactory, \
+             patch('simulation.orchestration.phases.prepare_market_data', return_value={}):
+
+            phase = Phase1_Decision(world_state)
+
+            # Setup factory to return real DTO
+            mock_input_factory_instance = MockInputFactory.return_value
+            mock_input_factory_instance.create_decision_input.return_value = DecisionInputDTO(
+                markets={},
+                goods_data={},
+                market_data={},
+                current_time=100
+            )
+
+            phase.execute(state)
+
+            firm.make_decision.assert_called_once()
+            household.make_decision.assert_called_once()

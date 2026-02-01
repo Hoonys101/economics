@@ -24,6 +24,9 @@ from modules.government.components.monetary_policy_manager import MonetaryPolicy
 from simulation.orchestration.utils import prepare_market_data
 from modules.government.proxy import GovernmentFiscalProxy
 
+# NEW
+from simulation.orchestration.factories import MarketSignalFactory, DecisionInputFactory
+
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -196,269 +199,175 @@ class Phase_Production(IPhaseStrategy):
 class Phase1_Decision(IPhaseStrategy):
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
+        # TD-189: Use factories
+        self.signal_factory = MarketSignalFactory()
+        self.input_factory = DecisionInputFactory()
 
     def execute(self, state: SimulationState) -> SimulationState:
         # Snapshot agents for learning (Pre-state)
-        for f in state.firms:
-            if f.is_active: f.pre_state_snapshot = f.get_agent_data()
-        for h in state.households:
-            if h.is_active: h.pre_state_snapshot = h.get_agent_data()
+        self._snapshot_agent_pre_states(state)
 
         # Prepare Market Data
         market_data = prepare_market_data(state)
         state.market_data = market_data
 
-        firm_pre_states = {}
-        household_pre_states = {}
-        household_time_allocation = {}
-
-        # Construct Market Signals (Phase 2)
-        from modules.system.api import MarketSignalDTO
-        market_signals: Dict[str, MarketSignalDTO] = {}
-
-        import math
-
-        for m_id, market in state.markets.items():
-            # Only process OrderBookMarkets that have items
-            if isinstance(market, OrderBookMarket):
-                # Identify all unique items in this market (buy or sell side)
-                all_items = set(market.buy_orders.keys()) | set(market.sell_orders.keys()) | set(market.last_traded_prices.keys())
-
-                for item_id in all_items:
-                     price_history = list(market.price_history.get(item_id, []))
-                     # Take last 7 ticks or less
-                     history_7d = price_history[-7:]
-
-                     # Volatility Calculation
-                     volatility = 0.0
-                     if len(history_7d) > 1:
-                         mean = sum(history_7d) / len(history_7d)
-                         variance = sum((p - mean) ** 2 for p in history_7d) / len(history_7d)
-                         volatility = math.sqrt(variance)
-
-                     # Check frozen status
-                     min_p, max_p = market.get_dynamic_price_bounds(item_id)
-                     # Treat as frozen if price is inf or circuit breaker active (heuristic)
-                     # Since we don't have explicit state, we assume False unless proven otherwise.
-                     is_frozen = False
-
-                     signal = MarketSignalDTO(
-                         market_id=m_id,
-                         item_id=item_id,
-                         best_bid=market.get_best_bid(item_id),
-                         best_ask=market.get_best_ask(item_id),
-                         last_traded_price=market.get_last_traded_price(item_id),
-                         last_trade_tick=market.get_last_trade_tick(item_id) or -1,
-                         price_history_7d=history_7d,
-                         volatility_7d=volatility,
-                         order_book_depth_buy=len(market.buy_orders.get(item_id, [])),
-                         order_book_depth_sell=len(market.sell_orders.get(item_id, [])),
-                         is_frozen=is_frozen
-                     )
-                     market_signals[item_id] = signal
-
+        # 1. Create Signals using the factory
+        market_signals = self.signal_factory.create_market_signals(state.markets)
         market_snapshot = MarketSnapshotDTO(
             tick=state.time,
             market_signals=market_signals,
             market_data=market_data # Legacy support
         )
 
-        gov = state.government
-        bank = state.bank
-        gov_policy = GovernmentPolicyDTO(
-             income_tax_rate=getattr(gov, "income_tax_rate", 0.1),
-             sales_tax_rate=getattr(state.config_module, "SALES_TAX_RATE", 0.05),
-             corporate_tax_rate=getattr(gov, "corporate_tax_rate", 0.2),
-             base_interest_rate=getattr(bank, "base_rate", 0.05) if bank else 0.05
-        )
+        # 2. Create Base Input DTO using the factory
+        base_input_dto = self.input_factory.create_decision_input(state, self.world_state, market_snapshot)
 
-        # Create Fiscal Context
-        gov_proxy = GovernmentFiscalProxy(gov) if gov else None
-        fiscal_context = FiscalContext(government=gov_proxy) if gov_proxy else None
+        # 3. Dispatch decisions
+        self._dispatch_firm_decisions(state, base_input_dto)
+        self._dispatch_household_decisions(state, base_input_dto)
 
-        macro_financial_context = None
-        if getattr(state.config_module, "MACRO_PORTFOLIO_ADJUSTMENT_ENABLED", False):
-            interest_rate_trend = 0.0
-            if bank:
-                interest_rate_trend = bank.base_rate - self.world_state.last_interest_rate
-                self.world_state.last_interest_rate = bank.base_rate
+        # 4. Commerce Planning
+        self._plan_commerce(state, market_data)
 
-            market_volatility = self.world_state.stock_tracker.get_market_volatility() if self.world_state.stock_tracker else 0.0
+        return state
 
-            # Gov sensory data needed for macro context.
-            # Assuming government has it updated.
-            # Or retrieve from sensory system.
-            # We'll use dummy for now or previous tick data.
-            macro_financial_context = MacroFinancialContext(
-                inflation_rate=0.0,
-                gdp_growth_rate=0.0,
-                market_volatility=market_volatility,
-                interest_rate_trend=interest_rate_trend
-            )
+    def _snapshot_agent_pre_states(self, state: SimulationState):
+        for f in state.firms:
+            if f.is_active: f.pre_state_snapshot = f.get_agent_data()
+        for h in state.households:
+            if h.is_active: h.pre_state_snapshot = h.get_agent_data()
 
-        # Prepare Agent Registry (WO-138)
-        agent_registry = {}
-        if state.government:
-            agent_registry["GOVERNMENT"] = state.government.id
-        if state.central_bank:
-            agent_registry["CENTRAL_BANK"] = state.central_bank.id
-        if state.bank:
-             agent_registry["BANK"] = state.bank.id
-
-        # Create Common Input DTO (Base)
-        base_input_dto = DecisionInputDTO(
-             markets=state.markets,
-             goods_data=state.goods_data,
-             market_data=market_data,
-             current_time=state.time,
-             fiscal_context=fiscal_context,
-             market_snapshot=market_snapshot,
-             government_policy=gov_policy,
-             agent_registry=agent_registry
-        )
-
+    def _dispatch_firm_decisions(self, state: SimulationState, base_input_dto: DecisionInputDTO):
         from dataclasses import replace
+        firm_pre_states = {}
 
-        # 1. Firms
         for firm in state.firms:
-            if firm.is_active:
-                if hasattr(firm.decision_engine, 'ai_engine') and firm.decision_engine.ai_engine:
-                    pre_strategic_state = (
-                        firm.decision_engine.ai_engine._get_strategic_state(
-                            firm.get_agent_data(), market_data
-                        )
+            if not firm.is_active: continue
+
+            if hasattr(firm.decision_engine, 'ai_engine') and firm.decision_engine.ai_engine:
+                pre_strategic_state = (
+                    firm.decision_engine.ai_engine._get_strategic_state(
+                        firm.get_agent_data(), state.market_data
                     )
-                    pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(
-                        firm.decision_engine.ai_engine.chosen_intention,
-                        firm.get_agent_data(),
-                        market_data,
-                    )
-                    firm_pre_states[firm.id] = {
-                        "pre_strategic_state": pre_strategic_state,
-                        "pre_tactical_state": pre_tactical_state,
-                        "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
-                        "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
-                    }
-
-                stress_config = self.world_state.stress_scenario_config
-
-                # DTO Refactor: Expect DecisionOutputDTO
-                firm_input = replace(base_input_dto, stress_scenario_config=stress_config)
-                decision_output = firm.make_decision(firm_input)
-
-                # Check if it's new DTO or legacy tuple
-                if hasattr(decision_output, 'orders'):
-                    firm_orders = decision_output.orders
-                    # metadata ignored or used if needed
-                else:
-                    # Fallback for unmigrated code (Tuple)
-                    firm_orders, action_vector = decision_output
-
-                for order in firm_orders:
-                    target_market = state.markets.get(order.market_id)
-                    if target_market:
-                        # WO-024: Capture immediate transactions (e.g. LoanMarket)
-                        new_txs = target_market.place_order(order, state.time)
-                        if new_txs:
-                            state.transactions.extend(new_txs)
-
-        # 2. Households
-        for household in state.households:
-            if household.is_active:
-                if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
-                    pre_strategic_state = (
-                        household.decision_engine.ai_engine._get_strategic_state(
-                            household.get_agent_data(), market_data
-                        )
-                    )
-                    household_pre_states[household.id] = {
-                        "pre_strategic_state": pre_strategic_state,
-                    }
-
-                stress_config = self.world_state.stress_scenario_config
-                # DTO Refactor: Expect DecisionOutputDTO
-                household_input = replace(
-                    base_input_dto,
-                    stress_scenario_config=stress_config,
-                    macro_context=macro_financial_context
                 )
-                decision_output = household.make_decision(household_input)
+                pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(
+                    firm.decision_engine.ai_engine.chosen_intention,
+                    firm.get_agent_data(),
+                    state.market_data,
+                )
+                firm_pre_states[firm.id] = {
+                    "pre_strategic_state": pre_strategic_state,
+                    "pre_tactical_state": pre_tactical_state,
+                    "chosen_intention": firm.decision_engine.ai_engine.chosen_intention,
+                    "chosen_tactic": firm.decision_engine.ai_engine.last_chosen_tactic,
+                }
 
+            firm_input = replace(base_input_dto, stress_scenario_config=self.world_state.stress_scenario_config)
+            decision_output = firm.make_decision(firm_input)
 
-                if hasattr(decision_output, 'orders'):
-                    household_orders = decision_output.orders
-                    metadata = decision_output.metadata
+            if hasattr(decision_output, 'orders'):
+                firm_orders = decision_output.orders
+            else:
+                firm_orders, action_vector = decision_output
 
-                    # Assume metadata contains action_vector if needed, or handle if it is the vector itself
-                    # Since AIDrivenHouseholdDecisionEngine returns vector as second element,
-                    # metadata should be that vector.
-
-                    if hasattr(metadata, 'work_aggressiveness'):
-                        action_vector = metadata
-                        work_aggressiveness = action_vector.work_aggressiveness
-                    else:
-                         work_aggressiveness = 0.5
-                else:
-                    # Legacy Tuple
-                    household_orders, action_vector = decision_output
-                    if hasattr(action_vector, 'work_aggressiveness'):
-                        work_aggressiveness = action_vector.work_aggressiveness
-                    else:
-                        work_aggressiveness = 0.5
-
-                max_work_hours = state.config_module.MAX_WORK_HOURS
-                shopping_hours = getattr(state.config_module, "SHOPPING_HOURS", 2.0)
-                hours_per_tick = getattr(state.config_module, "HOURS_PER_TICK", 24.0)
-
-                work_hours = work_aggressiveness * max_work_hours
-                leisure_hours = max(0.0, hours_per_tick - work_hours - shopping_hours)
-                household_time_allocation[household.id] = leisure_hours
-
-                for order in household_orders:
-                    # WO-053: Force deflationary pressure on basic_food
-                    if hasattr(order, "item_id") and order.item_id == "basic_food" and order.side == "BUY": # Update order_type -> side
-                         # Check for generic scenario parameter via config injection
-                         deflationary_multiplier = getattr(state.config_module, "DEFLATIONARY_PRESSURE_MULTIPLIER", None)
-
-                         if deflationary_multiplier is not None:
-                             current_price = market_data.get("basic_food_current_sell_price", 5.0)
-                             # Update price -> price_limit (OrderDTO) or use alias
-                             # OrderDTO has 'price' property alias
-                             # But Order dataclass (alias) might not if it's just OrderDTO
-                             # OrderDTO has price property.
-                             # But we might need to construct a new order if it's frozen?
-                             # OrderDTO is frozen=True.
-                             # So we must replace.
-                             from dataclasses import replace
-                             new_price = min(order.price, max(0.1, current_price * float(deflationary_multiplier)))
-                             order = replace(order, price_limit=new_price)
-
-                    if order.side == "INVEST" and order.market_id == "admin": # Update order_type -> side
-                        if self.world_state.firm_system:
-                            self.world_state.firm_system.spawn_firm(state, household)
-                        else:
-                            state.logger.warning(f"SKIPPED_INVESTMENT | Agent {household.id} tried startup but firm_system missing.")
-                        continue
-
-                    target_market_id = order.market_id
-                    if order.side in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]: # Update order_type -> side
-                        target_market_id = "loan_market"
-                    elif hasattr(order, "item_id") and order.item_id in ["deposit", "currency"]:
-                        target_market_id = "loan_market"
-
-                    household_target_market = state.markets.get(target_market_id)
-
-                    if household_target_market:
-                        # WO-024: Capture immediate transactions (e.g. LoanMarket)
-                        new_txs = household_target_market.place_order(order, state.time)
-                        if new_txs:
-                            state.transactions.extend(new_txs)
+            for order in firm_orders:
+                target_market = state.markets.get(order.market_id)
+                if target_market:
+                    new_txs = target_market.place_order(order, state.time)
+                    if new_txs:
+                        state.transactions.extend(new_txs)
 
         state.firm_pre_states = firm_pre_states
+
+    def _dispatch_household_decisions(self, state: SimulationState, base_input_dto: DecisionInputDTO):
+        from dataclasses import replace
+        household_pre_states = {}
+        household_time_allocation = {}
+
+        for household in state.households:
+            if not household.is_active: continue
+
+            if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
+                pre_strategic_state = (
+                    household.decision_engine.ai_engine._get_strategic_state(
+                        household.get_agent_data(), state.market_data
+                    )
+                )
+                household_pre_states[household.id] = {
+                    "pre_strategic_state": pre_strategic_state,
+                }
+
+            household_input = replace(
+                base_input_dto,
+                stress_scenario_config=self.world_state.stress_scenario_config,
+                macro_context=base_input_dto.macro_context
+            )
+            decision_output = household.make_decision(household_input)
+
+            if hasattr(decision_output, 'orders'):
+                household_orders = decision_output.orders
+                metadata = decision_output.metadata
+                if hasattr(metadata, 'work_aggressiveness'):
+                     work_aggressiveness = metadata.work_aggressiveness
+                else:
+                     work_aggressiveness = 0.5
+            else:
+                household_orders, action_vector = decision_output
+                if hasattr(action_vector, 'work_aggressiveness'):
+                    work_aggressiveness = action_vector.work_aggressiveness
+                else:
+                    work_aggressiveness = 0.5
+
+            max_work_hours = state.config_module.MAX_WORK_HOURS
+            shopping_hours = getattr(state.config_module, "SHOPPING_HOURS", 2.0)
+            hours_per_tick = getattr(state.config_module, "HOURS_PER_TICK", 24.0)
+
+            work_hours = work_aggressiveness * max_work_hours
+            leisure_hours = max(0.0, hours_per_tick - work_hours - shopping_hours)
+            household_time_allocation[household.id] = leisure_hours
+
+            for order in household_orders:
+                self._process_household_order(state, household, order, state.market_data)
+
         state.household_pre_states = household_pre_states
         state.household_time_allocation = household_time_allocation
 
-        # Commerce Planning
+    def _process_household_order(self, state: SimulationState, household: Household, order: Order, market_data: Dict[str, Any]):
+        # WO-053: Force deflationary pressure on basic_food
+        if hasattr(order, "item_id") and order.item_id == "basic_food" and order.side == "BUY":
+                deflationary_multiplier = getattr(state.config_module, "DEFLATIONARY_PRESSURE_MULTIPLIER", None)
+
+                if deflationary_multiplier is not None:
+                    current_price = market_data.get("basic_food_current_sell_price", 5.0)
+                    from dataclasses import replace
+                    new_price = min(order.price_limit, max(0.1, current_price * float(deflationary_multiplier)))
+                    order = replace(order, price_limit=new_price)
+
+        if order.side == "INVEST" and order.market_id == "admin":
+            if self.world_state.firm_system:
+                self.world_state.firm_system.spawn_firm(state, household)
+            else:
+                state.logger.warning(f"SKIPPED_INVESTMENT | Agent {household.id} tried startup but firm_system missing.")
+            return
+
+        target_market_id = self._get_redirected_market(order)
+        household_target_market = state.markets.get(target_market_id)
+
+        if household_target_market:
+            new_txs = household_target_market.place_order(order, state.time)
+            if new_txs:
+                state.transactions.extend(new_txs)
+
+    def _get_redirected_market(self, order: Order) -> str:
+        target_market_id = order.market_id
+        if order.side in ["DEPOSIT", "WITHDRAW", "LOAN_REQUEST", "REPAYMENT"]:
+            target_market_id = "loan_market"
+        elif hasattr(order, "item_id") and order.item_id in ["deposit", "currency"]:
+            target_market_id = "loan_market"
+        return target_market_id
+
+    def _plan_commerce(self, state: SimulationState, market_data: Dict[str, Any]):
+         # Commerce Planning
         current_vacancies = 0
         labor_market = state.markets.get("labor")
         if labor_market and isinstance(labor_market, OrderBookMarket):
@@ -473,7 +382,7 @@ class Phase1_Decision(IPhaseStrategy):
             "households": state.households,
             "agents": state.agents,
             "breeding_planner": self.world_state.breeding_planner,
-            "household_time_allocation": household_time_allocation,
+            "household_time_allocation": state.household_time_allocation,
             "market_data": consumption_market_data,
             "config": state.config_module,
             "time": state.time,
