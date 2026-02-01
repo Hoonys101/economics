@@ -57,6 +57,7 @@ class ActionProcessor:
                 logger=self.world_state.logger,
                 ai_training_manager=getattr(self.world_state, "ai_training_manager", None),
                 ai_trainer=getattr(self.world_state, "ai_trainer", None),
+                settlement_system=getattr(self.world_state, "settlement_system", None),
                 next_agent_id=self.world_state.next_agent_id,
                 real_estate_units=self.world_state.real_estate_units,
                 transactions=transactions
