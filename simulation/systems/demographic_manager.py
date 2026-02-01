@@ -269,8 +269,15 @@ class DemographicManager:
 
     def handle_inheritance(self, deceased_agent: Household, simulation: Any):
         """
+        [DEPRECATED] This method is deprecated and should not be used.
+        Use InheritanceManager via TransactionProcessor instead.
         Distribute assets to children with Zero-Sum integrity.
         """
+        self.logger.warning(
+            f"DEPRECATED_METHOD_CALL | DemographicManager.handle_inheritance called for {deceased_agent.id}. "
+            "This logic is superseded by InheritanceManager and TransactionProcessor."
+        )
+
         # Ensure SettlementSystem is available
         if not getattr(simulation, "settlement_system", None):
             raise RuntimeError("SettlementSystem not found. Cannot execute inheritance.")

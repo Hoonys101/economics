@@ -19,6 +19,10 @@ class TaxationSystem:
     def __init__(self, config_module: Any):
         self.config_module = config_module
 
+    def _round_currency(self, amount: float) -> float:
+        """Rounds amount to 2 decimal places to prevent floating point pollution."""
+        return round(amount, 2)
+
     def calculate_income_tax(self, income: float, survival_cost: float, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> float:
         """
         Calculates income tax based on the provided parameters.
@@ -27,39 +31,42 @@ class TaxationSystem:
         if income <= 0:
             return 0.0
 
-        if tax_mode == "FLAT":
-            return income * current_income_tax_rate
-
-        tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
-        if not tax_brackets:
-            taxable = max(0, income - survival_cost)
-            return taxable * current_income_tax_rate
-
         raw_tax = 0.0
-        previous_limit_abs = 0.0
-        for multiple, rate in tax_brackets:
-            limit_abs = multiple * survival_cost
-            upper_bound = min(income, limit_abs)
-            lower_bound = max(0, previous_limit_abs)
-            taxable_amount = max(0.0, upper_bound - lower_bound)
 
-            if taxable_amount > 0:
-                raw_tax += taxable_amount * rate
+        if tax_mode == "FLAT":
+            raw_tax = income * current_income_tax_rate
+        else:
+            tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
+            if not tax_brackets:
+                taxable = max(0, income - survival_cost)
+                raw_tax = taxable * current_income_tax_rate
+            else:
+                previous_limit_abs = 0.0
+                for multiple, rate in tax_brackets:
+                    limit_abs = multiple * survival_cost
+                    upper_bound = min(income, limit_abs)
+                    lower_bound = max(0, previous_limit_abs)
+                    taxable_amount = max(0.0, upper_bound - lower_bound)
 
-            if income <= limit_abs:
-                break
-            previous_limit_abs = limit_abs
+                    if taxable_amount > 0:
+                        raw_tax += taxable_amount * rate
 
-        base_rate_config = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
-        if base_rate_config > 0:
-            adjustment_factor = current_income_tax_rate / base_rate_config
-            return raw_tax * adjustment_factor
+                    if income <= limit_abs:
+                        break
+                    previous_limit_abs = limit_abs
 
-        return raw_tax
+                base_rate_config = getattr(self.config_module, "TAX_RATE_BASE", 0.1)
+                if base_rate_config > 0:
+                    adjustment_factor = current_income_tax_rate / base_rate_config
+                    raw_tax = raw_tax * adjustment_factor
+
+        return self._round_currency(raw_tax)
 
     def calculate_corporate_tax(self, profit: float, current_corporate_tax_rate: float) -> float:
         """Calculates corporate tax."""
-        return profit * current_corporate_tax_rate if profit > 0 else 0.0
+        if profit <= 0:
+            return 0.0
+        return self._round_currency(profit * current_corporate_tax_rate)
 
     def calculate_tax_intents(
         self,
@@ -79,7 +86,8 @@ class TaxationSystem:
         # 1. Sales Tax (Goods)
         if transaction.transaction_type == "goods":
             sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
-            tax_amount = trade_value * sales_tax_rate
+            # Calculate raw then round
+            tax_amount = self._round_currency(trade_value * sales_tax_rate)
 
             if tax_amount > 0:
                 intents.append(TaxIntent(
@@ -109,6 +117,7 @@ class TaxationSystem:
             current_rate = getattr(government, "income_tax_rate", 0.1)
             tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
 
+            # calculate_income_tax already rounds
             tax_amount = self.calculate_income_tax(trade_value, survival_cost, current_rate, tax_mode)
 
             if tax_amount > 0:
@@ -124,16 +133,17 @@ class TaxationSystem:
                     reason=reason
                 ))
 
-        # 3. Escheatment (If handled here, though it's usually 100% transfer)
-        # TransactionProcessor handled 'escheatment' as "collect_tax(trade_value)".
-        # This implies it's a transfer to Government.
-        # If we handle it here:
+        # 3. Escheatment
         elif transaction.transaction_type == "escheatment":
-             intents.append(TaxIntent(
-                payer_id=buyer.id, # Agent
-                payee_id=government.id,
-                amount=trade_value,
-                reason="escheatment"
-            ))
+             # Escheatment usually takes the whole trade_value (assets)
+             # But let's round it to be safe
+             amount = self._round_currency(trade_value)
+             if amount > 0:
+                 intents.append(TaxIntent(
+                    payer_id=buyer.id, # Agent
+                    payee_id=government.id,
+                    amount=amount,
+                    reason="escheatment"
+                ))
 
         return intents

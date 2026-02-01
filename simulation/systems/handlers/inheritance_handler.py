@@ -23,7 +23,10 @@ class InheritanceHandler(ITransactionHandler):
         deceased_agent = buyer
 
         heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
-        total_cash = deceased_agent.assets
+
+        # Round total cash to 2 decimals to prevent floating point dust propagation.
+        # Any residual dust (< 0.01) remains on the deceased agent (effectively burnt or ignored).
+        total_cash = round(deceased_agent.assets, 2)
 
         if total_cash <= 0 or not heir_ids:
             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")
@@ -46,11 +49,11 @@ class InheritanceHandler(ITransactionHandler):
                 credits.append((heir, base_amount, "inheritance_distribution"))
                 distributed_sum += base_amount
 
-        # Last heir gets the remainder to ensure zero-sum
+        # Last heir gets the remainder to ensure zero-sum of the rounded total
         last_heir_id = heir_ids[-1]
         last_heir = agents.get(last_heir_id)
         if last_heir:
-            remaining_amount = total_cash - distributed_sum
+            remaining_amount = round(total_cash - distributed_sum, 2)
             # Ensure we don't transfer negative amounts or dust if something went wrong
             if remaining_amount > 0:
                 credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))

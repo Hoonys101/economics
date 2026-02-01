@@ -14,7 +14,8 @@ class GoodsTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = tx.quantity * tx.price
+        # Prevent floating point pollution by rounding to 2 decimal places (cents)
+        trade_value = round(tx.quantity * tx.price, 2)
 
         # 1. Prepare Settlement (Calculate tax intents)
         # Assuming taxation_system is available in context
@@ -30,9 +31,13 @@ class GoodsTransactionHandler(ITransactionHandler):
         total_cost = trade_value
 
         for intent in intents:
+            # Tax amounts are already rounded by TaxationSystem
             credits.append((context.government, intent.amount, intent.reason))
             if intent.payer_id == buyer.id:
                 total_cost += intent.amount
+
+        # Ensure total_cost is clean (though sum of rounded values should be okay, float sum can drift)
+        total_cost = round(total_cost, 2)
 
         # Solvency Check (Legacy compatibility)
         if hasattr(buyer, 'check_solvency'):
