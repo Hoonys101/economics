@@ -2,17 +2,14 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 import logging
 
-from modules.household.api import IDecisionUnit
-from modules.household.dtos import EconStateDTO, EconContextDTO
-from simulation.dtos import StressScenarioConfig, DecisionContext, MacroFinancialContext
+from modules.household.api import IDecisionUnit, OrchestrationContextDTO
+from modules.household.dtos import EconStateDTO
+from simulation.dtos import StressScenarioConfig
 from simulation.models import Order
 from simulation.ai.household_system2 import HousingDecisionInputs
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import HouseholdConfigDTO
-    from simulation.decisions.base_decision_engine import BaseDecisionEngine
-    from simulation.interfaces.market_interface import IMarket
-    from simulation.ai.api import Tactic, Aggressiveness
 
 logger = logging.getLogger(__name__)
 
@@ -22,44 +19,11 @@ class DecisionUnit(IDecisionUnit):
     Wraps DecisionEngine and System 2 logic (Orchestration).
     """
 
-    def make_decision(
-        self,
-        state: EconStateDTO,
-        decision_engine: BaseDecisionEngine,
-        context: DecisionContext,
-        macro_context: Optional[MacroFinancialContext],
-        markets: Dict[str, IMarket],
-        market_data: Dict[str, Any],
-        config: HouseholdConfigDTO
-    ) -> Tuple[EconStateDTO, List[Order], Tuple[Tactic, Aggressiveness]]:
-
-        # 1. Run Decision Engine
-        decision_output = decision_engine.make_decisions(context, macro_context)
-        
-        # Handle both DTO and legacy Tuple
-        if hasattr(decision_output, "orders"):
-            orders = decision_output.orders
-            chosen_tactic_tuple = decision_output.metadata
-        else:
-            orders, chosen_tactic_tuple = decision_output
-
-        # 2. Orchestrate / Refine Orders (System 2 Logic)
-        econ_context = EconContextDTO(markets, market_data, context.current_time)
-        stress_scenario_config = context.stress_scenario_config
-
-        new_state, refined_orders = self.orchestrate_economic_decisions(
-            state, econ_context, orders, stress_scenario_config, config
-        )
-
-        return new_state, refined_orders, chosen_tactic_tuple
-
     def orchestrate_economic_decisions(
         self,
         state: EconStateDTO,
-        context: EconContextDTO,
-        orders: List[Order],
-        stress_scenario_config: Optional[StressScenarioConfig] = None,
-        config: Optional[HouseholdConfigDTO] = None
+        context: OrchestrationContextDTO,
+        initial_orders: List[Order]
     ) -> Tuple[EconStateDTO, List[Order]]:
         """
         Refines orders and updates internal economic state.
@@ -67,24 +31,28 @@ class DecisionUnit(IDecisionUnit):
         Logic migrated from EconComponent.orchestrate_economic_decisions.
         """
         new_state = state.copy()
-        refined_orders = list(orders) # Copy list
+        refined_orders = list(initial_orders) # Copy list
 
-        market_data = context.market_data
-        current_time = context.current_time
-        markets = context.markets
+        # Unpack from DTO
+        market_snapshot = context["market_snapshot"]
+        current_time = context["current_time"]
+        config = context["config"]
+        stress_scenario_config = context["stress_scenario_config"]
 
         # 1. System 2 Housing Decision Logic (Ported from HouseholdSystem2Planner)
         if new_state.is_homeless or current_time % 30 == 0:
-            housing_market = market_data.get("housing_market", {})
-            loan_market = market_data.get("loan_market", {})
+            housing_snapshot = market_snapshot["housing"]
+            loan_snapshot = market_snapshot["loan"]
 
-            market_rent = housing_market.get("avg_rent_price", 100.0)
-            market_price = housing_market.get("avg_sale_price")
-            if not market_price:
+            market_rent = housing_snapshot["avg_rent_price"]
+            market_price = housing_snapshot["avg_sale_price"]
+
+            # Legacy fallback
+            if market_price <= 0.001:
                  market_price = market_rent * 12 * 20.0
 
             new_state.housing_price_history.append(market_price)
-            risk_free_rate = loan_market.get("interest_rate", 0.05)
+            risk_free_rate = loan_snapshot["interest_rate"]
 
             price_growth = 0.0
             if len(new_state.housing_price_history) >= 2:
@@ -156,9 +124,7 @@ class DecisionUnit(IDecisionUnit):
             new_state.housing_target_mode = decision
 
         # 2. Shadow Labor Market Logic
-        avg_market_wage = 0.0
-        if market_data and "labor" in market_data:
-             avg_market_wage = market_data["labor"].get("avg_wage", 0.0)
+        avg_market_wage = market_snapshot["labor"]["avg_wage"]
 
         if avg_market_wage > 0:
             new_state.market_wage_history.append(avg_market_wage)
@@ -177,32 +143,27 @@ class DecisionUnit(IDecisionUnit):
 
         # 3. Generate Housing Orders
         if new_state.housing_target_mode == "BUY" and new_state.is_homeless:
-            housing_market_obj = markets.get("housing")
-            if housing_market_obj:
-                target_unit_id = None
-                best_price = float('inf')
+            target_unit = None
+            best_price = float('inf')
 
-                # Check for available units (Assuming generic access to sell_orders)
-                if hasattr(housing_market_obj, "sell_orders"):
-                    for item_id, sell_orders in housing_market_obj.sell_orders.items():
-                        if item_id.startswith("unit_") and sell_orders:
-                            ask_price = sell_orders[0].price
-                            if ask_price < best_price:
-                                best_price = ask_price
-                                target_unit_id = item_id
+            # Access market data ONLY from the snapshot DTO
+            for unit_dto in market_snapshot["housing"]["for_sale_units"]:
+                if unit_dto["price"] < best_price:
+                    best_price = unit_dto["price"]
+                    target_unit = unit_dto
 
-                if target_unit_id:
-                     down_payment = best_price * 0.2
-                     if new_state.assets >= down_payment:
-                         buy_order = Order(
-                             agent_id=state.portfolio.owner_id, # Using owner_id from portfolio as proxy for ID
-                             side="BUY",
-                             item_id=target_unit_id,
-                             quantity=1.0,
-                             price_limit=best_price,
-                             market_id="housing"
-                         )
-                         refined_orders.append(buy_order)
+            if target_unit:
+                 down_payment = best_price * 0.2
+                 if new_state.assets >= down_payment:
+                     buy_order = Order(
+                         agent_id=state.portfolio.owner_id,
+                         side="BUY",
+                         item_id=target_unit["unit_id"],
+                         quantity=1.0,
+                         price_limit=best_price,
+                         market_id="housing"
+                     )
+                     refined_orders.append(buy_order)
 
         # 4. Panic Selling
         if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':

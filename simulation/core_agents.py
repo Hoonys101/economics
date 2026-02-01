@@ -35,6 +35,11 @@ from modules.household.dtos import (
     HouseholdStateDTO, CloningRequestDTO, EconContextDTO,
     BioStateDTO, EconStateDTO, SocialStateDTO
 )
+from modules.household.api import (
+    HousingMarketUnitDTO, HousingMarketSnapshotDTO,
+    LoanMarketSnapshotDTO, LaborMarketSnapshotDTO,
+    MarketSnapshotDTO, OrchestrationContextDTO
+)
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -706,15 +711,73 @@ class Household(BaseAgent, ILearningAgent):
             agent_registry=agent_registry or {}
         )
 
-        # Delegate to DecisionUnit
-        self._econ_state, refined_orders, chosen_tactic_tuple = self.decision_unit.make_decision(
-            state=self._econ_state,
-            decision_engine=self.decision_engine,
-            context=context,
-            macro_context=macro_context,
-            markets=markets,
-            market_data=market_data,
+        # 2. Run Decision Engine (Logic moved from DecisionUnit.make_decision)
+        decision_output = self.decision_engine.make_decisions(context, macro_context)
+
+        # Handle both DTO and legacy Tuple
+        if hasattr(decision_output, "orders"):
+            initial_orders = decision_output.orders
+            chosen_tactic_tuple = decision_output.metadata
+        else:
+            initial_orders, chosen_tactic_tuple = decision_output
+
+        # 3. Construct Orchestration DTOs (ACL)
+
+        # Housing Snapshot
+        housing_market_obj = markets.get("housing")
+        for_sale_units = []
+        # Safely access sell_orders if available (OrderBookMarket)
+        if housing_market_obj and hasattr(housing_market_obj, "sell_orders"):
+             for item_id, sell_orders in housing_market_obj.sell_orders.items():
+                if item_id.startswith("unit_") and sell_orders:
+                    # Taking the best price (lowest ask)
+                    order = sell_orders[0]
+                    # Quality is not on OrderDTO, assume default 1.0 or TODO: fetch from unit registry
+                    quality = 1.0
+
+                    for_sale_units.append(HousingMarketUnitDTO(
+                        unit_id=item_id,
+                        price=order.price_limit,
+                        quality=quality
+                    ))
+
+        housing_data = market_data.get("housing_market", {})
+        housing_snapshot = HousingMarketSnapshotDTO(
+            for_sale_units=for_sale_units,
+            avg_rent_price=housing_data.get("avg_rent_price", 100.0),
+            avg_sale_price=housing_data.get("avg_sale_price", 24000.0)
+        )
+
+        # Loan Snapshot
+        loan_data = market_data.get("loan_market", {})
+        loan_snapshot = LoanMarketSnapshotDTO(
+            interest_rate=loan_data.get("interest_rate", 0.05)
+        )
+
+        # Labor Snapshot
+        labor_data = market_data.get("labor", {})
+        labor_snapshot = LaborMarketSnapshotDTO(
+            avg_wage=labor_data.get("avg_wage", 0.0)
+        )
+
+        market_snapshot_dto = MarketSnapshotDTO(
+            housing=housing_snapshot,
+            loan=loan_snapshot,
+            labor=labor_snapshot
+        )
+
+        orchestration_context = OrchestrationContextDTO(
+            market_snapshot=market_snapshot_dto,
+            current_time=current_time,
+            stress_scenario_config=stress_scenario_config,
             config=self.config
+        )
+
+        # 4. Delegate to DecisionUnit (Stateless)
+        self._econ_state, refined_orders = self.decision_unit.orchestrate_economic_decisions(
+            state=self._econ_state,
+            context=orchestration_context,
+            initial_orders=initial_orders
         )
 
         return refined_orders, chosen_tactic_tuple

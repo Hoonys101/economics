@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union, TypedDict
 
 if TYPE_CHECKING:
     from simulation.dtos import LeisureEffectDTO, ConsumptionResult, LaborResult, StressScenarioConfig
@@ -10,6 +10,51 @@ if TYPE_CHECKING:
         BioStateDTO, EconStateDTO, SocialStateDTO,
         CloningRequestDTO, EconContextDTO
     )
+
+# --- Data Contracts for Market Snapshots (NEW) ---
+
+class HousingMarketUnitDTO(TypedDict):
+    """Represents a single, sellable housing unit in the market."""
+    unit_id: str
+    price: float
+    quality: float
+
+class HousingMarketSnapshotDTO(TypedDict):
+    """Contains a snapshot of the housing market's state."""
+    for_sale_units: List[HousingMarketUnitDTO]
+    avg_rent_price: float
+    avg_sale_price: float
+
+class LoanMarketSnapshotDTO(TypedDict):
+    """Contains a snapshot of the loan market's state."""
+    interest_rate: float
+
+class LaborMarketSnapshotDTO(TypedDict):
+    """Contains a snapshot of the labor market's state."""
+    avg_wage: float
+
+class MarketSnapshotDTO(TypedDict):
+    """
+    A comprehensive, data-only snapshot of all relevant markets.
+    This DTO replaces the need to pass live market objects and the loose 'market_data' dict.
+    """
+    housing: HousingMarketSnapshotDTO
+    loan: LoanMarketSnapshotDTO
+    labor: LaborMarketSnapshotDTO
+
+
+# --- Updated Context for Decision Making (NEW) ---
+
+class OrchestrationContextDTO(TypedDict):
+    """
+    Data-only context for the DecisionUnit's orchestration logic.
+    Replaces the legacy EconContextDTO that held live objects.
+    """
+    market_snapshot: MarketSnapshotDTO
+    current_time: int
+    stress_scenario_config: Optional["StressScenarioConfig"]
+    config: "HouseholdConfigDTO"
+
 
 class IBioComponent(ABC):
     """Interface for stateless Biological Component."""
@@ -66,29 +111,10 @@ class IDecisionUnit(ABC):
     def orchestrate_economic_decisions(
         self,
         state: EconStateDTO,
-        context: EconContextDTO,
-        orders: List[Order],
-        stress_scenario_config: Optional[StressScenarioConfig] = None,
-        config: Optional[HouseholdConfigDTO] = None
+        context: OrchestrationContextDTO,
+        initial_orders: List[Order]
     ) -> Tuple[EconStateDTO, List[Order]]:
         """Refines orders and updates internal economic state (e.g. shadow wages)."""
-        pass
-
-    @abstractmethod
-    def make_decision(
-        self,
-        state: EconStateDTO,
-        decision_engine: Any, # BaseDecisionEngine
-        context: Any, # DecisionContext
-        macro_context: Any, # MacroFinancialContext
-        markets: Dict[str, Any], # IMarket
-        market_data: Dict[str, Any],
-        config: HouseholdConfigDTO
-    ) -> Tuple[EconStateDTO, List[Order], Any]: # Any is (Tactic, Aggressiveness)
-        """
-        Coordinated decision making process.
-        Returns: (Updated Econ State, Refined Orders, (Tactic, Aggressiveness))
-        """
         pass
 
 class IEconComponent(ABC):
