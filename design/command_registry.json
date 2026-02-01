@@ -3,11 +3,5 @@
     "session": "Clean Room Era",
     "updated": "2026-01-30",
     "author": "Antigravity"
-  },
-  "mission-liq-td181": {
-    "command": "create",
-    "instruction": "Enforce 100% DTO flow from Household to DecisionUnit. Refactor DecisionUnit to be stateless as per spec_td181_abstraction_leak.md.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "[LIQUIDATION] TD-181/182 Abstraction Leak Resolution",
-    "file": "design/3_work_artifacts/spec_td181_abstraction_leak.md"
   }
 }
