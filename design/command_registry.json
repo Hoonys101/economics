@@ -4,10 +4,16 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FixViewModelDI": {
+  "HousingPlannerImplementation": {
     "command": "create",
-    "instruction": "Refactor AgentStateViewModel, EconomicIndicatorsViewModel, and MarketHistoryViewModel to strictly require SimulationRepository via constructor injection, removing default instantiation logic. Refer to the findings in the DI Audit Report.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Refactor ViewModels for DI",
-    "file": "reports/temp/report_20260201_194625_Identify_all_ViewMod.md"
+    "instruction": "Implement the HousingPlanner as specified in spec_td065_housing_planner.md. Consolidate duplicated decision logic from DecisionUnit and HouseholdSystem2Planner into this new component.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Implement Unified HousingPlanner",
+    "file": "design/3_work_artifacts/specs/spec_td065_housing_planner.md"
+  },
+  "DecisionSignatureRefactor": {
+    "command": "create",
+    "instruction": "Refactor agent make_decision method to use immutable MarketSnapshotDTO as specified in spec_td182_immutable_market.md. Ensure no raw market objects are accessed.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Refactor make_decision Signature",
+    "file": "design/3_work_artifacts/specs/spec_td182_immutable_market.md"
   }
 }

@@ -41,7 +41,6 @@ This session marked a significant leap in architectural maturity, resolving crit
 - **High Priority:**
   - **Fix Orphaned Housing Logic (WO-HousingRefactor):** The mortgage processing logic in `HousingSystem` is currently dead code. It must be extracted into a `HousingTransactionHandler` and registered with the `TransactionManager` to make the housing market and credit system functional.
   - **Fix DI in ViewModels (TDL-029):** ViewModels are creating their own `SimulationRepository` instances, which breaks dependency injection. They must be refactored to receive the repository as a constructor argument.
-  - **Add Missing Dependencies (TDL-029):** The `requirements.txt` file is missing `python-dotenv`, `joblib`, and other dependencies, causing environment inconsistencies.
 
 - **Medium Priority:**
   - **Consolidate Housing Decision Logic (TD-065):** Logic for housing decisions is duplicated between `DecisionUnit` and `HouseholdSystem2Planner`. This must be consolidated to a single source of truth.

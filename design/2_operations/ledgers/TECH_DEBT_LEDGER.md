@@ -51,8 +51,8 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
-| TDL-029 | 2026-01-31 | ViewModel DI Violation (Repository) | Tight Coupling | **ACTIVE** | 
-| TD-192 | 2026-02-01 | ActionProcessor Transient State Synchronization Risk | Manual sync of `SimulationState` needed; regression risk | **ACTIVE** | ViewModels create own repository instances. |
+| TDL-029 | 2026-01-31 | ViewModel DI Violation (Repository) | Tight Coupling | **RESOLVED** | ViewModels correctly receive SimulationRepository via DI. |
+| TD-192 | 2026-02-01 | ActionProcessor Transient State Synchronization Risk | Regression risk | **ACTIVE** | Manual sync of `SimulationState` needed. |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 

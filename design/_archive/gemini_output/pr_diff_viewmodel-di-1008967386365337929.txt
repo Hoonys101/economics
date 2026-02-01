@@ -1,0 +1,89 @@
+diff --git a/communications/insights/TD-066_ViewModel_DI_Refactor.md b/communications/insights/TD-066_ViewModel_DI_Refactor.md
+new file mode 100644
+index 0000000..6e64423
+--- /dev/null
++++ b/communications/insights/TD-066_ViewModel_DI_Refactor.md
+@@ -0,0 +1,21 @@
++# Technical Debt: Implicit Dependency Instantiation in ViewModels
++
++## Context
++Three ViewModel classes (`AgentStateViewModel`, `EconomicIndicatorsViewModel`, `MarketHistoryViewModel`) were found to implicitly instantiate `SimulationRepository` within their constructors if a repository was not provided.
++
++## Problem
++- **Coupling**: The ViewModels were tightly coupled to the specific `SimulationRepository` implementation.
++- **Testability**: Unit testing was harder because the classes created their own dependencies, requiring patching of `SimulationRepository` constructor rather than simple injection.
++- **Inconsistency**: This pattern violated the Dependency Injection (DI) principle observed in `SnapshotViewModel`.
++
++## Solution
++- Refactored `__init__` methods to strictly require `SimulationRepository` as an argument.
++- Removed the default `None` value and the conditional instantiation logic.
++- This enforces the caller to provide the dependency, making the dependency graph explicit.
++
++## Impact
++- **Positive**: improved testability, clearer dependency graph, adherence to SOLID principles (DIP).
++- **Negative**: Callers must now instantiate `SimulationRepository` before creating these ViewModels (which is desired behavior).
++
++## References
++- DI Audit Report (2026-02-01)
+diff --git a/simulation/viewmodels/agent_state_viewmodel.py b/simulation/viewmodels/agent_state_viewmodel.py
+index 6c24871..af3bf95 100644
+--- a/simulation/viewmodels/agent_state_viewmodel.py
++++ b/simulation/viewmodels/agent_state_viewmodel.py
+@@ -9,8 +9,8 @@ class AgentStateViewModel:
+     SimulationRepository를 통해 데이터를 조회하고, 필요한 형태로 가공합니다.
+     """
+ 
+-    def __init__(self, repository: Optional[SimulationRepository] = None):
+-        self.repository = repository if repository else SimulationRepository()
++    def __init__(self, repository: SimulationRepository):
++        self.repository = repository
+ 
+     def get_agent_states(
+         self,
+diff --git a/simulation/viewmodels/economic_indicators_viewmodel.py b/simulation/viewmodels/economic_indicators_viewmodel.py
+index 87d880a..4a6f01e 100644
+--- a/simulation/viewmodels/economic_indicators_viewmodel.py
++++ b/simulation/viewmodels/economic_indicators_viewmodel.py
+@@ -12,8 +12,8 @@ class EconomicIndicatorsViewModel:
+     Retrives data via SimulationRepository and processes it into the required format.
+     """
+ 
+-    def __init__(self, repository: Optional[SimulationRepository] = None):
+-        self.repository = repository if repository else SimulationRepository()
++    def __init__(self, repository: SimulationRepository):
++        self.repository = repository
+ 
+     def get_economic_indicators(
+         self, start_tick: Optional[int] = None, end_tick: Optional[int] = None, run_id: Optional[int] = None
+diff --git a/simulation/viewmodels/market_history_viewmodel.py b/simulation/viewmodels/market_history_viewmodel.py
+index 3cc6893..4f93037 100644
+--- a/simulation/viewmodels/market_history_viewmodel.py
++++ b/simulation/viewmodels/market_history_viewmodel.py
+@@ -9,8 +9,8 @@ class MarketHistoryViewModel:
+     SimulationRepository를 통해 데이터를 조회하고, 필요한 형태로 가공합니다.
+     """
+ 
+-    def __init__(self, repository: Optional[SimulationRepository] = None):
+-        self.repository = repository if repository else SimulationRepository()
++    def __init__(self, repository: SimulationRepository):
++        self.repository = repository
+ 
+     def get_market_history(
+         self,
+diff --git a/tests/unit/test_api_extensions.py b/tests/unit/test_api_extensions.py
+index d2c71ec..d0620e7 100644
+--- a/tests/unit/test_api_extensions.py
++++ b/tests/unit/test_api_extensions.py
+@@ -72,10 +72,10 @@ class TestEconomicIndicatorsViewModel:
+         market = OrderBookMarket("test_market")
+         # Manually inject orders for testing
+         market.buy_orders = {
+-            "apple": [Order(agent_id=1, order_type="BUY", market_id="test_market", item_id="apple", quantity=10, price=5)]
++            "apple": [Order(agent_id=1, side="BUY", market_id="test_market", item_id="apple", quantity=10, price_limit=5)]
+         }
+         market.sell_orders = {
+-            "apple": [Order(agent_id=2, order_type="SELL", market_id="test_market", item_id="apple", quantity=5, price=6)]
++            "apple": [Order(agent_id=2, side="SELL", market_id="test_market", item_id="apple", quantity=5, price_limit=6)]
+         }
+ 
+         markets = {"test_market": market}
