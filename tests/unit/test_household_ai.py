@@ -23,6 +23,7 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.ai.enums import Tactic
+from simulation.dtos.api import DecisionInputDTO
 
 @pytest.fixture
 def setup_test_environment():
@@ -42,8 +43,8 @@ def setup_test_environment():
     
     # Pre-populate goods market with some offers for testing
     goods_market = markets["goods_market"]
-    goods_market.place_order(Order(agent_id=99, order_type="SELL", item_id="basic_food", quantity=100, price=10.0, market_id="goods_market"), 0)
-    goods_market.place_order(Order(agent_id=98, order_type="SELL", item_id="luxury_food", quantity=50, price=50.0, market_id="goods_market"), 0)
+    goods_market.place_order(Order(agent_id=99, side="SELL", item_id="basic_food", quantity=100, price_limit=10.0, market_id="goods_market"), 0)
+    goods_market.place_order(Order(agent_id=98, side="SELL", item_id="luxury_food", quantity=50, price_limit=50.0, market_id="goods_market"), 0)
     
     return goods_data, markets
 
@@ -93,11 +94,18 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
              "luxury_food_current_sell_price": 50.0,
         }
     }
-    orders, _ = household.make_decision(markets, goods_data, market_data, 1)
+
+    input_dto = DecisionInputDTO(
+        markets=markets,
+        goods_data=goods_data,
+        market_data=market_data,
+        current_time=1
+    )
+    orders, _ = household.make_decision(input_dto)
 
     assert orders is not None
     # Check if any order is for food
-    food_orders = [o for o in orders if "food" in o.item_id and o.order_type == "BUY"]
+    food_orders = [o for o in orders if "food" in o.item_id and o.side == "BUY"]
     assert len(food_orders) > 0, "Expected at least one food purchase order"
     
     purchase_order = food_orders[0]
@@ -145,13 +153,20 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
              "food_current_sell_price": 10.0,
         }
     }
-    orders, action_vector = household.make_decision(markets, goods_data, market_data, 1)
+
+    input_dto = DecisionInputDTO(
+        markets=markets,
+        goods_data=goods_data,
+        market_data=market_data,
+        current_time=1
+    )
+    orders, action_vector = household.make_decision(input_dto)
 
     assert orders is not None
     assert len(orders) > 0
     
     # Check if luxury_food is bought
-    luxury_food_orders = [o for o in orders if o.item_id == "luxury_food" and o.order_type == "BUY"]
+    luxury_food_orders = [o for o in orders if o.item_id == "luxury_food" and o.side == "BUY"]
     assert len(luxury_food_orders) > 0, "Expected luxury_food purchase order"
 
     purchase_order = luxury_food_orders[0]

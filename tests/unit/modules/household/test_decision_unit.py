@@ -1,11 +1,11 @@
 import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 from collections import deque, defaultdict
 from modules.household.decision_unit import DecisionUnit
 from modules.household.dtos import EconStateDTO
+from modules.household.api import OrchestrationContextDTO, MarketSnapshotDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO, LaborMarketSnapshotDTO
 from simulation.models import Talent, Order
 from simulation.portfolio import Portfolio
-from simulation.dtos import DecisionContext
 from tests.utils.factories import create_household_config_dto
 
 class TestDecisionUnit:
@@ -33,7 +33,7 @@ class TestDecisionUnit:
             education_xp=0.0,
             education_level=0,
             expected_wage=10.0,
-            talent=Talent(base_learning_rate=0.5, max_potential=1.0),
+            talent=Talent(base_learning_rate=0.5, max_potential={"general": 1.0}),
             skills={},
             aptitude=0.5,
             owned_properties=[],
@@ -41,7 +41,7 @@ class TestDecisionUnit:
             is_homeless=True,
             home_quality_score=1.0,
             housing_target_mode="RENT",
-            housing_price_history=deque([100.0, 110.0]), # Some history for growth calc
+            housing_price_history=deque([100.0, 110.0]),
             market_wage_history=deque(),
             shadow_reservation_wage=10.0,
             last_labor_offer_tick=0,
@@ -58,105 +58,90 @@ class TestDecisionUnit:
             capital_income_this_tick=0.0
         )
 
-    def test_make_decision_flow(self, econ_state, mock_config):
-        decision_unit = DecisionUnit()
-
-        # Mocks
-        mock_engine = MagicMock()
-        initial_orders = [Order(agent_id=1, side="BUY", item_id="food", quantity=1.0, price_limit=10.0, market_id="goods")]
-        mock_engine.make_decisions.return_value = (initial_orders, ("TACTIC", "AGGRESSIVE"))
-
-        mock_context = MagicMock(spec=DecisionContext)
-        mock_context.current_time = 100
-        mock_context.market_data = {
-            "housing_market": {"avg_rent_price": 50.0, "avg_sale_price": 10000.0},
-            "loan_market": {"interest_rate": 0.05}
-        }
-        mock_context.stress_scenario_config = None
-
-        mock_macro_context = MagicMock()
-        mock_markets = {"housing": MagicMock()}
-
-        # Call
-        new_state, refined_orders, tactic = decision_unit.make_decision(
-            econ_state,
-            mock_engine,
-            mock_context,
-            mock_macro_context,
-            mock_markets,
-            mock_context.market_data,
-            mock_config
-        )
-
-        # Verification
-        mock_engine.make_decisions.assert_called_once()
-
-        # Check if orders are preserved
-        assert len(refined_orders) >= 1
-        assert refined_orders[0].item_id == "food"
-
-        # Check if state updated (e.g. shadow wage logic)
-        # Shadow wage logic runs:
-        # if not employed: shadow_wage *= 0.98. min demand 7.0.
-        # 10.0 * 0.98 = 9.8
-        assert new_state.shadow_reservation_wage == 9.8
-
     def test_orchestrate_housing_buy(self, econ_state, mock_config):
         decision_unit = DecisionUnit()
 
         # Setup state for BUY decision
-        # Needs plenty of assets for down payment (20% of 10000 = 2000)
         econ_state.assets = 5000.0
         econ_state.is_homeless = True
 
-        # Mock Markets
-        mock_housing_market = MagicMock()
-        # Mock sell orders: item_id -> list of Orders
-        mock_housing_market.sell_orders = {
-            "unit_1": [Order(agent_id=99, side="SELL", item_id="unit_1", quantity=1.0, price_limit=10000.0, market_id="housing")]
-        }
+        # Construct DTOs
+        housing_snapshot = HousingMarketSnapshotDTO(
+            for_sale_units=[
+                {"unit_id": "unit_1", "price": 10000.0, "quality": 1.0}
+            ],
+            avg_rent_price=500.0,
+            avg_sale_price=10000.0
+        )
+        loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
+        labor_snapshot = LaborMarketSnapshotDTO(avg_wage=10.0)
 
-        markets = {"housing": mock_housing_market}
-
-        # Mock Context Data
-        # Ensure NPV favors BUY.
-        # High rent (income flow), Low price.
-        # Rent 500/mo. Price 10000. Yield = 6000/10000 = 60%. Risk free 5%. Definitely BUY.
-        market_data = {
-            "housing_market": {"avg_rent_price": 500.0, "avg_sale_price": 10000.0},
-            "loan_market": {"interest_rate": 0.05}
-        }
-
-        # Mock Context DTO
-        # We need EconContextDTO, but make_decision takes DecisionContext and creates EconContextDTO internally.
-        # But we can test make_decision which calls orchestrate.
-
-        mock_engine = MagicMock()
-        mock_engine.make_decisions.return_value = ([], ("TACTIC", "AGGRESSIVE"))
-
-        mock_context = MagicMock(spec=DecisionContext)
-        mock_context.current_time = 30 # Trigger tick
-        mock_context.market_data = market_data
-        mock_context.stress_scenario_config = None
-
-        new_state, refined_orders, _ = decision_unit.make_decision(
-            econ_state,
-            mock_engine,
-            mock_context,
-            None,
-            markets,
-            market_data,
-            mock_config
+        market_snapshot = MarketSnapshotDTO(
+            housing=housing_snapshot,
+            loan=loan_snapshot,
+            labor=labor_snapshot
         )
 
-        # Check if BUY order generated
-        # Logic:
-        # 1. System 2 decides BUY (due to high rent vs price)
-        # 2. Finds unit_1 at 10000
-        # 3. Checks assets >= 2000 (True, 5000)
-        # 4. Appends BUY order
+        context = OrchestrationContextDTO(
+            market_snapshot=market_snapshot,
+            current_time=30,
+            stress_scenario_config=None,
+            config=mock_config
+        )
 
+        initial_orders = []
+
+        # Run
+        new_state, refined_orders = decision_unit.orchestrate_economic_decisions(
+            econ_state, context, initial_orders
+        )
+
+        # Verify
         assert new_state.housing_target_mode == "BUY"
         assert len(refined_orders) == 1
         assert refined_orders[0].item_id == "unit_1"
         assert refined_orders[0].price_limit == 10000.0
+        assert refined_orders[0].side == "BUY"
+
+    def test_shadow_wage_update(self, econ_state, mock_config):
+        decision_unit = DecisionUnit()
+
+        # Setup state
+        econ_state.is_employed = False
+        econ_state.shadow_reservation_wage = 10.0
+
+        # Construct DTOs
+        # Housing doesn't matter for this test
+        housing_snapshot = HousingMarketSnapshotDTO(
+            for_sale_units=[], avg_rent_price=100.0, avg_sale_price=20000.0
+        )
+        loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
+        labor_snapshot = LaborMarketSnapshotDTO(avg_wage=12.0)
+
+        market_snapshot = MarketSnapshotDTO(
+            housing=housing_snapshot,
+            loan=loan_snapshot,
+            labor=labor_snapshot
+        )
+
+        context = OrchestrationContextDTO(
+            market_snapshot=market_snapshot,
+            current_time=100,
+            stress_scenario_config=None,
+            config=mock_config
+        )
+
+        initial_orders = []
+
+        # Run
+        new_state, _ = decision_unit.orchestrate_economic_decisions(
+            econ_state, context, initial_orders
+        )
+
+        # Verify Shadow Wage Logic
+        # Not employed -> shadow wage decay
+        # 10.0 * (1.0 - 0.02) = 9.8
+        assert new_state.shadow_reservation_wage == 9.8
+        # Check market wage history update
+        assert len(new_state.market_wage_history) == 1
+        assert new_state.market_wage_history[0] == 12.0
