@@ -194,6 +194,10 @@ class Registry(IRegistry):
 
             # Update Unit
             unit.owner_id = buyer.id
+            if tx.metadata and "mortgage_id" in tx.metadata:
+                unit.mortgage_id = tx.metadata["mortgage_id"]
+            else:
+                unit.mortgage_id = None
 
             # Update Seller (if not None/Govt)
             if seller and hasattr(seller, "owned_properties"):

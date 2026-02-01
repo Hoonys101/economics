@@ -113,3 +113,24 @@ def test_public_manager_routing():
     tp.execute(state)
 
     pm_handler.handle.assert_called_once()
+
+def test_transaction_processor_dispatches_housing():
+    config = MagicMock()
+    tp = TransactionProcessor(config_module=config)
+
+    housing_handler = MagicMock()
+    tp.register_handler("housing", housing_handler)
+
+    state = MagicMock()
+    state.transactions = [
+        Transaction(
+            buyer_id=1, seller_id=2, item_id="unit_1", price=100, quantity=1,
+            market_id="housing", transaction_type="housing", time=0
+        )
+    ]
+    state.agents = {1: MagicMock(), 2: MagicMock()}
+    state.taxation_system = MagicMock()
+
+    tp.execute(state)
+
+    housing_handler.handle.assert_called_once()

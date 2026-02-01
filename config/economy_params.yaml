@@ -37,3 +37,10 @@ max_willingness_to_pay_multiplier: 2.5
 # WO-157: Code Blue - Dynamic Pricing
 sale_timeout_ticks: 20
 dynamic_price_reduction_factor: 0.95
+
+# ----------------------------------------------------------------------
+# Housing Market Configuration
+# ----------------------------------------------------------------------
+housing:
+  max_ltv_ratio: 0.8
+  mortgage_term_ticks: 300

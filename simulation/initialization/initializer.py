@@ -51,7 +51,7 @@ from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
 from simulation.systems.handlers.labor_handler import LaborTransactionHandler
 from simulation.systems.handlers.stock_handler import StockTransactionHandler
 from simulation.systems.handlers.asset_transfer_handler import AssetTransferHandler
-from simulation.systems.handlers.housing_transaction_handler import HousingTransactionHandler
+from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
 from simulation.systems.handlers.inheritance_handler import InheritanceHandler
 from simulation.systems.handlers.monetary_handler import MonetaryTransactionHandler
 from simulation.systems.handlers.financial_handler import FinancialTransactionHandler
