@@ -24,7 +24,7 @@
 |---|---|---|---|---|
 | TD-181 | 2026-02-01 | Abstraction Leak: `DecisionUnit` Direct Market Access | Tight coupling; bypasses MarketSnapshotDTO | **ACTIVE** |
 | TD-182 | 2026-02-01 | Abstraction Leak: `make_decision` signature | Passing raw market objects allows mutation risk | **ACTIVE** |
-| TD-189 | 2026-02-01 | God Method: `Phase1_Decision.execute` | Excessive orchestration complexity in `phases.py` | **ACTIVE** |
+| TD-189 | 2026-02-01 | God Method: `Phase1_Decision.execute` | Excessive orchestration complexity in `phases.py` | **RESOLVED** |
 
 ## 💹 4. MARKETS & ECONOMICS
 
@@ -51,7 +51,8 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-122 | 2026-01-26 | Test Directory Organization | Maintenance overhead | **DEFERRED** |
-| TDL-029 | 2026-01-31 | ViewModel DI Violation (Repository) | Tight Coupling | **ACTIVE** | ViewModels create own repository instances. |
+| TDL-029 | 2026-01-31 | ViewModel DI Violation (Repository) | Tight Coupling | **ACTIVE** | 
+| TD-192 | 2026-02-01 | ActionProcessor Transient State Synchronization Risk | Manual sync of `SimulationState` needed; regression risk | **ACTIVE** | ViewModels create own repository instances. |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
