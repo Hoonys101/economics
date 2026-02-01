@@ -4,7 +4,7 @@ from typing import TypedDict, List, Dict, Optional, Any, Protocol
 
 # --- DTOs for Market Stability Signals ---
 
-@dataclass
+@dataclass(frozen=True)
 class MarketSignalDTO:
     """
     Provides agents with essential, pre-calculated signals about a specific market's state.
@@ -21,19 +21,50 @@ class MarketSignalDTO:
     volatility_7d: float  # Standard deviation of price_history_7d
     order_book_depth_buy: int  # Number of outstanding buy orders
     order_book_depth_sell: int  # Number of outstanding sell orders
-    is_frozen: bool  # True if circuit breaker is active or no trades have occurred recently
+    total_bid_quantity: float = 0.0 # Total quantity demanded
+    total_ask_quantity: float = 0.0 # Total quantity supplied
+    is_frozen: bool = False  # True if circuit breaker is active or no trades have occurred recently
 
-# --- Modifications to Existing Core DTOs ---
+# --- Comprehensive Market Snapshot DTOs ---
 
-@dataclass
+@dataclass(frozen=True)
+class HousingMarketUnitDTO:
+    """Represents a single, sellable housing unit in the market."""
+    unit_id: str
+    price: float
+    quality: float
+
+@dataclass(frozen=True)
+class HousingMarketSnapshotDTO:
+    """Contains a snapshot of the housing market's state."""
+    for_sale_units: List[HousingMarketUnitDTO]
+    avg_rent_price: float
+    avg_sale_price: float
+
+@dataclass(frozen=True)
+class LoanMarketSnapshotDTO:
+    """Contains a snapshot of the loan market's state."""
+    interest_rate: float
+
+@dataclass(frozen=True)
+class LaborMarketSnapshotDTO:
+    """Contains a snapshot of the labor market's state."""
+    avg_wage: float
+
+@dataclass(frozen=True)
 class MarketSnapshotDTO:
     """
-    [MODIFIED] A snapshot of all relevant market data for a given tick.
-    This is a breaking change. The snapshot now contains a structured dictionary
-    of market signals instead of raw, unstructured data.
+    A comprehensive, read-only snapshot of all relevant market data for a given tick.
+    Serves as the single source of truth for agent decision-making.
     """
     tick: int
     market_signals: Dict[str, MarketSignalDTO]  # item_id -> signal_dto
+
+    # Domain-specific snapshots
+    housing: HousingMarketSnapshotDTO
+    loan: LoanMarketSnapshotDTO
+    labor: LaborMarketSnapshotDTO
+
     market_data: Dict[str, Any]  # [DEPRECATED] For legacy compatibility during transition.
 
 # --- Phase 3: Asset Recovery ---
