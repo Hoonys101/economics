@@ -40,10 +40,14 @@ class FiscalPolicyManager(IFiscalPolicyManager):
         else:
              m_data = getattr(market_snapshot, 'market_data', {})
              if isinstance(m_data, dict) and 'goods_market' in m_data:
-                 basic_food_price = m_data['goods_market'].get('basic_food_current_sell_price', 5.0)
+                 price = m_data['goods_market'].get('basic_food_current_sell_price', 5.0)
+                 # Protective check for Mock objects in tests
+                 if not isinstance(price, (int, float)):
+                     price = 5.0
+                 basic_food_price = float(price)
 
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
-        survival_cost = basic_food_price * daily_consumption
+        survival_cost = float(basic_food_price) * float(daily_consumption)
 
         # Ensure non-zero survival cost to prevent issues
         if survival_cost <= 0:

@@ -261,7 +261,79 @@ class Household(BaseAgent, ILearningAgent):
             extra={"tags": ["household_init"]}
         )
 
-    # --- Property Overrides (BaseAgent) ---
+    # --- Property Overrides (BaseAgent & Compatibility) ---
+
+    @property
+    @override
+    def assets(self) -> float:
+        return self._econ_state.assets
+
+    @assets.setter
+    def assets(self, value: float) -> None:
+        self._econ_state.assets = value
+        self._assets = value
+
+    @property
+    @override
+    def inventory(self) -> Dict[str, float]:
+        return self._econ_state.inventory
+
+    @inventory.setter
+    def inventory(self, value: Dict[str, float]) -> None:
+        self._econ_state.inventory = value
+
+    @property
+    @override
+    def needs(self) -> Dict[str, float]:
+        return self._bio_state.needs
+
+    @needs.setter
+    def needs(self, value: Dict[str, float]) -> None:
+        self._bio_state.needs = value
+
+    @property
+    def is_active(self) -> bool:
+        return self._bio_state.is_active
+
+    @property
+    def is_homeless(self) -> bool:
+        return self._econ_state.is_homeless
+
+    @property
+    def residing_property_id(self) -> Optional[int]:
+        return self._econ_state.residing_property_id
+
+    @residing_property_id.setter
+    def residing_property_id(self, value: Optional[int]) -> None:
+        self._econ_state.residing_property_id = value
+
+    @property
+    def owned_properties(self) -> List[int]:
+        return self._econ_state.owned_properties
+
+    @owned_properties.setter
+    def owned_properties(self, value: List[int]) -> None:
+        self._econ_state.owned_properties = value
+
+    @property
+    def current_wage(self) -> float:
+        return self._econ_state.current_wage
+
+    @current_wage.setter
+    def current_wage(self, value: float) -> None:
+        self._econ_state.current_wage = value
+
+    @property
+    def is_employed(self) -> bool:
+        return self._econ_state.is_employed
+
+    @is_employed.setter
+    def is_employed(self, value: bool) -> None:
+        self._econ_state.is_employed = value
+
+    @property
+    def is_employed(self) -> bool:
+        return self._econ_state.is_employed
 
     @override
     def _add_assets(self, amount: float) -> None:
@@ -272,13 +344,6 @@ class Household(BaseAgent, ILearningAgent):
     def _sub_assets(self, amount: float) -> None:
         self._econ_state.assets -= amount
         self._assets = self._econ_state.assets
-
-    # --- Property Removal (TD-065) ---
-    # All properties delegating to _bio_state, _econ_state, _social_state have been removed.
-    # Access these states directly (e.g. self._econ_state.assets).
-    # BaseAgent overrides (assets, inventory, needs) have been removed, meaning
-    # Household now uses BaseAgent's storage for these fields, which may be stale/unused.
-    # Internal logic strictly uses _state DTOs.
 
     # --- Methods ---
 
