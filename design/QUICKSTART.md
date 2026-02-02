@@ -52,13 +52,13 @@ This is the definitive entry point for all contributors. **Read this first.**
 > **🚨 CRITICAL: MASTER `cmd_ops.py` OR FAIL.**
 > Use **SCR (Structured Command Registry)** via `scripts/cmd_ops.py`.
 
-### 🚨 Zero-Error Operations: Agent ASYMMETRY
-Gemini와 Jules는 사용하는 파라미터가 다릅니다. 이를 혼동하면 런타임 에러가 발생합니다.
+### 🚨 Zero-Error Operations: Agent HARMONY
+Gemini와 Jules는 정합된 파라미터 구조를 공유합니다. 모든 미션 설정 시 **Key**와 **Title(-t)**은 필수입니다.
 
 | Agent | command | Key Args | Path Flag |
 | :--- | :--- | :--- | :--- |
-| **Gemini** | `set-gemini` | `--worker [audit/spec/...]` | `--context` (Multiple files) |
-| **Jules** | `set-jules` | `--command [create/send-message]` | `--file` (Single spec/wo file) |
+| **Gemini** | `set-gemini` | `--worker [audit/spec/...]`, **`-t Title`** | `--context` (Multiple files) |
+| **Jules** | `set-jules` | `--command [create/send-message]`, **`-t Title`** | `--file` (Single spec/wo file) |
 
 ### 🆘 Troubleshooting & Support
 - **Git Errors?** (Blocked checkout, commit issues): See **[Troubleshooting: Git](2_operations/protocols/TROUBLESHOOTING_GIT.md)**.
@@ -69,16 +69,22 @@ Gemini와 Jules는 사용하는 파라미터가 다릅니다. 이를 혼동하�
 ### 1. Analysis & Spec (Gemini)
 **Generic Pattern**:
 ```powershell
-python scripts/cmd_ops.py set-gemini <key> --worker <type> -i "<prompt>" --context <file1> <file2>
+python scripts/cmd_ops.py set-gemini <key> -t "<title>" --worker <type> -i "<prompt>" --context <file1> <file2>
 ```
 - **Pro-Tip**: 여러 참조 파일은 `--context` 뒤에 나열합니다.
 
 ### 2. Implementation (Jules)
 **Generic Pattern**:
 ```powershell
-python scripts/cmd_ops.py set-jules <key> --command create -t "<title>" -i "<prompt>" --file <spec_path>
+# Create Mode (New Mission)
+python scripts/cmd_ops.py set-jules <key> -t "<title>" --command create -i "<prompt>" --file <spec_path>
+
+# Send Mode (Feedback / Follow-up)
+# Note: session_id는 UI/Orchestrator에서 활성 세션을 검색하여 자동 주입하므로 설정 시 생략 가능합니다.
+python scripts/cmd_ops.py set-jules <key> -t "<title>" --command send-message -i "<prompt>"
 ```
 - **Pro-Tip**: Jules는 `--file` (또는 `-f`)만 지원하며, `--context`는 무시됩니다.
+- **Dynamic ID**: `send-message` 시 서버의 활성 ID를 UI에서 선택하면 레지스트리의 설정값이 해당 세션으로 발송됩니다.
 
 ---
 

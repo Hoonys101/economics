@@ -60,9 +60,28 @@ class ActionProcessor:
                 settlement_system=getattr(self.world_state, "settlement_system", None),
                 next_agent_id=self.world_state.next_agent_id,
                 real_estate_units=self.world_state.real_estate_units,
-                transactions=transactions
+                transactions=transactions,
+                effects_queue=self.world_state.effects_queue,
+                inter_tick_queue=self.world_state.inter_tick_queue,
+                inactive_agents=self.world_state.inactive_agents
             )
             self.world_state.transaction_processor.execute(state)
+            
+            # TD-192: Synchronize scalar values AND transient queues back to WorldState
+            # Critical: TransactionProcessor might populate these queues.
+            self.world_state.next_agent_id = state.next_agent_id
+            
+            # Note: Lists are mutable, so in-place appends work by reference.
+            # However, if TP re-assigned the list, we would lose data.
+            # Explicit sync protects against re-assignment bugs.
+            if state.effects_queue is not self.world_state.effects_queue:
+                 self.world_state.effects_queue.extend(state.effects_queue)
+            
+            if state.inter_tick_queue is not self.world_state.inter_tick_queue:
+                 self.world_state.inter_tick_queue.extend(state.inter_tick_queue)
+
+            # Inactive agents map might be updated
+            self.world_state.inactive_agents.update(state.inactive_agents)
         else:
             logger.error("TransactionProcessor is not initialized in WorldState.")
 

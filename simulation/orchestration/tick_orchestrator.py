@@ -98,7 +98,10 @@ class TickOrchestrator:
             next_agent_id=state.next_agent_id,
             real_estate_units=state.real_estate_units,
             injectable_sensory_dto=injectable_sensory_dto,
-            inactive_agents=state.inactive_agents
+            inactive_agents=state.inactive_agents,
+            effects_queue=state.effects_queue,
+            inter_tick_queue=state.inter_tick_queue,
+            transactions=state.transactions
         )
 
     def _synchronize_world_state(self, sim_state: SimulationState):

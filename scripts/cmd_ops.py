@@ -28,6 +28,7 @@ def op_set_gemini(args):
     data = load_registry()
     
     entry = {
+        "title": args.title,
         "worker": args.worker,
         "instruction": args.instruction
     }
@@ -54,12 +55,11 @@ def op_set_jules(args):
             instruction += MANDATORY_REPORTING_PROMPT
 
     entry = {
+        "title": args.title,
         "command": args.command,
         "instruction": instruction
     }
     
-    if args.title:
-        entry["title"] = args.title
     if args.file:
         entry["file"] = args.file
     if args.session_id:
@@ -107,6 +107,7 @@ def main():
     # Set Gemini
     p_gemini = subparsers.add_parser("set-gemini", help="Set a Gemini mission")
     p_gemini.add_argument("key", help="Mission Key")
+    p_gemini.add_argument("--title", "-t", required=True, help="Mission Title")
     p_gemini.add_argument("--worker", required=True, choices=["audit", "spec", "git-review", "context", "verify", "git", "reporter"], help="Worker type")
     p_gemini.add_argument("--instruction", "-i", required=True, help="Instruction")
     p_gemini.add_argument("--context", nargs="+", help="Context files")
@@ -116,9 +117,9 @@ def main():
     # Set Jules
     p_jules = subparsers.add_parser("set-jules", help="Set a Jules mission")
     p_jules.add_argument("key", help="Mission Key")
+    p_jules.add_argument("--title", "-t", required=True, help="Mission Title")
     p_jules.add_argument("--command", required=True, choices=["create", "send-message"], help="Command Type")
     p_jules.add_argument("--instruction", "-i", required=True, help="Instruction")
-    p_jules.add_argument("--title", "-t", help="Mission Title")
     p_jules.add_argument("--file", help="Target File")
     p_jules.add_argument("--session_id", help="Session ID")
     p_jules.add_argument("--wait", action="store_true", help="Wait for completion")
