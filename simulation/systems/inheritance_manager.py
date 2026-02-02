@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import Optional, Dict, List, Any
 from simulation.core_agents import Household
 from simulation.agents.government import Government
@@ -222,12 +223,20 @@ class InheritanceManager:
 
         else:
             # Distribute to Heirs
-            # Equal Split for now
+            # Equal Split for now (Penny-Perfect)
             count = len(heirs)
             if cash > 0:
-                share_cash = cash / count
-                for heir in heirs:
-                    distribution_plan.append((heir, share_cash, "inheritance_distribution", "inheritance_distribution"))
+                share_cash = math.floor((cash / count) * 100) / 100
+                distributed_so_far = 0.0
+
+                for i, heir in enumerate(heirs):
+                    amount = share_cash
+                    # Last heir gets the remainder to ensure zero leak
+                    if i == count - 1:
+                        amount = round(cash - distributed_so_far, 2)
+
+                    distribution_plan.append((heir, amount, "inheritance_distribution", "inheritance_distribution"))
+                    distributed_so_far += amount
 
             # Distribute Assets (Manual)
             for firm_id, share in portfolio_holdings.items():
