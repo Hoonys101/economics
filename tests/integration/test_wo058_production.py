@@ -77,6 +77,8 @@ def mock_repo():
     """Provides a mock repository object."""
     repo = MagicMock()
     repo.save_simulation_run.return_value = 1
+    # Mock 'agents' attribute to support flush_buffers
+    repo.agents = MagicMock()
     return repo
 
 @pytest.fixture
@@ -84,7 +86,19 @@ def mock_ai_trainer():
     """Provides a mock AI trainer."""
     return Mock()
 
-def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
+@pytest.fixture
+def mock_config_manager():
+    """Provides a mock config manager with DB path configured."""
+    cm = Mock()
+    # Configure get to return :memory: for database_name, else default
+    def get_side_effect(key, default=None):
+        if key == "simulation.database_name":
+            return ":memory:"
+        return default
+    cm.get.side_effect = get_side_effect
+    return cm
+
+def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_config_manager):
     """Tests that the bootstrapper correctly injects capital and inputs."""
     hh_config_dto = create_config_dto(global_config, HouseholdConfigDTO)
     firm_config_dto = create_config_dto(global_config, FirmConfigDTO)
@@ -97,7 +111,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
     ]
 
     # The bootstrapper is called during the Simulation initialization
-    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo)
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
@@ -117,7 +131,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
             for mat in inputs:
                 assert firm.input_inventory.get(mat, 0) > 0, f"Firm {firm.id} missing input {mat}"
 
-def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer):
+def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_config_manager):
     """Tests that the economy starts and production is non-zero after bootstrapping."""
     hh_config_dto = create_config_dto(global_config, HouseholdConfigDTO)
     firm_config_dto = create_config_dto(global_config, FirmConfigDTO)
@@ -129,7 +143,7 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer):
     ]
 
     # This is a simplified simulation setup; a real test would need more comprehensive mocks
-    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo)
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
