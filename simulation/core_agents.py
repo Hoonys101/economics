@@ -283,6 +283,14 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.inventory = value
 
     @property
+    def inventory_quality(self) -> Dict[str, float]:
+        return self._econ_state.inventory_quality
+
+    @inventory_quality.setter
+    def inventory_quality(self, value: Dict[str, float]) -> None:
+        self._econ_state.inventory_quality = value
+
+    @property
     @override
     def needs(self) -> Dict[str, float]:
         return self._bio_state.needs
@@ -295,9 +303,33 @@ class Household(BaseAgent, ILearningAgent):
     def is_active(self) -> bool:
         return self._bio_state.is_active
 
+    @is_active.setter
+    def is_active(self, value: bool) -> None:
+        self._bio_state.is_active = value
+
+    @property
+    def age(self) -> float:
+        return self._bio_state.age
+
+    @age.setter
+    def age(self, value: float) -> None:
+        self._bio_state.age = value
+
+    @property
+    def children_ids(self) -> List[int]:
+        return self._bio_state.children_ids
+
+    @children_ids.setter
+    def children_ids(self, value: List[int]) -> None:
+        self._bio_state.children_ids = value
+
     @property
     def is_homeless(self) -> bool:
         return self._econ_state.is_homeless
+
+    @is_homeless.setter
+    def is_homeless(self, value: bool) -> None:
+        self._econ_state.is_homeless = value
 
     @property
     def residing_property_id(self) -> Optional[int]:
@@ -332,8 +364,12 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.is_employed = value
 
     @property
-    def is_employed(self) -> bool:
-        return self._econ_state.is_employed
+    def employer_id(self) -> Optional[int]:
+        return self._econ_state.employer_id
+
+    @employer_id.setter
+    def employer_id(self, value: Optional[int]) -> None:
+        self._econ_state.employer_id = value
 
     @override
     def _add_assets(self, amount: float) -> None:

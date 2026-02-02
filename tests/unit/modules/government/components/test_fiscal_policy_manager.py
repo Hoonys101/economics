@@ -22,8 +22,8 @@ class TestFiscalPolicyManager:
 
     def test_determine_fiscal_stance_calculates_survival_cost_correctly(self, manager, mock_config):
         # Setup
-        prices = {"basic_food": 10.0}
-        snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
+        market_data = {'goods_market': {'basic_food_current_sell_price': 10.0}}
+        snapshot = MarketSnapshotDTO(tick=1, market_signals={}, market_data=market_data)
 
         # Execute
         policy = manager.determine_fiscal_stance(snapshot)
@@ -57,8 +57,8 @@ class TestFiscalPolicyManager:
         config.TAX_BRACKETS = []
         manager = FiscalPolicyManager(config)
 
-        prices = {"basic_food": 10.0}
-        snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
+        market_data = {'goods_market': {'basic_food_current_sell_price': 10.0}}
+        snapshot = MarketSnapshotDTO(tick=1, market_signals={}, market_data=market_data)
 
         policy = manager.determine_fiscal_stance(snapshot)
 
