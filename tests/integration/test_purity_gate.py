@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.dtos import DecisionContext, FirmStateDTO
+from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.household.dtos import HouseholdStateDTO
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.decisions.standalone_rule_based_firm_engine import StandaloneRuleBasedFirmDecisionEngine
@@ -49,13 +50,53 @@ def test_standalone_firm_engine_uses_dto():
 
     engine = StandaloneRuleBasedFirmDecisionEngine(config_mock)
 
+    finance = FinanceStateDTO(
+        balance=1000.0,
+        revenue_this_turn=0.0,
+        expenses_this_tick=0.0,
+        consecutive_loss_turns=0,
+        profit_history=[],
+        altman_z_score=0.0,
+        valuation=0.0,
+        total_shares=100.0,
+        treasury_shares=0.0,
+        dividend_rate=0.0,
+        is_publicly_traded=False
+    )
+    production = ProductionStateDTO(
+        current_production=0.0,
+        productivity_factor=1.0,
+        production_target=50.0,
+        capital_stock=10.0,
+        base_quality=1.0,
+        automation_level=0.0,
+        specialization="wood",
+        inventory={"wood": 50.0},
+        input_inventory={},
+        inventory_quality={}
+    )
+    sales = SalesStateDTO(
+        inventory_last_sale_tick={},
+        price_history={"wood": 10.0},
+        brand_awareness=0.0,
+        perceived_quality=0.0,
+        marketing_budget=0.0
+    )
+    hr = HRStateDTO(
+        employees=[],
+        employees_data={}
+    )
+
     firm_dto = FirmStateDTO(
-        id=1, assets=1000.0, is_active=True, inventory={"wood": 50.0}, inventory_quality={}, input_inventory={},
-        current_production=0.0, productivity_factor=1.0, production_target=50.0, capital_stock=10.0, base_quality=1.0,
-        automation_level=0.0, specialization="wood", total_shares=100, treasury_shares=0, dividend_rate=0.0,
-        is_publicly_traded=False, valuation=0.0, revenue_this_turn=0.0, expenses_this_tick=0.0, consecutive_loss_turns=0,
-        altman_z_score=0.0, price_history={"wood": 10.0}, profit_history=[], brand_awareness=0.0, perceived_quality=0.0,
-        marketing_budget=0.0, employees=[], employees_data={}, agent_data={}, system2_guidance={}, sentiment_index=0.5
+        id=1,
+        is_active=True,
+        finance=finance,
+        production=production,
+        sales=sales,
+        hr=hr,
+        agent_data={},
+        system2_guidance={},
+        sentiment_index=0.5
     )
 
     context = MagicMock(spec=DecisionContext)
@@ -63,8 +104,10 @@ def test_standalone_firm_engine_uses_dto():
     context.goods_data = []
     context.market_data = {}
     context.current_time = 1
+    context.config = config_mock
 
-    orders, (tactic, agg) = engine.make_decisions(context)
+    output = engine.make_decisions(context)
+    orders = output.orders
 
     assert isinstance(orders, list)
     # Check that it didn't crash
@@ -117,6 +160,11 @@ def test_household_engine_uses_dto():
     household_dto.ambition = 0.5
 
     config_dto = MagicMock()
+    config_dto.labor_market_min_wage = 10.0
+    config_dto.job_quit_threshold_base = 0.5
+    config_dto.job_quit_prob_base = 0.1
+    config_dto.job_quit_prob_scale = 0.1
+    config_dto.stock_market_enabled = False
     config_dto.market_price_fallback = 10.0
     config_dto.min_purchase_quantity = 1.0
     config_dto.household_max_purchase_quantity = 10.0
@@ -161,6 +209,7 @@ def test_household_engine_uses_dto():
     context.market_data = {"loan_market": {"interest_rate": 0.05}}
     context.current_time = 1
 
-    orders, vector = engine._make_decisions_internal(context)
+    output = engine._make_decisions_internal(context)
+    orders = output.orders
 
     assert isinstance(orders, list)
