@@ -1,4 +1,4 @@
-from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal
+from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple
 from dataclasses import dataclass
 import abc
 
@@ -224,10 +224,10 @@ class IFinanceSystem(Protocol):
         """Issues new treasury bonds to the market."""
         ...
 
-    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> bool:
+    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> Tuple[bool, List[Transaction]]:
         """
         Issues bonds and attempts to settle them immediately via SettlementSystem.
-        Returns True if full amount raised, False otherwise.
+        Returns (success_bool, list_of_transactions).
         """
         ...
 

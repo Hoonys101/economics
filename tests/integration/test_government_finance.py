@@ -59,7 +59,8 @@ def test_invest_infrastructure_generates_transaction():
     # So we don't need to do anything if it's a MagicMock, it will return a Mock object for that attr.
     # But then success check: if success: ...
     # So we need it to return True.
-    government.finance_system.issue_treasury_bonds_synchronous.return_value = True
+    # TD-177: Updated to return tuple (success, transactions)
+    government.finance_system.issue_treasury_bonds_synchronous.return_value = (True, [])
 
     # Households
     mock_household = MagicMock()

@@ -477,12 +477,7 @@ class Phase3_Transaction(IPhaseStrategy):
 
         state.transactions.extend(system_transactions)
 
-        # WO-024: Process Monetary Transactions (Credit Creation/Destruction)
-        if state.government:
-            # TD-192: Use combined transactions for correct processing after partial drains
-            # Note: We don't modify state.transactions here to avoid duplication during drain
-            combined_txs = list(self.world_state.transactions) + list(state.transactions)
-            state.government.process_monetary_transactions(combined_txs)
+        # WO-024: Monetary Transactions are now processed incrementally in TickOrchestrator._drain_and_sync_state (TD-177)
 
         if self.world_state.transaction_processor:
             # TD-192: Pass combined transactions to ensure execution of drained (historic) and current items

@@ -35,10 +35,11 @@ class InfrastructureManager:
             needed = effective_cost - self.government.assets
             # Use new synchronous method
             if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
-                success = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
+                success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
                 if not success:
                      logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
                      return []
+                transactions.extend(bond_txs)
             else:
                 # Fallback to old behavior (should not happen if system is updated)
                 bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)

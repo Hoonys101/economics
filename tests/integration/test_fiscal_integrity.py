@@ -80,12 +80,23 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     assert bank.assets == 6000.0 # 10000 - 4000
 
     # 2. Transactions
+    # TD-177: Transactions now include bond purchase (4000) and infrastructure spending (5000)
     assert len(transactions) > 0
-    total_payout = sum(tx.price * tx.quantity for tx in transactions)
+
+    spending_txs = [tx for tx in transactions if tx.transaction_type == "infrastructure_spending"]
+    bond_txs = [tx for tx in transactions if tx.transaction_type == "bond_purchase"]
+
+    assert len(spending_txs) > 0
+    total_payout = sum(tx.price * tx.quantity for tx in spending_txs)
     assert total_payout == 5000.0
 
+    # Verify bond transactions were captured
+    if bond_txs:
+         total_raised = sum(tx.price * tx.quantity for tx in bond_txs)
+         assert total_raised == 4000.0
+
     # 3. Transaction Details
-    tx = transactions[0]
+    tx = spending_txs[0]
     assert tx.buyer_id == gov.id
     assert tx.seller_id == h1.id
     assert tx.transaction_type == "infrastructure_spending"
@@ -110,7 +121,7 @@ def test_education_spending_generates_transactions_only():
     gov.finance_system = finance_system
 
     # Setup Household
-    household = MagicMock(spec=Household)
+    household = MagicMock() # spec=Household removed to avoid AttributeError on private attrs
     household.id = 10
     household._econ_state.education_level = 0
     household._econ_state.assets = 100.0

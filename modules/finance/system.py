@@ -141,10 +141,10 @@ class FinanceSystem(IFinanceSystem):
 
         return [new_bond], generated_transactions
 
-    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> bool:
+    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> Tuple[bool, List[Transaction]]:
         """
         Issues bonds and attempts to settle them immediately via SettlementSystem.
-        Returns True on full success, False on failure.
+        Returns (success, transactions).
         """
         # 1. Logic Reuse: Yield Calculation
         base_rate = self.central_bank.get_base_rate()
@@ -187,6 +187,7 @@ class FinanceSystem(IFinanceSystem):
              potential_buyers.append(self.bank)
 
         amount_raised = 0.0
+        generated_transactions = []
 
         for buyer in potential_buyers:
              if amount_raised >= amount_to_raise:
@@ -232,12 +233,25 @@ class FinanceSystem(IFinanceSystem):
                        if buyer == self.central_bank and hasattr(self.government, 'total_money_issued'):
                             self.government.total_money_issued += purchase_amount
 
+                       # TD-177: Persist Transaction Record
+                       tx = Transaction(
+                            buyer_id=buyer.id,
+                            seller_id=self.government.id,
+                            item_id=new_bond.id,
+                            quantity=1.0,
+                            price=purchase_amount,
+                            market_id="financial",
+                            transaction_type="bond_purchase",
+                            time=current_tick
+                       )
+                       generated_transactions.append(tx)
+
                        amount_raised += purchase_amount
                        logger.info(f"BOND_SYNC_SUCCESS | Raised {purchase_amount:.2f} from {buyer.id}")
                   else:
                        logger.error(f"BOND_SYNC_FAIL | Settlement failed for {purchase_amount:.2f} from {buyer.id}")
 
-        return amount_raised >= amount_to_raise
+        return (amount_raised >= amount_to_raise, generated_transactions)
 
     def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: float) -> bool:
         """
