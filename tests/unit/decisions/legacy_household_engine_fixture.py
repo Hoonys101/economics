@@ -487,7 +487,9 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         if not food_price or food_price <= 0:
             food_price = self.config_module.GOODS.get("basic_food", {}).get("initial_price", 5.0)
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 2.0)
-        survival_cost = food_price * daily_consumption * 30.0
+        monthly_survival_cost = food_price * daily_consumption * 30.0
+
+        equity_return = getattr(self.config_module, "EXPECTED_STARTUP_ROI", 0.15)
 
         risk_aversion = self._get_risk_aversion(household._social_state.personality)
 

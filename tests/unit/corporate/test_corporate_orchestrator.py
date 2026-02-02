@@ -21,16 +21,16 @@ def test_orchestration(firm_dto, context_mock):
     manager.system2_planner.project_future.return_value = {}
 
     # Setup state for HR and Sales to produce orders
-    firm_dto.production_target = 100
-    firm_dto.inventory["food"] = 80 # HR will try to hire
-    firm_dto.employees = []
+    firm_dto.production.production_target = 100
+    firm_dto.production.inventory["food"] = 80 # HR will try to hire
+    firm_dto.hr.employees = []
 
-    firm_dto.inventory["food"] = 100 # Sales will try to sell (wait, this conflicts with HR need?)
+    firm_dto.production.inventory["food"] = 100 # Sales will try to sell (wait, this conflicts with HR need?)
     # If inventory is high, HR might fire.
     # HR logic: target=100, inventory=100 -> gap 0. No hiring.
     # So let's make target 200, inventory 100.
-    firm_dto.production_target = 200
-    firm_dto.inventory["food"] = 100
+    firm_dto.production.production_target = 200
+    firm_dto.production.inventory["food"] = 100
     # Sales: inventory > 0, so it will sell.
 
     firm_dto.finance.balance = 10000.0
