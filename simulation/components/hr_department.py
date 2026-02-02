@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import logging
 
 if TYPE_CHECKING:
@@ -18,6 +18,7 @@ class HRDepartment:
         self.firm = firm
         self.employees: List[Household] = []
         self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
+        self.unpaid_wages: Dict[int, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
         self.hires_last_tick: int = 0
 
     def calculate_wage(self, employee: Household, base_wage: float) -> float:
@@ -143,17 +144,36 @@ class HRDepartment:
             employee.quit()
             self.remove_employee(employee)
         else:
-            # Zombie Employee
-            # Refactor: Use finance.balance
+            # Zombie Employee (Unpaid Wage Tracking)
+            # Record unpaid wage for Tier 1 claim in liquidation
+            if employee.id not in self.unpaid_wages:
+                self.unpaid_wages[employee.id] = []
+
+            self.unpaid_wages[employee.id].append((current_time, wage))
+
+            # Prune old unpaid wages (older than 3 months)
+            ticks_per_year = getattr(self.firm.config, "ticks_per_year", 365)
+            # 3 months = 1/4 year
+            cutoff_tick = current_time - (ticks_per_year // 4)
+
+            self.unpaid_wages[employee.id] = [
+                (t, w) for t, w in self.unpaid_wages[employee.id]
+                if t >= cutoff_tick
+            ]
+
             self.firm.logger.warning(
-                f"ZOMBIE | Firm {self.firm.id} cannot afford wage OR severance for Household {employee.id}. Employment retained (unpaid).",
-                extra={"tick": 0, "agent_id": self.firm.id, "wage_deficit": wage - self.firm.finance.balance}
+                f"ZOMBIE | Firm {self.firm.id} cannot afford wage for Household {employee.id}. Recorded as unpaid wage.",
+                extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - self.firm.finance.balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
             )
 
-    def hire(self, employee: Household, wage: float):
+    def hire(self, employee: Household, wage: float, current_tick: int = 0):
         self.employees.append(employee)
         self.employee_wages[employee.id] = wage
         self.hires_last_tick += 1
+
+        # Set employment start tick for tenure calculation (Tier 1 Severance)
+        if hasattr(employee, '_econ_state'):
+            employee._econ_state.employment_start_tick = current_tick
 
     def remove_employee(self, employee: Household):
         if employee in self.employees:

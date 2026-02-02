@@ -96,7 +96,7 @@ class LaborTransactionHandler(ITransactionHandler):
         if isinstance(buyer, Firm):
             # HR Update
             if seller not in buyer.hr.employees:
-                buyer.hr.hire(seller, tx.price)
+                buyer.hr.hire(seller, tx.price, context.time)
             else:
                  buyer.hr.employee_wages[seller.id] = tx.price
 

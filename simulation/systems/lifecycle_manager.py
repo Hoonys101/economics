@@ -12,6 +12,7 @@ from simulation.systems.demographic_manager import DemographicManager
 from simulation.systems.immigration_manager import ImmigrationManager
 from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.firm_management import FirmSystem
+from simulation.systems.liquidation_manager import LiquidationManager
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.finance.api import ISettlementSystem
 from modules.system.api import IAssetRecoverySystem
@@ -33,6 +34,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         self.settlement_system = settlement_system
         self.public_manager = public_manager
         self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
+
+        # TD-187: Liquidation Waterfall
+        self.liquidation_manager = LiquidationManager(settlement_system)
 
         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
         self.logger = logger
@@ -257,6 +261,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                  }
                  self.public_manager.process_bankruptcy_event(bankruptcy_event)
 
+            # TD-187: Liquidation Waterfall Protocol (Prioritized Claims)
+            # Must run BEFORE employees are cleared to calculate severance/wages
+            self.liquidation_manager.initiate_liquidation(firm, state)
+
             # Clear employees
             for employee in firm.hr.employees:
                 if employee.is_active:
@@ -265,26 +273,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             firm.hr.employees = []
             firm.inventory.clear()
             firm.capital_stock = 0.0
-
-            # Distribute cash (Dividends)
-            # Refactor: Use finance.balance
-            total_cash = firm.finance.balance
-            if total_cash > 0:
-                outstanding_shares = firm.total_shares - firm.treasury_shares
-                if outstanding_shares > 0:
-                    shareholders = list(state.households)
-                    if hasattr(state, 'government') and state.government:
-                        shareholders.append(state.government)
-
-                    for agent in shareholders:
-                        shares = 0
-                        if hasattr(agent, "shares_owned"):
-                            shares = agent.shares_owned.get(firm.id, 0)
-
-                        if shares > 0:
-                            share_ratio = shares / outstanding_shares
-                            distribution = total_cash * share_ratio
-                            self.settlement_system.transfer(firm, agent, distribution, "liquidation_dividend", tick=state.time)
 
             # Record Liquidation (Destruction of real assets & Escheatment)
             # Only Capital Stock is destroyed now (machines, buildings), inventory is recovered.

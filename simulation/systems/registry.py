@@ -66,7 +66,7 @@ class Registry(IRegistry):
 
         if isinstance(buyer, Firm):
             if seller not in buyer.hr.employees:
-                buyer.hr.hire(seller, tx.price)
+                buyer.hr.hire(seller, tx.price, state.time)
             else:
                  buyer.hr.employee_wages[seller.id] = tx.price
 
