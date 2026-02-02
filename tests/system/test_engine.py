@@ -146,6 +146,14 @@ def mock_households(mock_config_module):
 
     hh1 = Mock(spec=Household)
     hh1.id = 1
+
+    # TD-Mock-Household: Explicitly mock sub-states
+    hh1._bio_state = Mock()
+    hh1._bio_state.is_active = True
+    hh1._econ_state = Mock()
+    hh1._econ_state.assets = 100.0
+    hh1._social_state = Mock()
+
     hh1._assets = 100.0
     hh1.assets = 100.0 # WO-124: Explicitly set assets for property access
     hh1.is_active = True
@@ -183,6 +191,14 @@ def mock_households(mock_config_module):
 
     hh2 = Mock(spec=Household)
     hh2.id = 2
+
+    # TD-Mock-Household: Explicitly mock sub-states
+    hh2._bio_state = Mock()
+    hh2._bio_state.is_active = True
+    hh2._econ_state = Mock()
+    hh2._econ_state.assets = 150.0
+    hh2._social_state = Mock()
+
     hh2._assets = 150.0
     hh2.assets = 150.0 # WO-124: Explicitly set assets for property access
     hh2.is_active = True
@@ -624,9 +640,19 @@ def setup_simulation_for_lifecycle(
         "improvement": 10.0
     }
 
+    # Create pre-configured talent mocks
+    talent_active = Mock(spec=Talent)
+    talent_active.base_learning_rate = 0.1
+
+    talent_inactive = Mock(spec=Talent)
+    talent_inactive.base_learning_rate = 0.1
+
+    talent_employed = Mock(spec=Talent)
+    talent_employed.base_learning_rate = 0.1
+
     household_active = Household(
         id=1,
-        talent=Mock(spec=Talent),
+        talent=talent_active,
         goods_data=mock_goods_data_for_lifecycle,
         initial_assets=100,
         initial_needs=initial_needs.copy(),
@@ -638,13 +664,10 @@ def setup_simulation_for_lifecycle(
     household_active.is_active = True
     household_active.is_employed = True
     household_active.employer_id = 101
-    # Mock talent attributes for update_needs -> _update_skill
-    household_active.talent = Mock(spec=Talent)
-    household_active.talent.base_learning_rate = 0.1
 
     household_inactive = Household(
         id=2,
-        talent=Mock(spec=Talent),
+        talent=talent_inactive,
         goods_data=mock_goods_data_for_lifecycle,
         initial_assets=50,
         initial_needs=initial_needs.copy(),
@@ -654,12 +677,10 @@ def setup_simulation_for_lifecycle(
         config_dto=create_household_config_dto(),
     )
     household_inactive.is_active = False
-    household_inactive.talent = Mock(spec=Talent)
-    household_inactive.talent.base_learning_rate = 0.1
 
     household_employed_by_inactive_firm = Household(
         id=3,
-        talent=Mock(spec=Talent),
+        talent=talent_employed,
         goods_data=mock_goods_data_for_lifecycle,
         initial_assets=70,
         initial_needs=initial_needs.copy(),
@@ -671,8 +692,6 @@ def setup_simulation_for_lifecycle(
     household_employed_by_inactive_firm.is_active = True
     household_employed_by_inactive_firm.is_employed = True
     household_employed_by_inactive_firm.employer_id = 102
-    household_employed_by_inactive_firm.talent = Mock(spec=Talent)
-    household_employed_by_inactive_firm.talent.base_learning_rate = 0.1
 
     firm_active = Firm(
         id=101,

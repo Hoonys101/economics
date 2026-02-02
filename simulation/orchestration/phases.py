@@ -50,18 +50,6 @@ class Phase0_PreSequence(IPhaseStrategy):
                 state.transactions.extend(stabilization_txs)
                 state.logger.warning("STABILIZATION | Queued pre-sequence stabilization transactions.")
 
-        # Events
-        if self.world_state.event_system:
-             context: EventContext = {
-                 "households": state.households,
-                 "firms": state.firms,
-                 "markets": state.markets,
-                 "government": state.government,
-                 "central_bank": state.central_bank,
-                 "bank": state.bank
-             }
-             self.world_state.event_system.execute_scheduled_events(state.time, context, self.world_state.stress_scenario_config)
-
         # AI Training
         if state.ai_training_manager:
             if state.time > 0 and state.time % state.config_module.IMITATION_LEARNING_INTERVAL == 0:
@@ -150,6 +138,18 @@ class Phase0_PreSequence(IPhaseStrategy):
 
             if state.bank and hasattr(state.bank, "update_base_rate"):
                  state.bank.update_base_rate(mp_policy.target_interest_rate)
+
+        # Events (Moved to end to ensure shocks overwrite policy decisions)
+        if self.world_state.event_system:
+             context: EventContext = {
+                 "households": state.households,
+                 "firms": state.firms,
+                 "markets": state.markets,
+                 "government": state.government,
+                 "central_bank": state.central_bank,
+                 "bank": state.bank
+             }
+             self.world_state.event_system.execute_scheduled_events(state.time, context, self.world_state.stress_scenario_config)
 
         return state
 

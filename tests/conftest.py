@@ -22,6 +22,8 @@ def mock_config():
     config.TICKS_PER_YEAR = 100
     config.FISCAL_SENSITIVITY_ALPHA = 0.5
     config.CB_INFLATION_TARGET = 0.02
+    config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    config.TAX_BRACKETS = []
 
     # For FinanceSystem
     config.STARTUP_GRACE_PERIOD_TICKS = 24
