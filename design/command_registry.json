@@ -15,10 +15,10 @@
     "instruction": "Implement the SettlementSystem and atomic Saga pattern for Inheritance and Severance payments as per the approved spec (TD-160, TD-187). Ensure zero-sum integrity.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
     "file": "design/3_work_artifacts/drafts/draft_122944_Create_detailed_technical_spec.md"
   },
-  "MISSION-TEST-REORG": {
-    "title": "Reorganize Test Structure (TD-122)",
+  "MISSION-SYNC-FIX": {
+    "title": "Implement State Sync Protocol (TD-192)",
     "command": "create",
-    "instruction": "Execute Phase 2 of Test Reorganization. Move integration tests to tests/integration/ and system tests to tests/system/ as per SPEC_TD122_TEST_REORG.md. Ensure pytest.ini is updated.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "design/3_work_artifacts/specs/SPEC_TD122_TEST_REORG.md"
+    "instruction": "Implement the '_drain_and_sync_state' mechanism in TickOrchestrator as per spec_td192_state_sync.md. Remove manual sync from ActionProcessor to centralize transient state management.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "design/3_work_artifacts/specs/spec_td192_state_sync.md"
   }
 }
