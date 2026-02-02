@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-ATOMIC-INHERITANCE": {
-    "title": "Atomic Inheritance Resolution",
-    "command": "create",
-    "instruction": "Implement Spec TD-160: Atomic Inheritance Resolution. Use SettlementSystem and LegacySettlementAccount to ensure zero-sum integrity during agent death.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "design/3_work_artifacts/specs/TD-160_Atomic_Inheritance.md"
-  },
   "FIX-SEVERANCE-WATERFALL": {
     "title": "Liquidation Waterfall Protocol",
     "command": "create",
