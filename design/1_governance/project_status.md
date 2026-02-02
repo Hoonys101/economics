@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-02-01 (Architectural Liquidation Phase)
+**최종 업데이트**: 2026-02-02 (System Stabilization & M2 Integrity Phase)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -24,6 +24,7 @@
     - **Simulation Cockpit**: Streamlit Dashboard ✅
     - **Double-Entry Refactor**: Finance System Atomic Implementation ✅
     - **Fractional Reserve Banking**: Credit Creation & Scoring ✅ (2026-01-31)
+- **Operation Iron Dome**: Simulation Stabilization & M2 Integrity (0.0000 Leak) ✅ (2026-02-02)
 
 
 - **완료된 단계(Recent):** `Phase 29: The Great Depression & Crisis Monitor` ✅ (2026-01-21)
@@ -64,6 +65,8 @@
             - [x] **TD-193: Stock Market DTO Migration**: ManagedOrder wrapper & Immutable `OrderDTO` enforcement.
             - [x] **WO-142: Floating Point Integrity**: Rounding policy applied to taxes and inheritance.
         - **Economic Integrity**: Financial Leak Audit (0.0000 leak confirmed) ✅ COMPLETED
+- [x] **Household Compatibility**: Restored properties (`skills`, `portfolio`, `age`, etc.) for legacy system support.
+- [x] **Sector-Specific Fixes**: Resolved `Firm.sector` and `Repository` mock issues in integration tests.
 
     - **Next Phase**: `Emergency Phase: Mortgage System Restoration`
         - **Goal**: Fix the broken housing market and disconnected credit creation pipeline.

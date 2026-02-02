@@ -6,9 +6,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-162 | 2026-01-30 | Bloated God Class: Household (Decomposed) | SRP compliance; Decomposed to components | **RESOLVED** |
 | TD-180 | 2026-02-01 | TestFile Bloat: `test_firm_decision_engine_new.py` | 828 lines; indicator of complex engine surface | **WARNING** |
-| TD-122-B | 2026-02-02 | Broken Unit Tests after Household Refactor | 128 failing tests due to Mock fragility | **ACTIVE** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -34,7 +32,6 @@
 |---|---|---|---|---|
 | TD-160 | 2026-02-02 | Non-Atomic Inheritance (Direct Asset Transfer) | Money leaks during death; Partial state corruption | **CRITICAL** |
 | TD-187 | 2026-02-02 | Severance Pay Race Condition | Over-withdrawal during firm liquidation | **HIGH** |
-| TD-195 | 2026-02-02 | Household Asset Sync Mismatch | `_add_assets` override missing in Household; Risk of state drift | **RESOLVED** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -46,8 +43,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-122 | 2026-01-26 | Test Directory Fragmentation | Maintenance overhead; Writing friction | **RESOLVED** |
-| TD-192 | 2026-02-01 | ActionProcessor Transient State Synchronization Risk | Regression risk | **RESOLVED** |
+| (Empty) | | | | |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 

@@ -4,10 +4,16 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-M2-ORCHESTRATION": {
-    "title": "Structural M2 Integrity via Post-Phase Hook",
+  "FIX-ATOMIC-INHERITANCE": {
+    "title": "Atomic Inheritance Resolution",
     "command": "create",
-    "instruction": "Implement a structural guarantee for M2 integrity: 1. Modify TickOrchestrator to ensure Government.process_monetary_transactions is called as a mandatory post-step (e.g., in _drain_and_sync_state or _finalize_tick) to capture ALL transactions including ones generated late. 2. Remove redundant/manual calls from phases. 3. Call reset_tick_flow() properly.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "communications/insights/Money_Leak_Resolution.md"
+    "instruction": "Implement Spec TD-160: Atomic Inheritance Resolution. Use SettlementSystem and LegacySettlementAccount to ensure zero-sum integrity during agent death.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "design/3_work_artifacts/specs/TD-160_Atomic_Inheritance.md"
+  },
+  "FIX-SEVERANCE-WATERFALL": {
+    "title": "Liquidation Waterfall Protocol",
+    "command": "create",
+    "instruction": "Implement Spec TD-187: Liquidation Waterfall Protocol. Ensure employee severance (3y) and wages (3m) are prioritized over other debts.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "design/3_work_artifacts/specs/TD-187_Severance_Waterfall.md"
   }
 }
