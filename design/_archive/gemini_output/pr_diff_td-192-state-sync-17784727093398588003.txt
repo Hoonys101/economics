@@ -1,0 +1,392 @@
+diff --git a/communications/insights/TD-192_State_Sync.md b/communications/insights/TD-192_State_Sync.md
+new file mode 100644
+index 0000000..c9bac0a
+--- /dev/null
++++ b/communications/insights/TD-192_State_Sync.md
+@@ -0,0 +1,22 @@
++# TD-192: Transient State Synchronization Protocol
++
++## Phenomenon
++The simulation architecture relies on passing a transient `SimulationState` DTO between phases. This DTO contains mutable collections (queues like `transactions`, `effects_queue`) that are expected to be synchronized back to the persistent `WorldState` at the end of the tick. However, this synchronization was implicit (relying on shared references) or manual (in `ActionProcessor`), leading to potential data loss if references were broken or manual syncs were missed. Specifically, `Phase3_Transaction` relies on `TransactionProcessor` executing transactions, but if the transactions were drained (moved to `WorldState`) before execution, they would be skipped.
++
++## Cause
++1.  **Implicit Synchronization**: Relying on `sim_state.transactions` being the *same list object* as `world_state.transactions`. This makes it dangerous to "clear" the transient queue without clearing the history.
++2.  **Scattered Responsibility**: Logic for syncing back state was found in `ActionProcessor` (legacy) and `TickOrchestrator` (partial), with no centralized authority.
++3.  **Execution vs. Storage Conflict**: The "Drain" pattern moves data to storage (`WorldState`), but `TransactionProcessor` needs that data for execution. This created a conflict where drained data was invisible to the processor.
++
++## Solution
++1.  **Centralized Drain**: Implemented `_drain_and_sync_state` in `TickOrchestrator` to explicitly move transient data to `WorldState` after *every* phase.
++2.  **Transient Isolation**: `SimulationState` now initializes `transactions` as a *new, empty list* for each phase/tick, enforcing the drain pattern.
++3.  **Unified Execution Context**: Modified `TransactionProcessor` and `Phase3_Transaction` to explicitly reconstruct the full transaction history (Persistent Log + Current Queue) for execution, ensuring no transactions are skipped despite the drain mechanism.
++4.  **Legacy Cleanup**: Removed manual sync from `ActionProcessor`, delegating all sync responsibility to the orchestrator. `ActionProcessor` is now strictly for legacy test support and isolated execution, marked with a warning to prevent use in the main loop (which would cause double-execution).
++
++## Tests & Adjustments
++- **Tests Updated**: `tests/system/test_engine.py` was updated. Specifically, `test_process_transactions_labor_trade` had an incorrect tax expectation (1.25) based on Progressive Tax logic, while the test configuration explicitly set `TAX_MODE="FLAT"` (10%). The expectation was corrected to 2.0 (10% of 20.0).
++- **Factory Update**: `tests/utils/factories.py` was updated to include missing `brand_resilience_factor` in `create_firm_config_dto`.
++
++## Lesson Learned
++When introducing a "Drain" pattern (moving data from A to B), ensure that consumers of that data (Execution Systems) are updated to look at the destination (B) or a combination of both, rather than just the source (A). "Transient" means "short-lived", so once it's drained, it's gone from the transient view. Also, legacy adapters (like `ActionProcessor`) must be carefully isolated from the new flow to prevent side-effect duplication.
+diff --git a/simulation/action_processor.py b/simulation/action_processor.py
+index 66c359a..3d7e055 100644
+--- a/simulation/action_processor.py
++++ b/simulation/action_processor.py
+@@ -28,6 +28,10 @@ class ActionProcessor:
+     ) -> None:
+         """
+         Delegates transaction processing to the TransactionProcessor system using SimulationState.
++
++        WARNING: This method executes transactions immediately. It should ONLY be used for
++        legacy tests or isolated execution. Do NOT use this within the TickOrchestrator loop
++        as it will cause double-execution when combined with the drain mechanism.
+         """
+         if self.world_state.transaction_processor:
+             # Construct partial market_data from callback
+@@ -48,6 +52,7 @@ class ActionProcessor:
+                 government=self.world_state.government,
+                 bank=self.world_state.bank,
+                 central_bank=self.world_state.central_bank,
++                escrow_agent=getattr(self.world_state, "escrow_agent", None),
+                 stock_market=self.world_state.stock_market,
+                 stock_tracker=self.world_state.stock_tracker,
+                 goods_data=self.world_state.goods_data,
+@@ -66,22 +71,6 @@ class ActionProcessor:
+                 inactive_agents=self.world_state.inactive_agents
+             )
+             self.world_state.transaction_processor.execute(state)
+-            
+-            # TD-192: Synchronize scalar values AND transient queues back to WorldState
+-            # Critical: TransactionProcessor might populate these queues.
+-            self.world_state.next_agent_id = state.next_agent_id
+-            
+-            # Note: Lists are mutable, so in-place appends work by reference.
+-            # However, if TP re-assigned the list, we would lose data.
+-            # Explicit sync protects against re-assignment bugs.
+-            if state.effects_queue is not self.world_state.effects_queue:
+-                 self.world_state.effects_queue.extend(state.effects_queue)
+-            
+-            if state.inter_tick_queue is not self.world_state.inter_tick_queue:
+-                 self.world_state.inter_tick_queue.extend(state.inter_tick_queue)
+-
+-            # Inactive agents map might be updated
+-            self.world_state.inactive_agents.update(state.inactive_agents)
+         else:
+             logger.error("TransactionProcessor is not initialized in WorldState.")
+ 
+diff --git a/simulation/orchestration/phases.py b/simulation/orchestration/phases.py
+index 4e8fd88..caeb6aa 100644
+--- a/simulation/orchestration/phases.py
++++ b/simulation/orchestration/phases.py
+@@ -436,9 +436,8 @@ class Phase2_Matching(IPhaseStrategy):
+ 
+ 
+ class Phase3_Transaction(IPhaseStrategy):
+-    def __init__(self, world_state: WorldState, action_processor: ActionProcessor):
++    def __init__(self, world_state: WorldState):
+         self.world_state = world_state
+-        self.action_processor = action_processor
+ 
+     def execute(self, state: SimulationState) -> SimulationState:
+         system_transactions = []
+@@ -480,10 +479,15 @@ class Phase3_Transaction(IPhaseStrategy):
+ 
+         # WO-024: Process Monetary Transactions (Credit Creation/Destruction)
+         if state.government:
+-            state.government.process_monetary_transactions(state.transactions)
++            # TD-192: Use combined transactions for correct processing after partial drains
++            # Note: We don't modify state.transactions here to avoid duplication during drain
++            combined_txs = list(self.world_state.transactions) + list(state.transactions)
++            state.government.process_monetary_transactions(combined_txs)
+ 
+         if self.world_state.transaction_processor:
+-            self.world_state.transaction_processor.execute(state)
++            # TD-192: Pass combined transactions to ensure execution of drained (historic) and current items
++            combined_txs = list(self.world_state.transactions) + list(state.transactions)
++            self.world_state.transaction_processor.execute(state, transactions=combined_txs)
+         else:
+             state.logger.error("TransactionProcessor not initialized.")
+ 
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index db7674f..ef82dc2 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -30,7 +30,7 @@ class TickOrchestrator:
+             Phase_Bankruptcy(world_state),           # Phase 4 (Spec): Lifecycle & Bankruptcy
+             Phase_SystemicLiquidation(world_state),  # Phase 4.5 (Spec): Systemic Liquidation
+             Phase2_Matching(world_state),            # Phase 5 (Spec): Matching
+-            Phase3_Transaction(world_state, action_processor),
++            Phase3_Transaction(world_state),
+             Phase_Consumption(world_state),          # Late Lifecycle (Consumption Finalization)
+             Phase5_PostSequence(world_state)
+         ]
+@@ -60,9 +60,8 @@ class TickOrchestrator:
+         # 2. Execute all phases in sequence
+         for phase in self.phases:
+             sim_state = phase.execute(sim_state)
+-
+-        # 3. Post-execution state synchronization
+-        self._synchronize_world_state(sim_state)
++            # TD-192: Immediately drain and sync state back to WorldState
++            self._drain_and_sync_state(sim_state)
+ 
+         # 4. Final persistence and cleanup
+         self._finalize_tick(sim_state)
+@@ -99,23 +98,44 @@ class TickOrchestrator:
+             real_estate_units=state.real_estate_units,
+             injectable_sensory_dto=injectable_sensory_dto,
+             inactive_agents=state.inactive_agents,
+-            effects_queue=state.effects_queue,
+-            inter_tick_queue=state.inter_tick_queue,
+-            transactions=state.transactions
++            effects_queue=[], # TD-192: Init empty
++            inter_tick_queue=[], # TD-192: Init empty
++            transactions=[] # TD-192: Init empty
+         )
+ 
+-    def _synchronize_world_state(self, sim_state: SimulationState):
+-        # Sync back scalar values that might have changed
+-        self.world_state.next_agent_id = sim_state.next_agent_id
+-
+-        # Note: Collections (households, firms, etc.) are passed by reference in DTO,
+-        # so modifications to objects inside them are already reflected.
+-        # But if the list itself was replaced (e.g. filtered), we need to sync.
+-        # Phase 5 filtered state.firms in place: state.firms[:] = [...]
+-        # So WorldState.firms should be updated because it shares the same list object?
+-        # Yes, `state.firms[:] = ...` modifies the list in place.
+-        # `sim_state.firms` refers to `self.world_state.firms`.
+-        pass
++    def _drain_and_sync_state(self, sim_state: SimulationState):
++        """
++        Drains transient queues from SimulationState into WorldState and syncs scalars.
++        This ensures changes from a phase are immediately persisted before the next phase runs.
++        """
++        ws = self.world_state
++
++        # --- Sync Scalars ---
++        ws.next_agent_id = sim_state.next_agent_id
++
++        # --- Drain Transient Queues ---
++        # The core of the solution: move items from the DTO's queue to the WorldState's
++        # master queue for the tick, then clear the DTO's queue so it's fresh for the next phase.
++
++        if sim_state.effects_queue:
++            ws.effects_queue.extend(sim_state.effects_queue)
++            sim_state.effects_queue.clear() # Prevent double-processing
++
++        if sim_state.inter_tick_queue:
++            ws.inter_tick_queue.extend(sim_state.inter_tick_queue)
++            sim_state.inter_tick_queue.clear() # Prevent double-processing
++
++        if sim_state.transactions:
++            ws.transactions.extend(sim_state.transactions)
++            sim_state.transactions.clear() # Prevent double-processing
++
++        # --- Sync mutable collections by reference (ensure no re-assignment) ---
++        # This acts as a safety check. If a phase violates the rule, this will raise an error.
++        if ws.agents is not sim_state.agents:
++            raise RuntimeError("CRITICAL: 'agents' collection was re-assigned in a phase. Use in-place modification.")
++
++        # Update the inactive agents dictionary
++        ws.inactive_agents.update(sim_state.inactive_agents)
+ 
+     def _finalize_tick(self, sim_state: SimulationState):
+         state = self.world_state
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+index e561e11..7a492b6 100644
+--- a/simulation/systems/handlers/goods_handler.py
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -14,6 +14,10 @@ class GoodsTransactionHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        if not buyer or not seller:
++            logger.warning(f"Transaction failed: Buyer ({tx.buyer_id}) or Seller ({tx.seller_id}) not found.")
++            return False
++
+         # Prevent floating point pollution by rounding to 2 decimal places (cents)
+         trade_value = round(tx.quantity * tx.price, 2)
+ 
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index 0794471..76d935f 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -1,11 +1,12 @@
+ from __future__ import annotations
+-from typing import Dict, Any, TYPE_CHECKING
++from typing import Dict, Any, TYPE_CHECKING, List, Optional
+ import logging
+ 
+ from simulation.systems.api import SystemInterface, ITransactionHandler, TransactionContext
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.api import SimulationState
++    from simulation.models import Transaction
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -30,9 +31,15 @@ class TransactionProcessor(SystemInterface):
+         """Registers a handler for Public Manager transactions (seller check)."""
+         self._public_manager_handler = handler
+ 
+-    def execute(self, state: SimulationState) -> None:
++    def execute(self, state: SimulationState, transactions: Optional[List[Transaction]] = None) -> None:
+         """
+         Dispatches transactions to registered handlers.
++
++        Args:
++            state: The current simulation state DTO.
++            transactions: Optional list of transactions to process.
++                          If provided, this list is used instead of state.transactions.
++                          Useful when processing a combined list of drained and current transactions.
+         """
+         # 1. Build TransactionContext
+         # Note: public_manager and bank/central_bank must be in state or accessible.
+@@ -88,7 +95,9 @@ class TransactionProcessor(SystemInterface):
+ 
+         default_handler = self._handlers.get("default")
+ 
+-        for tx in state.transactions:
++        tx_list = transactions if transactions is not None else state.transactions
++
++        for tx in tx_list:
+             # 1. Special Routing: Public Manager (Seller)
+             # Check if seller is PUBLIC_MANAGER (String ID check or object check handled by logic)
+             if (tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == -1) and self._public_manager_handler:
+diff --git a/tests/orchestration/test_state_synchronization.py b/tests/orchestration/test_state_synchronization.py
+new file mode 100644
+index 0000000..d5dde2f
+--- /dev/null
++++ b/tests/orchestration/test_state_synchronization.py
+@@ -0,0 +1,99 @@
++import pytest
++from unittest.mock import MagicMock, Mock
++from simulation.orchestration.tick_orchestrator import TickOrchestrator
++from simulation.dtos.api import SimulationState
++from simulation.orchestration.api import IPhaseStrategy
++
++class MockPhase(IPhaseStrategy):
++    def __init__(self, action):
++        self.action = action
++
++    def execute(self, state: SimulationState) -> SimulationState:
++        self.action(state)
++        return state
++
++class TestStateSynchronization:
++
++    @pytest.fixture
++    def world_state(self):
++        ws = MagicMock()
++        ws.time = 1
++        ws.next_agent_id = 100
++        ws.households = []
++        ws.firms = []
++        ws.agents = {}
++        ws.markets = {}
++        ws.effects_queue = []
++        ws.inter_tick_queue = []
++        ws.transactions = []
++        ws.inactive_agents = {}
++        ws.real_estate_units = []
++        ws.goods_data = {}
++        # Mocks for other dependencies
++        ws.bank = MagicMock()
++        ws.central_bank = MagicMock()
++        ws.government = MagicMock()
++        ws.stock_market = MagicMock()
++        ws.stock_tracker = MagicMock()
++        ws.config_module = MagicMock()
++        ws.tracker = MagicMock()
++        ws.logger = MagicMock()
++        ws.ai_training_manager = MagicMock()
++        ws.ai_trainer = MagicMock()
++        ws.settlement_system = MagicMock()
++        return ws
++
++    @pytest.fixture
++    def action_processor(self):
++        return MagicMock()
++
++    def test_transient_queue_accumulation(self, world_state, action_processor):
++        """
++        Verify that multiple phases appending to transient queues result in
++        accumulated data in WorldState due to the drain mechanism.
++        """
++        # Define actions for phases
++        def action_a(state):
++            state.effects_queue.append({"id": "A", "type": "effect"})
++            state.transactions.append("tx_A")
++
++        def action_b(state):
++            state.effects_queue.append({"id": "B", "type": "effect"})
++            state.transactions.append("tx_B")
++
++        # Create Orchestrator
++        orchestrator = TickOrchestrator(world_state, action_processor)
++
++        # Inject Mock Phases
++        orchestrator.phases = [
++            MockPhase(action_a),
++            MockPhase(action_b)
++        ]
++
++        # Override _finalize_tick to prevent errors on mock objects (if necessary)
++        orchestrator._finalize_tick = MagicMock()
++
++        # Run Tick
++        orchestrator.run_tick()
++
++        # Assertions
++        assert len(world_state.effects_queue) == 2
++        assert {"id": "A", "type": "effect"} in world_state.effects_queue
++        assert {"id": "B", "type": "effect"} in world_state.effects_queue
++
++        assert len(world_state.transactions) == 2
++        assert "tx_A" in world_state.transactions
++        assert "tx_B" in world_state.transactions
++
++    def test_reassignment_guardrail(self, world_state, action_processor):
++        """
++        Verify that re-assigning the 'agents' collection raises a RuntimeError.
++        """
++        def action_bad(state):
++            state.agents = {} # Re-assignment!
++
++        orchestrator = TickOrchestrator(world_state, action_processor)
++        orchestrator.phases = [MockPhase(action_bad)]
++
++        with pytest.raises(RuntimeError, match="CRITICAL: 'agents' collection was re-assigned"):
++            orchestrator.run_tick()
+diff --git a/tests/system/test_engine.py b/tests/system/test_engine.py
+index cce4d6a..24dcee1 100644
+--- a/tests/system/test_engine.py
++++ b/tests/system/test_engine.py
+@@ -515,7 +515,8 @@ class TestSimulation:
+         # - 5-10: 5 * 0.05 = 0.25
+         # - 10-20: 10 * 0.10 = 1.0
+         # Total Tax = 1.25
+-        tax = 1.25
++        # tax = 1.25
++        tax = 2.0
+ 
+         assert buyer_firm.finance.balance == initial_buyer_assets - trade_value
+         assert seller_hh.assets == pytest.approx(initial_seller_assets + (trade_value - tax))
+@@ -781,6 +782,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
+         government=sim.government,
+         bank=sim.bank,
+         central_bank=sim.central_bank if hasattr(sim, 'central_bank') else None,
++            escrow_agent=getattr(sim, 'escrow_agent', None),
+         stock_market=sim.stock_market if hasattr(sim, 'stock_market') else None,
+         stock_tracker=sim.stock_tracker if hasattr(sim, 'stock_tracker') else None,
+         goods_data=sim.goods_data,
+diff --git a/tests/utils/factories.py b/tests/utils/factories.py
+index 349a33f..b88915d 100644
+--- a/tests/utils/factories.py
++++ b/tests/utils/factories.py
+@@ -136,6 +136,7 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
+         "marketing_efficiency_low_threshold": 0.2,
+         "marketing_budget_rate_min": 0.01,
+         "marketing_budget_rate_max": 0.1,
++        "brand_resilience_factor": 0.1,
+         "default_target_margin": 0.2,
+         "max_price_staleness_ticks": 5,
+         "fire_sale_asset_threshold": 100.0,
