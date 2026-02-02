@@ -201,7 +201,7 @@ class MAManager:
                 # Retain
                 prey.hr.remove_employee(emp)
                 wage = prey.hr.employee_wages.get(emp.id, 10.0)
-                predator.hr.hire(emp, wage)
+                predator.hr.hire(emp, wage, tick)
                 emp.employer_id = predator.id
                 retained_count += 1
                 

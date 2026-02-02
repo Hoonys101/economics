@@ -45,7 +45,7 @@ class Bootstrapper:
                     worker = unemployed.pop(0)
                     worker.employer_id = firm.id
                     worker.wage = DEFAULT_WAGE
-                    firm.hr.hire(worker, DEFAULT_WAGE)
+                    firm.hr.hire(worker, DEFAULT_WAGE, 0) # Genesis Tick
                     assigned_count += 1
                 logger.info(f'BOOTSTRAPPER | Force-assigned {workers_needed} workers to Firm {firm.id}')
 

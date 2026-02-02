@@ -110,6 +110,7 @@ class EconStateDTO:
     last_labor_offer_tick: int
     last_fired_tick: int
     job_search_patience: int
+    employment_start_tick: int
 
     # Consumption & Inflation
     current_consumption: float

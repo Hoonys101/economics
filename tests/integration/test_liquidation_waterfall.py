@@ -1,0 +1,182 @@
+import unittest
+from unittest.mock import MagicMock, Mock
+from typing import List
+
+from simulation.systems.liquidation_manager import LiquidationManager, Claim
+from simulation.firms import Firm
+from simulation.core_agents import Household
+from simulation.dtos.api import SimulationState
+from simulation.dtos.config_dtos import FirmConfigDTO
+
+class TestLiquidationWaterfallIntegration(unittest.TestCase):
+    def setUp(self):
+        self.mock_settlement = MagicMock()
+        self.manager = LiquidationManager(self.mock_settlement)
+
+        # Setup Config
+        self.config = MagicMock(spec=FirmConfigDTO)
+        self.config.ticks_per_year = 365
+        self.config.severance_pay_weeks = 2.0
+        self.config.corporate_tax_rate = 0.2
+        self.config.labor_market_min_wage = 10.0
+        self.config.halo_effect = 0.0
+
+        # Setup Firm
+        self.firm = MagicMock(spec=Firm)
+        self.firm.id = 1
+        self.firm.config = self.config
+        self.firm.finance = MagicMock()
+        self.firm.finance.current_profit = 0.0 # Fix 1
+        self.firm.hr = MagicMock()
+        self.firm.hr.employees = []
+        self.firm.hr.employee_wages = {}
+        self.firm.hr.unpaid_wages = {}
+        self.firm.total_shares = 1000.0
+        self.firm.treasury_shares = 0.0
+        self.firm.total_debt = 0.0
+
+        # Setup State
+        self.state = MagicMock(spec=SimulationState)
+        self.state.time = 2000 # Increased to accommodate 3y history
+        self.state.agents = {}
+        self.state.households = []
+        self.state.government = MagicMock()
+        self.state.government.id = "government"
+        # Mock shares_owned.get for government to avoid TypeError
+        self.state.government.shares_owned.get.return_value = 0.0
+
+    def test_severance_priority_over_shareholders(self):
+        """
+        Verify that employees receive severance before shareholders receive any dividends.
+        Scenario:
+        - Cash: 5000
+        - Employee A: 3 years tenure, wage 100. Claim: 3yr * 2wk * 7day * 100 = 4200.
+        - Employee B: 1 year tenure, wage 100. Claim: 1yr * 2wk * 7day * 100 = 1400.
+        - Total Tier 1: 5600.
+        - Shortfall: 600.
+        - Expected: Employees get pro-rata (5000/5600 ratio). Shareholders get 0.
+        """
+        self.firm.finance.balance = 5000.0
+
+        # Employee A
+        empA = MagicMock(spec=Household)
+        empA.id = 101
+        empA._econ_state = MagicMock()
+        empA._econ_state.employment_start_tick = 2000 - (365 * 3) # 3 years
+
+        # Employee B
+        empB = MagicMock(spec=Household)
+        empB.id = 102
+        empB._econ_state = MagicMock()
+        empB._econ_state.employment_start_tick = 2000 - 365 # 1 year
+
+        self.firm.hr.employees = [empA, empB]
+        self.firm.hr.employee_wages = {101: 100.0, 102: 100.0}
+
+        # Register in state
+        self.state.agents[101] = empA
+        self.state.agents[102] = empB
+
+        # Run Liquidation
+        self.manager.initiate_liquidation(self.firm, self.state)
+
+        # Verify Transfers
+        # Total Claims = 4200 + 1400 = 5600.
+        # Ratio = 5000 / 5615.38 (approx)
+        # But A has 3 years, B has 1 year. 3:1 ratio of claims.
+        # Total Cash 5000.
+        # A gets 5000 * 0.75 = 3750.
+        # B gets 5000 * 0.25 = 1250.
+
+        expected_A = 3750.0
+        expected_B = 1250.0
+
+        # Check call args
+        calls = self.mock_settlement.transfer.call_args_list
+        self.assertEqual(len(calls), 2)
+
+        # Extract amounts paid
+        paid_amounts = {}
+        for call in calls:
+            args, _ = call
+            # args: (from, to, amount, memo)
+            payee = args[1]
+            amount = args[2]
+            paid_amounts[payee.id] = amount
+
+        self.assertAlmostEqual(paid_amounts[101], expected_A)
+        self.assertAlmostEqual(paid_amounts[102], expected_B)
+
+        # Verify Shareholders got nothing (no calls to shareholder agents)
+        # Note: In this test setup, households list is empty so no shareholders loop ran anyway,
+        # but execute_waterfall logic puts Equity at Tier 5, and loop breaks if cash=0.
+
+    def test_waterfall_tiers(self):
+        """
+        Verify Tier 1 > Tier 2 > Tier 5.
+        Scenario:
+        - Cash: 10000.
+        - Tier 1 (Severance): 2000.
+        - Tier 2 (Debt): 5000.
+        - Remaining: 3000.
+        - Tier 5 (Equity): Should receive 3000.
+        """
+        self.firm.finance.balance = 10000.0
+
+        # Employee (Tier 1) - 2000 claim
+        # 2000 = Tenure * 2 * 7 * 100 => Tenure * 1400 = 2000 => Tenure = 1.42 yrs
+        ticks = 1.428 * 365
+        emp = MagicMock(spec=Household)
+        emp.id = 101
+        emp._econ_state = MagicMock()
+        emp._econ_state.employment_start_tick = 2000 - int(ticks)
+
+        self.firm.hr.employees = [emp]
+        self.firm.hr.employee_wages = {101: 100.0}
+
+        # Debt (Tier 2) - 5000
+        self.firm.total_debt = 5000.0
+        bank = MagicMock()
+        bank.id = "bank"
+        self.firm.decision_engine = MagicMock() # Fix 2
+        self.firm.decision_engine.loan_market.bank = bank
+
+        # Shareholders (Tier 5)
+        shareholder = MagicMock(spec=Household)
+        shareholder.id = 201
+        shareholder.shares_owned = {1: 500.0} # 50% ownership
+
+        self.state.households = [shareholder]
+        self.state.agents[101] = emp
+        self.state.agents["bank"] = bank
+        self.state.agents[201] = shareholder
+
+        # Run
+        self.manager.initiate_liquidation(self.firm, self.state)
+
+        # Verify
+        # 1. Employee Paid Full 2000 (Approx)
+        # 2. Bank Paid Full 5000
+        # 3. Shareholder Paid 1500 (50% of 3000 remaining)
+
+        # Calculate exact severance claim
+        tenure = (2000 - emp._econ_state.employment_start_tick) / 365.0
+        severance = tenure * 2.0 * (365/52) * 100.0
+
+        remaining = 10000.0 - severance - 5000.0
+        equity_payout = remaining * (500.0 / 1000.0)
+
+        transfers = self.mock_settlement.transfer.call_args_list
+
+        paid_map = {}
+        for call in transfers:
+            payee = call[0][1]
+            amt = call[0][2]
+            paid_map[payee.id] = amt
+
+        self.assertAlmostEqual(paid_map[101], severance)
+        self.assertAlmostEqual(paid_map["bank"], 5000.0)
+        self.assertAlmostEqual(paid_map[201], equity_payout)
+
+if __name__ == '__main__':
+    unittest.main()

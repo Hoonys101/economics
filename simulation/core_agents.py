@@ -160,6 +160,7 @@ class Household(BaseAgent, ILearningAgent):
             last_labor_offer_tick=0,
             last_fired_tick=-1,
             job_search_patience=0,
+            employment_start_tick=-1,
             current_consumption=0.0,
             current_food_consumption=0.0,
             expected_inflation=defaultdict(float),
