@@ -78,6 +78,7 @@ class TestPhase29Depression(unittest.TestCase):
             QE_INTERVENTION_YIELD_THRESHOLD=0.10,
             DEBT_RISK_PREMIUM_TIERS={1.2: 0.05, 0.9: 0.02, 0.6: 0.005},
             BOND_MATURITY_TICKS=400,
+            SURVIVAL_NEED_DEATH_THRESHOLD=100.0,
             SURVIVAL_NEED_CONSUMPTION_THRESHOLD=50.0,
             FOOD_CONSUMPTION_QUANTITY=1.0,
             FOOD_PURCHASE_MAX_PER_TICK=5.0,
@@ -108,13 +109,17 @@ class TestPhase29Depression(unittest.TestCase):
         )
 
         # Create dummy agents
-        self.households = [MagicMock() for _ in range(5)]
+        self.households = [MagicMock(spec=Household) for _ in range(5)]
         for i, h in enumerate(self.households):
             h.id = i
+            h._bio_state = MagicMock() # Needs explicit sub-mock with spec
+            h._econ_state = MagicMock()
+            h._social_state = MagicMock()
             h._bio_state.is_active = True
             h._econ_state.employer_id = None
             h._econ_state.is_employed = False
             h._bio_state.age = 25
+            h.age = 25  # Explicitly set property
             h.income = 100
             h._econ_state.current_consumption = 0.0
             h._econ_state.current_food_consumption = 0.0
@@ -122,9 +127,12 @@ class TestPhase29Depression(unittest.TestCase):
             h._econ_state.education_level = 1.0
             h._econ_state.aptitude = 0.5
             h._econ_state.current_wage = 10.0
+            h.current_wage = 10.0
             h._bio_state.children_ids = []
+            h.children_ids = []
             h._bio_state.needs = {"survival": 0.5}
             h._assets = 1000
+            h.assets = 1000.0
             h._econ_state.assets = 1000 # Explicitly set property for sorting
             h.decision_engine = MagicMock()
             h.decision_engine.ai_engine = MagicMock()
@@ -137,10 +145,11 @@ class TestPhase29Depression(unittest.TestCase):
             h._econ_state.residing_property_id = None
             h._social_state.approval_rating = 1.0
 
-        self.firms = [MagicMock() for _ in range(5)]
+        self.firms = [MagicMock(spec=Firm) for _ in range(5)]
         for i, f in enumerate(self.firms):
             f.id = 100 + i
             f.type = "ConsumerGoodFirm"
+            f.sector = "consumer_goods"
             f.specialization = "food" if i % 2 == 0 else "electronics"
             f.is_active = True
             f.age = 0
@@ -168,10 +177,13 @@ class TestPhase29Depression(unittest.TestCase):
 
             # Phase 29 Refinement: Mock FinanceDepartment
             f.finance = MagicMock()
+            f.finance.balance = 5000.0  # Initialize balance (fix for Bootstrapper)
             f.finance.consecutive_loss_turns = 0
             f.finance.current_profit = 100.0
             f.finance.calculate_altman_z_score.return_value = 3.0
             f.finance.calculate_valuation.return_value = 5000.0
+            f.finance.get_inventory_value.return_value = 0.0
+            f.finance.check_cash_crunch.return_value = False
 
             # Phase 29 Refinement: Mock get_financial_snapshot
             f.get_financial_snapshot.return_value = {
@@ -183,7 +195,9 @@ class TestPhase29Depression(unittest.TestCase):
             }
 
         self.repository = MagicMock(spec=SimulationRepository)
-        self.repository.save_simulation_run.return_value = "test_run"
+        self.repository.runs = MagicMock()
+        self.repository.analytics = MagicMock()
+        self.repository.runs.save_simulation_run.return_value = "test_run"
         self.ai_trainer = MagicMock(spec=AIEngineRegistry)
 
         # Create Initializer

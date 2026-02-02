@@ -71,45 +71,50 @@ def test_debt_ceiling_enforcement(government):
     # by the amount of the bond. A simple mock doesn't do this.
     def issue_bonds_side_effect(amount, tick):
         government._assets += amount
-        return [Mock()] # Return a successful bond issuance
+        return [Mock()], [] # Return a successful bond issuance and empty transactions
 
     government.finance_system.issue_treasury_bonds = Mock(side_effect=issue_bonds_side_effect)
 
     # 1. Spend within limit
     amount = 500.0
-    paid = government.provide_household_support(agent, amount, current_tick=1)
+    txs = government.provide_household_support(agent, amount, current_tick=1)
+    paid = sum(tx.price for tx in txs)
     assert paid == 500.0
+
+    # Simulate execution (deduct spent amount)
+    government._assets -= paid
+
     # After spending 500, assets should be 0, and total_debt (which is -assets) should be 0.
     # The bonds were issued for 500, assets became 500, then spent.
     assert government.assets == 0.0
 
     # 2. Spend more
     amount = 1500.0
-    paid = government.provide_household_support(agent, amount, current_tick=2)
+    txs = government.provide_household_support(agent, amount, current_tick=2)
+    paid = sum(tx.price for tx in txs)
     assert paid == 1500.0
+
+    # Simulate execution
+    government._assets -= paid
+
     assert government.assets == 0.0
 
     # 3. Try to spend when bond issuance fails
     government.finance_system.issue_treasury_bonds.side_effect = None # Disable the side effect
-    government.finance_system.issue_treasury_bonds.return_value = []
+    government.finance_system.issue_treasury_bonds.return_value = [], []
     amount = 100.0
-    paid = government.provide_household_support(agent, amount, current_tick=3)
+    txs = government.provide_household_support(agent, amount, current_tick=3)
+    paid = sum(tx.price for tx in txs)
     assert paid == 0.0
 
 def test_calculate_income_tax_uses_current_rate(government, mock_config):
     """Verify income tax calculation uses the current government rate."""
-    government.income_tax_rate = 0.05  # Set a specific rate
-    mock_config.TAX_MODE = "FLAT"
-    mock_config.INCOME_TAX_RATE = 0.20 # Make sure the gov't's own rate is used
+    # Manually overwrite the policy to be a flat tax policy (5%)
+    from modules.government.dtos import FiscalPolicyDTO, TaxBracketDTO
+    flat_bracket = TaxBracketDTO(floor=0.0, rate=0.05, ceiling=None)
+    government.fiscal_policy = FiscalPolicyDTO(progressive_tax_brackets=[flat_bracket])
 
     income = 100.0
+    # survival_cost is irrelevant for flat tax bracket starting at 0
     tax = government.calculate_income_tax(income, survival_cost=10.0)
     assert tax == 5.0
-
-    mock_config.TAX_MODE = "PROGRESSIVE"
-    government.tax_agency.calculate_income_tax = Mock(return_value=10.0)
-    tax = government.calculate_income_tax(income, survival_cost=10.0)
-    government.tax_agency.calculate_income_tax.assert_called_with(
-        income, 10.0, government.income_tax_rate, "PROGRESSIVE"
-    )
-    assert tax == 10.0

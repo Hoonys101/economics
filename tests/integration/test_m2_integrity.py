@@ -56,12 +56,30 @@ class TestM2Integrity:
         # 4. Household
         hh = MagicMock(spec=Household)
         hh.id = 2
+
+        # Explicitly Mock Sub-States (TD-Mock-Household)
+        hh._bio_state = MagicMock()
+        hh._bio_state.is_active = True
+        hh._econ_state = MagicMock()
+        hh._econ_state.assets = 1000.0  # Initialize as float for calculation
+        hh._social_state = MagicMock()
+
         hh.assets = 1000.0
         hh.is_active = True
         hh.settlement_system = settlement_system
+
         # Household must support withdraw/deposit for SettlementSystem
-        hh.withdraw = lambda amount: setattr(hh, 'assets', hh.assets - amount)
-        hh.deposit = lambda amount: setattr(hh, 'assets', hh.assets + amount)
+        # And keep _econ_state.assets in sync for WorldState calculations
+        def withdraw(amount):
+            hh.assets -= amount
+            hh._econ_state.assets -= amount
+
+        def deposit(amount):
+            hh.assets += amount
+            hh._econ_state.assets += amount
+
+        hh.withdraw = withdraw
+        hh.deposit = deposit
 
         state.households.append(hh)
         state.agents[hh.id] = hh

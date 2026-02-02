@@ -204,6 +204,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Alias for backward compatibility (DecisionContext uses this name)
         sim.stress_scenario_config = strategy
 
+        # Ensure WorldState has the strategy/config (Critical for Phases)
+        sim.world_state.stress_scenario_config = strategy
+
         # WO-124: Initialize CentralBank EARLY for Genesis Protocol
         sim.central_bank = CentralBank(
             tracker=sim.tracker,
