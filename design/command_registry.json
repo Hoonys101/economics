@@ -4,11 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "STABILIZE-CORP": {
-    "title": "Corporate Test Repair",
-    "command": "create",
-    "instruction": "Fix broken corporate and decision unit tests. Use spec: design/3_work_artifacts/specs/spec_jules_b_corporate.md\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
-  },
   "STABILIZE-SYS": {
     "title": "System Test Repair",
     "command": "create",
