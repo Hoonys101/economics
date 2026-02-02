@@ -315,9 +315,14 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             if hasattr(state, "inactive_agents") and isinstance(state.inactive_agents, dict):
                 state.inactive_agents[household.id] = household
 
-            # Capture transactions returned by InheritanceManager
-            inheritance_txs = self.inheritance_manager.process_death(household, state.government, state)
-            transactions.extend(inheritance_txs)
+            # TD-160: Use Settlement Saga instead of Transactions
+            saga = self.inheritance_manager.process_death(household, state.government, state)
+
+            # Submit Saga
+            if state.settlement_system:
+                state.settlement_system.submit_saga(saga)
+            else:
+                 self.logger.critical("SETTLEMENT_SYSTEM_MISSING | Cannot submit estate saga.")
 
             inv_value = self._calculate_inventory_value(household._econ_state.inventory, state.markets)
 

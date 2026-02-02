@@ -656,3 +656,18 @@ class Phase5_PostSequence(IPhaseStrategy):
              state.stock_tracker.track_all_firms(state.firms, state.stock_market)
 
         return state
+
+
+class Phase_Settlement(IPhaseStrategy):
+    """
+    Phase 4.7: Settlement
+    Executes atomic financial sagas (e.g., Estate Settlement, Severance).
+    Runs after Bankruptcy (where sagas are created) and before Transaction Processing.
+    """
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
+
+    def execute(self, state: SimulationState) -> SimulationState:
+        if state.settlement_system:
+            state.settlement_system.execute(state)
+        return state
