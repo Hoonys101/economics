@@ -1,0 +1,108 @@
+diff --git a/communications/insights/TD-200_Category_C_E_Fixes.md b/communications/insights/TD-200_Category_C_E_Fixes.md
+new file mode 100644
+index 0000000..7ad946b
+--- /dev/null
++++ b/communications/insights/TD-200_Category_C_E_Fixes.md
+@@ -0,0 +1,27 @@
++# Technical Debt & Insights Report: Category C & E Fixes
++
++## Mission: TD-200 (Fix Logic Failures)
++
++### 1. Phenomenon: Missing Default Values in Mock Configs
++- **Observation**: `MonetaryPolicyManager` crashed with `TypeError: '>' not supported between instances of 'MagicMock' and 'float'` because it tried to access `getattr(config_module, "CB_NEUTRAL_RATE", 0.02)`. Since `config_module` was a `MagicMock`, it returned a new Mock instead of raising `AttributeError` (which would trigger the default) or returning the default.
++- **Cause**: `MagicMock` by default creates attributes on access. `getattr(mock, "attr", default)` returns `mock.attr` (which is a Mock), ignoring `default`.
++- **Solution**: Explicitly set attributes in `configure_mock` (e.g., `CB_NEUTRAL_RATE=0.02`).
++- **Lesson Learned**: When mocking configuration objects that use `getattr` with defaults, ALWAYS explicitly set the attribute on the mock, or use `spec` carefully. `MagicMock` behaves differently than standard objects regarding `getattr` defaults.
++
++### 2. Phenomenon: Test/Code mismatch in Household Attributes
++- **Observation**: `test_indicator_aggregation` failed because it set `household.current_consumption`, but the `EconomicIndicatorTracker` read `household._econ_state.current_consumption`.
++- **Cause**: The `Household` refactor moved state to DTOs (`_econ_state`), removing facade properties. The test was not updated to reflect this structural change.
++- **Solution**: Updated test to write directly to `_econ_state`.
++- **Lesson Learned**: Unit tests must be strictly synchronized with architectural refactors. When removing facade properties, grep for test usages to ensure no "silent writes" (setting a new attribute on the object) occur.
++
++### 3. Phenomenon: Testing Deprecated Interfaces
++- **Observation**: `test_collect_tax_legacy` verified that `government.tax_agency.collect_tax` was called. However, `Government.collect_tax` (itself deprecated) had been refactored to bypass `TaxAgency` and call `SettlementSystem` directly.
++- **Cause**: The test was verifying an implementation detail (collaboration with TaxAgency) that had been removed, rather than the outcome (money collection) or the new collaborator (SettlementSystem).
++- **Solution**: Updated the test to verify `settlement_system.transfer` is called.
++- **Lesson Learned**: When components are deprecated or removed (like `TaxAgency`), associated tests should either be removed or updated to test the new path immediately to avoid "zombie tests".
++
++### 4. Phenomenon: Missing Mock Attributes in System Tests
++- **Observation**: `test_depression_scenario_triggers` failed with `AttributeError: Mock object has no attribute 'agents'` because `PersistenceManager` accessed `repository.agents`, which wasn't mocked in the system test setup.
++- **Cause**: Integration/System tests mocking complex dependencies (`SimulationRepository`) often miss deeply nested attributes used by specific subsystems (`PersistenceManager`).
++- **Solution**: Added `repository.agents = MagicMock()` to the test setup.
++- **Lesson Learned**: Use `spec=RealClass` and possibly recursive specs (or better, real stub objects) for complex repositories to catch missing attribute errors earlier or provide better error messages.
+diff --git a/tests/integration/scenarios/diagnosis/test_indicator_pipeline.py b/tests/integration/scenarios/diagnosis/test_indicator_pipeline.py
+index d793516..0388293 100644
+--- a/tests/integration/scenarios/diagnosis/test_indicator_pipeline.py
++++ b/tests/integration/scenarios/diagnosis/test_indicator_pipeline.py
+@@ -13,7 +13,7 @@ def test_indicator_aggregation(simple_household, mock_config_module):
+ 
+     # Setup Household state
+     # tracker calculates total_consumption from household._econ_state.current_consumption
+-    simple_household.current_consumption = 10.0
++    simple_household._econ_state.current_consumption = 10.0
+     simple_household.is_active = True
+ 
+     # Act
+diff --git a/tests/integration/test_government_tax.py b/tests/integration/test_government_tax.py
+index 55ea0ad..8875b07 100644
+--- a/tests/integration/test_government_tax.py
++++ b/tests/integration/test_government_tax.py
+@@ -67,30 +67,20 @@ class TestGovernmentTax:
+         tax_type = "wealth_tax"
+         current_tick = 10
+ 
+-        expected_result: TaxCollectionResult = {
+-            "success": True,
+-            "amount_collected": 50.0,
+-            "tax_type": tax_type,
+-            "payer_id": payer.id,
+-            "payee_id": government.id,
+-            "error_message": None
+-        }
+-        government.tax_agency.collect_tax.return_value = expected_result
++        government.settlement_system.transfer.return_value = True
+ 
+         # Act
+         with pytest.warns(DeprecationWarning, match="Government.collect_tax is deprecated"):
+             result = government.collect_tax(amount, tax_type, payer, current_tick)
+ 
+         # Assert
+-        government.tax_agency.collect_tax.assert_called_once_with(
+-            payer=payer,
+-            payee=government,
+-            amount=amount,
+-            tax_type=tax_type,
+-            settlement_system=government.settlement_system,
+-            current_tick=current_tick
++        government.settlement_system.transfer.assert_called_once_with(
++            payer, government, amount, f"{tax_type} collection"
+         )
+-        assert result == expected_result
++
++        assert result["success"] is True
++        assert result["amount_collected"] == amount
++        assert result["tax_type"] == tax_type
+         assert government.total_collected_tax == 50.0 # Should have called record_revenue internally
+ 
+     def test_collect_tax_no_settlement_system(self, government):
+diff --git a/tests/system/test_phase29_depression.py b/tests/system/test_phase29_depression.py
+index 870b11c..c2cc668 100644
+--- a/tests/system/test_phase29_depression.py
++++ b/tests/system/test_phase29_depression.py
+@@ -67,6 +67,7 @@ class TestPhase29Depression(unittest.TestCase):
+             CB_INFLATION_TARGET=0.02,
+             CB_TAYLOR_ALPHA=1.5,
+             CB_TAYLOR_BETA=0.5,
++            CB_NEUTRAL_RATE=0.02,
+             MIN_BASE_RATE=0.0,
+             MAX_BASE_RATE=0.2,
+             HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK=1.0,
+@@ -197,6 +198,7 @@ class TestPhase29Depression(unittest.TestCase):
+         self.repository = MagicMock(spec=SimulationRepository)
+         self.repository.runs = MagicMock()
+         self.repository.analytics = MagicMock()
++        self.repository.agents = MagicMock()
+         self.repository.runs.save_simulation_run.return_value = "test_run"
+         self.ai_trainer = MagicMock(spec=AIEngineRegistry)
+ 

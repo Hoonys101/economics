@@ -4,10 +4,16 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-LEAK-ACCOUNTING": {
-    "title": "Resolve 8000 Monetary Leak",
+  "FIX-M2-ORCHESTRATION": {
+    "title": "Fix M2 Sync and Gov Reset",
     "command": "create",
-    "instruction": "Resolve the consistent 8000 unit money leak. 1. Update scripts/trace_leak.py to account for government spending (e.g., infrastructure) in 'authorized_delta'. 2. Verify if the leak persists; if so, investigate untracked money creation in settlement or government modules.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "reports/temp/report_20260202_172347_Analyze_logs_final_v.md"
+    "instruction": "Implement recommendations from Money_Leak_Resolution.md: 1. Update Phase3_Transaction to process secondary transactions (loans). 2. Call government.reset_tick_flow() in Phase0. 3. Ensure all money creation is tracked by Authorized Delta.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "communications/insights/Money_Leak_Resolution.md"
+  },
+  "FIX-TEST-REMAINDER": {
+    "title": "Fix Last 6 Test Failures",
+    "command": "create",
+    "instruction": "Fix the remaining 6 test failures in logs/final_merged_test_results.log. Focus on Category C and E leftovers like indicator_aggregation and OMO system tests.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "logs/final_merged_test_results.log"
   }
 }
