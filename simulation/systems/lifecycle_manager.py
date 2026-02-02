@@ -317,7 +317,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
             # Capture transactions returned by InheritanceManager
             inheritance_txs = self.inheritance_manager.process_death(household, state.government, state)
-            transactions.extend(inheritance_txs)
+            # TD-160: Atomic Execution - Transactions are already executed.
+            # Append to state.transactions for logging, but do NOT return them to inter_tick_queue.
+            state.transactions.extend(inheritance_txs)
 
             inv_value = self._calculate_inventory_value(household._econ_state.inventory, state.markets)
 

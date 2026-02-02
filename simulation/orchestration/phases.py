@@ -621,7 +621,8 @@ class Phase5_PostSequence(IPhaseStrategy):
              state.government.finalize_tick(state.time)
 
         if self.world_state.persistence_manager:
-             self.world_state.persistence_manager.buffer_tick_state(self.world_state, state.transactions)
+             # TD-160: Use world_state.transactions to ensure all drained transactions are captured
+             self.world_state.persistence_manager.buffer_tick_state(self.world_state, self.world_state.transactions)
              if state.time % self.world_state.batch_save_interval == 0:
                  self.world_state.persistence_manager.flush_buffers(state.time)
 

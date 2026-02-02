@@ -98,6 +98,10 @@ class TransactionProcessor(SystemInterface):
         tx_list = transactions if transactions is not None else state.transactions
 
         for tx in tx_list:
+            # 0. Skip Executed Transactions (TD-160: Atomic Inheritance)
+            if hasattr(tx, "metadata") and tx.metadata and tx.metadata.get("executed", False):
+                continue
+
             # 1. Special Routing: Public Manager (Seller)
             # Check if seller is PUBLIC_MANAGER (String ID check or object check handled by logic)
             if (tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == -1) and self._public_manager_handler:

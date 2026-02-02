@@ -161,3 +161,77 @@ def test_transfer_rollback(settlement_system):
     assert sender.assets == 100.0
     # Receiver should have 50.0 (unchanged)
     assert receiver.assets == 50.0
+
+def test_atomic_settlement_success(settlement_system):
+    # Setup
+    deceased_id = 101
+    heir1 = MockAgent(201, 100.0)
+    heir2 = MockAgent(202, 50.0)
+
+    # 1. Create Settlement (Simulate agent cleared)
+    # Agent had 500 cash.
+    account = settlement_system.create_settlement(
+        deceased_id,
+        cash_assets=500.0,
+        portfolio_assets={},
+        real_estate_assets=[],
+        tick=1
+    )
+
+    assert account.status == "OPEN"
+    assert account.escrow_cash == 500.0
+
+    # 2. Execute Settlement
+    plan = [
+        (heir1, 250.0, "Split 1", "inheritance"),
+        (heir2, 250.0, "Split 2", "inheritance")
+    ]
+
+    receipts = settlement_system.execute_settlement(deceased_id, plan, tick=2)
+
+    assert len(receipts) == 2
+    assert receipts[0]["quantity"] == 250.0
+    assert receipts[0]["metadata"]["executed"] == True
+
+    assert heir1.assets == 350.0 # 100 + 250
+    assert heir2.assets == 300.0 # 50 + 250
+    assert account.escrow_cash == 0.0
+
+    # 3. Close
+    success = settlement_system.verify_and_close(deceased_id, tick=3)
+    assert success is True
+    assert account.status == "CLOSED"
+
+def test_atomic_settlement_leak_prevention(settlement_system):
+    deceased_id = 102
+    heir = MockAgent(203, 0.0)
+
+    account = settlement_system.create_settlement(deceased_id, 100.0, {}, [], 1)
+
+    # Distribute less than total
+    plan = [(heir, 90.0, "Partial", "inheritance")]
+    settlement_system.execute_settlement(deceased_id, plan, 1)
+
+    assert heir.assets == 90.0
+    assert account.escrow_cash == 10.0
+
+    # Verify and Close should fail/warn and burn remainder
+    success = settlement_system.verify_and_close(deceased_id, 1)
+
+    assert success is False
+    assert account.status == "CLOSED_WITH_LEAK"
+    assert account.escrow_cash == 0.0 # Burned
+
+def test_atomic_settlement_overdraft_protection(settlement_system):
+    deceased_id = 103
+    heir = MockAgent(204, 0.0)
+
+    account = settlement_system.create_settlement(deceased_id, 100.0, {}, [], 1)
+
+    # Try to distribute MORE
+    plan = [(heir, 150.0, "Overdraft", "inheritance")]
+    receipts = settlement_system.execute_settlement(deceased_id, plan, 1)
+
+    assert len(receipts) == 0 # Should skip
+    assert heir.assets == 0.0
+    assert account.escrow_cash == 100.0

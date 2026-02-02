@@ -150,6 +150,10 @@ class TickOrchestrator:
     def _finalize_tick(self, sim_state: SimulationState):
         state = self.world_state
 
+        # TD-160: Clear world_state transactions to prevent memory leak and double-processing
+        # Persistence has already happened in Phase 5.
+        state.transactions.clear()
+
         # Track Economics
         if state.tracker:
              state.tracker.track(
