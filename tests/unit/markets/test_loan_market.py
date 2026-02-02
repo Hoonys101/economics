@@ -43,10 +43,10 @@ class TestLoanMarket:
     ):
         order = Order(
             agent_id=1,
-            order_type="LOAN_REQUEST",
+            side="LOAN_REQUEST",
             item_id="loan_item",
             quantity=100,
-            price=0.05,
+            price_limit=0.05,
             market_id="test_loan_market",
         )
 
@@ -60,7 +60,14 @@ class TestLoanMarket:
             origination_tick=0,
             due_tick=50
         )
-        mock_bank.grant_loan.return_value = mock_loan_info
+        # Mock transaction returned by bank
+        mock_tx = MagicMock(spec=Transaction)
+        mock_tx.transaction_type = "loan"
+        mock_tx.item_id = "loan_granted"
+        mock_tx.buyer_id = mock_bank.id
+        mock_tx.seller_id = 1
+
+        mock_bank.grant_loan.return_value = (mock_loan_info, mock_tx)
 
         transactions = loan_market_instance.place_order(order, 1)
 
@@ -86,10 +93,10 @@ class TestLoanMarket:
         profile = {"borrower_id": "1", "gross_income": 1000.0}
         order = Order(
             agent_id=1,
-            order_type="LOAN_REQUEST",
+            side="LOAN_REQUEST",
             item_id="loan_item",
             quantity=100,
-            price=0.05,
+            price_limit=0.05,
             market_id="test_loan_market",
             metadata={"borrower_profile": profile}
         )
@@ -103,7 +110,7 @@ class TestLoanMarket:
             origination_tick=0,
             due_tick=50
         )
-        mock_bank.grant_loan.return_value = mock_loan_info
+        mock_bank.grant_loan.return_value = (mock_loan_info, None)
 
         loan_market_instance.place_order(order, 1)
 
@@ -120,10 +127,10 @@ class TestLoanMarket:
     ):
         order = Order(
             agent_id=1,
-            order_type="LOAN_REQUEST",
+            side="LOAN_REQUEST",
             item_id="loan_item",
             quantity=100,
-            price=0.05,
+            price_limit=0.05,
             market_id="test_loan_market",
         )
         mock_bank.grant_loan.return_value = None
@@ -138,10 +145,10 @@ class TestLoanMarket:
     ):
         order = Order(
             agent_id=1,
-            order_type="REPAYMENT",
+            side="REPAYMENT",
             item_id="loan_id_456",
             quantity=50,
-            price=0,
+            price_limit=0,
             market_id="test_loan_market",
         )
 
@@ -158,10 +165,10 @@ class TestLoanMarket:
     ):
         order = Order(
             agent_id=1,
-            order_type="UNKNOWN_TYPE",
+            side="UNKNOWN_TYPE",
             item_id="item",
             quantity=10,
-            price=1,
+            price_limit=1,
             market_id="test_loan_market",
         )
         transactions = loan_market_instance.place_order(order, 1)

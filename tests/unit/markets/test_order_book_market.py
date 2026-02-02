@@ -35,10 +35,10 @@ def order_book_market_instance():  # Keep this for general tests
 def sample_buy_order():
     return Order(
         agent_id=1,
-        order_type="BUY",
+        side="BUY",
         item_id="food",
         quantity=10,
-        price=100,
+        price_limit=100,
         market_id="test_market",
     )
 
@@ -47,10 +47,10 @@ def sample_buy_order():
 def sample_sell_order():
     return Order(
         agent_id=2,
-        order_type="SELL",
+        side="SELL",
         item_id="food",
         quantity=10,
-        price=90,
+        price_limit=90,
         market_id="test_market",
     )
 
@@ -64,18 +64,18 @@ class TestOrderBookMarket:
     def test_place_buy_order_adds_and_sorts(self, order_book_market_instance):
         order1 = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         order2 = Order(
             agent_id=2,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=5,
-            price=110,
+            price_limit=110,
             market_id="test_market",
         )
         order_book_market_instance.place_order(order1, 1)
@@ -89,18 +89,18 @@ class TestOrderBookMarket:
     def test_place_sell_order_adds_and_sorts(self, order_book_market_instance):
         order1 = Order(
             agent_id=1,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         order2 = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=5,
-            price=90,
+            price_limit=90,
             market_id="test_market",
         )
         order_book_market_instance.place_order(order1, 1)
@@ -116,22 +116,22 @@ class TestOrderBookMarket:
     ):
         order = Order(
             agent_id=1,
-            order_type="UNKNOWN",
+            side="UNKNOWN",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         order_book_market_instance.place_order(order, 1)
 
         mock_logger.warning.assert_called_with(
-            "Unknown order type for _add_order: UNKNOWN",
+            "Unknown side for _add_order: UNKNOWN",
             extra={
                 "tick": 1,
                 "market_id": "test_market",
                 "agent_id": 1,
                 "item_id": "food",
-                "order_type": "UNKNOWN",
+                "side": "UNKNOWN",
                 "price": 100,
                 "quantity": 10,
             },
@@ -143,18 +143,18 @@ class TestOrderBookMarket:
     def test_match_orders_full_fill(self, goods_market_instance):
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="goods_market",
         )
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=90,
+            price_limit=90,
             market_id="goods_market",
         )
         goods_market_instance.place_order(buy_order, 1)
@@ -178,18 +178,18 @@ class TestOrderBookMarket:
     def test_match_orders_partial_fill_buy_order(self, goods_market_instance):
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=15,
-            price=100,
+            price_limit=100,
             market_id="goods_market",
         )
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=90,
+            price_limit=90,
             market_id="goods_market",
         )
         goods_market_instance.place_order(buy_order, 1)
@@ -209,18 +209,18 @@ class TestOrderBookMarket:
     def test_match_orders_partial_fill_sell_order(self, goods_market_instance):
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="goods_market",
         )
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=15,
-            price=90,
+            price_limit=90,
             market_id="goods_market",
         )
         goods_market_instance.place_order(buy_order, 1)
@@ -240,18 +240,18 @@ class TestOrderBookMarket:
     def test_match_orders_no_match_price(self, goods_market_instance):
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=80,
+            price_limit=80,
             market_id="goods_market",
         )
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=90,
+            price_limit=90,
             market_id="goods_market",
         )
         goods_market_instance.place_order(buy_order, 1)
@@ -266,26 +266,26 @@ class TestOrderBookMarket:
     def test_match_orders_multiple_matches(self, goods_market_instance):
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=20,
-            price=100,
+            price_limit=100,
             market_id="goods_market",
         )
         sell_order1 = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=5,
-            price=90,
+            price_limit=90,
             market_id="goods_market",
         )
         sell_order2 = Order(
             agent_id=3,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=8,
-            price=95,
+            price_limit=95,
             market_id="goods_market",
         )
         goods_market_instance.place_order(buy_order, 1)
@@ -297,40 +297,46 @@ class TestOrderBookMarket:
         assert len(transactions) == 2
         assert transactions[0].quantity == 5
         assert transactions[1].quantity == 8
-        assert buy_order.quantity == 7  # 20 - 5 - 8
+
+        # Verify remaining buy order in the book
+        remaining_orders = goods_market_instance.buy_orders.get("food", [])
+        assert len(remaining_orders) == 1
+        assert remaining_orders[0].quantity == 7  # 20 - 5 - 8
+        assert remaining_orders[0].agent_id == 1
+
         assert not goods_market_instance.sell_orders.get("food", [])
 
     def test_match_orders_different_items(self, goods_market_instance):
         buy_order_food = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="goods_market",
         )
         sell_order_food = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=90,
+            price_limit=90,
             market_id="goods_market",
         )
         buy_order_water = Order(
             agent_id=3,
-            order_type="BUY",
+            side="BUY",
             item_id="water",
             quantity=5,
-            price=50,
+            price_limit=50,
             market_id="goods_market",
         )
         sell_order_water = Order(
             agent_id=4,
-            order_type="SELL",
+            side="SELL",
             item_id="water",
             quantity=5,
-            price=40,
+            price_limit=40,
             market_id="goods_market",
         )
 
@@ -356,18 +362,18 @@ class TestOrderBookMarket:
     def test_match_orders_transaction_type_goods(self, goods_market_instance):
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="goods_market",
         )
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=90,
+            price_limit=90,
             market_id="goods_market",
         )
         goods_market_instance.place_order(buy_order, 1)
@@ -381,18 +387,18 @@ class TestOrderBookMarket:
     ):
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="labor",
             quantity=1,
-            price=20,
+            price_limit=20,
             market_id="labor_market",
         )
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="labor",
             quantity=1,
-            price=15,
+            price_limit=15,
             market_id="labor_market",
         )
         labor_market_instance.place_order(buy_order, 1)

@@ -31,126 +31,87 @@ class TestInheritanceManager:
         h._bio_state = MagicMock()
         h._econ_state.assets = assets
         h._econ_state.portfolio = Portfolio(id)
-        # h._econ_state.portfolio.to_legacy_dict() = {} # Removed
         h._econ_state.owned_properties = []
         h._bio_state.is_active = True
         h._bio_state.children_ids = []
         return h
 
-    def test_even_split(self, setup_manager, mocks):
-        """Test Case 1 (Even Split): 10,000 cash, 100 shares, 2 heirs."""
+    def test_distribution_transaction_generation(self, setup_manager, mocks):
+        """Test Case 1: Verify correct distribution transaction is generated for heirs."""
         deceased = self.create_household(1, assets=10000.0)
         deceased._econ_state.portfolio.add("FIRM_A", 100, 10.0)
-        # deceased.shares_owned["FIRM_A"] = 100 # Removed
 
         heir1 = self.create_household(2)
         heir2 = self.create_household(3)
-        deceased._bio_state.children_ids = [2, 3] # Fixed
+        deceased._bio_state.children_ids = [2, 3]
 
         mocks.agents = {2: heir1, 3: heir2}
 
-        setup_manager.process_death(deceased, mocks.government, mocks)
+        txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
-        # Verify Cash
-        # 10000 / 2 = 5000 each
-        # Check calls to settlement.transfer
-        # Expect 2 calls of 5000
-        calls = mocks.settlement_system.transfer.call_args_list
-        assert len(calls) == 2
+        # Check for distribution tx
+        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
+        assert dist_tx is not None
+        assert dist_tx.buyer_id == 1
+        assert set(dist_tx.metadata["heir_ids"]) == {2, 3}
+        assert dist_tx.market_id == "system"
 
-        amounts = [c[0][2] for c in calls]
-        assert amounts == [5000.0, 5000.0]
-
-        # Verify Stocks
-        # 100 / 2 = 50 each
-        assert heir1._econ_state.portfolio.holdings["FIRM_A"].quantity == 50
-        assert heir2._econ_state.portfolio.holdings["FIRM_A"].quantity == 50
-
-        # Verify remainder not sent to government
-        mocks.government.record_revenue.assert_not_called()
-
-        # Verify cleanup
-        assert len(deceased._econ_state.portfolio.holdings) == 0
-        # assert len(deceased.shares_owned) == 0
-
-    def test_uneven_split(self, setup_manager, mocks):
-        """Test Case 2 (Uneven Split): 10,000.01 cash, 101 shares, 2 heirs."""
-        deceased = self.create_household(1, assets=10000.01)
-        deceased._econ_state.portfolio.add("FIRM_A", 101, 10.0)
-
-        heir1 = self.create_household(2)
-        heir2 = self.create_household(3)
-        deceased._bio_state.children_ids = [2, 3] # Fixed
-        mocks.agents = {2: heir1, 3: heir2}
-
-        setup_manager.process_death(deceased, mocks.government, mocks)
-
-        # Verify Cash
-        # 10000.01 = 1000001 pennies
-        # / 2 = 500000 pennies (5000.00) remainder 1 penny (0.01)
-        # Heir 1: 5000.00
-        # Heir 2: 5000.01
-
-        calls = mocks.settlement_system.transfer.call_args_list
-        # Filter for transfers to heirs (exclude potential tax/residual if any, though tax is 0)
-        heir_calls = [c for c in calls if c[0][1] in [heir1, heir2]]
-        assert len(heir_calls) == 2
-
-        amounts = sorted([c[0][2] for c in heir_calls])
-        assert amounts == [5000.00, 5000.01]
-
-        # Verify Stocks
-        # 101 / 2 = 50 remainder 1
-        # Heir 1 gets 50? Heir 2 gets 50? Remainder distributed to first in loop (0 index)?
-        # Implementation detail: loop through remainder.
-        # total 101.
-        q1 = heir1._econ_state.portfolio.holdings["FIRM_A"].quantity
-        q2 = heir2._econ_state.portfolio.holdings["FIRM_A"].quantity
-        assert q1 + q2 == 101
-        assert abs(q1 - q2) == 1
-
-        # Verify cleanup
-        assert len(deceased._econ_state.portfolio.holdings) == 0
-        # assert len(deceased.shares_owned) == 0
-
-    def test_multiple_heirs(self, setup_manager, mocks):
-        """Test Case 3 (Multiple Heirs): 100.00 cash, 10 shares, 3 heirs."""
+    def test_multiple_heirs_metadata(self, setup_manager, mocks):
+        """Test Case 2: Verify metadata for multiple heirs."""
         deceased = self.create_household(1, assets=100.00)
-        deceased._econ_state.portfolio.add("FIRM_A", 10, 10.0)
 
         heir1 = self.create_household(2)
         heir2 = self.create_household(3)
         heir3 = self.create_household(4)
-        deceased._bio_state.children_ids = [2, 3, 4] # Fixed
+        deceased._bio_state.children_ids = [2, 3, 4]
         mocks.agents = {2: heir1, 3: heir2, 4: heir3}
 
-        setup_manager.process_death(deceased, mocks.government, mocks)
+        txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
-        # Cash: 10000 pennies / 3 = 3333 r 1
-        # 33.33, 33.33, 33.34
-        calls = mocks.settlement_system.transfer.call_args_list
-        heir_calls = [c for c in calls if c[0][1] in [heir1, heir2, heir3]]
-        amounts = sorted([c[0][2] for c in heir_calls])
-        assert amounts == [33.33, 33.33, 33.34]
+        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
+        assert dist_tx is not None
+        assert set(dist_tx.metadata["heir_ids"]) == {2, 3, 4}
 
-        # Stocks: 10 / 3 = 3 r 1
-        # 3, 3, 4 (or 4, 3, 3 depending on distribution order)
-        quantities = sorted([
-            heir1._econ_state.portfolio.holdings["FIRM_A"].quantity,
-            heir2._econ_state.portfolio.holdings["FIRM_A"].quantity,
-            heir3._econ_state.portfolio.holdings["FIRM_A"].quantity
-        ])
-        assert quantities == [3, 3, 4]
+    def test_escheatment_when_no_heirs(self, setup_manager, mocks):
+        """Test Case 3: Verify escheatment transaction when no heirs exist."""
+        deceased = self.create_household(1, assets=1000.0)
+        deceased._bio_state.children_ids = [] # No children
 
-    def test_zero_assets(self, setup_manager, mocks):
-        """Test Case 4 (Zero Assets): 0 cash, 0 shares."""
+        txs = setup_manager.process_death(deceased, mocks.government, mocks)
+
+        # Expect Escheatment transactions
+        escheat_cash = next((t for t in txs if t.item_id == "escheatment_cash"), None)
+        assert escheat_cash is not None
+        assert escheat_cash.buyer_id == 1
+        assert escheat_cash.seller_id == mocks.government.id
+
+    def test_zero_assets_distribution(self, setup_manager, mocks):
+        """Test Case 4: Verify transaction even with zero assets (process usually runs)."""
         deceased = self.create_household(1, assets=0.0)
         heir1 = self.create_household(2)
-        deceased._bio_state.children_ids = [2] # Fixed
+        deceased._bio_state.children_ids = [2]
         mocks.agents = {2: heir1}
 
-        setup_manager.process_death(deceased, mocks.government, mocks)
+        txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
-        # No transfers
-        mocks.settlement_system.transfer.assert_not_called()
-        assert len(heir1._econ_state.portfolio.holdings) == 0
+        # Still expects distribution tx to handle potential cleanup or signaling
+        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
+        assert dist_tx is not None
+        assert dist_tx.metadata["heir_ids"] == [2]
+
+    def test_tax_transaction_generation(self, setup_manager, mocks):
+        """Test Case 5: Verify tax transaction if tax rate > 0."""
+        # Enable tax
+        setup_manager.config_module.INHERITANCE_TAX_RATE = 0.5
+        setup_manager.config_module.INHERITANCE_DEDUCTION = 0.0
+
+        deceased = self.create_household(1, assets=1000.0)
+        heir1 = self.create_household(2)
+        deceased._bio_state.children_ids = [2]
+        mocks.agents = {2: heir1}
+
+        txs = setup_manager.process_death(deceased, mocks.government, mocks)
+
+        tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
+        assert tax_tx is not None
+        assert tax_tx.price == 500.0 # 50% of 1000

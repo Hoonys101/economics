@@ -30,10 +30,15 @@ def context():
 def buyer():
     b = MagicMock(spec=Household)
     b.id = 1
-    b.assets = 100000.0
-    b.owned_properties = []
-    b.residing_property_id = None
-    b.is_homeless = True
+
+    # Mock _econ_state
+    b._econ_state = MagicMock()
+    b._econ_state.assets = 100000.0
+    b._econ_state.owned_properties = []
+    b._econ_state.residing_property_id = None
+    b._econ_state.is_homeless = True
+    b._econ_state.current_wage = 100.0
+
     return b
 
 @pytest.fixture
@@ -96,14 +101,14 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     # 5. Side Effects
     assert unit.owner_id == buyer.id
     assert unit.mortgage_id == "loan_123"
-    assert 101 in buyer.owned_properties
+    assert 101 in buyer._econ_state.owned_properties
     assert 101 not in seller.owned_properties
     assert tx.metadata["mortgage_id"] == "loan_123"
 
 def test_housing_transaction_insufficient_down_payment(handler, context, buyer, seller, unit, escrow_agent):
     context.real_estate_units = [unit]
     context.agents = {99: escrow_agent}
-    buyer.assets = 10.0 # Insufficient
+    buyer._econ_state.assets = 10.0 # Insufficient
 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
