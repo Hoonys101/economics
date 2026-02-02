@@ -6,8 +6,9 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-162 | 2026-01-30 | Bloated God Class: Household (977 lines) | SRP violation; property delegation bloat | **ACTIVE** |
+| TD-162 | 2026-01-30 | Bloated God Class: Household (Decomposed) | SRP compliance; Decomposed to components | **RESOLVED** |
 | TD-180 | 2026-02-01 | TestFile Bloat: `test_firm_decision_engine_new.py` | 828 lines; indicator of complex engine surface | **WARNING** |
+| TD-122-B | 2026-02-02 | Broken Unit Tests after Household Refactor | 128 failing tests due to Mock fragility | **ACTIVE** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -45,8 +46,8 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-122 | 2026-01-26 | Test Directory Fragmentation | Maintenance overhead; Writing friction | **ACTIVE (GRADUAL)** |
-| TD-192 | 2026-02-01 | ActionProcessor Transient State Synchronization Risk | Regression risk | **ACTIVE** |
+| TD-122 | 2026-01-26 | Test Directory Fragmentation | Maintenance overhead; Writing friction | **RESOLVED** |
+| TD-192 | 2026-02-01 | ActionProcessor Transient State Synchronization Risk | Regression risk | **RESOLVED** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 

@@ -1,9 +1,3 @@
-🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
-📖 Attached context: C:\coding\economics\design\_archive\gemini_output\pr_diff_td-162-household-refactor-stage-b-12486772000699169884.txt
-🚀 [GeminiWorker] Running task with manual: git_reviewer.md
-
-📝 [Review Report]
-============================================================
 # 🔍 Summary
 
 This pull request executes a large-scale, systematic refactoring of the `Household` "God Class". It successfully decomposes agent state into dedicated DTOs (`_econ_state`, `_bio_state`, `_social_state`), replacing direct property access across the entire codebase. The change includes helper scripts used for the refactoring and, crucially, detailed insight reports documenting the process, compatibility strategies, and resulting technical debt (failing unit tests).
@@ -36,5 +30,3 @@ The requirement to document insights has been perfectly met. No proposal is nece
 **APPROVE**
 
 This is a model example of how to execute a major refactoring. The code changes are systematic and thorough. More importantly, the work is accompanied by excellent documentation in the form of insight reports that transparently communicate the architectural decisions, compatibility strategies, and resulting technical debt.
-
-============================================================

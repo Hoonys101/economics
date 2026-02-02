@@ -4,15 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "MISSION-HOUSEHOLD": {
-    "title": "Decompose Household God Class (Stage B)",
-    "command": "send-message",
-    "instruction": "Proceed with 'Fix key tests only'. Prioritize ensuring that critical integration paths (Inheritance, Settlement, Housing, Government) are verified and working correcty. \nDo not spend time fixing trivial unit tests for isolated component logic right now. Please create a new Tech Debt entry (TD-122-B) for the remaining broken unit tests and log them in the insight report.\n\nOnce the core systems are verified, push the changes."
-  },
   "MISSION-ATOMICITY": {
     "title": "Implement Atomic Settlements (TD-160/187)",
     "command": "create",
-    "instruction": "Implement the SettlementSystem and atomic Saga pattern for Inheritance and Severance payments as per the approved spec (TD-160, TD-187). Ensure zero-sum integrity.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "design/3_work_artifacts/drafts/draft_122944_Create_detailed_technical_spec.md"
+    "instruction": "Implement the SettlementSystem and atomic Saga pattern for Inheritance and Severance payments as per spec_td160_atomic_settlement.md. Ensure zero-sum integrity.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "design/3_work_artifacts/specs/spec_td160_atomic_settlement.md"
   }
 }
