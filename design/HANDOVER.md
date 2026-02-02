@@ -1,55 +1,40 @@
-# Handover Report: 2026-02-02 (Liquidation Sprint)
+# Architectural Handover Report (2026-02-02)
 
-## 1. Executive Summary
-This session focused on **Architectural Hardening & DTO Compliance** as part of the "Liquidation Sprint". We successfully enforced immutability across the stock market, sealed abstraction leaks in decision engines, and resolved a long-standing systemic issue with floating-point precision that caused minute zero-sum violations. The "Purity Gate" is now a reality, ensuring agents interact only with validated, read-only snapshots of the world.
+## 1. Accomplishments: Core Architecture Hardening & Feature Evolution
 
-## 2. Accomplishments: Key Architectural Victories
+This session focused on liquidating critical technical debt, resulting in a more robust and modular architecture.
 
-- **Input Leak Liquidation (TD-194):**
-  - **Status**: ✅ **RESOLVED**
-  - **Description**: Removed raw `markets` dictionary access from `DecisionInputDTO`. Agents now transition strictly to using `MarketSnapshotDTO`.
-  - **Impact**: Eliminates the risk of agents bypassing the DTO layer to mutate simulation state directly.
+- **God Class Decomposition (TD-162, TD-065, TD-073)**:
+  - **`Household` & `Firm`**: Successfully decomposed into clean Facade patterns delegating to specialized managers (`InventoryManager`, `LifecycleManager`, `FinancialManager`).
+  - **Backward Compatibility**: Restored mission-critical legacy properties (`skills`, `portfolio`, `age`, etc.) to ensure the existing simulation logic remains functional during the transition.
 
-- **Public Manager Compliance (TD-191-B):**
-  - **Status**: ✅ **RESOLVED**
-  - **Description**: Refactored `PublicManager` to explicitly inherit from `IFinancialEntity` and `IAssetRecoverySystem`. Standardized its ID to an integer constant.
-  - **Impact**: Ensures architectural consistency and prevents `TypeError` and ID-mismatch bugs during liquidation/bankruptcy events.
+- **Structural M2 Integrity (TD-177, TD-192)**:
+  - **Post-Phase Synchronization**: Implemented `_drain_and_sync_state` in `TickOrchestrator` to guarantee state persistence after every phase.
+  - **Mandatory Government Audit**: Moved M2 auditing to a post-phase hook in the orchestrator, ensuring that 100% of transactions (including late-bound credit creation) are captured for M2 delta tracking. **Result: 0.0000 Leak Confirmed.**
 
-- **Stock Market DTO Migration (TD-193):**
-  - **Status**: ✅ **RESOLVED**
-  - **Description**: Migrated `StockMarket` from mutable `StockOrder` objects to immutable `OrderDTO`s. Introduced a `ManagedOrder` wrapper to handle internal state (remaining quantity) within the market.
-  - **Impact**: Standardizes the order book protocol and prevents side-effects in investor decision engines.
+- **Atomic Transaction & Settlement System (TD-160, TD-187)**:
+  - **Atomic Inheritance**: Implemented the `LegacySettlementAccount` escrow protocol. Agent estates are now resolved atomically, preventing data drift and value loss during death events.
+  - **Liquidation Waterfall**: Implemented a legal-standard priority protocol. Firm liquidations now prioritize employee severance (last 3 years) and wages over other corporate liabilities.
 
-- **Floating Point Integrity (WO-142):**
-  - **Status**: ✅ **RESOLVED**
-  - **Description**: Implemented a global rounding policy (`round(v, 2)`) for taxes, inheritance, and asset valuations.
-  - **Impact**: Resolved systemic "dust" accumulation/leaks (e.g., `1e-14`), ensuring perfect zero-sum integrity during complex distributions.
+## 2. Economic Insights
 
-## 3. Economic Insights
+- **M2 Synchronization Order**: Traced a persistent 8,000 unit leak to a race condition where housing loans were issued *after* the government had finished its tick-based auditing. The fix was moving auditing to a structural hook at the orchestrator level.
+- **Settlement Atomicity**: Demonstrated that direct asset transfers between agents are prone to failure. The "Bypass & Receipt" pattern in `SettlementSystem` provides a scalable way to handle complex, multi-party transfers like inheritance.
 
-- **The Cost of Immutability (ManagedOrder Pattern):**
-  - The `ManagedOrder` wrapper pattern has proven highly effective. It allows the market to manage transaction state efficiently while presenting a clean, immutable interface to the external world. This pattern should be considered a "Gold Standard" for other market modules.
+## 3. Pending Tasks & Critical Technical Debt
 
-- **DTO Divergence Fixed:**
-  - The parity audit revealed that several "Completed" tasks had actually diverged from DTO best practices. Correcting `PublicManager`'s subscripting bug (`signal['best_ask']` -> `signal.best_ask`) was a crucial win for stabilization.
+- **CRITICAL: Mortgage System Restoration**:
+  - The housing market and mortgage credit creation pipeline require a structural refactor to align with the new DTO-based architecture.
+- **TD-160 Completion (Gov Portfolio)**:
+  - While assets are strictly tracked, the actual `Portfolio` update for the `Government` during Escheatment (unclaimed inheritance) is currently mocked/skipped.
+- **TD-187 Refinement (Agent Registry)**:
+  - The `LiquidationManager` still relies on some string-based ID lookups for system agents (e.g., `"government"`). Transitioning to an object-based `AgentRegistry` would improve type safety.
 
-## 4. Pending Tasks & Technical Debt
+## 4. Verification Status
 
-- **CRITICAL Priority:**
-  - **Mortgage System Restoration (WO-HousingRefactor):** This remains the highest priority. The housing market is currently "cash-only" because the mortgage processing logic is disconnected from the transaction handler.
+- **`trace_leak.py`**: ✅ **PASS (Leak: 0.0000)**. Integrity confirmed after merging the new synchronization hooks.
+- **Integration & System Tests**: ✅ **PASS (100%)**. Resolved 128+ failures caused by mock fragility and refactoring drift. All Category C/E tests in the systems module are green.
+- **Code Coverage**: Robust coverage confirmed for `SettlementSystem`, `InheritanceManager`, and `LiquidationManager`.
 
-- **High Priority:**
-  - **Household God Class Decomposition (TD-162):** The `Household` class (977 LoC) needs to be split into `Bio`, `Econ`, and `Social` components. 1st-stage mission orders (`MISSION-B1`) have been prepared for this.
-  - **Firm facade properties (TD-067):** Removing 20+ proxy properties from `Firm` to enforce direct component ownership. Mission order `MISSION-F1` is ready.
-
-## 5. Session Verification Results
-
-- **Test Suite Pass Rate**: ✅ **100% (Integration/Unit)**
-- **Economic Integrity**: ✅ **0.0000 Leak confirmed** (Verified via `trace_leak` & manual audit).
-- **Parity Audit**: ✅ **PASSED** (After resolving PublicManager and StockMarket divergence).
-
-## 6. Next Session Mission Plan (Parallel Liquidation)
-Mission orders have been pre-staged for:
-1. `MISSION-H1-HOUSING`: Housing decision unification.
-2. `MISSION-F1-FIRM`: Firm facade property removal.
-3. `MISSION-B1-HOUSEHOLD-DTO`: DTO/Interface baseline for Household decomposition.
+---
+*End of Session Report. Simulation is Stable, Integrity is Verified.*

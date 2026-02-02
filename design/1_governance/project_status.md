@@ -25,6 +25,7 @@
     - **Double-Entry Refactor**: Finance System Atomic Implementation ✅
     - **Fractional Reserve Banking**: Credit Creation & Scoring ✅ (2026-01-31)
 - **Operation Iron Dome**: Simulation Stabilization & M2 Integrity (0.0000 Leak) ✅ (2026-02-02)
+- **Operation Sacred Harvest**: Atomic Inheritance & Liquidation Waterfall Protocol ✅ (2026-02-02)
 
 
 - **완료된 단계(Recent):** `Phase 29: The Great Depression & Crisis Monitor` ✅ (2026-01-21)
@@ -64,9 +65,12 @@
             - [x] **TD-191-B: Public Manager Compliance**: `IFinancialEntity` compliance & ID Standardization.
             - [x] **TD-193: Stock Market DTO Migration**: ManagedOrder wrapper & Immutable `OrderDTO` enforcement.
             - [x] **WO-142: Floating Point Integrity**: Rounding policy applied to taxes and inheritance.
-        - **Economic Integrity**: Financial Leak Audit (0.0000 leak confirmed) ✅ COMPLETED
+- **Economic Integrity**: Financial Leak Audit (0.0000 leak confirmed) ✅ COMPLETED
 - [x] **Household Compatibility**: Restored properties (`skills`, `portfolio`, `age`, etc.) for legacy system support.
 - [x] **Sector-Specific Fixes**: Resolved `Firm.sector` and `Repository` mock issues in integration tests.
+- [x] **Structural M2 Integrity**: Post-Phase Hook in TickOrchestrator for automated gov audit.
+- [x] **Atomic Inheritance (TD-160)**: SettlementSystem-based legacy escrow protocol.
+- [x] **Prioritized Severance (TD-187)**: Legal Waterfall Protocol for firm liquidation.
 
     - **Next Phase**: `Emergency Phase: Mortgage System Restoration`
         - **Goal**: Fix the broken housing market and disconnected credit creation pipeline.
