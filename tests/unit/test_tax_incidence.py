@@ -134,7 +134,7 @@ class TestTaxIncidence(unittest.TestCase):
         
         # 가계: 1000 + (100 - 10) = 1090
         # 기업: 5000 - 100 = 4900
-        self.assertEqual(h.assets, 1090.0)
+        self.assertEqual(h._econ_state.assets, 1090.0)
         self.assertEqual(f.assets, 4900.0)
         self.assertEqual(sim.government.assets, 10.0)
         print("✓ Household Payer (Withholding): Agent Assets Correct")
@@ -153,7 +153,7 @@ class TestTaxIncidence(unittest.TestCase):
         
         # 가계: 1000 + 100 = 1100
         # 기업: 5000 - (100 + 10) = 4890
-        self.assertEqual(h.assets, 1100.0)
+        self.assertEqual(h._econ_state.assets, 1100.0)
         self.assertEqual(f.assets, 4890.0)
         self.assertEqual(sim.government.assets, 10.0)
         print("✓ Firm Payer (Extra Tax): Agent Assets Correct")

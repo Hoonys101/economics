@@ -12,7 +12,7 @@ def test_indicator_aggregation(simple_household, mock_config_module):
     tracker = EconomicIndicatorTracker(config_module=mock_config_module)
 
     # Setup Household state
-    # tracker calculates total_consumption from household.current_consumption
+    # tracker calculates total_consumption from household._econ_state.current_consumption
     simple_household.current_consumption = 10.0
     simple_household.is_active = True
 

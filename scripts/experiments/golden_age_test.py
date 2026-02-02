@@ -74,7 +74,7 @@ def run_golden_age_test():
 
         # Collect Tightly Coupled Metrics
         if tick % 10 == 0 or tick == 1:
-            active_households = [h for h in sim.households if h.is_active]
+            active_households = [h for h in sim.households if h._bio_state.is_active]
             pop_size = len(active_households)
             
             # GDP = Total Production * Avg Quality (Simplified for Integration Test)
@@ -104,7 +104,7 @@ def run_golden_age_test():
 
         if tick % 100 == 0:
             elapsed = time.time() - start_time
-            logger.info(f"Progress: {tick}/1000 | Pop: {len([h for h in sim.households if h.is_active])} | GDP: {total_production:.1f} | Elapsed: {elapsed:.1f}s")
+            logger.info(f"Progress: {tick}/1000 | Pop: {len([h for h in sim.households if h._bio_state.is_active])} | GDP: {total_production:.1f} | Elapsed: {elapsed:.1f}s")
 
     # 3. Final Analysis
     df = pd.DataFrame(history)
@@ -124,7 +124,7 @@ def run_golden_age_test():
     df_ige = pd.DataFrame([{
         "initial_assets": getattr(h, "initial_assets_record", 0.0),
         "education_level": getattr(h, "education_level", 0)
-    } for h in last_snapshot if h.is_active])
+    } for h in last_snapshot if h._bio_state.is_active])
     
     ige_corr = df_ige["initial_assets"].corr(df_ige["education_level"])
     

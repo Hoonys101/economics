@@ -78,7 +78,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         # 2. Debt Burden (Income Effect)
         debt_data = market_data.get("debt_data", {}).get(household.id, {})
         daily_interest_burden = debt_data.get("daily_interest_burden", 0.0)
-        income_proxy = max(household.current_wage, household.assets * 0.01)
+        income_proxy = max(household._econ_state.current_wage, household._econ_state.assets * 0.01)
         dsr = daily_interest_burden / (income_proxy + 1e-9)
 
         debt_penalty = 1.0
@@ -93,15 +93,15 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         for item_id in goods_list:
             # WO-023: Maslow Constraint (Food Security First)
             if item_id == "consumer_goods":
-                food_inventory = household.inventory.get("basic_food", 0.0)
+                food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
                 target_buffer = getattr(self.config_module, "TARGET_FOOD_BUFFER_QUANTITY", 5.0)
                 if food_inventory < target_buffer:
                     continue # Skip consumer_goods if food insecure
 
             # Phase 15: Utility Saturation for Durables
             if hasattr(household, 'durable_assets'):
-                 existing_durables = [a for a in household.durable_assets if a['item_id'] == item_id]
-                 has_inventory = household.inventory.get(item_id, 0.0) >= 1.0
+                 existing_durables = [a for a in household._econ_state.durable_assets if a['item_id'] == item_id]
+                 has_inventory = household._econ_state.inventory.get(item_id, 0.0) >= 1.0
 
                  if existing_durables or has_inventory:
                      if random.random() < 0.95: # 95% chance to skip
@@ -121,7 +121,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             max_need_value = 0.0
             utility_effects = good_info.get("utility_effects", {})
             for need_type in utility_effects.keys():
-                nv = household.needs.get(need_type, 0.0)
+                nv = household._bio_state.needs.get(need_type, 0.0)
                 if nv > max_need_value:
                     max_need_value = nv
 
@@ -161,7 +161,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
             max_need_value = 0.0
             for need_type in utility_effects.keys():
-                nv = household.needs.get(need_type, 0.0)
+                nv = household._bio_state.needs.get(need_type, 0.0)
                 if nv > max_need_value:
                     max_need_value = nv
 
@@ -187,7 +187,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 target_quantity = max(1.0, max_q * self.config_module.BULK_BUY_MODERATE_RATIO)
 
             # --- Phase 8: Inflation Psychology (Hoarding & Delay) ---
-            expected_inflation = household.expected_inflation.get(item_id, 0.0)
+            expected_inflation = household._econ_state.expected_inflation.get(item_id, 0.0)
 
             if expected_inflation > getattr(self.config_module, "PANIC_BUYING_THRESHOLD", 0.05):
                 hoarding_factor = getattr(self.config_module, "HOARDING_FACTOR", 0.5)
@@ -209,9 +209,9 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                      if random.random() < 0.05:
                          self.logger.info(f"HOARDING_TRIGGER | Household {household.id} hoarding {item_id} (x{target_quantity:.1f})")
 
-            budget_limit = household.assets * self.config_module.BUDGET_LIMIT_NORMAL_RATIO
+            budget_limit = household._econ_state.assets * self.config_module.BUDGET_LIMIT_NORMAL_RATIO
             if max_need_value > self.config_module.BUDGET_LIMIT_URGENT_NEED:
-                budget_limit = household.assets * self.config_module.BUDGET_LIMIT_URGENT_RATIO
+                budget_limit = household._econ_state.assets * self.config_module.BUDGET_LIMIT_URGENT_RATIO
 
             if willingness_to_pay * target_quantity > budget_limit:
                 target_quantity = budget_limit / willingness_to_pay
@@ -231,25 +231,25 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
 
         # Scenario A: Already Employed
-        if household.is_employed:
+        if household._econ_state.is_employed:
             # Recovery handled by EconComponent/LaborManager, here we just check for quit
             agg_mobility = action_vector.job_mobility_aggressiveness
             quit_threshold = self.config_module.JOB_QUIT_THRESHOLD_BASE - agg_mobility
 
-            if (market_avg_wage > household.current_wage * quit_threshold or
-                best_market_offer > household.current_wage * quit_threshold):
+            if (market_avg_wage > household._econ_state.current_wage * quit_threshold or
+                best_market_offer > household._econ_state.current_wage * quit_threshold):
 
                 if random.random() < (self.config_module.JOB_QUIT_PROB_BASE + agg_mobility * self.config_module.JOB_QUIT_PROB_SCALE):
                     # Signal quit via Order
                     orders.append(Order(household.id, "QUIT", "labor", 0, 0, "labor"))
 
         # Scenario B: Unemployed
-        if not household.is_employed:
-            food_inventory = household.inventory.get("basic_food", 0.0)
+        if not household._econ_state.is_employed:
+            food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
             food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
             if food_price <= 0: food_price = 10.0
 
-            survival_days = food_inventory + (household.assets / food_price)
+            survival_days = food_inventory + (household._econ_state.assets / food_price)
             critical_turns = getattr(self.config_module, "SURVIVAL_CRITICAL_TURNS", 5)
 
             is_panic = False
@@ -263,7 +263,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             else:
                 labor_market_info = market_data.get("goods_market", {}).get("labor", {})
                 market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
-                reservation_wage = market_avg_wage * household.wage_modifier
+                reservation_wage = market_avg_wage * household._econ_state.wage_modifier
 
             labor_market_info = market_data.get("goods_market", {}).get("labor", {})
             market_avg_wage = labor_market_info.get("avg_wage", self.config_module.LABOR_MARKET_MIN_WAGE)
@@ -305,9 +305,9 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             cap_ratio = self.config_module.DEBT_REPAYMENT_CAP
             liquidity_ratio = self.config_module.DEBT_LIQUIDITY_RATIO
 
-            repay_amount = household.assets * base_ratio * stress_config.debt_aversion_multiplier
+            repay_amount = household._econ_state.assets * base_ratio * stress_config.debt_aversion_multiplier
             repay_amount = min(repay_amount, principal * cap_ratio)
-            repay_amount = min(repay_amount, household.assets * liquidity_ratio)
+            repay_amount = min(repay_amount, household._econ_state.assets * liquidity_ratio)
 
             if repay_amount > 1.0:
                  orders.append(Order(household.id, "REPAYMENT", "currency", repay_amount, 1.0, "loan_market"))
@@ -315,15 +315,15 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         if current_time % 30 == 0:
             # Modify DTO locally for simulation
-            temp_assets = household.assets
+            temp_assets = household._econ_state.assets
             if is_debt_aversion_mode and repay_amount > 0:
-                household.assets -= repay_amount
+                household._econ_state.assets -= repay_amount
 
             try:
                 portfolio_orders = self._manage_portfolio(household, market_data, current_time, macro_context)
                 orders.extend(portfolio_orders)
             finally:
-                household.assets = temp_assets
+                household._econ_state.assets = temp_assets
         else:
             emergency_orders = self._check_emergency_liquidity(household, market_data, current_time)
             orders.extend(emergency_orders)
@@ -339,7 +339,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
              reference_standard = market_data.get("reference_standard", {})
              mimicry_intent = housing_manager.decide_mimicry_purchase(reference_standard)
 
-             is_owner_occupier = household.residing_property_id in household.owned_properties
+             is_owner_occupier = household._econ_state.residing_property_id in household._econ_state.owned_properties
              should_search = (not is_owner_occupier) or (mimicry_intent is not None)
 
              if should_search:
@@ -393,7 +393,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         Executes Portfolio Optimization (WO-026).
         """
         orders = []
-        cash = household.assets
+        cash = household._econ_state.assets
         deposit_data = market_data.get("deposit_data", {})
         deposit_balance = deposit_data.get(household.id, 0.0)
         total_liquid = cash + deposit_balance
@@ -410,8 +410,8 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 2.0)
         monthly_survival_cost = food_price * daily_consumption * 30.0
 
-        if household.expected_inflation:
-            avg_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+        if household._econ_state.expected_inflation:
+            avg_inflation = sum(household._econ_state.expected_inflation.values()) / len(household._econ_state.expected_inflation)
         else:
             avg_inflation = 0.0
 
@@ -449,7 +449,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
     def _check_emergency_liquidity(self, household: "HouseholdStateDTO", market_data: Dict[str, Any], current_time: int) -> List[Order]:
         orders = []
-        if household.assets < 10.0:
+        if household._econ_state.assets < 10.0:
             deposit_data = market_data.get("deposit_data", {})
             deposit_balance = deposit_data.get(household.id, 0.0)
 
@@ -476,7 +476,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         if market_snapshot is None:
             return stock_orders
 
-        if household.assets < self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT:
+        if household._econ_state.assets < self.config_module.HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT:
             return stock_orders
 
         avg_dividend_yield = market_data.get("avg_dividend_yield", 0.05)
@@ -489,10 +489,10 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 2.0)
         survival_cost = food_price * daily_consumption * 30.0
 
-        risk_aversion = self._get_risk_aversion(household.personality)
+        risk_aversion = self._get_risk_aversion(household._social_state.personality)
 
         target_cash, target_deposit, target_equity = PortfolioManager.optimize_portfolio(
-            total_liquid_assets=household.assets,
+            total_liquid_assets=household._econ_state.assets,
             risk_aversion=risk_aversion,
             risk_free_rate=risk_free_rate,
             equity_return_proxy=equity_return,
@@ -595,17 +595,17 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
     def _calculate_savings_roi(self, household: "HouseholdStateDTO", nominal_rate: float) -> float:
         """가계의 저축 ROI(미래 효용)를 계산합니다."""
-        if household.expected_inflation:
-            avg_expected_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+        if household._econ_state.expected_inflation:
+            avg_expected_inflation = sum(household._econ_state.expected_inflation.values()) / len(household._econ_state.expected_inflation)
         else:
             avg_expected_inflation = 0.0
 
         real_rate = nominal_rate - avg_expected_inflation
 
         beta = 1.0
-        if household.personality in [Personality.MISER, Personality.CONSERVATIVE]:
+        if household._social_state.personality in [Personality.MISER, Personality.CONSERVATIVE]:
             beta = 1.2
-        elif household.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+        elif household._social_state.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
             beta = 0.8
 
         return (1.0 + real_rate) * beta

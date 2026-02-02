@@ -37,14 +37,14 @@ def get_metrics(simulation: Simulation) -> Dict[str, Any]:
     # Calculate average assets manually if not in indicators
     # Note: indicators usually have aggregate data.
 
-    total_population = len([h for h in simulation.households if h.is_active])
+    total_population = len([h for h in simulation.households if h._bio_state.is_active])
 
     # Use 'total_production' as GDP proxy if available, or calculate sum of production
     gdp = indicators.get("total_production", 0.0)
 
     # Calculate average assets
-    active_households = [h for h in simulation.households if h.is_active]
-    total_assets = sum(h.assets for h in active_households)
+    active_households = [h for h in simulation.households if h._bio_state.is_active]
+    total_assets = sum(h._econ_state.assets for h in active_households)
     avg_assets = total_assets / total_population if total_population > 0 else 0.0
 
     # Unemployment Rate

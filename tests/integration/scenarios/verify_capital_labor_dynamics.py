@@ -59,7 +59,7 @@ class TestCapitalLaborDynamics(unittest.TestCase):
             config_module=config,
             logger=logger,
         )
-        household.inventory["basic_food"] = 10.0
+        household._econ_state.inventory["basic_food"] = 10.0
         return household
 
     def _create_firm(self, id: int, assets: float):

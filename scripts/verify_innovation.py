@@ -145,15 +145,15 @@ def run_verification():
         for i in range(5):
             h = sim.households[i]
             firm_c.employees.append(h)
-            h.employer_id = firm_c.id
-            h.is_employed = True
+            h._econ_state.employer_id = firm_c.id
+            h._econ_state.is_employed = True
             firm_c.employee_wages[h.id] = 15.0
 
         for i in range(5, 10):
             h = sim.households[i]
             firm_v.employees.append(h)
-            h.employer_id = firm_v.id
-            h.is_employed = True
+            h._econ_state.employer_id = firm_v.id
+            h._econ_state.is_employed = True
             firm_v.employee_wages[h.id] = 15.0
 
     # Data Collection

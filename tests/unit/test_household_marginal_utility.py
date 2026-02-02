@@ -67,8 +67,8 @@ class TestHouseholdMarginalUtility(unittest.TestCase):
         )
         # Give infinite money
         self.household._assets = 1_000_000_000
-        self.household.inventory = {"food": 0}
-        self.household.needs = {"survival": 1.0} # Needs > 0 to have utility
+        self.household._econ_state.inventory = {"food": 0}
+        self.household._bio_state.needs = {"survival": 1.0} # Needs > 0 to have utility
 
         self.engine = AIDrivenHouseholdDecisionEngine(self.ai_engine, self.config)
 

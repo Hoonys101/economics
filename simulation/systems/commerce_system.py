@@ -42,7 +42,7 @@ class CommerceSystem(ICommerceSystem):
         food_price = batch_decisions.get('price', 5.0)
 
         for i, household in enumerate(households):
-            if not household.is_active:
+            if not household._bio_state.is_active:
                 continue
 
             c_amt = 0.0
@@ -50,7 +50,7 @@ class CommerceSystem(ICommerceSystem):
                 c_amt = consume_list[i]
                 # Phase 28: Deflationary Spiral - Consumption Collapse
                 if scenario_config and scenario_config.is_active and scenario_config.scenario_name == 'deflation':
-                    if not household.is_employed and scenario_config.consumption_pessimism_factor > 0:
+                    if not household._econ_state.is_employed and scenario_config.consumption_pessimism_factor > 0:
                         original_amt = c_amt
                         c_amt *= (1 - scenario_config.consumption_pessimism_factor)
                         logger.debug(f"PESSIMISM_IMPACT | Household {household.id} consumption reduced from {original_amt:.2f} to {c_amt:.2f}")
@@ -63,24 +63,24 @@ class CommerceSystem(ICommerceSystem):
             }
 
             # ThoughtStream: Instrument non-consumption
-            survival_need = household.needs.get("survival", 0.0)
+            survival_need = household._bio_state.needs.get("survival", 0.0)
             threshold = getattr(breeding_planner, "survival_threshold", 50.0)
 
             if c_amt <= 0 and survival_need > threshold:
                 reason = "UNKNOWN"
                 context_data = {}
 
-                food_inventory = household.inventory.get("basic_food", 0.0)
+                food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
                 if food_inventory <= 0:
                     # Stock Out. Could we afford it?
                     default_price = getattr(self.config, 'DEFAULT_FALLBACK_PRICE', 5.0)
                     price = batch_decisions.get('price', default_price)
-                    if household.assets < price:
+                    if household._econ_state.assets < price:
                         reason = "INSOLVENT"
-                        context_data = {"cash": household.assets, "price": price, "need": survival_need}
+                        context_data = {"cash": household._econ_state.assets, "price": price, "need": survival_need}
                     else:
                         reason = "STOCK_OUT"
-                        context_data = {"inventory": household.inventory.copy(), "cash": household.assets}
+                        context_data = {"inventory": household._econ_state.inventory.copy(), "cash": household._econ_state.assets}
                 else:
                      reason = "UTILITY_CONSTRAINT"
 
@@ -126,7 +126,7 @@ class CommerceSystem(ICommerceSystem):
                     else:
                         # Legacy Emergency Buy
                         cost = b_amt * food_price
-                        if household.assets >= cost:
+                        if household._econ_state.assets >= cost:
                             planned_consumptions[household.id]["buy_amount"] = b_amt
                             government = context.get("government")
                             seller_id = government.id if government else 999999
@@ -162,7 +162,7 @@ class CommerceSystem(ICommerceSystem):
         household_leisure_effects: Dict[int, float] = {}
 
         for household in households:
-            if not household.is_active:
+            if not household._bio_state.is_active:
                 continue
 
             plan = planned_consumptions.get(household.id, {})
@@ -182,7 +182,7 @@ class CommerceSystem(ICommerceSystem):
             # 5. Parenting XP Transfer
             if effect_dto.leisure_type == "PARENTING" and effect_dto.xp_gained > 0:
                 agents = context.get("agents", {})
-                for child_id in household.children_ids:
+                for child_id in household._bio_state.children_ids:
                     # Use O(1) lookup from agents dict
                     child = agents.get(child_id)
                     if child and getattr(child, "is_active", False):

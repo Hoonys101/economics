@@ -28,9 +28,9 @@ class TestNeedsFluctuation(unittest.TestCase):
         # Force a household to have specific personality and state
         self.household = self.simulation.households[0]
         # Use a valid personality
-        self.household.personality = Personality.MISER
-        self.household.needs['survival'] = 50.0
-        self.household.inventory['basic_food'] = 5.0 # Give food so they can consume
+        self.household._social_state.personality = Personality.MISER
+        self.household._bio_state.needs['survival'] = 50.0
+        self.household._econ_state.inventory['basic_food'] = 5.0 # Give food so they can consume
 
         # Ensure utility effects are loaded (relying on my app.py fix)
         # We can check this
@@ -42,15 +42,15 @@ class TestNeedsFluctuation(unittest.TestCase):
 
     def test_needs_increase_over_time(self):
         """Verify that needs increase over time (base growth) when not consuming."""
-        initial_survival = self.household.needs['survival']
+        initial_survival = self.household._bio_state.needs['survival']
 
         # Run 1 tick without consumption (force empty inventory to test growth only?
         # But I gave inventory above. Let's remove it for this test)
-        self.household.inventory['basic_food'] = 0.0
+        self.household._econ_state.inventory['basic_food'] = 0.0
 
         self.simulation.run_tick()
 
-        new_survival = self.household.needs['survival']
+        new_survival = self.household._bio_state.needs['survival']
         # Expect increase: base_growth (1.0)
         expected_increase = config.BASE_DESIRE_GROWTH
 
@@ -61,14 +61,14 @@ class TestNeedsFluctuation(unittest.TestCase):
     def test_consumption_reduces_needs(self):
         """Verify that consumption reduces needs."""
         # Set high need to trigger consumption
-        self.household.needs['survival'] = 80.0
-        self.household.inventory['basic_food'] = 5.0
+        self.household._bio_state.needs['survival'] = 80.0
+        self.household._econ_state.inventory['basic_food'] = 5.0
 
-        initial_survival = self.household.needs['survival']
+        initial_survival = self.household._bio_state.needs['survival']
 
         self.simulation.run_tick()
 
-        new_survival = self.household.needs['survival']
+        new_survival = self.household._bio_state.needs['survival']
         print(f"Initial Survival: {initial_survival}, New Survival: {new_survival}")
 
         # Utility of basic_food is 10 (survival). Base growth is 1.

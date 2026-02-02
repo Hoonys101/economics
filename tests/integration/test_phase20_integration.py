@@ -51,8 +51,8 @@ class TestPhase20Integration:
         engine.households = []
         for i in range(50):
             h = MagicMock()
-            h.is_active = True # Boolean, not Mock
-            h.assets = 5000.0
+            h._bio_state.is_active = True # Boolean, not Mock
+            h._econ_state.assets = 5000.0
             engine.households.append(h)
         engine.goods_data = []
         engine.ai_trainer = MagicMock()
@@ -83,7 +83,7 @@ class TestPhase20Integration:
         manager = ImmigrationManager(mock_config, settlement_system=MagicMock())
         engine = MagicMock()
         engine.households = [MagicMock() for _ in range(50)]
-        for h in engine.households: h.is_active = True
+        for h in engine.households: h._bio_state.is_active = True
 
         # Mock Engine Markets
         labor_market = MagicMock()

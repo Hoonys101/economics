@@ -41,7 +41,7 @@ class ImmigrationManager:
         if "labor" in engine.markets:
             job_vacancies = engine.markets["labor"].get_total_demand()
 
-        total_population = len([h for h in engine.households if h.is_active])
+        total_population = len([h for h in engine.households if h._bio_state.is_active])
         pop_threshold = getattr(self.config, "POPULATION_IMMIGRATION_THRESHOLD", 80)
 
         # 2. Check Conditions
@@ -129,7 +129,7 @@ class ImmigrationManager:
             )
 
             # Set specific immigrant traits
-            household.education_level = education_level
+            household._econ_state.education_level = education_level
             household.initialize_demographics(
                 age=float(random.randint(20, 35)),
                 gender=random.choice(["M", "F"]),
@@ -138,7 +138,7 @@ class ImmigrationManager:
             )
 
             # Initial Inventory (Survival Kit)
-            household.inventory["basic_food"] = 5.0
+            household._econ_state.inventory["basic_food"] = 5.0
 
             # WO-106: Immigration Funding from Government
             if hasattr(engine, "government") and engine.government:

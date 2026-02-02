@@ -34,12 +34,12 @@ class TestHouseholdAIConsumption:
         
         household = MagicMock(spec=Household)
         household.id = 1
-        household.needs = {"survival": 80.0} # High survival need
-        household.inventory = {"food": 0.0}
+        household._bio_state.needs = {"survival": 80.0} # High survival need
+        household._econ_state.inventory = {"food": 0.0}
         household._assets = 100.0
         household.get_agent_data.return_value = {}
         household.get_pre_state_data.return_value = {}
-        household.perceived_avg_prices = {"food": 10.0}
+        household._econ_state.perceived_avg_prices = {"food": 10.0}
         
         return engine, household, mock_household_ai
 
@@ -56,10 +56,10 @@ class TestHouseholdAIConsumption:
         
         # Run make_decisions
         state = MagicMock(spec=HouseholdStateDTO)
-        state.needs = household.needs
-        state.inventory = household.inventory
-        state.assets = household.assets
-        state.perceived_prices = household.perceived_avg_prices
+        state.needs = household._bio_state.needs
+        state.inventory = household._econ_state.inventory
+        state.assets = household._econ_state.assets
+        state.perceived_prices = household._econ_state.perceived_avg_prices
 
         context = DecisionContext(
             state=state,

@@ -43,7 +43,7 @@ class TestFirmManagementLeak(unittest.TestCase):
         # 1. Setup Household
         household = MagicMock()
         household.id = 1
-        household.assets = 5000.0
+        household._econ_state.assets = 5000.0
         household._sub_assets = MagicMock()
 
         # 2. Patch dependencies

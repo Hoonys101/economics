@@ -1,8 +1,9 @@
 import unittest
 from unittest.mock import MagicMock
-from simulation.systems.handlers.housing_transaction_handler import HousingTransactionHandler
+from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
 from simulation.models import Transaction
 from simulation.agents.government import Government
+from simulation.core_agents import Household
 
 class TestHousingTransactionHandler(unittest.TestCase):
     def setUp(self):
@@ -27,19 +28,23 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.state.transactions = []
 
         # Mock Agents
-        self.buyer = MagicMock()
+        self.buyer = MagicMock(spec=Household)
         self.buyer.id = 3
-        self.buyer.assets = 20000.0
-        self.buyer.current_wage = 20.0 # Needed for income calc
-        self.buyer.is_active = True
-        self.buyer.owned_properties = []
-        self.buyer.residing_property_id = None
+        self.buyer._econ_state = MagicMock()
+        self.buyer._bio_state = MagicMock()
+        self.buyer._econ_state.assets = 20000.0
+        self.buyer._econ_state.current_wage = 20.0 # Needed for income calc
+        self.buyer._bio_state.is_active = True
+        self.buyer._econ_state.owned_properties = []
+        self.buyer._econ_state.residing_property_id = None
 
-        self.seller = MagicMock()
+        self.seller = MagicMock(spec=Household)
         self.seller.id = 4
-        self.seller.assets = 50000.0
-        self.seller.is_active = True
-        self.seller.owned_properties = [101]
+        self.seller._econ_state = MagicMock()
+        self.seller._bio_state = MagicMock()
+        self.seller._econ_state.assets = 50000.0
+        self.seller._bio_state.is_active = True
+        self.seller._econ_state.owned_properties = [101]
 
         # Mock Unit
         self.unit = MagicMock()

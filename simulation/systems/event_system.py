@@ -42,7 +42,7 @@ class EventSystem(IEventSystem):
         if config.scenario_name == 'hyperinflation' and config.demand_shock_cash_injection > 0:
             if central_bank and self.settlement_system:
                 for h in households:
-                    amount = h.assets * config.demand_shock_cash_injection
+                    amount = h._econ_state.assets * config.demand_shock_cash_injection
                     self.settlement_system.create_and_transfer(
                         source_authority=central_bank,
                         destination=h,

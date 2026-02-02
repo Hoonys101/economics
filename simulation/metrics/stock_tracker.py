@@ -171,8 +171,8 @@ class PersonalityStatisticsTracker:
         }
         
         for h in households:
-            if hasattr(h, "personality") and h.is_active:
-                personality_name = h.personality.name
+            if h._bio_state.is_active:
+                personality_name = h._social_state.personality.name
                 if personality_name in groups:
                     groups[personality_name].append(h)
         
@@ -199,12 +199,12 @@ class PersonalityStatisticsTracker:
         n = len(members)
         
         # 기본 자산 통계
-        assets = [h.assets for h in members]
+        assets = [h._econ_state.assets for h in members]
         avg_assets = sum(assets) / n
         median_assets = median(assets)
         
         # 고용 통계
-        employed_count = sum(1 for h in members if h.is_employed)
+        employed_count = sum(1 for h in members if h._econ_state.is_employed)
         employment_rate = employed_count / n
         
         # 포트폴리오 통계
@@ -216,7 +216,9 @@ class PersonalityStatisticsTracker:
             total_shares = 0.0
             
             if stock_market is not None:
-                for firm_id, shares in h.shares_owned.items():
+                # Use portfolio directly
+                for firm_id, holding in h._econ_state.portfolio.holdings.items():
+                    shares = holding.quantity
                     price = stock_market.get_stock_price(firm_id) or 0.0
                     portfolio_value += shares * price
                     total_shares += shares
@@ -225,24 +227,25 @@ class PersonalityStatisticsTracker:
             stock_holdings.append(total_shares)
         
         # 욕구 통계
-        survival_needs = [h.needs.get("survival", 0.0) for h in members]
-        social_needs = [h.needs.get("social", 0.0) for h in members]
-        improvement_needs = [h.needs.get("improvement", 0.0) for h in members]
+        survival_needs = [h._bio_state.needs.get("survival", 0.0) for h in members]
+        social_needs = [h._bio_state.needs.get("social", 0.0) for h in members]
+        improvement_needs = [h._bio_state.needs.get("improvement", 0.0) for h in members]
         
         # 자산 증가율
         growth_rates = []
         for h in members:
             prev_assets = self.previous_assets.get(h.id)
+            current_assets = h._econ_state.assets
             if prev_assets is not None and prev_assets > 0:
-                growth_rate = (h.assets - prev_assets) / prev_assets
+                growth_rate = (current_assets - prev_assets) / prev_assets
                 growth_rates.append(growth_rate)
-            self.previous_assets[h.id] = h.assets
+            self.previous_assets[h.id] = current_assets
         
         avg_growth_rate = sum(growth_rates) / len(growth_rates) if growth_rates else 0.0
         
         # 소득 통계 (labor_income_this_tick, capital_income_this_tick 사용)
-        labor_incomes = [getattr(h, "labor_income_this_tick", 0.0) for h in members]
-        capital_incomes = [getattr(h, "capital_income_this_tick", 0.0) for h in members]
+        labor_incomes = [h._econ_state.labor_income_this_tick for h in members]
+        capital_incomes = [h._econ_state.capital_income_this_tick for h in members]
 
         avg_labor_income = sum(labor_incomes) / n
         avg_capital_income = sum(capital_incomes) / n

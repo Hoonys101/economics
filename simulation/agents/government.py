@@ -311,9 +311,9 @@ class Government:
         total_approval = 0
         count = 0
         for h in households:
-            if h.is_active:
+            if h._bio_state.is_active:
                 # Household must have 'approval_rating' (0 or 1)
-                rating = getattr(h, "approval_rating", 0)
+                rating = h._social_state.approval_rating
                 total_approval += rating
                 count += 1
 
@@ -538,5 +538,5 @@ class Government:
         Delegates public education logic to the Ministry of Education.
         Returns transactions.
         """
-        households = [a for a in agents if hasattr(a, 'education_level')]
+        households = [a for a in agents if hasattr(a, '_econ_state')]
         return self.ministry_of_education.run_public_education(households, self, current_tick)

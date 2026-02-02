@@ -39,10 +39,10 @@ def diagnose():
     sim = create_simulation()
     
     def get_balances():
-        h_sum = sum(h.assets for h in sim.households if h.is_active)
+        h_sum = sum(h._econ_state.assets for h in sim.households if h._bio_state.is_active)
         f_sum = sum(f.assets for f in sim.firms if f.is_active)
         # 소멸 과정에 있는 에이전트 포함 (Ghost check)
-        h_inactive = sum(h.assets for h in sim.households if not h.is_active)
+        h_inactive = sum(h._econ_state.assets for h in sim.households if not h._bio_state.is_active)
         f_inactive = sum(f.assets for f in sim.firms if not f.is_active)
         
         gov = sim.government.assets

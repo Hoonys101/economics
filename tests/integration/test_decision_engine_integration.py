@@ -182,8 +182,8 @@ class TestDecisionEngineIntegration:
         self, household: Household, goods_market: OrderBookMarket
     ):
         """가계가 식량 구매 주문을 올바르게 제출하는지 테스트합니다."""
-        household.needs["survival_need"] = 80.0
-        household.inventory["food"] = 0.0
+        household._bio_state.needs["survival_need"] = 80.0
+        household._econ_state.inventory["food"] = 0.0
 
         # Configure the mock instance directly
         household.make_decision.return_value = (
@@ -219,9 +219,9 @@ class TestDecisionEngineIntegration:
         self, household: Household, labor_market: OrderBookMarket
     ):
         """가계가 노동 판매 주문을 올바르게 제출하는지 테스트합니다."""
-        household.is_employed = False
-        household.needs["labor_need"] = 50
-        household.needs["survival_need"] = 10.0
+        household._econ_state.is_employed = False
+        household._bio_state.needs["labor_need"] = 50
+        household._bio_state.needs["survival_need"] = 10.0
 
         # Configure the mock instance directly
         household.make_decision.return_value = (
@@ -329,9 +329,9 @@ class TestDecisionEngineIntegration:
         self, household: Household, firm: Firm, labor_market: OrderBookMarket
     ):
         """가계와 기업의 주문이 노동 시장에서 올바르게 매칭되는지 통합 테스트합니다."""
-        household.is_employed = False
-        household.needs["labor_need"] = 50
-        household.needs["survival_need"] = 10.0
+        household._econ_state.is_employed = False
+        household._bio_state.needs["labor_need"] = 50
+        household._bio_state.needs["survival_need"] = 10.0
         household_sell_order = Order(
             agent_id=household.id,
             side="SELL",

@@ -13,9 +13,9 @@ def probe():
         return
 
     h = sim.households[0]
-    print(f"Household {h.id} Needs: {h.needs}")
+    print(f"Household {h.id} Needs: {h._bio_state.needs}")
     
-    if "survival" in h.needs:
+    if "survival" in h._bio_state.needs:
         print("SUCCESS: 'survival' key found.")
     else:
         print("FAILURE: 'survival' key MISSING.")

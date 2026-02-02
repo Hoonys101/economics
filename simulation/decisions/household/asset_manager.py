@@ -46,9 +46,9 @@ class AssetManager:
             cap_ratio = config.debt_repayment_cap
             liquidity_ratio = config.debt_liquidity_ratio
 
-            repay_amount = household.assets * base_ratio * stress_config.debt_aversion_multiplier
+            repay_amount = household._econ_state.assets * base_ratio * stress_config.debt_aversion_multiplier
             repay_amount = min(repay_amount, principal * cap_ratio)
-            repay_amount = min(repay_amount, household.assets * liquidity_ratio)
+            repay_amount = min(repay_amount, household._econ_state.assets * liquidity_ratio)
 
             if repay_amount > 1.0:
                  orders.append(Order(
@@ -66,7 +66,7 @@ class AssetManager:
         # Logic for Portfolio Management vs Emergency Liquidity
         if current_time % 30 == 0:
             # Immutability Fix: Calculate effective cash instead of modifying DTO
-            effective_cash = household.assets
+            effective_cash = household._econ_state.assets
             if is_debt_aversion_mode and repay_amount > 0:
                 effective_cash -= repay_amount
 
@@ -87,17 +87,17 @@ class AssetManager:
         default_rate = getattr(config, "default_mortgage_rate", 0.05)
         nominal_rate = loan_market_data.get("interest_rate", default_rate)
 
-        if household.expected_inflation:
-            avg_expected_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+        if household._econ_state.expected_inflation:
+            avg_expected_inflation = sum(household._econ_state.expected_inflation.values()) / len(household._econ_state.expected_inflation)
         else:
             avg_expected_inflation = 0.0
 
         real_rate = nominal_rate - avg_expected_inflation
 
         beta = 1.0
-        if household.personality in [Personality.MISER, Personality.CONSERVATIVE]:
+        if household._social_state.personality in [Personality.MISER, Personality.CONSERVATIVE]:
             beta = 1.2
-        elif household.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+        elif household._social_state.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
             beta = 0.8
 
         return (1.0 + real_rate) * beta
@@ -105,7 +105,7 @@ class AssetManager:
     def get_debt_penalty(self, household: Any, market_data: Dict[str, Any], config: Any) -> float:
         debt_data = market_data.get("debt_data", {}).get(household.id, {})
         daily_interest_burden = debt_data.get("daily_interest_burden", 0.0)
-        income_proxy = max(household.current_wage, household.assets * 0.01)
+        income_proxy = max(household._econ_state.current_wage, household._econ_state.assets * 0.01)
         dsr = daily_interest_burden / (income_proxy + 1e-9)
 
         debt_penalty = 1.0
@@ -138,8 +138,8 @@ class AssetManager:
         daily_consumption = getattr(config, "household_food_consumption_per_tick", 2.0)
         monthly_survival_cost = food_price * daily_consumption * 30.0
 
-        if household.expected_inflation:
-            avg_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+        if household._econ_state.expected_inflation:
+            avg_inflation = sum(household._econ_state.expected_inflation.values()) / len(household._econ_state.expected_inflation)
         else:
             avg_inflation = 0.0
 
@@ -203,7 +203,7 @@ class AssetManager:
         household = context.household
         market_data = context.market_data
 
-        if household.assets < 10.0:
+        if household._econ_state.assets < 10.0:
             deposit_data = market_data.get("deposit_data", {})
             deposit_balance = deposit_data.get(household.id, 0.0)
 
@@ -235,7 +235,7 @@ class AssetManager:
         if market_snapshot is None:
             return stock_orders
 
-        if household.assets < config.household_min_assets_for_investment:
+        if household._econ_state.assets < config.household_min_assets_for_investment:
             return stock_orders
 
         avg_dividend_yield = market_data.get("avg_dividend_yield", 0.05)
@@ -249,10 +249,10 @@ class AssetManager:
         daily_consumption = getattr(config, "household_food_consumption_per_tick", 2.0)
         survival_cost = food_price * daily_consumption * 30.0
 
-        risk_aversion = self._get_risk_aversion(household.personality)
+        risk_aversion = self._get_risk_aversion(household._social_state.personality)
 
         target_cash, target_deposit, target_equity = PortfolioManager.optimize_portfolio(
-            total_liquid_assets=household.assets,
+            total_liquid_assets=household._econ_state.assets,
             risk_aversion=risk_aversion,
             risk_free_rate=risk_free_rate,
             equity_return_proxy=avg_dividend_yield,

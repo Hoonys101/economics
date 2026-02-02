@@ -23,7 +23,7 @@ class LaborManager:
         best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
 
         # Scenario A: Already Employed
-        if household.is_employed:
+        if household._econ_state.is_employed:
             # Recovery handled by EconComponent/LaborManager, here we just check for quit
             if hasattr(action_vector, 'job_mobility_aggressiveness'):
                 agg_mobility = action_vector.job_mobility_aggressiveness
@@ -32,8 +32,8 @@ class LaborManager:
 
             quit_threshold = config.job_quit_threshold_base - agg_mobility
 
-            if (market_avg_wage > household.current_wage * quit_threshold or
-                best_market_offer > household.current_wage * quit_threshold):
+            if (market_avg_wage > household._econ_state.current_wage * quit_threshold or
+                best_market_offer > household._econ_state.current_wage * quit_threshold):
 
                 if random.random() < (config.job_quit_prob_base + agg_mobility * config.job_quit_prob_scale):
                     # Signal quit via Order
@@ -48,26 +48,26 @@ class LaborManager:
 
 
         # Scenario B: Unemployed
-        if not household.is_employed:
+        if not household._econ_state.is_employed:
             # Note: Legacy code accessed `basic_food` from inventory. DTO has `inventory: List[GoodsDTO]` usually,
             # but legacy code treated it as Dict?
             # Memory says: "HouseholdStateDTO defines inventory as a List[GoodsDTO]... replacing the previous Dict[str, float] representation."
-            # BUT legacy code: `food_inventory = household.inventory.get("basic_food", 0.0)`
-            # This implies `household.inventory` IS A DICT in the Legacy Engine's view.
+            # BUT legacy code: `food_inventory = household._econ_state.inventory.get("basic_food", 0.0)`
+            # This implies `household._econ_state.inventory` IS A DICT in the Legacy Engine's view.
             # If `HouseholdStateDTO` has `inventory` as `List`, then `get` would fail.
             # Let's verify `HouseholdStateDTO` definition.
             # If it is a List, I must convert or iterate.
             # But wait, `AIDrivenHouseholdDecisionEngine` (legacy) ran successfully?
-            # If so, `household.inventory` acts like a dict.
+            # If so, `household._econ_state.inventory` acts like a dict.
             # Maybe `HouseholdStateDTO`'s `inventory` field is `Dict[str, float]` after all, or property wrapper.
             # I will assume dict access works as per legacy code parity.
 
-            food_inventory = household.inventory.get("basic_food", 0.0)
+            food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
 
             food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
             if food_price <= 0: food_price = 10.0
 
-            survival_days = food_inventory + (household.assets / food_price)
+            survival_days = food_inventory + (household._econ_state.assets / food_price)
             critical_turns = getattr(config, "survival_critical_turns", 5)
 
             is_panic = False
@@ -81,7 +81,7 @@ class LaborManager:
                     )
             else:
                 # labor_market_info re-fetch or reuse? Reuse.
-                reservation_wage = market_avg_wage * household.wage_modifier
+                reservation_wage = market_avg_wage * household._econ_state.wage_modifier
 
             # labor_market_info re-fetch in legacy? Yes.
             labor_market_info = market_data.get("goods_market", {}).get("labor", {})

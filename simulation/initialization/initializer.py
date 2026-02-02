@@ -275,16 +275,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         ]
 
         top_20_count = len(sim.households) // 5
-        top_households = sorted(sim.households, key=lambda h: h.assets, reverse=True)[:top_20_count]
+        top_households = sorted(sim.households, key=lambda h: h._econ_state.assets, reverse=True)[:top_20_count]
 
         for i, hh in enumerate(top_households):
             if i < len(sim.real_estate_units):
                 unit = sim.real_estate_units[i]
                 unit.owner_id = hh.id
-                hh.owned_properties.append(unit.id)
+                hh._econ_state.owned_properties.append(unit.id)
                 unit.occupant_id = hh.id
-                hh.residing_property_id = unit.id
-                hh.is_homeless = False
+                hh._econ_state.residing_property_id = unit.id
+                hh._econ_state.is_homeless = False
 
         sim.markets: Dict[str, Market] = {
             good_name: OrderBookMarket(market_id=good_name, config_module=self.config)

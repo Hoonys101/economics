@@ -172,7 +172,7 @@ class TestSupplyShock(unittest.TestCase):
             
             for h in sim.households:
                 # Calculate urgency based on individual needs
-                current_survival = h.needs.get("survival", 0)
+                current_survival = h._bio_state.needs.get("survival", 0)
                 base_agg = 0.5
                 if current_survival > 60: base_agg = 0.9 # Panic buy
                 elif current_survival < 30: base_agg = 0.3 # Relaxed

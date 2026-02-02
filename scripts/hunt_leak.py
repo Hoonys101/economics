@@ -15,7 +15,7 @@ def hunt_leak():
     def get_snapshot():
         snapshot = {}
         for h in state.households:
-            snapshot[f"H_{h.id}"] = h.assets
+            snapshot[f"H_{h.id}"] = h._econ_state.assets
         for f in state.firms:
             snapshot[f"F_{f.id}"] = f.assets
         if state.bank:

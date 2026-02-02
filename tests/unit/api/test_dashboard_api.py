@@ -66,9 +66,9 @@ class TestDashboardAPI:
         # Inject Golden Fixtures
         # Patch households 'needs' and 'last_leisure_type' as done in generator
         for h in golden_households:
-            if isinstance(h.needs, MagicMock):
-                h.needs = {"survival": h.needs.survival}
-            h.last_leisure_type = "IDLE"
+            if isinstance(h._bio_state.needs, MagicMock):
+                h._bio_state.needs = {"survival": h._bio_state.needs.survival}
+            h._social_state.last_leisure_type = "IDLE"
 
         # Patch firms 'total_shares'
         for f in golden_firms:

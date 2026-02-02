@@ -78,9 +78,9 @@ def run_phase4_verification(ticks=100, output_file="phase4_verification.csv"):
             config_module=config
         )
         # Set some to unemployed to trigger welfare
-        h.is_employed = False
+        h._econ_state.is_employed = False
         if i >= 18:
-            h.needs["survival"] = 60.0 # High need
+            h._bio_state.needs["survival"] = 60.0 # High need
         households.append(h)
 
     firms = []
@@ -138,7 +138,7 @@ def run_phase4_verification(ticks=100, output_file="phase4_verification.csv"):
         gini = wealth_dist.get("gini_total_assets", 0.0)
         
         # Credit Jail Count
-        jailed_count = sum(1 for h in sim.households if h.credit_frozen_until_tick > t)
+        jailed_count = sum(1 for h in sim.households if h._econ_state.credit_frozen_until_tick > t)
         
         # Welfare Spending (Stimulus + Benefit)
         # Assuming run_welfare_check ran and updated Government stats

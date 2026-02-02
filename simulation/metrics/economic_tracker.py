@@ -73,7 +73,7 @@ class EconomicIndicatorTracker:
 
         # Perform calculations...
         total_household_assets = sum(
-            h.assets for h in households if getattr(h, "is_active", True)
+            h._econ_state.assets for h in households if h._bio_state.is_active
         )
         # WO-106: Initial Sink Fix
         # Use get_financial_snapshot to include Capital Stock and Inventory in Total Assets
@@ -85,14 +85,11 @@ class EconomicIndicatorTracker:
         record["total_household_assets"] = total_household_assets
         record["total_firm_assets"] = total_firm_assets
 
-        total_households = len([h for h in households if getattr(h, "is_active", True)])
+        total_households = len([h for h in households if h._bio_state.is_active])
         unemployed_households = 0
         for h in households:
-            if getattr(h, "is_active", True):
-                if not hasattr(h, 'is_employed'):
-                    self.logger.error(f"TRACKER ERROR: Agent {h.id} in households list is not a Household! Type: {type(h)}")
-                    continue
-                if not h.is_employed:
+            if h._bio_state.is_active:
+                if not hasattr(h, '_econ_state') or not h._econ_state.is_employed:
                     unemployed_households += 1
         record["unemployment_rate"] = (
             (unemployed_households / total_households) * 100
@@ -177,14 +174,14 @@ class EconomicIndicatorTracker:
         record["total_production"] = total_production
 
         total_consumption = sum(
-            h.current_consumption for h in households if getattr(h, "is_active", True)
+            h._econ_state.current_consumption for h in households if h._bio_state.is_active
         )
         record["total_consumption"] = total_consumption
 
         total_food_consumption = sum(
-            h.current_food_consumption
+            h._econ_state.current_food_consumption
             for h in households
-            if isinstance(h, Household) and getattr(h, "is_active", True)
+            if isinstance(h, Household) and h._bio_state.is_active
         )
         record["total_food_consumption"] = total_food_consumption
 
@@ -197,9 +194,9 @@ class EconomicIndicatorTracker:
         active_households_count = 0
         total_survival_need = 0.0
         for h in households:
-            if getattr(h, "is_active", True):
+            if h._bio_state.is_active:
                 active_households_count += 1
-                total_survival_need += h.needs.get("survival", 0.0)
+                total_survival_need += h._bio_state.needs.get("survival", 0.0)
 
         record["avg_survival_need"] = (
             total_survival_need / active_households_count
@@ -209,9 +206,9 @@ class EconomicIndicatorTracker:
         # --- WO-043: Comprehensive Metrics ---
         # 1. Labor Share = Total Labor Income / Nominal GDP
         total_labor_income = sum(
-            getattr(h, "labor_income_this_tick", 0.0)
+            h._econ_state.labor_income_this_tick
             for h in households
-            if getattr(h, "is_active", True)
+            if h._bio_state.is_active
         )
         record["total_labor_income"] = total_labor_income
 
@@ -247,15 +244,15 @@ class EconomicIndicatorTracker:
 
         # --- Phase 23: Opportunity Index & Education Metrics ---
         # 1. Average Education Level
-        total_edu = sum(getattr(h, "education_level", 0.0) for h in households if getattr(h, "is_active", True))
+        total_edu = sum(h._econ_state.education_level for h in households if h._bio_state.is_active)
         record["avg_education_level"] = total_edu / total_households if total_households > 0 else 0.0
 
         # 2. Brain Waste Count (Aptitude >= 0.8 but Education < Level 2)
         brain_waste = [
             h for h in households 
-            if getattr(h, "is_active", True) 
-            and getattr(h, "aptitude", 0.0) >= 0.8 
-            and getattr(h, "education_level", 0.0) < 2.0
+            if h._bio_state.is_active
+            and h._econ_state.aptitude >= 0.8
+            and h._econ_state.education_level < 2.0
         ]
         record["brain_waste_count"] = len(brain_waste)
 
@@ -294,8 +291,8 @@ class EconomicIndicatorTracker:
 
         # 1. Households
         for h in world_state.households:
-            if getattr(h, "is_active", True):
-                total += h.assets
+            if h._bio_state.is_active:
+                total += h._econ_state.assets
 
         # 2. Firms
         for f in world_state.firms:

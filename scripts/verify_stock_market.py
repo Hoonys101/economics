@@ -61,7 +61,7 @@ def run_verification():
     shares_per_hh = total_shares_start / config.NUM_HOUSEHOLDS
     
     for h in sim.households:
-        h.shares_owned[firm.id] = shares_per_hh
+        h._econ_state.portfolio.to_legacy_dict()[firm.id] = shares_per_hh
         # Set risk aversion: 10 Value Investors, 10 Momentum Traders
         if h.id < 10:
             h.risk_aversion = 2.0 # Value (High Aversion)
@@ -103,10 +103,10 @@ def run_verification():
         # Agents generate orders
         for h in sim.households:
             # Inject cash to fuel bubble
-            h.assets += 100.0 
+            h._econ_state.assets += 100.0
             # Portfolio Manager call
             orders = h.portfolio_manager.generate_stock_orders(
-                h.id, h.shares_owned, h.assets * 0.5, h.assets, market_data, h.risk_aversion, 0.02
+                h.id, h._econ_state.portfolio.to_legacy_dict(), h._econ_state.assets * 0.5, h._econ_state.assets, market_data, h.risk_aversion, 0.02
             )
             for o in orders:
                 sim.stock_market.place_order(o, t)
@@ -135,7 +135,7 @@ def run_verification():
         
         for h in sim.households:
             orders = h.portfolio_manager.generate_stock_orders(
-                h.id, h.shares_owned, h.assets * 0.5, h.assets, market_data, h.risk_aversion, 0.02
+                h.id, h._econ_state.portfolio.to_legacy_dict(), h._econ_state.assets * 0.5, h._econ_state.assets, market_data, h.risk_aversion, 0.02
             )
             for o in orders:
                 sim.stock_market.place_order(o, t)

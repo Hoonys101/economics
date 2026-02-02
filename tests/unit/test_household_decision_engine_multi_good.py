@@ -63,19 +63,19 @@ def mock_household(mock_config_module):
     household = Mock(spec=Household)
     household.id = 1
     household._assets = 100.0
-    household.inventory = {"basic_food": 0, "luxury_food": 0}
-    household.needs = {
+    household._econ_state.inventory = {"basic_food": 0, "luxury_food": 0}
+    household._bio_state.needs = {
         "survival": 70.0,
         "social": 30.0,
         "improvement": 10.0,
         "asset": 50.0,
     }
-    household.perceived_avg_prices = {}
+    household._econ_state.perceived_avg_prices = {}
     household.config_module = mock_config_module
     household.get_agent_data.return_value = {
-        "assets": household.assets,
-        "needs": household.needs.copy(),
-        "inventory": household.inventory.copy(),
+        "assets": household._econ_state.assets,
+        "needs": household._bio_state.needs.copy(),
+        "inventory": household._econ_state.inventory.copy(),
     }
     household.get_pre_state_data.return_value = household.get_agent_data()
     household.logger = MagicMock()  # Mock the logger

@@ -127,11 +127,11 @@ class SnapshotViewModel:
         active_household_count = 0
 
         for h in simulation.households:
-             if h.is_active:
+             if h._bio_state.is_active:
                   leisure = simulation.household_time_allocation.get(h.id, 0.0)
                   total_leisure_hours += leisure
                   active_household_count += 1
-                  if h.last_leisure_type == "PARENTING":
+                  if h._social_state.last_leisure_type == "PARENTING":
                        total_parenting_hours += leisure
 
         avg_leisure_hours = (total_leisure_hours / active_household_count) if active_household_count > 0 else 0.0
@@ -161,7 +161,7 @@ class SnapshotViewModel:
         ]
 
         # Mitosis Cost
-        current_pop = len([h for h in simulation.households if h.is_active])
+        current_pop = len([h for h in simulation.households if h._bio_state.is_active])
         target_pop = simulation.config_module.TARGET_POPULATION
         base_threshold = simulation.config_module.MITOSIS_BASE_THRESHOLD
         sensitivity = simulation.config_module.MITOSIS_SENSITIVITY
@@ -185,11 +185,11 @@ class SnapshotViewModel:
         count_active = 0
 
         for h in simulation.households:
-            if h.is_active:
+            if h._bio_state.is_active:
                 count_active += 1
                 # Unemployment Logic
-                if not h.is_employed:
-                    survival_need = h.needs.get("survival", 0.0)
+                if not h._econ_state.is_employed:
+                    survival_need = h._bio_state.needs.get("survival", 0.0)
                     if survival_need > 50:
                         struggling += 1
                     else:
@@ -201,7 +201,7 @@ class SnapshotViewModel:
 
                 time_allocation["WORK"] += work_hours
 
-                l_type = h.last_leisure_type
+                l_type = h._social_state.last_leisure_type
                 if l_type in time_allocation:
                      time_allocation[l_type] += leisure_hours
                 else:

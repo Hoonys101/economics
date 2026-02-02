@@ -28,7 +28,7 @@ class EconomicIndicatorsViewModel:
         """
         Calculates the wealth distribution (histogram buckets).
         """
-        all_assets = [h.assets for h in households] + [f.assets for f in firms]
+        all_assets = [h._econ_state.assets for h in households] + [f.assets for f in firms]
         if not all_assets:
             return {"labels": [], "data": []}
 
@@ -74,7 +74,7 @@ class EconomicIndicatorsViewModel:
                 household_needs[key] = 0.0
 
             for h in households:
-                for key, value in h.needs.items():
+                for key, value in h._bio_state.needs.items():
                     household_needs[key] += value
 
             for key in household_needs:

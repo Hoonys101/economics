@@ -263,11 +263,6 @@ class Household(BaseAgent, ILearningAgent):
 
     # --- Property Overrides (BaseAgent) ---
 
-    @property
-    @override
-    def assets(self) -> float:
-        return self._econ_state.assets
-
     @override
     def _add_assets(self, amount: float) -> None:
         self._econ_state.assets += amount
@@ -278,326 +273,12 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.assets -= amount
         self._assets = self._econ_state.assets
 
-    @property
-    def inventory(self) -> Dict[str, float]:
-        return self._econ_state.inventory
-
-    @inventory.setter
-    def inventory(self, value: Dict[str, float]) -> None:
-        self._econ_state.inventory = value
-
-    @property
-    def needs(self) -> Dict[str, float]:
-        return self._bio_state.needs
-
-    @needs.setter
-    def needs(self, value: Dict[str, float]) -> None:
-        self._bio_state.needs = value
-
-    @property
-    def is_active(self) -> bool:
-        return self._bio_state.is_active
-
-    @is_active.setter
-    def is_active(self, value: bool) -> None:
-        self._bio_state.is_active = value
-
-    # --- Properties Delegating to DTOs ---
-
-    # Legacy Compatibility Property
-    @property
-    def demographics(self) -> "Household":
-        """
-        [COMPATIBILITY] Returns self to satisfy legacy access to demographics fields
-        (e.g. household.demographics.parent_id).
-        """
-        return self
-
-    @property
-    def personality(self) -> Personality:
-        return self._social_state.personality
-
-    @property
-    def age(self) -> float:
-        return self._bio_state.age
-
-    @property
-    def gender(self) -> str:
-        return self._bio_state.gender
-
-    @property
-    def parent_id(self) -> Optional[int]:
-        return self._bio_state.parent_id
-
-    @property
-    def generation(self) -> int:
-        return self._bio_state.generation
-
-    @property
-    def spouse_id(self) -> Optional[int]:
-        return self._bio_state.spouse_id
-
-    @property
-    def children_ids(self) -> List[int]:
-        return self._bio_state.children_ids
-
-    @property
-    def children_count(self) -> int:
-        return len(self._bio_state.children_ids)
-
-    @property
-    def is_employed(self) -> bool:
-        return self._econ_state.is_employed
-
-    @is_employed.setter
-    def is_employed(self, value: bool) -> None:
-        self._econ_state.is_employed = value
-
-    @property
-    def employer_id(self) -> Optional[int]:
-        return self._econ_state.employer_id
-
-    @employer_id.setter
-    def employer_id(self, value: Optional[int]) -> None:
-        self._econ_state.employer_id = value
-
-    @property
-    def current_wage(self) -> float:
-        return self._econ_state.current_wage
-
-    @current_wage.setter
-    def current_wage(self, value: float) -> None:
-        self._econ_state.current_wage = value
-
-    @property
-    def wage_modifier(self) -> float:
-        return self._econ_state.wage_modifier
-
-    @wage_modifier.setter
-    def wage_modifier(self, value: float) -> None:
-        self._econ_state.wage_modifier = value
-
-    @property
-    def labor_skill(self) -> float:
-        return self._econ_state.labor_skill
-
-    @labor_skill.setter
-    def labor_skill(self, value: float) -> None:
-        self._econ_state.labor_skill = value
-
-    @property
-    def education_xp(self) -> float:
-        return self._econ_state.education_xp
-
-    @education_xp.setter
-    def education_xp(self, value: float) -> None:
-        self._econ_state.education_xp = value
-
-    @property
-    def education_level(self) -> int:
-        return self._econ_state.education_level
-
-    @education_level.setter
-    def education_level(self, value: int) -> None:
-        self._econ_state.education_level = value
-
-    @property
-    def expected_wage(self) -> float:
-        return self._econ_state.expected_wage
-
-    @expected_wage.setter
-    def expected_wage(self, value: float) -> None:
-        self._econ_state.expected_wage = value
-
-    @property
-    def talent(self) -> Talent:
-        return self._econ_state.talent
-
-    @talent.setter
-    def talent(self, value: Talent) -> None:
-        self._econ_state.talent = value
-
-    @property
-    def skills(self) -> Dict[str, Skill]:
-        return self._econ_state.skills
-
-    @skills.setter
-    def skills(self, value: Dict[str, Skill]) -> None:
-        self._econ_state.skills = value
-
-    @property
-    def aptitude(self) -> float:
-        return self._econ_state.aptitude
-
-    @aptitude.setter
-    def aptitude(self, value: float) -> None:
-        self._econ_state.aptitude = value
-
-    @property
-    def portfolio(self) -> Portfolio:
-        return self._econ_state.portfolio
-
-    @property
-    def shares_owned(self) -> Dict[int, float]:
-        return self._econ_state.portfolio.to_legacy_dict()
-
-    @property
-    def durable_assets(self) -> List[Dict[str, Any]]:
-        return self._econ_state.durable_assets
-
-    @property
-    def owned_properties(self) -> List[int]:
-        return self._econ_state.owned_properties
-
-    @property
-    def residing_property_id(self) -> Optional[int]:
-        return self._econ_state.residing_property_id
-
-    @residing_property_id.setter
-    def residing_property_id(self, value: Optional[int]) -> None:
-        self._econ_state.residing_property_id = value
-
-    @property
-    def is_homeless(self) -> bool:
-        return self._econ_state.is_homeless
-
-    @is_homeless.setter
-    def is_homeless(self, value: bool) -> None:
-        self._econ_state.is_homeless = value
-
-    @property
-    def home_quality_score(self) -> float:
-        return self._econ_state.home_quality_score
-
-    @home_quality_score.setter
-    def home_quality_score(self, value: float) -> None:
-        self._econ_state.home_quality_score = value
-
-    @property
-    def housing_target_mode(self) -> str:
-        return self._econ_state.housing_target_mode
-
-    @housing_target_mode.setter
-    def housing_target_mode(self, value: str) -> None:
-        self._econ_state.housing_target_mode = value
-
-    @property
-    def inventory_quality(self) -> Dict[str, float]:
-        return self._econ_state.inventory_quality
-
-    @property
-    def labor_income_this_tick(self) -> float:
-        return self._econ_state.labor_income_this_tick
-
-    @labor_income_this_tick.setter
-    def labor_income_this_tick(self, value: float) -> None:
-        self._econ_state.labor_income_this_tick = value
-
-    @property
-    def capital_income_this_tick(self) -> float:
-        return self._econ_state.capital_income_this_tick
-
-    @capital_income_this_tick.setter
-    def capital_income_this_tick(self, value: float) -> None:
-        self._econ_state.capital_income_this_tick = value
-
-    @property
-    def current_consumption(self) -> float:
-        return self._econ_state.current_consumption
-
-    @property
-    def current_food_consumption(self) -> float:
-        return self._econ_state.current_food_consumption
-
-    @property
-    def expected_inflation(self) -> Dict[str, float]:
-        return self._econ_state.expected_inflation
-
-    @property
-    def perceived_avg_prices(self) -> Dict[str, float]:
-        return self._econ_state.perceived_avg_prices
-
-    # Social Properties
-    @property
-    def social_status(self) -> float:
-        return self._social_state.social_status
-
-    @social_status.setter
-    def social_status(self, value: float) -> None:
-        self._social_state.social_status = value
-
-    @property
-    def approval_rating(self) -> int:
-        return self._social_state.approval_rating
-
-    @approval_rating.setter
-    def approval_rating(self, value: int) -> None:
-        self._social_state.approval_rating = value
-
-    @property
-    def discontent(self) -> float:
-        return self._social_state.discontent
-
-    @property
-    def conformity(self) -> float:
-        return self._social_state.conformity
-
-    @property
-    def social_rank(self) -> float:
-        return self._social_state.social_rank
-
-    @social_rank.setter
-    def social_rank(self, value: float) -> None:
-        self._social_state.social_rank = value
-
-    @property
-    def quality_preference(self) -> float:
-        return self._social_state.quality_preference
-
-    @property
-    def brand_loyalty(self) -> Dict[int, float]:
-        return self._social_state.brand_loyalty
-
-    @property
-    def last_purchase_memory(self) -> Dict[str, int]:
-        return self._social_state.last_purchase_memory
-
-    @property
-    def patience(self) -> float:
-        return self._social_state.patience
-
-    @property
-    def optimism(self) -> float:
-        return self._social_state.optimism
-
-    @property
-    def ambition(self) -> float:
-        return self._social_state.ambition
-
-    @property
-    def last_leisure_type(self) -> str:
-        return self._social_state.last_leisure_type
-
-    @property
-    def desire_weights(self) -> Dict[str, float]:
-        return self._social_state.desire_weights
-
-    # Legacy attributes support
-    @property
-    def initial_assets_record(self) -> float:
-        return self._econ_state.initial_assets_record
-
-    @initial_assets_record.setter
-    def initial_assets_record(self, value: float) -> None:
-        self._econ_state.initial_assets_record = value
-
-    @property
-    def credit_frozen_until_tick(self) -> int:
-        return self._econ_state.credit_frozen_until_tick
-
-    @credit_frozen_until_tick.setter
-    def credit_frozen_until_tick(self, value: int) -> None:
-        self._econ_state.credit_frozen_until_tick = value
+    # --- Property Removal (TD-065) ---
+    # All properties delegating to _bio_state, _econ_state, _social_state have been removed.
+    # Access these states directly (e.g. self._econ_state.assets).
+    # BaseAgent overrides (assets, inventory, needs) have been removed, meaning
+    # Household now uses BaseAgent's storage for these fields, which may be stale/unused.
+    # Internal logic strictly uses _state DTOs.
 
     # --- Methods ---
 
@@ -611,7 +292,7 @@ class Household(BaseAgent, ILearningAgent):
             preference_asset=self.preference_asset,
             preference_social=self.preference_social,
             preference_growth=self.preference_growth,
-            personality=self.personality,
+            personality=self._social_state.personality,
             durable_assets=[d.copy() for d in self._econ_state.durable_assets],
             expected_inflation=self._econ_state.expected_inflation.copy(),
             is_employed=self._econ_state.is_employed,
@@ -741,7 +422,7 @@ class Household(BaseAgent, ILearningAgent):
         return refined_orders, chosen_tactic_tuple
 
     def adjust_assets(self, delta: float) -> None:
-        self._add_assets(delta)
+        self._econ_state.assets += delta
 
     def modify_inventory(self, item_id: str, quantity: float) -> None:
         if item_id not in self._econ_state.inventory:
@@ -777,11 +458,11 @@ class Household(BaseAgent, ILearningAgent):
         orders = []
 
         # 1. Liquidate Inventory
-        for good, qty in self.inventory.items():
+        for good, qty in self._econ_state.inventory.items():
             if qty <= 0:
                 continue
 
-            price = self.perceived_avg_prices.get(good, 10.0)
+            price = self._econ_state.perceived_avg_prices.get(good, 10.0)
             liquidation_price = price * 0.8
 
             order = Order(
@@ -795,7 +476,8 @@ class Household(BaseAgent, ILearningAgent):
             orders.append(order)
 
         # 2. Liquidate Stocks
-        for firm_id, shares in self.shares_owned.items():
+        for firm_id, holding in self._econ_state.portfolio.holdings.items():
+            shares = holding.quantity
             if shares <= 0:
                 continue
 
@@ -833,7 +515,7 @@ class Household(BaseAgent, ILearningAgent):
         Updates agent needs and lifecycle (Bio, Social, Econ-Work).
         Replaces legacy AgentLifecycleComponent.
         """
-        if not self.is_active:
+        if not self._bio_state.is_active:
             return
 
         # 1. Work (Econ)
@@ -910,7 +592,7 @@ class Household(BaseAgent, ILearningAgent):
         # 2. Econ Cloning (Inheritance)
         # We need parent skills.
         econ_inheritance = self.econ_component.prepare_clone_state(
-            self._econ_state, self.skills, self.config
+            self._econ_state, self._econ_state.skills, self.config
         )
 
         # 3. Create Decision Engine
@@ -920,7 +602,7 @@ class Household(BaseAgent, ILearningAgent):
         # Combine args
         cloned_household = Household(
             id=new_id,
-            talent=self.talent, # Copied reference
+            talent=self._econ_state.talent, # Copied reference
             goods_data=[g for g in self.goods_info_map.values()],
             initial_assets=initial_assets_from_parent,
             initial_needs=self._bio_state.needs.copy(), # Inherit current needs or reset? Usually reset.
@@ -929,7 +611,7 @@ class Household(BaseAgent, ILearningAgent):
 
             decision_engine=new_decision_engine,
             value_orientation=self.value_orientation,
-            personality=self.personality, # Inherit personality
+            personality=self._social_state.personality, # Inherit personality
             config_dto=self.config,
             loan_market=self.decision_engine.loan_market,
             risk_aversion=self.risk_aversion,
@@ -943,12 +625,12 @@ class Household(BaseAgent, ILearningAgent):
         )
 
         # 5. Apply Econ Inheritance
-        cloned_household.skills = econ_inheritance["skills"]
-        cloned_household.education_level = econ_inheritance["education_level"]
-        cloned_household.expected_wage = econ_inheritance["expected_wage"]
-        cloned_household.labor_skill = econ_inheritance["labor_skill"]
+        cloned_household._econ_state.skills = econ_inheritance["skills"]
+        cloned_household._econ_state.education_level = econ_inheritance["education_level"]
+        cloned_household._econ_state.expected_wage = econ_inheritance["expected_wage"]
+        cloned_household._econ_state.labor_skill = econ_inheritance["labor_skill"]
         if "aptitude" in econ_inheritance:
-             cloned_household.aptitude = econ_inheritance["aptitude"]
+             cloned_household._econ_state.aptitude = econ_inheritance["aptitude"]
 
         return cloned_household
 
@@ -969,7 +651,7 @@ class Household(BaseAgent, ILearningAgent):
         )
 
     def get_generational_similarity(self, other: "Household") -> float:
-        talent_diff = abs(self.talent.base_learning_rate - other.talent.base_learning_rate)
+        talent_diff = abs(self._econ_state.talent.base_learning_rate - other._econ_state.talent.base_learning_rate)
         similarity = max(0.0, 1.0 - talent_diff)
         return similarity
 
@@ -995,7 +677,7 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.labor_income_this_tick += income
 
     def get_desired_wage(self) -> float:
-        if self.assets < self.config.household_low_asset_threshold:
+        if self._econ_state.assets < self.config.household_low_asset_threshold:
             return self.config.household_low_asset_wage
         return self.config.household_default_wage
 

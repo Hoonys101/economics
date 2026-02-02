@@ -169,7 +169,7 @@ class FirmSystem:
 
         wealthy_households = [
             h for h in simulation.households
-            if h.is_active and h.assets > startup_cost * capital_multiplier
+            if h._bio_state.is_active and h._econ_state.assets > startup_cost * capital_multiplier
         ]
 
         for household in wealthy_households:
