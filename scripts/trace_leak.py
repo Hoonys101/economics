@@ -17,6 +17,11 @@ def trace():
     # Baseline is established at Tick 0
     baseline_money = sim.world_state.calculate_total_money()
 
+    initial_assets = {}
+    for agent_id, agent in sim.agents.items():
+        if hasattr(agent, "assets"):
+            initial_assets[agent_id] = agent.assets
+
     for f in sim.world_state.firms:
         print(f"Firm {f.id}: Assets={f.assets:,.2f}, Active={f.is_active}")
     
@@ -47,12 +52,33 @@ def trace():
     authorized_delta = 0.0
     if hasattr(sim.government, "get_monetary_delta"):
         authorized_delta = sim.government.get_monetary_delta()
+    
+    # Add manual delta from pre-tick loan grant (which was reset in run_tick)
+    if 'grant_result' in locals() and grant_result:
+        authorized_delta += loan_amount
 
     print(f"\nTick 1 (END) Total Money: {current_money:,.2f}")
     print(f"Baseline: {baseline_money:,.2f}")
     print(f"Authorized Delta (Minted - Destroyed + Credit): {authorized_delta:,.2f}")
     print(f"Actual Delta: {delta:,.2f}")
+
+    # Inspect Individual Deltas
+    print("\n--- Agent Asset Deltas ---")
+    deltas = []
+    for agent_id, agent in sim.agents.items():
+        if hasattr(agent, "assets") and agent_id in initial_assets:
+            d = agent.assets - initial_assets[agent_id]
+            if abs(d) > 0.01:
+                deltas.append((agent_id, d, type(agent).__name__))
     
+    deltas.sort(key=lambda x: x[1], reverse=True)
+    for aid, d, atype in deltas[:10]:
+        print(f"{atype} {aid}: {d:,.2f}")
+    if len(deltas) > 10:
+        print("...")
+        for aid, d, atype in deltas[-5:]:
+             print(f"{atype} {aid}: {d:,.2f}")
+
     # Check Integrity
     leak = delta - authorized_delta
     if abs(leak) > 1.0:

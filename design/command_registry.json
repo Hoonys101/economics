@@ -4,10 +4,22 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "STABILIZE-SYS-V2": {
-    "title": "System Unit Test Repair",
+  "FIX-LEAK": {
+    "title": "Fix 8000 Housing Loan Leak",
     "command": "create",
-    "instruction": "Fix system unit tests and mock fixtures as per spec.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "design/3_work_artifacts/specs/STABILIZE-SYS-V2.md"
+    "instruction": "Fix the 8000 monetary leak in housing purchase. The loan_proceeds transfer must originate from the BANK, not the buyer. Target: simulation/utils/simulation_builder.py (escrow logic).\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "reports/temp/report_20260202_150507_Analyze_logs_leak_de.md"
+  },
+  "FIX-CRISIS": {
+    "title": "Fix Crisis Monitor OSError",
+    "command": "create",
+    "instruction": "Fix the OSError in modules/analysis/crisis_monitor.py caused by MagicMock being used as a filename. This blocks all system tests.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "reports/temp/report_20260202_155247_Analyze_the_test_res.md"
+  },
+  "FIX-TESTS": {
+    "title": "Fix Integration and System Tests",
+    "command": "create",
+    "instruction": "Fix all failing integration and system tests (28 failed, 11 errors). Update Mock objects to match refactored agent state (_econ_state removal). Correct DTO signatures and method calls. Do NOT modify core simulation code.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "reports/temp/report_20260202_155247_Analyze_the_test_res.md"
   }
 }
