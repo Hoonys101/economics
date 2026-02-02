@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "MISSION-TD005-HALO": {
-    "command": "create",
-    "instruction": "Remove is_visionary flag and implement Brand Resilience logic as per SPEC_TD005_HALO_LIQUIDATION.md\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Liquidate TD-005 Halo Effect",
-    "file": "design/3_work_artifacts/specs/SPEC_TD005_HALO_LIQUIDATION.md"
-  },
   "MISSION-TD006-PERSONALITY": {
     "command": "create",
     "instruction": "Implement dynamic personality updates based on wealth percentile as per SPEC_TD006_DYNAMIC_PERSONALITY.md\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
