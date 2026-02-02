@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-TEST-BOOTSTRAP": {
-    "title": "Fix Test Mocks and Agent Attributes",
-    "command": "create",
-    "instruction": "Fix Category A, B, and D failues (mocking, DTOs, and missing attributes). 1. Update tests to provide missing config_manager to Bank. 2. Ensure MockAgents have _econ_state. 3. Update DTO initializations (e.g., FirmStateDTO). 4. Add 'gender' attribute to Household class in core_agents.py.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "reports/temp/report_20260202_172347_Analyze_logs_final_v.md"
-  },
   "FIX-SYSTEM-LOGIC": {
     "title": "Fix Core Economic Logic Bugs",
     "command": "create",
