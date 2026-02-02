@@ -24,6 +24,10 @@ def context():
     ctx.logger = MagicMock()
     ctx.time = 0
     ctx.transaction_queue = []
+
+    # Defaults
+    ctx.bank.withdraw_for_customer.return_value = True
+
     return ctx
 
 @pytest.fixture
@@ -92,8 +96,11 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     # 2. Loan Grant called
     context.bank.grant_loan.assert_called()
 
-    # 3. Disbursement: Buyer -> Escrow (800)
-    context.settlement_system.transfer.assert_any_call(buyer, escrow_agent, 800.0, "escrow_hold:loan_proceeds:unit_101", tick=0)
+    # 2b. Deposit Neutralization (Withdrawal)
+    context.bank.withdraw_for_customer.assert_called_with(1, 800.0)
+
+    # 3. Disbursement: BANK -> Escrow (800)
+    context.settlement_system.transfer.assert_any_call(context.bank, escrow_agent, 800.0, "escrow_hold:loan_proceeds:unit_101", tick=0)
 
     # 4. Final Settlement: Escrow -> Seller (1000)
     context.settlement_system.transfer.assert_any_call(escrow_agent, seller, 1000.0, "final_settlement:unit_101", tick=0)
@@ -167,13 +174,22 @@ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller
     result = handler.handle(tx, buyer, seller, context)
 
     assert result is False
-    # Verify Compensation: Void Loan, Return Down Payment
-    context.bank.void_loan.assert_called_with("loan_123")
+    # Verify Compensation: TERMINATE Loan (not void), Return Down Payment
+    context.bank.terminate_loan.assert_called_with("loan_123")
+
+    # Verify withdraw happened
+    context.bank.withdraw_for_customer.assert_called()
 
     # Check transfer calls
     # 1. Buyer->Escrow (Down) [Success]
-    # 2. Buyer->Escrow (Proceeds) [Fail]
+    # 2. Bank->Escrow (Proceeds) [Fail]
     # 3. Escrow->Buyer (Down Reversal)
     assert context.settlement_system.transfer.call_count == 3
     calls = context.settlement_system.transfer.call_args_list
+
+    # Verify Step 2 was from Bank
+    assert calls[1][0][0] == context.bank
+    assert calls[1][0][1] == escrow_agent
+
+    # Verify Step 3 was reversal to Buyer
     assert "escrow_reversal" in calls[2][0][3]

@@ -123,48 +123,29 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     context.transaction_queue.append(credit_tx)
 
                 # 4. Saga Step C: Disburse Loan (Bank -> Escrow)
-                # Note: Bank.grant_loan created a deposit for borrower.
-                # We need to transfer that deposit (or newly minted funds if Bank logic differs) to Escrow.
-                # Actually, grant_loan creates a deposit for the borrower.
-                # So the borrower now has `loan_amount` in their bank account (or existing assets).
-                # Wait, `grant_loan` calls `deposit_from_customer`. So Buyer has the money.
-                # BUT the Spec says "Disburse Loan Principal to Escrow".
-                # If the money is in Buyer's account, we must transfer from Buyer to Escrow?
-                # OR does the Bank transfer directly?
-                # The `grant_loan` implementation adds to `borrower_id` deposit.
-                # So `Buyer` now has the funds.
-                # The Spec Pseudo-code says: `settlement_system.transfer(bank, escrow_agent, ...)`
-                # This implies the loan funds come from Bank directly to Escrow.
-                # But current `grant_loan` implementation puts it in Buyer's deposit.
-                # So we should transfer from Buyer (using the loan funds) to Escrow?
-                # OR we treat `grant_loan` as just booking the loan, and the disbursement happens differently?
-                # `grant_loan` creates a Deposit.
-                # If I transfer from Bank to Escrow, I am double counting if I also keep the deposit for Buyer.
-                # Current `Bank.grant_loan` logic: `self.deposit_from_customer(bid_int, amount)`.
-                # This increases Buyer's deposit balance.
-                # So for the Saga "Disburse to Escrow", I should transfer from Buyer (using the newly acquired funds) to Escrow?
-                # Or maybe the Spec implies `grant_loan` shouldn't deposit to Buyer immediately but to Escrow?
-                # I cannot change `Bank.grant_loan`.
-                # So, effectively, the "Disbursement" step is moving the loan proceeds from Buyer's account (where Bank put them) to Escrow.
-                # Step C Modified: Transfer Loan Proceeds (Buyer -> Escrow).
-                # Wait, if I do that, the "Bank -> Escrow" semantic is lost.
-                # But financially it is same: Bank -> Buyer -> Escrow.
-                # The Spec says `transfer(bank, escrow_agent, ...)`. This would imply Bank sends cash to Escrow.
-                # If `grant_loan` already gave money to Buyer, and then we do Bank->Escrow, Bank pays twice?
-                # Yes.
-                # So I must transfer from Buyer -> Escrow.
-                # BUT wait, the Spec says "Disburse Loan Principal to Escrow... transfer(bank, escrow_agent)".
-                # This suggests the Spec assumes `create_loan` does NOT credit the buyer immediately, or the handler controls it.
-                # But existing `Bank.grant_loan` DOES credit the buyer.
-                # To align with existing Bank logic AND the goal (funds in Escrow):
-                # We should transfer the loan amount from Buyer to Escrow.
-                # The "Source" of funds is the Bank (via the loan), but the intermediate hop is the Buyer's account.
+                # Correction: funds must originate from BANK.
+                # But `grant_loan` already created a deposit for Buyer. We must withdraw it first.
+                try:
+                    # Neutralize the deposit created by grant_loan
+                    withdrawal_success = context.bank.withdraw_for_customer(buyer.id, loan_amount)
+                    if not withdrawal_success:
+                        context.logger.critical(f"HOUSING | Failed to withdraw loan deposit from Buyer {buyer.id}. Aborting.")
+                        self._void_loan_safely(context, loan_id)
+                        context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
+                        return False
+                except Exception as e:
+                    context.logger.critical(f"HOUSING | Error withdrawing loan deposit: {e}")
+                    self._void_loan_safely(context, loan_id)
+                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
+                    return False
 
                 memo_disburse = f"escrow_hold:loan_proceeds:{tx.item_id}"
-                if not context.settlement_system.transfer(buyer, escrow_agent, loan_amount, memo_disburse, tick=context.time):
-                    context.logger.critical(f"HOUSING | Failed to move loan proceeds to escrow for {buyer.id}")
-                    # Compensate: Void Loan, Return Down Payment
-                    self._void_loan_safely(context, loan_id)
+                # Transfer from BANK (Reserves) to Escrow
+                if not context.settlement_system.transfer(context.bank, escrow_agent, loan_amount, memo_disburse, tick=context.time):
+                    context.logger.critical(f"HOUSING | Failed to move loan proceeds from Bank to Escrow for {buyer.id}")
+                    # Compensate: Terminate Loan (Asset), Return Down Payment
+                    # Note: We cannot use _void_loan_safely because the deposit is already gone (withdrawn).
+                    self._terminate_loan_safely(context, loan_id)
                     context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
                     return False
 
@@ -178,15 +159,14 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
             if not context.settlement_system.transfer(escrow_agent, seller, sale_price, memo_settle, tick=context.time):
                 context.logger.critical(f"HOUSING | CRITICAL: Failed to pay seller {seller.id} from escrow.")
-                # Compensate: This is messy.
-                # 1. Return Loan Proceeds to Buyer (so we can void loan? No, void loan expects deposit reversal).
-                # If we return to Buyer, we can void loan.
+                # Compensate:
+                # 1. Return Loan Proceeds to BANK (since we withdrew form Buyer and sent to Escrow from Bank)
                 if use_mortgage:
-                    context.settlement_system.transfer(escrow_agent, buyer, loan_amount, "reversal:seller_payment_failed", tick=context.time)
-                    self._void_loan_safely(context, loan_id)
+                    context.settlement_system.transfer(escrow_agent, context.bank, loan_amount, "reversal:loan_return_to_bank", tick=context.time)
+                    self._terminate_loan_safely(context, loan_id)
 
-                # 2. Return Down Payment
-                context.settlement_system.transfer(escrow_agent, buyer, down_payment, "reversal:seller_payment_failed", tick=context.time)
+                # 2. Return Down Payment to Buyer
+                context.settlement_system.transfer(escrow_agent, buyer, down_payment, "reversal:down_payment_return", tick=context.time)
                 return False
 
             # Success!
@@ -254,6 +234,15 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     context.transaction_queue.append(void_tx)
             except Exception as e:
                 context.logger.error(f"HOUSING | Failed to void loan {loan_id}: {e}")
+
+    def _terminate_loan_safely(self, context: TransactionContext, loan_id: str):
+        if context.bank and loan_id:
+            try:
+                term_tx = context.bank.terminate_loan(loan_id)
+                if term_tx and context.transaction_queue is not None:
+                    context.transaction_queue.append(term_tx)
+            except Exception as e:
+                context.logger.error(f"HOUSING | Failed to terminate loan {loan_id}: {e}")
 
     def _apply_housing_effects(self, unit: Any, buyer: Any, seller: Any, mortgage_id: Optional[str], context: TransactionContext):
         """
