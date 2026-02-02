@@ -43,6 +43,8 @@ def test_infrastructure_investment():
     config_mock = Mock()
     config_mock.INFRASTRUCTURE_INVESTMENT_COST = 5000.0
     config_mock.TICKS_PER_YEAR = 100 # Required for TaylorRulePolicy init
+    config_mock.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    config_mock.TAX_BRACKETS = [] # Ensure this is a list, not a Mock
 
     gov = Government(id=1, initial_assets=6000.0, config_module=config_mock)
 
@@ -60,14 +62,17 @@ def test_infrastructure_investment():
     gov.settlement_system = Mock()
     gov.settlement_system.transfer.return_value = True
 
-    invested_result = gov.invest_infrastructure(current_tick=1, reflux_system=reflux_mock)
+    # Setup dummy household for public works
+    h1 = Mock()
+    h1.id = 999
+    h1.is_active = True
 
-    assert isinstance(invested_result, tuple)
-    success, txs = invested_result
-    assert success is True
+    # Call with households, expecting a list of transactions
+    txs = gov.invest_infrastructure(current_tick=1, households=[h1])
+
     assert isinstance(txs, list)
+    assert len(txs) > 0
 
-    # TD-105 Fix: Immediate withdrawal is now enforced to ensure Zero-Sum
-    # when transferring to RefluxSystem.
-    assert gov.assets == initial_assets - config_mock.INFRASTRUCTURE_INVESTMENT_COST
-    assert gov.infrastructure_level == initial_level + 1
+    # Verify metadata trigger instead of immediate level change
+    # Infrastructure update is now deferred to EffectSystem
+    assert txs[0].metadata.get("triggers_effect") == "GOVERNMENT_INFRA_UPGRADE"

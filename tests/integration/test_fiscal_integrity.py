@@ -123,8 +123,10 @@ def test_education_spending_generates_transactions_only():
     # Setup Household
     household = MagicMock() # spec=Household removed to avoid AttributeError on private attrs
     household.id = 10
+    household._econ_state = MagicMock()
     household._econ_state.education_level = 0
     household._econ_state.assets = 100.0
+    household._bio_state = MagicMock()
     household._bio_state.is_active = True
     # Needed for education logic check
     household._bio_state.age = 20

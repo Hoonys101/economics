@@ -56,7 +56,9 @@ class TestWO048Breeding(unittest.TestCase):
         # Monthly 10,000 -> Hourly = 10000 / (8 * 20) = 62.5
         self.agent_data["current_wage"] = 62.5
 
-        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', True):
+        # Explicitly patch OPPORTUNITY_COST_FACTOR to ensure deterministic NPV calculation
+        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', True), \
+             patch.object(config, 'OPPORTUNITY_COST_FACTOR', 0.5):
             decision = self.ai.decide_reproduction(self.agent_data, self.market_data, self.current_time)
             self.assertFalse(decision, "High income agent should reject reproduction due to opportunity cost.")
 
