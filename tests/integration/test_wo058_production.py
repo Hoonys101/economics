@@ -109,7 +109,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
 
     # Assert Assets >= 2000
     for firm in sim.firms:
-        assert firm.assets >= 2000.0, f"Firm {firm.id} undercapitalized"
+        assert firm.finance.balance >= 2000.0, f"Firm {firm.id} undercapitalized"
 
         # Assert Inputs Present
         if "inputs" in mock_config.GOODS[firm.specialization]:

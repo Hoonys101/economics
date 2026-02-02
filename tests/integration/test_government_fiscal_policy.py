@@ -17,7 +17,7 @@ def test_tax_collection_and_bailouts(government):
     mock_firm = Mock()
     mock_firm.id = 101
     mock_firm._assets = 1000.0
-    initial_firm_assets = mock_firm.assets
+    initial_firm_assets = mock_firm.finance.balance
 
     # Mock the finance system to approve the bailout
     government.finance_system.evaluate_solvency.return_value = True

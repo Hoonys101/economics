@@ -92,14 +92,16 @@ class Bootstrapper:
 
 
             # 2. Capital Injection (Demand Side)
-            if firm.assets < Bootstrapper.MIN_CAPITAL:
-                diff = Bootstrapper.MIN_CAPITAL - firm.assets
+            # Refactor: Use finance.balance
+            if firm.finance.balance < Bootstrapper.MIN_CAPITAL:
+                diff = Bootstrapper.MIN_CAPITAL - firm.finance.balance
                 if settlement_system and central_bank:
                     settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
                     logger.info(f"BOOTSTRAPPER | Injected {diff:.2f} capital to Firm {firm.id} via Settlement.")
                 else:
                     # Fallback (Should not be used in Genesis mode, but keeps compatibility)
-                    firm._add_assets(diff)
+                    # Use finance.credit explicitly
+                    firm.finance.credit(diff, "Legacy Bootstrap")
                     logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff:.2f} to Firm {firm.id} (No SettlementSystem).")
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

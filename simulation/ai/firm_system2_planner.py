@@ -44,15 +44,15 @@ class FirmSystem2Planner:
             raise ValueError("FirmSystem2Planner requires firm_state (FirmStateDTO).")
 
         # Abstraction layer to access data from DTO
-        revenue = firm_state.revenue_this_turn
+        revenue = firm_state.finance.revenue_this_turn
         last_revenue = revenue # DTO might not have last_revenue, approximate
 
         # Sum wages from employees_data
         current_wages = 0.0
-        if firm_state.employees_data:
-            current_wages = sum(e['wage'] for e in firm_state.employees_data.values())
+        if firm_state.hr.employees_data:
+            current_wages = sum(e['wage'] for e in firm_state.hr.employees_data.values())
 
-        automation_level = firm_state.automation_level
+        automation_level = firm_state.production.automation_level
 
         # Map string to Enum
         personality_data = firm_state.agent_data.get("personality", "BALANCED")
@@ -69,7 +69,7 @@ class FirmSystem2Planner:
             except (KeyError, AttributeError):
                 personality = Personality.BALANCED
 
-        assets = firm_state.assets
+        assets = firm_state.finance.balance
 
         # 1. Forecast Revenue
         base_revenue = max(revenue, last_revenue, 10.0)

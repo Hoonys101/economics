@@ -53,17 +53,17 @@ class ProductionStrategy:
         """
         orders = []
         # Access goods_map instead of config_module.GOODS
-        good_info = goods_map.get(firm.specialization, {})
+        good_info = goods_map.get(firm.production.specialization, {})
         input_config = good_info.get("inputs", {})
 
         if not input_config:
             return orders
 
-        target_production = firm.production_target
+        target_production = firm.production.production_target
 
         for mat, req_per_unit in input_config.items():
             needed = target_production * req_per_unit
-            current = firm.input_inventory.get(mat, 0.0)
+            current = firm.production.input_inventory.get(mat, 0.0)
             deficit = needed - current
 
             if deficit > 0:
@@ -88,8 +88,8 @@ class ProductionStrategy:
         Phase 21: Automation Investment.
         """
         orders = []
-        target_a = guidance.get("target_automation", firm.automation_level)
-        current_a = firm.automation_level
+        target_a = guidance.get("target_automation", firm.production.automation_level)
+        current_a = firm.production.automation_level
 
         if current_a >= target_a:
             return orders
@@ -99,7 +99,7 @@ class ProductionStrategy:
         cost = cost_per_pct * (gap * 100.0)
 
         safety_margin = config.firm_safety_margin
-        investable_cash = max(0.0, firm.assets - safety_margin)
+        investable_cash = max(0.0, firm.finance.balance - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
         actual_spend = min(cost, budget)
@@ -126,12 +126,12 @@ class ProductionStrategy:
         if aggressiveness <= 0.1:
             return None
 
-        revenue_base = max(firm.revenue_this_turn, firm.assets * 0.05)
+        revenue_base = max(firm.finance.revenue_this_turn, firm.finance.balance * 0.05)
         rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
         safety_margin = config.firm_safety_margin
-        investable_cash = max(0.0, firm.assets - safety_margin)
+        investable_cash = max(0.0, firm.finance.balance - safety_margin)
 
         if investable_cash < budget:
             budget = investable_cash * 0.5
@@ -149,7 +149,7 @@ class ProductionStrategy:
             return None
 
         safety_margin = config.firm_safety_margin
-        investable_cash = max(0.0, firm.assets - safety_margin)
+        investable_cash = max(0.0, firm.finance.balance - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
 
@@ -162,9 +162,9 @@ class ProductionStrategy:
         """
         Adjust Production Target based on Inventory Levels.
         """
-        item = firm.specialization
-        current_inventory = firm.inventory.get(item, 0.0)
-        target = firm.production_target
+        item = firm.production.specialization
+        current_inventory = firm.production.inventory.get(item, 0.0)
+        target = firm.production.production_target
 
         overstock_threshold = config.overstock_threshold
         understock_threshold = config.understock_threshold

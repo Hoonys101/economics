@@ -134,8 +134,8 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         fire_sale_asset_threshold = getattr(config, 'fire_sale_asset_threshold', 50.0)
         if not isinstance(fire_sale_asset_threshold, (int, float)): fire_sale_asset_threshold = 50.0
 
-        # Use assets from state
-        assets = firm_state.assets
+        # Use finance.balance
+        assets = firm_state.finance.balance
         is_distressed = assets < fire_sale_asset_threshold
 
         if is_distressed:
@@ -145,7 +145,8 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
              fire_sale_target = getattr(config, 'fire_sale_inventory_target', 5.0)
              if not isinstance(fire_sale_target, (int, float)): fire_sale_target = 5.0
 
-             for item_id, quantity in firm_state.inventory.items():
+             # Use production.inventory
+             for item_id, quantity in firm_state.production.inventory.items():
                  if quantity > fire_sale_inv_threshold:
                      # Identify surplus
                      surplus = quantity - fire_sale_target

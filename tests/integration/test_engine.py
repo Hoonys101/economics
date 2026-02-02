@@ -448,7 +448,7 @@ class TestSimulation:
         buyer_hh = mock_households[0]
         seller_firm = mock_firms[0]
         initial_buyer_assets = buyer_hh.assets
-        initial_seller_assets = seller_firm.assets
+        initial_seller_assets = seller_firm.finance.balance
         initial_seller_inventory = seller_firm.inventory.get("basic_food", 0)
         initial_buyer_inventory = buyer_hh.inventory.get("basic_food", 0)
 
@@ -467,7 +467,7 @@ class TestSimulation:
         trade_value = tx.quantity * tx.price
         tax = trade_value * simulation_instance.config_module.SALES_TAX_RATE
         assert buyer_hh.assets == initial_buyer_assets - (trade_value + tax)
-        assert seller_firm.assets == initial_seller_assets + trade_value
+        assert seller_firm.finance.balance == initial_seller_assets + trade_value
         assert (
             seller_firm.inventory["basic_food"]
             == initial_seller_inventory - tx.quantity
@@ -477,14 +477,14 @@ class TestSimulation:
         # This assertion might need adjustment depending on how consumption of different food types is tracked
         # For now, assuming any food purchase contributes to current_food_consumption
         assert buyer_hh.current_food_consumption == tx.quantity
-        assert seller_firm.revenue_this_turn == (tx.quantity * tx.price)
+        assert seller_firm.finance.revenue_this_turn == (tx.quantity * tx.price)
 
     def test_process_transactions_labor_trade(
         self, simulation_instance, mock_households, mock_firms
     ):
         buyer_firm = mock_firms[0]
         seller_hh = mock_households[0]
-        initial_buyer_assets = buyer_firm.assets
+        initial_buyer_assets = buyer_firm.finance.balance
         initial_seller_assets = seller_hh.assets
 
         seller_hh.is_employed = False
@@ -517,7 +517,7 @@ class TestSimulation:
         # Total Tax = 1.25
         tax = 1.25
 
-        assert buyer_firm.assets == initial_buyer_assets - trade_value
+        assert buyer_firm.finance.balance == initial_buyer_assets - trade_value
         assert seller_hh.assets == pytest.approx(initial_seller_assets + (trade_value - tax))
         assert seller_hh.is_employed is True
         assert seller_hh.employer_id == buyer_firm.id

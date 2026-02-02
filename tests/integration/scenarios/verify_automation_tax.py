@@ -21,12 +21,12 @@ class TestAutomationTax(unittest.TestCase):
         firm = MagicMock(spec=FirmStateDTO)
         firm.id = 1
         firm.automation_level = 0.5
-        firm.assets = 10000.0
+        firm.finance.balance = 10000.0
         firm.input_inventory = {}
         firm.inventory = {}
         firm.specialization = "food"
         firm.production_target = 100.0
-        firm.revenue_this_turn = 5000.0 # needed for R&D logic if called, but agg=0.0
+        firm.finance.revenue_this_turn = 5000.0 # needed for R&D logic if called, but agg=0.0
 
         context = MagicMock(spec=DecisionContext)
         context.config = config

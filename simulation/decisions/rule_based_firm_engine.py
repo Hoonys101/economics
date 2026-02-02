@@ -33,8 +33,8 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         current_tick = context.current_time
 
         # 1. Sales Logic (Sell Inventory)
-        specialization = firm_state.specialization
-        inventory = firm_state.inventory.get(specialization, 0.0)
+        specialization = firm_state.production.specialization
+        inventory = firm_state.production.inventory.get(specialization, 0.0)
 
         if inventory > 0:
             # Determine Price
@@ -79,7 +79,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
 
         # 4. Firing Logic (Cost Cutting)
         needed_labor = self._calculate_needed_labor(firm_state)
-        current_employees = len(firm_state.employees)
+        current_employees = len(firm_state.hr.employees)
 
         # Simple firing logic: if we have more than needed + 1 (buffer), fire excess
         if current_employees > needed_labor + 1:
@@ -92,7 +92,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         """
         Fires excess employees if current workforce exceeds needed labor (with tolerance).
         """
-        current_employees = len(firm.employees)
+        current_employees = len(firm.hr.employees)
         excess = current_employees - int(needed_labor)
         # Always keep at least 1 employee unless shutting down? (Let's keep 1)
         excess = min(excess, max(0, current_employees - 1))
@@ -101,14 +101,14 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
             return []
 
         # Fire from the list (FIFO logic - first in list)
-        candidates = firm.employees[:excess]
+        candidates = firm.hr.employees[:excess]
         orders = []
 
         severance_weeks = getattr(self.config_module, "SEVERANCE_PAY_WEEKS", 4)
         min_wage = getattr(self.config_module, "LABOR_MARKET_MIN_WAGE", 5.0)
 
         # Access employee details via DTO if available, else use defaults.
-        employees_data = getattr(firm, "employees_data", {})
+        employees_data = getattr(firm.hr, "employees_data", {})
 
         for emp_id in candidates:
             emp_info = employees_data.get(emp_id, {})
@@ -139,9 +139,9 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         """
         재고 수준에 따라 생산 목표를 조정한다.
         """
-        item_id = firm.specialization
-        current_inventory = firm.inventory.get(item_id, 0)
-        target_quantity = firm.production_target
+        item_id = firm.production.specialization
+        current_inventory = firm.production.inventory.get(item_id, 0)
+        target_quantity = firm.production.production_target
 
         overstock_threshold = getattr(self.config_module, "OVERSTOCK_THRESHOLD", 1.2)
         understock_threshold = getattr(self.config_module, "UNDERSTOCK_THRESHOLD", 0.8)
@@ -192,7 +192,7 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         needed_labor = self._calculate_needed_labor(firm)
         offered_wage = self._calculate_dynamic_wage_offer(firm)
 
-        current_employees = len(firm.employees)
+        current_employees = len(firm.hr.employees)
 
         min_employees = getattr(self.config_module, "FIRM_MIN_EMPLOYEES", 1)
         max_employees = getattr(self.config_module, "FIRM_MAX_EMPLOYEES", 100)
@@ -231,14 +231,16 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         """
         생산 목표 달성에 필요한 총 노동력을 계산한다.
         """
-        item_id = firm.specialization
-        target_quantity = firm.production_target
-        current_inventory = firm.inventory.get(item_id, 0)
+        item_id = firm.production.specialization
+        target_quantity = firm.production.production_target
+        current_inventory = firm.production.inventory.get(item_id, 0)
         needed_production = max(0, target_quantity - current_inventory)
-        if firm.productivity_factor <= 0:
+        productivity_factor = firm.production.productivity_factor
+
+        if productivity_factor <= 0:
             return 999999.0 # Impossible to produce without productivity
 
-        needed_labor = needed_production / firm.productivity_factor
+        needed_labor = needed_production / productivity_factor
         return needed_labor
 
     def _calculate_dynamic_wage_offer(self, firm: FirmStateDTO) -> float:
@@ -248,10 +250,11 @@ class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
         sensitivity = getattr(self.config_module, "WAGE_PROFIT_SENSITIVITY", 0.1)
         max_premium = getattr(self.config_module, "MAX_WAGE_PREMIUM", 2.0)
 
-        if not firm.profit_history:
+        profit_history = firm.finance.profit_history
+        if not profit_history:
             return base_wage
 
-        avg_profit = sum(firm.profit_history) / len(firm.profit_history)
+        avg_profit = sum(profit_history) / len(profit_history)
         profit_based_premium = avg_profit / (base_wage * 10.0)
         wage_premium = max(
             0,

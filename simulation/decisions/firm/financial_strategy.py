@@ -36,11 +36,11 @@ class FinancialStrategy:
         """
         Set Dividend Rate.
         """
-        z_score = firm.altman_z_score
+        z_score = firm.finance.altman_z_score
         z_score_threshold = config.altman_z_score_threshold
         loss_limit = config.dividend_suspension_loss_ticks
 
-        is_distressed = (z_score < z_score_threshold) or (firm.consecutive_loss_turns >= loss_limit)
+        is_distressed = (z_score < z_score_threshold) or (firm.finance.consecutive_loss_turns >= loss_limit)
 
         if is_distressed:
             return Order(agent_id=firm.id, side="SET_DIVIDEND", item_id="internal", quantity=0.0, price_limit=0.0, market_id="internal")
@@ -64,7 +64,7 @@ class FinancialStrategy:
         if debt_info:
             current_debt = debt_info.get("total_principal", 0.0)
 
-        current_assets = max(firm.assets, 1.0)
+        current_assets = max(firm.finance.balance, 1.0)
         current_leverage = current_debt / current_assets
 
         if current_leverage < target_leverage:
@@ -81,10 +81,10 @@ class FinancialStrategy:
 
                 borrower_profile = BorrowerProfileDTO(
                     borrower_id=str(firm.id),
-                    gross_income=firm.revenue_this_turn,
+                    gross_income=firm.finance.revenue_this_turn,
                     existing_debt_payments=daily_burden * 30, # Approx monthly
                     collateral_value=0.0, # Unsecured
-                    existing_assets=firm.assets
+                    existing_assets=firm.finance.balance
                 )
 
                 # WO-146: Use market rate + spread instead of hardcoded 0.10
@@ -118,7 +118,7 @@ class FinancialStrategy:
 
         elif current_leverage > target_leverage:
             excess_debt = current_debt - (current_assets * target_leverage)
-            repay_amount = min(excess_debt, firm.assets * 0.5)
+            repay_amount = min(excess_debt, firm.finance.balance * 0.5)
 
             if repay_amount > 10.0 and current_debt > 0:
                  orders.append(
@@ -132,16 +132,16 @@ class FinancialStrategy:
         startup_cost = config.startup_cost
         trigger_ratio = config.seo_trigger_ratio
 
-        if firm.assets >= startup_cost * trigger_ratio:
+        if firm.finance.balance >= startup_cost * trigger_ratio:
             return None
-        if firm.treasury_shares <= 0:
+        if firm.finance.treasury_shares <= 0:
             return None
 
         # Use DTO
         market_snapshot = context.market_snapshot
 
         max_sell_ratio = config.seo_max_sell_ratio
-        sell_qty = min(firm.treasury_shares * max_sell_ratio, firm.treasury_shares)
+        sell_qty = min(firm.finance.treasury_shares * max_sell_ratio, firm.finance.treasury_shares)
 
         if sell_qty < 1.0:
             return None
@@ -164,8 +164,8 @@ class FinancialStrategy:
 
         if price is None or price <= 0:
             # Fallback to Book Value
-            if firm.total_shares > 0:
-                price = firm.assets / firm.total_shares
+            if firm.finance.total_shares > 0:
+                price = firm.finance.balance / firm.finance.total_shares
             else:
                 price = 0.0
 

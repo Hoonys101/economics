@@ -1,52 +1,22 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
+from .department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 
 @dataclass
 class FirmStateDTO:
     """
     A read-only DTO containing the state of a Firm agent.
     Used by DecisionEngines to make decisions without direct dependency on the Firm class.
+    Refactored to Composite State (TD-073).
     """
     id: int
-    assets: float
     is_active: bool
-    inventory: Dict[str, float]
-    inventory_quality: Dict[str, float]
-    input_inventory: Dict[str, float]
 
-    # WO-157: Sales Tracking
-    inventory_last_sale_tick: Dict[str, int]
-
-    # Production & Tech
-    current_production: float
-    productivity_factor: float
-    production_target: float
-    capital_stock: float
-    base_quality: float
-    automation_level: float
-    specialization: str
-
-    # Finance & Market
-    total_shares: float
-    treasury_shares: float
-    dividend_rate: float
-    is_publicly_traded: bool
-    valuation: float
-    revenue_this_turn: float
-    expenses_this_tick: float
-    consecutive_loss_turns: int
-    altman_z_score: float
-    price_history: Dict[str, float] # last_prices
-    profit_history: List[float]
-
-    # Brand & Sales
-    brand_awareness: float
-    perceived_quality: float
-    marketing_budget: float
-
-    # HR
-    employees: List[int] # List of employee IDs
-    employees_data: Dict[int, Dict[str, Any]] # Detailed employee info
+    # Department Composite States
+    finance: FinanceStateDTO
+    production: ProductionStateDTO
+    sales: SalesStateDTO
+    hr: HRStateDTO
 
     # AI/Agent Data
     agent_data: Dict[str, Any]
@@ -60,7 +30,7 @@ class FirmStateDTO:
         """
         Creates a FirmStateDTO from a Firm-like object (Firm instance or Mock).
         """
-        # Extract employee IDs safely
+        # --- HR State ---
         employee_ids = []
         employees_data = {}
         if hasattr(firm, 'hr') and hasattr(firm.hr, 'employees'):
@@ -77,24 +47,96 @@ class FirmStateDTO:
                     "education_level": getattr(e, 'education_level', 0)
                 }
 
-        # Extract financial data safely (using properties or direct access)
+        hr_dto = HRStateDTO(
+            employees=employee_ids,
+            employees_data=employees_data
+        )
+
+        # --- Finance State ---
         finance = getattr(firm, 'finance', None)
-        revenue = firm.revenue_this_turn if finance else 0.0
-        expenses = firm.expenses_this_tick if finance else 0.0
+        # Handle access via old properties if they exist (during refactor transition) or direct finance access
+        # Since we are removing properties, we should look at finance component directly if possible.
+        # However, for mocks or tests that might not have finance fully setup, we need care.
+        # But 'firm' here is likely the actual Firm object which has 'finance'.
+
+        balance = 0.0
+        if finance and hasattr(finance, 'balance'):
+            balance = finance.balance
+        elif hasattr(firm, 'assets'): # Fallback (e.g. BaseAgent or Mock)
+             balance = firm.assets
+
+        revenue = 0.0
+        if finance and hasattr(finance, 'revenue_this_turn'):
+            revenue = finance.revenue_this_turn
+        elif hasattr(firm, 'revenue_this_turn'):
+            revenue = firm.revenue_this_turn
+
+        expenses = 0.0
+        if finance and hasattr(finance, 'expenses_this_tick'):
+            expenses = finance.expenses_this_tick
+        elif hasattr(firm, 'expenses_this_tick'):
+            expenses = firm.expenses_this_tick
 
         profit_history = []
         if finance and hasattr(finance, 'profit_history'):
              profit_history = list(finance.profit_history)
+        elif hasattr(firm, 'profit_history'): # Fallback
+             profit_history = firm.profit_history
 
-        consecutive_loss_turns = firm.consecutive_loss_turns if hasattr(firm, 'consecutive_loss_turns') else 0
+        consecutive_loss_turns = 0
         if finance and hasattr(finance, 'consecutive_loss_turns'):
              consecutive_loss_turns = finance.consecutive_loss_turns
+        elif hasattr(firm, 'consecutive_loss_turns'):
+             consecutive_loss_turns = firm.consecutive_loss_turns
 
         altman_z = 0.0
         if finance and hasattr(finance, 'get_altman_z_score'):
             altman_z = finance.get_altman_z_score()
         elif hasattr(firm, 'altman_z_score'):
             altman_z = firm.altman_z_score
+
+        finance_dto = FinanceStateDTO(
+            balance=balance,
+            revenue_this_turn=revenue,
+            expenses_this_tick=expenses,
+            consecutive_loss_turns=consecutive_loss_turns,
+            profit_history=profit_history,
+            altman_z_score=altman_z,
+            valuation=getattr(firm, 'valuation', 0.0),
+            total_shares=getattr(firm, 'total_shares', 0.0),
+            treasury_shares=getattr(firm, 'treasury_shares', 0.0),
+            dividend_rate=getattr(firm, 'dividend_rate', 0.0),
+            is_publicly_traded=getattr(firm, 'is_publicly_traded', True)
+        )
+
+        # --- Production State ---
+        production_dto = ProductionStateDTO(
+            current_production=getattr(firm, 'current_production', 0.0),
+            productivity_factor=getattr(firm, 'productivity_factor', 1.0),
+            production_target=getattr(firm, 'production_target', 0.0),
+            capital_stock=getattr(firm, 'capital_stock', 0.0),
+            base_quality=getattr(firm, 'base_quality', 1.0),
+            automation_level=getattr(firm, 'automation_level', 0.0),
+            specialization=getattr(firm, 'specialization', "GENERIC"),
+            inventory=getattr(firm, 'inventory', {}).copy(),
+            input_inventory=getattr(firm, 'input_inventory', {}).copy(),
+            inventory_quality=getattr(firm, 'inventory_quality', {}).copy()
+        )
+
+        # --- Sales State ---
+        brand_awareness = 0.0
+        perceived_quality = 0.0
+        if hasattr(firm, 'brand_manager'):
+            brand_awareness = firm.brand_manager.brand_awareness
+            perceived_quality = firm.brand_manager.perceived_quality
+
+        sales_dto = SalesStateDTO(
+            inventory_last_sale_tick=getattr(firm, 'inventory_last_sale_tick', {}).copy(),
+            price_history=getattr(firm, 'last_prices', {}).copy(),
+            brand_awareness=brand_awareness,
+            perceived_quality=perceived_quality,
+            marketing_budget=getattr(firm, 'marketing_budget', 0.0)
+        )
 
         # Determine sentiment_index
         # Logic: 1.0 if profitable/active, 0.0 if failing.
@@ -103,35 +145,11 @@ class FirmStateDTO:
 
         return cls(
             id=firm.id,
-            assets=firm.assets,
             is_active=firm.is_active,
-            inventory=firm.inventory.copy(),
-            inventory_quality=firm.inventory_quality.copy(),
-            input_inventory=firm.input_inventory.copy() if hasattr(firm, 'input_inventory') else {},
-            inventory_last_sale_tick=firm.inventory_last_sale_tick.copy() if hasattr(firm, 'inventory_last_sale_tick') else {},
-            current_production=firm.current_production,
-            productivity_factor=firm.productivity_factor,
-            production_target=firm.production_target,
-            capital_stock=firm.capital_stock,
-            base_quality=firm.base_quality,
-            automation_level=firm.automation_level,
-            specialization=firm.specialization,
-            total_shares=firm.total_shares,
-            treasury_shares=firm.treasury_shares,
-            dividend_rate=firm.dividend_rate,
-            is_publicly_traded=firm.is_publicly_traded,
-            valuation=firm.valuation,
-            revenue_this_turn=revenue,
-            expenses_this_tick=expenses,
-            consecutive_loss_turns=consecutive_loss_turns,
-            altman_z_score=altman_z,
-            price_history=firm.last_prices.copy(),
-            profit_history=profit_history,
-            brand_awareness=firm.brand_manager.brand_awareness,
-            perceived_quality=firm.brand_manager.perceived_quality,
-            marketing_budget=firm.marketing_budget,
-            employees=employee_ids,
-            employees_data=employees_data,
+            finance=finance_dto,
+            production=production_dto,
+            sales=sales_dto,
+            hr=hr_dto,
             agent_data=firm.get_agent_data(),
             system2_guidance={}, # Placeholder
             sentiment_index=sentiment

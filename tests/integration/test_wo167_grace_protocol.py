@@ -23,7 +23,7 @@ class TestGraceProtocol:
         firm.is_active = True
         firm.age = 10
         firm.needs = {"liquidity_need": 0.0}
-        firm.assets = 0.0 # No cash
+        firm.finance.balance = 0.0 # No cash
         firm.inventory = {"wood": 10.0}
         firm.last_prices = {"wood": 10.0}
 
