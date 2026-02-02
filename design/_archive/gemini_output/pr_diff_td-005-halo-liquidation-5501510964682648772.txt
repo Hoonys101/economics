@@ -1,0 +1,521 @@
+diff --git a/communications/insights/TD-005_Halo_Liquidation.md b/communications/insights/TD-005_Halo_Liquidation.md
+new file mode 100644
+index 0000000..ac22ece
+--- /dev/null
++++ b/communications/insights/TD-005_Halo_Liquidation.md
+@@ -0,0 +1,25 @@
++# Mission Update: TD-005 Halo Effect Liquidation
++
++## 1. Phenomenon
++The legacy `is_visionary` flag provided a hardcoded, unfair advantage to certain firms (doubling bankruptcy threshold and immediate tech adoption), violating market fairness principles. This was a technical debt (TD-005) that needed liquidation.
++
++## 2. Cause
++The `is_visionary` flag was likely an early simulation shortcut to ensure some firms survived or led innovation without full simulation mechanics. It created a "Halo Effect" that was not emergent but imposed.
++
++## 3. Solution
++We successfully liquidated TD-005 by:
++1.  **Removing `is_visionary`**: Completely removed the flag from `Firm`, `ServiceFirm`, `FirmSystem`, `FirmTechInfoDTO`, and `TechnologyManager`.
++2.  **Implementing Brand Resilience**: Replaced the hardcoded bankruptcy buffer with an emergent `Brand Resilience` mechanic.
++    *   **Logic**: `FinanceDepartment` now calculates `resilience_ticks` based on `BrandManager.awareness` and a configurable `BRAND_RESILIENCE_FACTOR` (default 0.05).
++    *   **Effect**: High brand awareness grants firms extra "ticks" of consecutive losses before bankruptcy, simulating market trust and customer loyalty providing a safety net.
++3.  **Updating Tech Adoption**: Removed the "immediate adoption by visionaries" logic. All firms now follow the same probabilistic adoption rules based on R&D investment and sector, ensuring a level playing field.
++
++## 4. Lesson Learned
++*   **Emergent vs. Imposed**: Replacing hardcoded traits with emergent systems (like Brand Resilience) creates a more robust and realistic simulation. It allows "Visionary-like" behavior to be earned (via Brand Investment) rather than assigned.
++*   **Configuration Alignment**: We ensured `FIRM_CLOSURE_TURNS_THRESHOLD` and `BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD` are aligned and the check is centralized in `FinanceDepartment`, exposed via `is_bankrupt` flag, which `AgentLifecycleManager` now respects.
++*   **Verification Rigor**: We verified that critical flags like `is_bankrupt` are properly initialized in `Firm` constructor to prevent regression, even if the logic moving to a component suggested potential risk.
++
++## 5. Verification
++*   Unit tests confirmed that firms with 0 brand awareness fail exactly at the threshold, while firms with high awareness survive longer proportional to their awareness.
++*   Tech manager tests confirmed that tech unlocks work based on cost thresholds without visionary shortcuts.
++*   Verification script `scripts/verify_firm_init.py` confirmed `Firm.is_bankrupt` is correctly initialized.
+diff --git a/config.py b/config.py
+index 0b413bf..8802703 100644
+--- a/config.py
++++ b/config.py
+@@ -626,6 +626,7 @@ FISCAL_MODEL = "MIXED" # Default regime
+ MARKETING_DECAY_RATE = 0.8        # Adstock retains 80% per tick
+ MARKETING_EFFICIENCY = 0.01       # 1 unit of currency = 0.01 adstock unit
+ PERCEIVED_QUALITY_ALPHA = 0.2     # EMA smoothing factor for quality perception
++BRAND_RESILIENCE_FACTOR = 0.05    # Brand Awareness converts to resilience ticks
+ 
+ # 2. Consumer Behavior
+ QUALITY_SENSITIVITY_MEAN = 0.5    # Average preference for quality over price
+diff --git a/scripts/verify_firm_init.py b/scripts/verify_firm_init.py
+new file mode 100644
+index 0000000..2228d85
+--- /dev/null
++++ b/scripts/verify_firm_init.py
+@@ -0,0 +1,40 @@
++
++import sys
++import os
++from unittest.mock import MagicMock
++# Add project root to sys.path
++sys.path.append(os.getcwd())
++
++from simulation.firms import Firm
++from simulation.dtos.config_dtos import FirmConfigDTO
++
++def test_firm_init():
++    config = MagicMock(spec=FirmConfigDTO)
++    config.bankruptcy_consecutive_loss_threshold = 20
++    config.firm_min_production_target = 10.0
++    config.ipo_initial_shares = 1000
++    config.dividend_rate = 0.1
++    config.profit_history_ticks = 10
++    config.brand_resilience_factor = 0.05
++    config.initial_firm_liquidity_need = 100.0
++    config.automation_cost_per_pct = 1000.0
++    config.capital_to_output_ratio = 1.0
++
++    firm = Firm(
++        id=1,
++        initial_capital=1000.0,
++        initial_liquidity_need=100.0,
++        specialization="food",
++        productivity_factor=1.0,
++        decision_engine=MagicMock(),
++        value_orientation="PROFIT",
++        config_dto=config
++    )
++
++    if hasattr(firm, 'is_bankrupt'):
++        print(f"Firm.is_bankrupt exists: {firm.is_bankrupt}")
++    else:
++        print("Firm.is_bankrupt DOES NOT EXIST")
++
++if __name__ == "__main__":
++    test_firm_init()
+diff --git a/scripts/verify_stock_market.py b/scripts/verify_stock_market.py
+index 33daee9..8d66f8c 100644
+--- a/scripts/verify_stock_market.py
++++ b/scripts/verify_stock_market.py
+@@ -53,7 +53,7 @@ def run_verification():
+     )
+     # Manually populate for control
+     sim.households = [Household(i, 1000.0, [], 'BALANCED', config) for i in range(config.NUM_HOUSEHOLDS)]
+-    sim.firms = [Firm(1, 10000.0, 500.0, "food", 1.0, None, 'BALANCED', config, is_visionary=True)]
++    sim.firms = [Firm(1, 10000.0, 500.0, "food", 1.0, None, 'BALANCED', config)]
+     
+     # Give some shares to households
+     firm = sim.firms[0]
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index c33288e..2e9ca44 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -357,6 +357,19 @@ class FinanceDepartment:
+         else:
+             self.consecutive_loss_turns = 0
+ 
++        # Calculate Brand Resilience
++        resilience_ticks = 0
++        if hasattr(self.firm, 'brand_manager') and self.firm.brand_manager:
++            awareness = self.firm.brand_manager.awareness
++            factor = getattr(self.config, "brand_resilience_factor", 0.05)
++            resilience_ticks = int(awareness * factor)
++
++        threshold = getattr(self.config, "bankruptcy_consecutive_loss_threshold", 20)
++        effective_loss_ticks = self.consecutive_loss_turns - resilience_ticks
++
++        if effective_loss_ticks >= threshold:
++            self.firm.is_bankrupt = True
++
+     def check_cash_crunch(self) -> bool:
+         """
+         WO-167: Evaluates if the firm is in a 'Cash Crunch'.
+diff --git a/simulation/dtos/config_dtos.py b/simulation/dtos/config_dtos.py
+index 4b8c1ce..f603e1a 100644
+--- a/simulation/dtos/config_dtos.py
++++ b/simulation/dtos/config_dtos.py
+@@ -150,6 +150,7 @@ class FirmConfigDTO:
+     marketing_efficiency_low_threshold: float
+     marketing_budget_rate_min: float
+     marketing_budget_rate_max: float
++    brand_resilience_factor: float
+ 
+     # Phase 2: Pricing Logic
+     default_target_margin: float
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 3ba7f3b..511ffb8 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -54,8 +54,7 @@ class Firm(BaseAgent, ILearningAgent):
+         loan_market: Optional[LoanMarket] = None,
+         logger: Optional[logging.Logger] = None,
+         # Phase 14-2: Innovation
+-        sector: str = "FOOD", 
+-        is_visionary: bool = False,
++        sector: str = "FOOD",
+         # Phase 16-B: Personality
+         personality: Optional[Personality] = None,
+     ) -> None:
+@@ -81,7 +80,6 @@ class Firm(BaseAgent, ILearningAgent):
+         
+         # Phase 14-2 attributes
+         self.sector = sector
+-        self.is_visionary = is_visionary
+         self.owner_id: Optional[int] = None # Phase 14-1: Shareholder System
+         
+         # Phase 16-B: Personality & Innovation Attributes
+@@ -102,12 +100,8 @@ class Firm(BaseAgent, ILearningAgent):
+         self.production = ProductionDepartment(self, self.config)
+         self.sales = SalesDepartment(self, self.config)
+ 
+-        # Set bankruptcy threshold based on visionary status
+-        base_threshold = self.config.bankruptcy_consecutive_loss_threshold
+-        if self.is_visionary:
+-            self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold * 2
+-        else:
+-             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
++        # Set bankruptcy threshold
++        self.consecutive_loss_ticks_for_bankruptcy_threshold = self.config.bankruptcy_consecutive_loss_threshold
+ 
+         self.production_target: float = (
+             self.config.firm_min_production_target
+diff --git a/simulation/orchestration/phases.py b/simulation/orchestration/phases.py
+index faca6ab..a3bb37f 100644
+--- a/simulation/orchestration/phases.py
++++ b/simulation/orchestration/phases.py
+@@ -181,7 +181,6 @@ class Phase_Production(IPhaseStrategy):
+                 FirmTechInfoDTO(
+                     id=f.id,
+                     sector=f.sector,
+-                    is_visionary=getattr(f, 'is_visionary', False),
+                     current_rd_investment=f.research_history.get("total_spent", 0.0) if hasattr(f, "research_history") else 0.0
+                 )
+                 for f in state.firms if f.is_active
+diff --git a/simulation/service_firms.py b/simulation/service_firms.py
+index 49d24d2..f59b0cc 100644
+--- a/simulation/service_firms.py
++++ b/simulation/service_firms.py
+@@ -30,7 +30,6 @@ class ServiceFirm(Firm):
+         loan_market: Optional[Any] = None,
+         logger: Optional[logging.Logger] = None,
+         sector: str = "SERVICE",
+-        is_visionary: bool = False,
+         personality: Optional[Personality] = None,
+     ) -> None:
+         super().__init__(
+@@ -46,7 +45,6 @@ class ServiceFirm(Firm):
+             loan_market,
+             logger,
+             sector,
+-            is_visionary,
+             personality,
+         )
+         # Service Specific Metrics
+diff --git a/simulation/systems/firm_management.py b/simulation/systems/firm_management.py
+index b501c20..0c0a70c 100644
+--- a/simulation/systems/firm_management.py
++++ b/simulation/systems/firm_management.py
+@@ -31,22 +31,7 @@ class FirmSystem:
+ 
+         # 1. Choose Specialization First to calculate REAL cost
+         specializations = list(self.config.GOODS.keys())
+-        is_visionary = False
+-        
+-        mutation_rate = getattr(self.config, "VISIONARY_MUTATION_RATE", 0.05)
+-        if random.random() < mutation_rate:
+-            is_visionary = True
+-            
+-        if is_visionary:
+-            active_specs = {f.specialization for f in simulation.firms if f.is_active}
+-            potential_blue_oceans = [s for s in specializations if s not in active_specs]
+-            
+-            if potential_blue_oceans:
+-                specialization = random.choice(potential_blue_oceans)
+-            else:
+-                specialization = random.choice(specializations)
+-        else:
+-            specialization = random.choice(specializations)
++        specialization = random.choice(specializations)
+             
+         goods_config = self.config.GOODS.get(specialization, {})
+         sector = goods_config.get("sector", "OTHER")
+@@ -121,7 +106,6 @@ class FirmSystem:
+             config_dto=firm_config_dto,
+             logger=simulation.logger,
+             sector=sector,
+-            is_visionary=is_visionary,
+         )
+         
+         new_firm.founder_id = founder_household.id
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 8115d75..406da28 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -128,7 +128,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+ 
+             # Standard Closure Check
+             if (firm.assets <= assets_threshold or
+-                    firm.finance.consecutive_loss_turns >= closure_turns_threshold):
++                    firm.is_bankrupt):
+ 
+                 # Double check grace period (if we fell through but counter is high)
+                 if firm.finance.distress_tick_counter > 5:
+diff --git a/simulation/systems/tech/api.py b/simulation/systems/tech/api.py
+index 06a074d..b976b7a 100644
+--- a/simulation/systems/tech/api.py
++++ b/simulation/systems/tech/api.py
+@@ -10,7 +10,6 @@ class FirmTechInfoDTO(TypedDict):
+     """Minimal firm data required for technology diffusion."""
+     id: int
+     sector: str
+-    is_visionary: bool
+     current_rd_investment: float
+ 
+ class HouseholdEducationDTO(TypedDict):
+diff --git a/simulation/systems/technology_manager.py b/simulation/systems/technology_manager.py
+index 3882f10..91f01a6 100644
+--- a/simulation/systems/technology_manager.py
++++ b/simulation/systems/technology_manager.py
+@@ -81,12 +81,12 @@ class TechnologyManager:
+             current_rd_by_sector[sector] = current_rd_by_sector.get(sector, 0.0) + rd
+ 
+         # 1. Unlock Check (Probabilistic)
+-        self._check_probabilistic_unlocks(current_rd_by_sector, firms, current_tick)
++        self._check_probabilistic_unlocks(current_rd_by_sector, current_tick)
+ 
+         # 2. Diffusion Process (S-Curve)
+         self._process_diffusion(firms, current_tick)
+ 
+-    def _check_probabilistic_unlocks(self, current_rd_by_sector: Dict[str, float], firms: List[FirmTechInfoDTO], current_tick: int):
++    def _check_probabilistic_unlocks(self, current_rd_by_sector: Dict[str, float], current_tick: int):
+         """
+         WO-136: Probabilistic unlock based on accumulated R&D.
+         P = min(0.1, (Sector_Accumulated_RD / Tech_Cost_Threshold)^2)
+@@ -111,28 +111,15 @@ class TechnologyManager:
+ 
+             # Roll dice
+             if random.random() < prob:
+-                self._unlock_tech(tech, firms, current_tick)
++                self._unlock_tech(tech, current_tick)
+ 
+-    def _unlock_tech(self, tech: TechNode, firms: List[FirmTechInfoDTO], current_tick: int):
+-        """Unlock technology and assign to Early Adopters (Visionaries)."""
++    def _unlock_tech(self, tech: TechNode, current_tick: int):
++        """Unlock technology."""
+         tech.is_unlocked = True
+         self.active_techs.append(tech.id)
+         
+-        # Immediate Adoption by Visionaries
+-        early_adopters_count = 0
+-        for firm_dto in firms:
+-            # Check sector match even for visionaries
+-            if firm_dto["sector"] != tech.sector and tech.sector != "ALL":
+-                continue
+-
+-            # Visionary Firms
+-            if firm_dto["is_visionary"]:
+-                self._adopt(firm_dto["id"], tech)
+-                early_adopters_count += 1
+-        
+         self.logger.info(
+-            f"TECH_UNLOCK | Unlocked {tech.name} (ID: {tech.id}). "
+-            f"Early Adopters: {early_adopters_count} firms.",
++            f"TECH_UNLOCK | Unlocked {tech.name} (ID: {tech.id}).",
+             extra={"tick": current_tick, "tech_id": tech.id}
+         )
+ 
+diff --git a/tests/integration/scenarios/verify_industrial_revolution.py b/tests/integration/scenarios/verify_industrial_revolution.py
+index 4312b96..32b8ebc 100644
+--- a/tests/integration/scenarios/verify_industrial_revolution.py
++++ b/tests/integration/scenarios/verify_industrial_revolution.py
+@@ -76,9 +76,8 @@ def verify_industrial_revolution():
+             value_orientation="PROFIT", 
+             config_module=Config, 
+             sector="FOOD", 
+-            is_visionary=(i==0),
+             personality=Personality.BALANCED
+-        ) # Firm 0 is Visionary
++        )
+         for i in range(Config.NUM_FIRMS)
+     ]
+     
+diff --git a/tests/integration/test_phase23_production.py b/tests/integration/test_phase23_production.py
+index 90ffffe..75d3d4f 100644
+--- a/tests/integration/test_phase23_production.py
++++ b/tests/integration/test_phase23_production.py
+@@ -33,7 +33,6 @@ class TestPhase23Production:
+             firm.id = firm_id
+             firm.sector = "FOOD"
+             firm.specialization = "food"
+-            firm.is_visionary = False
+             firm.productivity_factor = 1.0
+             firm.capital_stock = 100.0
+             firm.automation_level = 0.0
+diff --git a/tests/unit/components/test_finance_department_bankruptcy.py b/tests/unit/components/test_finance_department_bankruptcy.py
+new file mode 100644
+index 0000000..ab26cc9
+--- /dev/null
++++ b/tests/unit/components/test_finance_department_bankruptcy.py
+@@ -0,0 +1,84 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.components.finance_department import FinanceDepartment
++from simulation.firms import Firm
++
++class TestFinanceDepartmentBankruptcy:
++    @pytest.fixture
++    def config(self):
++        mock_config = MagicMock()
++        mock_config.bankruptcy_consecutive_loss_threshold = 5
++        mock_config.brand_resilience_factor = 0.5 # 1 point of awareness = 0.5 tick resilience?
++        # Wait, implementation was: resilience_ticks = int(awareness * factor)
++        # So factor should be e.g. 0.5 means 2 awareness -> 1 tick.
++        # Let's use 0.1. 10 awareness -> 1 tick.
++        mock_config.brand_resilience_factor = 0.1
++        mock_config.profit_history_ticks = 10
++        return mock_config
++
++    @pytest.fixture
++    def firm_setup(self, config):
++        firm = MagicMock(spec=Firm)
++        firm.brand_manager = MagicMock()
++        firm.brand_manager.awareness = 0.0
++        firm.is_bankrupt = False
++        finance = FinanceDepartment(firm, config)
++        return firm, finance
++
++    def test_bankruptcy_threshold_no_resilience(self, firm_setup):
++        firm, finance = firm_setup
++        firm.brand_manager.awareness = 0.0 # Resilience = 0
++
++        # Threshold is 5.
++        # Simulate 4 losses
++        for _ in range(4):
++            finance.current_profit = -100.0
++            finance.check_bankruptcy()
++            assert not firm.is_bankrupt
++
++        # 5th loss
++        finance.current_profit = -100.0
++        finance.check_bankruptcy()
++        assert firm.is_bankrupt
++
++    def test_bankruptcy_resilience(self, firm_setup):
++        firm, finance = firm_setup
++        # Resilience factor 0.1.
++        # Give awareness 20. Resilience = int(20 * 0.1) = 2 ticks.
++        firm.brand_manager.awareness = 20.0
++
++        # Threshold is 5. Effective threshold = 5 + 2 = 7?
++        # Logic: effective_loss_ticks = consecutive - resilience.
++        # effective >= threshold.
++        # consecutive - resilience >= 5
++        # consecutive >= 5 + resilience = 7.
++
++        # So firm should survive 6 losses.
++        for _ in range(6):
++            finance.current_profit = -100.0
++            finance.check_bankruptcy()
++            assert not firm.is_bankrupt
++
++        # 7th loss
++        finance.current_profit = -100.0
++        finance.check_bankruptcy()
++        assert firm.is_bankrupt
++
++    def test_bankruptcy_reset_on_profit(self, firm_setup):
++        firm, finance = firm_setup
++
++        # 3 losses
++        for _ in range(3):
++            finance.current_profit = -100.0
++            finance.check_bankruptcy()
++
++        # 1 profit
++        finance.current_profit = 100.0
++        finance.check_bankruptcy()
++        assert finance.consecutive_loss_turns == 0
++
++        # 3 losses again
++        for _ in range(3):
++            finance.current_profit = -100.0
++            finance.check_bankruptcy()
++            assert not firm.is_bankrupt
+diff --git a/tests/unit/systems/test_technology_manager.py b/tests/unit/systems/test_technology_manager.py
+index 385524d..4c36d2e 100644
+--- a/tests/unit/systems/test_technology_manager.py
++++ b/tests/unit/systems/test_technology_manager.py
+@@ -9,6 +9,8 @@ class TestTechnologyManager:
+         mock_config = MagicMock()
+         mock_config.TECH_FERTILIZER_UNLOCK_TICK = 30 # Updated default
+         mock_config.TECH_DIFFUSION_RATE = 0.10       # Updated default
++        mock_config.TECH_UNLOCK_COST_THRESHOLD = 5000.0
++        mock_config.TECH_UNLOCK_PROB_CAP = 1.0 # Guarantee unlock for test if threshold met
+         return mock_config
+ 
+     @pytest.fixture
+@@ -29,52 +31,47 @@ class TestTechnologyManager:
+         manager.human_capital_index = 5.0
+         assert manager._get_effective_diffusion_rate(0.10) == 0.25
+ 
+-    def test_unlock_and_visionary_adoption(self, manager):
++    def test_unlock_mechanism(self, manager):
+         # Setup Tech
+         tech_id = "TECH_AGRI_CHEM_01"
+         tech = manager.tech_tree[tech_id]
+-        tech.unlock_tick = 30 # Updated check
++        tech.cost_threshold = 100.0
+         tech.sector = "FOOD"
+ 
+         # Setup Firms DTO
+         firms = [
+-            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=True),
+-            FirmTechInfoDTO(id=2, sector="FOOD", is_visionary=False),
+-            FirmTechInfoDTO(id=3, sector="MANUFACTURING", is_visionary=True),
++            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=60.0),
++            FirmTechInfoDTO(id=2, sector="FOOD", current_rd_investment=60.0), # Total 120 > 100
++            FirmTechInfoDTO(id=3, sector="MANUFACTURING", current_rd_investment=0.0),
+         ]
+ 
+-        # Tick 29: No unlock
+-        manager.update(29, firms, 1.0)
+-        assert not tech.is_unlocked
+-        assert not manager.has_adopted(1, tech_id)
+-
+-        # Tick 30: Unlock
++        # Tick 29: Update
++        # Ratio = 120 / 100 = 1.2. Prob = 1.0 (capped)
+         manager.update(30, firms, 1.0)
++
++        # It should unlock
+         assert tech.is_unlocked
+ 
+-        # Visionary Check
+-        # Firm 1 (Food, Visionary) should adopt
+-        assert manager.has_adopted(1, tech_id)
+-        # Firm 2 (Food, Not Visionary) should NOT adopt immediately
+-        assert not manager.has_adopted(2, tech_id)
+-        # Firm 3 (Mfg, Visionary) should NOT adopt due to sector mismatch
+-        assert not manager.has_adopted(3, tech_id)
++        # Visionary logic removed, so NO immediate adoption expected unless random diffusion happened.
++        # But diffusion happens in the same update.
++        # If diffusion rate is > 0, some might adopt.
++        # To strictly test unlock only, we can set diffusion rate to 0.
+ 
+     def test_diffusion_over_time(self, manager):
+         # Setup Tech
+         tech_id = "TECH_AGRI_CHEM_01"
+         tech = manager.tech_tree[tech_id]
+-        tech.unlock_tick = 30
+         tech.diffusion_rate = 0.0 # No diffusion initially
++        tech.is_unlocked = True   # Force unlock
+ 
+         firms = [
+-            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=False),
++            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=0.0),
+         ]
+ 
+-        # Unlock it first (needs unlock call)
+-        # Note: _unlock_tech also iterates firms, but firm 1 is not visionary, so it won't adopt there.
++        manager.active_techs.append(tech_id) # Manually activate
++
+         manager.update(30, firms, 1.0)
+-        assert not manager.has_adopted(1, tech_id) # Not visionary, and diffusion 0%
++        assert not manager.has_adopted(1, tech_id) # Diffusion 0%
+ 
+         # Now enable diffusion
+         tech.diffusion_rate = 1.0

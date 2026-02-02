@@ -58,9 +58,6 @@ class Firm(BaseAgent, ILearningAgent):
         # Phase 16-B: Personality
         personality: Optional[Personality] = None,
     ) -> None:
-        # WO-103 Phase 1: Initialize buffer for assets property
-        self._assets_buffer: float = 0.0
-
         super().__init__(
             id,
             initial_capital,
@@ -134,7 +131,8 @@ class Firm(BaseAgent, ILearningAgent):
 
         # Phase 16-B: Rewards Tracking (Delta storage)
         self.prev_market_share: float = 0.0
-        self.prev_assets: float = self.assets
+        # Refactor: Use finance.balance
+        self.prev_assets: float = self.finance.balance
         self.prev_avg_quality: float = 1.0
 
         # Phase 21: Automation
@@ -149,30 +147,28 @@ class Firm(BaseAgent, ILearningAgent):
         self.has_bailout_loan = False
         self.decision_engine.loan_market = loan_market
 
-    # WO-103 Phase 1: Assets Property to delegate to FinanceDepartment
-    @property
-    def assets(self) -> float:
-        if hasattr(self, 'finance'):
-            return self.finance.balance
-        return self._assets_buffer
+    # [REMOVED] assets property. Now uses BaseAgent.assets (which delegates to _assets)
+    # But Firm uses finance.balance for actual operations.
 
     def _add_assets(self, amount: float) -> None:
         """[PROTECTED] Delegate to FinanceDepartment."""
         if hasattr(self, 'finance'):
             self.finance.credit(amount, "Settlement Transfer")
         else:
-            self._assets_buffer += amount
+            self._assets += amount
 
     def _sub_assets(self, amount: float) -> None:
         """[PROTECTED] Delegate to FinanceDepartment."""
         if hasattr(self, 'finance'):
             self.finance.debit(amount, "Settlement Transfer")
         else:
-            self._assets_buffer -= amount
+            self._assets -= amount
 
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""
-        par_value = self.assets / self.total_shares if self.total_shares > 0 else 1.0
+        # Refactor: Use finance.balance
+        assets = self.finance.balance
+        par_value = assets / self.total_shares if self.total_shares > 0 else 1.0
         stock_market.update_shareholder(self.id, self.id, self.treasury_shares)
         self.logger.info(
             f"IPO | Firm {self.id} initialized IPO with {self.total_shares} shares. Par value: {par_value:.2f}",
@@ -210,11 +206,11 @@ class Firm(BaseAgent, ILearningAgent):
                 tick=current_tick,
                 agent_id=self.id,
                 event_type="BANKRUPTCY",
-                data={"assets_returned": self.assets}
+                data={"assets_returned": self.finance.balance}
             )
             self.memory_v2.add_record(record)
 
-        return self.assets
+        return self.finance.balance
 
     def add_inventory(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
@@ -292,7 +288,7 @@ class Firm(BaseAgent, ILearningAgent):
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
         return {
-            "assets": self.assets,
+            "assets": self.finance.balance, # Direct Access
             "needs": self.needs.copy(),
             "inventory": self.inventory.copy(),
             "input_inventory": self.input_inventory.copy(), # WO-030
@@ -345,10 +341,10 @@ class Firm(BaseAgent, ILearningAgent):
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
         self.logger.debug(
-            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
+            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.finance.balance:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
             extra={
                 **log_extra,
-                "assets_before": self.assets,
+                "assets_before": self.finance.balance,
                 "num_employees_before": len(self.hr.employees),
                 "is_active_before": self.is_active,
             },
@@ -395,10 +391,10 @@ class Firm(BaseAgent, ILearningAgent):
 
         # SoC Refactor
         self.logger.debug(
-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.assets:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
+            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.finance.balance:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
             extra={
                 **log_extra,
-                "assets_after": self.assets,
+                "assets_after": self.finance.balance,
                 "num_employees_after": len(self.hr.employees),
                 "is_active_after": self.is_active,
                 "num_decisions": len(external_orders),
@@ -407,79 +403,36 @@ class Firm(BaseAgent, ILearningAgent):
         return external_orders, tactic
 
     def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int) -> None:
-        """Executes internal orders (state modifications) received from the Decision Engine."""
+        """
+        [REFACTORED] Routes internal orders to the correct department.
+        """
         if order.order_type == "SET_TARGET":
-            self.production_target = order.quantity
-            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} set production target to {self.production_target:.1f}")
+            self.production.set_production_target(order.quantity)
 
         elif order.order_type == "INVEST_AUTOMATION":
-            spend = order.quantity
-            if self.finance.invest_in_automation(spend, government):
-                cost_per_pct = self.config.automation_cost_per_pct
-                if cost_per_pct > 0:
-                    gained_a = (spend / cost_per_pct) / 100.0
-                    self.production.set_automation_level(self.automation_level + gained_a)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {spend:.1f} in automation.")
+            self.production.invest_in_automation(order.quantity, government)
 
         elif order.order_type == "PAY_TAX":
+            # Finance still handles this directly as it's purely financial
             amount = order.quantity
             reason = order.item_id
             if government:
                 self.finance.pay_ad_hoc_tax(amount, reason, government, current_time)
 
         elif order.order_type == "INVEST_RD":
-            budget = order.quantity
-            if self.finance.invest_in_rd(budget, government):
-                self._execute_rd_outcome(budget, current_time)
+            self.production.invest_in_rd(order.quantity, government, current_time)
 
         elif order.order_type == "INVEST_CAPEX":
-            budget = order.quantity
-            if self.finance.invest_in_capex(budget, government):
-                efficiency = 1.0 / self.config.capital_to_output_ratio
-                added_capital = budget * efficiency
-                self.production.add_capital(added_capital)
-                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {budget:.1f} in CAPEX.")
+            self.production.invest_in_capex(order.quantity, government)
 
         elif order.order_type == "SET_DIVIDEND":
             self.finance.set_dividend_rate(order.quantity)
 
         elif order.order_type == "SET_PRICE":
-            # Using quantity field for price as per CorporateManager implementation
             self.sales.set_price(order.item_id, order.quantity)
 
         elif order.order_type == "FIRE":
-            emp_id = order.target_agent_id
-            severance_pay = order.price
-
-            employee = next((e for e in self.hr.employees if e.id == emp_id), None)
-            if employee:
-                if self.finance.pay_severance(employee, severance_pay):
-                    employee.quit()
-                    self.hr.remove_employee(employee)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {emp_id}.")
-                else:
-                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {emp_id} (insufficient funds).")
-
-    def _execute_rd_outcome(self, budget: float, current_time: int) -> None:
-        """Executes the probabilistic outcome of R&D investment."""
-        self.research_history["total_spent"] += budget
-
-        denominator = max(self.finance.revenue_this_turn * 0.2, 100.0)
-        base_chance = min(1.0, budget / denominator)
-
-        avg_skill = 1.0
-        if self.hr.employees:
-            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in self.hr.employees) / len(self.hr.employees)
-
-        success_chance = base_chance * avg_skill
-
-        import random
-        if random.random() < success_chance:
-            self.research_history["success_count"] += 1
-            self.research_history["last_success_tick"] = current_time
-            self.base_quality += 0.05
-            self.productivity_factor *= 1.05
-            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {budget:.1f})")
+            self.hr.fire_employee(order.target_agent_id, order.price)
 
     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         """
@@ -545,12 +498,12 @@ class Firm(BaseAgent, ILearningAgent):
         transactions.extend(tx_finance)
 
         # 3. Marketing (Direct Calculation here as per old update_needs)
-        if self.assets > 100.0:
+        if self.finance.balance > 100.0:
             marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
         else:
             marketing_spend = 0.0
 
-        if self.assets < marketing_spend:
+        if self.finance.balance < marketing_spend:
              marketing_spend = 0.0
 
         if marketing_spend > 0:
@@ -579,11 +532,6 @@ class Firm(BaseAgent, ILearningAgent):
     def distribute_profit(self, agents: Dict[int, Any], current_time: int) -> float:
         """
         Legacy method kept for compatibility but should use generate_transactions.
-        Calls distribute_profit_private which returns List[Transaction] now, but signature says float?
-        FinanceDepartment.distribute_profit_private returns List[Transaction].
-        So we cannot return float if we use it.
-        We will return 0.0 dummy or fix caller.
-        TickScheduler uses this method in old code. New code will use generate_transactions.
         """
         return 0.0
 
@@ -616,46 +564,6 @@ class Firm(BaseAgent, ILearningAgent):
     def get_financial_snapshot(self) -> Dict[str, float]:
         """Delegates to FinanceDepartment."""
         return self.finance.get_financial_snapshot()
-
-    @property
-    def current_profit(self) -> float:
-        return self.finance.current_profit
-
-    @current_profit.setter
-    def current_profit(self, value: float) -> None:
-        self.finance.current_profit = value
-
-    @property
-    def revenue_this_turn(self) -> float:
-        return self.finance.revenue_this_turn
-
-    @revenue_this_turn.setter
-    def revenue_this_turn(self, value: float) -> None:
-        self.finance.revenue_this_turn = value
-
-    @property
-    def expenses_this_tick(self) -> float:
-        return self.finance.expenses_this_tick
-
-    @expenses_this_tick.setter
-    def expenses_this_tick(self, value: float) -> None:
-        self.finance.expenses_this_tick = value
-
-    @property
-    def sales_volume_this_tick(self) -> float:
-        return self.finance.sales_volume_this_tick
-
-    @sales_volume_this_tick.setter
-    def sales_volume_this_tick(self, value: float) -> None:
-        self.finance.sales_volume_this_tick = value
-
-    @property
-    def last_sales_volume(self) -> float:
-        return self.finance.last_sales_volume
-
-    @last_sales_volume.setter
-    def last_sales_volume(self, value: float) -> None:
-        self.finance.last_sales_volume = value
 
     def update_learning(self, context: LearningUpdateContext) -> None:
         """

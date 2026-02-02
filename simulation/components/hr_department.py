@@ -64,7 +64,8 @@ class HRDepartment:
             wage = self.calculate_wage(employee, base_wage)
 
             # Affordability Check (Optimistic)
-            if self.firm.assets >= wage:
+            # Refactor: Use finance.balance
+            if self.firm.finance.balance >= wage:
                 # Calculate Tax
                 income_tax = 0.0
                 if government:
@@ -119,7 +120,8 @@ class HRDepartment:
         severance_weeks = self.firm.config.severance_pay_weeks
         severance_pay = wage * severance_weeks
 
-        if self.firm.assets >= severance_pay:
+        # Refactor: Use finance.balance
+        if self.firm.finance.balance >= severance_pay:
             # Fire with severance (Transaction)
             tx = Transaction(
                 buyer_id=self.firm.id,
@@ -142,9 +144,10 @@ class HRDepartment:
             self.remove_employee(employee)
         else:
             # Zombie Employee
+            # Refactor: Use finance.balance
             self.firm.logger.warning(
                 f"ZOMBIE | Firm {self.firm.id} cannot afford wage OR severance for Household {employee.id}. Employment retained (unpaid).",
-                extra={"tick": 0, "agent_id": self.firm.id, "wage_deficit": wage - self.firm.assets}
+                extra={"tick": 0, "agent_id": self.firm.id, "wage_deficit": wage - self.firm.finance.balance}
             )
 
     def hire(self, employee: Household, wage: float):
@@ -157,6 +160,22 @@ class HRDepartment:
             self.employees.remove(employee)
         if employee.id in self.employee_wages:
             del self.employee_wages[employee.id]
+
+    def fire_employee(self, employee_id: int, severance_pay: float) -> bool:
+        """
+        Fires an employee with severance pay.
+        Returns True if successful (found and paid), False otherwise.
+        """
+        employee = next((e for e in self.employees if e.id == employee_id), None)
+        if employee:
+            if self.firm.finance.pay_severance(employee, severance_pay):
+                employee.quit()
+                self.remove_employee(employee)
+                self.firm.logger.info(f"INTERNAL_EXEC | Firm {self.firm.id} fired employee {employee_id}.")
+                return True
+            else:
+                self.firm.logger.warning(f"INTERNAL_EXEC | Firm {self.firm.id} failed to fire {employee_id} (insufficient funds).")
+        return False
 
     def get_total_labor_skill(self) -> float:
         return sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees)

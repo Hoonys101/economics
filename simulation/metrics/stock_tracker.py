@@ -65,9 +65,10 @@ class StockMarketTracker:
         sell_order_count = summary.get("sell_order_count", 0)
         
         # 기업 실적
-        firm_assets = firm.assets
-        firm_profit = getattr(firm, "current_profit", 0.0)
-        dividend_paid = getattr(firm, "last_dividend_paid", 0.0)
+        # Refactor: Use finance component
+        firm_assets = firm.finance.balance
+        firm_profit = firm.finance.current_profit
+        dividend_paid = firm.finance.dividends_paid_last_tick
         market_cap = firm.get_market_cap(stock_price)
         
         return {

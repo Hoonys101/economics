@@ -140,7 +140,7 @@ def test_firm_inheritance_and_init():
 
     assert isinstance(firm, BaseAgent)
     assert firm.id == 101
-    assert firm.assets == initial_capital
+    assert firm.finance.balance == initial_capital
     assert firm.needs == {"liquidity_need": initial_liquidity_need}
     assert firm.decision_engine == decision_engine
     assert firm.name == "Firm_101"

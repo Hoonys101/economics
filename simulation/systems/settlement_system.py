@@ -56,7 +56,11 @@ class SettlementSystem(ISettlementSystem):
         # WO-178: Escheatment Logic
         if government_agent:
             try:
-                current_assets = float(agent.assets) if hasattr(agent, 'assets') else 0.0
+                # TD-073: Check finance.balance first for Firms
+                if hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
+                    current_assets = agent.finance.balance
+                else:
+                    current_assets = float(agent.assets) if hasattr(agent, 'assets') else 0.0
             except (TypeError, ValueError):
                 current_assets = 0.0
 
@@ -93,16 +97,20 @@ class SettlementSystem(ISettlementSystem):
                  self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
                  return False
 
-        # 2. Standard Agent Checks
-        if not hasattr(agent, 'assets'):
-             self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")
-             # Attempt withdraw anyway if interface expects it
-             pass
+        # 2. Standard Agent Checks (Compatible with TD-073 Firm Refactor)
+        current_cash = 0.0
 
-        try:
-            current_cash = float(agent.assets)
-        except (TypeError, ValueError):
-             current_cash = 0.0
+        # Check for Firm's finance component first
+        if hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
+             current_cash = agent.finance.balance
+        else:
+             if not hasattr(agent, 'assets'):
+                  self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")
+                  pass
+             try:
+                 current_cash = float(agent.assets) if hasattr(agent, 'assets') else 0.0
+             except (TypeError, ValueError):
+                  current_cash = 0.0
 
         if current_cash < amount:
             # Seamless Check

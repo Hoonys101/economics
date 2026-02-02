@@ -6,7 +6,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-006 | 2026-01-12 | Static Personality (Deterministic Class Caste) | Adaptability loss; ignores economic context | **ACTIVE (RE-SCOPED)** |
+| TD-006 | 2026-02-02 | Static Personality (Deterministic Class Caste) | Adaptability loss; ignores economic context | **RESOLVED** |
 | TD-162 | 2026-01-30 | Bloated God Class: Household (977 lines) | SRP violation; property delegation bloat | **ACTIVE** |
 | TD-180 | 2026-02-01 | TestFile Bloat: `test_firm_decision_engine_new.py` | 828 lines; indicator of complex engine surface | **WARNING** |
 

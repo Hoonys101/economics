@@ -32,16 +32,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         self.firm_system = firm_system
         self.settlement_system = settlement_system
         self.public_manager = public_manager
-        # ImmigrationManager also needs SettlementSystem now, we'll pass ours or let it be created?
-        # It's created inside __init__.
-        # We should probably pass settlement_system to it.
-        # But ImmigrationManager __init__ currently takes only config.
-        # I will update ImmigrationManager in the next step.
-        # For now, I'll pass it if constructor allows, or set it after.
-        # I'll update ImmigrationManager first? No, the plan handles it.
-        # I'll modify ImmigrationManager instantiation to pass settlement_system.
-        # This implies I should have updated ImmigrationManager first or update the call here assuming signature change.
-        # I'll assume signature change.
         self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
 
         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
@@ -127,8 +117,14 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 firm.finance.distress_tick_counter = 0
 
             # Standard Closure Check
+<<<<<<< HEAD
             if (firm.assets <= assets_threshold or
                     firm.is_bankrupt):
+=======
+            # Refactor: Use finance.balance
+            if (firm.finance.balance <= assets_threshold or
+                    firm.finance.consecutive_loss_turns >= closure_turns_threshold):
+>>>>>>> origin/td-073-firm-refactor-v2-668135522089889137
 
                 # Double check grace period (if we fell through but counter is high)
                 if firm.finance.distress_tick_counter > 5:
@@ -138,11 +134,11 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
                 firm.is_active = False
                 self.logger.warning(
-                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {firm.assets:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
+                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {firm.finance.balance:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
                     extra={
                         "tick": state.time,
                         "agent_id": firm.id,
-                        "assets": firm.assets,
+                        "assets": firm.finance.balance,
                         "consecutive_loss_turns": firm.finance.consecutive_loss_turns,
                         "tags": ["firm_closure"],
                     }
@@ -276,7 +272,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             firm.capital_stock = 0.0
 
             # Distribute cash (Dividends)
-            total_cash = firm.assets
+            # Refactor: Use finance.balance
+            total_cash = firm.finance.balance
             if total_cash > 0:
                 outstanding_shares = firm.total_shares - firm.treasury_shares
                 if outstanding_shares > 0:

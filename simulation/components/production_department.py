@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 import logging
 import math
 import simulation
+import random
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -17,7 +18,7 @@ class ProductionDepartment:
         self.firm = firm
         self.config = config
 
-    def produce(self, current_time: int, technology_manager: any = None) -> float:
+    def produce(self, current_time: int, technology_manager: Any = None) -> float:
         """
         Cobb-Douglas 생산 함수를 사용한 생산 로직.
         Phase 21: Modified Cobb-Douglas with Automation.
@@ -118,9 +119,10 @@ class ProductionDepartment:
                      wage = self.firm.hr.calculate_wage(employee, base)
                      wage_bill += wage
 
-                 if self.firm.assets < wage_bill:
+                 # Refactor: Use finance.balance instead of firm.assets
+                 if self.firm.finance.balance < wage_bill:
                      reason = "LIQUIDITY_CRUNCH"
-                     context = {"cash": self.firm.assets, "wage_bill": wage_bill}
+                     context = {"cash": self.firm.finance.balance, "wage_bill": wage_bill}
 
                  # 3. Check Input Shortage
                  elif produced_quantity > 0:
@@ -166,3 +168,66 @@ class ProductionDepartment:
     def set_automation_level(self, level: float) -> None:
         """Sets the firm's automation level (0.0 to 1.0)."""
         self.firm.automation_level = max(0.0, min(1.0, level))
+
+    def set_production_target(self, quantity: float) -> None:
+        """Sets the production target."""
+        self.firm.production_target = quantity
+        self.firm.logger.info(f"INTERNAL_EXEC | Firm {self.firm.id} set production target to {self.firm.production_target:.1f}")
+
+    def invest_in_automation(self, amount: float, government: Any) -> bool:
+        """
+        Invests in automation.
+        Delegates payment to Finance, handles state update here.
+        """
+        if self.firm.finance.invest_in_automation(amount, government):
+            cost_per_pct = self.config.automation_cost_per_pct
+            if cost_per_pct > 0:
+                gained_a = (amount / cost_per_pct) / 100.0
+                self.set_automation_level(self.firm.automation_level + gained_a)
+                self.firm.logger.info(f"INTERNAL_EXEC | Firm {self.firm.id} invested {amount:.1f} in automation.")
+            return True
+        return False
+
+    def invest_in_capex(self, amount: float, government: Any) -> bool:
+        """
+        Invests in Capital Expenditure (CAPEX).
+        Delegates payment to Finance, handles state update here.
+        """
+        if self.firm.finance.invest_in_capex(amount, government):
+            efficiency = 1.0 / self.config.capital_to_output_ratio
+            added_capital = amount * efficiency
+            self.add_capital(added_capital)
+            self.firm.logger.info(f"INTERNAL_EXEC | Firm {self.firm.id} invested {amount:.1f} in CAPEX.")
+            return True
+        return False
+
+    def invest_in_rd(self, amount: float, government: Any, current_time: int) -> bool:
+        """
+        Invests in Research & Development (R&D).
+        Delegates payment to Finance, handles state update (probabilistic outcome) here.
+        """
+        if self.firm.finance.invest_in_rd(amount, government):
+            self._execute_rd_outcome(amount, current_time)
+            return True
+        return False
+
+    def _execute_rd_outcome(self, budget: float, current_time: int) -> None:
+        """Executes the probabilistic outcome of R&D investment."""
+        self.firm.research_history["total_spent"] += budget
+
+        # Revenue logic should be via finance
+        denominator = max(self.firm.finance.revenue_this_turn * 0.2, 100.0)
+        base_chance = min(1.0, budget / denominator)
+
+        avg_skill = 1.0
+        if self.firm.hr.employees:
+            avg_skill = sum(getattr(e, 'labor_skill', 1.0) for e in self.firm.hr.employees) / len(self.firm.hr.employees)
+
+        success_chance = base_chance * avg_skill
+
+        if random.random() < success_chance:
+            self.firm.research_history["success_count"] += 1
+            self.firm.research_history["last_success_tick"] = current_time
+            self.firm.base_quality += 0.05
+            self.firm.productivity_factor *= 1.05
+            self.firm.logger.info(f"INTERNAL_EXEC | Firm {self.firm.id} R&D SUCCESS (Budget: {budget:.1f})")

@@ -6,7 +6,7 @@ from simulation.models import Order
 from simulation.ai.enums import Tactic, Aggressiveness
 from .base_decision_engine import BaseDecisionEngine
 from .rule_based_firm_engine import RuleBasedFirmDecisionEngine
-from simulation.dtos import DecisionContext, FirmStateDTO
+from simulation.dtos import DecisionContext, FirmStateDTO, DecisionOutputDTO
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -44,7 +44,6 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         규칙 기반 로직을 사용하여 기업의 의사결정을 수행한다.
         생산 조정, 임금 조정, 가격 조정에 집중한다.
         """
-        from simulation.dtos import DecisionOutputDTO
         firm = context.state # FirmStateDTO
         # markets = context.markets # Removed for DTO purity
         goods_data = context.goods_data
@@ -52,20 +51,20 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         current_time = context.current_time
 
         if firm is None:
-            return [], (Tactic.NO_ACTION, Aggressiveness.NEUTRAL)
+            return DecisionOutputDTO(orders=[], metadata=(Tactic.NO_ACTION, Aggressiveness.NEUTRAL))
 
         # Guard: Check type
         if not isinstance(firm, FirmStateDTO):
             self.logger.error("StandaloneEngine received invalid state object.")
-            return [], (Tactic.NO_ACTION, Aggressiveness.NEUTRAL)
+            return DecisionOutputDTO(orders=[], metadata=(Tactic.NO_ACTION, Aggressiveness.NEUTRAL))
 
         orders: List[Order] = []
         chosen_tactic: Tactic = Tactic.NO_ACTION
         chosen_aggressiveness: Aggressiveness = Aggressiveness.NEUTRAL # 규칙 기반은 중립으로 설정
 
-        item_id = firm.specialization
-        current_inventory = firm.inventory.get(item_id, 0)
-        target_quantity = firm.production_target
+        item_id = firm.production.specialization
+        current_inventory = firm.production.inventory.get(item_id, 0)
+        target_quantity = firm.production.production_target
 
         # 1. 생산 조정 결정 (Planning)
         if current_inventory > target_quantity * self.config_module.OVERSTOCK_THRESHOLD:
@@ -88,7 +87,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         # 2. 임금 조정 및 고용 결정 (Operation)
         # WO-110: Sequential execution - Check labor needs even if production was adjusted
         needed_labor_for_production = self.rule_based_executor._calculate_needed_labor(firm)
-        current_employees = len(firm.employees)
+        current_employees = len(firm.hr.employees)
 
         # Hiring Logic
         if current_employees < needed_labor_for_production * self.config_module.FIRM_LABOR_REQUIREMENT_RATIO or \
@@ -108,11 +107,11 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         firing_buffer_ratio = getattr(self.config_module, "LABOR_FIRING_BUFFER_RATIO", 1.05)
         if current_employees > needed_labor_for_production * firing_buffer_ratio:
              loss_threshold = getattr(self.config_module, "LABOR_HOARDING_LOSS_THRESHOLD", 5)
-             is_bleeding = firm.consecutive_loss_turns > loss_threshold
+             is_bleeding = firm.finance.consecutive_loss_turns > loss_threshold
 
              startup_cost = getattr(self.config_module, "STARTUP_COST", 30000.0)
              asset_ratio_threshold = getattr(self.config_module, "LABOR_HOARDING_ASSET_RATIO", 0.5)
-             is_poor = firm.assets < startup_cost * asset_ratio_threshold
+             is_poor = firm.finance.balance < startup_cost * asset_ratio_threshold
 
              if is_bleeding or is_poor:
                  # Fire excess
@@ -131,7 +130,7 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         # 3. 가격 조정 및 판매 (Commerce)
         if current_inventory > 0:
             if chosen_tactic == Tactic.NO_ACTION:
-                if current_inventory > firm.production_target * self.config_module.OVERSTOCK_THRESHOLD:
+                if current_inventory > firm.production.production_target * self.config_module.OVERSTOCK_THRESHOLD:
                     chosen_tactic = Tactic.PRICE_DECREASE_SMALL
                 else:
                     chosen_tactic = Tactic.PRICE_HOLD
@@ -150,18 +149,18 @@ class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
         재고 수준에 따라 판매 가격을 조정하고 판매 주문을 생성한다.
         """
         orders = []
-        item_id = firm.specialization
-        current_inventory = firm.inventory.get(item_id, 0)
+        item_id = firm.production.specialization
+        current_inventory = firm.production.inventory.get(item_id, 0)
 
         if current_inventory > 0:
-            target_inventory = firm.production_target
+            target_inventory = firm.production.production_target
             is_understocked = (
                 current_inventory
                 < target_inventory * self.config_module.UNDERSTOCK_THRESHOLD
             )
 
             # Get price from history or config
-            base_price = firm.price_history.get(
+            base_price = firm.sales.price_history.get(
                 item_id, self.config_module.GOODS[item_id]["production_cost"]
             )
 

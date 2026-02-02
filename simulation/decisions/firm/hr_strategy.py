@@ -20,17 +20,17 @@ class HRStrategy:
         Hiring Channel.
         """
         orders = []
-        target_inventory = firm.production_target
-        current_inventory = firm.inventory.get(firm.specialization, 0)
+        target_inventory = firm.production.production_target
+        current_inventory = firm.production.inventory.get(firm.production.specialization, 0)
         inventory_gap = target_inventory - current_inventory
 
         base_alpha = config.labor_alpha
         automation_reduction = config.automation_labor_reduction
-        alpha_adjusted = base_alpha * (1.0 - (firm.automation_level * automation_reduction))
+        alpha_adjusted = base_alpha * (1.0 - (firm.production.automation_level * automation_reduction))
         beta_adjusted = 1.0 - alpha_adjusted
 
-        capital = max(firm.capital_stock, 1.0)
-        tfp = firm.productivity_factor
+        capital = max(firm.production.capital_stock, 1.0)
+        tfp = firm.production.productivity_factor
 
         if tfp <= 0: tfp = 1.0
 
@@ -45,7 +45,7 @@ class HRStrategy:
             needed_labor_calc = 0.0
 
         needed_labor = int(needed_labor_calc) + 1
-        current_employees = len(firm.employees)
+        current_employees = len(firm.hr.employees)
 
         # A. Firing Logic (Layoffs)
         if current_employees > needed_labor:
@@ -54,13 +54,13 @@ class HRStrategy:
 
             if fire_count > 0:
                 # Identify candidates (FIFO from ID list)
-                candidates = firm.employees[:fire_count]
+                candidates = firm.hr.employees[:fire_count]
 
                 severance_weeks = config.severance_pay_weeks
 
                 for emp_id in candidates:
                     # Get wage and skill from DTO
-                    emp_data = firm.employees_data.get(emp_id, {})
+                    emp_data = firm.hr.employees_data.get(emp_id, {})
                     wage = emp_data.get("wage", config.labor_market_min_wage)
                     skill = emp_data.get("skill", 1.0)
 
@@ -105,7 +105,7 @@ class HRStrategy:
         """
         WO-047-B: Competitive Bidding Logic (DTO version).
         """
-        current_employees = len(firm.employees)
+        current_employees = len(firm.hr.employees)
         vacancies = max(0, needed_labor - current_employees)
 
         if vacancies <= 0:
@@ -120,16 +120,16 @@ class HRStrategy:
             total_liabilities = debt_info.get("total_principal", 0.0)
 
         if total_liabilities > 0:
-            solvency_ratio = firm.assets / total_liabilities
+            solvency_ratio = firm.finance.balance / total_liabilities
             if solvency_ratio < 1.5:
                 return base_offer_wage
 
         # 2. Wage Bill Cap
         wage_bill = 0.0
-        if firm.employees_data:
-            wage_bill = sum(e['wage'] for e in firm.employees_data.values())
+        if firm.hr.employees_data:
+            wage_bill = sum(e['wage'] for e in firm.hr.employees_data.values())
 
-        if wage_bill > 0 and firm.assets < wage_bill * 2:
+        if wage_bill > 0 and firm.finance.balance < wage_bill * 2:
              return base_offer_wage
 
         # 3. Calculate Increase
@@ -137,7 +137,7 @@ class HRStrategy:
         new_wage = base_offer_wage * (1.0 + increase_rate)
 
         # 4. Absolute Ceiling
-        max_affordable = firm.assets / (current_employees + vacancies + 1)
+        max_affordable = firm.finance.balance / (current_employees + vacancies + 1)
         if new_wage > max_affordable:
             new_wage = max(base_offer_wage, max_affordable)
 

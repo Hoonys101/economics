@@ -24,8 +24,8 @@ class SalesManager:
         Sales Channel.
         """
         orders = []
-        item_id = firm.specialization
-        current_inventory = firm.inventory.get(item_id, 0)
+        item_id = firm.production.specialization
+        current_inventory = firm.production.inventory.get(item_id, 0)
 
         if current_inventory <= 0:
             return orders
@@ -34,7 +34,7 @@ class SalesManager:
         if item_id in market_data:
              market_price = market_data[item_id].get('avg_price', 0)
         if market_price <= 0:
-             market_price = firm.price_history.get(item_id, 0)
+             market_price = firm.sales.price_history.get(item_id, 0)
         if market_price <= 0:
              market_price = goods_map.get(item_id, {}).get("production_cost", 10.0)
 

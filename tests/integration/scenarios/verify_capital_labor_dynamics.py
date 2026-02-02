@@ -115,7 +115,7 @@ class TestCapitalLaborDynamics(unittest.TestCase):
         """자본재 투자 시 capital_stock 증가 검증"""
         firm = self._create_firm(10, 10000.0)
         initial_capital = firm.capital_stock
-        initial_assets = firm.assets
+        initial_assets = firm.finance.balance
         
         # 높은 자본 공격성으로 투자 시뮬레이션
         from simulation.schemas import FirmActionVector
@@ -155,15 +155,15 @@ class TestCapitalLaborDynamics(unittest.TestCase):
         # But since that is internal AI decision, we force the investment manually
         # Capital investment happens when cap_aggressiveness > 0.6 and assets > 1000
         cap_agg = 1.0  # Maximum
-        inv_budget = firm.assets * 0.1 * (cap_agg - 0.5) * 2.0
+        inv_budget = firm.finance.balance * 0.1 * (cap_agg - 0.5) * 2.0
         efficiency = 1.0 / getattr(config, "CAPITAL_TO_OUTPUT_RATIO", 2.0)
         added_capital = inv_budget * efficiency
         firm._assets -= inv_budget
         firm.capital_stock += added_capital
         
-        logger.info(f"After Investment - Capital: {firm.capital_stock:.2f}, Assets: {firm.assets:.2f}")
+        logger.info(f"After Investment - Capital: {firm.capital_stock:.2f}, Assets: {firm.finance.balance:.2f}")
         self.assertGreater(firm.capital_stock, initial_capital)
-        self.assertLess(firm.assets, initial_assets)
+        self.assertLess(firm.finance.balance, initial_assets)
         logger.info("✓ Capital investment successful")
 
     def test_wage_downward_rigidity(self):

@@ -46,7 +46,8 @@ class MAManager:
             return
 
         # Calculate stats for relative thresholds
-        avg_assets = sum(f.assets for f in firms) / len(firms)
+        # Refactor: Use finance.balance
+        avg_assets = sum(f.finance.balance for f in firms) / len(firms)
         
         predators = []
         preys = []
@@ -58,14 +59,15 @@ class MAManager:
             firm.calculate_valuation()
             
             # Bankruptcy Criteria
-            if firm.assets < 0:
+            # Refactor: Use finance.balance
+            if firm.finance.balance < 0:
                 bankrupts.append(firm)
                 continue
             
             # Standard Distress (Friendly M&A)
             if firm.finance.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
                  preys.append(firm)
-            elif firm.assets < avg_assets * 0.2:
+            elif firm.finance.balance < avg_assets * 0.2:
                 preys.append(firm)
             
             # Phase 21: Hostile Takeover Criteria
@@ -77,7 +79,7 @@ class MAManager:
                 hostile_targets.append(firm)
 
             # Predator Criteria
-            if firm.assets > avg_assets * 1.5 and firm.finance.current_profit > 0:
+            if firm.finance.balance > avg_assets * 1.5 and firm.finance.current_profit > 0:
                 predators.append(firm)
 
         # 2. M&A Matching Loop
@@ -98,7 +100,7 @@ class MAManager:
 
                 # Check Capacity
                 target_mcap = target.get_market_cap()
-                if predator.assets > target_mcap * 1.5:
+                if predator.finance.balance > target_mcap * 1.5:
                     # Attempt Hostile Takeover
                     success = self._attempt_hostile_takeover(predator, target, target_mcap, current_tick)
                     if success:
@@ -125,7 +127,7 @@ class MAManager:
                 
                 # Check Cash Requirement
                 min_cash_ratio = getattr(self.config, "MIN_ACQUISITION_CASH_RATIO", 1.5)
-                if predator.assets >= offer_price * min_cash_ratio:
+                if predator.finance.balance >= offer_price * min_cash_ratio:
                     # Attempt Deal
                     self._execute_merger(predator, prey, offer_price, current_tick, is_hostile=False)
                     acquired = True

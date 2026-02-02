@@ -55,7 +55,7 @@ class TestWO103Phase1(unittest.TestCase):
 
     def test_initialization(self):
         print("\nTest Initialization...")
-        self.assertEqual(self.firm.assets, 1000.0)
+        self.assertEqual(self.firm.finance.balance, 1000.0)
         self.assertEqual(self.firm.finance.balance, 1000.0)
         print("Initialization Passed.")
 
@@ -63,22 +63,22 @@ class TestWO103Phase1(unittest.TestCase):
         print("\nTest Assets Property Setter (External Update)...")
         # Emulate TransactionProcessor adding money
         self.firm._assets += 500.0
-        self.assertEqual(self.firm.assets, 1500.0)
+        self.assertEqual(self.firm.finance.balance, 1500.0)
         self.assertEqual(self.firm.finance.balance, 1500.0)
 
         # Emulate TransactionProcessor removing money
         self.firm._assets -= 200.0
-        self.assertEqual(self.firm.assets, 1300.0)
+        self.assertEqual(self.firm.finance.balance, 1300.0)
         self.assertEqual(self.firm.finance.balance, 1300.0)
         print("Property Setter Passed.")
 
     def test_transactional_methods(self):
         print("\nTest Transactional Methods (Deposit/Withdraw)...")
         self.firm.deposit(100.0)
-        self.assertEqual(self.firm.assets, 1100.0)
+        self.assertEqual(self.firm.finance.balance, 1100.0)
 
         self.firm.withdraw(100.0)
-        self.assertEqual(self.firm.assets, 1000.0)
+        self.assertEqual(self.firm.finance.balance, 1000.0)
         print("Transactional Methods Passed.")
 
     def test_holding_costs(self):
@@ -96,12 +96,12 @@ class TestWO103Phase1(unittest.TestCase):
         # Revenue 0.
         # Marketing = max(10.0, 0 * 0.05) = 10.0.
 
-        initial_assets = self.firm.assets
+        initial_assets = self.firm.finance.balance
 
         self.firm.update_needs(current_time=1)
 
         expected_deduction = 10.0 + 10.0 # Holding + Marketing
-        self.assertAlmostEqual(self.firm.assets, initial_assets - expected_deduction, delta=0.1)
+        self.assertAlmostEqual(self.firm.finance.balance, initial_assets - expected_deduction, delta=0.1)
 
         # Verify finance recorded expenses
         self.assertGreater(self.firm.finance.expenses_this_tick, 0)

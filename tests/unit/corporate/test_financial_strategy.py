@@ -12,7 +12,7 @@ def test_dividend_logic(firm_dto, context_mock):
 
 def test_debt_logic_borrow(firm_dto, context_mock):
     manager = FinancialStrategy()
-    firm_dto.assets = 1000.0
+    firm_dto.finance.balance = 1000.0
     context_mock.market_data["debt_data"] = {firm_dto.id: {"total_principal": 0.0}}
 
     plan = manager.formulate_plan(context_mock, dividend_aggressiveness=0.0, debt_aggressiveness=0.5)

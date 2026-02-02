@@ -92,7 +92,9 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
             if price <= 0:
                 price = state.stock_market.get_best_ask(firm.id) or 0
             if price <= 0:
-                price = firm.assets / firm.total_shares if firm.total_shares > 0 else 10.0
+                # Refactor: Use finance.balance
+                assets = firm.finance.balance if hasattr(firm, 'finance') else firm.assets
+                price = assets / firm.total_shares if firm.total_shares > 0 else 10.0
             stock_market_data[firm_item_id] = {"avg_price": price}
 
     rent_prices = [u.rent_price for u in state.real_estate_units if u.owner_id is not None]

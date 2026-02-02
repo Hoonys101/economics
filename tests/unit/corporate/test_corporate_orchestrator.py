@@ -33,8 +33,8 @@ def test_orchestration(firm_dto, context_mock):
     firm_dto.inventory["food"] = 100
     # Sales: inventory > 0, so it will sell.
 
-    firm_dto.assets = 10000.0
-    firm_dto.revenue_this_turn = 1000.0
+    firm_dto.finance.balance = 10000.0
+    firm_dto.finance.revenue_this_turn = 1000.0
 
     orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
 
