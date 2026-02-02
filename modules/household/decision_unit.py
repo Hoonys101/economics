@@ -41,18 +41,18 @@ class DecisionUnit(IDecisionUnit):
 
         # 1. System 2 Housing Decision Logic (Ported from HouseholdSystem2Planner)
         if new_state.is_homeless or current_time % 30 == 0:
-            housing_snapshot = market_snapshot["housing"]
-            loan_snapshot = market_snapshot["loan"]
+            housing_snapshot = market_snapshot.housing
+            loan_snapshot = market_snapshot.loan
 
-            market_rent = housing_snapshot["avg_rent_price"]
-            market_price = housing_snapshot["avg_sale_price"]
+            market_rent = housing_snapshot.avg_rent_price
+            market_price = housing_snapshot.avg_sale_price
 
             # Legacy fallback
             if market_price <= 0.001:
                  market_price = market_rent * 12 * 20.0
 
             new_state.housing_price_history.append(market_price)
-            risk_free_rate = loan_snapshot["interest_rate"]
+            risk_free_rate = loan_snapshot.interest_rate
 
             price_growth = 0.0
             if len(new_state.housing_price_history) >= 2:
@@ -124,7 +124,7 @@ class DecisionUnit(IDecisionUnit):
             new_state.housing_target_mode = decision
 
         # 2. Shadow Labor Market Logic
-        avg_market_wage = market_snapshot["labor"]["avg_wage"]
+        avg_market_wage = market_snapshot.labor.avg_wage
 
         if avg_market_wage > 0:
             new_state.market_wage_history.append(avg_market_wage)
@@ -147,10 +147,11 @@ class DecisionUnit(IDecisionUnit):
             best_price = float('inf')
 
             # Access market data ONLY from the snapshot DTO
-            for unit_dto in market_snapshot["housing"]["for_sale_units"]:
-                if unit_dto["price"] < best_price:
-                    best_price = unit_dto["price"]
-                    target_unit = unit_dto
+            if market_snapshot.housing:
+                for unit_dto in market_snapshot.housing.for_sale_units:
+                    if unit_dto.price < best_price:
+                        best_price = unit_dto.price
+                        target_unit = unit_dto
 
             if target_unit:
                  down_payment = best_price * 0.2
@@ -158,7 +159,7 @@ class DecisionUnit(IDecisionUnit):
                      buy_order = Order(
                          agent_id=state.portfolio.owner_id,
                          side="BUY",
-                         item_id=target_unit["unit_id"],
+                         item_id=target_unit.unit_id,
                          quantity=1.0,
                          price_limit=best_price,
                          market_id="housing"

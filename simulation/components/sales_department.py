@@ -30,10 +30,10 @@ class SalesDepartment:
         # 2. 주문 생성 (brand_info 자동 주입)
         order = Order(
             agent_id=self.firm.id,
-            order_type="SELL",
+            side="SELL",
             item_id=item_id,
             quantity=quantity,
-            price=price,
+            price_limit=price,
             market_id=market.id,
             brand_info=brand_snapshot  # <-- Critical Injection
         )
@@ -92,20 +92,24 @@ class SalesDepartment:
         """
         sale_timeout = getattr(self.config, 'sale_timeout_ticks', 20)
         reduction_factor = getattr(self.config, 'dynamic_price_reduction_factor', 0.95)
+        from dataclasses import replace
 
-        for order in orders:
+        for i, order in enumerate(orders):
             # Check if order is a goods order (has item_id)
             if not hasattr(order, "item_id"):
                 continue
 
-            if order.order_type == "SELL":
+            # Alias check for backward compatibility if side/order_type usage is mixed
+            side = getattr(order, "side", getattr(order, "order_type", None))
+
+            if side == "SELL":
                 item_id = order.item_id
                 last_sale = self.firm.inventory_last_sale_tick.get(item_id, 0)
 
                 # Check Staleness
                 if (current_tick - last_sale) > sale_timeout:
                     # Apply Discount
-                    original_price = order.price
+                    original_price = getattr(order, "price_limit", getattr(order, "price", 0.0))
                     discounted_price = original_price * reduction_factor
 
                     # Check Cost Floor
@@ -114,7 +118,10 @@ class SalesDepartment:
 
                     # Apply if lower
                     if final_price < original_price:
-                        order.price = final_price
+                        # order.price = final_price # Frozen
+                        new_order = replace(order, price_limit=final_price)
+                        orders[i] = new_order
+
                         # Update Firm's price memory
                         self.firm.last_prices[item_id] = final_price
 

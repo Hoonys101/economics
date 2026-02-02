@@ -145,14 +145,13 @@ class DecisionInputDTO:
     Standardized input DTO for agent decision-making.
     Encapsulates all external system inputs passed to make_decision.
     """
-    markets: Dict[str, Any]
+    market_snapshot: MarketSnapshotDTO
     goods_data: List[Dict[str, Any]]
     market_data: Dict[str, Any]
     current_time: int
     fiscal_context: Optional[FiscalContext] = None
     macro_context: Optional[MacroFinancialContext] = None
     stress_scenario_config: Optional[Any] = None # Avoid circular import with StressScenarioConfig if possible, or use forward ref
-    market_snapshot: Optional[MarketSnapshotDTO] = None
     government_policy: Optional[GovernmentPolicyDTO] = None
     agent_registry: Optional[Dict[str, int]] = None
 

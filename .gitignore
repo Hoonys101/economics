@@ -152,6 +152,8 @@ cython_debug/
 # Custom for this project
 simulation_data.db
 simulation_data.db-journal
+test_simulation.db
+test_simulation.db-journal
 logs/
 *.log
 # Note: tests/goldens/ is NOT ignored - golden fixtures are required for tests

@@ -668,7 +668,7 @@ class Household(BaseAgent, ILearningAgent):
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
 
         # Unpack input_dto
-        markets = input_dto.markets
+        # markets = input_dto.markets # Removed TD-194
         goods_data = input_dto.goods_data
         market_data = input_dto.market_data
         current_time = input_dto.current_time
@@ -723,51 +723,9 @@ class Household(BaseAgent, ILearningAgent):
 
         # 3. Construct Orchestration DTOs (ACL)
 
-        # Housing Snapshot
-        housing_market_obj = markets.get("housing")
-        for_sale_units = []
-        # Safely access sell_orders if available (OrderBookMarket)
-        if housing_market_obj and hasattr(housing_market_obj, "sell_orders"):
-             for item_id, sell_orders in housing_market_obj.sell_orders.items():
-                if item_id.startswith("unit_") and sell_orders:
-                    # Taking the best price (lowest ask)
-                    order = sell_orders[0]
-                    # Quality is not on OrderDTO, assume default 1.0 or TODO: fetch from unit registry
-                    quality = 1.0
-
-                    for_sale_units.append(HousingMarketUnitDTO(
-                        unit_id=item_id,
-                        price=order.price,
-                        quality=quality
-                    ))
-
-        housing_data = market_data.get("housing_market", {})
-        housing_snapshot = HousingMarketSnapshotDTO(
-            for_sale_units=for_sale_units,
-            avg_rent_price=housing_data.get("avg_rent_price", 100.0),
-            avg_sale_price=housing_data.get("avg_sale_price", 24000.0)
-        )
-
-        # Loan Snapshot
-        loan_data = market_data.get("loan_market", {})
-        loan_snapshot = LoanMarketSnapshotDTO(
-            interest_rate=loan_data.get("interest_rate", 0.05)
-        )
-
-        # Labor Snapshot
-        labor_data = market_data.get("labor", {})
-        labor_snapshot = LaborMarketSnapshotDTO(
-            avg_wage=labor_data.get("avg_wage", 0.0)
-        )
-
-        market_snapshot_dto = MarketSnapshotDTO(
-            housing=housing_snapshot,
-            loan=loan_snapshot,
-            labor=labor_snapshot
-        )
-
+        # Use valid snapshot from input
         orchestration_context = OrchestrationContextDTO(
-            market_snapshot=market_snapshot_dto,
+            market_snapshot=market_snapshot,
             current_time=current_time,
             stress_scenario_config=stress_scenario_config,
             config=self.config
@@ -828,10 +786,10 @@ class Household(BaseAgent, ILearningAgent):
 
             order = Order(
                 agent_id=self.id,
-                order_type="SELL",
+                side="SELL",
                 item_id=good,
                 quantity=qty,
-                price=liquidation_price,
+                price_limit=liquidation_price,
                 market_id=good
             )
             orders.append(order)
@@ -851,12 +809,12 @@ class Household(BaseAgent, ILearningAgent):
             # Let's try to be somewhat reasonable: 10.0 (default fallback) * 0.8 = 8.0
             price = 8.0
 
-            order = StockOrder(
+            order = Order(
                 agent_id=self.id,
-                order_type="SELL",
-                firm_id=firm_id,
+                side="SELL",
+                item_id=f"stock_{firm_id}",
                 quantity=shares,
-                price=price,
+                price_limit=price,
                 market_id="stock_market"
             )
             orders.append(order)
