@@ -15,6 +15,7 @@ from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
+from modules.system.api import MarketSnapshotDTO
 
 # SoC Refactor
 from simulation.components.hr_department import HRDepartment
@@ -24,6 +25,7 @@ from simulation.components.sales_department import SalesDepartment
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
+from modules.system.api import MarketSnapshotDTO
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -336,7 +338,7 @@ class Firm(BaseAgent, ILearningAgent):
         self, input_dto: DecisionInputDTO
     ) -> tuple[list[Order], Any]:
         # Unpack
-        markets = input_dto.markets
+        # markets = input_dto.markets # Removed TD-194
         goods_data = input_dto.goods_data
         market_data = input_dto.market_data
         current_time = input_dto.current_time
@@ -394,7 +396,8 @@ class Firm(BaseAgent, ILearningAgent):
         self.sales.check_and_apply_dynamic_pricing(external_orders, current_time)
 
         # WO-056: Shadow Mode Calculation
-        self._calculate_invisible_hand_price(markets, current_time)
+        if market_snapshot:
+             self._calculate_invisible_hand_price(market_snapshot, current_time)
 
         # SoC Refactor
         self.logger.debug(
@@ -484,22 +487,21 @@ class Firm(BaseAgent, ILearningAgent):
             self.productivity_factor *= 1.05
             self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {budget:.1f})")
 
-    def _calculate_invisible_hand_price(self, markets: Dict[str, Any], current_tick: int) -> None:
+    def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         """
         WO-056: Stage 1 Shadow Mode (Price Discovery 2.0).
         Calculates and logs the shadow price based on Excess Demand.
         """
-        market = markets.get(self.specialization)
-        # Check if market supports order book inspection
-        if not market or not hasattr(market, 'get_all_bids'):
+        if not market_snapshot.market_signals:
             return
 
-        # 1. Get Demand and Supply (Market-wide for this good)
-        bids = market.get_all_bids(self.specialization)
-        asks = market.get_all_asks(self.specialization)
+        signal = market_snapshot.market_signals.get(self.specialization)
+        if not signal:
+            return
 
-        demand = sum(o.quantity for o in bids)
-        supply = sum(o.quantity for o in asks)
+        # 1. Get Demand and Supply (from signals)
+        demand = signal.total_bid_quantity
+        supply = signal.total_ask_quantity
 
         # 2. Calculate Excess Demand Ratio
         # Formula: (Demand - Supply) / Supply
