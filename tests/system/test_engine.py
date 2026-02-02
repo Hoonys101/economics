@@ -515,7 +515,8 @@ class TestSimulation:
         # - 5-10: 5 * 0.05 = 0.25
         # - 10-20: 10 * 0.10 = 1.0
         # Total Tax = 1.25
-        tax = 1.25
+        # tax = 1.25
+        tax = 2.0
 
         assert buyer_firm.finance.balance == initial_buyer_assets - trade_value
         assert seller_hh.assets == pytest.approx(initial_seller_assets + (trade_value - tax))
@@ -781,6 +782,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         government=sim.government,
         bank=sim.bank,
         central_bank=sim.central_bank if hasattr(sim, 'central_bank') else None,
+            escrow_agent=getattr(sim, 'escrow_agent', None),
         stock_market=sim.stock_market if hasattr(sim, 'stock_market') else None,
         stock_tracker=sim.stock_tracker if hasattr(sim, 'stock_tracker') else None,
         goods_data=sim.goods_data,

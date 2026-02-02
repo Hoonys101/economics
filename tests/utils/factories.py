@@ -136,6 +136,7 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
         "marketing_efficiency_low_threshold": 0.2,
         "marketing_budget_rate_min": 0.01,
         "marketing_budget_rate_max": 0.1,
+        "brand_resilience_factor": 0.1,
         "default_target_margin": 0.2,
         "max_price_staleness_ticks": 5,
         "fire_sale_asset_threshold": 100.0,
