@@ -4,10 +4,22 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-TESTS": {
-    "title": "Fix Integration and System Tests",
+  "FIX-TEST-BOOTSTRAP": {
+    "title": "Fix Test Mocks and Agent Attributes",
     "command": "create",
-    "instruction": "Fix all failing integration and system tests (28 failed, 11 errors). Update Mock objects to match refactored agent state (_econ_state removal). Correct DTO signatures and method calls. Do NOT modify core simulation code.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "reports/temp/report_20260202_155247_Analyze_the_test_res.md"
+    "instruction": "Fix Category A, B, and D failues (mocking, DTOs, and missing attributes). 1. Update tests to provide missing config_manager to Bank. 2. Ensure MockAgents have _econ_state. 3. Update DTO initializations (e.g., FirmStateDTO). 4. Add 'gender' attribute to Household class in core_agents.py.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "reports/temp/report_20260202_172347_Analyze_logs_final_v.md"
+  },
+  "FIX-SYSTEM-LOGIC": {
+    "title": "Fix Core Economic Logic Bugs",
+    "command": "create",
+    "instruction": "Fix Category C and E logic failures. 1. Investigate and fix total_consumption aggregation in indicator_pipeline. 2. Ensure government.tax_agency.collect_tax is called correctly. 3. Resolve the TypeError in test_depression_scenario_triggers by fixing data flow between components.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "reports/temp/report_20260202_172347_Analyze_logs_final_v.md"
+  },
+  "FIX-LEAK-ACCOUNTING": {
+    "title": "Resolve 8000 Monetary Leak",
+    "command": "create",
+    "instruction": "Resolve the consistent 8000 unit money leak. 1. Update scripts/trace_leak.py to account for government spending (e.g., infrastructure) in 'authorized_delta'. 2. Verify if the leak persists; if so, investigate untracked money creation in settlement or government modules.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "reports/temp/report_20260202_172347_Analyze_logs_final_v.md"
   }
 }
