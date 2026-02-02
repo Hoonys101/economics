@@ -6,7 +6,16 @@ from tests.unit.decisions.legacy_household_engine_fixture import LegacyAIDrivenH
 from simulation.dtos import DecisionContext, HouseholdConfigDTO, MarketSnapshotDTO
 from modules.household.dtos import HouseholdStateDTO
 
-def test_behavioral_equivalence():
+def test_engine_execution_parity_smoke():
+    """
+    Smoke test to verify that both the Legacy and New Household Engines can execute
+    without error given the same input state (Hybrid Mock).
+
+    NOTE: Strict behavioral equivalence is NOT enforced here.
+    The new engine implements logic (e.g., WO-157 Continuous Demand Curve) that intentionally
+    diverges from the legacy engine (Need Factors). This test primarily ensures that
+    the DTO refactoring hasn't broken the execution path of either engine.
+    """
     # Setup Mocks
     mock_ai = MagicMock()
     # Mock Action Vector
@@ -237,4 +246,4 @@ def test_behavioral_equivalence():
     #     assert abs(o1.price - o2.price) < 1e-6, f"Price mismatch at {i}: {o1.price} vs {o2.price}"
 
 if __name__ == "__main__":
-    test_behavioral_equivalence()
+    test_engine_execution_parity_smoke()

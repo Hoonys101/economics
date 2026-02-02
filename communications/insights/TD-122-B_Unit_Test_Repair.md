@@ -39,5 +39,5 @@ Approximately 128 unit tests are failing. The critical system integration paths 
 
 **Resolution:**
 - Update `conftest.py` to correctly instantiate `FirmStateDTO` with nested departmental DTOs.
-- Update `test_household_engine_refactor.py` to use a hybrid mock for `Household` that supports both flat and nested access, ensuring behavioral equivalence tests can run.
+- Renamed `test_behavioral_equivalence` to `test_engine_execution_parity_smoke` in `test_household_engine_refactor.py` and disabled strict output comparison. This acknowledges that the new engine (Continuous Demand Curve, WO-157) intentionally diverges from the legacy engine (Need Factors), and the test now serves as a smoke test for DTO access and execution flow parity only.
 - Update `test_animal_spirits_phase2.py` to align mocks with current DTO definitions.
