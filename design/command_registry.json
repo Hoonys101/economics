@@ -3,11 +3,5 @@
     "session": "Clean Room Era",
     "updated": "2026-01-30",
     "author": "Antigravity"
-  },
-  "MISSION-ATOMICITY": {
-    "title": "Implement Atomic Settlements (TD-160/187)",
-    "command": "create",
-    "instruction": "Implement the SettlementSystem and atomic Saga pattern for Inheritance and Severance payments as per spec_td160_atomic_settlement.md. Ensure zero-sum integrity.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "design/3_work_artifacts/specs/spec_td160_atomic_settlement.md"
   }
 }
