@@ -371,6 +371,24 @@ class Household(BaseAgent, ILearningAgent):
     def employer_id(self, value: Optional[int]) -> None:
         self._econ_state.employer_id = value
 
+    @property
+    def skills(self) -> Dict[str, "Skill"]:
+        """[TD-162] Backward compat: Exposes _econ_state.skills."""
+        return self._econ_state.skills
+
+    @skills.setter
+    def skills(self, value: Dict[str, "Skill"]) -> None:
+        self._econ_state.skills = value
+
+    @property
+    def portfolio(self) -> "Portfolio":
+        """[TD-162] Backward compat: Exposes _econ_state.portfolio."""
+        return self._econ_state.portfolio
+
+    @portfolio.setter
+    def portfolio(self, value: "Portfolio") -> None:
+        self._econ_state.portfolio = value
+
     @override
     def _add_assets(self, amount: float) -> None:
         self._econ_state.assets += amount

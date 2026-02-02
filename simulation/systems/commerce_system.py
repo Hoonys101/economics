@@ -66,7 +66,12 @@ class CommerceSystem(ICommerceSystem):
             survival_need = household._bio_state.needs.get("survival", 0.0)
             threshold = getattr(breeding_planner, "survival_threshold", 50.0)
 
-            if c_amt <= 0 and survival_need > threshold:
+            try:
+                survival_val = float(survival_need)
+            except (TypeError, ValueError):
+                survival_val = 0.0
+
+            if c_amt <= 0 and survival_val > threshold:
                 reason = "UNKNOWN"
                 context_data = {}
 

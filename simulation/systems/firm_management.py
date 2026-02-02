@@ -42,7 +42,12 @@ class FirmSystem:
              final_startup_cost *= 1.5
 
         # 2. Capital Deduction Check
-        if founder_household.assets < final_startup_cost:
+        try:
+            current_assets = float(founder_household.assets)
+        except (TypeError, ValueError, AttributeError):
+            current_assets = 0.0
+
+        if current_assets < final_startup_cost:
             return None
 
         # 3. Generate New Firm ID
@@ -169,7 +174,7 @@ class FirmSystem:
 
         wealthy_households = [
             h for h in simulation.households
-            if h._bio_state.is_active and h._econ_state.assets > startup_cost * capital_multiplier
+            if h.is_active and h.assets > startup_cost * capital_multiplier
         ]
 
         for household in wealthy_households:

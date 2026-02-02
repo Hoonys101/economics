@@ -8,8 +8,7 @@ def commerce_system():
     config = MagicMock()
     # Mock config values
     config.FOOD_CONSUMPTION_QUANTITY = 1.0
-    reflux_system = MagicMock()
-    return CommerceSystem(config, reflux_system)
+    return CommerceSystem(config)
 
 def test_execute_consumption_and_leisure(commerce_system):
     # Setup Households
@@ -36,11 +35,12 @@ def test_execute_consumption_and_leisure(commerce_system):
     }
 
     # Mock Context
+    mock_reflux = MagicMock()
     context: CommerceContext = {
         "households": households,
         "breeding_planner": planner,
         "household_time_allocation": {1: 8.0},
-        "reflux_system": commerce_system.reflux_system,
+        "reflux_system": mock_reflux,
         "market_data": {},
         "config": commerce_system.config,
         "time": 1
@@ -67,7 +67,7 @@ def test_execute_consumption_and_leisure(commerce_system):
     h1.update_needs.assert_called_once()
 
     # 6. Reflux Capture
-    commerce_system.reflux_system.capture.assert_called_with(20.0, source="Household_1", category="emergency_food")
+    mock_reflux.capture.assert_called_with(20.0, source="Household_1", category="emergency_food")
 
 def test_fast_track_consumption_if_needed(commerce_system):
     # Case: Inventory 0, Consumes 0 (in vector), Buys 2.

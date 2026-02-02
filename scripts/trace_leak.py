@@ -48,10 +48,6 @@ def trace():
     if hasattr(sim.government, "get_monetary_delta"):
         authorized_delta = sim.government.get_monetary_delta()
 
-    # Add manual delta from pre-tick loan grant (which was reset in run_tick)
-    if 'grant_result' in locals() and grant_result:
-        authorized_delta += loan_amount
-
     print(f"\nTick 1 (END) Total Money: {current_money:,.2f}")
     print(f"Baseline: {baseline_money:,.2f}")
     print(f"Authorized Delta (Minted - Destroyed + Credit): {authorized_delta:,.2f}")

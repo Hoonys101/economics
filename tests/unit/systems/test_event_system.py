@@ -6,7 +6,8 @@ from simulation.systems.api import EventContext
 @pytest.fixture
 def event_system():
     config = MagicMock()
-    return EventSystem(config)
+    settlement_system = MagicMock()
+    return EventSystem(config, settlement_system)
 
 def test_inflation_shock(event_system):
     # Setup

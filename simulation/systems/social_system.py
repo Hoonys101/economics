@@ -44,7 +44,7 @@ class SocialSystem(ISocialSystem):
              hm = HousingManager(None, self.config)
 
         for h in households:
-            if not h._bio_state.is_active: continue
+            if not h.is_active: continue
 
             # Calculate Score
             consumption_score = h._econ_state.current_consumption * 10.0
@@ -72,7 +72,7 @@ class SocialSystem(ISocialSystem):
         Calculates the average consumption and housing tier of the top 20% households.
         """
         households = context["households"]
-        active_households = [h for h in households if h._bio_state.is_active]
+        active_households = [h for h in households if h.is_active]
 
         if not active_households:
             return {"avg_consumption": 0.0, "avg_housing_tier": 0.0}

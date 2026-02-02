@@ -1,5 +1,0 @@
-error: you need to resolve your current index first
-simulation/components/finance_department.py: needs merge
-🚀 Executing: git checkout main
-❌ Command failed with return code 1
-❌ Stop: Merge sequence interrupted at 'git checkout main'

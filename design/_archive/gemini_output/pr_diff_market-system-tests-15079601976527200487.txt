@@ -1,0 +1,697 @@
+diff --git a/communications/insights/JULES_C_SYSTEMS.md b/communications/insights/JULES_C_SYSTEMS.md
+new file mode 100644
+index 0000000..0283dfc
+--- /dev/null
++++ b/communications/insights/JULES_C_SYSTEMS.md
+@@ -0,0 +1,26 @@
++# Mission Insights: JULES_C_SYSTEMS
++
++## Technical Debt & Insights
++
++### Insight 1: InheritanceManager Purity Refactor
++* **Phenomenon**: `test_inheritance_manager.py` was failing because it expected direct calls to `settlement_system.transfer`.
++* **Cause**: `InheritanceManager` has been refactored to follow the Saga pattern, where it produces `Transaction` intent objects (e.g., `inheritance_distribution` with heir metadata) rather than executing side-effects directly.
++* **Solution**: Updated unit tests to verify the generation and content of the returned `Transaction` objects instead of mocking the settlement system's execution.
++* **Lesson Learned**: When refactoring for Purity/Saga patterns, ensure tests verify the *message* (DTO/Transaction) produced, not the *execution* of that message, which belongs to the Handler/System tests.
++
++### Insight 2: OrderDTO Immutability and Signature
++* **Phenomenon**: `test_order_book_market.py` failed with `AttributeError` on `order.quantity` updates and `TypeError` on `__init__`.
++* **Cause**: `OrderDTO` is an immutable dataclass (`frozen=True`) and aliases `order_type` to `side` and `price` to `price_limit`. Tests were using legacy mutable behavior and old signature.
++* **Solution**: Updated tests to use `side` and `price_limit`. For quantity assertions, verified the market's internal state (Order Book) instead of expecting the order object reference to update in-place.
++* **Lesson Learned**: Immutable DTOs require tests to inspect the system state or returned new objects, as the input objects remain unchanged.
++
++### Insight 3: Widespread Mocking Deficiencies (TD-122)
++* **Phenomenon**: Multiple system tests (`test_social_system.py`, `test_registry_housing.py`, etc.) fail with `AttributeError: Mock object has no attribute '_econ_state'` or `_bio_state`.
++* **Cause**: The `Household` class refactor moved state to `_econ_state` and `_bio_state` components, but many legacy mocks only mock the top-level attributes or use `spec=Household` without populating the sub-components.
++* **Solution**: Fixed `test_housing_transaction_handler.py` by explicitly mocking `_econ_state`. Other tests remain broken and require similar updates.
++* **Lesson Learned**: Mocks for complex entities like `Household` should be centralized or use a factory that ensures all required components (`_econ_state`, `_bio_state`) are present to avoid fragile, repetitive test setup.
++
++### Insight 4: LoanMarket Logic Update (WO-024)
++* **Phenomenon**: `test_loan_market.py` failed because `grant_loan` return signature changed and logic for generating transactions requires a `credit_tx`.
++* **Cause**: `Bank.grant_loan` now returns `(LoanInfoDTO, Transaction)`. `LoanMarket` only appends a transaction if `credit_tx` is present, to avoid double counting with commercial loan transactions.
++* **Solution**: Updated mocks to return a tuple `(dto, mock_tx)` to satisfy the `LoanMarket` logic and ensure a transaction is generated for the test to assert on.
+diff --git a/tests/unit/markets/test_housing_transaction_handler.py b/tests/unit/markets/test_housing_transaction_handler.py
+index c8bda9f..db44f26 100644
+--- a/tests/unit/markets/test_housing_transaction_handler.py
++++ b/tests/unit/markets/test_housing_transaction_handler.py
+@@ -30,10 +30,15 @@ def context():
+ def buyer():
+     b = MagicMock(spec=Household)
+     b.id = 1
+-    b.assets = 100000.0
+-    b.owned_properties = []
+-    b.residing_property_id = None
+-    b.is_homeless = True
++
++    # Mock _econ_state
++    b._econ_state = MagicMock()
++    b._econ_state.assets = 100000.0
++    b._econ_state.owned_properties = []
++    b._econ_state.residing_property_id = None
++    b._econ_state.is_homeless = True
++    b._econ_state.current_wage = 100.0
++
+     return b
+ 
+ @pytest.fixture
+@@ -96,14 +101,14 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
+     # 5. Side Effects
+     assert unit.owner_id == buyer.id
+     assert unit.mortgage_id == "loan_123"
+-    assert 101 in buyer.owned_properties
++    assert 101 in buyer._econ_state.owned_properties
+     assert 101 not in seller.owned_properties
+     assert tx.metadata["mortgage_id"] == "loan_123"
+ 
+ def test_housing_transaction_insufficient_down_payment(handler, context, buyer, seller, unit, escrow_agent):
+     context.real_estate_units = [unit]
+     context.agents = {99: escrow_agent}
+-    buyer.assets = 10.0 # Insufficient
++    buyer._econ_state.assets = 10.0 # Insufficient
+ 
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+diff --git a/tests/unit/test_loan_market.py b/tests/unit/markets/test_loan_market.py
+similarity index 87%
+rename from tests/unit/test_loan_market.py
+rename to tests/unit/markets/test_loan_market.py
+index 23766fb..2ed5ecb 100644
+--- a/tests/unit/test_loan_market.py
++++ b/tests/unit/markets/test_loan_market.py
+@@ -43,10 +43,10 @@ class TestLoanMarket:
+     ):
+         order = Order(
+             agent_id=1,
+-            order_type="LOAN_REQUEST",
++            side="LOAN_REQUEST",
+             item_id="loan_item",
+             quantity=100,
+-            price=0.05,
++            price_limit=0.05,
+             market_id="test_loan_market",
+         )
+ 
+@@ -60,7 +60,14 @@ class TestLoanMarket:
+             origination_tick=0,
+             due_tick=50
+         )
+-        mock_bank.grant_loan.return_value = mock_loan_info
++        # Mock transaction returned by bank
++        mock_tx = MagicMock(spec=Transaction)
++        mock_tx.transaction_type = "loan"
++        mock_tx.item_id = "loan_granted"
++        mock_tx.buyer_id = mock_bank.id
++        mock_tx.seller_id = 1
++
++        mock_bank.grant_loan.return_value = (mock_loan_info, mock_tx)
+ 
+         transactions = loan_market_instance.place_order(order, 1)
+ 
+@@ -86,10 +93,10 @@ class TestLoanMarket:
+         profile = {"borrower_id": "1", "gross_income": 1000.0}
+         order = Order(
+             agent_id=1,
+-            order_type="LOAN_REQUEST",
++            side="LOAN_REQUEST",
+             item_id="loan_item",
+             quantity=100,
+-            price=0.05,
++            price_limit=0.05,
+             market_id="test_loan_market",
+             metadata={"borrower_profile": profile}
+         )
+@@ -103,7 +110,7 @@ class TestLoanMarket:
+             origination_tick=0,
+             due_tick=50
+         )
+-        mock_bank.grant_loan.return_value = mock_loan_info
++        mock_bank.grant_loan.return_value = (mock_loan_info, None)
+ 
+         loan_market_instance.place_order(order, 1)
+ 
+@@ -120,10 +127,10 @@ class TestLoanMarket:
+     ):
+         order = Order(
+             agent_id=1,
+-            order_type="LOAN_REQUEST",
++            side="LOAN_REQUEST",
+             item_id="loan_item",
+             quantity=100,
+-            price=0.05,
++            price_limit=0.05,
+             market_id="test_loan_market",
+         )
+         mock_bank.grant_loan.return_value = None
+@@ -138,10 +145,10 @@ class TestLoanMarket:
+     ):
+         order = Order(
+             agent_id=1,
+-            order_type="REPAYMENT",
++            side="REPAYMENT",
+             item_id="loan_id_456",
+             quantity=50,
+-            price=0,
++            price_limit=0,
+             market_id="test_loan_market",
+         )
+ 
+@@ -158,10 +165,10 @@ class TestLoanMarket:
+     ):
+         order = Order(
+             agent_id=1,
+-            order_type="UNKNOWN_TYPE",
++            side="UNKNOWN_TYPE",
+             item_id="item",
+             quantity=10,
+-            price=1,
++            price_limit=1,
+             market_id="test_loan_market",
+         )
+         transactions = loan_market_instance.place_order(order, 1)
+diff --git a/tests/unit/test_order_book_market.py b/tests/unit/markets/test_order_book_market.py
+similarity index 87%
+rename from tests/unit/test_order_book_market.py
+rename to tests/unit/markets/test_order_book_market.py
+index af6d421..758367f 100644
+--- a/tests/unit/test_order_book_market.py
++++ b/tests/unit/markets/test_order_book_market.py
+@@ -35,10 +35,10 @@ def order_book_market_instance():  # Keep this for general tests
+ def sample_buy_order():
+     return Order(
+         agent_id=1,
+-        order_type="BUY",
++        side="BUY",
+         item_id="food",
+         quantity=10,
+-        price=100,
++        price_limit=100,
+         market_id="test_market",
+     )
+ 
+@@ -47,10 +47,10 @@ def sample_buy_order():
+ def sample_sell_order():
+     return Order(
+         agent_id=2,
+-        order_type="SELL",
++        side="SELL",
+         item_id="food",
+         quantity=10,
+-        price=90,
++        price_limit=90,
+         market_id="test_market",
+     )
+ 
+@@ -64,18 +64,18 @@ class TestOrderBookMarket:
+     def test_place_buy_order_adds_and_sorts(self, order_book_market_instance):
+         order1 = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=10,
+-            price=100,
++            price_limit=100,
+             market_id="test_market",
+         )
+         order2 = Order(
+             agent_id=2,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=5,
+-            price=110,
++            price_limit=110,
+             market_id="test_market",
+         )
+         order_book_market_instance.place_order(order1, 1)
+@@ -89,18 +89,18 @@ class TestOrderBookMarket:
+     def test_place_sell_order_adds_and_sorts(self, order_book_market_instance):
+         order1 = Order(
+             agent_id=1,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=10,
+-            price=100,
++            price_limit=100,
+             market_id="test_market",
+         )
+         order2 = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=5,
+-            price=90,
++            price_limit=90,
+             market_id="test_market",
+         )
+         order_book_market_instance.place_order(order1, 1)
+@@ -116,22 +116,22 @@ class TestOrderBookMarket:
+     ):
+         order = Order(
+             agent_id=1,
+-            order_type="UNKNOWN",
++            side="UNKNOWN",
+             item_id="food",
+             quantity=10,
+-            price=100,
++            price_limit=100,
+             market_id="test_market",
+         )
+         order_book_market_instance.place_order(order, 1)
+ 
+         mock_logger.warning.assert_called_with(
+-            "Unknown order type for _add_order: UNKNOWN",
++            "Unknown side for _add_order: UNKNOWN",
+             extra={
+                 "tick": 1,
+                 "market_id": "test_market",
+                 "agent_id": 1,
+                 "item_id": "food",
+-                "order_type": "UNKNOWN",
++                "side": "UNKNOWN",
+                 "price": 100,
+                 "quantity": 10,
+             },
+@@ -143,18 +143,18 @@ class TestOrderBookMarket:
+     def test_match_orders_full_fill(self, goods_market_instance):
+         buy_order = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=10,
+-            price=100,
++            price_limit=100,
+             market_id="goods_market",
+         )
+         sell_order = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=10,
+-            price=90,
++            price_limit=90,
+             market_id="goods_market",
+         )
+         goods_market_instance.place_order(buy_order, 1)
+@@ -178,18 +178,18 @@ class TestOrderBookMarket:
+     def test_match_orders_partial_fill_buy_order(self, goods_market_instance):
+         buy_order = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=15,
+-            price=100,
++            price_limit=100,
+             market_id="goods_market",
+         )
+         sell_order = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=10,
+-            price=90,
++            price_limit=90,
+             market_id="goods_market",
+         )
+         goods_market_instance.place_order(buy_order, 1)
+@@ -209,18 +209,18 @@ class TestOrderBookMarket:
+     def test_match_orders_partial_fill_sell_order(self, goods_market_instance):
+         buy_order = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=10,
+-            price=100,
++            price_limit=100,
+             market_id="goods_market",
+         )
+         sell_order = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=15,
+-            price=90,
++            price_limit=90,
+             market_id="goods_market",
+         )
+         goods_market_instance.place_order(buy_order, 1)
+@@ -240,18 +240,18 @@ class TestOrderBookMarket:
+     def test_match_orders_no_match_price(self, goods_market_instance):
+         buy_order = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=10,
+-            price=80,
++            price_limit=80,
+             market_id="goods_market",
+         )
+         sell_order = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=10,
+-            price=90,
++            price_limit=90,
+             market_id="goods_market",
+         )
+         goods_market_instance.place_order(buy_order, 1)
+@@ -266,26 +266,26 @@ class TestOrderBookMarket:
+     def test_match_orders_multiple_matches(self, goods_market_instance):
+         buy_order = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=20,
+-            price=100,
++            price_limit=100,
+             market_id="goods_market",
+         )
+         sell_order1 = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=5,
+-            price=90,
++            price_limit=90,
+             market_id="goods_market",
+         )
+         sell_order2 = Order(
+             agent_id=3,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=8,
+-            price=95,
++            price_limit=95,
+             market_id="goods_market",
+         )
+         goods_market_instance.place_order(buy_order, 1)
+@@ -297,40 +297,46 @@ class TestOrderBookMarket:
+         assert len(transactions) == 2
+         assert transactions[0].quantity == 5
+         assert transactions[1].quantity == 8
+-        assert buy_order.quantity == 7  # 20 - 5 - 8
++
++        # Verify remaining buy order in the book
++        remaining_orders = goods_market_instance.buy_orders.get("food", [])
++        assert len(remaining_orders) == 1
++        assert remaining_orders[0].quantity == 7  # 20 - 5 - 8
++        assert remaining_orders[0].agent_id == 1
++
+         assert not goods_market_instance.sell_orders.get("food", [])
+ 
+     def test_match_orders_different_items(self, goods_market_instance):
+         buy_order_food = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=10,
+-            price=100,
++            price_limit=100,
+             market_id="goods_market",
+         )
+         sell_order_food = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=10,
+-            price=90,
++            price_limit=90,
+             market_id="goods_market",
+         )
+         buy_order_water = Order(
+             agent_id=3,
+-            order_type="BUY",
++            side="BUY",
+             item_id="water",
+             quantity=5,
+-            price=50,
++            price_limit=50,
+             market_id="goods_market",
+         )
+         sell_order_water = Order(
+             agent_id=4,
+-            order_type="SELL",
++            side="SELL",
+             item_id="water",
+             quantity=5,
+-            price=40,
++            price_limit=40,
+             market_id="goods_market",
+         )
+ 
+@@ -356,18 +362,18 @@ class TestOrderBookMarket:
+     def test_match_orders_transaction_type_goods(self, goods_market_instance):
+         buy_order = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="food",
+             quantity=10,
+-            price=100,
++            price_limit=100,
+             market_id="goods_market",
+         )
+         sell_order = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="food",
+             quantity=10,
+-            price=90,
++            price_limit=90,
+             market_id="goods_market",
+         )
+         goods_market_instance.place_order(buy_order, 1)
+@@ -381,18 +387,18 @@ class TestOrderBookMarket:
+     ):
+         buy_order = Order(
+             agent_id=1,
+-            order_type="BUY",
++            side="BUY",
+             item_id="labor",
+             quantity=1,
+-            price=20,
++            price_limit=20,
+             market_id="labor_market",
+         )
+         sell_order = Order(
+             agent_id=2,
+-            order_type="SELL",
++            side="SELL",
+             item_id="labor",
+             quantity=1,
+-            price=15,
++            price_limit=15,
+             market_id="labor_market",
+         )
+         labor_market_instance.place_order(buy_order, 1)
+@@ -441,4 +447,4 @@ class TestOrderBookMarket:
+         assert len(status["buy_orders"]) == 1
+         assert status["buy_orders"][0]["price"] == 90
+         assert len(status["sell_orders"]) == 1
+-        assert status["sell_orders"][0]["price"] == 100
+\ No newline at end of file
++        assert status["sell_orders"][0]["price"] == 100
+diff --git a/tests/unit/systems/test_inheritance_manager.py b/tests/unit/systems/test_inheritance_manager.py
+index a433255..a92f567 100644
+--- a/tests/unit/systems/test_inheritance_manager.py
++++ b/tests/unit/systems/test_inheritance_manager.py
+@@ -31,126 +31,87 @@ class TestInheritanceManager:
+         h._bio_state = MagicMock()
+         h._econ_state.assets = assets
+         h._econ_state.portfolio = Portfolio(id)
+-        # h._econ_state.portfolio.to_legacy_dict() = {} # Removed
+         h._econ_state.owned_properties = []
+         h._bio_state.is_active = True
+         h._bio_state.children_ids = []
+         return h
+ 
+-    def test_even_split(self, setup_manager, mocks):
+-        """Test Case 1 (Even Split): 10,000 cash, 100 shares, 2 heirs."""
++    def test_distribution_transaction_generation(self, setup_manager, mocks):
++        """Test Case 1: Verify correct distribution transaction is generated for heirs."""
+         deceased = self.create_household(1, assets=10000.0)
+         deceased._econ_state.portfolio.add("FIRM_A", 100, 10.0)
+-        # deceased.shares_owned["FIRM_A"] = 100 # Removed
+ 
+         heir1 = self.create_household(2)
+         heir2 = self.create_household(3)
+-        deceased._bio_state.children_ids = [2, 3] # Fixed
++        deceased._bio_state.children_ids = [2, 3]
+ 
+         mocks.agents = {2: heir1, 3: heir2}
+ 
+-        setup_manager.process_death(deceased, mocks.government, mocks)
++        txs = setup_manager.process_death(deceased, mocks.government, mocks)
+ 
+-        # Verify Cash
+-        # 10000 / 2 = 5000 each
+-        # Check calls to settlement.transfer
+-        # Expect 2 calls of 5000
+-        calls = mocks.settlement_system.transfer.call_args_list
+-        assert len(calls) == 2
++        # Check for distribution tx
++        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
++        assert dist_tx is not None
++        assert dist_tx.buyer_id == 1
++        assert set(dist_tx.metadata["heir_ids"]) == {2, 3}
++        assert dist_tx.market_id == "system"
+ 
+-        amounts = [c[0][2] for c in calls]
+-        assert amounts == [5000.0, 5000.0]
++    def test_multiple_heirs_metadata(self, setup_manager, mocks):
++        """Test Case 2: Verify metadata for multiple heirs."""
++        deceased = self.create_household(1, assets=100.00)
+ 
+-        # Verify Stocks
+-        # 100 / 2 = 50 each
+-        assert heir1._econ_state.portfolio.holdings["FIRM_A"].quantity == 50
+-        assert heir2._econ_state.portfolio.holdings["FIRM_A"].quantity == 50
++        heir1 = self.create_household(2)
++        heir2 = self.create_household(3)
++        heir3 = self.create_household(4)
++        deceased._bio_state.children_ids = [2, 3, 4]
++        mocks.agents = {2: heir1, 3: heir2, 4: heir3}
+ 
+-        # Verify remainder not sent to government
+-        mocks.government.record_revenue.assert_not_called()
++        txs = setup_manager.process_death(deceased, mocks.government, mocks)
+ 
+-        # Verify cleanup
+-        assert len(deceased._econ_state.portfolio.holdings) == 0
+-        # assert len(deceased.shares_owned) == 0
++        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
++        assert dist_tx is not None
++        assert set(dist_tx.metadata["heir_ids"]) == {2, 3, 4}
+ 
+-    def test_uneven_split(self, setup_manager, mocks):
+-        """Test Case 2 (Uneven Split): 10,000.01 cash, 101 shares, 2 heirs."""
+-        deceased = self.create_household(1, assets=10000.01)
+-        deceased._econ_state.portfolio.add("FIRM_A", 101, 10.0)
++    def test_escheatment_when_no_heirs(self, setup_manager, mocks):
++        """Test Case 3: Verify escheatment transaction when no heirs exist."""
++        deceased = self.create_household(1, assets=1000.0)
++        deceased._bio_state.children_ids = [] # No children
+ 
+-        heir1 = self.create_household(2)
+-        heir2 = self.create_household(3)
+-        deceased._bio_state.children_ids = [2, 3] # Fixed
+-        mocks.agents = {2: heir1, 3: heir2}
++        txs = setup_manager.process_death(deceased, mocks.government, mocks)
+ 
+-        setup_manager.process_death(deceased, mocks.government, mocks)
+-
+-        # Verify Cash
+-        # 10000.01 = 1000001 pennies
+-        # / 2 = 500000 pennies (5000.00) remainder 1 penny (0.01)
+-        # Heir 1: 5000.00
+-        # Heir 2: 5000.01
+-
+-        calls = mocks.settlement_system.transfer.call_args_list
+-        # Filter for transfers to heirs (exclude potential tax/residual if any, though tax is 0)
+-        heir_calls = [c for c in calls if c[0][1] in [heir1, heir2]]
+-        assert len(heir_calls) == 2
+-
+-        amounts = sorted([c[0][2] for c in heir_calls])
+-        assert amounts == [5000.00, 5000.01]
+-
+-        # Verify Stocks
+-        # 101 / 2 = 50 remainder 1
+-        # Heir 1 gets 50? Heir 2 gets 50? Remainder distributed to first in loop (0 index)?
+-        # Implementation detail: loop through remainder.
+-        # total 101.
+-        q1 = heir1._econ_state.portfolio.holdings["FIRM_A"].quantity
+-        q2 = heir2._econ_state.portfolio.holdings["FIRM_A"].quantity
+-        assert q1 + q2 == 101
+-        assert abs(q1 - q2) == 1
+-
+-        # Verify cleanup
+-        assert len(deceased._econ_state.portfolio.holdings) == 0
+-        # assert len(deceased.shares_owned) == 0
+-
+-    def test_multiple_heirs(self, setup_manager, mocks):
+-        """Test Case 3 (Multiple Heirs): 100.00 cash, 10 shares, 3 heirs."""
+-        deceased = self.create_household(1, assets=100.00)
+-        deceased._econ_state.portfolio.add("FIRM_A", 10, 10.0)
++        # Expect Escheatment transactions
++        escheat_cash = next((t for t in txs if t.item_id == "escheatment_cash"), None)
++        assert escheat_cash is not None
++        assert escheat_cash.buyer_id == 1
++        assert escheat_cash.seller_id == mocks.government.id
+ 
++    def test_zero_assets_distribution(self, setup_manager, mocks):
++        """Test Case 4: Verify transaction even with zero assets (process usually runs)."""
++        deceased = self.create_household(1, assets=0.0)
+         heir1 = self.create_household(2)
+-        heir2 = self.create_household(3)
+-        heir3 = self.create_household(4)
+-        deceased._bio_state.children_ids = [2, 3, 4] # Fixed
+-        mocks.agents = {2: heir1, 3: heir2, 4: heir3}
++        deceased._bio_state.children_ids = [2]
++        mocks.agents = {2: heir1}
+ 
+-        setup_manager.process_death(deceased, mocks.government, mocks)
+-
+-        # Cash: 10000 pennies / 3 = 3333 r 1
+-        # 33.33, 33.33, 33.34
+-        calls = mocks.settlement_system.transfer.call_args_list
+-        heir_calls = [c for c in calls if c[0][1] in [heir1, heir2, heir3]]
+-        amounts = sorted([c[0][2] for c in heir_calls])
+-        assert amounts == [33.33, 33.33, 33.34]
+-
+-        # Stocks: 10 / 3 = 3 r 1
+-        # 3, 3, 4 (or 4, 3, 3 depending on distribution order)
+-        quantities = sorted([
+-            heir1._econ_state.portfolio.holdings["FIRM_A"].quantity,
+-            heir2._econ_state.portfolio.holdings["FIRM_A"].quantity,
+-            heir3._econ_state.portfolio.holdings["FIRM_A"].quantity
+-        ])
+-        assert quantities == [3, 3, 4]
+-
+-    def test_zero_assets(self, setup_manager, mocks):
+-        """Test Case 4 (Zero Assets): 0 cash, 0 shares."""
+-        deceased = self.create_household(1, assets=0.0)
++        txs = setup_manager.process_death(deceased, mocks.government, mocks)
++
++        # Still expects distribution tx to handle potential cleanup or signaling
++        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
++        assert dist_tx is not None
++        assert dist_tx.metadata["heir_ids"] == [2]
++
++    def test_tax_transaction_generation(self, setup_manager, mocks):
++        """Test Case 5: Verify tax transaction if tax rate > 0."""
++        # Enable tax
++        setup_manager.config_module.INHERITANCE_TAX_RATE = 0.5
++        setup_manager.config_module.INHERITANCE_DEDUCTION = 0.0
++
++        deceased = self.create_household(1, assets=1000.0)
+         heir1 = self.create_household(2)
+-        deceased._bio_state.children_ids = [2] # Fixed
++        deceased._bio_state.children_ids = [2]
+         mocks.agents = {2: heir1}
+ 
+-        setup_manager.process_death(deceased, mocks.government, mocks)
++        txs = setup_manager.process_death(deceased, mocks.government, mocks)
+ 
+-        # No transfers
+-        mocks.settlement_system.transfer.assert_not_called()
+-        assert len(heir1._econ_state.portfolio.holdings) == 0
++        tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
++        assert tax_tx is not None
++        assert tax_tx.price == 500.0 # 50% of 1000

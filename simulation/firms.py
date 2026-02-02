@@ -147,20 +147,31 @@ class Firm(BaseAgent, ILearningAgent):
         self.has_bailout_loan = False
         self.decision_engine.loan_market = loan_market
 
-    # [REMOVED] assets property. Now uses BaseAgent.assets (which delegates to _assets)
-    # But Firm uses finance.balance for actual operations.
+    @property
+    @override
+    def assets(self) -> float:
+        """Returns the firm's liquid assets."""
+        return self.finance.balance
+
+    @assets.setter
+    def assets(self, value: float) -> None:
+        """Sets the firm's liquid assets (Compatibility)."""
+        self.finance._balance = value # Direct internal access for override
+        self._assets = value
 
     def _add_assets(self, amount: float) -> None:
-        """[PROTECTED] Delegate to FinanceDepartment."""
+        """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
         if hasattr(self, 'finance'):
             self.finance.credit(amount, "Settlement Transfer")
+            self._assets = self.finance.balance
         else:
             self._assets += amount
 
     def _sub_assets(self, amount: float) -> None:
-        """[PROTECTED] Delegate to FinanceDepartment."""
+        """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
         if hasattr(self, 'finance'):
             self.finance.debit(amount, "Settlement Transfer")
+            self._assets = self.finance.balance
         else:
             self._assets -= amount
 

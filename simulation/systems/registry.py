@@ -54,15 +54,15 @@ class Registry(IRegistry):
 
         if isinstance(seller, Household):
             # Change Employer Logic
-            if seller._econ_state.is_employed and seller._econ_state.employer_id is not None and seller._econ_state.employer_id != buyer.id:
-                previous_employer = state.agents.get(seller._econ_state.employer_id)
+            if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
+                previous_employer = state.agents.get(seller.employer_id)
                 if isinstance(previous_employer, Firm):
                      previous_employer.hr.remove_employee(seller)
 
-            seller._econ_state.is_employed = True
-            seller._econ_state.employer_id = buyer.id
-            seller._econ_state.current_wage = tx.price # Contract update
-            seller._bio_state.needs["labor_need"] = 0.0 # Fulfilled need
+            seller.is_employed = True
+            seller.employer_id = buyer.id
+            seller.current_wage = tx.price # Contract update
+            seller.needs["labor_need"] = 0.0 # Fulfilled need
 
         if isinstance(buyer, Firm):
             if seller not in buyer.hr.employees:
@@ -74,7 +74,7 @@ class Registry(IRegistry):
             # Is this Registry or TechSystem? It modifies Firm state (productivity_factor).
             # Registry updates "Non-financial state". Productivity is state.
             if tx.transaction_type == "research_labor" and isinstance(seller, Household):
-                research_skill = seller._econ_state.skills.get("research", Skill("research")).value
+                research_skill = seller.skills.get("research", Skill("research")).value
                 # Config access via state.config_module
                 multiplier = getattr(state.config_module, "RND_PRODUCTIVITY_MULTIPLIER", 0.0)
                 buyer.productivity_factor += (research_skill * multiplier)
@@ -92,7 +92,7 @@ class Registry(IRegistry):
             # Physical Goods: Update Inventory
             # Seller Inventory
             if isinstance(seller, Household):
-                seller._econ_state.inventory[tx.item_id] = max(0, seller._econ_state.inventory.get(tx.item_id, 0) - tx.quantity)
+                seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
             elif hasattr(seller, "inventory"):
                  seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
 
@@ -102,16 +102,16 @@ class Registry(IRegistry):
             if is_raw_material and isinstance(buyer, Firm):
                 buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
             elif isinstance(buyer, Household):
-                current_qty = buyer._econ_state.inventory.get(tx.item_id, 0)
-                existing_quality = buyer._econ_state.inventory_quality.get(tx.item_id, 1.0)
+                current_qty = buyer.inventory.get(tx.item_id, 0)
+                existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
                 tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
                 total_new_qty = current_qty + tx.quantity
 
                 if total_new_qty > 0:
                     new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
-                    buyer._econ_state.inventory_quality[tx.item_id] = new_avg_quality
+                    buyer.inventory_quality[tx.item_id] = new_avg_quality
 
-                buyer._econ_state.inventory[tx.item_id] = total_new_qty
+                buyer.inventory[tx.item_id] = total_new_qty
             elif hasattr(buyer, "inventory"):
                 current_qty = buyer.inventory.get(tx.item_id, 0)
                 existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
@@ -141,7 +141,7 @@ class Registry(IRegistry):
         # 1. Seller Holdings
         if isinstance(seller, Household):
             # Use portfolio directly. shares_owned is legacy computed property.
-            seller._econ_state.portfolio.remove(firm_id, tx.quantity)
+            seller.portfolio.remove(firm_id, tx.quantity)
         elif isinstance(seller, Firm) and seller.id == firm_id:
             seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
         elif hasattr(seller, "portfolio"):
@@ -149,7 +149,7 @@ class Registry(IRegistry):
 
         # 2. Buyer Holdings
         if isinstance(buyer, Household):
-            buyer._econ_state.portfolio.add(firm_id, tx.quantity, tx.price)
+            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
         elif isinstance(buyer, Firm) and buyer.id == firm_id:
             buyer.treasury_shares += tx.quantity
             buyer.total_shares -= tx.quantity
@@ -157,14 +157,14 @@ class Registry(IRegistry):
         # 3. Market Registry (Shareholder List)
         if stock_market:
             # Sync Buyer
-            if isinstance(buyer, Household) and firm_id in buyer._econ_state.portfolio.holdings:
-                 stock_market.update_shareholder(buyer.id, firm_id, buyer._econ_state.portfolio.holdings[firm_id].quantity)
+            if isinstance(buyer, Household) and firm_id in buyer.portfolio.holdings:
+                 stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
             elif hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
                  stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
 
             # Sync Seller
-            if isinstance(seller, Household) and firm_id in seller._econ_state.portfolio.holdings:
-                stock_market.update_shareholder(seller.id, firm_id, seller._econ_state.portfolio.holdings[firm_id].quantity)
+            if isinstance(seller, Household) and firm_id in seller.portfolio.holdings:
+                stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
             elif hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
                 stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
             else:
@@ -179,13 +179,13 @@ class Registry(IRegistry):
                 unit.owner_id = buyer.id
                 # Update seller/buyer lists if they exist
                 if isinstance(seller, Household):
-                    if unit_id in seller._econ_state.owned_properties:
-                        seller._econ_state.owned_properties.remove(unit_id)
+                    if unit_id in seller.owned_properties:
+                        seller.owned_properties.remove(unit_id)
                 elif hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
                     seller.owned_properties.remove(unit_id)
 
                 if isinstance(buyer, Household):
-                    buyer._econ_state.owned_properties.append(unit_id)
+                    buyer.owned_properties.append(unit_id)
                 elif hasattr(buyer, "owned_properties"):
                     buyer.owned_properties.append(unit_id)
 
@@ -217,22 +217,22 @@ class Registry(IRegistry):
             # Update Seller (if not None/Govt)
             if seller:
                 if isinstance(seller, Household):
-                     if unit_id in seller._econ_state.owned_properties:
-                        seller._econ_state.owned_properties.remove(unit_id)
+                     if unit_id in seller.owned_properties:
+                        seller.owned_properties.remove(unit_id)
                 elif hasattr(seller, "owned_properties"):
                     if unit_id in seller.owned_properties:
                         seller.owned_properties.remove(unit_id)
 
             # Update Buyer
             if isinstance(buyer, Household):
-                if unit_id not in buyer._econ_state.owned_properties:
-                    buyer._econ_state.owned_properties.append(unit_id)
+                if unit_id not in buyer.owned_properties:
+                    buyer.owned_properties.append(unit_id)
 
                 # Housing System Logic: Auto-move-in if homeless
-                if buyer._econ_state.residing_property_id is None:
+                if buyer.residing_property_id is None:
                     unit.occupant_id = buyer.id
-                    buyer._econ_state.residing_property_id = unit_id
-                    buyer._econ_state.is_homeless = False
+                    buyer.residing_property_id = unit_id
+                    buyer.is_homeless = False
             elif hasattr(buyer, "owned_properties"):
                 if unit_id not in buyer.owned_properties:
                     buyer.owned_properties.append(unit_id)
@@ -251,6 +251,6 @@ class Registry(IRegistry):
     def _handle_emergency_buy(self, tx: Transaction, buyer: Any):
         """Updates inventory for emergency buys."""
         if isinstance(buyer, Household):
-            buyer._econ_state.inventory[tx.item_id] = buyer._econ_state.inventory.get(tx.item_id, 0.0) + tx.quantity
+            buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
         elif hasattr(buyer, "inventory"):
             buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
