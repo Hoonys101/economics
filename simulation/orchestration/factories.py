@@ -116,6 +116,7 @@ class MarketSnapshotFactory:
 
         return HousingMarketSnapshotDTO(
             for_sale_units=for_sale_units,
+            units_for_rent=[],
             avg_rent_price=housing_data.get("avg_rent_price", 100.0),
             avg_sale_price=housing_data.get("avg_sale_price", 24000.0)
         )

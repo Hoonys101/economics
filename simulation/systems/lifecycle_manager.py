@@ -117,14 +117,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 firm.finance.distress_tick_counter = 0
 
             # Standard Closure Check
-<<<<<<< HEAD
-            if (firm.assets <= assets_threshold or
-                    firm.is_bankrupt):
-=======
             # Refactor: Use finance.balance
             if (firm.finance.balance <= assets_threshold or
                     firm.finance.consecutive_loss_turns >= closure_turns_threshold):
->>>>>>> origin/td-073-firm-refactor-v2-668135522089889137
 
                 # Double check grace period (if we fell through but counter is high)
                 if firm.finance.distress_tick_counter > 5:
@@ -367,6 +362,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
              state.agents[state.government.id] = state.government
         if hasattr(state, 'central_bank') and state.central_bank:
              state.agents[state.central_bank.id] = state.central_bank
+        if hasattr(state, 'escrow_agent') and state.escrow_agent:
+             state.agents[state.escrow_agent.id] = state.escrow_agent
 
         for firm in state.firms:
             firm.hr.employees = [

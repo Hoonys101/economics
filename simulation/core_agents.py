@@ -728,7 +728,8 @@ class Household(BaseAgent, ILearningAgent):
             market_snapshot=market_snapshot,
             current_time=current_time,
             stress_scenario_config=stress_scenario_config,
-            config=self.config
+            config=self.config,
+            household_state=state_dto
         )
 
         # 4. Delegate to DecisionUnit (Stateless)

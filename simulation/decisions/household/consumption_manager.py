@@ -39,8 +39,11 @@ class ConsumptionManager:
                 if isinstance(signals, dict):
                     # Try to get signal for the specific item from dict
                     signal = signals.get(food_id)
-                    if signal and signal.get('best_ask') is not None:
-                        ask_price = signal['best_ask']
+                    if signal:
+                        if hasattr(signal, 'best_ask') and signal.best_ask is not None:
+                            ask_price = signal.best_ask
+                        elif isinstance(signal, dict) and signal.get('best_ask') is not None:
+                            ask_price = signal['best_ask']
                 elif signals: # Assume it's a DTO if not dict and not None
                     # Access DTO attributes directly or via getattr
                     signal_dto = getattr(signals, food_id, None)

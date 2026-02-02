@@ -206,6 +206,7 @@ class SimulationState:
     government: Any  # Government
     bank: Any        # Bank
     central_bank: Any # CentralBank
+    escrow_agent: Optional[Any] # EscrowAgent
     stock_market: Optional[Any] # StockMarket
     stock_tracker: Optional[Any] # Added for WO-133 Fix
     goods_data: Dict[str, Any]

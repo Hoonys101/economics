@@ -28,8 +28,8 @@ class HousingSystem:
         for unit in simulation.real_estate_units:
             if unit.mortgage_id:
                 loan = simulation.bank.loans.get(unit.mortgage_id)
-                if loan and loan.is_active:
-                    if loan.missed_payments >= 3:
+                if loan and loan.remaining_balance > 0:
+                    if getattr(loan, 'missed_payments', 0) >= 3:
                         # Foreclosure
                         old_owner_id = unit.owner_id
                         unit.owner_id = -1  # -1 is Bank/Govt

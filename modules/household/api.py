@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from simulation.models import Order
     from modules.household.dtos import (
         BioStateDTO, EconStateDTO, SocialStateDTO,
-        CloningRequestDTO, EconContextDTO
+        CloningRequestDTO, EconContextDTO, HouseholdStateDTO
     )
 
 # --- Updated Context for Decision Making (NEW) ---
@@ -31,6 +31,7 @@ class OrchestrationContextDTO(TypedDict):
     current_time: int
     stress_scenario_config: Optional["StressScenarioConfig"]
     config: "HouseholdConfigDTO"
+    household_state: "HouseholdStateDTO"
 
 
 class IBioComponent(ABC):

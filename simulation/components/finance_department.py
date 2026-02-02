@@ -360,7 +360,7 @@ class FinanceDepartment:
         # Calculate Brand Resilience
         resilience_ticks = 0
         if hasattr(self.firm, 'brand_manager') and self.firm.brand_manager:
-            awareness = self.firm.brand_manager.awareness
+            awareness = self.firm.brand_manager.brand_awareness
             factor = getattr(self.config, "brand_resilience_factor", 0.05)
             resilience_ticks = int(awareness * factor)
 

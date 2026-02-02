@@ -84,6 +84,7 @@ class TickOrchestrator:
             government=state.government,
             bank=state.bank,
             central_bank=state.central_bank,
+            escrow_agent=getattr(state, "escrow_agent", None),
             stock_market=state.stock_market,
             stock_tracker=state.stock_tracker,
             goods_data=state.goods_data,

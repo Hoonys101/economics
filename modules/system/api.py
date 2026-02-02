@@ -33,11 +33,13 @@ class HousingMarketUnitDTO:
     unit_id: str
     price: float
     quality: float
+    rent_price: Optional[float] = None
 
 @dataclass(frozen=True)
 class HousingMarketSnapshotDTO:
     """Contains a snapshot of the housing market's state."""
     for_sale_units: List[HousingMarketUnitDTO]
+    units_for_rent: List[HousingMarketUnitDTO]
     avg_rent_price: float
     avg_sale_price: float
 

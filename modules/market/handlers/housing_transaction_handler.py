@@ -114,7 +114,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     return False
 
                 new_loan_dto, credit_tx = grant_result
-                loan_id = new_loan_dto.loan_id
+                # LoanInfoDTO is a TypedDict
+                loan_id = new_loan_dto['loan_id']
 
                 # Append credit creation tx to queue
                 if credit_tx:
