@@ -1044,3 +1044,24 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.current_food_consumption = 0.0
         self._econ_state.labor_income_this_tick = 0.0
         self._econ_state.capital_income_this_tick = 0.0
+
+    @override
+    def _add_assets(self, amount: float) -> None:
+        self._econ_state.assets += amount
+        self._assets = self._econ_state.assets # Sync legacy property
+
+    @override
+    def _sub_assets(self, amount: float) -> None:
+        self._econ_state.assets -= amount
+        self._assets = self._econ_state.assets # Sync legacy property
+
+    @override
+    def adjust_assets(self, delta: float) -> None:
+        """
+        Adjusts assets by delta (positive or negative).
+        Delegates to _add_assets or _sub_assets to ensure validation and hooks run.
+        """
+        if delta >= 0:
+            self._add_assets(delta)
+        else:
+            self._sub_assets(abs(delta))

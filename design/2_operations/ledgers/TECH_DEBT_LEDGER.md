@@ -33,6 +33,7 @@
 |---|---|---|---|---|
 | TD-160 | 2026-02-02 | Non-Atomic Inheritance (Direct Asset Transfer) | Money leaks during death; Partial state corruption | **CRITICAL** |
 | TD-187 | 2026-02-02 | Severance Pay Race Condition | Over-withdrawal during firm liquidation | **HIGH** |
+| TD-195 | 2026-02-02 | Household Asset Sync Mismatch | `_add_assets` override missing in Household; Risk of state drift | **RESOLVED** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
