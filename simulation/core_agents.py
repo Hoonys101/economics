@@ -786,10 +786,10 @@ class Household(BaseAgent, ILearningAgent):
 
             order = Order(
                 agent_id=self.id,
-                order_type="SELL",
+                side="SELL",
                 item_id=good,
                 quantity=qty,
-                price=liquidation_price,
+                price_limit=liquidation_price,
                 market_id=good
             )
             orders.append(order)
@@ -809,12 +809,12 @@ class Household(BaseAgent, ILearningAgent):
             # Let's try to be somewhat reasonable: 10.0 (default fallback) * 0.8 = 8.0
             price = 8.0
 
-            order = StockOrder(
+            order = Order(
                 agent_id=self.id,
-                order_type="SELL",
-                firm_id=firm_id,
+                side="SELL",
+                item_id=f"stock_{firm_id}",
                 quantity=shares,
-                price=price,
+                price_limit=price,
                 market_id="stock_market"
             )
             orders.append(order)

@@ -8,6 +8,7 @@ import unittest
 import logging
 import sys
 import os
+from unittest.mock import MagicMock
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,7 +26,9 @@ from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.firm_ai import FirmAI
 from simulation.db.repository import SimulationRepository
-from simulation.models import StockOrder
+from modules.market.api import OrderDTO
+from tests.utils.factories import create_household_config_dto, create_firm_config_dto
+from modules.common.config_manager.api import ConfigManager
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(name)s:%(message)s')
@@ -44,6 +47,16 @@ class TestStockTradingIntegration(unittest.TestCase):
             action_proposal_engine=self.action_proposal_engine,
             state_builder=self.state_builder
         )
+        self.config_manager = MagicMock(spec=ConfigManager)
+
+        def config_side_effect(key, default=None):
+            if key == "simulation.database_name":
+                return "test_simulation.db"
+            if key == "simulation.batch_save_interval":
+                return 10
+            return default
+
+        self.config_manager.get.side_effect = config_side_effect
         
         # 주식 시장 활성화 확인
         self.assertTrue(
@@ -64,6 +77,8 @@ class TestStockTradingIntegration(unittest.TestCase):
             ai_engine=household_ai, config_module=config
         )
         
+        config_dto = create_household_config_dto()
+
         household = Household(
             id=id,
             talent=Talent(1.0, {}),
@@ -73,7 +88,7 @@ class TestStockTradingIntegration(unittest.TestCase):
             decision_engine=decision_engine,
             value_orientation=value_orientation,
             personality=Personality.MISER,
-            config_module=config,
+            config_dto=config_dto,
             logger=logger,
         )
         household.inventory["basic_food"] = 10.0
@@ -88,6 +103,8 @@ class TestStockTradingIntegration(unittest.TestCase):
             ai_engine=firm_ai, config_module=config
         )
         
+        config_dto = create_firm_config_dto()
+
         firm = Firm(
             id=id,
             initial_capital=assets,
@@ -96,12 +113,53 @@ class TestStockTradingIntegration(unittest.TestCase):
             productivity_factor=10.0,
             decision_engine=decision_engine,
             value_orientation=value_orientation,
-            config_module=config,
+            config_dto=config_dto,
             logger=logger,
         )
         firm.inventory["basic_food"] = 100.0
         return firm
     
+    def _create_simulation(self, households, firms):
+        sim = Simulation(
+            config_manager=self.config_manager,
+            config_module=config,
+            logger=logger,
+            repository=self.repository
+        )
+        sim.world_state.households = households
+        sim.world_state.firms = firms
+
+        # Mock tracker
+        sim.world_state.tracker = MagicMock()
+        sim.world_state.tracker.get_latest_indicators.return_value = {}
+
+        # Mock government
+        sim.world_state.government = MagicMock()
+        sim.world_state.government.id = "government"
+        sim.world_state.government.assets = 0.0
+        sim.world_state.government.get_monetary_delta.return_value = 0.0
+
+        # Mock public_manager
+        sim.world_state.public_manager = MagicMock()
+        sim.world_state.public_manager.id = "public_manager"
+        sim.world_state.public_manager.assets = 0.0
+
+        # Mock stock_tracker
+        sim.world_state.stock_tracker = MagicMock()
+
+        # Mock calculate_total_money to return float
+        sim.world_state.calculate_total_money = MagicMock(return_value=0.0)
+
+        # Set baseline money supply manually
+        sim.world_state.baseline_money_supply = 0.0
+
+        # Initialize Markets manually since we bypassed Initializer
+        from simulation.markets.stock_market import StockMarket
+        sim.world_state.stock_market = StockMarket(config_module=config, logger=logger)
+        sim.world_state.markets["stock_market"] = sim.world_state.stock_market
+
+        return sim
+
     def test_stock_market_initialized(self):
         """주식 시장이 초기화되는지 확인"""
         households = [self._create_household(i, 1000.0) for i in range(5)]
@@ -111,17 +169,10 @@ class TestStockTradingIntegration(unittest.TestCase):
         for firm in firms:
             shares_per_household = firm.total_shares / len(households)
             for household in households:
-                household.shares_owned[firm.id] = shares_per_household
+                # Use portfolio add
+                household._econ_state.portfolio.add(firm.id, shares_per_household, 10.0)
         
-        sim = Simulation(
-            households=households,
-            firms=firms,
-            ai_trainer=self.ai_trainer,
-            repository=self.repository,
-            config_module=config,
-            goods_data=[{"id": "basic_food", "utility_effects": {"survival": 10.0}}],
-            logger=logger,
-        )
+        sim = self._create_simulation(households, firms)
         
         # 주식 시장 존재 확인
         self.assertIsNotNone(sim.stock_market, "Stock market should be initialized")
@@ -133,16 +184,11 @@ class TestStockTradingIntegration(unittest.TestCase):
         """기업 기준가가 업데이트되는지 확인"""
         households = [self._create_household(i, 1000.0) for i in range(3)]
         firms = [self._create_firm(10, 10000.0)]
+        # Ensure outstanding shares for BPS calculation
+        firms[0].total_shares = 1000.0
+        firms[0].treasury_shares = 0.0
         
-        sim = Simulation(
-            households=households,
-            firms=firms,
-            ai_trainer=self.ai_trainer,
-            repository=self.repository,
-            config_module=config,
-            goods_data=[{"id": "basic_food", "utility_effects": {"survival": 10.0}}],
-            logger=logger,
-        )
+        sim = self._create_simulation(households, firms)
         
         # 1틱 실행
         sim.run_tick()
@@ -159,27 +205,25 @@ class TestStockTradingIntegration(unittest.TestCase):
         # 자산이 충분한 가계 생성
         households = [self._create_household(i, 2000.0) for i in range(5)]
         firms = [self._create_firm(10, 10000.0)]
+        firms[0].treasury_shares = 0.0 # Make shares outstanding
         
         # 초기 주식 분배
         for household in households:
-            household.shares_owned[10] = 20.0
+            # household.shares_owned[10] = 20.0
+            household._econ_state.portfolio.add(10, 20.0, 10.0)
         
-        sim = Simulation(
-            households=households,
-            firms=firms,
-            ai_trainer=self.ai_trainer,
-            repository=self.repository,
-            config_module=config,
-            goods_data=[{"id": "basic_food", "utility_effects": {"survival": 10.0}}],
-            logger=logger,
-        )
+        sim = self._create_simulation(households, firms)
         
+        # Update reference prices initially so trading can happen
+        sim.stock_market.update_reference_prices({f.id: f for f in sim.world_state.firms})
+
         # 여러 틱 실행하여 주식 주문 발생 확인
         stock_orders_placed = False
         for _ in range(10):
             sim.run_tick()
             
             # 체결되지 않은 주문 확인
+            # Note: buy_orders.values() returns list of ManagedOrders
             total_orders = sum(len(orders) for orders in sim.stock_market.buy_orders.values())
             total_orders += sum(len(orders) for orders in sim.stock_market.sell_orders.values())
             
@@ -200,6 +244,10 @@ class TestStockTradingIntegration(unittest.TestCase):
         """기업 주당 순자산가치 계산 확인"""
         firm = self._create_firm(10, 10000.0)
         
+        # Override to match test assumption
+        firm.total_shares = 100.0
+        firm.treasury_shares = 0.0
+
         # 기본값: total_shares = 100, assets = 10000
         bps = firm.get_book_value_per_share()
         expected_bps = 10000.0 / 100.0  # = 100.0
@@ -211,6 +259,10 @@ class TestStockTradingIntegration(unittest.TestCase):
         """기업 시가총액 계산 확인"""
         firm = self._create_firm(10, 10000.0)
         
+        # Override to match test assumption
+        firm.total_shares = 100.0
+        firm.treasury_shares = 0.0
+
         # 주가 없이 계산 (BPS 사용)
         market_cap = firm.get_market_cap()
         expected = 100.0 * 100.0  # total_shares * BPS = 10000

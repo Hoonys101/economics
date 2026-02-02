@@ -1,6 +1,6 @@
 from typing import List, Any, Optional
 import random
-from simulation.models import StockOrder
+from modules.market.api import OrderDTO
 
 class StockTrader:
     """
@@ -31,7 +31,7 @@ class StockTrader:
 
         return price
 
-    def place_buy_orders(self, household: Any, amount_to_invest: float, market_snapshot: Any, config: Any, logger: Optional[Any] = None) -> List[StockOrder]:
+    def place_buy_orders(self, household: Any, amount_to_invest: float, market_snapshot: Any, config: Any, logger: Optional[Any] = None) -> List[OrderDTO]:
         orders = []
 
         if not market_snapshot:
@@ -73,11 +73,18 @@ class StockTrader:
             if price > 0:
                 quantity = investment_per_stock / price
                 if quantity >= 1.0:
-                    order = StockOrder(household.id, order_type="BUY", firm_id=firm_id, quantity=quantity, price=price * 1.05)
+                    order = OrderDTO(
+                        agent_id=household.id,
+                        side="BUY",
+                        item_id=f"stock_{firm_id}",
+                        quantity=quantity,
+                        price_limit=price * 1.05,
+                        market_id="stock_market"
+                    )
                     orders.append(order)
         return orders
 
-    def place_sell_orders(self, household: Any, amount_to_sell: float, market_snapshot: Any, config: Any, logger: Optional[Any] = None) -> List[StockOrder]:
+    def place_sell_orders(self, household: Any, amount_to_sell: float, market_snapshot: Any, config: Any, logger: Optional[Any] = None) -> List[OrderDTO]:
         orders = []
         sorted_holdings = sorted(
             household.portfolio_holdings.items(),
@@ -95,7 +102,14 @@ class StockTrader:
                 sell_value = min(amount_to_sell, value_of_holding)
                 sell_quantity = sell_value / price
                 if sell_quantity >= 1.0:
-                    order = StockOrder(household.id, order_type="SELL", firm_id=firm_id, quantity=sell_quantity, price=price * 0.95)
+                    order = OrderDTO(
+                        agent_id=household.id,
+                        side="SELL",
+                        item_id=f"stock_{firm_id}",
+                        quantity=sell_quantity,
+                        price_limit=price * 0.95,
+                        market_id="stock_market"
+                    )
                     orders.append(order)
                     amount_to_sell -= sell_value
         return orders
