@@ -81,12 +81,12 @@ class TechnologyManager:
             current_rd_by_sector[sector] = current_rd_by_sector.get(sector, 0.0) + rd
 
         # 1. Unlock Check (Probabilistic)
-        self._check_probabilistic_unlocks(current_rd_by_sector, firms, current_tick)
+        self._check_probabilistic_unlocks(current_rd_by_sector, current_tick)
 
         # 2. Diffusion Process (S-Curve)
         self._process_diffusion(firms, current_tick)
 
-    def _check_probabilistic_unlocks(self, current_rd_by_sector: Dict[str, float], firms: List[FirmTechInfoDTO], current_tick: int):
+    def _check_probabilistic_unlocks(self, current_rd_by_sector: Dict[str, float], current_tick: int):
         """
         WO-136: Probabilistic unlock based on accumulated R&D.
         P = min(0.1, (Sector_Accumulated_RD / Tech_Cost_Threshold)^2)
@@ -111,28 +111,15 @@ class TechnologyManager:
 
             # Roll dice
             if random.random() < prob:
-                self._unlock_tech(tech, firms, current_tick)
+                self._unlock_tech(tech, current_tick)
 
-    def _unlock_tech(self, tech: TechNode, firms: List[FirmTechInfoDTO], current_tick: int):
-        """Unlock technology and assign to Early Adopters (Visionaries)."""
+    def _unlock_tech(self, tech: TechNode, current_tick: int):
+        """Unlock technology."""
         tech.is_unlocked = True
         self.active_techs.append(tech.id)
         
-        # Immediate Adoption by Visionaries
-        early_adopters_count = 0
-        for firm_dto in firms:
-            # Check sector match even for visionaries
-            if firm_dto["sector"] != tech.sector and tech.sector != "ALL":
-                continue
-
-            # Visionary Firms
-            if firm_dto["is_visionary"]:
-                self._adopt(firm_dto["id"], tech)
-                early_adopters_count += 1
-        
         self.logger.info(
-            f"TECH_UNLOCK | Unlocked {tech.name} (ID: {tech.id}). "
-            f"Early Adopters: {early_adopters_count} firms.",
+            f"TECH_UNLOCK | Unlocked {tech.name} (ID: {tech.id}).",
             extra={"tick": current_tick, "tech_id": tech.id}
         )
 

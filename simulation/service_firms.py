@@ -30,7 +30,6 @@ class ServiceFirm(Firm):
         loan_market: Optional[Any] = None,
         logger: Optional[logging.Logger] = None,
         sector: str = "SERVICE",
-        is_visionary: bool = False,
         personality: Optional[Personality] = None,
     ) -> None:
         super().__init__(
@@ -46,7 +45,6 @@ class ServiceFirm(Firm):
             loan_market,
             logger,
             sector,
-            is_visionary,
             personality,
         )
         # Service Specific Metrics

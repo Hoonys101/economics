@@ -181,7 +181,6 @@ class Phase_Production(IPhaseStrategy):
                 FirmTechInfoDTO(
                     id=f.id,
                     sector=f.sector,
-                    is_visionary=getattr(f, 'is_visionary', False),
                     current_rd_investment=f.research_history.get("total_spent", 0.0) if hasattr(f, "research_history") else 0.0
                 )
                 for f in state.firms if f.is_active

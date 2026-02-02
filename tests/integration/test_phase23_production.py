@@ -33,7 +33,6 @@ class TestPhase23Production:
             firm.id = firm_id
             firm.sector = "FOOD"
             firm.specialization = "food"
-            firm.is_visionary = False
             firm.productivity_factor = 1.0
             firm.capital_stock = 100.0
             firm.automation_level = 0.0

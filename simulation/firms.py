@@ -54,8 +54,7 @@ class Firm(BaseAgent, ILearningAgent):
         loan_market: Optional[LoanMarket] = None,
         logger: Optional[logging.Logger] = None,
         # Phase 14-2: Innovation
-        sector: str = "FOOD", 
-        is_visionary: bool = False,
+        sector: str = "FOOD",
         # Phase 16-B: Personality
         personality: Optional[Personality] = None,
     ) -> None:
@@ -81,7 +80,6 @@ class Firm(BaseAgent, ILearningAgent):
         
         # Phase 14-2 attributes
         self.sector = sector
-        self.is_visionary = is_visionary
         self.owner_id: Optional[int] = None # Phase 14-1: Shareholder System
         
         # Phase 16-B: Personality & Innovation Attributes
@@ -102,12 +100,8 @@ class Firm(BaseAgent, ILearningAgent):
         self.production = ProductionDepartment(self, self.config)
         self.sales = SalesDepartment(self, self.config)
 
-        # Set bankruptcy threshold based on visionary status
-        base_threshold = self.config.bankruptcy_consecutive_loss_threshold
-        if self.is_visionary:
-            self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold * 2
-        else:
-             self.consecutive_loss_ticks_for_bankruptcy_threshold = base_threshold
+        # Set bankruptcy threshold
+        self.consecutive_loss_ticks_for_bankruptcy_threshold = self.config.bankruptcy_consecutive_loss_threshold
 
         self.production_target: float = (
             self.config.firm_min_production_target

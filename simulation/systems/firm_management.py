@@ -31,22 +31,7 @@ class FirmSystem:
 
         # 1. Choose Specialization First to calculate REAL cost
         specializations = list(self.config.GOODS.keys())
-        is_visionary = False
-        
-        mutation_rate = getattr(self.config, "VISIONARY_MUTATION_RATE", 0.05)
-        if random.random() < mutation_rate:
-            is_visionary = True
-            
-        if is_visionary:
-            active_specs = {f.specialization for f in simulation.firms if f.is_active}
-            potential_blue_oceans = [s for s in specializations if s not in active_specs]
-            
-            if potential_blue_oceans:
-                specialization = random.choice(potential_blue_oceans)
-            else:
-                specialization = random.choice(specializations)
-        else:
-            specialization = random.choice(specializations)
+        specialization = random.choice(specializations)
             
         goods_config = self.config.GOODS.get(specialization, {})
         sector = goods_config.get("sector", "OTHER")
@@ -121,7 +106,6 @@ class FirmSystem:
             config_dto=firm_config_dto,
             logger=simulation.logger,
             sector=sector,
-            is_visionary=is_visionary,
         )
         
         new_firm.founder_id = founder_household.id

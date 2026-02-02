@@ -10,7 +10,6 @@ class FirmTechInfoDTO(TypedDict):
     """Minimal firm data required for technology diffusion."""
     id: int
     sector: str
-    is_visionary: bool
     current_rd_investment: float
 
 class HouseholdEducationDTO(TypedDict):

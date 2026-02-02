@@ -150,6 +150,7 @@ class FirmConfigDTO:
     marketing_efficiency_low_threshold: float
     marketing_budget_rate_min: float
     marketing_budget_rate_max: float
+    brand_resilience_factor: float
 
     # Phase 2: Pricing Logic
     default_target_margin: float
