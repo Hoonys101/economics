@@ -12,15 +12,19 @@ class MockAgent:
         self.assets = float(assets)
         self.total_money_issued = 0.0
         self.total_money_destroyed = 0.0
+        self._econ_state = MagicMock()
+        self._econ_state.assets = self.assets
 
     def deposit(self, amount):
         self.assets += amount
+        self._econ_state.assets = self.assets
 
     def withdraw(self, amount):
         if self.id != "CENTRAL_BANK" and self.assets < amount:
             from modules.finance.api import InsufficientFundsError
             raise InsufficientFundsError("Insufficient Funds")
         self.assets -= amount
+        self._econ_state.assets = self.assets
 
 @pytest.fixture
 def omo_setup():

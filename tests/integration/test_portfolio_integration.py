@@ -52,7 +52,8 @@ class TestPortfolioIntegration(unittest.TestCase):
         self.assertEqual(equity, 0.0)
 
     def test_bank_deposit_balance(self):
-        bank = Bank(1, 100000.0)
+        config_manager = MagicMock()
+        bank = Bank(1, 100000.0, config_manager=config_manager)
         bank.deposits = {
             "d1": MagicMock(depositor_id=1, amount=100.0),
             "d2": MagicMock(depositor_id=2, amount=200.0),

@@ -399,6 +399,16 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.assets -= amount
         self._assets = self._econ_state.assets
 
+    @property
+    def gender(self) -> str:
+        """Exposes gender from bio_state."""
+        return self._bio_state.gender
+
+    @property
+    def home_quality_score(self) -> float:
+        """Exposes home_quality_score from econ_state."""
+        return self._econ_state.home_quality_score
+
     # --- Methods ---
 
     def create_state_dto(self) -> HouseholdStateDTO:
