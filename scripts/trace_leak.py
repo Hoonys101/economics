@@ -57,6 +57,44 @@ def trace():
     if 'grant_result' in locals() and grant_result:
         authorized_delta += loan_amount
 
+    # --- JULES UPDATE: Account for Fiscal Activities (Infrastructure / Bond Sales) ---
+    # Scan transactions for Central Bank bond purchases (Money Creation)
+    # Scan transactions for Infrastructure Spending (Diagnostic)
+
+    cb_bond_buys = 0.0
+    infra_spending = 0.0
+
+    cb_id = sim.central_bank.id if sim.central_bank else None
+
+    if hasattr(sim.world_state, "transactions"):
+        for tx in sim.world_state.transactions:
+            # Check if tx is object or dict
+            if isinstance(tx, dict):
+                 t_type = tx.get("transaction_type")
+                 t_buyer = tx.get("buyer_id")
+                 t_price = tx.get("price", 0.0)
+                 t_qty = tx.get("quantity", 0.0)
+            else:
+                 t_type = getattr(tx, "transaction_type", None)
+                 t_buyer = getattr(tx, "buyer_id", None)
+                 t_price = getattr(tx, "price", 0.0)
+                 t_qty = getattr(tx, "quantity", 0.0)
+
+            # Bond Purchase by Central Bank (Credit Creation)
+            if t_type == "bond_purchase" and str(t_buyer) == str(cb_id):
+                cb_bond_buys += t_price
+
+            # Infrastructure Spending (Transfer, but useful diagnostic)
+            if t_type == "infrastructure_spending":
+                infra_spending += (t_price * t_qty)
+
+    if cb_bond_buys > 0:
+        print(f"Detected Untracked CB Bond Purchases: {cb_bond_buys:,.2f}")
+        authorized_delta += cb_bond_buys
+
+    if infra_spending > 0:
+        print(f"Detected Infrastructure Spending: {infra_spending:,.2f}")
+
     print(f"\nTick 1 (END) Total Money: {current_money:,.2f}")
     print(f"Baseline: {baseline_money:,.2f}")
     print(f"Authorized Delta (Minted - Destroyed + Credit): {authorized_delta:,.2f}")
