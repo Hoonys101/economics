@@ -4,10 +4,10 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-TEST-REMAINDER": {
-    "title": "Fix Last 6 Test Failures",
+  "FIX-M2-ORCHESTRATION": {
+    "title": "Structural M2 Integrity via Post-Phase Hook",
     "command": "create",
-    "instruction": "Fix the remaining 6 test failures in logs/final_merged_test_results.log. Focus on Category C and E leftovers like indicator_aggregation and OMO system tests.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "logs/final_merged_test_results.log"
+    "instruction": "Implement a structural guarantee for M2 integrity: 1. Modify TickOrchestrator to ensure Government.process_monetary_transactions is called as a mandatory post-step (e.g., in _drain_and_sync_state or _finalize_tick) to capture ALL transactions including ones generated late. 2. Remove redundant/manual calls from phases. 3. Call reset_tick_flow() properly.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "file": "communications/insights/Money_Leak_Resolution.md"
   }
 }
