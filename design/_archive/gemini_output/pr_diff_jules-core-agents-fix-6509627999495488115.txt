@@ -1,0 +1,356 @@
+diff --git a/communications/insights/Restore_Household_Props.md b/communications/insights/Restore_Household_Props.md
+new file mode 100644
+index 0000000..fa17e96
+--- /dev/null
++++ b/communications/insights/Restore_Household_Props.md
+@@ -0,0 +1,20 @@
++# Technical Debt & Insights Report: Restore Household Properties & Fix FiscalPolicyManager
++
++## Phenomenon
++During the verification of `Household` property restoration using `scripts/trace_leak.py`, a cascade of `AttributeError` failures occurred in `ConsumptionManager`, `LaborManager`, `AssetManager`, and `DemographicManager`.
++Specifically, these managers were attempting to access `_bio_state` and `_econ_state` attributes on the `household` object, which in the context of the decision engine (`AIDrivenHouseholdDecisionEngine`), is actually a `HouseholdStateDTO`.
++
++## Cause
++The `Household` class was refactored to delegate state to `BioStateDTO` and `EconStateDTO`, and the decision engine was updated to pass `HouseholdStateDTO` to managers. However, the managers (`simulation/decisions/household/*`) were seemingly written or left in a state where they expected the full `Household` agent object (or an object with `_bio_state`/`_econ_state` structure), whereas `HouseholdStateDTO` provides a flattened view of these properties (e.g., `assets` directly, not `_econ_state.assets`).
++
++Additionally, unit tests (e.g., `test_household_engine_refactor.py`) were mocking `HouseholdStateDTO` but incorrectly setting up `_econ_state` on the mock, masking the issue in tests until integration/system tests (`trace_leak.py`) ran.
++
++## Solution
++1.  **Restored Properties on `Household`:** Added getter/setter bridges for `is_active`, `is_homeless`, `age`, `children_ids`, `inventory_quality`, and `employer_id` on the `Household` class to maintain backward compatibility and ensure it acts as a proper facade for its state components.
++2.  **Updated Managers:** Modified `ConsumptionManager`, `LaborManager`, and `AssetManager` to access properties directly from the `household` object (which is a `HouseholdStateDTO` in the decision context), aligning with the DTO's flattened structure (e.g., changed `household._econ_state.assets` to `household.assets`).
++3.  **Fixed `FiscalPolicyManager`:** Updated `determine_fiscal_stance` to robustly handle Mock objects for price data by attempting float conversion instead of strictly checking for `int`/`float` types. Updated corresponding unit tests to use the correct `MarketSnapshotDTO` constructor.
++
++## Lesson Learned
++*   **DTO vs Agent Interface:** When refactoring agents to use DTOs for decision contexts, strictly verify that all downstream consumers (Managers, Strategies) are updated to consume the DTO interface, not the Agent's internal structure.
++*   **Mock Fidelity:** Unit tests should mock the *interface* of the DTO, not the implementation details of the Agent. Mocks that simulate internal state structures (`_econ_state`) on a DTO that doesn't have them create a false sense of security.
++*   **System Verification:** `trace_leak.py` proved invaluable as a system-level integration test, revealing interface mismatches that isolated unit tests missed.
+diff --git a/modules/government/components/fiscal_policy_manager.py b/modules/government/components/fiscal_policy_manager.py
+index b459515..d254694 100644
+--- a/modules/government/components/fiscal_policy_manager.py
++++ b/modules/government/components/fiscal_policy_manager.py
+@@ -42,9 +42,10 @@ class FiscalPolicyManager(IFiscalPolicyManager):
+              if isinstance(m_data, dict) and 'goods_market' in m_data:
+                  price = m_data['goods_market'].get('basic_food_current_sell_price', 5.0)
+                  # Protective check for Mock objects in tests
+-                 if not isinstance(price, (int, float)):
+-                     price = 5.0
+-                 basic_food_price = float(price)
++                 try:
++                     basic_food_price = float(price)
++                 except (ValueError, TypeError):
++                     basic_food_price = 5.0
+ 
+         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+         survival_cost = float(basic_food_price) * float(daily_consumption)
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index c573aae..ca0598f 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -282,6 +282,14 @@ class Household(BaseAgent, ILearningAgent):
+     def inventory(self, value: Dict[str, float]) -> None:
+         self._econ_state.inventory = value
+ 
++    @property
++    def inventory_quality(self) -> Dict[str, float]:
++        return self._econ_state.inventory_quality
++
++    @inventory_quality.setter
++    def inventory_quality(self, value: Dict[str, float]) -> None:
++        self._econ_state.inventory_quality = value
++
+     @property
+     @override
+     def needs(self) -> Dict[str, float]:
+@@ -295,10 +303,34 @@ class Household(BaseAgent, ILearningAgent):
+     def is_active(self) -> bool:
+         return self._bio_state.is_active
+ 
++    @is_active.setter
++    def is_active(self, value: bool) -> None:
++        self._bio_state.is_active = value
++
++    @property
++    def age(self) -> float:
++        return self._bio_state.age
++
++    @age.setter
++    def age(self, value: float) -> None:
++        self._bio_state.age = value
++
++    @property
++    def children_ids(self) -> List[int]:
++        return self._bio_state.children_ids
++
++    @children_ids.setter
++    def children_ids(self, value: List[int]) -> None:
++        self._bio_state.children_ids = value
++
+     @property
+     def is_homeless(self) -> bool:
+         return self._econ_state.is_homeless
+ 
++    @is_homeless.setter
++    def is_homeless(self, value: bool) -> None:
++        self._econ_state.is_homeless = value
++
+     @property
+     def residing_property_id(self) -> Optional[int]:
+         return self._econ_state.residing_property_id
+@@ -332,8 +364,12 @@ class Household(BaseAgent, ILearningAgent):
+         self._econ_state.is_employed = value
+ 
+     @property
+-    def is_employed(self) -> bool:
+-        return self._econ_state.is_employed
++    def employer_id(self) -> Optional[int]:
++        return self._econ_state.employer_id
++
++    @employer_id.setter
++    def employer_id(self, value: Optional[int]) -> None:
++        self._econ_state.employer_id = value
+ 
+     @override
+     def _add_assets(self, amount: float) -> None:
+diff --git a/simulation/decisions/household/asset_manager.py b/simulation/decisions/household/asset_manager.py
+index 78c768f..2f08bd2 100644
+--- a/simulation/decisions/household/asset_manager.py
++++ b/simulation/decisions/household/asset_manager.py
+@@ -46,9 +46,9 @@ class AssetManager:
+             cap_ratio = config.debt_repayment_cap
+             liquidity_ratio = config.debt_liquidity_ratio
+ 
+-            repay_amount = household._econ_state.assets * base_ratio * stress_config.debt_aversion_multiplier
++            repay_amount = household.assets * base_ratio * stress_config.debt_aversion_multiplier
+             repay_amount = min(repay_amount, principal * cap_ratio)
+-            repay_amount = min(repay_amount, household._econ_state.assets * liquidity_ratio)
++            repay_amount = min(repay_amount, household.assets * liquidity_ratio)
+ 
+             if repay_amount > 1.0:
+                  orders.append(Order(
+@@ -66,7 +66,7 @@ class AssetManager:
+         # Logic for Portfolio Management vs Emergency Liquidity
+         if current_time % 30 == 0:
+             # Immutability Fix: Calculate effective cash instead of modifying DTO
+-            effective_cash = household._econ_state.assets
++            effective_cash = household.assets
+             if is_debt_aversion_mode and repay_amount > 0:
+                 effective_cash -= repay_amount
+ 
+@@ -87,17 +87,17 @@ class AssetManager:
+         default_rate = getattr(config, "default_mortgage_rate", 0.05)
+         nominal_rate = loan_market_data.get("interest_rate", default_rate)
+ 
+-        if household._econ_state.expected_inflation:
+-            avg_expected_inflation = sum(household._econ_state.expected_inflation.values()) / len(household._econ_state.expected_inflation)
++        if household.expected_inflation:
++            avg_expected_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+         else:
+             avg_expected_inflation = 0.0
+ 
+         real_rate = nominal_rate - avg_expected_inflation
+ 
+         beta = 1.0
+-        if household._social_state.personality in [Personality.MISER, Personality.CONSERVATIVE]:
++        if household.personality in [Personality.MISER, Personality.CONSERVATIVE]:
+             beta = 1.2
+-        elif household._social_state.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
++        elif household.personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
+             beta = 0.8
+ 
+         return (1.0 + real_rate) * beta
+@@ -105,7 +105,7 @@ class AssetManager:
+     def get_debt_penalty(self, household: Any, market_data: Dict[str, Any], config: Any) -> float:
+         debt_data = market_data.get("debt_data", {}).get(household.id, {})
+         daily_interest_burden = debt_data.get("daily_interest_burden", 0.0)
+-        income_proxy = max(household._econ_state.current_wage, household._econ_state.assets * 0.01)
++        income_proxy = max(household.current_wage, household.assets * 0.01)
+         dsr = daily_interest_burden / (income_proxy + 1e-9)
+ 
+         debt_penalty = 1.0
+@@ -138,8 +138,8 @@ class AssetManager:
+         daily_consumption = getattr(config, "household_food_consumption_per_tick", 2.0)
+         monthly_survival_cost = food_price * daily_consumption * 30.0
+ 
+-        if household._econ_state.expected_inflation:
+-            avg_inflation = sum(household._econ_state.expected_inflation.values()) / len(household._econ_state.expected_inflation)
++        if household.expected_inflation:
++            avg_inflation = sum(household.expected_inflation.values()) / len(household.expected_inflation)
+         else:
+             avg_inflation = 0.0
+ 
+@@ -203,7 +203,7 @@ class AssetManager:
+         household = context.household
+         market_data = context.market_data
+ 
+-        if household._econ_state.assets < 10.0:
++        if household.assets < 10.0:
+             deposit_data = market_data.get("deposit_data", {})
+             deposit_balance = deposit_data.get(household.id, 0.0)
+ 
+@@ -235,7 +235,7 @@ class AssetManager:
+         if market_snapshot is None:
+             return stock_orders
+ 
+-        if household._econ_state.assets < config.household_min_assets_for_investment:
++        if household.assets < config.household_min_assets_for_investment:
+             return stock_orders
+ 
+         avg_dividend_yield = market_data.get("avg_dividend_yield", 0.05)
+@@ -249,10 +249,10 @@ class AssetManager:
+         daily_consumption = getattr(config, "household_food_consumption_per_tick", 2.0)
+         survival_cost = food_price * daily_consumption * 30.0
+ 
+-        risk_aversion = self._get_risk_aversion(household._social_state.personality)
++        risk_aversion = self._get_risk_aversion(household.personality)
+ 
+         target_cash, target_deposit, target_equity = PortfolioManager.optimize_portfolio(
+-            total_liquid_assets=household._econ_state.assets,
++            total_liquid_assets=household.assets,
+             risk_aversion=risk_aversion,
+             risk_free_rate=risk_free_rate,
+             equity_return_proxy=avg_dividend_yield,
+diff --git a/simulation/decisions/household/consumption_manager.py b/simulation/decisions/household/consumption_manager.py
+index ea7bbde..246e6e1 100644
+--- a/simulation/decisions/household/consumption_manager.py
++++ b/simulation/decisions/household/consumption_manager.py
+@@ -22,7 +22,7 @@ class ConsumptionManager:
+         Phase 2: Survival Override.
+         Checks if critical needs exceed threshold and triggers panic buying.
+         """
+-        survival_need = household._bio_state.needs.get('survival', 0)
++        survival_need = household.needs.get('survival', 0)
+         emergency_threshold = getattr(config, 'survival_need_emergency_threshold', 0.8)
+         if not isinstance(emergency_threshold, (int, float)):
+             emergency_threshold = 0.8
+@@ -53,7 +53,7 @@ class ConsumptionManager:
+             # If ask_price was found and is valid
+             if ask_price is not None:
+                 # Affordability Check
+-                if household._econ_state.assets >= ask_price:
++                if household.assets >= ask_price:
+                      premium = getattr(config, 'survival_bid_premium', 0.1)
+                      if not isinstance(premium, (int, float)):
+                          premium = 0.1
+@@ -96,15 +96,15 @@ class ConsumptionManager:
+         for item_id in goods_list:
+             # WO-023: Maslow Constraint (Food Security First)
+             if item_id == "consumer_goods":
+-                food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
++                food_inventory = household.inventory.get("basic_food", 0.0)
+                 target_buffer = getattr(config, "target_food_buffer_quantity", 5.0)
+                 if food_inventory < target_buffer:
+                     continue # Skip consumer_goods if food insecure
+ 
+             # Phase 15: Utility Saturation for Durables
+             if hasattr(household, 'durable_assets'):
+-                 existing_durables = [a for a in household._econ_state.durable_assets if a['item_id'] == item_id]
+-                 has_inventory = household._econ_state.inventory.get(item_id, 0.0) >= 1.0
++                 existing_durables = [a for a in household.durable_assets if a['item_id'] == item_id]
++                 has_inventory = household.inventory.get(item_id, 0.0) >= 1.0
+ 
+                  if existing_durables or has_inventory:
+                      if random.random() < 0.95: # 95% chance to skip
+@@ -129,7 +129,7 @@ class ConsumptionManager:
+             max_need_value = 0.0
+             utility_effects = good_info.get("utility_effects", {})
+             for need_type in utility_effects.keys():
+-                nv = household._bio_state.needs.get(need_type, 0.0)
++                nv = household.needs.get(need_type, 0.0)
+                 if nv > max_need_value:
+                     max_need_value = nv
+ 
+@@ -167,9 +167,9 @@ class ConsumptionManager:
+                     quantity_to_buy *= (1.0 + 0.2 * conformity)
+ 
+             # 5. Budget Constraint (Zero-Sum Integrity)
+-            budget_limit = household._econ_state.assets * config.budget_limit_normal_ratio
++            budget_limit = household.assets * config.budget_limit_normal_ratio
+             if max_need_value > config.budget_limit_urgent_need:
+-                budget_limit = household._econ_state.assets * config.budget_limit_urgent_ratio
++                budget_limit = household.assets * config.budget_limit_urgent_ratio
+ 
+             # Determine Bid Price First
+             # WO-157: Bid slightly above avg_price to ensure execution if urgent, capped at max_affordable_price.
+diff --git a/simulation/decisions/household/labor_manager.py b/simulation/decisions/household/labor_manager.py
+index 98e043e..a3a53ff 100644
+--- a/simulation/decisions/household/labor_manager.py
++++ b/simulation/decisions/household/labor_manager.py
+@@ -23,7 +23,7 @@ class LaborManager:
+         best_market_offer = labor_market_info.get("best_wage_offer", 0.0)
+ 
+         # Scenario A: Already Employed
+-        if household._econ_state.is_employed:
++        if household.is_employed:
+             # Recovery handled by EconComponent/LaborManager, here we just check for quit
+             if hasattr(action_vector, 'job_mobility_aggressiveness'):
+                 agg_mobility = action_vector.job_mobility_aggressiveness
+@@ -32,8 +32,8 @@ class LaborManager:
+ 
+             quit_threshold = config.job_quit_threshold_base - agg_mobility
+ 
+-            if (market_avg_wage > household._econ_state.current_wage * quit_threshold or
+-                best_market_offer > household._econ_state.current_wage * quit_threshold):
++            if (market_avg_wage > household.current_wage * quit_threshold or
++                best_market_offer > household.current_wage * quit_threshold):
+ 
+                 if random.random() < (config.job_quit_prob_base + agg_mobility * config.job_quit_prob_scale):
+                     # Signal quit via Order
+@@ -48,7 +48,7 @@ class LaborManager:
+ 
+ 
+         # Scenario B: Unemployed
+-        if not household._econ_state.is_employed:
++        if not household.is_employed:
+             # Note: Legacy code accessed `basic_food` from inventory. DTO has `inventory: List[GoodsDTO]` usually,
+             # but legacy code treated it as Dict?
+             # Memory says: "HouseholdStateDTO defines inventory as a List[GoodsDTO]... replacing the previous Dict[str, float] representation."
+@@ -62,12 +62,12 @@ class LaborManager:
+             # Maybe `HouseholdStateDTO`'s `inventory` field is `Dict[str, float]` after all, or property wrapper.
+             # I will assume dict access works as per legacy code parity.
+ 
+-            food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
++            food_inventory = household.inventory.get("basic_food", 0.0)
+ 
+             food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
+             if food_price <= 0: food_price = 10.0
+ 
+-            survival_days = food_inventory + (household._econ_state.assets / food_price)
++            survival_days = food_inventory + (household.assets / food_price)
+             critical_turns = getattr(config, "survival_critical_turns", 5)
+ 
+             is_panic = False
+@@ -81,7 +81,7 @@ class LaborManager:
+                     )
+             else:
+                 # labor_market_info re-fetch or reuse? Reuse.
+-                reservation_wage = market_avg_wage * household._econ_state.wage_modifier
++                reservation_wage = market_avg_wage * household.wage_modifier
+ 
+             # labor_market_info re-fetch in legacy? Yes.
+             labor_market_info = market_data.get("goods_market", {}).get("labor", {})
+diff --git a/tests/unit/modules/government/components/test_fiscal_policy_manager.py b/tests/unit/modules/government/components/test_fiscal_policy_manager.py
+index d8a6760..0703410 100644
+--- a/tests/unit/modules/government/components/test_fiscal_policy_manager.py
++++ b/tests/unit/modules/government/components/test_fiscal_policy_manager.py
+@@ -22,8 +22,8 @@ class TestFiscalPolicyManager:
+ 
+     def test_determine_fiscal_stance_calculates_survival_cost_correctly(self, manager, mock_config):
+         # Setup
+-        prices = {"basic_food": 10.0}
+-        snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
++        market_data = {'goods_market': {'basic_food_current_sell_price': 10.0}}
++        snapshot = MarketSnapshotDTO(tick=1, market_signals={}, market_data=market_data)
+ 
+         # Execute
+         policy = manager.determine_fiscal_stance(snapshot)
+@@ -57,8 +57,8 @@ class TestFiscalPolicyManager:
+         config.TAX_BRACKETS = []
+         manager = FiscalPolicyManager(config)
+ 
+-        prices = {"basic_food": 10.0}
+-        snapshot = MarketSnapshotDTO(prices=prices, volumes={}, asks={}, best_asks={})
++        market_data = {'goods_market': {'basic_food_current_sell_price': 10.0}}
++        snapshot = MarketSnapshotDTO(tick=1, market_signals={}, market_data=market_data)
+ 
+         policy = manager.determine_fiscal_stance(snapshot)
+ 
