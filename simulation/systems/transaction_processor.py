@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, List, Optional
 import logging
 
 from simulation.systems.api import SystemInterface, ITransactionHandler, TransactionContext
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
+    from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,15 @@ class TransactionProcessor(SystemInterface):
         """Registers a handler for Public Manager transactions (seller check)."""
         self._public_manager_handler = handler
 
-    def execute(self, state: SimulationState) -> None:
+    def execute(self, state: SimulationState, transactions: Optional[List[Transaction]] = None) -> None:
         """
         Dispatches transactions to registered handlers.
+
+        Args:
+            state: The current simulation state DTO.
+            transactions: Optional list of transactions to process.
+                          If provided, this list is used instead of state.transactions.
+                          Useful when processing a combined list of drained and current transactions.
         """
         # 1. Build TransactionContext
         # Note: public_manager and bank/central_bank must be in state or accessible.
@@ -88,7 +95,9 @@ class TransactionProcessor(SystemInterface):
 
         default_handler = self._handlers.get("default")
 
-        for tx in state.transactions:
+        tx_list = transactions if transactions is not None else state.transactions
+
+        for tx in tx_list:
             # 1. Special Routing: Public Manager (Seller)
             # Check if seller is PUBLIC_MANAGER (String ID check or object check handled by logic)
             if (tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == -1) and self._public_manager_handler:

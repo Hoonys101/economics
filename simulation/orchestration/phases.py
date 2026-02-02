@@ -436,9 +436,8 @@ class Phase2_Matching(IPhaseStrategy):
 
 
 class Phase3_Transaction(IPhaseStrategy):
-    def __init__(self, world_state: WorldState, action_processor: ActionProcessor):
+    def __init__(self, world_state: WorldState):
         self.world_state = world_state
-        self.action_processor = action_processor
 
     def execute(self, state: SimulationState) -> SimulationState:
         system_transactions = []
@@ -480,10 +479,15 @@ class Phase3_Transaction(IPhaseStrategy):
 
         # WO-024: Process Monetary Transactions (Credit Creation/Destruction)
         if state.government:
-            state.government.process_monetary_transactions(state.transactions)
+            # TD-192: Use combined transactions for correct processing after partial drains
+            # Note: We don't modify state.transactions here to avoid duplication during drain
+            combined_txs = list(self.world_state.transactions) + list(state.transactions)
+            state.government.process_monetary_transactions(combined_txs)
 
         if self.world_state.transaction_processor:
-            self.world_state.transaction_processor.execute(state)
+            # TD-192: Pass combined transactions to ensure execution of drained (historic) and current items
+            combined_txs = list(self.world_state.transactions) + list(state.transactions)
+            self.world_state.transaction_processor.execute(state, transactions=combined_txs)
         else:
             state.logger.error("TransactionProcessor not initialized.")
 

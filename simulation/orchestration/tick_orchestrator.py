@@ -30,7 +30,7 @@ class TickOrchestrator:
             Phase_Bankruptcy(world_state),           # Phase 4 (Spec): Lifecycle & Bankruptcy
             Phase_SystemicLiquidation(world_state),  # Phase 4.5 (Spec): Systemic Liquidation
             Phase2_Matching(world_state),            # Phase 5 (Spec): Matching
-            Phase3_Transaction(world_state, action_processor),
+            Phase3_Transaction(world_state),
             Phase_Consumption(world_state),          # Late Lifecycle (Consumption Finalization)
             Phase5_PostSequence(world_state)
         ]
@@ -60,9 +60,8 @@ class TickOrchestrator:
         # 2. Execute all phases in sequence
         for phase in self.phases:
             sim_state = phase.execute(sim_state)
-
-        # 3. Post-execution state synchronization
-        self._synchronize_world_state(sim_state)
+            # TD-192: Immediately drain and sync state back to WorldState
+            self._drain_and_sync_state(sim_state)
 
         # 4. Final persistence and cleanup
         self._finalize_tick(sim_state)
@@ -99,23 +98,44 @@ class TickOrchestrator:
             real_estate_units=state.real_estate_units,
             injectable_sensory_dto=injectable_sensory_dto,
             inactive_agents=state.inactive_agents,
-            effects_queue=state.effects_queue,
-            inter_tick_queue=state.inter_tick_queue,
-            transactions=state.transactions
+            effects_queue=[], # TD-192: Init empty
+            inter_tick_queue=[], # TD-192: Init empty
+            transactions=[] # TD-192: Init empty
         )
 
-    def _synchronize_world_state(self, sim_state: SimulationState):
-        # Sync back scalar values that might have changed
-        self.world_state.next_agent_id = sim_state.next_agent_id
+    def _drain_and_sync_state(self, sim_state: SimulationState):
+        """
+        Drains transient queues from SimulationState into WorldState and syncs scalars.
+        This ensures changes from a phase are immediately persisted before the next phase runs.
+        """
+        ws = self.world_state
 
-        # Note: Collections (households, firms, etc.) are passed by reference in DTO,
-        # so modifications to objects inside them are already reflected.
-        # But if the list itself was replaced (e.g. filtered), we need to sync.
-        # Phase 5 filtered state.firms in place: state.firms[:] = [...]
-        # So WorldState.firms should be updated because it shares the same list object?
-        # Yes, `state.firms[:] = ...` modifies the list in place.
-        # `sim_state.firms` refers to `self.world_state.firms`.
-        pass
+        # --- Sync Scalars ---
+        ws.next_agent_id = sim_state.next_agent_id
+
+        # --- Drain Transient Queues ---
+        # The core of the solution: move items from the DTO's queue to the WorldState's
+        # master queue for the tick, then clear the DTO's queue so it's fresh for the next phase.
+
+        if sim_state.effects_queue:
+            ws.effects_queue.extend(sim_state.effects_queue)
+            sim_state.effects_queue.clear() # Prevent double-processing
+
+        if sim_state.inter_tick_queue:
+            ws.inter_tick_queue.extend(sim_state.inter_tick_queue)
+            sim_state.inter_tick_queue.clear() # Prevent double-processing
+
+        if sim_state.transactions:
+            ws.transactions.extend(sim_state.transactions)
+            sim_state.transactions.clear() # Prevent double-processing
+
+        # --- Sync mutable collections by reference (ensure no re-assignment) ---
+        # This acts as a safety check. If a phase violates the rule, this will raise an error.
+        if ws.agents is not sim_state.agents:
+            raise RuntimeError("CRITICAL: 'agents' collection was re-assigned in a phase. Use in-place modification.")
+
+        # Update the inactive agents dictionary
+        ws.inactive_agents.update(sim_state.inactive_agents)
 
     def _finalize_tick(self, sim_state: SimulationState):
         state = self.world_state

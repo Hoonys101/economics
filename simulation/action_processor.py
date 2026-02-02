@@ -28,6 +28,10 @@ class ActionProcessor:
     ) -> None:
         """
         Delegates transaction processing to the TransactionProcessor system using SimulationState.
+
+        WARNING: This method executes transactions immediately. It should ONLY be used for
+        legacy tests or isolated execution. Do NOT use this within the TickOrchestrator loop
+        as it will cause double-execution when combined with the drain mechanism.
         """
         if self.world_state.transaction_processor:
             # Construct partial market_data from callback
@@ -48,6 +52,7 @@ class ActionProcessor:
                 government=self.world_state.government,
                 bank=self.world_state.bank,
                 central_bank=self.world_state.central_bank,
+                escrow_agent=getattr(self.world_state, "escrow_agent", None),
                 stock_market=self.world_state.stock_market,
                 stock_tracker=self.world_state.stock_tracker,
                 goods_data=self.world_state.goods_data,
@@ -66,22 +71,6 @@ class ActionProcessor:
                 inactive_agents=self.world_state.inactive_agents
             )
             self.world_state.transaction_processor.execute(state)
-            
-            # TD-192: Synchronize scalar values AND transient queues back to WorldState
-            # Critical: TransactionProcessor might populate these queues.
-            self.world_state.next_agent_id = state.next_agent_id
-            
-            # Note: Lists are mutable, so in-place appends work by reference.
-            # However, if TP re-assigned the list, we would lose data.
-            # Explicit sync protects against re-assignment bugs.
-            if state.effects_queue is not self.world_state.effects_queue:
-                 self.world_state.effects_queue.extend(state.effects_queue)
-            
-            if state.inter_tick_queue is not self.world_state.inter_tick_queue:
-                 self.world_state.inter_tick_queue.extend(state.inter_tick_queue)
-
-            # Inactive agents map might be updated
-            self.world_state.inactive_agents.update(state.inactive_agents)
         else:
             logger.error("TransactionProcessor is not initialized in WorldState.")
 
