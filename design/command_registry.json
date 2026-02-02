@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-SYSTEM-LOGIC": {
-    "title": "Fix Core Economic Logic Bugs",
-    "command": "create",
-    "instruction": "Fix Category C and E logic failures. 1. Investigate and fix total_consumption aggregation in indicator_pipeline. 2. Ensure government.tax_agency.collect_tax is called correctly. 3. Resolve the TypeError in test_depression_scenario_triggers by fixing data flow between components.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "reports/temp/report_20260202_172347_Analyze_logs_final_v.md"
-  },
   "FIX-LEAK-ACCOUNTING": {
     "title": "Resolve 8000 Monetary Leak",
     "command": "create",
