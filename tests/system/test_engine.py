@@ -308,7 +308,7 @@ def mock_ai_trainer():
 @pytest.fixture
 def mock_repository():
     repo = MagicMock()
-    repo.save_simulation_run = MagicMock(return_value=1)  # Return a dummy run_id
+    repo.runs.save_simulation_run = MagicMock(return_value=1)  # Return a dummy run_id
     repo.save_economic_indicator = MagicMock()
     repo.save_agent_states = MagicMock()
     repo.save_transactions = MagicMock()

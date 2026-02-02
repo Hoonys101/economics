@@ -80,9 +80,11 @@ class TestTickNormalization:
         with patch('simulation.orchestration.tick_orchestrator.Phase0_PreSequence') as MockPhase0, \
              patch('simulation.orchestration.tick_orchestrator.Phase_Production') as MockPhaseProd, \
              patch('simulation.orchestration.tick_orchestrator.Phase1_Decision') as MockPhase1, \
+             patch('simulation.orchestration.tick_orchestrator.Phase_Bankruptcy') as MockPhaseBankruptcy, \
+             patch('simulation.orchestration.tick_orchestrator.Phase_SystemicLiquidation') as MockPhaseLiquidation, \
              patch('simulation.orchestration.tick_orchestrator.Phase2_Matching') as MockPhase2, \
              patch('simulation.orchestration.tick_orchestrator.Phase3_Transaction') as MockPhase3, \
-             patch('simulation.orchestration.tick_orchestrator.Phase4_Lifecycle') as MockPhase4, \
+             patch('simulation.orchestration.tick_orchestrator.Phase_Consumption') as MockPhaseConsumption, \
              patch('simulation.orchestration.tick_orchestrator.Phase5_PostSequence') as MockPhase5:
 
              # Configure mocks to return the state passed to execute
@@ -92,9 +94,11 @@ class TestTickNormalization:
              MockPhase0.return_value.execute.side_effect = side_effect
              MockPhaseProd.return_value.execute.side_effect = side_effect
              MockPhase1.return_value.execute.side_effect = side_effect
+             MockPhaseBankruptcy.return_value.execute.side_effect = side_effect
+             MockPhaseLiquidation.return_value.execute.side_effect = side_effect
              MockPhase2.return_value.execute.side_effect = side_effect
              MockPhase3.return_value.execute.side_effect = side_effect
-             MockPhase4.return_value.execute.side_effect = side_effect
+             MockPhaseConsumption.return_value.execute.side_effect = side_effect
              MockPhase5.return_value.execute.side_effect = side_effect
 
              orch = TickOrchestrator(mock_world_state, processor)
@@ -104,9 +108,11 @@ class TestTickNormalization:
                  'Phase0': MockPhase0.return_value,
                  'PhaseProduction': MockPhaseProd.return_value,
                  'Phase1': MockPhase1.return_value,
+                 'PhaseBankruptcy': MockPhaseBankruptcy.return_value,
+                 'PhaseLiquidation': MockPhaseLiquidation.return_value,
                  'Phase2': MockPhase2.return_value,
                  'Phase3': MockPhase3.return_value,
-                 'Phase4': MockPhase4.return_value,
+                 'PhaseConsumption': MockPhaseConsumption.return_value,
                  'Phase5': MockPhase5.return_value,
              }
 
@@ -120,9 +126,11 @@ class TestTickNormalization:
         orchestrator.mock_phases['Phase0'].execute.assert_called_once()
         orchestrator.mock_phases['PhaseProduction'].execute.assert_called_once()
         orchestrator.mock_phases['Phase1'].execute.assert_called_once()
+        orchestrator.mock_phases['PhaseBankruptcy'].execute.assert_called_once()
+        orchestrator.mock_phases['PhaseLiquidation'].execute.assert_called_once()
         orchestrator.mock_phases['Phase2'].execute.assert_called_once()
         orchestrator.mock_phases['Phase3'].execute.assert_called_once()
-        orchestrator.mock_phases['Phase4'].execute.assert_called_once()
+        orchestrator.mock_phases['PhaseConsumption'].execute.assert_called_once()
         orchestrator.mock_phases['Phase5'].execute.assert_called_once()
 
         # Verify state time incremented
