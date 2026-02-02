@@ -70,8 +70,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     context.settlement_system.transfer.side_effect = [True, True, True]
 
     # Mock Bank Success
-    loan_dto = MagicMock()
-    loan_dto.loan_id = "loan_123"
+    loan_dto = {"loan_id": "loan_123"}
     context.bank.grant_loan.return_value = (loan_dto, None)
 
     # Execute
@@ -157,8 +156,7 @@ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller
     # 2. Loan Proceeds Transfer Fails
     context.settlement_system.transfer.side_effect = [True, False, True]
 
-    loan_dto = MagicMock()
-    loan_dto.loan_id = "loan_123"
+    loan_dto = {"loan_id": "loan_123"}
     context.bank.grant_loan.return_value = (loan_dto, None)
 
     result = handler.handle(tx, buyer, seller, context)
