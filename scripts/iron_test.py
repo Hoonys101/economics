@@ -112,7 +112,7 @@ def run_simulation(ticks: int, overrides: dict = None):
 
     final_indicators = simulation.tracker.get_latest_indicators()
     final_gdp = final_indicators.get("total_production", 0.0)
-    final_pop = sum(1 for h in households if h.is_active)
+    final_pop = sum(1 for h in households if h._bio_state.is_active)
     
     # Verification Rules
     if final_pop < config.NUM_HOUSEHOLDS * 0.5: # Pop collapse check

@@ -123,10 +123,10 @@ class TestLaborDynamics(unittest.TestCase):
             # Firm 20 offers min wage
             f10.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=FirmActionVector(0.5, 0.0, 0.5))
             for h in sim.households:
-                h.needs["survival"] = 0.0  # Prevent death
-                h.needs["social"] = 0.0
-                h.needs["asset"] = 0.0
-                h.needs["improvement"] = 0.0
+                h._bio_state.needs["survival"] = 0.0  # Prevent death
+                h._bio_state.needs["social"] = 0.0
+                h._bio_state.needs["asset"] = 0.0
+                h._bio_state.needs["improvement"] = 0.0
                 h.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=HouseholdActionVector({"basic_food": 0.5}, 1.0, 0.9, 0.0, 0.0))
             
             sim.run_tick()
@@ -144,7 +144,7 @@ class TestLaborDynamics(unittest.TestCase):
             sim.agents[f11.id] = f11
         
         hops = 0
-        ever_at_20 = {h.id for h in sim.households if h.employer_id == 20} # Everyone starts at 20 (roughly)
+        ever_at_20 = {h.id for h in sim.households if h._econ_state.employer_id == 20} # Everyone starts at 20 (roughly)
         hopped_agents = set()
 
         for t in range(6, 41):
@@ -152,19 +152,19 @@ class TestLaborDynamics(unittest.TestCase):
             f10.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=FirmActionVector(0.5, 0.0, 0.5))
             f11.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=FirmActionVector(0.5, 1.0, 0.5))
             
-            old_employers = {h.id: h.employer_id for h in sim.households}
+            old_employers = {h.id: h._econ_state.employer_id for h in sim.households}
             
             for h in sim.households:
-                h.needs["survival"] = 0.0 # Keep them alive and happy
-                h.needs["social"] = 0.0
-                h.needs["asset"] = 0.0
-                h.needs["improvement"] = 0.0
+                h._bio_state.needs["survival"] = 0.0 # Keep them alive and happy
+                h._bio_state.needs["social"] = 0.0
+                h._bio_state.needs["asset"] = 0.0
+                h._bio_state.needs["improvement"] = 0.0
                 h.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=HouseholdActionVector({"basic_food": 0.5}, 1.0, 0.9, 0.0, 0.0))
             
             sim.run_tick()
             
             for h in sim.households:
-                if h.id in ever_at_20 and h.employer_id == 21 and h.id not in hopped_agents:
+                if h.id in ever_at_20 and h._econ_state.employer_id == 21 and h.id not in hopped_agents:
                     hops += 1
                     hopped_agents.add(h.id)
             

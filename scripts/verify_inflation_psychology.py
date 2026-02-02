@@ -63,10 +63,10 @@ class TestInflationPsychology(unittest.TestCase):
         for p in prices:
             market_data = {"goods_market": {"food_avg_traded_price": p}}
             self.household.update_perceived_prices(market_data)
-            print(f"Price: {p}, Expected Inflation: {self.household.expected_inflation['food']:.2%}")
+            print(f"Price: {p}, Expected Inflation: {self.household._econ_state.expected_inflation['food']:.2%}")
             
         # Check Expectation
-        expected = self.household.expected_inflation["food"]
+        expected = self.household._econ_state.expected_inflation["food"]
         self.assertGreater(expected, 0.05, "Agent should expect high inflation (>5%)")
         
         # 2. Make Decision
@@ -81,7 +81,7 @@ class TestInflationPsychology(unittest.TestCase):
         # Mock Config for Needs
         self.config.BULK_BUY_NEED_THRESHOLD = 100.0 # Don't bulk buy due to need
         self.config.BULK_BUY_AGG_THRESHOLD = 1.0
-        self.household.needs["survival"] = 50.0 # Moderate need
+        self.household._bio_state.needs["survival"] = 50.0 # Moderate need
         
         orders, _ = self.decision_engine.make_decisions(context)
         
@@ -117,19 +117,19 @@ class TestInflationPsychology(unittest.TestCase):
         
         # Reset household memory
         self.household.price_history["food"].clear()
-        self.household.expected_inflation["food"] = 0.0
+        self.household._econ_state.expected_inflation["food"] = 0.0
         
         for p in prices:
             market_data = {"goods_market": {"food_avg_traded_price": p}}
             self.household.update_perceived_prices(market_data)
-            print(f"Price: {p}, Expected Inflation: {self.household.expected_inflation['food']:.2%}")
+            print(f"Price: {p}, Expected Inflation: {self.household._econ_state.expected_inflation['food']:.2%}")
             
-        expected = self.household.expected_inflation["food"]
+        expected = self.household._econ_state.expected_inflation["food"]
         self.assertLess(expected, -0.05, "Agent should expect deflation (<-5%)")
         
         # 2. Make Decision
         # Ensure base buy would be > 1 so we can see reduction
-        self.household.needs["survival"] = 80.0 # High need -> Bulk Buy (Base 10?)
+        self.household._bio_state.needs["survival"] = 80.0 # High need -> Bulk Buy (Base 10?)
         self.config.BULK_BUY_NEED_THRESHOLD = 70.0
         self.config.HOUSEHOLD_MAX_PURCHASE_QUANTITY = 10.0
         

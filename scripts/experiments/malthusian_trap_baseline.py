@@ -54,8 +54,8 @@ def run_malthusian_experiment():
             pop_count = len(sim.households)
 
             # Calculate Mean Wage
-            employed_agents = [h for h in sim.households if h.is_employed]
-            mean_wage = sum(h.current_wage for h in employed_agents) / len(employed_agents) if employed_agents else 0.0
+            employed_agents = [h for h in sim.households if h._econ_state.is_employed]
+            mean_wage = sum(h._econ_state.current_wage for h in employed_agents) / len(employed_agents) if employed_agents else 0.0
 
             # Calculate Survival Cost (Average cost of 1 unit of food * monthly need, approx)
             # Or use the agent's tracked survival cost if available.

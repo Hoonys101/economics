@@ -69,7 +69,7 @@ def run_verification(output_file: str = "reports/verify_portfolio.png"):
 
 def record_metrics(sim: Simulation, tick: int, phase: str):
     total_deposits = sum(sim.bank.deposits.get(d_id).amount for d_id in sim.bank.deposits)
-    total_cash = sum(h.assets for h in sim.households)
+    total_cash = sum(h._econ_state.assets for h in sim.households)
 
     # Calculate Flow (Change in deposits)
     # We rely on total stock for now.

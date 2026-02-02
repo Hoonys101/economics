@@ -75,7 +75,7 @@ def verify_phase23():
         supply = getattr(market, "last_tick_supply", market.get_total_supply())
         demand = getattr(market, "last_tick_demand", market.get_total_demand())
         price = market.get_daily_avg_price()
-        population = len([h for h in sim.households if h.is_active])
+        population = len([h for h in sim.households if h._bio_state.is_active])
 
         # Log periodically
         if tick % 10 == 0:

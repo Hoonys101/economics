@@ -55,9 +55,9 @@ def operation_heartbeat():
             total_consumption = 0.0
             active_households = 0
             for h in sim.households:
-                if h.is_active:
-                    total_income += h.current_wage
-                    total_consumption += h.current_consumption
+                if h._bio_state.is_active:
+                    total_income += h._econ_state.current_wage
+                    total_consumption += h._econ_state.current_consumption
                     active_households += 1
             
             savings_rate = 0.0

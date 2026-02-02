@@ -137,8 +137,8 @@ class WorldState:
 
         # 1. Households
         for h in self.households:
-            if h.is_active:
-                total += h.assets
+            if h._bio_state.is_active:
+                total += h._econ_state.assets
 
         # 2. Firms
         for f in self.firms:
@@ -172,8 +172,8 @@ class WorldState:
 
         # 1. Households
         for h in self.households:
-            if h.is_active:
-                total += h.assets
+            if h._bio_state.is_active:
+                total += h._econ_state.assets
 
         # 2. Firms
         for f in self.firms:

@@ -32,7 +32,7 @@ class TestEconomicConservation(unittest.TestCase):
             self.fail("Failed to create simulation.")
 
         def calculate_total_money(simulation):
-            h_assets = sum(h.assets for h in simulation.households)
+            h_assets = sum(h._econ_state.assets for h in simulation.households)
             f_assets = sum(f.assets for f in simulation.firms)
             b_assets = simulation.bank.assets
             g_assets = simulation.government.assets

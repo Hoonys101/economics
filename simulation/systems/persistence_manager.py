@@ -104,7 +104,7 @@ class PersistenceManager:
         total_capital_income = sum(getattr(h, "capital_income_this_tick", 0.0) for h in simulation.households)
 
         # Calculate Wealth Distribution (Snapshot)
-        total_assets = sum(h.assets for h in simulation.households)
+        total_assets = sum(h._econ_state.assets for h in simulation.households)
         
         indicator_dto = EconomicIndicatorData(
             run_id=self.run_id,

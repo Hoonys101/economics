@@ -178,7 +178,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             risk_aversion=risk_aversion,
             logger=logger,
         )
-        household.inventory["basic_food"] = (
+        household._econ_state.inventory["basic_food"] = (
             config.INITIAL_HOUSEHOLD_FOOD_INVENTORY
         )  # Provide initial food (now basic_food)
 
@@ -266,11 +266,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         firm.founder_id = founder_household.id
 
         # Add to portfolio
-        if hasattr(founder_household, "portfolio"):
-            # Portfolio is now a Portfolio object, not a list.
-            # Initially, all shares are treasury shares, so we don't add them to the founder's portfolio yet.
-            # They are registered as owner/founder in the firm object itself.
-            pass
+        # Portfolio is now a Portfolio object in _econ_state
+        pass
 
         firm_founders[firm.id] = founder_household.id
 
@@ -287,11 +284,11 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             if unemployed_households:
                 household_to_hire = unemployed_households.pop()
                 firm.hr.employees.append(household_to_hire)
-                household_to_hire.employer_id = firm.id
-                household_to_hire.is_employed = (
+                household_to_hire._econ_state.employer_id = firm.id
+                household_to_hire._econ_state.is_employed = (
                     True  # Explicitly set is_employed to True
                 )
-                household_to_hire.current_wage = config.INITIAL_WAGE
+                household_to_hire._econ_state.current_wage = config.INITIAL_WAGE
                 firm.hr.employee_wages[household_to_hire.id] = config.INITIAL_WAGE
                 logger.info(
                     f"Firm {firm.id} initially hired Household {household_to_hire.id}.",

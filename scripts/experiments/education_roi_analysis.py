@@ -72,10 +72,10 @@ def run_experiment():
             firm = sim.firms[0]
             count = 0
             for h in sim.households:
-                if not h.is_employed and h.is_active:
-                    h.is_employed = True
-                    h.employer_id = firm.id
-                    h.current_wage = 10.0 # Base wage
+                if not h._econ_state.is_employed and h._bio_state.is_active:
+                    h._econ_state.is_employed = True
+                    h._econ_state.employer_id = firm.id
+                    h._econ_state.current_wage = 10.0 # Base wage
                     firm.employees.append(h)
                     firm.employee_wages[h.id] = 10.0
                     count += 1
@@ -107,8 +107,8 @@ def run_experiment():
                     history_data.append(data)
 
         if tick % 50 == 0:
-            active_count = len([h for h in sim.households if h.is_active])
-            employed_count = len([h for h in sim.households if h.is_active and h.is_employed])
+            active_count = len([h for h in sim.households if h._bio_state.is_active])
+            employed_count = len([h for h in sim.households if h._bio_state.is_active and h._econ_state.is_employed])
             logger.info(f"Tick {tick}/{target_ticks}: Active {active_count}, Employed {employed_count}")
 
     # 3. Collect Data from Agents (Cumulative)
@@ -118,9 +118,9 @@ def run_experiment():
     df = pd.DataFrame(agents_data)
 
     # Calculate Final Employment Rate
-    active_households = [h for h in sim.households if h.is_active]
+    active_households = [h for h in sim.households if h._bio_state.is_active]
     final_active_count = len(active_households)
-    final_employed_count = len([h for h in active_households if h.is_employed])
+    final_employed_count = len([h for h in active_households if h._econ_state.is_employed])
     employment_rate = final_employed_count / final_active_count if final_active_count > 0 else 0.0
 
     if df.empty:

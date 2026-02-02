@@ -32,7 +32,7 @@ class Bootstrapper:
         MAX_FORCED_WORKERS = 5
         DEFAULT_WAGE = 50.0
         assigned_count = 0
-        unemployed = [h for h in households if h.employer_id is None and h.is_active]
+        unemployed = [h for h in households if h._econ_state.employer_id is None and h._bio_state.is_active]
 
         for firm in firms:
             if not firm.is_active:

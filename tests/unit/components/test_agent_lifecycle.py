@@ -13,13 +13,13 @@ def lifecycle_component():
 def test_run_tick_execution_order(lifecycle_component):
     # Setup
     household = lifecycle_component.owner
-    household.is_employed = True
+    household._econ_state.is_employed = True
     # Components on household
     household.labor_manager = MagicMock()
     household.economy_manager = MagicMock()
     household.psychology = MagicMock()
 
-    state = LifecycleDTO(is_employed=household.is_employed)
+    state = LifecycleDTO(is_employed=household._econ_state.is_employed)
     context: LifecycleContext = {
         "state": state,
         "market_data": {},
@@ -36,12 +36,12 @@ def test_run_tick_execution_order(lifecycle_component):
 
 def test_run_tick_unemployed(lifecycle_component):
     household = lifecycle_component.owner
-    household.is_employed = False
+    household._econ_state.is_employed = False
     household.labor_manager = MagicMock()
     household.economy_manager = MagicMock()
     household.psychology = MagicMock()
 
-    state = LifecycleDTO(is_employed=household.is_employed)
+    state = LifecycleDTO(is_employed=household._econ_state.is_employed)
     context: LifecycleContext = {
         "state": state,
         "market_data": {},

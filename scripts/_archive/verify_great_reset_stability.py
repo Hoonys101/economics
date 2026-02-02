@@ -46,7 +46,7 @@ def verify_great_reset_stability():
     # Baseline M2 (Zero-Sum start)
     # M2 Definition: Sum of all agent assets + bank reserves
     def get_total_m2():
-        h_assets = sum(h.assets for h in sim.households if h.is_active)
+        h_assets = sum(h._econ_state.assets for h in sim.households if h._bio_state.is_active)
         f_assets = sum(f.assets for f in sim.firms if f.is_active)
         gov_assets = sim.government.assets
         bank_assets = sim.bank.assets

@@ -175,8 +175,8 @@ class TestMultiGoodMarket(unittest.TestCase):
                 f.decision_engine.ai_engine.decide_action_vector = MagicMock(return_value=FirmActionVector(0.2, 0.4, 0.5)) 
             for h in sim.households:
                 # Force hunger and social need
-                h.needs["survival"] = min(100.0, h.needs.get("survival", 0.0) + 10.0 * (t - 15))
-                h.needs["social"] = min(100.0, h.needs.get("social", 0.0) + 5.0 * (t - 15))
+                h._bio_state.needs["survival"] = min(100.0, h._bio_state.needs.get("survival", 0.0) + 10.0 * (t - 15))
+                h._bio_state.needs["social"] = min(100.0, h._bio_state.needs.get("social", 0.0) + 5.0 * (t - 15))
                 
                 # High aggressiveness
                 h.decision_engine.ai_engine.decide_action_vector = MagicMock(side_effect=lambda *args, **kwargs: noisy_hh_vector(goods_list_ids))

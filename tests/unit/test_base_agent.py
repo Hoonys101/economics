@@ -107,7 +107,7 @@ def test_household_clone():
     assert isinstance(clone, BaseAgent)
     assert clone.id == 2
     assert clone.assets == 50.0
-    # assert household.needs == initial_needs
+    # assert household._bio_state.needs == initial_needs
     assert clone.name == "Household_2"
     assert clone.talent == talent
     assert clone.demographics.parent_id == 1

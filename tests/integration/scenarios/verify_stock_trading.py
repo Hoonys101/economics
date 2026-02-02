@@ -91,7 +91,7 @@ class TestStockTradingIntegration(unittest.TestCase):
             config_dto=config_dto,
             logger=logger,
         )
-        household.inventory["basic_food"] = 10.0
+        household._econ_state.inventory["basic_food"] = 10.0
         return household
     
     def _create_firm(self, id: int, assets: float):
@@ -209,7 +209,7 @@ class TestStockTradingIntegration(unittest.TestCase):
         
         # 초기 주식 분배
         for household in households:
-            # household.shares_owned[10] = 20.0
+            # household._econ_state.portfolio.to_legacy_dict()[10] = 20.0
             household._econ_state.portfolio.add(10, 20.0, 10.0)
         
         sim = self._create_simulation(households, firms)

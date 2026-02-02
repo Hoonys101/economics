@@ -111,31 +111,31 @@ class TestPhase29Depression(unittest.TestCase):
         self.households = [MagicMock() for _ in range(5)]
         for i, h in enumerate(self.households):
             h.id = i
-            h.is_active = True
-            h.employer_id = None
-            h.is_employed = False
-            h.age = 25
+            h._bio_state.is_active = True
+            h._econ_state.employer_id = None
+            h._econ_state.is_employed = False
+            h._bio_state.age = 25
             h.income = 100
-            h.current_consumption = 0.0
-            h.current_food_consumption = 0.0
-            h.labor_income_this_tick = 0.0
-            h.education_level = 1.0
-            h.aptitude = 0.5
-            h.current_wage = 10.0
-            h.children_ids = []
-            h.needs = {"survival": 0.5}
+            h._econ_state.current_consumption = 0.0
+            h._econ_state.current_food_consumption = 0.0
+            h._econ_state.labor_income_this_tick = 0.0
+            h._econ_state.education_level = 1.0
+            h._econ_state.aptitude = 0.5
+            h._econ_state.current_wage = 10.0
+            h._bio_state.children_ids = []
+            h._bio_state.needs = {"survival": 0.5}
             h._assets = 1000
-            h.assets = 1000 # Explicitly set property for sorting
+            h._econ_state.assets = 1000 # Explicitly set property for sorting
             h.decision_engine = MagicMock()
             h.decision_engine.ai_engine = MagicMock()
             # make_decision must return (orders, action_vector)
             mock_action_vector = MagicMock()
             mock_action_vector.work_aggressiveness = 0.5
             h.make_decision.return_value = ([], mock_action_vector)
-            h.inventory = {}
-            h.owned_properties = []
-            h.residing_property_id = None
-            h.approval_rating = 1.0
+            h._econ_state.inventory = {}
+            h._econ_state.owned_properties = []
+            h._econ_state.residing_property_id = None
+            h._social_state.approval_rating = 1.0
 
         self.firms = [MagicMock() for _ in range(5)]
         for i, f in enumerate(self.firms):

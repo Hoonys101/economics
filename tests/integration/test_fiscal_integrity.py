@@ -112,12 +112,12 @@ def test_education_spending_generates_transactions_only():
     # Setup Household
     household = MagicMock(spec=Household)
     household.id = 10
-    household.education_level = 0
-    household.assets = 100.0
-    household.is_active = True
+    household._econ_state.education_level = 0
+    household._econ_state.assets = 100.0
+    household._bio_state.is_active = True
     # Needed for education logic check
-    household.age = 20
-    household.talent.base_learning_rate = 1.0
+    household._bio_state.age = 20
+    household._econ_state.talent.base_learning_rate = 1.0
 
     # Mock update methods since they might be called
     household.update_education = MagicMock()

@@ -119,17 +119,17 @@ def run_verification():
         total_durable_count = 0
 
         for h in sim.households:
-            if not h.is_active:
+            if not h._bio_state.is_active:
                 continue
 
-            cash = h.assets
+            cash = h._econ_state.assets
             durable_value = 0.0
 
             # Debug Inventory vs Durable Assets
-            total_inventory_goods += h.inventory.get("consumer_goods", 0)
+            total_inventory_goods += h._econ_state.inventory.get("consumer_goods", 0)
 
             # Calculate Durable Value
-            for asset in h.durable_assets:
+            for asset in h._econ_state.durable_assets:
                 if asset["item_id"] == "consumer_goods":
                     total_durable_count += 1
                     quality = asset["quality"]
@@ -158,12 +158,12 @@ def run_verification():
     if final_price <= 0: final_price = 15.0
 
     for h in sim.households:
-        if not h.is_active:
+        if not h._bio_state.is_active:
             continue
 
-        cash = h.assets
+        cash = h._econ_state.assets
         durable_val = 0.0
-        owned_durables = [a for a in h.durable_assets if a["item_id"] == "consumer_goods"]
+        owned_durables = [a for a in h._econ_state.durable_assets if a["item_id"] == "consumer_goods"]
 
         for asset in owned_durables:
             q = asset["quality"]

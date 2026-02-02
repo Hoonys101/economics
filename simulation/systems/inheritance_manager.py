@@ -33,12 +33,12 @@ class InheritanceManager:
         current_tick = simulation.time
 
         self.logger.info(
-            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased.assets:.2f}",
+            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased._econ_state.assets:.2f}",
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
         )
 
         # 1. Valuation (Read-only)
-        cash = round(deceased.assets, 2)
+        cash = round(deceased._econ_state.assets, 2)
         real_estate_value = 0.0
         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
         for unit in deceased_units:
@@ -48,7 +48,7 @@ class InheritanceManager:
         stock_value = 0.0
         current_prices = {}
         if simulation.stock_market:
-            for firm_id, share in deceased.portfolio.holdings.items():
+            for firm_id, share in deceased._econ_state.portfolio.holdings.items():
                 price = simulation.stock_market.get_daily_avg_price(firm_id)
                 if price <= 0:
                     price = share.acquisition_price
@@ -72,10 +72,10 @@ class InheritanceManager:
         )
 
         # 3. Liquidation Transactions (if Cash < Tax)
-        if deceased.assets < tax_amount:
+        if deceased._econ_state.assets < tax_amount:
             # A. Stock Liquidation
             if stock_value > 0:
-                for firm_id, share in deceased.portfolio.holdings.items():
+                for firm_id, share in deceased._econ_state.portfolio.holdings.items():
                     price = current_prices.get(firm_id, 0.0)
                     proceeds = round(share.quantity * price, 2) # Just for logging/logic if needed
 
@@ -135,9 +135,9 @@ class InheritanceManager:
 
         # 5. Distribution / Escheatment
         heirs = []
-        for child_id in deceased.children_ids:
+        for child_id in deceased._bio_state.children_ids:
             child = simulation.agents.get(child_id)
-            if child and child.is_active:
+            if child and child._bio_state.is_active:
                 heirs.append(child)
 
         if not heirs:
@@ -161,8 +161,8 @@ class InheritanceManager:
             
             # Stock Escheatment (if not liquidated)
             # If we didn't liquidate (because assets >= tax), we escheat stocks now.
-            if deceased.assets >= tax_amount:
-                 for firm_id, share in deceased.portfolio.holdings.items():
+            if deceased._econ_state.assets >= tax_amount:
+                 for firm_id, share in deceased._econ_state.portfolio.holdings.items():
                     tx = Transaction(
                         buyer_id=government.id,
                         seller_id=deceased.id,

@@ -73,13 +73,13 @@ def run_verification_simulation(enable_stabilizers: bool, ticks: int = 1000) -> 
         results.inflation.append(avg_price)
 
         # Unemployment
-        unemployed_count = sum(1 for h in sim.households if not h.is_employed and h.is_active)
-        active_count = sum(1 for h in sim.households if h.is_active)
+        unemployed_count = sum(1 for h in sim.households if not h._econ_state.is_employed and h._bio_state.is_active)
+        active_count = sum(1 for h in sim.households if h._bio_state.is_active)
         unemp_rate = unemployed_count / active_count if active_count > 0 else 0.0
         results.unemployment.append(unemp_rate)
 
         # Gini
-        assets = [h.assets for h in sim.households if getattr(h, "is_active", True)]
+        assets = [h._econ_state.assets for h in sim.households if getattr(h, "is_active", True)]
         gini = sim.inequality_tracker.calculate_gini_coefficient(assets)
         results.gini.append(gini)
 

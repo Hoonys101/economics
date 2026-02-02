@@ -53,7 +53,7 @@ class StormVerifier:
         # TD-118: Access inventory as dictionary
         starving_count = 0
         all_households = self._simulation.households
-        active_households = [h for h in all_households if h.is_active]
+        active_households = [h for h in all_households if h._bio_state.is_active]
 
         # Load starvation threshold from config via Protocol without default
         starvation_threshold = self._simulation.config_module.STARVATION_THRESHOLD

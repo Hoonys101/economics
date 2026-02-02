@@ -113,13 +113,13 @@ def test_process_omo_purchase_transaction(omo_setup):
     )
     state.transactions = [tx]
 
-    initial_hh_assets = household.assets
+    initial_hh_assets = household._econ_state.assets
     initial_money_issued = gov_agent.total_money_issued
 
     tx_manager.execute(state)
 
     # Verify Household got paid
-    assert household.assets == initial_hh_assets + trade_price
+    assert household._econ_state.assets == initial_hh_assets + trade_price
 
     # Verify Gov Ledger Updated (Minting)
     assert gov_agent.total_money_issued == initial_money_issued + trade_price
@@ -142,13 +142,13 @@ def test_process_omo_sale_transaction(omo_setup):
     )
     state.transactions = [tx]
 
-    initial_hh_assets = household.assets
+    initial_hh_assets = household._econ_state.assets
     initial_money_destroyed = gov_agent.total_money_destroyed
 
     tx_manager.execute(state)
 
     # Verify Household paid
-    assert household.assets == initial_hh_assets - trade_price
+    assert household._econ_state.assets == initial_hh_assets - trade_price
 
     # Verify Gov Ledger Updated (Burning)
     assert gov_agent.total_money_destroyed == initial_money_destroyed + trade_price

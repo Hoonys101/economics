@@ -22,17 +22,17 @@ class MinistryOfEducation:
         # WO-057 Deficit Spending: Budget is based on REVENUE, not ASSETS
         edu_budget = government.revenue_this_tick * budget_ratio
         
-        active_households = [h for h in households if getattr(h, "is_active", False)]
+        active_households = [h for h in households if h._bio_state.is_active]
         if not active_households:
             return []
 
         # Identify Potential Teachers (Households with Education > 0)
-        teachers = [h for h in active_households if getattr(h, "education_level", 0) > 0]
+        teachers = [h for h in active_households if h._econ_state.education_level > 0]
         # Fallback if no educated households (Generation 0)
         if not teachers:
             teachers = active_households
 
-        active_households.sort(key=lambda x: x.assets)
+        active_households.sort(key=lambda x: x._econ_state.assets)
         cutoff_idx = int(len(active_households) * getattr(self.config_module, "SCHOLARSHIP_WEALTH_PERCENTILE", 0.20))
         poor_households = set(h.id for h in active_households[:cutoff_idx])
 
@@ -40,7 +40,7 @@ class MinistryOfEducation:
         scholarship_potential_threshold = getattr(self.config_module, "SCHOLARSHIP_POTENTIAL_THRESHOLD", 0.7)
 
         for agent in active_households:
-            current_level = getattr(agent, "education_level", 0)
+            current_level = agent._econ_state.education_level
             next_level = current_level + 1
             cost = costs.get(next_level, 100000.0)
 
@@ -71,13 +71,13 @@ class MinistryOfEducation:
 
             elif current_level >= 1:
                 is_poor = agent.id in poor_households
-                has_potential = getattr(agent, "aptitude", 0.0) >= scholarship_potential_threshold
+                has_potential = agent._econ_state.aptitude >= scholarship_potential_threshold
 
                 if is_poor and has_potential:
                     subsidy = cost * 0.8
                     student_share = cost * 0.2
 
-                    if edu_budget >= subsidy and agent.assets >= student_share:
+                    if edu_budget >= subsidy and agent._econ_state.assets >= student_share:
                         # 1. Government Subsidy Tx (Gov -> Teacher)
                         tx_subsidy = Transaction(
                             buyer_id=government.id,

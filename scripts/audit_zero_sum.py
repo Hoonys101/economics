@@ -30,7 +30,7 @@ def audit_integrity():
     # ------------------------------------------------------------------
 
     def get_total_wealth(sim):
-        h_assets = sum(h.assets for h in sim.households)
+        h_assets = sum(h._econ_state.assets for h in sim.households)
         f_assets = sum(f.get_financial_snapshot().get("total_assets", f.assets)
                        if hasattr(f, "get_financial_snapshot") else f.assets
                        for f in sim.firms)
@@ -86,7 +86,7 @@ def audit_integrity():
         gross_production_value += f.current_production * price
 
     # 2. Consumption (Value Destroyed)
-    household_consumption_value = sum(h.current_consumption for h in sim.households)
+    household_consumption_value = sum(h._econ_state.current_consumption for h in sim.households)
 
     # 3. Depreciation (Capital Stock Loss)
     depreciation_loss = cap_stock_t0 - cap_stock_t1

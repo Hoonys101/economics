@@ -43,18 +43,18 @@ def mock_households(golden_households):
         for i in range(10):
              h = MagicMock(spec=Household)
              h.id = i
-             h.is_active = True
-             h.approval_rating = 1 # Start happy
-             h.needs = {"survival": 20.0}
+             h._bio_state.is_active = True
+             h._social_state.approval_rating = 1 # Start happy
+             h._bio_state.needs = {"survival": 20.0}
              households.append(h)
     else:
         # Fallback
         for i in range(10):
             h = MagicMock(spec=Household)
             h.id = i
-            h.is_active = True
-            h.approval_rating = 1
-            h.needs = {"survival": 20.0}
+            h._bio_state.is_active = True
+            h._social_state.approval_rating = 1
+            h._bio_state.needs = {"survival": 20.0}
             households.append(h)
 
     return households
@@ -76,12 +76,12 @@ def test_opinion_aggregation(government, mock_households):
 def test_opinion_lag(government, mock_households):
     """Test if Perceived Public Opinion lags by 4 ticks (or queue size)."""
     # Tick 1: 1.0
-    for h in mock_households: h.approval_rating = 1
+    for h in mock_households: h._social_state.approval_rating = 1
     government.update_public_opinion(mock_households) # Q: [1.0]
     assert government.perceived_public_opinion == 1.0
 
     # Tick 2: 0.0
-    for h in mock_households: h.approval_rating = 0
+    for h in mock_households: h._social_state.approval_rating = 0
     government.update_public_opinion(mock_households) # Q: [1.0, 0.0]
     assert government.perceived_public_opinion == 1.0 # Still sees old
 

@@ -150,16 +150,16 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         distress_threshold = survival_threshold * 0.9
 
         for household in state.households:
-            if not household.is_active:
+            if not household._bio_state.is_active:
                 continue
 
-            survival_need = household.needs.get("survival", 0.0)
+            survival_need = household._bio_state.needs.get("survival", 0.0)
 
             # Check for Distress (High Survival Need or Low Assets but High Real Assets)
             # Simplification: If survival need is high, we check if they have things to sell.
             if survival_need > distress_threshold:
-                has_inventory = any(qty > 0 for qty in household.inventory.values())
-                has_stocks = any(qty > 0 for qty in household.shares_owned.values())
+                has_inventory = any(qty > 0 for qty in household._econ_state.inventory.values())
+                has_stocks = any(qty > 0 for qty in household._econ_state.portfolio.to_legacy_dict().values())
 
                 if has_inventory or has_stocks:
                     household.distress_tick_counter += 1
@@ -184,7 +184,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
     def _process_births(self, state: SimulationState) -> List[Household]:
         birth_requests = []
-        active_households = [h for h in state.households if h.is_active]
+        active_households = [h for h in state.households if h._bio_state.is_active]
         if not active_households:
             return []
 
@@ -303,13 +303,13 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
             # Clear shareholdings
             for household in state.households:
-                if firm.id in household.shares_owned:
-                    del household.shares_owned[firm.id]
+                if firm.id in household._econ_state.portfolio.to_legacy_dict():
+                    del household._econ_state.portfolio.to_legacy_dict()[firm.id]
                     if state.stock_market:
                         state.stock_market.update_shareholder(household.id, firm.id, 0)
 
         # --- Household Liquidation (Inheritance) ---
-        inactive_households = [h for h in state.households if not h.is_active]
+        inactive_households = [h for h in state.households if not h._bio_state.is_active]
         for household in inactive_households:
             # WO-109: Preserve inactive agent for transaction processing
             if hasattr(state, "inactive_agents") and isinstance(state.inactive_agents, dict):
@@ -319,14 +319,14 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             inheritance_txs = self.inheritance_manager.process_death(household, state.government, state)
             transactions.extend(inheritance_txs)
 
-            inv_value = self._calculate_inventory_value(household.inventory, state.markets)
+            inv_value = self._calculate_inventory_value(household._econ_state.inventory, state.markets)
 
             # Phase 3: Asset Recovery for Households
-            if household.inventory:
+            if household._econ_state.inventory:
                  bankruptcy_event = {
                      "agent_id": household.id,
                      "tick": state.time,
-                     "inventory": household.inventory.copy()
+                     "inventory": household._econ_state.inventory.copy()
                  }
                  self.public_manager.process_bankruptcy_event(bankruptcy_event)
 
@@ -342,16 +342,16 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                      tick=state.time
                  )
 
-            household.inventory.clear()
-            household.shares_owned.clear()
+            household._econ_state.inventory.clear()
+            household._econ_state.portfolio.to_legacy_dict().clear()
             if hasattr(household, "portfolio"):
-                 household.portfolio.holdings.clear()
+                 household._econ_state.portfolio.holdings.clear()
             if state.stock_market:
                 for firm_id in list(state.stock_market.shareholders.keys()):
                      state.stock_market.update_shareholder(household.id, firm_id, 0)
 
         # Cleanup Global Lists
-        state.households[:] = [h for h in state.households if h.is_active]
+        state.households[:] = [h for h in state.households if h._bio_state.is_active]
         state.firms[:] = [f for f in state.firms if f.is_active]
 
         state.agents.clear()

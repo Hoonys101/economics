@@ -72,9 +72,9 @@ class SystemEffectsManager:
 
         household = state.agents.get(target_id)
         if household:
-            old_level = getattr(household, 'education_level', 0)
-            household.education_level = old_level + 1
+            old_level = household._econ_state.education_level
+            household._econ_state.education_level = old_level + 1
             logger.info(
-                f"EDUCATION_UPGRADE | Household {target_id} promoted to Level {household.education_level}.",
+                f"EDUCATION_UPGRADE | Household {target_id} promoted to Level {household._econ_state.education_level}.",
                 extra={"tick": state.time, "tags": ["system_effect", "education"]}
             )

@@ -27,23 +27,25 @@ class TestInheritanceManager:
     def create_household(self, id, assets=0.0):
         h = MagicMock(spec=Household)
         h.id = id
-        h.assets = assets
-        h.portfolio = Portfolio(id)
-        h.shares_owned = {}
-        h.owned_properties = []
-        h.is_active = True
-        h.children_ids = []
+        h._econ_state = MagicMock()
+        h._bio_state = MagicMock()
+        h._econ_state.assets = assets
+        h._econ_state.portfolio = Portfolio(id)
+        # h._econ_state.portfolio.to_legacy_dict() = {} # Removed
+        h._econ_state.owned_properties = []
+        h._bio_state.is_active = True
+        h._bio_state.children_ids = []
         return h
 
     def test_even_split(self, setup_manager, mocks):
         """Test Case 1 (Even Split): 10,000 cash, 100 shares, 2 heirs."""
         deceased = self.create_household(1, assets=10000.0)
-        deceased.portfolio.add("FIRM_A", 100, 10.0)
-        deceased.shares_owned["FIRM_A"] = 100
+        deceased._econ_state.portfolio.add("FIRM_A", 100, 10.0)
+        # deceased.shares_owned["FIRM_A"] = 100 # Removed
 
         heir1 = self.create_household(2)
         heir2 = self.create_household(3)
-        deceased.children_ids = [2, 3]
+        deceased._bio_state.children_ids = [2, 3] # Fixed
 
         mocks.agents = {2: heir1, 3: heir2}
 
@@ -61,24 +63,24 @@ class TestInheritanceManager:
 
         # Verify Stocks
         # 100 / 2 = 50 each
-        assert heir1.portfolio.holdings["FIRM_A"].quantity == 50
-        assert heir2.portfolio.holdings["FIRM_A"].quantity == 50
+        assert heir1._econ_state.portfolio.holdings["FIRM_A"].quantity == 50
+        assert heir2._econ_state.portfolio.holdings["FIRM_A"].quantity == 50
 
         # Verify remainder not sent to government
         mocks.government.record_revenue.assert_not_called()
 
         # Verify cleanup
-        assert len(deceased.portfolio.holdings) == 0
-        assert len(deceased.shares_owned) == 0
+        assert len(deceased._econ_state.portfolio.holdings) == 0
+        # assert len(deceased.shares_owned) == 0
 
     def test_uneven_split(self, setup_manager, mocks):
         """Test Case 2 (Uneven Split): 10,000.01 cash, 101 shares, 2 heirs."""
         deceased = self.create_household(1, assets=10000.01)
-        deceased.portfolio.add("FIRM_A", 101, 10.0)
+        deceased._econ_state.portfolio.add("FIRM_A", 101, 10.0)
 
         heir1 = self.create_household(2)
         heir2 = self.create_household(3)
-        deceased.children_ids = [2, 3]
+        deceased._bio_state.children_ids = [2, 3] # Fixed
         mocks.agents = {2: heir1, 3: heir2}
 
         setup_manager.process_death(deceased, mocks.government, mocks)
@@ -102,24 +104,24 @@ class TestInheritanceManager:
         # Heir 1 gets 50? Heir 2 gets 50? Remainder distributed to first in loop (0 index)?
         # Implementation detail: loop through remainder.
         # total 101.
-        q1 = heir1.portfolio.holdings["FIRM_A"].quantity
-        q2 = heir2.portfolio.holdings["FIRM_A"].quantity
+        q1 = heir1._econ_state.portfolio.holdings["FIRM_A"].quantity
+        q2 = heir2._econ_state.portfolio.holdings["FIRM_A"].quantity
         assert q1 + q2 == 101
         assert abs(q1 - q2) == 1
 
         # Verify cleanup
-        assert len(deceased.portfolio.holdings) == 0
-        assert len(deceased.shares_owned) == 0
+        assert len(deceased._econ_state.portfolio.holdings) == 0
+        # assert len(deceased.shares_owned) == 0
 
     def test_multiple_heirs(self, setup_manager, mocks):
         """Test Case 3 (Multiple Heirs): 100.00 cash, 10 shares, 3 heirs."""
         deceased = self.create_household(1, assets=100.00)
-        deceased.portfolio.add("FIRM_A", 10, 10.0)
+        deceased._econ_state.portfolio.add("FIRM_A", 10, 10.0)
 
         heir1 = self.create_household(2)
         heir2 = self.create_household(3)
         heir3 = self.create_household(4)
-        deceased.children_ids = [2, 3, 4]
+        deceased._bio_state.children_ids = [2, 3, 4] # Fixed
         mocks.agents = {2: heir1, 3: heir2, 4: heir3}
 
         setup_manager.process_death(deceased, mocks.government, mocks)
@@ -134,9 +136,9 @@ class TestInheritanceManager:
         # Stocks: 10 / 3 = 3 r 1
         # 3, 3, 4 (or 4, 3, 3 depending on distribution order)
         quantities = sorted([
-            heir1.portfolio.holdings["FIRM_A"].quantity,
-            heir2.portfolio.holdings["FIRM_A"].quantity,
-            heir3.portfolio.holdings["FIRM_A"].quantity
+            heir1._econ_state.portfolio.holdings["FIRM_A"].quantity,
+            heir2._econ_state.portfolio.holdings["FIRM_A"].quantity,
+            heir3._econ_state.portfolio.holdings["FIRM_A"].quantity
         ])
         assert quantities == [3, 3, 4]
 
@@ -144,11 +146,11 @@ class TestInheritanceManager:
         """Test Case 4 (Zero Assets): 0 cash, 0 shares."""
         deceased = self.create_household(1, assets=0.0)
         heir1 = self.create_household(2)
-        deceased.children_ids = [2]
+        deceased._bio_state.children_ids = [2] # Fixed
         mocks.agents = {2: heir1}
 
         setup_manager.process_death(deceased, mocks.government, mocks)
 
         # No transfers
         mocks.settlement_system.transfer.assert_not_called()
-        assert len(heir1.portfolio.holdings) == 0
+        assert len(heir1._econ_state.portfolio.holdings) == 0

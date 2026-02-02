@@ -70,7 +70,7 @@ def test_atomic_wealth_tax_collection_success():
     txs = gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Check assets transferred
-    assert household.assets == 2000.0 - 0.2
+    assert household._econ_state.assets == 2000.0 - 0.2
     assert gov.assets == 0.2
 
     # Check stats
@@ -100,7 +100,7 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
     gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Assets unchanged
-    assert household.assets == 2000.0
+    assert household._econ_state.assets == 2000.0
     assert gov.assets == 0.0
 
     # Stats unchanged

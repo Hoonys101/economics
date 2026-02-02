@@ -46,10 +46,10 @@ def verify_golden_load():
              print("❌ household.id missing")
 
         val_age = getattr(first_household, 'age', None)
-        print(f"✅ household.age (direct): {val_age}")
+        print(f"✅ household._bio_state.age (direct): {val_age}")
 
         if val_age is None:
-             print("❌ household.age is missing!")
+             print("❌ household._bio_state.age is missing!")
              sys.exit(1)
 
         print("✅ Verification Successful")

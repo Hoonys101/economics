@@ -29,7 +29,7 @@ class HousingPlanner(IHousingPlanner):
 
         # --- Priority 1: Homelessness ---
         # The most urgent need is shelter.
-        if household.is_homeless:
+        if household._econ_state.is_homeless:
             # Find the cheapest, minimally acceptable rental unit.
             # Using config.housing.RENT_TO_INCOME_RATIO_MAX as per spec
             max_rent = household.income * config.housing.RENT_TO_INCOME_RATIO_MAX
@@ -56,14 +56,14 @@ class HousingPlanner(IHousingPlanner):
 
         # --- Priority 2: Financial Distress (Owner) ---
         # An owner who is financially unstable should liquidate their property.
-        if household.owned_property_ids:
+        if household._econ_state.owned_properties:
             # Assuming an agent owns at most one property for now, as per spec
-            owned_property_id = household.owned_property_ids[0]
+            owned_property_id = household._econ_state.owned_properties[0]
 
             # config.housing.FINANCIAL_DISTRESS_ASSET_THRESHOLD_MONTHS
             distress_threshold = household.income * config.housing.FINANCIAL_DISTRESS_ASSET_THRESHOLD_MONTHS
 
-            if household.assets < distress_threshold:
+            if household._econ_state.assets < distress_threshold:
                  return HousingDecisionDTO(
                     agent_id=household.id,
                     action=HousingActionType.SELL_PROPERTY,
@@ -74,7 +74,7 @@ class HousingPlanner(IHousingPlanner):
         # --- Priority 3: Desire to Upgrade (Renter to Owner) ---
         # A financially stable renter may want to buy a house.
         # Condition: Is a renter (residing but not owning)
-        if household.residing_property_id and not household.owned_property_ids:
+        if household._econ_state.residing_property_id and not household._econ_state.owned_properties:
             affordable_homes = [
                 h for h in market.units_for_sale
                 if self._is_purchase_affordable(h, household, config)
@@ -109,7 +109,7 @@ class HousingPlanner(IHousingPlanner):
         down_payment = home.for_sale_price * config.finance.MORTGAGE_DOWN_PAYMENT_RATE
         monthly_payment = self._calculate_mortgage_payment(home.for_sale_price, config)
 
-        has_down_payment = household.assets >= down_payment
+        has_down_payment = household._econ_state.assets >= down_payment
         can_afford_monthly = monthly_payment < household.income * config.housing.MORTGAGE_TO_INCOME_RATIO_MAX
 
         return has_down_payment and can_afford_monthly

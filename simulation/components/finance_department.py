@@ -216,7 +216,7 @@ class FinanceDepartment:
 
         if distributable_profit > 0:
             for household in households:
-                shares = household.shares_owned.get(self.firm.id, 0.0)
+                shares = household._econ_state.portfolio.to_legacy_dict().get(self.firm.id, 0.0)
                 if shares > 0:
                     dividend_amount = distributable_profit * (shares / self.firm.total_shares)
                     transactions.append(

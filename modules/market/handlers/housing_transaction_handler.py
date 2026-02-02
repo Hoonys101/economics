@@ -77,7 +77,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             down_payment = sale_price - loan_amount
 
         # Check Buyer Funds for Down Payment
-        if buyer.assets < down_payment:
+        buyer_assets = buyer._econ_state.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        if buyer_assets < down_payment:
             context.logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
             return False
 
@@ -215,8 +216,14 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
     def _create_borrower_profile(self, buyer: Household, trade_value: float, context: TransactionContext) -> BorrowerProfileDTO:
         gross_income = 0.0
-        if hasattr(buyer, "current_wage"):
+        if isinstance(buyer, Household):
              # Estimate monthly income
+             work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
+             ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
+             ticks_per_month = ticks_per_year / 12.0
+             gross_income = buyer._econ_state.current_wage * work_hours * ticks_per_month
+        elif hasattr(buyer, "current_wage"):
+             # Fallback
              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
              ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
              ticks_per_month = ticks_per_year / 12.0
@@ -229,12 +236,14 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                  existing_debt = status.total_outstanding_debt
              except: pass
 
+        assets = buyer._econ_state.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+
         return BorrowerProfileDTO(
             borrower_id=str(buyer.id),
             gross_income=gross_income,
             existing_debt_payments=existing_debt * 0.01, # Approx
             collateral_value=trade_value,
-            existing_assets=buyer.assets
+            existing_assets=assets
         )
 
     def _void_loan_safely(self, context: TransactionContext, loan_id: str):
@@ -258,12 +267,25 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         unit.mortgage_id = mortgage_id
 
         # Update Seller (if not None/Govt)
-        if seller and hasattr(seller, "owned_properties"):
-            if unit_id in seller.owned_properties:
-                seller.owned_properties.remove(unit_id)
+        if seller:
+            if isinstance(seller, Household):
+                 if unit_id in seller._econ_state.owned_properties:
+                      seller._econ_state.owned_properties.remove(unit_id)
+            elif hasattr(seller, "owned_properties"):
+                 if unit_id in seller.owned_properties:
+                      seller.owned_properties.remove(unit_id)
 
         # Update Buyer
-        if hasattr(buyer, "owned_properties"):
+        if isinstance(buyer, Household):
+            if unit_id not in buyer._econ_state.owned_properties:
+                buyer._econ_state.owned_properties.append(unit_id)
+
+            # Auto-move-in if homeless
+            if buyer._econ_state.residing_property_id is None:
+                unit.occupant_id = buyer.id
+                buyer._econ_state.residing_property_id = unit_id
+                buyer._econ_state.is_homeless = False
+        elif hasattr(buyer, "owned_properties"):
             if unit_id not in buyer.owned_properties:
                 buyer.owned_properties.append(unit_id)
 

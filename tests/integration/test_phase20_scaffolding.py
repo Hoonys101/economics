@@ -56,7 +56,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
         f_count = 0
         for i in range(100):
             h = Household(**{**self.household_args, "id": i})
-            if h.gender == "M":
+            if h._bio_state.gender == "M":
                 m_count += 1
             else:
                 f_count += 1

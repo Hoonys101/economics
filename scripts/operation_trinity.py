@@ -62,9 +62,9 @@ def operation_trinity():
             debt_ratio = gov.total_debt / max(gov.potential_gdp, 1.0)
             
             # Household Metrics
-            active_households = [h for h in sim.households if h.is_active]
+            active_households = [h for h in sim.households if h._bio_state.is_active]
             # Fix: consumption_aggressiveness is internal state. Use current_consumption instead.
-            avg_consumption = np.mean([h.current_consumption for h in active_households]) if active_households else 0
+            avg_consumption = np.mean([h._econ_state.current_consumption for h in active_households]) if active_households else 0
             
             record = {
                 "Tick": tick,

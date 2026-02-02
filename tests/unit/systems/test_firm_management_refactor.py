@@ -35,7 +35,7 @@ class TestFirmManagementRefactor(unittest.TestCase):
         self.mock_simulation.settlement_system = None
 
         household = MagicMock()
-        household.assets = 5000.0
+        household._econ_state.assets = 5000.0
 
         with patch('simulation.systems.firm_management.random.choice', return_value='food'), \
              patch('simulation.systems.firm_management.random.random', return_value=0.9), \
@@ -54,7 +54,7 @@ class TestFirmManagementRefactor(unittest.TestCase):
         self.mock_simulation.settlement_system.transfer.return_value = None # Failure
 
         household = MagicMock()
-        household.assets = 5000.0
+        household._econ_state.assets = 5000.0
 
         with patch('simulation.systems.firm_management.random.choice', return_value='food'), \
              patch('simulation.systems.firm_management.random.random', return_value=0.9), \

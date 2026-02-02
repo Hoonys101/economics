@@ -73,10 +73,10 @@ def test_social_rank_calculation(vanity_config):
     for i in range(5):
         h = Mock(spec=Household)
         h.id = i
-        h.is_active = True
-        h.current_consumption = float(i * 10) # 0, 10, 20, 30, 40
-        h.residing_property_id = None
-        h.is_homeless = True # Tier 0
+        h._bio_state.is_active = True
+        h._econ_state.current_consumption = float(i * 10) # 0, 10, 20, 30, 40
+        h._econ_state.residing_property_id = None
+        h._econ_state.is_homeless = True # Tier 0
         households.append(h)
 
     # Give top agent a house
@@ -86,7 +86,7 @@ def test_social_rank_calculation(vanity_config):
     scores = []
     hm = HousingManager(None, vanity_config)
     for h in households:
-        consumption_score = h.current_consumption * 10.0
+        consumption_score = h._econ_state.current_consumption * 10.0
         housing_tier = hm.get_housing_tier(h)
         housing_score = housing_tier * 1000.0
         scores.append((h.id, consumption_score + housing_score))
@@ -110,19 +110,19 @@ def test_veblen_demand(vanity_config):
 
     household = Mock(spec=Household)
     household.id = 1
-    household.is_employed = True
-    household.current_wage = 100.0
-    household.shares_owned = {}
-    household.conformity = 1.0 # Max conformity
-    household.inventory = {}
-    household.needs = {"social": 10.0}
+    household._econ_state.is_employed = True
+    household._econ_state.current_wage = 100.0
+    household._econ_state.portfolio.to_legacy_dict() = {}
+    household._social_state.conformity = 1.0 # Max conformity
+    household._econ_state.inventory = {}
+    household._bio_state.needs = {"social": 10.0}
     household._assets = 10000.0
-    household.expected_inflation = {} # Fix attribute error
-    household.personality = Personality.STATUS_SEEKER # Fix attribute error
+    household._econ_state.expected_inflation = {} # Fix attribute error
+    household._social_state.personality = Personality.STATUS_SEEKER # Fix attribute error
     household.preference_asset = 1.0
     household.preference_social = 1.0
     household.preference_growth = 1.0
-    household.wage_modifier = 1.0 # Added to fix AttributeError
+    household._econ_state.wage_modifier = 1.0 # Added to fix AttributeError
     household.get_agent_data.return_value = {"assets": 10000.0, "needs": {"social": 10.0}, "inventory": {}}
 
     ai_engine = Mock()

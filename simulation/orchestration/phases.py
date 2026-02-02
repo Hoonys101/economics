@@ -167,8 +167,8 @@ class Phase_Production(IPhaseStrategy):
 
         # 1. Calculate Human Capital Index
         active_households_dto = [
-            HouseholdEducationDTO(is_active=h.is_active, education_level=getattr(h, 'education_level', 0))
-            for h in state.households if h.is_active
+            HouseholdEducationDTO(is_active=h._bio_state.is_active, education_level=getattr(h, 'education_level', 0))
+            for h in state.households if h._bio_state.is_active
         ]
         
         total_edu = sum(h['education_level'] for h in active_households_dto)
@@ -229,7 +229,7 @@ class Phase1_Decision(IPhaseStrategy):
         for f in state.firms:
             if f.is_active: f.pre_state_snapshot = f.get_agent_data()
         for h in state.households:
-            if h.is_active: h.pre_state_snapshot = h.get_agent_data()
+            if h._bio_state.is_active: h.pre_state_snapshot = h.get_agent_data()
 
     def _dispatch_firm_decisions(self, state: SimulationState, base_input_dto: DecisionInputDTO):
         from dataclasses import replace
@@ -279,7 +279,7 @@ class Phase1_Decision(IPhaseStrategy):
         household_time_allocation = {}
 
         for household in state.households:
-            if not household.is_active: continue
+            if not household._bio_state.is_active: continue
 
             if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
                 pre_strategic_state = (
@@ -582,7 +582,7 @@ class Phase5_PostSequence(IPhaseStrategy):
 
         # Households
         for household in state.households:
-             if household.is_active and household.id in state.household_pre_states:
+             if household._bio_state.is_active and household.id in state.household_pre_states:
                  if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
                      agent_data = household.get_agent_data()
                      leisure_utility = state.household_leisure_effects.get(household.id, 0.0)

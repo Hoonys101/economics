@@ -121,28 +121,28 @@ def test_behavioral_equivalence():
     household = MagicMock(spec=HouseholdStateDTO)
     household.id = "HH_1"
     household.agent_data = {}
-    household.inventory = {"basic_food": 2.0}
-    household.assets = 1000.0
-    household.current_wage = 20.0
-    household.is_employed = True
-    household.wage_modifier = 1.0
+    household._econ_state.inventory = {"basic_food": 2.0}
+    household._econ_state.assets = 1000.0
+    household._econ_state.current_wage = 20.0
+    household._econ_state.is_employed = True
+    household._econ_state.wage_modifier = 1.0
     household.preference_asset = 1.5 # Non-unitary to test 3-pillar preference application
     household.preference_social = 1.0
     household.preference_growth = 1.0
-    household.needs = {"survival": 50.0, "social": 20.0}
-    household.expected_inflation = {"basic_food": 0.02}
+    household._bio_state.needs = {"survival": 50.0, "social": 20.0}
+    household._econ_state.expected_inflation = {"basic_food": 0.02}
     household.portfolio_holdings = {}
-    household.personality = "NORMAL" # Legacy checks personality enum, need valid value? Or mock _get_risk_aversion?
+    household._social_state.personality = "NORMAL" # Legacy checks personality enum, need valid value? Or mock _get_risk_aversion?
     # Actually personality is Enum.
     from simulation.ai.api import Personality
-    household.personality = Personality.STATUS_SEEKER
+    household._social_state.personality = Personality.STATUS_SEEKER
     household.risk_aversion = 1.0
-    household.conformity = 0.5
-    household.optimism = 0.5
-    household.ambition = 0.5
-    household.residing_property_id = None
-    household.owned_properties = []
-    household.is_homeless = True
+    household._social_state.conformity = 0.5
+    household._social_state.optimism = 0.5
+    household._social_state.ambition = 0.5
+    household._econ_state.residing_property_id = None
+    household._econ_state.owned_properties = []
+    household._econ_state.is_homeless = True
 
     # Market Data
     market_data = {

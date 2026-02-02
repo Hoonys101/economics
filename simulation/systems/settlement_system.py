@@ -103,6 +103,9 @@ class SettlementSystem(ISettlementSystem):
         # Check for Firm's finance component first
         if hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
              current_cash = agent.finance.balance
+        # Check for Household's EconComponent state
+        elif hasattr(agent, '_econ_state') and hasattr(agent._econ_state, 'assets'):
+             current_cash = agent._econ_state.assets
         else:
              if not hasattr(agent, 'assets'):
                   self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")

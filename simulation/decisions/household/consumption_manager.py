@@ -22,7 +22,7 @@ class ConsumptionManager:
         Phase 2: Survival Override.
         Checks if critical needs exceed threshold and triggers panic buying.
         """
-        survival_need = household.needs.get('survival', 0)
+        survival_need = household._bio_state.needs.get('survival', 0)
         emergency_threshold = getattr(config, 'survival_need_emergency_threshold', 0.8)
         if not isinstance(emergency_threshold, (int, float)):
             emergency_threshold = 0.8
@@ -53,7 +53,7 @@ class ConsumptionManager:
             # If ask_price was found and is valid
             if ask_price is not None:
                 # Affordability Check
-                if household.assets >= ask_price:
+                if household._econ_state.assets >= ask_price:
                      premium = getattr(config, 'survival_bid_premium', 0.1)
                      if not isinstance(premium, (int, float)):
                          premium = 0.1
@@ -96,15 +96,15 @@ class ConsumptionManager:
         for item_id in goods_list:
             # WO-023: Maslow Constraint (Food Security First)
             if item_id == "consumer_goods":
-                food_inventory = household.inventory.get("basic_food", 0.0)
+                food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
                 target_buffer = getattr(config, "target_food_buffer_quantity", 5.0)
                 if food_inventory < target_buffer:
                     continue # Skip consumer_goods if food insecure
 
             # Phase 15: Utility Saturation for Durables
             if hasattr(household, 'durable_assets'):
-                 existing_durables = [a for a in household.durable_assets if a['item_id'] == item_id]
-                 has_inventory = household.inventory.get(item_id, 0.0) >= 1.0
+                 existing_durables = [a for a in household._econ_state.durable_assets if a['item_id'] == item_id]
+                 has_inventory = household._econ_state.inventory.get(item_id, 0.0) >= 1.0
 
                  if existing_durables or has_inventory:
                      if random.random() < 0.95: # 95% chance to skip
@@ -129,7 +129,7 @@ class ConsumptionManager:
             max_need_value = 0.0
             utility_effects = good_info.get("utility_effects", {})
             for need_type in utility_effects.keys():
-                nv = household.needs.get(need_type, 0.0)
+                nv = household._bio_state.needs.get(need_type, 0.0)
                 if nv > max_need_value:
                     max_need_value = nv
 
@@ -167,9 +167,9 @@ class ConsumptionManager:
                     quantity_to_buy *= (1.0 + 0.2 * conformity)
 
             # 5. Budget Constraint (Zero-Sum Integrity)
-            budget_limit = household.assets * config.budget_limit_normal_ratio
+            budget_limit = household._econ_state.assets * config.budget_limit_normal_ratio
             if max_need_value > config.budget_limit_urgent_need:
-                budget_limit = household.assets * config.budget_limit_urgent_ratio
+                budget_limit = household._econ_state.assets * config.budget_limit_urgent_ratio
 
             # Determine Bid Price First
             # WO-157: Bid slightly above avg_price to ensure execution if urgent, capped at max_affordable_price.

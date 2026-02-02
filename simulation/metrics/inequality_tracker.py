@@ -66,7 +66,7 @@ class InequalityTracker:
         if not households:
             return {}
         
-        sorted_households = sorted(households, key=lambda h: h.assets)
+        sorted_households = sorted(households, key=lambda h: h._econ_state.assets)
         n = len(sorted_households)
         quintile_size = n // 5 if n >= 5 else 1
         
@@ -106,7 +106,7 @@ class InequalityTracker:
             return {}
         
         # 자산 순으로 정렬
-        sorted_households = sorted(households, key=lambda h: h.assets)
+        sorted_households = sorted(households, key=lambda h: h._econ_state.assets)
         n = len(sorted_households)
         quintile_size = n // 5
         
@@ -117,12 +117,12 @@ class InequalityTracker:
             quintiles[quintile].append(h)
         
         # 분위별 통계 계산
-        total_assets = sum(h.assets for h in households)
+        total_assets = sum(h._econ_state.assets for h in households)
         result: Dict[str, Any] = {}
         
         for q in range(1, 6):
             q_households = quintiles[q]
-            q_assets = sum(h.assets for h in q_households)
+            q_assets = sum(h._econ_state.assets for h in q_households)
             
             result[f"quintile_{q}_count"] = len(q_households)
             result[f"quintile_{q}_avg_assets"] = (
@@ -296,7 +296,7 @@ class InequalityTracker:
             self.initialize_cohort(households)
         
         # 자산 데이터 수집
-        total_assets = [h.assets for h in households]
+        total_assets = [h._econ_state.assets for h in households]
         
         # 금융자산 (현금 + 주식 포트폴리오 가치)
         financial_assets = []
@@ -307,12 +307,14 @@ class InequalityTracker:
             total_shares = 0.0
             
             if stock_market is not None:
-                for firm_id, shares in h.shares_owned.items():
+                # Use portfolio directly
+                for firm_id, holding in h._econ_state.portfolio.holdings.items():
+                    shares = holding.quantity
                     price = stock_market.get_stock_price(firm_id) or 0.0
                     portfolio_value += shares * price
                     total_shares += shares
             
-            financial_assets.append(h.assets + portfolio_value)
+            financial_assets.append(h._econ_state.assets + portfolio_value)
             stock_holdings.append(portfolio_value)
         
         # 분위 계산

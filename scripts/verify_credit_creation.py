@@ -20,7 +20,7 @@ def verify_multiplier():
     total_deposit = 0.0
     for h in savers:
         amount = 1000.0
-        if h.assets >= amount:
+        if h._econ_state.assets >= amount:
             h._sub_assets(amount)
             bank.deposit(amount) # Bank Assets (Reserves) Up
             bank.deposit_from_customer(h.id, amount) # Bank Liabilities Up
