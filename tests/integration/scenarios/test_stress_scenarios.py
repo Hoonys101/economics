@@ -262,7 +262,22 @@ class TestPhase28StressScenarios:
         markets = {}
         household.decision_engine.make_decisions.return_value = ([], None) # Normal engine returns nothing
 
-        orders, _ = household.make_decision(markets, [], {}, 100, stress_scenario_config=stress_config)
+        from simulation.dtos.api import DecisionInputDTO, MarketSnapshotDTO
+        input_dto = DecisionInputDTO(
+            market_snapshot=MarketSnapshotDTO(
+                tick=100,
+                housing=MagicMock(),
+                labor=MagicMock(avg_wage=10.0),
+                market_signals={}
+            ),
+            goods_data=[],
+            market_data=markets,
+            current_time=100,
+            stress_scenario_config=stress_config,
+            agent_registry={}
+        )
+
+        orders, _ = household.make_decision(input_dto)
 
         # Assert
         assert len(orders) == 1
@@ -323,6 +338,7 @@ class TestPhase28StressScenarios:
         config_module.DELAY_FACTOR = 0.5
         config_module.BUDGET_LIMIT_URGENT_NEED = 80.0
         config_module.WAGE_RECOVERY_RATE = 0.01
+        config_module.max_willingness_to_pay_multiplier = 2.5
 
         # Import real engine for logic test
         from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -344,6 +360,7 @@ class TestPhase28StressScenarios:
         state_dto.inventory = {}
         state_dto.needs = {"survival": 50.0}
         state_dto.expected_inflation = {}
+        state_dto.perceived_prices = {}
         state_dto.preference_asset = 1.0
         state_dto.preference_social = 1.0
         state_dto.preference_growth = 1.0
@@ -359,6 +376,7 @@ class TestPhase28StressScenarios:
         state_dto.optimism = 0.5
         state_dto.ambition = 0.5
         state_dto.agent_data = {}
+        state_dto.demand_elasticity = 1.0
 
         stress_config = StressScenarioConfig(
             is_active=True,
@@ -376,11 +394,15 @@ class TestPhase28StressScenarios:
         )
 
         # Act
-        orders, _ = decision_engine.make_decisions(context)
+        output = decision_engine.make_decisions(context)
+        orders = [o for o in output.orders if o.item_id == "basic_food"]
 
         # Assert
         assert len(orders) == 1
-        assert orders[0].quantity == pytest.approx(1.5)
+        # Quantity calculation:
+        # max_need_value (50.0) * (1 - (avg_price(5.0) / max_affordable(12.5))) ** elastic(1.0)
+        # = 50.0 * (1 - 0.4) = 30.0
+        assert orders[0].quantity == pytest.approx(30.0)
 
     def test_debt_repayment_priority(self):
         """Verify Debt Repayment generation in Deflation."""
@@ -449,7 +471,8 @@ class TestPhase28StressScenarios:
         )
 
         # Act
-        orders, _ = decision_engine.make_decisions(context)
+        output = decision_engine.make_decisions(context)
+        orders = output.orders
 
         # Assert
         repayment_orders = [o for o in orders if o.order_type == "REPAYMENT"]
