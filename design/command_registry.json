@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "FIX-LEAK": {
-    "title": "Fix 8000 Housing Loan Leak",
-    "command": "create",
-    "instruction": "Fix the 8000 monetary leak in housing purchase. The loan_proceeds transfer must originate from the BANK, not the buyer. Target: simulation/utils/simulation_builder.py (escrow logic).\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "file": "reports/temp/report_20260202_150507_Analyze_logs_leak_de.md"
-  },
   "FIX-CRISIS": {
     "title": "Fix Crisis Monitor OSError",
     "command": "create",
