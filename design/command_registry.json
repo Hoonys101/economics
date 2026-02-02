@@ -4,12 +4,6 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "MISSION-HOUSING": {
-    "command": "create",
-    "instruction": "Implement HousingPlanner and CENTRALIZED logic as per spec_td065_housing_planner.md\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Implement HousingPlanner",
-    "file": "design/3_work_artifacts/specs/spec_td065_housing_planner.md"
-  },
   "MISSION-HOUSEHOLD": {
     "command": "create",
     "instruction": "Execute Stage B of Household Refactor (Property Removal) as per TD-065_Household_Refactor_Spec.md\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
