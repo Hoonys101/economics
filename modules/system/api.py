@@ -61,11 +61,11 @@ class MarketSnapshotDTO:
     market_signals: Dict[str, MarketSignalDTO]  # item_id -> signal_dto
 
     # Domain-specific snapshots
-    housing: HousingMarketSnapshotDTO
-    loan: LoanMarketSnapshotDTO
-    labor: LaborMarketSnapshotDTO
+    housing: Optional[HousingMarketSnapshotDTO] = None
+    loan: Optional[LoanMarketSnapshotDTO] = None
+    labor: Optional[LaborMarketSnapshotDTO] = None
 
-    market_data: Dict[str, Any]  # [DEPRECATED] For legacy compatibility during transition.
+    market_data: Dict[str, Any] = field(default_factory=dict)  # [DEPRECATED] For legacy compatibility during transition.
 
 # --- Phase 3: Asset Recovery ---
 

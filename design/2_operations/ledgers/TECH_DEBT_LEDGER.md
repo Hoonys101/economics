@@ -23,7 +23,7 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-181 | 2026-02-01 | Abstraction Leak: `DecisionUnit` Direct Market Access | Tight coupling; bypasses MarketSnapshotDTO | **RESOLVED** |
-| TD-182 | 2026-02-01 | Abstraction Leak: `make_decision` signature | Passing raw market objects allows mutation risk | **ACTIVE** |
+| TD-182 | 2026-02-01 | Abstraction Leak: `make_decision` signature | Passing raw market objects allows mutation risk | **RESOLVED** |
 | TD-189 | 2026-02-01 | God Method: `Phase1_Decision.execute` | Excessive orchestration complexity in `phases.py` | **RESOLVED** |
 
 ## 💹 4. MARKETS & ECONOMICS
@@ -37,7 +37,7 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-191 | 2026-02-01 | God Method/Class: `TransactionProcessor.execute` | Violates SRP; excessive branching logic | **RESOLVED** |
-| TD-191-B | 2026-02-01 | Public Manager Integration Gaps | PublicManager lacks full IFinancialEntity compliance; ID type mismatch (String vs Int) | **ACTIVE** |
+| TD-191-B | 2026-02-01 | Public Manager Integration Gaps | PublicManager lacks full IFinancialEntity compliance; ID type mismatch (String vs Int) | **RESOLVED** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -45,6 +45,7 @@
 |---|---|---|---|---|
 | **HousingRefactor** | 2026-01-31 | Orphaned Housing Logic (Mortgage Bypass) | **CRITICAL** | **ACTIVE** | Housing market functional failure. |
 | TD-065 | 2026-01-31 | Duplicated Housing Decision Logic | Maintenance Risk | **ACTIVE** | Consolidated housing logic pending. |
+| TD-194 | 2026-02-02 | Abstraction Leak: `DecisionInputDTO` | Raw market access in DTO | **RESOLVED** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 

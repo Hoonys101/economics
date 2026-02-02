@@ -200,9 +200,8 @@ class Phase1_Decision(IPhaseStrategy):
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
         # TD-189: Use factories
-        self.signal_factory = MarketSignalFactory()
-        self.snapshot_factory = MarketSnapshotFactory(self.signal_factory)
         self.input_factory = DecisionInputFactory()
+        self.snapshot_factory = MarketSnapshotFactory()
 
     def execute(self, state: SimulationState) -> SimulationState:
         # Snapshot agents for learning (Pre-state)

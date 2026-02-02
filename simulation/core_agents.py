@@ -668,6 +668,7 @@ class Household(BaseAgent, ILearningAgent):
     ) -> Tuple[List["Order"], Tuple["Tactic", "Aggressiveness"]]:
 
         # Unpack input_dto
+        # markets = input_dto.markets # Removed TD-194
         goods_data = input_dto.goods_data
         market_data = input_dto.market_data
         current_time = input_dto.current_time
@@ -721,6 +722,8 @@ class Household(BaseAgent, ILearningAgent):
             initial_orders, chosen_tactic_tuple = decision_output
 
         # 3. Construct Orchestration DTOs (ACL)
+
+        # Use valid snapshot from input
         orchestration_context = OrchestrationContextDTO(
             market_snapshot=market_snapshot,
             current_time=current_time,

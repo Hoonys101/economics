@@ -15,6 +15,7 @@ from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
+from modules.system.api import MarketSnapshotDTO
 
 # SoC Refactor
 from simulation.components.hr_department import HRDepartment
@@ -337,6 +338,7 @@ class Firm(BaseAgent, ILearningAgent):
         self, input_dto: DecisionInputDTO
     ) -> tuple[list[Order], Any]:
         # Unpack
+        # markets = input_dto.markets # Removed TD-194
         goods_data = input_dto.goods_data
         market_data = input_dto.market_data
         current_time = input_dto.current_time
@@ -394,7 +396,8 @@ class Firm(BaseAgent, ILearningAgent):
         self.sales.check_and_apply_dynamic_pricing(external_orders, current_time)
 
         # WO-056: Shadow Mode Calculation
-        self._calculate_invisible_hand_price(market_snapshot, current_time)
+        if market_snapshot:
+             self._calculate_invisible_hand_price(market_snapshot, current_time)
 
         # SoC Refactor
         self.logger.debug(
@@ -489,12 +492,14 @@ class Firm(BaseAgent, ILearningAgent):
         WO-056: Stage 1 Shadow Mode (Price Discovery 2.0).
         Calculates and logs the shadow price based on Excess Demand.
         """
-        item_id = self.specialization
-        signal = market_snapshot.market_signals.get(item_id)
+        if not market_snapshot.market_signals:
+            return
 
+        signal = market_snapshot.market_signals.get(self.specialization)
         if not signal:
             return
 
+        # 1. Get Demand and Supply (from signals)
         demand = signal.total_bid_quantity
         supply = signal.total_ask_quantity
 

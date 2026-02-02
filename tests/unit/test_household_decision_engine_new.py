@@ -196,7 +196,7 @@ class TestAIDrivenHouseholdDecisionEngine:
             market_data={},
             current_time=1,
         )
-        orders, _ = decision_engine.make_decisions(context)
+        orders = decision_engine.make_decisions(context).orders
         # V2 Engine generates orders but WTP should be low.
         pass
 
@@ -221,7 +221,7 @@ class TestAIDrivenHouseholdDecisionEngine:
             market_data=market_data,
             current_time=1,
         )
-        orders, _ = decision_engine.make_decisions(context)
+        orders = decision_engine.make_decisions(context).orders
 
         bf_order = next((o for o in orders if o.item_id == "basic_food"), None)
         assert bf_order is not None
@@ -250,7 +250,7 @@ class TestAIDrivenHouseholdDecisionEngine:
             market_data=market_data,
             current_time=1,
         )
-        orders, _ = decision_engine.make_decisions(context)
+        orders = decision_engine.make_decisions(context).orders
 
         lf_order = next((o for o in orders if o.item_id == "luxury_food"), None)
         # Should be None OR have very small quantity due to budget
@@ -278,7 +278,7 @@ class TestAIDrivenHouseholdDecisionEngine:
             market_data=market_data,
             current_time=1,
         )
-        orders, _ = decision_engine.make_decisions(context)
+        orders = decision_engine.make_decisions(context).orders
 
         assert len(orders) >= 1
 
@@ -310,13 +310,13 @@ class TestAIDrivenHouseholdDecisionEngine:
             market_data=market_data,
             current_time=1,
         )
-        orders, _ = decision_engine.make_decisions(context)
+        orders = decision_engine.make_decisions(context).orders
 
         # Filter Labor Order
         labor_order = next((o for o in orders if o.item_id == "labor"), None)
 
         assert labor_order is not None
-        assert labor_order.order_type == "SELL"
+        assert labor_order.side == "SELL"
         # 50.0 * 0.9 = 45.0
         assert labor_order.price == 45.0
 
@@ -348,7 +348,7 @@ class TestAIDrivenHouseholdDecisionEngine:
             market_data=market_data,
             current_time=1,
         )
-        orders, _ = decision_engine.make_decisions(context)
+        orders = decision_engine.make_decisions(context).orders
 
         # Filter Labor Order
         labor_order = next((o for o in orders if o.item_id == "labor"), None)

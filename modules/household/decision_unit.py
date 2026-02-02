@@ -147,10 +147,11 @@ class DecisionUnit(IDecisionUnit):
             best_price = float('inf')
 
             # Access market data ONLY from the snapshot DTO
-            for unit_dto in market_snapshot.housing.for_sale_units:
-                if unit_dto.price < best_price:
-                    best_price = unit_dto.price
-                    target_unit = unit_dto
+            if market_snapshot.housing:
+                for unit_dto in market_snapshot.housing.for_sale_units:
+                    if unit_dto.price < best_price:
+                        best_price = unit_dto.price
+                        target_unit = unit_dto
 
             if target_unit:
                  down_payment = best_price * 0.2
