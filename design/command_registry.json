@@ -4,10 +4,16 @@
     "updated": "2026-01-30",
     "author": "Antigravity"
   },
-  "DecisionSignatureRefactor": {
+  "MISSION-TD005-HALO": {
     "command": "create",
-    "instruction": "Refactor agent make_decision method to use immutable MarketSnapshotDTO as specified in spec_td182_immutable_market.md. Ensure no raw market objects are accessed.\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
-    "title": "Refactor make_decision Signature",
-    "file": "design/3_work_artifacts/specs/spec_td182_immutable_market.md"
+    "instruction": "Remove is_visionary flag and implement Brand Resilience logic as per SPEC_TD005_HALO_LIQUIDATION.md\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Liquidate TD-005 Halo Effect",
+    "file": "design/3_work_artifacts/specs/SPEC_TD005_HALO_LIQUIDATION.md"
+  },
+  "MISSION-TD006-PERSONALITY": {
+    "command": "create",
+    "instruction": "Implement dynamic personality updates based on wealth percentile as per SPEC_TD006_DYNAMIC_PERSONALITY.md\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)",
+    "title": "Implement Dynamic Household Personality",
+    "file": "design/3_work_artifacts/specs/SPEC_TD006_DYNAMIC_PERSONALITY.md"
   }
 }
