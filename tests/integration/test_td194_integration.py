@@ -39,6 +39,7 @@ class TestTD194Integration:
             market_data={},
             housing=HousingMarketSnapshotDTO(
                 for_sale_units=[],
+                units_for_rent=[],
                 avg_rent_price=100.0,
                 avg_sale_price=20000.0
             ),

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from simulation.models import Order
 from simulation.core_agents import Household
 from simulation.firms import Firm
+from simulation.dtos.api import DecisionInputDTO, MarketSnapshotDTO, HousingMarketSnapshotDTO, LaborMarketSnapshotDTO
 
 def test_household_makes_decision(simple_household):
     """Spec 0: 에이전트가 주문을 생성하는지 검증 (Household)"""
@@ -21,12 +22,19 @@ def test_household_makes_decision(simple_household):
     simple_household.decision_engine.make_decisions = MagicMock(return_value=([expected_order], None))
 
     # Act
-    orders, tactic = simple_household.make_decision(
-        markets={},
+    input_dto = DecisionInputDTO(
         goods_data=[],
         market_data={},
-        current_time=1
+        current_time=1,
+        market_snapshot=MarketSnapshotDTO(
+            tick=1,
+            market_signals={},
+            housing=HousingMarketSnapshotDTO(for_sale_units=[], units_for_rent=[], avg_rent_price=0.0, avg_sale_price=0.0),
+            loan=None,
+            labor=LaborMarketSnapshotDTO(avg_wage=10.0)
+        )
     )
+    orders, tactic = simple_household.make_decision(input_dto)
 
     # Assert
     assert len(orders) == 1
@@ -49,14 +57,13 @@ def test_firm_makes_decision(simple_firm):
     simple_firm.decision_engine.make_decisions = MagicMock(return_value=([expected_order], None))
 
     # Act
-    # Firm likely has make_decision too? Checking Firm class would be good,
-    # but assuming consistency with BaseAgent.
-    orders, tactic = simple_firm.make_decision(
-        markets={},
+    input_dto = DecisionInputDTO(
         goods_data=[],
         market_data={},
-        current_time=1
+        current_time=1,
+        market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
     )
+    orders, tactic = simple_firm.make_decision(input_dto)
 
     # Assert
     assert len(orders) == 1

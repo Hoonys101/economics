@@ -127,7 +127,13 @@ class OrderDTO:
     price: float
 
 # Phase 1: MarketSnapshotDTO moved to modules.system.api
-from modules.system.api import MarketSnapshotDTO
+from modules.system.api import (
+    MarketSnapshotDTO,
+    HousingMarketSnapshotDTO,
+    LoanMarketSnapshotDTO,
+    LaborMarketSnapshotDTO,
+    HousingMarketUnitDTO
+)
 # Phase 1: EconomicIndicatorsDTO from modules.simulation.api
 from modules.simulation.api import EconomicIndicatorsDTO
 

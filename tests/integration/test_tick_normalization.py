@@ -82,7 +82,7 @@ class TestTickNormalization:
              patch('simulation.orchestration.tick_orchestrator.Phase1_Decision') as MockPhase1, \
              patch('simulation.orchestration.tick_orchestrator.Phase2_Matching') as MockPhase2, \
              patch('simulation.orchestration.tick_orchestrator.Phase3_Transaction') as MockPhase3, \
-             patch('simulation.orchestration.tick_orchestrator.Phase4_Lifecycle') as MockPhase4, \
+             patch('simulation.orchestration.tick_orchestrator.Phase_Bankruptcy') as MockPhase4, \
              patch('simulation.orchestration.tick_orchestrator.Phase5_PostSequence') as MockPhase5:
 
              # Configure mocks to return the state passed to execute

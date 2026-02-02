@@ -16,6 +16,22 @@ class TestPhase28StressScenarios:
     def mock_households(self):
         h1 = MagicMock(spec=Household)
         h1.id = 1
+
+        # Setup nested states
+        h1._econ_state = MagicMock()
+        h1._econ_state.assets = 1000.0
+        h1._econ_state.inventory = {}
+        h1._econ_state.is_employed = False
+        h1._econ_state.perceived_avg_prices = {"item1": 10.0}
+        h1._econ_state.expected_inflation = {"item1": 0.0}
+
+        h1._bio_state = MagicMock()
+        h1._bio_state.is_active = True
+        h1._bio_state.needs = {}
+
+        h1._social_state = MagicMock()
+
+        # Sync top-level properties (Legacy/Convenience)
         h1.assets = 1000.0
         h1.inventory = {}
         h1.is_active = True
@@ -25,11 +41,25 @@ class TestPhase28StressScenarios:
         h1.adaptation_rate = 0.1
         h1.price_history = {"item1": []}
         h1.expected_inflation = {"item1": 0.0}
+        # Wire consume to use consumption manager or simple mock
+        h1.consume = MagicMock()
 
         h2 = MagicMock(spec=Household)
         h2.id = 2
+
+        h2._econ_state = MagicMock()
+        h2._econ_state.assets = 5000.0
+        h2._econ_state.inventory = {}
+
+        h2._bio_state = MagicMock()
+        h2._bio_state.is_active = True
+        h2._bio_state.needs = {}
+
+        h2._social_state = MagicMock()
+
         h2.assets = 5000.0 # Wealthy
         h2.is_active = True
+        h2.consume = MagicMock()
 
         return [h1, h2]
 

@@ -66,4 +66,5 @@ class TestGovernmentFiscalIntegration:
         args, _ = gov.fiscal_policy_manager.determine_fiscal_stance.call_args
         snapshot = args[0]
         assert isinstance(snapshot, MarketSnapshotDTO)
-        assert snapshot.prices["basic_food"] == 20.0
+        # Check market_data field (legacy support) since MarketSnapshotDTO doesn't have prices attribute
+        assert snapshot.market_data["goods_market"]["basic_food_current_sell_price"] == 20.0

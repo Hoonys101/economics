@@ -308,7 +308,13 @@ def mock_ai_trainer():
 @pytest.fixture
 def mock_repository():
     repo = MagicMock()
-    repo.save_simulation_run = MagicMock(return_value=1)  # Return a dummy run_id
+    # Mock the nested structure: repo.runs.save_simulation_run
+    repo.runs = MagicMock()
+    repo.runs.save_simulation_run = MagicMock(return_value=1)
+
+    # Also mock the top-level method if it's called directly elsewhere (backward compatibility)
+    repo.save_simulation_run = MagicMock(return_value=1)
+
     repo.save_economic_indicator = MagicMock()
     repo.save_agent_states = MagicMock()
     repo.save_transactions = MagicMock()

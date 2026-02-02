@@ -13,8 +13,9 @@ from simulation.decisions.ai_driven_household_engine import (
 )
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 import config
-from simulation.ai.api import Tactic, Aggressiveness # Import Tactic and Aggressiveness
-from simulation.core_markets import Market # Import Market
+from simulation.ai.api import Tactic, Aggressiveness
+from simulation.core_markets import Market
+from simulation.dtos.api import DecisionInputDTO, MarketSnapshotDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO, LaborMarketSnapshotDTO
 
 # Add project root to sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -60,11 +61,19 @@ def mock_logger():
 def household():
     hh = Mock(spec=Household)
     hh.id = 1
-    hh._assets = 1000.0
-    hh.inventory = {"food": 10.0}
-    hh.needs = {"survival_need": 50.0, "labor_need": 0.0}
-    hh.perceived_avg_prices = {"food": 10.0}
-    hh.is_employed = False
+
+    # Initialize nested states
+    hh._econ_state = Mock()
+    hh._econ_state.assets = 1000.0
+    hh._econ_state.inventory = {"food": 10.0}
+    hh._econ_state.is_employed = False
+    hh._econ_state.perceived_avg_prices = {"food": 10.0}
+
+    hh._bio_state = Mock()
+    hh._bio_state.needs = {"survival_need": 50.0, "labor_need": 0.0}
+
+    hh._social_state = Mock()
+
     hh.goods_info_map = {g["id"]: g for g in GOODS_DATA}
     hh.decision_engine = Mock(spec=AIDrivenHouseholdDecisionEngine)
     hh.decision_engine.ai_engine = (
@@ -165,12 +174,14 @@ class TestDecisionEngineIntegration:
             (Tactic.ADJUST_PRICE, Aggressiveness.NORMAL)
         )
         markets = {"goods_market": goods_market}
-        orders, _ = firm.make_decision(
-            markets=markets,
+
+        input_dto = DecisionInputDTO(
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
-            current_time=1
+            current_time=1,
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
         )
+        orders, _ = firm.make_decision(input_dto)
 
         for order in orders:
             goods_market.place_order(order, current_time=1)
@@ -201,12 +212,14 @@ class TestDecisionEngineIntegration:
         )
 
         markets = {"goods_market": goods_market}
-        orders, _ = household.make_decision(
-            markets=cast(Dict[str, Market], markets),
+
+        input_dto = DecisionInputDTO(
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
-            current_time=1
+            current_time=1,
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
         )
+        orders, _ = household.make_decision(input_dto)
 
         for order in orders:
             goods_market.place_order(order, current_time=1)
@@ -238,12 +251,14 @@ class TestDecisionEngineIntegration:
             (Tactic.PARTICIPATE_LABOR_MARKET, Aggressiveness.NORMAL)
         )
         markets = {"labor_market": labor_market}
-        orders, _ = household.make_decision(
-            markets=cast(Dict[str, Market], markets),
+
+        input_dto = DecisionInputDTO(
             goods_data=GOODS_DATA,
             market_data={"all_households": [household], "goods_data": GOODS_DATA},
             current_time=1,
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
         )
+        orders, _ = household.make_decision(input_dto)
 
         for order in orders:
             labor_market.place_order(order, current_time=1)
@@ -272,12 +287,14 @@ class TestDecisionEngineIntegration:
             (Tactic.ADJUST_WAGES, Aggressiveness.NORMAL)
         )
         markets = {"labor_market": labor_market}
-        orders, _ = firm.make_decision(
-            markets=markets,
+
+        input_dto = DecisionInputDTO(
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
-            current_time=1
+            current_time=1,
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
         )
+        orders, _ = firm.make_decision(input_dto)
 
         for order in orders:
             labor_market.place_order(order, current_time=1)
