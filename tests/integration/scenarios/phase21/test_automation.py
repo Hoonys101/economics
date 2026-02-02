@@ -33,11 +33,12 @@ def test_firm_automation_init(firm_mock):
 def test_production_function_with_automation(firm_mock):
     """Test modified Cobb-Douglas production function."""
     # Setup
-    firm_mock.employees = [Mock(labor_skill=1.0)] # 1 Employee
+    firm_mock.hr.employees = [Mock(labor_skill=1.0)] # 1 Employee
     firm_mock.capital_stock = 100.0
     firm_mock.productivity_factor = 10.0
     firm_mock.config.labor_alpha = 0.5
     firm_mock.config.automation_labor_reduction = 0.5
+    firm_mock.config.labor_elasticity_min = 0.0 # Allow alpha to drop below default 0.5
 
     # Disable depreciation for precise calc
     firm_mock.config.capital_depreciation_rate = 0.0
@@ -65,9 +66,14 @@ def test_production_function_with_automation(firm_mock):
 def test_system2_planner_guidance(firm_mock):
     """Test System 2 Planner logic."""
     # Override config for this test to make automation cheaper
+    # Set both lowercase (DTO standard) and uppercase (System2Planner access) just in case
     firm_mock.config.automation_cost_per_pct = 100.0 # Was 1000.0
+    firm_mock.config.AUTOMATION_COST_PER_PCT = 100.0
+    firm_mock.config.AUTOMATION_LABOR_REDUCTION = 0.5
+    firm_mock.config.FIRM_MAINTENANCE_FEE = 10.0 # Ensure maintenance is low enough
 
-    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, config) # Pass config module for Planner if needed?
+    # Pass firm_mock.config instead of global config to ensure override is respected
+    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, firm_mock.config)
 
     # Mock Data
     market_data = {}
@@ -79,7 +85,15 @@ def test_system2_planner_guidance(firm_mock):
 
     # Test CASH_COW personality
     firm_mock.personality = Personality.CASH_COW
-    guidance = firm_mock.system2_planner.project_future(1, market_data)
+
+    firm_state = MagicMock()
+    firm_state.finance.revenue_this_turn = 5000.0
+    firm_state.finance.balance = 300000.0
+    firm_state.production.automation_level = 0.0
+    firm_state.hr.employees_data = {1: {'wage': 1000.0}, 2: {'wage': 1000.0}}
+    firm_state.agent_data = {"personality": Personality.CASH_COW}
+
+    guidance = firm_mock.system2_planner.project_future(1, market_data, firm_state=firm_state)
 
     # Should favor automation if profitable
     # With lower cost (100.0 * 80 gap = 8000 cost) vs 80k benefit, highly profitable.
@@ -87,7 +101,9 @@ def test_system2_planner_guidance(firm_mock):
 
     # Test GROWTH_HACKER
     firm_mock.personality = Personality.GROWTH_HACKER
-    guidance = firm_mock.system2_planner.project_future(11, market_data)
+    firm_state.agent_data = {"personality": Personality.GROWTH_HACKER}
+
+    guidance = firm_mock.system2_planner.project_future(11, market_data, firm_state=firm_state)
 
     # Expansion mode should be MA if rich
     assert guidance["expansion_mode"] == "MA"

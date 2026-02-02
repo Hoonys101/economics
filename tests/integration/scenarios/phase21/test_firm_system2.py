@@ -29,14 +29,26 @@ def test_system2_planner_guidance_automation_preference(firm_mock):
     """Test that CASH_COW prefers automation when profitable."""
     # Setup cheap automation scenario
     firm_mock.config.automation_cost_per_pct = 100.0
+    firm_mock.config.AUTOMATION_COST_PER_PCT = 100.0
+    firm_mock.config.AUTOMATION_LABOR_REDUCTION = 0.5
+    firm_mock.config.FIRM_MAINTENANCE_FEE = 10.0
+
     firm_mock.employee_wages = {1: 1000.0}
     firm_mock.revenue_this_turn = 5000.0
     firm_mock._assets = 50000.0
 
     firm_mock.personality = Personality.CASH_COW
-    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, config)
+    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, firm_mock.config)
 
-    guidance = firm_mock.system2_planner.project_future(1, {})
+    # Create Mock FirmStateDTO
+    firm_state = MagicMock()
+    firm_state.finance.revenue_this_turn = 5000.0
+    firm_state.finance.balance = 50000.0
+    firm_state.production.automation_level = 0.0
+    firm_state.hr.employees_data = {1: {'wage': 1000.0}}
+    firm_state.agent_data = {"personality": Personality.CASH_COW}
+
+    guidance = firm_mock.system2_planner.project_future(1, {}, firm_state=firm_state)
     assert guidance["target_automation"] > 0.0
 
 def test_system2_planner_guidance_ma_preference(firm_mock):
@@ -44,8 +56,16 @@ def test_system2_planner_guidance_ma_preference(firm_mock):
     firm_mock._assets = 1000000.0
     firm_mock.revenue_this_turn = 10000.0
     firm_mock.personality = Personality.GROWTH_HACKER
-    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, config)
+    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, firm_mock.config)
 
-    guidance = firm_mock.system2_planner.project_future(1, {})
+    # Create Mock FirmStateDTO
+    firm_state = MagicMock()
+    firm_state.finance.revenue_this_turn = 10000.0
+    firm_state.finance.balance = 1000000.0
+    firm_state.production.automation_level = 0.0
+    firm_state.hr.employees_data = {}
+    firm_state.agent_data = {"personality": Personality.GROWTH_HACKER}
+
+    guidance = firm_mock.system2_planner.project_future(1, {}, firm_state=firm_state)
     assert guidance["expansion_mode"] == "MA"
     assert guidance["rd_intensity"] == 0.2

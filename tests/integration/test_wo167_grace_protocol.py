@@ -18,16 +18,19 @@ class TestGraceProtocol:
         config.FIRM_CLOSURE_TURNS_THRESHOLD = 5
         config.LIQUIDITY_NEED_INCREASE_RATE = 1.0
 
-        firm = MagicMock(spec=Firm)
+        # Use MagicMock without spec to avoid property/attribute conflicts with real FinanceDepartment attachment
+        firm = MagicMock()
         firm.id = 1
         firm.is_active = True
         firm.age = 10
         firm.needs = {"liquidity_need": 0.0}
-        firm.finance.balance = 0.0 # No cash
+        # firm.finance will be overwritten below, but we initialize common attrs
         firm.inventory = {"wood": 10.0}
         firm.last_prices = {"wood": 10.0}
+        firm.get_financial_snapshot.return_value = {} # Mock helper if needed
 
         # Real FinanceDepartment to test logic
+        # FinanceDepartment expects a firm object, our mock is sufficient if it behaves like one
         firm.finance = FinanceDepartment(firm, config, initial_capital=0.0)
         # Mock logger
         firm.logger = MagicMock()
