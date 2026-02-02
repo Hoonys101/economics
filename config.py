@@ -846,3 +846,18 @@ ELASTICITY_MAPPING = {
 MAX_WILLINGNESS_TO_PAY_MULTIPLIER = 2.5
 SALE_TIMEOUT_TICKS = 20
 DYNAMIC_PRICE_REDUCTION_FACTOR = 0.95
+
+# ==============================================================================
+# TD-006: Dynamic Personality
+# ==============================================================================
+PERSONALITY_STATUS_SEEKER_WEALTH_PCT = 0.9
+PERSONALITY_SURVIVAL_MODE_WEALTH_PCT = 0.2
+DESIRE_WEIGHTS_MAP = {
+  "MISER": {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5, "quality": 1.0},
+  "STATUS_SEEKER": {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5, "quality": 1.0},
+  "GROWTH_ORIENTED": {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5, "quality": 1.0},
+  "IMPULSIVE": {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5, "quality": 1.0},
+  "CONSERVATIVE": {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5, "quality": 1.0},
+  "SURVIVAL_MODE": {"survival": 2.0, "asset": 1.0, "social": 0.1, "improvement": 0.1, "quality": 0.1},
+  "BALANCED": {"survival": 1.0, "asset": 1.0, "social": 1.0, "improvement": 1.0, "quality": 1.0}
+}

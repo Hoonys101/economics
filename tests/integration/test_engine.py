@@ -515,7 +515,10 @@ class TestSimulation:
         # - 5-10: 5 * 0.05 = 0.25
         # - 10-20: 10 * 0.10 = 1.0
         # Total Tax = 1.25
-        tax = 1.25
+        # tax = 1.25
+        # Update: MockConfig sets TAX_MODE="FLAT" and TAX_RATE_BASE=0.1
+        # So Tax = 20.0 * 0.1 = 2.0
+        tax = 2.0
 
         assert buyer_firm.assets == initial_buyer_assets - trade_value
         assert seller_hh.assets == pytest.approx(initial_seller_assets + (trade_value - tax))
@@ -631,7 +634,6 @@ def setup_simulation_for_lifecycle(
         initial_needs=initial_needs.copy(),
         decision_engine=mock_household_decision_engine_for_lifecycle,
         value_orientation="test",
-        personality=Personality.MISER,
         config_dto=create_household_config_dto(),
     )
     household_active.is_active = True
@@ -649,7 +651,6 @@ def setup_simulation_for_lifecycle(
         initial_needs=initial_needs.copy(),
         decision_engine=mock_household_decision_engine_for_lifecycle,
         value_orientation="test",
-        personality=Personality.MISER,
         config_dto=create_household_config_dto(),
     )
     household_inactive.is_active = False
@@ -664,7 +665,6 @@ def setup_simulation_for_lifecycle(
         initial_needs=initial_needs.copy(),
         decision_engine=mock_household_decision_engine_for_lifecycle,
         value_orientation="test",
-        personality=Personality.MISER,
         config_dto=create_household_config_dto(),
     )
     household_employed_by_inactive_firm.is_active = True

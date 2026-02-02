@@ -188,3 +188,42 @@ class SocialComponent(ISocialComponent):
             # Logging handled by caller
 
         return new_state, new_needs, living_assets, is_active
+
+    def update_dynamic_personality(
+        self,
+        agent_id: int,
+        social_state: SocialStateDTO,
+        econ_state: Any, # EconStateDTO (Avoiding circular import if necessary, but DTOs should be fine)
+        macro_context: Any, # MacroFinancialContext
+        config: HouseholdConfigDTO
+    ) -> SocialStateDTO:
+        """Updates personality based on relative wealth."""
+
+        # Use percentile from macro_context, which should be pre-calculated
+        # Handle case where macro_context might be mocked or partial
+        wealth_percentiles = getattr(macro_context, "wealth_percentiles", {})
+        wealth_percentile = wealth_percentiles.get(agent_id, 0.5)
+
+        new_personality = social_state.personality
+
+        # Define thresholds in config
+        status_seeker_threshold = config.personality_status_seeker_wealth_pct
+        survival_mode_threshold = config.personality_survival_mode_wealth_pct
+
+        if wealth_percentile >= status_seeker_threshold:
+            new_personality = Personality.STATUS_SEEKER
+        elif wealth_percentile <= survival_mode_threshold:
+            new_personality = Personality.SURVIVAL_MODE
+        else:
+            # Optional: Revert to a base or neutral personality
+            # For now, we only change at the extremes.
+            pass
+
+        if new_personality != social_state.personality:
+            social_state.personality = new_personality
+            # IMPORTANT: Update desire weights to match the new personality
+            desire_weights = config.desire_weights_map.get(new_personality.name)
+            if desire_weights:
+                social_state.desire_weights = desire_weights.copy()
+
+        return social_state

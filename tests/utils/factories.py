@@ -84,6 +84,18 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
         "survival_bid_premium": 0.2,
         "elasticity_mapping": {"DEFAULT": 1.0},
         "max_willingness_to_pay_multiplier": 1.5,
+        # TD-006: Dynamic Personality
+        "personality_status_seeker_wealth_pct": 0.9,
+        "personality_survival_mode_wealth_pct": 0.2,
+        "desire_weights_map": {
+            "MISER": {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5, "quality": 1.0},
+            "STATUS_SEEKER": {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5, "quality": 1.0},
+            "GROWTH_ORIENTED": {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5, "quality": 1.0},
+            "IMPULSIVE": {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5, "quality": 1.0},
+            "CONSERVATIVE": {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5, "quality": 1.0},
+            "SURVIVAL_MODE": {"survival": 2.0, "asset": 1.0, "social": 0.1, "improvement": 0.1, "quality": 0.1},
+            "BALANCED": {"survival": 1.0, "asset": 1.0, "social": 1.0, "improvement": 1.0, "quality": 1.0}
+        }
     }
     defaults.update(kwargs)
     return HouseholdConfigDTO(**defaults)

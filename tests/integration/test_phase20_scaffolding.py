@@ -25,7 +25,6 @@ class TestPhase20Scaffolding(unittest.TestCase):
             "initial_needs": {},
             "decision_engine": self.mock_decision_engine,
             "value_orientation": "wealth_and_needs",
-            "personality": Personality.CONSERVATIVE,
             "config_dto": create_household_config_dto(),
             "loan_market": self.mock_loan_market,
             "logger": self.logger

@@ -99,6 +99,11 @@ class HouseholdConfigDTO:
     elasticity_mapping: Dict[str, float]
     max_willingness_to_pay_multiplier: float
 
+    # TD-006: Dynamic Personality
+    personality_status_seeker_wealth_pct: float
+    personality_survival_mode_wealth_pct: float
+    desire_weights_map: Dict[str, Dict[str, float]]
+
 @dataclass
 class FirmConfigDTO:
     """Static configuration values relevant to firm decisions."""

@@ -59,6 +59,7 @@ class HouseholdSnapshot:
     needs: Dict[str, float]
     inventory: Dict[str, float]
     approval_rating: float
+    personality: str = "BALANCED" # Default for backward compatibility
 
 
 @dataclass 
@@ -116,6 +117,10 @@ class FixtureHarvester:
     
     def capture_household(self, household) -> HouseholdSnapshot:
         """Capture a single household's state."""
+        # Handle personality enum or string
+        p = getattr(household, 'personality', Personality.BALANCED)
+        p_str = p.name if hasattr(p, 'name') else str(p)
+
         return HouseholdSnapshot(
             id=household.id,
             assets=getattr(household, 'assets', 0.0),
@@ -127,7 +132,8 @@ class FixtureHarvester:
             current_wage=getattr(household, 'current_wage', 0.0),
             needs=dict(getattr(household, 'needs', {})),
             inventory=dict(getattr(household, 'inventory', {})),
-            approval_rating=getattr(household, 'approval_rating', 1.0)
+            approval_rating=getattr(household, 'approval_rating', 1.0),
+            personality=p_str
         )
     
     def capture_firm(self, firm) -> FirmSnapshot:
@@ -253,6 +259,13 @@ class GoldenLoader:
                 mock = SimpleNamespace()
             for key, value in h_data.items():
                 setattr(mock, key, value)
+
+            # Ensure personality is set as Enum if possible
+            if hasattr(mock, "personality") and isinstance(mock.personality, str):
+                try:
+                    mock.personality = getattr(Personality, mock.personality)
+                except AttributeError:
+                    pass # Keep as string if not found in Enum
 
             mock.make_decision = MagicMock(return_value=([], MagicMock()))
             if not hasattr(mock, 'decision_engine'):

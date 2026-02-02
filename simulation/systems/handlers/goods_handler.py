@@ -14,6 +14,9 @@ class GoodsTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+        if not buyer or not seller:
+            return False
+
         # Prevent floating point pollution by rounding to 2 decimal places (cents)
         trade_value = round(tx.quantity * tx.price, 2)
 

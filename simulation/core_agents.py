@@ -63,7 +63,6 @@ class Household(BaseAgent, ILearningAgent):
         initial_needs: Dict[str, float],
         decision_engine: BaseDecisionEngine,
         value_orientation: str,
-        personality: Personality,
         config_dto: HouseholdConfigDTO,
         loan_market: Optional[LoanMarket] = None,
         risk_aversion: float = 1.0,
@@ -120,6 +119,9 @@ class Household(BaseAgent, ILearningAgent):
         perceived_prices = {}
         for g in goods_data:
              perceived_prices[g["id"]] = g.get("initial_price", 10.0)
+
+        # TD-006: Default Personality
+        personality = Personality.BALANCED
 
         # Adaptation Rate
         adaptation_rate = self.config.adaptation_rate_normal
@@ -215,13 +217,11 @@ class Household(BaseAgent, ILearningAgent):
         )
 
         # Initialize Desire Weights in SocialState
-        if personality in [Personality.MISER, Personality.CONSERVATIVE]:
-            self._social_state.desire_weights = {"survival": 1.0, "asset": 1.5, "social": 0.5, "improvement": 0.5, "quality": 1.0}
-        elif personality in [Personality.STATUS_SEEKER, Personality.IMPULSIVE]:
-            self._social_state.desire_weights = {"survival": 1.0, "asset": 0.5, "social": 1.5, "improvement": 0.5, "quality": 1.0}
-        elif personality == Personality.GROWTH_ORIENTED:
-            self._social_state.desire_weights = {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5, "quality": 1.0}
-        else:
+        if self.config.desire_weights_map:
+             self._social_state.desire_weights = self.config.desire_weights_map.get(personality.name, {}).copy()
+
+        if not self._social_state.desire_weights:
+             # Fallback
              self._social_state.desire_weights = {"survival": 1.0, "asset": 1.0, "social": 1.0, "improvement": 1.0, "quality": 1.0}
 
         self.goods_info_map = {g["id"]: g for g in goods_data}
@@ -836,6 +836,17 @@ class Household(BaseAgent, ILearningAgent):
         if not self.is_active:
             return
 
+        # TD-006: Dynamic Personality Update
+        if market_data and "wealth_percentiles" in market_data:
+             from simulation.dtos.api import MacroFinancialContext
+             macro_context = MacroFinancialContext(
+                 inflation_rate=0.0, gdp_growth_rate=0.0, market_volatility=0.0, interest_rate_trend=0.0,
+                 wealth_percentiles=market_data["wealth_percentiles"]
+             )
+             self._social_state = self.social_component.update_dynamic_personality(
+                 self.id, self._social_state, self._econ_state, macro_context, self.config
+             )
+
         # 1. Work (Econ)
         if self._econ_state.is_employed:
             self._econ_state, labor_res = self.econ_component.work(
@@ -929,7 +940,6 @@ class Household(BaseAgent, ILearningAgent):
 
             decision_engine=new_decision_engine,
             value_orientation=self.value_orientation,
-            personality=self.personality, # Inherit personality
             config_dto=self.config,
             loan_market=self.decision_engine.loan_market,
             risk_aversion=self.risk_aversion,

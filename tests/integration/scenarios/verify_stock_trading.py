@@ -87,7 +87,6 @@ class TestStockTradingIntegration(unittest.TestCase):
             initial_needs={"survival": 30.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
             decision_engine=decision_engine,
             value_orientation=value_orientation,
-            personality=Personality.MISER,
             config_dto=config_dto,
             logger=logger,
         )

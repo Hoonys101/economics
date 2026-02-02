@@ -14,6 +14,8 @@ import config
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from simulation.ai.api import Personality
+from simulation.utils.config_factory import create_config_dto
+from simulation.dtos.config_dtos import HouseholdConfigDTO
 
 def diagnose():
     logging.basicConfig(level=logging.INFO)
@@ -23,10 +25,12 @@ def diagnose():
     # Use a dummy repo or real one? Real one is fine, it creates a new run_id.
     # repo = SimulationRepository()
 
+    hh_config_dto = create_config_dto(config, HouseholdConfigDTO)
+
     # Create Agents
     talent = Talent(base_learning_rate=0.1, max_potential={})
     households = [
-        Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=AIDrivenHouseholdDecisionEngine(None, config), value_orientation="test", personality=Personality.MISER, config_module=config)
+        Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=AIDrivenHouseholdDecisionEngine(None, config), value_orientation="test", config_dto=hh_config_dto)
         for i in range(10)
     ]
     # Create Firms (Mixed Specialization)

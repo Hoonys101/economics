@@ -511,6 +511,8 @@ class MacroFinancialContext:
     gdp_growth_rate: float
     market_volatility: float
     interest_rate_trend: float
+    # TD-006: Dynamic Personality
+    wealth_percentiles: Dict[int, float] = field(default_factory=dict)
 
 
 @dataclass

@@ -90,14 +90,16 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer):
     firm_config_dto = create_config_dto(global_config, FirmConfigDTO)
 
     talent = Talent(base_learning_rate=0.1, max_potential={})
-    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", personality=Personality.MISER, config_dto=hh_config_dto) for i in range(1)]
+    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", config_dto=hh_config_dto) for i in range(1)]
     firms = [
         Firm(id=100, initial_capital=500, specialization="tools", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_dto=firm_config_dto, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1),
         Firm(id=101, initial_capital=2500, specialization="food", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_dto=firm_config_dto, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1)
     ]
 
     # The bootstrapper is called during the Simulation initialization
-    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    mock_config_manager = Mock()
+    mock_config_manager.get.return_value = "test.db"
+    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo)
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
@@ -123,13 +125,15 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer):
     firm_config_dto = create_config_dto(global_config, FirmConfigDTO)
 
     talent = Talent(base_learning_rate=0.1, max_potential={})
-    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", personality=Personality.MISER, config_dto=hh_config_dto) for i in range(1)]
+    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", config_dto=hh_config_dto) for i in range(1)]
     firms = [
         Firm(id=100, initial_capital=3000, specialization="tools", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_dto=firm_config_dto, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1),
     ]
 
     # This is a simplified simulation setup; a real test would need more comprehensive mocks
-    sim = Simulation(config_manager=Mock(), config_module=mock_config, logger=Mock(), repository=mock_repo)
+    mock_config_manager = Mock()
+    mock_config_manager.get.return_value = "test.db"
+    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo)
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer

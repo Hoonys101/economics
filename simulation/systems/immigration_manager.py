@@ -83,7 +83,6 @@ class ImmigrationManager:
             # Random Attributes
             initial_assets = random.uniform(3000.0, 5000.0)
 
-            personality = random.choice(list(Personality))
             value_orientation = random.choice(all_value_orientations)
             risk_aversion = random.uniform(0.1, 10.0)
 
@@ -122,7 +121,6 @@ class ImmigrationManager:
                 initial_needs=initial_needs,
                 decision_engine=household_decision_engine,
                 value_orientation=value_orientation,
-                personality=personality,
                 config_dto=hh_config_dto,
                 risk_aversion=risk_aversion,
                 logger=logger

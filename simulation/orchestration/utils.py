@@ -106,6 +106,17 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
     if state.bank:
         interest_rate = state.bank.base_rate
 
+    # TD-006: Calculate wealth percentiles
+    wealth_percentiles: Dict[int, float] = {}
+    if state.households:
+        # Sort by assets
+        sorted_households = sorted(state.households, key=lambda h: h.assets)
+        num_households = len(sorted_households)
+        for rank, household in enumerate(sorted_households):
+             # Percentile: 0.0 (poorest) to 1.0 (richest)
+             percentile = rank / (num_households - 1) if num_households > 1 else 0.5
+             wealth_percentiles[household.id] = percentile
+
     return {
         "time": state.time,
         "goods_market": goods_market_data,
@@ -116,5 +127,6 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
         "avg_goods_price": avg_goods_price_for_market_data,
         "debt_data": debt_data_map,
         "deposit_data": deposit_data_map,
-        "inflation": latest_indicators.get("inflation_rate", state.config_module.DEFAULT_INFLATION_RATE)
+        "inflation": latest_indicators.get("inflation_rate", state.config_module.DEFAULT_INFLATION_RATE),
+        "wealth_percentiles": wealth_percentiles
     }

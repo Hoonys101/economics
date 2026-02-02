@@ -85,6 +85,7 @@ class Personality(Enum):
     GROWTH_ORIENTED = auto()  # 학습형 (Growth-Oriented)
     IMPULSIVE = auto()     # 충동구매형 (High Adaptation, High Hoarding)
     CONSERVATIVE = auto()  # 보수적형 (Low Adaptation)
+    SURVIVAL_MODE = auto() # 생존모드 (Low Wealth)
 
     # --- Firm Personalities (Phase 16-B) ---
     BALANCED = auto()        # 균형형 (Profit + Brand)

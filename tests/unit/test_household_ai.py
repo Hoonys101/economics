@@ -99,7 +99,6 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         initial_needs={"survival": 80.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
         value_orientation=value_orientation,
         decision_engine=household_decision_engine,
-        personality=Personality.MISER,
         config_dto=hh_config,
     )
 
@@ -160,7 +159,6 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
         value_orientation=value_orientation,
         decision_engine=household_decision_engine,
-        personality=Personality.STATUS_SEEKER,
         config_dto=hh_config,
     )
 

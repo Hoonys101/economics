@@ -141,9 +141,6 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         }
         value_orientation = random.choice(all_value_orientations)
 
-        # Create a random personality
-        personality = random.choice(list(Personality))
-
         # Instantiate HouseholdAI
         ai_decision_engine_instance = ai_trainer.get_engine(value_orientation)
         household_ai_instance = HouseholdAI(agent_id=i, ai_decision_engine=ai_decision_engine_instance)
@@ -173,7 +170,6 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             initial_needs=initial_needs,
             decision_engine=household_decision_engine,
             value_orientation=value_orientation,
-            personality=personality,
             config_dto=hh_config_dto,
             risk_aversion=risk_aversion,
             logger=logger,

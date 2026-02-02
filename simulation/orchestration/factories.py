@@ -165,7 +165,8 @@ class DecisionInputFactory:
                 inflation_rate=0.0, # Placeholder as per original
                 gdp_growth_rate=0.0, # Placeholder as per original
                 market_volatility=market_volatility,
-                interest_rate_trend=interest_rate_trend
+                interest_rate_trend=interest_rate_trend,
+                wealth_percentiles=state.market_data.get("wealth_percentiles", {})
             )
 
         # Prepare Agent Registry (WO-138)

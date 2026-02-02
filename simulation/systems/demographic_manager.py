@@ -134,8 +134,8 @@ class DemographicManager:
                 from simulation.ai.household_ai import HouseholdAI
                 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 
-                # Inherit Personality (with mutation)
-                child_personality = self._inherit_personality(parent.personality)
+                # Inherit Personality (with mutation) -> Deprecated by Dynamic Personality
+                # child_personality = self._inherit_personality(parent.personality)
 
                 new_ai = HouseholdAI(
                     agent_id=str(child_id),
@@ -180,7 +180,6 @@ class DemographicManager:
                     initial_needs=initial_needs_for_newborn.copy(),
                     decision_engine=new_decision_engine,
                     value_orientation=value_orientation,
-                    personality=child_personality,
                     config_dto=hh_config_dto,
                     loan_market=simulation.markets.get("loan_market"),
                     risk_aversion=parent.risk_aversion, # Inherit risk aversion

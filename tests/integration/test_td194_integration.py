@@ -28,7 +28,6 @@ class TestTD194Integration:
             initial_needs={"survival": 0.5},
             decision_engine=decision_engine,
             value_orientation="neutral",
-            personality=Personality.BALANCED,
             config_dto=config
         )
 

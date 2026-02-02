@@ -98,7 +98,6 @@ def test_household_clone():
         decision_engine=decision_engine,
         value_orientation=Mock(),
         logger=mock_logger,
-        personality=Personality.MISER,
         config_dto=hh_config,
     )
 

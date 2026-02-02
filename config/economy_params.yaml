@@ -23,6 +23,54 @@ NEWBORN_INITIAL_NEEDS:
   labor_need: 0.0
   liquidity_need: 50.0
 
+# TD-006: Dynamic Personality
+personality_status_seeker_wealth_pct: 0.9
+personality_survival_mode_wealth_pct: 0.2
+
+desire_weights_map:
+  MISER:
+    survival: 1.0
+    asset: 1.5
+    social: 0.5
+    improvement: 0.5
+    quality: 1.0
+  STATUS_SEEKER:
+    survival: 1.0
+    asset: 0.5
+    social: 1.5
+    improvement: 0.5
+    quality: 1.0
+  GROWTH_ORIENTED:
+    survival: 1.0
+    asset: 0.5
+    social: 0.5
+    improvement: 1.5
+    quality: 1.0
+  IMPULSIVE:
+    survival: 1.0
+    asset: 0.5
+    social: 1.5
+    improvement: 0.5
+    quality: 1.0
+  CONSERVATIVE:
+    survival: 1.0
+    asset: 1.5
+    social: 0.5
+    improvement: 0.5
+    quality: 1.0
+  SURVIVAL_MODE:
+    survival: 2.0
+    asset: 1.0
+    social: 0.1
+    improvement: 0.1
+    quality: 0.1
+  BALANCED:
+    survival: 1.0
+    asset: 1.0
+    social: 1.0
+    improvement: 1.0
+    quality: 1.0
+
 # WO-157: Code Blue - Demand Elasticity
 elasticity_mapping:
   MISER: 2.0

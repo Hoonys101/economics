@@ -13,7 +13,7 @@ import config as global_config # Root config module
 from simulation.engine import Simulation
 from simulation.models import Order
 from simulation.firms import Firm
-from simulation.core_agents import Household
+from simulation.core_agents import Household, Talent
 from simulation.markets.stock_market import StockMarket
 from simulation.decisions.corporate_manager import CorporateManager
 
@@ -52,7 +52,20 @@ def run_verification():
         households=[], firms=[], ai_trainer=None, repository=None, config_module=config, goods_data=[]
     )
     # Manually populate for control
-    sim.households = [Household(i, 1000.0, [], 'BALANCED', config) for i in range(config.NUM_HOUSEHOLDS)]
+    mock_talent = Talent(1.0, {})
+    sim.households = [
+        Household(
+            id=i,
+            talent=mock_talent,
+            goods_data=[],
+            initial_assets=1000.0,
+            initial_needs={},
+            decision_engine=None,
+            value_orientation='BALANCED',
+            config_dto=config
+        )
+        for i in range(config.NUM_HOUSEHOLDS)
+    ]
     sim.firms = [Firm(1, 10000.0, 500.0, "food", 1.0, None, 'BALANCED', config, is_visionary=True)]
     
     # Give some shares to households
