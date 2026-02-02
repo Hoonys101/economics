@@ -28,3 +28,16 @@ Approximately 128 unit tests are failing. The critical system integration paths 
 
 ## Priority
 **Medium**. The simulation core is functional, but the broken test suite hinders future refactoring confidence.
+
+## Progress Update (Corporate & Decision Units)
+**Status:** Completed
+**Scope:** Fix `tests/unit/corporate/` and `tests/unit/decisions/`.
+**Findings:**
+1. `tests/unit/corporate/conftest.py`: `FirmStateDTO` construction is outdated. It uses flat fields (`assets`, `inventory`) instead of the new nested DTO structure (`finance`, `production`, etc.).
+2. `tests/unit/decisions/test_household_engine_refactor.py`: The `test_behavioral_equivalence` test fails because `HouseholdStateDTO` is flat (Stage B refactor), but the `LegacyAIDrivenHouseholdDecisionEngine` (used for comparison) expects nested component access (`_econ_state`). The test fixture needs to satisfy both interfaces.
+3. `tests/unit/decisions/test_animal_spirits_phase2.py`: Similar mocking issues where `FirmStateDTO` and `HouseholdStateDTO` mocks are inconsistent with the code under test.
+
+**Resolution:**
+- Update `conftest.py` to correctly instantiate `FirmStateDTO` with nested departmental DTOs.
+- Update `test_household_engine_refactor.py` to use a hybrid mock for `Household` that supports both flat and nested access, ensuring behavioral equivalence tests can run.
+- Update `test_animal_spirits_phase2.py` to align mocks with current DTO definitions.

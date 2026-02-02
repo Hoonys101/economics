@@ -27,6 +27,9 @@ class TestHouseholdSurvivalOverride:
         household_state.needs = {"survival": 0.9} # Critical
         household_state.assets = 100.0
         household_state.agent_data = {}
+        household_state.expected_inflation = {}
+        household_state.preference_asset = 1.0
+        household_state.personality = "BALANCED"
 
         market_signals = {
             "food": {
@@ -34,7 +37,8 @@ class TestHouseholdSurvivalOverride:
                 "last_trade_tick": 100
             }
         }
-        market_snapshot = {"market_signals": market_signals}
+        market_snapshot = MagicMock()
+        market_snapshot.market_signals = market_signals
 
         context = DecisionContext(
             state=household_state,
@@ -46,7 +50,8 @@ class TestHouseholdSurvivalOverride:
         )
 
         # Execute
-        orders, vector = mock_household_engine._make_decisions_internal(context)
+        output = mock_household_engine._make_decisions_internal(context)
+        orders = output.orders
 
         # Assert
         assert len(orders) == 1
@@ -95,7 +100,8 @@ class TestHouseholdSurvivalOverride:
         mock_household_engine.asset_manager.decide_investments = MagicMock(return_value=[])
         mock_household_engine.housing_manager.decide_housing = MagicMock(return_value=[])
 
-        orders, vector = mock_household_engine._make_decisions_internal(context)
+        output = mock_household_engine._make_decisions_internal(context)
+        orders = output.orders
 
         # Assert no survival order (assumes normal logic returns empty in this mock setup)
         # Verify survival override logic didn't return early
@@ -119,10 +125,16 @@ class TestFirmPricingLogic:
         config.default_target_margin = 0.2
         config.fire_sale_asset_threshold = 0.0 # Disable fire sale
 
-        firm_state = MagicMock(spec=FirmStateDTO)
+        # Remove spec to allow nested mocking without strict DTO validation (or update spec validation logic)
+        firm_state = MagicMock()
         firm_state.id = 1
-        firm_state.assets = 1000.0
-        firm_state.inventory = {"widget": 10}
+        # Mock Finance
+        firm_state.finance = MagicMock()
+        firm_state.finance.balance = 1000.0
+        # Mock Production
+        firm_state.production = MagicMock()
+        firm_state.production.inventory = {"widget": 10}
+
         firm_state.agent_data = {"productivity_factor": 1.0}
 
         # Primary order from CEO (Market Price)
@@ -150,13 +162,16 @@ class TestFirmPricingLogic:
         )
 
         # Execute
-        orders, vector = mock_firm_engine.make_decisions(context)
+        output = mock_firm_engine.make_decisions(context)
+        orders = output.orders
 
         # Assert
         assert len(orders) == 1
         # Cost = 20.0 / 1.0 = 20.0
         # Price = 20.0 * (1 + 0.2) = 24.0
-        assert orders[0].price == 24.0
+        # Check price_limit or price (OrderDTO vs Order)
+        price = getattr(orders[0], 'price_limit', orders[0].price)
+        assert price == 24.0
 
     def test_fire_sale_trigger(self, mock_firm_engine):
         # Setup
@@ -166,10 +181,12 @@ class TestFirmPricingLogic:
         config.fire_sale_inventory_target = 5.0
         config.fire_sale_discount = 0.5
 
-        firm_state = MagicMock(spec=FirmStateDTO)
+        firm_state = MagicMock()
         firm_state.id = 1
-        firm_state.assets = 50.0 # Distressed (< 100)
-        firm_state.inventory = {"widget": 20} # High Inventory (> 10)
+        firm_state.finance = MagicMock()
+        firm_state.finance.balance = 50.0 # Distressed (< 100)
+        firm_state.production = MagicMock()
+        firm_state.production.inventory = {"widget": 20} # High Inventory (> 10)
         firm_state.agent_data = {"productivity_factor": 1.0}
 
         mock_firm_engine.corporate_manager.realize_ceo_actions.return_value = []
@@ -193,11 +210,13 @@ class TestFirmPricingLogic:
         )
 
         # Execute
-        orders, vector = mock_firm_engine.make_decisions(context)
+        output = mock_firm_engine.make_decisions(context)
+        orders = output.orders
 
         # Assert
         assert len(orders) == 1
         fire_sale = orders[0]
         assert fire_sale.order_type == "SELL"
         assert fire_sale.quantity == 15.0 # 20 - 5
-        assert fire_sale.price == 5.0 # 10.0 * (1 - 0.5)
+        price = getattr(fire_sale, 'price_limit', fire_sale.price)
+        assert price == 5.0 # 10.0 * (1 - 0.5)

@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
+from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from tests.utils.factories import create_firm_config_dto
 
 class MockConfig:
@@ -107,13 +108,21 @@ def firm_config_dto():
 
 @pytest.fixture
 def firm_dto():
-    return FirmStateDTO(
-        id=1,
-        assets=10000.0,
-        is_active=True,
-        inventory={"food": 50.0},
-        inventory_quality={"food": 1.0},
-        input_inventory={},
+    finance = FinanceStateDTO(
+        balance=10000.0,
+        revenue_this_turn=200.0,
+        expenses_this_tick=100.0,
+        consecutive_loss_turns=0,
+        profit_history=[],
+        altman_z_score=3.0,
+        valuation=1000.0,
+        total_shares=100.0,
+        treasury_shares=0.0,
+        dividend_rate=0.1,
+        is_publicly_traded=True
+    )
+
+    production = ProductionStateDTO(
         current_production=0.0,
         productivity_factor=1.0,
         production_target=100.0,
@@ -121,26 +130,34 @@ def firm_dto():
         base_quality=1.0,
         automation_level=0.0,
         specialization="food",
-        total_shares=100.0,
-        treasury_shares=0.0,
-        dividend_rate=0.1,
-        is_publicly_traded=True,
-        valuation=1000.0,
-        revenue_this_turn=200.0,
-        expenses_this_tick=100.0,
-        consecutive_loss_turns=0,
-        altman_z_score=3.0,
+        inventory={"food": 50.0},
+        input_inventory={},
+        inventory_quality={"food": 1.0}
+    )
+
+    sales = SalesStateDTO(
+        inventory_last_sale_tick={},
         price_history={"food": 10.0},
-        profit_history=[],
         brand_awareness=0.0,
         perceived_quality=1.0,
-        marketing_budget=0.0,
+        marketing_budget=0.0
+    )
+
+    hr = HRStateDTO(
         employees=[],
-        employees_data={},
+        employees_data={}
+    )
+
+    return FirmStateDTO(
+        id=1,
+        is_active=True,
+        finance=finance,
+        production=production,
+        sales=sales,
+        hr=hr,
         agent_data={"personality": "BALANCED"},
         system2_guidance={},
-        sentiment_index=1.0,
-        inventory_last_sale_tick={}
+        sentiment_index=1.0
     )
 
 @pytest.fixture
