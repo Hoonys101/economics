@@ -67,30 +67,20 @@ class TestGovernmentTax:
         tax_type = "wealth_tax"
         current_tick = 10
 
-        expected_result: TaxCollectionResult = {
-            "success": True,
-            "amount_collected": 50.0,
-            "tax_type": tax_type,
-            "payer_id": payer.id,
-            "payee_id": government.id,
-            "error_message": None
-        }
-        government.tax_agency.collect_tax.return_value = expected_result
+        government.settlement_system.transfer.return_value = True
 
         # Act
         with pytest.warns(DeprecationWarning, match="Government.collect_tax is deprecated"):
             result = government.collect_tax(amount, tax_type, payer, current_tick)
 
         # Assert
-        government.tax_agency.collect_tax.assert_called_once_with(
-            payer=payer,
-            payee=government,
-            amount=amount,
-            tax_type=tax_type,
-            settlement_system=government.settlement_system,
-            current_tick=current_tick
+        government.settlement_system.transfer.assert_called_once_with(
+            payer, government, amount, f"{tax_type} collection"
         )
-        assert result == expected_result
+
+        assert result["success"] is True
+        assert result["amount_collected"] == amount
+        assert result["tax_type"] == tax_type
         assert government.total_collected_tax == 50.0 # Should have called record_revenue internally
 
     def test_collect_tax_no_settlement_system(self, government):

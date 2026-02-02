@@ -13,7 +13,7 @@ def test_indicator_aggregation(simple_household, mock_config_module):
 
     # Setup Household state
     # tracker calculates total_consumption from household._econ_state.current_consumption
-    simple_household.current_consumption = 10.0
+    simple_household._econ_state.current_consumption = 10.0
     simple_household.is_active = True
 
     # Act

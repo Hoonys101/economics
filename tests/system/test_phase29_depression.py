@@ -67,6 +67,7 @@ class TestPhase29Depression(unittest.TestCase):
             CB_INFLATION_TARGET=0.02,
             CB_TAYLOR_ALPHA=1.5,
             CB_TAYLOR_BETA=0.5,
+            CB_NEUTRAL_RATE=0.02,
             MIN_BASE_RATE=0.0,
             MAX_BASE_RATE=0.2,
             HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK=1.0,
@@ -197,6 +198,7 @@ class TestPhase29Depression(unittest.TestCase):
         self.repository = MagicMock(spec=SimulationRepository)
         self.repository.runs = MagicMock()
         self.repository.analytics = MagicMock()
+        self.repository.agents = MagicMock()
         self.repository.runs.save_simulation_run.return_value = "test_run"
         self.ai_trainer = MagicMock(spec=AIEngineRegistry)
 
