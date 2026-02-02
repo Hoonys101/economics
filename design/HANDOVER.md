@@ -1,64 +1,55 @@
-# Handover Report: 2026-01-31
+# Handover Report: 2026-02-02 (Liquidation Sprint)
 
 ## 1. Executive Summary
-This session marked a significant leap in architectural maturity, resolving critical technical debt related to configuration management and transaction atomicity. The introduction of a unified configuration system (TD-166) and an atomic settlement protocol (TD-176, TDL-028) has substantially improved system reliability and traceability. However, a major economic bug was discovered: the mortgage system is non-functional due to orphaned transaction logic, which is now the highest priority pending task.
+This session focused on **Architectural Hardening & DTO Compliance** as part of the "Liquidation Sprint". We successfully enforced immutability across the stock market, sealed abstraction leaks in decision engines, and resolved a long-standing systemic issue with floating-point precision that caused minute zero-sum violations. The "Purity Gate" is now a reality, ensuring agents interact only with validated, read-only snapshots of the world.
 
 ## 2. Accomplishments: Key Architectural Victories
 
-- **Unified Configuration System (TD-166):**
+- **Input Leak Liquidation (TD-194):**
   - **Status**: ✅ **RESOLVED**
-  - **Description**: The monolithic `config.py` and fragmented YAML files have been replaced by a unified, Pydantic-based configuration system. A new `modules/config` module provides a single source of truth via schemas, a layered loader, and an ECS `ConfigurationComponent`.
-  - **Impact**: Eliminates configuration duplication and ambiguity. A `legacy_adapter` was implemented to ensure 100% backward compatibility with the hundreds of existing `config.PARAM` references, enabling a safe, incremental migration.
+  - **Description**: Removed raw `markets` dictionary access from `DecisionInputDTO`. Agents now transition strictly to using `MarketSnapshotDTO`.
+  - **Impact**: Eliminates the risk of agents bypassing the DTO layer to mutate simulation state directly.
 
-- **Atomic Settlements & Tax Decoupling (TD-176):**
-  - **Status**: ✅ **Implemented**
-  - **Description**: A saga-like atomic settlement system (`SettlementSystem.settle_atomic`) was implemented to ensure trades and their associated taxes are settled as a single, all-or-nothing transaction. Tax calculation logic was decoupled from the `TransactionProcessor` into a pure `TaxationSystem`.
-  - **Impact**: Prevents data inconsistencies and "free lunch" scenarios where a trade could succeed but tax collection could fail.
-
-- **Standardized Order Protocol (TDL-028):**
+- **Public Manager Compliance (TD-191-B):**
   - **Status**: ✅ **RESOLVED**
-  - **Description**: The legacy mutable `Order` class was replaced with a frozen, immutable `OrderDTO`. This enforces a clear, standardized contract for all market interactions.
-  - **Impact**: Eliminates side-effect risks in decision engines and standardizes field names (`side`, `price_limit`) across the system.
+  - **Description**: Refactored `PublicManager` to explicitly inherit from `IFinancialEntity` and `IAssetRecoverySystem`. Standardized its ID to an integer constant.
+  - **Impact**: Ensures architectural consistency and prevents `TypeError` and ID-mismatch bugs during liquidation/bankruptcy events.
 
-- **Escheatment & Liquidation Integrity (WO-178):**
-  - **Status**: ✅ **Implemented**
-  - **Description**: Implemented "Escheatment" logic within `SettlementSystem.record_liquidation`. Residual assets from liquidated firms are now correctly transferred to the Government instead of vanishing.
-  - **Impact**: Plugs a significant money leak and enforces zero-sum integrity during agent bankruptcy.
+- **Stock Market DTO Migration (TD-193):**
+  - **Status**: ✅ **RESOLVED**
+  - **Description**: Migrated `StockMarket` from mutable `StockOrder` objects to immutable `OrderDTO`s. Introduced a `ManagedOrder` wrapper to handle internal state (remaining quantity) within the market.
+  - **Impact**: Standardizes the order book protocol and prevents side-effects in investor decision engines.
 
-- **Component Refactoring:**
-  - **Household Decomposition (TD-065, TD-066):** The `Household` god-class was decomposed into `ConsumptionManager` and `DecisionUnit`, improving separation of concerns.
-  - **Repository Unit of Work (TDL-029):** `SimulationRepository` was refactored from a facade into a Unit of Work container, improving interface segregation.
-  - **Corporate Strategy Renaming (WO-171):** `FinanceManager`, `OperationsManager`, and `HRManager` were renamed to `FinancialStrategy`, `ProductionStrategy`, and `HRStrategy` to align with architectural goals.
+- **Floating Point Integrity (WO-142):**
+  - **Status**: ✅ **RESOLVED**
+  - **Description**: Implemented a global rounding policy (`round(v, 2)`) for taxes, inheritance, and asset valuations.
+  - **Impact**: Resolved systemic "dust" accumulation/leaks (e.g., `1e-14`), ensuring perfect zero-sum integrity during complex distributions.
 
 ## 3. Economic Insights
 
-- **CRITICAL FLAW - Mortgage System Bypass (WO-HousingRefactor):**
-  - A major flaw was discovered where the `TransactionManager` was not correctly routing housing purchase transactions. This bypassed the entire mortgage creation logic (LTV calculation, loan creation).
-  - **Consequence**: All housing transactions were effectively cash-only, severely distorting the credit system, preventing fractional-reserve banking mechanics, and leading to an unrealistic economic simulation.
+- **The Cost of Immutability (ManagedOrder Pattern):**
+  - The `ManagedOrder` wrapper pattern has proven highly effective. It allows the market to manage transaction state efficiently while presenting a clean, immutable interface to the external world. This pattern should be considered a "Gold Standard" for other market modules.
+
+- **DTO Divergence Fixed:**
+  - The parity audit revealed that several "Completed" tasks had actually diverged from DTO best practices. Correcting `PublicManager`'s subscripting bug (`signal['best_ask']` -> `signal.best_ask`) was a crucial win for stabilization.
 
 ## 4. Pending Tasks & Technical Debt
 
+- **CRITICAL Priority:**
+  - **Mortgage System Restoration (WO-HousingRefactor):** This remains the highest priority. The housing market is currently "cash-only" because the mortgage processing logic is disconnected from the transaction handler.
+
 - **High Priority:**
-  - **Fix Orphaned Housing Logic (WO-HousingRefactor):** The mortgage processing logic in `HousingSystem` is currently dead code. It must be extracted into a `HousingTransactionHandler` and registered with the `TransactionManager` to make the housing market and credit system functional.
-  - **Fix DI in ViewModels (TDL-029):** ViewModels are creating their own `SimulationRepository` instances, which breaks dependency injection. They must be refactored to receive the repository as a constructor argument.
+  - **Household God Class Decomposition (TD-162):** The `Household` class (977 LoC) needs to be split into `Bio`, `Econ`, and `Social` components. 1st-stage mission orders (`MISSION-B1`) have been prepared for this.
+  - **Firm facade properties (TD-067):** Removing 20+ proxy properties from `Firm` to enforce direct component ownership. Mission order `MISSION-F1` is ready.
 
-- **Medium Priority:**
-  - **Consolidate Housing Decision Logic (TD-065):** Logic for housing decisions is duplicated between `DecisionUnit` and `HouseholdSystem2Planner`. This must be consolidated to a single source of truth.
-  - **Externalize Magic Numbers (TD-065):** Hardcoded values in the `DecisionUnit`'s decision-making logic (e.g., risk premiums, decay rates) should be moved into the new `HouseholdConfigDTO`.
+## 5. Session Verification Results
 
-- **SPECCED / Long-Term:**
-  - The following technical debts have been formally specified and are ready for implementation: `[TD-160]` Transaction-Tax Atomicity, `[TDL-028]` Order DTO final deprecations, `[TD-176]` full Government interaction via Proxies.
+- **Test Suite Pass Rate**: ✅ **100% (Integration/Unit)**
+- **Economic Integrity**: ✅ **0.0000 Leak confirmed** (Verified via `trace_leak` & manual audit).
+- **Parity Audit**: ✅ **PASSED** (After resolving PublicManager and StockMarket divergence).
 
-## 5. Verification Status
-
-- **`trace_leak.py`**:
-  - **Result**: ✅ **PASSED**
-  - **Notes**: Confirmed **0.0000 leak** after the `OrderDTO` refactor (TDL-028). The Escheatment fix (WO-178) further secures the system against money disappearing.
-
-- **Integration & Unit Tests**:
-  - **Result**: ✅ **PASSED**
-  - **Notes**: The comprehensive test suite passed after major refactors (TD-166, TDL-028), validating the success and safety of these architectural changes.
-
-- **`main.py` (Simulation Initialization)**:
-  - **Result**: ✅ **OK**
-  - **Notes**: The simulation initializes and runs, but the economic output is flawed due to the mortgage system bug.
+## 6. Next Session Mission Plan (Parallel Liquidation)
+Mission orders have been pre-staged for:
+1. `MISSION-H1-HOUSING`: Housing decision unification.
+2. `MISSION-F1-FIRM`: Firm facade property removal.
+3. `MISSION-B1-HOUSEHOLD-DTO`: DTO/Interface baseline for Household decomposition.

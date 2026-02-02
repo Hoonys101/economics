@@ -61,6 +61,8 @@
         - **Liquidation Sprint (2026-02-02)**: ✅ COMPLETED & MERGED
             - [x] **TD-194: Input Leak Liquidation**: Strict DTO funnelling through `MarketSnapshotDTO`.
             - [x] **TD-191-B: Public Manager Compliance**: `IFinancialEntity` compliance & ID Standardization.
+            - [x] **TD-193: Stock Market DTO Migration**: ManagedOrder wrapper & Immutable `OrderDTO` enforcement.
+            - [x] **WO-142: Floating Point Integrity**: Rounding policy applied to taxes and inheritance.
         - **Economic Integrity**: Financial Leak Audit (0.0000 leak confirmed) ✅ COMPLETED
 
     - **Next Phase**: `Emergency Phase: Mortgage System Restoration`

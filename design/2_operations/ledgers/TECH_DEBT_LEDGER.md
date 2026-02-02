@@ -45,7 +45,9 @@
 |---|---|---|---|---|
 | **HousingRefactor** | 2026-01-31 | Orphaned Housing Logic (Mortgage Bypass) | **CRITICAL** | **ACTIVE** | Housing market functional failure. |
 | TD-065 | 2026-01-31 | Duplicated Housing Decision Logic | Maintenance Risk | **ACTIVE** | Consolidated housing logic pending. |
+| TD-193 | 2026-02-02 | Mutable StockOrders in Market | Immutability Violation | **RESOLVED** |
 | TD-194 | 2026-02-02 | Abstraction Leak: `DecisionInputDTO` | Raw market access in DTO | **RESOLVED** |
+| WO-142 | 2026-02-02 | Floating Point Precision Leak | Zero-Sum Violation | **RESOLVED** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
