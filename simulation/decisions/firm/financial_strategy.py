@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any
 import logging
-from simulation.models import Order, StockOrder
+from simulation.models import Order
+from modules.market.api import OrderDTO
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from modules.finance.api import BorrowerProfileDTO
 from simulation.decisions.firm.api import FinancialPlanDTO
@@ -126,7 +127,7 @@ class FinancialStrategy:
 
         return orders
 
-    def _attempt_secondary_offering(self, firm: FirmStateDTO, context: DecisionContext, config: FirmConfigDTO) -> Optional[StockOrder]:
+    def _attempt_secondary_offering(self, firm: FirmStateDTO, context: DecisionContext, config: FirmConfigDTO) -> Optional[OrderDTO]:
         """Sell treasury shares to raise capital when cash is low."""
         startup_cost = config.startup_cost
         trigger_ratio = config.seo_trigger_ratio
@@ -171,12 +172,12 @@ class FinancialStrategy:
         if price <= 0:
             return None
 
-        order = StockOrder(
+        order = OrderDTO(
             agent_id=firm.id,
-            firm_id=firm.id,
-            order_type="SELL",
+            side="SELL",
+            item_id=f"stock_{firm.id}",
             quantity=sell_qty,
-            price=price,
+            price_limit=price,
             market_id="stock_market"
         )
         logger.info(f"SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}")

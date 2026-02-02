@@ -3,11 +3,12 @@ from typing import TYPE_CHECKING, List, Dict, Any, Optional, Tuple
 import logging
 import random
 
-from simulation.models import Order, StockOrder
+from simulation.models import Order
 from simulation.ai.api import Tactic, Aggressiveness, Personality
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext, MacroFinancialContext
 from simulation.decisions.portfolio_manager import PortfolioManager
+from modules.market.api import OrderDTO
 
 if TYPE_CHECKING:
     from simulation.ai.household_ai import HouseholdAI
@@ -466,8 +467,8 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         action_vector: Any,
         current_time: int,
         macro_context: Optional[MacroFinancialContext] = None,
-    ) -> List[StockOrder]:
-        stock_orders: List[StockOrder] = []
+    ) -> List[OrderDTO]:
+        stock_orders: List[OrderDTO] = []
 
         if not getattr(self.config_module, "STOCK_MARKET_ENABLED", False):
             return stock_orders
@@ -494,8 +495,8 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             total_liquid_assets=household.assets,
             risk_aversion=risk_aversion,
             risk_free_rate=risk_free_rate,
-            equity_return_proxy=avg_dividend_yield,
-            survival_cost=survival_cost,
+            equity_return_proxy=equity_return,
+            survival_cost=monthly_survival_cost,
             inflation_expectation=market_data.get("inflation", 0.02),
             macro_context=macro_context
         )
@@ -528,7 +529,7 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             return 5.0
         return 2.0
 
-    def _place_buy_orders(self, household: "HouseholdStateDTO", amount_to_invest: float, market_snapshot: Any, tick: int) -> List[StockOrder]:
+    def _place_buy_orders(self, household: "HouseholdStateDTO", amount_to_invest: float, market_snapshot: Any, tick: int) -> List[OrderDTO]:
         orders = []
         # Filter stock prices from snapshot
         available_stocks = []
@@ -551,11 +552,18 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             if price > 0:
                 quantity = investment_per_stock / price
                 if quantity >= 1.0:
-                    order = StockOrder(household.id, order_type="BUY", firm_id=firm_id, quantity=quantity, price=price * 1.05)
+                    order = OrderDTO(
+                        agent_id=household.id,
+                        side="BUY",
+                        item_id=f"stock_{firm_id}",
+                        quantity=quantity,
+                        price_limit=price * 1.05,
+                        market_id="stock_market"
+                    )
                     orders.append(order)
         return orders
 
-    def _place_sell_orders(self, household: "HouseholdStateDTO", amount_to_sell: float, market_snapshot: Any, tick: int) -> List[StockOrder]:
+    def _place_sell_orders(self, household: "HouseholdStateDTO", amount_to_sell: float, market_snapshot: Any, tick: int) -> List[OrderDTO]:
         orders = []
         sorted_holdings = sorted(
             household.portfolio_holdings.items(),
@@ -573,7 +581,14 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
                 sell_value = min(amount_to_sell, value_of_holding)
                 sell_quantity = sell_value / price
                 if sell_quantity >= 1.0:
-                    order = StockOrder(household.id, order_type="SELL", firm_id=firm_id, quantity=sell_quantity, price=price * 0.95)
+                    order = OrderDTO(
+                        agent_id=household.id,
+                        side="SELL",
+                        item_id=f"stock_{firm_id}",
+                        quantity=sell_quantity,
+                        price_limit=price * 0.95,
+                        market_id="stock_market"
+                    )
                     orders.append(order)
                     amount_to_sell -= sell_value
         return orders

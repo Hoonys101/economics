@@ -5,7 +5,8 @@ from simulation.firms import Firm
 from simulation.components.finance_department import FinanceDepartment
 from simulation.systems.lifecycle_manager import AgentLifecycleManager
 from simulation.dtos.api import SimulationState
-from simulation.models import Order, StockOrder
+from simulation.models import Order
+from modules.market.api import OrderDTO
 from tests.utils.factories import create_firm_config_dto, create_household_config_dto
 
 class TestGraceProtocol:
@@ -61,10 +62,11 @@ class TestGraceProtocol:
         assert market_mock.place_order.called
         call_args = market_mock.place_order.call_args
         order = call_args[0][0]
-        assert isinstance(order, Order)
-        assert order.order_type == "SELL"
+        # Order is OrderDTO
+        assert isinstance(order, OrderDTO)
+        assert order.side == "SELL"
         assert order.item_id == "wood"
-        assert order.price == 8.0 # 10.0 * 0.8
+        assert order.price_limit == 8.0 # 10.0 * 0.8
 
         # Run 2-5: Stay in Distress
         for i in range(2, 6):
@@ -143,8 +145,9 @@ class TestGraceProtocol:
         # Check Stock Order
         assert stock_market_mock.place_order.called
         order = stock_market_mock.place_order.call_args[0][0]
-        assert isinstance(order, StockOrder)
-        assert order.firm_id == 1
+        # Should now be OrderDTO
+        assert isinstance(order, OrderDTO)
+        assert order.item_id == "stock_1"
 
         # Test Death Override in update_needs
         # Mock social component to return False (Death)

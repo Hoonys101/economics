@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
-from simulation.models import Order, StockOrder
+from simulation.models import Order
+from modules.market.api import OrderDTO
 from simulation.decisions.household.api import AssetManagementContext
 from simulation.decisions.portfolio_manager import PortfolioManager
 from simulation.decisions.household.stock_trader import StockTrader
@@ -220,8 +221,8 @@ class AssetManager:
 
         return orders
 
-    def _make_stock_investment_decisions(self, context: AssetManagementContext) -> List[StockOrder]:
-        stock_orders: List[StockOrder] = []
+    def _make_stock_investment_decisions(self, context: AssetManagementContext) -> List[OrderDTO]:
+        stock_orders: List[OrderDTO] = []
         household = context.household
         config = context.config
         market_snapshot = context.market_snapshot
