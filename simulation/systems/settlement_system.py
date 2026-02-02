@@ -2,7 +2,10 @@ from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List
 import logging
 
 from simulation.finance.api import ISettlementSystem, ITransaction
-from modules.finance.api import IFinancialEntity, InsufficientFundsError
+from modules.finance.api import (
+    IFinancialEntity, InsufficientFundsError,
+    IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider
+)
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
 
 if TYPE_CHECKING:
@@ -27,29 +30,53 @@ class SettlementSystem(ISettlementSystem):
 
     def create_settlement(
         self,
-        agent_id: int,
-        cash_assets: float,
-        portfolio_assets: Dict[str, Any],
-        real_estate_assets: List[Any],
+        agent: Any, # IPortfolioHandler & IHeirProvider & IFinancialEntity
         tick: int
     ) -> LegacySettlementAccount:
         """
         TD-160: Initiates the settlement process by creating an escrow account.
-        In a real implementation, this would involve moving assets.
-        Here we assume assets are 'logically' moved by the caller clearing them from the agent.
+        Atomically transfers all assets (Cash + Portfolio) from the agent to the escrow.
         """
+        agent_id = agent.id
+
+        # 1. Atomic Transfer: Portfolio
+        if isinstance(agent, IPortfolioHandler):
+            portfolio_dto = agent.get_portfolio()
+            agent.clear_portfolio()
+        else:
+            # Fallback for non-compliant agents (should not happen with new Households)
+            portfolio_dto = PortfolioDTO(assets=[])
+            self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
+
+        # 2. Atomic Transfer: Cash
+        cash_balance = agent.assets
+        if cash_balance > 0:
+            agent.withdraw(cash_balance)
+
+        # 3. Determine Heir / Escheatment
+        heir_id = None
+        is_escheatment = True
+
+        if isinstance(agent, IHeirProvider):
+            heir_id = agent.get_heir()
+            if heir_id is not None:
+                is_escheatment = False
+
         account = LegacySettlementAccount(
             deceased_agent_id=agent_id,
-            escrow_cash=cash_assets,
-            escrow_portfolio=portfolio_assets,
-            escrow_real_estate=real_estate_assets,
+            escrow_cash=cash_balance,
+            escrow_portfolio=portfolio_dto,
+            escrow_real_estate=[], # Placeholder
             status="OPEN",
-            created_at=tick
+            created_at=tick,
+            heir_id=heir_id,
+            is_escheatment=is_escheatment
         )
         self.settlement_accounts[agent_id] = account
+
         self.logger.info(
-            f"SETTLEMENT_CREATED | Escrow account created for Agent {agent_id}. Cash: {cash_assets:.2f}",
-            extra={"tick": tick, "agent_id": agent_id, "tags": ["settlement", "inheritance"]}
+            f"SETTLEMENT_CREATED | Escrow account created for Agent {agent_id}. Cash: {cash_balance:.2f}. Portfolio items: {len(portfolio_dto.assets)}. Heir: {heir_id if heir_id else 'NONE (Escheatment)'}",
+            extra={"tick": tick, "agent_id": agent_id, "tags": ["settlement", "inheritance", "atomic"]}
         )
         return account
 
@@ -75,16 +102,47 @@ class SettlementSystem(ISettlementSystem):
         account.status = "PROCESSING"
         transactions: List[ITransaction] = []
 
-        # We need a dummy 'escrow' entity for the source of transfer
-        # or we assume the money is 'floating' in this system and we just deposit to recipients.
-        # To maintain zero-sum, we must ensure the total distributed <= escrow_cash.
-        # But wait, where is the cash?
-        # Ideally, we should have transferred it to a concrete 'EscrowAgent' in the simulation.
-        # But `SettlementSystem` holds the account virtually.
-        # If we didn't transfer to a real agent, the cash effectively vanished from the system when we cleared the deceased agent.
-        # So creating it here (depositing to heir) is technically 'creating' it back.
-        # Zero-Sum: Deceased Assets -> 0 -> Heir Assets. Net change 0 (if amounts match).
+        # --- 1. Portfolio Distribution (Priority) ---
+        portfolio_transferred = False
+        if account.escrow_portfolio.assets:
+            # Attempt to find the correct recipient in the plan
+            # If escheatment -> Government
+            # If inheritance -> Heir (heir_id)
 
+            recipient_candidate = None
+
+            for recipient, _, _, _ in distribution_plan:
+                # Check for Government (Escheatment)
+                if account.is_escheatment:
+                    # Heuristic: Check for Government class or ID
+                    if (hasattr(recipient, 'agent_type') and recipient.agent_type == 'government') or \
+                       (hasattr(recipient, 'id') and str(recipient.id).upper() == "GOVERNMENT") or \
+                       (recipient.__class__.__name__ == "Government"):
+                        recipient_candidate = recipient
+                        break
+
+                # Check for Heir
+                else:
+                    if hasattr(recipient, 'id') and recipient.id == account.heir_id:
+                        recipient_candidate = recipient
+                        break
+
+            if recipient_candidate and isinstance(recipient_candidate, IPortfolioHandler):
+                recipient_candidate.receive_portfolio(account.escrow_portfolio)
+                # Clear from escrow to prevent leak/duplication (Reassign to empty DTO to preserve passed reference)
+                account.escrow_portfolio = PortfolioDTO(assets=[])
+                portfolio_transferred = True
+                self.logger.info(
+                    f"PORTFOLIO_TRANSFER | Transferred portfolio to {recipient_candidate.id}",
+                    extra={"tick": tick, "agent_id": account.deceased_agent_id}
+                )
+            else:
+                self.logger.error(
+                    f"PORTFOLIO_TRANSFER_FAIL | Could not find valid IPortfolioHandler recipient for {'Escheatment' if account.is_escheatment else f'Heir {account.heir_id}'}",
+                    extra={"tick": tick, "agent_id": account.deceased_agent_id}
+                )
+
+        # --- 2. Cash Distribution ---
         total_distributed = 0.0
 
         for recipient, amount, memo, tx_type in distribution_plan:
@@ -97,23 +155,23 @@ class SettlementSystem(ISettlementSystem):
                      f"Escrow: {account.escrow_cash:.2f}, Distributed: {total_distributed:.2f}, Requested: {amount:.2f}",
                      extra={"tick": tick, "agent_id": account_id}
                  )
-                 continue # Skip or abort? Skip for now to save what we can.
+                 continue
 
             try:
-                # Direct Deposit (Logic: The cash is coming from the void where we put it when clearing deceased)
+                # Direct Deposit (Source is Void/Escrow)
                 recipient.deposit(amount)
                 total_distributed += amount
 
                 # Create Receipt
                 tx = self._create_transaction_record(
-                    buyer_id=recipient.id if hasattr(recipient, 'id') else 0, # Recipient is Buyer (Receiver)
-                    seller_id=account.deceased_agent_id, # Deceased is Seller (Source)
+                    buyer_id=recipient.id if hasattr(recipient, 'id') else 0, # Recipient
+                    seller_id=account.deceased_agent_id, # Deceased
                     amount=amount,
                     memo=memo,
                     tick=tick
                 )
                 tx["transaction_type"] = tx_type
-                tx["metadata"]["executed"] = True # Mark as executed
+                tx["metadata"]["executed"] = True
                 transactions.append(tx)
 
             except Exception as e:
@@ -121,7 +179,6 @@ class SettlementSystem(ISettlementSystem):
 
         # Update Account
         account.escrow_cash -= total_distributed
-        # Rounding check
         if abs(account.escrow_cash) < 0.01:
             account.escrow_cash = 0.0
 
@@ -136,17 +193,27 @@ class SettlementSystem(ISettlementSystem):
 
         account = self.settlement_accounts[account_id]
 
-        # Check integrity
-        # We assume Portfolio and Real Estate are handled separately or in same batch (not implemented in execute_settlement yet for brevity, assuming cash conversion or direct transfer handling elsewhere).
-        # For this task, we focus on Cash integrity.
+        has_error = False
 
+        # 1. Cash Check
         if account.escrow_cash > 0.01:
             self.logger.warning(
                 f"SETTLEMENT_LEAK | Account {account_id} closed with remaining cash: {account.escrow_cash:.2f}. Burning it.",
                 extra={"tick": tick, "agent_id": account_id}
             )
-            # Burn remaining (it's already in void, just update record)
             account.escrow_cash = 0.0
+            has_error = True
+
+        # 2. Portfolio Check (TD-160)
+        if account.escrow_portfolio and account.escrow_portfolio.assets:
+             self.logger.warning(
+                f"SETTLEMENT_LEAK | Account {account_id} closed with remaining PORTFOLIO ASSETS: {len(account.escrow_portfolio.assets)} items.",
+                extra={"tick": tick, "agent_id": account_id}
+             )
+             # Logic to burn/destroy portfolio assets? Just log for now.
+             has_error = True
+
+        if has_error:
             account.status = "CLOSED_WITH_LEAK"
             return False
 
@@ -155,8 +222,6 @@ class SettlementSystem(ISettlementSystem):
             f"SETTLEMENT_CLOSED | Account {account_id} closed successfully.",
             extra={"tick": tick, "agent_id": account_id}
         )
-        # Optional: Remove from dict to save memory, or keep for audit?
-        # self.settlement_accounts.pop(account_id)
         return True
 
     def record_liquidation(

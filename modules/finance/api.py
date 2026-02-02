@@ -1,4 +1,4 @@
-from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple
+from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable
 from dataclasses import dataclass
 import abc
 
@@ -31,6 +31,20 @@ class BailoutLoanDTO:
     amount: float
     interest_rate: float
     covenants: BailoutCovenant
+
+# --- Portfolio DTOs (TD-160) ---
+
+@dataclass
+class PortfolioAsset:
+    """Represents a single type of asset holding."""
+    asset_type: str  # e.g., 'stock', 'bond'
+    asset_id: str    # e.g., 'FIRM_1', 'GOV_BOND_10Y'
+    quantity: float
+
+@dataclass
+class PortfolioDTO:
+    """A comprehensive, serializable representation of an agent's portfolio."""
+    assets: List[PortfolioAsset]
 
 class TaxCollectionResult(TypedDict):
     """
@@ -284,4 +298,39 @@ class ICentralBank(IMonetaryOperations, Protocol):
         This is primarily for logging and verification. The actual money supply
         update happens in Government's ledger.
         """
+        ...
+
+# --- Portfolio Interfaces (TD-160) ---
+
+@runtime_checkable
+class IPortfolioHandler(Protocol):
+    """
+    An interface for entities that can own and transact with portfolio assets.
+    This contract decouples the SettlementSystem from agent-specific implementations.
+    """
+
+    def get_portfolio(self) -> PortfolioDTO:
+        """Returns a complete, structured snapshot of the agent's portfolio."""
+        ...
+
+    def receive_portfolio(self, portfolio: PortfolioDTO) -> None:
+        """
+        Receives and integrates a full portfolio of assets.
+        This method must handle the addition of assets to the agent's holdings.
+        """
+        ...
+
+    def clear_portfolio(self) -> None:
+        """
+        Atomically clears all portfolio assets from the agent.
+        Used to transfer assets to an escrow account.
+        """
+        ...
+
+@runtime_checkable
+class IHeirProvider(Protocol):
+    """An interface for agents that can designate an heir."""
+
+    def get_heir(self) -> Any: # Should resolve to IPortfolioHandler & IFinancialEntity
+        """Returns the designated heir, or None if there is no heir."""
         ...

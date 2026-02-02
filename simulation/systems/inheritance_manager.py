@@ -149,18 +149,12 @@ class InheritanceManager:
         # Move remaining assets to Settlement Account
         # Logic: We define them here, and clear them from Deceased.
         account = settlement_system.create_settlement(
-            agent_id=deceased.id,
-            cash_assets=cash,
-            portfolio_assets=portfolio_holdings,
-            real_estate_assets=deceased_units,
+            agent=deceased,
             tick=current_tick
         )
 
-        # ATOMIC CLEAR: Deceased is now empty.
-        deceased._econ_state.assets = 0.0
-        deceased._econ_state.portfolio.holdings.clear()
-        # RE units already removed from list if liquidated, but ones remaining in `deceased_units` still point to `deceased.id`.
-        # We don't change `unit.owner_id` to "ESCROW" just yet, we track them in account.
+        # ATOMIC CLEAR: Handled by create_settlement via IPortfolioHandler interface.
+        # RE units remaining in `deceased_units` still point to `deceased.id`.
 
         # 4. Plan Distribution
         # ------------------------------------------------------------------
@@ -187,24 +181,9 @@ class InheritanceManager:
                 distribution_plan.append((government, cash, "escheatment_cash", "escheatment"))
 
             # Escheat remaining Assets
-            # We must transfer ownership manually as SettlementSystem.execute only does cash.
-            for firm_id, share in portfolio_holdings.items():
-                 # Transfer logic: Deceased (now void) -> Gov
-                 # Record TX
-                 tx = Transaction(
-                        buyer_id=government.id,
-                        seller_id=deceased.id,
-                        item_id=f"stock_{firm_id}",
-                        quantity=share.quantity,
-                        price=0.0,
-                        market_id="stock_market",
-                        transaction_type="asset_transfer",
-                        time=current_tick,
-                        metadata={"executed": True}
-                    )
-                 transactions.append(tx)
-                 # We assume Gov handles the stock (or it's lost/absorbed)
+            # Portfolio Transfer is handled by SettlementSystem (Atomic).
 
+            # Real Estate Transfer (Manual)
             for unit in deceased_units:
                  unit.owner_id = government.id
                  tx = Transaction(
@@ -229,25 +208,9 @@ class InheritanceManager:
                 for heir in heirs:
                     distribution_plan.append((heir, share_cash, "inheritance_distribution", "inheritance_distribution"))
 
-            # Distribute Assets (Manual)
-            for firm_id, share in portfolio_holdings.items():
-                qty_per_heir = share.quantity / count # Float
-
-                for heir in heirs:
-                    heir._econ_state.portfolio.add(firm_id, qty_per_heir, share.acquisition_price)
-
-                    tx = Transaction(
-                        buyer_id=heir.id,
-                        seller_id=deceased.id,
-                        item_id=f"stock_{firm_id}",
-                        quantity=qty_per_heir,
-                        price=0.0, # Transfer, no cash involved
-                        market_id="stock_market",
-                        transaction_type="inheritance_distribution",
-                        time=current_tick,
-                        metadata={"executed": True}
-                    )
-                    transactions.append(tx)
+            # Distribute Assets
+            # Portfolio Transfer is handled by SettlementSystem (Atomic) to the designated heir (Primary).
+            # Note: This changes from equal split to single heir for portfolio assets to ensure atomicity.
 
             # Distribute Real Estate (Round Robin)
             for i, unit in enumerate(deceased_units):

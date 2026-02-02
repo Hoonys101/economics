@@ -19,6 +19,7 @@ from simulation.interfaces.market_interface import IMarket
 from simulation.dtos import DecisionContext, FiscalContext, LeisureEffectDTO, LeisureType, MacroFinancialContext, ConsumptionResult, DecisionInputDTO
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
+from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO, PortfolioAsset
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -877,3 +878,43 @@ class Household(BaseAgent, ILearningAgent):
             self._add_assets(delta)
         else:
             self._sub_assets(abs(delta))
+
+    # --- IPortfolioHandler Implementation ---
+
+    def get_portfolio(self) -> PortfolioDTO:
+        assets = []
+        for firm_id, share in self._econ_state.portfolio.holdings.items():
+            assets.append(PortfolioAsset(
+                asset_type="stock",
+                asset_id=str(firm_id),
+                quantity=share.quantity
+            ))
+        return PortfolioDTO(assets=assets)
+
+    def receive_portfolio(self, portfolio: PortfolioDTO) -> None:
+        for asset in portfolio.assets:
+            if asset.asset_type == "stock":
+                try:
+                    firm_id = int(asset.asset_id)
+                    # TD-160: Inherited assets are integrated.
+                    # We use 0.0 acquisition price as default for inheritance if not specified.
+                    self._econ_state.portfolio.add(firm_id, asset.quantity, 0.0)
+                except ValueError:
+                    self.logger.error(f"Invalid firm_id in portfolio receive: {asset.asset_id}")
+            else:
+                self.logger.warning(f"Household received unhandled asset type: {asset.asset_type} (ID: {asset.asset_id})")
+
+    def clear_portfolio(self) -> None:
+        self._econ_state.portfolio.holdings.clear()
+
+    # --- IHeirProvider Implementation ---
+
+    def get_heir(self) -> Optional[int]:
+        """
+        Returns the ID of the designated heir (Spouse -> Oldest Child -> None).
+        """
+        if self._bio_state.spouse_id is not None:
+            return self._bio_state.spouse_id
+        if self._bio_state.children_ids:
+            return self._bio_state.children_ids[0]
+        return None

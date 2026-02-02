@@ -11,8 +11,9 @@ from simulation.dtos.api import MarketSnapshotDTO
 from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
+from simulation.portfolio import Portfolio
 from modules.government.taxation.system import TaxationSystem
-from modules.finance.api import InsufficientFundsError, TaxCollectionResult
+from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
 from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
 from modules.government.dtos import FiscalPolicyDTO
 from modules.government.components.welfare_manager import WelfareManager
@@ -153,6 +154,9 @@ class Government:
 
         # Analysis Hook for Phenomena Reporting (TD-154)
         self.last_fiscal_activation_tick: int = -1
+
+        # TD-160: Portfolio for holding escheated assets
+        self.portfolio = Portfolio(self.id)
 
         logger.info(
             f"Government {self.id} initialized with assets: {self.assets}",
@@ -540,3 +544,34 @@ class Government:
         """
         households = [a for a in agents if hasattr(a, '_econ_state')]
         return self.ministry_of_education.run_public_education(households, self, current_tick)
+
+    # --- IPortfolioHandler Implementation (TD-160) ---
+
+    def get_portfolio(self) -> PortfolioDTO:
+        assets = []
+        for firm_id, share in self.portfolio.holdings.items():
+            assets.append(PortfolioAsset(
+                asset_type="stock",
+                asset_id=str(firm_id),
+                quantity=share.quantity
+            ))
+        return PortfolioDTO(assets=assets)
+
+    def receive_portfolio(self, portfolio: PortfolioDTO) -> None:
+        """
+        Receives escheated assets.
+        """
+        for asset in portfolio.assets:
+            if asset.asset_type == "stock":
+                try:
+                    firm_id = int(asset.asset_id)
+                    # Government integrates assets.
+                    # Note: Ideally Government might sell them later (Privatization).
+                    self.portfolio.add(firm_id, asset.quantity, 0.0)
+                except ValueError:
+                    logger.error(f"Invalid firm_id in portfolio receive: {asset.asset_id}")
+            else:
+                logger.warning(f"Government received unhandled asset type: {asset.asset_type} (ID: {asset.asset_id})")
+
+    def clear_portfolio(self) -> None:
+        self.portfolio.holdings.clear()

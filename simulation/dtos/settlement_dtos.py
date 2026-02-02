@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
+from modules.finance.api import PortfolioDTO
 
 @dataclass
 class LegacySettlementAccount:
@@ -8,10 +9,11 @@ class LegacySettlementAccount:
     Holds assets of a deceased agent during the settlement process.
     """
     deceased_agent_id: int
-    escrow_cash: float = 0.0
-    escrow_portfolio: Dict[str, Any] = field(default_factory=dict) # firm_id -> Share object/Mock
-    escrow_real_estate: List[Any] = field(default_factory=list) # List of RealEstateUnit objects
-    status: str = "OPEN" # OPEN, PROCESSING, CLOSED, ERROR
-    heir_ids: List[int] = field(default_factory=list)
-    created_at: int = 0
+    escrow_cash: float
+    escrow_portfolio: PortfolioDTO  # Structurally holds all non-cash assets
+    escrow_real_estate: List[Any]  # List of RealEstateUnit objects
+    status: str  # OPEN, PROCESSING, CLOSED, ERROR
+    created_at: int
+    heir_id: Optional[int] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    is_escheatment: bool = False
