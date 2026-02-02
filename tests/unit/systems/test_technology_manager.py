@@ -9,6 +9,8 @@ class TestTechnologyManager:
         mock_config = MagicMock()
         mock_config.TECH_FERTILIZER_UNLOCK_TICK = 30 # Updated default
         mock_config.TECH_DIFFUSION_RATE = 0.10       # Updated default
+        mock_config.TECH_UNLOCK_COST_THRESHOLD = 5000.0
+        mock_config.TECH_UNLOCK_PROB_CAP = 1.0 # Guarantee unlock for test if threshold met
         return mock_config
 
     @pytest.fixture
@@ -29,52 +31,47 @@ class TestTechnologyManager:
         manager.human_capital_index = 5.0
         assert manager._get_effective_diffusion_rate(0.10) == 0.25
 
-    def test_unlock_and_visionary_adoption(self, manager):
+    def test_unlock_mechanism(self, manager):
         # Setup Tech
         tech_id = "TECH_AGRI_CHEM_01"
         tech = manager.tech_tree[tech_id]
-        tech.unlock_tick = 30 # Updated check
+        tech.cost_threshold = 100.0
         tech.sector = "FOOD"
 
         # Setup Firms DTO
         firms = [
-            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=True),
-            FirmTechInfoDTO(id=2, sector="FOOD", is_visionary=False),
-            FirmTechInfoDTO(id=3, sector="MANUFACTURING", is_visionary=True),
+            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=60.0),
+            FirmTechInfoDTO(id=2, sector="FOOD", current_rd_investment=60.0), # Total 120 > 100
+            FirmTechInfoDTO(id=3, sector="MANUFACTURING", current_rd_investment=0.0),
         ]
 
-        # Tick 29: No unlock
-        manager.update(29, firms, 1.0)
-        assert not tech.is_unlocked
-        assert not manager.has_adopted(1, tech_id)
-
-        # Tick 30: Unlock
+        # Tick 29: Update
+        # Ratio = 120 / 100 = 1.2. Prob = 1.0 (capped)
         manager.update(30, firms, 1.0)
+
+        # It should unlock
         assert tech.is_unlocked
 
-        # Visionary Check
-        # Firm 1 (Food, Visionary) should adopt
-        assert manager.has_adopted(1, tech_id)
-        # Firm 2 (Food, Not Visionary) should NOT adopt immediately
-        assert not manager.has_adopted(2, tech_id)
-        # Firm 3 (Mfg, Visionary) should NOT adopt due to sector mismatch
-        assert not manager.has_adopted(3, tech_id)
+        # Visionary logic removed, so NO immediate adoption expected unless random diffusion happened.
+        # But diffusion happens in the same update.
+        # If diffusion rate is > 0, some might adopt.
+        # To strictly test unlock only, we can set diffusion rate to 0.
 
     def test_diffusion_over_time(self, manager):
         # Setup Tech
         tech_id = "TECH_AGRI_CHEM_01"
         tech = manager.tech_tree[tech_id]
-        tech.unlock_tick = 30
         tech.diffusion_rate = 0.0 # No diffusion initially
+        tech.is_unlocked = True   # Force unlock
 
         firms = [
-            FirmTechInfoDTO(id=1, sector="FOOD", is_visionary=False),
+            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=0.0),
         ]
 
-        # Unlock it first (needs unlock call)
-        # Note: _unlock_tech also iterates firms, but firm 1 is not visionary, so it won't adopt there.
+        manager.active_techs.append(tech_id) # Manually activate
+
         manager.update(30, firms, 1.0)
-        assert not manager.has_adopted(1, tech_id) # Not visionary, and diffusion 0%
+        assert not manager.has_adopted(1, tech_id) # Diffusion 0%
 
         # Now enable diffusion
         tech.diffusion_rate = 1.0

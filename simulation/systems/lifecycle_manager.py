@@ -128,7 +128,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
             # Standard Closure Check
             if (firm.assets <= assets_threshold or
-                    firm.finance.consecutive_loss_turns >= closure_turns_threshold):
+                    firm.is_bankrupt):
 
                 # Double check grace period (if we fell through but counter is high)
                 if firm.finance.distress_tick_counter > 5:

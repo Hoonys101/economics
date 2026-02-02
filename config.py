@@ -626,6 +626,7 @@ FISCAL_MODEL = "MIXED" # Default regime
 MARKETING_DECAY_RATE = 0.8        # Adstock retains 80% per tick
 MARKETING_EFFICIENCY = 0.01       # 1 unit of currency = 0.01 adstock unit
 PERCEIVED_QUALITY_ALPHA = 0.2     # EMA smoothing factor for quality perception
+BRAND_RESILIENCE_FACTOR = 0.05    # Brand Awareness converts to resilience ticks
 
 # 2. Consumer Behavior
 QUALITY_SENSITIVITY_MEAN = 0.5    # Average preference for quality over price

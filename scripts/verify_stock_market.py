@@ -53,7 +53,7 @@ def run_verification():
     )
     # Manually populate for control
     sim.households = [Household(i, 1000.0, [], 'BALANCED', config) for i in range(config.NUM_HOUSEHOLDS)]
-    sim.firms = [Firm(1, 10000.0, 500.0, "food", 1.0, None, 'BALANCED', config, is_visionary=True)]
+    sim.firms = [Firm(1, 10000.0, 500.0, "food", 1.0, None, 'BALANCED', config)]
     
     # Give some shares to households
     firm = sim.firms[0]

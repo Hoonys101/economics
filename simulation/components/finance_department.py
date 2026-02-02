@@ -357,6 +357,19 @@ class FinanceDepartment:
         else:
             self.consecutive_loss_turns = 0
 
+        # Calculate Brand Resilience
+        resilience_ticks = 0
+        if hasattr(self.firm, 'brand_manager') and self.firm.brand_manager:
+            awareness = self.firm.brand_manager.awareness
+            factor = getattr(self.config, "brand_resilience_factor", 0.05)
+            resilience_ticks = int(awareness * factor)
+
+        threshold = getattr(self.config, "bankruptcy_consecutive_loss_threshold", 20)
+        effective_loss_ticks = self.consecutive_loss_turns - resilience_ticks
+
+        if effective_loss_ticks >= threshold:
+            self.firm.is_bankrupt = True
+
     def check_cash_crunch(self) -> bool:
         """
         WO-167: Evaluates if the firm is in a 'Cash Crunch'.

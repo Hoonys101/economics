@@ -76,9 +76,8 @@ def verify_industrial_revolution():
             value_orientation="PROFIT", 
             config_module=Config, 
             sector="FOOD", 
-            is_visionary=(i==0),
             personality=Personality.BALANCED
-        ) # Firm 0 is Visionary
+        )
         for i in range(Config.NUM_FIRMS)
     ]
     
