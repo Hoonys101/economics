@@ -47,6 +47,9 @@
 | TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | - | **LOW** |
 | TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | - | **HIGH** |
 | TD-210 | 2026-02-04 | Test Dependency Bloat (`numpy`) | `conftest.py` imports CentralBank | [Review](../../_archive/gemini_output/pr_review_settlement-system-tests-2138438581752818541.md) | **LOW** |
+| TD-211 | 2026-02-03 | `trace_leak.py` NameError | Blocks integrity verification | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | **HIGH** (Jules) |
+| TD-212 | 2026-02-03 | Float-based Asset Callers | Legacy code accessing `assets` as `float` | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | **MEDIUM** |
+
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
