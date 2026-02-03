@@ -43,14 +43,16 @@
 |---|---|---|---|---|
 | TD-191 | 2026-02-03 | Weak Typing & DTO Contract Violation (Any Abuse) | Runtime errors; Maintenance nightmare | **FIXED** |
 | TD-194 | 2026-02-03 | HouseholdStateDTO Fragmentation | Missing critical financial fields for DTI | **MEDIUM** |
-| TD-198 | 2026-02-03 | MortgageApplicationDTO Inconsistency | Field name mismatches between APIs | **MEDIUM** |
+| TD-198 | 2026-02-03 | MortgageApplicationDTO Inconsistency | Field name mismatches between APIs | **FIXED** |
+| TD-206 | 2026-02-03 | MortgageApplicationDTO Precision | Uses total debt instead of monthly payments | **MEDIUM** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | **LOW** |
-| TD-199 | 2026-02-03 | SettlementSystem Mocking Fragility | hasattr check conflicts with MagicMock | **MEDIUM** |
+| TD-199 | 2026-02-03 | SettlementSystem Mocking Fragility | hasattr check conflicts with MagicMock | **FIXED** |
+| TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | **HIGH** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
@@ -61,8 +63,12 @@
 | TD-188 | 2026-02-01 | Inconsistent Config Path Doc | `PROJECT_STATUS.md` path mismatch | **ACTIVE** |
 | TD-190 | 2026-02-03 | Magic Number Proliferation (Hardcoded Simulation Constants) | Hard to tune/test; Fragile logic | **MEDIUM** |
 | TD-193 | 2026-02-03 | Fragmented Implementation: Half-baked Political System | Spec (Leviathan) vs Code (ruling_party) drift; logic duplication | **WARNING** |
-| TD-195 | 2026-02-03 | Loan ID Consistency (Int vs Str) | Potential KeyError in Saga/Market logic | **MEDIUM** |
+| TD-195 | 2026-02-03 | Loan ID Consistency (Int vs Str) | Potential KeyError in Saga/Market logic | **FIXED** |
 | TD-197 | 2026-02-03 | Legacy HousingManager Dependency | Dual logic paths; architectural confusion | **MEDIUM** |
+| TD-204 | 2026-02-03 | BubbleObservatory SRP Violation | Handles calculation, logging, and alerts | **MEDIUM** |
+| TD-205 | 2026-02-03 | Phase3_Transaction God Class | Too many responsibilities (Tax, Banks, Infra) | **MEDIUM** |
+| TD-161 | 2026-02-03 | RealEstateUnit Dependency on Registry | Data model depends on service interface | **HIGH** |
+| TD-207 | 2026-02-03 | Synchronous Loan Staging | Logic drift from "Staging" spec (immediate grant) | **LOW** |
 
 ---
 
@@ -96,22 +102,42 @@
 
 ---
 
-### [2026-02-03] Atomic Housing Purchase Saga (V3) - (TD-198, TD-199)
+### [2026-02-03] Multi-Tick Housing Saga & Lien System Integration (TD-198, TD-195, TD-199)
 
-- **현상 (Observation)**:
-  1.  **테스트 Mock의 취약성**: `SettlementSystem`에서 `hasattr`로 에이전트 타입을 검사하는 로직이 `MagicMock`의 자동 속성 생성 기능과 충돌하여 테스트 시 논리 오류를 유발함.
-  2.  **DTO 비호환성**: `housing_planner_api`와 `housing_purchase_api` 간 `MortgageApplicationDTO`의 필드명이 달라 호환성 레이어가 필요해짐.
+- **현상 (Phenomenon)**:
+    - 주택 거래가 틱 간 상태를 유지하지 못해 파산이나 데이터 불일치에 취약했음.
+    - `MortgageApplicationDTO` 필드 불일치(TD-198)와 Loan ID 타입 혼선(TD-195)으로 인한 기동성 저하.
+    - `SettlementSystem` 테스트 시 `MagicMock`이 `hasattr` 체크를 방해하여 거짓 양성(False Positive) 발생(TD-199).
 
 - **원인 (Cause)**:
-  1.  엄격한 인터페이스나 타입 체크 대신, 유연하지만 모호한 `hasattr` 방식에 의존.
-  2.  기능 개발 과정에서 API DTO 명세가 파편화됨.
+    - 초기 설계의 단순성 지향이 복잡한 다자간 거래(사가) 환경에서 한계에 도달함.
+    - 파편화된 API 개발로 DTO 명세가 중앙에서 관리되지 않음.
 
-- **해결 (Resolution)**:
-  1.  `unittest.mock.MagicMock` 생성 시 `spec` 인자를 사용하여 Mock 객체의 속성을 명시적으로 제한함.
-  2.  `LoanMarket`에 임시 호환성 로직을 추가하여 두 DTO를 모두 처리함.
+- **해결 (Solution)**:
+    - **5단계 상태 머신**: INITIATED부터 TRANSFER_TITLE까지의 명시적 상태 전이 로직 구현.
+    - **Lien 시스템**: `RealEstateUnit`에 `liens: List[LienDTO]`를 도입하여 다중 담보 지원 및 하위 호환성 확보.
+    - **DTO 중앙화**: `modules/market/housing_planner_api.py`를 정본으로 하여 `MortgageApplicationDTO` 통일.
+    - **Mocking 정교화**: `spec` 인자를 사용하여 `MagicMock`의 속성 노출을 제한하여 `hasattr` 호환성 확보.
 
 - **교훈 (Lesson Learned)**:
-  - 핵심 로직에서는 `hasattr`보다 `isinstance`나 인터페이스 기반의 명시적 타입 체크를 사용하여 예측 가능성을 높여야 한다.
-  - API DTO는 프로젝트 전반에 걸쳐 일관성을 유지하도록 관리해야 하며, 변경 시 파급 효과를 분석하고 통합 리팩토링 계획을 수립해야 한다.
+    - 복잡한 도메인(부동산 금융)은 초기부터 사가 패턴과 같은 분산 트랜잭션 설계를 고려해야 함.
+    - 데이터 모델과 서비스 인터페이스 간의 경계를 명확히 하고, DTO는 일관된 소스에서 관리되어야 함.
+
+---
+
+### [2026-02-03] RealEstateUnit Dependency & SRP Violations (TD-161, TD-204, TD-205)
+
+- **현상 (Observation)**:
+    - `RealEstateUnit`이 `is_under_contract` 상태 조회를 위해 서비스 계층(`IRealEstateRegistry`)을 직접 참조함. (TD-161)
+    - `BubbleObservatory`와 `Phase3_Transaction`이 너무 많은 책임을 보유한 "God Class" 형태를 띰.
+
+- **위험 (Risk)**:
+    - 데이터 객체가 무거워져 직렬화 및 테스트가 어려워짐.
+    - 모듈 간 결합도가 높아져 특정 기능 변경이 전체 시스템에 예기치 못한 영향을 미침.
+
+- **향후 계획 (Next Steps)**:
+    - `RealEstateUnit`의 행위 로직을 `HousingService`로 완전히 이전하여 순수 데이터 컨테이너로 리팩토링.
+    - `BubbleObservatory`의 측정(Tracker)과 알림(Alert) 로직 분리.
+    - `Phase3_Transaction`의 과다한 프로세싱 로직을 하위 전문 Phase로 분산 배치.
 
 ---
