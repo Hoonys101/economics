@@ -7,6 +7,7 @@ from modules.finance.api import BorrowerProfileDTO, LienDTO
 from modules.system.escrow_agent import EscrowAgent
 from simulation.core_agents import Household
 from simulation.firms import Firm
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,10 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             down_payment = sale_price - loan_amount
 
         # Check Buyer Funds for Down Payment
-        buyer_assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        # Phase 33 Fix: Handle Multi-Currency Assets (Dict[str, float])
+        raw_assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        buyer_assets = raw_assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(raw_assets, dict) else float(raw_assets)
+
         if buyer_assets < down_payment:
             context.logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
             return False
@@ -219,14 +223,15 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                  existing_debt = status.total_outstanding_debt
              except: pass
 
-        assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        raw_assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        existing_assets = raw_assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(raw_assets, dict) else float(raw_assets)
 
         return BorrowerProfileDTO(
             borrower_id=str(buyer.id),
             gross_income=gross_income,
             existing_debt_payments=existing_debt * 0.01, # Approx
             collateral_value=trade_value,
-            existing_assets=assets
+            existing_assets=existing_assets
         )
 
     def _void_loan_safely(self, context: TransactionContext, loan_id: str):
