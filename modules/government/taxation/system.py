@@ -153,44 +153,33 @@ class TaxationSystem:
 
         return intents
 
-    def generate_corporate_tax_intents(self, firms: List['Firm']) -> List['TransactionDTO']:
+    def generate_corporate_tax_intents(self, firms: List['Firm'], current_tick: int) -> List['TransactionDTO']:
         """
         Calculates corporate tax for all eligible firms and returns transaction intents.
         """
-        # Avoid circular import at runtime if possible, but we need the class for construction if we use it.
-        # However, we can construct the object using the alias or dictionary or what's expected.
-        # The system expects Transaction objects.
-        # We import here to avoid circular dependency at module level if any.
+        # Avoid circular import at runtime
         from simulation.models import Transaction
 
         intents = []
 
-        # Access config via nested structure if available, or flat.
-        # We will check both for robustness.
-        corporate_tax_rate = 0.21
+        # Resolve corporate tax rate from config strict (No Fallback)
         if hasattr(self.config_module, "taxation"):
-             corporate_tax_rate = self.config_module.taxation.get("corporate_tax_rate", 0.21)
+             corporate_tax_rate = self.config_module.taxation.get("corporate_tax_rate")
         elif hasattr(self.config_module, "CORPORATE_TAX_RATE"):
              corporate_tax_rate = self.config_module.CORPORATE_TAX_RATE
+        else:
+             corporate_tax_rate = None
+
+        if corporate_tax_rate is None:
+            raise KeyError("CORPORATE_TAX_RATE not found in config. Cannot calculate corporate tax.")
 
         for firm in firms:
             if not firm.is_active:
                 continue
 
-            # Determine Profit Base
-            # We use the accumulated profit from the current tick (since production/sales happened).
-            # If called in Phase 3, this should be valid.
-            # We assume current_profit holds the value.
-            # If current_profit is 0, we check if there's a last_tick_profit or similar.
-            # For now, we rely on firm.finance.current_profit or firm.finance.revenue_this_turn.
-
-            # Since Spec says "decouples... providing stable basis", and we invoke this *before* distribution
-            # (which clears profit), we should use current_profit.
-
+            # Determine Profit Base (Net Profit = Revenue - Costs)
             profit = 0.0
             if hasattr(firm, 'finance'):
-                # Net Profit = Revenue - Costs
-                # We use revenue_this_turn - cost_this_turn to match previous logic
                 profit = firm.finance.revenue_this_turn - firm.finance.cost_this_turn
 
             if profit <= 0:
@@ -199,49 +188,15 @@ class TaxationSystem:
             tax_amount = self.calculate_corporate_tax(profit, corporate_tax_rate)
 
             if tax_amount > 0:
-                # We need a government ID.
-                # Ideally passed in or resolved.
-                # TaxationSystem doesn't know government ID.
-                # We can use a placeholder or well-known ID if available.
-                # Or we ask firms who their gov is? No.
-                # We can assume 0 or look it up?
-                # Spec says "Calculates corporate tax ... returns transaction intents".
-                # The caller (TickScheduler) has access to Government.
-                # But TaxIntent needs payee_id.
-                # We will use a placeholder or expect TickScheduler to fix it?
-                # Actually, TaxIntent uses payee_id.
-                # Transaction uses seller_id (payee).
-                # We will use -1 or "GOVERNMENT" if we don't know ID.
-                # But we can iterate and fix later?
-                # Better: `generate_corporate_tax_intents` should probably accept `government_id`.
-                # But Spec signature is `(self, firms: List[Any])`.
-                # We will try to find Gov ID from firms (they interact with Gov).
-                # Or we can assume Gov ID is usually found in SimulationState.
-                # But we only get `firms`.
-                # We'll use a placeholder and rely on `TransactionProcessor` or `SettlementSystem` to resolve "GOVERNMENT"?
-                # But `Transaction` expects int/str.
-                # Let's use "GOVERNMENT" string or resolve if we can.
-
-                # Wait, if we are inside `TickOrchestrator`, we have `state`.
-                # But the method only takes `firms`.
-                # We will assume Gov ID is available via config or global constant?
-                # `simulation.initialization.initializer` assigns ID.
-                # Usually Gov ID is not constant.
-
-                # I will create a transaction with a generic payee if needed,
-                # but let's check if we can pass Gov ID.
-                # I'll update signature to accept `government_id` optional.
-
                 transaction = Transaction(
                     buyer_id=firm.id,
-                    seller_id="GOVERNMENT", # Placeholder, should be resolved
+                    seller_id="GOVERNMENT", # Placeholder, will be resolved by Orchestrator
                     item_id="corporate_tax",
                     quantity=1.0,
                     price=tax_amount,
                     market_id="system",
                     transaction_type="tax",
-                    time=0, # Tick? We don't have tick here either.
-                    # We need tick.
+                    time=current_tick
                 )
                 intents.append(transaction)
 

@@ -35,13 +35,34 @@ def test_generate_corporate_tax_intents():
 
     firms = [firm1, firm2]
 
-    intents = system.generate_corporate_tax_intents(firms)
+    # Pass current_tick=100
+    intents = system.generate_corporate_tax_intents(firms, current_tick=100)
 
     assert len(intents) == 1
     tx = intents[0]
     assert tx.buyer_id == 1
     assert tx.item_id == "corporate_tax"
     assert tx.price == 125.0 # 500 * 0.25
+    assert tx.time == 100 # Verify tick is passed correctly
+
+def test_generate_corporate_tax_intents_missing_config():
+    config = MagicMock()
+    # Ensure config has NO taxation attributes
+    del config.taxation
+    del config.CORPORATE_TAX_RATE
+    # We need to ensure getattr raises AttributeError or we control it.
+    # MagicMock by default creates new mocks.
+    # We must explicitly set spec or use side_effect for getattr to fail if we want to simulate missing.
+    # Actually, the code checks `hasattr`. MagicMock `hasattr` is tricky.
+    # Let's use a plain object.
+
+    class EmptyConfig:
+        pass
+
+    system = TaxationSystem(EmptyConfig())
+
+    with pytest.raises(KeyError, match="CORPORATE_TAX_RATE not found"):
+        system.generate_corporate_tax_intents([], current_tick=1)
 
 def test_record_revenue_success():
     config = MockConfig()

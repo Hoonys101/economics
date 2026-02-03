@@ -481,7 +481,7 @@ class Phase3_Transaction(IPhaseStrategy):
 
         # WO-116: Corporate Tax Intent Generation
         if state.taxation_system and state.government:
-            tax_intents = state.taxation_system.generate_corporate_tax_intents(state.firms)
+            tax_intents = state.taxation_system.generate_corporate_tax_intents(state.firms, current_tick=state.time)
             for tx in tax_intents:
                 if tx.seller_id == "GOVERNMENT":
                      tx.seller_id = state.government.id
