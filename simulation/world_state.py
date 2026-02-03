@@ -104,6 +104,7 @@ class WorldState:
         self.event_system: Optional[EventSystem] = None
         self.sensory_system: Optional[SensorySystem] = None
         self.settlement_system: Optional[SettlementSystem] = None
+        self.taxation_system: Optional[Any] = None # WO-116
         self.commerce_system: Optional[CommerceSystem] = None
         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None
         self.crisis_monitor: Optional[CrisisMonitor] = None

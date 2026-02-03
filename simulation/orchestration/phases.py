@@ -479,10 +479,26 @@ class Phase3_Transaction(IPhaseStrategy):
 
         # WO-024: Monetary Transactions are now processed incrementally in TickOrchestrator._drain_and_sync_state (TD-177)
 
+        # WO-116: Corporate Tax Intent Generation
+        if state.taxation_system and state.government:
+            tax_intents = state.taxation_system.generate_corporate_tax_intents(state.firms, current_tick=state.time)
+            for tx in tax_intents:
+                if tx.seller_id == "GOVERNMENT":
+                     tx.seller_id = state.government.id
+            system_transactions.extend(tax_intents)
+
+        state.transactions.extend(system_transactions)
+
+        # WO-024: Monetary Transactions are now processed incrementally in TickOrchestrator._drain_and_sync_state (TD-177)
+
         if self.world_state.transaction_processor:
             # TD-192: Pass combined transactions to ensure execution of drained (historic) and current items
             combined_txs = list(self.world_state.transactions) + list(state.transactions)
-            self.world_state.transaction_processor.execute(state, transactions=combined_txs)
+            results = self.world_state.transaction_processor.execute(state, transactions=combined_txs)
+
+            # WO-116: Record Revenue (Saga Pattern)
+            if state.taxation_system:
+                state.taxation_system.record_revenue(results)
         else:
             state.logger.error("TransactionProcessor not initialized.")
 

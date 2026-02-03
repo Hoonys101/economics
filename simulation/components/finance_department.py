@@ -121,38 +121,6 @@ class FinanceDepartment:
             )
         return None
 
-    def generate_tax_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
-        """Generates corporate tax transaction."""
-        net_profit = self.revenue_this_turn - self.cost_this_turn
-
-        if net_profit > 0:
-            tax_rate = self.config.corporate_tax_rate
-            tax_amount = net_profit * tax_rate
-
-            # Optimistic check
-            payment = min(self._cash, tax_amount)
-
-            if payment > 0:
-                after_tax_profit = net_profit - payment
-                self.retained_earnings += after_tax_profit
-
-                self.firm.logger.info(
-                    f"Generated corporate tax tx: {payment:.2f} on profit {net_profit:.2f}.",
-                    extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "corporate_tax"]}
-                )
-
-                return Transaction(
-                    buyer_id=self.firm.id,
-                    seller_id=government.id,
-                    item_id="corporate_tax",
-                    quantity=1.0,
-                    price=payment,
-                    market_id="system",
-                    transaction_type="tax",
-                    time=current_time
-                )
-        return None
-
     def generate_marketing_transaction(self, government: IFinancialEntity, current_time: int, amount: float) -> Optional[Transaction]:
         """Generates marketing spend transaction."""
         if amount > 0:
@@ -307,10 +275,8 @@ class FinanceDepartment:
         if tx_maint:
             transactions.append(tx_maint)
 
-        # 3. Corporate Tax
-        tx_tax = self.generate_tax_transaction(government, current_time)
-        if tx_tax:
-            transactions.append(tx_tax)
+        # 3. Corporate Tax (Handled centrally by TaxationSystem)
+        # WO-116: Removed direct tax generation.
 
         # 4. Profit Distribution (Public)
         txs_public = self.process_profit_distribution(households, government, current_time)

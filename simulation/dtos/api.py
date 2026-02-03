@@ -231,6 +231,7 @@ class SimulationState:
     inter_tick_queue: List[Any] = None # List[Transaction]
     effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
     inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
+    taxation_system: Optional[Any] = None # WO-116: Taxation System
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)

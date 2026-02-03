@@ -72,6 +72,7 @@ from simulation.systems.settlement_system import SettlementSystem
 from simulation.systems.commerce_system import CommerceSystem
 from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
 from modules.system.escrow_agent import EscrowAgent
+from modules.government.taxation.system import TaxationSystem
 
 # Phase 29: Crisis Monitor
 from modules.analysis.crisis_monitor import CrisisMonitor
@@ -116,6 +117,7 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # 2. Populate the shell with all its components
         sim.settlement_system = SettlementSystem(logger=self.logger)
+        sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
 
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 

@@ -1,6 +1,11 @@
 from dataclasses import dataclass
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, TYPE_CHECKING
 import logging
+
+if TYPE_CHECKING:
+    from simulation.dtos.transactions import TransactionDTO
+    from simulation.dtos.settlement_dtos import SettlementResultDTO
+    from simulation.firms import Firm
 
 logger = logging.getLogger(__name__)
 
@@ -147,3 +152,70 @@ class TaxationSystem:
                 ))
 
         return intents
+
+    def generate_corporate_tax_intents(self, firms: List['Firm'], current_tick: int) -> List['TransactionDTO']:
+        """
+        Calculates corporate tax for all eligible firms and returns transaction intents.
+        """
+        # Avoid circular import at runtime
+        from simulation.models import Transaction
+
+        intents = []
+
+        # Resolve corporate tax rate from config strict (No Fallback)
+        if hasattr(self.config_module, "taxation"):
+             corporate_tax_rate = self.config_module.taxation.get("corporate_tax_rate")
+        elif hasattr(self.config_module, "CORPORATE_TAX_RATE"):
+             corporate_tax_rate = self.config_module.CORPORATE_TAX_RATE
+        else:
+             corporate_tax_rate = None
+
+        if corporate_tax_rate is None:
+            raise KeyError("CORPORATE_TAX_RATE not found in config. Cannot calculate corporate tax.")
+
+        for firm in firms:
+            if not firm.is_active:
+                continue
+
+            # Determine Profit Base (Net Profit = Revenue - Costs)
+            profit = 0.0
+            if hasattr(firm, 'finance'):
+                profit = firm.finance.revenue_this_turn - firm.finance.cost_this_turn
+
+            if profit <= 0:
+                continue
+
+            tax_amount = self.calculate_corporate_tax(profit, corporate_tax_rate)
+
+            if tax_amount > 0:
+                transaction = Transaction(
+                    buyer_id=firm.id,
+                    seller_id="GOVERNMENT", # Placeholder, will be resolved by Orchestrator
+                    item_id="corporate_tax",
+                    quantity=1.0,
+                    price=tax_amount,
+                    market_id="system",
+                    transaction_type="tax",
+                    time=current_tick
+                )
+                intents.append(transaction)
+
+        return intents
+
+    def record_revenue(self, results: List['SettlementResultDTO']) -> None:
+        """
+        Records the outcome of tax payments.
+        """
+        success_count = 0
+        total_revenue = 0.0
+
+        for res in results:
+            if not res.success:
+                continue
+
+            if getattr(res.original_transaction, 'transaction_type', '') == 'tax':
+                success_count += 1
+                total_revenue += res.amount_settled
+
+        if success_count > 0:
+            logger.info(f"TAXATION_RECORD | Recorded {total_revenue:.2f} revenue from {success_count} transactions.")
