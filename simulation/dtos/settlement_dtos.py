@@ -17,3 +17,14 @@ class LegacySettlementAccount:
     heir_id: Optional[int] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     is_escheatment: bool = False
+
+@dataclass
+class SettlementResultDTO:
+    """
+    Result of a settlement execution.
+    Used for recording revenue and auditing.
+    """
+    original_transaction: Any # Transaction
+    success: bool
+    amount_settled: float
+    error: Optional[str] = None

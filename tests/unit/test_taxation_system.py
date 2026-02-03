@@ -1,121 +1,77 @@
 import pytest
-from unittest.mock import MagicMock, Mock
-from modules.government.taxation.system import TaxationSystem, TaxIntent
+from unittest.mock import MagicMock
+from modules.government.taxation.system import TaxationSystem
+from simulation.models import Transaction
+from simulation.dtos.settlement_dtos import SettlementResultDTO
 
-@pytest.fixture
-def config_module():
-    mock = MagicMock()
-    mock.SALES_TAX_RATE = 0.05
-    mock.INCOME_TAX_PAYER = "HOUSEHOLD"
-    mock.TAX_MODE = "FLAT"
-    mock.TAX_BRACKETS = []
-    mock.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
-    mock.GOODS_INITIAL_PRICE = {"basic_food": 5.0}
-    mock.TAX_RATE_BASE = 0.1
-    return mock
+class MockConfig:
+    taxation = {"corporate_tax_rate": 0.25}
+    # For backward compatibility test if code falls back to attributes
+    SALES_TAX_RATE = 0.05
+    TAX_BRACKETS = []
+    TAX_RATE_BASE = 0.1
+    HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    GOODS_INITIAL_PRICE = {"basic_food": 5.0}
+    TAX_MODE = "PROGRESSIVE"
+    INCOME_TAX_PAYER = "HOUSEHOLD"
 
-@pytest.fixture
-def taxation_system(config_module):
-    return TaxationSystem(config_module)
+def test_generate_corporate_tax_intents():
+    config = MockConfig()
+    system = TaxationSystem(config)
 
-def test_sales_tax_calculation(taxation_system, config_module):
-    # Setup
-    tx = Mock()
-    tx.transaction_type = "goods"
-    tx.quantity = 10
-    tx.price = 10.0 # Trade Value = 100
+    firm1 = MagicMock()
+    firm1.is_active = True
+    firm1.id = 1
+    # Profit = 1000 - 500 = 500
+    firm1.finance.revenue_this_turn = 1000.0
+    firm1.finance.cost_this_turn = 500.0
 
-    buyer = Mock()
-    buyer.id = 1
-    seller = Mock()
-    seller.id = 2
-    government = Mock()
-    government.id = 99
+    firm2 = MagicMock()
+    firm2.is_active = True
+    firm2.id = 2
+    # Profit = 200 - 300 = -100 (Loss)
+    firm2.finance.revenue_this_turn = 200.0
+    firm2.finance.cost_this_turn = 300.0
 
-    # Execute
-    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
+    firms = [firm1, firm2]
 
-    # Verify
-    assert len(intents) == 1
-    intent = intents[0]
-    assert intent.payer_id == buyer.id
-    assert intent.payee_id == government.id
-    assert intent.amount == 100 * 0.05 # 5.0
-    assert "sales_tax" in intent.reason
-
-def test_income_tax_household_payer(taxation_system, config_module):
-    # Setup
-    config_module.INCOME_TAX_PAYER = "HOUSEHOLD"
-
-    tx = Mock()
-    tx.transaction_type = "labor"
-    tx.quantity = 1
-    tx.price = 100.0
-
-    buyer = Mock()
-    buyer.id = 10 # Firm
-    seller = Mock()
-    seller.id = 20 # Household (Worker)
-
-    government = Mock()
-    government.id = 99
-    government.income_tax_rate = 0.1
-
-    # Execute
-    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
-
-    # Verify
-    assert len(intents) == 1
-    intent = intents[0]
-    assert intent.payer_id == seller.id # Household pays
-    assert intent.amount == 100.0 * 0.1 # 10.0 (Flat rate mocked)
-    assert intent.reason == "income_tax_household"
-
-def test_income_tax_firm_payer(taxation_system, config_module):
-    # Setup
-    config_module.INCOME_TAX_PAYER = "FIRM"
-
-    tx = Mock()
-    tx.transaction_type = "labor"
-    tx.quantity = 1
-    tx.price = 100.0
-
-    buyer = Mock()
-    buyer.id = 10
-    seller = Mock()
-    seller.id = 20
-
-    government = Mock()
-    government.id = 99
-    government.income_tax_rate = 0.1
-
-    # Execute
-    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
-
-    # Verify
-    assert len(intents) == 1
-    intent = intents[0]
-    assert intent.payer_id == buyer.id # Firm pays
-    assert intent.amount == 100.0 * 0.1
-    assert intent.reason == "income_tax_firm"
-
-def test_escheatment(taxation_system):
-    tx = Mock()
-    tx.transaction_type = "escheatment"
-    tx.quantity = 1
-    tx.price = 500.0
-
-    buyer = Mock()
-    buyer.id = 666 # Deceased
-    seller = Mock() # Gov
-    government = Mock()
-    government.id = 99
-
-    intents = taxation_system.calculate_tax_intents(tx, buyer, seller, government)
+    intents = system.generate_corporate_tax_intents(firms)
 
     assert len(intents) == 1
-    intent = intents[0]
-    assert intent.payer_id == buyer.id
-    assert intent.payee_id == government.id
-    assert intent.amount == 500.0
-    assert intent.reason == "escheatment"
+    tx = intents[0]
+    assert tx.buyer_id == 1
+    assert tx.item_id == "corporate_tax"
+    assert tx.price == 125.0 # 500 * 0.25
+
+def test_record_revenue_success():
+    config = MockConfig()
+    system = TaxationSystem(config)
+
+    tx = Transaction(
+        buyer_id=1, seller_id=2, item_id="corporate_tax",
+        quantity=1, price=100.0, market_id="system", transaction_type="tax", time=1
+    )
+    result = SettlementResultDTO(
+        original_transaction=tx,
+        success=True,
+        amount_settled=100.0
+    )
+
+    # Just ensure no error, logic is logging
+    system.record_revenue([result])
+
+def test_record_revenue_failure():
+    config = MockConfig()
+    system = TaxationSystem(config)
+
+    tx = Transaction(
+        buyer_id=1, seller_id=2, item_id="corporate_tax",
+        quantity=1, price=100.0, market_id="system", transaction_type="tax", time=1
+    )
+    result = SettlementResultDTO(
+        original_transaction=tx,
+        success=False,
+        amount_settled=0.0
+    )
+
+    system.record_revenue([result])

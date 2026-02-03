@@ -54,4 +54,8 @@ class FinancialTransactionHandler(ITransactionHandler):
                          "error_message": None
                      })
 
+                 # WO-116 Fix: Ensure Firms record tax as expense for accounting integrity
+                 if isinstance(buyer, Firm) and hasattr(buyer, 'finance'):
+                     buyer.finance.record_expense(trade_value)
+
         return success is not None

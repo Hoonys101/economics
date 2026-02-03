@@ -46,3 +46,9 @@ housing:
   max_ltv: 0.8
   max_dti: 0.43
   mortgage_term_ticks: 300
+
+# ----------------------------------------------------------------------
+# Taxation System Configuration (WO-116)
+# ----------------------------------------------------------------------
+taxation:
+  corporate_tax_rate: 0.21
