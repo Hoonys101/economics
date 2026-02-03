@@ -10,7 +10,7 @@
 
 ## 2. 참조 문서 (Must Read)
 작업 시작 전 아래 문서를 반드시 숙지하십시오:
-- **[PROJECT_STATUS.md](../../1_governance/project_status.md)**: 현재 완료된 것으로 주장되는 마일스톤 목록.
+- **[PROJECT_STATUS.md](../../../PROJECT_STATUS.md)**: 현재 완료된 것으로 주장되는 마일스톤 목록.
 - **[ARCH_AGENTS.md](../../1_governance/architecture/ARCH_AGENTS.md)**: 'Born with Purpose', 'Demand Elasticity' 등 박제된 아키텍처 원칙.
 
 ---

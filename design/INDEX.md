@@ -16,7 +16,7 @@ Start here to understand the project.
 
 ## 📂 1. Governance & Architecture (`1_governance/`)
 *The "Constitution" of the simulation.*
-- **[Project Status](1_governance/project_status.md)**: Current build status and roadmap.
+- **[Project Status](../PROJECT_STATUS.md)**: Current build status and roadmap.
 - **[Platform Architecture](1_governance/platform_architecture.md)**: System design and core graphs.
 - **[Project Structure](1_governance/project_structure.md)**: Folder layout and key modules.
 - **[Protocols](1_governance/protocols/)**: Engineering standards and tooling rules.

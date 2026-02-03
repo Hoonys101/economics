@@ -29,7 +29,7 @@ def main():
     # 2. Context Distillation & Routine Sync
     print("\n🧠 Step 2: Distilling context & Checking Registry...")
     context_files = [
-        "design/1_governance/project_status.md",
+        "PROJECT_STATUS.md",
         "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
         "CHANGELOG.md",
         "task.md",

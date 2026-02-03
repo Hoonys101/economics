@@ -9,7 +9,7 @@
 
 ### 1. 세션 스냅샷 생성 (Session Snapshot)
 - 대화 기록, 최근 코드 변경점, `app.log`를 분석하여 **핵심 요약**을 작성합니다.
-- 이때 `design/project_status.md`와 `task.md`를 참고하여 실제 진행률을 반영합니다.
+- 이때 `PROJECT_STATUS.md`와 `task.md`를 참고하여 실제 진행률을 반영합니다.
 
 ### 2. Warm Boot 프롬프트 생성 (Warm Boot)
 - 다음 세션에서 팀장이 다시 깨어났을 때, 단 20줄 내외로 현재 상황을 완벽히 이해할 수 있는 **압축된 상황 보고서**를 작성합니다.

@@ -151,11 +151,16 @@
 4. **Policy Throttling**: 30틱 간격 (GOV_ACTION_INTERVAL)
 5. **Central Bank Link**: `market_data["central_bank"]`를 통한 금리 간접 조작
 
-### 아키텍처 결정
+### Stock Market Architecture
 1. **Shareholder Registry Sync**: `StockMarket`과 `Portfolio` 간 실시간 원장 동기화
 2. **Circuit Breaker**: 일일 변동폭 ±15% 제한 (Floor Price=$0.01$)
 3. **Wealth-biased Merton**: $RiskAversion = f(Personality, Wealth)$
 4. **Treasury Dominance**: 미발행 주식은 전량 기업 자사주로 관리, 필요 시 SEO로 유동성 공급
+
+### Liquidation Waterfall (TD-187)
+1. **Priority**: Severance (3yr cap) > Wages (3mo cap) > Secured Debt > Taxes > Unsecured Debt > Equity.
+2. **Implementation**: `LiquidationManager` via `SettlementSystem` (Atomic Zero-Sum).
+3.  **Phase**: `Phase_SystemicLiquidation` (Pre-Matching Fast Fail).
 
 ### Phase 23: The Great Expansion ✅
 | 항목 | 상태 | 비고 |

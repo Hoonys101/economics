@@ -24,7 +24,7 @@
 
 ### 4. 문서 관리 대장 (Document Registry)
 - 당신이 관리하고 업데이트해야 할 대상 파일 목록입니다:
-  - `design/1_governance/project_status.md`: Phase 진행 상황 및 완료 여부.
+  - `PROJECT_STATUS.md`: Phase 진행 상황 및 완료 여부.
   - `design/2_operations/ledgers/TECH_DEBT_LEDGER.md`: 인지된 기술 부채 목록.
   - `CHANGELOG.md`: 버전별 변경 사항.
   - `task.md`: 현재 세션의 작업 체크리스트.

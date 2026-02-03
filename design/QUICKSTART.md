@@ -38,7 +38,7 @@ This is the definitive entry point for all contributors. **Read this first.**
 1.  **Read the Handover**: Check `_archive/handovers/` for the latest `HANDOVER_YYYY-MM-DD.md`. What was finished?
 2.  **Master the Architecture**: Review **[Platform Architecture](1_governance/platform_architecture.md)**.
     - *Tip*: 핵심 개념은 숙지하고, 구체적인 매커니즘은 작업 시 상세 문서를 찾아 활용하십시오.
-3.  **Check Status**: Review **[Project Status](1_governance/project_status.md)** for the big picture.
+3.  **Check Status**: Review **[Project Status](../PROJECT_STATUS.md)** for the big picture.
 4.  **Check Debt**: Review **[Tech Debt Ledger](2_operations/ledgers/TECH_DEBT_LEDGER.md)** for critical blockers.
 5.  **Connect the Dots**: Ensure the link from `Global Goal` -> `Handover` -> `Today's Task` is clear.
 
@@ -105,7 +105,7 @@ python scripts/cmd_ops.py set-jules <key> -t "<title>" --command send-message -i
 ## 🏁 Phase 4: Session Conclusion (The Spontaneous Closure)
 1.  **Harvest**: The USER runs **`.\session-go.bat`**. This arms and executes a Gemini mission to distill all `communications/insights/` into a single Handover Report.
 2.  **Crystallize (Architect's Duty)**: 🚨 **MANDATORY**: Antigravity MUST read the generated report and reflect its findings into:
-    - **Governance**: `design/1_governance/project_status.md` (Update milestones & current focus).
+    - **Governance**: `PROJECT_STATUS.md` (Update milestones & current focus).
     - **Operations**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md` (Liquidate/Add debts).
     - **Architecture**: `design/1_governance/architecture/ARCH_*.md` (Hard-code new systemic rules).
 3.  **Final Handover**: Ensure the permanent handover log is stored in `design/_archive/handovers/HANDOVER_YYYY-MM-DD.md`.
