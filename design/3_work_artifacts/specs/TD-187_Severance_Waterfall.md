@@ -52,8 +52,8 @@ The Liquidation Waterfall implements a sequential, prioritized claims settlement
     - `tier`: The priority tier (1-5).
 
 ## 4. Action Items
-- [ ] Implement the `LiquidationManager` service.
-- [ ] Define the `Claim` data structure.
-- [ ] Develop logic to accurately calculate severance (last 3 years) and wages (last 3 months).
-- [ ] Integrate the `LiquidationManager` into the firm failure/insolvency workflow.
-- [ ] Write unit and integration tests to verify the priority logic and pro-rata distribution under various asset-level scenarios.
+- [x] Implement the `LiquidationManager` service.
+- [x] Define the `Claim` data structure.
+- [x] Develop logic to accurately calculate severance (last 3 years) and wages (last 3 months).
+- [x] Integrate the `LiquidationManager` into the firm failure/insolvency workflow.
+- [x] Write unit and integration tests to verify the priority logic and pro-rata distribution under various asset-level scenarios.
