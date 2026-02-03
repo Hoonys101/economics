@@ -7,6 +7,8 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-180 | 2026-02-01 | TestFile Bloat: `test_firm_decision_engine_new.py` | 828 lines; indicator of complex engine surface | **WARNING** |
+| TD-201 | 2026-02-03 | Orphaned `reset_tick_flow` Method (Government) | M2 Delta tracking broken; potential data rot | **HIGH** |
+| TD-202 | 2026-02-03 | Missing Escheated Asset Liquidation Logic | Dead assets (stocks) accumulate on Gov balance sheet | **MEDIUM** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -41,12 +43,14 @@
 |---|---|---|---|---|
 | TD-191 | 2026-02-03 | Weak Typing & DTO Contract Violation (Any Abuse) | Runtime errors; Maintenance nightmare | **FIXED** |
 | TD-194 | 2026-02-03 | HouseholdStateDTO Fragmentation | Missing critical financial fields for DTI | **MEDIUM** |
+| TD-198 | 2026-02-03 | MortgageApplicationDTO Inconsistency | Field name mismatches between APIs | **MEDIUM** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | **LOW** |
+| TD-199 | 2026-02-03 | SettlementSystem Mocking Fragility | hasattr check conflicts with MagicMock | **MEDIUM** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
@@ -89,5 +93,25 @@
 - **교훈 (Lesson Learned)**:
   - 느슨한 타이핑은 단기적인 개발 속도를 높일 수 있지만, 장기적으로는 시스템의 복잡성과 예측 불가능성을 증가시켜 유지보수 비용을 급격히 상승시킨다.
   - 객체의 내부 상태는 반드시 캡슐화되어야 하며, 상태 변경은 명시적인 인터페이스(메서드)를 통해서만 이루어져야 한다.
+
+---
+
+### [2026-02-03] Atomic Housing Purchase Saga (V3) - (TD-198, TD-199)
+
+- **현상 (Observation)**:
+  1.  **테스트 Mock의 취약성**: `SettlementSystem`에서 `hasattr`로 에이전트 타입을 검사하는 로직이 `MagicMock`의 자동 속성 생성 기능과 충돌하여 테스트 시 논리 오류를 유발함.
+  2.  **DTO 비호환성**: `housing_planner_api`와 `housing_purchase_api` 간 `MortgageApplicationDTO`의 필드명이 달라 호환성 레이어가 필요해짐.
+
+- **원인 (Cause)**:
+  1.  엄격한 인터페이스나 타입 체크 대신, 유연하지만 모호한 `hasattr` 방식에 의존.
+  2.  기능 개발 과정에서 API DTO 명세가 파편화됨.
+
+- **해결 (Resolution)**:
+  1.  `unittest.mock.MagicMock` 생성 시 `spec` 인자를 사용하여 Mock 객체의 속성을 명시적으로 제한함.
+  2.  `LoanMarket`에 임시 호환성 로직을 추가하여 두 DTO를 모두 처리함.
+
+- **교훈 (Lesson Learned)**:
+  - 핵심 로직에서는 `hasattr`보다 `isinstance`나 인터페이스 기반의 명시적 타입 체크를 사용하여 예측 가능성을 높여야 한다.
+  - API DTO는 프로젝트 전반에 걸쳐 일관성을 유지하도록 관리해야 하며, 변경 시 파급 효과를 분석하고 통합 리팩토링 계획을 수립해야 한다.
 
 ---
