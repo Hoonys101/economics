@@ -22,3 +22,13 @@
 ## 4. 교훈 (Lesson Learned)
 - 복잡한 도메인(부동산 금융)은 초기부터 사가 패턴과 같은 분산 트랜잭션 설계를 고려해야 함.
 - 데이터 모델과 서비스 인터페이스 간의 경계를 명확히 하고, DTO는 일관된 소스에서 관리되어야 함.
+
+## 5. 추가 조치 (Test Coverage Expansion)
+- **일자**: 2026-02-04
+- **작업**: `tests/unit/systems/test_settlement_system.py` 전면 리팩토링 및 커버리지 확대.
+    - **Saga Logic**: `submit_saga`, `process_sagas` (Liveness Check), `find_and_compensate_by_agent` (Compensation) 테스트 추가.
+    - **Financial Logic**: `Seamless Payment` (Bank 연동), `Multiparty Settlement`, `Atomic Settlement` 테스트 추가.
+    - **Inheritance**: `Portfolio` 자산의 상속(Heir) 및 국고 귀속(Escheatment) 시나리오 검증 완료.
+- **발견된 기술 부채**:
+    - `PortfolioAsset` 생성자 파라미터 불일치(`symbol` vs `asset_id`) 수정됨.
+    - `tests/conftest.py`가 `simulation.agents.central_bank`를 임포트하며 `numpy` 의존성을 강제함. 이는 단위 테스트 환경 구성의 복잡도를 높임. 향후 Mock 객체로 대체하여 의존성을 끊어낼 필요가 있음.
