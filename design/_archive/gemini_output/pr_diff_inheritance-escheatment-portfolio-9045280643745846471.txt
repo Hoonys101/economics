@@ -1,0 +1,142 @@
+diff --git a/communications/insights/TD-160_Inheritance_Fix.md b/communications/insights/TD-160_Inheritance_Fix.md
+new file mode 100644
+index 0000000..45a845c
+--- /dev/null
++++ b/communications/insights/TD-160_Inheritance_Fix.md
+@@ -0,0 +1,17 @@
++# Insight: TD-160 Inheritance & TD-192 Audit
++
++## 1. Inheritance Manager Fix (TD-160)
++The current `InheritanceManager` correctly creates a `LegacySettlementAccount` which captures the deceased's portfolio. However, the escheatment logic (transfer to Government when no heirs) relies on `SettlementSystem.execute_settlement` iterating over the `distribution_plan` to find the Government.
++
++**Issue**: If the deceased has 0 cash, `InheritanceManager` adds nothing to `distribution_plan` (because `if cash > 0`). Consequently, `SettlementSystem.execute_settlement` has an empty plan to iterate over, and the loop that checks `if account.is_escheatment` and triggers `recipient.receive_portfolio` is never entered.
++
++**Solution**: Force the Government into the `distribution_plan` (with 0.0 cash) when there are no heirs, even if cash is 0. This ensures `SettlementSystem` visits the Government entry and triggers the portfolio transfer.
++
++## 2. ActionProcessor Refactor (TD-192 / Task 2)
++The task requested replacing direct asset modifications in `ActionProcessor` with `SettlementSystem` calls.
++An audit of `ActionProcessor` (wrapper) and `TransactionProcessor` (dispatcher) and its handlers (`FinancialTransactionHandler`, `AssetTransferHandler`, `MonetaryHandler`, `StockTransactionHandler`, `GovernmentSpendingHandler`) revealed that **they already use `SettlementSystem`**.
++- `settlement_system.transfer(...)` and `settlement_system.settle_atomic(...)` are consistently used for cash/value transfers.
++- Direct property modification (`.assets +=`) was not found in these handlers (except for read operations).
++- Direct modification of `shares_owned` (inventory) in `StockTransactionHandler` is appropriate as `SettlementSystem` handles cash, while handlers manage specific asset registries (unless using `receive_portfolio` which is specific to inheritance).
++
++**Conclusion**: No refactoring of `ActionProcessor` is required as it complies with the requirement. The "audit" mentioned in the task draft likely referred to confirming this state or referred to `TickOrchestrator` (which the draft recommended NOT refactoring).
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index 1616519..662d694 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -179,6 +179,10 @@ class InheritanceManager:
+             # Escheatment (To Gov)
+             if cash > 0:
+                 distribution_plan.append((government, cash, "escheatment_cash", "escheatment"))
++            else:
++                # TD-160: Ensure Gov is in plan for portfolio transfer even if cash is 0
++                # SettlementSystem requires a recipient in the plan to trigger receive_portfolio
++                distribution_plan.append((government, 0.0, "escheatment_portfolio_trigger", "escheatment"))
+ 
+             # Escheat remaining Assets
+             # Portfolio Transfer is handled by SettlementSystem (Atomic).
+diff --git a/tests/unit/systems/test_inheritance_manager_escheatment.py b/tests/unit/systems/test_inheritance_manager_escheatment.py
+new file mode 100644
+index 0000000..5d4cbef
+--- /dev/null
++++ b/tests/unit/systems/test_inheritance_manager_escheatment.py
+@@ -0,0 +1,98 @@
++import pytest
++from unittest.mock import MagicMock, ANY
++from types import SimpleNamespace
++from simulation.systems.inheritance_manager import InheritanceManager
++from simulation.models import Transaction
++
++class TestInheritanceManagerEscheatment:
++
++    @pytest.fixture
++    def mock_config(self):
++        config = MagicMock()
++        # Ensure config attributes used in InheritanceManager return float values, not Mocks
++        config.INHERITANCE_TAX_RATE = 0.4
++        config.INHERITANCE_DEDUCTION = 10000.0
++        return config
++
++    @pytest.fixture
++    def inheritance_manager(self, mock_config):
++        return InheritanceManager(mock_config)
++
++    @pytest.fixture
++    def mock_simulation(self):
++        sim = MagicMock()
++        sim.time = 100
++        sim.real_estate_units = []
++        sim.stock_market = MagicMock()
++        sim.agents = MagicMock()
++        return sim
++
++    @pytest.fixture
++    def mock_government(self):
++        gov = MagicMock()
++        gov.id = 1
++        gov.agent_type = "government"
++        return gov
++
++    @pytest.fixture
++    def mock_deceased(self):
++        deceased = MagicMock()
++        deceased.id = 101
++        deceased._econ_state.assets = 0.0 # ZERO CASH
++        deceased._bio_state.children_ids = [] # NO HEIRS
++
++        # Portfolio setup (though create_settlement consumes it,
++        # InheritanceManager reads it before calling create_settlement for valuation)
++        deceased._econ_state.portfolio.holdings = {
++            999: SimpleNamespace(quantity=10, acquisition_price=5.0)
++        }
++        return deceased
++
++    def test_escheatment_portfolio_trigger_zero_cash(
++        self, inheritance_manager, mock_simulation, mock_government, mock_deceased
++    ):
++        """
++        TD-160: Verify that when cash is 0, Government is still added to distribution plan
++        to ensure SettlementSystem triggers portfolio escheatment.
++        """
++        # Setup SettlementSystem Mock
++        mock_settlement = MagicMock()
++        mock_simulation.settlement_system = mock_settlement
++
++        # Mock create_settlement return value (Account)
++        mock_account = MagicMock()
++        mock_account.deceased_agent_id = mock_deceased.id
++        mock_account.escrow_cash = 0.0
++        mock_account.escrow_portfolio.assets = ["some_asset"] # Simulate portfolio exists in escrow
++        mock_account.is_escheatment = True
++
++        mock_settlement.create_settlement.return_value = mock_account
++        mock_settlement.execute_settlement.return_value = [] # Return empty receipts
++
++        # Mock Stock Market for Valuation
++        mock_simulation.stock_market.get_daily_avg_price.return_value = 10.0
++
++        # Execute
++        inheritance_manager.process_death(mock_deceased, mock_government, mock_simulation)
++
++        # Verification
++        # 1. create_settlement called
++        mock_settlement.create_settlement.assert_called_once_with(agent=mock_deceased, tick=mock_simulation.time)
++
++        # 2. execute_settlement called with Government in distribution plan
++        # execute_settlement(account_id, distribution_plan, tick)
++        call_args = mock_settlement.execute_settlement.call_args
++        assert call_args is not None
++
++        distribution_plan = call_args[0][1]
++
++        # Check if Government is in the plan
++        # Expected: [(government, 0.0, "escheatment_portfolio", "escheatment")] OR similar
++        gov_in_plan = False
++        for recipient, amount, memo, tx_type in distribution_plan:
++            if recipient == mock_government:
++                gov_in_plan = True
++                # Optional: Check memo/type
++                break
++
++        assert gov_in_plan, "Government must be in distribution plan to trigger portfolio escheatment, even if cash is 0."
