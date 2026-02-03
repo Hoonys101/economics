@@ -5,7 +5,7 @@ import logging
 from simulation.dtos.api import SimulationState, GovernmentStateDTO
 from simulation.orchestration.phases import (
     Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
-    Phase3_Transaction, Phase_Bankruptcy, Phase_Consumption, Phase5_PostSequence
+    Phase3_Transaction, Phase_Bankruptcy, Phase_HousingSaga, Phase_Consumption, Phase5_PostSequence
 )
 from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
@@ -28,6 +28,7 @@ class TickOrchestrator:
             Phase_Production(world_state),
             Phase1_Decision(world_state),
             Phase_Bankruptcy(world_state),           # Phase 4 (Spec): Lifecycle & Bankruptcy
+            Phase_HousingSaga(world_state),          # Phase 4.1: Advance Housing Sagas
             Phase_SystemicLiquidation(world_state),  # Phase 4.5 (Spec): Systemic Liquidation
             Phase2_Matching(world_state),            # Phase 5 (Spec): Matching
             Phase3_Transaction(world_state),

@@ -1,12 +1,15 @@
 import pytest
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.api import IFinancialEntity, InsufficientFundsError
 
-class MockAgent(IFinancialEntity):
+from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO
+
+class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
     def __init__(self, agent_id, assets=0.0):
         self._id = agent_id
         self._assets = float(assets)
+        self.portfolio = PortfolioDTO(assets=[])
 
     @property
     def id(self):
@@ -29,6 +32,18 @@ class MockAgent(IFinancialEntity):
 
     def _sub_assets(self, amount):
         self.withdraw(amount)
+
+    def get_portfolio(self) -> PortfolioDTO:
+        return self.portfolio
+
+    def clear_portfolio(self) -> None:
+        self.portfolio = PortfolioDTO(assets=[])
+
+    def receive_portfolio(self, portfolio: PortfolioDTO) -> None:
+        self.portfolio.assets.extend(portfolio.assets)
+
+    def get_heir(self):
+        return None
 
 class MockCentralBank(MockAgent):
     # Central Bank can withdraw infinitely (negative assets allowed for tracking)
@@ -165,16 +180,14 @@ def test_transfer_rollback(settlement_system):
 def test_atomic_settlement_success(settlement_system):
     # Setup
     deceased_id = 101
+    deceased_agent = MockAgent(deceased_id, 500.0)
     heir1 = MockAgent(201, 100.0)
     heir2 = MockAgent(202, 50.0)
 
     # 1. Create Settlement (Simulate agent cleared)
     # Agent had 500 cash.
     account = settlement_system.create_settlement(
-        deceased_id,
-        cash_assets=500.0,
-        portfolio_assets={},
-        real_estate_assets=[],
+        deceased_agent,
         tick=1
     )
 
@@ -204,9 +217,10 @@ def test_atomic_settlement_success(settlement_system):
 
 def test_atomic_settlement_leak_prevention(settlement_system):
     deceased_id = 102
+    deceased_agent = MockAgent(deceased_id, 100.0)
     heir = MockAgent(203, 0.0)
 
-    account = settlement_system.create_settlement(deceased_id, 100.0, {}, [], 1)
+    account = settlement_system.create_settlement(deceased_agent, 1)
 
     # Distribute less than total
     plan = [(heir, 90.0, "Partial", "inheritance")]
@@ -224,9 +238,10 @@ def test_atomic_settlement_leak_prevention(settlement_system):
 
 def test_atomic_settlement_overdraft_protection(settlement_system):
     deceased_id = 103
+    deceased_agent = MockAgent(deceased_id, 100.0)
     heir = MockAgent(204, 0.0)
 
-    account = settlement_system.create_settlement(deceased_id, 100.0, {}, [], 1)
+    account = settlement_system.create_settlement(deceased_agent, 1)
 
     # Try to distribute MORE
     plan = [(heir, 150.0, "Overdraft", "inheritance")]
@@ -235,3 +250,98 @@ def test_atomic_settlement_overdraft_protection(settlement_system):
     assert len(receipts) == 0 # Should skip
     assert heir.assets == 0.0
     assert account.escrow_cash == 100.0
+
+def test_process_sagas_liveness_check(settlement_system):
+    # Setup
+    saga_id = "test-saga-uuid"
+    buyer_id = 1
+    seller_id = 2
+
+    saga = {
+        "saga_id": saga_id,
+        "buyer_id": buyer_id,
+        "seller_id": seller_id,
+        "status": "STARTED",
+        "logs": []
+    }
+
+    settlement_system.submit_saga(saga)
+
+    # Mock Simulation State
+    mock_state = MagicMock()
+    mock_state.agents = {}
+
+    # Case 1: Buyer Inactive
+    mock_buyer = MagicMock()
+    mock_buyer.is_active = False
+    mock_seller = MagicMock()
+    mock_seller.is_active = True
+
+    mock_state.agents[buyer_id] = mock_buyer
+    mock_state.agents[seller_id] = mock_seller
+
+    # Patch the Handler to avoid actual logic execution
+    with patch("simulation.systems.settlement_system.HousingTransactionSagaHandler") as MockHandler:
+        mock_handler_instance = MockHandler.return_value
+        # If execution were called, it would return updated saga
+        mock_handler_instance.execute_step.return_value = saga
+
+        # Execute
+        settlement_system.process_sagas(mock_state)
+
+        # Verify Cancellation
+        # Saga should be removed from active_sagas
+        assert saga_id not in settlement_system.active_sagas
+        # Check logs/status if we still had reference, but we modify dict in place
+        assert saga["status"] == "CANCELLED"
+        assert "Cancelled due to inactive participant." in saga["logs"]
+
+        # Verify execute_step was NOT called
+        mock_handler_instance.execute_step.assert_not_called()
+
+def test_process_sagas_active_participants(settlement_system):
+    # Setup
+    saga_id = "test-saga-uuid-2"
+    buyer_id = 3
+    seller_id = 4
+
+    saga = {
+        "saga_id": saga_id,
+        "buyer_id": buyer_id,
+        "seller_id": seller_id,
+        "status": "STARTED",
+        "logs": []
+    }
+
+    settlement_system.submit_saga(saga)
+
+    # Mock Simulation State
+    mock_state = MagicMock()
+    mock_state.agents = {}
+
+    # Both Active
+    mock_buyer = MagicMock()
+    mock_buyer.is_active = True
+    mock_seller = MagicMock()
+    mock_seller.is_active = True
+
+    mock_state.agents[buyer_id] = mock_buyer
+    mock_state.agents[seller_id] = mock_seller
+
+    # Patch the Handler
+    with patch("simulation.systems.settlement_system.HousingTransactionSagaHandler") as MockHandler:
+        mock_handler_instance = MockHandler.return_value
+        # Handler updates saga to next step
+        updated_saga = saga.copy()
+        updated_saga["status"] = "PENDING_OFFER"
+        mock_handler_instance.execute_step.return_value = updated_saga
+
+        # Execute
+        settlement_system.process_sagas(mock_state)
+
+        # Verify Success
+        assert saga_id in settlement_system.active_sagas
+        assert settlement_system.active_sagas[saga_id]["status"] == "PENDING_OFFER"
+
+        # Verify execute_step WAS called
+        mock_handler_instance.execute_step.assert_called_once_with(saga)

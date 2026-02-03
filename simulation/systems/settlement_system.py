@@ -60,6 +60,36 @@ class SettlementSystem(ISettlementSystem):
         # Iterate over copy to allow modification/deletion
         for saga_id, saga in list(self.active_sagas.items()):
             try:
+                # 1. Agent Liveness Check (Pre-Settlement Logic)
+                # Ensure agents are accessible via simulation_state.agents
+                buyer = simulation_state.agents.get(saga['buyer_id'])
+                seller = simulation_state.agents.get(saga['seller_id'])
+
+                is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
+                is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
+
+                if is_buyer_inactive or is_seller_inactive:
+                    # Transition to CANCELLED manually as it's a system-level override
+                    saga['status'] = "CANCELLED"
+                    if 'logs' in saga and isinstance(saga['logs'], list):
+                        saga['logs'].append("Cancelled due to inactive participant.")
+
+                    self.logger.warning(
+                         f"SAGA_CANCELLED | Saga {saga_id} cancelled due to inactive participant. "
+                         f"Buyer Active: {not is_buyer_inactive}, Seller Active: {not is_seller_inactive}",
+                         extra={"saga_id": saga_id}
+                    )
+
+                    # Safe approach: attempt compensation if status implies locked funds.
+                    if saga['status'] not in ["STARTED", "PENDING_OFFER"]:
+                         try:
+                             handler.compensate_step(saga)
+                         except Exception as comp_err:
+                             self.logger.error(f"SAGA_COMPENSATE_FAIL | {comp_err}")
+
+                    del self.active_sagas[saga_id]
+                    continue
+
                 # Delegate to Handler
                 updated_saga = handler.execute_step(saga)
                 self.active_sagas[saga_id] = updated_saga

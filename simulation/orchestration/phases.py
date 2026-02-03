@@ -435,6 +435,29 @@ class Phase2_Matching(IPhaseStrategy):
         return state
 
 
+class Phase_HousingSaga(IPhaseStrategy):
+    """
+    Phase 4.1: Advance Housing Sagas (Pre-Settlement Checks)
+
+    This phase processes long-running transactions (sagas), specifically for housing.
+    Its primary responsibility at this point in the tick is to perform pre-condition checks
+    that do not depend on market matching or financial settlement, such as agent liveness.
+    """
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
+
+    def execute(self, state: SimulationState) -> SimulationState:
+        """
+        Checks for agent liveness and cancels sagas if participants are no longer active.
+        """
+        if state.settlement_system and hasattr(state.settlement_system, 'process_sagas'):
+            # The core logic is delegated to the settlement system.
+            # This call now handles all saga state transitions.
+            state.settlement_system.process_sagas(state)
+
+        return state
+
+
 class Phase3_Transaction(IPhaseStrategy):
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
@@ -479,9 +502,7 @@ class Phase3_Transaction(IPhaseStrategy):
 
         # WO-024: Monetary Transactions are now processed incrementally in TickOrchestrator._drain_and_sync_state (TD-177)
 
-        # Housing Saga Processing (Atomic V3)
-        if state.settlement_system and hasattr(state.settlement_system, 'process_sagas'):
-            state.settlement_system.process_sagas(state)
+        # REMOVED: Housing Saga Processing (Atomic V3) - Moved to Phase_HousingSaga
 
         # WO-116: Corporate Tax Intent Generation
         if state.taxation_system and state.government:
