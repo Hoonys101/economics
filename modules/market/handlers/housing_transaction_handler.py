@@ -3,7 +3,7 @@ import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
 from modules.market.api import IHousingTransactionHandler, HousingConfigDTO
-from modules.finance.api import BorrowerProfileDTO
+from modules.finance.api import BorrowerProfileDTO, LienDTO
 from modules.system.escrow_agent import EscrowAgent
 from simulation.core_agents import Household
 from simulation.firms import Firm
@@ -171,12 +171,15 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
             # Success!
             # 6. Apply Side Effects
-            self._apply_housing_effects(unit, buyer, seller, loan_id, context)
+            lender_id = context.bank.id if context.bank else 0
+            self._apply_housing_effects(unit, buyer, seller, loan_id, loan_amount, lender_id, context)
 
             # Store mortgage_id in metadata for Registry/Observer
             if loan_id:
                 if not tx.metadata: tx.metadata = {}
                 tx.metadata["mortgage_id"] = loan_id
+                tx.metadata["loan_principal"] = loan_amount
+                tx.metadata["lender_id"] = lender_id
 
             context.logger.info(f"HOUSING | Success: Unit {unit.id} sold to {buyer.id}. Price: {sale_price}")
             return True
@@ -244,7 +247,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             except Exception as e:
                 context.logger.error(f"HOUSING | Failed to terminate loan {loan_id}: {e}")
 
-    def _apply_housing_effects(self, unit: Any, buyer: Any, seller: Any, mortgage_id: Optional[str], context: TransactionContext):
+    def _apply_housing_effects(self, unit: Any, buyer: Any, seller: Any, mortgage_id: Optional[str],
+                             loan_amount: float, lender_id: int, context: TransactionContext):
         """
         Updates housing ownership and residency.
         Mirrors Registry._handle_housing_registry but includes mortgage_id.
@@ -253,7 +257,18 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
         # Update Unit
         unit.owner_id = buyer.id
-        unit.mortgage_id = mortgage_id
+
+        # Update Liens
+        unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
+
+        if mortgage_id:
+             new_lien: LienDTO = {
+                 "loan_id": str(mortgage_id),
+                 "lienholder_id": lender_id,
+                 "principal_remaining": loan_amount,
+                 "lien_type": "MORTGAGE"
+             }
+             unit.liens.append(new_lien)
 
         # Update Seller (if not None/Govt)
         if seller:

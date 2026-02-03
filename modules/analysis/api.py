@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TypedDict, Dict, List, Protocol, Optional, TYPE_CHECKING
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
     from modules.simulation.api import ISimulationState

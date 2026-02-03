@@ -1,11 +1,11 @@
 from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING
 from dataclasses import dataclass
 import abc
-
-from simulation.models import Order, Transaction
+from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
+    from simulation.models import Order, Transaction
 
 # Forward reference for type hinting
 class Firm: pass
@@ -117,6 +117,32 @@ class CreditAssessmentResultDTO(TypedDict):
     is_approved: bool
     max_loan_amount: float
     reason: Optional[str] # Reason for denial
+
+# --- Lien and Encumbrance DTOs ---
+
+class LienDTO(TypedDict):
+    """
+    Represents a financial claim (lien) against a real estate property.
+    This is the canonical data structure for all property-secured debt.
+    """
+    loan_id: str
+    lienholder_id: int  # The ID of the agent/entity holding the lien (e.g., the bank)
+    principal_remaining: float
+    lien_type: Literal["MORTGAGE", "TAX_LIEN", "JUDGEMENT_LIEN"]
+
+class MortgageApplicationDTO(TypedDict):
+    """
+    Represents a formal mortgage application sent to the LoanMarket.
+    This is the primary instrument for the new credit pipeline.
+    """
+    applicant_id: int
+    principal: float
+    purpose: Literal["MORTGAGE"]
+    property_id: int
+    property_value: float # Market value for LTV calculation
+    applicant_income: float # For DTI calculation
+    applicant_existing_debt: float # For DTI calculation
+    loan_term: int # Added to support calculation (implied in logic)
 
 class ICreditScoringService(Protocol):
     """
@@ -259,7 +285,7 @@ class IFinanceSystem(Protocol):
         """Issues new treasury bonds to the market."""
         ...
 
-    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> Tuple[bool, List[Transaction]]:
+    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> Tuple[bool, List["Transaction"]]:
         """
         Issues bonds and attempts to settle them immediately via SettlementSystem.
         Returns (success_bool, list_of_transactions).
@@ -293,7 +319,7 @@ class IMonetaryOperations(Protocol):
     """
     Interface for a system that executes monetary operations like OMO.
     """
-    def execute_open_market_operation(self, instruction: OMOInstructionDTO) -> List[Order]:
+    def execute_open_market_operation(self, instruction: OMOInstructionDTO) -> List["Order"]:
         """
         Takes an instruction and creates market orders to fulfill it.
 
@@ -312,7 +338,7 @@ class ICentralBank(IMonetaryOperations, Protocol):
     """
     id: int
 
-    def process_omo_settlement(self, transaction: Transaction) -> None:
+    def process_omo_settlement(self, transaction: "Transaction") -> None:
         """
         Callback for SettlementSystem to notify the Central Bank about
         a completed OMO transaction, allowing it to update internal state if needed.
@@ -322,6 +348,36 @@ class ICentralBank(IMonetaryOperations, Protocol):
         ...
 
 # --- Portfolio Interfaces (TD-160) ---
+
+# --- Interfaces for Data Access ---
+
+class IRealEstateRegistry(ABC):
+    """
+    An interface for querying the state of real estate assets,
+    decoupling models from business logic.
+    """
+    @abstractmethod
+    def is_under_contract(self, property_id: int) -> bool:
+        """
+        Checks if a property is currently involved in an active purchase Saga.
+        This is the single source of truth for the "under contract" status.
+
+        Implementation Note: This method should query the Saga persistence layer
+        for any non-terminal Saga state associated with the property_id.
+        """
+        ...
+
+class ISagaRepository(ABC):
+    """
+    Interface for querying the state of active Sagas.
+    """
+    @abstractmethod
+    def find_active_saga_for_property(self, property_id: int) -> Optional[dict]:
+        """
+        Finds an active (non-completed, non-failed) housing transaction saga
+        for a given property ID. Returns the saga state DTO if found, else None.
+        """
+        ...
 
 @runtime_checkable
 class IPortfolioHandler(Protocol):

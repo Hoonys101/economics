@@ -52,7 +52,8 @@ class HousingSystem:
                         # Foreclosure
                         old_owner_id = unit.owner_id
                         unit.owner_id = -1  # -1 is Bank/Govt
-                        unit.mortgage_id = None
+                        # Clear mortgages (foreclosure)
+                        unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
                         
                         # Evict Occupant (if owner was occupying)
                         if unit.occupant_id == old_owner_id:

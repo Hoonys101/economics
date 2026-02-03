@@ -1,5 +1,6 @@
 from typing import Any, List, Optional
 import logging
+from modules.finance.api import LienDTO
 from simulation.systems.api import IRegistry
 from simulation.models import Transaction
 from simulation.core_agents import Household, Skill
@@ -209,10 +210,21 @@ class Registry(IRegistry):
 
             # Update Unit
             unit.owner_id = buyer.id
-            if tx.metadata and "mortgage_id" in tx.metadata:
-                unit.mortgage_id = tx.metadata["mortgage_id"]
-            else:
-                unit.mortgage_id = None
+            # Update Liens
+            unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
+
+            if tx.metadata and "mortgage_id" in tx.metadata and tx.metadata["mortgage_id"]:
+                loan_id = str(tx.metadata["mortgage_id"])
+                loan_principal = float(tx.metadata.get("loan_principal", 0.0))
+                lender_id = int(tx.metadata.get("lender_id", 0))
+
+                new_lien: LienDTO = {
+                    "loan_id": loan_id,
+                    "lienholder_id": lender_id,
+                    "principal_remaining": loan_principal,
+                    "lien_type": "MORTGAGE"
+                }
+                unit.liens.append(new_lien)
 
             # Update Seller (if not None/Govt)
             if seller:

@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 # Note: Adjust imports based on actual file structure
 from modules.household.dtos import HouseholdStateDTO
 from modules.system.api import HousingMarketSnapshotDTO
+from modules.finance.api import MortgageApplicationDTO
 
 class LoanMarketSnapshotDTO(TypedDict):
     """
@@ -13,21 +14,6 @@ class LoanMarketSnapshotDTO(TypedDict):
     interest_rate: float
     max_ltv: float
     max_dti: float
-
-# Renamed from LoanApplicationDTO for clarity as per Phase 32 spec
-class MortgageApplicationDTO(TypedDict):
-    """
-    Represents a formal mortgage application sent to the LoanMarket.
-    This is the primary instrument for the new credit pipeline.
-    """
-    applicant_id: int
-    principal: float
-    purpose: Literal["MORTGAGE"]
-    property_id: int
-    property_value: float # Market value for LTV calculation
-    applicant_income: float # For DTI calculation
-    applicant_existing_debt: float # For DTI calculation
-    loan_term: int # Added to support calculation (implied in logic)
 
 class HousingOfferRequestDTO(TypedDict):
     """

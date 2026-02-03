@@ -30,6 +30,7 @@ def verify_pipeline():
 
     config_mock = MagicMock()
     config_mock.TICKS_PER_YEAR = 100
+    config_mock.regulations = None # Ensure new path is skipped
     config_mock.housing.max_ltv = 0.8
     config_mock.housing.max_dti = 0.5
     config_mock.DEFAULT_MORTGAGE_INTEREST_RATE = 0.05

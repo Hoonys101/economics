@@ -1,7 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
 import uuid
 from modules.market.api import OrderDTO
+from modules.finance.api import LienDTO
+
+if TYPE_CHECKING:
+    from modules.finance.api import IRealEstateRegistry
 
 # Alias for backward compatibility and migration
 Order = OrderDTO
@@ -47,14 +51,42 @@ class Share:
 
 @dataclass
 class RealEstateUnit:
-    """부동산 자산 단위 (Phase 17-3A)"""
+    """부동산 자산 단위 (Phase 17-3A, Updated for Lien System)"""
     id: int
     owner_id: Optional[int] = None  # None = Government
     occupant_id: Optional[int] = None  # Tenant
     condition: float = 1.0
     estimated_value: float = 10000.0
     rent_price: float = 100.0
-    mortgage_id: Optional[int] = None
+
+    # New field for tracking all liens against the property
+    liens: List[LienDTO] = field(default_factory=list)
+
+    # Dependency for is_under_contract
+    _registry_dependency: Optional["IRealEstateRegistry"] = field(default=None, repr=False, compare=False, hash=False)
+
+    @property
+    def mortgage_id(self) -> Optional[str]:
+        """
+        Backward compatibility for existing logic. Returns the loan_id of the
+        first mortgage found in the liens list. Returns None if no mortgage exists.
+        New logic should iterate over the `liens` list directly.
+        """
+        for lien in self.liens:
+            if lien['lien_type'] == 'MORTGAGE':
+                return str(lien['loan_id'])
+        return None
+
+    @property
+    def is_under_contract(self) -> bool:
+        """
+        Derived property to check if the unit is in a pending transaction.
+        Delegates the check to the Real Estate Registry, which queries the
+        Saga state, ensuring a single source of truth.
+        """
+        if self._registry_dependency:
+            return self._registry_dependency.is_under_contract(self.id)
+        return False
 
 @dataclass
 class Talent:

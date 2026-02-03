@@ -4,7 +4,7 @@ import logging
 from simulation.finance.api import ISettlementSystem, ITransaction
 from modules.finance.api import (
     IFinancialEntity, InsufficientFundsError,
-    IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider
+    IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
 )
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
 from modules.market.housing_purchase_api import HousingPurchaseSagaDTO, MortgageApplicationDTO
@@ -156,7 +156,10 @@ class SettlementSystem(ISettlementSystem):
 
                 # Update Property Ownership
                 # We do this here as part of the "Transfer" step
-                self._transfer_property(state, data['property_id'], buyer_id, seller_id, offer_price, data['approved_loan_id'])
+                # Pass loan principal and lender ID for lien creation
+                lender_id = self.bank.id if self.bank else 0
+                self._transfer_property(state, data['property_id'], buyer_id, seller_id, offer_price,
+                                      data['approved_loan_id'], loan_principal, lender_id)
 
                 saga['status'] = "COMPLETED"
                 self.logger.info(f"SAGA_COMPLETED | Property {data['property_id']} transferred to {buyer_id}.")
@@ -165,7 +168,8 @@ class SettlementSystem(ISettlementSystem):
                 saga['status'] = "FAILED_COMPENSATED"
                 self._void_loan(state, data['approved_loan_id'])
 
-    def _transfer_property(self, state: Any, property_id: int, buyer_id: int, seller_id: int, price: float, loan_id: Any):
+    def _transfer_property(self, state: Any, property_id: int, buyer_id: int, seller_id: int, price: float,
+                         loan_id: Any, loan_principal: float = 0.0, lender_id: int = 0):
         # Update Registry / Real Estate Units
         # Find unit
         unit = None
@@ -176,8 +180,28 @@ class SettlementSystem(ISettlementSystem):
 
         if unit:
             unit.owner_id = buyer_id
-            unit.mortgage_id = str(loan_id) if loan_id else None
+
+            # Clear existing mortgages
+            unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
+
+            # Add new mortgage lien if applicable
+            if loan_id:
+                new_lien: LienDTO = {
+                    "loan_id": str(loan_id),
+                    "lienholder_id": lender_id,
+                    "principal_remaining": loan_principal,
+                    "lien_type": "MORTGAGE"
+                }
+                unit.liens.append(new_lien)
+
             # Log Transaction
+            metadata = {
+                "mortgage_id": loan_id,
+                "executed": True,
+                "loan_principal": loan_principal,
+                "lender_id": lender_id
+            }
+
             tx = {
                 "buyer_id": buyer_id,
                 "seller_id": seller_id,
@@ -187,7 +211,7 @@ class SettlementSystem(ISettlementSystem):
                 "market_id": "housing",
                 "transaction_type": "housing",
                 "time": state.time,
-                "metadata": {"mortgage_id": loan_id, "executed": True} # Executed flag to skip re-processing if needed
+                "metadata": metadata
             }
             # Add to state transactions
             from simulation.models import Transaction
@@ -204,7 +228,7 @@ class SettlementSystem(ISettlementSystem):
                 market_id="housing",
                 transaction_type="housing",
                 time=state.time,
-                metadata={"mortgage_id": loan_id, "executed": True}
+                metadata=metadata
             )
             state.transactions.append(tx_obj)
 
