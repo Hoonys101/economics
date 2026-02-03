@@ -6,8 +6,7 @@ from simulation.core_markets import Market
 from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError, BorrowerProfileDTO
 from modules.housing.dtos import MortgageApprovalDTO
 # Import from new API
-# from modules.market.housing_planner_api import ILoanMarket, MortgageApplicationDTO
-from modules.market.housing_purchase_api import ILoanMarket, MortgageApplicationDTO
+from modules.market.housing_planner_api import ILoanMarket, MortgageApplicationDTO
 from modules.finance.api import LoanInfoDTO as LoanDTO
 
 if TYPE_CHECKING:
@@ -46,28 +45,15 @@ class LoanMarket(Market, ILoanMarket):
         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
         Implements ILoanMarket.evaluate_mortgage_application.
         """
-        # Compatibility with different DTO versions/definitions
-        # housing_purchase_api.MortgageApplicationDTO uses: offer_price, loan_principal
-        # housing_planner_api.MortgageApplicationDTO uses: property_value, principal
+        # Canonical Keys from housing_planner_api:
+        # principal, property_value, applicant_income, applicant_existing_debt
 
-        if 'loan_principal' in application:
-            principal = application['loan_principal']
-            prop_value = application.get('offer_price', 0.0) # Or property_id resolution?
-            # Actually offer_price is likely property value for LTV purposes
-            # But wait, property_value might be different. DTO has 'offer_price'.
-            # If property_value is not in DTO, we use offer_price.
-            if prop_value == 0 and 'property_id' in application:
-                 # Should we look up? No, evaluation should be self-contained ideally.
-                 pass
-        else:
-            principal = application.get('principal', 0.0)
-            prop_value = application.get('property_value', 0.0)
+        principal = application.get('principal', 0.0)
+        prop_value = application.get('property_value', 0.0)
 
         if prop_value <= 0:
-             # Fallback if property_value missing but offer_price exists (alias)
-             prop_value = application.get('offer_price', 0.0)
-             if prop_value <= 0:
-                 return False
+             logger.warning(f"LOAN_DENIED | Invalid property value {prop_value}")
+             return False
 
         # 1. LTV Check
         ltv = principal / prop_value
@@ -103,11 +89,8 @@ class LoanMarket(Market, ILoanMarket):
         # 2. DTI Check
         applicant_id = application['applicant_id']
 
-        # Support new DTO keys
-        annual_income = application.get('applicant_gross_income', application.get('applicant_income', 0.0))
-        existing_debt_payments = application.get('applicant_existing_debt_payments', 0.0)
+        annual_income = application.get('applicant_income', 0.0)
         existing_debt_total = application.get('applicant_existing_debt', 0.0)
-
         loan_term = application.get('loan_term', 360)
 
         # Get Interest Rate
@@ -125,26 +108,23 @@ class LoanMarket(Market, ILoanMarket):
              new_payment = principal * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
 
         # Estimate Existing Debt Payment
-        if existing_debt_payments > 0:
-             existing_payment = existing_debt_payments
-        else:
-             # Fallback: estimate from total debt if payments not provided
-             # Use existing Bank query to get accurate debt payments if possible
-             existing_payment = 0.0
-             try:
-                  debt_status = self.bank.get_debt_status(str(applicant_id))
-                  for l in debt_status['loans']:
-                      r = l['interest_rate'] / 12.0
-                      if r == 0:
-                          payment = l['outstanding_balance'] / 360
-                      else:
-                          payment = l['outstanding_balance'] * r
-                      existing_payment += payment
-             except Exception:
-                  if monthly_rate == 0:
-                       existing_payment = existing_debt_total / 360
+        # Use existing Bank query to get accurate debt payments if possible
+        existing_payment = 0.0
+        try:
+              debt_status = self.bank.get_debt_status(str(applicant_id))
+              for l in debt_status['loans']:
+                  r = l['interest_rate'] / 12.0
+                  if r == 0:
+                      payment = l['outstanding_balance'] / 360 # Default term assumption? Or use remaining term?
                   else:
-                       existing_payment = existing_debt_total * monthly_rate
+                      payment = l['outstanding_balance'] * r # Simplified
+                  existing_payment += payment
+        except Exception:
+              # Fallback: estimate from total debt reported in application
+              if monthly_rate == 0:
+                   existing_payment = existing_debt_total / 360
+              else:
+                   existing_payment = existing_debt_total * monthly_rate
 
         total_monthly_obligation = existing_payment + new_payment
         monthly_income = annual_income / 12.0
@@ -165,7 +145,6 @@ class LoanMarket(Market, ILoanMarket):
         Processes a mortgage application with regulatory checks.
         Returns LoanInfoDTO if approved, None otherwise.
         """
-        # Refactored to use stage_mortgage which now returns LoanDTO (dict)
         return self.stage_mortgage(application)
 
     def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
@@ -184,14 +163,7 @@ class LoanMarket(Market, ILoanMarket):
         else:
              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
 
-        due_tick = None
-        # Ideally calculate based on loan_term if current tick known, but Bank handles defaults.
-
-        # Support DTO key variation
-        if 'loan_principal' in application:
-            principal = application['loan_principal']
-        else:
-            principal = application.get('principal', 0.0)
+        principal = application.get('principal', 0.0)
 
         loan_info = self.bank.stage_loan(
             borrower_id=str(application['applicant_id']),

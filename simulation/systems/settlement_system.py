@@ -7,7 +7,8 @@ from modules.finance.api import (
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
 )
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
-from modules.market.housing_purchase_api import HousingPurchaseSagaDTO, MortgageApplicationDTO
+from modules.market.housing_purchase_api import HousingPurchaseSagaDTO
+from modules.market.housing_planner_api import MortgageApplicationDTO
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -119,7 +120,7 @@ class SettlementSystem(ISettlementSystem):
             seller_id = data['seller_id']
             offer_price = data['offer_price']
             down_payment = data['down_payment']
-            loan_principal = data['mortgage_application']['loan_principal']
+            loan_principal = data['mortgage_application']['principal']
 
             buyer = state.agents.get(buyer_id)
             seller = state.agents.get(seller_id)

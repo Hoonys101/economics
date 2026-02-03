@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from modules.household.dtos import HouseholdStateDTO
 from modules.system.api import HousingMarketSnapshotDTO
-from modules.finance.api import MortgageApplicationDTO
+from modules.market.housing_planner_api import MortgageApplicationDTO
 
 # --- Mortgage & Saga DTOs ---
 
