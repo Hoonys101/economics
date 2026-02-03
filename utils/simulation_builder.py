@@ -4,7 +4,7 @@ from typing import Dict, Any
 from pathlib import Path
 
 import config
-from modules.common.config_manager.impl import ConfigManagerImpl
+from modules.common.config.impl import ConfigManagerImpl
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 from simulation.core_agents import Household, Talent

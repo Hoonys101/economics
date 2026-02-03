@@ -1,0 +1,50 @@
+from modules.common.config.api import GovernmentConfigDTO
+
+government_config = GovernmentConfigDTO(
+    income_tax_rate=0.0,
+    corporate_tax_rate=0.0,
+    sales_tax_rate=0.0,
+    inheritance_tax_rate=0.0,
+    wealth_tax_threshold=50000.0,
+    annual_wealth_tax_rate=0.02,
+    tax_brackets=[
+        (0.5, 0.0),
+        (1.0, 0.05),
+        (3.0, 0.10),
+        (float('inf'), 0.20)
+    ],
+    gov_action_interval=30,
+    rd_subsidy_rate=0.2,
+    infrastructure_investment_cost=5000.0,
+    infrastructure_tfp_boost=0.05,
+    unemployment_benefit_ratio=0.0,
+    stimulus_trigger_gdp_drop=-0.05,
+    deficit_spending_enabled=True,
+    deficit_spending_limit_ratio=0.30,
+    emergency_budget_multiplier_cap=2.0,
+    normal_budget_multiplier_cap=1.0,
+    fiscal_sensitivity_alpha=0.5,
+    potential_gdp_window=50,
+    tax_rate_min=0.05,
+    tax_rate_max=0.50,
+    tax_rate_base=0.10,
+    budget_allocation_min=0.1,
+    budget_allocation_max=1.0,
+    debt_ceiling_ratio=2.0,
+    fiscal_stance_expansion_threshold=0.025,
+    fiscal_stance_contraction_threshold=-0.025,
+    fiscal_model="MIXED",
+    public_edu_budget_ratio=0.20,
+    government_policy_mode="AI_ADAPTIVE",
+    target_inflation_rate=0.02,
+    target_unemployment_rate=0.04,
+    rl_learning_rate=0.1,
+    rl_discount_factor=0.95,
+    automation_tax_rate=0.05,
+    policy_actuator_step_sizes=(0.01, 0.0025, 0.1),
+    policy_actuator_bounds={
+        "tax": (0.05, 0.50),
+        "rate": (0.0, 0.20),
+        "budget": (0.1, 1.0)
+    }
+)
