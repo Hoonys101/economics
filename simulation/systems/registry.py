@@ -7,6 +7,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
+from modules.housing.api import IHousingService
 
 logger = logging.getLogger(__name__)
 
@@ -14,67 +15,16 @@ class Registry(IRegistry):
     """
     Updates non-financial state: Ownership, Inventory, Employment, Contracts.
     Extracted from TransactionProcessor.
+    Refactored to delegate housing logic to HousingService.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, housing_service: Optional[IHousingService] = None, logger: Optional[logging.Logger] = None):
         self.logger = logger if logger else logging.getLogger(__name__)
-        self.contract_locks: Dict[int, UUID] = {}
-        self.real_estate_units: List[Any] = []
+        self.housing_service = housing_service
 
     def set_real_estate_units(self, units: List[Any]) -> None:
-        self.real_estate_units = units
-
-    def is_under_contract(self, property_id: int) -> bool:
-        return property_id in self.contract_locks
-
-    def set_under_contract(self, property_id: int, saga_id: UUID) -> bool:
-        if property_id in self.contract_locks:
-             return False
-        self.contract_locks[property_id] = saga_id
-        return True
-
-    def release_contract(self, property_id: int, saga_id: UUID) -> bool:
-        if self.contract_locks.get(property_id) == saga_id:
-             del self.contract_locks[property_id]
-             return True
-        return False
-
-    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
-        unit = next((u for u in self.real_estate_units if u.id == property_id), None)
-        if not unit:
-             return None
-
-        # Check if already has this loan lien
-        if any(l['loan_id'] == loan_id for l in unit.liens):
-             return f"lien_{loan_id}"
-
-        lien_id = f"lien_{loan_id}"
-        new_lien: LienDTO = {
-            "loan_id": loan_id,
-            "lienholder_id": lienholder_id,
-            "principal_remaining": principal,
-            "lien_type": "MORTGAGE"
-        }
-        unit.liens.append(new_lien)
-        return lien_id
-
-    def remove_lien(self, property_id: int, lien_id: str) -> bool:
-        unit = next((u for u in self.real_estate_units if u.id == property_id), None)
-        if not unit:
-             return False
-
-        original_len = len(unit.liens)
-        # Remove if lien_id matches generated ID or raw loan_id
-        unit.liens = [l for l in unit.liens if f"lien_{l['loan_id']}" != lien_id and l['loan_id'] != lien_id]
-
-        return len(unit.liens) < original_len
-
-    def transfer_ownership(self, property_id: int, new_owner_id: int) -> bool:
-        unit = next((u for u in self.real_estate_units if u.id == property_id), None)
-        if not unit:
-             return False
-        unit.owner_id = new_owner_id
-        return True
+        if self.housing_service:
+            self.housing_service.set_real_estate_units(units)
 
     def update_ownership(self, transaction: Transaction, buyer: Any, seller: Any, state: SimulationState) -> None:
         """
@@ -91,12 +41,11 @@ class Registry(IRegistry):
         elif tx_type == "stock":
             self._handle_stock_registry(transaction, buyer, seller, state.stock_market, state.time)
 
-        elif tx_type.startswith("real_estate_") or tx_type == "housing": # transaction_type might be 'asset_transfer' or 'housing'
-            # Check item_id for real_estate prefix if type is generic asset_transfer
-            if transaction.item_id.startswith("real_estate_"):
-                self._handle_real_estate_registry(transaction, buyer, seller, state.real_estate_units, state.time)
-            elif tx_type == "housing":
-                self._handle_housing_registry(transaction, buyer, seller, state.real_estate_units, state.time)
+        elif tx_type.startswith("real_estate_") or tx_type == "housing":
+             if self.housing_service:
+                 self.housing_service.process_transaction(transaction, state)
+             else:
+                 self.logger.error("Registry: HousingService not initialized but housing transaction received.")
 
         elif tx_type == "emergency_buy":
              self._handle_emergency_buy(transaction, buyer)
@@ -105,7 +54,10 @@ class Registry(IRegistry):
              if transaction.item_id.startswith("stock_"):
                  self._handle_stock_registry(transaction, buyer, seller, state.stock_market, state.time)
              elif transaction.item_id.startswith("real_estate_"):
-                 self._handle_real_estate_registry(transaction, buyer, seller, state.real_estate_units, state.time)
+                 if self.housing_service:
+                     self.housing_service.process_transaction(transaction, state)
+                 else:
+                     self.logger.error("Registry: HousingService not initialized but real_estate transaction received.")
 
     def _handle_labor_registry(self, tx: Transaction, buyer: Any, seller: Any, state: SimulationState):
         """Updates employment status and employer/employee lists."""
@@ -228,95 +180,6 @@ class Registry(IRegistry):
                 stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
             else:
                 stock_market.update_shareholder(seller.id, firm_id, 0.0)
-
-    def _handle_real_estate_registry(self, tx: Transaction, buyer: Any, seller: Any, real_estate_units: List[Any], current_time: int):
-        """Updates real estate ownership."""
-        try:
-            unit_id = int(tx.item_id.split("_")[2])
-            unit = next((u for u in real_estate_units if u.id == unit_id), None)
-            if unit:
-                unit.owner_id = buyer.id
-                # Update seller/buyer lists if they exist
-                if isinstance(seller, Household):
-                    if unit_id in seller.owned_properties:
-                        seller.owned_properties.remove(unit_id)
-                elif hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
-                    seller.owned_properties.remove(unit_id)
-
-                if isinstance(buyer, Household):
-                    buyer.owned_properties.append(unit_id)
-                elif hasattr(buyer, "owned_properties"):
-                    buyer.owned_properties.append(unit_id)
-
-                self.logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
-        except (IndexError, ValueError) as e:
-            self.logger.error(f"RE_TX_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
-
-    def _handle_housing_registry(self, tx: Transaction, buyer: Any, seller: Any, real_estate_units: List[Any], current_time: int):
-        """
-        Updates housing ownership, handling 'unit_{id}' format.
-        Also updates 'is_homeless' status and 'residing_property_id'.
-        """
-        try:
-            # item_id format: "unit_{id}"
-            unit_id = int(tx.item_id.split("_")[1])
-            unit = next((u for u in real_estate_units if u.id == unit_id), None)
-
-            if not unit:
-                self.logger.warning(f"HOUSING_REGISTRY | Unit {unit_id} not found.")
-                return
-
-            # Update Unit
-            unit.owner_id = buyer.id
-            # Update Liens
-            unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
-
-            if tx.metadata and "mortgage_id" in tx.metadata and tx.metadata["mortgage_id"]:
-                loan_id = str(tx.metadata["mortgage_id"])
-                loan_principal = float(tx.metadata.get("loan_principal", 0.0))
-                lender_id = int(tx.metadata.get("lender_id", 0))
-
-                new_lien: LienDTO = {
-                    "loan_id": loan_id,
-                    "lienholder_id": lender_id,
-                    "principal_remaining": loan_principal,
-                    "lien_type": "MORTGAGE"
-                }
-                unit.liens.append(new_lien)
-
-            # Update Seller (if not None/Govt)
-            if seller:
-                if isinstance(seller, Household):
-                     if unit_id in seller.owned_properties:
-                        seller.owned_properties.remove(unit_id)
-                elif hasattr(seller, "owned_properties"):
-                    if unit_id in seller.owned_properties:
-                        seller.owned_properties.remove(unit_id)
-
-            # Update Buyer
-            if isinstance(buyer, Household):
-                if unit_id not in buyer.owned_properties:
-                    buyer.owned_properties.append(unit_id)
-
-                # Housing System Logic: Auto-move-in if homeless
-                if buyer.residing_property_id is None:
-                    unit.occupant_id = buyer.id
-                    buyer.residing_property_id = unit_id
-                    buyer.is_homeless = False
-            elif hasattr(buyer, "owned_properties"):
-                if unit_id not in buyer.owned_properties:
-                    buyer.owned_properties.append(unit_id)
-
-                # Housing System Logic: Auto-move-in if homeless
-                if getattr(buyer, "residing_property_id", None) is None:
-                    unit.occupant_id = buyer.id
-                    buyer.residing_property_id = unit_id
-                    buyer.is_homeless = False
-
-            self.logger.info(f"HOUSING_REGISTRY | Unit {unit_id} transferred from {tx.seller_id} to {buyer.id}")
-
-        except (IndexError, ValueError) as e:
-            self.logger.error(f"HOUSING_REGISTRY_FAIL | Invalid item_id format: {tx.item_id}. Error: {e}")
 
     def _handle_emergency_buy(self, tx: Transaction, buyer: Any):
         """Updates inventory for emergency buys."""

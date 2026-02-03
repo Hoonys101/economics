@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.models import RealEstateUnit
-from modules.finance.api import LienDTO, IRealEstateRegistry
+from modules.finance.api import LienDTO
 
 def test_real_estate_unit_initialization():
     """Test standard initialization without optional deps."""
@@ -9,7 +9,6 @@ def test_real_estate_unit_initialization():
     assert unit.id == 1
     assert unit.liens == []
     assert unit.mortgage_id is None
-    assert unit.is_under_contract is False
 
 def test_liens_management():
     """Test adding/removing liens."""
@@ -39,23 +38,6 @@ def test_liens_management():
     assert len(unit.liens) == 2
     # mortgage_id should still find the mortgage
     assert unit.mortgage_id == "loan_101"
-
-def test_is_under_contract_delegation():
-    """Test delegation to registry."""
-    unit = RealEstateUnit(id=3)
-
-    # Mock Registry
-    registry = MagicMock(spec=IRealEstateRegistry)
-    registry.is_under_contract.return_value = True
-
-    # Inject dependency
-    unit._registry_dependency = registry
-
-    assert unit.is_under_contract is True
-    registry.is_under_contract.assert_called_with(3)
-
-    registry.is_under_contract.return_value = False
-    assert unit.is_under_contract is False
 
 def test_mortgage_id_backward_compatibility():
     """Test read-only property logic."""

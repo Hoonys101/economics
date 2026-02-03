@@ -4,9 +4,6 @@ import uuid
 from modules.market.api import OrderDTO
 from modules.finance.api import LienDTO
 
-if TYPE_CHECKING:
-    from modules.finance.api import IRealEstateRegistry
-
 # Alias for backward compatibility and migration
 Order = OrderDTO
 
@@ -62,9 +59,6 @@ class RealEstateUnit:
     # New field for tracking all liens against the property
     liens: List[LienDTO] = field(default_factory=list)
 
-    # Dependency for is_under_contract
-    _registry_dependency: Optional["IRealEstateRegistry"] = field(default=None, repr=False, compare=False, hash=False)
-
     @property
     def mortgage_id(self) -> Optional[str]:
         """
@@ -76,17 +70,6 @@ class RealEstateUnit:
             if lien['lien_type'] == 'MORTGAGE':
                 return str(lien['loan_id'])
         return None
-
-    @property
-    def is_under_contract(self) -> bool:
-        """
-        Derived property to check if the unit is in a pending transaction.
-        Delegates the check to the Real Estate Registry, which queries the
-        Saga state, ensuring a single source of truth.
-        """
-        if self._registry_dependency:
-            return self._registry_dependency.is_under_contract(self.id)
-        return False
 
 @dataclass
 class Talent:

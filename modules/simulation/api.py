@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from simulation.systems.api import IRegistry
     from modules.finance.api import IBankService
     from simulation.interfaces.market_interface import IMarket
+    from modules.housing.api import IHousingService
 
 # --- DTOs ---
 
@@ -75,6 +76,7 @@ class ISimulationState(Protocol):
     time: int
     settlement_system: "ISettlementSystem"
     registry: "IRegistry"
+    housing_service: "IHousingService"
     agents: Dict[int, IAgent]
     bank: "IBankService"
     markets: Dict[str, "IMarket"]

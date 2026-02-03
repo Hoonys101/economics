@@ -21,7 +21,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         self.simulation = simulation
         self.settlement_system: ISettlementSystem = simulation.settlement_system
         # Note: Registry in simulation must implement IPropertyRegistry methods
-        self.registry = simulation.registry
+        self.housing_service = simulation.housing_service
         self.loan_market = simulation.markets.get("loan")
 
     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
@@ -71,8 +71,8 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
             if saga.get('mortgage_approval'):
                  # Remove Lien
                  lien_id = saga['mortgage_approval']['lien_id']
-                 if hasattr(self.registry, 'remove_lien'):
-                    self.registry.remove_lien(saga['property_id'], lien_id)
+                 if hasattr(self.housing_service, 'remove_lien'):
+                    self.housing_service.remove_lien(saga['property_id'], lien_id)
 
                  # Void Loan
                  loan_id = saga['mortgage_approval']['loan_id']
@@ -85,8 +85,8 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
                     self.loan_market.void_staged_application(saga['staged_loan_id'])
 
             # 4. Release Property Lock
-            if hasattr(self.registry, 'release_contract'):
-                self.registry.release_contract(saga['property_id'], saga['saga_id'])
+            if hasattr(self.housing_service, 'release_contract'):
+                self.housing_service.release_contract(saga['property_id'], saga['saga_id'])
 
             saga['status'] = "FAILED_ROLLED_BACK"
 
@@ -98,8 +98,8 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
     def _handle_initiated(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         # 1. Lock Property
-        if hasattr(self.registry, 'set_under_contract'):
-             success = self.registry.set_under_contract(saga['property_id'], saga['saga_id'])
+        if hasattr(self.housing_service, 'set_under_contract'):
+             success = self.housing_service.set_under_contract(saga['property_id'], saga['saga_id'])
              if not success:
                  saga['error_message'] = "Property already under contract"
                  # Can't rollback lock if we didn't get it, but compensate handles cleanup
@@ -179,7 +179,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # LoanInfo might not have it, but we know it's the Bank.
         bank_id = self.simulation.bank.id if self.simulation.bank else -1
 
-        lien_id = self.registry.add_lien(saga['property_id'], loan_id, bank_id, principal)
+        lien_id = self.housing_service.add_lien(saga['property_id'], loan_id, bank_id, principal)
         if not lien_id:
              saga['error_message'] = "Failed to create lien"
              return self.compensate_step(saga)
@@ -234,7 +234,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
     def _handle_transfer_title(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         # Finalize Ownership
-        success = self.registry.transfer_ownership(saga['property_id'], saga['buyer_id'])
+        success = self.housing_service.transfer_ownership(saga['property_id'], saga['buyer_id'])
 
         if success:
              self._log_transaction(saga)
@@ -243,7 +243,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
              # Draft: "Call PropertyRegistry.transfer_ownership... Transition to COMPLETED."
              # Usually ownership transfer overrides contract lock or lock is ignored for new owner.
              # But good hygiene: release lock.
-             self.registry.release_contract(saga['property_id'], saga['saga_id'])
+             self.housing_service.release_contract(saga['property_id'], saga['saga_id'])
 
              saga['status'] = "COMPLETED"
         else:

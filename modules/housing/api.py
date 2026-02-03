@@ -1,5 +1,13 @@
 from abc import ABC, abstractmethod
+from typing import Optional, TYPE_CHECKING, List, Any
+from uuid import UUID
+
+from modules.finance.api import LienDTO
 from modules.housing.dtos import HousingDecisionRequestDTO, HousingDecisionDTO, HousingTransactionSagaStateDTO
+
+if TYPE_CHECKING:
+    from simulation.dtos.api import SimulationState
+    from simulation.models import Transaction
 
 class IHousingPlanner(ABC):
     """
@@ -25,4 +33,55 @@ class IHousingTransactionSagaHandler(ABC):
         This method is idempotent and handles all financial operations
         via the SettlementSystem, including rollbacks.
         """
+        ...
+
+class IHousingService(ABC):
+    """
+    Manages the lifecycle and state of all real estate and housing units.
+    This service is the single source of truth for ownership, liens,
+    and contractual status of properties.
+    """
+
+    @abstractmethod
+    def set_real_estate_units(self, units: List[Any]) -> None:
+        """Sets the reference to the list of real estate units."""
+        ...
+
+    @abstractmethod
+    def process_transaction(self, tx: "Transaction", state: "SimulationState") -> None:
+        """
+        Primary entry point to process a housing-related transaction and update
+        the state of real estate units, owners, and occupants.
+        This replaces the logic previously in Registry._handle_housing_registry.
+        """
+        ...
+
+    @abstractmethod
+    def is_under_contract(self, property_id: int) -> bool:
+        """Checks if a property is currently locked by a purchase saga."""
+        ...
+
+    @abstractmethod
+    def set_under_contract(self, property_id: int, saga_id: UUID) -> bool:
+        """Locks a property for a purchase saga."""
+        ...
+
+    @abstractmethod
+    def release_contract(self, property_id: int, saga_id: UUID) -> bool:
+        """Releases a property lock from a purchase saga."""
+        ...
+
+    @abstractmethod
+    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
+        """Adds a lien (e.g., a mortgage) to a property."""
+        ...
+
+    @abstractmethod
+    def remove_lien(self, property_id: int, lien_id: str) -> bool:
+        """Removes a lien from a property."""
+        ...
+
+    @abstractmethod
+    def transfer_ownership(self, property_id: int, new_owner_id: int) -> bool:
+        """Transfers ownership of a property."""
         ...

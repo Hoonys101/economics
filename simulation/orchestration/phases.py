@@ -458,20 +458,41 @@ class Phase_HousingSaga(IPhaseStrategy):
         return state
 
 
-class Phase3_Transaction(IPhaseStrategy):
+class Phase_BankAndDebt(IPhaseStrategy):
+    """
+    Phase 4.2: Bank & Debt Service
+    Handles bank interest/fees and agent debt servicing.
+    """
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
 
     def execute(self, state: SimulationState) -> SimulationState:
-        system_transactions = []
-        system_transactions.extend(state.inter_tick_queue)
-        state.inter_tick_queue.clear()
-
+        # 1. Bank Tick
         if state.bank and hasattr(state.bank, "run_tick"):
             bank_txs = state.bank.run_tick(state.agents, state.time)
-            system_transactions.extend(bank_txs)
+            if bank_txs:
+                state.transactions.extend(bank_txs)
 
+        # 2. Debt Service
+        if self.world_state.finance_system:
+             debt_txs = self.world_state.finance_system.service_debt(state.time)
+             if debt_txs:
+                 state.transactions.extend(debt_txs)
+
+        return state
+
+class Phase_FirmProductionAndSalaries(IPhaseStrategy):
+    """
+    Phase 4.3: Firm Operations (Transactions)
+    Handles core firm operations like paying salaries.
+    Note: Production logic is in Phase_Production, this is for financial transactions.
+    """
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
+
+    def execute(self, state: SimulationState) -> SimulationState:
         market_data_prev = state.market_data
+
         for firm in state.firms:
              if firm.is_active:
                  firm_txs = firm.generate_transactions(
@@ -480,42 +501,69 @@ class Phase3_Transaction(IPhaseStrategy):
                      all_households=state.households,
                      current_time=state.time
                  )
-                 system_transactions.extend(firm_txs)
+                 if firm_txs:
+                     state.transactions.extend(firm_txs)
+        return state
 
-        if self.world_state.finance_system:
-             debt_txs = self.world_state.finance_system.service_debt(state.time)
-             system_transactions.extend(debt_txs)
+class Phase_GovernmentPrograms(IPhaseStrategy):
+    """
+    Phase 4.4: Government Spending Programs
+    """
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
+
+    def execute(self, state: SimulationState) -> SimulationState:
+        market_data_prev = state.market_data
 
         if state.government:
+            # Welfare
             welfare_txs = state.government.run_welfare_check(list(state.agents.values()), market_data_prev, state.time)
-            system_transactions.extend(welfare_txs)
+            if welfare_txs:
+                state.transactions.extend(welfare_txs)
 
+            # Infrastructure
             infra_txs = state.government.invest_infrastructure(state.time, state.households)
             if infra_txs:
-                system_transactions.extend(infra_txs)
+                state.transactions.extend(infra_txs)
 
+            # Education
             edu_txs = state.government.run_public_education(state.households, state.config_module, state.time)
             if edu_txs:
-                system_transactions.extend(edu_txs)
+                state.transactions.extend(edu_txs)
 
-        state.transactions.extend(system_transactions)
+        return state
 
-        # WO-024: Monetary Transactions are now processed incrementally in TickOrchestrator._drain_and_sync_state (TD-177)
+class Phase_TaxationIntents(IPhaseStrategy):
+    """
+    Phase 4.6: Corporate Tax Intents
+    Generates tax obligations before final transaction processing.
+    """
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
 
-        # REMOVED: Housing Saga Processing (Atomic V3) - Moved to Phase_HousingSaga
-
+    def execute(self, state: SimulationState) -> SimulationState:
         # WO-116: Corporate Tax Intent Generation
         if state.taxation_system and state.government:
             tax_intents = state.taxation_system.generate_corporate_tax_intents(state.firms, current_tick=state.time)
             for tx in tax_intents:
                 if tx.seller_id == "GOVERNMENT":
                      tx.seller_id = state.government.id
-            system_transactions.extend(tax_intents)
+            if tax_intents:
+                state.transactions.extend(tax_intents)
+        return state
 
-        state.transactions.extend(system_transactions)
+class Phase3_Transaction(IPhaseStrategy):
+    def __init__(self, world_state: WorldState):
+        self.world_state = world_state
+
+    def execute(self, state: SimulationState) -> SimulationState:
+        # Move system transactions from queue if any (e.g. from Bankruptcy phase)
+        if state.inter_tick_queue:
+            state.transactions.extend(state.inter_tick_queue)
+            state.inter_tick_queue.clear()
 
         # WO-024: Monetary Transactions are now processed incrementally in TickOrchestrator._drain_and_sync_state (TD-177)
-
+        # Main transaction processing logic
         if self.world_state.transaction_processor:
             # TD-192: Pass combined transactions to ensure execution of drained (historic) and current items
             combined_txs = list(self.world_state.transactions) + list(state.transactions)
