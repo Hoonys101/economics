@@ -1,0 +1,359 @@
+diff --git a/communications/insights/TD-187.md b/communications/insights/TD-187.md
+index f04a022..e806761 100644
+--- a/communications/insights/TD-187.md
++++ b/communications/insights/TD-187.md
+@@ -9,10 +9,12 @@ Implemented the Liquidation Waterfall Protocol to prioritize employee entitlemen
+     *   **Tier 1**: Employee Severance (based on tenure, capped at 3 years) & Unpaid Wages.
+     *   **Tier 2**: Secured Debt (Bank Loans).
+     *   **Tier 3**: Taxes (estimated current liability).
++    *   **Tier 4**: General Unsecured Creditors.
+     *   **Tier 5**: Equity (Shareholders).
+ 3.  **Tenure Tracking**: Added `employment_start_tick` to `Household` (EconStateDTO) and initialized on hire in `HRDepartment`.
+ 4.  **Unpaid Wage Tracking**: `HRDepartment` now tracks unpaid wages in `unpaid_wages` dictionary instead of just logging "Zombie" state.
+ 5.  **Integration**: `AgentLifecycleManager` uses `LiquidationManager` before clearing employees/assets.
++6.  **Asset Liquidation (TD-187-LEAK Fix)**: `LiquidationManager` now executes an asset liquidation step (Tier 0) where `PublicManager` purchases the firm's inventory at a discounted rate (20% haircut) to provide cash liquidity for the waterfall, addressing the "Asset-Rich Cash-Poor" zero-sum violation.
+ 
+ ## Technical Debt & Observations
+ *   **SettlementSystem dependency**: `LiquidationManager` relies on `SettlementSystem` which usually requires Agent objects. Handling "government" or external creditors purely by string ID might be fragile if `SettlementSystem` expects objects. Currently, we try to resolve string IDs to objects via `state.agents`.
+@@ -23,4 +25,4 @@ Implemented the Liquidation Waterfall Protocol to prioritize employee entitlemen
+ 
+ ## Verification
+ *   Unit tests in `tests/unit/systems/test_liquidation_manager.py` verify claim calculation and distribution logic.
+-*   Integration tests in `tests/integration/test_liquidation_waterfall.py` verify priority of employees over shareholders.
++*   Integration tests in `tests/integration/test_liquidation_waterfall.py` verify priority of employees over shareholders and correct liquidation of assets.
+diff --git a/design/2_operations/ledgers/TECH_DEBT_LEDGER.md b/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
+index aa1f8e2..8e5c765 100644
+--- a/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
++++ b/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
+@@ -32,6 +32,7 @@
+ |---|---|---|---|---|
+ | TD-160 | 2026-02-02 | Non-Atomic Inheritance (Direct Asset Transfer) | Money leaks during death; Partial state corruption | **CRITICAL** |
+ | TD-187 | 2026-02-02 | Severance Pay Race Condition | Over-withdrawal during firm liquidation | **HIGH** |
++| TD-187-DEBT | 2026-02-03 | Hardcoded Logic & Fragile State in Liquidation | `LiquidationManager` uses hardcoded `haircut` (20%) and directly manipulates `PublicManager` state (`.managed_inventory`), breaking encapsulation. | Refactoring |
+ | TD-192 | 2026-02-03 | Direct Asset Manipulation (_assets Bypassing SettlementSystem) | Zero-Sum breakage; Magic Money leaks | **CRITICAL** |
+ 
+ ## 📦 6. DATA & DTO CONTRACTS
+@@ -63,3 +64,5 @@
+ |---|---|---|---|---|
+ | TD-105 | 2026-01-23 | DLL Loading Failure (C++ Agent) | System environment constraints | Abandoned C++ |
+ | TD-135-v1 | 2026-01-28 | Operation Abstraction Wall (Initial) | Failed due to 'Mock-Magic' leaks | Architectural Bloat |
++
++---
+diff --git a/design/3_work_artifacts/specs/TD-187_Severance_Waterfall.md b/design/3_work_artifacts/specs/TD-187_Severance_Waterfall.md
+index 40b9f55..a416708 100644
+--- a/design/3_work_artifacts/specs/TD-187_Severance_Waterfall.md
++++ b/design/3_work_artifacts/specs/TD-187_Severance_Waterfall.md
+@@ -52,8 +52,8 @@ The Liquidation Waterfall implements a sequential, prioritized claims settlement
+     - `tier`: The priority tier (1-5).
+ 
+ ## 4. Action Items
+-- [ ] Implement the `LiquidationManager` service.
+-- [ ] Define the `Claim` data structure.
+-- [ ] Develop logic to accurately calculate severance (last 3 years) and wages (last 3 months).
+-- [ ] Integrate the `LiquidationManager` into the firm failure/insolvency workflow.
+-- [ ] Write unit and integration tests to verify the priority logic and pro-rata distribution under various asset-level scenarios.
++- [x] Implement the `LiquidationManager` service.
++- [x] Define the `Claim` data structure.
++- [x] Develop logic to accurately calculate severance (last 3 years) and wages (last 3 months).
++- [x] Integrate the `LiquidationManager` into the firm failure/insolvency workflow.
++- [x] Write unit and integration tests to verify the priority logic and pro-rata distribution under various asset-level scenarios.
+diff --git a/modules/system/api.py b/modules/system/api.py
+index f2c5afd..b6d2efd 100644
+--- a/modules/system/api.py
++++ b/modules/system/api.py
+@@ -97,6 +97,13 @@ class IAssetRecoverySystem(Protocol):
+         """Takes ownership of a defunct agent's inventory."""
+         ...
+ 
++    def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
++        """
++        Receives inventory from a liquidated firm via asset buyout.
++        Used by LiquidationManager during the 'Asset Liquidation' phase.
++        """
++        ...
++
+     def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO]) -> List[Any]:
+         """Generates non-disruptive SELL orders for managed assets."""
+         # Note: Return type is List["Order"], using Any to avoid circular imports
+diff --git a/modules/system/execution/public_manager.py b/modules/system/execution/public_manager.py
+index 9e61650..088ca21 100644
+--- a/modules/system/execution/public_manager.py
++++ b/modules/system/execution/public_manager.py
+@@ -75,6 +75,17 @@ class PublicManager(IAssetRecoverySystem):
+                 self.last_tick_recovered_assets[item_id] += quantity
+                 self.logger.info(f"Recovered {quantity} of {item_id}.")
+ 
++    def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
++        """
++        Receives inventory from a liquidated firm via asset buyout.
++        Used by LiquidationManager during the 'Asset Liquidation' phase.
++        """
++        for item_id, quantity in inventory.items():
++            if quantity > 0:
++                self.managed_inventory[item_id] += quantity
++                self.last_tick_recovered_assets[item_id] += quantity
++        self.logger.info(f"Received liquidated assets: {inventory}")
++
+     def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO]) -> List[Order]:
+         """
+         Generates non-disruptive SELL orders for managed assets.
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index abf239b..a298839 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -36,7 +36,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
+ 
+         # TD-187: Liquidation Waterfall
+-        self.liquidation_manager = LiquidationManager(settlement_system)
++        self.liquidation_manager = LiquidationManager(settlement_system, public_manager)
+ 
+         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
+         self.logger = logger
+@@ -251,18 +251,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
+             capital_value = firm.capital_stock
+ 
+-            # Phase 3: Asset Recovery
+-            # Instead of destroying inventory, we transfer it to the PublicManager.
+-            if firm.inventory:
+-                 bankruptcy_event = {
+-                     "agent_id": firm.id,
+-                     "tick": state.time,
+-                     "inventory": firm.inventory.copy()
+-                 }
+-                 self.public_manager.process_bankruptcy_event(bankruptcy_event)
+-
+             # TD-187: Liquidation Waterfall Protocol (Prioritized Claims)
+             # Must run BEFORE employees are cleared to calculate severance/wages
++            # AND before PublicManager seizure (now handled internally by LiquidationManager)
+             self.liquidation_manager.initiate_liquidation(firm, state)
+ 
+             # Clear employees
+diff --git a/simulation/systems/liquidation_manager.py b/simulation/systems/liquidation_manager.py
+index 81362d6..2884053 100644
+--- a/simulation/systems/liquidation_manager.py
++++ b/simulation/systems/liquidation_manager.py
+@@ -1,12 +1,13 @@
+ from __future__ import annotations
+ from dataclasses import dataclass, field
+-from typing import List, Dict, Any, TYPE_CHECKING
++from typing import List, Dict, Any, TYPE_CHECKING, Optional
+ import logging
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+     from simulation.finance.api import ISettlementSystem
+     from simulation.dtos.api import SimulationState
++    from modules.system.api import IAssetRecoverySystem
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -24,8 +25,9 @@ class LiquidationManager:
+     Implements TD-187 Protocol.
+     """
+ 
+-    def __init__(self, settlement_system: ISettlementSystem):
++    def __init__(self, settlement_system: ISettlementSystem, public_manager: Optional[IAssetRecoverySystem] = None):
+         self.settlement_system = settlement_system
++        self.public_manager = public_manager
+ 
+     def initiate_liquidation(self, firm: Firm, state: SimulationState) -> None:
+         """
+@@ -36,6 +38,13 @@ class LiquidationManager:
+             return
+ 
+         current_tick = state.time
++
++        # 0. Asset Liquidation (TD-187-LEAK Fix)
++        # If public_manager is available, liquidate assets to generate cash.
++        if self.public_manager:
++            self._liquidate_assets(firm, state)
++
++        # Re-fetch cash after liquidation
+         available_cash = firm.finance.balance
+ 
+         # 1. Calculate Claims
+@@ -49,6 +58,67 @@ class LiquidationManager:
+         # 2. Execute Waterfall
+         self.execute_waterfall(firm, claims, available_cash, state)
+ 
++    def _liquidate_assets(self, firm: Firm, state: SimulationState):
++        """
++        Liquidates non-cash assets (Inventory) by selling them to the PublicManager.
++        This prevents the 'Asset-Rich Cash-Poor' leak.
++        """
++        if not self.public_manager:
++            return
++
++        # Calculate Total Value
++        total_value = 0.0
++
++        # Use last prices or default config price from firm's config
++        # Default price fallback: 10.0 if not found in config
++        default_price = 10.0
++        if firm.config and hasattr(firm.config, "goods_initial_price") and isinstance(firm.config.goods_initial_price, dict):
++             default_price = firm.config.goods_initial_price.get("default", 10.0)
++
++        # Configurable Haircut (Default 20%)
++        haircut = getattr(firm.config, "liquidation_haircut", 0.2)
++
++        inventory_transfer = {}
++        for item_id, qty in firm.inventory.items():
++            if qty <= 0:
++                continue
++
++            # Determine fair value
++            price = firm.last_prices.get(item_id, 0.0)
++            if price <= 0:
++                # Fallback to configured initial price if available
++                if firm.config and hasattr(firm.config, "goods") and isinstance(firm.config.goods, dict):
++                     price = firm.config.goods.get(item_id, {}).get("initial_price", default_price)
++                else:
++                     price = default_price
++
++            # Apply Liquidation Discount (Haircut)
++            liquidation_value = price * qty * (1.0 - haircut)
++            total_value += liquidation_value
++            inventory_transfer[item_id] = qty
++
++        if total_value > 0:
++            # Transfer Funds: PublicManager -> Firm
++            # Note: PublicManager must implement IFinancialEntity to be a sender in SettlementSystem
++            # and it must have funds (System Treasury).
++            success = self.settlement_system.transfer(
++                self.public_manager,
++                firm,
++                total_value,
++                f"Asset Liquidation (Inventory) - Firm {firm.id}"
++            )
++
++            if success:
++                logger.info(f"LIQUIDATION_ASSET_SALE | Firm {firm.id} sold inventory to PublicManager for {total_value:.2f}.")
++
++                # Transfer Inventory via Interface (Encapsulation)
++                self.public_manager.receive_liquidated_assets(inventory_transfer)
++
++                # Clear Firm Inventory
++                firm.inventory.clear()
++            else:
++                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Firm {firm.id}.")
++
+     def calculate_claims(self, firm: Firm, state: SimulationState) -> List[Claim]:
+         """
+         Calculates all claims and assigns priority tiers.
+diff --git a/tests/integration/test_liquidation_waterfall.py b/tests/integration/test_liquidation_waterfall.py
+index 4938026..87ec0f2 100644
+--- a/tests/integration/test_liquidation_waterfall.py
++++ b/tests/integration/test_liquidation_waterfall.py
+@@ -7,11 +7,17 @@ from simulation.firms import Firm
+ from simulation.core_agents import Household
+ from simulation.dtos.api import SimulationState
+ from simulation.dtos.config_dtos import FirmConfigDTO
++from modules.system.api import IAssetRecoverySystem
+ 
+ class TestLiquidationWaterfallIntegration(unittest.TestCase):
+     def setUp(self):
+         self.mock_settlement = MagicMock()
+-        self.manager = LiquidationManager(self.mock_settlement)
++        self.mock_public_manager = MagicMock(spec=IAssetRecoverySystem)
++        self.mock_public_manager.managed_inventory = {}
++        self.mock_public_manager.id = 999
++        self.mock_settlement.transfer.return_value = True # Default success
++
++        self.manager = LiquidationManager(self.mock_settlement, self.mock_public_manager)
+ 
+         # Setup Config
+         self.config = MagicMock(spec=FirmConfigDTO)
+@@ -26,7 +32,10 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
+         self.firm.id = 1
+         self.firm.config = self.config
+         self.firm.finance = MagicMock()
++        self.firm.finance.balance = 0.0 # Start with 0 cash
+         self.firm.finance.current_profit = 0.0 # Fix 1
++        self.firm.inventory = {}
++        self.firm.last_prices = {}
+         self.firm.hr = MagicMock()
+         self.firm.hr.employees = []
+         self.firm.hr.employee_wages = {}
+@@ -178,5 +187,80 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
+         self.assertAlmostEqual(paid_map["bank"], 5000.0)
+         self.assertAlmostEqual(paid_map[201], equity_payout)
+ 
++    def test_asset_rich_cash_poor_liquidation(self):
++        """
++        TD-187-LEAK Fix Verification.
++        Scenario:
++        - Cash: 0.0
++        - Inventory: 100 units of 'Apples' @ 10.0 market price.
++        - Liquidation Value: 100 * 10 * 0.8 (haircut) = 800.0
++        - Severance Claim: 500.0
++
++        Expected:
++        - PublicManager buys inventory for 800.0.
++        - Firm Balance becomes 800.0.
++        - Employee paid 500.0.
++        - Equity (or Escheatment) gets 300.0.
++        """
++        self.firm.finance.balance = 0.0
++        self.firm.inventory = {"apples": 100.0}
++        self.firm.last_prices = {"apples": 10.0}
++
++        # Mock public manager managed inventory update
++        self.mock_public_manager.managed_inventory = {"apples": 0.0}
++        self.mock_public_manager.receive_liquidated_assets = MagicMock()
++
++        # Employee Claim 500.0
++        # 500 = Tenure * 2 * 7 * 100 => Tenure = 0.35 yrs
++        ticks = 0.357 * 365
++        emp = MagicMock(spec=Household)
++        emp.id = 101
++        emp._econ_state = MagicMock()
++        emp._econ_state.employment_start_tick = 2000 - int(ticks)
++
++        self.firm.hr.employees = [emp]
++        self.firm.hr.employee_wages = {101: 100.0}
++
++        self.state.agents[101] = emp
++
++        # To simulate cash update after transfer, we need side_effect on transfer
++        def transfer_side_effect(sender, receiver, amount, memo):
++            if receiver == self.firm:
++                self.firm.finance.balance += amount
++            return True
++
++        self.mock_settlement.transfer.side_effect = transfer_side_effect
++
++        # Run
++        self.manager.initiate_liquidation(self.firm, self.state)
++
++        # Verify
++        # 1. PublicManager -> Firm Transfer (800.0)
++        self.mock_settlement.transfer.assert_any_call(
++            self.mock_public_manager,
++            self.firm,
++            800.0,
++            "Asset Liquidation (Inventory) - Firm 1"
++        )
++
++        # 2. Firm -> Employee Transfer (500.0)
++        # Note: Match float roughly
++        # severance = 0.357 * 2.0 * 7.019 * 100 ~= 500
++
++        # Find payout
++        payout = 0.0
++        for call in self.mock_settlement.transfer.call_args_list:
++            if call[0][0] == self.firm and call[0][1] == emp:
++                payout = call[0][2]
++                break
++
++        self.assertGreater(payout, 490.0)
++        self.assertLess(payout, 510.0)
++
++        # 3. Verify Inventory Cleared
++        self.assertEqual(self.firm.inventory, {})
++        # 4. Verify Public Manager received inventory via interface
++        self.mock_public_manager.receive_liquidated_assets.assert_called_with({"apples": 100.0})
++
+ if __name__ == '__main__':
+     unittest.main()
