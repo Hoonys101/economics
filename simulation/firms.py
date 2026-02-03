@@ -159,7 +159,7 @@ class Firm(BaseAgent, ILearningAgent):
         self.finance._balance = value # Direct internal access for override
         self._assets = value
 
-    def _add_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: float) -> None:
         """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
         if hasattr(self, 'finance'):
             self.finance.credit(amount, "Settlement Transfer")
@@ -167,7 +167,7 @@ class Firm(BaseAgent, ILearningAgent):
         else:
             self._assets += amount
 
-    def _sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float) -> None:
         """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
         if hasattr(self, 'finance'):
             self.finance.debit(amount, "Settlement Transfer")
@@ -549,14 +549,14 @@ class Firm(BaseAgent, ILearningAgent):
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the firm's cash reserves."""
         if amount > 0:
-            self.finance.credit(amount, "Deposit")
+            self._internal_add_assets(amount)
 
     def withdraw(self, amount: float) -> None:
         """Withdraws a given amount from the firm's cash reserves."""
         if amount > 0:
             if self.finance.balance < amount:
                 raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.finance.balance:.2f}")
-            self.finance.debit(amount, "Withdrawal")
+            self._internal_sub_assets(amount)
 
     # --- Delegated Methods (Facade Pattern) ---
 

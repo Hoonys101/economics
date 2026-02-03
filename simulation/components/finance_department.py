@@ -56,12 +56,17 @@ class FinanceDepartment:
         return self._cash
 
     def credit(self, amount: float, description: str = "") -> None:
-        """Adds funds to the firm's cash reserves."""
+        """
+        Adds funds to the firm's cash reserves.
+        WARNING: This method should only be called by Firm.deposit(), which is called by SettlementSystem.
+        Do not call directly for business logic (e.g., sales, loans).
+        """
         self._cash += amount
 
     def debit(self, amount: float, description: str = "") -> None:
         """
         Deducts funds from the firm's cash reserves.
+        WARNING: This method should only be called by Firm.withdraw(), which is called by SettlementSystem.
         """
         self._cash -= amount
 
@@ -285,8 +290,10 @@ class FinanceDepartment:
         return transactions
 
     def add_liability(self, amount: float, interest_rate: float):
-        """Adds a liability (like a loan) to the firm's balance sheet."""
-        self.credit(amount, "Liability Addition")
+        """
+        Adds a liability (like a loan) to the firm's balance sheet.
+        NOTE: Does NOT credit cash. Cash must be transferred via SettlementSystem (e.g. from Bank).
+        """
         if not hasattr(self.firm, 'total_debt'):
             self.firm.total_debt = 0.0
         self.firm.total_debt += amount
@@ -432,16 +439,21 @@ class FinanceDepartment:
         }
 
     def issue_shares(self, quantity: float, price: float) -> float:
+        """
+        Records the issuance of new shares.
+        NOTE: Does NOT credit cash. Cash must be raised via StockMarket transaction (SettlementSystem).
+        """
         if quantity <= 0 or price <= 0:
             return 0.0
 
         self.firm.total_shares += quantity
         raised_capital = quantity * price
-        self.credit(raised_capital, "Share Issue")
+
+        # Cash is NOT credited here. It must come from the StockMarket executing the order.
 
         self.firm.logger.info(
             f"Firm {self.firm.id} issued {quantity:.1f} shares at {price:.2f}, "
-            f"raising {raised_capital:.2f} capital. Total shares: {self.firm.total_shares:.1f}",
+            f"raising {raised_capital:.2f} capital (pending settlement). Total shares: {self.firm.total_shares:.1f}",
             extra={
                 "agent_id": self.firm.id,
                 "quantity": quantity,

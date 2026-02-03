@@ -45,22 +45,22 @@ class BaseAgent(ABC):
         """Current assets (Read-Only)."""
         return self._assets
 
-    def _add_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: float) -> None:
         """
         [INTERNAL ONLY] Increase assets.
         MUST ONLY BE CALLED BY:
-        1. SettlementSystem.transfer (Normal Operation)
-        2. System Managers for Minting (e.g. Bank Credit Creation, Reflux Alchemy) WITH corresponding Ledger Update.
+        1. SettlementSystem.transfer (Normal Operation) via deposit()
+        2. System Managers for Minting (e.g. Bank Credit Creation, Reflux Alchemy) WITH corresponding Ledger Update via deposit()
 
         DO NOT CALL DIRECTLY for standard transfers. Use SettlementSystem.
         """
         self._assets += amount
 
-    def _sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float) -> None:
         """
         [INTERNAL ONLY] Decrease assets.
         MUST ONLY BE CALLED BY:
-        1. SettlementSystem.transfer (Normal Operation)
+        1. SettlementSystem.transfer (Normal Operation) via withdraw()
 
         DO NOT CALL DIRECTLY. Use SettlementSystem.
         """
@@ -69,7 +69,7 @@ class BaseAgent(ABC):
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the entity's account."""
         if amount > 0:
-            self._add_assets(amount)
+            self._internal_add_assets(amount)
 
     def withdraw(self, amount: float) -> None:
         """
@@ -81,7 +81,7 @@ class BaseAgent(ABC):
         if amount > 0:
             if self.assets < amount:
                 raise InsufficientFundsError(f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self._sub_assets(amount)
+            self._internal_sub_assets(amount)
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""

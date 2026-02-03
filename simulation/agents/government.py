@@ -167,17 +167,17 @@ class Government:
     def assets(self) -> float:
         return self._assets
 
-    def _add_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: float) -> None:
         """
         [INTERNAL ONLY] Increase assets.
-        See BaseAgent._add_assets docstring.
+        See BaseAgent._internal_add_assets docstring.
         """
         self._assets += amount
 
-    def _sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float) -> None:
         """
         [INTERNAL ONLY] Decrease assets.
-        See BaseAgent._sub_assets docstring.
+        See BaseAgent._internal_sub_assets docstring.
         """
         self._assets -= amount
 
@@ -527,14 +527,14 @@ class Government:
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the government's assets."""
         if amount > 0:
-            self._assets += amount
+            self._internal_add_assets(amount)
 
     def withdraw(self, amount: float) -> None:
         """Withdraws a given amount from the government's assets."""
         if amount > 0:
             if self.assets < amount:
                 raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self._assets -= amount
+            self._internal_sub_assets(amount)
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:

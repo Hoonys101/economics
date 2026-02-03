@@ -93,10 +93,12 @@ class Bank(IBankService):
     def assets(self) -> float:
         return self._assets
 
-    def _add_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: float) -> None:
+        """[INTERNAL ONLY] Increase assets. Do not call directly."""
         self._assets += amount
 
-    def _sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float) -> None:
+        """[INTERNAL ONLY] Decrease assets. Do not call directly."""
         self._assets -= amount
 
     def get_interest_rate(self) -> float:
@@ -309,13 +311,13 @@ class Bank(IBankService):
 
     def deposit(self, amount: float) -> None:
         if amount > 0:
-            self._assets += amount
+            self._internal_add_assets(amount)
 
     def withdraw(self, amount: float) -> None:
         if amount > 0:
             if self.assets < amount:
                  raise InsufficientFundsError(f"Insufficient funds")
-            self._assets -= amount
+            self._internal_sub_assets(amount)
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Legacy method used by TickScheduler etc. until refactored."""

@@ -183,10 +183,21 @@ class CentralBank:
             }
         )
 
+    def _internal_add_assets(self, amount: float) -> None:
+        """[INTERNAL ONLY] Increase cash reserves."""
+        self.assets['cash'] = self.assets.get('cash', 0) + amount
+
+    def _internal_sub_assets(self, amount: float) -> None:
+        """[INTERNAL ONLY] Decrease cash reserves."""
+        current_cash = self.assets.get('cash', 0)
+        # Central Bank can withdraw (create money) even if it results in negative cash
+        # This represents expansion of the monetary base.
+        self.assets['cash'] = current_cash - amount
+
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
         if amount > 0:
-            self.assets['cash'] = self.assets.get('cash', 0) + amount
+            self._internal_add_assets(amount)
 
     def mint(self, amount: float) -> None:
         """
@@ -201,7 +212,4 @@ class CentralBank:
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
         """
         if amount > 0:
-            current_cash = self.assets.get('cash', 0)
-            # Central Bank can withdraw (create money) even if it results in negative cash
-            # This represents expansion of the monetary base.
-            self.assets['cash'] = current_cash - amount
+            self._internal_sub_assets(amount)

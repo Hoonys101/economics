@@ -6,7 +6,7 @@ class IFinancialEntity(Protocol):
     """
     Protocol for any entity that possesses assets and participates in financial transactions.
     Assets are read-only to the public; state changes must occur via the SettlementSystem
-    calling the protected _add_assets / _sub_assets methods (or equivalent internal logic).
+    calling the public deposit / withdraw methods.
     """
     id: int
 
@@ -15,17 +15,14 @@ class IFinancialEntity(Protocol):
         """Current assets (Read-Only)."""
         ...
 
-    def _add_assets(self, amount: float) -> None:
-        """
-        [PROTECTED] Increase assets.
-        Should ONLY be called by SettlementSystem.
-        """
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount into the entity's account."""
         ...
 
-    def _sub_assets(self, amount: float) -> None:
+    def withdraw(self, amount: float) -> None:
         """
-        [PROTECTED] Decrease assets.
-        Should ONLY be called by SettlementSystem.
+        Withdraws a given amount from the entity's account.
+        Raises InsufficientFundsError if funds are insufficient.
         """
         ...
 
