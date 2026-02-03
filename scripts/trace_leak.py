@@ -7,23 +7,29 @@ import os
 sys.path.append(os.getcwd())
 
 from main import create_simulation
+from modules.system.api import DEFAULT_CURRENCY
 
 def trace():
     print("--- TRACE START ---")
     sim = create_simulation()
     
-    print(f"Tick 0 (START) Total Money: {sim.world_state.calculate_total_money():,.2f}")
+    print(f"Tick 0 (START) Total Money ({DEFAULT_CURRENCY}): {sim.world_state.get_total_system_money_for_diagnostics():,.2f}")
     
     # Baseline is established at Tick 0
-    baseline_money = sim.world_state.calculate_total_money()
+    baseline_money = sim.world_state.get_total_system_money_for_diagnostics()
 
     initial_assets = {}
     for agent_id, agent in sim.agents.items():
         if hasattr(agent, "assets"):
-            initial_assets[agent_id] = agent.assets
+            assets = agent.assets
+            if isinstance(assets, dict):
+                initial_assets[agent_id] = assets.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                initial_assets[agent_id] = assets
 
     for f in sim.world_state.firms:
-        print(f"Firm {f.id}: Assets={f.assets:,.2f}, Active={f.is_active}")
+        f_assets = f.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(f.assets, dict) else f.assets
+        print(f"Firm {f.id}: Assets={f_assets:,.2f}, Active={f.is_active}")
     
     # --- WO-024: Manual Loan Grant for Verification ---
     target_firm = next((f for f in sim.world_state.firms if f.is_active), None)
@@ -45,22 +51,19 @@ def trace():
 
     sim.run_tick()
     
-    current_money = sim.world_state.calculate_total_money()
+    current_money = sim.world_state.get_total_system_money_for_diagnostics()
     delta = current_money - baseline_money
     
     # WO-120: Authorized Delta (Credit Creation / Destruction)
     authorized_delta = 0.0
     if hasattr(sim.government, "get_monetary_delta"):
-        authorized_delta = sim.government.get_monetary_delta()
+        authorized_delta = sim.government.get_monetary_delta(DEFAULT_CURRENCY)
     
     # Add manual delta from pre-tick loan grant (which was reset in run_tick)
     if 'grant_result' in locals() and grant_result:
         authorized_delta += loan_amount
 
     # --- JULES UPDATE: Account for Fiscal Activities (Infrastructure / Bond Sales) ---
-    # Scan transactions for Central Bank bond purchases (Money Creation)
-    # Scan transactions for Infrastructure Spending (Diagnostic)
-
     cb_bond_buys = 0.0
     infra_spending = 0.0
 
@@ -105,7 +108,9 @@ def trace():
     deltas = []
     for agent_id, agent in sim.agents.items():
         if hasattr(agent, "assets") and agent_id in initial_assets:
-            d = agent.assets - initial_assets[agent_id]
+            assets = agent.assets
+            curr_assets = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else assets
+            d = curr_assets - initial_assets[agent_id]
             if abs(d) > 0.01:
                 deltas.append((agent_id, d, type(agent).__name__))
     
@@ -126,7 +131,8 @@ def trace():
         print(f"✅ INTEGRITY CONFIRMED (Leak: {leak:,.4f})")
 
     for f in sim.world_state.firms:
-        print(f"Firm {f.id}: Assets={f.assets:,.2f}, Active={f.is_active}")
+        f_assets = f.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(f.assets, dict) else f.assets
+        print(f"Firm {f.id}: Assets={f_assets:,.2f}, Active={f.is_active}")
         
     # Check if any firm was removed from the list
     all_agent_ids = [a.id for a in sim.world_state.get_all_agents()]

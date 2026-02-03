@@ -14,6 +14,7 @@ from modules.finance.api import (
     ICreditScoringService,
     BorrowerProfileDTO
 )
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
 import config
@@ -37,6 +38,7 @@ class Loan:
     start_tick: int
     origination_tick: int = 0
     created_deposit_id: Optional[str] = None # Link to the deposit created by this loan
+    currency: CurrencyCode = DEFAULT_CURRENCY # Added for Phase 33
 
     @property
     def tick_interest_rate(self) -> float:
@@ -47,12 +49,13 @@ class Deposit:
     depositor_id: int
     amount: float
     annual_interest_rate: float
+    currency: CurrencyCode = DEFAULT_CURRENCY # Added for Phase 33
 
     @property
     def tick_interest_rate(self) -> float:
         return self.annual_interest_rate / TICKS_PER_YEAR
 
-class Bank(IBankService):
+class Bank(IBankService, ICurrencyHolder):
     """
     Phase 3: Central & Commercial Bank Hybrid System.
     WO-109: Refactored for Sacred Sequence (Transactions).
@@ -60,7 +63,11 @@ class Bank(IBankService):
 
     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None, credit_scoring_service: Optional[ICreditScoringService] = None):
         self._id = id
-        self._assets = initial_assets
+        self._assets: Dict[CurrencyCode, float] = {}
+        if isinstance(initial_assets, dict):
+            self._assets = initial_assets.copy()
+        else:
+            self._assets[DEFAULT_CURRENCY] = float(initial_assets)
         self.config_manager = config_manager
         self.settlement_system = settlement_system
         self.credit_scoring_service = credit_scoring_service
@@ -80,7 +87,7 @@ class Bank(IBankService):
         # Current tick tracker (updated via run_tick usually, but need it for grant_loan defaults if available)
         self.current_tick_tracker = 0
 
-        logger.info(f"Bank {self.id} initialized. Assets: {self.assets:.2f}")
+        logger.info(f"Bank {self.id} initialized. Assets: {self._assets}")
 
     @property
     def id(self) -> int:
@@ -91,16 +98,25 @@ class Bank(IBankService):
         self._id = value
 
     @property
-    def assets(self) -> float:
+    def assets(self) -> Dict[CurrencyCode, float]:
+        """Returns the bank's liquid assets (reserves)."""
         return self._assets
 
-    def _internal_add_assets(self, amount: float) -> None:
-        """[INTERNAL ONLY] Increase assets. Do not call directly."""
-        self._assets += amount
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+        """Implementation of ICurrencyHolder."""
+        return self._assets.copy()
 
-    def _internal_sub_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """[INTERNAL ONLY] Increase assets. Do not call directly."""
+        if currency not in self._assets:
+            self._assets[currency] = 0.0
+        self._assets[currency] += amount
+
+    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """[INTERNAL ONLY] Decrease assets. Do not call directly."""
-        self._assets -= amount
+        if currency not in self._assets:
+            self._assets[currency] = 0.0
+        self._assets[currency] -= amount
 
     def get_interest_rate(self) -> float:
         return self.base_rate
@@ -140,17 +156,19 @@ class Bank(IBankService):
 
         # Step 2: Solvency Check (Reserve Requirement)
         gold_standard_mode = self._get_config("gold_standard_mode", False)
+        usd_assets = self._assets.get(DEFAULT_CURRENCY, 0.0)
         if gold_standard_mode:
-            if self.assets < amount:
+            if usd_assets < amount:
                 return None
         else:
             reserve_ratio = self._get_config("reserve_req_ratio", 0.1)
             # New deposit will be created, so total deposits increase by amount
-            projected_deposits = sum(d.amount for d in self.deposits.values()) + amount
+            # For Phase 33, we assume USD for simplicity here or filter by currency
+            projected_deposits = sum(d.amount for d in self.deposits.values() if d.currency == DEFAULT_CURRENCY) + amount
             required_reserves = projected_deposits * reserve_ratio
 
-            if self.assets < required_reserves:
-                logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient reserves. Assets: {self.assets:.2f} < Req: {required_reserves:.2f}")
+            if usd_assets < required_reserves:
+                logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient reserves. Assets: {usd_assets:.2f} < Req: {required_reserves:.2f}")
                 return None
 
         # Step 3: Credit Creation (Book the Loan and Create Deposit)
@@ -226,8 +244,9 @@ class Bank(IBankService):
 
         # Step 2: Liquidity Check (Direct Funding from Reserves)
         # Since this is a direct transfer of reserves, we must have the cash.
-        if self.assets < amount:
-            logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient liquidity for direct funding. Assets: {self.assets:.2f} < Req: {amount:.2f}")
+        usd_assets = self._assets.get(DEFAULT_CURRENCY, 0.0)
+        if usd_assets < amount:
+            logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient liquidity for direct funding. Assets: {usd_assets:.2f} < Req: {amount:.2f}")
             return None
 
         # Step 3: Book the Loan (No Deposit Creation)
@@ -339,7 +358,7 @@ class Bank(IBankService):
 
     # --- Legacy / Internal Methods ---
 
-    def deposit_from_customer(self, depositor_id: int, amount: float) -> Optional[str]:
+    def deposit_from_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[str]:
         margin = self._get_config("bank.deposit_margin", getattr(config, "BANK_DEPOSIT_MARGIN", 0.02))
         spread = self._get_config("bank.credit_spread_base", getattr(config, "BANK_CREDIT_SPREAD_BASE", 0.02))
         deposit_rate = max(0.0, self.base_rate + spread - margin)
@@ -350,16 +369,17 @@ class Bank(IBankService):
         new_deposit = Deposit(
             depositor_id=depositor_id,
             amount=amount,
-            annual_interest_rate=deposit_rate
+            annual_interest_rate=deposit_rate,
+            currency=currency
         )
         self.deposits[deposit_id] = new_deposit
         return deposit_id
 
-    def withdraw_for_customer(self, depositor_id: int, amount: float) -> bool:
+    def withdraw_for_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
         target_deposit = None
         target_dep_id = None
         for dep_id, deposit in self.deposits.items():
-            if deposit.depositor_id == depositor_id:
+            if deposit.depositor_id == depositor_id and deposit.currency == currency:
                 target_deposit = deposit
                 target_dep_id = dep_id
                 break
@@ -372,15 +392,16 @@ class Bank(IBankService):
             del self.deposits[target_dep_id]
         return True
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if amount > 0:
-            self._internal_add_assets(amount)
+            self._internal_add_assets(amount, currency=currency)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if amount > 0:
-            if self.assets < amount:
-                 raise InsufficientFundsError(f"Insufficient funds")
-            self._internal_sub_assets(amount)
+            current_bal = self._assets.get(currency, 0.0)
+            if current_bal < amount:
+                 raise InsufficientFundsError(f"Insufficient funds in {currency}")
+            self._internal_sub_assets(amount, currency=currency)
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Legacy method used by TickScheduler etc. until refactored."""
@@ -499,9 +520,10 @@ class Bank(IBankService):
         WO-109: Generate 'lender_of_last_resort' transactions if insolvent.
         This replaces the old direct-modification `check_solvency`.
         """
-        if self.assets < 0:
+        usd_assets = self._assets.get(DEFAULT_CURRENCY, 0.0)
+        if usd_assets < 0:
             solvency_buffer = self._get_config("bank.solvency_buffer", getattr(config, "BANK_SOLVENCY_BUFFER", 1000.0))
-            borrow_amount = abs(self.assets) + solvency_buffer
+            borrow_amount = abs(usd_assets) + solvency_buffer
 
             tx = Transaction(
                 buyer_id=government.id, # Source of minting (symbolic)

@@ -135,8 +135,10 @@ class Household(BaseAgent, ILearningAgent):
         raw_aptitude = random.gauss(*self.config.initial_aptitude_distribution)
         aptitude = max(0.0, min(1.0, raw_aptitude))
 
+        initial_assets_dict = {DEFAULT_CURRENCY: float(initial_assets)}
+
         self._econ_state = EconStateDTO(
-            assets=initial_assets,
+            assets=initial_assets_dict,
             inventory={},
             inventory_quality={},
             durable_assets=[],
@@ -269,11 +271,11 @@ class Household(BaseAgent, ILearningAgent):
 
     @property
     @override
-    def assets(self) -> float:
+    def assets(self) -> Dict[CurrencyCode, float]:
         return self._econ_state.assets
 
     @assets.setter
-    def assets(self, value: float) -> None:
+    def assets(self, value: Dict[CurrencyCode, float]) -> None:
         self._econ_state.assets = value
         self._assets = value
 
@@ -394,13 +396,17 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.portfolio = value
 
     @override
-    def _internal_add_assets(self, amount: float) -> None:
-        self._econ_state.assets += amount
+    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if currency not in self._econ_state.assets:
+            self._econ_state.assets[currency] = 0.0
+        self._econ_state.assets[currency] += amount
         self._assets = self._econ_state.assets
 
     @override
-    def _internal_sub_assets(self, amount: float) -> None:
-        self._econ_state.assets -= amount
+    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if currency not in self._econ_state.assets:
+            self._econ_state.assets[currency] = 0.0
+        self._econ_state.assets[currency] -= amount
         self._assets = self._econ_state.assets
 
     @property
@@ -586,8 +592,10 @@ class Household(BaseAgent, ILearningAgent):
 
         return refined_orders, chosen_tactic_tuple
 
-    def adjust_assets(self, delta: float) -> None:
-        self._econ_state.assets += delta
+    def adjust_assets(self, delta: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if currency not in self._econ_state.assets:
+            self._econ_state.assets[currency] = 0.0
+        self._econ_state.assets[currency] += delta
 
     def modify_inventory(self, item_id: str, quantity: float) -> None:
         if item_id not in self._econ_state.inventory:

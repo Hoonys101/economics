@@ -1,7 +1,20 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import TypedDict, List, Dict, Optional, Any, Protocol, TYPE_CHECKING
+from typing import TypedDict, List, Dict, Optional, Any, Protocol, TYPE_CHECKING, TypeAlias
 from abc import ABC, abstractmethod
+
+# --- Phase 33: Multi-Polar WorldState Foundation ---
+CurrencyCode: TypeAlias = str
+DEFAULT_CURRENCY: CurrencyCode = "USD"
+
+class ICurrencyHolder(Protocol):
+    """
+    An interface for any entity that holds assets in one or more currencies.
+    Used to decouple WorldState's money calculation from concrete agent types.
+    """
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+        """Returns a dictionary of all assets held, keyed by currency code."""
+        ...
 
 if TYPE_CHECKING:
     from simulation.agents import Agent

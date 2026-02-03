@@ -149,37 +149,41 @@ class Firm(BaseAgent, ILearningAgent):
 
     @property
     @override
-    def assets(self) -> float:
+    def assets(self) -> Dict[CurrencyCode, float]:
         """Returns the firm's liquid assets."""
         return self.finance.balance
 
     @assets.setter
-    def assets(self, value: float) -> None:
+    def assets(self, value: Dict[CurrencyCode, float]) -> None:
         """Sets the firm's liquid assets (Compatibility)."""
         self.finance._balance = value # Direct internal access for override
         self._assets = value
 
-    def _internal_add_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
         if hasattr(self, 'finance'):
-            self.finance.credit(amount, "Settlement Transfer")
+            self.finance.credit(amount, "Settlement Transfer", currency=currency)
             self._assets = self.finance.balance
         else:
-            self._assets += amount
+            if currency not in self._assets:
+                self._assets[currency] = 0.0
+            self._assets[currency] += amount
 
-    def _internal_sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
         if hasattr(self, 'finance'):
-            self.finance.debit(amount, "Settlement Transfer")
+            self.finance.debit(amount, "Settlement Transfer", currency=currency)
             self._assets = self.finance.balance
         else:
-            self._assets -= amount
+            if currency not in self._assets:
+                self._assets[currency] = 0.0
+            self._assets[currency] -= amount
 
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""
         # Refactor: Use finance.balance
-        assets = self.finance.balance
-        par_value = assets / self.total_shares if self.total_shares > 0 else 1.0
+        usd_balance = self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+        par_value = usd_balance / self.total_shares if self.total_shares > 0 else 1.0
         stock_market.update_shareholder(self.id, self.id, self.treasury_shares)
         self.logger.info(
             f"IPO | Firm {self.id} initialized IPO with {self.total_shares} shares. Par value: {par_value:.2f}",
@@ -217,11 +221,11 @@ class Firm(BaseAgent, ILearningAgent):
                 tick=current_tick,
                 agent_id=self.id,
                 event_type="BANKRUPTCY",
-                data={"assets_returned": self.finance.balance}
+                data={"assets_returned": self.finance.balance.get(DEFAULT_CURRENCY, 0.0)}
             )
             self.memory_v2.add_record(record)
 
-        return self.finance.balance
+        return self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
 
     def add_inventory(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
@@ -509,12 +513,15 @@ class Firm(BaseAgent, ILearningAgent):
         transactions.extend(tx_finance)
 
         # 3. Marketing (Direct Calculation here as per old update_needs)
-        if self.finance.balance > 100.0:
-            marketing_spend = max(10.0, self.finance.revenue_this_turn * self.marketing_budget_rate)
+        usd_balance = self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+        usd_revenue = self.finance.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0)
+
+        if usd_balance > 100.0:
+            marketing_spend = max(10.0, usd_revenue * self.marketing_budget_rate)
         else:
             marketing_spend = 0.0
 
-        if self.finance.balance < marketing_spend:
+        if usd_balance < marketing_spend:
              marketing_spend = 0.0
 
         if marketing_spend > 0:
@@ -546,17 +553,18 @@ class Firm(BaseAgent, ILearningAgent):
         """
         return 0.0
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the firm's cash reserves."""
         if amount > 0:
-            self._internal_add_assets(amount)
+            self._internal_add_assets(amount, currency=currency)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Withdraws a given amount from the firm's cash reserves."""
         if amount > 0:
-            if self.finance.balance < amount:
-                raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.finance.balance:.2f}")
-            self._internal_sub_assets(amount)
+            current_bal = self.finance.balance.get(currency, 0.0)
+            if current_bal < amount:
+                raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f} {currency}. Available: {current_bal:.2f}")
+            self._internal_sub_assets(amount, currency=currency)
 
     # --- Delegated Methods (Facade Pattern) ---
 

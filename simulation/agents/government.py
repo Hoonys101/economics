@@ -19,6 +19,7 @@ from modules.government.dtos import FiscalPolicyDTO
 from modules.government.components.welfare_manager import WelfareManager
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -28,14 +29,18 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Government:
+class Government(ICurrencyHolder):
     """
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
     """
 
     def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None):
         self.id = id
-        self._assets = initial_assets
+        self._assets: Dict[CurrencyCode, float] = {}
+        if isinstance(initial_assets, dict):
+            self._assets = initial_assets.copy()
+        else:
+            self._assets[DEFAULT_CURRENCY] = float(initial_assets)
         self.config_module = config_module
         self.settlement_system: Optional["ISettlementSystem"] = None
         
@@ -55,17 +60,17 @@ class Government:
             MarketSnapshotDTO(tick=0, market_signals={}, market_data={})
         )
 
-        self.total_collected_tax: float = 0.0
-        self.total_spent_subsidies: float = 0.0
+        self.total_collected_tax: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.total_spent_subsidies: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         self.infrastructure_level: int = 0
 
         # Money Tracking (Gold Standard & Fractional Reserve)
-        self.total_money_issued: float = 0.0
-        self.total_money_destroyed: float = 0.0
-        self.start_tick_money_issued: float = 0.0
-        self.start_tick_money_destroyed: float = 0.0
+        self.total_money_issued: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.total_money_destroyed: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.start_tick_money_issued: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.start_tick_money_destroyed: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         # WO-024: Fractional Reserve Credit Tracking
-        self.credit_delta_this_tick: float = 0.0
+        self.credit_delta_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
@@ -142,9 +147,9 @@ class Government:
         ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR))
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
 
-        self.revenue_this_tick = 0.0
-        self.expenditure_this_tick = 0.0
-        self.revenue_breakdown_this_tick = {}
+        self.revenue_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.expenditure_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.revenue_breakdown_this_tick: Dict[str, float] = {}
         
         self.average_approval_rating = 0.5
 
@@ -164,22 +169,29 @@ class Government:
         )
 
     @property
-    def assets(self) -> float:
+    def assets(self) -> Dict[CurrencyCode, float]:
+        """Returns the government's liquid assets."""
         return self._assets
 
-    def _internal_add_assets(self, amount: float) -> None:
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+        """Implementation of ICurrencyHolder."""
+        return self._assets.copy()
+
+    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Increase assets.
-        See BaseAgent._internal_add_assets docstring.
         """
-        self._assets += amount
+        if currency not in self._assets:
+            self._assets[currency] = 0.0
+        self._assets[currency] += amount
 
-    def _internal_sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Decrease assets.
-        See BaseAgent._internal_sub_assets docstring.
         """
-        self._assets -= amount
+        if currency not in self._assets:
+            self._assets[currency] = 0.0
+        self._assets[currency] -= amount
 
     def update_sensory_data(self, dto: GovernmentStateDTO):
         """
@@ -225,8 +237,8 @@ class Government:
         self.revenue_breakdown_this_tick = {}
 
         # Snapshot for delta calculation
-        self.start_tick_money_issued = self.total_money_issued
-        self.start_tick_money_destroyed = self.total_money_destroyed
+        self.start_tick_money_issued = self.total_money_issued.copy()
+        self.start_tick_money_destroyed = self.total_money_destroyed.copy()
 
     def process_monetary_transactions(self, transactions: List[Transaction]):
         """
@@ -234,14 +246,19 @@ class Government:
         Called by the orchestrator or systems generating these transactions.
         """
         for tx in transactions:
+            cur = getattr(tx, 'currency', DEFAULT_CURRENCY)
             if tx.transaction_type == "credit_creation":
-                self.credit_delta_this_tick += tx.price
-                self.total_money_issued += tx.price
-                logger.debug(f"MONETARY_EXPANSION | Credit created: {tx.price:.2f}")
+                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
+                if cur not in self.total_money_issued: self.total_money_issued[cur] = 0.0
+                self.credit_delta_this_tick[cur] += tx.price
+                self.total_money_issued[cur] += tx.price
+                logger.debug(f"MONETARY_EXPANSION | Credit created: {tx.price:.2f} {cur}")
             elif tx.transaction_type == "credit_destruction":
-                self.credit_delta_this_tick -= tx.price
-                self.total_money_destroyed += tx.price
-                logger.debug(f"MONETARY_CONTRACTION | Credit destroyed: {tx.price:.2f}")
+                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
+                if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0.0
+                self.credit_delta_this_tick[cur] -= tx.price
+                self.total_money_destroyed[cur] += tx.price
+                logger.debug(f"MONETARY_CONTRACTION | Credit destroyed: {tx.price:.2f} {cur}")
 
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
         """
@@ -297,9 +314,13 @@ class Government:
         amount = result['amount_collected']
         tax_type = result['tax_type']
         payer_id = result['payer_id']
+        cur = result.get('currency', DEFAULT_CURRENCY)
 
-        self.total_collected_tax += amount
-        self.revenue_this_tick += amount
+        if cur not in self.total_collected_tax: self.total_collected_tax[cur] = 0.0
+        if cur not in self.revenue_this_tick: self.revenue_this_tick[cur] = 0.0
+        
+        self.total_collected_tax[cur] += amount
+        self.revenue_this_tick[cur] += amount
         self.tax_revenue[tax_type] = (
             self.tax_revenue.get(tax_type, 0.0) + amount
         )
@@ -432,7 +453,9 @@ class Government:
             # FinanceSystem now returns (loan, transactions)
             loan, txs = self.finance_system.grant_bailout_loan(firm, amount, current_tick)
             if loan:
-                self.expenditure_this_tick += amount
+                cur = getattr(loan, 'currency', DEFAULT_CURRENCY)
+                if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0.0
+                self.expenditure_this_tick[cur] += amount
             return loan, txs
         else:
             logger.warning(f"BAILOUT_DENIED | Firm {firm.id} is insolvent and not eligible for a bailout.")
@@ -460,6 +483,7 @@ class Government:
         """
         revenue_snapshot = self.current_tick_stats["tax_revenue"].copy()
         revenue_snapshot["tick"] = current_tick
+        # For simplicity, snapshot uses USD or sums main currency
         revenue_snapshot["total"] = self.current_tick_stats["total_collected"]
 
         # WO-057 Deficit Spending: Update total_debt based on FinanceSystem
@@ -494,14 +518,12 @@ class Government:
             "total_collected": 0.0
         }
 
-    def get_monetary_delta(self) -> float:
+    def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
         """
-        Returns the net change in the money supply authorized this tick.
-        This includes base money changes (mint/burn) and credit money changes.
+        Returns the net change in the money supply authorized this tick for a specific currency.
         """
-        # Calculate changes in totals during this tick
-        issued_delta = self.total_money_issued - self.start_tick_money_issued
-        destroyed_delta = self.total_money_destroyed - self.start_tick_money_destroyed
+        issued_delta = self.total_money_issued.get(currency, 0.0) - self.start_tick_money_issued.get(currency, 0.0)
+        destroyed_delta = self.total_money_destroyed.get(currency, 0.0) - self.start_tick_money_destroyed.get(currency, 0.0)
         return issued_delta - destroyed_delta
 
     def get_agent_data(self) -> Dict[str, Any]:

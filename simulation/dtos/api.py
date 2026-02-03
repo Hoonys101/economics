@@ -23,6 +23,7 @@ class TransactionData:
     item_id: str
     quantity: float
     price: float
+    currency: CurrencyCode  # Added for Phase 33
     market_id: str
     transaction_type: str
 
@@ -32,7 +33,7 @@ class AgentStateData:
     time: int
     agent_id: int
     agent_type: str
-    assets: float
+    assets: Dict[CurrencyCode, float] # Changed for Phase 33
     is_active: bool
     is_employed: Optional[bool] = None
     employer_id: Optional[int] = None
@@ -58,8 +59,8 @@ class EconomicIndicatorData:
     avg_goods_price: Optional[float] = None
     total_production: Optional[float] = None
     total_consumption: Optional[float] = None
-    total_household_assets: Optional[float] = None
-    total_firm_assets: Optional[float] = None
+    total_household_assets: Optional[Dict[CurrencyCode, float]] = None # Changed for Phase 33
+    total_firm_assets: Optional[Dict[CurrencyCode, float]] = None # Changed for Phase 33
     total_food_consumption: Optional[float] = None
     total_inventory: Optional[float] = None
     avg_survival_need: Optional[float] = None
@@ -125,9 +126,11 @@ class OrderDTO:
     item_id: str
     quantity: float
     price: float
+    currency: CurrencyCode # Added for Phase 33
 
 # Phase 1: MarketSnapshotDTO moved to modules.system.api
 from modules.system.api import (
+    CurrencyCode, # Added for Phase 33
     MarketSnapshotDTO,
     HousingMarketSnapshotDTO,
     LoanMarketSnapshotDTO,

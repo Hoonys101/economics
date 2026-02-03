@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from simulation.db.repository import SimulationRepository
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
-from modules.system.api import IAssetRecoverySystem
+from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode # Added for Phase 33
 
 
 class WorldState:
@@ -70,7 +70,7 @@ class WorldState:
         self.next_agent_id: int = 0
         self.markets: Dict[str, Market] = {}
         self.bank: Optional[Bank] = None
-        self.government: Optional[Government] = None
+        self.governments: List[Government] = [] # Changed for Phase 33
         self.central_bank: Optional[CentralBank] = None
         self.stock_market: Optional[StockMarket] = None
         self.tracker: Optional[EconomicIndicatorTracker] = None
@@ -110,6 +110,7 @@ class WorldState:
         self.crisis_monitor: Optional[CrisisMonitor] = None
         self.stress_scenario_config: Optional[StressScenarioConfig] = None
         self.public_manager: Optional[IAssetRecoverySystem] = None
+        self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
 
         # Attributes with default values
         self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)
@@ -128,74 +129,34 @@ class WorldState:
 
         self.baseline_money_supply: float = 0.0
 
-    def calculate_base_money(self) -> float:
+    def calculate_base_money(self) -> Dict[CurrencyCode, float]:
         """
-        Calculates M0 (Base Money).
-        M0 = Currency in Circulation + Bank Reserves.
-        Currency in Circulation = Assets of Non-Bank Agents (Households, Firms, Government, Public Manager).
+        Calculates M0 (Base Money) for each currency.
+        M0 = Sum of all assets held by ICurrencyHolder implementations.
         """
-        total = 0.0
+        totals: Dict[CurrencyCode, float] = {}
+        for holder in self.currency_holders:
+            assets_dict = holder.get_assets_by_currency()
+            for cur, amount in assets_dict.items():
+                totals[cur] = totals.get(cur, 0.0) + amount
+        return totals
 
-        # 1. Households
-        for h in self.households:
-            if h._bio_state.is_active:
-                total += h._econ_state.assets
-
-        # 2. Firms
-        for f in self.firms:
-            if f.is_active:
-                total += f.assets
-
-        # 3. Government
-        if self.government:
-            total += self.government.assets
-
-        # 4. Public Manager
-        if self.public_manager:
-            total += self.public_manager.system_treasury
-
-        # 5. Bank Reserves
-        if self.bank:
-            total += self.bank.assets
-
-        return total
-
-    def calculate_total_money(self) -> float:
+    def calculate_total_money(self) -> Dict[CurrencyCode, float]:
         """
         Calculates M2 (Total Money Supply).
-        M2 = Currency in Circulation + Deposits.
-        Currency in Circulation = Assets of Non-Bank Agents (Households, Firms, Government, Public Manager).
-
-        Note: Central Bank assets (negative cash liability or undistributed mint) are EXCLUDED
-        to properly track Money Supply (M2) rather than net system wealth.
+        In this foundational phase, M2 calculation is refactored to use ICurrencyHolder.
+        Specific M2 logic (deposits vs reserves) should be handled by the Bank's
+        ICurrencyHolder implementation.
         """
-        total = 0.0
+        return self.calculate_base_money() # Placeholder until Bank/Finance refactor
 
-        # 1. Households
-        for h in self.households:
-            if h._bio_state.is_active:
-                total += h._econ_state.assets
-
-        # 2. Firms
-        for f in self.firms:
-            if f.is_active:
-                total += f.assets
-
-        # 3. Bank Reserves & Deposits (M2 Accounting)
-        if self.bank:
-            # WO-024: M2 = Currency + Deposits. Bank Reserves are excluded.
-            # total += self.bank.assets (Reserves excluded)
-            total += sum(d.amount for d in self.bank.deposits.values())
-
-        # 4. Government Assets (WO-Fix: Include Government in M2 to prevent leaks)
-        if self.government:
-            total += self.government.assets
-
-        # 5. Public Manager Treasury (Phase 3: Asset Liquidation)
-        if self.public_manager:
-            total += self.public_manager.system_treasury
-
-        return total
+    def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
+        """
+        Provides a single float value for total system money for backward compatibility
+        with diagnostic tools. Tracks only a single currency and ignores exchange rates.
+        """
+        all_money = self.calculate_total_money()
+        return all_money.get(target_currency, 0.0)
 
     def resolve_agent_id(self, role: str) -> Optional[int]:
         """
@@ -203,7 +164,8 @@ class WorldState:
         Used to eliminate hardcoded ID constants.
         """
         if role == "GOVERNMENT":
-            return self.government.id if self.government else None
+            self.logger.warning("Call to deprecated method WorldState.resolve_agent_id('GOVERNMENT')")
+            return self.governments[0].id if self.governments else None
         elif role == "CENTRAL_BANK":
             return self.central_bank.id if self.central_bank else None
         return None

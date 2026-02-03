@@ -1,15 +1,16 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Any
+from modules.system.api import CurrencyCode # Added for Phase 33
 
 @dataclass
 class FinanceStateDTO:
-    balance: float
-    revenue_this_turn: float
-    expenses_this_tick: float
+    balance: Dict[CurrencyCode, float] # Changed for Phase 33
+    revenue_this_turn: Dict[CurrencyCode, float] # Changed for Phase 33
+    expenses_this_tick: Dict[CurrencyCode, float] # Changed for Phase 33
     consecutive_loss_turns: int
-    profit_history: List[float]
+    profit_history: List[float] # This might need to be Dict if it's total profit in a specific currency, but for now let's keep it simple or change to Dict
     altman_z_score: float
-    valuation: float
+    valuation: Dict[CurrencyCode, float] # Changed for Phase 33
     total_shares: float
     treasury_shares: float
     dividend_rate: float

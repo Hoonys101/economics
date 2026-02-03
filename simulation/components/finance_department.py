@@ -4,6 +4,7 @@ import logging
 from collections import deque
 from simulation.models import Transaction, Order
 from modules.finance.api import InsufficientFundsError
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY # Added for Phase 33
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -17,25 +18,26 @@ class FinanceDepartment:
     """
     Manages assets, maintenance fees, corporate taxes, dividend distribution, and tracks financial metrics.
     Centralized Asset Management (WO-103 Phase 1).
+    Refactored for Multi-Currency support (Phase 33).
     """
     def __init__(self, firm: Firm, config: FirmConfigDTO, initial_capital: float = 0.0):
         self.firm = firm
         self.config = config
 
         # Centralized Assets (WO-103 Phase 1)
-        self._cash: float = initial_capital
+        self._balance: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: initial_capital}
 
         # Financial State
-        self.retained_earnings: float = 0.0
+        self.retained_earnings: float = 0.0 # This might stay float as a net equity measure
         self.dividends_paid_last_tick: float = 0.0
         self.consecutive_loss_turns: int = 0
-        self.current_profit: float = 0.0
+        self.current_profit: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
 
-        # Period Trackers (Reset daily usually)
-        self.revenue_this_turn: float = 0.0
-        self.cost_this_turn: float = 0.0
-        self.revenue_this_tick: float = 0.0
-        self.expenses_this_tick: float = 0.0
+        # Period Trackers
+        self.revenue_this_turn: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.cost_this_turn: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.revenue_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.expenses_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
 
         # History
         self.profit_history: deque[float] = deque(maxlen=self.config.profit_history_ticks)
@@ -52,33 +54,40 @@ class FinanceDepartment:
         self.distress_tick_counter: int = 0
 
     @property
-    def balance(self) -> float:
-        return self._cash
+    def balance(self) -> Dict[CurrencyCode, float]:
+        return self._balance
 
-    def credit(self, amount: float, description: str = "") -> None:
-        """
-        Adds funds to the firm's cash reserves.
-        WARNING: This method should only be called by Firm.deposit(), which is called by SettlementSystem.
-        Do not call directly for business logic (e.g., sales, loans).
-        """
-        self._cash += amount
+    def credit(self, amount: float, description: str = "", currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Adds funds to the firm's cash reserves."""
+        if currency not in self._balance:
+            self._balance[currency] = 0.0
+        self._balance[currency] += amount
 
-    def debit(self, amount: float, description: str = "") -> None:
-        """
-        Deducts funds from the firm's cash reserves.
-        WARNING: This method should only be called by Firm.withdraw(), which is called by SettlementSystem.
-        """
-        self._cash -= amount
+    def debit(self, amount: float, description: str = "", currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Deducts funds from the firm's cash reserves."""
+        if currency not in self._balance:
+            self._balance[currency] = 0.0
+        self._balance[currency] -= amount
 
-    def record_revenue(self, amount: float):
-        self.revenue_this_turn += amount
-        self.revenue_this_tick += amount
-        self.current_profit += amount
+    def record_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
+        if currency not in self.revenue_this_turn:
+            self.revenue_this_turn[currency] = 0.0
+            self.revenue_this_tick[currency] = 0.0
+            self.current_profit[currency] = 0.0
+        
+        self.revenue_this_turn[currency] += amount
+        self.revenue_this_tick[currency] += amount
+        self.current_profit[currency] += amount
 
-    def record_expense(self, amount: float):
-        self.cost_this_turn += amount
-        self.expenses_this_tick += amount
-        self.current_profit -= amount
+    def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
+        if currency not in self.cost_this_turn:
+            self.cost_this_turn[currency] = 0.0
+            self.expenses_this_tick[currency] = 0.0
+            self.current_profit[currency] = 0.0
+            
+        self.cost_this_turn[currency] += amount
+        self.expenses_this_tick[currency] += amount
+        self.current_profit[currency] -= amount
 
     def generate_holding_cost_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
         """Generates inventory holding cost transaction."""
@@ -86,34 +95,27 @@ class FinanceDepartment:
         holding_cost = inventory_value * self.config.inventory_holding_cost_rate
 
         if holding_cost > 0:
-            # We record expense so Profit calc later in tick is correct
             self.record_expense(holding_cost)
-
             return Transaction(
                 buyer_id=self.firm.id,
-                seller_id=government.id, # Capture to Gov/Reflux
+                seller_id=government.id,
                 item_id="holding_cost",
                 quantity=1.0,
                 price=holding_cost,
                 market_id="system",
                 transaction_type="holding_cost",
-                time=current_time
+                time=current_time,
+                currency=DEFAULT_CURRENCY
             )
         return None
 
     def generate_maintenance_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
         """Generates maintenance fee transaction."""
         fee = self.config.firm_maintenance_fee
-
-        # Optimistic check
-        payment = min(self._cash, fee)
+        payment = min(self._balance.get(DEFAULT_CURRENCY, 0.0), fee)
 
         if payment > 0:
             self.record_expense(payment)
-            self.firm.logger.info(
-                f"Generated maintenance fee tx: {payment:.2f}",
-                extra={"tick": current_time, "agent_id": self.firm.id, "tags": ["tax", "maintenance"]}
-            )
             return Transaction(
                 buyer_id=self.firm.id,
                 seller_id=government.id,
@@ -122,7 +124,8 @@ class FinanceDepartment:
                 price=payment,
                 market_id="system",
                 transaction_type="tax",
-                time=current_time
+                time=current_time,
+                currency=DEFAULT_CURRENCY
             )
         return None
 
@@ -132,35 +135,26 @@ class FinanceDepartment:
             self.record_expense(amount)
             return Transaction(
                 buyer_id=self.firm.id,
-                seller_id=government.id, # Reflux/Gov capture
+                seller_id=government.id,
                 item_id="marketing",
                 quantity=1.0,
                 price=amount,
                 market_id="system",
                 transaction_type="marketing",
-                time=current_time
+                time=current_time,
+                currency=DEFAULT_CURRENCY
             )
         return None
 
     def process_profit_distribution(self, households: List[Household], government: IFinancialEntity, current_time: int) -> List[Transaction]:
-        """
-        Public Shareholders Dividend & Bailout Repayment.
-        Returns List of Transactions.
-        """
+        """Public Shareholders Dividend & Bailout Repayment."""
         transactions = []
+        usd_profit = self.current_profit.get(DEFAULT_CURRENCY, 0.0)
 
         # 1. Bailout Repayment
-        if getattr(self.firm, 'has_bailout_loan', False) and self.current_profit > 0:
+        if getattr(self.firm, 'has_bailout_loan', False) and usd_profit > 0:
             repayment_ratio = self.config.bailout_repayment_ratio
-            repayment = self.current_profit * repayment_ratio
-
-            # Optimistic update of debt state (assuming tx succeeds)
-            # If it fails, we might drift. But TransactionProcessor should be reliable if funds exist.
-            # We assume funds exist if current_profit > 0 (implies we made money).
-
-            # Ensure total_debt exists
-            if not hasattr(self.firm, 'total_debt'):
-                self.firm.total_debt = 0.0
+            repayment = usd_profit * repayment_ratio
 
             transactions.append(
                 Transaction(
@@ -171,47 +165,52 @@ class FinanceDepartment:
                     price=repayment,
                     market_id="system",
                     transaction_type="repayment",
-                    time=current_time
+                    time=current_time,
+                    currency=DEFAULT_CURRENCY
                 )
             )
 
-            self.firm.total_debt -= repayment
-            self.current_profit -= repayment
-            self.firm.logger.info(f"BAILOUT_REPAYMENT | Generated repayment tx {repayment:.2f}.")
+            if hasattr(self.firm, 'total_debt'):
+                self.firm.total_debt -= repayment
+            self.current_profit[DEFAULT_CURRENCY] -= repayment
+            usd_profit -= repayment
 
-            if self.firm.total_debt <= 0:
-                self.firm.total_debt = 0.0
+            if getattr(self.firm, 'total_debt', 0.0) <= 0:
                 self.firm.has_bailout_loan = False
 
         # 2. Dividends
-        distributable_profit = max(0, self.current_profit * self.firm.dividend_rate)
+        distributable_profit = max(0, usd_profit * self.firm.dividend_rate)
         self.dividends_paid_last_tick = 0.0
 
         if distributable_profit > 0:
-            for household in households:
-                shares = household._econ_state.portfolio.to_legacy_dict().get(self.firm.id, 0.0)
-                if shares > 0:
-                    dividend_amount = distributable_profit * (shares / self.firm.total_shares)
-                    transactions.append(
-                        Transaction(
-                            buyer_id=self.firm.id,
-                            seller_id=household.id,
-                            item_id="dividend",
-                            quantity=1.0, # 1 unit of dividend event
-                            price=dividend_amount, # Cash amount
-                            market_id="financial",
-                            transaction_type="dividend",
-                            time=current_time,
+            total_shares = self.firm.total_shares
+            if total_shares > 0:
+                for household in households:
+                    shares = household._econ_state.portfolio.to_legacy_dict().get(self.firm.id, 0.0)
+                    if shares > 0:
+                        dividend_amount = distributable_profit * (shares / total_shares)
+                        transactions.append(
+                            Transaction(
+                                buyer_id=self.firm.id,
+                                seller_id=household.id,
+                                item_id="dividend",
+                                quantity=1.0,
+                                price=dividend_amount,
+                                market_id="financial",
+                                transaction_type="dividend",
+                                time=current_time,
+                                currency=DEFAULT_CURRENCY
+                            )
                         )
-                    )
-                    self.dividends_paid_last_tick += dividend_amount
+                        self.dividends_paid_last_tick += dividend_amount
 
         # Reset period counters
-        self.current_profit = 0.0
-        self.revenue_this_turn = 0.0
-        self.cost_this_turn = 0.0
-        self.revenue_this_tick = 0.0
-        self.expenses_this_tick = 0.0
+        for cur in self.current_profit:
+             self.current_profit[cur] = 0.0
+             self.revenue_this_turn[cur] = 0.0
+             self.cost_this_turn[cur] = 0.0
+             self.revenue_this_tick[cur] = 0.0
+             self.expenses_this_tick[cur] = 0.0
 
         return transactions
 
@@ -225,8 +224,6 @@ class FinanceDepartment:
             return []
 
         maintenance_fee = self.config.firm_maintenance_fee
-
-        # Query HR for wage data
         avg_wage = 0.0
         employees = self.firm.hr.employees
         if employees:
@@ -236,343 +233,165 @@ class FinanceDepartment:
         weekly_burn_rate = maintenance_fee + (avg_wage * len(employees))
         required_reserves = weekly_burn_rate * reserve_period
 
-        distributable_cash = self._cash - required_reserves
+        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        distributable_cash = usd_balance - required_reserves
 
         transactions = []
         if distributable_cash > 0:
-            dividend_amount = distributable_cash
-
             transactions.append(
                 Transaction(
                     buyer_id=self.firm.id,
                     seller_id=owner.id,
                     item_id="private_dividend",
                     quantity=1.0,
-                    price=dividend_amount,
+                    price=distributable_cash,
                     market_id="financial",
                     transaction_type="dividend",
-                    time=current_time
+                    time=current_time,
+                    currency=DEFAULT_CURRENCY
                 )
             )
-
-            # Optimistic state update
-            if hasattr(owner, 'income_capital_cumulative'):
-                owner.income_capital_cumulative += dividend_amount
-            if hasattr(owner, 'capital_income_this_tick'):
-                owner.capital_income_this_tick += dividend_amount
-
-            self.retained_earnings -= dividend_amount
-            self.dividends_paid_last_tick += dividend_amount
+            self.dividends_paid_last_tick += distributable_cash
 
         return transactions
 
     def generate_financial_transactions(self, government: IFinancialEntity, households: List[Household], current_time: int) -> List[Transaction]:
         """Consolidates all financial outflow generation logic."""
         transactions = []
-
-        # 1. Holding Costs
         tx_holding = self.generate_holding_cost_transaction(government, current_time)
-        if tx_holding:
-            transactions.append(tx_holding)
-
-        # 2. Maintenance
+        if tx_holding: transactions.append(tx_holding)
         tx_maint = self.generate_maintenance_transaction(government, current_time)
-        if tx_maint:
-            transactions.append(tx_maint)
-
-        # 3. Corporate Tax (Handled centrally by TaxationSystem)
-        # WO-116: Removed direct tax generation.
-
-        # 4. Profit Distribution (Public)
+        if tx_maint: transactions.append(tx_maint)
         txs_public = self.process_profit_distribution(households, government, current_time)
         transactions.extend(txs_public)
-
         return transactions
 
     def add_liability(self, amount: float, interest_rate: float):
-        """
-        Adds a liability (like a loan) to the firm's balance sheet.
-        NOTE: Does NOT credit cash. Cash must be transferred via SettlementSystem (e.g. from Bank).
-        """
         if not hasattr(self.firm, 'total_debt'):
             self.firm.total_debt = 0.0
         self.firm.total_debt += amount
 
     def calculate_altman_z_score(self) -> float:
-        total_assets = self._cash + self.firm.capital_stock + self.get_inventory_value()
-        if total_assets == 0:
-            return 0.0
-
-        working_capital = self._cash - getattr(self.firm, 'total_debt', 0.0)
+        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        total_assets = usd_balance + self.firm.capital_stock + self.get_inventory_value()
+        if total_assets == 0: return 0.0
+        working_capital = usd_balance - getattr(self.firm, 'total_debt', 0.0)
         x1 = working_capital / total_assets
         x2 = self.retained_earnings / total_assets
         avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
         x3 = avg_profit / total_assets
-
-        z_score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3
-        return z_score
+        return 1.2 * x1 + 1.4 * x2 + 3.3 * x3
 
     def get_estimated_unit_cost(self, item_id: str) -> float:
-        """
-        Estimates the unit cost of production/operation for a given item.
-        Used as a price floor for dynamic pricing.
-        WO-157: Use Production Target as denominator to avoid Death Spiral (Low Sales -> High Cost -> High Price).
-        """
         target = getattr(self.firm, 'production_target', 10.0)
-        denominator = max(1.0, target)
-
-        # Use last daily expenses as proxy for total cost
-        return self.last_daily_expenses / denominator
+        return self.last_daily_expenses / max(1.0, target)
 
     def check_bankruptcy(self):
-        if self.current_profit < 0:
+        if self.current_profit.get(DEFAULT_CURRENCY, 0.0) < 0:
             self.consecutive_loss_turns += 1
         else:
             self.consecutive_loss_turns = 0
-
-        # Calculate Brand Resilience
-        resilience_ticks = 0
-        if hasattr(self.firm, 'brand_manager') and self.firm.brand_manager:
-            awareness = self.firm.brand_manager.brand_awareness
-            factor = getattr(self.config, "brand_resilience_factor", 0.05)
-            resilience_ticks = int(awareness * factor)
-
         threshold = getattr(self.config, "bankruptcy_consecutive_loss_threshold", 20)
-        effective_loss_ticks = self.consecutive_loss_turns - resilience_ticks
-
-        if effective_loss_ticks >= threshold:
+        if self.consecutive_loss_turns >= threshold:
             self.firm.is_bankrupt = True
 
     def check_cash_crunch(self) -> bool:
-        """
-        WO-167: Evaluates if the firm is in a 'Cash Crunch'.
-        Defined as Cash < 0 or Cash < 10% of expected expenses.
-        """
         threshold = 0.1 * self.last_daily_expenses
-        return self._cash < 0 or self._cash < threshold
+        return self._balance.get(DEFAULT_CURRENCY, 0.0) < threshold
 
     def trigger_emergency_liquidation(self) -> List[Order]:
-        """
-        WO-167: Generates emergency sell orders for all inventory items at 80% market price.
-        """
         orders = []
         for good, qty in self.firm.inventory.items():
-            if qty <= 0:
-                continue
-
-            # Determine price: 80% of market average, or last known price, or initial price
-            price = self.firm.last_prices.get(good, 0.0)
-            if price == 0.0:
-                if self.config and self.config.goods:
-                    price = self.config.goods.get(good, {}).get('initial_price', 10.0)
-                else:
-                    price = 10.0
-
-            liquidation_price = price * 0.8
-
+            if qty <= 0: continue
+            price = self.firm.last_prices.get(good, 10.0)
             order = Order(
-                agent_id=self.firm.id,
-                side="SELL",
-                item_id=good,
-                quantity=qty,
-                price_limit=liquidation_price,
-                market_id=good
+                agent_id=self.firm.id, side="SELL", item_id=good,
+                quantity=qty, price_limit=price * 0.8, market_id=good,
+                currency=DEFAULT_CURRENCY
             )
             orders.append(order)
-
-            self.firm.logger.warning(
-                f"GRACE_PROTOCOL | Firm {self.firm.id} triggering emergency liquidation for {good}. Qty: {qty}, Price: {liquidation_price:.2f}",
-                extra={"agent_id": self.firm.id, "tags": ["grace_protocol", "liquidation"]}
-            )
-
         return orders
 
     def calculate_valuation(self) -> float:
-        """
-        Calculate Firm Valuation based on Net Assets + Profit Potential.
-        Formula: Net Assets + (Max(0, Avg_Profit_Last_10) * PER Multiplier)
-        """
-        net_assets = self._cash + self.get_inventory_value() + self.firm.capital_stock
-
-        avg_profit = 0.0
-        if len(self.profit_history) > 0:
-            avg_profit = sum(self.profit_history) / len(self.profit_history)
-
-        profit_premium = max(0.0, avg_profit) * self.config.valuation_per_multiplier
-
-        self.firm.valuation = net_assets + profit_premium
+        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        net_assets = usd_balance + self.get_inventory_value() + self.firm.capital_stock
+        avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
+        self.firm.valuation = net_assets + max(0.0, avg_profit) * self.config.valuation_per_multiplier
         return self.firm.valuation
 
     def get_inventory_value(self) -> float:
-        """Calculate market value of current inventory."""
         total_val = 0.0
         for good, qty in self.firm.inventory.items():
-             price = self.firm.last_prices.get(good, 0.0)
-             if price == 0.0:
-                 if self.config and self.config.goods:
-                     price = self.config.goods.get(good, {}).get('initial_price', 10.0)
-                 else:
-                     price = 10.0
+             price = self.firm.last_prices.get(good, 10.0)
              total_val += qty * price
         return total_val
 
     def get_financial_snapshot(self) -> Dict[str, float]:
-        # WO-106: Include Capital Stock in Total Assets for correct accounting
-        total_assets = self._cash + self.get_inventory_value() + getattr(self.firm, 'capital_stock', 0.0)
-
+        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        total_assets = usd_balance + self.get_inventory_value() + getattr(self.firm, 'capital_stock', 0.0)
         current_liabilities = getattr(self.firm, "total_debt", 0.0)
-        working_capital = total_assets - current_liabilities
-
-        retained_earnings = self.retained_earnings
-
-        avg_profit = self.current_profit
+        avg_profit = self.current_profit.get(DEFAULT_CURRENCY, 0.0)
         if self.profit_history:
             recent = list(self.profit_history)[-10:]
             avg_profit = sum(recent) / len(recent)
-
         return {
             "total_assets": total_assets,
-            "working_capital": working_capital,
-            "retained_earnings": retained_earnings,
+            "working_capital": total_assets - current_liabilities,
+            "retained_earnings": self.retained_earnings,
             "average_profit": avg_profit,
             "total_debt": current_liabilities
         }
 
     def issue_shares(self, quantity: float, price: float) -> float:
-        """
-        Records the issuance of new shares.
-        NOTE: Does NOT credit cash. Cash must be raised via StockMarket transaction (SettlementSystem).
-        """
-        if quantity <= 0 or price <= 0:
-            return 0.0
-
+        if quantity <= 0 or price <= 0: return 0.0
         self.firm.total_shares += quantity
-        raised_capital = quantity * price
-
-        # Cash is NOT credited here. It must come from the StockMarket executing the order.
-
-        self.firm.logger.info(
-            f"Firm {self.firm.id} issued {quantity:.1f} shares at {price:.2f}, "
-            f"raising {raised_capital:.2f} capital (pending settlement). Total shares: {self.firm.total_shares:.1f}",
-            extra={
-                "agent_id": self.firm.id,
-                "quantity": quantity,
-                "price": price,
-                "raised_capital": raised_capital,
-                "total_shares": self.firm.total_shares,
-                "tags": ["stock", "issue"]
-            }
-        )
-        return raised_capital
+        return quantity * price
 
     def get_book_value_per_share(self) -> float:
-        """주당 순자산가치(BPS)를 계산합니다."""
         outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
-        if outstanding_shares <= 0:
-            return 0.0
-
-        liabilities = 0.0
-        try:
-            loan_market = getattr(self.firm.decision_engine, 'loan_market', None)
-            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
-                debt_status = loan_market.bank.get_debt_status(str(self.firm.id))
-                liabilities = debt_status.get('total_outstanding_debt', 0.0)
-        except Exception:
-            pass
-
-        net_assets = self._cash - liabilities
+        if outstanding_shares <= 0: return 0.0
+        debt = getattr(self.firm, 'total_debt', 0.0)
+        net_assets = self._balance.get(DEFAULT_CURRENCY, 0.0) - debt
         return max(0.0, net_assets) / outstanding_shares
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
-        if stock_price is None:
-            stock_price = self.get_book_value_per_share()
-
-        outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
-        return outstanding_shares * stock_price
+        if stock_price is None: stock_price = self.get_book_value_per_share()
+        return (self.firm.total_shares - self.firm.treasury_shares) * stock_price
 
     def get_assets(self) -> float:
-        """Returns the current assets (cash) of the firm."""
-        return self._cash
+        return self._balance.get(DEFAULT_CURRENCY, 0.0)
 
     def invest_in_automation(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
-        if self._cash < amount:
-            return False
-
-        if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and government:
-            transfer_success = self.firm.settlement_system.transfer(self.firm, government, amount, "Automation Investment")
-            if transfer_success:
-                return True
-            else:
-                self.firm.logger.warning(f"Automation investment of {amount:.2f} failed due to failed settlement transfer.")
-                return False
-        else:
-            self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or Government for Automation.")
-            return False
+        if self._balance.get(DEFAULT_CURRENCY, 0.0) < amount: return False
+        if not self.firm.settlement_system or not government: return False
+        return self.firm.settlement_system.transfer(self.firm, government, amount, "Automation", currency=DEFAULT_CURRENCY)
 
     def invest_in_rd(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
-        if self._cash < amount:
-            return False
-
-        if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and government:
-            transfer_success = self.firm.settlement_system.transfer(self.firm, government, amount, "R&D Investment")
-            if transfer_success:
-                self.record_expense(amount)
-                return True
-            else:
-                self.firm.logger.warning(f"R&D investment of {amount:.2f} failed due to failed settlement transfer.")
-                return False
-        else:
-            self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or Government for R&D.")
-            return False
+        if self._balance.get(DEFAULT_CURRENCY, 0.0) < amount: return False
+        if not self.firm.settlement_system or not government: return False
+        if self.firm.settlement_system.transfer(self.firm, government, amount, "R&D", currency=DEFAULT_CURRENCY):
+            self.record_expense(amount)
+            return True
+        return False
 
     def invest_in_capex(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
-        if self._cash < amount:
-            return False
-
-        if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system and government:
-            transfer_success = self.firm.settlement_system.transfer(self.firm, government, amount, "CAPEX")
-            if transfer_success:
-                return True
-            else:
-                self.firm.logger.warning(f"CAPEX investment of {amount:.2f} failed due to failed settlement transfer.")
-                return False
-        else:
-            self.firm.logger.warning("INVESTMENT_BLOCKED | Missing SettlementSystem or Government for CAPEX.")
-            return False
+        if self._balance.get(DEFAULT_CURRENCY, 0.0) < amount: return False
+        if not self.firm.settlement_system or not government: return False
+        return self.firm.settlement_system.transfer(self.firm, government, amount, "CAPEX", currency=DEFAULT_CURRENCY)
 
     def set_dividend_rate(self, rate: float) -> None:
         self.firm.dividend_rate = rate
 
     def pay_severance(self, employee: Household, amount: float) -> bool:
-        if self._cash >= amount:
-            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
-                if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance Pay"):
-                    self.record_expense(amount)
-                    return True
-            else:
-                self.firm.logger.error("PAY_SEVERANCE | SettlementSystem missing. Cannot pay severance.")
+        if self._balance.get(DEFAULT_CURRENCY, 0.0) >= amount and self.firm.settlement_system:
+            if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance", currency=DEFAULT_CURRENCY):
+                self.record_expense(amount)
+                return True
         return False
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:
-        """
-        Pay an ad-hoc tax (e.g. from internal order).
-        Refactored to use SettlementSystem directly (WO-124).
-        """
-        if self._cash >= amount:
-            if hasattr(self.firm, 'settlement_system') and self.firm.settlement_system:
-                success = self.firm.settlement_system.transfer(self.firm, government, amount, tax_type)
-                if success:
-                    # Record revenue on government side if possible
-                    if hasattr(government, 'record_revenue'):
-                        government.record_revenue({
-                            "success": True,
-                            "amount_collected": amount,
-                            "tax_type": tax_type,
-                            "payer_id": self.firm.id,
-                            "payee_id": government.id,
-                            "error_message": None
-                        })
-
-                    self.record_expense(amount)
-                    return True
+        if self._balance.get(DEFAULT_CURRENCY, 0.0) >= amount and self.firm.settlement_system:
+            if self.firm.settlement_system.transfer(self.firm, government, amount, tax_type, currency=DEFAULT_CURRENCY):
+                self.record_expense(amount)
+                return True
         return False

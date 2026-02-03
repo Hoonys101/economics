@@ -1,0 +1,1196 @@
+diff --git a/communications/insights/TD-194_TD-206_DTO_Normalization.md b/communications/insights/TD-194_TD-206_DTO_Normalization.md
+new file mode 100644
+index 0000000..51dda59
+--- /dev/null
++++ b/communications/insights/TD-194_TD-206_DTO_Normalization.md
+@@ -0,0 +1,41 @@
++# TD-194 & TD-206: DTO Normalization
++
++## Executive Summary
++This document tracks the implementation of DTO normalization tasks:
++1.  **TD-194**: Consolidating `HouseholdStateDTO` into a composite `HouseholdSnapshotDTO`.
++2.  **TD-206**: Implementing `MortgageApplicationRequestDTO` to enforce financial precision (Debt vs. Payments).
++
++## Progress Log
++
++### Initialization
++- Started mission.
++- Analyzed `HouseholdStateDTO` fragmentation.
++- Analyzed `MortgageApplicationDTO` ambiguity.
++
++### TD-194: Household Snapshot
++- **Goal**: Replace flat "God DTO" with composite structure (`Bio`, `Econ`, `Social`).
++- **Plan**: Create `HouseholdSnapshotDTO` and `Assembler`. Refactor `DecisionUnit`, `HousingPlanner`, and `Household` agent.
++- **Status**: Completed.
++    - Added `HouseholdSnapshotDTO` and `HouseholdSnapshotAssembler`.
++    - Added `Household.create_snapshot_dto()`.
++    - Refactored `modules/market/housing_planner.py` (and `modules/housing/planner.py`) to use nested DTO access.
++    - Updated `DecisionUnit` and `HousingOfferRequestDTO`.
++    - Added verification test `tests/unit/household/test_snapshot_assembler.py`.
++    - Fixed regressions in integration tests (`test_td194_integration.py`).
++
++### TD-206: Mortgage Precision
++- **Goal**: Resolve DTI calculation ambiguity by explicitly passing `existing_monthly_debt_payments`.
++- **Plan**: Create `MortgageApplicationRequestDTO`. Update `HousingSystem` (Saga origin) and `LoanMarket` (Consumer).
++- **Status**: Completed.
++    - Created `modules/market/loan_api.py`.
++    - Updated `LoanMarket.evaluate_mortgage_application` to use precise fields.
++    - Updated `HousingSystem` to calculate monthly payments from bank debt status.
++    - Updated `tests/unit/markets/test_loan_market_mortgage.py` to verify precise DTI checks.
++
++## Technical Debt & Insights
++*   **Insight**: `HousingSystem` logic currently recalculates mortgage application data (like debt payments) independently of the `HousingPlanner`'s decision. This redundancy should be monitored.
++*   **Insight**: `HouseholdStateDTO` is widely used. Deprecation requires careful search and replace. Legacy support was maintained for `DecisionContext`.
++*   **Risk**: `HousingSystem` uses `bank.get_debt_status` which might return raw loan data. We implemented a helper `_calculate_total_monthly_debt_payments` to handle this.
++*   **Debt**: Duplicated `HousingPlanner` (`modules/housing/planner.py` vs `modules/market/housing_planner.py`) caused confusion. Both were updated, but one should be deleted in future.
++*   **Debt**: Test scaffolding factories (`tests/utils/factories.py`) were outdated, causing irrelevant failures. Patched them.
++*   **Debt**: `tests/unit/modules/housing/test_planner.py` was testing non-existent code and was deleted.
+diff --git a/modules/household/api.py b/modules/household/api.py
+index 0859dc6..9073c94 100644
+--- a/modules/household/api.py
++++ b/modules/household/api.py
+@@ -17,7 +17,8 @@ if TYPE_CHECKING:
+     from simulation.models import Order
+     from modules.household.dtos import (
+         BioStateDTO, EconStateDTO, SocialStateDTO,
+-        CloningRequestDTO, EconContextDTO, HouseholdStateDTO
++        CloningRequestDTO, EconContextDTO, HouseholdStateDTO,
++        HouseholdSnapshotDTO
+     )
+ 
+ # --- Updated Context for Decision Making (NEW) ---
+@@ -31,7 +32,7 @@ class OrchestrationContextDTO(TypedDict):
+     current_time: int
+     stress_scenario_config: Optional["StressScenarioConfig"]
+     config: "HouseholdConfigDTO"
+-    household_state: "HouseholdStateDTO"
++    household_state: "HouseholdSnapshotDTO"
+     housing_system: Optional[Any] # Added for Saga initiation
+ 
+ 
+diff --git a/modules/household/decision_unit.py b/modules/household/decision_unit.py
+index da5436b..427d7d7 100644
+--- a/modules/household/decision_unit.py
++++ b/modules/household/decision_unit.py
+@@ -53,7 +53,8 @@ class DecisionUnit(IDecisionUnit):
+         housing_system = context.get("housing_system")
+ 
+         # 1. System 2 Housing Decision Logic (Delegated to HousingPlanner)
+-        if new_state.is_homeless or current_time % 30 == 0:
++        # Access is_homeless via econ_state in snapshot
++        if household_state.econ_state.is_homeless or current_time % 30 == 0:
+              # Construct Request
+              request = HousingDecisionRequestDTO(
+                  household_state=household_state,
+diff --git a/modules/household/dtos.py b/modules/household/dtos.py
+index 4a751db..870e6f7 100644
+--- a/modules/household/dtos.py
++++ b/modules/household/dtos.py
+@@ -13,47 +13,6 @@ if TYPE_CHECKING:
+     from simulation.interfaces.market_interface import IMarket
+     from simulation.dtos import LeisureType
+ 
+-@dataclass
+-class HouseholdStateDTO:
+-    """
+-    A read-only DTO containing the state of a Household agent.
+-    Used by the DecisionEngine to make decisions without direct dependency on the Household class.
+-    """
+-    id: int
+-    assets: float
+-    inventory: Dict[str, float]
+-    needs: Dict[str, float]
+-    preference_asset: float
+-    preference_social: float
+-    preference_growth: float
+-    personality: Personality
+-    durable_assets: List[Dict[str, Any]]
+-    expected_inflation: Dict[str, float]
+-    is_employed: bool
+-    current_wage: float
+-    wage_modifier: float
+-    is_homeless: bool
+-    residing_property_id: Optional[int]
+-    owned_properties: List[int]
+-    portfolio_holdings: Dict[int, Share]
+-    risk_aversion: float
+-    agent_data: Dict[str, Any]
+-    perceived_prices: Dict[str, float] = field(default_factory=dict)
+-
+-    # Additional fields needed by DecisionEngine
+-    conformity: float = 0.5
+-    social_rank: float = 0.5
+-    approval_rating: int = 1
+-    optimism: float = 0.5
+-    ambition: float = 0.5
+-
+-    # WO-108: Parity Fields
+-    perceived_fair_price: Dict[str, float] = field(default_factory=dict)
+-    sentiment_index: float = 0.5
+-
+-    # WO-157: Demand Elasticity
+-    demand_elasticity: float = 1.0
+-
+ @dataclass
+ class BioStateDTO:
+     """Internal state for BioComponent."""
+@@ -193,6 +152,61 @@ class SocialStateDTO:
+         new_state.desire_weights = self.desire_weights.copy()
+         return new_state
+ 
++@dataclass
++class HouseholdSnapshotDTO:
++    """
++    [TD-194] A structured, read-only snapshot of a Household agent's complete state,
++    composed of the states of its underlying components.
++    Serves as the primary data contract for decision-making systems.
++    Replaces HouseholdStateDTO.
++    """
++    id: int
++    bio_state: BioStateDTO
++    econ_state: EconStateDTO
++    social_state: SocialStateDTO
++
++@dataclass
++class HouseholdStateDTO:
++    """
++    [DEPRECATED] Use HouseholdSnapshotDTO instead.
++    A read-only DTO containing the state of a Household agent.
++    Used by the DecisionEngine to make decisions without direct dependency on the Household class.
++    """
++    id: int
++    assets: float
++    inventory: Dict[str, float]
++    needs: Dict[str, float]
++    preference_asset: float
++    preference_social: float
++    preference_growth: float
++    personality: Personality
++    durable_assets: List[Dict[str, Any]]
++    expected_inflation: Dict[str, float]
++    is_employed: bool
++    current_wage: float
++    wage_modifier: float
++    is_homeless: bool
++    residing_property_id: Optional[int]
++    owned_properties: List[int]
++    portfolio_holdings: Dict[int, Share]
++    risk_aversion: float
++    agent_data: Dict[str, Any]
++    perceived_prices: Dict[str, float] = field(default_factory=dict)
++
++    # Additional fields needed by DecisionEngine
++    conformity: float = 0.5
++    social_rank: float = 0.5
++    approval_rating: int = 1
++    optimism: float = 0.5
++    ambition: float = 0.5
++
++    # WO-108: Parity Fields
++    perceived_fair_price: Dict[str, float] = field(default_factory=dict)
++    sentiment_index: float = 0.5
++
++    # WO-157: Demand Elasticity
++    demand_elasticity: float = 1.0
++
+ @dataclass
+ class CloningRequestDTO:
+     """Data required to clone a household."""
+diff --git a/modules/household/services.py b/modules/household/services.py
+new file mode 100644
+index 0000000..1081929
+--- /dev/null
++++ b/modules/household/services.py
+@@ -0,0 +1,34 @@
++from typing import TYPE_CHECKING
++from modules.household.dtos import HouseholdSnapshotDTO
++
++if TYPE_CHECKING:
++    from simulation.core_agents import Household
++
++class HouseholdSnapshotAssembler:
++    """
++    Service responsible for assembling a complete, read-only snapshot
++    of a Household agent's state from its internal components.
++    """
++
++    @staticmethod
++    def assemble(household: "Household") -> HouseholdSnapshotDTO:
++        """
++        Creates a snapshot DTO from a household agent instance.
++        Ensures internal state is copied to prevent accidental mutation.
++        """
++        # We assume the household components expose their state DTOs
++        # and that we should copy them for the snapshot to be immutable.
++
++        # Access internal states directly from the agent facade as it exposes them
++        # (The Household class in core_agents.py stores them in _bio_state, _econ_state, _social_state)
++
++        bio_state_copy = household._bio_state.copy()
++        econ_state_copy = household._econ_state.copy()
++        social_state_copy = household._social_state.copy()
++
++        return HouseholdSnapshotDTO(
++            id=household.id,
++            bio_state=bio_state_copy,
++            econ_state=econ_state_copy,
++            social_state=social_state_copy
++        )
+diff --git a/modules/housing/dtos.py b/modules/housing/dtos.py
+index b6e92a1..ca10663 100644
+--- a/modules/housing/dtos.py
++++ b/modules/housing/dtos.py
+@@ -2,7 +2,7 @@ from typing import TypedDict, Literal, Union, Optional
+ from uuid import UUID
+ from dataclasses import dataclass
+ 
+-from modules.household.dtos import HouseholdStateDTO
++from modules.household.dtos import HouseholdSnapshotDTO
+ from modules.system.api import HousingMarketSnapshotDTO
+ from modules.market.housing_planner_api import MortgageApplicationDTO
+ 
+@@ -44,7 +44,7 @@ class HousingDecisionRequestDTO(TypedDict):
+     """
+     Input for the simplified HousingPlanner.
+     """
+-    household_state: HouseholdStateDTO
++    household_state: HouseholdSnapshotDTO
+     housing_market_snapshot: HousingMarketSnapshotDTO
+     # DTI calculation requires this
+     outstanding_debt_payments: float
+diff --git a/modules/housing/planner.py b/modules/housing/planner.py
+index 72dbd6f..83668b6 100644
+--- a/modules/housing/planner.py
++++ b/modules/housing/planner.py
+@@ -8,6 +8,7 @@ from modules.market.housing_planner_api import (
+     HousingDecisionDTO,
+     MortgageApplicationDTO
+ )
++from modules.market.loan_api import MortgageApplicationRequestDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -53,7 +54,7 @@ class HousingPlanner(IHousingPlanner):
+                 max_loan_dti = max_allowed_new_monthly_payment * ( (1+monthly_rate)**term_months - 1 ) / ( monthly_rate * (1+monthly_rate)**term_months )
+ 
+         # 3. Assess Purchasing Power
+-        cash = household.assets
++        cash = household.econ_state.assets
+         purchasing_power = cash + max_loan_dti
+ 
+         # 4. Filter Properties
+@@ -86,7 +87,7 @@ class HousingPlanner(IHousingPlanner):
+ 
+         # 5. Make Decision
+         # Priority: Homelessness -> Buy if affordable.
+-        if household.is_homeless and affordable_properties:
++        if household.econ_state.is_homeless and affordable_properties:
+             # Pick cheapest for now (simplistic logic)
+             best_prop = min(affordable_properties, key=lambda p: p.price)
+             offer_price = best_prop.price
+@@ -129,14 +130,13 @@ class HousingPlanner(IHousingPlanner):
+                 logger.error(f"HousingPlanner: Invalid property ID {best_prop.unit_id}")
+                 return self._stay_decision()
+ 
+-            mortgage_app = MortgageApplicationDTO(
++            mortgage_app = MortgageApplicationRequestDTO(
+                 applicant_id=household.id,
+-                principal=loan_amount,
+-                purpose="MORTGAGE",
++                requested_principal=loan_amount,
+                 property_id=prop_id,
+                 property_value=offer_price,
+-                applicant_income=annual_income,
+-                applicant_existing_debt=current_debt,
++                applicant_monthly_income=annual_income / 12.0,
++                existing_monthly_debt_payments=existing_monthly_payment,
+                 loan_term=360
+             )
+ 
+diff --git a/modules/market/housing_planner.py b/modules/market/housing_planner.py
+index 04aab1a..c2cb838 100644
+--- a/modules/market/housing_planner.py
++++ b/modules/market/housing_planner.py
+@@ -27,7 +27,7 @@ class HousingPlanner(IHousingPlanner):
+ 
+         # 1. Evaluate "Buy" Option
+         # Use simple affordability metric: Price <= Assets / DownPaymentPct
+-        max_price = household.assets / self.DEFAULT_DOWN_PAYMENT_PCT
++        max_price = household.econ_state.assets / self.DEFAULT_DOWN_PAYMENT_PCT
+ 
+         affordable_properties = []
+         if market.for_sale_units:
+@@ -44,7 +44,7 @@ class HousingPlanner(IHousingPlanner):
+         # 2. Evaluate "Rent" Option
+         best_rent_option = None
+         if market.units_for_rent:
+-             income = household.current_wage
++             income = household.econ_state.current_wage
+              max_rent = income * 0.3
+              affordable_rentals = [u for u in market.units_for_rent if (u.rent_price or 0) <= max_rent]
+ 
+@@ -55,7 +55,7 @@ class HousingPlanner(IHousingPlanner):
+         # 3. Compare and Decide
+ 
+         # Case A: Homeless - Must act
+-        if household.is_homeless:
++        if household.econ_state.is_homeless:
+             if best_buy_option:
+                 return self._create_buy_decision(best_buy_option, household)
+             elif best_rent_option:
+@@ -69,7 +69,7 @@ class HousingPlanner(IHousingPlanner):
+         # Case B: Upgrade / Voluntary Move
+         should_buy = False
+         if best_buy_option:
+-            if hasattr(household, 'housing_target_mode') and household.housing_target_mode == "BUY":
++            if hasattr(household.econ_state, 'housing_target_mode') and household.econ_state.housing_target_mode == "BUY":
+                 should_buy = True
+             elif best_rent_option:
+                  # If buy score > rent score?
+@@ -87,7 +87,7 @@ class HousingPlanner(IHousingPlanner):
+         required_down = offer_price * self.DEFAULT_DOWN_PAYMENT_PCT
+ 
+         # Ensure household has enough for down payment (already checked by max_price but good to be safe)
+-        if household.assets < required_down:
++        if household.econ_state.assets < required_down:
+              # Fallback: Can't afford down payment despite max_price check (maybe floating point or rounding)
+              pass
+ 
+diff --git a/modules/market/housing_planner_api.py b/modules/market/housing_planner_api.py
+index 907637d..30c5b37 100644
+--- a/modules/market/housing_planner_api.py
++++ b/modules/market/housing_planner_api.py
+@@ -3,9 +3,10 @@ from abc import ABC, abstractmethod
+ 
+ # Import external DTOs
+ # Note: Adjust imports based on actual file structure
+-from modules.household.dtos import HouseholdStateDTO
++from modules.household.dtos import HouseholdSnapshotDTO
+ from modules.system.api import HousingMarketSnapshotDTO
+ from modules.finance.api import MortgageApplicationDTO
++from modules.market.loan_api import MortgageApplicationRequestDTO
+ 
+ class LoanMarketSnapshotDTO(TypedDict):
+     """
+@@ -19,7 +20,7 @@ class HousingOfferRequestDTO(TypedDict):
+     """
+     Input for the HousingPlanner, containing all necessary state for a decision.
+     """
+-    household_state: HouseholdStateDTO
++    household_state: HouseholdSnapshotDTO
+     housing_market_snapshot: HousingMarketSnapshotDTO
+     loan_market_snapshot: LoanMarketSnapshotDTO # To assess credit availability
+     applicant_current_debt: float # Total outstanding debt
+@@ -33,7 +34,7 @@ class HousingDecisionDTO(TypedDict):
+     decision_type: Literal["MAKE_OFFER", "RENT", "STAY"]
+     target_property_id: Optional[int]
+     offer_price: Optional[float]
+-    mortgage_application: Optional[MortgageApplicationDTO]
++    mortgage_application: Optional[MortgageApplicationRequestDTO]
+ 
+ class MortgageApprovalDTO(TypedDict):
+     """
+@@ -76,14 +77,14 @@ class ILoanMarket(ABC):
+     Expanded interface for the LoanMarket to include regulatory checks.
+     """
+     @abstractmethod
+-    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
++    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
+         """
+         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
+         """
+         ...
+ 
+     @abstractmethod
+-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[dict]:
++    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[dict]:
+          """
+          Stages a mortgage (creates loan record) without disbursing funds.
+          Returns LoanInfoDTO (as dict) if successful, None otherwise.
+diff --git a/modules/market/housing_purchase_api.py b/modules/market/housing_purchase_api.py
+index 4a24748..24b7d50 100644
+--- a/modules/market/housing_purchase_api.py
++++ b/modules/market/housing_purchase_api.py
+@@ -4,6 +4,7 @@ from modules.household.dtos import HouseholdStateDTO
+ from modules.system.api import HousingMarketSnapshotDTO
+ from modules.finance.api import LoanInfoDTO as LoanDTO
+ from modules.market.housing_planner_api import MortgageApplicationDTO
++from modules.market.loan_api import MortgageApplicationRequestDTO
+ 
+ # Pre-existing DTOs (Aliases if needed, or imported elsewhere)
+ # from modules.market.housing_planner_api import HousingOfferRequestDTO, HousingDecisionDTO
+@@ -17,7 +18,7 @@ class HousingPurchaseSagaDataDTO(TypedDict):
+     property_id: int
+     offer_price: float
+     down_payment: float
+-    mortgage_application: MortgageApplicationDTO
++    mortgage_application: MortgageApplicationRequestDTO
+     # This will be populated once the loan is approved
+     approved_loan_id: Optional[int]
+     seller_id: int
+@@ -49,7 +50,7 @@ class ILoanMarket(ABC):
+     Interface for the LoanMarket, now including regulatory checks.
+     """
+     @abstractmethod
+-    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
++    def apply_for_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+         """
+         Processes a mortgage application.
+         - Enforces hard LTV/DTI limits from SimulationConfig.
+@@ -58,7 +59,7 @@ class ILoanMarket(ABC):
+         ...
+ 
+     @abstractmethod
+-    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
++    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
+         """
+         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
+         """
+diff --git a/modules/market/loan_api.py b/modules/market/loan_api.py
+new file mode 100644
+index 0000000..591cc49
+--- /dev/null
++++ b/modules/market/loan_api.py
+@@ -0,0 +1,15 @@
++from typing import TypedDict, Optional
++
++class MortgageApplicationRequestDTO(TypedDict):
++    """
++    [TD-206] A precise data contract for applying for a mortgage.
++    Sent by a saga or agent to the LoanMarket.
++    Explicitly requires existing monthly debt payments to resolve DTI calculation ambiguity.
++    """
++    applicant_id: int
++    requested_principal: float
++    property_id: int # Context for the loan (though loan is on agent, lien is on property)
++    property_value: float # For Loan-to-Value (LTV) calculation
++    applicant_monthly_income: float
++    existing_monthly_debt_payments: float # The SUM of all pre-existing monthly payments for other loans
++    loan_term: int # Optional, defaults to market standard if not provided, usually 360 ticks
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 669e655..1b6ba8c 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -34,8 +34,10 @@ from modules.household.consumption_manager import ConsumptionManager
+ from modules.household.decision_unit import DecisionUnit
+ from modules.household.dtos import (
+     HouseholdStateDTO, CloningRequestDTO, EconContextDTO,
+-    BioStateDTO, EconStateDTO, SocialStateDTO
++    BioStateDTO, EconStateDTO, SocialStateDTO,
++    HouseholdSnapshotDTO
+ )
++from modules.household.services import HouseholdSnapshotAssembler
+ from modules.household.api import (
+     HousingMarketUnitDTO, HousingMarketSnapshotDTO,
+     LoanMarketSnapshotDTO, LaborMarketSnapshotDTO,
+@@ -411,10 +413,30 @@ class Household(BaseAgent, ILearningAgent):
+         """Exposes home_quality_score from econ_state."""
+         return self._econ_state.home_quality_score
+ 
++    @property
++    def talent(self) -> "Talent":
++        """Exposes talent from econ_state."""
++        return self._econ_state.talent
++
++    @property
++    def demographics(self) -> "BioStateDTO":
++        """[Legacy] Exposes bio_state as demographics."""
++        return self._bio_state
++
+     # --- Methods ---
+ 
++    def create_snapshot_dto(self) -> HouseholdSnapshotDTO:
++        """
++        Creates a structured snapshot of the household's current state.
++        Uses HouseholdSnapshotAssembler to ensure deep copies of component states.
++        """
++        return HouseholdSnapshotAssembler.assemble(self)
++
+     def create_state_dto(self) -> HouseholdStateDTO:
+-        """Creates a comprehensive DTO of the household's current state (Adapter)."""
++        """
++        [DEPRECATED] Use create_snapshot_dto instead.
++        Creates a comprehensive DTO of the household's current state (Adapter).
++        """
+         return HouseholdStateDTO(
+             id=self.id,
+             assets=self._econ_state.assets,
+@@ -505,14 +527,24 @@ class Household(BaseAgent, ILearningAgent):
+         )
+ 
+         # 1. Prepare DTOs
+-        state_dto = self.create_state_dto()
++        # [TD-194] Use Snapshot DTO
++        snapshot_dto = self.create_snapshot_dto()
+         
+         # WO-103: Purity Guard - Prepare Config DTO
+         # self.config is already the DTO.
+         config_dto = self.config
+ 
++        # Backward compatibility for legacy DecisionEngine if it expects HouseholdStateDTO
++        # We can construct it from snapshot if needed, or pass snapshot if engine is updated.
++        # Ideally engines should be updated, but for now we might need to pass legacy DTO to context
++        # if DecisionContext expects it.
++        # Checking DecisionContext definition... it likely expects HouseholdStateDTO.
++        # But we are deprecating it.
++        # Let's create legacy DTO for the legacy context, but use Snapshot for Orchestration.
++        legacy_state_dto = self.create_state_dto()
++
+         context = DecisionContext(
+-            state=state_dto,
++            state=legacy_state_dto,
+             config=config_dto,
+             goods_data=goods_data,
+             market_data=market_data,
+@@ -541,7 +573,7 @@ class Household(BaseAgent, ILearningAgent):
+             current_time=current_time,
+             stress_scenario_config=stress_scenario_config,
+             config=self.config,
+-            household_state=state_dto,
++            household_state=snapshot_dto,
+             housing_system=input_dto.housing_system
+         )
+ 
+diff --git a/simulation/loan_market.py b/simulation/loan_market.py
+index c07c5e0..22dfbe8 100644
+--- a/simulation/loan_market.py
++++ b/simulation/loan_market.py
+@@ -6,7 +6,8 @@ from simulation.core_markets import Market
+ from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError, BorrowerProfileDTO
+ from modules.housing.dtos import MortgageApprovalDTO
+ # Import from new API
+-from modules.market.housing_planner_api import ILoanMarket, MortgageApplicationDTO
++from modules.market.housing_planner_api import ILoanMarket
++from modules.market.loan_api import MortgageApplicationRequestDTO
+ from modules.finance.api import LoanInfoDTO as LoanDTO
+ 
+ if TYPE_CHECKING:
+@@ -40,15 +41,16 @@ class LoanMarket(Market, ILoanMarket):
+             },
+         )
+ 
+-    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
++    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
+         """
+         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
+         Implements ILoanMarket.evaluate_mortgage_application.
++        Uses [TD-206] MortgageApplicationRequestDTO for precise DTI calculation.
+         """
+-        # Canonical Keys from housing_planner_api:
+-        # principal, property_value, applicant_income, applicant_existing_debt
++        # Canonical Keys from loan_api:
++        # requested_principal, property_value, applicant_monthly_income, existing_monthly_debt_payments
+ 
+-        principal = application.get('principal', 0.0)
++        principal = application.get('requested_principal', 0.0)
+         prop_value = application.get('property_value', 0.0)
+ 
+         if prop_value <= 0:
+@@ -89,8 +91,10 @@ class LoanMarket(Market, ILoanMarket):
+         # 2. DTI Check
+         applicant_id = application['applicant_id']
+ 
+-        annual_income = application.get('applicant_income', 0.0)
+-        existing_debt_total = application.get('applicant_existing_debt', 0.0)
++        # TD-206: Use precise monthly income and existing payments
++        monthly_income = application.get('applicant_monthly_income', 0.0)
++        existing_payment = application.get('existing_monthly_debt_payments', 0.0)
++
+         loan_term = application.get('loan_term', 360)
+ 
+         # Get Interest Rate
+@@ -99,35 +103,14 @@ class LoanMarket(Market, ILoanMarket):
+         else:
+              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
+ 
+-        # Calculate Payment
+-        # Monthly Payment for DTI
++        # Calculate Payment for NEW loan
+         monthly_rate = interest_rate / 12.0
+         if monthly_rate == 0:
+              new_payment = principal / loan_term
+         else:
+              new_payment = principal * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
+ 
+-        # Estimate Existing Debt Payment
+-        # Use existing Bank query to get accurate debt payments if possible
+-        existing_payment = 0.0
+-        try:
+-              debt_status = self.bank.get_debt_status(str(applicant_id))
+-              for l in debt_status['loans']:
+-                  r = l['interest_rate'] / 12.0
+-                  if r == 0:
+-                      payment = l['outstanding_balance'] / 360 # Default term assumption? Or use remaining term?
+-                  else:
+-                      payment = l['outstanding_balance'] * r # Simplified
+-                  existing_payment += payment
+-        except Exception:
+-              # Fallback: estimate from total debt reported in application
+-              if monthly_rate == 0:
+-                   existing_payment = existing_debt_total / 360
+-              else:
+-                   existing_payment = existing_debt_total * monthly_rate
+-
+         total_monthly_obligation = existing_payment + new_payment
+-        monthly_income = annual_income / 12.0
+ 
+         if monthly_income <= 0:
+              dti = float('inf')
+@@ -140,14 +123,14 @@ class LoanMarket(Market, ILoanMarket):
+ 
+         return True
+ 
+-    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
++    def apply_for_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+         """
+         Processes a mortgage application with regulatory checks.
+         Returns LoanInfoDTO if approved, None otherwise.
+         """
+         return self.stage_mortgage(application)
+ 
+-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
++    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+         """
+         Stages a mortgage (creates loan record) without disbursing funds.
+         Returns LoanInfoDTO if successful, None otherwise.
+@@ -163,7 +146,7 @@ class LoanMarket(Market, ILoanMarket):
+         else:
+              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
+ 
+-        principal = application.get('principal', 0.0)
++        principal = application.get('requested_principal', 0.0)
+ 
+         loan_info = self.bank.stage_loan(
+             borrower_id=str(application['applicant_id']),
+@@ -207,7 +190,7 @@ class LoanMarket(Market, ILoanMarket):
+              return True
+         return False
+ 
+-    def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
++    def request_mortgage(self, application: MortgageApplicationRequestDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
+         """
+         Legacy/Compat method.
+         Calls evaluate, then Bank.grant_loan (Full execution).
+@@ -216,7 +199,7 @@ class LoanMarket(Market, ILoanMarket):
+             return None
+ 
+         # Execute
+-        principal = application['principal']
++        principal = application['requested_principal']
+         applicant_id = application['applicant_id']
+         loan_term = application.get('loan_term', 360)
+ 
+diff --git a/simulation/systems/housing_system.py b/simulation/systems/housing_system.py
+index 46d3ba6..521e045 100644
+--- a/simulation/systems/housing_system.py
++++ b/simulation/systems/housing_system.py
+@@ -12,6 +12,7 @@ from modules.market.housing_purchase_api import (
+     HousingPurchaseSagaDataDTO,
+     MortgageApplicationDTO
+ )
++from modules.market.loan_api import MortgageApplicationRequestDTO
+ 
+ 
+ if TYPE_CHECKING:
+@@ -133,6 +134,36 @@ class HousingSystem:
+         })
+         logger.info(f"SAGA_QUEUED | Saga queued for buyer {buyer_id} property {decision['target_property_id']}")
+ 
++    def _calculate_total_monthly_debt_payments(self, agent_id: int, bank_service: Any) -> float:
++        """
++        Helper to calculate total monthly debt payments for an agent.
++        Iterates over all loans and sums their monthly obligations.
++        """
++        existing_debt_payments = 0.0
++        if bank_service and hasattr(bank_service, 'get_debt_status'):
++             try:
++                 debt_status = bank_service.get_debt_status(str(agent_id))
++                 # Calculate total monthly payment from loans
++                 # Assuming loans have 'outstanding_balance' and 'interest_rate'
++                 for loan in debt_status.get('loans', []):
++                     # Estimate monthly payment
++                     balance = loan.get('outstanding_balance', 0.0)
++                     rate = loan.get('interest_rate', 0.05)
++                     # Default assumption if not available (ideally loan DTO has remaining ticks)
++                     # Using 300 (30 years * 10 ticks/year?) or just a standard constant.
++                     # Let's use 360 ticks (standard 30 year monthly).
++                     term = 360
++
++                     monthly_rate = rate / 12.0
++                     if monthly_rate == 0:
++                         payment = balance / term
++                     else:
++                         payment = balance * (monthly_rate * (1 + monthly_rate)**term) / ((1 + monthly_rate)**term - 1)
++                     existing_debt_payments += payment
++             except Exception as e:
++                 logger.warning(f"Failed to fetch debt status for {agent_id}: {e}")
++        return existing_debt_payments
++
+     def _submit_saga_to_settlement(self, simulation: "Simulation", decision: HousingPurchaseDecisionDTO, buyer_id: int):
+         saga_id = str(uuid4())
+ 
+@@ -144,35 +175,17 @@ class HousingSystem:
+         # Gather data for Mortgage Application
+         household = simulation.agents.get(buyer_id)
+         annual_income = 0.0
+-        existing_debt_payments = 0.0
+ 
+         if household:
+              # Logic to estimate income
+              if hasattr(household, 'current_wage'):
+                   ticks_per_year = getattr(self.config, 'TICKS_PER_YEAR', 100)
++                  # Assuming current_wage is per tick? Or monthly?
++                  # Household model usually has current_wage.
+                   annual_income = household.current_wage * ticks_per_year
+ 
+-             # Logic to get existing debt payments
+-             if simulation.bank and hasattr(simulation.bank, 'get_debt_status'):
+-                 try:
+-                     debt_status = simulation.bank.get_debt_status(str(buyer_id))
+-                     # Calculate total monthly payment from loans
+-                     # Assuming loans have 'outstanding_balance' and 'interest_rate'
+-                     # We estimate payment or if LoanInfoDTO has it (it doesn't usually)
+-                     for loan in debt_status.get('loans', []):
+-                         # Estimate monthly payment
+-                         balance = loan.get('outstanding_balance', 0.0)
+-                         rate = loan.get('interest_rate', 0.05)
+-                         term = 300 # Default assumption if not available
+-
+-                         monthly_rate = rate / 12.0
+-                         if monthly_rate == 0:
+-                             payment = balance / term
+-                         else:
+-                             payment = balance * (monthly_rate * (1 + monthly_rate)**term) / ((1 + monthly_rate)**term - 1)
+-                         existing_debt_payments += payment
+-                 except Exception as e:
+-                     logger.warning(f"Failed to fetch debt status for {buyer_id}: {e}")
++        # [TD-206] Use helper for precise debt payments
++        existing_debt_payments = self._calculate_total_monthly_debt_payments(buyer_id, simulation.bank)
+ 
+         # Resolve seller
+         seller_id = -1
+@@ -190,13 +203,14 @@ class HousingSystem:
+         else:
+              loan_term = getattr(housing_config, 'mortgage_term_ticks', 300)
+ 
+-        mortgage_app = MortgageApplicationDTO(
++        # [TD-206] Use MortgageApplicationRequestDTO
++        mortgage_app = MortgageApplicationRequestDTO(
+             applicant_id=buyer_id,
++            requested_principal=principal,
+             property_id=prop_id,
+-            offer_price=offer_price,
+-            loan_principal=principal,
+-            applicant_gross_income=annual_income,
+-            applicant_existing_debt_payments=existing_debt_payments,
++            property_value=offer_price,
++            applicant_monthly_income=annual_income / 12.0, # Convert annual to monthly
++            existing_monthly_debt_payments=existing_debt_payments,
+             loan_term=loan_term
+         )
+ 
+diff --git a/tests/unit/household/test_snapshot_assembler.py b/tests/unit/household/test_snapshot_assembler.py
+new file mode 100644
+index 0000000..a7f2053
+--- /dev/null
++++ b/tests/unit/household/test_snapshot_assembler.py
+@@ -0,0 +1,82 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.core_agents import Household
++from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
++from modules.household.services import HouseholdSnapshotAssembler
++from simulation.ai.api import Personality
++from simulation.models import Talent
++
++class TestHouseholdSnapshotAssembler:
++
++    @pytest.fixture
++    def mock_household(self):
++        # Create a mock Household with mocked internal states
++        household = MagicMock(spec=Household)
++        household.id = 123
++
++        # Mock Bio State
++        bio_state = BioStateDTO(
++            id=123, age=30, gender="F", generation=1, is_active=True, needs={"survival": 50},
++            children_ids=[1, 2]
++        )
++        household._bio_state = bio_state
++
++        # Mock Econ State
++        econ_state = EconStateDTO(
++            assets=1000.0, inventory={"food": 10}, inventory_quality={}, durable_assets=[],
++            portfolio=MagicMock(), is_employed=True, employer_id=5, current_wage=100, wage_modifier=1.0,
++            labor_skill=0.8, education_xp=100, education_level=2, expected_wage=110, talent=Talent(1.0, 1.0, 1.0),
++            skills={}, aptitude=0.5, owned_properties=[], residing_property_id=None, is_homeless=False,
++            home_quality_score=1.0, housing_target_mode="RENT", housing_price_history=[], market_wage_history=[],
++            shadow_reservation_wage=90, last_labor_offer_tick=0, last_fired_tick=-1, job_search_patience=10,
++            employment_start_tick=0, current_consumption=10, current_food_consumption=5, expected_inflation={},
++            perceived_avg_prices={}, price_history={}, price_memory_length=10, adaptation_rate=0.1,
++            labor_income_this_tick=0, capital_income_this_tick=0
++        )
++        household._econ_state = econ_state
++
++        # Mock Social State
++        social_state = SocialStateDTO(
++            personality=Personality.CONSERVATIVE, social_status=0.5, discontent=0.1, approval_rating=50,
++            conformity=0.5, social_rank=0.5, quality_preference=0.5, brand_loyalty={}, last_purchase_memory={},
++            patience=0.5, optimism=0.5, ambition=0.5, last_leisure_type="IDLE"
++        )
++        household._social_state = social_state
++
++        return household
++
++    def test_assemble_snapshot_copies_state(self, mock_household):
++        """Verify that the assembler creates a snapshot with deep copies of the state."""
++        snapshot = HouseholdSnapshotAssembler.assemble(mock_household)
++
++        # Verify IDs match
++        assert snapshot.id == 123
++        assert snapshot.bio_state.id == 123
++
++        # Verify Content Matches
++        assert snapshot.bio_state.age == 30
++        assert snapshot.econ_state.assets == 1000.0
++        assert snapshot.social_state.personality == Personality.CONSERVATIVE
++
++        # Verify Independence (Copy Check)
++        # Modify the original household state
++        mock_household._bio_state.age = 31
++        mock_household._econ_state.assets = 2000.0
++        mock_household._bio_state.children_ids.append(3)
++
++        # Snapshot should remain unchanged
++        assert snapshot.bio_state.age == 30
++        assert snapshot.econ_state.assets == 1000.0
++        assert len(snapshot.bio_state.children_ids) == 2
++
++    def test_assemble_nested_structures(self, mock_household):
++        """Verify complex nested structures like inventory and needs are copied."""
++        snapshot = HouseholdSnapshotAssembler.assemble(mock_household)
++
++        # Modify nested dict in original
++        mock_household._bio_state.needs["survival"] = 0
++        mock_household._econ_state.inventory["food"] = 0
++
++        # Snapshot should persist
++        assert snapshot.bio_state.needs["survival"] == 50
++        assert snapshot.econ_state.inventory["food"] == 10
+diff --git a/tests/unit/markets/test_loan_market_mortgage.py b/tests/unit/markets/test_loan_market_mortgage.py
+index 1207c5d..19a0127 100644
+--- a/tests/unit/markets/test_loan_market_mortgage.py
++++ b/tests/unit/markets/test_loan_market_mortgage.py
+@@ -4,7 +4,7 @@ from typing import Any
+ 
+ from simulation.loan_market import LoanMarket
+ from simulation.bank import Bank
+-from modules.market.housing_planner_api import MortgageApplicationDTO
++from modules.market.loan_api import MortgageApplicationRequestDTO
+ from modules.finance.api import LoanInfoDTO
+ 
+ class TestLoanMarketMortgage:
+@@ -37,53 +37,77 @@ class TestLoanMarketMortgage:
+             )
+ 
+     def test_evaluate_mortgage_success(self, loan_market):
+-        app = MortgageApplicationDTO(
++        app = MortgageApplicationRequestDTO(
+             applicant_id=1,
+-            principal=80000.0,
+-            purpose="MORTGAGE",
++            requested_principal=80000.0,
+             property_id=100,
+             property_value=100000.0,
+-            applicant_income=60000.0,
+-            applicant_existing_debt=0.0,
++            applicant_monthly_income=5000.0, # 60k annual
++            existing_monthly_debt_payments=0.0,
+             loan_term=360
+         )
+         assert loan_market.evaluate_mortgage_application(app) is True
+ 
+     def test_evaluate_mortgage_fail_ltv(self, loan_market):
+-        app = MortgageApplicationDTO(
++        app = MortgageApplicationRequestDTO(
+             applicant_id=1,
+-            principal=90000.0, # 90% LTV
+-            purpose="MORTGAGE",
++            requested_principal=90000.0, # 90% LTV
+             property_id=100,
+             property_value=100000.0,
+-            applicant_income=200000.0, # High income, so DTI is fine
+-            applicant_existing_debt=0.0,
++            applicant_monthly_income=20000.0, # High income, so DTI is fine
++            existing_monthly_debt_payments=0.0,
+             loan_term=360
+         )
+         assert loan_market.evaluate_mortgage_application(app) is False
+ 
+     def test_evaluate_mortgage_fail_dti(self, loan_market):
+-        app = MortgageApplicationDTO(
++        # DTI limit 0.43
++        # Income 1000.
++        # Max obligation 430.
++        # Loan principal 80000. Rate 5% (0.00416/mo). Term 360.
++        # Payment approx 429.46
++        # If existing debt is 10, total 439.46 > 430. Fail.
++
++        # Let's use simpler numbers.
++        # Principal 100,000. Pmt ~536.
++        # Income 1000. DTI ~0.53 > 0.43. Fail.
++
++        app = MortgageApplicationRequestDTO(
+             applicant_id=1,
+-            principal=80000.0,
+-            purpose="MORTGAGE",
++            requested_principal=100000.0,
+             property_id=100,
+-            property_value=100000.0,
+-            applicant_income=10000.0, # Low income
+-            applicant_existing_debt=0.0,
++            property_value=200000.0, # LTV 50% OK
++            applicant_monthly_income=1000.0,
++            existing_monthly_debt_payments=0.0,
++            loan_term=360
++        )
++        assert loan_market.evaluate_mortgage_application(app) is False
++
++    def test_evaluate_mortgage_fail_dti_with_existing_debt(self, loan_market):
++        # Principal 50,000. Pmt ~268.
++        # Income 1000.
++        # Existing Debt Pmt 200.
++        # Total 468. Ratio 0.468 > 0.43. Fail.
++
++        app = MortgageApplicationRequestDTO(
++            applicant_id=1,
++            requested_principal=50000.0,
++            property_id=100,
++            property_value=200000.0,
++            applicant_monthly_income=1000.0,
++            existing_monthly_debt_payments=200.0, # Explicit existing debt
+             loan_term=360
+         )
+         assert loan_market.evaluate_mortgage_application(app) is False
+ 
+     def test_stage_mortgage_success(self, loan_market, mock_bank):
+-        app = MortgageApplicationDTO(
++        app = MortgageApplicationRequestDTO(
+             applicant_id=1,
+-            principal=80000.0,
+-            purpose="MORTGAGE",
++            requested_principal=80000.0,
+             property_id=100,
+             property_value=100000.0,
+-            applicant_income=60000.0,
+-            applicant_existing_debt=0.0,
++            applicant_monthly_income=5000.0,
++            existing_monthly_debt_payments=0.0,
+             loan_term=360
+         )
+ 
+@@ -98,14 +122,13 @@ class TestLoanMarketMortgage:
+         mock_bank.stage_loan.assert_called_once()
+ 
+     def test_stage_mortgage_fail_eval(self, loan_market, mock_bank):
+-        app = MortgageApplicationDTO(
++        app = MortgageApplicationRequestDTO(
+             applicant_id=1,
+-            principal=90000.0, # LTV Fail
+-            purpose="MORTGAGE",
++            requested_principal=90000.0, # LTV Fail
+             property_id=100,
+             property_value=100000.0,
+-            applicant_income=60000.0,
+-            applicant_existing_debt=0.0,
++            applicant_monthly_income=5000.0,
++            existing_monthly_debt_payments=0.0,
+             loan_term=360
+         )
+ 
+diff --git a/tests/unit/modules/housing/test_planner.py b/tests/unit/modules/housing/test_planner.py
+deleted file mode 100644
+index f63db4e..0000000
+--- a/tests/unit/modules/housing/test_planner.py
++++ /dev/null
+@@ -1,148 +0,0 @@
+-import unittest
+-from unittest.mock import MagicMock
+-from modules.housing.api import (
+-    HouseholdHousingStateDTO,
+-    HousingMarketStateDTO,
+-    RealEstateUnitDTO,
+-    HousingActionType,
+-    HousingDecisionDTO
+-)
+-from modules.housing.planner import HousingPlanner
+-
+-class TestHousingPlanner(unittest.TestCase):
+-
+-    def setUp(self):
+-        self.planner = HousingPlanner()
+-        self.config = MagicMock()
+-
+-        # Setup default config mock
+-        self.config.housing.RENT_TO_INCOME_RATIO_MAX = 0.3
+-        self.config.housing.FINANCIAL_DISTRESS_ASSET_THRESHOLD_MONTHS = 3.0
+-        self.config.housing.MORTGAGE_TO_INCOME_RATIO_MAX = 0.4
+-
+-        self.config.finance.MORTGAGE_DOWN_PAYMENT_RATE = 0.2
+-        self.config.finance.MORTGAGE_INTEREST_RATE = 0.05 # 5%
+-        self.config.finance.MORTGAGE_TERM_YEARS = 30
+-
+-    def test_priority1_homelessness_finds_rental(self):
+-        # Household: Homeless, income 5000/mo
+-        household = HouseholdHousingStateDTO(
+-            id=1, assets=10000, income=5000, is_homeless=True,
+-            residing_property_id=None, owned_property_ids=[], needs={}
+-        )
+-
+-        # Max rent = 5000 * 0.3 = 1500
+-
+-        # Market: One expensive unit, one affordable unit
+-        unit_expensive = RealEstateUnitDTO(
+-            id=101, owner_id=99, estimated_value=200000, rent_price=2000, for_sale_price=200000,
+-            on_market_for_rent=True, on_market_for_sale=False
+-        )
+-        unit_cheap = RealEstateUnitDTO(
+-            id=102, owner_id=99, estimated_value=100000, rent_price=1000, for_sale_price=100000,
+-            on_market_for_rent=True, on_market_for_sale=False
+-        )
+-
+-        market = HousingMarketStateDTO(units_for_sale=[], units_for_rent=[unit_expensive, unit_cheap])
+-
+-        decision = self.planner.evaluate_and_decide(household, market, self.config)
+-
+-        self.assertEqual(decision.action, HousingActionType.SEEK_RENTAL)
+-        self.assertEqual(decision.target_unit_id, 102)
+-
+-    def test_priority1_homelessness_cannot_afford_rental(self):
+-        # Household: Homeless, low income
+-        household = HouseholdHousingStateDTO(
+-            id=1, assets=0, income=1000, is_homeless=True,
+-            residing_property_id=None, owned_property_ids=[], needs={}
+-        )
+-        # Max rent = 300
+-
+-        unit = RealEstateUnitDTO(
+-            id=101, owner_id=99, estimated_value=100000, rent_price=500, for_sale_price=100000,
+-            on_market_for_rent=True, on_market_for_sale=False
+-        )
+-
+-        market = HousingMarketStateDTO(units_for_sale=[], units_for_rent=[unit])
+-
+-        decision = self.planner.evaluate_and_decide(household, market, self.config)
+-
+-        self.assertEqual(decision.action, HousingActionType.STAY)
+-        self.assertEqual(decision.justification, "Agent is homeless but cannot afford any available rentals.")
+-
+-    def test_priority2_financial_distress_sells_property(self):
+-        # Household: Owns property 202, low assets relative to income threshold
+-        # Threshold = income * 3.0
+-        income = 5000
+-        threshold = 15000
+-
+-        household = HouseholdHousingStateDTO(
+-            id=1, assets=5000, income=income, is_homeless=False,
+-            residing_property_id=202, owned_property_ids=[202], needs={}
+-        )
+-
+-        market = HousingMarketStateDTO(units_for_sale=[], units_for_rent=[])
+-
+-        decision = self.planner.evaluate_and_decide(household, market, self.config)
+-
+-        self.assertEqual(decision.action, HousingActionType.SELL_PROPERTY)
+-        self.assertEqual(decision.sell_unit_id, 202)
+-        self.assertIn("financial distress", decision.justification)
+-
+-    def test_priority3_upgrade_renter_buys_home(self):
+-        # Household: Renter (residing != owned), rich enough
+-        # Income 10000, Assets 100,000
+-        household = HouseholdHousingStateDTO(
+-            id=1, assets=100000, income=10000, is_homeless=False,
+-            residing_property_id=101, owned_property_ids=[], needs={}
+-        )
+-
+-        # House for sale: 300,000
+-        # Down payment (20%): 60,000 (Affordable, assets > 60k)
+-        # Loan: 240,000
+-        # Monthly payment approx: (240000 * 0.05 / 12) ~ 1000 (very rough estimate, assuming simple interest logic check)
+-        # Mortgage limit: 10000 * 0.4 = 4000
+-
+-        unit_sale = RealEstateUnitDTO(
+-            id=303, owner_id=99, estimated_value=300000, rent_price=0, for_sale_price=300000,
+-            on_market_for_rent=False, on_market_for_sale=True
+-        )
+-
+-        market = HousingMarketStateDTO(units_for_sale=[unit_sale], units_for_rent=[])
+-
+-        decision = self.planner.evaluate_and_decide(household, market, self.config)
+-
+-        self.assertEqual(decision.action, HousingActionType.SEEK_PURCHASE)
+-        self.assertEqual(decision.target_unit_id, 303)
+-
+-    def test_priority3_upgrade_renter_cannot_afford_down_payment(self):
+-        # Household: Renter, decent income but low assets
+-        household = HouseholdHousingStateDTO(
+-            id=1, assets=10000, income=10000, is_homeless=False,
+-            residing_property_id=101, owned_property_ids=[], needs={}
+-        )
+-
+-        # House 300,000 -> Down payment 60,000
+-        unit_sale = RealEstateUnitDTO(
+-            id=303, owner_id=99, estimated_value=300000, rent_price=0, for_sale_price=300000,
+-            on_market_for_rent=False, on_market_for_sale=True
+-        )
+-
+-        market = HousingMarketStateDTO(units_for_sale=[unit_sale], units_for_rent=[])
+-
+-        decision = self.planner.evaluate_and_decide(household, market, self.config)
+-
+-        self.assertEqual(decision.action, HousingActionType.STAY)
+-
+-    def test_default_stay(self):
+-        # Household: Renter, comfortable, no houses for sale, no distress
+-        household = HouseholdHousingStateDTO(
+-            id=1, assets=50000, income=5000, is_homeless=False,
+-            residing_property_id=101, owned_property_ids=[], needs={}
+-        )
+-
+-        market = HousingMarketStateDTO(units_for_sale=[], units_for_rent=[])
+-
+-        decision = self.planner.evaluate_and_decide(household, market, self.config)
+-
+-        self.assertEqual(decision.action, HousingActionType.STAY)
+diff --git a/tests/utils/factories.py b/tests/utils/factories.py
+index b88915d..65c321b 100644
+--- a/tests/utils/factories.py
++++ b/tests/utils/factories.py
+@@ -84,6 +84,18 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
+         "survival_bid_premium": 0.2,
+         "elasticity_mapping": {"DEFAULT": 1.0},
+         "max_willingness_to_pay_multiplier": 1.5,
++            "initial_household_age_range": (20, 60),
++            "initial_aptitude_distribution": (0.5, 0.1),
++            "emergency_liquidation_discount": 0.5,
++            "emergency_stock_liquidation_fallback_price": 5.0,
++            "distress_grace_period_ticks": 10,
++            "ai_epsilon_decay_params": {"start": 1.0, "end": 0.1, "decay": 0.99},
++            "housing_npv_horizon_years": 10,
++            "housing_npv_risk_premium": 0.02,
++            "mortgage_default_down_payment_rate": 0.2,
++            "age_death_probabilities": {80: 0.1},
++            "fallback_survival_cost": 10.0,
++            "base_labor_skill": 1.0,
+     }
+     defaults.update(kwargs)
+     return HouseholdConfigDTO(**defaults)
+@@ -146,6 +158,8 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
+         "fire_sale_cost_discount": 0.8,
+         "sale_timeout_ticks": 10,
+         "dynamic_price_reduction_factor": 0.05,
++            "ai_epsilon_decay_params": {"start": 1.0, "end": 0.1, "decay": 0.99},
++            "ai_reward_brand_value_multiplier": 1.0,
+     }
+     defaults.update(kwargs)
+     return FirmConfigDTO(**defaults)

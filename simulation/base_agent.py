@@ -2,12 +2,13 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, TYPE_CHECKING
 import logging
 from modules.finance.api import InsufficientFundsError
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
 
 
-class BaseAgent(ABC):
+class BaseAgent(ICurrencyHolder, ABC):
     def __init__(
         self,
         id: int,
@@ -20,7 +21,11 @@ class BaseAgent(ABC):
         memory_interface: Optional["MemoryV2Interface"] = None,
     ):
         self.id = id
-        self._assets = initial_assets
+        self._assets: Dict[CurrencyCode, float] = {}
+        if isinstance(initial_assets, dict):
+            self._assets = initial_assets.copy()
+        else:
+            self._assets[DEFAULT_CURRENCY] = float(initial_assets)
         self.needs = initial_needs
         self.decision_engine = decision_engine
         self.value_orientation = value_orientation
@@ -41,47 +46,44 @@ class BaseAgent(ABC):
         self.memory_v2 = memory_interface
 
     @property
-    def assets(self) -> float:
-        """Current assets (Read-Only)."""
+    def assets(self) -> Dict[CurrencyCode, float]:
+        """Current assets keyed by currency (Read-Only)."""
         return self._assets
 
-    def _internal_add_assets(self, amount: float) -> None:
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+        """Implementation of ICurrencyHolder."""
+        return self._assets.copy()
+
+    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Increase assets.
-        MUST ONLY BE CALLED BY:
-        1. SettlementSystem.transfer (Normal Operation) via deposit()
-        2. System Managers for Minting (e.g. Bank Credit Creation, Reflux Alchemy) WITH corresponding Ledger Update via deposit()
-
-        DO NOT CALL DIRECTLY for standard transfers. Use SettlementSystem.
         """
-        self._assets += amount
+        if currency not in self._assets:
+            self._assets[currency] = 0.0
+        self._assets[currency] += amount
 
-    def _internal_sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Decrease assets.
-        MUST ONLY BE CALLED BY:
-        1. SettlementSystem.transfer (Normal Operation) via withdraw()
-
-        DO NOT CALL DIRECTLY. Use SettlementSystem.
         """
-        self._assets -= amount
+        if currency not in self._assets:
+             self._assets[currency] = 0.0
+        self._assets[currency] -= amount
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the entity's account."""
         if amount > 0:
-            self._internal_add_assets(amount)
+            self._internal_add_assets(amount, currency)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Withdraws a given amount from the entity's account.
-
-        Raises:
-            InsufficientFundsError: If the withdrawal amount exceeds available funds.
         """
         if amount > 0:
-            if self.assets < amount:
-                raise InsufficientFundsError(f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self._internal_sub_assets(amount)
+            current_bal = self._assets.get(currency, 0.0)
+            if current_bal < amount:
+                raise InsufficientFundsError(f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f} {currency}. Available: {current_bal:.2f}")
+            self._internal_sub_assets(amount, currency)
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""

@@ -7,6 +7,7 @@ import copy
 from simulation.ai.api import Personality
 from simulation.models import Share, Skill, Talent, Order
 from simulation.portfolio import Portfolio
+from modules.system.api import CurrencyCode # Added for Phase 33
 
 if TYPE_CHECKING:
     from simulation.core_markets import Market
@@ -36,7 +37,7 @@ class BioStateDTO:
 class EconStateDTO:
     """Internal state for EconComponent."""
     # Assets & Inventory
-    assets: float
+    assets: Dict[CurrencyCode, float] # Changed for Phase 33
     inventory: Dict[str, float]
     inventory_quality: Dict[str, float]
     durable_assets: List[Dict[str, Any]]
@@ -173,7 +174,7 @@ class HouseholdStateDTO:
     Used by the DecisionEngine to make decisions without direct dependency on the Household class.
     """
     id: int
-    assets: float
+    assets: Dict[CurrencyCode, float] # Changed for Phase 33
     inventory: Dict[str, float]
     needs: Dict[str, float]
     preference_asset: float
@@ -211,7 +212,7 @@ class HouseholdStateDTO:
 class CloningRequestDTO:
     """Data required to clone a household."""
     new_id: int
-    initial_assets_from_parent: float
+    initial_assets_from_parent: Dict[CurrencyCode, float] # Changed for Phase 33
     current_tick: int
 
 @dataclass

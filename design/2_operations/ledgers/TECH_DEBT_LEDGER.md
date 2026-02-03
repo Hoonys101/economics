@@ -4,9 +4,7 @@
 
 ## 🏛️ 1. AGENTS & POPULATIONS (`ARCH_AGENTS.md`)
 
-| ID | Date | Description | Impact | Refs | Status |
-|---|---|---|---|---|---|
-| TD-180 | 2026-02-01 | TestFile Bloat: `test_firm_decision_engine_new.py` | 828 lines | [Spec](../../3_work_artifacts/specs/spec_td180_test_refactor.md) | **WARNING** |
+| (Empty) | | | | | |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -48,6 +46,7 @@
 |---|---|---|---|---|---|
 | TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | - | **LOW** |
 | TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | - | **HIGH** |
+| TD-210 | 2026-02-04 | Test Dependency Bloat (`numpy`) | `conftest.py` imports CentralBank | [Review](../../_archive/gemini_output/pr_review_settlement-system-tests-2138438581752818541.md) | **LOW** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
@@ -63,6 +62,8 @@
 | TD-205 | 2026-02-03 | Phase3_Transaction God Class | Responsibility overload | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
 | TD-161 | 2026-02-03 | RealEstateUnit Dependency | Encapsulation breach | [Insight](../../communications/insights/TD-161_SRP.md) | **HIGH** |
 | TD-207 | 2026-02-03 | Synchronous Loan Staging | Logic drift | - | **LOW** |
+| TD-208 | 2026-02-04 | Secured Loan SRP (Liquidation) | Logic inside Manager | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
+| TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | String-based IDs in Registry | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 
 ---
 
@@ -81,7 +82,10 @@
 | TD-198 | 2026-02-03 | MortgageApplicationDTO Inconsistency | [Spec](../../3_work_artifacts/specs/spec_h1_housing_v3_saga_blueprint.md) | [Insight](../../communications/insights/TD-198_SAGA.md) |
 | TD-195 | 2026-02-03 | Loan ID Consistency (Int vs Str) | ^ | ^ |
 | TD-199 | 2026-02-03 | SettlementSystem Mocking Fragility | ^ | ^ |
+| TD-180 | 2026-02-04 | Test Suite Bloat & Factory Sync | [Spec](../../3_work_artifacts/specs/spec_td180_test_refactor.md) | [Insight](../../communications/insights/TD-180-Test-Refactor.md) |
+| TD-190 | 2026-02-04 | Config Shadowing & God Object | [Spec](../../3_work_artifacts/specs/spec_td190_config_refactor.md) | [Insight](../../communications/insights/TD-190_Config_Refactor.md) |
+| TD-161 | 2026-02-04 | Registry Decoupling & Phase Decomposition | [Spec](../../3_work_artifacts/specs/spec_td161_arch_refactor.md) | [Insight](../../communications/insights/TD-161_Architecture_Refactoring.md) |
 
 ---
 
-> **Note**: For details on active items like **TD-161** (RealEstateUnit Registry Dependency), see [Insight: TD-161](../../communications/insights/TD-161_SRP.md).
+> **Note**: For details on active items, see relevant insights.
