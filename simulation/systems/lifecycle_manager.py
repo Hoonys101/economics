@@ -211,8 +211,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 agent.settlement_system = self.settlement_system
 
             if state.stock_market:
-                for firm_id, qty in agent.shares_owned.items():
-                    state.stock_market.update_shareholder(agent.id, firm_id, qty)
+                for firm_id, holding in agent.portfolio.holdings.items():
+                    state.stock_market.update_shareholder(agent.id, firm_id, holding.quantity)
 
             if state.ai_training_manager:
                 state.ai_training_manager.agents.append(agent)

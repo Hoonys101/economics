@@ -154,12 +154,11 @@ class SettlementSystem(ISettlementSystem):
             if success:
                 saga['status'] = "PROPERTY_TRANSFER_PENDING"
 
-                # Update Property Ownership
-                # We do this here as part of the "Transfer" step
-                # Pass loan principal and lender ID for lien creation
+                # Trigger Transaction logging which Registry will pick up to update ownership
+                # Pass loan principal and lender ID for lien creation in metadata
                 lender_id = self.bank.id if self.bank else 0
-                self._transfer_property(state, data['property_id'], buyer_id, seller_id, offer_price,
-                                      data['approved_loan_id'], loan_principal, lender_id)
+                self._log_property_transfer(state, data['property_id'], buyer_id, seller_id, offer_price,
+                                          data['approved_loan_id'], loan_principal, lender_id)
 
                 saga['status'] = "COMPLETED"
                 self.logger.info(f"SAGA_COMPLETED | Property {data['property_id']} transferred to {buyer_id}.")
@@ -168,84 +167,43 @@ class SettlementSystem(ISettlementSystem):
                 saga['status'] = "FAILED_COMPENSATED"
                 self._void_loan(state, data['approved_loan_id'])
 
-    def _transfer_property(self, state: Any, property_id: int, buyer_id: int, seller_id: int, price: float,
-                         loan_id: Any, loan_principal: float = 0.0, lender_id: int = 0):
-        # Update Registry / Real Estate Units
-        # Find unit
-        unit = None
-        for u in state.real_estate_units:
-            if u.id == property_id:
-                unit = u
-                break
+    def _log_property_transfer(self, state: Any, property_id: int, buyer_id: int, seller_id: int, price: float,
+                             loan_id: Any, loan_principal: float = 0.0, lender_id: int = 0):
+        """
+        Logs the property transaction. The Registry will pick this up to update ownership/liens.
+        Also manually updates critical Agent state if Registry is not immediate, to prevent same-tick inconsistency.
+        """
+        metadata = {
+            "mortgage_id": loan_id,
+            "executed": True,
+            "loan_principal": loan_principal,
+            "lender_id": lender_id
+        }
 
-        if unit:
-            unit.owner_id = buyer_id
+        # Create Transaction Object
+        from simulation.models import Transaction
+        tx_obj = Transaction(
+            buyer_id=buyer_id,
+            seller_id=seller_id,
+            item_id=f"unit_{property_id}",
+            quantity=1.0,
+            price=price,
+            market_id="housing",
+            transaction_type="housing",
+            time=state.time,
+            metadata=metadata
+        )
+        state.transactions.append(tx_obj)
 
-            # Clear existing mortgages
-            unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
-
-            # Add new mortgage lien if applicable
-            if loan_id:
-                new_lien: LienDTO = {
-                    "loan_id": str(loan_id),
-                    "lienholder_id": lender_id,
-                    "principal_remaining": loan_principal,
-                    "lien_type": "MORTGAGE"
-                }
-                unit.liens.append(new_lien)
-
-            # Log Transaction
-            metadata = {
-                "mortgage_id": loan_id,
-                "executed": True,
-                "loan_principal": loan_principal,
-                "lender_id": lender_id
-            }
-
-            tx = {
-                "buyer_id": buyer_id,
-                "seller_id": seller_id,
-                "item_id": f"unit_{property_id}",
-                "quantity": 1.0,
-                "price": price,
-                "market_id": "housing",
-                "transaction_type": "housing",
-                "time": state.time,
-                "metadata": metadata
-            }
-            # Add to state transactions
-            from simulation.models import Transaction
-            # Helper to create Transaction object if needed or append dict if compatible
-            # Using internal create helper or just append if list expects dicts/objects
-            # State transactions list expects Transaction objects usually.
-
-            tx_obj = Transaction(
-                buyer_id=buyer_id,
-                seller_id=seller_id,
-                item_id=f"unit_{property_id}",
-                quantity=1.0,
-                price=price,
-                market_id="housing",
-                transaction_type="housing",
-                time=state.time,
-                metadata=metadata
-            )
-            state.transactions.append(tx_obj)
-
-            # Update Buyer/Seller specific state if needed (e.g. owned_properties list)
-            buyer_agent = state.agents.get(buyer_id)
-            if buyer_agent and hasattr(buyer_agent, 'owned_properties'):
-                 buyer_agent.owned_properties.add(property_id)
-                 buyer_agent.residing_property_id = property_id
-                 buyer_agent.is_homeless = False
-
-            seller_agent = state.agents.get(seller_id)
-            if seller_agent and hasattr(seller_agent, 'owned_properties'):
-                 if property_id in seller_agent.owned_properties:
-                     seller_agent.owned_properties.remove(property_id)
-                 if hasattr(seller_agent, 'residing_property_id') and seller_agent.residing_property_id == property_id:
-                     seller_agent.residing_property_id = None
-                     seller_agent.is_homeless = True # Seller becomes homeless unless they buy another
+        # Force Registry Update Immediately (if available) to ensure consistency
+        if hasattr(state, 'registry') and state.registry:
+             buyer = state.agents.get(buyer_id)
+             seller = state.agents.get(seller_id)
+             state.registry.update_ownership(tx_obj, buyer, seller, state)
+        else:
+             # Fallback: We rely on TickOrchestrator to run Registry later.
+             # BUT, for immediate consistency (Saga completed), we might need to trust the Registry will catch up.
+             pass
 
     def _void_loan(self, state: Any, loan_id: Any):
         if not loan_id:

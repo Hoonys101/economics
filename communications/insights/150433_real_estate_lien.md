@@ -14,28 +14,27 @@ This mission implemented the `Lien` data structure in `RealEstateUnit`, replacin
     - `LienDTO`, `MortgageApplicationDTO` defined in `modules/finance/api.py`.
     - `modules/market/housing_planner_api.py` and `modules/housing/dtos.py` now import `MortgageApplicationDTO` from `finance/api.py`.
 - **Logic Updates**:
-    - `SettlementSystem`, `HousingSystem`, `Registry`, and `HousingTransactionHandler` updated to manipulate `liens` list instead of `mortgage_id`.
-    - `SettlementSystem` now includes `loan_principal` and `lender_id` in transaction metadata to ensure `Registry` can accurately reconstruct Lien data.
+    - `SettlementSystem` now triggers state updates via Transaction logging (metadata: `mortgage_id`, `loan_principal`, `lender_id`) rather than direct mutation, making `Registry` the single source of truth.
+    - `Registry._handle_housing_registry` logic updated to reconstruct `liens` from transaction metadata.
+    - `HousingSystem` and `HousingTransactionHandler` updated to manipulate `liens` list.
+- **Regression Fixes**:
+    - Fixed `LifecycleManager` regression by replacing deprecated `agent.shares_owned` with `agent.portfolio.holdings`.
+    - Fixed `verify_mortgage_pipeline_integrity.py` mock configuration for regulatory checks.
 
 ## 3. Technical Debt & Insights
 
 ### 3.1. Type Hint Mismatch Resolved
 The `RealEstateUnit.mortgage_id` type hint was `Optional[int]`, but the system consistently used string IDs (e.g., `"loan_123"`). This mismatch was corrected by defining `LienDTO.loan_id` as `str` and updating the `RealEstateUnit.mortgage_id` property return type to `Optional[str]`.
 
-### 3.2. Redundant State Updates (Critical)
-Both `SettlementSystem._transfer_property` and `Registry._handle_housing_registry` update the `RealEstateUnit` state.
-- `SettlementSystem` updates it directly during execution.
-- `Registry` updates it reactively when processing the transaction log.
-**Risk**: If logic diverges, the state might be inconsistent depending on when it is read (pre- or post-Registry update). Currently, both are synchronized to update `liens`, but this duplication violates the Single Source of Truth principle.
+### 3.2. Single Source of Truth Enforced
+Previously, `SettlementSystem` and `Registry` both updated `RealEstateUnit` state, risking divergence. The `SettlementSystem._transfer_property` method was refactored to `_log_property_transfer`, which creates a Transaction with rich metadata. The `Registry` is now the sole authority for updating ownership and liens based on these transactions.
 
 ### 3.3. Dependency Injection in Data Models
 `RealEstateUnit` is a dataclass but now requires `IRealEstateRegistry` to function fully (`is_under_contract`). The current implementation uses an optional field `_registry_dependency` that defaults to `None`.
 **Recommendation**: Move behavioral logic (checking contract status) out of the data model (`RealEstateUnit`) and into a Service (e.g., `HousingService` or `Registry`). Data models should ideally be anemic (pure state) in this architecture.
 
-### 3.4. Unrelated Regression in Household/Lifecycle
-During verification (`scripts/generate_golden_fixtures.py`), the simulation crashed at tick 19 with:
-`AttributeError: 'Household' object has no attribute 'shares_owned'` in `simulation/systems/lifecycle_manager.py`.
-This indicates that `Household` decomposition (moving shares to `portfolio`) has broken `LifecycleManager`, which still expects the old attribute. This prevented full fixture regeneration.
+### 3.4. Transaction Metadata as Protocol
+The `Transaction` model's `metadata` field is now critical for `Registry` to function correctly (reconstructing Liens). The fields `loan_principal` and `lender_id` must be preserved in any future transaction schema changes.
 
-### 3.5. Transaction Metadata Quality
-The `Transaction` model's `metadata` field is now critical for `Registry` to function correctly (reconstructing Liens). I added `loan_principal` and `lender_id` to the metadata in `SettlementSystem`. Future changes to Transaction structure must ensure these fields are preserved.
+### 3.5. Simulation Stability
+The `LifecycleManager` fix (using `portfolio`) restored simulation stability, allowing successful generation of golden fixtures up to tick 100. This highlights the importance of comprehensive regression testing when refactoring core agent attributes.
