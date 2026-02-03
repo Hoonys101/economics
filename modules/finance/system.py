@@ -3,6 +3,8 @@ import logging
 from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
+from modules.simulation.api import EconomicIndicatorsDTO
+from modules.system.api import DEFAULT_CURRENCY
 # Forward reference for type hinting
 from simulation.firms import Firm
 from simulation.models import Transaction
@@ -59,7 +61,15 @@ class FinanceSystem(IFinanceSystem):
 
         # Use FiscalMonitor for risk assessment
         world_dto = getattr(self.government, 'sensory_data', None)
-        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, world_dto)
+
+        # Adapter: Convert GovernmentStateDTO to EconomicIndicatorsDTO if needed
+        indicator_dto = world_dto
+        if world_dto and not isinstance(world_dto, EconomicIndicatorsDTO):
+             # Assume GovernmentStateDTO which has current_gdp
+             current_gdp = getattr(world_dto, 'current_gdp', 0.0)
+             indicator_dto = EconomicIndicatorsDTO(gdp=current_gdp, cpi=0.0)
+
+        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, indicator_dto)
 
         # Config-driven risk premium tiers
         risk_premium_tiers = self.config_module.get("economy_params.DEBT_RISK_PREMIUM_TIERS", {
@@ -151,7 +161,15 @@ class FinanceSystem(IFinanceSystem):
 
         # Use FiscalMonitor for risk assessment
         world_dto = getattr(self.government, 'sensory_data', None)
-        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, world_dto)
+
+        # Adapter: Convert GovernmentStateDTO to EconomicIndicatorsDTO if needed
+        indicator_dto = world_dto
+        if world_dto and not isinstance(world_dto, EconomicIndicatorsDTO):
+             # Assume GovernmentStateDTO which has current_gdp
+             current_gdp = getattr(world_dto, 'current_gdp', 0.0)
+             indicator_dto = EconomicIndicatorsDTO(gdp=current_gdp, cpi=0.0)
+
+        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, indicator_dto)
 
         # Config-driven risk premium tiers
         risk_premium_tiers = self.config_module.get("economy_params.DEBT_RISK_PREMIUM_TIERS", {
@@ -198,8 +216,13 @@ class FinanceSystem(IFinanceSystem):
              # Check Solvency (Optimistic)
              # Bank is the primary liquidity provider. It should buy all if possible.
              if buyer == self.bank:
-                  if buyer.assets < purchase_amount:
-                      logger.warning(f"BOND_SYNC_FAIL | Bank has {buyer.assets}, needed {purchase_amount}")
+                  buyer_assets_raw = buyer.assets
+                  buyer_assets_val = buyer_assets_raw
+                  if isinstance(buyer_assets_raw, dict):
+                      buyer_assets_val = buyer_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
+                  if buyer_assets_val < purchase_amount:
+                      logger.warning(f"BOND_SYNC_FAIL | Bank has {buyer_assets_val}, needed {purchase_amount}")
                       continue
 
              # Execute Transfer
@@ -208,7 +231,8 @@ class FinanceSystem(IFinanceSystem):
                       debit_agent=buyer,
                       credit_agent=issuer,
                       amount=purchase_amount,
-                      memo=f"Bond Purchase from {buyer.id}"
+                      memo=f"Bond Purchase from {buyer.id}",
+                      currency=DEFAULT_CURRENCY
                   )
 
                   if success:

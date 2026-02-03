@@ -24,6 +24,7 @@ from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO, 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 import simulation
 
 # New Components

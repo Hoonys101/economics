@@ -9,6 +9,7 @@ from simulation.ai.enums import Tactic, Aggressiveness
 from .base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext
 from simulation.decisions.corporate_manager import CorporateManager
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -135,7 +136,11 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
         if not isinstance(fire_sale_asset_threshold, (int, float)): fire_sale_asset_threshold = 50.0
 
         # Use finance.balance
-        assets = firm_state.finance.balance
+        assets_raw = firm_state.finance.balance
+        assets = assets_raw
+        if isinstance(assets_raw, dict):
+            assets = assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
         is_distressed = assets < fire_sale_asset_threshold
 
         if is_distressed:

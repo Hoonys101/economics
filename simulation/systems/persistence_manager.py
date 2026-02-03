@@ -9,6 +9,7 @@ from simulation.dtos import (
 )
 from simulation.core_agents import Household
 from simulation.firms import Firm
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.engine import Simulation
@@ -91,6 +92,7 @@ class PersistenceManager:
                 item_id=tx.item_id,
                 quantity=tx.quantity,
                 price=tx.price,
+                currency=getattr(tx, 'currency', DEFAULT_CURRENCY),
                 market_id=tx.market_id,
                 transaction_type=tx.transaction_type,
             )
@@ -104,8 +106,18 @@ class PersistenceManager:
         total_capital_income = sum(getattr(h, "capital_income_this_tick", 0.0) for h in simulation.households)
 
         # Calculate Wealth Distribution (Snapshot)
-        total_assets = sum(h._econ_state.assets for h in simulation.households)
+        total_assets = sum(h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in simulation.households)
         
+        # Prepare asset dicts for DTO
+        hh_assets = tracker_indicators.get("total_household_assets", 0.0)
+        firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
+
+        # Wrap as dict if they are floats (backward compatibility check)
+        if isinstance(hh_assets, (int, float)):
+            hh_assets = {DEFAULT_CURRENCY: float(hh_assets)}
+        if isinstance(firm_assets, (int, float)):
+            firm_assets = {DEFAULT_CURRENCY: float(firm_assets)}
+
         indicator_dto = EconomicIndicatorData(
             run_id=self.run_id,
             time=time,
@@ -116,8 +128,8 @@ class PersistenceManager:
             avg_goods_price=tracker_indicators.get("avg_goods_price"),
             total_production=tracker_indicators.get("total_production", 0.0),
             total_consumption=tracker_indicators.get("total_consumption", 0.0),
-            total_household_assets=tracker_indicators.get("total_household_assets", 0.0),
-            total_firm_assets=tracker_indicators.get("total_firm_assets", 0.0),
+            total_household_assets=hh_assets,
+            total_firm_assets=firm_assets,
             avg_survival_need=tracker_indicators.get("avg_survival_need", 0.0),
             total_labor_income=total_labor_income,
             total_capital_income=total_capital_income,

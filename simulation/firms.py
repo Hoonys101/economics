@@ -15,7 +15,7 @@ from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
-from modules.system.api import MarketSnapshotDTO
+from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode
 
 # SoC Refactor
 from simulation.components.hr_department import HRDepartment
@@ -25,7 +25,6 @@ from simulation.components.sales_department import SalesDepartment
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
-from modules.system.api import MarketSnapshotDTO
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -355,8 +354,9 @@ class Firm(BaseAgent, ILearningAgent):
 
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
+        current_assets_val = self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
         self.logger.debug(
-            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.finance.balance:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
+            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={current_assets_val:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
             extra={
                 **log_extra,
                 "assets_before": self.finance.balance,
@@ -405,8 +405,9 @@ class Firm(BaseAgent, ILearningAgent):
              self._calculate_invisible_hand_price(market_snapshot, current_time)
 
         # SoC Refactor
+        current_assets_val_after = self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
         self.logger.debug(
-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.finance.balance:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
+            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={current_assets_val_after:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
             extra={
                 **log_extra,
                 "assets_after": self.finance.balance,

@@ -5,6 +5,7 @@ from .api import BaseAIEngine, Intention, Tactic, Aggressiveness
 from .enums import Personality
 from .q_table_manager import QTableManager
 from simulation.schemas import FirmActionVector
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.ai_model import AIDecisionEngine
@@ -64,7 +65,11 @@ class FirmAI(BaseAIEngine):
 
         # 2. Cash Level (Relative to costs/standard)
         # Simplified: Just log scale or relative
-        cash = agent_data.get("assets", 0)
+        assets_raw = agent_data.get("assets", 0)
+        cash = assets_raw
+        if isinstance(assets_raw, dict):
+            cash = assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
         cash_idx = self._discretize(cash, [100, 500, 1000, 5000, 10000])
 
         # 3. Debt Ratio
@@ -179,8 +184,16 @@ class FirmAI(BaseAIEngine):
         personality = firm_agent.personality
 
         # Common Metrics
-        current_assets = current_state.get("assets", 0.0)
-        prev_assets = prev_state.get("assets", 0.0)
+        current_assets_raw = current_state.get("assets", 0.0)
+        current_assets = current_assets_raw
+        if isinstance(current_assets_raw, dict):
+            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        prev_assets_raw = prev_state.get("assets", 0.0)
+        prev_assets = prev_assets_raw
+        if isinstance(prev_assets_raw, dict):
+            prev_assets = prev_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
         delta_assets = current_assets - prev_assets
 
         # Net Profit approximation (Asset Change is best proxy for realized profit + cash flow)

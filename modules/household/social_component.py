@@ -6,6 +6,7 @@ from modules.household.api import ISocialComponent
 from modules.household.dtos import SocialStateDTO
 from simulation.dtos import LeisureEffectDTO
 from simulation.ai.api import Personality
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import HouseholdConfigDTO
@@ -21,7 +22,7 @@ class SocialComponent(ISocialComponent):
     def calculate_social_status(
         self,
         state: SocialStateDTO,
-        assets: float,
+        assets: Any,
         luxury_inventory: Dict[str, float],
         config: HouseholdConfigDTO
     ) -> SocialStateDTO:
@@ -31,13 +32,18 @@ class SocialComponent(ISocialComponent):
         """
         new_state = state.copy()
 
+        # Handle Phase 33 Multi-Currency Assets
+        total_assets_val = assets
+        if isinstance(assets, dict):
+            total_assets_val = assets.get(DEFAULT_CURRENCY, 0.0)
+
         luxury_goods_value = sum(luxury_inventory.values()) # Assuming values are quantities?
 
         asset_weight = config.social_status_asset_weight
         luxury_weight = config.social_status_luxury_weight
 
         new_state.social_status = (
-            assets * asset_weight
+            total_assets_val * asset_weight
         ) + (luxury_goods_value * luxury_weight)
 
         return new_state
@@ -123,7 +129,7 @@ class SocialComponent(ISocialComponent):
         self,
         state: SocialStateDTO,
         bio_needs: Dict[str, float],
-        assets: float,
+        assets: Any,
         durable_assets: List[Dict[str, Any]],
         goods_info_map: Dict[str, Any],
         config: HouseholdConfigDTO,
@@ -138,6 +144,11 @@ class SocialComponent(ISocialComponent):
         new_state = state.copy()
         new_needs = bio_needs.copy()
         is_active = True
+
+        # Handle Phase 33 Multi-Currency Assets
+        total_assets_val = assets
+        if isinstance(assets, dict):
+            total_assets_val = assets.get(DEFAULT_CURRENCY, 0.0)
 
         # 1. Apply Durable Asset Utility (Depreciation & Satisfaction)
         living_assets = []
@@ -182,7 +193,7 @@ class SocialComponent(ISocialComponent):
         assets_death_threshold = config.assets_death_threshold
         turns_threshold = config.household_death_turns_threshold
 
-        if (assets <= assets_death_threshold or
+        if (total_assets_val <= assets_death_threshold or
             new_state.survival_need_high_turns >= turns_threshold):
             is_active = False
             # Logging handled by caller

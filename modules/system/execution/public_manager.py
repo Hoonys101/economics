@@ -20,6 +20,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
     """
 
     def __init__(self, config: Any):
+        self._id = 999999  # Fixed System ID for PublicManager
         self.config = config
         self.logger = logging.getLogger("PublicManager")
         self.managed_inventory: Dict[str, float] = defaultdict(float)

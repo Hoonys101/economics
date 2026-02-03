@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -73,15 +74,20 @@ class EconomicIndicatorTracker:
 
         # Perform calculations...
         total_household_assets = sum(
-            h._econ_state.assets for h in households if h._bio_state.is_active
+            h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in households if h._bio_state.is_active
         )
         # WO-106: Initial Sink Fix
         # Use get_financial_snapshot to include Capital Stock and Inventory in Total Assets
-        total_firm_assets = sum(
-            f.get_financial_snapshot().get("total_assets", f.assets)
-            if hasattr(f, "get_financial_snapshot") else f.assets
-            for f in firms if getattr(f, "is_active", False)
-        )
+        total_firm_assets = 0.0
+        for f in firms:
+             if not getattr(f, "is_active", False):
+                 continue
+
+             if hasattr(f, "get_financial_snapshot"):
+                 snap = f.get_financial_snapshot()
+                 total_firm_assets += snap.get("total_assets", f.assets.get(DEFAULT_CURRENCY, 0.0))
+             else:
+                 total_firm_assets += f.assets.get(DEFAULT_CURRENCY, 0.0)
         record["total_household_assets"] = total_household_assets
         record["total_firm_assets"] = total_firm_assets
 
@@ -292,20 +298,26 @@ class EconomicIndicatorTracker:
         # 1. Households
         for h in world_state.households:
             if h._bio_state.is_active:
-                total += h._econ_state.assets
+                total += h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
 
         # 2. Firms
         for f in world_state.firms:
             if getattr(f, "is_active", False):
-                total += f.assets
+                total += f.assets.get(DEFAULT_CURRENCY, 0.0)
 
         # 3. Bank Reserves
         if world_state.bank:
-            total += world_state.bank.assets
+            if isinstance(world_state.bank.assets, dict):
+                 total += world_state.bank.assets.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                 total += world_state.bank.assets
 
         # 4. Government Assets
         if world_state.government:
-            total += world_state.government.assets
+             if isinstance(world_state.government.assets, dict):
+                 total += world_state.government.assets.get(DEFAULT_CURRENCY, 0.0)
+             else:
+                 total += world_state.government.assets
 
         # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.
 

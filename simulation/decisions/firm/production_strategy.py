@@ -3,6 +3,7 @@ import logging
 from simulation.models import Order
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from simulation.decisions.firm.api import OperationsPlanDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,12 @@ class ProductionStrategy:
         cost = cost_per_pct * (gap * 100.0)
 
         safety_margin = config.firm_safety_margin
-        investable_cash = max(0.0, firm.finance.balance - safety_margin)
+        current_assets_raw = firm.finance.balance
+        current_assets = current_assets_raw
+        if isinstance(current_assets_raw, dict):
+            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        investable_cash = max(0.0, current_assets - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
         actual_spend = min(cost, budget)
@@ -126,12 +132,22 @@ class ProductionStrategy:
         if aggressiveness <= 0.1:
             return None
 
-        revenue_base = max(firm.finance.revenue_this_turn, firm.finance.balance * 0.05)
+        current_revenue_raw = firm.finance.revenue_this_turn
+        current_revenue = current_revenue_raw
+        if isinstance(current_revenue_raw, dict):
+            current_revenue = current_revenue_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        current_assets_raw = firm.finance.balance
+        current_assets = current_assets_raw
+        if isinstance(current_assets_raw, dict):
+            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        revenue_base = max(current_revenue, current_assets * 0.05)
         rd_budget_rate = aggressiveness * 0.20
         budget = revenue_base * rd_budget_rate
 
         safety_margin = config.firm_safety_margin
-        investable_cash = max(0.0, firm.finance.balance - safety_margin)
+        investable_cash = max(0.0, current_assets - safety_margin)
 
         if investable_cash < budget:
             budget = investable_cash * 0.5
@@ -149,7 +165,12 @@ class ProductionStrategy:
             return None
 
         safety_margin = config.firm_safety_margin
-        investable_cash = max(0.0, firm.finance.balance - safety_margin)
+        current_assets_raw = firm.finance.balance
+        current_assets = current_assets_raw
+        if isinstance(current_assets_raw, dict):
+            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        investable_cash = max(0.0, current_assets - safety_margin)
 
         budget = investable_cash * (aggressiveness * 0.5)
 
