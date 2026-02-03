@@ -3,22 +3,10 @@ from abc import ABC, abstractmethod
 from modules.household.dtos import HouseholdStateDTO
 from modules.system.api import HousingMarketSnapshotDTO
 from modules.finance.api import LoanInfoDTO as LoanDTO
+from modules.market.housing_planner_api import MortgageApplicationDTO
 
 # Pre-existing DTOs (Aliases if needed, or imported elsewhere)
 # from modules.market.housing_planner_api import HousingOfferRequestDTO, HousingDecisionDTO
-
-class MortgageApplicationDTO(TypedDict):
-    """
-    Formal mortgage application sent to the LoanMarket.
-    Contains all data required for LTV/DTI checks.
-    """
-    applicant_id: int
-    property_id: int
-    offer_price: float
-    loan_principal: float
-    applicant_gross_income: float
-    applicant_existing_debt_payments: float
-    loan_term: int
 
 class HousingPurchaseSagaDataDTO(TypedDict):
     """

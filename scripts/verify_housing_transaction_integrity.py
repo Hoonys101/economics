@@ -8,7 +8,8 @@ from uuid import uuid4
 sys.path.append(os.getcwd())
 
 from simulation.systems.settlement_system import SettlementSystem
-from modules.market.housing_purchase_api import HousingPurchaseSagaDTO, HousingPurchaseSagaDataDTO, MortgageApplicationDTO
+from modules.market.housing_purchase_api import HousingPurchaseSagaDTO, HousingPurchaseSagaDataDTO
+from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
 
 class TestAtomicHousingPurchaseV3(unittest.TestCase):
@@ -67,11 +68,12 @@ class TestAtomicHousingPurchaseV3(unittest.TestCase):
         saga_id = str(uuid4())
         mortgage_app = MortgageApplicationDTO(
             applicant_id=101,
+            principal=80000.0,
+            purpose="MORTGAGE",
             property_id=500,
-            offer_price=100000.0,
-            loan_principal=80000.0,
-            applicant_gross_income=60000.0,
-            applicant_existing_debt_payments=0.0,
+            property_value=100000.0,
+            applicant_income=60000.0,
+            applicant_existing_debt=0.0,
             loan_term=360
         )
         saga_data = HousingPurchaseSagaDataDTO(
@@ -145,11 +147,12 @@ class TestAtomicHousingPurchaseV3(unittest.TestCase):
         saga_id = str(uuid4())
         mortgage_app = MortgageApplicationDTO(
             applicant_id=101,
+            principal=80000.0,
+            purpose="MORTGAGE",
             property_id=500,
-            offer_price=100000.0,
-            loan_principal=80000.0,
-            applicant_gross_income=10000.0, # Low income
-            applicant_existing_debt_payments=0.0,
+            property_value=100000.0,
+            applicant_income=10000.0, # Low income
+            applicant_existing_debt=0.0,
             loan_term=360
         )
         saga_data = HousingPurchaseSagaDataDTO(
