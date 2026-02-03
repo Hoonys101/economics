@@ -9,7 +9,12 @@ from simulation.models import Order
 
 # New Imports
 from modules.market.housing_planner import HousingPlanner
-from modules.market.housing_planner_api import HousingOfferRequestDTO
+from modules.housing.dtos import (
+    HousingDecisionRequestDTO,
+    HousingPurchaseDecisionDTO,
+    HousingRentalDecisionDTO,
+    HousingStayDecisionDTO
+)
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import HouseholdConfigDTO
@@ -45,49 +50,37 @@ class DecisionUnit(IDecisionUnit):
         config = context["config"]
         stress_scenario_config = context["stress_scenario_config"]
         household_state = context["household_state"]
+        housing_system = context.get("housing_system")
 
         # 1. System 2 Housing Decision Logic (Delegated to HousingPlanner)
         if new_state.is_homeless or current_time % 30 == 0:
              # Construct Request
-             request = HousingOfferRequestDTO(
+             request = HousingDecisionRequestDTO(
                  household_state=household_state,
-                 housing_market_snapshot=market_snapshot.housing
+                 housing_market_snapshot=market_snapshot.housing,
+                 outstanding_debt_payments=0.0 # Placeholder: Planner uses assets check primarily
              )
 
              # Call Planner
              decision = self.housing_planner.evaluate_housing_options(request)
 
              # Process Decision
-             if decision['decision_type'] == "MAKE_OFFER":
-                 # Create Housing Order
-                 if decision['target_property_id'] and decision['offer_price']:
-                     metadata = {}
-                     if decision['loan_application']:
-                         metadata["loan_application"] = decision['loan_application']
-
-                     buy_order = Order(
-                         agent_id=state.portfolio.owner_id,
-                         side="BUY",
-                         item_id=decision['target_property_id'],
-                         quantity=1.0,
-                         price_limit=decision['offer_price'],
-                         market_id="housing",
-                         metadata=metadata
-                     )
-
-                     refined_orders.append(buy_order)
+             if decision['decision_type'] == "INITIATE_PURCHASE":
+                 if housing_system and hasattr(housing_system, 'initiate_purchase'):
+                     # Dispatch to Saga Handler
+                     housing_system.initiate_purchase(decision, buyer_id=state.portfolio.owner_id)
                      new_state.housing_target_mode = "BUY"
+                 else:
+                     # logger.warning("Housing System not available for purchase initiation.")
+                     pass
 
-             elif decision['decision_type'] == "RENT":
+             elif decision['decision_type'] == "MAKE_RENTAL_OFFER":
                  # Future: Create Rent Order. For now, we update target mode.
                  new_state.housing_target_mode = "RENT"
                  # If we had a mechanism to rent, we would append order here.
 
              elif decision['decision_type'] == "STAY":
                  new_state.housing_target_mode = "STAY"
-
-             elif decision['decision_type'] == "DO_NOTHING":
-                 pass
 
 
         # 2. Shadow Labor Market Logic
@@ -107,8 +100,6 @@ class DecisionUnit(IDecisionUnit):
             min_wage = config.household_min_wage_demand
             if new_state.shadow_reservation_wage < min_wage:
                 new_state.shadow_reservation_wage = min_wage
-
-        # 3. Generate Housing Orders (REMOVED - Handled in Step 1)
 
         # 4. Panic Selling
         if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':

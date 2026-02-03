@@ -4,6 +4,7 @@ import logging
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
 from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError
+from modules.housing.dtos import MortgageApplicationDTO, MortgageApprovalDTO
 
 if TYPE_CHECKING:
     from simulation.bank import Bank # For legacy casting if needed
@@ -34,6 +35,116 @@ class LoanMarket(Market):
                 "tags": ["init", "market"],
             },
         )
+
+    def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
+        """
+        Specialized method for handling mortgage applications with LTV/DTI checks.
+        Called by HousingTransactionSagaHandler.
+        """
+        # 1. LTV Check
+        prop_value = application['property_value']
+        principal = application['principal']
+        if prop_value <= 0:
+             return None
+        ltv = principal / prop_value
+
+        # Config access
+        housing_config = getattr(self.config_module, 'housing', None)
+        max_ltv = 0.8
+        max_dti = 0.43
+
+        if housing_config:
+             if isinstance(housing_config, dict):
+                 max_ltv = housing_config.get('max_ltv', 0.8)
+                 max_dti = housing_config.get('max_dti', 0.43)
+             else:
+                 max_ltv = getattr(housing_config, 'max_ltv', 0.8)
+                 max_dti = getattr(housing_config, 'max_dti', 0.43)
+
+        if ltv > max_ltv:
+             logger.info(f"LOAN_DENIED | LTV {ltv:.2f} > {max_ltv}")
+             return None
+
+        # 2. DTI Check
+        # Need income and existing debt
+        applicant_id = application['applicant_id']
+
+        # Calculate Monthly Payment
+        # Get rate
+        # Assuming bank.get_interest_rate() exists (it does in Bank implementation, but interface?)
+        # IBankService doesn't explicitly mandate get_interest_rate, but Bank implements it.
+        # We can default if missing.
+        if hasattr(self.bank, 'get_interest_rate'):
+             interest_rate = self.bank.get_interest_rate() # Annual
+        else:
+             interest_rate = 0.05 # Default
+
+        ticks_per_year = getattr(self.config_module, 'TICKS_PER_YEAR', 100)
+
+        # Mortgage term is usually in ticks or converted.
+        # Spec DTO says loan_term (int). Assuming ticks.
+        # Payment per tick
+        r_tick = interest_rate / ticks_per_year
+        n = application['loan_term']
+
+        if r_tick == 0:
+            payment_per_tick = principal / n
+        else:
+            payment_per_tick = principal * (r_tick * (1 + r_tick)**n) / ((1 + r_tick)**n - 1)
+
+        # Income
+        income = 0.0
+        if household_agent and hasattr(household_agent, 'current_wage'):
+             income = household_agent.current_wage
+
+        # Existing Debt Service
+        existing_debt_service = 0.0
+        try:
+            debt_status = self.bank.get_debt_status(str(applicant_id))
+            if debt_status and debt_status['loans']:
+                 for l in debt_status['loans']:
+                     # approximate payment per tick (interest only usually in this sim)
+                     rate_per_tick = l['interest_rate'] / ticks_per_year
+                     existing_debt_service += l['outstanding_balance'] * rate_per_tick
+        except Exception:
+             pass
+
+        total_obligation = existing_debt_service + payment_per_tick
+
+        if income <= 0:
+             dti = float('inf')
+        else:
+             dti = total_obligation / income
+
+        if dti > max_dti:
+             logger.info(f"LOAN_DENIED | DTI {dti:.2f} > {max_dti}")
+             return None
+
+        # 3. Approve
+        due_tick = current_tick + application['loan_term']
+
+        grant_result = self.bank.grant_loan(
+            borrower_id=str(applicant_id),
+            amount=principal,
+            interest_rate=interest_rate,
+            due_tick=due_tick
+        )
+
+        if grant_result:
+             loan_info, _ = grant_result
+
+             try:
+                 loan_id_int = int(loan_info['loan_id'].split('_')[1])
+             except (IndexError, ValueError):
+                 loan_id_int = hash(loan_info['loan_id']) % 10000000 # Fallback
+
+             return MortgageApprovalDTO(
+                 loan_id=loan_id_int,
+                 approved_principal=loan_info['original_amount'],
+                 monthly_payment=payment_per_tick
+             )
+
+        return None
 
     def place_order(self, order: Order, current_tick: int) -> List[Transaction]:
         """Submits a loan request or repayment order to the bank service."""
