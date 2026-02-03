@@ -1,6 +1,11 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import TypedDict, List, Dict, Optional, Any, Protocol
+from typing import TypedDict, List, Dict, Optional, Any, Protocol, TYPE_CHECKING
+from abc import ABC, abstractmethod
+
+if TYPE_CHECKING:
+    from simulation.agents import Agent
+    from simulation.dtos.api import SimulationState
 
 # --- DTOs for Market Stability Signals ---
 
@@ -122,4 +127,15 @@ class IAssetRecoverySystem(Protocol):
 
     def get_status_report(self) -> PublicManagerReportDTO:
         """Returns a status report of the manager's state."""
+        ...
+
+class IAgentRegistry(ABC):
+    @abstractmethod
+    def get_agent(self, agent_id: Any) -> Optional[Agent]:
+        """Resolves an agent ID to an agent object."""
+        ...
+
+    @abstractmethod
+    def set_state(self, state: SimulationState) -> None:
+        """Updates the registry with the current simulation state."""
         ...
