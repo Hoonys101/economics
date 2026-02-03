@@ -39,6 +39,7 @@ def main():
     print("🤖 Arming Gemini for Handover Generation...")
     cmd = [
         "python", "scripts/cmd_ops.py", "set-gemini", "mission-session-handover",
+        "--title", f"Session Handover Report ({timestamp})",
         "--worker", "reporter",
         "--instruction", instruction
     ]
