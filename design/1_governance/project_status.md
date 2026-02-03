@@ -67,7 +67,7 @@
 | 항목 | 상태 | 비고 |
 |---|---|---|
 | Logic Fix | ✅ | 신생아 초기 욕구(`needs`) 주입으로 행동 불능(DOA) 해결 |
-| Config | ✅ | `initial_needs` 값을 `economy_params.yaml`로 외부화 |
+| Config | ✅ | `initial_needs` 값을 `config/economy_params.yaml (NEWBORN_INITIAL_NEEDS)`로 외부화 |
 | Test | ✅ | Mock 기반 단위 테스트로 리팩토링 및 검증 완료 |
 
 ### Bank Interface Segregation ✅
@@ -80,7 +80,7 @@
 ### Golden Loader Infrastructure ✅
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| Loader | ✅ | `GoldenLoader` class implements `load_json` |
+| Loader | ✅ | `GoldenLoader` (`simulation/utils/golden_loader.py`) class implements `load_json` |
 | Mocking | ✅ | Recursive nested dict -> MagicMock conversion |
 | Integration | ✅ | `conftest.py` fixtures integrated |
 
@@ -137,7 +137,7 @@
 ## 📊 Milestone Traceability
 | Milestone | Status | Key Artifact |
 |---|---|---|
-| **Animal Spirits ()** | ✅ DONE | `modules/system/execution/public_manager.py` |
+| **Animal Spirits ()** | ✅ DONE | `simulation/systems/firm_management.py` |
 | **Purity Gate ()** | ✅ DONE | `scripts/verify_purity.py` |
 | **Sacred Sequence ()** | ✅ DONE | `simulation/orchestration/tick_orchestrator.py` |
 | **Fractional Reserve** | ⏳ PENDING | |
