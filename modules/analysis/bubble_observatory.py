@@ -118,13 +118,30 @@ class BubbleObservatory(IBubbleObservatory):
         avg_ltv = statistics.mean(ltvs) if ltvs else 0.0
         avg_dti = statistics.mean(dtis) if dtis else 0.0
 
+        # 4. Price-to-Income Ratio (PIR)
+        TICKS_PER_YEAR = getattr(self.simulation.config_module, 'TICKS_PER_YEAR', 100)
+        all_agents = self.simulation.agents.values()
+        household_incomes = [
+            agent.current_wage * TICKS_PER_YEAR
+            for agent in all_agents
+            if hasattr(agent, 'current_wage') and agent.current_wage > 0
+        ]
+
+        avg_annual_income = statistics.mean(household_incomes) if household_incomes else 0.0
+        pir = (avg_price / avg_annual_income) if avg_annual_income > 0 else 0.0
+
+        # PIR Alarm
+        if pir > 20.0:
+            logger.warning(f"High PIR detected: {pir:.2f}. Avg House Price: {avg_price:.2f}, Avg Annual Income: {avg_annual_income:.2f}")
+
         metrics: HousingBubbleMetricsDTO = {
             "tick": tick,
             "house_price_index": avg_price,
             "m2_growth_rate": growth_rate,
             "new_mortgage_volume": new_mortgage_vol,
             "average_ltv": avg_ltv,
-            "average_dti": avg_dti
+            "average_dti": avg_dti,
+            "pir": pir
         }
 
         # Log to file (append)
@@ -138,9 +155,9 @@ class BubbleObservatory(IBubbleObservatory):
 
             with open("logs/housing_bubble_monitor.csv", "a") as f:
                 if not file_exists:
-                    f.write("tick,house_price_index,m2_growth_rate,new_mortgage_volume,average_ltv,average_dti\n")
+                    f.write("tick,house_price_index,m2_growth_rate,new_mortgage_volume,average_ltv,average_dti,pir\n")
 
-                f.write(f"{tick},{avg_price:.2f},{growth_rate:.6f},{new_mortgage_vol:.2f},{avg_ltv:.4f},{avg_dti:.4f}\n")
+                f.write(f"{tick},{avg_price:.2f},{growth_rate:.6f},{new_mortgage_vol:.2f},{avg_ltv:.4f},{avg_dti:.4f},{pir:.2f}\n")
         except Exception as e:
             logger.error(f"BubbleObservatory: Failed to log metrics. {e}")
 

@@ -45,6 +45,7 @@ class HousingBubbleMetricsDTO(TypedDict):
     new_mortgage_volume: float
     average_ltv: float
     average_dti: float
+    pir: float # Price-to-Income Ratio
 
 # --- Interfaces ---
 
