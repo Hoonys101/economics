@@ -1,0 +1,83 @@
+```python
+from typing import TypedDict, Literal, Union, Optional
+from uuid import UUID
+from dataclasses import dataclass
+
+from modules.household.dtos import HouseholdStateDTO
+from modules.system.api import HousingMarketSnapshotDTO
+# Import the canonical DTO to resolve TD-198 and unify mortgage applications.
+from modules.market.housing_planner_api import MortgageApplicationDTO
+
+# --- Mortgage & Saga DTOs ---
+
+# The local, inconsistent MortgageApplicationDTO has been removed.
+# The canonical version from housing_planner_api is now used throughout.
+
+class MortgageApprovalDTO(TypedDict):
+    """
+    Response from the LoanMarket upon successful loan approval.
+    """
+    loan_id: int
+    approved_principal: float
+    monthly_payment: float
+
+class HousingTransactionSagaStateDTO(TypedDict):
+    """
+    State object for the housing purchase Saga.
+    Manages the entire lifecycle of the transaction.
+    """
+    saga_id: UUID
+    status: Literal[
+        "INITIATED",
+        "LOAN_APPLICATION_PENDING", "LOAN_REJECTED", "LOAN_APPROVED",
+        "DOWN_PAYMENT_PENDING", "DOWN_PAYMENT_COMPLETE",
+        "MORTGAGE_DISBURSEMENT_PENDING", "MORTGAGE_DISBURSEMENT_COMPLETE",
+        "COMPLETED", "FAILED_ROLLED_BACK"
+    ]
+    buyer_id: int
+    seller_id: int # Fetched from property registry
+    property_id: int
+    offer_price: float
+    down_payment_amount: float
+    # This field now correctly uses the canonical MortgageApplicationDTO.
+    loan_application: Optional[MortgageApplicationDTO]
+    mortgage_approval: Optional[MortgageApprovalDTO]
+    error_message: Optional[str]
+
+# --- Input & Decision DTOs ---
+
+class HousingDecisionRequestDTO(TypedDict):
+    """
+    Input for the simplified HousingPlanner.
+    """
+    household_state: HouseholdStateDTO
+    housing_market_snapshot: HousingMarketSnapshotDTO
+    # DTI calculation requires this
+    outstanding_debt_payments: float
+
+class HousingPurchaseDecisionDTO(TypedDict):
+    """
+    Output of the HousingPlanner, representing a desire to buy.
+    This is the trigger for the transaction saga.
+    """
+    decision_type: Literal["INITIATE_PURCHASE"]
+    target_property_id: int
+    offer_price: float
+    # Down payment the household is willing to make
+    down_payment_amount: float
+
+class HousingRentalDecisionDTO(TypedDict):
+    """
+    Output of the HousingPlanner for renting.
+    """
+    decision_type: Literal["MAKE_RENTAL_OFFER"]
+    target_property_id: int
+
+class HousingStayDecisionDTO(TypedDict):
+    """
+    Output of the HousingPlanner to do nothing.
+    """
+    decision_type: Literal["STAY"]
+
+HousingDecisionDTO = Union[HousingPurchaseDecisionDTO, HousingRentalDecisionDTO, HousingStayDecisionDTO]
+```

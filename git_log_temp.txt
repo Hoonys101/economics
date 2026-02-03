@@ -1,0 +1,50 @@
+5b84541 docs: finalize session handover & strict-typing/housing-saga updates
+e04ef22 I have implemented the Atomic Housing Purchase Saga via the `SettlementSystem`. Here is a summary of the changes made:
+739f2f3 I have implemented the Atomic Housing Purchase Saga via the SettlementSystem. Here is a summary of the changes:
+6b44736 chore: Pre-Jules dispatch for The Great Housewarming V3: Atomic Settlement Saga
+1201868 Refactor housing pipeline for atomic transactions and macro-prudential regulations.
+6abdbc0 chore: Pre-Jules dispatch for The Great Housewarming V2: Atomic Mortgage & Regulations
+10c0593 Merge remote-tracking branch 'origin/refactor/strict-typing-dto-enforcement-3664420407678054950'
+bf96349 docs: restore political spec alignment & enforce Archaeology First principle
+abd783e Refactor: Enforce strict typing, DTOs, and encapsulation
+6c77270 chore: Pre-Jules dispatch for Type Safety & DTO Contract Enforcement
+a8fd317 Refactor TD-187 Liquidation to Fix Encapsulation & Hardcoding
+12f5a1c Fix TD-187 Asset Leak (PublicManager Buyout)
+43fae3a Verify TD-187 & Register Asset Leak Debt (TD-187-LEAK)
+cfb906f Verify and Document TD-187 Liquidation Waterfall Implementation
+e3bfb91 chore: Pre-Jules dispatch for Liquidation Waterfall Protocol
+eb1a8d3 Merge remote-tracking branch 'origin/refactor/externalize-constants-17834747064820109932'
+56a9400 Refactor agents to enforce SettlementSystem asset integrity
+5757941 Externalize hardcoded constants to config files
+f117319 chore: Pre-Jules dispatch for Financial Integrity: Eradicating Direct Asset Access
+a0e5638 Merge remote-tracking branch 'origin/wo-116-taxation-system-13354474737747527340'
+e8e742a Refactor Corporate Tax: Fix Review Issues (WO-116)
+f162513 Refactor Corporate Tax to Atomic Transaction Intent Model (WO-116)
+3ac0496 Move PROJECT_STATUS.md to root and register Waterfall architecture
+ad6ddaa chore: Pre-Jules dispatch for Documentation Hygiene & Consistency (TD-183, TD-188)
+9235578 chore: Pre-Jules dispatch for WO Standardization & Logic Alignment
+fbeb377 Merge remote-tracking branch 'origin/td150-ledger-automation-11140535136000647875'
+5e7b437 Merge remote-tracking branch 'origin/doc/TD-188-183-status-architecture-17880534257435619208'
+8cb2292 Implement scripts/ledger_manager.py for TD-150 Ledger Automation
+a0d4dcd Refactor firm decision engine tests (TD-180)
+ad2770a Fix PROJECT_STATUS.md paths and add Liquidation Protocol docs
+fb54883 chore: Pre-Jules dispatch for Unit Test Decomposition & Suite Cleanup (TD-180, TD-122)
+324a6bf chore: stop tracking command_registry.json to prevent merge conflicts
+9e96a7d Merge remote-tracking branch 'origin/h1-v2-atomic-housing-saga-9733414044186399468'
+3ca052b Implement H1-V2 Atomic Housing Saga with Compensating Transactions
+c40e1cb feat(finance): implement atomic portfolio settlement and escheatment
+76d689c docs: Finalize session status, ledger cleanup, and handover (Operation Sacred Harvest)
+19f871f Merge remote-tracking branch 'origin/TD-187-Liquidation-Waterfall-5301129886200202748'
+c469bf1 Implement TD-187 Liquidation Waterfall Protocol
+c5e69bb feat: Implement Atomic Inheritance Resolution (TD-160)
+4cdc19a chore: Pre-Jules dispatch for Liquidation Waterfall Protocol
+d63a70a chore: Pre-Jules dispatch for Atomic Inheritance Resolution
+ad9b3b8 Merge remote-tracking branch 'origin/fix-integration-test-failures-14754909560396730779'
+3e4acdf Fix M2 integrity by processing monetary transactions in drain loop and persisting sync bonds.
+783166f Fix 6 remaining integration test failures related to Mock configuration.
+acea125 chore: Pre-Jules dispatch for Structural M2 Integrity via Post-Phase Hook
+f198853 chore: Pre-Jules dispatch for Fix Last 6 Test Failures
+ad681b8 chore: Pre-Jules dispatch for Fix M2 Sync and Gov Reset
+f573621 Merge remote-tracking branch 'origin/fix-test-failures-ab-d-10193385577001340242'
+6048c12 Merge remote-tracking branch 'origin/fix-category-c-and-e-tests-2573582321954710979'
+be8ef26 Fix Category C and E test failures (logic & integration)

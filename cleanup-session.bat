@@ -39,7 +39,15 @@ del /q iron_debug.log > nul 2>&1
 
 :: 5. Temporary Repositories and Logs
 echo    [-] Clearing Temp Reports and Insights...
-del /q "reports\temp\report_*.md" > nul 2>&1
+if exist "reports\temp" (
+    rmdir /s /q "reports\temp" > nul 2>&1
+)
+if exist "reports\inbound" (
+    rmdir /s /q "reports\inbound" > nul 2>&1
+)
+del /q "reports\*.csv" > nul 2>&1
+del /q "reports\*.txt" > nul 2>&1
+del /q "reports\*.png" > nul 2>&1
 del /q "communications\insights\*.md" > nul 2>&1
 del /q "design\command_registry.json.bak" > nul 2>&1
 
