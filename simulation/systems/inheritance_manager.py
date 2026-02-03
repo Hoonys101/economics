@@ -127,8 +127,16 @@ class InheritanceManager:
                     sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
 
                     if settlement_system.transfer(government, deceased, sale_price, "liquidation_re", tick=current_tick):
-                        # Update Ownership
+                        # Update Ownership (Manual update required for immediate cash flow logic)
                         unit.owner_id = government.id
+
+                        # Fix Leak: Update owned_properties lists
+                        if hasattr(deceased, "owned_properties") and unit.id in deceased.owned_properties:
+                            deceased.owned_properties.remove(unit.id)
+                        if hasattr(government, "owned_properties"):
+                             if unit.id not in government.owned_properties:
+                                government.owned_properties.append(unit.id)
+
                         deceased_units.remove(unit)
 
                         tx = Transaction(
@@ -192,9 +200,8 @@ class InheritanceManager:
             # Escheat remaining Assets
             # Portfolio Transfer is handled by SettlementSystem (Atomic).
 
-            # Real Estate Transfer (Manual)
+            # Real Estate Transfer (Deferred via AssetTransferHandler)
             for unit in deceased_units:
-                 unit.owner_id = government.id
                  tx = Transaction(
                         buyer_id=government.id,
                         seller_id=deceased.id,
@@ -204,7 +211,7 @@ class InheritanceManager:
                         market_id="real_estate_market",
                         transaction_type="asset_transfer",
                         time=current_tick,
-                        metadata={"executed": True}
+                        metadata={"executed": False}
                      )
                  transactions.append(tx)
 
@@ -224,7 +231,8 @@ class InheritanceManager:
             # Distribute Real Estate (Round Robin)
             for i, unit in enumerate(deceased_units):
                 recipient = heirs[i % count]
-                unit.owner_id = recipient.id
+                # We do NOT set unit.owner_id here manually.
+                # AssetTransferHandler will handle it when processing the transaction.
                 tx = Transaction(
                         buyer_id=recipient.id,
                         seller_id=deceased.id,
@@ -232,9 +240,9 @@ class InheritanceManager:
                         quantity=1.0,
                         price=0.0,
                         market_id="real_estate_market",
-                        transaction_type="inheritance_distribution",
+                        transaction_type="asset_transfer",
                         time=current_tick,
-                        metadata={"executed": True}
+                        metadata={"executed": False}
                      )
                 transactions.append(tx)
 
