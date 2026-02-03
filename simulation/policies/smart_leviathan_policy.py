@@ -63,9 +63,10 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         old_rate = central_bank.base_rate if central_bank else 0.0
 
         # Constants from Architect Directive
-        TAX_STEP = 0.01          # +-1.0%p
-        RATE_STEP = 0.0025       # +-0.25%p
-        BUDGET_STEP = 0.1        # +-10%
+        steps = getattr(self.config, "POLICY_ACTUATOR_STEP_SIZES", (0.01, 0.0025, 0.1))
+        TAX_STEP = steps[0]
+        RATE_STEP = steps[1]
+        BUDGET_STEP = steps[2]
         
         # 3. Translation Logic (Mapping Action -> Physical Change)
         if action == self.ai.ACTION_DOVISH:
@@ -102,7 +103,9 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
             central_bank.base_rate = max(0.0, min(0.20, central_bank.base_rate))
         
         # Tax Rate [5% ~ 50%]
-        tax_min, tax_max = 0.05, 0.50
+        bounds = getattr(self.config, "POLICY_ACTUATOR_BOUNDS", {})
+        tax_min, tax_max = bounds.get("tax", (0.05, 0.50))
+
         government.income_tax_rate = max(tax_min, min(tax_max, government.income_tax_rate))
         government.corporate_tax_rate = max(tax_min, min(tax_max, government.corporate_tax_rate))
         

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 @dataclass
 class HouseholdConfigDTO:
@@ -99,6 +99,20 @@ class HouseholdConfigDTO:
     elasticity_mapping: Dict[str, float]
     max_willingness_to_pay_multiplier: float
 
+    # Refactor 2026-02-03: Externalized Constants
+    initial_household_age_range: Tuple[float, float]
+    initial_aptitude_distribution: Tuple[float, float]
+    emergency_liquidation_discount: float
+    emergency_stock_liquidation_fallback_price: float
+    distress_grace_period_ticks: int
+    ai_epsilon_decay_params: Tuple[float, float, int]
+    housing_npv_horizon_years: int
+    housing_npv_risk_premium: float
+    mortgage_default_down_payment_rate: float
+    age_death_probabilities: Dict[int, float]
+    fallback_survival_cost: float
+    base_labor_skill: float
+
 @dataclass
 class FirmConfigDTO:
     """Static configuration values relevant to firm decisions."""
@@ -164,3 +178,7 @@ class FirmConfigDTO:
     # WO-157: Dynamic Pricing
     sale_timeout_ticks: int
     dynamic_price_reduction_factor: float
+
+    # Refactor 2026-02-03: Externalized Constants
+    ai_epsilon_decay_params: Tuple[float, float, int]
+    ai_reward_brand_value_multiplier: float

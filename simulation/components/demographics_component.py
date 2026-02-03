@@ -93,13 +93,14 @@ class DemographicsComponent:
         """
 
         # The chance of death per year, based on age.
-        age_death_probabilities = {
+        default_probs = {
             60: 0.01,
             70: 0.02,
             80: 0.05,
             90: 0.15,
             100: 0.50,
         }
+        age_death_probabilities = getattr(self.config_module, "AGE_DEATH_PROBABILITIES", default_probs)
 
         # Find the highest age threshold that the agent's age has surpassed
         # and get the corresponding death probability.

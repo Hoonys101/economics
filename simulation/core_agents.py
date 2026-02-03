@@ -104,7 +104,7 @@ class Household(BaseAgent, ILearningAgent):
         # Bio State
         self._bio_state = BioStateDTO(
             id=id,
-            age=initial_age if initial_age is not None else random.uniform(20.0, 60.0),
+            age=initial_age if initial_age is not None else random.uniform(*self.config.initial_household_age_range),
             gender=gender if gender is not None else random.choice(["M", "F"]),
             generation=generation if generation is not None else 0,
             is_active=True,
@@ -130,7 +130,7 @@ class Household(BaseAgent, ILearningAgent):
              adaptation_rate = self.config.adaptation_rate_conservative
 
         # WO-054: Aptitude
-        raw_aptitude = random.gauss(0.5, 0.15)
+        raw_aptitude = random.gauss(*self.config.initial_aptitude_distribution)
         aptitude = max(0.0, min(1.0, raw_aptitude))
 
         self._econ_state = EconStateDTO(
@@ -596,7 +596,7 @@ class Household(BaseAgent, ILearningAgent):
                 continue
 
             price = self._econ_state.perceived_avg_prices.get(good, 10.0)
-            liquidation_price = price * 0.8
+            liquidation_price = price * self.config.emergency_liquidation_discount
 
             order = Order(
                 agent_id=self.id,
@@ -622,7 +622,7 @@ class Household(BaseAgent, ILearningAgent):
             # but OrderBookMarket matches based on price.
             # If we set price too low, we might crash the market.
             # Let's try to be somewhat reasonable: 10.0 (default fallback) * 0.8 = 8.0
-            price = 8.0
+            price = self.config.emergency_stock_liquidation_fallback_price
 
             order = Order(
                 agent_id=self.id,
@@ -673,7 +673,7 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.durable_assets = new_durable_assets
 
         # WO-167: Grace Protocol - Override death if in distress grace period
-        if not is_active and 0 < self.distress_tick_counter <= 5:
+        if not is_active and 0 < self.distress_tick_counter <= self.config.distress_grace_period_ticks:
             is_active = True
             self.logger.info(
                 f"GRACE_PROTOCOL_SAVE | Household {self.id} saved from death. Distress tick {self.distress_tick_counter}",

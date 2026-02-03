@@ -52,3 +52,66 @@ housing:
 # ----------------------------------------------------------------------
 taxation:
   corporate_tax_rate: 0.21
+
+# ----------------------------------------------------------------------
+# Bank & Finance Configuration
+# ----------------------------------------------------------------------
+bank:
+  initial_base_annual_rate: 0.05
+  default_loan_term_ticks: 50
+  deposit_margin: 0.02
+  credit_spread_base: 0.02
+  credit_recovery_ticks: 100
+  bankruptcy_xp_penalty: 0.2
+  solvency_buffer: 1000.0
+  default_mortgage_interest_rate: 0.05
+
+# ----------------------------------------------------------------------
+# Agent Behavior & AI Configuration
+# ----------------------------------------------------------------------
+agent:
+  initial_household_age_range: [20.0, 60.0]
+  initial_aptitude_distribution: [0.5, 0.15]
+  emergency_liquidation_discount: 0.8
+  emergency_stock_liquidation_fallback_price: 8.0
+  distress_grace_period_ticks: 5
+  base_labor_skill: 1.0
+
+ai:
+  epsilon_decay_params: [0.5, 0.05, 700]
+  reward_brand_value_multiplier: 0.05
+  housing_npv_horizon_years: 10
+  housing_npv_risk_premium: 0.02
+  mortgage_default_down_payment_rate: 0.2
+
+# ----------------------------------------------------------------------
+# System & Policy Configuration
+# ----------------------------------------------------------------------
+system:
+  foreclosure_fire_sale_discount: 0.8
+  friendly_merger_premium: 1.1
+  hostile_takeover_premium: 1.2
+  hostile_takeover_success_prob: 0.6
+  merger_employee_retention_rates: [0.3, 0.5] # [Hostile, Friendly]
+  price_volatility_window_ticks: 20
+
+policy:
+  actuator_step_sizes: [0.01, 0.0025, 0.1] # [Tax, Rate, Budget]
+  actuator_bounds:
+    tax: [0.05, 0.50]
+    rate: [0.0, 0.20]
+    budget: [0.1, 1.0]
+
+# ----------------------------------------------------------------------
+# Miscellaneous
+# ----------------------------------------------------------------------
+demographics:
+  age_death_probabilities:
+    60: 0.01
+    70: 0.02
+    80: 0.05
+    90: 0.15
+    100: 0.50
+  fallback_survival_cost: 10.0
+ai_housing:
+  housing_annual_maintenance_rate: 0.01

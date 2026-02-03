@@ -77,7 +77,7 @@ class LoanMarket(Market):
         if hasattr(self.bank, 'get_interest_rate'):
              interest_rate = self.bank.get_interest_rate() # Annual
         else:
-             interest_rate = 0.05 # Default
+             interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
 
         ticks_per_year = getattr(self.config_module, 'TICKS_PER_YEAR', 100)
 
@@ -172,7 +172,7 @@ class LoanMarket(Market):
             # Bank grant_loan uses this as 'interest_rate' param in new interface.
 
             # Duration (due_tick)
-            duration = self.config_module.DEFAULT_LOAN_DURATION
+            duration = getattr(self.config_module, "DEFAULT_LOAN_TERM_TICKS", 50)
             due_tick = current_tick + duration
 
             # WO-078: Extract BorrowerProfile from metadata

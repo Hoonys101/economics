@@ -12,14 +12,17 @@ class ActionSelector:
     에이전트의 특성(Personality)을 고려하여 행동 선택에 편향을 줄 수 있다.
     """
 
-    def __init__(self, epsilon: float = 0.1):
+    def __init__(self, epsilon: float = 0.1, decay_params: Tuple[float, float, int] = (0.5, 0.05, 700)):
         self.epsilon = epsilon
+        self.initial_epsilon = decay_params[0]
+        self.final_epsilon = decay_params[1]
+        self.decay_steps = decay_params[2]
 
     def get_epsilon(self, current_tick: int) -> float:
-        """Linear Decay: 0.5 → 0.05 over 700 ticks."""
-        initial = 0.5
-        final = 0.05
-        decay_steps = 700
+        """Linear Decay based on configured parameters."""
+        initial = self.initial_epsilon
+        final = self.final_epsilon
+        decay_steps = self.decay_steps
 
         if current_tick >= decay_steps:
             return final

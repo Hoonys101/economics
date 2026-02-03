@@ -32,25 +32,28 @@ class HouseholdSystem2Planner:
         """
 
         # Parameters
-        T_years = 10
+        T_years = getattr(self.config, "HOUSING_NPV_HORIZON_YEARS", 10)
         T_months = T_years * 12
 
         # Monthly Discount Rate
-        # r = (interest_rate + 0.02) / 12
-        r_monthly = (inputs.risk_free_rate + 0.02) / 12.0
+        # r = (interest_rate + risk_premium) / 12
+        risk_premium = getattr(self.config, "HOUSING_NPV_RISK_PREMIUM", 0.02)
+        r_monthly = (inputs.risk_free_rate + risk_premium) / 12.0
 
         # Buying Components
         P_initial = inputs.market_price
         U_shelter = inputs.market_rent_monthly
-        Cost_own = (P_initial * 0.01) / 12.0 # 1% annual maintenance
+        maintenance_rate = getattr(self.config, "HOUSING_ANNUAL_MAINTENANCE_RATE", 0.01)
+        Cost_own = (P_initial * maintenance_rate) / 12.0
 
         # Price Growth Expectation (Capped at 5%)
         g_annual = min(inputs.price_growth_expectation, getattr(self.config, "HOUSING_EXPECTATION_CAP", 0.05))
         P_future = P_initial * ((1.0 + g_annual) ** T_years)
 
         # Renting Components
-        # Principal = Down Payment (Assumed 20% of market_price)
-        Principal = P_initial * 0.2
+        # Principal = Down Payment
+        down_payment_rate = getattr(self.config, "MORTGAGE_DEFAULT_DOWN_PAYMENT_RATE", 0.2)
+        Principal = P_initial * down_payment_rate
         # Income_invest = Principal * (interest_rate / 12)
         Income_invest = Principal * (inputs.risk_free_rate / 12.0)
         Cost_rent = inputs.market_rent_monthly
