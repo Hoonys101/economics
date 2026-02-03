@@ -179,6 +179,10 @@ class InheritanceManager:
             # Escheatment (To Gov)
             if cash > 0:
                 distribution_plan.append((government, cash, "escheatment_cash", "escheatment"))
+            else:
+                # TD-160: Ensure Gov is in plan for portfolio transfer even if cash is 0
+                # SettlementSystem requires a recipient in the plan to trigger receive_portfolio
+                distribution_plan.append((government, 0.0, "escheatment_portfolio_trigger", "escheatment"))
 
             # Escheat remaining Assets
             # Portfolio Transfer is handled by SettlementSystem (Atomic).
