@@ -7,7 +7,11 @@ from modules.housing.dtos import (
     HousingPurchaseDecisionDTO,
     HousingTransactionSagaStateDTO
 )
-from modules.finance.saga_handler import HousingTransactionSagaHandler
+from modules.market.housing_purchase_api import (
+    HousingPurchaseSagaDTO,
+    HousingPurchaseSagaDataDTO,
+    MortgageApplicationDTO
+)
 
 
 if TYPE_CHECKING:
@@ -24,21 +28,20 @@ class HousingSystem:
 
     def __init__(self, config_module: Any):
         self.config = config_module
-        self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
-        self.saga_handler: Optional[HousingTransactionSagaHandler] = None
+        self.pending_sagas: List[Dict[str, Any]] = []
+        # Saga management moved to SettlementSystem
 
     def process_housing(self, simulation: "Simulation"):
         """
         Processes mortgage payments, maintenance costs, rent collection, and eviction/foreclosure checks.
         Consolidated from Simulation._process_housing (Line 1221 in engine.py).
-        Also processes Housing Transaction Sagas.
+        Also flushes queued housing transactions to SettlementSystem.
         """
-        # Initialize Saga Handler if needed
-        if self.saga_handler is None:
-            self.saga_handler = HousingTransactionSagaHandler(simulation)
-
-        # 0. Process Active Sagas
-        self._process_active_sagas()
+        # 0. Flush Queued Sagas
+        if self.pending_sagas:
+            for req in self.pending_sagas:
+                self._submit_saga_to_settlement(simulation, req['decision'], req['buyer_id'])
+            self.pending_sagas.clear()
 
         # 1. Process Bank/Mortgages
         for unit in simulation.real_estate_units:
@@ -117,51 +120,79 @@ class HousingSystem:
                             tenant.residing_property_id = None
                             tenant.is_homeless = True
 
-    def _process_active_sagas(self):
-        """Iterates through active sagas and executes next steps."""
-        if not self.saga_handler:
-            return
-
-        # Iterate over copy to allow removal
-        for saga_id, saga in list(self.active_sagas.items()):
-            # Execute Step
-            try:
-                updated_saga = self.saga_handler.execute_step(saga)
-                self.active_sagas[saga_id] = updated_saga
-
-                # Check terminal states
-                if updated_saga['status'] in ["COMPLETED", "FAILED_ROLLED_BACK", "LOAN_REJECTED"]:
-                    if updated_saga['status'] == "COMPLETED":
-                        logger.info(f"SAGA_COMPLETE | Saga {saga_id} completed successfully.")
-                    else:
-                        logger.info(f"SAGA_TERMINATED | Saga {saga_id} terminated with status {updated_saga['status']}. Error: {updated_saga.get('error_message')}")
-
-                    del self.active_sagas[saga_id]
-            except Exception as e:
-                logger.error(f"SAGA_PROCESS_ERROR | Saga {saga_id} failed processing. {e}")
-
     def initiate_purchase(self, decision: HousingPurchaseDecisionDTO, buyer_id: int):
         """
         Starts a new housing transaction saga.
         Called by DecisionUnit (or via orchestration).
         """
-        saga_id = uuid4()
+        # Queue for processing in next tick cycle (or later in this tick if Phase 5 runs)
+        self.pending_sagas.append({
+            "decision": decision,
+            "buyer_id": buyer_id
+        })
+        logger.info(f"SAGA_QUEUED | Saga queued for buyer {buyer_id} property {decision['target_property_id']}")
 
-        saga: HousingTransactionSagaStateDTO = {
-            "saga_id": saga_id,
-            "status": "INITIATED",
-            "buyer_id": buyer_id,
-            "seller_id": -1, # To be resolved
-            "property_id": decision['target_property_id'],
-            "offer_price": decision['offer_price'],
-            "down_payment_amount": decision['down_payment_amount'],
-            "loan_application": None,
-            "mortgage_approval": None,
-            "error_message": None
-        }
+    def _submit_saga_to_settlement(self, simulation: "Simulation", decision: HousingPurchaseDecisionDTO, buyer_id: int):
+        saga_id = str(uuid4())
 
-        self.active_sagas[saga_id] = saga
-        logger.info(f"SAGA_INIT | Initiated saga {saga_id} for buyer {buyer_id} property {decision['target_property_id']}")
+        offer_price = decision['offer_price']
+        down_payment = decision['down_payment_amount']
+        principal = offer_price - down_payment
+        prop_id = decision['target_property_id']
+
+        # Gather data for Mortgage Application
+        household = simulation.agents.get(buyer_id)
+        annual_income = 0.0
+
+        if household:
+             # Logic to estimate income
+             if hasattr(household, 'current_wage'):
+                  ticks_per_year = getattr(self.config, 'TICKS_PER_YEAR', 100)
+                  annual_income = household.current_wage * ticks_per_year
+
+        # Resolve seller
+        seller_id = -1
+        # Need to access registry to find owner
+        units = getattr(simulation, 'real_estate_units', [])
+        unit = next((u for u in units if u.id == prop_id), None)
+        if unit:
+             seller_id = unit.owner_id
+
+        mortgage_app = MortgageApplicationDTO(
+            applicant_id=buyer_id,
+            property_id=prop_id,
+            offer_price=offer_price,
+            loan_principal=principal,
+            applicant_gross_income=annual_income,
+            applicant_existing_debt_payments=0.0, # Placeholder
+            loan_term=360
+        )
+
+        saga_data = HousingPurchaseSagaDataDTO(
+            household_id=buyer_id,
+            property_id=prop_id,
+            offer_price=offer_price,
+            down_payment=down_payment,
+            mortgage_application=mortgage_app,
+            approved_loan_id=None,
+            seller_id=seller_id
+        )
+
+        saga = HousingPurchaseSagaDTO(
+            saga_id=saga_id,
+            saga_type="HOUSING_PURCHASE",
+            status="STARTED",
+            current_step=0,
+            data=saga_data,
+            start_tick=simulation.time
+        )
+
+        if simulation.settlement_system:
+             # Assuming we updated SettlementSystem to have submit_saga
+             if hasattr(simulation.settlement_system, 'submit_saga'):
+                 simulation.settlement_system.submit_saga(saga)
+             else:
+                 logger.error("SettlementSystem does not support submit_saga")
 
     def apply_homeless_penalty(self, simulation: "Simulation"):
         """

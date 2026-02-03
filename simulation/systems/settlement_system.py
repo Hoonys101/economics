@@ -7,6 +7,7 @@ from modules.finance.api import (
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider
 )
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
+from modules.market.housing_purchase_api import HousingPurchaseSagaDTO, MortgageApplicationDTO
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -27,6 +28,208 @@ class SettlementSystem(ISettlementSystem):
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.total_liquidation_losses: float = 0.0
         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
+        self.sagas: Dict[str, HousingPurchaseSagaDTO] = {} # Housing Saga Storage
+
+    def submit_saga(self, saga: HousingPurchaseSagaDTO) -> bool:
+        """
+        Submits a new saga to be processed.
+        """
+        if not saga or 'saga_id' not in saga:
+            return False
+        self.sagas[saga['saga_id']] = saga
+        self.logger.info(
+            f"SAGA_SUBMITTED | Saga {saga['saga_id']} submitted for buyer {saga['data']['household_id']}.",
+            extra={"tick": saga['start_tick'], "saga_id": saga['saga_id']}
+        )
+        return True
+
+    def process_sagas(self, simulation_state: Any) -> None:
+        """
+        Processes active sagas. Implements the Housing Transaction Saga state machine.
+        Called by TickOrchestrator.
+        """
+        if not self.sagas:
+            return
+
+        tick = simulation_state.time
+
+        # Iterate over copy to allow modification/deletion
+        for saga_id, saga in list(self.sagas.items()):
+            try:
+                self._process_single_saga(saga, simulation_state, tick)
+
+                # Cleanup Terminal States
+                if saga['status'] in ["COMPLETED", "FAILED_ROLLED_BACK", "LOAN_REJECTED", "FAILED_COMPENSATED"]:
+                    if saga['status'] == "COMPLETED":
+                        self.logger.info(f"SAGA_ARCHIVED | Saga {saga_id} completed successfully.")
+                    else:
+                        self.logger.info(f"SAGA_ARCHIVED | Saga {saga_id} ended with {saga['status']}.")
+
+                    del self.sagas[saga_id]
+            except Exception as e:
+                self.logger.error(f"SAGA_PROCESS_ERROR | Saga {saga_id} failed. {e}")
+                saga['status'] = "FAILED_COMPENSATED" # Fail safe
+
+    def _process_single_saga(self, saga: HousingPurchaseSagaDTO, state: Any, tick: int):
+        status = saga['status']
+        data = saga['data']
+
+        # Step 1: STARTED -> LOAN_APPLICATION_PENDING -> LOAN_APPROVED/REJECTED
+        if status == "STARTED":
+            # Action: Invoke ILoanMarket.apply_for_mortgage
+            loan_market = state.markets.get("loan_market") or state.markets.get("loan")
+
+            if not loan_market:
+                self.logger.error("SAGA_FAIL | Loan Market not found.")
+                saga['status'] = "FAILED_ROLLED_BACK"
+                return
+
+            # Update status to indicate processing (Tick T)
+            saga['status'] = "LOAN_APPLICATION_PENDING"
+
+            # Execute Application
+            try:
+                # Assuming synchronous return for now as per current LoanMarket impl
+                # If async, we would leave it in PENDING and check next tick.
+                loan_dto = loan_market.apply_for_mortgage(data['mortgage_application'])
+
+                if loan_dto:
+                    # Success
+                    data['approved_loan_id'] = loan_dto['loan_id']
+                    # Transition to APPROVED
+                    saga['status'] = "LOAN_APPROVED"
+                    self.logger.info(f"SAGA_LOAN_APPROVED | Loan {loan_dto['loan_id']} approved for Saga {saga['saga_id']}")
+                else:
+                    # Failure (LTV/DTI)
+                    saga['status'] = "LOAN_REJECTED"
+                    self.logger.info(f"SAGA_LOAN_REJECTED | Loan denied for Saga {saga['saga_id']}")
+
+            except Exception as e:
+                self.logger.error(f"SAGA_LOAN_ERROR | {e}")
+                saga['status'] = "FAILED_ROLLED_BACK"
+
+        # Step 2: LOAN_APPROVED -> PROPERTY_TRANSFER_PENDING -> COMPLETED
+        elif status == "LOAN_APPROVED":
+            # Wait for Tick T+1 (Strict Separation)
+            if tick <= saga['start_tick']:
+                return
+
+            # Action: Atomic Settlement
+            buyer_id = data['household_id']
+            seller_id = data['seller_id']
+            offer_price = data['offer_price']
+            down_payment = data['down_payment']
+            loan_principal = data['mortgage_application']['loan_principal']
+
+            buyer = state.agents.get(buyer_id)
+            seller = state.agents.get(seller_id)
+
+            # Handle Government/Bank as seller (-1)
+            if seller_id == -1:
+                if state.government:
+                     seller = state.government
+                else:
+                     # Bank or System
+                     pass
+
+            if not buyer or (seller_id != -1 and not seller):
+                self.logger.error(f"SAGA_SETTLEMENT_FAIL | Agents not found. Buyer: {buyer_id}, Seller: {seller_id}")
+                saga['status'] = "FAILED_COMPENSATED"
+                self._void_loan(state, data['approved_loan_id'])
+                return
+
+            # Execute Multiparty Settlement
+            # 1. Bank -> Buyer (Loan Principal)
+            # 2. Buyer -> Seller (Offer Price)
+            # Note: Buyer pays Down Payment implicitly because they receive Principal and pay Full Price.
+            # Net effect on Buyer: +Principal - Price = -(Price - Principal) = -DownPayment.
+
+            transfers = [
+                (self.bank, buyer, loan_principal),
+                (buyer, seller, offer_price)
+            ]
+
+            success = self.execute_multiparty_settlement(transfers, tick)
+
+            if success:
+                saga['status'] = "PROPERTY_TRANSFER_PENDING"
+
+                # Update Property Ownership
+                # We do this here as part of the "Transfer" step
+                self._transfer_property(state, data['property_id'], buyer_id, seller_id, offer_price, data['approved_loan_id'])
+
+                saga['status'] = "COMPLETED"
+                self.logger.info(f"SAGA_COMPLETED | Property {data['property_id']} transferred to {buyer_id}.")
+            else:
+                self.logger.error(f"SAGA_SETTLEMENT_FAIL | Multiparty settlement failed.")
+                saga['status'] = "FAILED_COMPENSATED"
+                self._void_loan(state, data['approved_loan_id'])
+
+    def _transfer_property(self, state: Any, property_id: int, buyer_id: int, seller_id: int, price: float, loan_id: Any):
+        # Update Registry / Real Estate Units
+        # Find unit
+        unit = None
+        for u in state.real_estate_units:
+            if u.id == property_id:
+                unit = u
+                break
+
+        if unit:
+            unit.owner_id = buyer_id
+            unit.mortgage_id = str(loan_id) if loan_id else None
+            # Log Transaction
+            tx = {
+                "buyer_id": buyer_id,
+                "seller_id": seller_id,
+                "item_id": f"unit_{property_id}",
+                "quantity": 1.0,
+                "price": price,
+                "market_id": "housing",
+                "transaction_type": "housing",
+                "time": state.time,
+                "metadata": {"mortgage_id": loan_id, "executed": True} # Executed flag to skip re-processing if needed
+            }
+            # Add to state transactions
+            from simulation.models import Transaction
+            # Helper to create Transaction object if needed or append dict if compatible
+            # Using internal create helper or just append if list expects dicts/objects
+            # State transactions list expects Transaction objects usually.
+
+            tx_obj = Transaction(
+                buyer_id=buyer_id,
+                seller_id=seller_id,
+                item_id=f"unit_{property_id}",
+                quantity=1.0,
+                price=price,
+                market_id="housing",
+                transaction_type="housing",
+                time=state.time,
+                metadata={"mortgage_id": loan_id, "executed": True}
+            )
+            state.transactions.append(tx_obj)
+
+            # Update Buyer/Seller specific state if needed (e.g. owned_properties list)
+            buyer_agent = state.agents.get(buyer_id)
+            if buyer_agent and hasattr(buyer_agent, 'owned_properties'):
+                 buyer_agent.owned_properties.add(property_id)
+                 buyer_agent.residing_property_id = property_id
+                 buyer_agent.is_homeless = False
+
+            seller_agent = state.agents.get(seller_id)
+            if seller_agent and hasattr(seller_agent, 'owned_properties'):
+                 if property_id in seller_agent.owned_properties:
+                     seller_agent.owned_properties.remove(property_id)
+                 if hasattr(seller_agent, 'residing_property_id') and seller_agent.residing_property_id == property_id:
+                     seller_agent.residing_property_id = None
+                     seller_agent.is_homeless = True # Seller becomes homeless unless they buy another
+
+    def _void_loan(self, state: Any, loan_id: Any):
+        if not loan_id:
+            return
+        if self.bank and hasattr(self.bank, 'terminate_loan'):
+             # Try to find the full loan ID string if loan_id is int
+             # But here we likely have the ID returned by stage_mortgage
+             self.bank.terminate_loan(str(loan_id)) # Best effort
 
     def create_settlement(
         self,

@@ -47,6 +47,11 @@ housing:
   max_dti: 0.43
   mortgage_term_ticks: 300
 
+# WO-Housing-V3: Macro-Prudential Regulations
+regulations:
+  max_ltv_ratio: 0.8
+  max_dti_ratio: 0.4
+
 # ----------------------------------------------------------------------
 # Taxation System Configuration (WO-116)
 # ----------------------------------------------------------------------

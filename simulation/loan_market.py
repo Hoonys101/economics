@@ -6,7 +6,9 @@ from simulation.core_markets import Market
 from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError, BorrowerProfileDTO
 from modules.housing.dtos import MortgageApprovalDTO
 # Import from new API
-from modules.market.housing_planner_api import ILoanMarket, MortgageApplicationDTO
+# from modules.market.housing_planner_api import ILoanMarket, MortgageApplicationDTO
+from modules.market.housing_purchase_api import ILoanMarket, MortgageApplicationDTO
+from modules.finance.api import LoanInfoDTO as LoanDTO
 
 if TYPE_CHECKING:
     from simulation.bank import Bank # For legacy casting if needed
@@ -44,26 +46,55 @@ class LoanMarket(Market, ILoanMarket):
         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
         Implements ILoanMarket.evaluate_mortgage_application.
         """
-        # 1. LTV Check
-        prop_value = application['property_value']
-        principal = application['principal']
-        if prop_value <= 0:
-             return False
+        # Compatibility with different DTO versions/definitions
+        # housing_purchase_api.MortgageApplicationDTO uses: offer_price, loan_principal
+        # housing_planner_api.MortgageApplicationDTO uses: property_value, principal
 
+        if 'loan_principal' in application:
+            principal = application['loan_principal']
+            prop_value = application.get('offer_price', 0.0) # Or property_id resolution?
+            # Actually offer_price is likely property value for LTV purposes
+            # But wait, property_value might be different. DTO has 'offer_price'.
+            # If property_value is not in DTO, we use offer_price.
+            if prop_value == 0 and 'property_id' in application:
+                 # Should we look up? No, evaluation should be self-contained ideally.
+                 pass
+        else:
+            principal = application.get('principal', 0.0)
+            prop_value = application.get('property_value', 0.0)
+
+        if prop_value <= 0:
+             # Fallback if property_value missing but offer_price exists (alias)
+             prop_value = application.get('offer_price', 0.0)
+             if prop_value <= 0:
+                 return False
+
+        # 1. LTV Check
         ltv = principal / prop_value
 
-        # Config access
-        housing_config = getattr(self.config_module, 'housing', None)
+        # Config access (support both object and dict)
         max_ltv = 0.8
         max_dti = 0.43
 
-        if housing_config:
-             if isinstance(housing_config, dict):
-                 max_ltv = housing_config.get('max_ltv', 0.8)
-                 max_dti = housing_config.get('max_dti', 0.43)
+        # Check 'regulations' section first (New Spec)
+        regulations = getattr(self.config_module, 'regulations', None)
+        if regulations:
+             if isinstance(regulations, dict):
+                 max_ltv = regulations.get('max_ltv_ratio', max_ltv)
+                 max_dti = regulations.get('max_dti_ratio', max_dti)
              else:
-                 max_ltv = getattr(housing_config, 'max_ltv', 0.8)
-                 max_dti = getattr(housing_config, 'max_dti', 0.43)
+                 max_ltv = getattr(regulations, 'max_ltv_ratio', max_ltv)
+                 max_dti = getattr(regulations, 'max_dti_ratio', max_dti)
+        else:
+             # Fallback to 'housing' section (Legacy)
+             housing_config = getattr(self.config_module, 'housing', None)
+             if housing_config:
+                 if isinstance(housing_config, dict):
+                     max_ltv = housing_config.get('max_ltv', max_ltv)
+                     max_dti = housing_config.get('max_dti', max_dti)
+                 else:
+                     max_ltv = getattr(housing_config, 'max_ltv', max_ltv)
+                     max_dti = getattr(housing_config, 'max_dti', max_dti)
 
         if ltv > max_ltv:
              logger.info(f"LOAN_DENIED | LTV {ltv:.2f} > {max_ltv}")
@@ -71,8 +102,12 @@ class LoanMarket(Market, ILoanMarket):
 
         # 2. DTI Check
         applicant_id = application['applicant_id']
-        annual_income = application.get('applicant_income', 0.0)
-        existing_debt = application.get('applicant_existing_debt', 0.0)
+
+        # Support new DTO keys
+        annual_income = application.get('applicant_gross_income', application.get('applicant_income', 0.0))
+        existing_debt_payments = application.get('applicant_existing_debt_payments', 0.0)
+        existing_debt_total = application.get('applicant_existing_debt', 0.0)
+
         loan_term = application.get('loan_term', 360)
 
         # Get Interest Rate
@@ -90,34 +125,26 @@ class LoanMarket(Market, ILoanMarket):
              new_payment = principal * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
 
         # Estimate Existing Debt Payment
-        # Assuming existing debt is serviced at similar rate or we approximate.
-        # Ideally we fetch exact debt status, but here we use passed DTO value if available.
-        # But DTI is typically calculated on monthly gross income vs total monthly debt payments.
-        # If 'applicant_existing_debt' is TOTAL principal, we need to estimate payment.
-
-        # Use existing Bank query to get accurate debt payments if possible
-        # But 'evaluate' is supposed to be fast/pure-ish.
-        # Let's rely on Bank service for debt status if we want accuracy.
-
-        existing_payment = 0.0
-        try:
-             debt_status = self.bank.get_debt_status(str(applicant_id))
-             # We can sum up 'outstanding_balance' * interest?
-             # LoanInfoDTO doesn't have monthly payment.
-             # So we approximate.
-             for l in debt_status['loans']:
-                 r = l['interest_rate'] / 12.0
-                 if r == 0:
-                     payment = l['outstanding_balance'] / 360 # Assume 30y remaining
-                 else:
-                     payment = l['outstanding_balance'] * r # Interest Only approx?
-                 existing_payment += payment
-        except Exception:
-             # Fallback to DTO passed value as principal estimate
-             if monthly_rate == 0:
-                  existing_payment = existing_debt / 360
-             else:
-                  existing_payment = existing_debt * monthly_rate
+        if existing_debt_payments > 0:
+             existing_payment = existing_debt_payments
+        else:
+             # Fallback: estimate from total debt if payments not provided
+             # Use existing Bank query to get accurate debt payments if possible
+             existing_payment = 0.0
+             try:
+                  debt_status = self.bank.get_debt_status(str(applicant_id))
+                  for l in debt_status['loans']:
+                      r = l['interest_rate'] / 12.0
+                      if r == 0:
+                          payment = l['outstanding_balance'] / 360
+                      else:
+                          payment = l['outstanding_balance'] * r
+                      existing_payment += payment
+             except Exception:
+                  if monthly_rate == 0:
+                       existing_payment = existing_debt_total / 360
+                  else:
+                       existing_payment = existing_debt_total * monthly_rate
 
         total_monthly_obligation = existing_payment + new_payment
         monthly_income = annual_income / 12.0
@@ -132,6 +159,61 @@ class LoanMarket(Market, ILoanMarket):
              return False
 
         return True
+
+    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
+        """
+        Processes a mortgage application with regulatory checks.
+        Returns LoanInfoDTO if approved, None otherwise.
+        """
+        # 1. Evaluate
+        if not self.evaluate_mortgage_application(application):
+            return None
+
+        # 2. Stage (Create Record)
+        # Adapt DTO for stage_mortgage if necessary (it calls evaluate again? No, we can call bank directly or use stage_mortgage)
+        # stage_mortgage returns int ID. We need LoanDTO (LoanInfoDTO).
+
+        # stage_mortgage currently calls evaluate_mortgage_application internally.
+        # But we already called it. Double check is fine but inefficient.
+
+        loan_id_int = self.stage_mortgage(application)
+
+        if loan_id_int is not None:
+             # Retrieve the full LoanInfoDTO from Bank
+             # stage_mortgage logic:
+             # loan_info = self.bank.stage_loan(...)
+             # return loan_id_int
+
+             # We need to re-fetch or modify stage_mortgage to return DTO.
+             # Since we can't easily change stage_mortgage return type without breaking legacy (if any),
+             # we will fetch it from bank using the ID or reconstruct it.
+             # But bank stores by "loan_X".
+
+             # Let's inspect stage_mortgage implementation below.
+             # It returns int.
+             # Ideally we modify stage_mortgage to return LoanDTO/int or just call bank.stage_loan here.
+
+             # Re-implementing staging logic here to get the DTO directly:
+             if hasattr(self.bank, 'get_interest_rate'):
+                  interest_rate = self.bank.get_interest_rate()
+             else:
+                  interest_rate = 0.05
+
+             if 'loan_principal' in application:
+                 principal = application['loan_principal']
+             else:
+                 principal = application.get('principal', 0.0)
+
+             loan_info = self.bank.stage_loan(
+                 borrower_id=str(application['applicant_id']),
+                 amount=principal,
+                 interest_rate=interest_rate,
+                 due_tick=None,
+                 borrower_profile=None
+             )
+             return loan_info
+
+        return None
 
     def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[int]:
         """

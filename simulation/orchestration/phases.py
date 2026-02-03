@@ -479,6 +479,10 @@ class Phase3_Transaction(IPhaseStrategy):
 
         # WO-024: Monetary Transactions are now processed incrementally in TickOrchestrator._drain_and_sync_state (TD-177)
 
+        # Housing Saga Processing (Atomic V3)
+        if state.settlement_system and hasattr(state.settlement_system, 'process_sagas'):
+            state.settlement_system.process_sagas(state)
+
         # WO-116: Corporate Tax Intent Generation
         if state.taxation_system and state.government:
             tax_intents = state.taxation_system.generate_corporate_tax_intents(state.firms, current_tick=state.time)
