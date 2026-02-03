@@ -114,6 +114,14 @@ python scripts/cmd_ops.py set-jules <key> -t "<title>" --command send-message -i
 - **Artifacts**: `3_work_artifacts/` (What we created).
 - **Archive**: `_archive/` (One-time logs, old handovers).
 
+### 3.5. Technical Debt & Insight Management (지식 자산화)
+기술 부채를 상환하거나 중요한 시스템 인사이트를 발견했을 때, 지사 사항을 반드시 문서로 자산화하십시오.
+
+1.  **인사이트 독립 문서화**: 상세 분석이나 교훈은 `communications/insights/` 폴더에 `[ID]_[TOPIC].md` 형식으로 별도 작성합니다.
+2.  **색인화 (Linking)**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md` 본문에는 핵심만 남기고, 상세 내용은 **인사이트 문서** 및 **관련 명세서(Spec)**로 링크를 연결합니다.
+3.  **부채 상환 관리**: 해결된 부채는 **"RESOLVED DEBTS"** 섹션으로 이동시키되, 반드시 상환 당시의 **인사이트 리포트**를 함께 링크하여 맥락을 보존합니다.
+4.  **청결 유지**: 링크가 연결되지 않았거나 문서화되지 않은 해결된 부채는 장부에서 과감히 삭제하여 장부의 가독성을 유지하십시오.
+
 **Action**: If you see fragmentation (loose files in root, temp logs), use `mission-doc-restructure` to clean it up immediately.
 
 ---
