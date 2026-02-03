@@ -1,0 +1,223 @@
+diff --git a/communications/insights/150513.md b/communications/insights/150513.md
+new file mode 100644
+index 0000000..565fb41
+--- /dev/null
++++ b/communications/insights/150513.md
+@@ -0,0 +1,24 @@
++# Insight Report: PIR Implementation in BubbleObservatory (Mission 150513)
++
++## Technical Debt & Risks
++
++### 1. Breaking API Change
++The addition of the `pir` field to `HousingBubbleMetricsDTO` constitutes a breaking API change.
++- **Details**: Any consumer of this DTO (including tests) that relies on strict typing or unpacking might fail if not updated.
++- **Mitigation**: We are updating the DTO definition, but comprehensive grepping for usages is required (done, no direct usages found in tests, but implicit usages in `BubbleObservatory` itself).
++
++### 2. God Class Dependency
++The implementation requires iterating over all agents to calculate average income.
++- **Details**: `self.simulation.agents` is accessed. This reinforces the dependency on the `Simulation` God Class.
++- **Justification**: Necessary for accurate economy-wide PIR calculation. Using transaction-only data would be biased towards recent market participants.
++- **Future Refactoring**: Consider an `EconomyStats` service that aggregates income data, or having agents report stats to a central registry.
++
++### 3. SRP Violation
++`BubbleObservatory` is responsible for metrics collection, calculation, and CSV logging.
++- **Details**: Adding PIR calculation and alerting logic adds more responsibility to this class.
++- **Impact**: Makes the class harder to test and maintain.
++- **Future Refactoring**: Split into `MetricCollector`, `BubbleAnalyzer` (for alerts), and `MetricLogger`.
++
++## Implementation Details
++- **PIR Threshold**: 20.0 (Hardcoded as per spec).
++- **Income Calculation**: `agent.current_wage * TICKS_PER_YEAR`.
+diff --git a/modules/analysis/bubble_observatory.py b/modules/analysis/bubble_observatory.py
+index b1cb6a2..0dc59f1 100644
+--- a/modules/analysis/bubble_observatory.py
++++ b/modules/analysis/bubble_observatory.py
+@@ -118,13 +118,30 @@ class BubbleObservatory(IBubbleObservatory):
+         avg_ltv = statistics.mean(ltvs) if ltvs else 0.0
+         avg_dti = statistics.mean(dtis) if dtis else 0.0
+ 
++        # 4. Price-to-Income Ratio (PIR)
++        TICKS_PER_YEAR = getattr(self.simulation.config_module, 'TICKS_PER_YEAR', 100)
++        all_agents = self.simulation.agents.values()
++        household_incomes = [
++            agent.current_wage * TICKS_PER_YEAR
++            for agent in all_agents
++            if hasattr(agent, 'current_wage') and agent.current_wage > 0
++        ]
++
++        avg_annual_income = statistics.mean(household_incomes) if household_incomes else 0.0
++        pir = (avg_price / avg_annual_income) if avg_annual_income > 0 else 0.0
++
++        # PIR Alarm
++        if pir > 20.0:
++            logger.warning(f"High PIR detected: {pir:.2f}. Avg House Price: {avg_price:.2f}, Avg Annual Income: {avg_annual_income:.2f}")
++
+         metrics: HousingBubbleMetricsDTO = {
+             "tick": tick,
+             "house_price_index": avg_price,
+             "m2_growth_rate": growth_rate,
+             "new_mortgage_volume": new_mortgage_vol,
+             "average_ltv": avg_ltv,
+-            "average_dti": avg_dti
++            "average_dti": avg_dti,
++            "pir": pir
+         }
+ 
+         # Log to file (append)
+@@ -138,9 +155,9 @@ class BubbleObservatory(IBubbleObservatory):
+ 
+             with open("logs/housing_bubble_monitor.csv", "a") as f:
+                 if not file_exists:
+-                    f.write("tick,house_price_index,m2_growth_rate,new_mortgage_volume,average_ltv,average_dti\n")
++                    f.write("tick,house_price_index,m2_growth_rate,new_mortgage_volume,average_ltv,average_dti,pir\n")
+ 
+-                f.write(f"{tick},{avg_price:.2f},{growth_rate:.6f},{new_mortgage_vol:.2f},{avg_ltv:.4f},{avg_dti:.4f}\n")
++                f.write(f"{tick},{avg_price:.2f},{growth_rate:.6f},{new_mortgage_vol:.2f},{avg_ltv:.4f},{avg_dti:.4f},{pir:.2f}\n")
+         except Exception as e:
+             logger.error(f"BubbleObservatory: Failed to log metrics. {e}")
+ 
+diff --git a/modules/market/housing_planner_api.py b/modules/market/housing_planner_api.py
+index 07c97c5..9dd5f69 100644
+--- a/modules/market/housing_planner_api.py
++++ b/modules/market/housing_planner_api.py
+@@ -59,6 +59,7 @@ class HousingBubbleMetricsDTO(TypedDict):
+     new_mortgage_volume: float
+     average_ltv: float
+     average_dti: float
++    pir: float # Price-to-Income Ratio
+ 
+ # --- Interfaces ---
+ 
+diff --git a/tests/unit/modules/analysis/test_bubble_observatory.py b/tests/unit/modules/analysis/test_bubble_observatory.py
+new file mode 100644
+index 0000000..88f0154
+--- /dev/null
++++ b/tests/unit/modules/analysis/test_bubble_observatory.py
+@@ -0,0 +1,127 @@
++import pytest
++from unittest.mock import MagicMock, patch, mock_open
++import statistics
++import os
++
++from modules.analysis.bubble_observatory import BubbleObservatory
++from modules.market.housing_planner_api import HousingBubbleMetricsDTO
++
++class TestBubbleObservatory:
++
++    @pytest.fixture
++    def simulation(self):
++        sim = MagicMock()
++        # Mock config_module attribute access
++        sim.config_module.TICKS_PER_YEAR = 100
++        sim.world_state = MagicMock()
++        sim.world_state.time = 10
++        sim.world_state.real_estate_units = []
++        sim.world_state.calculate_total_money.return_value = 1000.0
++        sim.world_state.transactions = []
++        sim.agents = {}
++        return sim
++
++    def test_pir_calculation_normal(self, simulation):
++        """
++        Verify PIR calculation under normal conditions.
++        Avg Price = 200,000
++        Avg Income = 10,000
++        PIR = 20.0
++        """
++        # Setup Prices
++        unit1 = MagicMock()
++        unit1.estimated_value = 200000
++        simulation.world_state.real_estate_units = [unit1]
++
++        # Setup Agents with Income
++        agent1 = MagicMock()
++        agent1.current_wage = 100 # Annual = 100 * 100 = 10000
++        simulation.agents = {1: agent1}
++
++        observatory = BubbleObservatory(simulation)
++
++        # Patch open to prevent file writing
++        with patch("builtins.open", mock_open()) as mock_file:
++            metrics = observatory.collect_metrics()
++
++        assert metrics["house_price_index"] == 200000
++        # Avg Annual Income = 10000
++        # PIR = 200000 / 10000 = 20.0
++        assert metrics["pir"] == 20.0
++
++    def test_pir_calculation_zero_income(self, simulation):
++        """
++        Verify PIR calculation when average income is zero.
++        Should return 0.0 and not raise ZeroDivisionError.
++        """
++        # Setup Prices
++        unit1 = MagicMock()
++        unit1.estimated_value = 200000
++        simulation.world_state.real_estate_units = [unit1]
++
++        # Setup Agents with Zero Income
++        agent1 = MagicMock()
++        agent1.current_wage = 0
++        simulation.agents = {1: agent1}
++
++        observatory = BubbleObservatory(simulation)
++
++        with patch("builtins.open", mock_open()):
++            metrics = observatory.collect_metrics()
++
++        assert metrics["pir"] == 0.0
++
++    def test_pir_alarm(self, simulation):
++        """
++        Verify that a WARNING is logged if PIR > 20.0.
++        """
++        # Setup Prices (High)
++        unit1 = MagicMock()
++        unit1.estimated_value = 300000
++        simulation.world_state.real_estate_units = [unit1]
++
++        # Setup Agents (Low Income)
++        agent1 = MagicMock()
++        agent1.current_wage = 100 # Annual = 10000
++        simulation.agents = {1: agent1}
++        # PIR = 300000 / 10000 = 30.0 > 20.0
++
++        observatory = BubbleObservatory(simulation)
++
++        with patch("modules.analysis.bubble_observatory.logger") as mock_logger:
++            with patch("builtins.open", mock_open()):
++                metrics = observatory.collect_metrics()
++
++            assert metrics["pir"] == 30.0
++            mock_logger.warning.assert_called_once()
++            args, _ = mock_logger.warning.call_args
++            assert "High PIR detected: 30.00" in args[0]
++
++    def test_csv_logging_structure(self, simulation):
++        """
++        Verify that the CSV log includes the PIR column.
++        """
++        # Setup dummy data
++        simulation.world_state.real_estate_units = []
++        simulation.agents = {}
++
++        observatory = BubbleObservatory(simulation)
++
++        # Mock file operations
++        m_open = mock_open()
++        with patch("builtins.open", m_open), patch("os.path.isfile", return_value=False):
++            observatory.collect_metrics()
++
++        # Check file writes
++        handle = m_open()
++
++        # Expect two calls to write: Header and Data
++        # Header should include 'pir'
++        # Data should include pir value
++
++        # Join all write calls
++        written_content = "".join([call.args[0] for call in handle.write.call_args_list])
++
++        assert "tick,house_price_index,m2_growth_rate,new_mortgage_volume,average_ltv,average_dti,pir\n" in written_content
++        # tick=10, others 0
++        assert "10,0.00,0.000000,0.00,0.0000,0.0000,0.00\n" in written_content
