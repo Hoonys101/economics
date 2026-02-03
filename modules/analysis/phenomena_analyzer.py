@@ -59,9 +59,9 @@ class PhenomenaAnalyzer(IAnalyzer):
             detector.update(tick, sim_state)
 
         # Record time series
-        snapshot = sim_state.get_market_snapshot()
-        self.history['gdp'].append(snapshot.get('gdp', 0.0))
-        self.history['cpi'].append(snapshot.get('cpi', 0.0))
+        indicators = sim_state.get_economic_indicators()
+        self.history['gdp'].append(indicators.gdp)
+        self.history['cpi'].append(indicators.cpi)
 
     def generate_report(self) -> PhenomenaReportDTO:
         all_events = []

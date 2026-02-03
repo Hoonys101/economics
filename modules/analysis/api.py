@@ -4,6 +4,14 @@ from typing import TypedDict, Dict, List, Protocol, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from modules.simulation.api import ISimulationState
 
+@dataclass
+class CrisisDistributionDTO:
+    """DTO for firm crisis status distribution."""
+    safe: int
+    gray: int
+    distress: int
+    active: int
+
 # --- Existing Verification DTOs (Keep for backward compatibility if needed) ---
 
 class VerificationConfigDTO(TypedDict):

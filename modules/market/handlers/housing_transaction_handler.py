@@ -77,7 +77,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             down_payment = sale_price - loan_amount
 
         # Check Buyer Funds for Down Payment
-        buyer_assets = buyer._econ_state.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        buyer_assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
         if buyer_assets < down_payment:
             context.logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
             return False
@@ -201,7 +201,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
              ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
              ticks_per_month = ticks_per_year / 12.0
-             gross_income = buyer._econ_state.current_wage * work_hours * ticks_per_month
+             gross_income = buyer.current_wage * work_hours * ticks_per_month
         elif hasattr(buyer, "current_wage"):
              # Fallback
              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
@@ -216,7 +216,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                  existing_debt = status.total_outstanding_debt
              except: pass
 
-        assets = buyer._econ_state.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
 
         return BorrowerProfileDTO(
             borrower_id=str(buyer.id),
@@ -258,22 +258,23 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         # Update Seller (if not None/Govt)
         if seller:
             if isinstance(seller, Household):
-                 if unit_id in seller._econ_state.owned_properties:
-                      seller._econ_state.owned_properties.remove(unit_id)
+                 seller.remove_property(unit_id)
             elif hasattr(seller, "owned_properties"):
-                 if unit_id in seller.owned_properties:
+                 # Legacy/Other agents fallback
+                 if hasattr(seller, "remove_property"):
+                      seller.remove_property(unit_id)
+                 elif unit_id in seller.owned_properties:
                       seller.owned_properties.remove(unit_id)
 
         # Update Buyer
         if isinstance(buyer, Household):
-            if unit_id not in buyer._econ_state.owned_properties:
-                buyer._econ_state.owned_properties.append(unit_id)
+            buyer.add_property(unit_id)
 
             # Auto-move-in if homeless
-            if buyer._econ_state.residing_property_id is None:
+            if buyer.residing_property_id is None:
                 unit.occupant_id = buyer.id
-                buyer._econ_state.residing_property_id = unit_id
-                buyer._econ_state.is_homeless = False
+                buyer.residing_property_id = unit_id
+                buyer.is_homeless = False
         elif hasattr(buyer, "owned_properties"):
             if unit_id not in buyer.owned_properties:
                 buyer.owned_properties.append(unit_id)

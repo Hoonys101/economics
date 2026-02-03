@@ -8,6 +8,7 @@ import json
 import os
 import logging
 from typing import Optional, Dict, Any
+from modules.government.dtos import TaxHistoryItemDTO
 
 logger = logging.getLogger(__name__)
 
@@ -104,14 +105,15 @@ class DataLoader:
 
         result = {}
         if "tax_history" in data:
-            # tax_history is list of dicts: [{"tick": 1, "total": 100, "tax_revenue": {...}}, ...]
-            # We need to flatten it.
-            # Actually, the structure in Government agent:
-            # revenue_snapshot = self.current_tick_stats["tax_revenue"].copy() -> {"income_tax": 10, ...}
-            # revenue_snapshot["tick"] = current_tick
-            # revenue_snapshot["total"] = ...
+            # Enforce DTO schema validation
+            try:
+                tax_items = [TaxHistoryItemDTO(**item) for item in data["tax_history"]]
+                # Convert back to dict for DataFrame creation (vars() returns __dict__)
+                df_tax = pd.DataFrame([vars(item) for item in tax_items])
+            except TypeError as e:
+                logger.error(f"Failed to parse tax history: {e}")
+                df_tax = pd.DataFrame()
 
-            df_tax = pd.DataFrame(data["tax_history"])
             if not df_tax.empty:
                 df_tax.set_index("tick", inplace=True)
             result["tax"] = df_tax

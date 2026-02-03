@@ -1,6 +1,9 @@
 from dataclasses import dataclass
-from typing import List, Any, Dict, Optional, TYPE_CHECKING
+from typing import List, Any, Dict, Optional, TYPE_CHECKING, Protocol, Tuple
 import logging
+from modules.finance.api import IFinancialEntity
+from modules.simulation.api import IGovernment
+from simulation.models import Transaction
 
 if TYPE_CHECKING:
     from simulation.dtos.transactions import TransactionDTO
@@ -8,6 +11,16 @@ if TYPE_CHECKING:
     from simulation.firms import Firm
 
 logger = logging.getLogger(__name__)
+
+class ITaxConfig(Protocol):
+    TAX_BRACKETS: List[Tuple[float, float]]
+    TAX_RATE_BASE: float
+    SALES_TAX_RATE: float
+    GOODS_INITIAL_PRICE: Dict[str, float]
+    HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK: float
+    TAX_MODE: str
+    INCOME_TAX_PAYER: str
+    CORPORATE_TAX_RATE: float
 
 @dataclass
 class TaxIntent:
@@ -21,7 +34,7 @@ class TaxationSystem:
     Pure logic component for tax calculations.
     Decoupled from Government agent state (policies are passed in) and Settlement execution.
     """
-    def __init__(self, config_module: Any):
+    def __init__(self, config_module: Any): # Keeping Any for broad config, but internally using attributes of ITaxConfig
         self.config_module = config_module
 
     def _round_currency(self, amount: float) -> float:
@@ -75,10 +88,10 @@ class TaxationSystem:
 
     def calculate_tax_intents(
         self,
-        transaction: Any, # Transaction model
-        buyer: Any,
-        seller: Any,
-        government: Any,
+        transaction: Transaction,
+        buyer: IFinancialEntity,
+        seller: IFinancialEntity,
+        government: IGovernment,
         market_data: Optional[Dict[str, Any]] = None
     ) -> List[TaxIntent]:
         """

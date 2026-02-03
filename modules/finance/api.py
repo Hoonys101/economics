@@ -1,8 +1,11 @@
-from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable
+from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING
 from dataclasses import dataclass
 import abc
 
 from simulation.models import Order, Transaction
+
+if TYPE_CHECKING:
+    from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
 
 # Forward reference for type hinting
 class Firm: pass
@@ -225,7 +228,7 @@ class IBankService(IFinancialEntity, Protocol):
 
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""
-    def get_debt_to_gdp_ratio(self, government_dto: Any, world_dto: Any) -> float: ...
+    def get_debt_to_gdp_ratio(self, government: "IGovernment", indicators: "EconomicIndicatorsDTO") -> float: ...
 
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""
