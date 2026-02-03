@@ -36,7 +36,6 @@ class TestHRRules:
         assert labor_orders[0].price > 10.0 # High aggressiveness bids up wage
         assert labor_orders[0].quantity > 0
 
-    @pytest.mark.skip(reason="Legacy Mutation Assertion: Needs migration to Order Verification")
     def test_make_decisions_does_not_hire_when_full(
         self, ai_decision_engine, base_mock_firm, firm_engine_config, create_firm_state_dto
     ):

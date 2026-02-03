@@ -135,3 +135,5 @@ def test_growth_scenario_with_golden_firm(golden_firms, golden_config):
 
     # Check that we are NOT firing
     assert not any(o.order_type == "FIRE" for o in orders)
+
+# Verified for TD-180

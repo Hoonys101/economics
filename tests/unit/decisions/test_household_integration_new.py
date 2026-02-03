@@ -4,6 +4,7 @@ from simulation.core_agents import Household
 from simulation.ai.api import Personality
 from tests.utils.factories import create_household_config_dto
 from simulation.models import Talent
+from simulation.dtos.api import DecisionInputDTO
 
 class TestHouseholdIntegrationNew(unittest.TestCase):
     def test_make_decision_integration(self):
@@ -47,12 +48,25 @@ class TestHouseholdIntegrationNew(unittest.TestCase):
         market_data = {"housing_market": {"avg_rent_price": 50.0}, "loan_market": {"interest_rate": 0.05}}
         current_time = 100
 
-        refined_orders, tactic = household.make_decision(
-            markets=markets,
+        # Create input DTO
+        mock_snapshot = MagicMock()
+        mock_snapshot.labor.avg_wage = 10.0
+        mock_snapshot.housing = MagicMock()
+
+        input_dto = DecisionInputDTO(
             goods_data=[],
             market_data=market_data,
-            current_time=current_time
+            current_time=current_time,
+            market_snapshot=mock_snapshot,
+            government_policy=None,
+            fiscal_context=None,
+            macro_context=None,
+            stress_scenario_config=None,
+            housing_system=None,
+            agent_registry={}
         )
+
+        refined_orders, tactic = household.make_decision(input_dto)
 
         # Verify DecisionUnit was used (indirectly via result)
         # The orders should be passed through (or modified)
