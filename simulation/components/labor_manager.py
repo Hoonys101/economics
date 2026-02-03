@@ -64,10 +64,11 @@ class LaborManager:
         """
         Updates the household's labor skill based on education experience.
         """
-        # XP -> Skill Conversion Formula: Labor Skill = 1.0 + ln(XP + 1) * Talent
+        # XP -> Skill Conversion Formula: Labor Skill = Base + ln(XP + 1) * Talent
+        base_skill = getattr(self._config, "BASE_LABOR_SKILL", 1.0)
         log_growth = math.log1p(self._household.education_xp)  # ln(x+1)
         talent_factor = self._household.talent.base_learning_rate
-        new_skill = 1.0 + (log_growth * talent_factor)
+        new_skill = base_skill + (log_growth * talent_factor)
 
         old_skill = self._household.labor_skill
         self._household.labor_skill = new_skill

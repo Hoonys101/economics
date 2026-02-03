@@ -13,6 +13,11 @@ class TestHouseholdSystem2(unittest.TestCase):
         self.mock_config.HOUSING_EXPECTATION_CAP = 0.05
         # Fix mock config list issue
         self.mock_config.EDUCATION_LEVEL_DISTRIBUTION = [1.0]
+        # Refactor config mocks
+        self.mock_config.HOUSING_NPV_HORIZON_YEARS = 10
+        self.mock_config.HOUSING_NPV_RISK_PREMIUM = 0.02
+        self.mock_config.HOUSING_ANNUAL_MAINTENANCE_RATE = 0.01
+        self.mock_config.MORTGAGE_DEFAULT_DOWN_PAYMENT_RATE = 0.2
         self.planner = HouseholdSystem2Planner(self.mock_agent, self.mock_config)
 
     def test_npv_buy_calculation(self):

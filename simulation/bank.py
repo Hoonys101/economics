@@ -16,6 +16,7 @@ from modules.finance.api import (
 )
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
+import config
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -23,8 +24,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-TICKS_PER_YEAR = 100
-INITIAL_BASE_ANNUAL_RATE = 0.05
+TICKS_PER_YEAR = config.TICKS_PER_YEAR
+INITIAL_BASE_ANNUAL_RATE = config.INITIAL_BASE_ANNUAL_RATE
 
 @dataclass
 class Loan:
@@ -67,7 +68,7 @@ class Bank(IBankService):
 
         self.loans: Dict[str, Loan] = {}
         self.deposits: Dict[str, Deposit] = {}
-        self.base_rate = self._get_config("bank_defaults.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE)
+        self.base_rate = self._get_config("bank.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE)
 
         self.next_loan_id = 0
         self.next_deposit_id = 0
@@ -155,11 +156,11 @@ class Bank(IBankService):
         self.next_loan_id += 1
 
         start_tick = self.current_tick_tracker
-        term_ticks = 50 # Default
+        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50) # Default
         if due_tick is not None:
              term_ticks = max(1, due_tick - start_tick)
         else:
-             term_ticks = self._get_config("loan.default_term", 50)
+             term_ticks = self._get_config("bank.default_loan_term_ticks", term_ticks)
              due_tick = start_tick + term_ticks
 
         # Create the new deposit (Money Creation)
@@ -249,7 +250,7 @@ class Bank(IBankService):
         loans_dto_list: List[LoanInfoDTO] = []
         total_debt = 0.0
 
-        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+        ticks_per_year = TICKS_PER_YEAR
 
         for lid, loan in self.loans.items():
             if loan.borrower_id == bid_int and loan.remaining_balance > 0:
@@ -276,8 +277,9 @@ class Bank(IBankService):
     # --- Legacy / Internal Methods ---
 
     def deposit_from_customer(self, depositor_id: int, amount: float) -> Optional[str]:
-        margin = self._get_config("bank_defaults.bank_margin", 0.02)
-        deposit_rate = max(0.0, self.base_rate + self._get_config("bank_defaults.credit_spread_base", 0.02) - margin)
+        margin = self._get_config("bank.deposit_margin", getattr(config, "BANK_DEPOSIT_MARGIN", 0.02))
+        spread = self._get_config("bank.credit_spread_base", getattr(config, "BANK_CREDIT_SPREAD_BASE", 0.02))
+        deposit_rate = max(0.0, self.base_rate + spread - margin)
 
         deposit_id = f"dep_{self.next_deposit_id}"
         self.next_deposit_id += 1
@@ -323,7 +325,7 @@ class Bank(IBankService):
         # Keeping separate implementation for safety, but logic is same.
         total_principal = 0.0
         daily_interest_burden = 0.0
-        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+        ticks_per_year = TICKS_PER_YEAR
         for loan in self.loans.values():
             if loan.borrower_id == agent_id:
                 total_principal += loan.remaining_balance
@@ -340,7 +342,7 @@ class Bank(IBankService):
     def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0) -> List[Transaction]:
         self.current_tick_tracker = current_tick
         generated_transactions: List[Transaction] = []
-        ticks_per_year = self._get_config("bank_defaults.ticks_per_year", TICKS_PER_YEAR)
+        ticks_per_year = TICKS_PER_YEAR
         gov_agent = None
         for a in agents_dict.values():
              if a.__class__.__name__ == 'Government':
@@ -435,7 +437,7 @@ class Bank(IBankService):
         This replaces the old direct-modification `check_solvency`.
         """
         if self.assets < 0:
-            solvency_buffer = self._get_config("bank_defaults.solvency_buffer", 1000.0)
+            solvency_buffer = self._get_config("bank.solvency_buffer", getattr(config, "BANK_SOLVENCY_BUFFER", 1000.0))
             borrow_amount = abs(self.assets) + solvency_buffer
 
             tx = Transaction(
@@ -475,11 +477,11 @@ class Bank(IBankService):
 
         loan.remaining_balance = 0.0
 
-        jail_ticks = self._get_config("credit_recovery_ticks", 100)
+        jail_ticks = self._get_config("bank.credit_recovery_ticks", getattr(config, "CREDIT_RECOVERY_TICKS", 100))
         if hasattr(agent, "credit_frozen_until_tick"):
             agent.credit_frozen_until_tick = current_tick + jail_ticks
 
-        xp_penalty = self._get_config("bankruptcy_xp_penalty", 0.2)
+        xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", getattr(config, "BANKRUPTCY_XP_PENALTY", 0.2))
         if hasattr(agent, "education_xp"):
              agent.education_xp *= (1.0 - xp_penalty)
 

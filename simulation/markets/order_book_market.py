@@ -81,8 +81,14 @@ class OrderBookMarket(Market):
 
     def _update_price_history(self, item_id: str, price: float):
         """Update the sliding window of price history."""
+        window_size = getattr(self.config_module, "PRICE_VOLATILITY_WINDOW_TICKS", 20) if self.config_module else 20
+
         if item_id not in self.price_history:
-            self.price_history[item_id] = deque(maxlen=20)
+            self.price_history[item_id] = deque(maxlen=window_size)
+        elif self.price_history[item_id].maxlen != window_size:
+            # Resize if config changed
+            self.price_history[item_id] = deque(self.price_history[item_id], maxlen=window_size)
+
         self.price_history[item_id].append(price)
 
     def get_dynamic_price_bounds(self, item_id: str) -> Tuple[float, float]:

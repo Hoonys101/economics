@@ -67,7 +67,8 @@ class HousingSystem:
                              if hasattr(simulation, 'world_state'):
                                  simulation.world_state.transactions.append(term_tx)
                         
-                        fire_sale_price = unit.estimated_value * 0.8
+                        fire_sale_discount = getattr(self.config, "FORECLOSURE_FIRE_SALE_DISCOUNT", 0.8)
+                        fire_sale_price = unit.estimated_value * fire_sale_discount
                         sell_order = Order(
                             agent_id=-1,
                             side="SELL",

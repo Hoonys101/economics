@@ -86,6 +86,9 @@ class MAManager:
         random.shuffle(predators)
         
         # --- Hostile Takeover Loop ---
+        hostile_premium = getattr(self.config, "HOSTILE_TAKEOVER_PREMIUM", 1.2)
+        friendly_premium = getattr(self.config, "FRIENDLY_MERGER_PREMIUM", 1.1)
+
         for predator in list(predators): # Copy list to iterate
             # Check strategy
             expansion_mode = "ORGANIC"
@@ -123,7 +126,7 @@ class MAManager:
                 
                 # Check if Predator can afford
                 target_valuation = prey.valuation
-                offer_price = target_valuation * 1.1 # 10% Premium
+                offer_price = target_valuation * friendly_premium
                 
                 # Check Cash Requirement
                 min_cash_ratio = getattr(self.config, "MIN_ACQUISITION_CASH_RATIO", 1.5)
@@ -144,10 +147,11 @@ class MAManager:
         Phase 21: Probabilistic Hostile Takeover.
         """
         # Offer Premium
-        offer_price = market_cap * 1.2 # 20% Premium over market price
+        premium = getattr(self.config, "HOSTILE_TAKEOVER_PREMIUM", 1.2)
+        offer_price = market_cap * premium
 
         # Success Probability
-        success_prob = 0.6
+        success_prob = getattr(self.config, "HOSTILE_TAKEOVER_SUCCESS_PROB", 0.6)
 
         # Roll
         if random.random() < success_prob:
@@ -190,7 +194,9 @@ class MAManager:
         retained_count = 0
         fired_count = 0
 
-        retention_rate = 0.3 if is_hostile else 0.5
+        retention_rates = getattr(self.config, "MERGER_EMPLOYEE_RETENTION_RATES", [0.3, 0.5])
+        # [0] = Hostile, [1] = Friendly
+        retention_rate = retention_rates[0] if is_hostile else retention_rates[1]
 
         for emp in list(prey.hr.employees):
             if random.random() > retention_rate:
