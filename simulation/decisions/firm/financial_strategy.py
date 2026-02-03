@@ -5,6 +5,7 @@ from modules.market.api import OrderDTO
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from modules.finance.api import BorrowerProfileDTO
 from simulation.decisions.firm.api import FinancialPlanDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,12 @@ class FinancialStrategy:
         if debt_info:
             current_debt = debt_info.get("total_principal", 0.0)
 
-        current_assets = max(firm.finance.balance, 1.0)
+        current_assets_raw = firm.finance.balance
+        current_assets_val = current_assets_raw
+        if isinstance(current_assets_raw, dict):
+            current_assets_val = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        current_assets = max(current_assets_val, 1.0)
         current_leverage = current_debt / current_assets
 
         if current_leverage < target_leverage:
@@ -79,9 +85,14 @@ class FinancialStrategy:
                 if debt_info:
                     daily_burden = debt_info.get("daily_interest_burden", 0.0)
 
+                gross_income_raw = firm.finance.revenue_this_turn
+                gross_income = gross_income_raw
+                if isinstance(gross_income_raw, dict):
+                    gross_income = gross_income_raw.get(DEFAULT_CURRENCY, 0.0)
+
                 borrower_profile = BorrowerProfileDTO(
                     borrower_id=str(firm.id),
-                    gross_income=firm.finance.revenue_this_turn,
+                    gross_income=gross_income,
                     existing_debt_payments=daily_burden * 30, # Approx monthly
                     collateral_value=0.0, # Unsecured
                     existing_assets=firm.finance.balance
@@ -118,7 +129,7 @@ class FinancialStrategy:
 
         elif current_leverage > target_leverage:
             excess_debt = current_debt - (current_assets * target_leverage)
-            repay_amount = min(excess_debt, firm.finance.balance * 0.5)
+            repay_amount = min(excess_debt, current_assets * 0.5)
 
             if repay_amount > 10.0 and current_debt > 0:
                  orders.append(
@@ -132,7 +143,12 @@ class FinancialStrategy:
         startup_cost = config.startup_cost
         trigger_ratio = config.seo_trigger_ratio
 
-        if firm.finance.balance >= startup_cost * trigger_ratio:
+        current_balance_raw = firm.finance.balance
+        current_balance = current_balance_raw
+        if isinstance(current_balance_raw, dict):
+            current_balance = current_balance_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        if current_balance >= startup_cost * trigger_ratio:
             return None
         if firm.finance.treasury_shares <= 0:
             return None
@@ -165,7 +181,7 @@ class FinancialStrategy:
         if price is None or price <= 0:
             # Fallback to Book Value
             if firm.finance.total_shares > 0:
-                price = firm.finance.balance / firm.finance.total_shares
+                price = current_balance / firm.finance.total_shares
             else:
                 price = 0.0
 

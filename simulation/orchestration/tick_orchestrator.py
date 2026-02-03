@@ -10,6 +10,7 @@ from simulation.orchestration.phases import (
 )
 from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -50,7 +51,7 @@ class TickOrchestrator:
         # Money Supply Verification (Tick 0)
         # This check is usually done before any activity starts
         if state.time == 0:
-            state.baseline_money_supply = state.calculate_total_money()
+            state.baseline_money_supply = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
             state.logger.info(
                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply:.2f}",
                 extra={"tick": state.time, "money_supply": state.baseline_money_supply}
@@ -86,6 +87,14 @@ class TickOrchestrator:
 
     def _create_simulation_state_dto(self, injectable_sensory_dto: Optional[GovernmentStateDTO]) -> SimulationState:
         state = self.world_state
+
+        # Ensure injectable_sensory_dto has valid current_gdp if provided
+        # This is passed to government as sensory_data, which is then used by FinanceSystem
+        # to calculate debt-to-GDP ratio via FiscalMonitor.
+        # FiscalMonitor expects 'gdp' attribute, but GovernmentStateDTO has 'current_gdp'.
+        # We need to bridge this gap either here or in FinanceSystem.
+        # Since FiscalMonitor is shared, better to adapt the input in FinanceSystem.
+        # However, we can also ensure current_gdp is populated here for clarity.
 
         return SimulationState(
             time=state.time,
@@ -176,10 +185,10 @@ class TickOrchestrator:
 
         # Money Supply Verification (Post-Tick)
         if state.time >= 1:
-            current_money = state.calculate_total_money()
+            current_money = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
             expected_money = state.baseline_money_supply
             if hasattr(state.government, "get_monetary_delta"):
-                expected_money += state.government.get_monetary_delta()
+                expected_money += state.government.get_monetary_delta(DEFAULT_CURRENCY)
 
             delta = current_money - expected_money
 

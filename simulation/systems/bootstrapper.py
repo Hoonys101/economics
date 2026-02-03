@@ -1,5 +1,6 @@
 from typing import List, Any, TYPE_CHECKING, Dict
 import logging
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -93,15 +94,16 @@ class Bootstrapper:
 
             # 2. Capital Injection (Demand Side)
             # Refactor: Use finance.balance
-            if firm.finance.balance < Bootstrapper.MIN_CAPITAL:
-                diff = Bootstrapper.MIN_CAPITAL - firm.finance.balance
+            current_balance = firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+            if current_balance < Bootstrapper.MIN_CAPITAL:
+                diff = Bootstrapper.MIN_CAPITAL - current_balance
                 if settlement_system and central_bank:
                     settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
                     logger.info(f"BOOTSTRAPPER | Injected {diff:.2f} capital to Firm {firm.id} via Settlement.")
                 else:
                     # Fallback (Should not be used in Genesis mode, but keeps compatibility)
                     # Use finance.credit explicitly
-                    firm.finance.credit(diff, "Legacy Bootstrap")
+                    firm.finance.credit(diff, "Legacy Bootstrap", currency=DEFAULT_CURRENCY)
                     logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff:.2f} to Firm {firm.id} (No SettlementSystem).")
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

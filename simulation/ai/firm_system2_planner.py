@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Tuple, Optional
 import math
 import logging
 from simulation.ai.enums import Personality
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,11 @@ class FirmSystem2Planner:
             raise ValueError("FirmSystem2Planner requires firm_state (FirmStateDTO).")
 
         # Abstraction layer to access data from DTO
-        revenue = firm_state.finance.revenue_this_turn
+        revenue_raw = firm_state.finance.revenue_this_turn
+        revenue = revenue_raw
+        if isinstance(revenue_raw, dict):
+            revenue = revenue_raw.get(DEFAULT_CURRENCY, 0.0)
+
         last_revenue = revenue # DTO might not have last_revenue, approximate
 
         # Sum wages from employees_data
@@ -69,7 +74,10 @@ class FirmSystem2Planner:
             except (KeyError, AttributeError):
                 personality = Personality.BALANCED
 
-        assets = firm_state.finance.balance
+        assets_raw = firm_state.finance.balance
+        assets = assets_raw
+        if isinstance(assets_raw, dict):
+            assets = assets_raw.get(DEFAULT_CURRENCY, 0.0)
 
         # 1. Forecast Revenue
         base_revenue = max(revenue, last_revenue, 10.0)

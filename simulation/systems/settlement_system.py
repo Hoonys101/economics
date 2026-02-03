@@ -8,6 +8,7 @@ from modules.finance.api import (
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
 )
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
 from modules.finance.saga_handler import HousingTransactionSagaHandler
 from modules.market.housing_planner_api import MortgageApplicationDTO
@@ -156,9 +157,13 @@ class SettlementSystem(ISettlementSystem):
             self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
 
         # 2. Atomic Transfer: Cash
-        cash_balance = agent.assets
+        cash_balance_raw = agent.assets
+        cash_balance = cash_balance_raw
+        if isinstance(cash_balance_raw, dict):
+            cash_balance = cash_balance_raw.get(DEFAULT_CURRENCY, 0.0)
+
         if cash_balance > 0:
-            agent.withdraw(cash_balance)
+            agent.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
 
         # 3. Determine Heir / Escheatment
         heir_id = None
@@ -372,16 +377,21 @@ class SettlementSystem(ISettlementSystem):
             except (TypeError, ValueError):
                 current_assets = 0.0
 
-            if current_assets > 0:
+            current_assets_val = current_assets
+            if isinstance(current_assets, dict):
+                current_assets_val = current_assets.get(DEFAULT_CURRENCY, 0.0)
+
+            if current_assets_val > 0:
                 self.transfer(
                     debit_agent=agent,
                     credit_agent=government_agent,
-                    amount=current_assets,
+                    amount=current_assets_val,
                     memo="liquidation_escheatment",
-                    tick=tick
+                    tick=tick,
+                    currency=DEFAULT_CURRENCY
                 )
 
-    def _execute_withdrawal(self, agent: IFinancialEntity, amount: float, memo: str, tick: int) -> bool:
+    def _execute_withdrawal(self, agent: IFinancialEntity, amount: float, memo: str, tick: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
         """
         Executes withdrawal with checks and seamless payment (Bank) support.
         Returns True on success, False on failure.
@@ -399,7 +409,7 @@ class SettlementSystem(ISettlementSystem):
 
         if is_central_bank:
              try:
-                 agent.withdraw(amount)
+                 agent.withdraw(amount, currency=currency)
                  return True
              except Exception as e:
                  self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
@@ -410,22 +420,34 @@ class SettlementSystem(ISettlementSystem):
 
         # Check for Firm's finance component first
         if hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
-             current_cash = agent.finance.balance
+             current_cash_raw = agent.finance.balance
+             if isinstance(current_cash_raw, dict):
+                 current_cash = current_cash_raw.get(currency, 0.0)
+             else:
+                 current_cash = current_cash_raw
         # Check for Household's EconComponent state
         elif hasattr(agent, '_econ_state') and hasattr(agent._econ_state, 'assets'):
-             current_cash = agent._econ_state.assets
+             current_cash_raw = agent._econ_state.assets
+             if isinstance(current_cash_raw, dict):
+                 current_cash = current_cash_raw.get(currency, 0.0)
+             else:
+                 current_cash = current_cash_raw
         else:
              if not hasattr(agent, 'assets'):
                   self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")
                   pass
              try:
-                 current_cash = float(agent.assets) if hasattr(agent, 'assets') else 0.0
+                 assets_raw = agent.assets if hasattr(agent, 'assets') else 0.0
+                 if isinstance(assets_raw, dict):
+                     current_cash = assets_raw.get(currency, 0.0)
+                 else:
+                     current_cash = float(assets_raw)
              except (TypeError, ValueError):
                   current_cash = 0.0
 
         if current_cash < amount:
-            # Seamless Check
-            if self.bank:
+            # Seamless Check (Only for DEFAULT_CURRENCY for now, assume Bank uses DEFAULT_CURRENCY)
+            if self.bank and currency == DEFAULT_CURRENCY:
                 needed_from_bank = amount - current_cash
                 bank_balance = self.bank.get_balance(str(agent.id))
                 if (current_cash + bank_balance) < amount:
@@ -447,18 +469,22 @@ class SettlementSystem(ISettlementSystem):
         # 3. Execution
         try:
             if current_cash >= amount:
-                agent.withdraw(amount)
+                agent.withdraw(amount, currency=currency)
             else:
-                # Seamless
+                # Seamless (Only for DEFAULT_CURRENCY)
+                if currency != DEFAULT_CURRENCY:
+                     self.logger.error(f"SETTLEMENT_FAIL | Seamless payment not supported for {currency}")
+                     return False
+
                 needed_from_bank = amount - current_cash
                 if current_cash > 0:
-                    agent.withdraw(current_cash)
+                    agent.withdraw(current_cash, currency=currency)
 
                 success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
                 if not success:
                     # Rollback cash
                     if current_cash > 0:
-                         agent.deposit(current_cash)
+                         agent.deposit(current_cash, currency=currency)
                     raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
 
                 self.logger.info(
@@ -586,7 +612,8 @@ class SettlementSystem(ISettlementSystem):
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
         credit_context: Optional[Dict[str, Any]] = None,
-        tick: int = 0
+        tick: int = 0,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """
         Executes an atomic transfer from debit_agent to credit_agent.
@@ -606,19 +633,19 @@ class SettlementSystem(ISettlementSystem):
              return None
 
         # EXECUTE
-        success = self._execute_withdrawal(debit_agent, amount, memo, tick)
+        success = self._execute_withdrawal(debit_agent, amount, memo, tick, currency=currency)
         if not success:
             return None
 
         try:
-            credit_agent.deposit(amount)
+            credit_agent.deposit(amount, currency=currency)
         except Exception as e:
             # ROLLBACK: Credit failed, must reverse debit
             self.logger.error(
                 f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount:.2f} from {debit_agent.id}. Error: {e}"
             )
             try:
-                debit_agent.deposit(amount)
+                debit_agent.deposit(amount, currency=currency)
                 self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount:.2f} to {debit_agent.id}.")
             except Exception as rollback_error:
                 self.logger.critical(
@@ -641,7 +668,8 @@ class SettlementSystem(ISettlementSystem):
         destination: IFinancialEntity,
         amount: float,
         reason: str,
-        tick: int
+        tick: int,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """
         Creates new money (or grants) and transfers it to an agent.
@@ -658,9 +686,9 @@ class SettlementSystem(ISettlementSystem):
         if is_central_bank:
             # Minting logic: Just credit destination. Source (CB) is assumed to have infinite capacity.
             try:
-                destination.deposit(amount)
+                destination.deposit(amount, currency=currency)
                 self.logger.info(
-                    f"MINT_AND_TRANSFER | Created {amount:.2f} from {source_authority.id} to {destination.id}. Reason: {reason}",
+                    f"MINT_AND_TRANSFER | Created {amount:.2f} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
                 return self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
@@ -669,7 +697,7 @@ class SettlementSystem(ISettlementSystem):
                 return None
         else:
             # If not CB (e.g. Government), treat as regular transfer to enforce budget
-            return self.transfer(source_authority, destination, amount, reason, tick=tick)
+            return self.transfer(source_authority, destination, amount, reason, tick=tick, currency=currency)
 
     def transfer_and_destroy(
         self,
@@ -677,7 +705,8 @@ class SettlementSystem(ISettlementSystem):
         sink_authority: IFinancialEntity,
         amount: float,
         reason: str,
-        tick: int
+        tick: int,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """
         Transfers money from an agent to an authority to be destroyed.
@@ -694,9 +723,9 @@ class SettlementSystem(ISettlementSystem):
         if is_central_bank:
             # Burning logic: Just debit source. Sink (CB) absorbs it (removed from circulation).
             try:
-                source.withdraw(amount)
+                source.withdraw(amount, currency=currency)
                 self.logger.info(
-                    f"TRANSFER_AND_DESTROY | Destroyed {amount:.2f} from {source.id} to {sink_authority.id}. Reason: {reason}",
+                    f"TRANSFER_AND_DESTROY | Destroyed {amount:.2f} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
                 return self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
@@ -705,7 +734,7 @@ class SettlementSystem(ISettlementSystem):
                 return None
         else:
             # If not CB, treat as regular transfer (e.g. tax to Gov)
-            return self.transfer(source, sink_authority, amount, reason, tick=tick)
+            return self.transfer(source, sink_authority, amount, reason, tick=tick, currency=currency)
 
     def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: float, memo: str, tick: int) -> ITransaction:
         return {

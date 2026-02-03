@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, TYPE_CHECKING, Optional, Any
 import logging
 from modules.common.dtos import Claim
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -48,7 +49,10 @@ class LiquidationManager:
             self._liquidate_assets(firm, state)
 
         # Re-fetch cash after liquidation
-        available_cash = firm.finance.balance
+        available_cash_raw = firm.finance.balance
+        available_cash = available_cash_raw
+        if isinstance(available_cash_raw, dict):
+            available_cash = available_cash_raw.get(DEFAULT_CURRENCY, 0.0)
 
         all_claims: List[Claim] = []
 
@@ -132,7 +136,8 @@ class LiquidationManager:
                 self.public_manager,
                 firm,
                 total_value,
-                f"Asset Liquidation (Inventory) - Firm {firm.id}"
+                f"Asset Liquidation (Inventory) - Firm {firm.id}",
+                currency=DEFAULT_CURRENCY
             )
 
             if success:
@@ -207,7 +212,7 @@ class LiquidationManager:
                     if shares > 0:
                         share_ratio = shares / outstanding_shares
                         distribution = remaining_cash * share_ratio
-                        self.settlement_system.transfer(firm, agent, distribution, "Liquidation Dividend (Tier 5)")
+                        self.settlement_system.transfer(firm, agent, distribution, "Liquidation Dividend (Tier 5)", currency=DEFAULT_CURRENCY)
                         total_distributed += distribution
 
                 logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed:.2f} to shareholders.")
@@ -222,7 +227,7 @@ class LiquidationManager:
 
         if creditor:
             memo = f"Liquidation Payout: {claim.description}" + (" (Partial)" if partial else "")
-            success = self.settlement_system.transfer(firm, creditor, amount, memo)
+            success = self.settlement_system.transfer(firm, creditor, amount, memo, currency=DEFAULT_CURRENCY)
             if not success:
                  logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount:.2f} to {creditor.id}")
         else:

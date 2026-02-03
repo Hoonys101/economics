@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
+from modules.system.api import DEFAULT_CURRENCY
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
@@ -281,7 +282,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         ]
 
         top_20_count = len(sim.households) // 5
-        top_households = sorted(sim.households, key=lambda h: h._econ_state.assets, reverse=True)[:top_20_count]
+        top_households = sorted(sim.households, key=lambda h: h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0), reverse=True)[:top_20_count]
 
         for i, hh in enumerate(top_households):
             if i < len(sim.real_estate_units):
@@ -356,7 +357,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         # TD-115: Establish baseline money supply AFTER all liquidity injection
         # but BEFORE any agent-level activities (hiring, update_needs) begin.
         sim.world_state.central_bank = sim.central_bank # Ensure WorldState has CB ref
-        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
+        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
         self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
 
         Bootstrapper.force_assign_workers(sim.firms, sim.households)

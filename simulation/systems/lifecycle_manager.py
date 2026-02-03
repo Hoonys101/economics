@@ -15,7 +15,7 @@ from simulation.systems.firm_management import FirmSystem
 from simulation.systems.liquidation_manager import LiquidationManager
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.finance.api import ISettlementSystem
-from modules.system.api import IAssetRecoverySystem
+from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
@@ -139,7 +139,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
             # Standard Closure Check
             # Refactor: Use finance.balance
-            if (firm.finance.balance <= assets_threshold or
+            current_assets = firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+            if (current_assets <= assets_threshold or
                     firm.finance.consecutive_loss_turns >= closure_turns_threshold):
 
                 # Double check grace period (if we fell through but counter is high)
@@ -150,11 +151,11 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
                 firm.is_active = False
                 self.logger.warning(
-                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {firm.finance.balance:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
+                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {current_assets:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
                     extra={
                         "tick": state.time,
                         "agent_id": firm.id,
-                        "assets": firm.finance.balance,
+                        "assets": current_assets,
                         "consecutive_loss_turns": firm.finance.consecutive_loss_turns,
                         "tags": ["firm_closure"],
                     }

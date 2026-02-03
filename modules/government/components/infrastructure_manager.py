@@ -2,6 +2,7 @@ from typing import List, Any, Optional, TYPE_CHECKING
 import logging
 from simulation.models import Transaction
 from modules.government.constants import DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.agents.government import Government
@@ -31,8 +32,13 @@ class InfrastructureManager:
             return []
 
         # Synchronous Financing (WO-117)
-        if self.government.assets < effective_cost:
-            needed = effective_cost - self.government.assets
+        current_assets_raw = self.government.assets
+        current_assets = current_assets_raw
+        if isinstance(current_assets_raw, dict):
+            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+
+        if current_assets < effective_cost:
+            needed = effective_cost - current_assets
             # Use new synchronous method
             if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
                 success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)

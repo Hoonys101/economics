@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from modules.system.api import DEFAULT_CURRENCY
 
 class VectorizedHouseholdPlanner:
     def __init__(self, config):
@@ -95,7 +96,7 @@ class VectorizedHouseholdPlanner:
         # 1. Extract State
         # Inventory: "basic_food"
         inventories = np.array([a.inventory.get("basic_food", 0.0) for a in agents], dtype=np.float32)
-        assets = np.array([a.assets for a in agents], dtype=np.float32)
+        assets = np.array([a.assets.get(DEFAULT_CURRENCY, 0.0) for a in agents], dtype=np.float32)
         survival_needs = np.array([a.needs.get("survival", 0.0) for a in agents], dtype=np.float32)
 
         # 2. Market Data

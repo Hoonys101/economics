@@ -4,6 +4,7 @@ from simulation.core_agents import Household
 from simulation.agents.government import Government
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +34,18 @@ class InheritanceManager:
         current_tick = simulation.time
         settlement_system = simulation.settlement_system
 
-        self.logger.info(
-            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased._econ_state.assets:.2f}",
-            extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
-        )
-
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
-        cash = round(deceased._econ_state.assets, 2)
+        cash_raw = deceased._econ_state.assets
+        cash = cash_raw
+        if isinstance(cash_raw, dict):
+            cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
+        cash = round(cash, 2)
+
+        self.logger.info(
+            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash:.2f}",
+            extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
+        )
 
         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
         real_estate_value = sum(u.estimated_value for u in deceased_units)

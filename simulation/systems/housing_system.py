@@ -13,6 +13,7 @@ from modules.market.housing_purchase_api import (
     MortgageApplicationDTO
 )
 from modules.market.loan_api import MortgageApplicationRequestDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 
 if TYPE_CHECKING:
@@ -94,9 +95,14 @@ class HousingSystem:
                 owner = simulation.agents.get(unit.owner_id)
                 if owner:
                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
-                    payable = min(cost, owner.assets)
+
+                    owner_assets = owner.assets
+                    if isinstance(owner_assets, dict):
+                        owner_assets = owner_assets.get(DEFAULT_CURRENCY, 0.0)
+
+                    payable = min(cost, owner_assets)
                     if payable > 0 and settlement and simulation.government:
-                        settlement.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time)
+                        settlement.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time, currency=DEFAULT_CURRENCY)
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:
@@ -108,9 +114,14 @@ class HousingSystem:
 
                 if tenant and owner and tenant.is_active and owner.is_active:
                     rent = unit.rent_price
-                    if tenant.assets >= rent:
+
+                    tenant_assets = tenant.assets
+                    if isinstance(tenant_assets, dict):
+                        tenant_assets = tenant_assets.get(DEFAULT_CURRENCY, 0.0)
+
+                    if tenant_assets >= rent:
                         if settlement:
-                            settlement.transfer(tenant, owner, rent, "rent_payment", tick=simulation.time)
+                            settlement.transfer(tenant, owner, rent, "rent_payment", tick=simulation.time, currency=DEFAULT_CURRENCY)
                     else:
                         # Eviction due to rent non-payment
                         logger.info(
