@@ -1,0 +1,485 @@
+diff --git a/communications/insights/20260203_Strict_Typing_Refactor.md b/communications/insights/20260203_Strict_Typing_Refactor.md
+new file mode 100644
+index 0000000..4c2f2e5
+--- /dev/null
++++ b/communications/insights/20260203_Strict_Typing_Refactor.md
+@@ -0,0 +1,29 @@
++# Insight Report: Strict Typing & Encapsulation Refactor
++**Date:** 2026-02-03
++**Mission Key:** 20260203_Strict_Typing_Refactor
++
++## Executive Summary
++This mission addressed critical technical debt related to weak typing (`Any`) and encapsulation violations in the `Household` agent and `HousingTransactionHandler`. By enforcing strict DTOs and Protocols, and implementing proper state management methods, we have significantly improved the system's robustness and type safety.
++
++## Key Changes
++1.  **Protocol Extensions (`ISimulationState`)**:
++    *   Extended `ISimulationState` to include `time`, `settlement_system`, `registry`, `agents`, `bank`, and `markets`. This eliminates the need for `Any` in systems that require access to the simulation context, such as Saga Handlers.
++
++2.  **Encapsulation Enforcement (`Household`)**:
++    *   Added `add_property(id)` and `remove_property(id)` methods to `Household`.
++    *   This prevents external entities (like `HousingTransactionHandler`) from directly modifying the internal `_econ_state` list, adhering to the "Tell, Don't Ask" principle.
++
++3.  **Strict Typing in Analysis Modules**:
++    *   Refactored `FiscalMonitor` to use `IGovernment` and `EconomicIndicatorsDTO` instead of `Any`.
++    *   Refactored `CrisisMonitor` to return a `CrisisDistributionDTO` instead of a raw dictionary.
++    *   Refactored `TaxationSystem` to use `Transaction`, `IFinancialEntity`, and `IGovernment` protocols.
++    *   Refactored `DataLoader` to validate JSON input against `TaxHistoryItemDTO`.
++
++## Technical Debt & Observations
++*   **Legacy Configuration Pattern**: Many components still rely on `getattr(config_module, ...)` with fallback values. While we defined `ITaxConfig` to document expectations, a system-wide move to strict Configuration DTOs (like `HouseholdConfigDTO` which is already in use) is recommended.
++*   **ISimulationState Scope**: The `ISimulationState` protocol is becoming a "God Protocol" that exposes nearly everything. Future refactoring should consider splitting this into smaller, purpose-specific contexts (e.g., `ISagaContext`, `IAnalysisContext`) to follow Interface Segregation Principle.
++*   **Saga Handler Dependencies**: `HousingTransactionSagaHandler` still has a strong coupling to `simulation.markets`. Moving towards dependency injection for specific markets would improve testability.
++*   **Missing Setters**: While `Household` has setters for `is_homeless`, relying on setters for state synchronization can be risky if not documented or enforced. The new `add/remove_property` methods are a step in the right direction.
++
++## Impact
++These changes reduce the risk of `AttributeError` and `KeyError` at runtime and make the data flow more explicit. The introduction of DTOs for analysis results allows for better API contracts between the simulation core and reporting tools.
+diff --git a/modules/analysis/api.py b/modules/analysis/api.py
+index 38a335f..6fe5af8 100644
+--- a/modules/analysis/api.py
++++ b/modules/analysis/api.py
+@@ -4,6 +4,14 @@ from typing import TypedDict, Dict, List, Protocol, Optional, TYPE_CHECKING
+ if TYPE_CHECKING:
+     from modules.simulation.api import ISimulationState
+ 
++@dataclass
++class CrisisDistributionDTO:
++    """DTO for firm crisis status distribution."""
++    safe: int
++    gray: int
++    distress: int
++    active: int
++
+ # --- Existing Verification DTOs (Keep for backward compatibility if needed) ---
+ 
+ class VerificationConfigDTO(TypedDict):
+diff --git a/modules/analysis/crisis_monitor.py b/modules/analysis/crisis_monitor.py
+index 65adf50..fdd88e7 100644
+--- a/modules/analysis/crisis_monitor.py
++++ b/modules/analysis/crisis_monitor.py
+@@ -4,6 +4,7 @@ import os
+ from typing import List, Dict, Any, TYPE_CHECKING
+ from simulation.firms import Firm
+ from modules.finance.domain.corporate_finance import AltmanZScoreCalculator
++from modules.analysis.api import CrisisDistributionDTO
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -49,7 +50,7 @@ class CrisisMonitor:
+             writer.writerow(["tick", "safe_count", "gray_count", "distress_count", "total_active_firms", "survival_rate"])
+         self._log_file_initialized = True
+ 
+-    def monitor(self, tick: int, firms: List['Firm']) -> Dict[str, int]:
++    def monitor(self, tick: int, firms: List['Firm']) -> CrisisDistributionDTO:
+         """
+         Iterates through active firms, calculates Z-Score, and logs distribution.
+         """
+@@ -92,12 +93,12 @@ class CrisisMonitor:
+             }
+         )
+ 
+-        return {
+-            "safe": safe_count,
+-            "gray": gray_count,
+-            "distress": distress_count,
+-            "active": active_firms_count
+-        }
++        return CrisisDistributionDTO(
++            safe=safe_count,
++            gray=gray_count,
++            distress=distress_count,
++            active=active_firms_count
++        )
+ 
+     def _calculate_z_score_for_firm(self, firm: 'Firm') -> float:
+         """
+diff --git a/modules/analysis/fiscal_monitor.py b/modules/analysis/fiscal_monitor.py
+index b2dfe32..f237ce6 100644
+--- a/modules/analysis/fiscal_monitor.py
++++ b/modules/analysis/fiscal_monitor.py
+@@ -1,27 +1,25 @@
+-from typing import Any
+ from modules.finance.api import IFiscalMonitor
++from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
+ 
+ class FiscalMonitor(IFiscalMonitor):
+     """
+     Component for analyzing government fiscal health.
+     """
+-    def get_debt_to_gdp_ratio(self, government_dto: Any, world_dto: Any) -> float:
++    def get_debt_to_gdp_ratio(self, government: IGovernment, indicators: EconomicIndicatorsDTO) -> float:
+         """
+         Calculates the debt-to-GDP ratio.
+ 
+         Args:
+-            government_dto: Object containing debt information (expected 'total_debt').
+-            world_dto: Object containing GDP information (expected 'current_gdp' or 'total_production').
++            government: Object containing debt information (expected 'total_debt').
++            indicators: Object containing GDP information.
+ 
+         Returns:
+             float: The debt-to-GDP ratio. Returns 0.0 if GDP is invalid.
+         """
+-        debt = getattr(government_dto, 'total_debt', 0.0)
++        debt = government.total_debt
+ 
+-        # GDP might be in various DTOs depending on context
+-        gdp = getattr(world_dto, 'current_gdp', 0.0)
+-        if gdp == 0.0:
+-            gdp = getattr(world_dto, 'total_production', 0.0)
++        # GDP is strictly in EconomicIndicatorsDTO
++        gdp = indicators.gdp
+ 
+         if gdp <= 0:
+             return 0.0
+diff --git a/modules/analysis/phenomena_analyzer.py b/modules/analysis/phenomena_analyzer.py
+index 843885e..8b76565 100644
+--- a/modules/analysis/phenomena_analyzer.py
++++ b/modules/analysis/phenomena_analyzer.py
+@@ -59,9 +59,9 @@ class PhenomenaAnalyzer(IAnalyzer):
+             detector.update(tick, sim_state)
+ 
+         # Record time series
+-        snapshot = sim_state.get_market_snapshot()
+-        self.history['gdp'].append(snapshot.get('gdp', 0.0))
+-        self.history['cpi'].append(snapshot.get('cpi', 0.0))
++        indicators = sim_state.get_economic_indicators()
++        self.history['gdp'].append(indicators.gdp)
++        self.history['cpi'].append(indicators.cpi)
+ 
+     def generate_report(self) -> PhenomenaReportDTO:
+         all_events = []
+diff --git a/modules/analytics/loader.py b/modules/analytics/loader.py
+index d4b8957..0f46ef1 100644
+--- a/modules/analytics/loader.py
++++ b/modules/analytics/loader.py
+@@ -8,6 +8,7 @@ import json
+ import os
+ import logging
+ from typing import Optional, Dict, Any
++from modules.government.dtos import TaxHistoryItemDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -104,14 +105,15 @@ class DataLoader:
+ 
+         result = {}
+         if "tax_history" in data:
+-            # tax_history is list of dicts: [{"tick": 1, "total": 100, "tax_revenue": {...}}, ...]
+-            # We need to flatten it.
+-            # Actually, the structure in Government agent:
+-            # revenue_snapshot = self.current_tick_stats["tax_revenue"].copy() -> {"income_tax": 10, ...}
+-            # revenue_snapshot["tick"] = current_tick
+-            # revenue_snapshot["total"] = ...
+-
+-            df_tax = pd.DataFrame(data["tax_history"])
++            # Enforce DTO schema validation
++            try:
++                tax_items = [TaxHistoryItemDTO(**item) for item in data["tax_history"]]
++                # Convert back to dict for DataFrame creation (vars() returns __dict__)
++                df_tax = pd.DataFrame([vars(item) for item in tax_items])
++            except TypeError as e:
++                logger.error(f"Failed to parse tax history: {e}")
++                df_tax = pd.DataFrame()
++
+             if not df_tax.empty:
+                 df_tax.set_index("tick", inplace=True)
+             result["tax"] = df_tax
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 5d48f34..b0c01ac 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -1,9 +1,12 @@
+-from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable
++from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING
+ from dataclasses import dataclass
+ import abc
+ 
+ from simulation.models import Order, Transaction
+ 
++if TYPE_CHECKING:
++    from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
++
+ # Forward reference for type hinting
+ class Firm: pass
+ class Household: pass # Assuming Household agent also interacts with the bank
+@@ -225,7 +228,7 @@ class IBankService(IFinancialEntity, Protocol):
+ 
+ class IFiscalMonitor(Protocol):
+     """Interface for the fiscal health analysis component."""
+-    def get_debt_to_gdp_ratio(self, government_dto: Any, world_dto: Any) -> float: ...
++    def get_debt_to_gdp_ratio(self, government: "IGovernment", indicators: "EconomicIndicatorsDTO") -> float: ...
+ 
+ class IFinanceSystem(Protocol):
+     """Interface for the sovereign debt and corporate bailout system."""
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index 77a981e..7f482e4 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -8,6 +8,7 @@ from modules.housing.dtos import (
+     MortgageApplicationDTO,
+     MortgageApprovalDTO
+ )
++from modules.simulation.api import ISimulationState
+ from simulation.finance.api import ISettlementSystem
+ from simulation.systems.api import IRegistry
+ from simulation.models import Transaction
+@@ -15,7 +16,7 @@ from simulation.models import Transaction
+ logger = logging.getLogger(__name__)
+ 
+ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+-    def __init__(self, simulation: Any):
++    def __init__(self, simulation: ISimulationState):
+         self.simulation = simulation
+         # Access systems via simulation
+         self.settlement_system: ISettlementSystem = simulation.settlement_system
+diff --git a/modules/government/dtos.py b/modules/government/dtos.py
+index 15d05d2..09743f8 100644
+--- a/modules/government/dtos.py
++++ b/modules/government/dtos.py
+@@ -1,5 +1,11 @@
+ from dataclasses import dataclass
+-from typing import List, Optional
++from typing import List, Optional, Dict
++
++@dataclass
++class TaxHistoryItemDTO:
++    tick: int
++    total: float
++    tax_revenue: Dict[str, float]
+ 
+ @dataclass
+ class TaxBracketDTO:
+diff --git a/modules/government/taxation/system.py b/modules/government/taxation/system.py
+index 27b84b5..2d41b3f 100644
+--- a/modules/government/taxation/system.py
++++ b/modules/government/taxation/system.py
+@@ -1,6 +1,9 @@
+ from dataclasses import dataclass
+-from typing import List, Any, Dict, Optional, TYPE_CHECKING
++from typing import List, Any, Dict, Optional, TYPE_CHECKING, Protocol, Tuple
+ import logging
++from modules.finance.api import IFinancialEntity
++from modules.simulation.api import IGovernment
++from simulation.models import Transaction
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.transactions import TransactionDTO
+@@ -9,6 +12,16 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
++class ITaxConfig(Protocol):
++    TAX_BRACKETS: List[Tuple[float, float]]
++    TAX_RATE_BASE: float
++    SALES_TAX_RATE: float
++    GOODS_INITIAL_PRICE: Dict[str, float]
++    HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK: float
++    TAX_MODE: str
++    INCOME_TAX_PAYER: str
++    CORPORATE_TAX_RATE: float
++
+ @dataclass
+ class TaxIntent:
+     payer_id: int
+@@ -21,7 +34,7 @@ class TaxationSystem:
+     Pure logic component for tax calculations.
+     Decoupled from Government agent state (policies are passed in) and Settlement execution.
+     """
+-    def __init__(self, config_module: Any):
++    def __init__(self, config_module: Any): # Keeping Any for broad config, but internally using attributes of ITaxConfig
+         self.config_module = config_module
+ 
+     def _round_currency(self, amount: float) -> float:
+@@ -75,10 +88,10 @@ class TaxationSystem:
+ 
+     def calculate_tax_intents(
+         self,
+-        transaction: Any, # Transaction model
+-        buyer: Any,
+-        seller: Any,
+-        government: Any,
++        transaction: Transaction,
++        buyer: IFinancialEntity,
++        seller: IFinancialEntity,
++        government: IGovernment,
+         market_data: Optional[Dict[str, Any]] = None
+     ) -> List[TaxIntent]:
+         """
+diff --git a/modules/market/handlers/housing_transaction_handler.py b/modules/market/handlers/housing_transaction_handler.py
+index 318960a..3478910 100644
+--- a/modules/market/handlers/housing_transaction_handler.py
++++ b/modules/market/handlers/housing_transaction_handler.py
+@@ -77,7 +77,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+             down_payment = sale_price - loan_amount
+ 
+         # Check Buyer Funds for Down Payment
+-        buyer_assets = buyer._econ_state.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
++        buyer_assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+         if buyer_assets < down_payment:
+             context.logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
+             return False
+@@ -201,7 +201,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
+              ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
+              ticks_per_month = ticks_per_year / 12.0
+-             gross_income = buyer._econ_state.current_wage * work_hours * ticks_per_month
++             gross_income = buyer.current_wage * work_hours * ticks_per_month
+         elif hasattr(buyer, "current_wage"):
+              # Fallback
+              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
+@@ -216,7 +216,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                  existing_debt = status.total_outstanding_debt
+              except: pass
+ 
+-        assets = buyer._econ_state.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
++        assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+ 
+         return BorrowerProfileDTO(
+             borrower_id=str(buyer.id),
+@@ -258,22 +258,23 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+         # Update Seller (if not None/Govt)
+         if seller:
+             if isinstance(seller, Household):
+-                 if unit_id in seller._econ_state.owned_properties:
+-                      seller._econ_state.owned_properties.remove(unit_id)
++                 seller.remove_property(unit_id)
+             elif hasattr(seller, "owned_properties"):
+-                 if unit_id in seller.owned_properties:
++                 # Legacy/Other agents fallback
++                 if hasattr(seller, "remove_property"):
++                      seller.remove_property(unit_id)
++                 elif unit_id in seller.owned_properties:
+                       seller.owned_properties.remove(unit_id)
+ 
+         # Update Buyer
+         if isinstance(buyer, Household):
+-            if unit_id not in buyer._econ_state.owned_properties:
+-                buyer._econ_state.owned_properties.append(unit_id)
++            buyer.add_property(unit_id)
+ 
+             # Auto-move-in if homeless
+-            if buyer._econ_state.residing_property_id is None:
++            if buyer.residing_property_id is None:
+                 unit.occupant_id = buyer.id
+-                buyer._econ_state.residing_property_id = unit_id
+-                buyer._econ_state.is_homeless = False
++                buyer.residing_property_id = unit_id
++                buyer.is_homeless = False
+         elif hasattr(buyer, "owned_properties"):
+             if unit_id not in buyer.owned_properties:
+                 buyer.owned_properties.append(unit_id)
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 9a2f8b8..83299ca 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -1,6 +1,12 @@
+ from __future__ import annotations
+ from dataclasses import dataclass
+-from typing import Protocol, TypedDict, Any, List, Dict
++from typing import Protocol, TypedDict, Any, List, Dict, TYPE_CHECKING
++
++if TYPE_CHECKING:
++    from simulation.finance.api import ISettlementSystem
++    from simulation.systems.api import IRegistry
++    from modules.finance.api import IBankService
++    from simulation.interfaces.market_interface import IMarket
+ 
+ # --- DTOs ---
+ 
+@@ -65,6 +71,14 @@ class ISimulationState(Protocol):
+     government: IGovernment
+     config_module: IConfig
+ 
++    # Extended context for Saga Handlers and System Logic
++    time: int
++    settlement_system: "ISettlementSystem"
++    registry: "IRegistry"
++    agents: Dict[int, IAgent]
++    bank: "IBankService"
++    markets: Dict[str, "IMarket"]
++
+     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
+         """
+         Retrieves the current market snapshot containing economic indicators like GDP.
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 7dfd145..669e655 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -562,6 +562,16 @@ class Household(BaseAgent, ILearningAgent):
+             self._econ_state.inventory[item_id] = 0
+         self._econ_state.inventory[item_id] += quantity
+ 
++    def add_property(self, property_id: int) -> None:
++        """Safely adds a property to the owned list."""
++        if property_id not in self._econ_state.owned_properties:
++            self._econ_state.owned_properties.append(property_id)
++
++    def remove_property(self, property_id: int) -> None:
++        """Safely removes a property from the owned list."""
++        if property_id in self._econ_state.owned_properties:
++            self._econ_state.owned_properties.remove(property_id)
++
+     def quit(self) -> None:
+         if self._econ_state.is_employed:
+             self.logger.info(f"Household {self.id} is quitting from Firm {self._econ_state.employer_id}")
+diff --git a/tests/unit/test_household_refactor.py b/tests/unit/test_household_refactor.py
+new file mode 100644
+index 0000000..0f2463f
+--- /dev/null
++++ b/tests/unit/test_household_refactor.py
+@@ -0,0 +1,55 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.core_agents import Household
++from modules.household.dtos import EconStateDTO, BioStateDTO, SocialStateDTO
++from simulation.dtos.config_dtos import HouseholdConfigDTO
++from simulation.ai.api import Personality
++from simulation.models import Talent
++
++class TestHouseholdRefactor:
++    def test_property_management(self):
++        # Setup DTOs
++        config = MagicMock(spec=HouseholdConfigDTO)
++        config.value_orientation_mapping = {}
++        config.initial_household_age_range = (20, 30)
++        config.price_memory_length = 10
++        config.wage_memory_length = 10
++        config.ticks_per_year = 100
++        config.initial_aptitude_distribution = (0.5, 0.1)
++        config.conformity_ranges = {}
++        config.initial_household_assets_mean = 1000.0
++        config.quality_pref_snob_min = 0.8
++        config.quality_pref_miser_max = 0.2
++        config.adaptation_rate_normal = 0.1
++
++        # Initialize Household
++        household = Household(
++            id=1,
++            talent=Talent(base_learning_rate=0.1, max_potential=1.0),
++            goods_data=[],
++            initial_assets=1000.0,
++            initial_needs={},
++            decision_engine=MagicMock(),
++            value_orientation="neutral",
++            personality=Personality.BALANCED,
++            config_dto=config
++        )
++
++        # Test add_property
++        household.add_property(101)
++        assert 101 in household.owned_properties
++        assert household.owned_properties == [101]
++
++        # Test add duplicate (should handle safe?)
++        # Implementation: if property_id not in ... append
++        household.add_property(101)
++        assert household.owned_properties == [101]
++
++        # Test remove_property
++        household.remove_property(101)
++        assert 101 not in household.owned_properties
++        assert household.owned_properties == []
++
++        # Test remove non-existent
++        household.remove_property(999) # Should not raise error
++        assert household.owned_properties == []

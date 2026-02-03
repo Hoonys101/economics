@@ -57,10 +57,13 @@
 ## 🔮 Phase 21+: The Future Visions (Long-Term)
 
 ### Vision A: The Political Animal (Politics & Democracy)
-- **Goal**: Introduce Voting Power and Democracy.
+- **Goal**: Introduce Voting Power and Democracy to balance Agent Intelligence (Labor vs Capital).
+- **Status**: 🟢 **SPECCED (Ready for Implementation)**
+- **Reference Spec**: [`design/3_work_artifacts/specs/phase17-5_leviathan_spec.md`](../3_work_artifacts/specs/phase17-5_leviathan_spec.md)
 - **Scenario**: 
  - Renters vote for Rent Control & Subsidies.
  - Owners vote for Tax Cuts & Asset Protection.
+ - **Two-Party System**: BLUE (Growth) vs RED (Equality) competitive policy loop.
  - Simulation of Gerontocracy (Rule of the Old) vs Youth Disenchantment.
 
 ### Phase 23: The Great Expansion (Industrial Revolution) 🔄 **[RESUMED]**
