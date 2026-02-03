@@ -52,6 +52,7 @@ from simulation.systems.handlers.labor_handler import LaborTransactionHandler
 from simulation.systems.handlers.stock_handler import StockTransactionHandler
 from simulation.systems.handlers.asset_transfer_handler import AssetTransferHandler
 from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
+from modules.housing.service import HousingService
 from simulation.systems.handlers.inheritance_handler import InheritanceHandler
 from simulation.systems.handlers.monetary_handler import MonetaryTransactionHandler
 from simulation.systems.handlers.financial_handler import FinancialTransactionHandler
@@ -387,8 +388,12 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)
 
+        # TD-161: Initialize HousingService
+        sim.housing_service = HousingService(logger=self.logger)
+        sim.housing_service.set_real_estate_units(sim.real_estate_units)
+
         # WO-124: Initialize Legacy Components (kept for compatibility)
-        sim.registry = Registry(logger=self.logger)
+        sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
         sim.central_bank_system = CentralBankSystem(
             central_bank_agent=sim.central_bank,
