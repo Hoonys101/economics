@@ -96,7 +96,7 @@ def settlement_system():
 @pytest.fixture
 def config_manager(mock_config, tmp_path):
     """Provides a ConfigManager instance."""
-    from modules.common.config_manager.impl import ConfigManagerImpl
+    from modules.common.config.impl import ConfigManagerImpl
     return ConfigManagerImpl(config_dir=tmp_path, legacy_config=mock_config)
 
 
