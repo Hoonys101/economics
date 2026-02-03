@@ -6,7 +6,8 @@ from simulation.core_markets import Market
 from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError, BorrowerProfileDTO
 from modules.housing.dtos import MortgageApprovalDTO
 # Import from new API
-from modules.market.housing_planner_api import ILoanMarket, MortgageApplicationDTO
+from modules.market.housing_planner_api import ILoanMarket
+from modules.market.loan_api import MortgageApplicationRequestDTO
 from modules.finance.api import LoanInfoDTO as LoanDTO
 
 if TYPE_CHECKING:
@@ -40,15 +41,16 @@ class LoanMarket(Market, ILoanMarket):
             },
         )
 
-    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
+    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
         """
         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
         Implements ILoanMarket.evaluate_mortgage_application.
+        Uses [TD-206] MortgageApplicationRequestDTO for precise DTI calculation.
         """
-        # Canonical Keys from housing_planner_api:
-        # principal, property_value, applicant_income, applicant_existing_debt
+        # Canonical Keys from loan_api:
+        # requested_principal, property_value, applicant_monthly_income, existing_monthly_debt_payments
 
-        principal = application.get('principal', 0.0)
+        principal = application.get('requested_principal', 0.0)
         prop_value = application.get('property_value', 0.0)
 
         if prop_value <= 0:
@@ -89,8 +91,10 @@ class LoanMarket(Market, ILoanMarket):
         # 2. DTI Check
         applicant_id = application['applicant_id']
 
-        annual_income = application.get('applicant_income', 0.0)
-        existing_debt_total = application.get('applicant_existing_debt', 0.0)
+        # TD-206: Use precise monthly income and existing payments
+        monthly_income = application.get('applicant_monthly_income', 0.0)
+        existing_payment = application.get('existing_monthly_debt_payments', 0.0)
+
         loan_term = application.get('loan_term', 360)
 
         # Get Interest Rate
@@ -99,35 +103,14 @@ class LoanMarket(Market, ILoanMarket):
         else:
              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
 
-        # Calculate Payment
-        # Monthly Payment for DTI
+        # Calculate Payment for NEW loan
         monthly_rate = interest_rate / 12.0
         if monthly_rate == 0:
              new_payment = principal / loan_term
         else:
              new_payment = principal * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
 
-        # Estimate Existing Debt Payment
-        # Use existing Bank query to get accurate debt payments if possible
-        existing_payment = 0.0
-        try:
-              debt_status = self.bank.get_debt_status(str(applicant_id))
-              for l in debt_status['loans']:
-                  r = l['interest_rate'] / 12.0
-                  if r == 0:
-                      payment = l['outstanding_balance'] / 360 # Default term assumption? Or use remaining term?
-                  else:
-                      payment = l['outstanding_balance'] * r # Simplified
-                  existing_payment += payment
-        except Exception:
-              # Fallback: estimate from total debt reported in application
-              if monthly_rate == 0:
-                   existing_payment = existing_debt_total / 360
-              else:
-                   existing_payment = existing_debt_total * monthly_rate
-
         total_monthly_obligation = existing_payment + new_payment
-        monthly_income = annual_income / 12.0
 
         if monthly_income <= 0:
              dti = float('inf')
@@ -140,14 +123,14 @@ class LoanMarket(Market, ILoanMarket):
 
         return True
 
-    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
+    def apply_for_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
         """
         Processes a mortgage application with regulatory checks.
         Returns LoanInfoDTO if approved, None otherwise.
         """
         return self.stage_mortgage(application)
 
-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
+    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
         """
         Stages a mortgage (creates loan record) without disbursing funds.
         Returns LoanInfoDTO if successful, None otherwise.
@@ -163,7 +146,7 @@ class LoanMarket(Market, ILoanMarket):
         else:
              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
 
-        principal = application.get('principal', 0.0)
+        principal = application.get('requested_principal', 0.0)
 
         loan_info = self.bank.stage_loan(
             borrower_id=str(application['applicant_id']),
@@ -207,7 +190,7 @@ class LoanMarket(Market, ILoanMarket):
              return True
         return False
 
-    def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
+    def request_mortgage(self, application: MortgageApplicationRequestDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
         """
         Legacy/Compat method.
         Calls evaluate, then Bank.grant_loan (Full execution).
@@ -216,7 +199,7 @@ class LoanMarket(Market, ILoanMarket):
             return None
 
         # Execute
-        principal = application['principal']
+        principal = application['requested_principal']
         applicant_id = application['applicant_id']
         loan_term = application.get('loan_term', 360)
 

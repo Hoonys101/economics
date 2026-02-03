@@ -3,9 +3,10 @@ from abc import ABC, abstractmethod
 
 # Import external DTOs
 # Note: Adjust imports based on actual file structure
-from modules.household.dtos import HouseholdStateDTO
+from modules.household.dtos import HouseholdSnapshotDTO
 from modules.system.api import HousingMarketSnapshotDTO
 from modules.finance.api import MortgageApplicationDTO
+from modules.market.loan_api import MortgageApplicationRequestDTO
 
 class LoanMarketSnapshotDTO(TypedDict):
     """
@@ -19,7 +20,7 @@ class HousingOfferRequestDTO(TypedDict):
     """
     Input for the HousingPlanner, containing all necessary state for a decision.
     """
-    household_state: HouseholdStateDTO
+    household_state: HouseholdSnapshotDTO
     housing_market_snapshot: HousingMarketSnapshotDTO
     loan_market_snapshot: LoanMarketSnapshotDTO # To assess credit availability
     applicant_current_debt: float # Total outstanding debt
@@ -33,7 +34,7 @@ class HousingDecisionDTO(TypedDict):
     decision_type: Literal["MAKE_OFFER", "RENT", "STAY"]
     target_property_id: Optional[int]
     offer_price: Optional[float]
-    mortgage_application: Optional[MortgageApplicationDTO]
+    mortgage_application: Optional[MortgageApplicationRequestDTO]
 
 class MortgageApprovalDTO(TypedDict):
     """
@@ -76,14 +77,14 @@ class ILoanMarket(ABC):
     Expanded interface for the LoanMarket to include regulatory checks.
     """
     @abstractmethod
-    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
+    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
         """
         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
         """
         ...
 
     @abstractmethod
-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[dict]:
+    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[dict]:
          """
          Stages a mortgage (creates loan record) without disbursing funds.
          Returns LoanInfoDTO (as dict) if successful, None otherwise.

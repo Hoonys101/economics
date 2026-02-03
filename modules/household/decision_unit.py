@@ -53,7 +53,8 @@ class DecisionUnit(IDecisionUnit):
         housing_system = context.get("housing_system")
 
         # 1. System 2 Housing Decision Logic (Delegated to HousingPlanner)
-        if new_state.is_homeless or current_time % 30 == 0:
+        # Access is_homeless via econ_state in snapshot
+        if household_state.econ_state.is_homeless or current_time % 30 == 0:
              # Construct Request
              request = HousingDecisionRequestDTO(
                  household_state=household_state,

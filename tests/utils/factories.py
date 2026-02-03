@@ -84,6 +84,18 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
         "survival_bid_premium": 0.2,
         "elasticity_mapping": {"DEFAULT": 1.0},
         "max_willingness_to_pay_multiplier": 1.5,
+            "initial_household_age_range": (20, 60),
+            "initial_aptitude_distribution": (0.5, 0.1),
+            "emergency_liquidation_discount": 0.5,
+            "emergency_stock_liquidation_fallback_price": 5.0,
+            "distress_grace_period_ticks": 10,
+            "ai_epsilon_decay_params": {"start": 1.0, "end": 0.1, "decay": 0.99},
+            "housing_npv_horizon_years": 10,
+            "housing_npv_risk_premium": 0.02,
+            "mortgage_default_down_payment_rate": 0.2,
+            "age_death_probabilities": {80: 0.1},
+            "fallback_survival_cost": 10.0,
+            "base_labor_skill": 1.0,
     }
     defaults.update(kwargs)
     return HouseholdConfigDTO(**defaults)
@@ -146,6 +158,8 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
         "fire_sale_cost_discount": 0.8,
         "sale_timeout_ticks": 10,
         "dynamic_price_reduction_factor": 0.05,
+            "ai_epsilon_decay_params": {"start": 1.0, "end": 0.1, "decay": 0.99},
+            "ai_reward_brand_value_multiplier": 1.0,
     }
     defaults.update(kwargs)
     return FirmConfigDTO(**defaults)

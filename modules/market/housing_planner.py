@@ -27,7 +27,7 @@ class HousingPlanner(IHousingPlanner):
 
         # 1. Evaluate "Buy" Option
         # Use simple affordability metric: Price <= Assets / DownPaymentPct
-        max_price = household.assets / self.DEFAULT_DOWN_PAYMENT_PCT
+        max_price = household.econ_state.assets / self.DEFAULT_DOWN_PAYMENT_PCT
 
         affordable_properties = []
         if market.for_sale_units:
@@ -44,7 +44,7 @@ class HousingPlanner(IHousingPlanner):
         # 2. Evaluate "Rent" Option
         best_rent_option = None
         if market.units_for_rent:
-             income = household.current_wage
+             income = household.econ_state.current_wage
              max_rent = income * 0.3
              affordable_rentals = [u for u in market.units_for_rent if (u.rent_price or 0) <= max_rent]
 
@@ -55,7 +55,7 @@ class HousingPlanner(IHousingPlanner):
         # 3. Compare and Decide
 
         # Case A: Homeless - Must act
-        if household.is_homeless:
+        if household.econ_state.is_homeless:
             if best_buy_option:
                 return self._create_buy_decision(best_buy_option, household)
             elif best_rent_option:
@@ -69,7 +69,7 @@ class HousingPlanner(IHousingPlanner):
         # Case B: Upgrade / Voluntary Move
         should_buy = False
         if best_buy_option:
-            if hasattr(household, 'housing_target_mode') and household.housing_target_mode == "BUY":
+            if hasattr(household.econ_state, 'housing_target_mode') and household.econ_state.housing_target_mode == "BUY":
                 should_buy = True
             elif best_rent_option:
                  # If buy score > rent score?
@@ -87,7 +87,7 @@ class HousingPlanner(IHousingPlanner):
         required_down = offer_price * self.DEFAULT_DOWN_PAYMENT_PCT
 
         # Ensure household has enough for down payment (already checked by max_price but good to be safe)
-        if household.assets < required_down:
+        if household.econ_state.assets < required_down:
              # Fallback: Can't afford down payment despite max_price check (maybe floating point or rounding)
              pass
 

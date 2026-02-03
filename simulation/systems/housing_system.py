@@ -12,6 +12,7 @@ from modules.market.housing_purchase_api import (
     HousingPurchaseSagaDataDTO,
     MortgageApplicationDTO
 )
+from modules.market.loan_api import MortgageApplicationRequestDTO
 
 
 if TYPE_CHECKING:
@@ -133,6 +134,36 @@ class HousingSystem:
         })
         logger.info(f"SAGA_QUEUED | Saga queued for buyer {buyer_id} property {decision['target_property_id']}")
 
+    def _calculate_total_monthly_debt_payments(self, agent_id: int, bank_service: Any) -> float:
+        """
+        Helper to calculate total monthly debt payments for an agent.
+        Iterates over all loans and sums their monthly obligations.
+        """
+        existing_debt_payments = 0.0
+        if bank_service and hasattr(bank_service, 'get_debt_status'):
+             try:
+                 debt_status = bank_service.get_debt_status(str(agent_id))
+                 # Calculate total monthly payment from loans
+                 # Assuming loans have 'outstanding_balance' and 'interest_rate'
+                 for loan in debt_status.get('loans', []):
+                     # Estimate monthly payment
+                     balance = loan.get('outstanding_balance', 0.0)
+                     rate = loan.get('interest_rate', 0.05)
+                     # Default assumption if not available (ideally loan DTO has remaining ticks)
+                     # Using 300 (30 years * 10 ticks/year?) or just a standard constant.
+                     # Let's use 360 ticks (standard 30 year monthly).
+                     term = 360
+
+                     monthly_rate = rate / 12.0
+                     if monthly_rate == 0:
+                         payment = balance / term
+                     else:
+                         payment = balance * (monthly_rate * (1 + monthly_rate)**term) / ((1 + monthly_rate)**term - 1)
+                     existing_debt_payments += payment
+             except Exception as e:
+                 logger.warning(f"Failed to fetch debt status for {agent_id}: {e}")
+        return existing_debt_payments
+
     def _submit_saga_to_settlement(self, simulation: "Simulation", decision: HousingPurchaseDecisionDTO, buyer_id: int):
         saga_id = str(uuid4())
 
@@ -144,35 +175,17 @@ class HousingSystem:
         # Gather data for Mortgage Application
         household = simulation.agents.get(buyer_id)
         annual_income = 0.0
-        existing_debt_payments = 0.0
 
         if household:
              # Logic to estimate income
              if hasattr(household, 'current_wage'):
                   ticks_per_year = getattr(self.config, 'TICKS_PER_YEAR', 100)
+                  # Assuming current_wage is per tick? Or monthly?
+                  # Household model usually has current_wage.
                   annual_income = household.current_wage * ticks_per_year
 
-             # Logic to get existing debt payments
-             if simulation.bank and hasattr(simulation.bank, 'get_debt_status'):
-                 try:
-                     debt_status = simulation.bank.get_debt_status(str(buyer_id))
-                     # Calculate total monthly payment from loans
-                     # Assuming loans have 'outstanding_balance' and 'interest_rate'
-                     # We estimate payment or if LoanInfoDTO has it (it doesn't usually)
-                     for loan in debt_status.get('loans', []):
-                         # Estimate monthly payment
-                         balance = loan.get('outstanding_balance', 0.0)
-                         rate = loan.get('interest_rate', 0.05)
-                         term = 300 # Default assumption if not available
-
-                         monthly_rate = rate / 12.0
-                         if monthly_rate == 0:
-                             payment = balance / term
-                         else:
-                             payment = balance * (monthly_rate * (1 + monthly_rate)**term) / ((1 + monthly_rate)**term - 1)
-                         existing_debt_payments += payment
-                 except Exception as e:
-                     logger.warning(f"Failed to fetch debt status for {buyer_id}: {e}")
+        # [TD-206] Use helper for precise debt payments
+        existing_debt_payments = self._calculate_total_monthly_debt_payments(buyer_id, simulation.bank)
 
         # Resolve seller
         seller_id = -1
@@ -190,13 +203,14 @@ class HousingSystem:
         else:
              loan_term = getattr(housing_config, 'mortgage_term_ticks', 300)
 
-        mortgage_app = MortgageApplicationDTO(
+        # [TD-206] Use MortgageApplicationRequestDTO
+        mortgage_app = MortgageApplicationRequestDTO(
             applicant_id=buyer_id,
+            requested_principal=principal,
             property_id=prop_id,
-            offer_price=offer_price,
-            loan_principal=principal,
-            applicant_gross_income=annual_income,
-            applicant_existing_debt_payments=existing_debt_payments,
+            property_value=offer_price,
+            applicant_monthly_income=annual_income / 12.0, # Convert annual to monthly
+            existing_monthly_debt_payments=existing_debt_payments,
             loan_term=loan_term
         )
 

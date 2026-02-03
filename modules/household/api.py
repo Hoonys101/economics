@@ -17,7 +17,8 @@ if TYPE_CHECKING:
     from simulation.models import Order
     from modules.household.dtos import (
         BioStateDTO, EconStateDTO, SocialStateDTO,
-        CloningRequestDTO, EconContextDTO, HouseholdStateDTO
+        CloningRequestDTO, EconContextDTO, HouseholdStateDTO,
+        HouseholdSnapshotDTO
     )
 
 # --- Updated Context for Decision Making (NEW) ---
@@ -31,7 +32,7 @@ class OrchestrationContextDTO(TypedDict):
     current_time: int
     stress_scenario_config: Optional["StressScenarioConfig"]
     config: "HouseholdConfigDTO"
-    household_state: "HouseholdStateDTO"
+    household_state: "HouseholdSnapshotDTO"
     housing_system: Optional[Any] # Added for Saga initiation
 
 

@@ -34,8 +34,10 @@ from modules.household.consumption_manager import ConsumptionManager
 from modules.household.decision_unit import DecisionUnit
 from modules.household.dtos import (
     HouseholdStateDTO, CloningRequestDTO, EconContextDTO,
-    BioStateDTO, EconStateDTO, SocialStateDTO
+    BioStateDTO, EconStateDTO, SocialStateDTO,
+    HouseholdSnapshotDTO
 )
+from modules.household.services import HouseholdSnapshotAssembler
 from modules.household.api import (
     HousingMarketUnitDTO, HousingMarketSnapshotDTO,
     LoanMarketSnapshotDTO, LaborMarketSnapshotDTO,
@@ -411,10 +413,30 @@ class Household(BaseAgent, ILearningAgent):
         """Exposes home_quality_score from econ_state."""
         return self._econ_state.home_quality_score
 
+    @property
+    def talent(self) -> "Talent":
+        """Exposes talent from econ_state."""
+        return self._econ_state.talent
+
+    @property
+    def demographics(self) -> "BioStateDTO":
+        """[Legacy] Exposes bio_state as demographics."""
+        return self._bio_state
+
     # --- Methods ---
 
+    def create_snapshot_dto(self) -> HouseholdSnapshotDTO:
+        """
+        Creates a structured snapshot of the household's current state.
+        Uses HouseholdSnapshotAssembler to ensure deep copies of component states.
+        """
+        return HouseholdSnapshotAssembler.assemble(self)
+
     def create_state_dto(self) -> HouseholdStateDTO:
-        """Creates a comprehensive DTO of the household's current state (Adapter)."""
+        """
+        [DEPRECATED] Use create_snapshot_dto instead.
+        Creates a comprehensive DTO of the household's current state (Adapter).
+        """
         return HouseholdStateDTO(
             id=self.id,
             assets=self._econ_state.assets,
@@ -505,14 +527,24 @@ class Household(BaseAgent, ILearningAgent):
         )
 
         # 1. Prepare DTOs
-        state_dto = self.create_state_dto()
+        # [TD-194] Use Snapshot DTO
+        snapshot_dto = self.create_snapshot_dto()
         
         # WO-103: Purity Guard - Prepare Config DTO
         # self.config is already the DTO.
         config_dto = self.config
 
+        # Backward compatibility for legacy DecisionEngine if it expects HouseholdStateDTO
+        # We can construct it from snapshot if needed, or pass snapshot if engine is updated.
+        # Ideally engines should be updated, but for now we might need to pass legacy DTO to context
+        # if DecisionContext expects it.
+        # Checking DecisionContext definition... it likely expects HouseholdStateDTO.
+        # But we are deprecating it.
+        # Let's create legacy DTO for the legacy context, but use Snapshot for Orchestration.
+        legacy_state_dto = self.create_state_dto()
+
         context = DecisionContext(
-            state=state_dto,
+            state=legacy_state_dto,
             config=config_dto,
             goods_data=goods_data,
             market_data=market_data,
@@ -541,7 +573,7 @@ class Household(BaseAgent, ILearningAgent):
             current_time=current_time,
             stress_scenario_config=stress_scenario_config,
             config=self.config,
-            household_state=state_dto,
+            household_state=snapshot_dto,
             housing_system=input_dto.housing_system
         )
 
