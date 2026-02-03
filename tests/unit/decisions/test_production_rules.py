@@ -113,3 +113,5 @@ class TestProductionRules:
         # Clamped: max(MIN, 4.5) = 10.
         # So it should be 10.
         assert target_orders[0].quantity == firm_engine_config.FIRM_MIN_PRODUCTION_TARGET
+
+# Verified for TD-180

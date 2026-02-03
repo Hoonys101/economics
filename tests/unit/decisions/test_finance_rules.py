@@ -89,3 +89,5 @@ class TestFinanceRules:
         assert len(div_orders) > 0
         rate = div_orders[0].quantity
         assert rate > 0.1
+
+# Verified for TD-180

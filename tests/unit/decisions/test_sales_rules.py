@@ -51,3 +51,5 @@ class TestSalesRules:
         # Assert if orders were generated
         if price_low_agg > 0 and price_high_agg > 0:
             assert price_low_agg > price_high_agg
+
+# Verified for TD-180
