@@ -112,6 +112,21 @@
  - [x] Bankruptcy Ledger Linking (TD-106 Solution)
  - [x] Fractional Reserve Logic & LTV/DTI Reliability (2026-01-27)
 
+### Phase 31: The Ordered Universe ✅
+- **Goal**: Establish structural time integrity and legal priority in liquidation.
+- **Tasks**:
+    - [x] **Post-Phase Hook**: Automated M2 audit at tick-end.
+    - [x] **Liquidation Waterfall (TD-187)**: Prioritized asset distribution (Taxes > Wages > Creditors).
+    - [x] **Atomic Inheritance (TD-160)**: SettlementSystem-based legacy escrow.
+
+### Phase 32: The Great Housewarming (Mortgage Restoration) 🏗️
+- **Goal**: Restore the housing credit pipeline with macro-prudential safeguards.
+- **Tasks**:
+    - [ ] **Mortgage Pipeline Modernization**: Implement `MortgageApplicationDTO` flow.
+    - [ ] **Macro-Prudential Regulation**: Automated LTV/DTI checks in `LoanMarket`.
+    - [ ] **Seamless Payment Integration**: Atomic home purchase saga.
+    - [ ] **Bubble Observatory**: M2 surge and Housing Price Index monitoring.
+
 ### Phase 28: Structural Stabilization & Verification ⭐ **[CURRENT]**
 - **Goal**: Clean up technical debt from rapid architectural changes and verify the new economic engine.
 - **Tasks**:
