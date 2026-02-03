@@ -1,6 +1,12 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Protocol, TypedDict, Any, List, Dict
+from typing import Protocol, TypedDict, Any, List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from simulation.finance.api import ISettlementSystem
+    from simulation.systems.api import IRegistry
+    from modules.finance.api import IBankService
+    from simulation.interfaces.market_interface import IMarket
 
 # --- DTOs ---
 
@@ -64,6 +70,14 @@ class ISimulationState(Protocol):
     central_bank: ICentralBank
     government: IGovernment
     config_module: IConfig
+
+    # Extended context for Saga Handlers and System Logic
+    time: int
+    settlement_system: "ISettlementSystem"
+    registry: "IRegistry"
+    agents: Dict[int, IAgent]
+    bank: "IBankService"
+    markets: Dict[str, "IMarket"]
 
     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
         """

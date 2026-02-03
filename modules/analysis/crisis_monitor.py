@@ -4,6 +4,7 @@ import os
 from typing import List, Dict, Any, TYPE_CHECKING
 from simulation.firms import Firm
 from modules.finance.domain.corporate_finance import AltmanZScoreCalculator
+from modules.analysis.api import CrisisDistributionDTO
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -49,7 +50,7 @@ class CrisisMonitor:
             writer.writerow(["tick", "safe_count", "gray_count", "distress_count", "total_active_firms", "survival_rate"])
         self._log_file_initialized = True
 
-    def monitor(self, tick: int, firms: List['Firm']) -> Dict[str, int]:
+    def monitor(self, tick: int, firms: List['Firm']) -> CrisisDistributionDTO:
         """
         Iterates through active firms, calculates Z-Score, and logs distribution.
         """
@@ -92,12 +93,12 @@ class CrisisMonitor:
             }
         )
 
-        return {
-            "safe": safe_count,
-            "gray": gray_count,
-            "distress": distress_count,
-            "active": active_firms_count
-        }
+        return CrisisDistributionDTO(
+            safe=safe_count,
+            gray=gray_count,
+            distress=distress_count,
+            active=active_firms_count
+        )
 
     def _calculate_z_score_for_firm(self, firm: 'Firm') -> float:
         """

@@ -562,6 +562,16 @@ class Household(BaseAgent, ILearningAgent):
             self._econ_state.inventory[item_id] = 0
         self._econ_state.inventory[item_id] += quantity
 
+    def add_property(self, property_id: int) -> None:
+        """Safely adds a property to the owned list."""
+        if property_id not in self._econ_state.owned_properties:
+            self._econ_state.owned_properties.append(property_id)
+
+    def remove_property(self, property_id: int) -> None:
+        """Safely removes a property from the owned list."""
+        if property_id in self._econ_state.owned_properties:
+            self._econ_state.owned_properties.remove(property_id)
+
     def quit(self) -> None:
         if self._econ_state.is_employed:
             self.logger.info(f"Household {self.id} is quitting from Firm {self._econ_state.employer_id}")

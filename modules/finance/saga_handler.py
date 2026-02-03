@@ -8,6 +8,7 @@ from modules.housing.dtos import (
     MortgageApplicationDTO,
     MortgageApprovalDTO
 )
+from modules.simulation.api import ISimulationState
 from simulation.finance.api import ISettlementSystem
 from simulation.systems.api import IRegistry
 from simulation.models import Transaction
@@ -15,7 +16,7 @@ from simulation.models import Transaction
 logger = logging.getLogger(__name__)
 
 class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
-    def __init__(self, simulation: Any):
+    def __init__(self, simulation: ISimulationState):
         self.simulation = simulation
         # Access systems via simulation
         self.settlement_system: ISettlementSystem = simulation.settlement_system
