@@ -12,7 +12,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| (Empty) | | | | |
+| (No Active Items) | | | | |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
@@ -32,12 +32,13 @@
 |---|---|---|---|---|
 | TD-160 | 2026-02-02 | Non-Atomic Inheritance (Direct Asset Transfer) | Money leaks during death; Partial state corruption | **CRITICAL** |
 | TD-187 | 2026-02-02 | Severance Pay Race Condition | Over-withdrawal during firm liquidation | **HIGH** |
+| TD-192 | 2026-02-03 | Direct Asset Manipulation (_assets Bypassing SettlementSystem) | Zero-Sum breakage; Magic Money leaks | **CRITICAL** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| (Empty) | | | | |
+| TD-191 | 2026-02-03 | Weak Typing & DTO Contract Violation (Any Abuse) | Runtime errors; Maintenance nightmare | **HIGH** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
@@ -52,6 +53,7 @@
 | TD-150 | 2026-01-29 | Ledger Management Process | Loss of context | **ACTIVE** |
 | TD-183 | 2026-02-01 | Sequence Deviation Documentation | Fast-Fail Liquidation needs ARCH entry | **ACTIVE** |
 | TD-188 | 2026-02-01 | Inconsistent Config Path Doc | `PROJECT_STATUS.md` path mismatch | **ACTIVE** |
+| TD-190 | 2026-02-03 | Magic Number Proliferation (Hardcoded Simulation Constants) | Hard to tune/test; Fragile logic | **MEDIUM** |
 
 ---
 
