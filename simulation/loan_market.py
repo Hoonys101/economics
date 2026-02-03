@@ -3,8 +3,10 @@ import logging
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError
-from modules.housing.dtos import MortgageApplicationDTO, MortgageApprovalDTO
+from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError, BorrowerProfileDTO
+from modules.housing.dtos import MortgageApprovalDTO
+# Import from new API
+from modules.market.housing_planner_api import ILoanMarket, MortgageApplicationDTO
 
 if TYPE_CHECKING:
     from simulation.bank import Bank # For legacy casting if needed
@@ -12,10 +14,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LoanMarket(Market):
+class LoanMarket(Market, ILoanMarket):
     """
     Handles loan requests and repayments via the IBankService interface.
     Refactored to decouple from concrete Bank implementation.
+    Implements ILoanMarket for housing pipeline (Phase 32).
     """
 
     def __init__(self, market_id: str, bank: IBankService, config_module: Any):
@@ -36,16 +39,17 @@ class LoanMarket(Market):
             },
         )
 
-    def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
+    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
         """
-        Specialized method for handling mortgage applications with LTV/DTI checks.
-        Called by HousingTransactionSagaHandler.
+        Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
+        Implements ILoanMarket.evaluate_mortgage_application.
         """
         # 1. LTV Check
         prop_value = application['property_value']
         principal = application['principal']
         if prop_value <= 0:
-             return None
+             return False
+
         ltv = principal / prop_value
 
         # Config access
@@ -63,65 +67,131 @@ class LoanMarket(Market):
 
         if ltv > max_ltv:
              logger.info(f"LOAN_DENIED | LTV {ltv:.2f} > {max_ltv}")
-             return None
+             return False
 
         # 2. DTI Check
-        # Need income and existing debt
         applicant_id = application['applicant_id']
+        annual_income = application.get('applicant_income', 0.0)
+        existing_debt = application.get('applicant_existing_debt', 0.0)
+        loan_term = application.get('loan_term', 360)
 
-        # Calculate Monthly Payment
-        # Get rate
-        # Assuming bank.get_interest_rate() exists (it does in Bank implementation, but interface?)
-        # IBankService doesn't explicitly mandate get_interest_rate, but Bank implements it.
-        # We can default if missing.
+        # Get Interest Rate
         if hasattr(self.bank, 'get_interest_rate'):
              interest_rate = self.bank.get_interest_rate() # Annual
         else:
              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
 
-        ticks_per_year = getattr(self.config_module, 'TICKS_PER_YEAR', 100)
-
-        # Mortgage term is usually in ticks or converted.
-        # Spec DTO says loan_term (int). Assuming ticks.
-        # Payment per tick
-        r_tick = interest_rate / ticks_per_year
-        n = application['loan_term']
-
-        if r_tick == 0:
-            payment_per_tick = principal / n
+        # Calculate Payment
+        # Monthly Payment for DTI
+        monthly_rate = interest_rate / 12.0
+        if monthly_rate == 0:
+             new_payment = principal / loan_term
         else:
-            payment_per_tick = principal * (r_tick * (1 + r_tick)**n) / ((1 + r_tick)**n - 1)
+             new_payment = principal * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
 
-        # Income
-        income = 0.0
-        if household_agent and hasattr(household_agent, 'current_wage'):
-             income = household_agent.current_wage
+        # Estimate Existing Debt Payment
+        # Assuming existing debt is serviced at similar rate or we approximate.
+        # Ideally we fetch exact debt status, but here we use passed DTO value if available.
+        # But DTI is typically calculated on monthly gross income vs total monthly debt payments.
+        # If 'applicant_existing_debt' is TOTAL principal, we need to estimate payment.
 
-        # Existing Debt Service
-        existing_debt_service = 0.0
+        # Use existing Bank query to get accurate debt payments if possible
+        # But 'evaluate' is supposed to be fast/pure-ish.
+        # Let's rely on Bank service for debt status if we want accuracy.
+
+        existing_payment = 0.0
         try:
-            debt_status = self.bank.get_debt_status(str(applicant_id))
-            if debt_status and debt_status['loans']:
-                 for l in debt_status['loans']:
-                     # approximate payment per tick (interest only usually in this sim)
-                     rate_per_tick = l['interest_rate'] / ticks_per_year
-                     existing_debt_service += l['outstanding_balance'] * rate_per_tick
+             debt_status = self.bank.get_debt_status(str(applicant_id))
+             # We can sum up 'outstanding_balance' * interest?
+             # LoanInfoDTO doesn't have monthly payment.
+             # So we approximate.
+             for l in debt_status['loans']:
+                 r = l['interest_rate'] / 12.0
+                 if r == 0:
+                     payment = l['outstanding_balance'] / 360 # Assume 30y remaining
+                 else:
+                     payment = l['outstanding_balance'] * r # Interest Only approx?
+                 existing_payment += payment
         except Exception:
-             pass
+             # Fallback to DTO passed value as principal estimate
+             if monthly_rate == 0:
+                  existing_payment = existing_debt / 360
+             else:
+                  existing_payment = existing_debt * monthly_rate
 
-        total_obligation = existing_debt_service + payment_per_tick
+        total_monthly_obligation = existing_payment + new_payment
+        monthly_income = annual_income / 12.0
 
-        if income <= 0:
+        if monthly_income <= 0:
              dti = float('inf')
         else:
-             dti = total_obligation / income
+             dti = total_monthly_obligation / monthly_income
 
         if dti > max_dti:
              logger.info(f"LOAN_DENIED | DTI {dti:.2f} > {max_dti}")
-             return None
+             return False
 
-        # 3. Approve
-        due_tick = current_tick + application['loan_term']
+        return True
+
+    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[int]:
+        """
+        Stages a mortgage (creates loan record) without disbursing funds.
+        Returns loan_id if successful, None otherwise.
+        """
+        # 1. Evaluate
+        if not self.evaluate_mortgage_application(application):
+            return None
+
+        # 2. Stage Loan via Bank
+        # Get Interest Rate
+        if hasattr(self.bank, 'get_interest_rate'):
+             interest_rate = self.bank.get_interest_rate() # Annual
+        else:
+             interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
+
+        due_tick = None # Let Bank decide or pass if needed. DTO has loan_term.
+        # If DTO has loan_term, we can calculate due_tick if we knew current tick.
+        # But we don't have current tick here easily unless passed.
+        # Bank.stage_loan takes due_tick.
+        # Bank.stage_loan uses current_tick_tracker if due_tick is None.
+
+        loan_info = self.bank.stage_loan(
+            borrower_id=str(application['applicant_id']),
+            amount=application['principal'],
+            interest_rate=interest_rate,
+            due_tick=None, # Bank defaults using term
+            borrower_profile=None # Could construct from application
+        )
+
+        if loan_info:
+             # Extract int ID
+             try:
+                 loan_id_int = int(loan_info['loan_id'].split('_')[1])
+             except (IndexError, ValueError):
+                 loan_id_int = hash(loan_info['loan_id']) % 10000000
+             return loan_id_int
+
+        return None
+
+    def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
+        """
+        Legacy/Compat method.
+        Calls evaluate, then Bank.grant_loan (Full execution).
+        """
+        if not self.evaluate_mortgage_application(application):
+            return None
+
+        # Execute
+        principal = application['principal']
+        applicant_id = application['applicant_id']
+        loan_term = application.get('loan_term', 360)
+
+        if hasattr(self.bank, 'get_interest_rate'):
+             interest_rate = self.bank.get_interest_rate()
+        else:
+             interest_rate = 0.05
+
+        due_tick = current_tick + loan_term
 
         grant_result = self.bank.grant_loan(
             borrower_id=str(applicant_id),
@@ -136,12 +206,19 @@ class LoanMarket(Market):
              try:
                  loan_id_int = int(loan_info['loan_id'].split('_')[1])
              except (IndexError, ValueError):
-                 loan_id_int = hash(loan_info['loan_id']) % 10000000 # Fallback
+                 loan_id_int = hash(loan_info['loan_id']) % 10000000
+
+             # Recalculate monthly payment for DTO
+             monthly_rate = interest_rate / 12.0
+             if monthly_rate == 0:
+                 pmt = principal / loan_term
+             else:
+                 pmt = principal * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
 
              return MortgageApprovalDTO(
                  loan_id=loan_id_int,
                  approved_principal=loan_info['original_amount'],
-                 monthly_payment=payment_per_tick
+                 monthly_payment=pmt
              )
 
         return None
@@ -164,18 +241,15 @@ class LoanMarket(Market):
         )
 
         if order.order_type == "LOAN_REQUEST":
-            # Credit Jail check omitted as per legacy issues discussed (requires agent instance access)
-            # Assuming Bank or Decision Engine handles it, or acceptable limitation for now.
+            # Direct loan request via Order (Legacy or different path)
+            # Use grant_loan directly as this bypasses the detailed MortgageApplication DTO usually.
 
             loan_amount = order.quantity
-            interest_rate = order.price # Household's WTP or Market Rate? Bank decides usually.
-            # Bank grant_loan uses this as 'interest_rate' param in new interface.
+            interest_rate = order.price
 
-            # Duration (due_tick)
             duration = getattr(self.config_module, "DEFAULT_LOAN_TERM_TICKS", 50)
             due_tick = current_tick + duration
 
-            # WO-078: Extract BorrowerProfile from metadata
             borrower_profile = None
             if order.metadata and "borrower_profile" in order.metadata:
                 borrower_profile = order.metadata["borrower_profile"]
@@ -190,10 +264,6 @@ class LoanMarket(Market):
 
             if grant_result:
                 loan_info, credit_tx = grant_result
-
-                # WO-024: Record the credit creation transaction (Monetary)
-                # This is the only transaction needed for auditable M2 tracking.
-                # The commercial 'loan' transaction (cash transfer) is removed to prevent double-counting (TD-178).
                 if credit_tx:
                     transactions.append(credit_tx)
 
@@ -234,8 +304,6 @@ class LoanMarket(Market):
                 logger.warning(f"Repayment failed for loan {loan_id}: {e}", extra=log_extra)
 
         elif order.order_type == "DEPOSIT":
-            # Legacy Support: IBankService doesn't expose deposit_from_customer.
-            # We assume self.bank is the concrete Bank or supports it dynamically.
             amount = order.quantity
             if hasattr(self.bank, "deposit_from_customer"):
                 deposit_id = self.bank.deposit_from_customer(order.agent_id, amount) # type: ignore
@@ -263,7 +331,6 @@ class LoanMarket(Market):
                 logger.error("Bank service does not support 'deposit_from_customer'.")
 
         elif order.order_type == "WITHDRAW":
-            # Legacy Support
             amount = order.quantity
             if hasattr(self.bank, "withdraw_for_customer"):
                 success = self.bank.withdraw_for_customer(order.agent_id, amount) # type: ignore

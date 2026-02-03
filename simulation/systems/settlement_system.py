@@ -366,6 +366,49 @@ class SettlementSystem(ISettlementSystem):
              self.logger.exception(f"SETTLEMENT_UNHANDLED_FAIL | {e}")
              return False
 
+    def execute_multiparty_settlement(
+        self,
+        transfers: List[Tuple[IFinancialEntity, IFinancialEntity, float]],
+        tick: int
+    ) -> bool:
+        """
+        Executes a batch of transfers atomically.
+        Format: (DebitAgent, CreditAgent, Amount)
+        If any transfer fails, all are rolled back.
+        """
+        if not transfers:
+            return True
+
+        completed_transfers = [] # List of (Debit, Credit, Amount)
+
+        for i, (debit, credit, amount) in enumerate(transfers):
+            memo = f"multiparty_seq_{i}"
+
+            # Execute individual transfer safely
+            tx = self.transfer(debit, credit, amount, memo, tick=tick)
+            if tx:
+                completed_transfers.append((debit, credit, amount))
+            else:
+                d_id = debit.id if hasattr(debit,'id') else '?'
+                c_id = credit.id if hasattr(credit,'id') else '?'
+                self.logger.warning(
+                    f"MULTIPARTY_FAIL | Transfer {i} failed ({d_id} -> {c_id}). Rolling back {len(completed_transfers)} previous transfers."
+                )
+
+                # ROLLBACK
+                for r_debit, r_credit, r_amount in reversed(completed_transfers):
+                    # Reverse: r_credit pays back r_debit
+                    rb_tx = self.transfer(r_credit, r_debit, r_amount, f"rollback_multiparty_{i}", tick=tick)
+                    if not rb_tx:
+                         rc_id = r_credit.id if hasattr(r_credit,'id') else '?'
+                         rd_id = r_debit.id if hasattr(r_debit,'id') else '?'
+                         self.logger.critical(
+                             f"MULTIPARTY_FATAL | Rollback failed for {r_amount} from {rc_id} to {rd_id}."
+                         )
+                return False
+
+        return True
+
     def settle_atomic(
         self,
         debit_agent: IFinancialEntity,

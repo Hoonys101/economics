@@ -1,145 +1,159 @@
-from __future__ import annotations
-from typing import Any, List, Optional
+from typing import List, Optional
 import math
+import logging
 
-from modules.housing.api import (
+from modules.market.housing_planner_api import (
     IHousingPlanner,
-    HouseholdHousingStateDTO,
-    HousingMarketStateDTO,
+    HousingOfferRequestDTO,
     HousingDecisionDTO,
-    HousingActionType,
-    RealEstateUnitDTO
+    MortgageApplicationDTO
 )
 
+logger = logging.getLogger(__name__)
 
 class HousingPlanner(IHousingPlanner):
     """
     Stateless component that contains all business logic for housing decisions.
+    Implements IHousingPlanner.
     """
 
-    def evaluate_and_decide(
-        self,
-        household: HouseholdHousingStateDTO,
-        market: HousingMarketStateDTO,
-        config: Any,
-    ) -> HousingDecisionDTO:
-        """
-        Determines the optimal housing action for a household based on its state and market conditions.
-        """
+    def evaluate_housing_options(self, request: HousingOfferRequestDTO) -> HousingDecisionDTO:
+        household = request['household_state']
+        housing_market = request['housing_market_snapshot']
+        loan_market = request['loan_market_snapshot']
+        current_debt = request.get('applicant_current_debt', 0.0)
+        annual_income = request.get('applicant_annual_income', 0.0)
 
-        # --- Priority 1: Homelessness ---
-        # The most urgent need is shelter.
-        if household._econ_state.is_homeless:
-            # Find the cheapest, minimally acceptable rental unit.
-            # Using config.housing.RENT_TO_INCOME_RATIO_MAX as per spec
-            max_rent = household.income * config.housing.RENT_TO_INCOME_RATIO_MAX
+        MIN_DOWN_PAYMENT_PCT = 0.2 # Standard requirement, ideally from config
 
-            affordable_rentals = [
-                u for u in market.units_for_rent
-                if u.rent_price <= max_rent
-            ]
+        # 1. Assess Market Conditions
+        interest_rate = loan_market['interest_rate']
+        max_dti = loan_market['max_dti']
+        max_ltv = loan_market['max_ltv']
 
-            if affordable_rentals:
-                cheapest_rental = min(affordable_rentals, key=lambda u: u.rent_price)
-                return HousingDecisionDTO(
-                    agent_id=household.id,
-                    action=HousingActionType.SEEK_RENTAL,
-                    target_unit_id=cheapest_rental.id,
-                    justification="Agent is homeless and can afford rent."
-                )
+        # 2. Calculate Max Affordable Loan (DTI Constraint)
+        monthly_income = annual_income / 12.0
+
+        # Estimate existing debt service (Monthly)
+        # Using current market rate for estimation if specific loan details unknown
+        monthly_rate = interest_rate / 12.0
+        if monthly_rate == 0:
+             existing_monthly_payment = current_debt / 360.0
+        else:
+             existing_monthly_payment = current_debt * monthly_rate
+
+        max_allowed_new_monthly_payment = (monthly_income * max_dti) - existing_monthly_payment
+
+        max_loan_dti = 0.0
+        if max_allowed_new_monthly_payment > 0:
+            term_months = 360
+            if monthly_rate == 0:
+                max_loan_dti = max_allowed_new_monthly_payment * term_months
             else:
-                return HousingDecisionDTO(
-                    agent_id=household.id,
-                    action=HousingActionType.STAY,
-                    justification="Agent is homeless but cannot afford any available rentals."
-                )
+                max_loan_dti = max_allowed_new_monthly_payment * ( (1+monthly_rate)**term_months - 1 ) / ( monthly_rate * (1+monthly_rate)**term_months )
 
-        # --- Priority 2: Financial Distress (Owner) ---
-        # An owner who is financially unstable should liquidate their property.
-        if household._econ_state.owned_properties:
-            # Assuming an agent owns at most one property for now, as per spec
-            owned_property_id = household._econ_state.owned_properties[0]
+        # 3. Assess Purchasing Power
+        cash = household.assets
+        purchasing_power = cash + max_loan_dti
 
-            # config.housing.FINANCIAL_DISTRESS_ASSET_THRESHOLD_MONTHS
-            distress_threshold = household.income * config.housing.FINANCIAL_DISTRESS_ASSET_THRESHOLD_MONTHS
+        # 4. Filter Properties
+        properties = getattr(housing_market, 'for_sale_units', [])
+        affordable_properties = []
 
-            if household._econ_state.assets < distress_threshold:
-                 return HousingDecisionDTO(
-                    agent_id=household.id,
-                    action=HousingActionType.SELL_PROPERTY,
-                    sell_unit_id=owned_property_id,
-                    justification="Agent is in financial distress; liquidating property."
-                )
+        for prop in properties:
+            price = prop.price
 
-        # --- Priority 3: Desire to Upgrade (Renter to Owner) ---
-        # A financially stable renter may want to buy a house.
-        # Condition: Is a renter (residing but not owning)
-        if household._econ_state.residing_property_id and not household._econ_state.owned_properties:
-            affordable_homes = [
-                h for h in market.units_for_sale
-                if self._is_purchase_affordable(h, household, config)
-            ]
+            # Basic Affordability Check
+            if price > purchasing_power:
+                continue
 
-            if affordable_homes:
-                best_home = min(affordable_homes, key=lambda h: h.for_sale_price) # Simplistic choice
-                return HousingDecisionDTO(
-                    agent_id=household.id,
-                    action=HousingActionType.SEEK_PURCHASE,
-                    target_unit_id=best_home.id,
-                    justification="Agent is a renter and can afford to purchase a home."
-                )
+            # Check Down Payment Constraint (LTV)
+            # Max Loan for this property = Price * MaxLTV
+            # Required Down Payment = Price - Max Loan
+            required_down_payment = price * (1.0 - max_ltv)
 
-        # --- Default Action: Stay ---
-        # If no other conditions are met, maintain the status quo.
+            if cash < required_down_payment:
+                continue
+
+            # Check if loan amount needed is within DTI limits
+            # Loan Needed = Price - Cash (Using all cash)
+            # Actually we can retain some cash, but let's see minimal loan needed.
+            # Minimal Loan = Price - Cash.
+            if (price - cash) > max_loan_dti:
+                continue
+
+            affordable_properties.append(prop)
+
+        # 5. Make Decision
+        # Priority: Homelessness -> Buy if affordable.
+        if household.is_homeless and affordable_properties:
+            # Pick cheapest for now (simplistic logic)
+            best_prop = min(affordable_properties, key=lambda p: p.price)
+            offer_price = best_prop.price
+
+            # Determine Down Payment & Loan Amount
+            # We want to minimize down payment while satisfying LTV and DTI?
+            # Or maximize down payment to minimize debt?
+            # Strategy: Pay target down payment (e.g. 20%) if possible, else minimal required.
+
+            target_down = offer_price * MIN_DOWN_PAYMENT_PCT
+            required_down_ltv = offer_price * (1.0 - max_ltv)
+
+            actual_down = max(target_down, required_down_ltv)
+
+            if cash < actual_down:
+                actual_down = cash # Should not happen given check above, but purely safe
+            else:
+                # If we have excess cash, maybe use more? For now stick to target/required.
+                pass
+
+            loan_amount = offer_price - actual_down
+
+            # Ensure loan amount is within DTI limit
+            if loan_amount > max_loan_dti:
+                 # Reduce loan amount, increase down payment
+                 diff = loan_amount - max_loan_dti
+                 actual_down += diff
+                 loan_amount = max_loan_dti
+
+                 if actual_down > cash:
+                     # Should have been filtered out
+                     logger.warning(f"HousingPlanner: Logic error, down payment {actual_down} exceeds cash {cash}")
+                     return self._stay_decision()
+
+            try:
+                # unit_id might be "unit_123" or just "123"
+                prop_id_str = best_prop.unit_id.replace("unit_", "")
+                prop_id = int(prop_id_str)
+            except ValueError:
+                logger.error(f"HousingPlanner: Invalid property ID {best_prop.unit_id}")
+                return self._stay_decision()
+
+            mortgage_app = MortgageApplicationDTO(
+                applicant_id=household.id,
+                principal=loan_amount,
+                purpose="MORTGAGE",
+                property_id=prop_id,
+                property_value=offer_price,
+                applicant_income=annual_income,
+                applicant_existing_debt=current_debt,
+                loan_term=360
+            )
+
+            return HousingDecisionDTO(
+                decision_type="MAKE_OFFER",
+                target_property_id=prop_id,
+                offer_price=offer_price,
+                mortgage_application=mortgage_app
+            )
+
+        # Default: Stay
+        return self._stay_decision()
+
+    def _stay_decision(self) -> HousingDecisionDTO:
         return HousingDecisionDTO(
-            agent_id=household.id,
-            action=HousingActionType.STAY,
-            justification="No urgent need or opportunity to move."
+            decision_type="STAY",
+            target_property_id=None,
+            offer_price=None,
+            mortgage_application=None
         )
-
-    def _is_purchase_affordable(
-        self,
-        home: RealEstateUnitDTO,
-        household: HouseholdHousingStateDTO,
-        config: Any
-    ) -> bool:
-        """
-        Helper to determine if a home purchase is affordable.
-        """
-        down_payment = home.for_sale_price * config.finance.MORTGAGE_DOWN_PAYMENT_RATE
-        monthly_payment = self._calculate_mortgage_payment(home.for_sale_price, config)
-
-        has_down_payment = household._econ_state.assets >= down_payment
-        can_afford_monthly = monthly_payment < household.income * config.housing.MORTGAGE_TO_INCOME_RATIO_MAX
-
-        return has_down_payment and can_afford_monthly
-
-    def _calculate_mortgage_payment(self, price: float, config: Any) -> float:
-        """
-        Calculates the estimated monthly mortgage payment.
-        Formula: M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]
-        """
-        # Assuming config has these values or defaulting
-        # Using getattr to be safe if config structure varies, but spec implies these exist.
-        # However, for pure implementation of spec:
-
-        # Loan Amount = Price - Down Payment
-        down_payment_rate = config.finance.MORTGAGE_DOWN_PAYMENT_RATE
-        loan_amount = price * (1 - down_payment_rate)
-
-        annual_rate = config.finance.MORTGAGE_INTEREST_RATE
-        term_years = config.finance.MORTGAGE_TERM_YEARS
-
-        if annual_rate == 0:
-            return loan_amount / (term_years * 12)
-
-        monthly_rate = annual_rate / 12.0
-        num_payments = term_years * 12
-
-        numerator = monthly_rate * ((1 + monthly_rate) ** num_payments)
-        denominator = ((1 + monthly_rate) ** num_payments) - 1
-
-        if denominator == 0:
-             return loan_amount / num_payments # Fallback to avoid div by zero
-
-        return loan_amount * (numerator / denominator)

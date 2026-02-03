@@ -183,6 +183,24 @@ class IBankService(IFinancialEntity, Protocol):
         ...
 
     @abc.abstractmethod
+    def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+        """
+        Creates a loan record but does not disburse funds (no deposit creation).
+        Used for atomic settlements where funds are transferred directly from Bank Reserves via SettlementSystem.
+
+        Args:
+            borrower_id: The ID of the entity receiving the loan.
+            amount: The principal amount.
+            interest_rate: The annual interest rate.
+            due_tick: Optional due tick.
+            borrower_profile: Optional credit scoring profile.
+
+        Returns:
+            A LoanInfoDTO if the loan is successfully staged, otherwise None.
+        """
+        ...
+
+    @abc.abstractmethod
     def repay_loan(self, loan_id: str, amount: float) -> bool:
         """
         Repays a portion or the full amount of a specific loan.

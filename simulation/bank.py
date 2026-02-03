@@ -205,6 +205,67 @@ class Bank(IBankService):
         )
         return dto, credit_creation_tx
 
+    def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+        """
+        Creates a loan record but does not disburse funds (no deposit creation).
+        Used for atomic settlements where funds are transferred directly from Bank Reserves.
+        Implements IBankService.stage_loan.
+        """
+        try:
+            bid_int = int(borrower_id)
+        except ValueError:
+            logger.error(f"Bank.stage_loan: Invalid borrower_id {borrower_id}, expected int-convertible string.")
+            return None
+
+        # Step 1: Credit Assessment
+        if self.credit_scoring_service and borrower_profile:
+             assessment = self.credit_scoring_service.assess_creditworthiness(borrower_profile, amount)
+             if not assessment['is_approved']:
+                 logger.info(f"LOAN_DENIED | Borrower {borrower_id} denied. Reason: {assessment.get('reason')}")
+                 return None
+
+        # Step 2: Liquidity Check (Direct Funding from Reserves)
+        # Since this is a direct transfer of reserves, we must have the cash.
+        if self.assets < amount:
+            logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient liquidity for direct funding. Assets: {self.assets:.2f} < Req: {amount:.2f}")
+            return None
+
+        # Step 3: Book the Loan (No Deposit Creation)
+        loan_id = f"loan_{self.next_loan_id}"
+        self.next_loan_id += 1
+
+        start_tick = self.current_tick_tracker
+        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50) # Default
+        if due_tick is not None:
+             term_ticks = max(1, due_tick - start_tick)
+        else:
+             term_ticks = self._get_config("bank.default_loan_term_ticks", term_ticks)
+             due_tick = start_tick + term_ticks
+
+        new_loan = Loan(
+            borrower_id=bid_int,
+            principal=amount,
+            remaining_balance=amount,
+            annual_interest_rate=interest_rate,
+            term_ticks=term_ticks,
+            start_tick=start_tick,
+            origination_tick=start_tick,
+            created_deposit_id=None # Explicitly None
+        )
+        self.loans[loan_id] = new_loan
+
+        logger.info(f"LOAN_STAGED | Loan {loan_id} staged for {borrower_id}. Amount: {amount:.2f}")
+
+        return LoanInfoDTO(
+            loan_id=loan_id,
+            borrower_id=borrower_id,
+            original_amount=amount,
+            outstanding_balance=amount,
+            interest_rate=interest_rate,
+            origination_tick=start_tick,
+            due_tick=due_tick
+        )
+
     def repay_loan(self, loan_id: str, amount: float) -> bool:
         """
         Repays a portion or the full amount of a specific loan.
