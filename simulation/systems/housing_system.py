@@ -1,7 +1,13 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Dict
+from uuid import uuid4, UUID
 from simulation.models import Order
+from modules.housing.dtos import (
+    HousingPurchaseDecisionDTO,
+    HousingTransactionSagaStateDTO
+)
+from modules.finance.saga_handler import HousingTransactionSagaHandler
 
 
 if TYPE_CHECKING:
@@ -18,12 +24,22 @@ class HousingSystem:
 
     def __init__(self, config_module: Any):
         self.config = config_module
+        self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
+        self.saga_handler: Optional[HousingTransactionSagaHandler] = None
 
     def process_housing(self, simulation: "Simulation"):
         """
         Processes mortgage payments, maintenance costs, rent collection, and eviction/foreclosure checks.
         Consolidated from Simulation._process_housing (Line 1221 in engine.py).
+        Also processes Housing Transaction Sagas.
         """
+        # Initialize Saga Handler if needed
+        if self.saga_handler is None:
+            self.saga_handler = HousingTransactionSagaHandler(simulation)
+
+        # 0. Process Active Sagas
+        self._process_active_sagas()
+
         # 1. Process Bank/Mortgages
         for unit in simulation.real_estate_units:
             if unit.mortgage_id:
@@ -100,6 +116,52 @@ class HousingSystem:
                             tenant.residing_property_id = None
                             tenant.is_homeless = True
 
+    def _process_active_sagas(self):
+        """Iterates through active sagas and executes next steps."""
+        if not self.saga_handler:
+            return
+
+        # Iterate over copy to allow removal
+        for saga_id, saga in list(self.active_sagas.items()):
+            # Execute Step
+            try:
+                updated_saga = self.saga_handler.execute_step(saga)
+                self.active_sagas[saga_id] = updated_saga
+
+                # Check terminal states
+                if updated_saga['status'] in ["COMPLETED", "FAILED_ROLLED_BACK", "LOAN_REJECTED"]:
+                    if updated_saga['status'] == "COMPLETED":
+                        logger.info(f"SAGA_COMPLETE | Saga {saga_id} completed successfully.")
+                    else:
+                        logger.info(f"SAGA_TERMINATED | Saga {saga_id} terminated with status {updated_saga['status']}. Error: {updated_saga.get('error_message')}")
+
+                    del self.active_sagas[saga_id]
+            except Exception as e:
+                logger.error(f"SAGA_PROCESS_ERROR | Saga {saga_id} failed processing. {e}")
+
+    def initiate_purchase(self, decision: HousingPurchaseDecisionDTO, buyer_id: int):
+        """
+        Starts a new housing transaction saga.
+        Called by DecisionUnit (or via orchestration).
+        """
+        saga_id = uuid4()
+
+        saga: HousingTransactionSagaStateDTO = {
+            "saga_id": saga_id,
+            "status": "INITIATED",
+            "buyer_id": buyer_id,
+            "seller_id": -1, # To be resolved
+            "property_id": decision['target_property_id'],
+            "offer_price": decision['offer_price'],
+            "down_payment_amount": decision['down_payment_amount'],
+            "loan_application": None,
+            "mortgage_approval": None,
+            "error_message": None
+        }
+
+        self.active_sagas[saga_id] = saga
+        logger.info(f"SAGA_INIT | Initiated saga {saga_id} for buyer {buyer_id} property {decision['target_property_id']}")
+
     def apply_homeless_penalty(self, simulation: "Simulation"):
         """
         Applies survival penalties to homeless agents.
@@ -122,4 +184,3 @@ class HousingSystem:
                         f"HOMELESS_PENALTY | Household {hh.id} survival need increased.",
                         extra={"agent_id": hh.id}
                     )
-

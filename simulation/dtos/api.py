@@ -160,6 +160,7 @@ class DecisionInputDTO:
     stress_scenario_config: Optional[Any] = None # Avoid circular import with StressScenarioConfig if possible, or use forward ref
     government_policy: Optional[GovernmentPolicyDTO] = None
     agent_registry: Optional[Dict[str, int]] = None
+    housing_system: Optional[Any] = None # Added for Saga initiation
 
 
 @dataclass

@@ -188,5 +188,6 @@ class DecisionInputFactory:
              government_policy=gov_policy,
              agent_registry=agent_registry,
              stress_scenario_config=world_state.stress_scenario_config,
-             macro_context=macro_financial_context
+             macro_context=macro_financial_context,
+             housing_system=world_state.housing_system if hasattr(world_state, 'housing_system') else None
         )

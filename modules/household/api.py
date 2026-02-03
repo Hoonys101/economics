@@ -32,6 +32,7 @@ class OrchestrationContextDTO(TypedDict):
     stress_scenario_config: Optional["StressScenarioConfig"]
     config: "HouseholdConfigDTO"
     household_state: "HouseholdStateDTO"
+    housing_system: Optional[Any] # Added for Saga initiation
 
 
 class IBioComponent(ABC):

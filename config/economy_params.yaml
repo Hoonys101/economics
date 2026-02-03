@@ -43,4 +43,6 @@ dynamic_price_reduction_factor: 0.95
 # ----------------------------------------------------------------------
 housing:
   max_ltv_ratio: 0.8
+  max_ltv: 0.8
+  max_dti: 0.43
   mortgage_term_ticks: 300

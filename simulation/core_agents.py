@@ -540,7 +540,8 @@ class Household(BaseAgent, ILearningAgent):
             current_time=current_time,
             stress_scenario_config=stress_scenario_config,
             config=self.config,
-            household_state=state_dto
+            household_state=state_dto,
+            housing_system=input_dto.housing_system
         )
 
         # 4. Delegate to DecisionUnit (Stateless)
