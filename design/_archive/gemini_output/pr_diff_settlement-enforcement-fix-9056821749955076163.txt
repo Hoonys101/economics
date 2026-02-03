@@ -1,0 +1,389 @@
+diff --git a/communications/insights/Mission_Settlement_Enforcement.md b/communications/insights/Mission_Settlement_Enforcement.md
+new file mode 100644
+index 0000000..fcc9c25
+--- /dev/null
++++ b/communications/insights/Mission_Settlement_Enforcement.md
+@@ -0,0 +1,28 @@
++# Mission Insight: Settlement Enforcement (2026-02-03)
++
++## Overview
++This mission addresses critical financial integrity violations identified in `report_20260203_100305...md`. The goal is to enforce the usage of `SettlementSystem` for all asset transfers and eliminate direct manipulation of agent assets ("magic money").
++
++## Identified Violations
++
++### 1. `FinanceDepartment` Bypasses
++- **Violation**: `issue_shares` and `add_liability` methods in `simulation/components/finance_department.py` directly modify the firm's cash balance via `self.credit()`.
++- **Impact**: This creates money out of thin air. For `issue_shares`, it duplicates the cash inflow if the Stock Market also executes a transaction. For `add_liability`, it adds cash without a corresponding withdrawal from a lender.
++- **Fix**: Remove `self.credit()` calls from these methods. They should only update the share count or debt record. Cash must be transferred via `SettlementSystem` transactions (e.g., stock purchase, loan disbursement).
++
++### 2. Direct Asset Modification in Agents
++- **Violation**: `Bank`, `Government`, and `BaseAgent` expose `_add_assets` and `_sub_assets` methods which are intended for internal use but are public enough to be abused (as noted in audits like `TD105_DRIFT_FORENSICS`).
++- **Impact**: Allows any system (e.g., `EconomicRefluxSystem`, legacy `HousingSystem`) to inject or remove money without a transaction record, breaking the Zero-Sum principle.
++- **Fix**: Rename these methods to `_internal_add_assets` and `_internal_sub_assets`. Update the public `deposit` and `withdraw` methods (mandated by `IFinancialEntity`) to call these internal methods. This forces all external callers to use `deposit`/`withdraw`, which are the standard entry points for `SettlementSystem`.
++
++### 3. `CentralBank` Asset Logic
++- **Violation**: `CentralBank` logic for `deposit` and `withdraw` directly modifies internal dictionary structures. While not strictly a violation if used correctly, it should follow the same pattern as other agents for consistency.
++- **Fix**: Ensure strict encapsulation.
++
++## Strategic Plan
++The refactoring will proceed by:
++1.  **Sanitizing Components**: Stripping `FinanceDepartment` of its magic money powers.
++2.  **Hardening Agents**: Renaming internal asset modification methods to break any unauthorized external dependencies.
++3.  **Verifying Integrity**: Using static analysis (`grep`) to ensure no direct asset modification remains.
++
++This ensures that the `SettlementSystem` becomes the sole authority for financial transfers, as it operates exclusively through the `IFinancialEntity.deposit/withdraw` interface which generates the necessary audit trails.
+diff --git a/simulation/agents/central_bank.py b/simulation/agents/central_bank.py
+index 5109832..fff0991 100644
+--- a/simulation/agents/central_bank.py
++++ b/simulation/agents/central_bank.py
+@@ -183,10 +183,21 @@ class CentralBank:
+             }
+         )
+ 
++    def _internal_add_assets(self, amount: float) -> None:
++        """[INTERNAL ONLY] Increase cash reserves."""
++        self.assets['cash'] = self.assets.get('cash', 0) + amount
++
++    def _internal_sub_assets(self, amount: float) -> None:
++        """[INTERNAL ONLY] Decrease cash reserves."""
++        current_cash = self.assets.get('cash', 0)
++        # Central Bank can withdraw (create money) even if it results in negative cash
++        # This represents expansion of the monetary base.
++        self.assets['cash'] = current_cash - amount
++
+     def deposit(self, amount: float) -> None:
+         """Deposits a given amount into the central bank's cash reserves."""
+         if amount > 0:
+-            self.assets['cash'] = self.assets.get('cash', 0) + amount
++            self._internal_add_assets(amount)
+ 
+     def mint(self, amount: float) -> None:
+         """
+@@ -201,7 +212,4 @@ class CentralBank:
+         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
+         """
+         if amount > 0:
+-            current_cash = self.assets.get('cash', 0)
+-            # Central Bank can withdraw (create money) even if it results in negative cash
+-            # This represents expansion of the monetary base.
+-            self.assets['cash'] = current_cash - amount
++            self._internal_sub_assets(amount)
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index b749fa0..54545bc 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -167,17 +167,17 @@ class Government:
+     def assets(self) -> float:
+         return self._assets
+ 
+-    def _add_assets(self, amount: float) -> None:
++    def _internal_add_assets(self, amount: float) -> None:
+         """
+         [INTERNAL ONLY] Increase assets.
+-        See BaseAgent._add_assets docstring.
++        See BaseAgent._internal_add_assets docstring.
+         """
+         self._assets += amount
+ 
+-    def _sub_assets(self, amount: float) -> None:
++    def _internal_sub_assets(self, amount: float) -> None:
+         """
+         [INTERNAL ONLY] Decrease assets.
+-        See BaseAgent._sub_assets docstring.
++        See BaseAgent._internal_sub_assets docstring.
+         """
+         self._assets -= amount
+ 
+@@ -527,14 +527,14 @@ class Government:
+     def deposit(self, amount: float) -> None:
+         """Deposits a given amount into the government's assets."""
+         if amount > 0:
+-            self._assets += amount
++            self._internal_add_assets(amount)
+ 
+     def withdraw(self, amount: float) -> None:
+         """Withdraws a given amount from the government's assets."""
+         if amount > 0:
+             if self.assets < amount:
+                 raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+-            self._assets -= amount
++            self._internal_sub_assets(amount)
+ 
+     # WO-054: Public Education System
+     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:
+diff --git a/simulation/bank.py b/simulation/bank.py
+index c6ee6e5..a74812d 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -93,10 +93,12 @@ class Bank(IBankService):
+     def assets(self) -> float:
+         return self._assets
+ 
+-    def _add_assets(self, amount: float) -> None:
++    def _internal_add_assets(self, amount: float) -> None:
++        """[INTERNAL ONLY] Increase assets. Do not call directly."""
+         self._assets += amount
+ 
+-    def _sub_assets(self, amount: float) -> None:
++    def _internal_sub_assets(self, amount: float) -> None:
++        """[INTERNAL ONLY] Decrease assets. Do not call directly."""
+         self._assets -= amount
+ 
+     def get_interest_rate(self) -> float:
+@@ -309,13 +311,13 @@ class Bank(IBankService):
+ 
+     def deposit(self, amount: float) -> None:
+         if amount > 0:
+-            self._assets += amount
++            self._internal_add_assets(amount)
+ 
+     def withdraw(self, amount: float) -> None:
+         if amount > 0:
+             if self.assets < amount:
+                  raise InsufficientFundsError(f"Insufficient funds")
+-            self._assets -= amount
++            self._internal_sub_assets(amount)
+ 
+     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+         """Legacy method used by TickScheduler etc. until refactored."""
+diff --git a/simulation/base_agent.py b/simulation/base_agent.py
+index 379deb6..4124855 100644
+--- a/simulation/base_agent.py
++++ b/simulation/base_agent.py
+@@ -45,22 +45,22 @@ class BaseAgent(ABC):
+         """Current assets (Read-Only)."""
+         return self._assets
+ 
+-    def _add_assets(self, amount: float) -> None:
++    def _internal_add_assets(self, amount: float) -> None:
+         """
+         [INTERNAL ONLY] Increase assets.
+         MUST ONLY BE CALLED BY:
+-        1. SettlementSystem.transfer (Normal Operation)
+-        2. System Managers for Minting (e.g. Bank Credit Creation, Reflux Alchemy) WITH corresponding Ledger Update.
++        1. SettlementSystem.transfer (Normal Operation) via deposit()
++        2. System Managers for Minting (e.g. Bank Credit Creation, Reflux Alchemy) WITH corresponding Ledger Update via deposit()
+ 
+         DO NOT CALL DIRECTLY for standard transfers. Use SettlementSystem.
+         """
+         self._assets += amount
+ 
+-    def _sub_assets(self, amount: float) -> None:
++    def _internal_sub_assets(self, amount: float) -> None:
+         """
+         [INTERNAL ONLY] Decrease assets.
+         MUST ONLY BE CALLED BY:
+-        1. SettlementSystem.transfer (Normal Operation)
++        1. SettlementSystem.transfer (Normal Operation) via withdraw()
+ 
+         DO NOT CALL DIRECTLY. Use SettlementSystem.
+         """
+@@ -69,7 +69,7 @@ class BaseAgent(ABC):
+     def deposit(self, amount: float) -> None:
+         """Deposits a given amount into the entity's account."""
+         if amount > 0:
+-            self._add_assets(amount)
++            self._internal_add_assets(amount)
+ 
+     def withdraw(self, amount: float) -> None:
+         """
+@@ -81,7 +81,7 @@ class BaseAgent(ABC):
+         if amount > 0:
+             if self.assets < amount:
+                 raise InsufficientFundsError(f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
+-            self._sub_assets(amount)
++            self._internal_sub_assets(amount)
+ 
+     def get_agent_data(self) -> Dict[str, Any]:
+         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index fc486c6..16c678b 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -56,12 +56,17 @@ class FinanceDepartment:
+         return self._cash
+ 
+     def credit(self, amount: float, description: str = "") -> None:
+-        """Adds funds to the firm's cash reserves."""
++        """
++        Adds funds to the firm's cash reserves.
++        WARNING: This method should only be called by Firm.deposit(), which is called by SettlementSystem.
++        Do not call directly for business logic (e.g., sales, loans).
++        """
+         self._cash += amount
+ 
+     def debit(self, amount: float, description: str = "") -> None:
+         """
+         Deducts funds from the firm's cash reserves.
++        WARNING: This method should only be called by Firm.withdraw(), which is called by SettlementSystem.
+         """
+         self._cash -= amount
+ 
+@@ -285,8 +290,10 @@ class FinanceDepartment:
+         return transactions
+ 
+     def add_liability(self, amount: float, interest_rate: float):
+-        """Adds a liability (like a loan) to the firm's balance sheet."""
+-        self.credit(amount, "Liability Addition")
++        """
++        Adds a liability (like a loan) to the firm's balance sheet.
++        NOTE: Does NOT credit cash. Cash must be transferred via SettlementSystem (e.g. from Bank).
++        """
+         if not hasattr(self.firm, 'total_debt'):
+             self.firm.total_debt = 0.0
+         self.firm.total_debt += amount
+@@ -432,16 +439,21 @@ class FinanceDepartment:
+         }
+ 
+     def issue_shares(self, quantity: float, price: float) -> float:
++        """
++        Records the issuance of new shares.
++        NOTE: Does NOT credit cash. Cash must be raised via StockMarket transaction (SettlementSystem).
++        """
+         if quantity <= 0 or price <= 0:
+             return 0.0
+ 
+         self.firm.total_shares += quantity
+         raised_capital = quantity * price
+-        self.credit(raised_capital, "Share Issue")
++
++        # Cash is NOT credited here. It must come from the StockMarket executing the order.
+ 
+         self.firm.logger.info(
+             f"Firm {self.firm.id} issued {quantity:.1f} shares at {price:.2f}, "
+-            f"raising {raised_capital:.2f} capital. Total shares: {self.firm.total_shares:.1f}",
++            f"raising {raised_capital:.2f} capital (pending settlement). Total shares: {self.firm.total_shares:.1f}",
+             extra={
+                 "agent_id": self.firm.id,
+                 "quantity": quantity,
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index c5bdb54..6ea5bf5 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -392,12 +392,12 @@ class Household(BaseAgent, ILearningAgent):
+         self._econ_state.portfolio = value
+ 
+     @override
+-    def _add_assets(self, amount: float) -> None:
++    def _internal_add_assets(self, amount: float) -> None:
+         self._econ_state.assets += amount
+         self._assets = self._econ_state.assets
+ 
+     @override
+-    def _sub_assets(self, amount: float) -> None:
++    def _internal_sub_assets(self, amount: float) -> None:
+         self._econ_state.assets -= amount
+         self._assets = self._econ_state.assets
+ 
+@@ -859,26 +859,24 @@ class Household(BaseAgent, ILearningAgent):
+         self._econ_state.labor_income_this_tick = 0.0
+         self._econ_state.capital_income_this_tick = 0.0
+ 
+-    @override
+-    def _add_assets(self, amount: float) -> None:
+-        self._econ_state.assets += amount
+-        self._assets = self._econ_state.assets # Sync legacy property
+-
+-    @override
+-    def _sub_assets(self, amount: float) -> None:
+-        self._econ_state.assets -= amount
+-        self._assets = self._econ_state.assets # Sync legacy property
++    # Redundant methods removed/renamed to match BaseAgent
++    # The definitions above are sufficient if they are the only ones.
++    # But wait, there were two definitions in the file?
++    # I will verify if I need to replace the second block or if it was just me scrolling.
++    # The file content showed a second block near line 570.
++    # I will replace it as well to be safe or delete it if it is duplicate.
++    # Assuming valid python file, overriding twice is legal but weird.
+ 
+     @override
+     def adjust_assets(self, delta: float) -> None:
+         """
+         Adjusts assets by delta (positive or negative).
+-        Delegates to _add_assets or _sub_assets to ensure validation and hooks run.
++        Delegates to _internal_add_assets or _internal_sub_assets to ensure validation and hooks run.
+         """
+         if delta >= 0:
+-            self._add_assets(delta)
++            self._internal_add_assets(delta)
+         else:
+-            self._sub_assets(abs(delta))
++            self._internal_sub_assets(abs(delta))
+ 
+     # --- IPortfolioHandler Implementation ---
+ 
+diff --git a/simulation/finance/api.py b/simulation/finance/api.py
+index 363a771..e89b792 100644
+--- a/simulation/finance/api.py
++++ b/simulation/finance/api.py
+@@ -6,7 +6,7 @@ class IFinancialEntity(Protocol):
+     """
+     Protocol for any entity that possesses assets and participates in financial transactions.
+     Assets are read-only to the public; state changes must occur via the SettlementSystem
+-    calling the protected _add_assets / _sub_assets methods (or equivalent internal logic).
++    calling the public deposit / withdraw methods.
+     """
+     id: int
+ 
+@@ -15,17 +15,14 @@ class IFinancialEntity(Protocol):
+         """Current assets (Read-Only)."""
+         ...
+ 
+-    def _add_assets(self, amount: float) -> None:
+-        """
+-        [PROTECTED] Increase assets.
+-        Should ONLY be called by SettlementSystem.
+-        """
++    def deposit(self, amount: float) -> None:
++        """Deposits a given amount into the entity's account."""
+         ...
+ 
+-    def _sub_assets(self, amount: float) -> None:
++    def withdraw(self, amount: float) -> None:
+         """
+-        [PROTECTED] Decrease assets.
+-        Should ONLY be called by SettlementSystem.
++        Withdraws a given amount from the entity's account.
++        Raises InsufficientFundsError if funds are insufficient.
+         """
+         ...
+ 
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 1587446..bd242f2 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -159,7 +159,7 @@ class Firm(BaseAgent, ILearningAgent):
+         self.finance._balance = value # Direct internal access for override
+         self._assets = value
+ 
+-    def _add_assets(self, amount: float) -> None:
++    def _internal_add_assets(self, amount: float) -> None:
+         """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
+         if hasattr(self, 'finance'):
+             self.finance.credit(amount, "Settlement Transfer")
+@@ -167,7 +167,7 @@ class Firm(BaseAgent, ILearningAgent):
+         else:
+             self._assets += amount
+ 
+-    def _sub_assets(self, amount: float) -> None:
++    def _internal_sub_assets(self, amount: float) -> None:
+         """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
+         if hasattr(self, 'finance'):
+             self.finance.debit(amount, "Settlement Transfer")
+@@ -549,14 +549,14 @@ class Firm(BaseAgent, ILearningAgent):
+     def deposit(self, amount: float) -> None:
+         """Deposits a given amount into the firm's cash reserves."""
+         if amount > 0:
+-            self.finance.credit(amount, "Deposit")
++            self._internal_add_assets(amount)
+ 
+     def withdraw(self, amount: float) -> None:
+         """Withdraws a given amount from the firm's cash reserves."""
+         if amount > 0:
+             if self.finance.balance < amount:
+                 raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.finance.balance:.2f}")
+-            self.finance.debit(amount, "Withdrawal")
++            self._internal_sub_assets(amount)
+ 
+     # --- Delegated Methods (Facade Pattern) ---
+ 
