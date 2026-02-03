@@ -40,12 +40,13 @@
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
 | TD-191 | 2026-02-03 | Weak Typing & DTO Contract Violation (Any Abuse) | Runtime errors; Maintenance nightmare | **FIXED** |
+| TD-194 | 2026-02-03 | HouseholdStateDTO Fragmentation | Missing critical financial fields for DTI | **MEDIUM** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| (Empty) | | | | |
+| TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | **LOW** |
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
 
@@ -56,6 +57,8 @@
 | TD-188 | 2026-02-01 | Inconsistent Config Path Doc | `PROJECT_STATUS.md` path mismatch | **ACTIVE** |
 | TD-190 | 2026-02-03 | Magic Number Proliferation (Hardcoded Simulation Constants) | Hard to tune/test; Fragile logic | **MEDIUM** |
 | TD-193 | 2026-02-03 | Fragmented Implementation: Half-baked Political System | Spec (Leviathan) vs Code (ruling_party) drift; logic duplication | **WARNING** |
+| TD-195 | 2026-02-03 | Loan ID Consistency (Int vs Str) | Potential KeyError in Saga/Market logic | **MEDIUM** |
+| TD-197 | 2026-02-03 | Legacy HousingManager Dependency | Dual logic paths; architectural confusion | **MEDIUM** |
 
 ---
 

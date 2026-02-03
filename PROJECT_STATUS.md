@@ -28,6 +28,7 @@
 - **Operation Sacred Harvest**: Atomic Inheritance & Liquidation Waterfall Protocol ✅ (2026-02-02)
 - **The Ordered Universe**: Structural Post-Phase Hook & Time Axis Alignment ✅ (2026-02-02)
 - **Operation Strict Encapsulation**: Strict Typing & DTO Enforcement (TD-191) ✅ (2026-02-03)
+- **The Great Housewarming**: Housing-V2 Mortgage Pipeline & Bubble Observatory (Phase 32) ✅ (2026-02-03)
 
 
 - **완료된 단계(Recent):** `Phase 29: The Great Depression & Crisis Monitor` ✅ (2026-01-21)
@@ -41,13 +42,12 @@
  - **Phase 2**: Guaranteed Execution Sequence ✅ (Merged 2026-01-21)
  - **Phase 3**: DTO Decoupling & Data Flow Purity ✅ (Merged 2026-01-21)
 
-- **현재 단계:** `Phase 32: The Great Housewarming (Mortgage Restoration)` 🏗️
-    - **Goal**: Restore the mortgage credit pipeline with macro-prudential regulations.
+- **현재 단계:** `Phase 33: Multi-Polar World & Global Trade` 🏗️
+    - **Goal**: Expand simulation to multiple sovereign entities with FX markets.
     - **Status**: 
-        - [x] **Interface Design**: `MortgageApplicationDTO` defined in spec.
-        - [ ] **Housing Legacy Repair**: Extract orphaned mortgage logic from DecisionUnit.
-        - [ ] **LTV/DTI implementation**: Hard regulatory checks in LoanMarket.
-        - [ ] **M2 Surge Monitoring**: Bubble observatory setup.
+        - [ ] **Sovereign Agent Factory**: Support for multiple `Government` instances.
+        - [ ] **FX Market Architecture**: Atomic currency exchange (`SettlementSystem` extension).
+        - [ ] **Cross-Border Trade**: Import/Export logic for basic goods.
     
 - **완료된 단계:** `Phase 31: Open Market Operations & Fiscal/Monetary Coordination` ✅ (2026-02-02)
     - **Outcome**: Established the **Ordered Universe** architecture.
