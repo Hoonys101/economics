@@ -47,27 +47,17 @@
  - **Phase 2**: Guaranteed Execution Sequence ✅ (Merged 2026-01-21)
  - **Phase 3**: DTO Decoupling & Data Flow Purity ✅ (Merged 2026-01-21)
 
-- **현재 단계:** `Phase 33: Multi-Polar World & Global Trade` 🏗️
-    - **Goal**: Expand simulation to multiple sovereign entities with FX markets.
+- **현재 단계:** `Phase 4: The Welfare State & Fiscal Stabilization` 🏗️
+    - **Goal**: Implement social safety nets, progressive taxation, and bankruptcy protection to stabilize domestic population.
     - **Status**: 
-        - [x] **Phase 33-Foundation**: Multi-Currency Asset Representation (`Dict[CurrencyCode, float]`) ✅ (2026-02-03)
-            - `ICurrencyHolder` Protocol implemented in all agents.
-            - `WorldState.get_total_system_money_for_diagnostics()` for backward compat.
-            - `trace_leak.py` updated (pending debug by Jules).
-        - [ ] **Phase 33-A**: Exogenous Foreign Economy API (Lightweight abstraction).
-        - [ ] **Phase 33-B**: Full Agent-Based Multi-Nation (Pending compute analysis).
-        - [ ] **FX Market Architecture**: Atomic currency exchange (`SettlementSystem` extension).
-        - [ ] **Cross-Border Trade**: Import/Export logic for basic goods.
-    
-- **완료된 단계:** `Phase 31: Open Market Operations & Fiscal/Monetary Coordination` ✅ (2026-02-02)
-    - **Outcome**: Established the **Ordered Universe** architecture.
-    - [x] **Post-Phase Hook**: Automated gov audit at end of tick.
-    - [x] **Liquidation Waterfall**: Prioritized asset distribution for bankruptcies.
-    - [x] **Atomic Inheritance (TD-160)**: SettlementSystem-based legacy escrow protocol.
-    - [x] **Prioritized Severance (TD-187)**: Employee-first liquidation.
-
-
-    - **Next Phase**: `Phase 32: Interbank Lending & Reserve Requirement Stress Tests`
+        - [x] **Phase 33-Foundation**: Multi-Currency Asset Representation ✅ (2026-02-03)
+        - [ ] **Phase 4-A**: Progressive Tax System & Survival-based Brackets.
+        - [ ] **Phase 4-B**: Social Safety Net (Unemployment Benefits, Disaster Relief).
+        - [ ] **Phase 4-C**: Bankruptcy Court (Credit Jail & XP Penalty).
+    - **Roadmap (Postponed)**:
+        - [ ] **Phase 33-A**: Exogenous Foreign Economy API (Deferred until domestic stability).
+        - [ ] **Phase 33-B**: Full Agent-Based Multi-Nation (Deferred).
+        - [ ] **FX Market Architecture**: Atomic currency exchange.
 
 
 ---

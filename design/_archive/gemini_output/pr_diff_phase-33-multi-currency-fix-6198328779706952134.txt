@@ -1,0 +1,1247 @@
+diff --git a/communications/insights/PH33_DEBUG.md b/communications/insights/PH33_DEBUG.md
+new file mode 100644
+index 0000000..5506966
+--- /dev/null
++++ b/communications/insights/PH33_DEBUG.md
+@@ -0,0 +1,81 @@
++# Phase 33: Multi-Currency Refactoring Debug Report
++
++## Issue Summary
++During the handover from Antigravity, `scripts/trace_leak.py` failed due to missing imports and type mismatches related to the introduction of `DEFAULT_CURRENCY` and the dictionary-based asset structure.
++
++## Fixes Implemented
++
++### 1. Missing Imports (`NameError: name 'DEFAULT_CURRENCY' is not defined`)
++Imported `DEFAULT_CURRENCY` and `CurrencyCode` from `modules.system.api` in the following files:
++- `simulation/core_agents.py`
++- `simulation/firms.py`
++- `simulation/initialization/initializer.py`
++- `simulation/systems/bootstrapper.py`
++- `simulation/orchestration/tick_orchestrator.py`
++- `simulation/metrics/economic_tracker.py`
++- `modules/household/social_component.py`
++- `simulation/ai/firm_ai.py`
++- `simulation/ai/firm_system2_planner.py`
++- `simulation/decisions/firm/financial_strategy.py`
++- `simulation/decisions/firm/production_strategy.py`
++- `simulation/decisions/ai_driven_firm_engine.py`
++- `simulation/systems/settlement_system.py`
++- `simulation/ai/vectorized_planner.py`
++- `simulation/systems/lifecycle_manager.py`
++- `modules/finance/system.py`
++- `modules/finance/service.py`
++- `modules/system/execution/public_manager.py`
++- `modules/government/components/infrastructure_manager.py`
++- `simulation/systems/housing_system.py`
++- `simulation/systems/persistence_manager.py`
++- `simulation/systems/inheritance_manager.py`
++
++### 2. Type Mismatches (`TypeError: '<' not supported between instances of 'dict' and 'float'`)
++The `assets` (and sometimes `revenue` or `balance`) attribute of agents is now a dictionary `{CurrencyCode: float}` instead of a single `float`. Logic was updated to extract `DEFAULT_CURRENCY` (USD) for comparisons and arithmetic operations in:
++- `simulation/initialization/initializer.py` (Sorting households)
++- `simulation/systems/bootstrapper.py` (Liquidity injection checks)
++- `simulation/orchestration/tick_orchestrator.py` (Money supply verification)
++- `simulation/metrics/economic_tracker.py` (Asset summation)
++- `modules/household/social_component.py` (Social status calculation, Death check)
++- `simulation/ai/firm_ai.py` (State feature extraction, Reward calculation)
++- `simulation/ai/firm_system2_planner.py` (Future projection)
++- `simulation/decisions/firm/financial_strategy.py` (Debt management, SEO)
++- `simulation/decisions/firm/production_strategy.py` (CAPEX, Automation, R&D)
++- `simulation/decisions/ai_driven_firm_engine.py` (Pricing logic)
++- `simulation/systems/settlement_system.py` (Transfer execution, Seamless payment checks)
++- `simulation/ai/vectorized_planner.py` (Consumption logic)
++- `simulation/systems/lifecycle_manager.py` (Bankruptcy checks)
++- `modules/finance/system.py` (Bond issuance solvency checks)
++- `modules/government/components/infrastructure_manager.py` (Infrastructure investment checks)
++- `simulation/systems/housing_system.py` (Rent/Maintenance payment checks)
++- `simulation/systems/persistence_manager.py` (DTO population)
++- `simulation/systems/inheritance_manager.py` (Valuation)
++- `modules/finance/service.py` (Tax calculation)
++
++### 3. Other Fixes
++- **Missing Dependencies**: Installed `python-dotenv`, `pyyaml`, `joblib`, `numpy`, `scikit-learn`.
++- **Duplicate Imports**: Removed duplicate `MarketSnapshotDTO` import in `simulation/firms.py`.
++- **Missing ID**: Added fixed `_id` to `PublicManager` in `modules/system/execution/public_manager.py`.
++- **AttributeError**: Fixed `GovernmentStateDTO` missing `gdp` attribute by adapting it to `EconomicIndicatorsDTO` in `modules/finance/system.py`.
++
++## Technical Debt (Phase 33-A/B Preparation)
++
++The following items are recorded as technical debt to be addressed when Exchange Markets (Phase 33-A/B) are introduced:
++
++1.  **Direct Usage of `DEFAULT_CURRENCY`**: The codebase heavily relies on `DEFAULT_CURRENCY` (USD) for logic comparisons, asset summation, and decision making. This assumes a single-currency dominance which will not hold true in a multi-currency regime.
++    -   *Action*: Replace direct dictionary lookups `assets.get(DEFAULT_CURRENCY)` with a `CurrencyConverter` service that normalizes value based on active exchange rates.
++
++2.  **Hardcoded "USD" Assumptions**: Many log messages and fallback logic assume "USD" is the only relevant currency.
++    -   *Action*: Update logging and logic to support dynamic reporting of relevant currencies.
++
++3.  **Settlement System "Seamless" Logic**: The seamless payment logic in `SettlementSystem` currently only checks `DEFAULT_CURRENCY` bank balances.
++    -   *Action*: Expand `_execute_withdrawal` to support multi-currency seamless payments (e.g., auto-conversion).
++
++4.  **Economic Tracker Aggregation**: `total_household_assets` and `total_firm_assets` are currently just the sum of `DEFAULT_CURRENCY`.
++    -   *Action*: `EconomicIndicatorTracker` should calculate Total Wealth by converting all currency holdings to a base currency (USD) using current exchange rates.
++
++5.  **Agent Decision Engines**: AI engines (FirmAI, HouseholdPlanner) simplify state by looking only at `DEFAULT_CURRENCY`.
++    -   *Action*: AI inputs should include vector representations of multi-currency holdings or a consolidated "Purchasing Power" metric.
++
++## Integrity Verification
++`scripts/trace_leak.py` passed successfully with `Leak: 0.0000`. The system's monetary integrity is preserved after refactoring.
+diff --git a/modules/finance/service.py b/modules/finance/service.py
+index 6d94e5b..dc8a3ae 100644
+--- a/modules/finance/service.py
++++ b/modules/finance/service.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ from typing import List, TYPE_CHECKING
+ from modules.finance.api import ITaxService
+ from modules.common.dtos import Claim
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -15,8 +16,13 @@ class TaxService(ITaxService):
+         claims = []
+         tax_rate = getattr(firm.config, "corporate_tax_rate", 0.0)
+ 
+-        if firm.finance.current_profit > 0:
+-            tax_liability = firm.finance.current_profit * tax_rate
++        current_profit_raw = firm.finance.current_profit
++        current_profit = current_profit_raw
++        if isinstance(current_profit_raw, dict):
++            current_profit = current_profit_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        if current_profit > 0:
++            tax_liability = current_profit * tax_rate
+ 
+             # Find Government ID
+             gov_agent = self.agent_registry.get_agent("government")
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index e7a6cfa..83f6741 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -3,6 +3,8 @@ import logging
+ from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
+ from modules.finance.domain import AltmanZScoreCalculator
+ from modules.analysis.fiscal_monitor import FiscalMonitor
++from modules.simulation.api import EconomicIndicatorsDTO
++from modules.system.api import DEFAULT_CURRENCY
+ # Forward reference for type hinting
+ from simulation.firms import Firm
+ from simulation.models import Transaction
+@@ -59,7 +61,15 @@ class FinanceSystem(IFinanceSystem):
+ 
+         # Use FiscalMonitor for risk assessment
+         world_dto = getattr(self.government, 'sensory_data', None)
+-        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, world_dto)
++
++        # Adapter: Convert GovernmentStateDTO to EconomicIndicatorsDTO if needed
++        indicator_dto = world_dto
++        if world_dto and not isinstance(world_dto, EconomicIndicatorsDTO):
++             # Assume GovernmentStateDTO which has current_gdp
++             current_gdp = getattr(world_dto, 'current_gdp', 0.0)
++             indicator_dto = EconomicIndicatorsDTO(gdp=current_gdp, cpi=0.0)
++
++        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, indicator_dto)
+ 
+         # Config-driven risk premium tiers
+         risk_premium_tiers = self.config_module.get("economy_params.DEBT_RISK_PREMIUM_TIERS", {
+@@ -151,7 +161,15 @@ class FinanceSystem(IFinanceSystem):
+ 
+         # Use FiscalMonitor for risk assessment
+         world_dto = getattr(self.government, 'sensory_data', None)
+-        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, world_dto)
++
++        # Adapter: Convert GovernmentStateDTO to EconomicIndicatorsDTO if needed
++        indicator_dto = world_dto
++        if world_dto and not isinstance(world_dto, EconomicIndicatorsDTO):
++             # Assume GovernmentStateDTO which has current_gdp
++             current_gdp = getattr(world_dto, 'current_gdp', 0.0)
++             indicator_dto = EconomicIndicatorsDTO(gdp=current_gdp, cpi=0.0)
++
++        debt_to_gdp = self.fiscal_monitor.get_debt_to_gdp_ratio(self.government, indicator_dto)
+ 
+         # Config-driven risk premium tiers
+         risk_premium_tiers = self.config_module.get("economy_params.DEBT_RISK_PREMIUM_TIERS", {
+@@ -198,8 +216,13 @@ class FinanceSystem(IFinanceSystem):
+              # Check Solvency (Optimistic)
+              # Bank is the primary liquidity provider. It should buy all if possible.
+              if buyer == self.bank:
+-                  if buyer.assets < purchase_amount:
+-                      logger.warning(f"BOND_SYNC_FAIL | Bank has {buyer.assets}, needed {purchase_amount}")
++                  buyer_assets_raw = buyer.assets
++                  buyer_assets_val = buyer_assets_raw
++                  if isinstance(buyer_assets_raw, dict):
++                      buyer_assets_val = buyer_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
++                  if buyer_assets_val < purchase_amount:
++                      logger.warning(f"BOND_SYNC_FAIL | Bank has {buyer_assets_val}, needed {purchase_amount}")
+                       continue
+ 
+              # Execute Transfer
+@@ -208,7 +231,8 @@ class FinanceSystem(IFinanceSystem):
+                       debit_agent=buyer,
+                       credit_agent=issuer,
+                       amount=purchase_amount,
+-                      memo=f"Bond Purchase from {buyer.id}"
++                      memo=f"Bond Purchase from {buyer.id}",
++                      currency=DEFAULT_CURRENCY
+                   )
+ 
+                   if success:
+diff --git a/modules/government/components/infrastructure_manager.py b/modules/government/components/infrastructure_manager.py
+index 6092c97..f3c8fd3 100644
+--- a/modules/government/components/infrastructure_manager.py
++++ b/modules/government/components/infrastructure_manager.py
+@@ -2,6 +2,7 @@ from typing import List, Any, Optional, TYPE_CHECKING
+ import logging
+ from simulation.models import Transaction
+ from modules.government.constants import DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.agents.government import Government
+@@ -31,8 +32,13 @@ class InfrastructureManager:
+             return []
+ 
+         # Synchronous Financing (WO-117)
+-        if self.government.assets < effective_cost:
+-            needed = effective_cost - self.government.assets
++        current_assets_raw = self.government.assets
++        current_assets = current_assets_raw
++        if isinstance(current_assets_raw, dict):
++            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        if current_assets < effective_cost:
++            needed = effective_cost - current_assets
+             # Use new synchronous method
+             if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
+                 success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
+diff --git a/modules/household/social_component.py b/modules/household/social_component.py
+index 95db394..36930ba 100644
+--- a/modules/household/social_component.py
++++ b/modules/household/social_component.py
+@@ -6,6 +6,7 @@ from modules.household.api import ISocialComponent
+ from modules.household.dtos import SocialStateDTO
+ from simulation.dtos import LeisureEffectDTO
+ from simulation.ai.api import Personality
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.config_dtos import HouseholdConfigDTO
+@@ -21,7 +22,7 @@ class SocialComponent(ISocialComponent):
+     def calculate_social_status(
+         self,
+         state: SocialStateDTO,
+-        assets: float,
++        assets: Any,
+         luxury_inventory: Dict[str, float],
+         config: HouseholdConfigDTO
+     ) -> SocialStateDTO:
+@@ -31,13 +32,18 @@ class SocialComponent(ISocialComponent):
+         """
+         new_state = state.copy()
+ 
++        # Handle Phase 33 Multi-Currency Assets
++        total_assets_val = assets
++        if isinstance(assets, dict):
++            total_assets_val = assets.get(DEFAULT_CURRENCY, 0.0)
++
+         luxury_goods_value = sum(luxury_inventory.values()) # Assuming values are quantities?
+ 
+         asset_weight = config.social_status_asset_weight
+         luxury_weight = config.social_status_luxury_weight
+ 
+         new_state.social_status = (
+-            assets * asset_weight
++            total_assets_val * asset_weight
+         ) + (luxury_goods_value * luxury_weight)
+ 
+         return new_state
+@@ -123,7 +129,7 @@ class SocialComponent(ISocialComponent):
+         self,
+         state: SocialStateDTO,
+         bio_needs: Dict[str, float],
+-        assets: float,
++        assets: Any,
+         durable_assets: List[Dict[str, Any]],
+         goods_info_map: Dict[str, Any],
+         config: HouseholdConfigDTO,
+@@ -139,6 +145,11 @@ class SocialComponent(ISocialComponent):
+         new_needs = bio_needs.copy()
+         is_active = True
+ 
++        # Handle Phase 33 Multi-Currency Assets
++        total_assets_val = assets
++        if isinstance(assets, dict):
++            total_assets_val = assets.get(DEFAULT_CURRENCY, 0.0)
++
+         # 1. Apply Durable Asset Utility (Depreciation & Satisfaction)
+         living_assets = []
+         for asset in durable_assets:
+@@ -182,7 +193,7 @@ class SocialComponent(ISocialComponent):
+         assets_death_threshold = config.assets_death_threshold
+         turns_threshold = config.household_death_turns_threshold
+ 
+-        if (assets <= assets_death_threshold or
++        if (total_assets_val <= assets_death_threshold or
+             new_state.survival_need_high_turns >= turns_threshold):
+             is_active = False
+             # Logging handled by caller
+diff --git a/modules/system/execution/public_manager.py b/modules/system/execution/public_manager.py
+index 164347e..d6050bd 100644
+--- a/modules/system/execution/public_manager.py
++++ b/modules/system/execution/public_manager.py
+@@ -20,6 +20,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
+     """
+ 
+     def __init__(self, config: Any):
++        self._id = 999999  # Fixed System ID for PublicManager
+         self.config = config
+         self.logger = logging.getLogger("PublicManager")
+         self.managed_inventory: Dict[str, float] = defaultdict(float)
+diff --git a/simulation/ai/firm_ai.py b/simulation/ai/firm_ai.py
+index 14812c8..29c00b9 100644
+--- a/simulation/ai/firm_ai.py
++++ b/simulation/ai/firm_ai.py
+@@ -5,6 +5,7 @@ from .api import BaseAIEngine, Intention, Tactic, Aggressiveness
+ from .enums import Personality
+ from .q_table_manager import QTableManager
+ from simulation.schemas import FirmActionVector
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.ai_model import AIDecisionEngine
+@@ -64,7 +65,11 @@ class FirmAI(BaseAIEngine):
+ 
+         # 2. Cash Level (Relative to costs/standard)
+         # Simplified: Just log scale or relative
+-        cash = agent_data.get("assets", 0)
++        assets_raw = agent_data.get("assets", 0)
++        cash = assets_raw
++        if isinstance(assets_raw, dict):
++            cash = assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
+         cash_idx = self._discretize(cash, [100, 500, 1000, 5000, 10000])
+ 
+         # 3. Debt Ratio
+@@ -179,8 +184,16 @@ class FirmAI(BaseAIEngine):
+         personality = firm_agent.personality
+ 
+         # Common Metrics
+-        current_assets = current_state.get("assets", 0.0)
+-        prev_assets = prev_state.get("assets", 0.0)
++        current_assets_raw = current_state.get("assets", 0.0)
++        current_assets = current_assets_raw
++        if isinstance(current_assets_raw, dict):
++            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        prev_assets_raw = prev_state.get("assets", 0.0)
++        prev_assets = prev_assets_raw
++        if isinstance(prev_assets_raw, dict):
++            prev_assets = prev_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
+         delta_assets = current_assets - prev_assets
+ 
+         # Net Profit approximation (Asset Change is best proxy for realized profit + cash flow)
+diff --git a/simulation/ai/firm_system2_planner.py b/simulation/ai/firm_system2_planner.py
+index 54aee3f..b75cd88 100644
+--- a/simulation/ai/firm_system2_planner.py
++++ b/simulation/ai/firm_system2_planner.py
+@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Tuple, Optional
+ import math
+ import logging
+ from simulation.ai.enums import Personality
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -44,7 +45,11 @@ class FirmSystem2Planner:
+             raise ValueError("FirmSystem2Planner requires firm_state (FirmStateDTO).")
+ 
+         # Abstraction layer to access data from DTO
+-        revenue = firm_state.finance.revenue_this_turn
++        revenue_raw = firm_state.finance.revenue_this_turn
++        revenue = revenue_raw
++        if isinstance(revenue_raw, dict):
++            revenue = revenue_raw.get(DEFAULT_CURRENCY, 0.0)
++
+         last_revenue = revenue # DTO might not have last_revenue, approximate
+ 
+         # Sum wages from employees_data
+@@ -69,7 +74,10 @@ class FirmSystem2Planner:
+             except (KeyError, AttributeError):
+                 personality = Personality.BALANCED
+ 
+-        assets = firm_state.finance.balance
++        assets_raw = firm_state.finance.balance
++        assets = assets_raw
++        if isinstance(assets_raw, dict):
++            assets = assets_raw.get(DEFAULT_CURRENCY, 0.0)
+ 
+         # 1. Forecast Revenue
+         base_revenue = max(revenue, last_revenue, 10.0)
+diff --git a/simulation/ai/vectorized_planner.py b/simulation/ai/vectorized_planner.py
+index d283579..d01b8f0 100644
+--- a/simulation/ai/vectorized_planner.py
++++ b/simulation/ai/vectorized_planner.py
+@@ -1,5 +1,6 @@
+ import numpy as np
+ import logging
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ class VectorizedHouseholdPlanner:
+     def __init__(self, config):
+@@ -95,7 +96,7 @@ class VectorizedHouseholdPlanner:
+         # 1. Extract State
+         # Inventory: "basic_food"
+         inventories = np.array([a.inventory.get("basic_food", 0.0) for a in agents], dtype=np.float32)
+-        assets = np.array([a.assets for a in agents], dtype=np.float32)
++        assets = np.array([a.assets.get(DEFAULT_CURRENCY, 0.0) for a in agents], dtype=np.float32)
+         survival_needs = np.array([a.needs.get("survival", 0.0) for a in agents], dtype=np.float32)
+ 
+         # 2. Market Data
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 71fae77..785ecf3 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -24,6 +24,7 @@ from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO,
+ from simulation.ai.household_ai import HouseholdAI
+ from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+ from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
++from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ import simulation
+ 
+ # New Components
+diff --git a/simulation/decisions/ai_driven_firm_engine.py b/simulation/decisions/ai_driven_firm_engine.py
+index 8b7c501..5be2450 100644
+--- a/simulation/decisions/ai_driven_firm_engine.py
++++ b/simulation/decisions/ai_driven_firm_engine.py
+@@ -9,6 +9,7 @@ from simulation.ai.enums import Tactic, Aggressiveness
+ from .base_decision_engine import BaseDecisionEngine
+ from simulation.dtos import DecisionContext
+ from simulation.decisions.corporate_manager import CorporateManager
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -135,7 +136,11 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
+         if not isinstance(fire_sale_asset_threshold, (int, float)): fire_sale_asset_threshold = 50.0
+ 
+         # Use finance.balance
+-        assets = firm_state.finance.balance
++        assets_raw = firm_state.finance.balance
++        assets = assets_raw
++        if isinstance(assets_raw, dict):
++            assets = assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
+         is_distressed = assets < fire_sale_asset_threshold
+ 
+         if is_distressed:
+diff --git a/simulation/decisions/firm/financial_strategy.py b/simulation/decisions/firm/financial_strategy.py
+index 47958bf..c1528b9 100644
+--- a/simulation/decisions/firm/financial_strategy.py
++++ b/simulation/decisions/firm/financial_strategy.py
+@@ -5,6 +5,7 @@ from modules.market.api import OrderDTO
+ from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
+ from modules.finance.api import BorrowerProfileDTO
+ from simulation.decisions.firm.api import FinancialPlanDTO
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -64,7 +65,12 @@ class FinancialStrategy:
+         if debt_info:
+             current_debt = debt_info.get("total_principal", 0.0)
+ 
+-        current_assets = max(firm.finance.balance, 1.0)
++        current_assets_raw = firm.finance.balance
++        current_assets_val = current_assets_raw
++        if isinstance(current_assets_raw, dict):
++            current_assets_val = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        current_assets = max(current_assets_val, 1.0)
+         current_leverage = current_debt / current_assets
+ 
+         if current_leverage < target_leverage:
+@@ -79,9 +85,14 @@ class FinancialStrategy:
+                 if debt_info:
+                     daily_burden = debt_info.get("daily_interest_burden", 0.0)
+ 
++                gross_income_raw = firm.finance.revenue_this_turn
++                gross_income = gross_income_raw
++                if isinstance(gross_income_raw, dict):
++                    gross_income = gross_income_raw.get(DEFAULT_CURRENCY, 0.0)
++
+                 borrower_profile = BorrowerProfileDTO(
+                     borrower_id=str(firm.id),
+-                    gross_income=firm.finance.revenue_this_turn,
++                    gross_income=gross_income,
+                     existing_debt_payments=daily_burden * 30, # Approx monthly
+                     collateral_value=0.0, # Unsecured
+                     existing_assets=firm.finance.balance
+@@ -118,7 +129,7 @@ class FinancialStrategy:
+ 
+         elif current_leverage > target_leverage:
+             excess_debt = current_debt - (current_assets * target_leverage)
+-            repay_amount = min(excess_debt, firm.finance.balance * 0.5)
++            repay_amount = min(excess_debt, current_assets * 0.5)
+ 
+             if repay_amount > 10.0 and current_debt > 0:
+                  orders.append(
+@@ -132,7 +143,12 @@ class FinancialStrategy:
+         startup_cost = config.startup_cost
+         trigger_ratio = config.seo_trigger_ratio
+ 
+-        if firm.finance.balance >= startup_cost * trigger_ratio:
++        current_balance_raw = firm.finance.balance
++        current_balance = current_balance_raw
++        if isinstance(current_balance_raw, dict):
++            current_balance = current_balance_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        if current_balance >= startup_cost * trigger_ratio:
+             return None
+         if firm.finance.treasury_shares <= 0:
+             return None
+@@ -165,7 +181,7 @@ class FinancialStrategy:
+         if price is None or price <= 0:
+             # Fallback to Book Value
+             if firm.finance.total_shares > 0:
+-                price = firm.finance.balance / firm.finance.total_shares
++                price = current_balance / firm.finance.total_shares
+             else:
+                 price = 0.0
+ 
+diff --git a/simulation/decisions/firm/production_strategy.py b/simulation/decisions/firm/production_strategy.py
+index d956e00..e173404 100644
+--- a/simulation/decisions/firm/production_strategy.py
++++ b/simulation/decisions/firm/production_strategy.py
+@@ -3,6 +3,7 @@ import logging
+ from simulation.models import Order
+ from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
+ from simulation.decisions.firm.api import OperationsPlanDTO
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -99,7 +100,12 @@ class ProductionStrategy:
+         cost = cost_per_pct * (gap * 100.0)
+ 
+         safety_margin = config.firm_safety_margin
+-        investable_cash = max(0.0, firm.finance.balance - safety_margin)
++        current_assets_raw = firm.finance.balance
++        current_assets = current_assets_raw
++        if isinstance(current_assets_raw, dict):
++            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        investable_cash = max(0.0, current_assets - safety_margin)
+ 
+         budget = investable_cash * (aggressiveness * 0.5)
+         actual_spend = min(cost, budget)
+@@ -126,12 +132,22 @@ class ProductionStrategy:
+         if aggressiveness <= 0.1:
+             return None
+ 
+-        revenue_base = max(firm.finance.revenue_this_turn, firm.finance.balance * 0.05)
++        current_revenue_raw = firm.finance.revenue_this_turn
++        current_revenue = current_revenue_raw
++        if isinstance(current_revenue_raw, dict):
++            current_revenue = current_revenue_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        current_assets_raw = firm.finance.balance
++        current_assets = current_assets_raw
++        if isinstance(current_assets_raw, dict):
++            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        revenue_base = max(current_revenue, current_assets * 0.05)
+         rd_budget_rate = aggressiveness * 0.20
+         budget = revenue_base * rd_budget_rate
+ 
+         safety_margin = config.firm_safety_margin
+-        investable_cash = max(0.0, firm.finance.balance - safety_margin)
++        investable_cash = max(0.0, current_assets - safety_margin)
+ 
+         if investable_cash < budget:
+             budget = investable_cash * 0.5
+@@ -149,7 +165,12 @@ class ProductionStrategy:
+             return None
+ 
+         safety_margin = config.firm_safety_margin
+-        investable_cash = max(0.0, firm.finance.balance - safety_margin)
++        current_assets_raw = firm.finance.balance
++        current_assets = current_assets_raw
++        if isinstance(current_assets_raw, dict):
++            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
++
++        investable_cash = max(0.0, current_assets - safety_margin)
+ 
+         budget = investable_cash * (aggressiveness * 0.5)
+ 
+diff --git a/simulation/firms.py b/simulation/firms.py
+index f5780ee..428407a 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -15,7 +15,7 @@ from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
+ from simulation.dtos.config_dtos import FirmConfigDTO
+ from simulation.dtos.firm_state_dto import FirmStateDTO
+ from simulation.ai.enums import Personality
+-from modules.system.api import MarketSnapshotDTO
++from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode
+ 
+ # SoC Refactor
+ from simulation.components.hr_department import HRDepartment
+@@ -25,7 +25,6 @@ from simulation.components.sales_department import SalesDepartment
+ from simulation.utils.shadow_logger import log_shadow
+ from modules.finance.api import InsufficientFundsError
+ from simulation.systems.api import ILearningAgent, LearningUpdateContext
+-from modules.system.api import MarketSnapshotDTO
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+@@ -355,8 +354,9 @@ class Firm(BaseAgent, ILearningAgent):
+ 
+         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
+         # SoC Refactor
++        current_assets_val = self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+         self.logger.debug(
+-            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={self.finance.balance:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
++            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={current_assets_val:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}",
+             extra={
+                 **log_extra,
+                 "assets_before": self.finance.balance,
+@@ -405,8 +405,9 @@ class Firm(BaseAgent, ILearningAgent):
+              self._calculate_invisible_hand_price(market_snapshot, current_time)
+ 
+         # SoC Refactor
++        current_assets_val_after = self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+         self.logger.debug(
+-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={self.finance.balance:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
++            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={current_assets_val_after:.2f}, Employees={len(self.hr.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
+             extra={
+                 **log_extra,
+                 "assets_after": self.finance.balance,
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 3155356..9a8f2ac 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -15,6 +15,7 @@ if TYPE_CHECKING:
+ from modules.common.config_manager.api import ConfigManager
+ from simulation.initialization.api import SimulationInitializerInterface
+ from simulation.models import Order, RealEstateUnit
++from modules.system.api import DEFAULT_CURRENCY
+ from simulation.core_agents import Household
+ from simulation.firms import Firm
+ from simulation.core_markets import Market
+@@ -281,7 +282,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         ]
+ 
+         top_20_count = len(sim.households) // 5
+-        top_households = sorted(sim.households, key=lambda h: h._econ_state.assets, reverse=True)[:top_20_count]
++        top_households = sorted(sim.households, key=lambda h: h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0), reverse=True)[:top_20_count]
+ 
+         for i, hh in enumerate(top_households):
+             if i < len(sim.real_estate_units):
+@@ -356,7 +357,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # TD-115: Establish baseline money supply AFTER all liquidity injection
+         # but BEFORE any agent-level activities (hiring, update_needs) begin.
+         sim.world_state.central_bank = sim.central_bank # Ensure WorldState has CB ref
+-        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money()
++        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
+         self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
+ 
+         Bootstrapper.force_assign_workers(sim.firms, sim.households)
+diff --git a/simulation/metrics/economic_tracker.py b/simulation/metrics/economic_tracker.py
+index 5ada87e..70ca825 100644
+--- a/simulation/metrics/economic_tracker.py
++++ b/simulation/metrics/economic_tracker.py
+@@ -8,6 +8,7 @@ if TYPE_CHECKING:
+ from simulation.core_agents import Household
+ from simulation.firms import Firm
+ from simulation.core_markets import Market
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -73,15 +74,20 @@ class EconomicIndicatorTracker:
+ 
+         # Perform calculations...
+         total_household_assets = sum(
+-            h._econ_state.assets for h in households if h._bio_state.is_active
++            h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in households if h._bio_state.is_active
+         )
+         # WO-106: Initial Sink Fix
+         # Use get_financial_snapshot to include Capital Stock and Inventory in Total Assets
+-        total_firm_assets = sum(
+-            f.get_financial_snapshot().get("total_assets", f.assets)
+-            if hasattr(f, "get_financial_snapshot") else f.assets
+-            for f in firms if getattr(f, "is_active", False)
+-        )
++        total_firm_assets = 0.0
++        for f in firms:
++             if not getattr(f, "is_active", False):
++                 continue
++
++             if hasattr(f, "get_financial_snapshot"):
++                 snap = f.get_financial_snapshot()
++                 total_firm_assets += snap.get("total_assets", f.assets.get(DEFAULT_CURRENCY, 0.0))
++             else:
++                 total_firm_assets += f.assets.get(DEFAULT_CURRENCY, 0.0)
+         record["total_household_assets"] = total_household_assets
+         record["total_firm_assets"] = total_firm_assets
+ 
+@@ -292,20 +298,26 @@ class EconomicIndicatorTracker:
+         # 1. Households
+         for h in world_state.households:
+             if h._bio_state.is_active:
+-                total += h._econ_state.assets
++                total += h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
+ 
+         # 2. Firms
+         for f in world_state.firms:
+             if getattr(f, "is_active", False):
+-                total += f.assets
++                total += f.assets.get(DEFAULT_CURRENCY, 0.0)
+ 
+         # 3. Bank Reserves
+         if world_state.bank:
+-            total += world_state.bank.assets
++            if isinstance(world_state.bank.assets, dict):
++                 total += world_state.bank.assets.get(DEFAULT_CURRENCY, 0.0)
++            else:
++                 total += world_state.bank.assets
+ 
+         # 4. Government Assets
+         if world_state.government:
+-            total += world_state.government.assets
++             if isinstance(world_state.government.assets, dict):
++                 total += world_state.government.assets.get(DEFAULT_CURRENCY, 0.0)
++             else:
++                 total += world_state.government.assets
+ 
+         # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.
+ 
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index 3a8f82a..593f1fc 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -10,6 +10,7 @@ from simulation.orchestration.phases import (
+ )
+ from simulation.orchestration.utils import prepare_market_data
+ from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.world_state import WorldState
+@@ -50,7 +51,7 @@ class TickOrchestrator:
+         # Money Supply Verification (Tick 0)
+         # This check is usually done before any activity starts
+         if state.time == 0:
+-            state.baseline_money_supply = state.calculate_total_money()
++            state.baseline_money_supply = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
+             state.logger.info(
+                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply:.2f}",
+                 extra={"tick": state.time, "money_supply": state.baseline_money_supply}
+@@ -87,6 +88,14 @@ class TickOrchestrator:
+     def _create_simulation_state_dto(self, injectable_sensory_dto: Optional[GovernmentStateDTO]) -> SimulationState:
+         state = self.world_state
+ 
++        # Ensure injectable_sensory_dto has valid current_gdp if provided
++        # This is passed to government as sensory_data, which is then used by FinanceSystem
++        # to calculate debt-to-GDP ratio via FiscalMonitor.
++        # FiscalMonitor expects 'gdp' attribute, but GovernmentStateDTO has 'current_gdp'.
++        # We need to bridge this gap either here or in FinanceSystem.
++        # Since FiscalMonitor is shared, better to adapt the input in FinanceSystem.
++        # However, we can also ensure current_gdp is populated here for clarity.
++
+         return SimulationState(
+             time=state.time,
+             households=state.households,
+@@ -176,10 +185,10 @@ class TickOrchestrator:
+ 
+         # Money Supply Verification (Post-Tick)
+         if state.time >= 1:
+-            current_money = state.calculate_total_money()
++            current_money = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
+             expected_money = state.baseline_money_supply
+             if hasattr(state.government, "get_monetary_delta"):
+-                expected_money += state.government.get_monetary_delta()
++                expected_money += state.government.get_monetary_delta(DEFAULT_CURRENCY)
+ 
+             delta = current_money - expected_money
+ 
+diff --git a/simulation/systems/bootstrapper.py b/simulation/systems/bootstrapper.py
+index 99bb874..8ee2a9d 100644
+--- a/simulation/systems/bootstrapper.py
++++ b/simulation/systems/bootstrapper.py
+@@ -1,5 +1,6 @@
+ from typing import List, Any, TYPE_CHECKING, Dict
+ import logging
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -93,15 +94,16 @@ class Bootstrapper:
+ 
+             # 2. Capital Injection (Demand Side)
+             # Refactor: Use finance.balance
+-            if firm.finance.balance < Bootstrapper.MIN_CAPITAL:
+-                diff = Bootstrapper.MIN_CAPITAL - firm.finance.balance
++            current_balance = firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
++            if current_balance < Bootstrapper.MIN_CAPITAL:
++                diff = Bootstrapper.MIN_CAPITAL - current_balance
+                 if settlement_system and central_bank:
+                     settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+                     logger.info(f"BOOTSTRAPPER | Injected {diff:.2f} capital to Firm {firm.id} via Settlement.")
+                 else:
+                     # Fallback (Should not be used in Genesis mode, but keeps compatibility)
+                     # Use finance.credit explicitly
+-                    firm.finance.credit(diff, "Legacy Bootstrap")
++                    firm.finance.credit(diff, "Legacy Bootstrap", currency=DEFAULT_CURRENCY)
+                     logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff:.2f} to Firm {firm.id} (No SettlementSystem).")
+ 
+         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")
+diff --git a/simulation/systems/housing_system.py b/simulation/systems/housing_system.py
+index 521e045..11a7092 100644
+--- a/simulation/systems/housing_system.py
++++ b/simulation/systems/housing_system.py
+@@ -13,6 +13,7 @@ from modules.market.housing_purchase_api import (
+     MortgageApplicationDTO
+ )
+ from modules.market.loan_api import MortgageApplicationRequestDTO
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ 
+ if TYPE_CHECKING:
+@@ -94,9 +95,14 @@ class HousingSystem:
+                 owner = simulation.agents.get(unit.owner_id)
+                 if owner:
+                     cost = unit.estimated_value * self.config.MAINTENANCE_RATE_PER_TICK
+-                    payable = min(cost, owner.assets)
++
++                    owner_assets = owner.assets
++                    if isinstance(owner_assets, dict):
++                        owner_assets = owner_assets.get(DEFAULT_CURRENCY, 0.0)
++
++                    payable = min(cost, owner_assets)
+                     if payable > 0 and settlement and simulation.government:
+-                        settlement.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time)
++                        settlement.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time, currency=DEFAULT_CURRENCY)
+ 
+             # B. Rent Collection (Tenant pays Owner)
+             if unit.occupant_id is not None and unit.owner_id is not None:
+@@ -108,9 +114,14 @@ class HousingSystem:
+ 
+                 if tenant and owner and tenant.is_active and owner.is_active:
+                     rent = unit.rent_price
+-                    if tenant.assets >= rent:
++
++                    tenant_assets = tenant.assets
++                    if isinstance(tenant_assets, dict):
++                        tenant_assets = tenant_assets.get(DEFAULT_CURRENCY, 0.0)
++
++                    if tenant_assets >= rent:
+                         if settlement:
+-                            settlement.transfer(tenant, owner, rent, "rent_payment", tick=simulation.time)
++                            settlement.transfer(tenant, owner, rent, "rent_payment", tick=simulation.time, currency=DEFAULT_CURRENCY)
+                     else:
+                         # Eviction due to rent non-payment
+                         logger.info(
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index 662d694..d12a98d 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -4,6 +4,7 @@ from simulation.core_agents import Household
+ from simulation.agents.government import Government
+ from simulation.models import Order, Transaction
+ from simulation.portfolio import Portfolio
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -33,15 +34,19 @@ class InheritanceManager:
+         current_tick = simulation.time
+         settlement_system = simulation.settlement_system
+ 
++        # 1. Valuation & Asset Gathering
++        # ------------------------------------------------------------------
++        cash_raw = deceased._econ_state.assets
++        cash = cash_raw
++        if isinstance(cash_raw, dict):
++            cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
++        cash = round(cash, 2)
++
+         self.logger.info(
+-            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {deceased._econ_state.assets:.2f}",
++            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash:.2f}",
+             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
+         )
+ 
+-        # 1. Valuation & Asset Gathering
+-        # ------------------------------------------------------------------
+-        cash = round(deceased._econ_state.assets, 2)
+-
+         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
+         real_estate_value = sum(u.estimated_value for u in deceased_units)
+         real_estate_value = round(real_estate_value, 2)
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 32f5a20..6855f0c 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -15,7 +15,7 @@ from simulation.systems.firm_management import FirmSystem
+ from simulation.systems.liquidation_manager import LiquidationManager
+ from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+ from simulation.finance.api import ISettlementSystem
+-from modules.system.api import IAssetRecoverySystem
++from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY
+ from modules.system.registry import AgentRegistry
+ from modules.hr.service import HRService
+ from modules.finance.service import TaxService
+@@ -139,7 +139,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+ 
+             # Standard Closure Check
+             # Refactor: Use finance.balance
+-            if (firm.finance.balance <= assets_threshold or
++            current_assets = firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
++            if (current_assets <= assets_threshold or
+                     firm.finance.consecutive_loss_turns >= closure_turns_threshold):
+ 
+                 # Double check grace period (if we fell through but counter is high)
+@@ -150,11 +151,11 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+ 
+                 firm.is_active = False
+                 self.logger.warning(
+-                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {firm.finance.balance:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
++                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {current_assets:.2f}, Consecutive Loss Turns: {firm.finance.consecutive_loss_turns}",
+                     extra={
+                         "tick": state.time,
+                         "agent_id": firm.id,
+-                        "assets": firm.finance.balance,
++                        "assets": current_assets,
+                         "consecutive_loss_turns": firm.finance.consecutive_loss_turns,
+                         "tags": ["firm_closure"],
+                     }
+diff --git a/simulation/systems/liquidation_manager.py b/simulation/systems/liquidation_manager.py
+index eb4c41c..712edc3 100644
+--- a/simulation/systems/liquidation_manager.py
++++ b/simulation/systems/liquidation_manager.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ from typing import List, TYPE_CHECKING, Optional, Any
+ import logging
+ from modules.common.dtos import Claim
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -48,7 +49,10 @@ class LiquidationManager:
+             self._liquidate_assets(firm, state)
+ 
+         # Re-fetch cash after liquidation
+-        available_cash = firm.finance.balance
++        available_cash_raw = firm.finance.balance
++        available_cash = available_cash_raw
++        if isinstance(available_cash_raw, dict):
++            available_cash = available_cash_raw.get(DEFAULT_CURRENCY, 0.0)
+ 
+         all_claims: List[Claim] = []
+ 
+@@ -132,7 +136,8 @@ class LiquidationManager:
+                 self.public_manager,
+                 firm,
+                 total_value,
+-                f"Asset Liquidation (Inventory) - Firm {firm.id}"
++                f"Asset Liquidation (Inventory) - Firm {firm.id}",
++                currency=DEFAULT_CURRENCY
+             )
+ 
+             if success:
+@@ -207,7 +212,7 @@ class LiquidationManager:
+                     if shares > 0:
+                         share_ratio = shares / outstanding_shares
+                         distribution = remaining_cash * share_ratio
+-                        self.settlement_system.transfer(firm, agent, distribution, "Liquidation Dividend (Tier 5)")
++                        self.settlement_system.transfer(firm, agent, distribution, "Liquidation Dividend (Tier 5)", currency=DEFAULT_CURRENCY)
+                         total_distributed += distribution
+ 
+                 logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed:.2f} to shareholders.")
+@@ -222,7 +227,7 @@ class LiquidationManager:
+ 
+         if creditor:
+             memo = f"Liquidation Payout: {claim.description}" + (" (Partial)" if partial else "")
+-            success = self.settlement_system.transfer(firm, creditor, amount, memo)
++            success = self.settlement_system.transfer(firm, creditor, amount, memo, currency=DEFAULT_CURRENCY)
+             if not success:
+                  logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount:.2f} to {creditor.id}")
+         else:
+diff --git a/simulation/systems/persistence_manager.py b/simulation/systems/persistence_manager.py
+index ae123bc..7a8905d 100644
+--- a/simulation/systems/persistence_manager.py
++++ b/simulation/systems/persistence_manager.py
+@@ -9,6 +9,7 @@ from simulation.dtos import (
+ )
+ from simulation.core_agents import Household
+ from simulation.firms import Firm
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.engine import Simulation
+@@ -91,6 +92,7 @@ class PersistenceManager:
+                 item_id=tx.item_id,
+                 quantity=tx.quantity,
+                 price=tx.price,
++                currency=getattr(tx, 'currency', DEFAULT_CURRENCY),
+                 market_id=tx.market_id,
+                 transaction_type=tx.transaction_type,
+             )
+@@ -104,8 +106,18 @@ class PersistenceManager:
+         total_capital_income = sum(getattr(h, "capital_income_this_tick", 0.0) for h in simulation.households)
+ 
+         # Calculate Wealth Distribution (Snapshot)
+-        total_assets = sum(h._econ_state.assets for h in simulation.households)
++        total_assets = sum(h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in simulation.households)
+         
++        # Prepare asset dicts for DTO
++        hh_assets = tracker_indicators.get("total_household_assets", 0.0)
++        firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
++
++        # Wrap as dict if they are floats (backward compatibility check)
++        if isinstance(hh_assets, (int, float)):
++            hh_assets = {DEFAULT_CURRENCY: float(hh_assets)}
++        if isinstance(firm_assets, (int, float)):
++            firm_assets = {DEFAULT_CURRENCY: float(firm_assets)}
++
+         indicator_dto = EconomicIndicatorData(
+             run_id=self.run_id,
+             time=time,
+@@ -116,8 +128,8 @@ class PersistenceManager:
+             avg_goods_price=tracker_indicators.get("avg_goods_price"),
+             total_production=tracker_indicators.get("total_production", 0.0),
+             total_consumption=tracker_indicators.get("total_consumption", 0.0),
+-            total_household_assets=tracker_indicators.get("total_household_assets", 0.0),
+-            total_firm_assets=tracker_indicators.get("total_firm_assets", 0.0),
++            total_household_assets=hh_assets,
++            total_firm_assets=firm_assets,
+             avg_survival_need=tracker_indicators.get("avg_survival_need", 0.0),
+             total_labor_income=total_labor_income,
+             total_capital_income=total_capital_income,
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index a1e6478..e5633e3 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -8,6 +8,7 @@ from modules.finance.api import (
+     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
+ )
+ from simulation.dtos.settlement_dtos import LegacySettlementAccount
++from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
+ from modules.finance.saga_handler import HousingTransactionSagaHandler
+ from modules.market.housing_planner_api import MortgageApplicationDTO
+@@ -156,9 +157,13 @@ class SettlementSystem(ISettlementSystem):
+             self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
+ 
+         # 2. Atomic Transfer: Cash
+-        cash_balance = agent.assets
++        cash_balance_raw = agent.assets
++        cash_balance = cash_balance_raw
++        if isinstance(cash_balance_raw, dict):
++            cash_balance = cash_balance_raw.get(DEFAULT_CURRENCY, 0.0)
++
+         if cash_balance > 0:
+-            agent.withdraw(cash_balance)
++            agent.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
+ 
+         # 3. Determine Heir / Escheatment
+         heir_id = None
+@@ -372,16 +377,21 @@ class SettlementSystem(ISettlementSystem):
+             except (TypeError, ValueError):
+                 current_assets = 0.0
+ 
+-            if current_assets > 0:
++            current_assets_val = current_assets
++            if isinstance(current_assets, dict):
++                current_assets_val = current_assets.get(DEFAULT_CURRENCY, 0.0)
++
++            if current_assets_val > 0:
+                 self.transfer(
+                     debit_agent=agent,
+                     credit_agent=government_agent,
+-                    amount=current_assets,
++                    amount=current_assets_val,
+                     memo="liquidation_escheatment",
+-                    tick=tick
++                    tick=tick,
++                    currency=DEFAULT_CURRENCY
+                 )
+ 
+-    def _execute_withdrawal(self, agent: IFinancialEntity, amount: float, memo: str, tick: int) -> bool:
++    def _execute_withdrawal(self, agent: IFinancialEntity, amount: float, memo: str, tick: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
+         """
+         Executes withdrawal with checks and seamless payment (Bank) support.
+         Returns True on success, False on failure.
+@@ -399,7 +409,7 @@ class SettlementSystem(ISettlementSystem):
+ 
+         if is_central_bank:
+              try:
+-                 agent.withdraw(amount)
++                 agent.withdraw(amount, currency=currency)
+                  return True
+              except Exception as e:
+                  self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
+@@ -410,22 +420,34 @@ class SettlementSystem(ISettlementSystem):
+ 
+         # Check for Firm's finance component first
+         if hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
+-             current_cash = agent.finance.balance
++             current_cash_raw = agent.finance.balance
++             if isinstance(current_cash_raw, dict):
++                 current_cash = current_cash_raw.get(currency, 0.0)
++             else:
++                 current_cash = current_cash_raw
+         # Check for Household's EconComponent state
+         elif hasattr(agent, '_econ_state') and hasattr(agent._econ_state, 'assets'):
+-             current_cash = agent._econ_state.assets
++             current_cash_raw = agent._econ_state.assets
++             if isinstance(current_cash_raw, dict):
++                 current_cash = current_cash_raw.get(currency, 0.0)
++             else:
++                 current_cash = current_cash_raw
+         else:
+              if not hasattr(agent, 'assets'):
+                   self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")
+                   pass
+              try:
+-                 current_cash = float(agent.assets) if hasattr(agent, 'assets') else 0.0
++                 assets_raw = agent.assets if hasattr(agent, 'assets') else 0.0
++                 if isinstance(assets_raw, dict):
++                     current_cash = assets_raw.get(currency, 0.0)
++                 else:
++                     current_cash = float(assets_raw)
+              except (TypeError, ValueError):
+                   current_cash = 0.0
+ 
+         if current_cash < amount:
+-            # Seamless Check
+-            if self.bank:
++            # Seamless Check (Only for DEFAULT_CURRENCY for now, assume Bank uses DEFAULT_CURRENCY)
++            if self.bank and currency == DEFAULT_CURRENCY:
+                 needed_from_bank = amount - current_cash
+                 bank_balance = self.bank.get_balance(str(agent.id))
+                 if (current_cash + bank_balance) < amount:
+@@ -447,18 +469,22 @@ class SettlementSystem(ISettlementSystem):
+         # 3. Execution
+         try:
+             if current_cash >= amount:
+-                agent.withdraw(amount)
++                agent.withdraw(amount, currency=currency)
+             else:
+-                # Seamless
++                # Seamless (Only for DEFAULT_CURRENCY)
++                if currency != DEFAULT_CURRENCY:
++                     self.logger.error(f"SETTLEMENT_FAIL | Seamless payment not supported for {currency}")
++                     return False
++
+                 needed_from_bank = amount - current_cash
+                 if current_cash > 0:
+-                    agent.withdraw(current_cash)
++                    agent.withdraw(current_cash, currency=currency)
+ 
+                 success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
+                 if not success:
+                     # Rollback cash
+                     if current_cash > 0:
+-                         agent.deposit(current_cash)
++                         agent.deposit(current_cash, currency=currency)
+                     raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
+ 
+                 self.logger.info(
+@@ -586,7 +612,8 @@ class SettlementSystem(ISettlementSystem):
+         memo: str,
+         debit_context: Optional[Dict[str, Any]] = None,
+         credit_context: Optional[Dict[str, Any]] = None,
+-        tick: int = 0
++        tick: int = 0,
++        currency: CurrencyCode = DEFAULT_CURRENCY
+     ) -> Optional[ITransaction]:
+         """
+         Executes an atomic transfer from debit_agent to credit_agent.
+@@ -606,19 +633,19 @@ class SettlementSystem(ISettlementSystem):
+              return None
+ 
+         # EXECUTE
+-        success = self._execute_withdrawal(debit_agent, amount, memo, tick)
++        success = self._execute_withdrawal(debit_agent, amount, memo, tick, currency=currency)
+         if not success:
+             return None
+ 
+         try:
+-            credit_agent.deposit(amount)
++            credit_agent.deposit(amount, currency=currency)
+         except Exception as e:
+             # ROLLBACK: Credit failed, must reverse debit
+             self.logger.error(
+                 f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount:.2f} from {debit_agent.id}. Error: {e}"
+             )
+             try:
+-                debit_agent.deposit(amount)
++                debit_agent.deposit(amount, currency=currency)
+                 self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount:.2f} to {debit_agent.id}.")
+             except Exception as rollback_error:
+                 self.logger.critical(
+@@ -641,7 +668,8 @@ class SettlementSystem(ISettlementSystem):
+         destination: IFinancialEntity,
+         amount: float,
+         reason: str,
+-        tick: int
++        tick: int,
++        currency: CurrencyCode = DEFAULT_CURRENCY
+     ) -> Optional[ITransaction]:
+         """
+         Creates new money (or grants) and transfers it to an agent.
+@@ -658,9 +686,9 @@ class SettlementSystem(ISettlementSystem):
+         if is_central_bank:
+             # Minting logic: Just credit destination. Source (CB) is assumed to have infinite capacity.
+             try:
+-                destination.deposit(amount)
++                destination.deposit(amount, currency=currency)
+                 self.logger.info(
+-                    f"MINT_AND_TRANSFER | Created {amount:.2f} from {source_authority.id} to {destination.id}. Reason: {reason}",
++                    f"MINT_AND_TRANSFER | Created {amount:.2f} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
+                     extra={"tick": tick}
+                 )
+                 return self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
+@@ -669,7 +697,7 @@ class SettlementSystem(ISettlementSystem):
+                 return None
+         else:
+             # If not CB (e.g. Government), treat as regular transfer to enforce budget
+-            return self.transfer(source_authority, destination, amount, reason, tick=tick)
++            return self.transfer(source_authority, destination, amount, reason, tick=tick, currency=currency)
+ 
+     def transfer_and_destroy(
+         self,
+@@ -677,7 +705,8 @@ class SettlementSystem(ISettlementSystem):
+         sink_authority: IFinancialEntity,
+         amount: float,
+         reason: str,
+-        tick: int
++        tick: int,
++        currency: CurrencyCode = DEFAULT_CURRENCY
+     ) -> Optional[ITransaction]:
+         """
+         Transfers money from an agent to an authority to be destroyed.
+@@ -694,9 +723,9 @@ class SettlementSystem(ISettlementSystem):
+         if is_central_bank:
+             # Burning logic: Just debit source. Sink (CB) absorbs it (removed from circulation).
+             try:
+-                source.withdraw(amount)
++                source.withdraw(amount, currency=currency)
+                 self.logger.info(
+-                    f"TRANSFER_AND_DESTROY | Destroyed {amount:.2f} from {source.id} to {sink_authority.id}. Reason: {reason}",
++                    f"TRANSFER_AND_DESTROY | Destroyed {amount:.2f} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
+                     extra={"tick": tick}
+                 )
+                 return self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
+@@ -705,7 +734,7 @@ class SettlementSystem(ISettlementSystem):
+                 return None
+         else:
+             # If not CB, treat as regular transfer (e.g. tax to Gov)
+-            return self.transfer(source, sink_authority, amount, reason, tick=tick)
++            return self.transfer(source, sink_authority, amount, reason, tick=tick, currency=currency)
+ 
+     def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: float, memo: str, tick: int) -> ITransaction:
+         return {

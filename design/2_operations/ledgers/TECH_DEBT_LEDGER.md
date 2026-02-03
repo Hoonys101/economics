@@ -4,7 +4,9 @@
 
 ## 🏛️ 1. AGENTS & POPULATIONS (`ARCH_AGENTS.md`)
 
-| (Empty) | | | | | |
+| ID | Date | Description | Impact | Refs | Status |
+|---|---|---|---|---|---|
+| TD-214 | 2026-02-04 | `Household` God Class (Saturation) | Maintenance deadlock (>900 lines) | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **HIGH** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -20,18 +22,16 @@
 
 ## 💹 4. MARKETS & ECONOMICS
 
-| ID | Date | Description | Impact | Status |
-|---|---|---|---|---|
-| (Empty) | | | | |
+| ID | Date | Description | Impact | Refs | Status |
+|---|---|---|---|---|---|
+| TD-215 | 2026-02-04 | Abstraction Leaks in Transaction Handlers | Tight coupling to `Household`/`Firm` | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **MEDIUM** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-160 | 2026-02-02 | Non-Atomic Inheritance | Money leaks; corruption | [Spec](../../3_work_artifacts/specs/TD-160_Atomic_Inheritance.md) | **CRITICAL** |
 | TD-187 | 2026-02-02 | Severance Pay Race Condition | Over-withdrawal during liq. | [Spec](../../3_work_artifacts/specs/TD-187_Severance_Waterfall.md) | **HIGH** |
 | TD-187-DEBT | 2026-02-03 | Hardcoded Logic in Liquidation | Breaking encapsulation | - | Refactoring |
-| TD-192 | 2026-02-03 | Direct Asset Manipulation | Zero-Sum breakage | [Spec](../../3_work_artifacts/specs/spec_td192_state_sync.md) | **CRITICAL** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -47,8 +47,8 @@
 | TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | - | **LOW** |
 | TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | - | **HIGH** |
 | TD-210 | 2026-02-04 | Test Dependency Bloat (`numpy`) | `conftest.py` imports CentralBank | [Review](../../_archive/gemini_output/pr_review_settlement-system-tests-2138438581752818541.md) | **LOW** |
-| TD-211 | 2026-02-03 | `trace_leak.py` NameError | Blocks integrity verification | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | **HIGH** (Jules) |
 | TD-212 | 2026-02-03 | Float-based Asset Callers | Legacy code accessing `assets` as `float` | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | **MEDIUM** |
+| TD-216 | 2026-02-04 | Orchestrator Coupling (`TickOrchestrator`) | Direct dependency on `Government` methods | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **MEDIUM** |
 
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
@@ -58,15 +58,15 @@
 | TD-150 | 2026-01-29 | Ledger Process | Loss of context | [Spec](../../3_work_artifacts/specs/spec_td150_ledger_automation.md) | **ACTIVE** |
 | TD-183 | 2026-02-01 | Sequence Documentation | Migration gaps | - | **ACTIVE** |
 | TD-188 | 2026-02-01 | Config Path Doc Drift | `PROJECT_STATUS.md` stale | - | **ACTIVE** |
-| TD-190 | 2026-02-03 | Magic Numbers | Fragile logic | - | **MEDIUM** |
 | TD-193 | 2026-02-03 | Fragmented Politics | Spec vs Code drift | - | **WARNING** |
 | TD-197 | 2026-02-03 | HousingManager Legacy | Architectural confusion | - | **MEDIUM** |
 | TD-204 | 2026-02-03 | BubbleObservatory SRP | God class risk | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
 | TD-205 | 2026-02-03 | Phase3_Transaction God Class | Responsibility overload | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
-| TD-161 | 2026-02-03 | RealEstateUnit Dependency | Encapsulation breach | [Insight](../../communications/insights/TD-161_SRP.md) | **HIGH** |
 | TD-207 | 2026-02-03 | Synchronous Loan Staging | Logic drift | - | **LOW** |
 | TD-208 | 2026-02-04 | Secured Loan SRP (Liquidation) | Logic inside Manager | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 | TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | String-based IDs in Registry | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
+| TD-213 | 2026-02-03 | Multi-Currency Transition Debt | Logic still dependent on `DEFAULT_CURRENCY` | [Insight](../../communications/insights/PH33_DEBUG.md) | **MEDIUM** |
+| TD-217 | 2026-02-04 | Protected Member Access in Snapshotting | Assembler high coupling to internal state | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **LOW** |
 
 ---
 
@@ -88,6 +88,9 @@
 | TD-180 | 2026-02-04 | Test Suite Bloat & Factory Sync | [Spec](../../3_work_artifacts/specs/spec_td180_test_refactor.md) | [Insight](../../communications/insights/TD-180-Test-Refactor.md) |
 | TD-190 | 2026-02-04 | Config Shadowing & God Object | [Spec](../../3_work_artifacts/specs/spec_td190_config_refactor.md) | [Insight](../../communications/insights/TD-190_Config_Refactor.md) |
 | TD-161 | 2026-02-04 | Registry Decoupling & Phase Decomposition | [Spec](../../3_work_artifacts/specs/spec_td161_arch_refactor.md) | [Insight](../../communications/insights/TD-161_Architecture_Refactoring.md) |
+| TD-211 | 2026-02-03 | `trace_leak.py` NameError Fix | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | [Insight](../../communications/insights/PH33_DEBUG.md) |
+| TD-160 | 2026-02-04 | Non-Atomic Inheritance | Fixed via deferred asset_transfer & inheritance manager | [Merge_8a7cff1](../../files_in_commit.txt) |
+| TD-192 | 2026-02-04 | Direct Asset Manipulation in Emergency | Fixed via atomic sales_tax settlement in emergency handler | [Merge_8a7cff1](../../files_in_commit.txt) |
 
 ---
 

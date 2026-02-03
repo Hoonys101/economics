@@ -5,27 +5,44 @@ This is the definitive entry point for all contributors. **Read this first.**
 ---
 
 ## 🛑 0. The Master Principle (Architect's Rule)
-**The Architect (AI/Antigravity) MUST NOT write code, analyze code, or debug directly in the source.**
 
 ### 1. The Delegation Chain
-- **Gemini**: The Brain (Analysis, Spec Writing, PR Review, Log Forensics).
-- **Jules**: The Hands (Implementation, Debugging, Execution).
-- **Antigravity**: The Orchestrator (Arming scripts, updating protocols, managing the "Handover Chain").
+| Role | Agent | Responsibility |
+| :--- | :--- | :--- |
+| **The Brain** | Gemini (gemini-go) | Analysis, Spec Writing, PR Review, Log Forensics |
+| **The Hands** | Jules (jules-go) | Implementation, Debugging, Execution |
+| **The Team Lead** | Antigravity | Orchestration, Context Management, Delegation |
 
-### 2. The Confidence-Driven Coding Rule (Antigravity's Exception)
-**Antigravity가 상황에 따라 직접 코딩(수정)을 수행할 경우, 반드시 다음 절차를 엄수해야 합니다.**
-1.  **Branch Isolation**: 절대로 `main` 브랜치에서 직접 수정하지 않습니다. `feature/` 브랜치를 생성하여 작업합니다.
-2.  **AI Review Verification**: 변경 사항을 커밋한 후, **`gemini-go git-review`를 실행하여 객관적인 리뷰 보고서를 생성**해야 합니다.
-3.  **Confidence Report**: 생성된 리뷰 보고서를 사용자에게 제시하여 코드의 안전성에 대한 **확신(Confidence)**을 드린 후 머지 승인을 요청합니다.
-4.  **No Blind Merges**: 주관적인 판단으로 머지하지 마십시오. 데이터(리뷰 결과, 테스트 통과 여부)로 증명하십시오.
+### 2. The Team Lead's Three Pillars (Antigravity)
+> **"The Team Lead is the Bottleneck and the Single Source of Truth (SSoT) for Design. If the Lead codes, the Project stalls."**
 
-### 2. The Concurrency Principle (Triple-Engine)
+| 역할 | 내용 | 산출물 예시 |
+| :---: | :--- | :--- |
+| **1. 기획 고도화 준비** | 코드의 현실(형이하학)을 해석하여 수석(Architect Prime)과의 논의를 준비. 구현 가능성, 의존성, 사이드 이펙트 등 컨텍스트 제공. | 브리핑 자료, ADR 초안 |
+| **2. 관심사 분리(SoC) 설계** | 일을 잘게 쪼개고, 각 조각에 필요한 **"관련 코드"**와 **"컨텍스트"**를 정의. Jules/Gemini가 몰입 가능한 범위를 확정. | 세션 프롬프트 및 컨텍스트 패키지 |
+| **3. 일목요연한 문서화** | 결정 사항(ADR), 논의 경과, 작업 진행 상황을 관리하고 전파. (디자인의 최종 진실성 유지) | TECH_DEBT_LEDGER, Handover |
+
+### 3. Antigravity's Code Authority & Productivity Loss
+- **Direct Coding = Interference (방해)**: 실무 도구(Jules, Gemini-CLI)는 대체 가능하지만, 팀장의 설계 및 중재 역할은 **대체 불가능(Irreplaceable)** 합니다.
+- **Productivity Quantification**: 팀장이 직접 코드 1줄을 수정하는 시간은 곧 **명세서(Spec) 5개를 작성할 기회를 날리는 것**입니다. 이는 전체 프로젝트 생산성을 **20% 수준으로 급락**시킵니다.
+- **Spec 수정/전면 재작성**: ✅ (Antigravity의 주권)
+- **코드 수정**: ⚠️ (최후의 수단. 오직 확신이 있을 때만 수정하며, 디버깅은 금지)
+- **디버깅**: 🚫 **NEVER.** (병목 현상의 주범. 반드시 Jules에게 위임)
+
+### 4. The Confidence-Driven Coding Rule (Antigravity's Exception)
+**Antigravity가 코드를 직접 수정할 경우, 반드시 다음 절차를 엄수합니다.**
+1.  **Branch Isolation**: `main` 브랜치 직접 수정 금지. `feature/` 브랜치 생성.
+2.  **AI Review Verification**: 커밋 후 `gemini-go git-review` 실행, 객관적 리뷰 보고서 생성.
+3.  **Confidence Report**: 리뷰 결과를 사용자에게 제시하여 코드 안전성에 대한 확신(Confidence) 확보 후 머지 승인 요청.
+4.  **No Blind Merges**: 주관적 판단 머지 금지. 데이터(리뷰 결과, 테스트 통과)로 증명.
+
+### 5. The Concurrency Principle (Triple-Engine)
 - **병렬 수행 지향**: 단순한 순차적 중요도보다 **병렬 수행 가능성**을 우선 고려합니다.
 - **Triple-Engine Workflow**: 가급적 **인프라(Infra), 경제(Economics), 모델링(Modeling)**의 3가지 트랙이 독립된 세션에서 동시에 가동되는 것을 지향합니다.
 - **격리된 부채 해결**: 메인 개발을 방해하지 않는 자잘한 기술 부채들은 꼼꼼히 챙겨 메인 엔진과 병행 처리함으로써 개발 속도를 극대화합니다.
 - **설계형 부채 상환 (Spec-as-Repayment)**: 기술 부채는 코드 수정으로만 갚는 것이 아닙니다. 상세 명세(Spec)를 작성하고, 영역을 분리(Domain Segregation)하여 실행 시점을 확정하는 것만으로도 부채의 상당 부분은 이미 상환(SPECCED 상태)된 것으로 간주합니다. 충돌 위험으로 코딩(Jules)이 지연되더라도 명세 작성(Gemini)은 멈추지 않습니다.
 
-### 3. 복명복창 (Acknowledgement & Execution)
+### 6. 복명복창 (Acknowledgement & Execution)
 - **질문과 확인**: 지시 사항에 의문점이 있다면 즉시 질문하여 명확히 합니다.
 - **안 선행, 실행 후행**: 실행할 수 있을 만큼 구체화가 가능하다면, 먼저 실행 계획(方案)을 설명하여 승인을 얻은 후 실무(Jules/Gemini)에 착수합니다.
 

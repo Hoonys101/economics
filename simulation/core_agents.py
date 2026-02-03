@@ -33,6 +33,7 @@ from modules.household.econ_component import EconComponent
 from modules.household.social_component import SocialComponent
 from modules.household.consumption_manager import ConsumptionManager
 from modules.household.decision_unit import DecisionUnit
+from modules.household.political_component import PoliticalComponent
 from modules.household.dtos import (
     HouseholdStateDTO, CloningRequestDTO, EconContextDTO,
     BioStateDTO, EconStateDTO, SocialStateDTO,
@@ -101,6 +102,7 @@ class Household(BaseAgent, ILearningAgent):
         self.social_component = SocialComponent()
         self.consumption_manager = ConsumptionManager()
         self.decision_unit = DecisionUnit()
+        self.political_component = PoliticalComponent(personality)
 
         # --- Initialize Internal State DTOs ---
 
@@ -724,12 +726,16 @@ class Household(BaseAgent, ILearningAgent):
         self._econ_state.durable_assets = new_durable_assets
 
         # WO-167: Grace Protocol - Override death if in distress grace period
-        if not is_active and 0 < self.distress_tick_counter <= self.config.distress_grace_period_ticks:
-            is_active = True
-            self.logger.info(
-                f"GRACE_PROTOCOL_SAVE | Household {self.id} saved from death. Distress tick {self.distress_tick_counter}",
-                extra={"agent_id": self.id, "tags": ["grace_protocol", "survival"]}
-            )
+        if not is_active:
+            self.distress_tick_counter += 1
+            if self.distress_tick_counter <= getattr(self.config, "distress_grace_period_ticks", 10):
+                is_active = True
+                self.logger.info(
+                    f"GRACE_PROTOCOL_SAVE | Household {self.id} saved from death. Distress tick {self.distress_tick_counter}",
+                    extra={"agent_id": self.id, "tags": ["grace_protocol", "survival"]}
+                )
+        else:
+            self.distress_tick_counter = 0
 
         self._bio_state.is_active = is_active
 

@@ -1,0 +1,16 @@
+commit 8a7cff1f63a4c9a5e467935a6b23bd420cb735a6
+Author: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date:   Tue Feb 3 18:25:03 2026 +0000
+
+    Fix economic integrity issues: Sales Tax Atomicity and Inheritance Leaks
+    
+    - Updated `EmergencyTransactionHandler` to calculate sales tax intents and use atomic settlement (`settle_atomic`) instead of simple transfer. This ensures sales tax is collected for emergency buys and prevents partial transaction failures.
+    - Updated `InheritanceManager` to:
+        - Manually update `owned_properties` lists during liquidation to prevent leaks while maintaining immediate cash availability.
+        - Defer asset distribution (Real Estate, Stock) to heirs by using `asset_transfer` transactions with `executed=False`. This delegates the complex state update logic (ownership, lists, logging) to the robust `AssetTransferHandler`, ensuring consistency and eliminating the previous leak where `owned_properties` lists were not updated.
+    - Verified fixes with a reproduction script (`tests/reproduce_audit_issues.py`) which confirmed that leaks are resolved and tax logic is applied.
+    
+    Co-authored-by: Hoonys101 <97838891+Hoonys101@users.noreply.github.com>
+
+simulation/systems/handlers/emergency_handler.py
+simulation/systems/inheritance_manager.py

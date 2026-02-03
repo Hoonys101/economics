@@ -1,114 +1,60 @@
-# W-1 Specification: Phase 4 - Fiscal Policy & The Welfare State
+# W-1 Specification: Phase 4 - Operation "Leviathan" (Adaptive Governance)
 
-**모듈**: Phase 4 - Government & Stability  
-**상태**: 🟡 Drafting (기획 단계)  
-**작성자**: Architect (Antigravity)  
-**전제**: Phase 3 (Banking) 구현 완료  
-**대상 파일**: `config.py`, `simulation/agents/government.py`, `simulation/bank.py`, `simulation/core_agents.py`
-
----
-
-## 1. 개요 (Overview)
-금융(Phase 3) 도입으로 인한 빈부격차 확대와 불황(Crisis)을 방어하기 위해 **"정부의 적극적 개입(Fiscal Policy)"**을 구현한다.
-핵심은 **"부의 재분배(Redistribution)"**와 **"사회 안전망(Safety Net)"**이며, 이를 통해 시뮬레이션의 **장기적 동적 평형(Dynamic Equilibrium)**을 달성한다.
-
-## 2. 아키텍처 및 정책 모델
-
-### 2.1 Policy Configuration (Regime System)
-정부의 성격을 결정하는 정책 파라미터를 도입하여 다양한 경제 체제 실험을 지원한다.
-
-*   **`FISCAL_MODEL`**:
-    *   `"LIBERTARIAN"` (야경 국가): 저세율, 복지 없음, 파산 시 가혹한 처벌.
-    *   `"SOCIAL_DEMOCRACY"` (복지시): 고세율(누진세), 강력한 실업급여/기본소득.
-    *   `"MIXED"` (혼합 경제): 절충안 (Default).
-
-### 2.2 Advanced Taxation (조세 고도화)
-*   **누진세 (Progressive Income Tax)**:
-    *   소득 구간(Tax Brackets)별 차등 세율 적용.
-    *   예: 하위 50%(0%), 중위(10%), 상위 10%(40%).
-*   **보유세 (Wealth Tax)**:
-    *   순자산(Net Worth)이 일정 임계치(`WEALTH_TAX_THRESHOLD`)를 초과하는 가계에 대해 매 틱 과세.
-    *   목표: 노동 없는 부의 무한 축적 견제.
-
-### 2.3 Welfare System (사회 안전망)
-*   **실업 급여 (Unemployment Benefit)**:
-    *   **자격**: `is_employed = False` AND `looking_for_work = True` (노동 시장에 오퍼를 냄).
-    *   **지급액**: `SURVIVAL_COST` * 0.8 (굶어 죽지 않을 정도).
-    *   **재원**: 국고(Treasury). 부족 시 국채 발행(Money Printing) 또는 지급 축소.
-*   **재난 지원금 (Stimulus Check)**:
-    *   **조건**: GDP가 2분기 연속 하락하거나, 기아 사망자 급증 시 발동.
-    *   **지급**: 모든 가계에 일시금 지급 (Helicopter Money).
-
-### 2.4 Bankruptcy Court (회생 절차)
-*   **`BankruptcyProcedure`**:
-    1.  **청산 (Liquidation)**: 가계의 현금 및 유동화 가능한 자산(주식 등)을 전량 매각하여 은행 빚 상환.
-    2.  **탕감 (Forgiveness)**: 남은 빚은 소멸(Write-off). 은행의 손실로 기록(Bad Debt).
-    3.  **패널티 (Penalty)**:
-        *   신용 불량 (`credit_rating = 0`): `CREDIT_RECOVERY_TICKS` 동안 신규 대출 불가.
-        *   자존감 하락: 사회적 욕구(Social Need) 충족도 초기화.
+**Module**: Phase 4 - Political Economy  
+**Status**: 🟠 In Design (Adaptive Agent Refactoring)  
+**Author**: Architect (Antigravity)  
+**Philosophy**: "Social phenomena are emergence, not scripts. Agents act rationally to survive within their systemic constraints."
 
 ---
 
-## 3. 세부 구현 명세
+## 1. The Political Self: `PoliticalComponent` (Voters)
 
-### 3.1 Config 추가 (`config.py`)
-```python
-### 3.1 Config 수정 (Critical Refinement: Economics Math Fix)
-```python
-# --- Phase 4: Fiscal Policy ---
+유권자(Household)는 단순히 소득에 반응하는 기계가 아니라, 내적 가치와 신뢰를 바탕으로 판단한다.
 
-# 1. Progressive Tax (Income Tax)
-# 기준: SURVIVAL_COST (생존 비용) 대비 배수
-# 이유: 경기 침체 시 '평균 소득'이 폭락하면 빈민에게 과세하는 오류 방지
-TAX_BRACKETS = [
-    (1.5, 0.0),   # 생존비의 1.5배까지: 면세 (최저 생계 보장)
-    (5.0, 0.15),  # 중산층 구간 (1.5 ~ 5.0배): 15%
-    (float('inf'), 0.40) # 부유층: 40%
-]
+### 1.1 Data Structure
+*   **Economic Vision (0.0~1.0)**: 가계의 이념적 성향 (0.0: 안전망/분배 중시 ~ 1.0: 성장/기회 중시). 성격(Personality)에 따라 초기화됨.
+*   **Trust Score (0.0~1.0)**: 정부 시스템에 대한 신뢰도.
 
-# 2. Wealth Tax (보유세)
-# 틱당 금리(Phase 3)와 마찬가지로 연율 기준 환산 필요.
-# WEALTH_TAX_THRESHOLD = 50000.0  # (기존 유지)
-ANNUAL_WEALTH_TAX_RATE = 0.02   # 연 2% 부유세
-# 틱당 징수액 = (NetWorth - Threshold) * (ANNUAL_WEALTH_TAX_RATE / TICKS_PER_YEAR)
-
-# 3. Welfare
-UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # 생존 비용 대비 지급 비율
-STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% 하락 시
-
-# 4. Bankruptcy Penalty (Moral Hazard 방지)
-CREDIT_RECOVERY_TICKS = 100 # 1년(100틱) 간 신용 불량 (대출 불가)
-BANKRUPTCY_XP_PENALTY = 0.2 #보유 기술 경험치 20% 삭감 (지능 패널티)
-```
-
-UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # 생존 비용 대비 지급 비율
-STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% 하락 시
-```
-
-### 3.2 Government Logic Update
-*   **`collect_tax()` 개선**: 단순 세율 곱하기 → `_calculate_progressive_tax(income)` 호출.
-*   **`run_welfare_check()` 추가**:
-    *   매 틱 가계 상태 전수 조사.
-    *   실업자에게 급여 지급.
-    *   보유세 징수.
-
-### 3.3 Bankruptcy Mechanism (in Bank)
-*   **`process_default(agent)`**:
-    *   이자 연체 발생 시 호출.
-    *   자산 처분 로직 실행.
-    *   `agent.reset_financial_status()` 호출.
+### 1.2 Approval Logic (지지의 역설)
+*   **Approval = (0.4 * Economic_Satisfaction) + (0.6 * (1.0 - Ideological_Distance))**
+*   **Paradox Mechanic**: 자산이 적은 서민이라도 '성장 비전'이 높다면, 자신의 경제적 상황과 반대되는 보수 정당(BLUE)을 지지할 수 있다.
+*   **Trust Threshold**: 신뢰도가 극도로 낮아지면(0.2 미만) 이념과 상관없이 지지를 철회한다.
 
 ---
 
-## 4. 검증 계획
-1.  **지니계수 완화**: 누진세 도입 전후 지니계수 변화 비교.
-2.  **생존율 향상**: 불황 시 실업급여로 인한 아사자 감소 확인.
-3.  **좀비 기업/가계 퇴출**: 파산 절차를 통해 부실 에이전트가 리셋되고 경제가 다시 활력을 찾는지 확인.
+## 2. The Constraint System: `PolicyLockoutManager`
+
+정치적 결단(고문 해고)에 따른 **'기회비용'**을 시스템적으로 강제한다.
+
+### 2.1 Action Tags
+*   모든 정부 액션은 태그(`KEYNESIAN_FISCAL`, `AUSTRIAN_AUSTERITY` 등)를 가진다.
+
+### 2.2 Scapegoating & Lockout
+*   **Action**: 고문(Advisor) 해고.
+*   **Effect**: 
+    *   **Trust Reset**: 대중의 기대심리를 일시적으로 리셋하여 지지율 하락을 방어.
+    *   **Lockout**: 해고된 고문의 학파와 관련된 모든 액션 태그는 **20틱 동안 비활성화(Locked)**된다.
+    *   **Reasoning**: "실패한 과거의 수단을 다시 쓸 수 없다"는 정치적 명분의 상실을 구현.
 
 ---
 
-## 5. 작업 체크리스트
-- [ ] Config: 누진세율 및 복지 파라미터 정의
-- [ ] Government: `run_welfare_check`, `calc_progressive_tax` 구현
-- [ ] Bank/Agent: 파산 및 회생(Rehab) 로직 구현
-- [ ] Engine: GDP 트래킹 및 경기 침체 감지 로직 (Stimulus Trigger)
+## 3. The Brain: `AdaptiveGovBrain` (Government)
+
+정당(RED/BLUE)에 따라 서로 다른 목적함수를 가진 의사결정 엔진이다.
+
+### 3.1 Reality-based Utility (현실적 효용)
+*   **🔴 RED (Progressive)**: $U = (0.7 \cdot 서민층지지율) + (0.3 \cdot 지니계수개선) - Penalty$
+*   **🔵 BLUE (Conservative)**: $U = (0.6 \cdot 자산가지지율) + (0.4 \cdot GDP성장) - Penalty$
+
+### 3.2 Decision Loop
+1.  **Perceive State**: 매 틱 거시 경제 지표 및 지지율 수집.
+2.  **Filter Actions**: `PolicyLockoutManager`에 의해 잠긴 액션 제거.
+3.  **Evaluate Utility**: 가능한 각 액션의 기대 효용 계산.
+4.  **Softmax Selection**: 확률적 선택을 통해 '실수 가능성'과 '탐험'을 포함한 현실적 의사결정 수행.
+
+---
+
+## 4. Verification & Emergence
+1.  **The Scapegoat Emergence**: 위기 상황에서 정부가 리스크를 감수하고 고문을 희생양으로 삼는지 관측.
+2.  **The Paradox Support**: 서민층 내에서 '성장 비전'에 의한 보수당 지지 현상 데이터 검증.
+3.  **Policy Cycle**: 고문 교체와 쿨다운으로 인해 발생하는 정책적 단절과 이로 인한 경기 순환(Political Business Cycle) 관측.

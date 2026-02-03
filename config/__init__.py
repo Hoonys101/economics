@@ -309,8 +309,8 @@ HOUSEHOLD_MIN_FOOD_INVENTORY_TICKS = (
 
 # --- Agent Lifecycle & Death ---
 SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
-ASSETS_DEATH_THRESHOLD = 0.0
-HOUSEHOLD_DEATH_TURNS_THRESHOLD = 5
+ASSETS_DEATH_THRESHOLD = -500.0 # Allow some depth before death (Credit/Debt survival)
+HOUSEHOLD_DEATH_TURNS_THRESHOLD = 10 # Increase survival window (10 ticks = 2.4 days)
 ASSETS_CLOSURE_THRESHOLD = 0.0
 FIRM_CLOSURE_TURNS_THRESHOLD = 20
 
@@ -609,8 +609,8 @@ WEALTH_TAX_THRESHOLD = 50000.0
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
-# [WO-020] Operation Darwin: No Free Lunch.
-UNEMPLOYMENT_BENEFIT_RATIO = 0.0 # No unemployment benefit
+# [PHASE 4] Re-enabling Welfare for Stabilization
+UNEMPLOYMENT_BENEFIT_RATIO = 0.8 # 80% of survival cost
 STIMULUS_TRIGGER_GDP_DROP = -0.05 # GDP 5% drop trigger
 
 # 4. Bankruptcy Penalty

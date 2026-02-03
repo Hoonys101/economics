@@ -9,3 +9,7 @@
 - **audit_parity_AUDIT-PARITY-001.md** (from `audit-parity-AUDIT-PARITY-001-15366241405581627154`) -> `parity-audit-parity-001-15366241405581627154_audit_parity_AUDIT-PARITY-001.md`
 - **audit_economic_integrity.md** (from `audit-economic-integrity-17706362991746798029`) -> `economic-integrity-17706362991746798029_audit_economic_integrity.md`
 - **audit_structural_god_class_abstraction.md** (from `audit-structural-god-class-abstraction-1421750167376257246`) -> `structural-god-class-abstraction-1421750167376257246_audit_structural_god_class_abstraction.md`
+
+## Harvested on 2026-02-04 07:06:12
+- **audit_structural_god_class.md** (from `audit-structural-god-class-9257244532893801478`) -> `structural-god-class-9257244532893801478_audit_structural_god_class.md`
+- **audit_parity_AUDIT-PARITY-JULES.md** (from `audit-parity-jules-7170558188652712354`) -> `parity-jules-7170558188652712354_audit_parity_AUDIT-PARITY-JULES.md`

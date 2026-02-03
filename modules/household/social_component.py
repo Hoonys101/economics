@@ -189,12 +189,7 @@ class SocialComponent(ISocialComponent):
         else:
             new_state.survival_need_high_turns = 0
 
-        # Assets Death Check
-        assets_death_threshold = config.assets_death_threshold
-        turns_threshold = config.household_death_turns_threshold
-
-        if (total_assets_val <= assets_death_threshold or
-            new_state.survival_need_high_turns >= turns_threshold):
+        if new_state.survival_need_high_turns >= turns_threshold:
             is_active = False
             # Logging handled by caller
 

@@ -109,3 +109,30 @@ class PoliticalParty(Enum):
     """
     BLUE = auto() # Pro-Corporate (Low Corp Tax, Subsidies)
     RED = auto()  # Pro-Household (Low Income Tax, Welfare)
+
+class EconomicSchool(Enum):
+    """
+    Phase 4: Political Economy
+    Economic schools for government advisors.
+    """
+    KEYNESIAN = auto()
+    MONETARIST = auto()
+    AUSTRIAN = auto()
+
+class PoliticalVision(Enum):
+    """
+    Phase 4: Political Economy
+    Household ideological preference.
+    """
+    GROWTH = auto() # Favors Blue (Ladder/Opportunity)
+    SAFETY = auto() # Favors Red (Safety Net/Equity)
+
+class PolicyActionTag(Enum):
+    """
+    Phase 4: Political Economy
+    Tags for government actions to manage lockouts and accountability.
+    """
+    KEYNESIAN_FISCAL = auto()  # Stimulus, Deficit Spending
+    AUSTRIAN_AUSTERITY = auto() # Spending Cuts, Liquidation
+    MONETARIST_RULES = auto()   # Fixed M-Growth, Interest Rules
+    GENERAL_ADMIN = auto()     # Education, Infra
