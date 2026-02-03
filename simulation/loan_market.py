@@ -1,4 +1,4 @@
-from typing import List, Any, Optional, override, TYPE_CHECKING
+from typing import List, Any, Optional, override, TYPE_CHECKING, Literal
 import logging
 
 from simulation.models import Order, Transaction
@@ -174,6 +174,38 @@ class LoanMarket(Market, ILoanMarket):
         )
 
         return loan_info
+
+    def check_staged_application_status(self, staged_loan_id: str) -> Literal["PENDING", "APPROVED", "REJECTED"]:
+        """Checks the status of a pending mortgage application."""
+        # Check if loan exists in Bank
+        if hasattr(self.bank, 'loans') and staged_loan_id in self.bank.loans:
+             return "APPROVED"
+        return "REJECTED"
+
+    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[dict]:
+        """
+        Finalizes an approved application.
+        Returns LoanInfoDTO dict.
+        """
+        if hasattr(self.bank, 'loans') and staged_loan_id in self.bank.loans:
+             loan = self.bank.loans[staged_loan_id]
+             return {
+                 "loan_id": staged_loan_id,
+                 "borrower_id": str(loan.borrower_id),
+                 "original_amount": loan.principal,
+                 "outstanding_balance": loan.remaining_balance,
+                 "interest_rate": loan.annual_interest_rate,
+                 "origination_tick": loan.origination_tick,
+                 "due_tick": loan.start_tick + loan.term_ticks
+             }
+        return None
+
+    def void_staged_application(self, staged_loan_id: str) -> bool:
+        """Cancels a pending or approved application."""
+        if hasattr(self.bank, 'terminate_loan'):
+             self.bank.terminate_loan(staged_loan_id)
+             return True
+        return False
 
     def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
         """

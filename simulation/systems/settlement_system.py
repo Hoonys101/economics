@@ -1,5 +1,6 @@
 from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List
 import logging
+from uuid import UUID
 
 from simulation.finance.api import ISettlementSystem, ITransaction
 from modules.finance.api import (
@@ -7,7 +8,8 @@ from modules.finance.api import (
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
 )
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
-from modules.market.housing_purchase_api import HousingPurchaseSagaDTO
+from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
+from modules.finance.saga_handler import HousingTransactionSagaHandler
 from modules.market.housing_planner_api import MortgageApplicationDTO
 
 if TYPE_CHECKING:
@@ -29,18 +31,19 @@ class SettlementSystem(ISettlementSystem):
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.total_liquidation_losses: float = 0.0
         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
-        self.sagas: Dict[str, HousingPurchaseSagaDTO] = {} # Housing Saga Storage
+        self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
 
-    def submit_saga(self, saga: HousingPurchaseSagaDTO) -> bool:
+    def submit_saga(self, saga: Any) -> bool:
         """
         Submits a new saga to be processed.
         """
         if not saga or 'saga_id' not in saga:
             return False
-        self.sagas[saga['saga_id']] = saga
+        # Cast to new DTO type hint
+        self.active_sagas[saga['saga_id']] = saga
         self.logger.info(
-            f"SAGA_SUBMITTED | Saga {saga['saga_id']} submitted for buyer {saga['data']['household_id']}.",
-            extra={"tick": saga['start_tick'], "saga_id": saga['saga_id']}
+            f"SAGA_SUBMITTED | Saga {saga['saga_id']} submitted.",
+            extra={"saga_id": saga['saga_id']}
         )
         return True
 
@@ -49,170 +52,58 @@ class SettlementSystem(ISettlementSystem):
         Processes active sagas. Implements the Housing Transaction Saga state machine.
         Called by TickOrchestrator.
         """
-        if not self.sagas:
+        if not self.active_sagas:
             return
 
-        tick = simulation_state.time
+        handler = HousingTransactionSagaHandler(simulation_state)
 
         # Iterate over copy to allow modification/deletion
-        for saga_id, saga in list(self.sagas.items()):
+        for saga_id, saga in list(self.active_sagas.items()):
             try:
-                self._process_single_saga(saga, simulation_state, tick)
+                # Delegate to Handler
+                updated_saga = handler.execute_step(saga)
+                self.active_sagas[saga_id] = updated_saga
 
                 # Cleanup Terminal States
-                if saga['status'] in ["COMPLETED", "FAILED_ROLLED_BACK", "LOAN_REJECTED", "FAILED_COMPENSATED"]:
-                    if saga['status'] == "COMPLETED":
+                status = updated_saga['status']
+                if status in ["COMPLETED", "FAILED_ROLLED_BACK"]:
+                    if status == "COMPLETED":
                         self.logger.info(f"SAGA_ARCHIVED | Saga {saga_id} completed successfully.")
                     else:
-                        self.logger.info(f"SAGA_ARCHIVED | Saga {saga_id} ended with {saga['status']}.")
+                        self.logger.info(f"SAGA_ARCHIVED | Saga {saga_id} ended with {status}.")
 
-                    del self.sagas[saga_id]
+                    del self.active_sagas[saga_id]
+
             except Exception as e:
                 self.logger.error(f"SAGA_PROCESS_ERROR | Saga {saga_id} failed. {e}")
-                saga['status'] = "FAILED_COMPENSATED" # Fail safe
+                # Try to compensate
+                try:
+                    handler.compensate_step(saga)
+                except Exception:
+                    pass
+                del self.active_sagas[saga_id]
 
-    def _process_single_saga(self, saga: HousingPurchaseSagaDTO, state: Any, tick: int):
-        status = saga['status']
-        data = saga['data']
-
-        # Step 1: STARTED -> LOAN_APPLICATION_PENDING -> LOAN_APPROVED/REJECTED
-        if status == "STARTED":
-            # Action: Invoke ILoanMarket.apply_for_mortgage
-            loan_market = state.markets.get("loan_market") or state.markets.get("loan")
-
-            if not loan_market:
-                self.logger.error("SAGA_FAIL | Loan Market not found.")
-                saga['status'] = "FAILED_ROLLED_BACK"
-                return
-
-            # Update status to indicate processing (Tick T)
-            saga['status'] = "LOAN_APPLICATION_PENDING"
-
-            # Execute Application
-            try:
-                # Assuming synchronous return for now as per current LoanMarket impl
-                # If async, we would leave it in PENDING and check next tick.
-                loan_dto = loan_market.apply_for_mortgage(data['mortgage_application'])
-
-                if loan_dto:
-                    # Success
-                    data['approved_loan_id'] = loan_dto['loan_id']
-                    # Transition to APPROVED
-                    saga['status'] = "LOAN_APPROVED"
-                    self.logger.info(f"SAGA_LOAN_APPROVED | Loan {loan_dto['loan_id']} approved for Saga {saga['saga_id']}")
-                else:
-                    # Failure (LTV/DTI)
-                    saga['status'] = "LOAN_REJECTED"
-                    self.logger.info(f"SAGA_LOAN_REJECTED | Loan denied for Saga {saga['saga_id']}")
-
-            except Exception as e:
-                self.logger.error(f"SAGA_LOAN_ERROR | {e}")
-                saga['status'] = "FAILED_ROLLED_BACK"
-
-        # Step 2: LOAN_APPROVED -> PROPERTY_TRANSFER_PENDING -> COMPLETED
-        elif status == "LOAN_APPROVED":
-            # Wait for Tick T+1 (Strict Separation)
-            if tick <= saga['start_tick']:
-                return
-
-            # Action: Atomic Settlement
-            buyer_id = data['household_id']
-            seller_id = data['seller_id']
-            offer_price = data['offer_price']
-            down_payment = data['down_payment']
-            loan_principal = data['mortgage_application']['principal']
-
-            buyer = state.agents.get(buyer_id)
-            seller = state.agents.get(seller_id)
-
-            # Handle Government/Bank as seller (-1)
-            if seller_id == -1:
-                if state.government:
-                     seller = state.government
-                else:
-                     # Bank or System
-                     pass
-
-            if not buyer or (seller_id != -1 and not seller):
-                self.logger.error(f"SAGA_SETTLEMENT_FAIL | Agents not found. Buyer: {buyer_id}, Seller: {seller_id}")
-                saga['status'] = "FAILED_COMPENSATED"
-                self._void_loan(state, data['approved_loan_id'])
-                return
-
-            # Execute Multiparty Settlement
-            # 1. Bank -> Buyer (Loan Principal)
-            # 2. Buyer -> Seller (Offer Price)
-            # Note: Buyer pays Down Payment implicitly because they receive Principal and pay Full Price.
-            # Net effect on Buyer: +Principal - Price = -(Price - Principal) = -DownPayment.
-
-            transfers = [
-                (self.bank, buyer, loan_principal),
-                (buyer, seller, offer_price)
-            ]
-
-            success = self.execute_multiparty_settlement(transfers, tick)
-
-            if success:
-                saga['status'] = "PROPERTY_TRANSFER_PENDING"
-
-                # Trigger Transaction logging which Registry will pick up to update ownership
-                # Pass loan principal and lender ID for lien creation in metadata
-                lender_id = self.bank.id if self.bank else 0
-                self._log_property_transfer(state, data['property_id'], buyer_id, seller_id, offer_price,
-                                          data['approved_loan_id'], loan_principal, lender_id)
-
-                saga['status'] = "COMPLETED"
-                self.logger.info(f"SAGA_COMPLETED | Property {data['property_id']} transferred to {buyer_id}.")
-            else:
-                self.logger.error(f"SAGA_SETTLEMENT_FAIL | Multiparty settlement failed.")
-                saga['status'] = "FAILED_COMPENSATED"
-                self._void_loan(state, data['approved_loan_id'])
-
-    def _log_property_transfer(self, state: Any, property_id: int, buyer_id: int, seller_id: int, price: float,
-                             loan_id: Any, loan_principal: float = 0.0, lender_id: int = 0):
+    def find_and_compensate_by_agent(self, agent_id: int, handler: Optional[IHousingTransactionSagaHandler] = None) -> None:
         """
-        Logs the property transaction. The Registry will pick this up to update ownership/liens.
-        Also manually updates critical Agent state if Registry is not immediate, to prevent same-tick inconsistency.
+        Finds all sagas involving a specific agent and triggers their compensation.
+        Note: handler must be provided if calling outside process_sagas (where handler is local).
         """
-        metadata = {
-            "mortgage_id": loan_id,
-            "executed": True,
-            "loan_principal": loan_principal,
-            "lender_id": lender_id
-        }
-
-        # Create Transaction Object
-        from simulation.models import Transaction
-        tx_obj = Transaction(
-            buyer_id=buyer_id,
-            seller_id=seller_id,
-            item_id=f"unit_{property_id}",
-            quantity=1.0,
-            price=price,
-            market_id="housing",
-            transaction_type="housing",
-            time=state.time,
-            metadata=metadata
-        )
-        state.transactions.append(tx_obj)
-
-        # Force Registry Update Immediately (if available) to ensure consistency
-        if hasattr(state, 'registry') and state.registry:
-             buyer = state.agents.get(buyer_id)
-             seller = state.agents.get(seller_id)
-             state.registry.update_ownership(tx_obj, buyer, seller, state)
-        else:
-             # Fallback: We rely on TickOrchestrator to run Registry later.
-             # BUT, for immediate consistency (Saga completed), we might need to trust the Registry will catch up.
-             pass
-
-    def _void_loan(self, state: Any, loan_id: Any):
-        if not loan_id:
+        if not self.active_sagas:
             return
-        if self.bank and hasattr(self.bank, 'terminate_loan'):
-             # Try to find the full loan ID string if loan_id is int
-             # But here we likely have the ID returned by stage_mortgage
-             self.bank.terminate_loan(str(loan_id)) # Best effort
+
+        if not handler:
+             self.logger.error("SAGA_COMPENSATE_FAIL | No handler provided for find_and_compensate_by_agent")
+             return
+
+        for saga_id, saga in list(self.active_sagas.items()):
+            if saga['buyer_id'] == agent_id or saga['seller_id'] == agent_id:
+                self.logger.warning(f"SAGA_AGENT_DEATH | Triggering compensation for Saga {saga_id} due to agent {agent_id} death.")
+                try:
+                    updated_saga = handler.compensate_step(saga)
+                    if updated_saga['status'] == "FAILED_ROLLED_BACK":
+                        del self.active_sagas[saga_id]
+                except Exception as e:
+                    self.logger.critical(f"SAGA_AGENT_DEATH_FAIL | Failed to compensate saga {saga_id}. {e}")
 
     def create_settlement(
         self,

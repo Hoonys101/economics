@@ -1,5 +1,6 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 import logging
+from uuid import UUID
 from modules.finance.api import LienDTO
 from simulation.systems.api import IRegistry
 from simulation.models import Transaction
@@ -17,6 +18,63 @@ class Registry(IRegistry):
 
     def __init__(self, logger: Optional[logging.Logger] = None):
         self.logger = logger if logger else logging.getLogger(__name__)
+        self.contract_locks: Dict[int, UUID] = {}
+        self.real_estate_units: List[Any] = []
+
+    def set_real_estate_units(self, units: List[Any]) -> None:
+        self.real_estate_units = units
+
+    def is_under_contract(self, property_id: int) -> bool:
+        return property_id in self.contract_locks
+
+    def set_under_contract(self, property_id: int, saga_id: UUID) -> bool:
+        if property_id in self.contract_locks:
+             return False
+        self.contract_locks[property_id] = saga_id
+        return True
+
+    def release_contract(self, property_id: int, saga_id: UUID) -> bool:
+        if self.contract_locks.get(property_id) == saga_id:
+             del self.contract_locks[property_id]
+             return True
+        return False
+
+    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
+        unit = next((u for u in self.real_estate_units if u.id == property_id), None)
+        if not unit:
+             return None
+
+        # Check if already has this loan lien
+        if any(l['loan_id'] == loan_id for l in unit.liens):
+             return f"lien_{loan_id}"
+
+        lien_id = f"lien_{loan_id}"
+        new_lien: LienDTO = {
+            "loan_id": loan_id,
+            "lienholder_id": lienholder_id,
+            "principal_remaining": principal,
+            "lien_type": "MORTGAGE"
+        }
+        unit.liens.append(new_lien)
+        return lien_id
+
+    def remove_lien(self, property_id: int, lien_id: str) -> bool:
+        unit = next((u for u in self.real_estate_units if u.id == property_id), None)
+        if not unit:
+             return False
+
+        original_len = len(unit.liens)
+        # Remove if lien_id matches generated ID or raw loan_id
+        unit.liens = [l for l in unit.liens if f"lien_{l['loan_id']}" != lien_id and l['loan_id'] != lien_id]
+
+        return len(unit.liens) < original_len
+
+    def transfer_ownership(self, property_id: int, new_owner_id: int) -> bool:
+        unit = next((u for u in self.real_estate_units if u.id == property_id), None)
+        if not unit:
+             return False
+        unit.owner_id = new_owner_id
+        return True
 
     def update_ownership(self, transaction: Transaction, buyer: Any, seller: Any, state: SimulationState) -> None:
         """

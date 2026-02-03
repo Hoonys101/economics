@@ -35,6 +35,15 @@ class HousingDecisionDTO(TypedDict):
     offer_price: Optional[float]
     mortgage_application: Optional[MortgageApplicationDTO]
 
+class MortgageApprovalDTO(TypedDict):
+    """
+    Represents the confirmed details of an approved mortgage.
+    """
+    loan_id: str  # Bank-issued unique loan identifier (string)
+    lien_id: str  # Registry-issued unique lien identifier
+    approved_principal: float
+    monthly_payment: float
+
 class HousingBubbleMetricsDTO(TypedDict):
     """
     Data structure for monitoring housing market stability.
@@ -80,6 +89,24 @@ class ILoanMarket(ABC):
          Returns LoanInfoDTO (as dict) if successful, None otherwise.
          """
          ...
+
+    @abstractmethod
+    def check_staged_application_status(self, staged_loan_id: str) -> Literal["PENDING", "APPROVED", "REJECTED"]:
+        """Checks the status of a pending mortgage application."""
+        ...
+
+    @abstractmethod
+    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[dict]:
+        """
+        Finalizes an approved application, creating an official loan.
+        Returns the final loan details (LoanInfoDTO dict) or None on failure.
+        """
+        ...
+
+    @abstractmethod
+    def void_staged_application(self, staged_loan_id: str) -> bool:
+        """Cancels a pending or approved application before funds are disbursed."""
+        ...
 
 class IBubbleObservatory(ABC):
     """

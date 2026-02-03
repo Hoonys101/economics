@@ -2,6 +2,7 @@ from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tupl
 from dataclasses import dataclass
 import abc
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
@@ -270,6 +271,14 @@ class IBankService(IFinancialEntity, Protocol):
         """
         ...
 
+    @abc.abstractmethod
+    def terminate_loan(self, loan_id: str) -> Optional["Transaction"]:
+        """
+        Forcefully terminates a loan (e.g. foreclosure or voiding).
+        Returns a credit_destruction transaction if balance was > 0.
+        """
+        ...
+
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""
     def get_debt_to_gdp_ratio(self, government: "IGovernment", indicators: "EconomicIndicatorsDTO") -> float: ...
@@ -361,10 +370,32 @@ class IRealEstateRegistry(ABC):
         """
         Checks if a property is currently involved in an active purchase Saga.
         This is the single source of truth for the "under contract" status.
-
-        Implementation Note: This method should query the Saga persistence layer
-        for any non-terminal Saga state associated with the property_id.
         """
+        ...
+
+    @abstractmethod
+    def set_under_contract(self, property_id: int, saga_id: UUID) -> bool:
+        """Locks a property, preventing other sales. Returns False if already locked."""
+        ...
+
+    @abstractmethod
+    def release_contract(self, property_id: int, saga_id: UUID) -> bool:
+        """Releases the lock on a property."""
+        ...
+
+    @abstractmethod
+    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
+        """Adds a lien to a property, returns a unique lien_id."""
+        ...
+
+    @abstractmethod
+    def remove_lien(self, property_id: int, lien_id: str) -> bool:
+        """Removes a lien from a property."""
+        ...
+
+    @abstractmethod
+    def transfer_ownership(self, property_id: int, new_owner_id: int) -> bool:
+        """Finalizes the transfer of the property."""
         ...
 
 class ISagaRepository(ABC):
