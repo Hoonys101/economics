@@ -22,6 +22,10 @@
 -   **Phase Integration**: Hooked `SettlementSystem.process_sagas` into `Phase3_Transaction` in `TickOrchestrator`, ensuring housing transactions occur alongside other financial activities.
 -   **Macro-Prudential Regulations**: `LoanMarket` now strictly enforces LTV and DTI limits defined in `economy_params.yaml`.
 
+### Manual Review Updates (Refactoring)
+-   **HousingSystem**: Removed hardcoded `loan_term` and `existing_debt_payments`. Now fetches loan term from config and calculates existing debt payments by querying `Bank.get_debt_status`.
+-   **LoanMarket**: Removed hardcoded `interest_rate` fallback. Refactored `stage_mortgage` to return `LoanInfoDTO` (dict) instead of just an ID, simplifying `apply_for_mortgage` and integrating staging logic more cleanly. Updated `ILoanMarket` interface in `housing_planner_api.py` to match.
+
 ### Verification
 -   `scripts/verify_housing_transaction_integrity.py` confirms:
     -   Atomic transfer of Property, Loan Principal, and Down Payment.

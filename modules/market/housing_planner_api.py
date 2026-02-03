@@ -87,10 +87,10 @@ class ILoanMarket(ABC):
         ...
 
     @abstractmethod
-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[int]:
+    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[dict]:
          """
          Stages a mortgage (creates loan record) without disbursing funds.
-         Returns loan_id if successful, None otherwise.
+         Returns LoanInfoDTO (as dict) if successful, None otherwise.
          """
          ...
 

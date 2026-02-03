@@ -165,60 +165,13 @@ class LoanMarket(Market, ILoanMarket):
         Processes a mortgage application with regulatory checks.
         Returns LoanInfoDTO if approved, None otherwise.
         """
-        # 1. Evaluate
-        if not self.evaluate_mortgage_application(application):
-            return None
+        # Refactored to use stage_mortgage which now returns LoanDTO (dict)
+        return self.stage_mortgage(application)
 
-        # 2. Stage (Create Record)
-        # Adapt DTO for stage_mortgage if necessary (it calls evaluate again? No, we can call bank directly or use stage_mortgage)
-        # stage_mortgage returns int ID. We need LoanDTO (LoanInfoDTO).
-
-        # stage_mortgage currently calls evaluate_mortgage_application internally.
-        # But we already called it. Double check is fine but inefficient.
-
-        loan_id_int = self.stage_mortgage(application)
-
-        if loan_id_int is not None:
-             # Retrieve the full LoanInfoDTO from Bank
-             # stage_mortgage logic:
-             # loan_info = self.bank.stage_loan(...)
-             # return loan_id_int
-
-             # We need to re-fetch or modify stage_mortgage to return DTO.
-             # Since we can't easily change stage_mortgage return type without breaking legacy (if any),
-             # we will fetch it from bank using the ID or reconstruct it.
-             # But bank stores by "loan_X".
-
-             # Let's inspect stage_mortgage implementation below.
-             # It returns int.
-             # Ideally we modify stage_mortgage to return LoanDTO/int or just call bank.stage_loan here.
-
-             # Re-implementing staging logic here to get the DTO directly:
-             if hasattr(self.bank, 'get_interest_rate'):
-                  interest_rate = self.bank.get_interest_rate()
-             else:
-                  interest_rate = 0.05
-
-             if 'loan_principal' in application:
-                 principal = application['loan_principal']
-             else:
-                 principal = application.get('principal', 0.0)
-
-             loan_info = self.bank.stage_loan(
-                 borrower_id=str(application['applicant_id']),
-                 amount=principal,
-                 interest_rate=interest_rate,
-                 due_tick=None,
-                 borrower_profile=None
-             )
-             return loan_info
-
-        return None
-
-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[int]:
+    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
         """
         Stages a mortgage (creates loan record) without disbursing funds.
-        Returns loan_id if successful, None otherwise.
+        Returns LoanInfoDTO if successful, None otherwise.
         """
         # 1. Evaluate
         if not self.evaluate_mortgage_application(application):
@@ -231,29 +184,24 @@ class LoanMarket(Market, ILoanMarket):
         else:
              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
 
-        due_tick = None # Let Bank decide or pass if needed. DTO has loan_term.
-        # If DTO has loan_term, we can calculate due_tick if we knew current tick.
-        # But we don't have current tick here easily unless passed.
-        # Bank.stage_loan takes due_tick.
-        # Bank.stage_loan uses current_tick_tracker if due_tick is None.
+        due_tick = None
+        # Ideally calculate based on loan_term if current tick known, but Bank handles defaults.
+
+        # Support DTO key variation
+        if 'loan_principal' in application:
+            principal = application['loan_principal']
+        else:
+            principal = application.get('principal', 0.0)
 
         loan_info = self.bank.stage_loan(
             borrower_id=str(application['applicant_id']),
-            amount=application['principal'],
+            amount=principal,
             interest_rate=interest_rate,
             due_tick=None, # Bank defaults using term
             borrower_profile=None # Could construct from application
         )
 
-        if loan_info:
-             # Extract int ID
-             try:
-                 loan_id_int = int(loan_info['loan_id'].split('_')[1])
-             except (IndexError, ValueError):
-                 loan_id_int = hash(loan_info['loan_id']) % 10000000
-             return loan_id_int
-
-        return None
+        return loan_info
 
     def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
         """

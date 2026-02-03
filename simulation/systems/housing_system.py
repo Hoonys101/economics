@@ -143,12 +143,35 @@ class HousingSystem:
         # Gather data for Mortgage Application
         household = simulation.agents.get(buyer_id)
         annual_income = 0.0
+        existing_debt_payments = 0.0
 
         if household:
              # Logic to estimate income
              if hasattr(household, 'current_wage'):
                   ticks_per_year = getattr(self.config, 'TICKS_PER_YEAR', 100)
                   annual_income = household.current_wage * ticks_per_year
+
+             # Logic to get existing debt payments
+             if simulation.bank and hasattr(simulation.bank, 'get_debt_status'):
+                 try:
+                     debt_status = simulation.bank.get_debt_status(str(buyer_id))
+                     # Calculate total monthly payment from loans
+                     # Assuming loans have 'outstanding_balance' and 'interest_rate'
+                     # We estimate payment or if LoanInfoDTO has it (it doesn't usually)
+                     for loan in debt_status.get('loans', []):
+                         # Estimate monthly payment
+                         balance = loan.get('outstanding_balance', 0.0)
+                         rate = loan.get('interest_rate', 0.05)
+                         term = 300 # Default assumption if not available
+
+                         monthly_rate = rate / 12.0
+                         if monthly_rate == 0:
+                             payment = balance / term
+                         else:
+                             payment = balance * (monthly_rate * (1 + monthly_rate)**term) / ((1 + monthly_rate)**term - 1)
+                         existing_debt_payments += payment
+                 except Exception as e:
+                     logger.warning(f"Failed to fetch debt status for {buyer_id}: {e}")
 
         # Resolve seller
         seller_id = -1
@@ -158,14 +181,22 @@ class HousingSystem:
         if unit:
              seller_id = unit.owner_id
 
+        # Get Loan Term from Config
+        housing_config = getattr(self.config, 'housing', {})
+        # Support object or dict access
+        if isinstance(housing_config, dict):
+             loan_term = housing_config.get('mortgage_term_ticks', 300)
+        else:
+             loan_term = getattr(housing_config, 'mortgage_term_ticks', 300)
+
         mortgage_app = MortgageApplicationDTO(
             applicant_id=buyer_id,
             property_id=prop_id,
             offer_price=offer_price,
             loan_principal=principal,
             applicant_gross_income=annual_income,
-            applicant_existing_debt_payments=0.0, # Placeholder
-            loan_term=360
+            applicant_existing_debt_payments=existing_debt_payments,
+            loan_term=loan_term
         )
 
         saga_data = HousingPurchaseSagaDataDTO(
