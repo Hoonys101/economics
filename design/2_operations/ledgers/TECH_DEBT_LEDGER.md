@@ -32,6 +32,7 @@
 |---|---|---|---|---|
 | TD-160 | 2026-02-02 | Non-Atomic Inheritance (Direct Asset Transfer) | Money leaks during death; Partial state corruption | **CRITICAL** |
 | TD-187 | 2026-02-02 | Severance Pay Race Condition | Over-withdrawal during firm liquidation | **HIGH** |
+| TD-187-DEBT | 2026-02-03 | Hardcoded Logic & Fragile State in Liquidation | `LiquidationManager` uses hardcoded `haircut` (20%) and directly manipulates `PublicManager` state (`.managed_inventory`), breaking encapsulation. | Refactoring |
 | TD-192 | 2026-02-03 | Direct Asset Manipulation (_assets Bypassing SettlementSystem) | Zero-Sum breakage; Magic Money leaks | **CRITICAL** |
 
 ## 📦 6. DATA & DTO CONTRACTS

@@ -75,6 +75,17 @@ class PublicManager(IAssetRecoverySystem):
                 self.last_tick_recovered_assets[item_id] += quantity
                 self.logger.info(f"Recovered {quantity} of {item_id}.")
 
+    def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+        """
+        Receives inventory from a liquidated firm via asset buyout.
+        Used by LiquidationManager during the 'Asset Liquidation' phase.
+        """
+        for item_id, quantity in inventory.items():
+            if quantity > 0:
+                self.managed_inventory[item_id] += quantity
+                self.last_tick_recovered_assets[item_id] += quantity
+        self.logger.info(f"Received liquidated assets: {inventory}")
+
     def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO]) -> List[Order]:
         """
         Generates non-disruptive SELL orders for managed assets.

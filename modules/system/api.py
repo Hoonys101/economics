@@ -97,6 +97,13 @@ class IAssetRecoverySystem(Protocol):
         """Takes ownership of a defunct agent's inventory."""
         ...
 
+    def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+        """
+        Receives inventory from a liquidated firm via asset buyout.
+        Used by LiquidationManager during the 'Asset Liquidation' phase.
+        """
+        ...
+
     def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO]) -> List[Any]:
         """Generates non-disruptive SELL orders for managed assets."""
         # Note: Return type is List["Order"], using Any to avoid circular imports

@@ -208,6 +208,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
 
         # Mock public manager managed inventory update
         self.mock_public_manager.managed_inventory = {"apples": 0.0}
+        self.mock_public_manager.receive_liquidated_assets = MagicMock()
 
         # Employee Claim 500.0
         # 500 = Tenure * 2 * 7 * 100 => Tenure = 0.35 yrs
@@ -258,8 +259,8 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
 
         # 3. Verify Inventory Cleared
         self.assertEqual(self.firm.inventory, {})
-        # 4. Verify Public Manager got inventory
-        self.assertEqual(self.mock_public_manager.managed_inventory["apples"], 100.0)
+        # 4. Verify Public Manager received inventory via interface
+        self.mock_public_manager.receive_liquidated_assets.assert_called_with({"apples": 100.0})
 
 if __name__ == '__main__':
     unittest.main()

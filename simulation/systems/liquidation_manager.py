@@ -69,11 +69,14 @@ class LiquidationManager:
         # Calculate Total Value
         total_value = 0.0
 
-        # Use last prices or default config price
+        # Use last prices or default config price from firm's config
+        # Default price fallback: 10.0 if not found in config
         default_price = 10.0
-        if firm.config and hasattr(firm.config, "goods") and firm.config.goods:
-             # Just pick a random good's price or iterate? We need item specific.
-             pass
+        if firm.config and hasattr(firm.config, "goods_initial_price") and isinstance(firm.config.goods_initial_price, dict):
+             default_price = firm.config.goods_initial_price.get("default", 10.0)
+
+        # Configurable Haircut (Default 20%)
+        haircut = getattr(firm.config, "liquidation_haircut", 0.2)
 
         inventory_transfer = {}
         for item_id, qty in firm.inventory.items():
@@ -83,14 +86,13 @@ class LiquidationManager:
             # Determine fair value
             price = firm.last_prices.get(item_id, 0.0)
             if price <= 0:
-                # Fallback
-                if firm.config and hasattr(firm.config, "goods"):
+                # Fallback to configured initial price if available
+                if firm.config and hasattr(firm.config, "goods") and isinstance(firm.config.goods, dict):
                      price = firm.config.goods.get(item_id, {}).get("initial_price", default_price)
                 else:
                      price = default_price
 
-            # Apply Liquidation Discount (Haircut) e.g., 20%
-            haircut = 0.2
+            # Apply Liquidation Discount (Haircut)
             liquidation_value = price * qty * (1.0 - haircut)
             total_value += liquidation_value
             inventory_transfer[item_id] = qty
@@ -109,14 +111,8 @@ class LiquidationManager:
             if success:
                 logger.info(f"LIQUIDATION_ASSET_SALE | Firm {firm.id} sold inventory to PublicManager for {total_value:.2f}.")
 
-                # Transfer Inventory
-                # We can use process_bankruptcy_event logic but manually, or rely on PublicManager to take it.
-                # Since we already paid, we just hand it over.
-                # PublicManager needs to receive it.
-                # Assuming PublicManager has a way to receive inventory without re-triggering logic.
-                if hasattr(self.public_manager, "managed_inventory"):
-                     for item, qty in inventory_transfer.items():
-                          self.public_manager.managed_inventory[item] += qty
+                # Transfer Inventory via Interface (Encapsulation)
+                self.public_manager.receive_liquidated_assets(inventory_transfer)
 
                 # Clear Firm Inventory
                 firm.inventory.clear()
