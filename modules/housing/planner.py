@@ -8,6 +8,7 @@ from modules.market.housing_planner_api import (
     HousingDecisionDTO,
     MortgageApplicationDTO
 )
+from modules.market.loan_api import MortgageApplicationRequestDTO
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class HousingPlanner(IHousingPlanner):
                 max_loan_dti = max_allowed_new_monthly_payment * ( (1+monthly_rate)**term_months - 1 ) / ( monthly_rate * (1+monthly_rate)**term_months )
 
         # 3. Assess Purchasing Power
-        cash = household.assets
+        cash = household.econ_state.assets
         purchasing_power = cash + max_loan_dti
 
         # 4. Filter Properties
@@ -86,7 +87,7 @@ class HousingPlanner(IHousingPlanner):
 
         # 5. Make Decision
         # Priority: Homelessness -> Buy if affordable.
-        if household.is_homeless and affordable_properties:
+        if household.econ_state.is_homeless and affordable_properties:
             # Pick cheapest for now (simplistic logic)
             best_prop = min(affordable_properties, key=lambda p: p.price)
             offer_price = best_prop.price
@@ -129,14 +130,13 @@ class HousingPlanner(IHousingPlanner):
                 logger.error(f"HousingPlanner: Invalid property ID {best_prop.unit_id}")
                 return self._stay_decision()
 
-            mortgage_app = MortgageApplicationDTO(
+            mortgage_app = MortgageApplicationRequestDTO(
                 applicant_id=household.id,
-                principal=loan_amount,
-                purpose="MORTGAGE",
+                requested_principal=loan_amount,
                 property_id=prop_id,
                 property_value=offer_price,
-                applicant_income=annual_income,
-                applicant_existing_debt=current_debt,
+                applicant_monthly_income=annual_income / 12.0,
+                existing_monthly_debt_payments=existing_monthly_payment,
                 loan_term=360
             )
 

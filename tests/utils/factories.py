@@ -84,8 +84,6 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
         "survival_bid_premium": 0.2,
         "elasticity_mapping": {"DEFAULT": 1.0},
         "max_willingness_to_pay_multiplier": 1.5,
-
-        # New defaults added
         "initial_household_age_range": (20.0, 60.0),
         "initial_aptitude_distribution": (0.5, 0.15),
         "emergency_liquidation_discount": 0.8,
@@ -160,8 +158,6 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
         "fire_sale_cost_discount": 0.8,
         "sale_timeout_ticks": 10,
         "dynamic_price_reduction_factor": 0.05,
-
-        # New defaults added
         "ai_epsilon_decay_params": (0.5, 0.05, 700),
         "ai_reward_brand_value_multiplier": 0.05,
     }

@@ -2,7 +2,7 @@ from typing import TypedDict, Literal, Union, Optional
 from uuid import UUID
 from dataclasses import dataclass
 
-from modules.household.dtos import HouseholdStateDTO
+from modules.household.dtos import HouseholdSnapshotDTO
 from modules.system.api import HousingMarketSnapshotDTO
 from modules.market.housing_planner_api import MortgageApplicationDTO
 
@@ -44,7 +44,7 @@ class HousingDecisionRequestDTO(TypedDict):
     """
     Input for the simplified HousingPlanner.
     """
-    household_state: HouseholdStateDTO
+    household_state: HouseholdSnapshotDTO
     housing_market_snapshot: HousingMarketSnapshotDTO
     # DTI calculation requires this
     outstanding_debt_payments: float
