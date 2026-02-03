@@ -27,6 +27,10 @@
 - **개념**: 프로토콜 중심의 느슨한 결합과 실시간 관찰을 위한 웹 인터페이스.
 - **핵심**: DTO 기반 데이터 계약 및 플러그인 가능한 모듈식 설계.
 
+### 2.6 [청산 및 시스템 건전성 (Liquidation Protocols)](architecture/ARCH_TRANSACTIONS.md)
+- **개념**: 좀비 기업(Zombie Agent)의 시장 교란을 방지하고 "Fast-Fail" 원칙에 따라 자원을 즉시 재분배.
+- **핵심**: Liquidation Waterfall(TD-187)을 통한 5단계 자산 분배 우선순위(1.임금/퇴직금 -> 2.담보채무 -> 3.세금 -> 4.일반채무 -> 5.주주) 및 Systemic Liquidation Phase(Phase 4.5) 실행.
+
 ---
 
 ## 3. 핵심 설계 원칙 (Core Principles)
